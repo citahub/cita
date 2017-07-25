@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+enum MsgType {
+    REQUEST = 0;
+    HEADER = 1;
+    BODY = 2;
+    BLOCK = 3;
+    TX = 4;
+    STATUS = 5;
+    MSG = 6;
+    RESPONSE = 7;
+    TX_RESPONSE = 8;
+}
+
+enum OperateType{
+    BROADCAST = 0;
+    SINGLE = 1;
+    SUBTRACT = 2;
+}
+
+message Message {
+    uint32 cmd_id = 1;
+    MsgType type = 2;
+    uint32 origin = 3;
+    OperateType operate = 4;
+    bytes content = 5;
+}

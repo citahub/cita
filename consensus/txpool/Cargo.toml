@@ -1,0 +1,24 @@
+[package]
+description = "CITA node."
+name = "txpool"
+version = "0.6.0"
+
+[dependencies]
+threadpool = "1.3.2"
+libproto = {path = "../../share_libs/proto"}
+tx_pool = {path = "../../share_libs/tx_pool"}
+util = {path = "../../share_libs/util"}
+protobuf = { version = "^1.0.0"}
+log = "0.3.0"
+env_logger = "0.3"
+bincode = "0.8"
+serde_derive = "1.0"
+serde = "1.0"
+amqp = "=0.0.20"
+pubsub = { path = "../../share_libs/pubsub" }
+cita_log = { path = "../../share_libs/cita_log" }
+
+[[bin]]
+path = "main.rs"
+name = "txpool"
+

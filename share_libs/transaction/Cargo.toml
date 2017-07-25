@@ -1,0 +1,17 @@
+[package]
+name = "transaction"
+version = "0.6.0"
+authors = ["u2 <zhangyaning1985@gmail.com>"]
+
+[dependencies]
+sha3 = { path = "../parity/util/sha3"}
+util = { path = "../util"}
+cita-crypto = { path = "../crypto" }
+libproto = { path = "../proto" }
+rustc-serialize = "0.3"
+protobuf = { version = "^1.0.0"}
+log = "0.3"
+serde_types = { path = "../serde_types" }
+
+[dev-dependencies]
+uuid = { version = "0.4", features = ["v4"] }

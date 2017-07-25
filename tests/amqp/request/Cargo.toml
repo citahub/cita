@@ -1,0 +1,14 @@
+[package]
+description = "CITA node."
+name = "amqp_test_request"
+version = "0.1.0"
+authors = ["gguoss <gavin@Cryptape.com>"]
+
+[[bin]]
+path = "request.rs"
+name = "request"
+
+
+[dependencies]
+amqp = "=0.0.20"
+pubsub = { path = "../../../share_libs/pubsub" }

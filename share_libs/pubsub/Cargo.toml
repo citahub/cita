@@ -1,0 +1,11 @@
+[package]
+name = "pubsub"
+version = "0.6.0"
+authors = ["rink1969 <rink1969@cryptape.com>"]
+
+[dependencies]
+amqp = "=0.0.20"
+util = {path="../util"}
+
+[dev-dependencies]
+dotenv = "0.10.0"

@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+enum ProofType {
+    AuthorityRound = 0;
+    Raft = 1;
+    Tendermint = 2;
+}
+
+message Proof {
+    bytes content = 1; 
+    ProofType type = 2;
+}
+
+message BlockHeader {
+    bytes prevhash = 1;
+    uint64 timestamp = 2;
+    Proof proof = 3;
+    Commit commit = 4; // TODO: should be Commit?
+    uint64 height = 5;
+    Proof proof1 = 6;
+}
+
+message Commit {
+    bytes state_root = 1;
+    bytes transactions_root = 2;
+    bytes receipts_root = 3;
+    // TODO: 删除 gas_used
+    uint64 gas_used = 4;
+}
+
+message Status {
+    bytes hash = 1;
+    uint64 height = 2;
+}
+
+enum Crypto {
+    SECP = 0;
+    SM2 = 1; 
+}
+
+// TOOD: 重构
+// TODO: Change from&to type
+message Transaction {
+    string from = 1;
+    string to = 2;
+    bytes content = 3; // Content
+    uint64 valid_until_block = 4;
+}
+
+message Content {
+    // TODO: nonce type
+    string nonce = 1;
+    uint64 gas = 2;
+    uint64 value = 3;
+    bytes data = 4;
+}
+
+message SignedTransaction {
+    bytes transaction = 1;
+    bytes signature = 2;
+    Crypto crypto = 3;
+}
+// data precompile API
+
+message TxResponse {
+    bytes hash = 1;
+    bytes result = 2;
+}
+
+message Extra {}
+
+message BlockBody {
+    repeated Transaction transactions = 1;
+    // TODO: 移动到 header 中
+    Extra extra = 2;
+}
+
+message Block {
+    uint32 version = 1;
+    BlockHeader header = 2;
+    BlockBody body = 3;
+}

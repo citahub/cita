@@ -1,0 +1,18 @@
+[workspace]
+members = ["devtools"
+,"jsonrpc"
+,"chain"
+,"chain/state"
+,"chain/libchain"
+,"consensus/authority_round"
+,"consensus/txpool"
+,"consensus/raft"
+,"consensus/tendermint"
+,"network"
+,"tests/trans_evm"
+]
+exclude = [
+"share_libs/parity"
+]
+
+

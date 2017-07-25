@@ -1,0 +1,16 @@
+[package]
+name = "engine"
+version = "0.6.0"
+authors = ["zhangsoledad <787953403@qq.com>"]
+
+[dependencies]
+libproto = {path = "../../share_libs/proto"}
+util = {path = "../../share_libs/util"}
+sha3 = {path = "../../share_libs/parity/util/sha3"}
+protobuf = { version = "^1.0.0" }
+cita-crypto = { path = "../../share_libs/crypto" }
+engine_json = { path = "../json" }
+proof = { path = "../proof" }
+pubsub = { path = "../../share_libs/pubsub" }
+amqp = "=0.0.20"
+serde_types = { path = "../../share_libs/serde_types" }

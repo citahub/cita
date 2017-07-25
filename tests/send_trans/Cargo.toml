@@ -1,0 +1,19 @@
+[package]
+name = "send_trans"
+version = "0.1.0"
+authors = ["Boyu Yang <yangby@cryptape.com>"]
+
+[dependencies]
+log = "0.3"
+clap = "2"
+hyper = "0.10"
+tabwriter = "1.0"
+uuid = { version = "0.4", features = ["v4"] }
+protobuf = { version = "^1.0.0" }
+rustc-serialize = "0.3"
+util = { path = "../../share_libs/util" }
+cita-crypto = { path = "../../share_libs/crypto" }
+libproto = { path = "../../share_libs/proto"}
+now_proto = { path = "../../chain/now/proto" }
+serde_types = { path = "../../share_libs/serde_types" }
+cita_log = { path = "../../share_libs/cita_log" }

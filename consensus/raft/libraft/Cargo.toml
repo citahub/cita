@@ -1,0 +1,70 @@
+[package]
+name = "libraft"
+version = "0.6.0"
+authors = [
+    "gguoss <1536310027@qq.com>",
+    "Andrew Hobden <andrew@hoverbear.org>",
+    "Dan Burkert <dan@danburkert.com>",
+    "James McGlashan <github@darkfox.id.au>",
+]
+description = """
+Today our systems operate in extreme conditions, functioning across containers,
+virtual machines, infrastructure, networks, embedded systems, in our pockets,
+and even inside of us. Many of these systems depend on one another for
+operation, others are able to operate in failing connectivity without disaster.
+In many cases it is preferable to have the latter, especially if the operation
+the continued operation of the system is at stake. Distributed consensus
+represents one small part of a larger system, and offer the ability to maintain
+a replicated persistent log containing actions that are applied globally into
+a state machine. This allows *n* clients to communicate to a cluster of *m*
+servers in a stable and predictable manner, even in failing network conditions.
+
+Using Ongaro and Osterhouts's Raft algorithm we are developing a fast, low
+level, low requirements implementation of the system in an unopinionated,
+minimal way. The Raft library interfaces with custom or preexisting Log and
+State Machine implementations, providing a Client, Server, and Consensus Module
+within its core. We have chosen an asynchronous single threaded event loop model
+in the Rust language, allowing our implementation to have strong safety and
+performance characteristics with low demands. Communication, a primary
+performance concern, is kept as lightweight and fast as possible by using
+Renshaw's Cap'n Proto implementation. We are currently exploring opportunities
+in trust and security as well as testing our implementation for further failure
+conditions."""
+readme = "README.md"
+keywords = [
+    "Raft", "Distributed Computing", "Consensus", "State Machine",
+    "Persistent Log", "Networking",
+]
+license = "MIT"
+
+# Builds Cap'n Proto messages
+build = "build.rs"
+
+# Dependencies
+[build-dependencies]
+capnpc = "0.5"
+
+[dependencies]
+bufstream = "0.1"
+capnp = "0.6"
+capnp-nonblock = "0.3"
+log = "0.3"
+mio = "0.5"
+rand = "0.3"
+scoped_log = { git = "https://github.com/james-darkfox/rs-scoped_log" }
+uuid = "0.1"
+wrapped_enum = "0.1"
+redis = "0.8"
+libproto = {path = "../../../share_libs/proto"}
+protobuf = { version = "^1.0.0"}
+bincode = "0.8.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+serde = "1.0"
+pubsub = { path = "../../../share_libs/pubsub" }
+
+[dev-dependencies]
+env_logger = "*"
+# Used in Examples
+docopt = "0.7"
+rustc-serialize = "*"
