@@ -41,12 +41,22 @@ start_all () {
     start_node 3
 }
 
+get_height(){
+    nodeid=$1
+    if [ ! -n "$nodeid" ]; then
+        nodeid=0
+    fi
+    h=`${CUR_PATH}/cita_blockNumber.sh 127.0.0.1 $((1337+${nodeid}))`
+    h=$(echo $h | sed 's/\"//g')
+    echo $((h))    
+}
+
 check_height_change () {
     echo "check block height"
-    old_height=`${CUR_PATH}/cita_blockNumber.sh`
+    old_height=$(get_height)
     echo "block height $old_height"
     sleep 30
-    new_height=`${CUR_PATH}/cita_blockNumber.sh`
+    new_height=$(get_height)
     echo "block height $new_height"
     if [ $new_height -eq $old_height ]; then
         stop_all

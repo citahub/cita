@@ -37,13 +37,13 @@ function cita_start() {
         echo $! >> .pid
     else
         echo "starting ${node} debug"
-        nohup RUST_LOG= bin/network -c network.toml	     >${log_dir}/${node}.network    2>&1 &
+        RUST_LOG= nohup bin/network -c network.toml	     >${log_dir}/${node}.network    2>&1 &
         echo $! >> .pid
-        nohup RUST_LOG=consensus_tendermint bin/consensus_tendermint	-c consensus.json	 >${log_dir}/${node}.consensus  2>&1 &
+        RUST_LOG=consensus_tendermint nohup bin/consensus_tendermint	-c consensus.json	 >${log_dir}/${node}.consensus  2>&1 &
         echo $! >> .pid
-        nohup RUST_LOG=jsonrpc,jsonrpc_types,transaction=trace bin/jsonrpc --jsonrpc-port $((1337+${1}))		     >${log_dir}/${node}.jsonrpc    2>&1 &
+        RUST_LOG=jsonrpc,jsonrpc_types,transaction=trace nohup bin/jsonrpc --jsonrpc-port $((1337+${1}))		     >${log_dir}/${node}.jsonrpc    2>&1 &
         echo $! >> .pid
-        nohup RUST_LOG=chain,libchain,transaction=trace bin/chain	-c genesis.json		 >${log_dir}/${node}.chain	    2>&1 &
+        RUST_LOG=chain,libchain,transaction=trace nohup bin/chain	-c genesis.json		 >${log_dir}/${node}.chain	    2>&1 &
         echo $! >> .pid
     fi
     cita_status $1

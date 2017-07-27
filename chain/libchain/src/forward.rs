@@ -269,7 +269,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
         }
         MsgClass::MSG(content) => {
             if libproto::cmd_id(submodules::CHAIN, topics::SYNC_BLK) == cmd_id {
-                if let Some(block) = chain.block(BlockId::Hash(H256::from(content.as_slice()))) {
+                if let Some(block) = chain.block(BlockId::Number(BigEndian::read_u64(&content))) {
                     let msg = factory::create_msg_ex(submodules::CHAIN,
                                                      topics::NEW_BLK,
                                                      communication::MsgType::BLOCK,

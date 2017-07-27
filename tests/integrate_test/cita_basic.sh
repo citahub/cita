@@ -38,7 +38,11 @@ start_all () {
 }
 
 get_height(){
-    h=`${CUR_PATH}/cita_blockNumber.sh`
+    nodeid=$1
+    if [ ! -n "$nodeid" ]; then
+        nodeid=0
+    fi
+    h=`${CUR_PATH}/cita_blockNumber.sh 127.0.0.1 $((1337+${nodeid}))`
     h=$(echo $h | sed 's/\"//g')
     echo $((h))    
 }
@@ -105,10 +109,10 @@ node0_height=$(get_height)
 echo "node0 block height $node0_height"
 start_node 3
 sleep 3
-befor_sync_height=$(get_height)
+befor_sync_height=$(get_height 3)
 echo "node3 block height before sync $befor_sync_height"
 sleep 60
-after_sync_height=$(get_height)
+after_sync_height=$(get_height 3)
 echo "node3 block height after sync $after_sync_height"
 if [ $after_sync_height -le $befor_sync_height ]; then
     stop_all
@@ -140,7 +144,7 @@ start_node 3
 sleep 300
 check_height_change
 node0_height=$(get_height)
-node3_height=$(get_height)
+node3_height=$(get_height 3)
 echo "node0 height $node0_height"
 echo "node3 height $node3_height"
 if [ $node0_height -ne $node3_height ]; then
