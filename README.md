@@ -1,5 +1,7 @@
 # prerequirement
 ## Build dependencies
+
+[![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 ```
 sudo apt-get install --force-yes libsnappy1v5 libsnappy-dev  capnproto  libgoogle-perftools-dev  \
     libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq
