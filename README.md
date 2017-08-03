@@ -1,98 +1,50 @@
 [![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-# prerequirement
-## Build dependencies
+## What is CITA
+![](https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true)
 
-```
-sudo apt-get install --force-yes libsnappy1v5 libsnappy-dev  capnproto  libgoogle-perftools-dev  \
-    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq
-```
+CITA (Cryptape Inter-enterprise Trust Automation) is a fast and scalable blockchain solution for production, upon which enterprise users could easily build their own blockchain applications.
 
-## Install rust
-CITA requires Rust nightly, We recommend installing Rust through [rustup](https://www.rustup.rs/)
-```
-curl https://sh.rustup.rs -sSf | sh
-```
-after had installed rustup, Please let it become effective  
-```
-source ~/.cargo/env
-```
-switch to specify rust nightly version
-```
-rustup toolchain install nightly-2017-06-29
-rustup show      #show the version of nightly-2017-06-29
-rustup default nightly-2017-06-29-x86_64-unknown-linux-gnu
-```
-Speed up by mirrors
-[creates](https://mirrors.ustc.edu.cn/help/rust-crates.html) 
-[toolchain](https://mirrors.ustc.edu.cn/help/rust-static.html)
+- **Horizontal scalability**: CITA adopts a microservices architecture to boost each (logical) node’s performance.
+With the microservice architecture, a logical node can be easily scaled to a cluster of servers.
 
-# Build CITA
-```
-make setup
-```
+![](https://github.com/cryptape/cita-whitepaper/blob/master/en/architecture.png?raw=true)
 
-```
-please select the way of building CITA, debug or release
-make debug   or   make release
-```
+- **High Performance**: In CITA, consensus and transaction execution are decoupled as separate microservices. The consensus service is only responsible for transaction ordering, which can finish independently before transaction execution, thus increase transaction processing performance.
 
-# Setup CITA
-Install admintool
-```
-cd admintool
-./setup.sh
-```
-Generate node configuration with admintool
-```
-cd admintool
-./admintool -h  #see usage
-./admintool     #generate configuration for demo
-```
-Nodes files were generated in `admintool/release/node{...}`
+- **Customizable and Pluggable Components**: CITA is designed to be highly customizable. It support pluggable implementations of different components. You can easily customize your blockchain to fit business requirements. For example it's easy to replace the default Tendermint consensus algorithm with more appropriate consensus algorithms if necessary or you can replace the default executor EVM to something else as well.
 
-# Run CITA
-If Demo configuration, open four Terminal at
-```
-admintool/release/node0
-admintool/release/node1
-admintool/release/node2
-admintool/release/node3
-```
-Operation with node
-```
-./cita           #see usage
-./cita setup 0   #setup node0
-./cita start 0   #start node0
-./cita stop 0    #stop node0
-```
-Scripts to start/stop all Demo nodes
-```
-./tests/integrate_test/cita_start.sh
-./tests/integrate_test/cita_start.sh debug
-./tests/integrate_test/cita_stop.sh
-``` 
-If node configuration is customized, just copy admintool/release/node* to the customized server, then same as above.
+## White Paper
 
-# unit test
-```
-make test
-```
+For more details please check the white paper.
 
-# integrate test
-```
-./tests/integrate_test/cita_basic.sh
-./tests/integrate_test/cita_transactiontest.sh
-./tests/integrate_test/cita_byzantinetest.sh
-```
+- [English](https://github.com/cryptape/cita-whitepaper/blob/master/en/technical-whitepaper.md)
+- [Chinese](https://github.com/cryptape/cita-whitepaper/blob/master/zh/technical-whitepaper.md)
 
-# bench	
-```
-make bench
-```
+## Installation
 
-# coverage
-```
-make cov
-```
-It will open the result html file using your browser.  
+[中文文档](http://cita.readthedocs.io/zh_CN/latest/)
+
+Please follow the [Installation Guide](https://github.com/cryptape/cita/wiki/Installation)
+
+## Contributing
+Contribution is welcome, please check [CONTRIBUTING]() for details on submitting patches and the contribution workflow before you want to make any contribution.
+
+## Follow us
+
+[Twitter](https://twitter.com/Cryptape)
+
+[Weibo](http://weibo.com/u/6307204864)
+
+
+## License
+
+CITA is currently under the GPLv3 license. See the LICENSE file for details.
+
+**CITA will move to Apache 2.0 license soon.**
+
+## Credits
+
+![](https://github.com/cryptape/assets/blob/master/cryptape-logo-transparency.png?raw=true)
+
+CITA is created by Cryptape LLC with :heart:.
