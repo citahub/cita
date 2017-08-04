@@ -12,7 +12,7 @@ With the microservice architecture, a logical node can be easily scaled to a clu
 
 - **High Performance**: In CITA, consensus and transaction execution are decoupled as separate microservices. The consensus service is only responsible for transaction ordering, which can finish independently before transaction execution, thus increase transaction processing performance.
 
-- **Customizable and Pluggable Components**: CITA is designed to be highly customizable. It support pluggable implementations of different components. You can easily customize your blockchain to fit business requirements. For example it's easy to replace the default Tendermint consensus algorithm with more appropriate consensus algorithms if necessary or you can replace the default executor EVM to something else as well.
+- **Customizable and Pluggable Components**: CITA is designed to be highly customizable. It supports pluggable implementations of different components. You can easily customize your blockchain to fit business requirements. For example it's easy to replace the default Tendermint consensus algorithm with more appropriate consensus algorithms if necessary or you can replace the default executor EVM to something else as well.
 
 ## White Paper
 
@@ -28,7 +28,7 @@ For more details please check the white paper.
 Please follow the [Installation Guide](https://github.com/cryptape/cita/wiki/Installation)
 
 ## Contributing
-Contribution is welcome, please check [CONTRIBUTING]() for details on submitting patches and the contribution workflow before you want to make any contribution.
+Contribution is welcome, please check [CONTRIBUTING.md](CONTRIBUTING.md) for details on submitting patches and the contribution workflow before you want to make any contribution.
 
 ## Follow us
 
