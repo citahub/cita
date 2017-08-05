@@ -1,3 +1,5 @@
+**[中文文档](https://github.com/cryptape/cita)**
+
 [![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## What is CITA
@@ -23,7 +25,7 @@ For more details please check the white paper.
 
 ## Installation
 
-[中文文档](http://cita.readthedocs.io/zh_CN/latest/)
+[中文安装文档](http://cita.readthedocs.io/zh_CN/latest/getting_started.html)
 
 Please follow the [Installation Guide](https://github.com/cryptape/cita/wiki/Installation)
 
