@@ -9,13 +9,22 @@ jobs:
     - stage: build & test
       script:
         - |
-          apt-get update -q; sudo apt-get install --allow-change-held-packages libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  rabbitmq-server  google-perftools jq
-          /etc/init.d/rabbitmq-server restart
-          echo "1) clean"
-          make clean || exit 1
-          echo "2) setup"
-          make setup || exit 1
-          echo "3) build"
-          make debug || exit 1
-          echo "4) unit test"
-          make test || exit 1
+          set -e
+          sudo apt-get update -q
+          sudo apt-get install --allow-change-held-packages libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  rabbitmq-server  google-perftools jq
+          sudo /etc/init.d/rabbitmq-server restart
+          echo '################################################################################'
+          echo '1) clean'
+          make clean
+          echo '################################################################################'
+          echo '2) setup'
+          make setup
+          echo '################################################################################'
+          echo '3) format'
+          make fmt
+          echo '################################################################################'
+          echo '4) build'
+          make release
+          echo '################################################################################'
+          echo '5) unit test'
+          make test
