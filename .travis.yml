@@ -1,8 +1,7 @@
 language: rust
 cache:
   cargo: true
-rust:
-  - nightly
+rust: nightly-2017-08-04
 dist: trusty
 sudo: true
 jobs:
@@ -13,10 +12,10 @@ jobs:
           apt-get update -q; sudo apt-get install --allow-change-held-packages libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  rabbitmq-server  google-perftools jq
           /etc/init.d/rabbitmq-server restart
           echo "1) clean"
-          make clean
+          make clean || exit 1
           echo "2) setup"
-          make setup
+          make setup || exit 1
           echo "3) build"
-          make debug
+          make debug || exit 1
           echo "4) unit test"
-          make test
+          make test || exit 1
