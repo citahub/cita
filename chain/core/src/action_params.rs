@@ -22,8 +22,8 @@ use executed::CallType;
 
 use std::sync::Arc;
 use util::{Address, Bytes, U256};
-use util::HASH_EMPTY;
 use util::H256;
+use util::HASH_EMPTY;
 
 /// Transaction value
 #[derive(Clone, Debug)]

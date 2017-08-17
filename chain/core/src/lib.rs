@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![feature(plugin)]
-#![feature(vec_remove_item)] 
+#![feature(vec_remove_item)]
 #![feature(test)]
 extern crate test;
 extern crate libproto;

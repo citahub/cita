@@ -54,10 +54,10 @@ use core::mqsubpub::{MQWork, MyHandler};
 use core::spec::Spec;
 use core::tendermint::TenderMint;
 use core::votetime::WaitTimer;
+use cpuprofiler::PROFILER;
 use pubsub::PubSub;
 use std::rc::Rc;
 use std::sync::Arc;
-use cpuprofiler::PROFILER;
 
 const THREAD_POOL_NUM: usize = 10;
 
@@ -66,11 +66,11 @@ fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     let start = flag_prof_start;
     let duration = flag_prof_duration;
     thread::spawn(move || {
-        thread::sleep(std::time::Duration::new(start, 0));
-        PROFILER.lock().unwrap().start("./tdmint.profiler").expect("Couldn't start");
-        thread::sleep(std::time::Duration::new(duration, 0));
-        PROFILER.lock().unwrap().stop().unwrap();
-    });
+                      thread::sleep(std::time::Duration::new(start, 0));
+                      PROFILER.lock().unwrap().start("./tdmint.profiler").expect("Couldn't start");
+                      thread::sleep(std::time::Duration::new(duration, 0));
+                      PROFILER.lock().unwrap().stop().unwrap();
+                  });
 
 }
 

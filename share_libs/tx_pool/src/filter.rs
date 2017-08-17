@@ -49,7 +49,7 @@ mod tests {
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(valid_until_block);
 
-        let pv = H256::from_slice(&[20,17]);
+        let pv = H256::from_slice(&[20, 17]);
 
         let mut uv_tx = UnverifiedTransaction::new();
         uv_tx.set_transaction(tx);

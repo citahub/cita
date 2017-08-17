@@ -20,8 +20,8 @@ use core::libchain::Genesis;
 use core::libchain::chain::*;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
-use util::KeyValueDB;
 use util::{H256, H160};
+use util::KeyValueDB;
 
 #[allow(unused_variables, dead_code)]
 #[derive(Clone)]

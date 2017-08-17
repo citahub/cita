@@ -23,10 +23,10 @@ use proof::TendermintProof;
 use protobuf::RepeatedField;
 use protobuf::core::Message;
 use rustc_serialize::hex::FromHex;
-//util::hash::{H256, Address, H520};
-use util::H256;
 use std::collections::HashMap;
 use std::time::{UNIX_EPOCH, Duration};
+//util::hash::{H256, Address, H520};
+use util::H256;
 use util::Hashable;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]

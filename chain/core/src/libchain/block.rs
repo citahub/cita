@@ -118,7 +118,7 @@ impl TransactionHash for ExecutedBlock {
 pub struct OpenBlock {
     block: ExecutedBlock,
     last_hashes: Arc<LastHashes>,
-    tx_hashes: Vec<bool>, 
+    tx_hashes: Vec<bool>,
 }
 
 impl Deref for OpenBlock {
@@ -187,14 +187,14 @@ impl OpenBlock {
                 self.block.receipts.push(Some(outcome.receipt));
                 self.tx_hashes.push(false);
             }
-            Err(Error::Execution(ExecutionError::InvalidNonce{expected: _, got: _})) => {
+            Err(Error::Execution(ExecutionError::InvalidNonce { expected: _, got: _ })) => {
                 self.block.receipts.push(None);
                 self.tx_hashes.push(true);
             }
             Err(_) => {
                 self.block.receipts.push(None);
                 self.tx_hashes.push(false);
-            } 
+            }
         }
     }
 

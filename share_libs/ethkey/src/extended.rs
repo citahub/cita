@@ -211,8 +211,8 @@ mod derivation {
 
     use super::{Label, Derivation};
     use SECP256K1;
-    use bigint::hash::{H512, H256};
     use bigint::{U256, U512};
+    use bigint::hash::{H512, H256};
     use keccak;
     use math::curve_order;
     use rcrypto::hmac::Hmac;
@@ -499,19 +499,11 @@ mod tests {
 
     #[test]
     fn test_vector_1() {
-        test_extended(
-			|secret| secret.derive(2147483648.into()),
-			H256::from_str("edb2e14f9ee77d26dd93b4ecede8d16ed408ce149b6cd80b0715a2d911a0afea")
-				.expect("Private should be decoded ok")
-		);
+        test_extended(|secret| secret.derive(2147483648.into()), H256::from_str("edb2e14f9ee77d26dd93b4ecede8d16ed408ce149b6cd80b0715a2d911a0afea").expect("Private should be decoded ok"));
     }
 
     #[test]
     fn test_vector_2() {
-        test_extended(
-			|secret| secret.derive(2147483648.into()).derive(1.into()),
-			H256::from_str("3c6cb8d0f6a264c91ea8b5030fadaa8e538b020f0a387421a12de9319dc93368")
-				.expect("Private should be decoded ok")
-		);
+        test_extended(|secret| secret.derive(2147483648.into()).derive(1.into()), H256::from_str("3c6cb8d0f6a264c91ea8b5030fadaa8e538b020f0a387421a12de9319dc93368").expect("Private should be decoded ok"));
     }
 }

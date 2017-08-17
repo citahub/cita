@@ -173,7 +173,7 @@ impl Account {
         if let Some(value) = self.cached_storage_at(key) {
             return Ok(value);
         }
- 
+
         let t = trie_factory.readonly(db, &self.storage_root)?;
 
         let item: U256 = t.get_with(key, ::rlp::decode)?.unwrap_or_else(U256::zero);

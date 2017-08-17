@@ -61,26 +61,7 @@ impl From<H256> for NodeHandle {
 }
 
 fn empty_children() -> Box<[Option<NodeHandle>; 16]> {
-    Box::new(
-        [
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        ],
-    )
+    Box::new([None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None])
 }
 
 /// Node types in the Trie.
@@ -1056,13 +1037,7 @@ mod tests {
         let mut t = TrieDBMut::new(&mut memdb, &mut root);
         t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
         t.insert(&[0x11u8, 0x23], &[0x11u8, 0x23]).unwrap();
-        assert_eq!(
-            *t.root(),
-            trie_root(vec![
-                (vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
-                (vec![0x11u8, 0x23], vec![0x11u8, 0x23]),
-            ])
-        );
+        assert_eq!(*t.root(), trie_root(vec![(vec![0x01u8, 0x23], vec![0x01u8, 0x23]), (vec![0x11u8, 0x23], vec![0x11u8, 0x23])]));
     }
 
     #[test]
@@ -1090,13 +1065,7 @@ mod tests {
         let mut t = TrieDBMut::new(&mut memdb, &mut root);
         t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
         t.insert(&[], &[0x0]).unwrap();
-        assert_eq!(
-            *t.root(),
-            trie_root(vec![
-                (vec![], vec![0x0]),
-                (vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
-            ])
-        );
+        assert_eq!(*t.root(), trie_root(vec![(vec![], vec![0x0]), (vec![0x01u8, 0x23], vec![0x01u8, 0x23])]));
     }
 
     #[test]
@@ -1106,13 +1075,7 @@ mod tests {
         let mut t = TrieDBMut::new(&mut memdb, &mut root);
         t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
         t.insert(&[0x01u8, 0x34], &[0x01u8, 0x34]).unwrap();
-        assert_eq!(
-            *t.root(),
-            trie_root(vec![
-                (vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
-                (vec![0x01u8, 0x34], vec![0x01u8, 0x34]),
-            ])
-        );
+        assert_eq!(*t.root(), trie_root(vec![(vec![0x01u8, 0x23], vec![0x01u8, 0x23]), (vec![0x01u8, 0x34], vec![0x01u8, 0x34])]));
     }
 
     #[test]
@@ -1143,13 +1106,7 @@ mod tests {
         let mut t = TrieDBMut::new(&mut memdb, &mut root);
         t.insert(&[0x01u8, 0x23], big_value0).unwrap();
         t.insert(&[0x11u8, 0x23], big_value1).unwrap();
-        assert_eq!(
-            *t.root(),
-            trie_root(vec![
-                (vec![0x01u8, 0x23], big_value0.to_vec()),
-                (vec![0x11u8, 0x23], big_value1.to_vec()),
-            ])
-        );
+        assert_eq!(*t.root(), trie_root(vec![(vec![0x01u8, 0x23], big_value0.to_vec()), (vec![0x11u8, 0x23], big_value1.to_vec())]));
     }
 
     #[test]
@@ -1161,13 +1118,7 @@ mod tests {
         let mut t = TrieDBMut::new(&mut memdb, &mut root);
         t.insert(&[0x01u8, 0x23], big_value).unwrap();
         t.insert(&[0x11u8, 0x23], big_value).unwrap();
-        assert_eq!(
-            *t.root(),
-            trie_root(vec![
-                (vec![0x01u8, 0x23], big_value.to_vec()),
-                (vec![0x11u8, 0x23], big_value.to_vec()),
-            ])
-        );
+        assert_eq!(*t.root(), trie_root(vec![(vec![0x01u8, 0x23], big_value.to_vec()), (vec![0x11u8, 0x23], big_value.to_vec())]));
     }
 
     #[test]

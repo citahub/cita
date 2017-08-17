@@ -19,12 +19,12 @@ use super::{PrivKey, PubKey, SECP256K1, Error, Message, pubkey_to_address, Addre
 use rustc_serialize::hex::{ToHex, FromHex};
 use secp256k1::{Message as SecpMessage, RecoverableSignature, RecoveryId, Error as SecpError};
 use secp256k1::key::{SecretKey, PublicKey};
-use util::{H520, H256};
 use std::{mem, fmt};
 use std::cmp::PartialEq;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
+use util::{H520, H256};
 
 pub struct Signature(pub [u8; 65]);
 

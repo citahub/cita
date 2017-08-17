@@ -15,8 +15,8 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{SECP256K1, Public, Secret, Error};
-use bigint::hash::H256;
 use bigint::U256;
+use bigint::hash::H256;
 use secp256k1::constants::{GENERATOR_X, GENERATOR_Y, CURVE_ORDER};
 use secp256k1::key;
 

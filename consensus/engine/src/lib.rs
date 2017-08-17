@@ -32,8 +32,8 @@ pub use instrument::*;
 
 use libproto::blockchain::{Block, Transaction, Status};
 use pubsub::Pub;
-use util::H256;
 use std::time::Duration;
+use util::H256;
 use util::SemanticVersion;
 
 pub trait Engine: Sync + Send {

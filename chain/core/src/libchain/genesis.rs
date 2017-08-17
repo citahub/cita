@@ -17,9 +17,9 @@
 
 use libproto::blockchain::Block;
 use serde_json;
-use util::{H256, H512};
 use std::fs::File;
 use std::io::BufReader;
+use util::{H256, H512};
 use util::HASH_NULL_RLP;
 
 #[derive(Debug, PartialEq, Deserialize)]

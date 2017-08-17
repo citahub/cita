@@ -17,8 +17,8 @@
 
 use crypto::Signer;
 use engine_json;
-use util::Address;
 use std::time::Duration;
+use util::Address;
 
 #[derive(Debug, Clone)]
 pub struct TendermintTimer {

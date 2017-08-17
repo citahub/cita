@@ -107,12 +107,7 @@ impl Algorithm {
 
     /// Returns all algorithm types.
     pub fn all_types() -> Vec<Algorithm> {
-        vec![
-            Algorithm::Archive,
-            Algorithm::EarlyMerge,
-            Algorithm::OverlayRecent,
-            Algorithm::RefCounted,
-        ]
+        vec![Algorithm::Archive, Algorithm::EarlyMerge, Algorithm::OverlayRecent, Algorithm::RefCounted]
     }
 }
 

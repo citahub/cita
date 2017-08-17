@@ -18,10 +18,10 @@
 
 
 use rlp::{Decodable, Encodable, RlpStream, UntrustedRlp, DecoderError, encode, decode};
+use std::cmp::PartialEq;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::ops::{Deref, Index};
-use std::cmp::PartialEq;
 use util::{DBTransaction, KeyValueDB, RwLock, HeapSizeOf};
 
 // database columns
@@ -49,23 +49,32 @@ pub const NUM_COLUMNS: Option<u32> = Some(7);
 
 /// Contains all block receipts.
 #[derive(Clone)]
-pub struct DBList<T> where {
+pub struct DBList<T> {
     pub data: Vec<T>,
 }
 
-impl<T> Decodable for DBList<T> where T: Decodable {
+impl<T> Decodable for DBList<T>
+where
+    T: Decodable,
+{
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         Ok(DBList { data: rlp.as_list()? })
     }
 }
 
-impl<T> Encodable for DBList<T> where T: Encodable {
+impl<T> Encodable for DBList<T>
+where
+    T: Encodable,
+{
     fn rlp_append(&self, s: &mut RlpStream) {
         s.append_list(&self.data);
     }
 }
 
-impl<T> HeapSizeOf for DBList<T> where T: HeapSizeOf {
+impl<T> HeapSizeOf for DBList<T>
+where
+    T: HeapSizeOf,
+{
     fn heap_size_of_children(&self) -> usize {
         self.data.heap_size_of_children()
     }
@@ -80,14 +89,17 @@ impl<T> Index<usize> for DBList<T> {
 
 impl<T> DBList<T> {
     fn new() -> Self {
-        DBList { data: Vec::new()}
+        DBList { data: Vec::new() }
     }
 
     fn push(&mut self, value: T) {
         self.data.push(value);
     }
 
-    fn remove_item(&mut self, value: &T) where T: PartialEq {
+    fn remove_item(&mut self, value: &T)
+    where
+        T: PartialEq,
+    {
         self.data.remove_item(value);
     }
 }
@@ -180,15 +192,17 @@ pub trait Writable {
         R: Deref<Target = [u8]>;
 
     /// Writes the value into the database and updates the cache.
-    fn write_with_cache<K, T, R>(&mut self, col: Option<u32>, cache: &mut Cache<K, T>, key: K, value: T, policy: CacheUpdatePolicy) where
-    K: Key<T, Target = R> + Hash + Eq,
-    T: Encodable,
-    R: Deref<Target = [u8]> {
+    fn write_with_cache<K, T, R>(&mut self, col: Option<u32>, cache: &mut Cache<K, T>, key: K, value: T, policy: CacheUpdatePolicy)
+    where
+        K: Key<T, Target = R> + Hash + Eq,
+        T: Encodable,
+        R: Deref<Target = [u8]>,
+    {
         self.write(col, &key, &value);
         match policy {
             CacheUpdatePolicy::Overwrite => {
                 cache.insert(key, value);
-            },
+            }
             CacheUpdatePolicy::Remove => {
                 cache.remove(&key);
             }
@@ -196,31 +210,35 @@ pub trait Writable {
     }
 
     /// Writes the values into the database and updates the cache.
-    fn extend_with_cache<K, T, R>(&mut self, col: Option<u32>, cache: &mut Cache<K, T>, values: HashMap<K, T>, policy: CacheUpdatePolicy) where
-    K: Key<T, Target = R> + Hash + Eq,
-    T: Encodable,
-    R: Deref<Target = [u8]> {
+    fn extend_with_cache<K, T, R>(&mut self, col: Option<u32>, cache: &mut Cache<K, T>, values: HashMap<K, T>, policy: CacheUpdatePolicy)
+    where
+        K: Key<T, Target = R> + Hash + Eq,
+        T: Encodable,
+        R: Deref<Target = [u8]>,
+    {
         match policy {
             CacheUpdatePolicy::Overwrite => {
                 for (key, value) in values {
                     self.write(col, &key, &value);
                     cache.insert(key, value);
                 }
-            },
+            }
             CacheUpdatePolicy::Remove => {
                 for (key, value) in &values {
                     self.write(col, key, value);
                     cache.remove(key);
                 }
-            },
+            }
         }
     }
 
     /// Writes and removes the values into the database and updates the cache.
-    fn extend_with_option_cache<K, T, R>(&mut self, col: Option<u32>, cache: &mut Cache<K, Option<T>>, values: HashMap<K, Option<T>>, policy: CacheUpdatePolicy) where
-    K: Key<T, Target = R> + Hash + Eq,
-    T: Encodable,
-    R: Deref<Target = [u8]> {
+    fn extend_with_option_cache<K, T, R>(&mut self, col: Option<u32>, cache: &mut Cache<K, Option<T>>, values: HashMap<K, Option<T>>, policy: CacheUpdatePolicy)
+    where
+        K: Key<T, Target = R> + Hash + Eq,
+        T: Encodable,
+        R: Deref<Target = [u8]>,
+    {
         match policy {
             CacheUpdatePolicy::Overwrite => {
                 for (key, value) in values {
@@ -230,7 +248,7 @@ pub trait Writable {
                     }
                     cache.insert(key, value);
                 }
-            },
+            }
             CacheUpdatePolicy::Remove => {
                 for (key, value) in values {
                     match value {
@@ -239,16 +257,18 @@ pub trait Writable {
                     }
                     cache.remove(&key);
                 }
-            },
+            }
         }
     }
 
     /// Writes the value into the database and updates the cache.
-    fn write_with_cache_append<K, T, R, D>(&mut self, col: Option<u32>, db: &D, cache: &mut Cache<K, DBList<T>>, key: K, value: T, policy: AppendPolicy) where
-    K: Key<T, Target = R> + Hash + Eq + Clone,
-    T: Encodable + Decodable + Clone + PartialEq,
-    D: Readable + ?Sized,
-    R: Deref<Target = [u8]> {
+    fn write_with_cache_append<K, T, R, D>(&mut self, col: Option<u32>, db: &D, cache: &mut Cache<K, DBList<T>>, key: K, value: T, policy: AppendPolicy)
+    where
+        K: Key<T, Target = R> + Hash + Eq + Clone,
+        T: Encodable + Decodable + Clone + PartialEq,
+        D: Readable + ?Sized,
+        R: Deref<Target = [u8]>,
+    {
         match policy {
             AppendPolicy::Overwrite => {
                 let mut list = DBList::new();
@@ -278,11 +298,13 @@ pub trait Writable {
     }
 
     /// Writes the values into the database and updates the cache.
-    fn extend_with_cache_append<K, T, R, D>(&mut self, col: Option<u32>, db: &D, cache: &mut Cache<K, DBList<T>>, values: HashMap<K, T>, policy: AppendPolicy) where
-    K: Key<T, Target = R> + Hash + Eq + Clone,
-    T: Encodable + Decodable + Clone + PartialEq,
-    D: Readable + ?Sized,
-    R: Deref<Target = [u8]> {
+    fn extend_with_cache_append<K, T, R, D>(&mut self, col: Option<u32>, db: &D, cache: &mut Cache<K, DBList<T>>, values: HashMap<K, T>, policy: AppendPolicy)
+    where
+        K: Key<T, Target = R> + Hash + Eq + Clone,
+        T: Encodable + Decodable + Clone + PartialEq,
+        D: Readable + ?Sized,
+        R: Deref<Target = [u8]>,
+    {
         match policy {
             AppendPolicy::Overwrite => {
                 for (key, value) in values {
@@ -301,7 +323,7 @@ pub trait Writable {
                     list.push(value);
                     self.append(col, &key, &list);
                     cache.insert(key, list);
-                 }
+                }
             }
             AppendPolicy::Remove => {
                 for (key, value) in values {
@@ -326,7 +348,7 @@ pub trait Readable {
     where
         T: Decodable,
         R: Deref<Target = [u8]>;
-    
+
     fn read_list<T, R>(&self, col: Option<u32>, key: &Key<T, Target = R>) -> Option<DBList<T>>
     where
         T: Decodable,
@@ -367,10 +389,10 @@ pub trait Readable {
         }
 
         self.read_list(col, key).map(|value: DBList<T>| {
-                                    let mut write = cache.write();
-                                    write.insert(key.clone(), value.clone());
-                                    value
-                                })
+                                         let mut write = cache.write();
+                                         write.insert(key.clone(), value.clone());
+                                         value
+                                     })
     }
 
     fn get_list_with_cache<K, T>(&self, col: Option<u32>, cache: &Cache<K, DBList<T>>, key: &K) -> Option<DBList<T>>

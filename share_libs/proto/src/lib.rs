@@ -29,6 +29,7 @@ pub mod request;
 pub mod into;
 
 use blockchain::*;
+use cita_crypto::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
 use communication::*;
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
@@ -36,7 +37,6 @@ pub use request::*;
 use rustc_serialize::hex::ToHex;
 use util::{H256, Hashable, H520, merklehash};
 use util::snappy;
-use cita_crypto::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct State(pub Vec<Vec<u8>>);
@@ -220,16 +220,20 @@ impl blockchain::SignedTransaction {
                     match recover(&signature, &hash) {
                         Ok(pubkey) => {
                             self.set_signer(pubkey.to_vec());
-                        },
-                        _ => {ret = false;},
+                        }
+                        _ => {
+                            ret = false;
+                        }
                     }
-                },
-                _ => {ret = false;},
+                }
+                _ => {
+                    ret = false;
+                }
             }
         }
 
         let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
-        self.set_tx_hash(bytes.crypt_hash().to_vec());        
+        self.set_tx_hash(bytes.crypt_hash().to_vec());
         ret
     }
 

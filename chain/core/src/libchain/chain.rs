@@ -637,7 +637,7 @@ impl Chain {
             self.cache_man.lock().note_used(CacheId::TransactionAddresses(key));
         }
 
-         for (key, _) in block.transactions_dup.clone() {
+        for (key, _) in block.transactions_dup.clone() {
             self.cache_man.lock().note_used(CacheId::TransactionAddresses(key));
         }
 

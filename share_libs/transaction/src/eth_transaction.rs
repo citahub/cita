@@ -18,9 +18,9 @@
 use crypto::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN};
 use error::Error;
 use libproto::blockchain::{Transaction as ProtoTransaction, SignedTransaction as ProtoSignedTransaction};
+use std::ops::Deref;
 use std::str::FromStr;
 use util::{H256, Address, U256, Bytes, HeapSizeOf, H520, H512};
-use std::ops::Deref;
 
 // pub const STORE_ADDRESS: Address =  H160( [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff] );
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffff";
@@ -73,26 +73,26 @@ impl HeapSizeOf for VMTransaction {
 // now using the same type `ProtoTransaction`,
 // it's not a good design.
 impl VMTransaction {
-    pub fn new(plain_transaction: ProtoTransaction, tx_hash: H256) -> Result<Self, Error> {   
+    pub fn new(plain_transaction: ProtoTransaction, tx_hash: H256) -> Result<Self, Error> {
         let nonce = plain_transaction.nonce.parse::<u32>().map_err(|_| Error::ParseError)?;
         Ok(VMTransaction {
-                nonce: nonce.into(),
-                gas_price: U256::default(),
-                gas: U256::from(1_000_000u64),
-                action: {
-                    let to = plain_transaction.get_to();
-                    match to.is_empty() {
-                        true => Action::Create,
-                        false => match to {
-                            STORE_ADDRESS => Action::Store,
-                            _ => Action::Call(Address::from_str(plain_transaction.get_to()).map_err(|_| Error::ParseError)?),
-                        },
-                    }
-                },
-                value: U256::default(),
-                data: plain_transaction.data.into(),
-                hash: tx_hash,
-            })
+               nonce: nonce.into(),
+               gas_price: U256::default(),
+               gas: U256::from(1_000_000u64),
+               action: {
+                   let to = plain_transaction.get_to();
+                   match to.is_empty() {
+                       true => Action::Create,
+                       false => match to {
+                           STORE_ADDRESS => Action::Store,
+                           _ => Action::Call(Address::from_str(plain_transaction.get_to()).map_err(|_| Error::ParseError)?),
+                       },
+                   }
+               },
+               value: U256::default(),
+               data: plain_transaction.data.into(),
+               hash: tx_hash,
+           })
 
     }
 
