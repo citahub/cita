@@ -88,7 +88,7 @@ where
 mod tests {
     use std::cell::Cell;
     use transient_hashmap::Timer;
-    use v1::helpers::PollManager;
+    use super::*;
 
     struct TestTimer<'a> {
         time: &'a Cell<i64>,
