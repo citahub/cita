@@ -15,14 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use tx_pool;
+use cmd::{Command, encode};
 use libproto::*;
 use libproto::blockchain::*;
-use util::hash::*;
 use protobuf::Message;
 use protobuf::RepeatedField;
 use pubsub::Pub;
-use cmd::{Command, encode};
+use tx_pool;
+use util::*;
 
 struct Situation {
     pub height: u64,
@@ -68,18 +68,12 @@ impl CandidatePool {
 
     pub fn reflect_situation(&self, _pub: &mut Pub) {
         let cmd = Command::PoolSituation(self.1.height, self.1.hash.clone(), None);
-        let msg = factory::create_msg(submodules::CONSENSUS,
-                                      topics::DEFAULT,
-                                      communication::MsgType::MSG,
-                                      encode(&cmd));
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::DEFAULT, communication::MsgType::MSG, encode(&cmd));
         _pub.publish("consensus.default", msg.write_to_bytes().unwrap());
     }
 
     pub fn broadcast_tx(&self, tx: &Transaction, _pub: &mut Pub) -> Result<(), &'static str> {
-        let msg = factory::create_msg(submodules::CONSENSUS,
-                                      topics::NEW_TX,
-                                      communication::MsgType::TX,
-                                      tx.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
         trace!("broadcast new tx {:?}", tx);
         _pub.publish("consensus.tx", msg.write_to_bytes().unwrap());
         Ok(())
@@ -87,7 +81,7 @@ impl CandidatePool {
 
     pub fn add_tx(&mut self, tx: &Transaction, _pub: &mut Pub, is_from_broadcast: bool) {
         let mut content = blockchain::TxResponse::new();
-        let hash: H256 = tx.sha3();
+        let hash: H256 = tx.crypt_hash();
         {
             content.set_hash(hash.to_vec());
             let success = self.0.enqueue(tx.clone(), hash);
@@ -98,10 +92,7 @@ impl CandidatePool {
                 content.set_result(String::from("4:DUP").into_bytes());
             }
             if !is_from_broadcast {
-                let msg = factory::create_msg(submodules::CONSENSUS,
-                                              topics::TX_RESPONSE,
-                                              communication::MsgType::TX_RESPONSE,
-                                              content.write_to_bytes().unwrap());
+                let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
                 trace!("response new tx {:?}", tx);
                 _pub.publish("consensus.rpc", msg.write_to_bytes().unwrap());
             }
@@ -115,19 +106,14 @@ impl CandidatePool {
         self.1.height = height;
         block.mut_header().set_height(self.1.height);
         let txs: Vec<Transaction> = self.0.package(height);
-        block
-            .mut_body()
-            .set_transactions(RepeatedField::from_slice(&txs[..]));
+        block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
         //block.mut_header().set_timestamp(block_time.as_millis());
         //block.mut_header().set_proof(proof);
         block
     }
 
     pub fn pub_block(&self, block: &Block, _pub: &mut Pub) {
-        let msg = factory::create_msg(submodules::CONSENSUS,
-                                      topics::NEW_BLK,
-                                      communication::MsgType::BLOCK,
-                                      block.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
         trace!("publish block {:?}", block);
         _pub.publish("consensus.blk", msg.write_to_bytes().unwrap());
     }

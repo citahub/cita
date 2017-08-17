@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::PrivKey;
-use serde_types::hash::Address;
+use util::Address;
 
 /// Authority params deserialization.
 #[derive(Debug, PartialEq, Deserialize)]
@@ -29,17 +29,18 @@ pub struct TendermintParams {
     pub signer: PrivKey,
     pub block_tx_limit: u64,
     pub tx_filter_size: u64,
+    pub tx_pool_size: u64,
 
-    #[serde(rename="timeoutPropose")]
+    #[serde(rename = "timeoutPropose")]
     pub timeout_propose: Option<u64>,
     /// Prevote step timeout in milliseconds.
-    #[serde(rename="timeoutPrevote")]
+    #[serde(rename = "timeoutPrevote")]
     pub timeout_prevote: Option<u64>,
     /// Precommit step timeout in milliseconds.
-    #[serde(rename="timeoutPrecommit")]
+    #[serde(rename = "timeoutPrecommit")]
     pub timeout_precommit: Option<u64>,
     /// Commit step timeout in milliseconds.
-    #[serde(rename="timeoutCommit")]
+    #[serde(rename = "timeoutCommit")]
     pub timeout_commit: Option<u64>,
 }
 
@@ -51,8 +52,8 @@ pub struct Tendermint {
 
 #[cfg(test)]
 mod tests {
-    use serde_json;
     use super::*;
+    use serde_json;
 
     #[test]
     fn tendermint_params_deserialization() {
@@ -62,6 +63,7 @@ mod tests {
             "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
             "block_tx_limit": 1000,
             "tx_filter_size": 5000,
+            "tx_pool_size": 50000,
             "is_test": true
         }"#;
 
@@ -77,6 +79,7 @@ mod tests {
                 "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
                 "block_tx_limit": 1000,
                 "tx_filter_size": 5000,
+                "tx_pool_size": 50000,
                 "is_test": true
             }
         }"#;

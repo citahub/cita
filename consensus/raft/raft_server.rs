@@ -15,15 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::net::{SocketAddr, ToSocketAddrs};
-use std::collections::HashMap;
+
 
 // Raft's major components. See comments in code on usage and things.
+
 use libraft::{Server, ServerId};
-use mio::EventLoop;
+use log_store::*;
 // A payload datatype. We're just using a simple enum. You can use whatever.
 use machine::*;
-use log_store::*;
+use mio::EventLoop;
+use std::collections::HashMap;
+use std::net::{SocketAddr, ToSocketAddrs};
 
 #[derive(Debug, RustcDecodable)]
 pub struct Args {
@@ -46,9 +48,7 @@ fn parse_addr(addr: &str) -> SocketAddr {
 }
 
 /// Creates a Raft server using the specified ID from the list of nodes.
-pub fn server
-    (args: &Args)
-     -> (Server<Store, HashmapStateMachine>, EventLoop<Server<Store, HashmapStateMachine>>) {
+pub fn server(args: &Args) -> (Server<Store, HashmapStateMachine>, EventLoop<Server<Store, HashmapStateMachine>>) {
     // Creating a raft server requires several things:
 
     // A persistent log implementation, which manages the persistent, replicated log...
@@ -65,11 +65,10 @@ pub fn server
         node_id.push(i as u64 + 1);
     }
     // ...  And a list of peers.
-    let mut peers = node_id
-        .iter()
-        .zip(args.arg_node_address.iter())
-        .map(|(&id, addr)| (ServerId::from(id), parse_addr(&addr)))
-        .collect::<HashMap<_, _>>();
+    let mut peers = node_id.iter()
+                           .zip(args.arg_node_address.iter())
+                           .map(|(&id, addr)| (ServerId::from(id), parse_addr(&addr)))
+                           .collect::<HashMap<_, _>>();
     println!("peers:{:?}", peers);
 
     // The Raft Server will return an error if its ID is inside of its peer set. Don't do that.

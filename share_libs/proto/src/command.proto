@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-enum Command {
-    NEW_BLK = 0;
-}
-

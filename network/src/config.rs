@@ -17,13 +17,13 @@
 
 extern crate toml;
 
-use std::io::prelude::*;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::prelude::*;
 
 #[derive(Debug, RustcDecodable)]
 pub struct NetConfig {
-    pub id_card:Option<u32>,
+    pub id_card: Option<u32>,
     pub port: Option<u64>,
     pub max_peer: Option<u64>,
     pub peers: Option<Vec<PeerConfig>>,
@@ -31,7 +31,7 @@ pub struct NetConfig {
 
 #[derive(Debug, RustcDecodable)]
 pub struct PeerConfig {
-    pub id_card:Option<u32>,
+    pub id_card: Option<u32>,
     pub ip: Option<String>,
     pub port: Option<u64>,
 }

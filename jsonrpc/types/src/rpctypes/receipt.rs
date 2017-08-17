@@ -15,41 +15,41 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use state::receipt::{Receipt as EthReceipt, RichReceipt, LocalizedReceipt};
-use serde_types::{H160, H256, Bloom, U256};
 use rpctypes::log::Log;
+use types::receipt::{Receipt as EthReceipt, RichReceipt, LocalizedReceipt};
+use util::{H160, H256, Bloom, U256};
 
 /// Receipt
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Receipt {
     /// Transaction Hash
-    #[serde(rename="transactionHash")]
+    #[serde(rename = "transactionHash")]
     pub transaction_hash: Option<H256>,
     /// Transaction index
-    #[serde(rename="transactionIndex")]
+    #[serde(rename = "transactionIndex")]
     pub transaction_index: Option<U256>,
     /// Block hash
-    #[serde(rename="blockHash")]
+    #[serde(rename = "blockHash")]
     pub block_hash: Option<H256>,
-    /// Block 
-    #[serde(rename="blockNumber")]
+    /// Block
+    #[serde(rename = "blockNumber")]
     pub block_number: Option<U256>,
     /// Cumulative gas used
-    #[serde(rename="cumulativeGasUsed")]
+    #[serde(rename = "cumulativeGasUsed")]
     pub cumulative_gas_used: U256,
     /// Gas used
-    #[serde(rename="gasUsed")]
+    #[serde(rename = "gasUsed")]
     pub gas_used: Option<U256>,
     /// Contract address
-    #[serde(rename="contractAddress")]
+    #[serde(rename = "contractAddress")]
     pub contract_address: Option<H160>,
     /// Logs
     pub logs: Vec<Log>,
     /// State Root
-    #[serde(rename="root")]
+    #[serde(rename = "root")]
     pub state_root: Option<H256>,
     /// Logs bloom
-    #[serde(rename="logsBloom")]
+    #[serde(rename = "logsBloom")]
     pub logs_bloom: Bloom,
 }
 
@@ -106,9 +106,10 @@ impl From<EthReceipt> for Receipt {
 
 #[cfg(test)]
 mod tests {
-    use serde_json;
     use super::*;
-    use util::hash::{H256 as Hash256, H2048 as Hash2048};
+    use bincode::{serialize, deserialize, Infinite};
+    use serde_json;
+    use util::{H256 as Hash256, H2048 as Hash2048};
 
     #[test]
     fn receipt_serialization() {
@@ -122,25 +123,70 @@ mod tests {
             cumulative_gas_used: 0x20.into(),
             gas_used: Some(0x10.into()),
             contract_address: None,
-            logs: vec![Log {
-                address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),
-                topics: vec![
-                    "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc".parse().unwrap(),
-                    "4861736852656700000000000000000000000000000000000000000000000000".parse().unwrap(),
-                ],
-                data: vec![].into(),
-                block_hash: Some("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5".parse().unwrap()),
-                block_number: Some(0x4510c.into()),
-                transaction_hash: Some(Hash256::from(0).into()),
-                transaction_index: Some(0.into()),
-                transaction_log_index: None,
-                log_index: Some(1.into()),
-            }],
+            logs: vec![
+                Log {
+                    address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),
+                    topics: vec![
+                        "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc".parse().unwrap(),
+                        "4861736852656700000000000000000000000000000000000000000000000000".parse().unwrap(),
+                    ],
+                    data: vec![].into(),
+                    block_hash: Some("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5".parse().unwrap()),
+                    block_number: Some(0x4510c.into()),
+                    transaction_hash: Some(Hash256::from(0).into()),
+                    transaction_index: Some(0.into()),
+                    transaction_log_index: None,
+                    log_index: Some(1.into()),
+                },
+            ],
             logs_bloom: Hash2048::from(15).into(),
             state_root: Some(Hash256::from(10).into()),
         };
 
         let serialized = serde_json::to_string(&receipt).unwrap();
         assert_eq!(serialized, s);
+    }
+
+    #[test]
+    fn test_bincode_deserialization() {
+        let receipt = Receipt {
+            transaction_hash: Some(Hash256::from(0).into()),
+            transaction_index: Some(0.into()),
+            block_hash: Some("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5".parse().unwrap()),
+            block_number: Some(0x4510c.into()),
+            cumulative_gas_used: 0x20.into(),
+            gas_used: Some(0x10.into()),
+            contract_address: None,
+            logs: vec![
+                Log {
+                    address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),
+                    topics: vec![
+                        "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc".parse().unwrap(),
+                        "4861736852656700000000000000000000000000000000000000000000000000".parse().unwrap(),
+                    ],
+                    data: vec![].into(),
+                    block_hash: Some("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5".parse().unwrap()),
+                    block_number: Some(0x4510c.into()),
+                    transaction_hash: Some(Hash256::from(0).into()),
+                    transaction_index: Some(0.into()),
+                    transaction_log_index: None,
+                    log_index: Some(1.into()),
+                },
+            ],
+            logs_bloom: Hash2048::from(15).into(),
+            state_root: Some(Hash256::from(10).into()),
+        };
+
+        println!("{:?}", receipt);
+
+        let encoded: Vec<u8> = serialize(&receipt, Infinite).unwrap();
+
+        println!("{:?}", encoded);
+
+        let decoded: Receipt = deserialize(&encoded[..]).unwrap();
+
+        println!("{:?}", decoded);
+
+        assert_eq!(decoded, receipt);
     }
 }

@@ -6,7 +6,7 @@ authors = ["gguoss"]
 
 [dependencies]
 protobuf = { version = "^1.0.0"}
-sha3 = { path = "../parity/util/sha3"}
+cita-crypto = { path = "../crypto"}
 util = { path = "../util"}
 rustc-serialize = "0.3"
 bincode = "0.8.0"

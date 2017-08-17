@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use serde_types::hash::H256;
-use libproto::request::{FullTransaction as PTransaction};
-use libproto::blockchain::{Transaction as ProtoTransaction,};
 use bytes::Bytes;
+use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
+use libproto::request::FullTransaction as PTransaction;
 use protobuf::Message;
-use serde_types::U256;
+use util::H256;
+use util::U256;
 
 // TODO: No need Deserialize. Just because test in trans.rs
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -54,13 +54,13 @@ pub enum BlockTransaction {
 
 impl From<PTransaction> for RpcTransaction {
     fn from(mut ptransaction: PTransaction) -> Self {
-        let transaction = ptransaction.take_transaction();
+        let stx = ptransaction.take_transaction();
         let mut bhash: H256 = H256::default();
         bhash.0.clone_from_slice(ptransaction.block_hash.as_slice());
 
         RpcTransaction {
-            hash: transaction.sha3().into(),
-            content: Bytes(transaction.write_to_bytes().unwrap()),
+            hash: H256::from_slice(stx.get_tx_hash()),
+            content: Bytes(stx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap()),
             block_number: U256::from(ptransaction.block_number),
             block_hash: bhash,
             index: U256::from(ptransaction.index),
@@ -68,20 +68,17 @@ impl From<PTransaction> for RpcTransaction {
     }
 }
 
-impl From<ProtoTransaction> for FullTransaction {
-    fn from(transaction: ProtoTransaction) -> Self {
+impl From<ProtoSignedTransaction> for FullTransaction {
+    fn from(stx: ProtoSignedTransaction) -> Self {
         FullTransaction {
-            hash: transaction.sha3().into(),
-            content: Bytes(transaction.write_to_bytes().unwrap()),
+            hash: H256::from_slice(stx.get_tx_hash()),
+            content: Bytes(stx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap()),
         }
     }
 }
 
-impl From<ProtoTransaction> for TransactionHash {
-    fn from(transaction: ProtoTransaction) -> Self {
-        TransactionHash { hash: transaction.sha3().into() }
+impl From<ProtoSignedTransaction> for TransactionHash {
+    fn from(stx: ProtoSignedTransaction) -> Self {
+        TransactionHash { hash: H256::from_slice(stx.get_tx_hash()) }
     }
 }
-
-
-

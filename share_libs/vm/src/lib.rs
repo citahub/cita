@@ -21,22 +21,22 @@ extern crate util;
 
 pub mod precompile;
 
+use libproto::Call as CallTransaction;
 use libproto::blockchain::Transaction;
-use std::collections::HashMap;
 use precompile::Precompile;
+use std::collections::HashMap;
+use std::str;
 use std::sync::Arc;
 use std::sync::Mutex;
-use util::hash::H256;
-use libproto::Call as CallTransaction;
-use util::FixedHash;
-use std::str;
+use util::H256;
 
 pub struct VM<T> {
     buildin: HashMap<&'static str, Arc<Mutex<Precompile<T>>>>,
 }
 
 impl<T> VM<T>
-    where T: Send + 'static
+where
+    T: Send + 'static,
 {
     pub fn new() -> Self {
         VM { buildin: HashMap::new() }
@@ -66,13 +66,12 @@ impl<T> VM<T>
 #[cfg(test)]
 mod tests {
     use super::VM;
-    use precompile::Precompile;
+    use libproto::Call as CallTransaction;
     use libproto::blockchain::Transaction;
+    use precompile::Precompile;
     use std::thread;
     use std::time::Duration;
-    use util::hash::H256;
-    use util::FixedHash;
-    use libproto::Call as CallTransaction;
+    use util::H256;
 
     fn func1(tx: Transaction, height: u64, data: &Vec<u8>) -> H256 {
         thread::sleep(Duration::new(3, 0));

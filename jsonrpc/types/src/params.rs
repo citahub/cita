@@ -15,15 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::fmt;
+use super::Error;
+use super::Value;
 
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::de::{Visitor, SeqAccess, MapAccess};
 use serde_json;
 use serde_json::value::from_value;
-use super::RpcError;
-
-use super::Value;
+use std::fmt;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Params {
@@ -34,21 +33,23 @@ pub enum Params {
 
 impl Params {
     /// lazy parse into expected types.
-    pub fn parse<D>(self) -> Result<D, RpcError>
-        where for<'de> D: Deserialize<'de>
+    pub fn parse<D>(self) -> Result<D, Error>
+    where
+        for<'de> D: Deserialize<'de>,
     {
         let value = match self {
             Params::Array(vec) => Value::Array(vec),
             Params::Map(map) => Value::Object(map),
             Params::None => Value::Null,
         };
-        from_value(value).map_err(|_| RpcError::InvalidParams)
+        from_value(value).map_err(|err| err.into())
     }
 }
 
 impl Serialize for Params {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         match *self {
             Params::Array(ref vec) => vec.serialize(serializer),
@@ -62,9 +63,10 @@ struct ParamsVisitor;
 
 impl<'de> Deserialize<'de> for Params {
     fn deserialize<D>(deserializer: D) -> Result<Params, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
-        deserializer.deserialize_any(ParamsVisitor)
+        deserializer.deserialize_str(ParamsVisitor)
     }
 }
 
@@ -76,22 +78,20 @@ impl<'de> Visitor<'de> for ParamsVisitor {
     }
 
     fn visit_seq<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
-        where V: SeqAccess<'de>
+    where
+        V: SeqAccess<'de>,
     {
         let mut values = Vec::new();
         while let Some(value) = visitor.next_element()? {
             values.push(value);
         }
 
-        Ok(if values.is_empty() {
-               Params::None
-           } else {
-               Params::Array(values)
-           })
+        Ok(if values.is_empty() { Params::None } else { Params::Array(values) })
     }
 
     fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
-        where V: MapAccess<'de>
+    where
+        V: MapAccess<'de>,
     {
         let mut values = serde_json::Map::with_capacity(visitor.size_hint().unwrap());
 
@@ -99,21 +99,17 @@ impl<'de> Visitor<'de> for ParamsVisitor {
             values.insert(key, value);
         }
 
-        Ok(if values.is_empty() {
-               Params::None
-           } else {
-               Params::Map(values)
-           })
+        Ok(if values.is_empty() { Params::None } else { Params::Map(values) })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use serde_json;
     use super::Params;
-    use {Value, RpcError};
-    use serde_json::Number;
+    use {Value, Error};
+    use serde_json;
     use serde_json::Map;
+    use serde_json::Number;
 
     #[test]
     fn params_deserialization() {
@@ -124,28 +120,29 @@ mod tests {
         let mut map = serde_json::Map::new();
         map.insert("key".to_string(), Value::String("value".to_string()));
 
-        assert_eq!(Params::Array(vec![Value::Null,
-                                      Value::Bool(true),
-                                      Value::from(-1),
-                                      Value::from(4),
-                                      Value::from(2.3),
-                                      Value::String("hello".to_string()),
-                                      Value::Array(vec![Value::from(0)]),
-                                      Value::Object(map)]),
-                   deserialized);
+        assert_eq!(
+            Params::Array(vec![
+                Value::Null,
+                Value::Bool(true),
+                Value::from(-1),
+                Value::from(4),
+                Value::from(2.3),
+                Value::String("hello".to_string()),
+                Value::Array(vec![Value::from(0)]),
+                Value::Object(map),
+            ]),
+            deserialized
+        );
     }
 
     #[test]
     fn should_return_error() {
         let s = r#"[1, true]"#;
         let params = || serde_json::from_str::<Params>(s).unwrap();
-
-        let v1: Result<(Option<u8>, String), RpcError> = params().parse();
-        let v2: Result<(u8, bool, String), RpcError> = params().parse();
-        let err1 = v1.unwrap_err();
-        let err2 = v2.unwrap_err();
-        assert_eq!(err1, RpcError::InvalidParams);
-        assert_eq!(err2, RpcError::InvalidParams);
+        let v1: Result<(Option<u8>, String), Error> = params().parse();
+        let v2: Result<(u8, bool, String), Error> = params().parse();
+        assert!(v1.is_err());
+        assert!(v2.is_err());
     }
 
 
@@ -153,7 +150,7 @@ mod tests {
     fn should_parse() {
         let s = r#"["sdasda"]"#;
         let params = serde_json::from_str::<Params>(s).unwrap();
-        let v1: Result<(String,), RpcError> = params.parse();
+        let v1: Result<(String,), Error> = params.parse();
         assert_eq!(v1, Ok(("sdasda".to_string(),)));
     }
 
@@ -165,8 +162,7 @@ mod tests {
         let mut map = serde_json::Map::new();
         map.insert("from".to_string(), Value::String("foo".to_string()));
         map.insert("to".to_string(), Value::String("bar".to_string()));
-
-        let v1: Result<(Map<String, Value>, Value), RpcError> = params.parse();
+        let v1: Result<(Map<String, Value>, Value), Error> = params.parse();
         assert_eq!(v1, Ok((map, Value::Number(Number::from(99)))));
     }
 

@@ -16,17 +16,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![feature(plugin)]
-#![cfg_attr(test, plugin(stainless))]
 extern crate cita_crypto as crypto;
 extern crate libproto;
 extern crate protobuf;
 extern crate util;
 extern crate uuid;
-extern crate serde_types;
 extern crate rustc_serialize;
 extern crate hyper;
 extern crate serde_json;
 extern crate jsonrpc_types;
+extern crate rustc_hex;
 
 #[macro_use]
 extern crate serde_derive;
@@ -34,8 +33,8 @@ extern crate clap;
 
 mod core;
 
-use core::param::Param;
 use clap::App;
+use core::param::Param;
 use core::send_trans::Sendtx;
 //use std::sync::mpsc;
 
@@ -52,14 +51,13 @@ fn main() {
 
     if let Some(file) = matches.value_of("config") {
         filename = file.parse::<String>().unwrap();
-    }    
-
-    let p:Param = Param::load_from_file(&filename);
-    let work = Sendtx::new(&p);
-    match p.category{
-        1 => work.start(1),
-        _ => work.start(2),
     }
 
-
+    let p: Param = Param::load_from_file(&filename);
+    let work = Sendtx::new(&p);
+    match p.category {
+        1 => work.start(1),
+        2 => work.start(2),
+        _ => work.start(3),
+    }
 }

@@ -24,6 +24,7 @@
 //! application could implement `StateMachine`, with commands corresponding to `insert`, and
 //! `remove`. The `raft` library would guarantee that the same order of `insert` and `remove`
 //! commands would be seen by all consensus modules.
+
 use std::fmt::Debug;
 
 mod channel;

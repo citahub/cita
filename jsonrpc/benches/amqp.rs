@@ -19,10 +19,12 @@
 extern crate amqp;
 extern crate test;
 extern crate pubsub;
+extern crate dotenv;
 
 use amqp::{Consumer, Channel, Basic, protocol};
-use test::Bencher;
+use dotenv::dotenv;
 use pubsub::PubSub;
+use test::Bencher;
 
 struct MyHandler {
     count: u32,
@@ -35,11 +37,7 @@ impl MyHandler {
 }
 
 impl Consumer for MyHandler {
-    fn handle_delivery(&mut self,
-                       channel: &mut Channel,
-                       deliver: protocol::basic::Deliver,
-                       _: protocol::basic::BasicProperties,
-                       body: Vec<u8>) {
+    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, _body: Vec<u8>) {
         self.count += 1;
         let _ = channel.basic_ack(deliver.delivery_tag, false);
     }
@@ -47,6 +45,7 @@ impl Consumer for MyHandler {
 
 #[bench]
 fn publish(b: &mut Bencher) {
+    dotenv().ok();
     let mut pubsub = PubSub::new();
     let myhandler = MyHandler::new();
     pubsub.start_sub("test_x_queue", vec!["bench.*"], myhandler);

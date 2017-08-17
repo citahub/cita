@@ -17,10 +17,12 @@
 
 //! A multiplexed cita protocol
 
-use tokio_core::io::{Io, Codec, EasyBuf, Framed};
-use tokio_proto::pipeline::ServerProto;
 use byteorder::{BigEndian, ByteOrder};
+use bytes::BytesMut;
 use std::io;
+use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_io::codec::{Framed, Encoder, Decoder};
+use tokio_proto::pipeline::ServerProto;
 
 pub type CitaRequest = Vec<u8>;
 pub type CitaResponse = Vec<u8>;
@@ -45,11 +47,11 @@ pub struct CitaProto;
 /// |                |                              |
 /// +----------------+------------------------------+
 ///
-impl Codec for CitaCodec {
-    type In = CitaRequest;
-    type Out = CitaResponse;
+impl Decoder for CitaCodec {
+    type Item = CitaRequest;
+    type Error = io::Error;
 
-    fn decode(&mut self, buf: &mut EasyBuf) -> Result<Option<Self::In>, io::Error> {
+    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Self::Item>, io::Error> {
         let buf_len = buf.len();
         if buf_len < 8 {
             return Ok(None);
@@ -65,9 +67,9 @@ impl Codec for CitaCodec {
             return Ok(None);
         }
         // ok skip the flag
-        buf.drain_to(8);
+        buf.split_to(8);
         // get msg
-        let msg = buf.drain_to(msg_len as usize);
+        let msg = buf.split_to(msg_len as usize);
         let mut payload = Vec::new();
         payload.extend(msg.as_ref());
 
@@ -75,8 +77,13 @@ impl Codec for CitaCodec {
 
         Ok(Some(payload))
     }
+}
 
-    fn encode(&mut self, msg: Self::Out, buf: &mut Vec<u8>) -> io::Result<()> {
+impl Encoder for CitaCodec {
+    type Item = CitaResponse;
+    type Error = io::Error;
+
+    fn encode(&mut self, msg: Self::Item, buf: &mut BytesMut) -> io::Result<()> {
         let request_id = 0xDEADBEEF00000000 + msg.len();
         trace!("encode msg {:?} {:?}", request_id, msg);
 
@@ -90,7 +97,7 @@ impl Codec for CitaCodec {
     }
 }
 
-impl<T: Io + 'static> ServerProto<T> for CitaProto {
+impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for CitaProto {
     type Request = CitaRequest;
     type Response = CitaResponse;
 

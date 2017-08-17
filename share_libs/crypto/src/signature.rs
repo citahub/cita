@@ -15,18 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::ops::{Deref, DerefMut};
-use std::cmp::PartialEq;
-use std::{mem, fmt};
-use std::str::FromStr;
-use std::hash::{Hash, Hasher};
+use super::{PrivKey, PubKey, SECP256K1, Error, Message, pubkey_to_address, Address};
+use rustc_serialize::hex::{ToHex, FromHex};
 use secp256k1::{Message as SecpMessage, RecoverableSignature, RecoveryId, Error as SecpError};
 use secp256k1::key::{SecretKey, PublicKey};
-use rustc_serialize::hex::{ToHex, FromHex};
-use serde_types::hash::{H520, H256};
-use super::{PrivKey, PubKey, SECP256K1, Error, Message, pubkey_to_address, Address};
-use util::hash::{H256 as Hash256, H520 as Hash520};
-use util::FixedHash;
+use util::{H520, H256};
+use std::{mem, fmt};
+use std::cmp::PartialEq;
+use std::hash::{Hash, Hasher};
+use std::ops::{Deref, DerefMut};
+use std::str::FromStr;
 
 pub struct Signature(pub [u8; 65]);
 
@@ -57,19 +55,12 @@ impl Signature {
 
     /// Check if this is a "low" signature.
     pub fn is_low_s(&self) -> bool {
-        Hash256::from_slice(self.s()) <=
-        "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0".into()
+        H256::from_slice(self.s()) <= "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0".into()
     }
 
     /// Check if each component of the signature is in range.
     pub fn is_valid(&self) -> bool {
-        self.v() <= 1 &&
-        Hash256::from_slice(self.r()) <
-        "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141".into() &&
-        Hash256::from_slice(self.r()) >= 1.into() &&
-        Hash256::from_slice(self.s()) <
-        "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141".into() &&
-        Hash256::from_slice(self.s()) >= 1.into()
+        self.v() <= 1 && H256::from_slice(self.r()) < "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141".into() && H256::from_slice(self.r()) >= 1.into() && H256::from_slice(self.s()) < "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141".into() && H256::from_slice(self.s()) >= 1.into()
     }
 }
 
@@ -88,10 +79,10 @@ impl Eq for Signature {}
 impl fmt::Debug for Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         f.debug_struct("Signature")
-            .field("r", &self.0[0..32].to_hex())
-            .field("s", &self.0[32..64].to_hex())
-            .field("v", &self.0[64..65].to_hex())
-            .finish()
+         .field("r", &self.0[0..32].to_hex())
+         .field("s", &self.0[32..64].to_hex())
+         .field("v", &self.0[64..65].to_hex())
+         .finish()
     }
 }
 
@@ -124,7 +115,7 @@ impl Default for Signature {
 
 impl Hash for Signature {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Hash520::from(self.0).hash(state);
+        self.0.hash(state);
     }
 }
 
@@ -148,13 +139,13 @@ impl Into<[u8; 65]> for Signature {
 
 impl From<Signature> for H520 {
     fn from(s: Signature) -> Self {
-        Hash520::from(s.0).into()
+        s.0.into()
     }
 }
 
 impl From<H520> for Signature {
     fn from(bytes: H520) -> Self {
-        Signature(bytes.0.into())
+        Signature(bytes.into())
     }
 }
 
@@ -176,8 +167,7 @@ pub fn sign(privkey: &PrivKey, message: &Message) -> Result<Signature, Error> {
     let context = &SECP256K1;
     // no way to create from raw byte array.
     let sec: &SecretKey = unsafe { mem::transmute(privkey) };
-    let s = context
-        .sign_recoverable(&SecpMessage::from_slice(&message.0[..])?, sec)?;
+    let s = context.sign_recoverable(&SecpMessage::from_slice(&message.0[..])?, sec)?;
     let (rec_id, data) = s.serialize_compact(context);
     let mut data_arr = [0; 65];
 
@@ -187,19 +177,14 @@ pub fn sign(privkey: &PrivKey, message: &Message) -> Result<Signature, Error> {
     Ok(Signature(data_arr))
 }
 
-pub fn verify_public(pubkey: &PubKey,
-                     signature: &Signature,
-                     message: &Message)
-                     -> Result<bool, Error> {
+pub fn verify_public(pubkey: &PubKey, signature: &Signature, message: &Message) -> Result<bool, Error> {
     let context = &SECP256K1;
-    let rsig = RecoverableSignature::from_compact(context,
-                                                  &signature[0..64],
-                                                  RecoveryId::from_i32(signature[64] as i32)?)?;
+    let rsig = RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
     let sig = rsig.to_standard(context);
 
     let pdata: [u8; 65] = {
         let mut temp = [4u8; 65];
-        temp[1..65].copy_from_slice(&*pubkey.0);
+        temp[1..65].copy_from_slice(pubkey);
         temp
     };
 
@@ -211,10 +196,7 @@ pub fn verify_public(pubkey: &PubKey,
     }
 }
 
-pub fn verify_address(address: &Address,
-                      signature: &Signature,
-                      message: &Message)
-                      -> Result<bool, Error> {
+pub fn verify_address(address: &Address, signature: &Signature, message: &Message) -> Result<bool, Error> {
     let pubkey = recover(signature, message)?;
     let recovered_address = pubkey_to_address(&pubkey);
     Ok(address == &recovered_address)
@@ -222,11 +204,8 @@ pub fn verify_address(address: &Address,
 
 pub fn recover(signature: &Signature, message: &Message) -> Result<PubKey, Error> {
     let context = &SECP256K1;
-    let rsig = RecoverableSignature::from_compact(context,
-                                                  &signature[0..64],
-                                                  RecoveryId::from_i32(signature[64] as i32)?)?;
-    let publ = context
-        .recover(&SecpMessage::from_slice(&message.0[..])?, &rsig)?;
+    let rsig = RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+    let publ = context.recover(&SecpMessage::from_slice(&message.0[..])?, &rsig)?;
     let serialized = publ.serialize_vec(context, false);
 
     let mut pubkey = PubKey::default();
@@ -237,11 +216,11 @@ pub fn recover(signature: &Signature, message: &Message) -> Result<PubKey, Error
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-    use rand::os::OsRng;
-    use util::hash::H256;
     use super::{SECP256K1, Signature, sign};
     use super::super::KeyPair;
+    use rand::os::OsRng;
+    use std::str::FromStr;
+    use util::H256;
 
     fn generate() -> Result<KeyPair, &'static str> {
         let context = &SECP256K1;

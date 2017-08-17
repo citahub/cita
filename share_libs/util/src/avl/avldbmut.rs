@@ -22,14 +22,13 @@ use super::lookup::Lookup;
 use super::node::Node as RlpNode;
 use super::node::NodeKey;
 
-use {HashDB, H256};
+use H256;
 use bytes::ToPretty;
-use rlp::*;
-use ::sha3::SHA3_NULL_RLP;
-use hashdb::DBValue;
 
 use elastic_array::ElasticArray1024;
-
+use hashable::HASH_NULL_RLP;
+use hashdb::{HashDB, DBValue};
+use rlp::*;
 use std::cmp;
 use std::collections::{HashSet, VecDeque};
 use std::mem;
@@ -62,7 +61,7 @@ impl From<H256> for NodeHandle {
 }
 
 fn empty_children() -> Box<[Option<NodeHandle>; 2]> {
-    Box::new([None, None,])
+    Box::new([None, None])
 }
 
 /// Node types in the AVL.
@@ -81,12 +80,12 @@ impl Node {
     // load an inline node into memory or get the hash to do the lookup later.
     fn inline_or_hash(node: &[u8], db: &HashDB, storage: &mut NodeStorage) -> NodeHandle {
         let r = Rlp::new(node);
-		if r.is_data() && r.size() == 32 {
-			NodeHandle::Hash(r.as_val::<H256>())
-		} else {
-			let child = Node::from_rlp(node, db, storage);
-			NodeHandle::InMemory(storage.alloc(Stored::New(child)))
-		}
+        if r.is_data() && r.size() == 32 {
+            NodeHandle::Hash(r.as_val::<H256>())
+        } else {
+            let child = Node::from_rlp(node, db, storage);
+            NodeHandle::InMemory(storage.alloc(Stored::New(child)))
+        }
     }
 
     // decode a node from rlp without getting its children.
@@ -100,7 +99,7 @@ impl Node {
                 for i in 0..2 {
                     let raw = children_rlp[i];
                     let child_rlp = Rlp::new(raw);
-					if !child_rlp.is_empty() {
+                    if !child_rlp.is_empty() {
                         children[i] = Some(Self::inline_or_hash(raw, db, storage));
                     }
                 }
@@ -111,29 +110,31 @@ impl Node {
     }
 
     // encode a node to RLP
-    fn into_rlp<F>(self, mut child_cb: F) -> ElasticArray1024<u8> where F: FnMut(NodeHandle, &mut RlpStream)
+    fn into_rlp<F>(self, mut child_cb: F) -> ElasticArray1024<u8>
+    where
+        F: FnMut(NodeHandle, &mut RlpStream),
     {
         match self {
             Node::Empty => {
                 let mut stream = RlpStream::new();
-				stream.append_empty_data();
-				stream.drain()
+                stream.append_empty_data();
+                stream.drain()
             }
             Node::Leaf(key, value) => {
                 let mut stream = RlpStream::new_list(2);
-				stream.append(&&*key);
-				stream.append(&&*value);
-				stream.drain()
+                stream.append(&&*key);
+                stream.append(&&*value);
+                stream.drain()
             }
             Node::Branch(height, key, mut children) => {
                 let mut stream = RlpStream::new_list(4);
-				for child in children.iter_mut().map(Option::take) {
-					if let Some(handle) = child {
-						child_cb(handle, &mut stream);
-					} else {
-						stream.append_empty_data();
-					}
-				}
+                for child in children.iter_mut().map(Option::take) {
+                    if let Some(handle) = child {
+                        child_cb(handle, &mut stream);
+                    } else {
+                        stream.append_empty_data();
+                    }
+                }
                 stream.append(&height);
                 stream.append(&&*key);
                 stream.drain()
@@ -244,14 +245,15 @@ impl<'a> Index<&'a StorageHandle> for NodeStorage {
 /// use util::avl::*;
 /// use util::hashdb::*;
 /// use util::memorydb::*;
-/// use util::hash::*;
+/// use util::*;
+/// use util::hashable::HASH_NULL_RLP;
 ///
 /// fn main() {
 ///   let mut memdb = MemoryDB::new();
 ///   let mut root = H256::new();
 ///   let mut t = AVLDBMut::new(&mut memdb, &mut root);
 ///   assert!(t.is_empty());
-///   assert_eq!(*t.root(), ::util::sha3::SHA3_NULL_RLP);
+///   assert_eq!(*t.root(), HASH_NULL_RLP);
 ///   t.insert(b"foo", b"bar").unwrap();
 ///   assert!(t.contains(b"foo").unwrap());
 ///   assert_eq!(t.get(b"foo").unwrap().unwrap(), DBValue::from_slice(b"bar"));
@@ -273,9 +275,8 @@ pub struct AVLDBMut<'a> {
 impl<'a> AVLDBMut<'a> {
     /// Create a new avl with backing database `db` and empty `root`.
     pub fn new(db: &'a mut HashDB, root: &'a mut H256) -> Self {
-        *root = SHA3_NULL_RLP;
-        let root_handle = NodeHandle::Hash(SHA3_NULL_RLP);
-
+        *root = HASH_NULL_RLP;
+        let root_handle = NodeHandle::Hash(HASH_NULL_RLP);
         AVLDBMut {
             storage: NodeStorage::empty(),
             db: db,
@@ -315,8 +316,7 @@ impl<'a> AVLDBMut<'a> {
 
     // cache a node by hash
     fn cache(&mut self, hash: H256) -> super::Result<StorageHandle> {
-        let node_rlp = self.db.get(&hash)
-            .ok_or_else(|| Box::new(AVLError::IncompleteDatabase(hash)))?;
+        let node_rlp = self.db.get(&hash).ok_or_else(|| Box::new(AVLError::IncompleteDatabase(hash)))?;
         let node = Node::from_rlp(&node_rlp, &*self.db, &mut self.storage);
         Ok(self.storage.alloc(Stored::Cached(node, hash)))
     }
@@ -324,7 +324,8 @@ impl<'a> AVLDBMut<'a> {
     // inspect a node, choosing either to replace, restore, or delete it.
     // if restored or replaced, returns the new node along with a flag of whether it was changed.
     fn inspect<F>(&mut self, stored: Stored, inspector: F) -> super::Result<Option<(Stored, bool)>>
-        where F: FnOnce(&mut Self, Node) -> super::Result<Action>
+    where
+        F: FnOnce(&mut Self, Node) -> super::Result<Action>,
     {
         Ok(match stored {
                Stored::New(node) => {
@@ -338,39 +339,34 @@ impl<'a> AVLDBMut<'a> {
                    match inspector(self, node)? {
                        Action::Restore(node) => Some((Stored::Cached(node, hash), false)),
                        Action::Replace(node) => {
-                            self.death_row.insert(hash);
-                            Some((Stored::New(node), true))
-                        }
+                           self.death_row.insert(hash);
+                           Some((Stored::New(node), true))
+                       }
                        Action::Delete => {
-                            self.death_row.insert(hash);
-                            None
-                        }
+                           self.death_row.insert(hash);
+                           None
+                       }
                    }
                }
            })
     }
 
     // walk the avl, attempting to find the key's node.
-    fn lookup(&self, key: NodeKey, handle: &NodeHandle)
-       -> super::Result<Option<DBValue>> 
-    {
+    fn lookup(&self, key: NodeKey, handle: &NodeHandle) -> super::Result<Option<DBValue>> {
         match *handle {
             NodeHandle::Hash(ref hash) => Lookup {
-				db: &*self.db,
-				query: DBValue::from_slice,
-				hash: hash.clone(),
-			}.look_up(key),
+                                              db: &*self.db,
+                                              query: DBValue::from_slice,
+                                              hash: hash.clone(),
+                                          }
+                                          .look_up(key),
             NodeHandle::InMemory(ref handle) => {
                 match self.storage[handle] {
                     Node::Empty => Ok(None),
                     Node::Leaf(ref k, ref value) => {
-                        if *k == key {
-                            Ok(Some(DBValue::from_slice(value)))
-                        } else {
-                            Ok(None)
-                        }
+                        if *k == key { Ok(Some(DBValue::from_slice(value))) } else { Ok(None) }
                     }
-                    Node::Branch(_, ref k ,ref children) => {
+                    Node::Branch(_, ref k, ref children) => {
                         let idx = if key < *k { 0 } else { 1 };
                         match children[idx as usize].as_ref() {
                             Some(child) => self.lookup(key, child),
@@ -382,7 +378,7 @@ impl<'a> AVLDBMut<'a> {
         }
     }
 
-    
+
     fn left_rotate_successor(&mut self, mut k1: Node) -> super::Result<Stored> {
         let mut k2 = self.left_child_destroy(&mut k1)?;
         let llh = self.left_child_height(&mut k2)?;
@@ -391,7 +387,7 @@ impl<'a> AVLDBMut<'a> {
             let k3 = self.right_child_destroy(&mut k2)?;
             k2 = self.right_rotate(k2, k3);
         }
-        Ok(Stored::New(self.left_rotate(k1, k2))) 
+        Ok(Stored::New(self.left_rotate(k1, k2)))
     }
 
     fn right_rotate_successor(&mut self, mut k1: Node) -> super::Result<Stored> {
@@ -402,11 +398,11 @@ impl<'a> AVLDBMut<'a> {
             let k3 = self.left_child_destroy(&mut k2)?;
             k2 = self.left_rotate(k2, k3);
         }
-        Ok(Stored::New(self.right_rotate(k1, k2))) 
+        Ok(Stored::New(self.right_rotate(k1, k2)))
     }
 
-     fn left_rotate(&mut self, mut k1: Node, mut k2: Node) -> Node {
-         if let Node::Branch(ref mut h2, _,  ref mut children2) = k2 {
+    fn left_rotate(&mut self, mut k1: Node, mut k2: Node) -> Node {
+        if let Node::Branch(ref mut h2, _, ref mut children2) = k2 {
             if let Node::Branch(ref mut h1, _, ref mut children1) = k1 {
                 *h2 = *h1;
                 *h1 -= 1;
@@ -417,12 +413,12 @@ impl<'a> AVLDBMut<'a> {
             children2[1] = Some(self.storage.alloc(Stored::New(k1)).into());
         } else {
             unreachable!()
-        }  
+        }
         k2
     }
 
     fn right_rotate(&mut self, mut k1: Node, mut k2: Node) -> Node {
-         if let Node::Branch(ref mut h2, _,  ref mut children2) = k2 {
+        if let Node::Branch(ref mut h2, _, ref mut children2) = k2 {
             if let Node::Branch(ref mut h1, _, ref mut children1) = k1 {
                 *h2 = *h1;
                 *h1 -= 1;
@@ -433,7 +429,7 @@ impl<'a> AVLDBMut<'a> {
             children2[0] = Some(self.storage.alloc(Stored::New(k1)).into());
         } else {
             unreachable!()
-        }  
+        }
         k2
     }
 
@@ -521,7 +517,9 @@ impl<'a> AVLDBMut<'a> {
                 _ => return Ok(0),
             };
             let height = AVLDBMut::height(&self.storage[&h]);
-            children[1] = {Some(NodeHandle::InMemory(h))};
+            children[1] = {
+                Some(NodeHandle::InMemory(h))
+            };
             Ok(height)
         } else {
             Ok(0)
@@ -530,107 +528,102 @@ impl<'a> AVLDBMut<'a> {
 
     pub fn tree_height(&mut self) -> super::Result<(super::Result<u32>, u32, super::Result<u32>)> {
         let h = self.root.clone();
-        let node_rlp = self.db.get(&h)
-            .ok_or_else(|| Box::new(AVLError::IncompleteDatabase(h)))?;
+        let node_rlp = self.db.get(&h).ok_or_else(|| Box::new(AVLError::IncompleteDatabase(h)))?;
         let mut node = Node::from_rlp(&node_rlp, &*self.db, &mut self.storage);
-       Ok((self.left_child_height(&mut node), AVLDBMut::height(&node), self.right_child_height(&mut node)))
+        Ok((self.left_child_height(&mut node), AVLDBMut::height(&node), self.right_child_height(&mut node)))
     }
 
     /// insert a key, value pair into the AVL, creating new nodes if necessary.
-    fn insert_at(&mut self, handle: NodeHandle, key: NodeKey, value: DBValue, old_val: &mut Option<DBValue>)
-       -> super::Result<(StorageHandle, bool)> {
+    fn insert_at(&mut self, handle: NodeHandle, key: NodeKey, value: DBValue, old_val: &mut Option<DBValue>) -> super::Result<(StorageHandle, bool)> {
         let h = match handle {
             NodeHandle::InMemory(h) => h,
             NodeHandle::Hash(h) => self.cache(h)?,
         };
         let stored = self.storage.destroy(h);
-        let (new_stored, changed) = self.inspect(stored, move |avl, stored| {
-                avl.insert_inspector(stored, key, value, old_val).map(|a| a.into_action())
-            })?.expect("Insertion never deletes.");
-        
+        let (new_stored, changed) = self.inspect(stored, move |avl, stored| avl.insert_inspector(stored, key, value, old_val).map(|a| a.into_action()))?
+                                        .expect("Insertion never deletes.");
+
         match changed {
             true => {
                 let new_stored = self.rotate_if_necessary(new_stored)?;
-                Ok((self.storage.alloc(new_stored), true))                
-            } 
-            false => Ok((self.storage.alloc(new_stored), false))
+                Ok((self.storage.alloc(new_stored), true))
+            }
+            false => Ok((self.storage.alloc(new_stored), false)),
         }
     }
 
     /// the insertion inspector.
     #[cfg_attr(feature = "dev", allow(cyclomatic_complexity))]
-    fn insert_inspector(&mut self, node: Node, key: NodeKey, value: DBValue, old_val: &mut Option<DBValue>)
-       -> super::Result<InsertAction> {
+    fn insert_inspector(&mut self, node: Node, key: NodeKey, value: DBValue, old_val: &mut Option<DBValue>) -> super::Result<InsertAction> {
         trace!(target: "avl", "augmented (key: {:?}, value: {:?})", key, value.pretty());
 
         Ok(match node {
                Node::Empty => {
-                    trace!(target: "avl", "empty: COMPOSE");
-                    InsertAction::Replace(Node::Leaf(key, value))
+                   trace!(target: "avl", "empty: COMPOSE");
+                   InsertAction::Replace(Node::Leaf(key, value))
                }
                Node::Branch(h, k, mut children) => {
-                    trace!(target: "avl", "branch: ROUTE,AUGMENT");
-                    let idx = if key < k { 0 } else { 1 };
-                    if let Some(child) = children[idx].take() {
-                        // original had something there. recurse down into it.
-                        let (new_child, changed) = self.insert_at(child, key, value, old_val)?;
-                        children[idx] = Some(new_child.into());
-                        if !changed {
-                            // the new node we composed didn't change. that means our branch is untouched too.
-                            return Ok(InsertAction::Restore(Node::Branch(h, k, children)));
-                        }
-                    } else {
-                        // original had nothing there. compose a leaf.
-                        let leaf = self.storage.alloc(Stored::New(Node::Leaf(key, value)));
-                        children[idx] = Some(leaf.into());
-                    }
+                   trace!(target: "avl", "branch: ROUTE,AUGMENT");
+                   let idx = if key < k { 0 } else { 1 };
+                   if let Some(child) = children[idx].take() {
+                       // original had something there. recurse down into it.
+                       let (new_child, changed) = self.insert_at(child, key, value, old_val)?;
+                       children[idx] = Some(new_child.into());
+                       if !changed {
+                           // the new node we composed didn't change. that means our branch is untouched too.
+                           return Ok(InsertAction::Restore(Node::Branch(h, k, children)));
+                       }
+                   } else {
+                       // original had nothing there. compose a leaf.
+                       let leaf = self.storage.alloc(Stored::New(Node::Leaf(key, value)));
+                       children[idx] = Some(leaf.into());
+                   }
 
-                    InsertAction::Replace(Node::Branch(h, k, children))
+                   InsertAction::Replace(Node::Branch(h, k, children))
                }
                Node::Leaf(k, v) => {
-                    if k == key {
-                        trace!(target: "avl", "equivalent-leaf: REPLACE");
-                        // equivalent leaf.
-                        let unchanged = v == value;
-                        *old_val = Some(v);
+                   if k == key {
+                       trace!(target: "avl", "equivalent-leaf: REPLACE");
+                       // equivalent leaf.
+                       let unchanged = v == value;
+                       *old_val = Some(v);
 
-                        match unchanged {
-                            // unchanged. restore
-                            true => InsertAction::Restore(Node::Leaf(key, value)),
-                            false => InsertAction::Replace(Node::Leaf(key, value)),
-                        }
-                    } else {
-                        trace!(target: "avl", " (exist={:?}; new={:?}): TRANSMUTE,AUGMENT", k, key);
+                       match unchanged {
+                           // unchanged. restore
+                           true => InsertAction::Restore(Node::Leaf(key, value)),
+                           false => InsertAction::Replace(Node::Leaf(key, value)),
+                       }
+                   } else {
+                       trace!(target: "avl", " (exist={:?}; new={:?}): TRANSMUTE,AUGMENT", k, key);
 
-                        // one of us isn't empty: transmute to branch here
-                        let mut children = empty_children();
-                        let branch = match k < key {
-                            true => {
-                                let left_leaf = Node::Leaf(k.clone(), v);
-                                let right_leaf = Node::Leaf(key.clone(), value);
-                                children[0] = Some(self.storage.alloc(Stored::New(left_leaf)).into());
-                                children[1] = Some(self.storage.alloc(Stored::New(right_leaf)).into());
-                                Node::Branch(1, key, children)
-                            }
-                            false => {
-                                let left_leaf = Node::Leaf(key.clone(), value);
-                                let right_leaf = Node::Leaf(k.clone(), v);
-                                children[0] = Some(self.storage.alloc(Stored::New(left_leaf)).into());
-                                children[1] = Some(self.storage.alloc(Stored::New(right_leaf)).into());
-                                Node::Branch(1, k, children)
-                            }
-                            
-                        };
+                       // one of us isn't empty: transmute to branch here
+                       let mut children = empty_children();
+                       let branch = match k < key {
+                           true => {
+                               let left_leaf = Node::Leaf(k.clone(), v);
+                               let right_leaf = Node::Leaf(key.clone(), value);
+                               children[0] = Some(self.storage.alloc(Stored::New(left_leaf)).into());
+                               children[1] = Some(self.storage.alloc(Stored::New(right_leaf)).into());
+                               Node::Branch(1, key, children)
+                           }
+                           false => {
+                               let left_leaf = Node::Leaf(key.clone(), value);
+                               let right_leaf = Node::Leaf(k.clone(), v);
+                               children[0] = Some(self.storage.alloc(Stored::New(left_leaf)).into());
+                               children[1] = Some(self.storage.alloc(Stored::New(right_leaf)).into());
+                               Node::Branch(1, k, children)
+                           }
 
-                        InsertAction::Replace(branch)
-                    }
-                }
+                       };
+
+                       InsertAction::Replace(branch)
+                   }
+               }
            })
     }
 
     /// Remove a node from the avl based on key.
-    fn remove_at(&mut self, handle: NodeHandle, key: NodeKey, old_val: &mut Option<DBValue>)
-       -> super::Result<Option<(StorageHandle, bool)>> {
+    fn remove_at(&mut self, handle: NodeHandle, key: NodeKey, old_val: &mut Option<DBValue>) -> super::Result<Option<(StorageHandle, bool)>> {
         let stored = match handle {
             NodeHandle::InMemory(h) => self.storage.destroy(h),
             NodeHandle::Hash(h) => {
@@ -641,11 +634,11 @@ impl<'a> AVLDBMut<'a> {
 
         if let Some((new_stored, changed)) = self.inspect(stored, move |avl, node| avl.remove_inspector(node, key, old_val))? {
             match changed {
-                true =>{
+                true => {
                     let new_stored = self.rotate_if_necessary(new_stored)?;
-                    Ok(Some((self.storage.alloc(new_stored), true)))                   
-                } 
-                false => Ok(Some((self.storage.alloc(new_stored), false)))
+                    Ok(Some((self.storage.alloc(new_stored), true)))
+                }
+                false => Ok(Some((self.storage.alloc(new_stored), false))),
             }
         } else {
             Ok(None)
@@ -653,8 +646,7 @@ impl<'a> AVLDBMut<'a> {
     }
 
     /// the removal inspector
-    fn remove_inspector(&mut self, node: Node, key: NodeKey, old_val: &mut Option<DBValue>)
-       -> super::Result<Action> {
+    fn remove_inspector(&mut self, node: Node, key: NodeKey, old_val: &mut Option<DBValue>) -> super::Result<Action> {
         Ok(match node {
                Node::Empty => Action::Delete,
                Node::Leaf(k, v) => {
@@ -664,37 +656,37 @@ impl<'a> AVLDBMut<'a> {
                    }
                }
                Node::Branch(h, k, mut children) => {
-                    let idx = if key < k { 0 } else { 1 };
-                    if let Some(child) = children[idx].take() {
-                        trace!(target: "avl", "removing value out of branch child, key={:?}", key);
-                        match self.remove_at(child, key, old_val)? {
-                            Some((new, changed)) => {
-                                children[idx] = Some(new.into());
-                                let branch = Node::Branch(h, k, children);
-                                match changed {
-                                    // child was changed, so we were too.
-                                    true => Action::Replace(branch),
-                                    // unchanged, so we are too.
-                                    false => Action::Restore(branch),
-                                }
-                            }
-                            None => {
-                                // the child we took was deleted.
-                                // the node may need fixing.
-                                // trace!(target: "avl", "branch child deleted, key={:?}", key);                                
-                                let mut node = Node::Branch(h, k, children);
-                                match idx {
-                                    1 => Action::Replace(self.left_child_destroy(&mut node)?),
-                                    0 => Action::Replace(self.right_child_destroy(&mut node)?),
-                                    _ => unreachable!()
-                                }
-                            }
-                        }
-                    } else {
-                        // no change needed.
-                        Action::Restore(Node::Branch(h, k, children))
-                    }
-                }
+                   let idx = if key < k { 0 } else { 1 };
+                   if let Some(child) = children[idx].take() {
+                       trace!(target: "avl", "removing value out of branch child, key={:?}", key);
+                       match self.remove_at(child, key, old_val)? {
+                           Some((new, changed)) => {
+                               children[idx] = Some(new.into());
+                               let branch = Node::Branch(h, k, children);
+                               match changed {
+                                   // child was changed, so we were too.
+                                   true => Action::Replace(branch),
+                                   // unchanged, so we are too.
+                                   false => Action::Restore(branch),
+                               }
+                           }
+                           None => {
+                               // the child we took was deleted.
+                               // the node may need fixing.
+                               // trace!(target: "avl", "branch child deleted, key={:?}", key);
+                               let mut node = Node::Branch(h, k, children);
+                               match idx {
+                                   1 => Action::Replace(self.left_child_destroy(&mut node)?),
+                                   0 => Action::Replace(self.right_child_destroy(&mut node)?),
+                                   _ => unreachable!(),
+                               }
+                           }
+                       }
+                   } else {
+                       // no change needed.
+                       Action::Restore(Node::Branch(h, k, children))
+                   }
+               }
            })
     }
 
@@ -771,7 +763,7 @@ impl<'a> AVLMut for AVLDBMut<'a> {
 
     fn is_empty(&self) -> bool {
         match self.root_handle {
-            NodeHandle::Hash(h) => h == SHA3_NULL_RLP,
+            NodeHandle::Hash(h) => h == HASH_NULL_RLP,
             NodeHandle::InMemory(ref h) => {
                 match self.storage[h] {
                     Node::Empty => true,
@@ -781,7 +773,9 @@ impl<'a> AVLMut for AVLDBMut<'a> {
         }
     }
 
-    fn get<'x, 'key>(&'x self, key: &'key [u8]) -> super::Result<Option<DBValue>> where 'x: 'key
+    fn get<'x, 'key>(&'x self, key: &'key [u8]) -> super::Result<Option<DBValue>>
+    where
+        'x: 'key,
     {
         self.lookup(key.to_vec(), &self.root_handle)
     }
@@ -819,8 +813,8 @@ impl<'a> AVLMut for AVLDBMut<'a> {
             }
             None => {
                 trace!(target: "avl", "remove: obliterated avl");
-                self.root_handle = NodeHandle::Hash(SHA3_NULL_RLP);
-                *self.root = SHA3_NULL_RLP;
+                self.root_handle = NodeHandle::Hash(HASH_NULL_RLP);
+                *self.root = HASH_NULL_RLP;
             }
         }
 
@@ -836,9 +830,9 @@ impl<'a> Drop for AVLDBMut<'a> {
 
 #[cfg(test)]
 mod tests {
-    use memorydb::*;
     use super::*;
     use super::super::AVLMut;
+    use memorydb::*;
     // use super::super::standardmap::*;
 
     // fn populate_avl<'db>(db: &'db mut HashDB, root: &'db mut H256, v: &[(Vec<u8>, Vec<u8>)]) -> AVLDBMut<'db> {
@@ -891,7 +885,7 @@ mod tests {
     //         assert_eq!(*memavl.root(), real);
     //         unpopulate_avl(&mut memavl, &x);
     //         memavl.commit();
-    //         if *memavl.root() != SHA3_NULL_RLP {
+    //         if *memavl.root() != HASH_NULL_RLP {
     //             println!("- TRIE MISMATCH");
     //             println!("");
     //             println!("{:?} vs {:?}", memavl.root(), real);
@@ -899,7 +893,7 @@ mod tests {
     //                 println!("{:?} -> {:?}", i.0.pretty(), i.1.pretty());
     //             }
     //         }
-    //         assert_eq!(*memavl.root(), SHA3_NULL_RLP);
+    //         assert_eq!(*memavl.root(), HASH_NULL_RLP);
     //     }
     // }
 
@@ -908,7 +902,7 @@ mod tests {
         let mut memdb = MemoryDB::new();
         let mut root = H256::default();
         let mut t = AVLDBMut::new(&mut memdb, &mut root);
-        assert_eq!(*t.root(), SHA3_NULL_RLP);
+        assert_eq!(*t.root(), HASH_NULL_RLP);
     }
 
     // #[test]
@@ -1057,11 +1051,9 @@ mod tests {
         let mut root = H256::default();
         let mut t = AVLDBMut::new(&mut memdb, &mut root);
         t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
-        assert_eq!(t.get(&[0x1, 0x23]).unwrap().unwrap(),
-                   DBValue::from_slice(&[0x1u8, 0x23]));
+        assert_eq!(t.get(&[0x1, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0x1u8, 0x23]));
         t.commit();
-        assert_eq!(t.get(&[0x1, 0x23]).unwrap().unwrap(),
-                   DBValue::from_slice(&[0x1u8, 0x23]));
+        assert_eq!(t.get(&[0x1, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0x1u8, 0x23]));
     }
 
     #[test]
@@ -1072,20 +1064,14 @@ mod tests {
         t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
         t.insert(&[0xf1u8, 0x23], &[0xf1u8, 0x23]).unwrap();
         t.insert(&[0x81u8, 0x23], &[0x81u8, 0x23]).unwrap();
-        assert_eq!(t.get(&[0x01, 0x23]).unwrap().unwrap(),
-                   DBValue::from_slice(&[0x01u8, 0x23]));
-        assert_eq!(t.get(&[0xf1, 0x23]).unwrap().unwrap(),
-                   DBValue::from_slice(&[0xf1u8, 0x23]));
-        assert_eq!(t.get(&[0x81, 0x23]).unwrap().unwrap(),
-                   DBValue::from_slice(&[0x81u8, 0x23]));
+        assert_eq!(t.get(&[0x01, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0x01u8, 0x23]));
+        assert_eq!(t.get(&[0xf1, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0xf1u8, 0x23]));
+        assert_eq!(t.get(&[0x81, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0x81u8, 0x23]));
         assert_eq!(t.get(&[0x82, 0x23]), Ok(None));
         t.commit();
-        assert_eq!(t.get(&[0x01, 0x23]).unwrap().unwrap(),
-                   DBValue::from_slice(&[0x01u8, 0x23]));
-        assert_eq!(t.get(&[0xf1, 0x23]).unwrap().unwrap(),
-                   DBValue::from_slice(&[0xf1u8, 0x23]));
-        assert_eq!(t.get(&[0x81, 0x23]).unwrap().unwrap(),
-                   DBValue::from_slice(&[0x81u8, 0x23]));
+        assert_eq!(t.get(&[0x01, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0x01u8, 0x23]));
+        assert_eq!(t.get(&[0xf1, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0xf1u8, 0x23]));
+        assert_eq!(t.get(&[0x81, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0x81u8, 0x23]));
         assert_eq!(t.get(&[0x82, 0x23]), Ok(None));
     }
 
@@ -1168,7 +1154,7 @@ mod tests {
     //     }
 
     //     assert!(t.is_empty());
-    //     assert_eq!(*t.root(), SHA3_NULL_RLP);
+    //     assert_eq!(*t.root(), HASH_NULL_RLP);
     // }
 
     // #[test]

@@ -16,50 +16,47 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use filter::Filter;
-use std::collections::HashMap;
-use std::collections::BTreeSet;
-use libproto::blockchain::Transaction;
-use util::hash::H256;
+use libproto::blockchain::{SignedTransaction};
 use std::cmp::Ordering;
+use std::collections::BTreeSet;
+use std::collections::HashMap;
+use util::H256;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Strategy {
-	FIFO,
-	PRIORITY,
+    FIFO,
+    PRIORITY,
     VIP,
 }
 
 #[derive(Clone, Debug)]
 struct TxOrder {
-    hash : H256,
-	order: u64,
+    hash: H256,
+    order: u64,
 }
 
 impl TxOrder {
-	fn new(hash: H256, order: u64) -> Self {
-		TxOrder {
-			hash: hash,
-			order: order,
-		}
-	}
+    fn new(hash: H256, order: u64) -> Self {
+        TxOrder { hash: hash, order: order }
+    }
 }
 
 impl Eq for TxOrder {}
 impl PartialEq for TxOrder {
-	fn eq(&self, other: &TxOrder) -> bool {
-		self.cmp(other) == Ordering::Equal
-	}
+    fn eq(&self, other: &TxOrder) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
 }
 impl PartialOrd for TxOrder {
-	fn partial_cmp(&self, other: &TxOrder) -> Option<Ordering> {
-		Some(self.cmp(other))
-	}
+    fn partial_cmp(&self, other: &TxOrder) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Ord for TxOrder {
-	fn cmp(&self, b: &TxOrder) -> Ordering {
+    fn cmp(&self, b: &TxOrder) -> Ordering {
         self.order.cmp(&b.order)
-	}
+    }
 }
 
 #[derive(Debug)]
@@ -67,7 +64,7 @@ pub struct Pool {
     package_limit: usize,
     filter: Filter,
     order_set: BTreeSet<TxOrder>,
-    txs: HashMap<H256, Transaction>,
+    txs: HashMap<H256, SignedTransaction>,
     strategy: Strategy,
     order: u64,
 }
@@ -103,16 +100,18 @@ impl Pool {
     }
 
     #[allow(unused_variables)]
-    fn get_order_by_priority(&mut self, tx: &Transaction) -> u64 {
+    fn get_order_by_priority(&mut self, tx: &SignedTransaction) -> u64 {
         return self.get_order();
     }
 
     #[allow(unused_variables)]
-    fn get_order_by_vip(&mut self, tx: &Transaction) -> u64 {
+    fn get_order_by_vip(&mut self, tx: &SignedTransaction) -> u64 {
         return self.get_order();
     }
 
-    pub fn enqueue(&mut self, tx: Transaction, hash: H256) -> bool {
+    pub fn enqueue(&mut self, tx: SignedTransaction) -> bool {
+        let hash = H256::from_slice(tx.get_tx_hash());
+
         let is_ok = self.filter.check(hash);
         if is_ok {
             let order = match self.strategy {
@@ -128,24 +127,20 @@ impl Pool {
     }
 
     fn update_order_set(&mut self, hash_list: &[H256]) {
-        self.order_set = self.order_set
-            .iter()
-            .cloned()
-            .filter(|order| !hash_list.contains(&order.hash))
-            .collect();
+        self.order_set = self.order_set.iter().cloned().filter(|order| !hash_list.contains(&order.hash)).collect();
     }
 
-    pub fn update(&mut self, txs: &[Transaction]) {
+    pub fn update(&mut self, txs: &[SignedTransaction]) {
         let mut hash_list = Vec::new();
         for tx in txs {
-            let hash = tx.sha3();
+            let hash = tx.crypt_hash();
             self.txs.remove(&hash);
             hash_list.push(hash);
         }
         self.update_order_set(&hash_list);
     }
 
-    pub fn package(&mut self, height: u64) -> Vec<Transaction> {
+    pub fn package(&mut self, height: u64) -> Vec<SignedTransaction> {
         let mut tx_list = Vec::new();
         let mut invalid_tx_list = Vec::new();
         let mut n = self.package_limit;
@@ -160,7 +155,8 @@ impl Pool {
                 let hash = order.unwrap().hash;
                 let tx = self.txs.get(&hash);
                 if let Some(tx) = tx {
-                    if tx.valid_until_block == 0 || tx.valid_until_block >= height {
+                    if tx.get_transaction_with_sig().get_transaction().valid_until_block == 0
+                    || tx.get_transaction_with_sig().get_transaction().valid_until_block >= height {
                         tx_list.push(tx.clone());
                         n = n - 1;
                         if n == 0 {
@@ -174,7 +170,7 @@ impl Pool {
                 }
             }
         }
-        
+
         self.update(&invalid_tx_list);
         tx_list
     }
@@ -188,25 +184,39 @@ impl Pool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use libproto::blockchain::Transaction;
+    use libproto::blockchain::{SignedTransaction, UnverifiedTransaction, Transaction};
+
+    pub fn generate_tx(data: Vec<u8>, valid_until_block: u64) -> SignedTransaction {
+        let mut tx = Transaction::new();
+        tx.set_data(data);
+        tx.set_to("1234567".to_string());
+        tx.set_nonce("0".to_string());
+        tx.set_valid_until_block(valid_until_block);
+
+        let pv = H256::from_slice(&[20,17]);
+
+        let mut uv_tx = UnverifiedTransaction::new();
+        uv_tx.set_transaction(tx);
+
+        let mut signed_tx = SignedTransaction::new();
+        signed_tx.set_transaction_with_sig(uv_tx);
+        signed_tx.sign(pv);
+
+        signed_tx
+    }
+
     #[test]
     fn basic() {
         let mut p = Pool::new(2, 1);
-        let mut tx1 = Transaction::new();
-        tx1.set_content(vec![1]);
-        let mut tx2 = Transaction::new();
-        tx2.set_content(vec![1]);
-        let mut tx3 = Transaction::new();
-        tx3.set_content(vec![2]);
-        let mut tx4 = Transaction::new();
-        tx4.set_content(vec![3]);
-        tx4.valid_until_block = 5;
+        let tx1 = generate_tx(vec![1], 999);
+        let tx2 = generate_tx(vec![1], 999);
+        let tx3 = generate_tx(vec![2], 999);
+        let tx4 = generate_tx(vec![3], 5);
 
-        assert_eq!(p.enqueue(tx1.clone(), tx1.sha3()), true);
-        assert_eq!(p.enqueue(tx2.clone(), tx2.sha3()), false);
-        assert_eq!(p.enqueue(tx3.clone(), tx3.sha3()), true);
-        assert_eq!(p.enqueue(tx4.clone(), tx4.sha3()), true);
-
+        assert_eq!(p.enqueue(tx1.clone()), true);
+        assert_eq!(p.enqueue(tx2.clone()), false);
+        assert_eq!(p.enqueue(tx3.clone()), true);
+        assert_eq!(p.enqueue(tx4.clone()), true);
         assert_eq!(p.len(), 3);
         p.update(&vec![tx1.clone()]);
         assert_eq!(p.len(), 2);

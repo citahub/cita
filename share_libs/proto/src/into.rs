@@ -15,41 +15,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use super::*;
 use blockchain;
 use communication;
+use protobuf::Message;
 use request;
 use submodules;
 use topics;
-use protobuf::Message;
-use super::*;
 
 impl Into<communication::Message> for request::Request {
     fn into(self) -> communication::Message {
-        let msg = factory::create_msg(submodules::JSON_RPC,
-                                      topics::REQUEST,
-                                      communication::MsgType::REQUEST,
-                                      self.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::JSON_RPC, topics::REQUEST, communication::MsgType::REQUEST, self.write_to_bytes().unwrap());
         msg
     }
 }
 
-impl Into<communication::Message> for blockchain::Transaction {
+impl Into<communication::Message> for blockchain::SignedTransaction {
     fn into(self) -> communication::Message {
-        let msg = factory::create_msg(submodules::JSON_RPC,
-                                      topics::NEW_TX,
-                                      communication::MsgType::TX,
-                                      self.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::JSON_RPC, topics::NEW_TX, communication::MsgType::TX, self.write_to_bytes().unwrap());
         msg
     }
 }
 
 impl Into<communication::Message> for request::Response {
     fn into(self) -> communication::Message {
-        let msg = factory::create_msg(submodules::CHAIN,
-                                      topics::RESPONSE,
-                                      communication::MsgType::RESPONSE,
-                                      self.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CHAIN, topics::RESPONSE, communication::MsgType::RESPONSE, self.write_to_bytes().unwrap());
         msg
     }
 }
-

@@ -15,34 +15,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::time::Duration;
-use std::sync::{Arc, Mutex};
 use super::{Engine, EngineError, Signable, unix_now, AsMillis};
-use util::Address;
-use util::hash::H256;
 use crypto::{Signature, Signer};
-use util::sha3::Hashable;
-use rustc_serialize::hex::ToHex;
-use protobuf::{Message, RepeatedField};
-use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
-use proof::AuthorityRoundProof;
 use engine_json;
-use tx_pool::Pool;
-use parking_lot::RwLock;
-use pubsub::Pub;
 use libproto::*;
 use libproto::blockchain::{BlockBody, Proof, Block, Transaction, Status};
-use std::sync::mpsc::Sender;
-use util::FixedHash;
+use parking_lot::RwLock;
+use proof::AuthorityRoundProof;
+use protobuf::{Message, RepeatedField};
+use pubsub::Pub;
+use rustc_serialize::hex::ToHex;
 
-use serde_types::hash::H256 as Hash256;
+use util::H256 as Hash256;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
+use std::sync::mpsc::Sender;
+use std::time::Duration;
+use tx_pool::Pool;
+use util::Address;
+use util::Hashable;
+use util::H256;
 const INIT_HEIGHT: usize = 1;
 const INIT_STEP: usize = 0;
 
 impl Signable for BlockBody {
     fn bare_hash(&self) -> H256 {
-        let binary = self.write_to_bytes().unwrap();
-        binary.sha3()
+        self.transactions_root()
     }
 }
 
@@ -67,14 +65,8 @@ pub struct AuthorityRound {
 
 impl AuthorityRound {
     /// Create a new instance of POA engine
-    pub fn new(params: AuthorityRoundParams,
-               ready: Sender<usize>)
-               -> Result<Arc<Self>, EngineError> {
-        let position = params
-            .authorities
-            .iter()
-            .position(|&a| a == params.signer.address.clone().into())
-            .unwrap() as u64;
+    pub fn new(params: AuthorityRoundParams, ready: Sender<usize>) -> Result<Arc<Self>, EngineError> {
+        let position = params.authorities.iter().position(|&a| a == params.signer.address.clone().into()).unwrap() as u64;
 
         let engine = Arc::new(AuthorityRound {
                                   params: params,
@@ -100,8 +92,7 @@ impl AuthorityRound {
     }
 
     pub fn generate_proof(&self, body: &mut BlockBody, step: u64) -> Proof {
-        let signature = body.sign_with_privkey(self.params.signer.privkey())
-            .unwrap();
+        let signature = body.sign_with_privkey(self.params.signer.privkey()).unwrap();
         let proof: Proof = AuthorityRoundProof::new(step, signature).into();
         proof
     }
@@ -118,9 +109,7 @@ impl AuthorityRound {
             {
                 let mut tx_pool = self.tx_pool.write();
                 let txs: Vec<Transaction> = tx_pool.package(height);
-                block
-                    .mut_body()
-                    .set_transactions(RepeatedField::from_slice(&txs[..]));
+                block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
                 let proof = self.generate_proof(block.mut_body(), step);
                 block.mut_header().set_timestamp(block_time.as_millis());
                 block.mut_header().set_proof(proof);
@@ -133,10 +122,7 @@ impl AuthorityRound {
     }
 
     pub fn pub_transaction(&self, tx: &Transaction, _pub: &mut Pub) {
-        let msg = factory::create_msg(submodules::CONSENSUS,
-                                      topics::NEW_TX,
-                                      communication::MsgType::TX,
-                                      tx.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
         trace!("broadcast new tx {:?}", tx);
         _pub.publish("consensus.tx", msg.write_to_bytes().unwrap());
     }
@@ -144,10 +130,7 @@ impl AuthorityRound {
 
     //call by seal_block and update_head, broadcast block to other node and also pass to chain
     pub fn pub_block(&self, block: &Block, _pub: &mut Pub) {
-        let msg = factory::create_msg(submodules::CONSENSUS,
-                                      topics::NEW_BLK,
-                                      communication::MsgType::BLOCK,
-                                      block.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
         trace!("publish block {:?}", block);
         _pub.publish("consensus.blk", msg.write_to_bytes().unwrap());
     }
@@ -158,10 +141,7 @@ impl From<engine_json::AuthorityRoundParams> for AuthorityRoundParams {
         AuthorityRoundParams {
             duration: Duration::from_millis(p.duration.into()),
             authority_n: p.authorities.len() as u64,
-            authorities: p.authorities
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>(),
+            authorities: p.authorities.into_iter().map(Into::into).collect::<Vec<_>>(),
             signer: Signer::from(p.signer),
         }
     }
@@ -180,10 +160,7 @@ impl Engine for AuthorityRound {
         let block_time = block.get_header().get_timestamp();
         let proof = AuthorityRoundProof::from(block.get_header().get_proof().clone());
         let signature = Signature::from(proof.signature);
-        let author = block
-            .get_body()
-            .recover_address_with_signature(&signature)
-            .unwrap();
+        let author = block.get_body().recover_address_with_signature(&signature).unwrap();
         if !self.params.authorities.contains(&author) {
             trace!("verify_block author {:?}", author.to_hex());
             return Err(EngineError::NotAuthorized(author))?;
@@ -241,7 +218,7 @@ impl Engine for AuthorityRound {
 
     fn receive_new_transaction(&self, tx: &Transaction, _pub: &mut Pub, _origin: u32, from_broadcast: bool) {
         let mut content = blockchain::TxResponse::new();
-        let hash: H256 = tx.sha3();
+        let hash: H256 = tx.crypt_hash();
         {
             let mut tx_pool = self.tx_pool.write();
             content.set_hash(hash.to_vec());
@@ -253,10 +230,7 @@ impl Engine for AuthorityRound {
                 content.set_result(String::from("4:DUP").into_bytes());
             }
             if !from_broadcast {
-                let msg = factory::create_msg(submodules::CONSENSUS,
-                                              topics::TX_RESPONSE,
-                                              communication::MsgType::TX_RESPONSE,
-                                              content.write_to_bytes().unwrap());
+                let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
                 trace!("response new tx {:?}", tx);
                 _pub.publish("consensus.rpc", msg.write_to_bytes().unwrap());
             }
@@ -274,7 +248,7 @@ impl Engine for AuthorityRound {
             self.pub_block(&block, _pub);
         }
     }
-    
+
     #[allow(unused_variables)]
     fn set_new_status(&self, height: usize, pre_hash: Hash256) {
         unimplemented!()
@@ -288,9 +262,7 @@ mod tests {
 
     #[test]
     fn has_valid_metadata() {
-        let test_spec = ::std::env::current_dir()
-            .unwrap()
-            .join("../res/authority_round.json");
+        let test_spec = ::std::env::current_dir().unwrap().join("../res/authority_round.json");
         println!("{}", test_spec.display());
         let engine = Spec::new_test_round(test_spec.to_str().unwrap()).engine;
         assert!(!engine.name().is_empty());

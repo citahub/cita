@@ -4,13 +4,13 @@ version = "0.1.0"
 authors = ["u2 <zhangyaning1985@gmail.com>"]
 
 [dependencies]
+bincode = "0.8"
 futures = "0.1"
 hyper = "0.10"
 libproto = { path = "../../share_libs/proto" }
 protobuf = { version = "^1.0.0" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.3"
-sha3 = { path = "../../share_libs/parity/util/sha3"}
 util = { path = "../../share_libs/util"}
 serde = "1.0"
 serde_json = "1.0"
@@ -20,8 +20,4 @@ amqp = "=0.0.20"
 pubsub = { path = "../../share_libs/pubsub" }
 time = "0.1"
 proof = { path = "../../consensus/proof" }
-serde_types = { path = "../../share_libs/serde_types" }
-state = { path = "../../chain/state" }
-
-[dev-dependencies]
-stainless = "0.1.11"
+common-types = { path = "../../chain/types" }

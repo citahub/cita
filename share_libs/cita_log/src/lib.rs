@@ -26,11 +26,7 @@ use std::env;
 pub fn format(level: LogLevelFilter) {
     let format = |record: &LogRecord| {
         let t = time::now();
-        format!("{},{:03} - {} - {}",
-                time::strftime("%Y-%m-%d %H:%M:%S", &t).unwrap(),
-                t.tm_nsec / 1000_000,
-                record.level(),
-                record.args())
+        format!("{},{:03} - {} - {}", time::strftime("%Y-%m-%d %H:%M:%S", &t).unwrap(), t.tm_nsec / 1000_000, record.level(), record.args())
     };
 
     let mut builder = LogBuilder::new();

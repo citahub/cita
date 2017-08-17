@@ -1,0 +1,17 @@
+verbose=false
+max_width=1000
+comment_width=1000
+tab_spaces=4
+fn_call_width=1000
+struct_lit_width=32
+fn_call_style="Visual"
+single_line_if_else_max_width=100
+trailing_comma="Vertical"
+chain_indent="Visual"
+chain_one_line_max=100
+reorder_imports=true
+format_strings=true
+hard_tabs=false
+wrap_match_arms=false
+write_mode="Overwrite"
+array_width=100

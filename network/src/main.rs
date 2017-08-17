@@ -20,6 +20,7 @@
 extern crate log;
 extern crate clap;
 extern crate futures;
+extern crate tokio_io;
 extern crate tokio_core;
 extern crate tokio_proto;
 extern crate tokio_service;
@@ -33,6 +34,7 @@ extern crate pubsub;
 extern crate util;
 extern crate dotenv;
 extern crate cita_log;
+extern crate bytes;
 
 pub mod config;
 pub mod server;
@@ -40,18 +42,19 @@ pub mod connection;
 pub mod citaprotocol;
 pub mod msghandle;
 
-use std::sync::mpsc::channel;
-use std::env;
 
 use clap::{App, SubCommand};
-use server::start_server;
 use config::NetConfig;
-use connection::{Connection, do_connect};
-use pubsub::PubSub;
-use msghandle::MyHandler;
-use server::MySender;
-use log::LogLevelFilter;
+use connection::{Connection, do_connect, start_client};
 use dotenv::dotenv;
+use log::LogLevelFilter;
+use msghandle::MyHandler;
+use pubsub::PubSub;
+use server::MySender;
+use server::start_server;
+use std::env;
+use std::sync::Arc;
+use std::sync::mpsc::channel;
 
 fn main() {
     dotenv().ok();
@@ -64,7 +67,7 @@ fn main() {
     // init app
     // todo load config
     let matches = App::new("network")
-        .version("0.8")
+        .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
@@ -81,11 +84,7 @@ fn main() {
     // check for the existence of subcommands
     let is_test = matches.is_present("test");
 
-    let config = if is_test {
-        NetConfig::test_config()
-    } else {
-        NetConfig::new(config_path)
-    };
+    let config = if is_test { NetConfig::test_config() } else { NetConfig::new(config_path) };
 
     let (tx, rx) = channel();
 
@@ -97,18 +96,25 @@ fn main() {
     // connect peers
     let con = Connection::new(&config);
     do_connect(&con);
+    let (ctx, crx) = channel();
+    let con = Arc::new(con);
+    start_client(con.clone(), crx);
 
     // init pubsub
     let mut pubsub = PubSub::new();
     let mut _pub2 = pubsub.get_pub();
-    pubsub.start_sub("network",
-                     vec!["consensus.tx",
-                          "consensus.msg",
-                          "chain.status",
-                          "chain.blk",
-                          "chain.sync",
-                          "jsonrpc.net"],
-                     MyHandler::new(con, _pub2));
+    pubsub.start_sub(
+        "network",
+        vec![
+            "consensus.tx",
+            "consensus.msg",
+            "chain.status",
+            "chain.blk",
+            "chain.sync",
+            "jsonrpc.net",
+        ],
+        MyHandler::new(con, _pub2, ctx),
+    );
 
     let mut _pub = pubsub.get_pub();
     loop {

@@ -44,13 +44,13 @@ mod machine;
 mod log_store;
 mod dispatch;
 
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::thread;
-use raft_server::*;
+use amqp::{Consumer, Channel, protocol, Basic};
 use docopt::Docopt;
 use libproto::{parse_msg, MsgClass, key_to_id};
-use amqp::{Consumer, Channel, protocol, Basic};
 use pubsub::PubSub;
+use raft_server::*;
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread;
 
 
 // Using docopt we define the overall usage of the application.
@@ -91,18 +91,10 @@ impl MyHandler {
 }
 
 impl Consumer for MyHandler {
-    fn handle_delivery(&mut self,
-                       channel: &mut Channel,
-                       deliver: protocol::basic::Deliver,
-                       _: protocol::basic::BasicProperties,
-                       body: Vec<u8>) {
-        trace!("handle delivery id {:?} payload {:?}",
-               deliver.routing_key,
-               body);
+    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, body: Vec<u8>) {
+        trace!("handle delivery id {:?} payload {:?}", deliver.routing_key, body);
         let (cmd_id, _, content) = parse_msg(body.as_slice());
-        self.tx
-            .send((key_to_id(deliver.routing_key.as_str()), cmd_id, content))
-            .unwrap();
+        self.tx.send((key_to_id(deliver.routing_key.as_str()), cmd_id, content)).unwrap();
         let _ = channel.basic_ack(deliver.delivery_tag, false);
     }
 }
@@ -112,15 +104,11 @@ fn main() {
     // Always print backtrace on panic.
     ::std::env::set_var("RUST_BACKTRACE", "1");
     env_logger::init().unwrap();
-    let args: Args = Docopt::new(USAGE)
-        .and_then(|d| d.decode())
-        .unwrap_or_else(|e| e.exit());
+    let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
     info!("CITA:raft");
     let (tx, rx) = channel();
     let mut pubsub = PubSub::new();
-    pubsub.start_sub("consensus_cmd",
-                     vec!["consensus.status", "consensus.msg"],
-                     MyHandler::new(tx));
+    pubsub.start_sub("consensus_cmd", vec!["consensus.status", "consensus.msg"], MyHandler::new(tx));
     let mut _pub = pubsub.get_pub();
 
     let (mut server, mut event_loop) = server(&args);
@@ -132,8 +120,7 @@ fn main() {
     event_loop.run(&mut server);
 }
 
-fn thread_handler(rx: Receiver<(u32, u32, MsgClass)>,
-                  notifix: mio::Sender<libraft::NotifyMessage>) {
+fn thread_handler(rx: Receiver<(u32, u32, MsgClass)>, notifix: mio::Sender<libraft::NotifyMessage>) {
     thread::spawn(move || loop {
                       dispatch::dispatch(&notifix, &rx);
                   });

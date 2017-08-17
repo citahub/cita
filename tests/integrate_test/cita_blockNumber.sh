@@ -8,4 +8,5 @@ fi
 if [ ! -n "$PORT" ]; then
     PORT=1337
 fi
-curl -s -X POST -d '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":2}' $IP:$PORT | jq ".result"
+h=$(curl -s -X POST -d '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":2}' $IP:$PORT | jq ".result" | sed 's/\"//g')
+echo $((h))

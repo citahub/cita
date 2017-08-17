@@ -17,9 +17,10 @@
 
 //! AVL interface and implementation.
 
-use std::fmt;
-use hash::H256;
+use H256;
+use hashable::HASH_NULL_RLP;
 use hashdb::{HashDB, DBValue};
+use std::fmt;
 
 /// Export the standardmap module.
 pub mod standardmap;
@@ -42,13 +43,14 @@ mod fatdbmut;
 mod lookup;
 
 // pub use self::standardmap::{Alphabet, StandardMap, ValueMode};
-pub use self::avldbmut::AVLDBMut;
+
 pub use self::avldb::{AVLDB, AVLDBIterator};
-pub use self::secavldbmut::SecAVLDBMut;
-pub use self::secavldb::SecAVLDB;
+pub use self::avldbmut::AVLDBMut;
 pub use self::fatdb::{FatDB, FatDBIterator};
 pub use self::fatdbmut::FatDBMut;
 pub use self::recorder::Recorder;
+pub use self::secavldb::SecAVLDB;
+pub use self::secavldbmut::SecAVLDBMut;
 
 /// AVL Errors.
 ///
@@ -107,7 +109,8 @@ impl<'a> Query for &'a mut Recorder {
 }
 
 impl<F, T> Query for F
-    where F: for<'a> FnOnce(&'a [u8]) -> T
+where
+    F: for<'a> FnOnce(&'a [u8]) -> T,
 {
     type Item = T;
 
@@ -117,7 +120,8 @@ impl<F, T> Query for F
 }
 
 impl<'a, F, T> Query for (&'a mut Recorder, F)
-    where F: FnOnce(&[u8]) -> T
+where
+    F: FnOnce(&[u8]) -> T,
 {
     type Item = T;
 
@@ -136,7 +140,7 @@ pub trait AVL {
 
     /// Is the avl empty?
     fn is_empty(&self) -> bool {
-        *self.root() == ::sha3::SHA3_NULL_RLP
+        *self.root() == HASH_NULL_RLP
     }
 
     /// Does the avl contain a given key?
@@ -145,15 +149,18 @@ pub trait AVL {
     }
 
     /// What is the value of the given key in this AVL?
-    fn get<'a, 'key>(&'a self, key: &'key [u8]) -> Result<Option<DBValue>> where 'a: 'key
+    fn get<'a, 'key>(&'a self, key: &'key [u8]) -> Result<Option<DBValue>>
+    where
+        'a: 'key,
     {
         self.get_with(key, DBValue::from_slice)
     }
 
     /// Search for the key with the given query parameter. See the docs of the `Query`
     /// trait for more details.
-    fn get_with<'a, 'key, Q: Query>(&'a self, key: &'key [u8], query: Q)
-       -> Result<Option<Q::Item>> where 'a: 'key;
+    fn get_with<'a, 'key, Q: Query>(&'a self, key: &'key [u8], query: Q) -> Result<Option<Q::Item>>
+    where
+        'a: 'key;
 
     /// Returns a depth-first iterator over the elements of avl.
     fn iter<'a>(&'a self) -> Result<Box<AVLIterator<Item = AVLItem> + 'a>>;
@@ -173,7 +180,9 @@ pub trait AVLMut {
     }
 
     /// What is the value of the given key in this AVL?
-    fn get<'a, 'key>(&'a self, key: &'key [u8]) -> Result<Option<DBValue>> where 'a: 'key;
+    fn get<'a, 'key>(&'a self, key: &'key [u8]) -> Result<Option<DBValue>>
+    where
+        'a: 'key;
 
     /// Insert a `key`/`value` pair into the AVL. An empty value is equivalent to removing
     /// `key` from the AVL. Returns the old value associated with this key, if it existed.
@@ -249,7 +258,8 @@ impl<'db> AVL for AVLKinds<'db> {
     }
 
     fn get_with<'a, 'key, Q: Query>(&'a self, key: &'key [u8], query: Q) -> Result<Option<Q::Item>>
-        where 'a: 'key
+    where
+        'a: 'key,
     {
         wrapper!(self, get_with, key, query)
     }
@@ -259,7 +269,7 @@ impl<'db> AVL for AVLKinds<'db> {
     }
 }
 
-#[cfg_attr(feature="dev", allow(wrong_self_convention))]
+#[cfg_attr(feature = "dev", allow(wrong_self_convention))]
 impl AVLFactory {
     /// Creates new factory.
     pub fn new(spec: AVLSpec) -> Self {
@@ -285,8 +295,7 @@ impl AVLFactory {
     }
 
     /// Create new mutable instance of AVL and check for errors.
-    pub fn from_existing<'db>(&self, db: &'db mut HashDB, root: &'db mut H256)
-        -> Result<Box<AVLMut + 'db>> {
+    pub fn from_existing<'db>(&self, db: &'db mut HashDB, root: &'db mut H256) -> Result<Box<AVLMut + 'db>> {
         match self.spec {
             AVLSpec::Generic => Ok(Box::new(AVLDBMut::from_existing(db, root)?)),
             AVLSpec::Secure => Ok(Box::new(SecAVLDBMut::from_existing(db, root)?)),

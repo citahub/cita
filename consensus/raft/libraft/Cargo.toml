@@ -47,7 +47,7 @@ capnpc = "0.5"
 [dependencies]
 bufstream = "0.1"
 capnp = "0.6"
-capnp-nonblock = "0.3"
+capnp-nonblock = { path = "../../capnp_nonblock" }
 log = "0.3"
 mio = "0.5"
 rand = "0.3"

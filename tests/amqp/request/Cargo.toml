@@ -11,4 +11,5 @@ name = "request"
 
 [dependencies]
 amqp = "=0.0.20"
+dotenv = "0.10.0"
 pubsub = { path = "../../../share_libs/pubsub" }

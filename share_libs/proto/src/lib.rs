@@ -16,12 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate protobuf;
-extern crate sha3;
 extern crate util;
 extern crate rustc_serialize;
 extern crate bincode;
 #[macro_use]
 extern crate serde_derive;
+extern crate cita_crypto;
 
 pub mod blockchain;
 pub mod communication;
@@ -30,15 +30,13 @@ pub mod into;
 
 use blockchain::*;
 use communication::*;
-pub use request::*;
-use protobuf::core::parse_from_bytes;
 use protobuf::Message;
-use util::hash::H256;
-use util::sha3::Hashable;
+use protobuf::core::parse_from_bytes;
+pub use request::*;
 use rustc_serialize::hex::ToHex;
-use bincode::{serialize, Infinite};
-use std::hash::{Hash, Hasher};
+use util::{H256, Hashable, H520, merklehash};
 use util::snappy;
+use cita_crypto::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct State(pub Vec<Vec<u8>>);
@@ -73,7 +71,7 @@ pub enum MsgClass {
     HEADER(BlockHeader),
     BODY(BlockBody),
     BLOCK(Block),
-    TX(Transaction),
+    TX(SignedTransaction),
     TXRESPONSE(TxResponse),
     STATUS(Status),
     MSG(Vec<u8>),
@@ -143,11 +141,7 @@ pub mod factory {
     use super::*;
     pub const ZERO_ORIGIN: u32 = 99999;
 
-    pub fn create_msg(sub: u32,
-                      top: u16,
-                      msg_type: MsgType,
-                      content: Vec<u8>)
-                      -> communication::Message {
+    pub fn create_msg(sub: u32, top: u16, msg_type: MsgType, content: Vec<u8>) -> communication::Message {
         let mut msg = communication::Message::new();
         msg.set_cmd_id(cmd_id(sub, top));
         msg.set_field_type(msg_type);
@@ -159,13 +153,7 @@ pub mod factory {
     }
 
     ///for crate_msg extral version
-    pub fn create_msg_ex(sub: u32,
-                         top: u16,
-                         msg_type: MsgType,
-                         operate: communication::OperateType,
-                         origin: u32,
-                         content: Vec<u8>)
-                         -> communication::Message {
+    pub fn create_msg_ex(sub: u32, top: u16, msg_type: MsgType, operate: communication::OperateType, origin: u32, content: Vec<u8>) -> communication::Message {
         let mut msg = factory::create_msg(sub, top, msg_type, content);
         msg.set_origin(origin);
         msg.set_operate(operate);
@@ -191,7 +179,7 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::HEADER => MsgClass::HEADER(parse_from_bytes::<BlockHeader>(&content_msg).unwrap()),
         MsgType::BODY => MsgClass::BODY(parse_from_bytes::<BlockBody>(&content_msg).unwrap()),
         MsgType::BLOCK => MsgClass::BLOCK(parse_from_bytes::<Block>(&content_msg).unwrap()),
-        MsgType::TX => MsgClass::TX(parse_from_bytes::<Transaction>(&content_msg).unwrap()),
+        MsgType::TX => MsgClass::TX(parse_from_bytes::<SignedTransaction>(&content_msg).unwrap()),
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
         MsgType::MSG => {
             let mut content = Vec::new();
@@ -203,55 +191,83 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
     (msg.get_cmd_id(), msg.get_origin(), msg_class)
 }
 
-impl blockchain::Transaction {
-    pub fn sha3(&self) -> H256 {
-        let bytes = self.write_to_bytes().unwrap();
-        bytes.sha3()
+
+impl blockchain::SignedTransaction {
+    pub fn sign(&mut self, sk: PrivKey) {
+        let keypair = KeyPair::from_privkey(sk).unwrap();
+        let pubkey = keypair.pubkey();
+
+        let bytes = self.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
+        let hash = bytes.crypt_hash();
+        let signature = sign(&sk, &H256::from(hash)).unwrap();
+        self.mut_transaction_with_sig().set_signature(signature.to_vec());
+        self.mut_transaction_with_sig().set_crypto(Crypto::SECP);
+        self.set_signer(pubkey.to_vec());
+        let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
+        self.set_tx_hash(bytes.crypt_hash().to_vec());
     }
 
-    pub fn sha3_hex(&self) -> String {
-        let bytes = self.write_to_bytes().unwrap();
-        bytes.sha3().to_hex()
+    pub fn recover(&mut self) -> bool {
+        let mut ret = true;
+        let bytes = self.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
+        let hash = bytes.crypt_hash();
+        if self.get_transaction_with_sig().get_signature().len() != SIGNATURE_BYTES_LEN {
+            ret = false;
+        } else {
+            match self.get_transaction_with_sig().get_crypto() {
+                Crypto::SECP => {
+                    let signature: Signature = H520::from_slice(self.get_transaction_with_sig().get_signature()).into();
+                    match recover(&signature, &hash) {
+                        Ok(pubkey) => {
+                            self.set_signer(pubkey.to_vec());
+                        },
+                        _ => {ret = false;},
+                    }
+                },
+                _ => {ret = false;},
+            }
+        }
+
+        let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
+        self.set_tx_hash(bytes.crypt_hash().to_vec());        
+        ret
+    }
+
+    pub fn crypt_hash(&self) -> H256 {
+        let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
+        bytes.crypt_hash()
     }
 }
 
-impl Hash for blockchain::Transaction {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.from.hash(state);
-        self.to.hash(state);
-        self.content.hash(state);
+impl Block {
+    pub fn crypt_hash(&self) -> H256 {
+        self.get_header().crypt_hash()
+    }
+
+    pub fn crypt_hash_hex(&self) -> String {
+        self.get_header().crypt_hash_hex()
     }
 }
 
-impl Eq for blockchain::Transaction {}
-
-impl blockchain::Block {
-    pub fn sha3(&self) -> H256 {
+impl BlockHeader {
+    pub fn crypt_hash(&self) -> H256 {
         let bytes = self.write_to_bytes().unwrap();
-        bytes.sha3()
+        bytes.crypt_hash()
     }
 
-    pub fn sha3_hex(&self) -> String {
+    pub fn crypt_hash_hex(&self) -> String {
         let bytes = self.write_to_bytes().unwrap();
-        bytes.sha3().to_hex()
+        bytes.crypt_hash().to_hex()
     }
 }
 
-impl blockchain::Content {
-    pub fn sha3(&self) -> H256 {
-        let bytes = self.write_to_bytes().unwrap();
-        bytes.sha3()
+impl BlockBody {
+    pub fn transaction_hashes(&self) -> Vec<H256> {
+        self.get_transactions().iter().map(|ts| H256::from_slice(ts.get_tx_hash())).collect()
     }
-}
 
-impl Commit {
-    pub fn states_sha3(&self, states: Vec<Vec<u8>>) -> H256 {
-        let vec: Vec<u8> = Vec::new();
-        let encoded: Vec<u8> = serialize(&states.iter().fold(vec, |mut vec, i| {
-            vec.append(&mut i.clone());
-            vec
-        }), Infinite).unwrap();
-        encoded.sha3()
+    pub fn transactions_root(&self) -> H256 {
+        merklehash::complete_merkle_root_raw(self.transaction_hashes().clone())
     }
 }
 
@@ -263,5 +279,28 @@ mod tests {
     fn cmd_id_works() {
         assert_eq!(cmd_id(submodules::JSON_RPC, topics::NEW_TX), 0x10006);
         assert_eq!(cmd_id(submodules::CHAIN, topics::NEW_TX), 0x30006);
+    }
+
+    #[test]
+    fn create_tx() {
+        let test1_privkey = H256::random();
+        let keypair = KeyPair::from_privkey(H256::from(test1_privkey)).unwrap();
+        let pv = keypair.privkey();
+
+        let data = vec![1];
+        let mut tx = Transaction::new();
+        tx.set_data(data);
+        tx.set_nonce("0".to_string());
+        tx.set_to("123".to_string());
+        tx.set_valid_until_block(99999);
+
+        let mut uv_tx = UnverifiedTransaction::new();
+        uv_tx.set_transaction(tx);
+
+        let mut signed_tx = SignedTransaction::new();
+        signed_tx.set_transaction_with_sig(uv_tx);
+        signed_tx.sign(pv.clone());
+
+        println!("{}", signed_tx.write_to_bytes().unwrap().to_hex())
     }
 }

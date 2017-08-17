@@ -14,7 +14,7 @@ setup_node() {
 start_node() {
     id=$1
     cd ${CUR_PATH}/../../admintool/release/node${id}
-    ./cita start ${id}
+    ./cita start ${id} debug
 }
 
 stop_node() {

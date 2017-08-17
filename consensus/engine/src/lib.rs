@@ -17,14 +17,12 @@
 
 extern crate libproto;
 extern crate util;
-extern crate sha3;
 extern crate protobuf;
 extern crate cita_crypto as crypto;
 extern crate proof;
 extern crate amqp;
 extern crate pubsub;
 extern crate engine_json;
-extern crate serde_types;
 
 mod error;
 mod instrument;
@@ -33,10 +31,10 @@ pub use error::*;
 pub use instrument::*;
 
 use libproto::blockchain::{Block, Transaction, Status};
-use util::SemanticVersion;
-use std::time::Duration;
 use pubsub::Pub;
-use serde_types::hash::{H256};
+use util::H256;
+use std::time::Duration;
+use util::SemanticVersion;
 
 pub trait Engine: Sync + Send {
     fn name(&self) -> &str;

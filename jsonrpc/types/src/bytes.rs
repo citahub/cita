@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use rustc_serialize::hex::FromHex;
 use rustc_serialize::hex::ToHex;
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::de::{self, Visitor};
-use rustc_serialize::hex::FromHex;
 
 /// Wrapper structure around vector of bytes.
 #[derive(Debug, PartialEq, Eq, Default, Hash, Clone)]
@@ -49,7 +49,8 @@ impl Into<Vec<u8>> for Bytes {
 
 impl Serialize for Bytes {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut serialized = "0x".to_owned();
         serialized.push_str(self.0.to_hex().as_ref());
@@ -59,9 +60,10 @@ impl Serialize for Bytes {
 
 impl<'de> Deserialize<'de> for Bytes {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
-        deserializer.deserialize_any(BytesVisitor)
+        deserializer.deserialize_str(BytesVisitor)
     }
 }
 
@@ -75,7 +77,8 @@ impl<'de> Visitor<'de> for BytesVisitor {
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-        where E: de::Error
+    where
+        E: de::Error,
     {
         if value.is_empty() {
             warn!(
@@ -86,15 +89,15 @@ impl<'de> Visitor<'de> for BytesVisitor {
             );
             Ok(Bytes::new(Vec::new()))
         } else if value.len() >= 2 && &value[0..2] == "0x" && value.len() & 1 == 0 {
-            Ok(Bytes::new(FromHex::from_hex(&value[2..])
-                              .map_err(|_| E::custom("invalid hex"))?))
+            Ok(Bytes::new(FromHex::from_hex(&value[2..]).map_err(|_| E::custom("invalid hex"))?))
         } else {
             Err(de::Error::custom("invalid format"))
         }
     }
 
     fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
-        where E: de::Error
+    where
+        E: de::Error,
     {
         self.visit_str(value.as_ref())
     }
@@ -104,8 +107,8 @@ impl<'de> Visitor<'de> for BytesVisitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
     use rustc_serialize::hex::FromHex;
+    use serde_json;
 
     #[test]
     fn test_bytes_serialize() {

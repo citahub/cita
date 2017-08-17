@@ -15,9 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::cmp;
+
 
 use rand::{self, Rng};
+use std::cmp;
 
 /// A randomized exponential backoff policy for retrying operations.
 ///

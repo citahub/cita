@@ -1,0 +1,24 @@
+syntax = "proto3";
+enum Crypto {
+    SECP = 0;
+    SM2 = 1; 
+}
+
+message Transaction {
+    string to = 1;
+    string nonce = 2;
+    uint64 valid_until_block = 3;
+    bytes data = 4;
+}
+
+message UnverifiedTransaction {
+    Transaction transaction = 1;
+    bytes signature = 2;
+    Crypto crypto = 3;
+}
+
+message SignedTransaction {
+    UnverifiedTransaction transaction_with_sig = 1;
+    bytes tx_hash = 2;  // SignedTransaction hash
+    bytes signer = 3; //public key
+}

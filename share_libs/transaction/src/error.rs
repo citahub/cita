@@ -17,5 +17,8 @@
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {
-	ParseError,
+    ParseError,
+    InvaliHash,
+    InvalidSignature,
+    InvalidPubKey,
 }

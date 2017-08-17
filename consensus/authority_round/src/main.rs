@@ -21,7 +21,6 @@ extern crate libproto;
 extern crate util;
 extern crate threadpool;
 extern crate rustc_serialize;
-extern crate sha3;
 extern crate protobuf;
 #[macro_use]
 extern crate log;
@@ -35,25 +34,24 @@ extern crate engine_json;
 extern crate engine;
 extern crate parking_lot;
 extern crate cpuprofiler;
-extern crate serde_types;
 extern crate cita_log;
 extern crate dotenv;
 
 pub mod core;
 
+use amqp::{Consumer, Channel, protocol, Basic};
+use clap::App;
+use core::Spec;
+use core::handler;
+use cpuprofiler::PROFILER;
+use libproto::*;
+use log::LogLevelFilter;
+use pubsub::PubSub;
+use std::sync::mpsc::Sender;
 use std::sync::mpsc::channel;
 use std::thread;
-use core::handler;
-use core::Spec;
-use libproto::*;
-use clap::App;
 use std::time::{Duration, Instant};
-use amqp::{Consumer, Channel, protocol, Basic};
-use pubsub::PubSub;
 use threadpool::ThreadPool;
-use std::sync::mpsc::Sender;
-use log::LogLevelFilter;
-use cpuprofiler::PROFILER;
 
 
 pub struct MyHandler {
@@ -68,14 +66,8 @@ impl MyHandler {
 }
 
 impl Consumer for MyHandler {
-    fn handle_delivery(&mut self,
-                       channel: &mut Channel,
-                       deliver: protocol::basic::Deliver,
-                       _: protocol::basic::BasicProperties,
-                       body: Vec<u8>) {
-        trace!("handle delivery id {:?} payload {:?}",
-               deliver.routing_key,
-               body);
+    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, body: Vec<u8>) {
+        trace!("handle delivery id {:?} payload {:?}", deliver.routing_key, body);
         handler::receive(&self.pool, &self.tx, key_to_id(&deliver.routing_key), body);
         let _ = channel.basic_ack(deliver.delivery_tag, false);
     }
@@ -90,7 +82,7 @@ fn main() {
     println!("CITA:consensus:poa");
 
     let matches = App::new("authority_round")
-        .version("0.8")
+        .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
@@ -117,29 +109,29 @@ fn main() {
     }
     if prof_start != 0 && prof_duration != 0 {
         thread::spawn(move || {
-            thread::sleep(Duration::new(prof_start, 0));
-            println!("******Profiling Start******");
-            PROFILER
-                .lock()
-                .unwrap()
-                .start("./consensus_poa.profile")
-                .expect("Couldn't start");
-            thread::sleep(Duration::new(prof_duration, 0));
-            println!("******Profiling Stop******");
-            PROFILER.lock().unwrap().stop().unwrap();
-        });
+                          thread::sleep(Duration::new(prof_start, 0));
+                          println!("******Profiling Start******");
+                          PROFILER.lock().unwrap().start("./consensus_poa.profile").expect("Couldn't start");
+                          thread::sleep(Duration::new(prof_duration, 0));
+                          println!("******Profiling Stop******");
+                          PROFILER.lock().unwrap().stop().unwrap();
+                      });
     }
 
     let threadpool = threadpool::ThreadPool::new(2);
     let (tx, rx) = channel();
     let mut pubsub = PubSub::new();
-    pubsub.start_sub("consensus",
-                     vec!["net.tx",
-                          "net.blk",
-                          "jsonrpc.new_tx",
-                          "net.msg",
-                          "chain.status"],
-                     MyHandler::new(threadpool, tx));
+    pubsub.start_sub(
+        "consensus",
+        vec![
+            "net.tx",
+            "net.blk",
+            "jsonrpc.new_tx",
+            "net.msg",
+            "chain.status",
+        ],
+        MyHandler::new(threadpool, tx),
+    );
     let mut _pub = pubsub.get_pub();
 
 

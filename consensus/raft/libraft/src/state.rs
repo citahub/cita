@@ -15,11 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::{HashMap, HashSet, VecDeque};
+
 
 use ClientId;
 use LogIndex;
 use ServerId;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Consensus modules can be in one of three state:
 ///
@@ -163,10 +164,10 @@ impl FollowerState {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
 
     use {LogIndex, ServerId};
     use state::LeaderState;
+    use std::collections::HashSet;
 
     /// Tests the `LeaderState`'s  `.count_match_indexes()` function and makes sure it adequately
     /// produces the correct values.

@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::PrivKey;
-use serde_types::hash::Address;
+use util::Address;
 
 /// Authority params deserialization.
 #[derive(Debug, PartialEq, Deserialize)]
@@ -36,8 +36,8 @@ pub struct AuthorityRound {
 
 #[cfg(test)]
 mod tests {
-    use serde_json;
     use super::super::*;
+    use serde_json;
 
     #[test]
     fn poa_params_deserialization() {

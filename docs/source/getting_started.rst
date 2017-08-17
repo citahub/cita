@@ -1,0 +1,200 @@
+依赖
+=============
+
+系统平台要求
+---------------------------
+
+CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。CITA是基于Ubuntu 16.04稳定版开发的，在该系统版本上运行将是正确无误的。如果在Linux系统的其他版本上运行出现问题，建议将系统版本切换到Ubuntu 16.04版本。
+
+安装依赖包
+---------------------------
+
+CITA中引用了一些Linux外部库，所以需要安装相关的依赖库，其命令如下：
+::
+
+  sudo apt-get install --force-yes libsnappy1v5 libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  rabbitmq-server  google-perftools jq  
+
+安装Rust
+---------------------------
+
+CITA中使用的是Rust 1.20.0版本，具体为 ``rustc 1.20.0-nightly`` （即更新日期为2017-06-29的Rust版本)，我们推荐使用 ``rustup`` 安装Rust，如果还没有安装过 ``rustup`` ，可以使用以下命令进行安装：
+::
+
+  curl https://sh.rustup.rs -sSf | sh
+
+安装完成后，为了使用Rust的相关命令，需要将已安装Rust的 ``bin`` 目录添加到 ``PATH`` 环境变量中，而 ``~/.cargo/env`` 中重新设置了 ``PATH`` ，使用以下命令让其生效即可：
+::
+
+  source ~/.cargo/env
+
+由于CITA在开发时使用的是 ``Rust nightly-2017-06-29`` 版本，而Rust的官方版本更新较快，如果直接使用官方版本可能导致一些兼容性的问题，所以建议切换到指定版本，在后续的CITA新版本中，我们也将尽可能地兼容Rust新版本的新特性，其安装命令如下：
+
+.. code-block:: shell
+
+  rustup toolchain install nightly-2017-08-04
+
+由于Rust默认使用的是 ``stable`` 版本，所以我们需要将Rust切换到指定的 ``nightly`` 版本，首先要找到刚才安装的Rust版本信息，其查看已安装的版本命令如下：
+::
+
+  rustup show
+
+从显示的 ``installed toolchains`` 条目中找到我们刚才安装的Rust版本 ``nightly-2017-06-29-x86_64-unknown-linux-gnu`` ，将其设置为默认的Rust版本：
+
+.. code-block:: shell
+
+  rustup default nightly-2017-08-04
+
+安装Python
+---------------------------
+
+CITA的启动脚本是由Python语言写的，因此如果操作系统还没有安装Python，可以根据以下命令进行安装：
+::
+
+  sudo apt-get install python
+
+经过如上设置，CITA的依赖便安装完成了。
+
+安装
+=============
+
+从Github仓库下载CITA的源代码，然后切换到CITA的源代码目录
+::
+
+  cd cita
+
+对CITA进行相关初始化，并对引用的依赖Parity进行下载和更新
+::
+
+  make setup 
+
+可以按照自己的需求自行选择相应的编译方式（Debug-调试模式 或 Release-发行模式）
+::
+
+  make debug      
+  
+或者     
+::
+
+  make release
+
+编译成功后，其生成的可执行文件将放在 ``cita/admintool/release/bin`` 目录下。
+
+
+配置
+=============
+
+启动的公共脚本位于 ``cita/admintool`` 目录，主要用来创建创世块配置、节点相关配置、网络连接配置、私钥配置等相关文件。启动之前执行相关的初始化操作，其命令如下：
+::
+
+  ./setup.sh
+
+设置节点的配置信息，该默认示例Demo中配置了4个节点，对Demo中的节点进行默认初始化的操作命令为：
+::
+
+  ./admintool.sh   
+
+此外，用户可以根据需要更改其中的默认配置，使用命令 ``./admintool.sh -h`` 来获得详细帮助，允许自定义配置包括：
+
+* 系统管理员账户
+* 网络列表，按照 ``IP1:PORT1,IP2:PORT2,IP3:PORT3 ... IPn:PORTn`` 的格式
+* 共识算法选择，可供选择的有 ``tendermint`` 、 ``raft`` 和 ``poa``
+* 加密方法选择 
+* 出块时间间隔 
+* 单数据块中交易数量限制
+* 累积多少历史交易量后进行重复交易的检查
+
+节点初始化操作成功后，将在 ``cita/admintool/release`` 下生成节点的Demo目录和相关配置文件，其生成的节点目录为 ``node0`` 、 ``node1`` 、 ``node2`` 和 ``node3`` ，其对应的目录如下：
+
+* cita/admintool/release/node0
+* cita/admintool/release/node1
+* cita/admintool/release/node2
+* cita/admintool/release/node3
+
+进入对应节点的目录，便可以使用 ``cita`` 命令对节点进行启动和停止等操作了。
+
+
+运行
+=============
+
+启动节点的服务步骤都是相同的，以 ``node0`` 为例，其启动CITA节点的具体步骤为：
+
+1）启动节点 ``node0`` 之前需进行初始化：
+
+.. code-block:: none
+
+  cita setup 0       
+
+2）启动节点 ``node0`` 的服务：
+
+.. code-block:: none
+
+  cita start 0       
+  
+而停止节点 ``node0`` 服务只需执行以下操作：
+
+.. code-block:: none
+
+  cita stop 0        
+
+此外， ``cita`` 命令中还包括其他操作，具体使用可以查看相关说明：
+::
+
+  cita        
+
+除了上述的基本操作命令，为了方便用户对Demo进行相关测试，我们在目录 ``cita/tests/integreate_test`` 下提供了一些测试脚本。
+例如，测试所有节点服务启动并成功出块，然后停止节点服务的操作为：
+::
+
+  ./cita_start.sh
+
+停止所有节点服务的命令为：
+::
+
+  ./cita_stop.sh
+
+备注：以上示例Demo的节点启动都是位于同一台机器上，如果需要部署到不同的服务器上，只需将节点客户化操作已经完成的节点（即 ``cita/admintool/release/node{节点号}`` 目录），拷贝到其他服务器上运行即可。
+
+
+验证
+=============
+
+- 查询节点个数
+
+Request:
+::
+
+    curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}' 127.0.0.1:1337 | jq
+
+
+Result:
+::
+
+    {
+      "jsonrpc": "2.0",
+      "id": 74,
+      "result": "0x3"
+    }
+
+
+- 查询当前块高度。
+
+Request:
+::
+
+    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}' 127.0.0.1:1337 | jq
+
+
+Result:
+::
+
+    {
+      "jsonrpc": "2.0",
+      "id": 83,
+      "result": "0x8"
+    }
+
+返回块高度，表示节点已经开始正常出块。
+
+更多API（如合约调用、交易查询）请参见 RPC调用_。
+
+.. _RPC调用: rpc.html

@@ -15,18 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::net::SocketAddr;
-use std::{io, thread};
-use std::sync::mpsc::Sender;
+use citaprotocol::{CitaProto, CitaRequest, CitaResponse};
+
+use config::NetConfig;
 
 use futures::{BoxFuture, Future};
 use futures::future::result;
+use msghandle::net_msg_handler;
+use std::{io, thread};
+use std::net::SocketAddr;
+use std::sync::mpsc::Sender;
 use tokio_proto::TcpServer;
 use tokio_service::Service;
-
-use config::NetConfig;
-use citaprotocol::{CitaProto, CitaRequest, CitaResponse};
-use msghandle::net_msg_handler;
 
 #[derive(Clone)]
 pub struct MySender {
@@ -66,10 +66,6 @@ pub fn start_server(config: &NetConfig, mysender: MySender) {
 
     thread::spawn(move || {
                       info!("start server on {:?}!", addr);
-                      TcpServer::new(CitaProto, addr).serve(move || {
-                                                                Ok(Server {
-                                                                       mysender: mysender.clone(),
-                                                                   })
-                                                            });
+                      TcpServer::new(CitaProto, addr).serve(move || Ok(Server { mysender: mysender.clone() }));
                   });
 }

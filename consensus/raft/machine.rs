@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
-
-use serde_json::Value;
-use serde_json;
+use self::Message::*;
 // Raft's major components. See comments in code on usage and things.
 use libraft::state_machine;
-use self::Message::*;
+use serde_json;
+
+use serde_json::Value;
+use std::collections::HashMap;
 
 /// This is the defined message type for this example. For the sake of simplicity we don't go very
 /// far with this. In a "real" application you may want to more distinctly distinguish between

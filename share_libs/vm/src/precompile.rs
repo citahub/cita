@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::blockchain::Transaction;
 use libproto::Call as CallTransaction;
-use util::hash::H256;
+use libproto::blockchain::Transaction;
+use util::H256;
 
 pub struct Precompile<T> {
     f: Box<Fn(Transaction, u64, &T) -> H256 + Send>,
@@ -25,15 +25,11 @@ pub struct Precompile<T> {
 }
 
 impl<T> Precompile<T>
-    where T: Send + 'static
+where
+    T: Send + 'static,
 {
-    pub fn new(f: Box<Fn(Transaction, u64, &T) -> H256 + Send>,
-               call_f: Box<Fn(&CallTransaction, &T) -> Vec<u8> + Send>)
-               -> Self {
-        Precompile {
-            f: f,
-            call_f: call_f,
-        }
+    pub fn new(f: Box<Fn(Transaction, u64, &T) -> H256 + Send>, call_f: Box<Fn(&CallTransaction, &T) -> Vec<u8> + Send>) -> Self {
+        Precompile { f: f, call_f: call_f }
     }
 
     pub fn call(&mut self, tx: Transaction, height: u64, data: &T) -> H256 {

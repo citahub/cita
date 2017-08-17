@@ -36,10 +36,27 @@ test:
                { passed+=$$4; failed+=$$6; ignored+=$$8;  measured+=$$10; filter+=$$12; } \
          END   { printf "passed=%d; failed=%d; ignored=%d; measured=%d; filter=%d\n", passed, failed, ignored, measured, filter; }'
 	@echo "failed testcase:"
-	@grep '\.\.\. FAILED' target/test.log | true
+	@grep '\.\.\. FAILED' target/test.log ||true
 
 bench:
-	find . -iname Cargo.toml -not -path './share_libs/parity/*' |xargs -n 1 cargo bench  --manifest-path
+	-rm -f target/bench.log
+	find chain  consensus  devtools jsonrpc network share_libs tests              \
+          -name 'Cargo.toml'                                                      \
+          -not -path 'share_libs/parity/*'                                        \
+          -not -path 'consensus/raft/*'                                           \
+          -not -path 'consensus/capnp_nonblock/*'                                 \
+          -exec cargo bench --manifest-path {} 2>&1 \; |tee -a target/bench.log
+	@echo "################################################################################"
+	@echo "bench error:"
+	@grep -A 2  'error\[' target/bench.log || exit 0
+	@echo "################################################################################"
+	@echo "bench result:"
+	@grep '\.\.\. ' target/bench.log|grep -v 'ignored'|grep -v 'bench_execute_block' || exit 0
+	@grep -A 4 'libchain::chain::tests::bench_execute_block' target/bench.log || exit 0
+	grep -q 'error\[' target/bench.log; if [ $$? -eq 0 ] ; then exit 1; fi;
+
+fmt:
+	cargo fmt --all
 
 cov:
 	cargo cov test --all --no-fail-fast

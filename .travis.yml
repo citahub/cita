@@ -1,0 +1,22 @@
+language: rust
+cache:
+  cargo: true
+rust:
+  - nightly
+dist: trusty
+sudo: true
+jobs:
+  include:
+    - stage: build & test
+      script:
+        - |
+          apt-get update -q; sudo apt-get install --allow-change-held-packages libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  rabbitmq-server  google-perftools jq
+          /etc/init.d/rabbitmq-server restart
+          echo "1) clean"
+          make clean
+          echo "2) setup"
+          make setup
+          echo "3) build"
+          make debug
+          echo "4) unit test"
+          make test

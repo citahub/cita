@@ -9,4 +9,3 @@ serde_derive = "1.0"
 serde_json = "1.0"
 cita-crypto = { path = "../../share_libs/crypto" }
 util = {path = "../../share_libs/util"}
-serde_types = {path = "../../share_libs/serde_types"}

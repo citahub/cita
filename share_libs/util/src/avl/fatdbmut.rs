@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use hash::H256;
-use sha3::Hashable;
-use hashdb::{HashDB, DBValue};
 use super::{AVLDBMut, AVLMut};
+use H256;
+use hashable::Hashable;
+use hashdb::{HashDB, DBValue};
 
 /// A mutable `AVL` implementation which hashes keys and uses a generic `HashDB` backing database.
 /// Additionaly it stores inserted hash-key mappings for later retrieval.
@@ -54,7 +54,7 @@ impl<'db> FatDBMut<'db> {
     }
 
     fn to_aux_key(key: &[u8]) -> H256 {
-        key.sha3()
+        key.crypt_hash()
     }
 }
 
@@ -68,17 +68,18 @@ impl<'db> AVLMut for FatDBMut<'db> {
     }
 
     fn contains(&self, key: &[u8]) -> super::Result<bool> {
-        self.raw.contains(&key.sha3())
+        self.raw.contains(&key.crypt_hash())
     }
 
     fn get<'a, 'key>(&'a self, key: &'key [u8]) -> super::Result<Option<DBValue>>
-        where 'a: 'key
+    where
+        'a: 'key,
     {
-        self.raw.get(&key.sha3())
+        self.raw.get(&key.crypt_hash())
     }
 
     fn insert(&mut self, key: &[u8], value: &[u8]) -> super::Result<Option<DBValue>> {
-        let hash = key.sha3();
+        let hash = key.crypt_hash();
         let out = self.raw.insert(&hash, value)?;
         let db = self.raw.db_mut();
 
@@ -90,7 +91,7 @@ impl<'db> AVLMut for FatDBMut<'db> {
     }
 
     fn remove(&mut self, key: &[u8]) -> super::Result<Option<DBValue>> {
-        let hash = key.sha3();
+        let hash = key.crypt_hash();
         let out = self.raw.remove(&hash)?;
 
         // don't remove if it already exists.
@@ -115,6 +116,5 @@ fn fatdb_to_avl() {
         t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
     }
     let t = AVLDB::new(&memdb, &root).unwrap();
-    assert_eq!(t.get(&(&[0x01u8, 0x23]).sha3()).unwrap().unwrap(),
-               DBValue::from_slice(&[0x01u8, 0x23]));
+    assert_eq!(t.get(&(&[0x01u8, 0x23]).crypt_hash()).unwrap().unwrap(), DBValue::from_slice(&[0x01u8, 0x23]));
 }

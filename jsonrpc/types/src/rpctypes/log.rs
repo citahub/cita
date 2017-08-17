@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use state::log_entry::{LogEntry, LocalizedLogEntry};
-use serde_types::{H256, H160, U256};
 use bytes::Bytes;
+use types::log_entry::{LogEntry, LocalizedLogEntry};
+use util::{H256, H160, U256};
 
 /// Log
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -29,22 +29,22 @@ pub struct Log {
     /// Data
     pub data: Bytes,
     /// Block Hash
-    #[serde(rename="blockHash")]
+    #[serde(rename = "blockHash")]
     pub block_hash: Option<H256>,
     /// Block Height
-    #[serde(rename="blockNumber")]
+    #[serde(rename = "blockNumber")]
     pub block_number: Option<U256>,
     /// Transaction Hash
-    #[serde(rename="transactionHash")]
+    #[serde(rename = "transactionHash")]
     pub transaction_hash: Option<H256>,
     /// Transaction Index
-    #[serde(rename="transactionIndex")]
+    #[serde(rename = "transactionIndex")]
     pub transaction_index: Option<U256>,
     /// Log Index in Block
-    #[serde(rename="logIndex")]
+    #[serde(rename = "logIndex")]
     pub log_index: Option<U256>,
     /// Log Index in Transaction
-    #[serde(rename="transactionLogIndex")]
+    #[serde(rename = "transactionLogIndex")]
     pub transaction_log_index: Option<U256>,
 }
 
@@ -82,9 +82,9 @@ impl From<LogEntry> for Log {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use serde_json;
     use std::str::FromStr;
-    use super::*;
 
     #[test]
     fn log_serialization() {

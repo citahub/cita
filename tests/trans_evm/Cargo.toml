@@ -17,9 +17,8 @@ util = { path = "../../share_libs/util" }
 dotenv = "0.10.0"
 uuid = { version = "0.4", features = ["v4"] }
 hyper =  "0.10.7"
-stainless = "0.1.11"
 log = "0.3.0"
 cita_log = { path = "../../share_libs/cita_log" }
-serde_types = { path = "../../share_libs/serde_types" }
 jsonrpc_types = { path = "../../jsonrpc/types" }
+rustc-hex = "1.0"
 

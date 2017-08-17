@@ -15,6 +15,7 @@ def make_json():
     is_test = sys.argv[5]=="true"
     block_tx_limit = int(sys.argv[6])
     tx_filter_size = int(sys.argv[7])
+    tx_pool_size = int(sys.argv[8])
     secret_path = os.path.join(path, "privkey")
     secret_key = open(secret_path, "r")
     signer = secret_key.read()
@@ -26,7 +27,7 @@ def make_json():
         authorities.append(authority.strip('\n'))
 
     params = dict(authorities=authorities, duration=duration, is_test=is_test, signer=signer,
-                    block_tx_limit=block_tx_limit, tx_filter_size=tx_filter_size)
+                    block_tx_limit=block_tx_limit, tx_filter_size=tx_filter_size, tx_pool_size=tx_pool_size)
     name =  sys.argv[2]
     if name == "tendermint":
         tendermint = dict(params=params)

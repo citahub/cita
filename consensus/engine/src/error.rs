@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use util::Address;
 use crypto::Signature;
 use std::fmt;
+use util::Address;
 
 #[derive(Debug)]
 pub enum EngineError {
@@ -31,7 +31,7 @@ pub enum EngineError {
     /// Message was not expected.
     UnexpectedMessage,
     VoteMsgDelay(usize),
-
+    VoteMsgForth(usize),
 }
 
 impl fmt::Display for EngineError {
@@ -47,6 +47,7 @@ impl fmt::Display for EngineError {
             NotAboveThreshold(vote) => format!("Vote is not above threshold: {}", vote),
             UnexpectedMessage => "This Engine should not be fed messages.".into(),
             VoteMsgDelay(height) => format!("The vote message is delayed and missed the current height:{}", height),
+            VoteMsgForth(height) => format!("The vote message is fulture height :{}", height),
         };
         f.write_fmt(format_args!("Engine error ({})", msg))
     }

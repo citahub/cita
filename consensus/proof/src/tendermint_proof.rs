@@ -15,16 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use serde_types::hash::{H520, H256, Address};
-use util::sha3::Hashable;
-use libproto::blockchain::{Proof, ProofType};
 use bincode::{serialize, deserialize, Infinite};
+use crypto::{Signature, recover, pubkey_to_address};
+use libproto::blockchain::{Proof, ProofType};
+use util::{H520, H256, Address};
+use std::collections::HashMap;
+use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::usize::MAX;
-use std::collections::HashMap;
-use crypto::{Signature, recover, pubkey_to_address};
-use std::env;
+use util::Hashable;
 
 pub const DATA_PATH: &'static str = "DATA_PATH";
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -44,11 +44,7 @@ pub struct TendermintProof {
 }
 
 impl TendermintProof {
-    pub fn new(height: usize,
-               round: usize,
-               proposal: H256,
-               commits: HashMap<Address, H520>)
-               -> TendermintProof {
+    pub fn new(height: usize, round: usize, proposal: H256, commits: HashMap<Address, H520>) -> TendermintProof {
         TendermintProof {
             height: height,
             round: round,
@@ -67,8 +63,7 @@ impl TendermintProof {
     }
 
     pub fn store(&self) {
-        let proof_path = env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) +
-                         "/proof.bin";
+        let proof_path = env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/proof.bin";
         let mut file = File::create(&proof_path).unwrap();
         let encoded_proof: Vec<u8> = serialize(&self, Infinite).unwrap();
         file.write_all(&encoded_proof).unwrap();
@@ -98,50 +93,40 @@ impl TendermintProof {
     }
 
     pub fn check(&self, h: usize, authorities: &[Address]) -> bool {
-        if self.round == MAX {
+        if h == 0 {
             return true;
         }
         if h != self.height {
             return false;
         }
-        for (sender, sig) in &self.commits {
-            if authorities.contains(sender) {
-                let msg = serialize(&(h,
-                                      self.round,
-                                      Step::Precommit,
-                                      sender,
-                                      Some(self.proposal.clone())),
-                                    Infinite)
-                        .unwrap();
-                if let Ok(pubkey) = recover(&Signature(sig.0.into()), &msg.sha3().into()) {
-                    if pubkey_to_address(&pubkey) == sender.clone().into() {
-                        return true;
-                    }
-                }
-            }
+        if 2 * authorities.len() >= 3 * self.commits.len() {
+            return false;
         }
-        return false;
+        self.commits.iter().all(|(sender, sig)| {
+            if authorities.contains(sender) {
+                let msg = serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())), Infinite).unwrap();
+                if let Ok(pubkey) = recover(&Signature(sig.0.into()), &msg.crypt_hash().into()) {
+                    return pubkey_to_address(&pubkey) == sender.clone().into();
+                } 
+            }
+            false
+        })
     }
 
     pub fn simple_check(&self, h: usize) -> bool {
-        if self.round == MAX {
+        if h == 0 {
             return true;
         }
         if h != self.height {
             return false;
         }
-        for (sender, sig) in &self.commits {
-            let msg =
-                serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())),
-                          Infinite)
-                        .unwrap();
-            if let Ok(pubkey) = recover(&Signature(sig.0.into()), &msg.sha3().into()) {
-                if pubkey_to_address(&pubkey) == sender.clone().into() {
-                    return true;
-                }
-            }
-        }
-        return false;
+        self.commits.iter().all(|(sender, sig)| {
+            let msg = serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())), Infinite).unwrap();
+            if let Ok(pubkey) = recover(&Signature(sig.0.into()), &msg.crypt_hash().into()) {
+                return pubkey_to_address(&pubkey) == sender.clone().into();
+            } 
+            false
+        })
     }
 }
 

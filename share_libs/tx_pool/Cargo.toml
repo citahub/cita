@@ -7,3 +7,4 @@ authors = ["rink1969 <rink1969@cryptape.com>"]
 lru-cache = "0.1"
 libproto = { path = "../proto" }
 util = { path = "../util" }
+cita-crypto = { path = "../crypto" }

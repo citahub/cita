@@ -15,18 +15,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use parking_lot::RwLock;
 use byteorder::{BigEndian, ByteOrder};
-use std::net::SocketAddr;
-use std::time::Duration;
-use std::thread;
-use std::convert::AsRef;
-use std::sync::Arc;
-use std::io::prelude::*;
-use std::net::TcpStream;
 use config;
 use libproto::communication;
+use parking_lot::RwLock;
 use protobuf::Message;
+use std::convert::AsRef;
+use std::io::prelude::*;
+use std::net::SocketAddr;
+use std::net::TcpStream;
+use std::sync::Arc;
+use std::sync::mpsc::Receiver;
+use std::thread;
+use std::time::Duration;
 
 const TIMEOUT: u64 = 15;
 
@@ -46,10 +47,7 @@ impl Connection {
             let addr = addr.parse::<SocketAddr>().unwrap();
             peers_pair.push((id_card, addr, Arc::new(RwLock::new(None))));
         }
-        Connection {
-            id_card,
-            peers_pair,
-        }
+        Connection { id_card, peers_pair }
     }
 }
 
@@ -117,26 +115,21 @@ pub fn broadcast(con: &Connection, mut msg: communication::Message) {
         }
     }
 
-    info!("{:?} broadcast msg to nodes {:?} {:?}",
-          con.id_card,
-          operate,
-          peers);
+    info!("{:?} broadcast msg to nodes {:?} {:?}", con.id_card, operate, peers);
 }
 
 pub fn is_send(id_card: u32, origin: u32, operate: communication::OperateType) -> bool {
-    let mut is_ok = false;
-    if operate == communication::OperateType::BROADCAST {
-        is_ok = true;
-    } else if operate == communication::OperateType::SINGLE {
-        if id_card == origin {
-            is_ok = true;
-        }
-    } else if operate == communication::OperateType::SUBTRACT {
-        if origin != id_card {
-            is_ok = true;
-        }
-    }
-    is_ok
+    operate == communication::OperateType::BROADCAST || (operate == communication::OperateType::SINGLE && id_card == origin) || (operate == communication::OperateType::SUBTRACT && origin != id_card)
+}
+
+pub fn start_client(con: Arc<Connection>, rx: Receiver<communication::Message>) {
+    thread::spawn(move || {
+                      info!("start client!");
+                      loop {
+                          let msg = rx.recv().unwrap();
+                          broadcast(&con, msg);
+                      }
+                  });
 }
 
 #[cfg(test)]

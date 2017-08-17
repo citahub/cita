@@ -15,12 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use state::ids::BlockId;
-use serde_json;
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
-use serde::de::Visitor;
+use serde::de::{Visitor, Error};
 use std::fmt;
-use serde::de::Error;
+use types::ids::BlockId;
 
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Hash, Eq)]
@@ -53,9 +51,7 @@ impl Serialize for BlockNumber {
     {
         match *self {
             BlockNumber::Height(ref x) => serializer.serialize_str(&format!("0x{:x}", x)),
-            BlockNumber::Tag(ref tag) => {
-                serializer.serialize_str(serde_json::to_string(tag).unwrap().as_str())
-            }
+            BlockNumber::Tag(ref tag) => serializer.serialize_some(tag),
         }
     }
 }
@@ -91,9 +87,7 @@ impl<'a> Visitor<'a> for BlockNumberVisitor {
                     .map_err(|_| Error::custom("invalid block number"))
             }
             _ => {
-                value.parse::<u64>().map(BlockNumber::Height).map_err(|_| {
-                    Error::custom("invalid block number")
-                })
+                value.parse::<u64>().map(BlockNumber::Height).map_err(|_| Error::custom("invalid block number"))
             }
         }
     }
@@ -135,20 +129,14 @@ mod tests {
     fn block_height_deserialization() {
         let s3 = r#"[10, "latest"]"#;
         let deserialized3: Vec<BlockNumber> = serde_json::from_str(s3).unwrap();
-        assert_eq!(
-            deserialized3,
-            vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]
-        )
+        assert_eq!(deserialized3, vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)])
     }
 
     #[test]
     fn lower_hex_number_deserialization() {
         let s3 = r#"["0xA", "latest"]"#;
         let deserialized3: Vec<BlockNumber> = serde_json::from_str(s3).unwrap();
-        assert_eq!(
-            deserialized3,
-            vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]
-        )
+        assert_eq!(deserialized3, vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)])
     }
 
     #[test]
@@ -162,9 +150,6 @@ mod tests {
     fn decimal_number_deserialization() {
         let s3 = r#"["10", "latest"]"#;
         let deserialized3: Vec<BlockNumber> = serde_json::from_str(s3).unwrap();
-        assert_eq!(
-            deserialized3,
-            vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]
-        )
+        assert_eq!(deserialized3, vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)])
     }
 }

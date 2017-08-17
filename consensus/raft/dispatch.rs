@@ -17,10 +17,10 @@
 
 #![allow(unused_variables)]
 
-use std::sync::mpsc::Receiver;
 use libproto::*;
-use mio;
 use libraft::{NotifyMessage, Command, decode};
+use mio;
+use std::sync::mpsc::Receiver;
 
 pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, MsgClass)>) {
     let (id, cmd_id, content_ext) = rx.recv().unwrap();

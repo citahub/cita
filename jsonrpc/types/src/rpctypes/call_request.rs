@@ -15,18 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use serde_types::hash::Address;
 use bytes::Bytes;
+use util::Address;
 
 /// Call request
 #[derive(Debug, Default, PartialEq, Deserialize)]
 pub struct CallRequest {
-	/// From
-	pub from: Option<Address>,
-	/// To
-	pub to: Address,
-	/// Data
-	pub data: Option<Bytes>,
+    /// From
+    pub from: Option<Address>,
+    /// To
+    pub to: Address,
+    /// Data
+    pub data: Option<Bytes>,
 }
 
 #[cfg(test)]

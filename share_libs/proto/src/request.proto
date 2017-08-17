@@ -2,16 +2,6 @@ syntax = "proto3";
 
 import "blockchain.proto";
 
-message BlockParamsByHash {
-    bytes hash = 1;
-    bool include_txs = 2;
-}
-
-message BlockParamsByNumber {
-    uint64 height = 1;
-    bool include_txs = 2;
-}
-
 enum BlockTag {
     Latest = 0;
     Earliest = 1;
@@ -21,38 +11,29 @@ message Call {
     bytes from = 1;
     bytes to = 2;
     bytes data = 3;
-    oneof block_id {
-        BlockTag tag = 4;
-        uint64 height = 5;
-    }
+    string height = 4;
 }
 
 message Request {
     bytes request_id = 1;
     oneof req {
         bool block_number = 2;
-        BlockParamsByHash block_by_hash = 3;
-        BlockParamsByNumber block_by_height = 4;
+        string block_by_hash = 3;
+        string block_by_height = 4;
         bytes transaction = 5;
         uint64 height = 6;
         bool peercount = 7;
         Call call = 8;
         string filter = 9;
         bytes transaction_receipt = 10;
-        TransactionCount transaction_count = 11;
-        Code code = 12;
+        string transaction_count = 11;
+        string code = 12;
 
     }
 }
 
-message RpcBlock {
-    bytes block = 1;
-    bool include_txs = 2;
-    bytes hash = 3;
-}
-
 message FullTransaction {
-    Transaction transaction = 1;
+    SignedTransaction transaction = 1;
     uint64 block_number = 2;
     bytes block_hash = 3;
     uint32 index = 4;
@@ -62,7 +43,7 @@ message Response {
     bytes request_id = 1;
     oneof result {
         uint64 block_number = 2;
-        RpcBlock block = 3;
+        string block = 3;
         FullTransaction ts = 4;
         bool none = 5;
         uint32 peercount = 6;
@@ -74,19 +55,4 @@ message Response {
     }
 }
 
-message TransactionCount {
-    bytes address = 1;
-    oneof block_id {
-        BlockTag tag = 2;
-        uint64 height = 3;
-    }
-}
-
-message Code {
-    bytes address = 1;
-    oneof block_id {
-        BlockTag tag = 2;
-        uint64 height = 3;
-    }
-}
 

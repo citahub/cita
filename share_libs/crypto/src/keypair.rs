@@ -15,20 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::fmt;
-use secp256k1::key;
-use rustc_serialize::hex::ToHex;
 use super::{PrivKey, PubKey, Address, SECP256K1, Error};
-use serde_types::hash::H256;
-use sha3::*;
-use util::hash::{H256 as Hash256, H160 as Hash160};
+use rustc_serialize::hex::ToHex;
+use secp256k1::key;
+use std::fmt;
+use util::Hashable;
+use util::H160 as Hash160;
 
 pub fn pubkey_to_address(pubkey: &PubKey) -> Address {
-    let mut hash: H256 = H256::default();
-    unsafe {
-        sha3_256(hash.0.as_mut_ptr(), hash.0.len(), pubkey.0.as_ptr(), pubkey.0.len());
-    }
-    Address::from(Hash160::from(Hash256::from(hash)))
+    Address::from(Hash160::from(pubkey.crypt_hash()))
 }
 
 /// key pair
@@ -57,10 +52,7 @@ impl KeyPair {
         let mut pubkey = PubKey::default();
         pubkey.0.copy_from_slice(&serialized[1..65]);
 
-        let keypair = KeyPair {
-            privkey: privkey,
-            pubkey: pubkey,
-        };
+        let keypair = KeyPair { privkey: privkey, pubkey: pubkey };
 
         Ok(keypair)
     }
@@ -73,10 +65,7 @@ impl KeyPair {
         let mut pubkey = PubKey::default();
         pubkey.0.copy_from_slice(&serialized[1..65]);
 
-        KeyPair {
-            privkey: privkey,
-            pubkey: pubkey,
-        }
+        KeyPair { privkey: privkey, pubkey: pubkey }
     }
 
     pub fn privkey(&self) -> &PrivKey {
@@ -94,25 +83,20 @@ impl KeyPair {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
     use super::{KeyPair, PrivKey};
-    use util::hash::H256 as Hash256;
+    use std::str::FromStr;
+    use util::H256 as Hash256;
 
     #[test]
     fn from_privkey() {
-        let privkey =
-            PrivKey::from(Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
-                .unwrap());
+        let privkey = PrivKey::from(Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap());
         let _ = KeyPair::from_privkey(privkey).unwrap();
     }
 
     #[test]
     fn keypair_display() {
-        let expected =
-    "privkey:  a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65\npubkey:  8ce0db0b0359ffc5866ba61903cc2518c3675ef2cf380a7e54bde7ea20e6fa1ab45b7617346cd11b7610001ee6ae5b0155c41cad9527cbcdff44ec67848943a4\naddress:  5b073e9233944b5e729e46d618f0d8edf3d9c34a".to_owned();
-        let privkey =
-            PrivKey::from(Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
-                .unwrap());
+        let expected = "privkey:  a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65\npubkey:  8ce0db0b0359ffc5866ba61903cc2518c3675ef2cf380a7e54bde7ea20e6fa1ab45b7617346cd11b7610001ee6ae5b0155c41cad9527cbcdff44ec67848943a4\naddress:  5b073e9233944b5e729e46d618f0d8edf3d9c34a".to_owned();
+        let privkey = PrivKey::from(Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap());
         let kp = KeyPair::from_privkey(privkey).unwrap();
         assert_eq!(format!("{}", kp), expected);
     }

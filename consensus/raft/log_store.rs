@@ -15,9 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::{error, fmt, result};
+
 
 use libraft::*;
+use std::{error, fmt, result};
 
 /// This is a `Log` implementation that stores entries in a simple in-memory vector. Other data
 /// is stored in a struct. It is chiefly intended for testing.
@@ -96,11 +97,7 @@ impl Log for Store {
 
     fn latest_log_term(&self) -> result::Result<Term, Error> {
         let len = self.entries.len();
-        if len == 0 {
-            Ok(Term::from(0))
-        } else {
-            Ok(self.entries[len - 1].0)
-        }
+        if len == 0 { Ok(Term::from(0)) } else { Ok(self.entries[len - 1].0) }
     }
 
     fn entry(&self, index: LogIndex) -> result::Result<(Term, &[u8]), Error> {
@@ -108,10 +105,7 @@ impl Log for Store {
         Ok((term, bytes))
     }
 
-    fn append_entries(&mut self,
-                      from: LogIndex,
-                      entries: &[(Term, &[u8])])
-                      -> result::Result<(), Error> {
+    fn append_entries(&mut self, from: LogIndex, entries: &[(Term, &[u8])]) -> result::Result<(), Error> {
         assert!(self.latest_log_index().unwrap() + 1 >= from);
         self.entries.truncate((from - 1).as_u64() as usize);
         Ok(self.entries.extend(entries.iter().map(|&(term, command)| (term, command.to_vec()))))

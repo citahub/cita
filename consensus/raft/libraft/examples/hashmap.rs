@@ -32,8 +32,10 @@
 
 extern crate libraft; // <--- Kind of a big deal for this!
 extern crate env_logger;
-#[macro_use] extern crate log;
-#[macro_use] extern crate scoped_log;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate scoped_log;
 extern crate docopt;
 extern crate serde_json;
 extern crate rustc_serialize;
@@ -41,22 +43,17 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
-use std::net::{SocketAddr, ToSocketAddrs};
-use std::collections::HashMap;
+// A payload datatype. We're just using a simple enum. You can use whatever.
 
-use serde_json::Value;
+use Message::*;
 use docopt::Docopt;
 
 // Raft's major components. See comments in code on usage and things.
-use libraft::{
-    Server,
-    Client,
-    state_machine,
-    persistent_log,
-    ServerId,
-};
-// A payload datatype. We're just using a simple enum. You can use whatever.
-use Message::*;
+use libraft::{Server, Client, state_machine, persistent_log, ServerId};
+
+use serde_json::Value;
+use std::collections::HashMap;
+use std::net::{SocketAddr, ToSocketAddrs};
 
 // Using docopt we define the overall usage of the application.
 static USAGE: &'static str = "
@@ -87,7 +84,8 @@ Commands:
 
 Usage:
   hashmap get <key> (<node-address>)...
-  hashmap put <key> <new-value> (<node-address>)...
+  hashmap put \
+                              <key> <new-value> (<node-address>)...
   hashmap cas <key> <expected-value> <new-value> (<node-address>)...
   hashmap server <id> (<node-address>)...
   hashmap (-h | --help)
@@ -130,9 +128,7 @@ pub enum Message {
 /// Just a plain old boring "parse args and dispatch" call.
 fn main() {
     let _ = env_logger::init();
-    let args: Args = Docopt::new(USAGE)
-                            .and_then(|d| d.decode())
-                            .unwrap_or_else(|e| e.exit());
+    let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
     if args.cmd_server {
         server(&args);
     } else if args.cmd_get {
@@ -172,11 +168,10 @@ fn server(args: &Args) {
         node_id.push(i as u64 + 1);
     }
     // ...  And a list of peers.
-    let mut peers = node_id
-                    .iter()
-                    .zip(args.arg_node_address.iter())
-                    .map(|(&id, addr)| (ServerId::from(id), parse_addr(&addr)))
-                    .collect::<HashMap<_,_>>();
+    let mut peers = node_id.iter()
+                           .zip(args.arg_node_address.iter())
+                           .map(|(&id, addr)| (ServerId::from(id), parse_addr(&addr)))
+                           .collect::<HashMap<_, _>>();
     println!("peers:{:?}", peers);
 
     // The Raft Server will return an error if its ID is inside of its peer set. Don't do that.
@@ -195,9 +190,7 @@ fn get(args: &Args) {
     // Clients necessarily need to now the valid set of nodes which they can talk to.
     // This is both so they can try to talk to all the nodes if some are failing, and so that it
     // can verify that it's not being lead astray somehow in redirections on leadership changes.
-    let cluster = args.arg_node_address.iter()
-        .map(|v| parse_addr(&v))
-        .collect();
+    let cluster = args.arg_node_address.iter().map(|v| parse_addr(&v)).collect();
 
     // Clients can be stored and reused, or used once and discarded.
     // There is very small overhead in connecting a new client to a cluster as it must discover and
@@ -221,9 +214,7 @@ fn get(args: &Args) {
 /// Sets a value for a given key in the provided Raft cluster.
 fn put(args: &Args) {
     // Same as above.
-    let cluster = args.arg_node_address.iter()
-        .map(|v| parse_addr(&v))
-        .collect();
+    let cluster = args.arg_node_address.iter().map(|v| parse_addr(&v)).collect();
 
     let mut client = Client::new(cluster);
 
@@ -243,9 +234,7 @@ fn put(args: &Args) {
 /// expected.
 fn cas(args: &Args) {
     // Same as above.
-    let cluster = args.arg_node_address.iter()
-        .map(|v| parse_addr(&v))
-        .collect();
+    let cluster = args.arg_node_address.iter().map(|v| parse_addr(&v)).collect();
 
     let mut client = Client::new(cluster);
 
@@ -267,16 +256,13 @@ pub struct HashmapStateMachine {
 /// Implement anything you want... A `new()` is generally a great idea.
 impl HashmapStateMachine {
     pub fn new() -> HashmapStateMachine {
-        HashmapStateMachine {
-            map: HashMap::new(),
-        }
+        HashmapStateMachine { map: HashMap::new() }
     }
 }
 
 /// Implementing `state_machine::StateMachine` allows your application specific state machine to be
 /// used in Raft. Feel encouraged to base yours of one of ours in these examples.
 impl state_machine::StateMachine for HashmapStateMachine {
-
     /// `apply()` is called on when a client's `.propose()` is commited and reaches the state
     /// machine. At this point it is durable and is going to be applied on at least half the nodes
     /// within the next couple round trips.
@@ -291,11 +277,11 @@ impl state_machine::StateMachine for HashmapStateMachine {
             Get(key) => {
                 let old_value = &self.map.get(&key).map(|v| v.clone());
                 serde_json::to_string(old_value)
-            },
+            }
             Put(key, value) => {
                 let old_value = &self.map.insert(key, value);
                 serde_json::to_string(old_value)
-            },
+            }
             Cas(key, old_check, new) => {
                 if *self.map.get(&key).unwrap() == old_check {
                     let _ = self.map.insert(key, new);
@@ -303,7 +289,7 @@ impl state_machine::StateMachine for HashmapStateMachine {
                 } else {
                     serde_json::to_string(&false)
                 }
-            },
+            }
         };
 
         // Respond.
@@ -324,7 +310,7 @@ impl state_machine::StateMachine for HashmapStateMachine {
             Get(key) => {
                 let old_value = &self.map.get(&key).map(|v| v.clone());
                 serde_json::to_string(old_value)
-            },
+            }
             _ => panic!("Can't do mutating requests in query"),
         };
 
@@ -333,9 +319,7 @@ impl state_machine::StateMachine for HashmapStateMachine {
     }
 
     fn snapshot(&self) -> Vec<u8> {
-        serde_json::to_string(&self.map)
-            .unwrap()
-            .into_bytes()
+        serde_json::to_string(&self.map).unwrap().into_bytes()
     }
 
     fn restore_snapshot(&mut self, snapshot_value: Vec<u8>) {

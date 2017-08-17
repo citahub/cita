@@ -141,12 +141,12 @@ mod server;
 mod state;
 mod cmd;
 
+pub use client::Client;
+pub use cmd::{Command, encode, decode};
+pub use persistent_log::Log;
+pub use server::NotifyMessage;
 pub use server::Server;
 pub use state_machine::StateMachine;
-pub use persistent_log::Log;
-pub use client::Client;
-pub use server::NotifyMessage;
-pub use cmd::{Command, encode, decode};
 
 use std::{io, net, ops, fmt};
 
@@ -258,7 +258,7 @@ impl From<u64> for LogIndex {
     }
 }
 impl Into<u64> for LogIndex {
-   fn into(self) -> u64 {
+    fn into(self) -> u64 {
         self.0
     }
 }

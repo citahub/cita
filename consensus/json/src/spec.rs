@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::io::Read;
+use super::Engine;
 use serde_json;
 use serde_json::Error;
-use super::Engine;
+use std::io::Read;
 
 /// Spec deserialization.
 #[derive(Debug, PartialEq, Deserialize)]
@@ -33,7 +33,8 @@ pub struct Spec {
 impl Spec {
     /// Loads test from json.
     pub fn load<R>(reader: R) -> Result<Self, Error>
-        where R: Read
+    where
+        R: Read,
     {
         serde_json::from_reader(reader)
     }
@@ -42,22 +43,22 @@ impl Spec {
 
 #[cfg(test)]
 mod tests {
-    use serde_json;
     use super::Spec;
+    use serde_json;
 
     #[test]
     fn poa_spec_deserialization() {
         let s = r#"{
-            "name": "TestTendermint",
+            "name": "TestPOA",
             "engine": {
-                "Tendermint": {
+                "AuthorityRound": {
                     "params": {
-                        "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
-                        "duration": 3,
-                        "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
-			"block_tx_limit": 300,
-			"tx_filter_size": 100000,
-                        "is_test": true
+                        "authorities": [
+                            "0x5b073e9233944b5e729e46d618f0d8edf3d9c34a",
+                            "0x9cce34f7ab185c7aba1b7c8140d620b4bda941d6"
+                        ],
+                        "duration": 3000,
+                        "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
                     }
                 }
             }
@@ -75,10 +76,10 @@ mod tests {
                         "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
                         "duration": 3,
                         "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
-			"block_tx_limit": 300,
-			"tx_filter_size": 100000,
+			            "tx_pool_size": 0,
+			            "block_tx_limit": 300,
+			            "tx_filter_size": 100000,
                         "is_test": true
-
                     }
                 }
             }

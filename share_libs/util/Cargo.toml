@@ -2,30 +2,41 @@
 name = "util"
 version = "0.6.0"
 authors = ["zhangsoledad <787953403@qq.com>"]
+build = "build.rs"
 
 [dependencies]
-libc = "0.2.20"
-rustc-serialize = "0.3"
-heapsize = { version = "0.3", features = ["unstable"] }
-serde = "1.0"
-serde_derive = "1.0"
-serde_json = "1.0"
-bincode = "0.8.0"
-rand = "0.3"
-sha3 = { path = "../parity/util/sha3" }
-tiny-keccak= "1.0"
+blake2b = { path = "../blake2b" }
 log = "0.3"
 env_logger = "0.4"
-time = "0.1"
-semver = "0.6.0"
-elastic-array = { git = "https://github.com/ethcore/elastic-array" }
-rocksdb = { git = "https://github.com/ethcore/rust-rocksdb" }
-regex = "0.1"
-parking_lot = "0.4"
+rustc-hex = "1.0"
+rand = "0.3.12"
+time = "0.1.34"
+rocksdb = { git = "https://github.com/paritytech/rust-rocksdb" }
+rust-crypto = "0.2.34"
+elastic-array = "0.9"
+rlp = { path = "../rlp" }
+heapsize = "0.4"
 itertools = "0.5"
-ethcore-bigint = "0.1.3"
-lru-cache = "0.1.0"
-ethcore-util = { path = "../parity/util" }
-rlp = { path = "../../share_libs/parity/util/rlp" }
-[dev-dependencies]
+sha3 = { path = "../sha3" }
+clippy = { version = "0.0.103", optional = true}
 devtools = { path = "../../devtools" }
+libc = "0.2.7"
+vergen = "0.1"
+target_info = "0.1"
+bigint = { path = "../bigint", features = ["heapsizeof"] }
+parking_lot = "0.4"
+ansi_term = "0.9"
+tiny-keccak= "1.0"
+ethcore-bloom-journal = { path = "../bloom" }
+regex = "0.2"
+lru-cache = "0.1.0"
+ethcore-logger = { path = "../logger" }
+
+[features]
+default = ["sha3hash"]
+sha3hash = []
+blake2bhash = []
+
+[build-dependencies]
+vergen = "*"
+rustc_version = "0.1.0"

@@ -18,23 +18,23 @@
 //! The `Client` allows users of the `raft` library to connect to remote `Server` instances and
 //! issue commands to be applied to the `StateMachine`.
 
+use ClientId;
+use RaftError;
+use Result;
+
+use bufstream::BufStream;
+use capnp::message::{Allocator, Builder, ReaderOptions};
+use capnp::serialize;
+use messages;
+
+use messages_capnp::{client_response, command_response};
 use std::collections::HashSet;
 use std::fmt;
 use std::io::Write;
-use std::time::Duration;
 use std::net::SocketAddr;
 use std::net::TcpStream;
 use std::str::FromStr;
-
-use bufstream::BufStream;
-use capnp::serialize;
-use capnp::message::{Allocator, Builder, ReaderOptions};
-
-use messages_capnp::{client_response, command_response};
-use messages;
-use ClientId;
-use Result;
-use RaftError;
+use std::time::Duration;
 
 const CLIENT_TIMEOUT: u64 = 1500;
 
@@ -78,7 +78,8 @@ impl Client {
     }
 
     fn send_message<A>(&mut self, message: &mut Builder<A>) -> Result<Vec<u8>>
-        where A: Allocator
+    where
+        A: Allocator,
     {
         let mut members = self.cluster.iter().cloned();
 
@@ -134,8 +135,7 @@ impl Client {
                         Ok(command_response::Which::Success(data)) => {
                             scoped_debug!("received response Success");
                             self.leader_connection = Some(connection);
-                            return data.map(Vec::from)
-                                       .map_err(|e| e.into()); // Exit the function.
+                            return data.map(Vec::from).map_err(|e| e.into()); // Exit the function.
                         }
                         Ok(command_response::Which::UnknownLeader(())) => {
                             scoped_debug!("received response UnknownLeader");
@@ -175,18 +175,18 @@ impl fmt::Debug for Client {
 mod tests {
     extern crate env_logger;
 
+
+    use {Client, messages, Result};
+    use bufstream::BufStream;
+    use capnp::message::ReaderOptions;
+    use capnp::serialize;
+    use messages_capnp::{connection_preamble, client_request};
     use std::collections::HashSet;
     use std::io::Write;
     use std::net::{TcpStream, TcpListener};
     use std::thread;
 
     use uuid::Uuid;
-    use capnp::serialize;
-    use capnp::message::ReaderOptions;
-    use bufstream::BufStream;
-
-    use {Client, messages, Result};
-    use messages_capnp::{connection_preamble, client_request};
 
     fn expect_preamble(connection: &mut TcpStream, client_id: Uuid) -> Result<bool> {
         let message = try!(serialize::read_message(connection, ReaderOptions::new()));

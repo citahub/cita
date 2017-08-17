@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use threadpool::*;
-use std::sync::mpsc::{Sender, Receiver};
-use std::sync::Arc;
+use super::Engine;
 use libproto::*;
 use pubsub::Pub;
-use super::Engine;
+use std::sync::Arc;
+use std::sync::mpsc::{Sender, Receiver};
+use threadpool::*;
 
 pub fn receive(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id: u32, msg: Vec<u8>) {
     let tx = tx.clone();

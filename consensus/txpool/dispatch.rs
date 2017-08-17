@@ -17,13 +17,13 @@
 
 #![allow(unused_variables)]
 
-use threadpool::*;
-use std::sync::mpsc::{Sender, Receiver};
+use candidate_pool::CandidatePool;
+use cmd::{Command, decode};
 use libproto;
 use libproto::*;
-use candidate_pool::CandidatePool;
 use pubsub::Pub;
-use cmd::{Command, decode};
+use std::sync::mpsc::{Sender, Receiver};
+use threadpool::*;
 
 pub fn extract(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id: u32, msg: Vec<u8>) {
     let tx = tx.clone();
@@ -45,10 +45,8 @@ pub fn wait(rx: &Receiver<(u32, u32, u32, MsgClass)>) -> (u64, Vec<u8>) {
     }
 }
 
-pub fn dispatch(candidate_pool: &mut CandidatePool,
-                _pub: &mut Pub,
-                rx: &Receiver<(u32, u32, u32, MsgClass)>) {
-    let (id, cmd_id, _origin,content_ext) = rx.recv().unwrap();
+pub fn dispatch(candidate_pool: &mut CandidatePool, _pub: &mut Pub, rx: &Receiver<(u32, u32, u32, MsgClass)>) {
+    let (id, cmd_id, _origin, content_ext) = rx.recv().unwrap();
     match content_ext {
         MsgClass::REQUEST(req) => {}
         MsgClass::RESPONSE(rep) => {}
@@ -68,9 +66,7 @@ pub fn dispatch(candidate_pool: &mut CandidatePool,
         }
         MsgClass::TXRESPONSE(content) => {}
         MsgClass::STATUS(status) => {
-            info!("received chain status:({:?},{:?})",
-                  status.height,
-                  status.hash);
+            info!("received chain status:({:?},{:?})", status.height, status.hash);
         }
         MsgClass::MSG(content) => {
             if id == submodules::CONSENSUS_CMD {
@@ -83,9 +79,7 @@ pub fn dispatch(candidate_pool: &mut CandidatePool,
                             candidate_pool.pub_block(&blk, _pub);
                             candidate_pool.reflect_situation(_pub);
                         } else {
-                            warn!("tx_pool's height:{:?}, received from consensus's height:{:?}",
-                                  candidate_pool.get_height(),
-                                  height);
+                            warn!("tx_pool's height:{:?}, received from consensus's height:{:?}", candidate_pool.get_height(), height);
                         }
                     }
                     Command::PoolSituation(_, _, _) => {

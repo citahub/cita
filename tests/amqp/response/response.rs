@@ -17,6 +17,7 @@
 
 extern crate pubsub;
 extern crate amqp;
+extern crate dotenv;
 
 use pubsub::{PubSub, Pub};
 use std::time::{Duration, SystemTime};
@@ -24,6 +25,7 @@ use std::thread;
 use std::env;
 use std::process::exit;
 use amqp::{Consumer, Channel, protocol, Basic};
+use dotenv::dotenv;
 
 pub struct MyHandler {
     push: Pub,
@@ -75,6 +77,7 @@ fn main() {
         println!("need only one argument : max msg count!");
         return;
     }
+    dotenv().ok();
     let max = args[1].parse::<u64>().unwrap();
     let mut pubsub = PubSub::new();
     let mut _pub = pubsub.get_pub();

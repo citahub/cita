@@ -1,16 +1,20 @@
 [package]
 name = "jsonrpc"
-version = "0.8.0"
+version = "0.6.0"
 authors = ["https://github.com/u2"]
 
 [dependencies]
 futures = "0.1"
 hyper = "0.10"
+ws = "0.7"
+threadpool = "1.4"
+num_cpus = "1.6.2"
+parking_lot = "0.4.4"
+
 libproto = { path = "../share_libs/proto" }
 protobuf = { version = "^1.0.0" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.3"
-sha3 = { path = "../share_libs/parity/util/sha3"}
 util = { path = "../share_libs/util"}
 serde = "1.0"
 serde_derive = "1.0"
@@ -26,10 +30,11 @@ jsonrpc_types = { path = "types" }
 dotenv = "0.10.0"
 transaction = { path = "../share_libs/transaction" }
 cita_log =  { path = "../share_libs/cita_log" }
+clap = "2"
 
 [[bin]]
 name = "jsonrpc"
-path = "src/bin/mod.rs"
+path = "src/main.rs"
 
 [dev-dependencies]
 pretty_env_logger = "0.1"

@@ -1,3 +1,0 @@
-[submodule "share_libs/parity"]
-	path = share_libs/parity
-	url = https://github.com/paritytech/parity

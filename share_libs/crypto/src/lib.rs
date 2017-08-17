@@ -18,16 +18,20 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate secp256k1;
-extern crate sha3;
 extern crate rustc_serialize;
 extern crate util;
 extern crate rand;
-extern crate serde_types;
 
 pub type PrivKey = H256;
 pub type PubKey = H512;
 pub type Message = H256;
 pub type Public = H512;
+
+pub const ADDR_BYTES_LEN: usize = 20;
+pub const PUBKEY_BYTES_LEN: usize = 64;
+pub const PRIVKEY_BYTES_LEN: usize = 32;
+pub const SIGNATURE_BYTES_LEN: usize = 65;
+pub const HASH_BYTES_LEN: usize = 32;
 
 mod error;
 mod keypair;
@@ -38,8 +42,7 @@ pub use self::error::*;
 pub use self::keypair::*;
 pub use self::signature::*;
 pub use self::signer::Signer;
-use serde_types::hash::Address;
-use serde_types::hash::{H256, H512};
+use util::{H256, H512, Address};
 
 
 lazy_static! {

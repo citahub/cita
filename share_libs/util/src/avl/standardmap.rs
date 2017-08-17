@@ -18,9 +18,9 @@
 //! Key-value datastore with a modified Merkle tree.
 extern crate rand;
 
+use H256;
 use bytes::*;
-use sha3::*;
-use hash::*;
+use hashable::*;
 
 /// Alphabet to use when creating words for insertion into avls.
 pub enum Alphabet {
@@ -63,29 +63,25 @@ impl StandardMap {
     /// `seed` is mutated pseudoramdonly and used.
     fn random_bytes(min_count: usize, journal_count: usize, seed: &mut H256) -> Vec<u8> {
         assert!(min_count + journal_count <= 32);
-        *seed = seed.sha3();
+        *seed = seed.crypt_hash();
         let r = min_count + (seed[31] as usize % (journal_count + 1));
         seed[0..r].to_vec()
     }
 
     /// Get a random value. Equal chance of being 1 byte as of 32. `seed` is mutated pseudoramdonly and used.
     fn random_value(seed: &mut H256) -> Bytes {
-        *seed = seed.sha3();
+        *seed = seed.crypt_hash();
         match seed[0] % 2 {
-            1 => vec![seed[31];1],
+            1 => vec![seed[31]; 1],
             _ => seed.to_vec(),
         }
     }
 
     /// Get a random word of, at least `min_count` bytes, at most `min_count` + `journal_count` bytes.
     /// Each byte is an item from `alphabet`. `seed` is mutated pseudoramdonly and used.
-    fn random_word(alphabet: &[u8],
-                   min_count: usize,
-                   journal_count: usize,
-                   seed: &mut H256)
-                   -> Vec<u8> {
+    fn random_word(alphabet: &[u8], min_count: usize, journal_count: usize, seed: &mut H256) -> Vec<u8> {
         assert!(min_count + journal_count <= 32);
-        *seed = seed.sha3();
+        *seed = seed.crypt_hash();
         let r = min_count + (seed[31] as usize % (journal_count + 1));
         let mut ret: Vec<u8> = Vec::with_capacity(r);
         for i in 0..r {

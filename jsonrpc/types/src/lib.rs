@@ -15,9 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(try_from)]
 #![feature(plugin)]
-#![cfg_attr(test, plugin(stainless))]
+//#![cfg_attr(test)]
 extern crate futures;
 extern crate hyper;
 extern crate libproto;
@@ -25,10 +24,10 @@ extern crate protobuf;
 extern crate uuid;
 #[macro_use]
 extern crate log;
-extern crate sha3;
 extern crate util;
 #[macro_use]
 extern crate serde_derive;
+extern crate bincode;
 extern crate serde_json;
 extern crate serde;
 extern crate rustc_serialize;
@@ -36,20 +35,21 @@ extern crate amqp;
 extern crate pubsub;
 extern crate time;
 extern crate proof;
-extern crate serde_types;
-extern crate state;
+extern crate common_types as types;
+
 
 mod id;
 mod params;
-mod error;
+pub mod error;
 pub mod bytes;
-pub mod rpc_request;
-pub mod rpc_response;
+pub mod request;
+pub mod response;
 pub mod rpctypes;
-
+pub mod method;
+pub use self::error::*;
 pub use self::id::*;
 pub use self::params::*;
-pub use self::error::RpcError;
+pub use self::request::RpcRequest;
 pub use serde_json::Value;
-pub use serde_json::value::to_value;
 pub use serde_json::to_string;
+pub use serde_json::value::to_value;

@@ -27,11 +27,11 @@ function cita_start() {
     node=node$1
     if [ ! -n "$2" ]; then
         echo "starting ${node}"
-        nohup bin/network					-c network.toml	     >${log_dir}/${node}.network    2>&1 &
+        nohup bin/network			    -c network.toml	     >${log_dir}/${node}.network    2>&1 &
         echo $! >> .pid
         nohup bin/consensus_tendermint	-c consensus.json	 >${log_dir}/${node}.consensus  2>&1 &
         echo $! >> .pid
-        nohup bin/jsonrpc --jsonrpc-port $((1337+${1}))		     >${log_dir}/${node}.jsonrpc    2>&1 &
+        nohup bin/jsonrpc --jsonrpc-port -c jsonrpc.json	 >${log_dir}/${node}.jsonrpc    2>&1 &
         echo $! >> .pid
         nohup bin/chain					-c genesis.json		 >${log_dir}/${node}.chain	    2>&1 &
         echo $! >> .pid
@@ -41,9 +41,9 @@ function cita_start() {
         echo $! >> .pid
         RUST_LOG=consensus_tendermint nohup bin/consensus_tendermint	-c consensus.json	 >${log_dir}/${node}.consensus  2>&1 &
         echo $! >> .pid
-        RUST_LOG=jsonrpc,jsonrpc_types,transaction=trace nohup bin/jsonrpc --jsonrpc-port $((1337+${1}))		     >${log_dir}/${node}.jsonrpc    2>&1 &
+        RUST_LOG=jsonrpc,jsonrpc_types,transaction=trace nohup bin/jsonrpc -c jsonrpc.json	 >${log_dir}/${node}.jsonrpc    2>&1 &
         echo $! >> .pid
-        RUST_LOG=chain,libchain,transaction=trace nohup bin/chain	-c genesis.json		 >${log_dir}/${node}.chain	    2>&1 &
+        RUST_LOG=chain,core,transaction=trace nohup bin/chain	-c genesis.json		 >${log_dir}/${node}.chain	    2>&1 &
         echo $! >> .pid
     fi
     cita_status $1

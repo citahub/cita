@@ -21,21 +21,17 @@ extern crate pubsub;
 extern crate amqp;
 extern crate dotenv;
 
+use amqp::{Consumer, Channel, protocol, Basic};
 use libproto::*;
+use libproto::request as reqlib;
 use protobuf::Message;
 use pubsub::PubSub;
-use amqp::{Consumer, Channel, protocol, Basic};
-use libproto::request as reqlib;
 
 #[derive(Default)]
 pub struct MyHandler {}
 
 impl Consumer for MyHandler {
-    fn handle_delivery(&mut self,
-                       channel: &mut Channel,
-                       deliver: protocol::basic::Deliver,
-                       _: protocol::basic::BasicProperties,
-                       _: Vec<u8>) {
+    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, _: Vec<u8>) {
         let _ = channel.basic_ack(deliver.delivery_tag, false);
         std::process::exit(0);
     }

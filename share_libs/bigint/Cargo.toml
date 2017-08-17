@@ -1,0 +1,25 @@
+[package]
+description = "Large fixed-size integers and hash function outputs"
+homepage = "http://parity.io"
+repository = "https://github.com/paritytech/parity"
+license = "MIT/Apache-2.0"
+name = "bigint"
+version = "3.0.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+build = "build.rs"
+
+[build-dependencies]
+rustc_version = "0.2"
+
+[dependencies]
+rustc-hex = "1.0"
+rand = "0.3.12"
+libc = "0.2"
+heapsize = { version = "0.4", optional = true }
+serde = "1.0"
+byteorder = "1.0"
+
+[features]
+x64asm_arithmetic=[]
+rust_arithmetic=[]
+heapsizeof = ["heapsize"]

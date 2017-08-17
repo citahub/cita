@@ -12,4 +12,3 @@ serde_json = "1.0"
 bincode = "0.8.0"
 util = {path = "../../share_libs/util"}
 rustc-serialize = "0.3"
-serde_types = { path = "../../share_libs/serde_types" }

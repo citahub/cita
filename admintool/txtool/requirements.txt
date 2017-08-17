@@ -1,0 +1,10 @@
+jsonrpcclient==2.4.2
+secp256k1==0.13.2
+py_solc==1.2.2
+pyping==0.0.5
+simplejson==3.11.1
+ethereum==2.0.4
+protobuf==3.3.0
+pathlib==1.0.1
+ecdsa
+pysha3>=1.0.2

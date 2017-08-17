@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use hash::H256;
-use sha3::Hashable;
-use hashdb::HashDB;
 use super::{AVLDB, AVL, AVLDBIterator, AVLItem, AVLIterator, Query};
+use H256;
+use hashable::Hashable;
+use hashdb::HashDB;
 
 /// A `AVL` implementation which hashes keys and uses a generic `HashDB` backing database.
 /// Additionaly it stores inserted hash-key mappings for later retrieval.
@@ -54,13 +54,14 @@ impl<'db> AVL for FatDB<'db> {
     }
 
     fn contains(&self, key: &[u8]) -> super::Result<bool> {
-        self.raw.contains(&key.sha3())
+        self.raw.contains(&key.crypt_hash())
     }
 
-    fn get_with<'a, 'key, Q: Query>(&'a self, key: &'key [u8], query: Q)
-       -> super::Result<Option<Q::Item>> where 'a: 'key
+    fn get_with<'a, 'key, Q: Query>(&'a self, key: &'key [u8], query: Q) -> super::Result<Option<Q::Item>>
+    where
+        'a: 'key,
     {
-        self.raw.get_with(&key.sha3(), query)
+        self.raw.get_with(&key.crypt_hash(), query)
     }
 }
 
@@ -82,7 +83,7 @@ impl<'db> FatDBIterator<'db> {
 
 impl<'db> AVLIterator for FatDBIterator<'db> {
     fn seek(&mut self, key: &[u8]) -> super::Result<()> {
-        self.avl_iterator.seek(&key.sha3())
+        self.avl_iterator.seek(&key.crypt_hash())
     }
 }
 
@@ -90,14 +91,13 @@ impl<'db> Iterator for FatDBIterator<'db> {
     type Item = AVLItem<'db>;
 
     fn next(&mut self) -> Option<Self::Item> {
-		self.avl_iterator.next()
-			.map(|res|
-				res.map(|(hash, value)| {
-					let aux_hash = hash.sha3();
-					(self.avl.db().get(&aux_hash).expect("Missing fatdb hash").to_vec(), value)
-				})
-			)
-	}
+        self.avl_iterator.next().map(|res| {
+                                         res.map(|(hash, value)| {
+                                                     let aux_hash = hash.crypt_hash();
+                                                     (self.avl.db().get(&aux_hash).expect("Missing fatdb hash").to_vec(), value)
+                                                 })
+                                     })
+    }
 }
 
 #[test]
@@ -113,8 +113,11 @@ fn fatdb_to_avl() {
         t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
     }
     let t = FatDB::new(&memdb, &root).unwrap();
-    assert_eq!(t.get(&[0x01u8, 0x23]).unwrap().unwrap(),
-               DBValue::from_slice(&[0x01u8, 0x23]));
-    assert_eq!(t.iter().unwrap().map(Result::unwrap).collect::<Vec<_>>(),
-               vec![(vec![0x01u8, 0x23], DBValue::from_slice(&[0x01u8, 0x23] as &[u8]))]);
+    assert_eq!(t.get(&[0x01u8, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0x01u8, 0x23]));
+    assert_eq!(
+        t.iter().unwrap().map(Result::unwrap).collect::<Vec<_>>(),
+        vec![
+            (vec![0x01u8, 0x23], DBValue::from_slice(&[0x01u8, 0x23] as &[u8])),
+        ]
+    );
 }

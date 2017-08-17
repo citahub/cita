@@ -15,12 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use hashdb::HashDB;
-use H256;
-use rlp::*;
+
 
 use super::{AVLError, Query};
 use super::node::*;
+use H256;
+use hashdb::HashDB;
+use rlp::*;
 
 /// AVL lookup helper object.
 pub struct Lookup<'a, Q: Query> {
@@ -46,7 +47,7 @@ impl<'a, Q: Query> Lookup<'a, Q> {
                     return Err(Box::new(match depth {
                                             0 => AVLError::InvalidStateRoot(hash),
                                             _ => AVLError::IncompleteDatabase(hash),
-                                        }))
+                                        }));
                 }
             };
 
@@ -61,7 +62,7 @@ impl<'a, Q: Query> Lookup<'a, Q> {
                         return Ok(match k == key {
                                       true => Some(self.query.decode(value)),
                                       false => None,
-                                  })
+                                  });
                     }
                     Node::Branch(_, k, children) => {
                         let idx = if key < k { 0 } else { 1 };
@@ -73,9 +74,9 @@ impl<'a, Q: Query> Lookup<'a, Q> {
                 // check if new node data is inline or hash.
                 let r = Rlp::new(node_data);
                 if r.is_data() && r.size() == 32 {
-					hash = r.as_val();
-					break
-				}
+                    hash = r.as_val();
+                    break;
+                }
             }
         }
         Ok(None)

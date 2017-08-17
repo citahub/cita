@@ -14,18 +14,12 @@ message Proof {
 message BlockHeader {
     bytes prevhash = 1;
     uint64 timestamp = 2;
-    Proof proof = 3;
-    Commit commit = 4; // TODO: should be Commit?
-    uint64 height = 5;
-    Proof proof1 = 6;
-}
-
-message Commit {
-    bytes state_root = 1;
-    bytes transactions_root = 2;
-    bytes receipts_root = 3;
-    // TODO: 删除 gas_used
-    uint64 gas_used = 4;
+    uint64 height = 3;
+    bytes state_root = 4;
+    bytes transactions_root = 5;
+    bytes receipts_root = 6;
+    uint64 gas_used = 7;
+    Proof proof = 8;
 }
 
 message Status {
@@ -38,28 +32,25 @@ enum Crypto {
     SM2 = 1; 
 }
 
-// TOOD: 重构
-// TODO: Change from&to type
 message Transaction {
-    string from = 1;
-    string to = 2;
-    bytes content = 3; // Content
-    uint64 valid_until_block = 4;
-}
-
-message Content {
-    // TODO: nonce type
-    string nonce = 1;
-    uint64 gas = 2;
-    uint64 value = 3;
+    string to = 1;
+    string nonce = 2;
+    uint64 valid_until_block = 3;
     bytes data = 4;
 }
 
-message SignedTransaction {
-    bytes transaction = 1;
+message UnverifiedTransaction {
+    Transaction transaction = 1;
     bytes signature = 2;
     Crypto crypto = 3;
 }
+
+message SignedTransaction {
+    UnverifiedTransaction transaction_with_sig = 1;
+    bytes tx_hash = 2;  // SignedTransaction hash
+    bytes signer = 3; //public key
+}
+
 // data precompile API
 
 message TxResponse {
@@ -67,12 +58,8 @@ message TxResponse {
     bytes result = 2;
 }
 
-message Extra {}
-
 message BlockBody {
-    repeated Transaction transactions = 1;
-    // TODO: 移动到 header 中
-    Extra extra = 2;
+    repeated SignedTransaction transactions = 1;
 }
 
 message Block {
