@@ -28,11 +28,13 @@ pub mod filter;
 pub mod transaction;
 pub mod block;
 pub mod middle_modle;
+pub mod index;
 
 pub use self::block::*;
 pub use self::block_number::*;
 pub use self::call_request::*;
 pub use self::filter::*;
+pub use self::index::Index;
 pub use self::log::*;
 pub use self::middle_modle::*;
 pub use self::receipt::*;

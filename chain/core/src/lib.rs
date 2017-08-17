@@ -59,6 +59,9 @@ extern crate crossbeam;
 extern crate ethcore_io;
 extern crate cita_crypto;
 extern crate common_types as types;
+extern crate transient_hashmap;
+extern crate jsonrpc_types;
+extern crate bigint;
 
 pub mod state;
 pub mod account_db;
@@ -88,6 +91,7 @@ pub mod engines;
 pub mod native;
 
 pub mod libchain;
+pub mod filters;
 
 pub use factory::*;
 pub use types::*;

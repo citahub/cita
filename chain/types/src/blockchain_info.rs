@@ -17,6 +17,7 @@
 //! Blockhain info type definition
 
 use BlockNumber;
+use std::fmt;
 use util::{U256, H256};
 
 /// Information about the blockchain gathered together.
@@ -43,4 +44,11 @@ pub struct BlockChainInfo {
     pub first_block_hash: Option<H256>,
     /// Number of the first block on the best sequence.
     pub first_block_number: Option<BlockNumber>,
+}
+
+
+impl fmt::Display for BlockChainInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "#{}.{}", self.best_block_number, self.best_block_hash)
+    }
 }

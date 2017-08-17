@@ -15,34 +15,37 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::Error;
-use super::Value;
-
+use super::{Value, Error};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
-use serde::de::{Visitor, SeqAccess, MapAccess};
+use serde::de::{Visitor, SeqAccess, MapAccess, DeserializeOwned};
 use serde_json;
 use serde_json::value::from_value;
 use std::fmt;
 
+/// Request parameters
 #[derive(Debug, PartialEq, Clone)]
 pub enum Params {
+    /// Array of values
     Array(Vec<Value>),
+    /// Map of values
     Map(serde_json::Map<String, Value>),
+    /// No parameters
     None,
 }
 
 impl Params {
-    /// lazy parse into expected types.
+    /// Parse incoming `Params` into expected types.
     pub fn parse<D>(self) -> Result<D, Error>
     where
-        for<'de> D: Deserialize<'de>,
+        D: DeserializeOwned,
     {
         let value = match self {
             Params::Array(vec) => Value::Array(vec),
             Params::Map(map) => Value::Object(map),
             Params::None => Value::Null,
         };
-        from_value(value).map_err(|err| err.into())
+
+        from_value(value).map_err(|e| Error::invalid_params(format!("Invalid params: {}.", e)))
     }
 }
 
@@ -61,16 +64,16 @@ impl Serialize for Params {
 
 struct ParamsVisitor;
 
-impl<'de> Deserialize<'de> for Params {
+impl<'a> Deserialize<'a> for Params {
     fn deserialize<D>(deserializer: D) -> Result<Params, D::Error>
     where
-        D: Deserializer<'de>,
+        D: Deserializer<'a>,
     {
-        deserializer.deserialize_str(ParamsVisitor)
+        deserializer.deserialize_identifier(ParamsVisitor)
     }
 }
 
-impl<'de> Visitor<'de> for ParamsVisitor {
+impl<'a> Visitor<'a> for ParamsVisitor {
     type Value = Params;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -79,21 +82,22 @@ impl<'de> Visitor<'de> for ParamsVisitor {
 
     fn visit_seq<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
     where
-        V: SeqAccess<'de>,
+        V: SeqAccess<'a>,
     {
         let mut values = Vec::new();
+
         while let Some(value) = visitor.next_element()? {
             values.push(value);
         }
 
-        Ok(if values.is_empty() { Params::None } else { Params::Array(values) })
+        if values.is_empty() { Ok(Params::None) } else { Ok(Params::Array(values)) }
     }
 
     fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
     where
-        V: MapAccess<'de>,
+        V: MapAccess<'a>,
     {
-        let mut values = serde_json::Map::with_capacity(visitor.size_hint().unwrap());
+        let mut values = serde_json::Map::new();
 
         while let Some((key, value)) = visitor.next_entry()? {
             values.insert(key, value);
@@ -107,13 +111,13 @@ impl<'de> Visitor<'de> for ParamsVisitor {
 mod tests {
     use super::Params;
     use {Value, Error};
+    use rpctypes::Filter;
     use serde_json;
     use serde_json::Map;
     use serde_json::Number;
 
     #[test]
     fn params_deserialization() {
-
         let s = r#"[null, true, -1, 4, 2.3, "hello", [0], {"key": "value"}]"#;
         let deserialized: Params = serde_json::from_str(s).unwrap();
 
@@ -181,5 +185,28 @@ mod tests {
         assert_eq!(arr.get(0), Some(&Value::Object(map)));
         assert_eq!(arr.get(1), None);
         assert_eq!(arr.len(), 1);
+    }
+
+    #[test]
+    fn should_parse_filter() {
+        let s = r#"{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3",
+                                    "0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3",
+                                    "0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"]}"#;
+        let deserialized: Filter = serde_json::from_str(s).unwrap();
+        println!("deserialized = {:?}", deserialized);
+
+        let filter_str = r#"{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"]}"#;
+        let params = serde_json::from_str::<Params>(filter_str);
+        println!("param = {:?}", params);
+
+        let str_filter = serde_json::to_string(params.as_ref().unwrap());
+        println!("str_filter = {:?}", str_filter);
+
+        let filter: Filter = serde_json::from_str(filter_str).unwrap();
+        println!("filter struct parse = {:?}", filter);
+
+        //TODO
+        let filter: Filter = params.unwrap().parse().unwrap();
+        println!("params parse filter = {:?}", filter);
     }
 }

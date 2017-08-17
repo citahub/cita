@@ -24,7 +24,7 @@ use rpctypes::{BlockNumber, CallRequest, Filter, CountAndCode, BlockParamsByHash
 use rustc_serialize::hex::FromHex;
 use serde_json;
 use std::str::FromStr;
-use util::{H256, H160};
+use util::{H256, H160, U256};
 use util::clean_0x;
 use uuid::Uuid;
 
@@ -54,6 +54,13 @@ pub mod method {
     pub const ETH_CALL: &'static str = "eth_call";
     pub const ETH_GET_LOGS: &'static str = "eth_getLogs";
     pub const ETH_GET_TRANSACTION_RECEIPT: &'static str = "eth_getTransactionReceipt";
+
+    /// filter
+    pub const ETH_NEW_FILTER: &'static str = "eth_newFilter";
+    pub const ETH_NEW_BLOCK_FILTER: &'static str = "eth_newBlockFilter";
+    pub const ETH_UNINSTALL_FILTER: &'static str = "eth_uninstallFilter";
+    pub const ETH_GET_FILTER_CHANGES: &'static str = "eth_getFilterChanges";
+    pub const ETH_GET_FILTER_LOGS: &'static str = "eth_getFilterLogs";
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -120,6 +127,30 @@ impl MethodHandler {
                 let tx = self.send_transaction(rpc)?;
                 Ok(RpcReqType::TX(tx))
             }
+
+            method::ETH_NEW_FILTER => {
+                let new_filter = self.new_filter(rpc)?;
+                Ok(RpcReqType::REQ(new_filter))
+            }
+
+            method::ETH_NEW_BLOCK_FILTER => {
+                let new_block_filter = self.new_block_filter(rpc)?;
+                Ok(RpcReqType::REQ(new_block_filter))
+            }
+
+            method::ETH_UNINSTALL_FILTER => {
+                let uninstall_filter = self.uninstall_filter(rpc)?;
+                Ok(RpcReqType::REQ(uninstall_filter))
+            }
+            method::ETH_GET_FILTER_CHANGES => {
+                let changes = self.get_filter_changes(rpc)?;
+                Ok(RpcReqType::REQ(changes))
+            }
+            method::ETH_GET_FILTER_LOGS => {
+                let filter = self.get_filter_logs(rpc)?;
+                Ok(RpcReqType::REQ(filter))
+            }
+
             _ => Err(Error::method_not_found()),
         }
     }
@@ -260,6 +291,46 @@ impl MethodHandler {
         let mut request = self.create_request();
         let code = self.code_count(req_rpc)?;
         request.set_code(code);
+        Ok(request)
+    }
+
+    pub fn new_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        let mut request = self.create_request();
+        let params: (Filter,) = req_rpc.params.parse()?;
+        let filter = params.0;
+        request.set_new_filter(serde_json::to_string(&filter).unwrap());
+        Ok(request)
+    }
+
+    pub fn new_block_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        drop(req_rpc);
+        let mut request = self.create_request();
+        request.set_new_block_filter(true);
+        Ok(request)
+    }
+
+    pub fn uninstall_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        let mut request = self.create_request();
+        let params: (String,) = req_rpc.params.parse()?;
+        let filter_id = U256::from_str(clean_0x(&params.0)).unwrap();
+        // TODO
+        request.set_uninstall_filter(filter_id.into());
+        Ok(request)
+    }
+
+    pub fn get_filter_changes(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        let mut request = self.create_request();
+        let params: (String,) = req_rpc.params.parse()?;
+        let filter_id = U256::from_str(clean_0x(&params.0)).unwrap();
+        request.set_filter_changes(filter_id.into());
+        Ok(request)
+    }
+
+    pub fn get_filter_logs(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        let mut request = self.create_request();
+        let params: (String,) = req_rpc.params.parse()?;
+        let filter_id = U256::from_str(clean_0x(&params.0)).unwrap();
+        request.set_filter_logs(filter_id.into());
         Ok(request)
     }
 }

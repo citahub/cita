@@ -5,21 +5,22 @@ version = "0.6.0"
 authors = []
 
 [dependencies]
+dotenv = "0.10.0"
 threadpool = "1.3.2"
-libproto = {path = "../share_libs/proto"}
 protobuf = { version = "^1.0.0"}
 log = "0.3.0"
 amqp = "=0.0.20"
 clap = "2"
-pubsub = { path = "../share_libs/pubsub" }
-util = { path = "../share_libs/util" }
-dotenv = "0.10.0"
-cita_log = { path = "../share_libs/cita_log" }
-jsonrpc_types = { path = "../jsonrpc/types" }
-core = { path = "core" }
-common-types = { path = "types" }
 byteorder = { version = "1", default-features = false }
 serde_json = "1.0"
+libproto = {path = "../share_libs/proto"}
+pubsub = { path = "../share_libs/pubsub" }
+util = { path = "../share_libs/util" }
+cita_log = { path = "../share_libs/cita_log" }
+jsonrpc_types = { path = "../jsonrpc/types" }
+core = { path = "./core" }
+common-types = { path = "./types" }
+
 
 [[bin]]
 path = "main.rs"

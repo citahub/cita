@@ -15,8 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use super::Log;
 use rpctypes::block_number::BlockNumber;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serializer};
 use serde::de::DeserializeOwned;
 use serde::de::Error;
 use serde::ser::Serialize;
@@ -119,6 +120,32 @@ impl Into<EthFilter> for Filter {
         }
     }
 }
+
+
+/// Results of the filter_changes RPC.
+#[derive(Debug, PartialEq)]
+pub enum FilterChanges {
+    /// New logs.
+    Logs(Vec<Log>),
+    /// New hashes (block or transactions)
+    Hashes(Vec<H256>),
+    /// Empty result,
+    Empty,
+}
+
+impl Serialize for FilterChanges {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match *self {
+            FilterChanges::Logs(ref logs) => logs.serialize(s),
+            FilterChanges::Hashes(ref hashes) => hashes.serialize(s),
+            FilterChanges::Empty => (&[] as &[Value]).serialize(s),
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

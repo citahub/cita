@@ -53,6 +53,10 @@ pub enum ResponseBody {
     Logs(Vec<Log>),
     TranactionCount(U256),
     Code(Bytes),
+    FilterId(U256),
+    UninstallFliter(bool),
+    FilterChanges(Bytes),
+    FilterLog(Bytes),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -105,6 +109,10 @@ impl From<ResponseResult> for ResponseBody {
             ResponseResult::transaction_count(x) => ResponseBody::TranactionCount(U256::from(x)),
             ResponseResult::code(x) => ResponseBody::Code(Bytes::from(x)),
 
+            ResponseResult::filter_id(id) => ResponseBody::FilterId(U256::from(id)),
+            ResponseResult::uninstall_filter(x) => ResponseBody::UninstallFliter(x),
+            ResponseResult::filter_changes(x) => ResponseBody::FilterChanges(Bytes::from(x)),
+            ResponseResult::filter_logs(x) => ResponseBody::FilterLog(Bytes::from(x)),
         }
     }
 }

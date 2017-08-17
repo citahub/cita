@@ -28,7 +28,11 @@ message Request {
         bytes transaction_receipt = 10;
         string transaction_count = 11;
         string code = 12;
-
+        string new_filter = 13;
+        bool new_block_filter = 14;
+        uint64 uninstall_filter = 15;
+        uint64 filter_changes = 16;
+        uint64 filter_logs = 17;
     }
 }
 
@@ -52,6 +56,10 @@ message Response {
         string receipt = 9;
         uint64 transaction_count = 10;
         bytes code = 11;
+        uint64 filter_id = 12;
+        bool uninstall_filter = 13;
+        bytes filter_changes = 14;
+        bytes filter_logs = 15;
     }
 }
 
