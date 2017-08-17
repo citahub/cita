@@ -33,18 +33,6 @@ pub fn extract(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id: u3
                  });
 }
 
-pub fn wait(rx: &Receiver<(u32, u32, u32, MsgClass)>) -> (u64, Vec<u8>) {
-    info!("waiting chain's new status.");
-    loop {
-        let (id, cmd_id, _origin, content_ext) = rx.recv().unwrap();
-        if let MsgClass::STATUS(status) = content_ext {
-            if id == submodules::CHAIN {
-                return (status.height, status.hash);
-            }
-        }
-    }
-}
-
 pub fn dispatch(candidate_pool: &mut CandidatePool, _pub: &mut Pub, rx: &Receiver<(u32, u32, u32, MsgClass)>) {
     let (id, cmd_id, _origin, content_ext) = rx.recv().unwrap();
     match content_ext {
@@ -57,27 +45,25 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, _pub: &mut Pub, rx: &Receive
                 if block.get_header().get_height() < candidate_pool.get_height() {}
             }
         }
-        MsgClass::TX(tx) => {
+        MsgClass::TX(mut tx) => {
             if id == submodules::JSON_RPC {
-                candidate_pool.add_tx(&tx, _pub, false);
+                candidate_pool.add_tx(&mut tx, _pub, false);
             } else {
-                candidate_pool.add_tx(&tx, _pub, true);
+                candidate_pool.add_tx(&mut tx, _pub, true);
             }
         }
         MsgClass::TXRESPONSE(content) => {}
-        MsgClass::STATUS(status) => {
-            info!("received chain status:({:?},{:?})", status.height, status.hash);
-        }
+        MsgClass::STATUS(status) => {}
         MsgClass::MSG(content) => {
             if id == submodules::CONSENSUS_CMD {
-                //to do: consensus cmd.
                 match decode(&content) {
-                    Command::SpawnBlk(height) => {
+                    Command::SpawnBlk(height, hash) => {
                         if candidate_pool.meet_conditions(height) {
                             info!("recieved command spawn new blk.");
-                            let blk = candidate_pool.spawn_new_blk(height);
+                            let blk = candidate_pool.spawn_new_blk(height, hash);
                             candidate_pool.pub_block(&blk, _pub);
-                            candidate_pool.reflect_situation(_pub);
+                            let txs = blk.get_body().get_transactions();
+                            candidate_pool.update_txpool(txs);
                         } else {
                             warn!("tx_pool's height:{:?}, received from consensus's height:{:?}", candidate_pool.get_height(), height);
                         }

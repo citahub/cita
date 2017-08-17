@@ -31,6 +31,8 @@ extern crate bincode;
 extern crate pubsub;
 extern crate amqp;
 extern crate cita_log;
+extern crate engine;
+extern crate dotenv;
 
 mod candidate_pool;
 mod dispatch;
@@ -46,7 +48,6 @@ use std::sync::mpsc::Sender;
 use std::sync::mpsc::channel;
 use threadpool::ThreadPool;
 
-
 pub struct MyHandler {
     pool: ThreadPool,
     tx: Sender<(u32, u32, u32, MsgClass)>,
@@ -60,7 +61,6 @@ impl MyHandler {
 
 impl Consumer for MyHandler {
     fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, body: Vec<u8>) {
-        info!("handle delivery id {:?} payload {:?}", deliver.routing_key, body);
         dispatch::extract(&self.pool, &self.tx, key_to_id(deliver.routing_key.as_str()), body);
         let _ = channel.basic_ack(deliver.delivery_tag, false);
     }
@@ -68,6 +68,7 @@ impl Consumer for MyHandler {
 
 
 fn main() {
+    dotenv::dotenv().ok();
     // Always print backtrace on panic.
     ::std::env::set_var("RUST_BACKTRACE", "1");
     cita_log::format(LogLevelFilter::Info);
@@ -85,17 +86,10 @@ fn main() {
             "chain.status",
             "jsonrpc.new_tx",
         ],
-        MyHandler::new(pool, tx),
+        MyHandler::new(pool, tx)
     );
     let mut _pub = pubsub.get_pub();
-
-    let (height, hash) = dispatch::wait(&rx);
     let mut candidate_pool = CandidatePool::new(0);
-    info!("Initialize height: {:?}, hash: {:?}", height, hash);
-    candidate_pool.update_height(height);
-    candidate_pool.update_hash(hash);
-    candidate_pool.reflect_situation(&mut _pub);
-
     loop {
         dispatch::dispatch(&mut candidate_pool, &mut _pub, &rx);
     }

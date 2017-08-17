@@ -38,6 +38,8 @@ extern crate env_logger;
 extern crate scoped_log;
 extern crate pubsub;
 extern crate amqp;
+extern crate dotenv;
+extern crate cita_log;
 
 mod raft_server;
 mod machine;
@@ -50,6 +52,7 @@ use libproto::{parse_msg, MsgClass, key_to_id};
 use pubsub::PubSub;
 use raft_server::*;
 use std::sync::mpsc::{channel, Receiver, Sender};
+use log::LogLevelFilter;
 use std::thread;
 
 
@@ -101,14 +104,15 @@ impl Consumer for MyHandler {
 
 
 fn main() {
+    dotenv::dotenv().ok();
     // Always print backtrace on panic.
     ::std::env::set_var("RUST_BACKTRACE", "1");
-    env_logger::init().unwrap();
+    cita_log::format(LogLevelFilter::Info);
     let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
     info!("CITA:raft");
     let (tx, rx) = channel();
     let mut pubsub = PubSub::new();
-    pubsub.start_sub("consensus_cmd", vec!["consensus.status", "consensus.msg"], MyHandler::new(tx));
+    pubsub.start_sub("consensus_cmd", vec!["chain.status", "consensus.default"], MyHandler::new(tx));
     let mut _pub = pubsub.get_pub();
 
     let (mut server, mut event_loop) = server(&args);

@@ -250,8 +250,10 @@ where
         }
         if is_new_blk {
             // TO DO: Notify pool.
-            println!("3s timer, leader to spawn new blk.");
-            let msg = factory::create_msg(submodules::CONSENSUS_CMD, topics::DEFAULT, communication::MsgType::MSG, cmd::encode(&cmd::Command::SpawnBlk(self.consensus.get_height())));
+            let height = self.consensus.get_height();
+            let hash = self.consensus.prev_hash();
+            info!("leader to spawn new blk, height: {}.", height);
+            let msg = factory::create_msg(submodules::CONSENSUS_CMD, topics::DEFAULT, communication::MsgType::MSG, cmd::encode(&cmd::Command::SpawnBlk(height, hash)));
             if let Some(ref mut conn) = self.con {
                 conn.publish("consensus_cmd.default", msg.write_to_bytes().unwrap());
             } else {
