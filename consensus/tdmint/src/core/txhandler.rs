@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use amqp::{Consumer, Channel, protocol, Basic};
 use libproto::blockchain::SignedTransaction;
 use libproto::communication::{Message, MsgType};
 use libproto::key_to_id;
@@ -44,7 +43,7 @@ impl TxHandler {
             let content_msg = snappy::cita_decompress(content_msg);
             match msg.get_field_type() {
                 MsgType::TX => {
-                    let mut trans = parse_from_bytes::<SignedTransaction>(&content_msg).unwrap();
+                    let mut trans: SignedTransaction = parse_from_bytes::<SignedTransaction>(&content_msg).unwrap();
                     let ret = trans.recover();
                     tx.send((id, ret, trans)).unwrap();
                 }
@@ -52,12 +51,8 @@ impl TxHandler {
             };
         });
     }
-}
-
-impl Consumer for TxHandler {
-    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, body: Vec<u8>) {
+    pub fn handle(&mut self, key: String, body: Vec<u8>) {
         //trace!("************ handle delivery id {:?} {:?} ",deliver.routing_key,deliver.delivery_tag);
-        TxHandler::receive(&self.pool, &self.tx, key_to_id(&deliver.routing_key), body);
-        let _ = channel.basic_ack(deliver.delivery_tag, false);
+        TxHandler::receive(&self.pool, &self.tx, key_to_id(&key), body);
     }
 }

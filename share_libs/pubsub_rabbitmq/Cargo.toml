@@ -1,0 +1,7 @@
+[package]
+name = "pubsub_rabbitmq"
+version = "0.1.0"
+authors = ["rink1969 <rink1969@cryptape.com>"]
+
+[dependencies]
+amqp = "0.1"

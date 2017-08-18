@@ -50,13 +50,12 @@ use std::thread;
 
 mod core;
 use core::dispatchtx::{Dispatchtx, sub_new_tx};
-use core::mqsubpub::{MQWork, MyHandler};
 use core::spec::Spec;
 use core::tendermint::TenderMint;
 use core::votetime::WaitTimer;
 use cpuprofiler::PROFILER;
-use pubsub::PubSub;
-use std::rc::Rc;
+use libproto::{parse_msg, key_to_id};
+use pubsub::start_pubsub;
 use std::sync::Arc;
 
 const THREAD_POOL_NUM: usize = 10;
@@ -111,21 +110,20 @@ fn main() {
                                 });
 
     //mq pubsub module
+    let threadpool = threadpool::ThreadPool::new(THREAD_POOL_NUM);
     let (mq2main, main4mq) = channel();
-    let (main2mq, mq4main) = channel();
-
-    //Dispatchtx::sub_new_tx(mq2main.clone(),THREAD_POOL_NUM);
-
-    let mqthd = thread::spawn(move || {
-        let threadpool = threadpool::ThreadPool::new(THREAD_POOL_NUM);
-        let mut pubsub = PubSub::new();
-        let mut _pub = pubsub.get_pub();
-        let handler = MyHandler::new(threadpool, mq2main);
-        pubsub.start_sub("consensus", vec!["net.msg", "chain.status"], handler);
-        let inner_pub = Rc::new(_pub);
-        let mut work = MQWork::new(mq4main, inner_pub);
-        work.start();
-    });
+    let (tx_sub, rx_sub) = channel();
+    let (tx_pub, rx_pub) = channel();
+    start_pubsub("consensus", vec!["net.msg", "chain.status"], tx_sub, rx_pub);
+    thread::spawn(move || loop {
+                      let (key, body) = rx_sub.recv().unwrap();
+                      let tx = mq2main.clone();
+                      let pool = threadpool.clone();
+                      pool.execute(move || {
+                                       let (cmd_id, _, content) = parse_msg(body.as_slice());
+                                       tx.send((key_to_id(&key), cmd_id, content)).unwrap();
+                                   });
+                  });
 
     //main tendermint loop module
     let spec = Spec::new_test_tendermint(config_path);
@@ -133,7 +131,7 @@ fn main() {
     sub_new_tx(dispatch.clone(), tx_pool_thread_num);
     info!("main loop start **** ");
     let mainthd = thread::spawn(move || {
-                                    let mut engine = TenderMint::new(main2mq, main4mq, main2timer, main4timer, spec.params, dispatch);
+                                    let mut engine = TenderMint::new(tx_pub, main4mq, main2timer, main4timer, spec.params, dispatch);
                                     engine.start();
                                 });
 
@@ -144,5 +142,4 @@ fn main() {
 
     mainthd.join().unwrap();
     timethd.join().unwrap();
-    mqthd.join().unwrap();
 }

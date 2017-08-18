@@ -32,7 +32,6 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate rustc_serialize;
-extern crate amqp;
 extern crate pubsub;
 extern crate time;
 extern crate proof;
@@ -50,7 +49,6 @@ extern crate clap;
 
 pub mod http_handler;
 pub mod mq_hanlder;
-pub mod publisher;
 pub mod base_hanlder;
 pub mod ws_handler;
 pub mod config;
@@ -63,13 +61,12 @@ use dotenv::dotenv;
 use http_handler::RpcHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
-use libproto::TopicMessage;
 use log::LogLevelFilter;
 use parking_lot::{RwLock, Mutex};
-use pubsub::PubSub;
+use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::sync::mpsc::{channel, Sender, Receiver};
+use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 use ws_handler::WsFactory;
@@ -123,15 +120,14 @@ fn main() {
     }
 
     start_profile(&config.profile_config);
+
+    // init pubsub
+    let (tx_sub, rx_sub) = channel();
+    let (tx_pub, rx_pub) = channel();
+    start_pubsub("jsonrpc", vec!["*.rpc"], tx_sub, rx_pub);
+
     //mq
     let mut new_subscriber = mq_hanlder::MqHandler::new();
-    let mut pubsub = PubSub::new();
-    let (tx, rx): (Sender<TopicMessage>, Receiver<TopicMessage>) = channel();
-    let mut _pub = pubsub.get_pub();
-    let new_publisher = publisher::Publisher::new(rx);
-    thread::spawn(move || { new_publisher.run(&mut _pub); });
-
-    let mut thread_handlers = vec![];
 
     //http
     if config.http_config.enable {
@@ -141,8 +137,8 @@ fn main() {
         new_subscriber.set_http(http_tx_responses.clone(), http_responses.clone());
 
         let http_config = config.http_config.clone();
-        let sender_mq_http = tx.clone();
-        thread_handlers.push(thread::spawn(move || {
+        let sender_mq_http = tx_pub.clone();
+        thread::spawn(move || {
             let url = http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
             let arc_tx = Arc::new(Mutex::new(sender_mq_http));
             info!("Http Listening on {}", url);
@@ -155,7 +151,7 @@ fn main() {
                                                                   method_handler: method::MethodHandler,
                                                               },
                                                               http_config.thread_number);
-        }));
+        });
     }
 
     //ws
@@ -166,20 +162,19 @@ fn main() {
         new_subscriber.set_ws(ws_tx_responses.clone(), ws_responses.clone());
 
         let ws_config = config.ws_config.clone();
-        thread_handlers.push(thread::spawn(move || {
+        thread::spawn(move || {
             let url = ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
-            let factory = WsFactory::new(ws_tx_responses, ws_responses, tx, 0);
+            let factory = WsFactory::new(ws_tx_responses, ws_responses, tx_pub, 0);
             info!("WebSocket Listening on {}", url);
             let mut ws_build = ws::Builder::new();
             ws_build.with_settings(ws_config.into());
             let ws_server = ws_build.build(factory).unwrap();
             let _ = ws_server.listen(url);
-        }));
+        });
     }
 
-    pubsub.start_sub("jsonrpc", vec!["*.rpc"], new_subscriber);
-
-    for hander in thread_handlers {
-        let _ = hander.join();
+    loop {
+        let (key, msg) = rx_sub.recv().unwrap();
+        new_subscriber.handle(key, msg);
     }
 }

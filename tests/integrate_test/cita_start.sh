@@ -3,11 +3,15 @@
 #       ./cita_start.sh debug
 #!/bin/bash
 set +e
-debug=$1
+consensus=$1
+debug=$2
+if [ ! -n "$consensus" ]; then
+    consensus="tendermint"
+fi
 CUR_PATH=$(cd `dirname $0`; pwd)
 cd ${CUR_PATH}/../../admintool/
 ./setup.sh
-./admintool.sh
+./admintool.sh -n $consensus
 
 setup_node() {
     id=$1

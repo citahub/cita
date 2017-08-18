@@ -24,9 +24,10 @@ use hyper::uri::RequestUri::AbsolutePath;
 use jsonrpc_types::error::Error;
 use jsonrpc_types::method;
 use jsonrpc_types::response::{self as cita_response, RpcSuccess, RpcFailure};
-use libproto::{blockchain, request, TopicMessage};
+use libproto::{blockchain, request};
 use libproto::communication;
 use parking_lot::{RwLock, Mutex};
+use protobuf::Message;
 use serde_json;
 use std::cmp::Eq;
 use std::collections::HashMap;
@@ -43,7 +44,7 @@ use util::H256;
 impl BaseHandler for RpcHandler {}
 
 pub struct RpcHandler {
-    pub tx: Arc<Mutex<Sender<TopicMessage>>>,
+    pub tx: Arc<Mutex<Sender<(String, Vec<u8>)>>>,
     pub responses: Arc<RwLock<HashMap<Vec<u8>, request::Response>>>,
     pub tx_responses: Arc<RwLock<HashMap<H256, blockchain::TxResponse>>>,
     pub sleep_duration: usize,
@@ -118,7 +119,7 @@ impl RpcHandler {
     {
         {
             let tx = self.tx.clone();
-            tx.lock().send((topic, req.into())).unwrap();
+            tx.lock().send((topic, req.write_to_bytes().unwrap())).unwrap();
         }
         trace!("wait response {:?}", key);
         let mut timeout_count = 0;

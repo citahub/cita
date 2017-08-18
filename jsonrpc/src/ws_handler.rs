@@ -21,10 +21,10 @@ use jsonrpc_types::Id;
 use jsonrpc_types::method;
 use jsonrpc_types::request::Version;
 use jsonrpc_types::response::RpcFailure;
-use libproto::TopicMessage;
 use libproto::communication;
 use num_cpus;
 use parking_lot::Mutex;
+use protobuf::Message;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -39,12 +39,12 @@ pub struct WsFactory {
     tx_responses: Arc<Mutex<HashMap<H256, (ReqInfo, ws::Sender)>>>,
     responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>,
     thread_pool: Arc<Mutex<ThreadPool>>,
-    tx: Sender<TopicMessage>,
+    tx: Sender<(String, Vec<u8>)>,
 }
 
 
 impl WsFactory {
-    pub fn new(tx_responses: Arc<Mutex<HashMap<H256, (ReqInfo, ws::Sender)>>>, responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>, tx: Sender<TopicMessage>, thread_num: usize) -> WsFactory {
+    pub fn new(tx_responses: Arc<Mutex<HashMap<H256, (ReqInfo, ws::Sender)>>>, responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>, tx: Sender<(String, Vec<u8>)>, thread_num: usize) -> WsFactory {
         let mut thread_number: usize = 0 as usize;
         if thread_num == 0 {
             thread_number = num_cpus::get() * 2;
@@ -104,13 +104,13 @@ impl Handler for WsHandler {
                             method::RpcReqType::TX(tx_req) => {
                                 let hash = tx_req.crypt_hash();
                                 let data: communication::Message = tx_req.into();
-                                let _ = _self.tx.send((topic, data));
+                                let _ = _self.tx.send((topic, data.write_to_bytes().unwrap()));
                                 _self.tx_responses.lock().insert(hash, (req_info, _self.sender.clone()));
                             }
                             method::RpcReqType::REQ(_req) => {
                                 let key = _req.request_id.clone();
                                 let data: communication::Message = _req.into();
-                                let _ = _self.tx.send((topic, data));
+                                let _ = _self.tx.send((topic, data.write_to_bytes().unwrap()));
 
                                 _self.responses.lock().insert(key, (req_info, _self.sender.clone()));
                             }
@@ -144,7 +144,7 @@ pub struct WsHandler {
     thread_pool: Arc<Mutex<ThreadPool>>,
     method_handler: method::MethodHandler,
     sender: ws::Sender,
-    tx: Sender<TopicMessage>,
+    tx: Sender<(String, Vec<u8>)>,
 }
 
 
