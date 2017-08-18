@@ -1,20 +1,31 @@
-#![allow(unused_variables, unused_imports)]
-use super::{PollManager, PollFilter, PollId, limit_logs};
-use bigint::{H256, U256};
-use jsonrpc_types::rpctypes::{Filter, Log, BlockNumber, Index, FilterChanges};
-use libchain::chain::Chain;
-use std::collections::HashSet;
-use std::sync::Arc;
+// CITA
+// Copyright 2016-2017 Cryptape Technologies LLC.
 
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+use super::{PollFilter, PollId, limit_logs};
+use jsonrpc_types::rpctypes::{Filter, Log, Index, FilterChanges};
+use libchain::chain::Chain;
 use types::filter::Filter as EthcoreFilter;
 use types::ids::BlockId;
-use util::Mutex;
+use util::H256;
 
 
 pub trait EthFilter {
     fn new_filter(&self, filter: Filter) -> PollId;
     fn new_block_filter(&self) -> PollId;
-    fn new_pending_transaction_filter(&self) -> PollId;
     fn filter_changes(&self, index: Index) -> Option<FilterChanges>;
     fn filter_logs(&self, index: Index) -> Option<Vec<Log>>;
     fn uninstall_filter(&self, index: Index) -> bool;
@@ -37,15 +48,6 @@ impl EthFilter for Chain {
         id
     }
 
-    fn new_pending_transaction_filter(&self) -> PollId {
-        let polls = self.poll_filter();
-        let best_block = self.get_current_height();
-        let pending_transactions = vec![];
-        let id = polls.lock().create_poll(PollFilter::PendingTransaction(pending_transactions));
-        drop(polls);
-        id
-    }
-
     fn filter_changes(&self, index: Index) -> Option<FilterChanges> {
         let polls = self.poll_filter();
         let log = match polls.lock().poll_mut(&index.value()) {
@@ -62,9 +64,6 @@ impl EthFilter for Chain {
                     *block_number = current_number;
                     Some(FilterChanges::Hashes(hashes))
 
-                }
-                PollFilter::PendingTransaction(ref mut previous_hashes) => {
-                    Some(FilterChanges::Hashes(vec![]))
                 }
                 PollFilter::Logs(ref mut block_number, ref mut _previous_logs, ref filter) => {
                     // retrive the current block number

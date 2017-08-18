@@ -312,7 +312,7 @@ impl MethodHandler {
     pub fn uninstall_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let params: (String,) = req_rpc.params.parse()?;
-        let filter_id = U256::from_str(clean_0x(&params.0)).unwrap();
+        let filter_id = U256::from_str(clean_0x(&params.0)).map_err(|_| Error::invalid_params("param error"))?;
         // TODO
         request.set_uninstall_filter(filter_id.into());
         Ok(request)
@@ -321,7 +321,7 @@ impl MethodHandler {
     pub fn get_filter_changes(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let params: (String,) = req_rpc.params.parse()?;
-        let filter_id = U256::from_str(clean_0x(&params.0)).unwrap();
+        let filter_id = U256::from_str(clean_0x(&params.0)).map_err(|_| Error::invalid_params("param error"))?;
         request.set_filter_changes(filter_id.into());
         Ok(request)
     }
@@ -329,7 +329,7 @@ impl MethodHandler {
     pub fn get_filter_logs(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let params: (String,) = req_rpc.params.parse()?;
-        let filter_id = U256::from_str(clean_0x(&params.0)).unwrap();
+        let filter_id = U256::from_str(clean_0x(&params.0)).map_err(|_| Error::invalid_params("param error"))?;
         request.set_filter_logs(filter_id.into());
         Ok(request)
     }

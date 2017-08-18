@@ -392,7 +392,6 @@ dependencies = [
 name = "core"
 version = "0.1.0"
 dependencies = [
- "bigint 3.0.0",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bit-set 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bloomable 0.1.0",

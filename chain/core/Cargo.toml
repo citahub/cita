@@ -36,7 +36,6 @@ transient-hashmap = "0.4.0"
 ethcore-io = { path = "../../share_libs/io" }
 transaction = { path = "../../share_libs/transaction" }
 cita-crypto = { path = "../../share_libs/crypto" }
-bigint = { path = "../../share_libs/bigint" }
 
 protobuf = { version = "^1.0.0"}
 threadpool = "1.3.2"
