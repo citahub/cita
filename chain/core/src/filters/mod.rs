@@ -14,28 +14,9 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+pub mod poll_manager;
+pub mod poll_filter;
+pub mod eth_filter;
 
-//TODO: rpc types应该独立出来。和jsonrpc的抽象没有关系。
-
-extern crate serde;
-extern crate serde_json;
-
-pub mod receipt;
-pub mod log;
-pub mod block_number;
-pub mod call_request;
-pub mod filter;
-pub mod transaction;
-pub mod block;
-pub mod middle_modle;
-pub mod index;
-
-pub use self::block::*;
-pub use self::block_number::*;
-pub use self::call_request::*;
-pub use self::filter::*;
-pub use self::index::Index;
-pub use self::log::*;
-pub use self::middle_modle::*;
-pub use self::receipt::*;
-pub use self::transaction::*;
+pub use self::poll_filter::{PollFilter, limit_logs};
+pub use self::poll_manager::{PollManager, PollId};

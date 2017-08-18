@@ -18,13 +18,14 @@
 #![allow(unused_variables)]
 
 pub use byteorder::{BigEndian, ByteOrder};
+use core::filters::eth_filter::EthFilter;
 use core::libchain::call_request::CallRequest;
-pub use core::libchain::chain as cita_chain;
 pub use core::libchain::chain::*;
-use core::libchain::request::Request_oneof_req as Request;
+use jsonrpc_types::rpctypes;
 use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, CountAndCode, BlockNumber, BlockParamsByNumber, BlockParamsByHash, RpcBlock};
 use libproto;
 pub use libproto::*;
+pub use libproto::request::Request_oneof_req as Request;
 use pubsub::Pub;
 use serde_json;
 use std::sync::Arc;
@@ -195,6 +196,51 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let msg: communication::Message = response.into();
                     _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
 
+                }
+
+                Request::new_filter(new_filter) => {
+                    trace!("new_filter {:?}", new_filter);
+                    let new_filter: RpcFilter = serde_json::from_str(&new_filter).expect("Invalid param");
+                    trace!("new_filter {:?}", new_filter);
+                    response.set_filter_id(chain.new_filter(new_filter) as u64);
+                    let msg: communication::Message = response.into();
+                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                }
+
+                Request::new_block_filter(_) => {
+                    let block_filter = chain.new_block_filter();
+                    response.set_filter_id(block_filter as u64);
+                    let msg: communication::Message = response.into();
+                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                }
+
+                Request::uninstall_filter(filter_id) => {
+                    trace!("uninstall_filter's id is {:?}", filter_id);
+                    let index = rpctypes::Index(filter_id as usize);
+                    let b = chain.uninstall_filter(index);
+                    response.set_uninstall_filter(b);
+                    let msg: communication::Message = response.into();
+                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                }
+
+                Request::filter_changes(filter_id) => {
+                    trace!("filter_changes's id is {:?}", filter_id);
+                    let index = rpctypes::Index(filter_id as usize);
+                    let log = chain.filter_changes(index).unwrap();
+                    trace!("Log is: {:?}", log);
+                    response.set_filter_changes(serde_json::to_vec(&log).unwrap());
+                    let msg: communication::Message = response.into();
+                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                }
+
+                Request::filter_logs(filter_id) => {
+                    trace!("filter_log's id is {:?}", filter_id);
+                    let index = rpctypes::Index(filter_id as usize);
+                    let log = chain.filter_logs(index).unwrap_or(vec![]);
+                    trace!("Log is: {:?}", log);
+                    response.set_filter_logs(serde_json::to_vec(&log).unwrap());
+                    let msg: communication::Message = response.into();
+                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
                 }
 
                 _ => {}
