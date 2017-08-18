@@ -30,7 +30,7 @@ mod instrument;
 pub use error::*;
 pub use instrument::*;
 
-use libproto::blockchain::{Block, Transaction, Status};
+use libproto::blockchain::{Block, SignedTransaction, Status};
 use pubsub::Pub;
 use std::time::Duration;
 use util::H256;
@@ -47,7 +47,7 @@ pub trait Engine: Sync + Send {
 
     fn verify_block(&self, block: &Block) -> Result<(), EngineError>;
 
-    fn receive_new_transaction(&self, tx: &Transaction, _pub: &mut Pub, _origin: u32, from_broadcast: bool);
+    fn receive_new_transaction(&self, tx: &SignedTransaction, _pub: &mut Pub, _origin: u32, from_broadcast: bool);
 
     fn receive_new_block(&self, block: &Block, _pub: &mut Pub);
 
