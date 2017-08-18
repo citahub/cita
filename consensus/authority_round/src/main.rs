@@ -121,17 +121,7 @@ fn main() {
     let threadpool = threadpool::ThreadPool::new(2);
     let (tx, rx) = channel();
     let mut pubsub = PubSub::new();
-    pubsub.start_sub(
-        "consensus",
-        vec![
-            "net.tx",
-            "net.blk",
-            "jsonrpc.new_tx",
-            "net.msg",
-            "chain.status",
-        ],
-        MyHandler::new(threadpool, tx),
-    );
+    pubsub.start_sub("consensus", vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.status"], MyHandler::new(threadpool, tx));
     let mut _pub = pubsub.get_pub();
 
 
