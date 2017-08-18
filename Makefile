@@ -26,8 +26,7 @@ setup:
 	cp .env admintool/release/
 	sudo rabbitmqctl add_vhost dev                                  >/dev/null 2>&1 || echo "ok"
 	sudo rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"    >/dev/null 2>&1
-	git submodule init
-	git submodule update
+	cargo install --force --vers 0.9.0 rustfmt
 
 test:
 	$(CARGO) test --release --all --no-fail-fast |tee target/test.log

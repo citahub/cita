@@ -30,6 +30,11 @@ rust安装完成后，可以重新登录使环境变量生效，也可直接使�
    $ rustup toolchain list
    nightly-2017-08-03-x86_64-unknown-linux-gnu(default)
 
+安装rustfmt
+---------------------------
+::
+   cargo install --force --vers 0.9.0 rustfmt 
+
 安装Python
 ---------------------------
 
