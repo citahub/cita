@@ -450,7 +450,7 @@ macro_rules! impl_serde_for_bigint {
 
                 impl<'de> Visitor<'de> for HashVisitor {
                     type Value = $from;
-                    
+
                     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                         formatter.write_str("struct Hash")
                     }

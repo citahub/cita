@@ -17,8 +17,8 @@
 
 use super::{BlockTransaction, FullTransaction, TransactionHash};
 use super::RpcBlock;
-use libproto::blockchain::BlockHeader as ProtoBlockHeader;
 use libproto::blockchain::Block as ProtoBlock;
+use libproto::blockchain::BlockHeader as ProtoBlockHeader;
 use proof::CitaProof;
 use protobuf::core::parse_from_bytes;
 use util::H256;
@@ -34,7 +34,7 @@ pub struct BlockHeader {
     pub timestamp: u64,
     #[serde(rename = "prevHash")]
     pub prev_hash: H256,
-    pub height: U256,
+    pub number: U256,
     #[serde(rename = "stateRoot")]
     pub state_root: H256,
     #[serde(rename = "transactionsRoot")]
@@ -59,7 +59,7 @@ impl From<ProtoBlockHeader> for BlockHeader {
         BlockHeader {
             timestamp: proto_header.timestamp,
             prev_hash: H256::from(proto_header.get_prevhash()),
-            height: U256::from(proto_header.get_height()),
+            number: U256::from(proto_header.get_height()),
             state_root: H256::from(proto_header.get_state_root()),
             transactions_root: H256::from(proto_header.get_transactions_root()),
             receipts_root: H256::from(proto_header.get_receipts_root()),

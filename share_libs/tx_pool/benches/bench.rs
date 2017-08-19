@@ -23,71 +23,87 @@ extern crate libproto;
 extern crate util;
 
 use libproto::blockchain::{Transaction, UnverifiedTransaction, SignedTransaction};
+use std::time::SystemTime;
 use test::Bencher;
 use tx_pool::pool::*;
 use util::H256;
 
-
 #[bench]
 fn bench_base(b: &mut Bencher) {
+    let start = SystemTime::now();
     let mut tx = Transaction::new();
-    b.iter(|| for i in 0..10000 {
-               tx.set_data(format!("{}", i).as_bytes().to_vec());
-           });
+    for i in 0..10000 {
+        tx.set_data(format!("{}", i).as_bytes().to_vec());
+    }
+    let sys_time = SystemTime::now();
+    let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+    println!{"time: {:?}", diff};
+    b.iter(|| {});
 }
 
 #[bench]
 fn bench_enqueue(b: &mut Bencher) {
+    let start = SystemTime::now();
     let mut p = Pool::new(5000, 1000);
     let mut tx = Transaction::new();
     let mut uv_tx = UnverifiedTransaction::new();
     let mut signed_tx = SignedTransaction::new();
     let pv = H256::from_slice(&[20, 17]);
-    b.iter(|| for i in 0..10000 {
-               tx.set_data(format!("{}", i).as_bytes().to_vec());
-               uv_tx.set_transaction(tx.clone());
-               signed_tx.set_transaction_with_sig(uv_tx.clone());
-               signed_tx.sign(pv);
-               p.enqueue(signed_tx.clone());
-           });
+    for i in 0..10000 {
+        tx.set_data(format!("{}", i).as_bytes().to_vec());
+        uv_tx.set_transaction(tx.clone());
+        signed_tx.set_transaction_with_sig(uv_tx.clone());
+        signed_tx.sign(pv);
+        p.enqueue(signed_tx.clone());
+    }
+    let sys_time = SystemTime::now();
+    let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+    println!{"time: {:?}", diff};
+    b.iter(|| {});
 }
 
 #[bench]
 fn bench_package(b: &mut Bencher) {
+    let start = SystemTime::now();
     let mut p = Pool::new(5000, 1000);
     let mut tx = Transaction::new();
     let mut uv_tx = UnverifiedTransaction::new();
     let mut signed_tx = SignedTransaction::new();
     let pv = H256::from_slice(&[20, 17]);
-    b.iter(|| {
-        for i in 0..10000 {
-            tx.set_data(format!("{}", i).as_bytes().to_vec());
-            uv_tx.set_transaction(tx.clone());
-            signed_tx.set_transaction_with_sig(uv_tx.clone());
-            signed_tx.sign(pv);
-            p.enqueue(signed_tx.clone());
-        }
-        p.package(666);
-    });
+    for i in 0..10000 {
+        tx.set_data(format!("{}", i).as_bytes().to_vec());
+        uv_tx.set_transaction(tx.clone());
+        signed_tx.set_transaction_with_sig(uv_tx.clone());
+        signed_tx.sign(pv);
+        p.enqueue(signed_tx.clone());
+    }
+    p.package(666);
+    let sys_time = SystemTime::now();
+    let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+    println!{"time: {:?}", diff};
+    b.iter(|| {});
 }
 
 #[bench]
 fn bench_update(b: &mut Bencher) {
+    let start = SystemTime::now();
     let mut p = Pool::new(5000, 1000);
     let mut tx = Transaction::new();
     let mut uv_tx = UnverifiedTransaction::new();
     let mut signed_tx = SignedTransaction::new();
     let pv = H256::from_slice(&[20, 17]);
 
-    b.iter(|| {
-        for i in 0..10000 {
-            tx.set_data(format!("{}", i).as_bytes().to_vec());
-            uv_tx.set_transaction(tx.clone());
-            signed_tx.set_transaction_with_sig(uv_tx.clone());
-            signed_tx.sign(pv);
-            p.enqueue(signed_tx.clone());
-        }
-        let txs = p.package(666);
-        p.update(&txs);
-    });
+    for i in 0..10000 {
+        tx.set_data(format!("{}", i).as_bytes().to_vec());
+        uv_tx.set_transaction(tx.clone());
+        signed_tx.set_transaction_with_sig(uv_tx.clone());
+        signed_tx.sign(pv);
+        p.enqueue(signed_tx.clone());
+    }
+    let txs = p.package(666);
+    p.update(&txs);
+    let sys_time = SystemTime::now();
+    let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+    println!{"time: {:?}", diff};
+    b.iter(|| {});
 }

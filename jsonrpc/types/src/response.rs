@@ -26,9 +26,7 @@ use rpctypes::{Receipt, Log, RpcTransaction, Block, RpcBlock};
 use serde_json;
 use std::string::String;
 use std::vec::Vec;
-use util::H256;
-use util::H256 as EthH256;
-use util::U256;
+use util::{H256, U256};
 
 
 //TODO respone contain error
@@ -53,6 +51,10 @@ pub enum ResponseBody {
     Logs(Vec<Log>),
     TranactionCount(U256),
     Code(Bytes),
+    FilterId(U256),
+    UninstallFliter(bool),
+    FilterChanges(Bytes),
+    FilterLog(Bytes),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -74,7 +76,7 @@ pub struct RpcSuccess {
 impl From<ProtoTxResponse> for ResponseBody {
     fn from(transaction: ProtoTxResponse) -> Self {
         ResponseBody::TxResponse(TxResponse {
-                                     hash: EthH256::from(transaction.hash.as_slice()).into(),
+                                     hash: H256::from(transaction.hash.as_slice()).into(),
                                      status: String::from_utf8(transaction.result).unwrap(),
                                  })
     }
@@ -105,6 +107,10 @@ impl From<ResponseResult> for ResponseBody {
             ResponseResult::transaction_count(x) => ResponseBody::TranactionCount(U256::from(x)),
             ResponseResult::code(x) => ResponseBody::Code(Bytes::from(x)),
 
+            ResponseResult::filter_id(id) => ResponseBody::FilterId(U256::from(id)),
+            ResponseResult::uninstall_filter(x) => ResponseBody::UninstallFliter(x),
+            ResponseResult::filter_changes(x) => ResponseBody::FilterChanges(Bytes::from(x)),
+            ResponseResult::filter_logs(x) => ResponseBody::FilterLog(Bytes::from(x)),
         }
     }
 }

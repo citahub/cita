@@ -18,15 +18,15 @@
 #![allow(unused_variables)]
 
 pub use byteorder::{BigEndian, ByteOrder};
+use core::filters::eth_filter::EthFilter;
 use core::libchain::call_request::CallRequest;
-pub use core::libchain::chain as cita_chain;
 pub use core::libchain::chain::*;
-use core::libchain::request::Request_oneof_req as Request;
+use jsonrpc_types::rpctypes;
 use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, CountAndCode, BlockNumber, BlockParamsByNumber, BlockParamsByHash, RpcBlock};
 use libproto;
 pub use libproto::*;
 use protobuf::Message;
-use pubsub::Pub;
+pub use libproto::request::Request_oneof_req as Request;
 use serde_json;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -48,7 +48,7 @@ pub fn chain_pool(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id:
 }
 
 // TODO: RPC Errors
-pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>, _pub: &mut Pub) {
+pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>, ctx_pub: Sender<(String, Vec<u8>)>) {
     let (id, cmd_id, origin, content_ext) = rx.recv().unwrap();
     trace!("chain_result call {:?} {:?}", id, cmd_id);
     match content_ext {
@@ -62,7 +62,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let height = chain.get_current_height();
                     response.set_block_number(height);
                     let msg: communication::Message = response.into();
-                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::block_by_hash(rpc) => {
@@ -82,7 +82,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                         }
                     }
                     let msg: communication::Message = response.into();
-                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
 
                 }
 
@@ -92,7 +92,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let include_txs = block_height.include_txs;
                     match chain.block(block_height.block_id.into()) {
                         Some(block) => {
-                            //TODO: avoid to compute sha3
                             let rpc_block = RpcBlock::new(block.hash().to_vec(), include_txs, block.protobuf().write_to_bytes().unwrap());
                             //TODO，发生错误了，应该加错原因给rpc,通知客户
                             serde_json::to_string(&rpc_block)
@@ -104,7 +103,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                         }
                     }
                     let msg: communication::Message = response.into();
-                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
                 Request::transaction(hash) => {
                     match chain.full_transaction(H256::from_slice(&hash)) {
@@ -116,7 +115,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                         }
                     }
                     let msg: communication::Message = response.into();
-                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
                 Request::transaction_receipt(hash) => {
                     let tx_hash = H256::from_slice(&hash);
@@ -130,7 +129,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     }
 
                     let msg: communication::Message = response.into();
-                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::call(call) => {
@@ -140,7 +139,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let result = chain.cita_call(call_request, block_id.into());
                     response.set_call_result(result.unwrap_or_default());
                     let msg: communication::Message = response.into();
-                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::filter(encoded) => {
@@ -151,7 +150,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
                     response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
                     let msg: communication::Message = response.into();
-                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::transaction_count(tx_count) => {
@@ -168,7 +167,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                         }
                     };
                     let msg: communication::Message = response.into();
-                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
 
                 }
 
@@ -193,8 +192,53 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                         }
                     };
                     let msg: communication::Message = response.into();
-                    _pub.publish("chain.rpc", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
 
+                }
+
+                Request::new_filter(new_filter) => {
+                    trace!("new_filter {:?}", new_filter);
+                    let new_filter: RpcFilter = serde_json::from_str(&new_filter).expect("Invalid param");
+                    trace!("new_filter {:?}", new_filter);
+                    response.set_filter_id(chain.new_filter(new_filter) as u64);
+                    let msg: communication::Message = response.into();
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                }
+
+                Request::new_block_filter(_) => {
+                    let block_filter = chain.new_block_filter();
+                    response.set_filter_id(block_filter as u64);
+                    let msg: communication::Message = response.into();
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                }
+
+                Request::uninstall_filter(filter_id) => {
+                    trace!("uninstall_filter's id is {:?}", filter_id);
+                    let index = rpctypes::Index(filter_id as usize);
+                    let b = chain.uninstall_filter(index);
+                    response.set_uninstall_filter(b);
+                    let msg: communication::Message = response.into();
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                }
+
+                Request::filter_changes(filter_id) => {
+                    trace!("filter_changes's id is {:?}", filter_id);
+                    let index = rpctypes::Index(filter_id as usize);
+                    let log = chain.filter_changes(index).unwrap();
+                    trace!("Log is: {:?}", log);
+                    response.set_filter_changes(serde_json::to_vec(&log).unwrap());
+                    let msg: communication::Message = response.into();
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                }
+
+                Request::filter_logs(filter_id) => {
+                    trace!("filter_log's id is {:?}", filter_id);
+                    let index = rpctypes::Index(filter_id as usize);
+                    let log = chain.filter_logs(index).unwrap_or(vec![]);
+                    trace!("Log is: {:?}", log);
+                    response.set_filter_logs(serde_json::to_vec(&log).unwrap());
+                    let msg: communication::Message = response.into();
+                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 _ => {}
@@ -249,7 +293,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     BigEndian::write_u64(&mut wtr, start_height);
                     let msg = factory::create_msg_ex(submodules::CHAIN, topics::SYNC_BLK, communication::MsgType::MSG, communication::OperateType::SINGLE, origin, wtr);
                     trace!("-origin-{:?}---chain.sync---{:?}--", origin, communication::OperateType::SINGLE);
-                    _pub.publish("chain.sync", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.sync".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                     start_height += 1;
                     diff -= 1;
                 }
@@ -264,7 +308,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 if let Some(block) = chain.block(BlockId::Number(BigEndian::read_u64(&content))) {
                     let msg = factory::create_msg_ex(submodules::CHAIN, topics::NEW_BLK, communication::MsgType::BLOCK, communication::OperateType::SINGLE, origin, block.protobuf().write_to_bytes().unwrap());
                     trace!("-origin-{:?}---chain.blk---{:?}--", origin, communication::OperateType::SINGLE);
-                    _pub.publish("chain.blk", msg.write_to_bytes().unwrap());
+                    ctx_pub.send(("chain.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
             } else {
                 warn!("other content.");

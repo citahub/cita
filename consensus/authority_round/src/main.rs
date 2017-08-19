@@ -28,7 +28,6 @@ extern crate clap;
 extern crate tx_pool;
 extern crate cita_crypto as crypto;
 extern crate proof;
-extern crate amqp;
 extern crate pubsub;
 extern crate engine_json;
 extern crate engine;
@@ -39,39 +38,16 @@ extern crate dotenv;
 
 pub mod core;
 
-use amqp::{Consumer, Channel, protocol, Basic};
 use clap::App;
 use core::Spec;
 use core::handler;
 use cpuprofiler::PROFILER;
 use libproto::*;
 use log::LogLevelFilter;
-use pubsub::PubSub;
-use std::sync::mpsc::Sender;
+use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::{Duration, Instant};
-use threadpool::ThreadPool;
-
-
-pub struct MyHandler {
-    pool: ThreadPool,
-    tx: Sender<(u32, u32, u32, MsgClass)>,
-}
-
-impl MyHandler {
-    pub fn new(pool: ThreadPool, tx: Sender<(u32, u32, u32, MsgClass)>) -> Self {
-        MyHandler { pool: pool, tx: tx }
-    }
-}
-
-impl Consumer for MyHandler {
-    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, body: Vec<u8>) {
-        trace!("handle delivery id {:?} payload {:?}", deliver.routing_key, body);
-        handler::receive(&self.pool, &self.tx, key_to_id(&deliver.routing_key), body);
-        let _ = channel.basic_ack(deliver.delivery_tag, false);
-    }
-}
 
 fn main() {
     dotenv::dotenv().ok();
@@ -120,36 +96,30 @@ fn main() {
 
     let threadpool = threadpool::ThreadPool::new(2);
     let (tx, rx) = channel();
-    let mut pubsub = PubSub::new();
-    pubsub.start_sub(
-        "consensus",
-        vec![
-            "net.tx",
-            "net.blk",
-            "jsonrpc.new_tx",
-            "net.msg",
-            "chain.status",
-        ],
-        MyHandler::new(threadpool, tx),
-    );
-    let mut _pub = pubsub.get_pub();
-
-
+    let (tx_sub, rx_sub) = channel();
+    let (tx_pub, rx_pub) = channel();
+    start_pubsub("consensus", vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.status"], tx_sub, rx_pub);
+    thread::spawn(move || loop {
+                      let (key, body) = rx_sub.recv().unwrap();
+                      let tx = tx.clone();
+                      handler::receive(&threadpool, &tx, key_to_id(&key), body);
+                  });
     let spec = Spec::new_test_round(config_path);
     let engine = spec.engine;
     let ready = spec.rx;
 
     let process = engine.clone();
+    let tx_pub1 = tx_pub.clone();
     thread::spawn(move || loop {
                       let process = process.clone();
-                      handler::process(process, &rx, &mut _pub);
+                      handler::process(process, &rx, tx_pub1.clone());
                   });
 
-    let mut _pub1 = pubsub.get_pub();
     let seal = engine.clone();
     let dur = engine.duration();
     let mut old_height = 0;
     let mut new_height = 0;
+    let tx_pub = tx_pub.clone();
     thread::spawn(move || loop {
                       let seal = seal.clone();
                       trace!("seal worker lock!");
@@ -163,7 +133,7 @@ fn main() {
                       trace!("seal worker go {}!!!", new_height);
                       let now = Instant::now();
                       trace!("seal worker ready!");
-                      handler::seal(seal, &mut _pub1);
+                      handler::seal(seal, tx_pub.clone());
                       let elapsed = now.elapsed();
                       if let Some(dur1) = dur.checked_sub(elapsed) {
                           trace!("seal worker sleep !!!!!{:?}", dur1);

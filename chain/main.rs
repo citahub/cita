@@ -36,7 +36,6 @@ extern crate protobuf;
 mod forward;
 mod synchronizer;
 
-use amqp::{Consumer, Channel, protocol, Basic};
 use clap::App;
 use core::db;
 use core::libchain;
@@ -45,38 +44,17 @@ use core::libchain::Genesis;
 use forward::*;
 use log::LogLevelFilter;
 use protobuf::Message;
-use pubsub::PubSub;
+use pubsub::start_pubsub;
 use std::env;
 use std::sync::Arc;
-use std::sync::mpsc::Sender;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time;
 use std::time::Duration;
 use synchronizer::Synchronizer;
-use threadpool::ThreadPool;
 use util::kvdb::{Database, DatabaseConfig};
 
 pub const DATA_PATH: &'static str = "DATA_PATH";
-
-pub struct MyHandler {
-    pool: ThreadPool,
-    tx: Sender<(u32, u32, u32, MsgClass)>,
-}
-
-impl MyHandler {
-    pub fn new(pool: ThreadPool, tx: Sender<(u32, u32, u32, MsgClass)>) -> Self {
-        MyHandler { pool: pool, tx: tx }
-    }
-}
-
-// TODO: Remove Pool?
-impl Consumer for MyHandler {
-    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, body: Vec<u8>) {
-        forward::chain_pool(&self.pool, &self.tx, key_to_id(&deliver.routing_key), body);
-        let _ = channel.basic_ack(deliver.delivery_tag, false);
-    }
-}
 
 fn main() {
     dotenv::dotenv().ok();
@@ -100,9 +78,13 @@ fn main() {
 
     let (tx, rx) = channel();
     let pool = threadpool::ThreadPool::new(10);
-    let mut pubsub = PubSub::new();
-    pubsub.start_sub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request"], MyHandler::new(pool, tx));
-    let mut _pub = pubsub.get_pub();
+    let (ctx_sub, crx_sub) = channel();
+    let (ctx_pub, crx_pub) = channel();
+    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request"], ctx_sub, crx_pub);
+    thread::spawn(move || loop {
+                      let (key, msg) = crx_sub.recv().unwrap();
+                      forward::chain_pool(&pool, &tx, key_to_id(&key), msg);
+                  });
     let nosql_path = env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/nosql";
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &nosql_path).unwrap();
@@ -112,21 +94,21 @@ fn main() {
     let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st.write_to_bytes().unwrap());
 
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
-    _pub.publish("chain.status", msg.write_to_bytes().unwrap());
+    ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     let synchronizer = Synchronizer::new(chain.clone());
     let chain1 = chain.clone();
+    let ctx_pub1 = ctx_pub.clone();
     thread::spawn(move || loop {
                       let chain = chain1.clone();
-                      forward::chain_result(chain, &rx, &mut _pub);
+                      forward::chain_result(chain, &rx, ctx_pub1.clone());
                   });
 
-    let mut _pub1 = pubsub.get_pub();
     thread::spawn(move || loop {
                       let notify = sync_rx.recv_timeout(Duration::new(8, 0));
                       if notify.is_ok() {
-                          synchronizer.sync(&mut _pub1);
+                          synchronizer.sync(ctx_pub.clone());
                       } else {
-                          synchronizer.sync_status(&mut _pub1);
+                          synchronizer.sync_status(ctx_pub.clone());
                       }
                   });
     //garbage collect

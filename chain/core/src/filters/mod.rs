@@ -14,25 +14,9 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+pub mod poll_manager;
+pub mod poll_filter;
+pub mod eth_filter;
 
-use libproto::TopicMessage;
-use protobuf::Message;
-use pubsub::Pub;
-use std::sync::mpsc::Receiver;
-
-pub struct Publisher {
-    rx: Receiver<TopicMessage>,
-}
-
-impl Publisher {
-    pub fn new(rx: Receiver<TopicMessage>) -> Self {
-        Publisher { rx: rx }
-    }
-
-    pub fn run(&self, _pub: &mut Pub) {
-        loop {
-            let msg = self.rx.recv().unwrap();
-            _pub.publish(&msg.0, msg.1.write_to_bytes().unwrap());
-        }
-    }
-}
+pub use self::poll_filter::{PollFilter, limit_logs};
+pub use self::poll_manager::{PollManager, PollId};

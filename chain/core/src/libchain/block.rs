@@ -35,7 +35,7 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
-use util::{U256, H256, merklehash, HeapSizeOf};
+use util::{U256, H256, Address, merklehash, HeapSizeOf};
 
 /// Trait for a object that has a state database.
 pub trait Drain {
@@ -309,18 +309,16 @@ impl OpenBlock {
     pub fn env_info(&self) -> EnvInfo {
         EnvInfo {
             number: self.number(),
-            author: self.author().clone(),
+            author: Address::default(),
             timestamp: self.timestamp(),
             difficulty: U256::default(),
             last_hashes: self.last_hashes.clone(),
-            gas_used: self.gas_used().clone(),
-            gas_limit: self.gas_limit().clone(),
+            gas_used: *self.gas_used(),
+            gas_limit: *self.gas_limit(),
         }
     }
 
-    // TODO:
-    // 1. 存证的Transaction
-    // 2. 在Precompile中处理的合约
+    ///execute transactions
     pub fn apply_transactions(&mut self) {
         for t in self.body.transactions.clone() {
             self.apply_transaction(&t);
@@ -348,7 +346,7 @@ impl OpenBlock {
             Err(_) => {
                 self.receipts.push(None);
                 self.tx_hashes.push(false);
-            } 
+            }
         }
     }
 

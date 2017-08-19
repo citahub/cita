@@ -30,6 +30,7 @@ use error::CallError;
 use evm::Factory as EvmFactory;
 use executive::{Executive, Executed, TransactOptions, contract_address};
 use factory::*;
+use filters::{PollManager, PollFilter};
 use header::*;
 pub use libchain::block::*;
 use libchain::cache::CacheSize;
@@ -159,6 +160,7 @@ pub struct Chain {
     block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
 
     cache_man: Mutex<CacheManager<CacheId>>,
+    polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 }
 
 pub fn save_genesis(db: &KeyValueDB, genesis: &Genesis) -> Result<(), String> {
@@ -261,6 +263,7 @@ impl Chain {
                                  factories: factories,
                                  sync_sender: Mutex::new(sync_sender),
                                  last_hashes: RwLock::new(VecDeque::new()),
+                                 polls_filter: Arc::new(Mutex::new(PollManager::new())),
                              });
 
         chain.build_last_hashes(Some(hash), height);
@@ -305,7 +308,7 @@ impl Chain {
     }
 
     // Get block hash by height
-    fn block_hash(&self, index: BlockNumber) -> Option<H256> {
+    pub fn block_hash(&self, index: BlockNumber) -> Option<H256> {
         let result = self.db.read_with_cache(db::COL_EXTRA, &self.block_hashes, &index);
         self.cache_man.lock().note_used(CacheId::BlockHashes(index));
         result
@@ -769,7 +772,7 @@ impl Chain {
         let last_hashes = self.build_last_hashes(None, header.number());
         let env_info = EnvInfo {
             number: header.number(),
-            author: *header.author(),
+            author: Address::default(),
             timestamp: header.timestamp(),
             difficulty: U256::default(),
             last_hashes: last_hashes,
@@ -916,6 +919,10 @@ impl Chain {
 
             block_headers.heap_size_of_children() + block_bodies.heap_size_of_children() + block_hashes.heap_size_of_children() + transaction_addresses.heap_size_of_children() + blocks_blooms.heap_size_of_children() + block_receipts.heap_size_of_children()
         });
+    }
+
+    pub fn poll_filter(&self) -> Arc<Mutex<PollManager<PollFilter>>> {
+        self.polls_filter.clone()
     }
 }
 

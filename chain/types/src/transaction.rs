@@ -143,7 +143,7 @@ impl Decodable for Transaction {
                action: d.val_at(3)?,
                value: d.val_at(4)?,
                data: d.val_at(5)?,
-               block_limit: d.val_at(7)?,
+               block_limit: d.val_at(6)?,
            })
     }
 }
@@ -342,7 +342,7 @@ pub struct SignedTransaction {
 
 impl Decodable for SignedTransaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 3 {
+        if d.item_count()? != 2 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
         let public = d.val_at(1)?;

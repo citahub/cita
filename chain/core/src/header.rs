@@ -52,8 +52,6 @@ pub struct Header {
     timestamp: u64,
     /// Block number.
     number: BlockNumber,
-    /// Block author.
-    author: Address,
     /// Transactions root.
     transactions_root: H256,
     /// State root.
@@ -76,7 +74,7 @@ pub struct Header {
 
 impl PartialEq for Header {
     fn eq(&self, c: &Header) -> bool {
-        self.parent_hash == c.parent_hash && self.timestamp == c.timestamp && self.number == c.number && self.author == c.author && self.transactions_root == c.transactions_root && self.state_root == c.state_root && self.receipts_root == c.receipts_root && self.log_bloom == c.log_bloom && self.gas_used == c.gas_used && self.gas_limit == c.gas_limit && self.proof == c.proof
+        self.parent_hash == c.parent_hash && self.timestamp == c.timestamp && self.number == c.number && self.transactions_root == c.transactions_root && self.state_root == c.state_root && self.receipts_root == c.receipts_root && self.log_bloom == c.log_bloom && self.gas_used == c.gas_used && self.gas_limit == c.gas_limit && self.proof == c.proof
 
     }
 }
@@ -87,7 +85,6 @@ impl Default for Header {
             parent_hash: H256::default(),
             timestamp: 0,
             number: 0,
-            author: Address::default(),
             transactions_root: HASH_NULL_RLP,
             state_root: HASH_NULL_RLP,
             receipts_root: HASH_NULL_RLP,
@@ -107,7 +104,6 @@ impl From<BlockHeader> for Header {
             parent_hash: H256::from(bh.get_prevhash()),
             timestamp: bh.get_timestamp(),
             number: bh.get_height(),
-            author: Address::default(),
             transactions_root: H256::from(bh.get_transactions_root()),
             state_root: H256::from(bh.get_state_root()),
             receipts_root: H256::from(bh.get_receipts_root()),
@@ -138,10 +134,6 @@ impl Header {
     /// Get the number field of the header.
     pub fn number(&self) -> BlockNumber {
         self.number
-    }
-    /// Get the author field of the header.
-    pub fn author(&self) -> &Address {
-        &self.author
     }
     /// Get the state root field of the header.
     pub fn state_root(&self) -> &H256 {
@@ -220,13 +212,6 @@ impl Header {
         self.number = a;
         self.note_dirty();
     }
-    /// Set the author field of the header.
-    pub fn set_author(&mut self, a: Address) {
-        if a != self.author {
-            self.author = a;
-            self.note_dirty();
-        }
-    }
     /// Set the gas used field of the header.
     pub fn set_gas_used(&mut self, a: U256) {
         self.gas_used = a;
@@ -269,9 +254,8 @@ impl Header {
     // TODO: make these functions traity
     /// Place this header into an RLP stream `s`.
     pub fn stream_rlp(&self, s: &mut RlpStream) {
-        s.begin_list(12);
+        s.begin_list(11);
         s.append(&self.parent_hash);
-        s.append(&self.author);
         s.append(&self.state_root);
         s.append(&self.transactions_root);
         s.append(&self.receipts_root);
@@ -285,14 +269,14 @@ impl Header {
 
     }
 
-    /// Get the RLP of this header, optionally `with_seal`.
+    /// Get the RLP of this header.
     pub fn rlp(&self) -> Bytes {
         let mut s = RlpStream::new();
         self.stream_rlp(&mut s);
         s.out()
     }
 
-    /// Get the crypt_hash (Keccak or blake2b) of this header, optionally `with_seal`.
+    /// Get the crypt_hash (Keccak or blake2b) of this header.
     pub fn rlp_hash(&self) -> H256 {
         self.rlp().crypt_hash()
     }
@@ -316,17 +300,16 @@ impl Decodable for Header {
     fn decode(r: &UntrustedRlp) -> Result<Self, DecoderError> {
         let blockheader = Header {
             parent_hash: r.val_at(0)?,
-            author: r.val_at(1)?,
-            state_root: r.val_at(2)?,
-            transactions_root: r.val_at(3)?,
-            receipts_root: r.val_at(4)?,
-            log_bloom: r.val_at(5)?,
-            number: r.val_at(6)?,
-            gas_limit: r.val_at(7)?,
-            gas_used: r.val_at(8)?,
-            timestamp: cmp::min(r.val_at::<U256>(9)?, u64::max_value().into()).as_u64(),
-            version: r.val_at(10)?,
-            proof: r.val_at(11)?,
+            state_root: r.val_at(1)?,
+            transactions_root: r.val_at(2)?,
+            receipts_root: r.val_at(3)?,
+            log_bloom: r.val_at(4)?,
+            number: r.val_at(5)?,
+            gas_limit: r.val_at(6)?,
+            gas_used: r.val_at(7)?,
+            timestamp: cmp::min(r.val_at::<U256>(8)?, u64::max_value().into()).as_u64(),
+            version: r.val_at(9)?,
+            proof: r.val_at(10)?,
             hash: HashWrap(Cell::new(Some(r.as_raw().crypt_hash()))),
         };
 

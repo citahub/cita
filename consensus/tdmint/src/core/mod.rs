@@ -17,7 +17,6 @@
 
 pub mod wal;
 pub mod votetime;
-pub mod mqsubpub;
 pub mod tendermint;
 pub mod params;
 pub mod voteset;

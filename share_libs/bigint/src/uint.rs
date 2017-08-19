@@ -758,7 +758,7 @@ macro_rules! construct_uint {
 				}
 			}
 
-			/// Division with overflow 
+			/// Division with overflow
 			pub fn overflowing_div(self, other: $name) -> ($name, bool) {
 				(self / other, false)
 			}

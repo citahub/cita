@@ -24,6 +24,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "amq-proto"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "bit-vec 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "byteorder 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "enum_primitive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "amqp"
 version = "0.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -38,19 +51,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "amqp_test_request"
+name = "amqp"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
- "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0",
+ "amq-proto 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "openssl 0.7.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "amqp_test_response"
+name = "amqp_test"
 version = "0.1.0"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0",
 ]
@@ -352,6 +367,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "consensus_poa"
+version = "0.6.0"
+dependencies = [
+ "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cita-crypto 0.6.0",
+ "cita_log 0.1.0",
+ "clap 2.26.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "engine 0.6.0",
+ "engine_json 0.6.0",
+ "libproto 0.6.0",
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parking_lot 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proof 0.6.0",
+ "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pubsub 0.6.0",
+ "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "threadpool 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tx_pool 0.6.0",
+ "util 0.6.0",
+]
+
+[[package]]
 name = "consensus_tendermint"
 version = "0.1.0"
 dependencies = [
@@ -412,6 +454,7 @@ dependencies = [
  "ethcore-io 1.8.0",
  "ethkey 0.2.0",
  "futures 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc_types 0.1.0",
  "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -432,6 +475,7 @@ dependencies = [
  "serde_json 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "threadpool 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
+ "transient-hashmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0",
  "vm 0.6.0",
 ]
@@ -770,7 +814,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "jsonrpc"
 version = "0.6.0"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita_log 0.1.0",
  "clap 2.26.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -834,6 +877,13 @@ dependencies = [
 name = "language-tags"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "latency"
+version = "0.1.0"
+dependencies = [
+ "pubsub 0.6.0",
+]
 
 [[package]]
 name = "lazy_static"
@@ -999,7 +1049,6 @@ dependencies = [
 name = "network"
 version = "0.6.0"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita_log 0.1.0",
@@ -1230,10 +1279,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "pubsub"
 version = "0.6.0"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "pubsub_kafka 0.1.0",
+ "pubsub_rabbitmq 0.1.0",
+ "pubsub_zeromq 0.1.0",
 ]
+
+[[package]]
+name = "pubsub_kafka"
+version = "0.1.0"
+
+[[package]]
+name = "pubsub_rabbitmq"
+version = "0.1.0"
+dependencies = [
+ "amqp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "pubsub_zeromq"
+version = "0.1.0"
 
 [[package]]
 name = "pulldown-cmark"
@@ -1740,6 +1805,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "transient-hashmap"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "tx_pool"
 version = "0.6.0"
 dependencies = [
@@ -1949,7 +2022,9 @@ dependencies = [
 [metadata]
 "checksum aho-corasick 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ca972c2ea5f742bfce5687b9aef75506a764f61d37f8f649047846a9686ddb66"
 "checksum aho-corasick 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "500909c4f87a9e52355b26626d890833e9e1d53ac566db76c36faa984b889699"
+"checksum amq-proto 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "66d79639b71f74c7006c12683cc2ff221615a51a741688fa7798ccd080dc54d3"
 "checksum amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)" = "713e6aed2e9e8b34b076af7bc38f5d3e5964e27a12b91fde31b9ef2d1fcd070e"
+"checksum amqp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8e74c34e77c2790b394ab9ea305c49f0f919de036d89675139c5a7763ea8229a"
 "checksum ansi_term 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "23ac7c30002a5accbf7e8987d0632fa6de155b7c3d39d0067317a391e00a2ef6"
 "checksum arrayvec 0.3.23 (registry+https://github.com/rust-lang/crates.io-index)" = "699e63a93b79d717e8c3b5eb1b28b7780d0d6d9e59a72eb769291c83b0c8dc67"
 "checksum atty 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d912da0db7fa85514874458ca3651fe2cddace8d0b0505571dbdcd41ab490159"
@@ -2105,6 +2180,7 @@ dependencies = [
 "checksum toml 0.1.30 (registry+https://github.com/rust-lang/crates.io-index)" = "0590d72182e50e879c4da3b11c6488dae18fccb1ae0c7a3eda18e16795844796"
 "checksum toml 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "736b60249cb25337bc196faa43ee12c705e426f3d55c214d73a4e7be06f92cb4"
 "checksum traitobject 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
+"checksum transient-hashmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "715254c8f0811be1a79ad3ea5e6fa3c8eddec2b03d7f5ba78cf093e56d79c24f"
 "checksum typeable 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1410f6f91f21d1612654e7cc69193b0334f909dcf2c790c4826254fbb86f8887"
 "checksum unicase 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7f4765f83163b74f957c797ad9253caf97f103fb064d3999aea9568d09fc8a33"
 "checksum unicode-bidi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "49f2bd0c6468a8230e1db229cff8029217cf623c767ea5d60bfbd42729ea54d5"
