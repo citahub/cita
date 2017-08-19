@@ -83,10 +83,10 @@ impl Synchronizer {
     }
 
     fn add_block(&self, _pub: &mut Pub, blk: Block) {
-        trace!("chain sync add blk-----{:?}", blk.get_header().get_height());
+        trace!("chain sync add blk {:?}", blk.get_header().get_height());
         if let Some(st) = self.chain.set_block(blk) {
             let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st);
-            info!("chain after sync-----{:?}-----{:?}", self.chain.get_current_height(), self.chain.get_max_height());
+            info!("chain after sync current height {:?}  known height{:?}", self.chain.get_current_height(), self.chain.get_max_height());
             _pub.publish("chain.status", msg.write_to_bytes().unwrap());
         }
     }

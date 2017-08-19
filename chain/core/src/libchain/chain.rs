@@ -779,7 +779,7 @@ impl Chain {
 
     pub fn set_block(&self, block: Block) -> Option<Vec<u8>> {
         let blk_height = block.get_header().get_height();
-        trace!("set_block-----{:?}-----{:?}", blk_height, block.crypt_hash());
+        trace!("set_block height = {:?}, hash = {:?}", blk_height, block.crypt_hash());
         if self.validate_height(blk_height) {
             let mut batch = self.db.transaction();
             if let Some(current_hash) = self.add_block(&mut batch, block) {
@@ -793,7 +793,7 @@ impl Chain {
 
                 self.db.write(batch).expect("DB write failed.");
 
-                info!("-------chain update {:?}-------", blk_height);
+                info!("chain update {:?}", blk_height);
                 Some(status.write_to_bytes().unwrap())
             } else {
                 warn!("add block failed");
