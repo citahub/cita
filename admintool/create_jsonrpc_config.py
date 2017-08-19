@@ -5,15 +5,14 @@ import json
 import os
 import sys
 
+
 #  http_enable http_port ws_enable ws_port path
-def make_jsonrpc():
-    http_enable = sys.argv[1]=="true"
-    ws_enable = sys.argv[3]=="true"
+def main():
+    http_enable = sys.argv[1] == "true"
+    ws_enable = sys.argv[3] == "true"
     profile_config = dict(enable=False, flag_prof_start=0, flag_prof_duration=0)
-    http_config = dict(enable=http_enable, thread_number=200,
-                       listen_ip="0.0.0.0", listen_port=sys.argv[2],
-                       sleep_duration=1, timeout_count=3000
-                       )
+    http_config = dict(enable=http_enable, thread_number=200, listen_ip="0.0.0.0", listen_port=sys.argv[2],
+                       sleep_duration=1, timeout_count=3000)
 
     ws_config = dict(
         enable=ws_enable, thread_number=0,
@@ -43,4 +42,5 @@ def make_jsonrpc():
     f.close()
 
 
-make_jsonrpc()
+if __name__ == '__main__':
+    main()

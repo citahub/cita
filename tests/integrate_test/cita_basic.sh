@@ -3,7 +3,7 @@ set +e
 CUR_PATH=$(cd `dirname $0`; pwd)
 cd ${CUR_PATH}/../../admintool/
 ./setup.sh
-./admintool.sh -p 0x8ce0db0b0359ffc5866ba61903cc2518c3675ef2cf380a7e54bde7ea20e6fa1ab45b7617346cd11b7610001ee6ae5b0155c41cad9527cbcdff44ec67848943a4
+./admintool.sh
 
 setup_node() {
     id=$1
