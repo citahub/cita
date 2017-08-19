@@ -27,7 +27,6 @@ extern crate tokio_service;
 extern crate byteorder;
 extern crate rustc_serialize;
 extern crate parking_lot;
-extern crate amqp;
 extern crate libproto;
 extern crate protobuf;
 extern crate pubsub;
@@ -48,8 +47,8 @@ use config::NetConfig;
 use connection::{Connection, do_connect, start_client};
 use dotenv::dotenv;
 use log::LogLevelFilter;
-use msghandle::MyHandler;
-use pubsub::PubSub;
+use msghandle::{is_need_proc, handle_rpc};
+use pubsub::start_pubsub;
 use server::MySender;
 use server::start_server;
 use std::env;
@@ -86,11 +85,16 @@ fn main() {
 
     let config = if is_test { NetConfig::test_config() } else { NetConfig::new(config_path) };
 
-    let (tx, rx) = channel();
+    // init pubsub
+    let (ctx_sub, crx_sub) = channel();
+    let (ctx_pub, crx_pub) = channel();
+
+    start_pubsub("network", vec!["consensus.tx", "consensus.msg", "chain.status", "chain.blk", "chain.sync", "jsonrpc.net"], ctx_sub, crx_pub);
 
     // start server
     // This brings up our server.
-    let mysender = MySender::new(tx);
+    // all server recv msg directly publish to mq
+    let mysender = MySender::new(ctx_pub.clone());
     start_server(&config, mysender);
 
     // connect peers
@@ -100,14 +104,13 @@ fn main() {
     let con = Arc::new(con);
     start_client(con.clone(), crx);
 
-    // init pubsub
-    let mut pubsub = PubSub::new();
-    let mut _pub2 = pubsub.get_pub();
-    pubsub.start_sub("network", vec!["consensus.tx", "consensus.msg", "chain.status", "chain.blk", "chain.sync", "jsonrpc.net"], MyHandler::new(con, _pub2, ctx));
-
-    let mut _pub = pubsub.get_pub();
     loop {
-        let msg = rx.recv().unwrap();
-        _pub.publish(&msg.0, msg.1);
+        // msg from mq need proc before broadcast
+        let (key, body) = crx_sub.recv().unwrap();
+        trace!("handle delivery id {:?} payload {:?}", key, body);
+        if let (_, true, msg) = is_need_proc(body.as_ref()) {
+            ctx.send(msg).unwrap();
+        }
+        handle_rpc(&con, &ctx_pub, body.as_ref());
     }
 }

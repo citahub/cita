@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(deprecated,unused_assignments, unused_must_use)]
-use amqp::{Consumer, Channel, protocol, Basic};
 use base_hanlder::TransferType;
 use jsonrpc_types::response::{RpcSuccess, ResponseBody};
 use libproto::{submodules, topics, parse_msg, cmd_id, display_cmd, MsgClass, blockchain, request};
@@ -77,12 +76,10 @@ impl MqHandler {
         self.ws_tx_responses = ws_tx_responses;
         self.ws_responses = ws_responses;
     }
-}
 
-impl Consumer for MqHandler {
-    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, body: Vec<u8>) {
+    pub fn handle(&mut self, key: String, body: Vec<u8>) {
         let (id, _, content_ext) = parse_msg(body.as_slice());
-        trace!("routint_key {:?},get msg cmid {:?}", deliver.routing_key, display_cmd(id));
+        trace!("routint_key {:?},get msg cmid {:?}", key, display_cmd(id));
         //TODO match
 
         if id == cmd_id(submodules::CHAIN, topics::RESPONSE) {
@@ -148,6 +145,5 @@ impl Consumer for MqHandler {
         } else {
             // warn!("Unable handle msg {:?}", content_ext);
         }
-        let _ = channel.basic_ack(deliver.delivery_tag, false);
     }
 }

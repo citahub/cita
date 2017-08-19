@@ -17,7 +17,6 @@
 
 use bincode::{serialize, deserialize, Infinite};
 use core::dispatchtx::Dispatchtx;
-use core::mqsubpub::{MQWork, PubType, TransType};
 use core::params::TendermintParams;
 use core::voteset::{VoteCollector, ProposalCollector, VoteSet, Proposal, VoteMessage};
 
@@ -58,6 +57,9 @@ const ID_NEW_PROPOSAL: u32 = (submodules::CONSENSUS << 16) + topics::NEW_PROPOSA
 const TIMEOUT_RETRANSE_MULTIPLE: u32 = 5;
 const TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE: u32 = 10;
 const DATA_PATH: &'static str = "DATA_PATH";
+
+pub type TransType = (u32, u32, MsgClass);
+pub type PubType = (String, Vec<u8>);
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Eq, Clone, Copy, Hash)]
 pub enum Step {
@@ -191,7 +193,7 @@ impl TenderMint {
         msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::NEW_BLK));
         msg.set_field_type(communication::MsgType::BLOCK);
         msg.set_content(block.write_to_bytes().unwrap());
-        MQWork::send2pub(&self.pub_sender, ("consensus.blk".to_string(), msg.write_to_bytes().unwrap()));
+        self.pub_sender.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
     pub fn pub_proposal(&self, proposal: &Proposal) -> Vec<u8> {
@@ -206,7 +208,7 @@ impl TenderMint {
         let sig: H520 = signature.into();
         let bmsg = serialize(&(message, sig), Infinite).unwrap();
         msg.set_content(bmsg.clone());
-        MQWork::send2pub(&self.pub_sender, ("consensus.msg".to_string(), msg.write_to_bytes().unwrap()));
+        self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         bmsg
     }
 
@@ -533,7 +535,7 @@ impl TenderMint {
         msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG));
         msg.set_field_type(communication::MsgType::MSG);
         msg.set_content(message);
-        MQWork::send2pub(&self.pub_sender, ("consensus.msg".to_string(), msg.write_to_bytes().unwrap()));
+        self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
     fn pub_and_broadcast_message(&mut self, height: usize, round: usize, step: Step, hash: Option<H256>) {

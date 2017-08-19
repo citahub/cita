@@ -15,26 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod wal;
-pub mod votetime;
-pub mod tendermint;
-pub mod params;
-pub mod voteset;
-pub mod spec;
-pub mod dispatchtx;
-pub mod txwal;
-pub mod txhandler;
-
-pub use self::params::*;
-pub use self::spec::*;
-pub use self::tendermint::*;
-pub use self::voteset::*;
-
-pub use libproto::blockchain::{BlockHeader, Block, Transaction, BlockBody, Proof, Status};
-
-use util::Address;
-use util::H256;
-
-pub trait BareHash {
-    fn bare_hash(&self) -> H256;
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {}
 }
