@@ -21,8 +21,8 @@ use crypto::{recover, pubkey_to_address};
 use libproto::blockchain::Block;
 use lru_cache::LruCache;
 use protobuf::core::parse_from_bytes;
-use util::{H256, H520};
 use std::collections::HashMap;
+use util::{H256, H520};
 use util::Hashable;
 
 //height -> round collector
@@ -168,7 +168,7 @@ impl VoteSet {
                         // inc the count of vote for hash
                         if let Some(c) = votes_by_proposal.insert(hash, 1) {
                             votes_by_proposal.insert(hash.clone(), c + 1);
-                        }                  
+                        }
                     }
                 }
             }

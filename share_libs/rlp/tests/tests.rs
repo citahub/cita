@@ -318,9 +318,7 @@ fn encode_vector_u64() {
 
 #[test]
 fn encode_vector_str() {
-    let tests = vec![
-        VETestPair(vec!["cat", "dog"], vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']),
-    ];
+    let tests = vec![VETestPair(vec!["cat", "dog"], vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'])];
     run_encode_tests_list(tests);
 }
 
@@ -366,20 +364,13 @@ fn decode_vector_u8() {
 
 #[test]
 fn decode_untrusted_u8() {
-    let tests = vec![
-        DTestPair(0x0u8, vec![0x80]),
-        DTestPair(0x77u8, vec![0x77]),
-        DTestPair(0xccu8, vec![0x81, 0xcc]),
-    ];
+    let tests = vec![DTestPair(0x0u8, vec![0x80]), DTestPair(0x77u8, vec![0x77]), DTestPair(0xccu8, vec![0x81, 0xcc])];
     run_decode_tests(tests);
 }
 
 #[test]
 fn decode_untrusted_u16() {
-    let tests = vec![
-        DTestPair(0x100u16, vec![0x82, 0x01, 0x00]),
-        DTestPair(0xffffu16, vec![0x82, 0xff, 0xff]),
-    ];
+    let tests = vec![DTestPair(0x100u16, vec![0x82, 0x01, 0x00]), DTestPair(0xffffu16, vec![0x82, 0xff, 0xff])];
     run_decode_tests(tests);
 }
 
@@ -635,20 +626,7 @@ fn test_rlp_nested_empty_list_encode() {
 
 #[test]
 fn test_rlp_list_length_overflow() {
-    let data: Vec<u8> = vec![
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0x00,
-        0x00,
-        0x00,
-    ];
+    let data: Vec<u8> = vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00];
     let rlp = UntrustedRlp::new(&data);
     let as_val: Result<String, DecoderError> = rlp.val_at(0);
     assert_eq!(Err(DecoderError::RlpIsTooShort), as_val);

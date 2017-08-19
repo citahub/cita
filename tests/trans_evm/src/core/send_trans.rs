@@ -25,7 +25,6 @@ use hyper::client::Response;
 use hyper::status::StatusCode;
 use jsonrpc_types::response::*;
 use serde_json;
-use util::H256;
 use std::fmt;
 use std::fs::File;
 use std::io::Read;
@@ -36,6 +35,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 use std::thread;
 use std::time;
+use util::H256;
 
 static mut EXIT: bool = false;
 #[allow(dead_code, unused_assignments)]

@@ -17,7 +17,7 @@
 
 use super::{BlockTransaction, FullTransaction, TransactionHash};
 use super::RpcBlock;
-use libproto::blockchain::{ BlockHeader as ProtoBlockHeader};
+use libproto::blockchain::BlockHeader as ProtoBlockHeader;
 use libproto::blockchain::Block as ProtoBlock;
 use proof::CitaProof;
 use protobuf::core::parse_from_bytes;

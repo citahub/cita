@@ -106,7 +106,7 @@ impl Dispatchtx {
     }
 
     fn receive_new_transaction(&self, tx: &mut SignedTransaction, _pub: &mut Pub, from_broadcast: bool, recover: bool) {
-        
+
         if from_broadcast {
             if recover {
                 let _ = self.add_tx_to_pool(tx);
@@ -159,7 +159,7 @@ impl Dispatchtx {
 pub fn sub_new_tx(dispatch: Arc<Dispatchtx>, num_thds: usize) {
     let _ = thread::Builder::new().name("consensus_new_tx".to_string()).spawn(move || {
         let (tx, rx) = channel();
-        let threadpool = threadpool::ThreadPool::with_name("consensus_recv_tx_pool".to_string(),num_thds);
+        let threadpool = threadpool::ThreadPool::with_name("consensus_recv_tx_pool".to_string(), num_thds);
         let mut pubsub = PubSub::new();
         let handler = TxHandler::new(threadpool, tx);
         pubsub.start_sub("consensus_tx", vec!["net.tx", "jsonrpc.new_tx"], handler);

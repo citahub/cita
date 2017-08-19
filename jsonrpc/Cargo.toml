@@ -28,7 +28,6 @@ docopt = "0.7"
 cpuprofiler = "0.0.3"
 jsonrpc_types = { path = "types" }
 dotenv = "0.10.0"
-transaction = { path = "../share_libs/transaction" }
 cita_log =  { path = "../share_libs/cita_log" }
 clap = "2"
 

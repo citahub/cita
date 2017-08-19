@@ -19,8 +19,8 @@ use bincode::{serialize, deserialize, Infinite};
 use crypto::Signature;
 use libproto::blockchain::{Proof, ProofType};
 use rustc_serialize::hex::ToHex;
-use util::H520;
 use std::fmt;
+use util::H520;
 use util::H520 as EthH520;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]

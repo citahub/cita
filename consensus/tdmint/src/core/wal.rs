@@ -122,12 +122,7 @@ impl Wal {
             if index + 5 > fsize {
                 break;
             }
-            let hd: [u8; 4] = [
-                vec_buf[index],
-                vec_buf[index + 1],
-                vec_buf[index + 2],
-                vec_buf[index + 3],
-            ];
+            let hd: [u8; 4] = [vec_buf[index], vec_buf[index + 1], vec_buf[index + 2], vec_buf[index + 3]];
             let tmp: u32 = unsafe { transmute::<[u8; 4], u32>(hd) };
             let bodylen = tmp as usize;
             let mtype = vec_buf[index + 4];

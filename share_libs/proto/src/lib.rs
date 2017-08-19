@@ -18,7 +18,7 @@
 extern crate protobuf;
 extern crate util;
 extern crate rustc_serialize;
-extern crate bincode;
+extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
 extern crate cita_crypto;
@@ -29,14 +29,15 @@ pub mod request;
 pub mod into;
 
 use blockchain::*;
+use cita_crypto::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
 use communication::*;
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 pub use request::*;
+use rlp::*;
 use rustc_serialize::hex::ToHex;
 use util::{H256, Hashable, H520, merklehash};
 use util::snappy;
-use cita_crypto::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct State(pub Vec<Vec<u8>>);
@@ -220,22 +221,40 @@ impl blockchain::SignedTransaction {
                     match recover(&signature, &hash) {
                         Ok(pubkey) => {
                             self.set_signer(pubkey.to_vec());
-                        },
-                        _ => {ret = false;},
+                        }
+                        _ => {
+                            ret = false;
+                        }
                     }
-                },
-                _ => {ret = false;},
+                }
+                _ => {
+                    ret = false;
+                }
             }
         }
 
         let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
-        self.set_tx_hash(bytes.crypt_hash().to_vec());        
+        self.set_tx_hash(bytes.crypt_hash().to_vec());
         ret
     }
 
     pub fn crypt_hash(&self) -> H256 {
         let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
         bytes.crypt_hash()
+    }
+}
+
+impl Eq for Proof {}
+
+impl Decodable for Proof {
+    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+        rlp.decoder().decode_value(|bytes| Ok(parse_from_bytes::<Proof>(&bytes).unwrap()))
+    }
+}
+
+impl Encodable for Proof {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.encoder().encode_value(&self.write_to_bytes().unwrap());
     }
 }
 

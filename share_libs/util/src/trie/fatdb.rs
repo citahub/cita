@@ -113,10 +113,5 @@ fn fatdb_to_trie() {
     }
     let t = FatDB::new(&memdb, &root).unwrap();
     assert_eq!(t.get(&[0x01u8, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0x01u8, 0x23]));
-    assert_eq!(
-        t.iter().unwrap().map(Result::unwrap).collect::<Vec<_>>(),
-        vec![
-            (vec![0x01u8, 0x23], DBValue::from_slice(&[0x01u8, 0x23] as &[u8])),
-        ]
-    );
+    assert_eq!(t.iter().unwrap().map(Result::unwrap).collect::<Vec<_>>(), vec![(vec![0x01u8, 0x23], DBValue::from_slice(&[0x01u8, 0x23] as &[u8]))]);
 }

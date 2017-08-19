@@ -16,17 +16,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, Infinite};
+use core::libchain::block::Block;
+use core::transaction::SignedTransaction;
 use crypto::*;
 use libproto::{factory, communication, topics, submodules};
-use libproto::blockchain::{SignedTransaction, UnverifiedTransaction, Transaction, Block};
+use libproto::blockchain::{SignedTransaction as ProtoSignedTransaction, UnverifiedTransaction, Transaction};
 use proof::TendermintProof;
-use protobuf::RepeatedField;
 use protobuf::core::Message;
 use rustc_serialize::hex::FromHex;
-//util::hash::{H256, Address, H520};
-use util::H256;
 use std::collections::HashMap;
 use std::time::{UNIX_EPOCH, Duration};
+//util::hash::{H256, Address, H520};
+use util::H256;
 use util::Hashable;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -80,11 +81,11 @@ impl Generateblock {
         let mut uv_tx = UnverifiedTransaction::new();
         uv_tx.set_transaction(tx);
 
-        let mut signed_tx = SignedTransaction::new();
+        let mut signed_tx = ProtoSignedTransaction::new();
         signed_tx.set_transaction_with_sig(uv_tx);
         signed_tx.sign(pv.clone());
 
-        signed_tx
+        SignedTransaction::new(&signed_tx).unwrap()
     }
 
     pub fn build_block(txs: Vec<SignedTransaction>, pre_hash: H256, h: u64) -> (Vec<u8>, Block) {
@@ -96,10 +97,10 @@ impl Generateblock {
 
         let mut block = Block::new();
         let block_time = Self::unix_now();
-        block.mut_header().set_timestamp(block_time.as_millis());
-        block.mut_header().set_height(h);
-        block.mut_header().set_prevhash(pre_hash.to_vec());
-        block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
+        block.set_timestamp(block_time.as_millis());
+        block.set_number(h);
+        block.set_parent_hash(pre_hash);
+        block.body.set_transactions(txs);
         let mut proof = TendermintProof::default();
         proof.height = (h - 1) as usize;
         proof.round = 0;
@@ -109,9 +110,9 @@ impl Generateblock {
         let signature = sign(pv, &msg.crypt_hash().into()).unwrap();
         commits.insert((*sender).into(), signature.into());
         proof.commits = commits;
-        block.mut_header().set_proof(proof.into());
+        block.set_proof(proof.into());
 
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.protobuf().write_to_bytes().unwrap());
         (msg.write_to_bytes().unwrap(), block)
     }
 

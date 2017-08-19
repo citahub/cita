@@ -100,24 +100,9 @@ mod tests {
 
     #[test]
     fn complete_test() {
-        assert_eq!(
-            complete_merkle_root(vec![
-                b"A".to_vec(),
-                b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec(),
-            ]),
-            H256::from_str("9bd41e0d43f4ec7a703edc2eb9fbb4106e1bc2a845e9ee1d4f3f4cf99b8549e6").unwrap()
-        );
+        assert_eq!(complete_merkle_root(vec![b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec()]), H256::from_str("9bd41e0d43f4ec7a703edc2eb9fbb4106e1bc2a845e9ee1d4f3f4cf99b8549e6").unwrap());
 
-        assert_eq!(
-            complete_merkle_root(vec![
-                b"A".to_vec(),
-                b"aaaa".to_vec(),
-                b"abaa".to_vec(),
-                b"aaba".to_vec(),
-                b"aaab".to_vec(),
-            ]),
-            H256::from_str("8e827ab731f2416f6057b9c7f241b1841e345ffeabb4274e35995a45f4d42a1a").unwrap()
-        );
+        assert_eq!(complete_merkle_root(vec![b"A".to_vec(), b"aaaa".to_vec(), b"abaa".to_vec(), b"aaba".to_vec(), b"aaab".to_vec()]), H256::from_str("8e827ab731f2416f6057b9c7f241b1841e345ffeabb4274e35995a45f4d42a1a").unwrap());
 
         assert_eq!(complete_merkle_root(vec![]), H256::from_str("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421").unwrap());
 

@@ -19,8 +19,8 @@ use super::{PrivKey, PubKey, Address, SECP256K1, Error};
 use rustc_serialize::hex::ToHex;
 use secp256k1::key;
 use std::fmt;
-use util::Hashable;
 use util::H160 as Hash160;
+use util::Hashable;
 
 pub fn pubkey_to_address(pubkey: &PubKey) -> Address {
     Address::from(Hash160::from(pubkey.crypt_hash()))

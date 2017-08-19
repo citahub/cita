@@ -69,7 +69,7 @@ fn create_contract(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_prof
         txs.push(tx);
     }
     let tx = Generateblock::generate_tx(code, contract_address.clone());
-    let hash = H256::from_slice(tx.get_tx_hash());
+    let hash = tx.hash();
     txs.push(tx);
 
     //构造block
@@ -97,7 +97,7 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
     let mut txs = Vec::new();
     let mut hash = H256::default();
     let tx = Generateblock::generate_tx(code.clone(), contract_address.clone());
-    hash = H256::from_slice(tx.get_tx_hash());
+    hash = tx.hash();
     txs.push(tx);
 
     //构造block
@@ -116,7 +116,7 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
         txs.push(tx);
     }
     let tx = Generateblock::generate_tx(code.clone(), contract_address.clone());
-    hash = H256::from_slice(tx.get_tx_hash());
+    hash = tx.hash();
     txs.push(tx);
 
     let h = call.get_height() + 1;

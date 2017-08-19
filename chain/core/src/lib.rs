@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![feature(plugin)]
-#![feature(vec_remove_item)] 
+#![feature(vec_remove_item)]
 #![feature(test)]
 extern crate test;
 extern crate libproto;
@@ -38,7 +38,6 @@ extern crate rustc_serialize;
 extern crate proof;
 extern crate lru_cache;
 extern crate rlp;
-extern crate transaction as cita_transaction;
 extern crate bloomchain;
 extern crate bloomable;
 extern crate rustc_hex;

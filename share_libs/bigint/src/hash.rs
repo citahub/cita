@@ -13,14 +13,14 @@ use libc::{c_void, memcmp};
 use rand::{Rand, Rng};
 use rand::os::OsRng;
 use rustc_hex::{FromHex, FromHexError, ToHex};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{Error, Visitor};
 use std::{ops, fmt, cmp, str};
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher, BuildHasherDefault};
 use std::ops::{Deref, DerefMut, BitXor, BitAnd, BitOr, IndexMut, Index};
 use std::str::FromStr;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{Error, Visitor};
 
 /// Return `s` without the `0x` at the beginning of it, if any.
 pub fn clean_0x(s: &str) -> &str {

@@ -420,21 +420,7 @@ mod tests {
 
     #[test]
     fn length_overflow() {
-        let bs = [
-            0xbf,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xe5,
-        ];
+        let bs = [0xbf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xe5];
         let rlp = UntrustedRlp::new(&bs);
         let res: Result<u8, DecoderError> = rlp.as_val();
         assert_eq!(Err(DecoderError::RlpInvalidLength), res);

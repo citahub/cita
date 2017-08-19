@@ -140,9 +140,7 @@ mod tests {
             to_block: BlockId::Latest,
             address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
+                Some(vec!["ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into()]),
                 None,
                 None,
                 None,
@@ -166,12 +164,8 @@ mod tests {
             to_block: BlockId::Latest,
             address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
+                Some(vec!["ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into()]),
+                Some(vec!["ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into()]),
                 None,
                 None,
             ],
@@ -192,10 +186,7 @@ mod tests {
         let filter = Filter {
             from_block: BlockId::Earliest,
             to_block: BlockId::Latest,
-            address: Some(vec![
-                "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
-                "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
-            ]),
+            address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into(), "b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
                 Some(vec![
                     "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
@@ -205,9 +196,7 @@ mod tests {
                     "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
                     "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
                 ]),
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
+                Some(vec!["ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into()]),
                 None,
             ],
             limit: None,
@@ -226,12 +215,8 @@ mod tests {
             to_block: BlockId::Latest,
             address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23fa".into(),
-                ]),
+                Some(vec!["ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into()]),
+                Some(vec!["ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23fa".into()]),
                 None,
                 None,
             ],
@@ -260,9 +245,7 @@ mod tests {
 
         let entry2 = LogEntry {
             address: "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
-            topics: vec![
-                "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-            ],
+            topics: vec!["ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into()],
             data: vec![],
         };
 

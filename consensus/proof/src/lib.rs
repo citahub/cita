@@ -70,8 +70,8 @@ mod tests {
     use super::tendermint_proof::TendermintProof;
     use crypto::Signature;
     use libproto::blockchain::Proof;
-    use util::*;
     use std::collections::HashMap;
+    use util::*;
 
     #[test]
     fn poa_proof_convert() {

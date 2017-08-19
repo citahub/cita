@@ -17,7 +17,6 @@
 //! Transaction Execution environment.
 
 use action_params::{ActionParams, ActionValue};
-use cita_transaction::eth_transaction::{Action, SignedTransaction};
 use crossbeam;
 use engines::Engine;
 use env_info::EnvInfo;
@@ -32,6 +31,7 @@ use state::backend::Backend as StateBackend;
 use std::cmp;
 use std::sync::Arc;
 use trace::{FlatTrace, Tracer, NoopTracer, ExecutiveTracer, VMTrace, VMTracer, ExecutiveVMTracer, NoopVMTracer};
+use types::transaction::{Action, SignedTransaction};
 use util::*;
 
 

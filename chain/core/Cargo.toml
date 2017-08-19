@@ -32,7 +32,6 @@ bn = { git = "https://github.com/paritytech/bn" }
 time = "0.1"
 crossbeam = "0.2"
 ethcore-io = { path = "../../share_libs/io" }
-transaction = { path = "../../share_libs/transaction" }
 cita-crypto = { path = "../../share_libs/crypto" }
 
 protobuf = { version = "^1.0.0"}

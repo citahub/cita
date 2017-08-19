@@ -19,8 +19,8 @@ extern crate tiny_keccak;
 extern crate bigint;
 extern crate bloomable;
 
-use bloomable::Bloomable;
 use bigint::{H160, H256, H2048};
+use bloomable::Bloomable;
 use tiny_keccak::keccak256;
 
 fn sha3(input: &[u8]) -> H256 {

@@ -24,4 +24,4 @@ pub mod hash;
 pub mod uint;
 
 pub use hash::*;
-pub use ::uint::*;
+pub use uint::*;

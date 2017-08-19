@@ -238,10 +238,7 @@ mod tests {
             subtraces: 0,
         };
 
-        let block_traces = FlatBlockTraces(vec![
-            FlatTransactionTraces(vec![flat_trace]),
-            FlatTransactionTraces(vec![flat_trace1, flat_trace2]),
-        ]);
+        let block_traces = FlatBlockTraces(vec![FlatTransactionTraces(vec![flat_trace]), FlatTransactionTraces(vec![flat_trace1, flat_trace2])]);
 
         let encoded = ::rlp::encode(&block_traces);
         let decoded = ::rlp::decode(&encoded);

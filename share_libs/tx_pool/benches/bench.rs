@@ -42,7 +42,7 @@ fn bench_enqueue(b: &mut Bencher) {
     let mut tx = Transaction::new();
     let mut uv_tx = UnverifiedTransaction::new();
     let mut signed_tx = SignedTransaction::new();
-    let pv = H256::from_slice(&[20,17]);
+    let pv = H256::from_slice(&[20, 17]);
     b.iter(|| for i in 0..10000 {
                tx.set_data(format!("{}", i).as_bytes().to_vec());
                uv_tx.set_transaction(tx.clone());
@@ -58,17 +58,17 @@ fn bench_package(b: &mut Bencher) {
     let mut tx = Transaction::new();
     let mut uv_tx = UnverifiedTransaction::new();
     let mut signed_tx = SignedTransaction::new();
-    let pv = H256::from_slice(&[20,17]);
+    let pv = H256::from_slice(&[20, 17]);
     b.iter(|| {
-               for i in 0..10000 {
-                   tx.set_data(format!("{}", i).as_bytes().to_vec());
-                   uv_tx.set_transaction(tx.clone());
-                   signed_tx.set_transaction_with_sig(uv_tx.clone());
-                   signed_tx.sign(pv);
-                   p.enqueue(signed_tx.clone());
-               }
-               p.package(666);
-           });
+        for i in 0..10000 {
+            tx.set_data(format!("{}", i).as_bytes().to_vec());
+            uv_tx.set_transaction(tx.clone());
+            signed_tx.set_transaction_with_sig(uv_tx.clone());
+            signed_tx.sign(pv);
+            p.enqueue(signed_tx.clone());
+        }
+        p.package(666);
+    });
 }
 
 #[bench]
@@ -77,18 +77,17 @@ fn bench_update(b: &mut Bencher) {
     let mut tx = Transaction::new();
     let mut uv_tx = UnverifiedTransaction::new();
     let mut signed_tx = SignedTransaction::new();
-    let pv = H256::from_slice(&[20,17]);
+    let pv = H256::from_slice(&[20, 17]);
 
     b.iter(|| {
-               for i in 0..10000 {
-                   tx.set_data(format!("{}", i).as_bytes().to_vec());
-                   uv_tx.set_transaction(tx.clone());
-                   signed_tx.set_transaction_with_sig(uv_tx.clone());
-                   signed_tx.sign(pv);
-                   p.enqueue(signed_tx.clone());
-               }
-               let txs = p.package(666);
-               p.update(&txs);
-           });
+        for i in 0..10000 {
+            tx.set_data(format!("{}", i).as_bytes().to_vec());
+            uv_tx.set_transaction(tx.clone());
+            signed_tx.set_transaction_with_sig(uv_tx.clone());
+            signed_tx.sign(pv);
+            p.enqueue(signed_tx.clone());
+        }
+        let txs = p.package(666);
+        p.update(&txs);
+    });
 }
-

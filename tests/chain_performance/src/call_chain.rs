@@ -20,8 +20,8 @@ use core::libchain::Genesis;
 use core::libchain::chain::*;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
-use util::KeyValueDB;
 use util::{H256, H160};
+use util::KeyValueDB;
 
 #[allow(unused_variables, dead_code)]
 #[derive(Clone)]
@@ -51,10 +51,7 @@ impl Callchain {
     }
 
     pub fn get_contract_address(&self, hash: H256) -> H160 {
-        let receipt = self.chain
-                          .transaction_address(&hash)
-                          .and_then(|tx_address| self.chain.localized_receipt(hash, tx_address))
-                          .unwrap();
+        let receipt = self.chain.localized_receipt(hash).unwrap();
         match receipt.contract_address {
             Some(contract_address) => contract_address,
             None => panic!("contract_address error"),
@@ -62,9 +59,6 @@ impl Callchain {
     }
 
     pub fn get_receipt(&self, hash: H256) -> LocalizedReceipt {
-        self.chain
-            .transaction_address(&hash)
-            .and_then(|tx_address| self.chain.localized_receipt(hash, tx_address))
-            .unwrap()
+        self.chain.localized_receipt(hash).unwrap()
     }
 }

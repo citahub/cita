@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use filter::Filter;
-use libproto::blockchain::{SignedTransaction};
+use libproto::blockchain::SignedTransaction;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
@@ -155,8 +155,7 @@ impl Pool {
                 let hash = order.unwrap().hash;
                 let tx = self.txs.get(&hash);
                 if let Some(tx) = tx {
-                    if tx.get_transaction_with_sig().get_transaction().valid_until_block == 0
-                    || tx.get_transaction_with_sig().get_transaction().valid_until_block >= height {
+                    if tx.get_transaction_with_sig().get_transaction().valid_until_block == 0 || tx.get_transaction_with_sig().get_transaction().valid_until_block >= height {
                         tx_list.push(tx.clone());
                         n = n - 1;
                         if n == 0 {
@@ -193,7 +192,7 @@ mod tests {
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(valid_until_block);
 
-        let pv = H256::from_slice(&[20,17]);
+        let pv = H256::from_slice(&[20, 17]);
 
         let mut uv_tx = UnverifiedTransaction::new();
         uv_tx.set_transaction(tx);

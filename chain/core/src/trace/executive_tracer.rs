@@ -77,36 +77,16 @@ fn should_prefix_address_properly() {
             trace_address: v.into_iter().collect(),
         }
     };
-    let t = vec![
-        vec![],
-        vec![0],
-        vec![0, 0],
-        vec![0],
-        vec![],
-        vec![],
-        vec![0],
-        vec![],
-    ]
-            .into_iter()
-            .map(&f)
-            .collect();
-    let t = prefix_subtrace_addresses(t);
-    assert_eq!(
-        t,
-        vec![
-            vec![0],
-            vec![0, 0],
-            vec![0, 0, 0],
-            vec![0, 0],
-            vec![1],
-            vec![2],
-            vec![2, 0],
-            vec![3],
-        ]
+    let t = vec![vec![], vec![0], vec![0, 0], vec![0], vec![], vec![], vec![0], vec![]]
         .into_iter()
         .map(&f)
-        .collect::<Vec<_>>()
-    );
+        .collect();
+    let t = prefix_subtrace_addresses(t);
+    assert_eq!(t,
+               vec![vec![0], vec![0, 0], vec![0, 0, 0], vec![0, 0], vec![1], vec![2], vec![2, 0], vec![3]]
+                   .into_iter()
+                   .map(&f)
+                   .collect::<Vec<_>>());
 }
 
 impl Tracer for ExecutiveTracer {

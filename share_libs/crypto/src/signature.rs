@@ -16,17 +16,34 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{PrivKey, PubKey, SECP256K1, Error, Message, pubkey_to_address, Address};
+use rlp::*;
 use rustc_serialize::hex::{ToHex, FromHex};
 use secp256k1::{Message as SecpMessage, RecoverableSignature, RecoveryId, Error as SecpError};
 use secp256k1::key::{SecretKey, PublicKey};
-use util::{H520, H256};
 use std::{mem, fmt};
 use std::cmp::PartialEq;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
+use util::{H520, H256};
 
 pub struct Signature(pub [u8; 65]);
+
+impl Decodable for Signature {
+    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+        rlp.decoder().decode_value(|bytes| {
+                                       let mut sig = [0u8; 65];
+                                       sig[0..65].copy_from_slice(bytes);
+                                       Ok(Signature(sig))
+                                   })
+    }
+}
+
+impl Encodable for Signature {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.encoder().encode_value(&self.0[0..65]);
+    }
+}
 
 impl Signature {
     /// Get a slice into the 'r' portion of the data.

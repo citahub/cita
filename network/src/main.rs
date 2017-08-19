@@ -103,18 +103,7 @@ fn main() {
     // init pubsub
     let mut pubsub = PubSub::new();
     let mut _pub2 = pubsub.get_pub();
-    pubsub.start_sub(
-        "network",
-        vec![
-            "consensus.tx",
-            "consensus.msg",
-            "chain.status",
-            "chain.blk",
-            "chain.sync",
-            "jsonrpc.net",
-        ],
-        MyHandler::new(con, _pub2, ctx),
-    );
+    pubsub.start_sub("network", vec!["consensus.tx", "consensus.msg", "chain.status", "chain.blk", "chain.sync", "jsonrpc.net"], MyHandler::new(con, _pub2, ctx));
 
     let mut _pub = pubsub.get_pub();
     loop {

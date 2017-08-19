@@ -34,12 +34,12 @@ use libproto::blockchain::{Block, SignedTransaction, Status};
 use proof::TendermintProof;
 use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
-use util::{H256, H520};
-use util::Address;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver, RecvError};
 use std::time::Instant;
+use util::{H256, H520};
+use util::Address;
 use util::Hashable;
 
 const INIT_HEIGHT: usize = 1;
@@ -840,7 +840,7 @@ impl TenderMint {
         block.mut_header().set_timestamp(block_time.as_millis());
         block.mut_header().set_height(self.height as u64);
         block.mut_header().set_transactions_root(transactions_root.to_vec());
-        
+
         let bh = block.crypt_hash();
         info!("proposal new block------{:?}-----{:?}", self.height, bh);
         let pro_hash = Some(bh);

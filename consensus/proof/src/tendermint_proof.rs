@@ -18,12 +18,12 @@
 use bincode::{serialize, deserialize, Infinite};
 use crypto::{Signature, recover, pubkey_to_address};
 use libproto::blockchain::{Proof, ProofType};
-use util::{H520, H256, Address};
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::usize::MAX;
+use util::{H520, H256, Address};
 use util::Hashable;
 
 pub const DATA_PATH: &'static str = "DATA_PATH";
@@ -107,7 +107,7 @@ impl TendermintProof {
                 let msg = serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())), Infinite).unwrap();
                 if let Ok(pubkey) = recover(&Signature(sig.0.into()), &msg.crypt_hash().into()) {
                     return pubkey_to_address(&pubkey) == sender.clone().into();
-                } 
+                }
             }
             false
         })
@@ -121,12 +121,12 @@ impl TendermintProof {
             return false;
         }
         self.commits.iter().all(|(sender, sig)| {
-            let msg = serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())), Infinite).unwrap();
-            if let Ok(pubkey) = recover(&Signature(sig.0.into()), &msg.crypt_hash().into()) {
-                return pubkey_to_address(&pubkey) == sender.clone().into();
-            } 
-            false
-        })
+                                    let msg = serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())), Infinite).unwrap();
+                                    if let Ok(pubkey) = recover(&Signature(sig.0.into()), &msg.crypt_hash().into()) {
+                                        return pubkey_to_address(&pubkey) == sender.clone().into();
+                                    }
+                                    false
+                                })
     }
 }
 
