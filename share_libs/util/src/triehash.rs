@@ -333,10 +333,26 @@ mod tests {
     use super::trie_root;
     use hash::H256;
     use std::str::FromStr;
+    use hashable::HASH_NAME;
 
     #[test]
     fn simple_test() {
-        assert_eq!(trie_root(vec![(b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec())]), H256::from_str("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab").unwrap());
+        if HASH_NAME == "sha3"{
+            assert_eq!(
+            trie_root(vec![
+                (b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec()),
+            ]),
+                H256::from_str("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab").unwrap()
+            );
+        }
+        else if HASH_NAME == "blake2b"{
+            assert_eq!(
+            trie_root(vec![
+                (b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec()),
+            ]),
+                H256::from_str("e7d6072138c52966a5038d7f99e3e10939eae0a9b6235095e5cb798c56af9a26").unwrap()
+            );
+        }
     }
 
     #[test]

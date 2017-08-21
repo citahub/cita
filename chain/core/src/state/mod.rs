@@ -702,7 +702,7 @@ impl Clone for State<StateDB> {
 #[cfg(test)]
 mod tests {
     extern crate libproto;
-    extern crate cita_crypto;
+    extern crate cita_ed25519;
     extern crate protobuf;
     extern crate env_logger;
     ////////////////////////////////////////////////////////////////////////////////
@@ -713,7 +713,8 @@ mod tests {
     use rustc_hex::FromHex;
     use std::sync::Arc;
     use tests::helpers::*;
-    use util::{H256, Address};
+    use util::{H256, H512, Address};
+    use util::hashable::HASH_NAME;
 
     #[test]
     fn should_apply_create_transaction() {
@@ -753,7 +754,7 @@ mod tests {
         uv_tx.set_transaction(tx);
 
         // 2) stx = (from, content(code, nonce, signature))
-        let privkey = cita_crypto::PrivKey::from(H256::from("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"));
+        let privkey = cita_ed25519::PrivKey::from(H512::random());
         let mut stx = blockchain::SignedTransaction::new();
         stx.set_transaction_with_sig(uv_tx);
         stx.sign(privkey);
@@ -1843,8 +1844,14 @@ mod tests {
     #[test]
     fn create_empty() {
         let mut state = get_temp_state();
-        state.commit().unwrap();
-        assert_eq!(state.root().hex(), "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
+        if HASH_NAME == "sha3"{
+            state.commit().unwrap();
+            assert_eq!(state.root().hex(), "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
+        }
+        else if HASH_NAME == "blake2b"{
+            state.commit().unwrap();
+            assert_eq!(state.root().hex(), "18ee80f6c8dad115daf215fd4ec3ee6b7741347bd882fa18c28653d52c1fa95e");
+        }
     }
 
     #[test]

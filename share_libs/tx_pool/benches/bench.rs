@@ -26,7 +26,7 @@ use libproto::blockchain::{Transaction, UnverifiedTransaction, SignedTransaction
 use std::time::SystemTime;
 use test::Bencher;
 use tx_pool::pool::*;
-use util::H256;
+use util::H512;
 
 #[bench]
 fn bench_base(b: &mut Bencher) {
@@ -48,7 +48,7 @@ fn bench_enqueue(b: &mut Bencher) {
     let mut tx = Transaction::new();
     let mut uv_tx = UnverifiedTransaction::new();
     let mut signed_tx = SignedTransaction::new();
-    let pv = H256::from_slice(&[20, 17]);
+    let pv = H512::from_slice(&[20, 17]);
     for i in 0..10000 {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
         uv_tx.set_transaction(tx.clone());
@@ -69,7 +69,7 @@ fn bench_package(b: &mut Bencher) {
     let mut tx = Transaction::new();
     let mut uv_tx = UnverifiedTransaction::new();
     let mut signed_tx = SignedTransaction::new();
-    let pv = H256::from_slice(&[20, 17]);
+    let pv = H512::from_slice(&[20, 17]);
     for i in 0..10000 {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
         uv_tx.set_transaction(tx.clone());
@@ -91,7 +91,7 @@ fn bench_update(b: &mut Bencher) {
     let mut tx = Transaction::new();
     let mut uv_tx = UnverifiedTransaction::new();
     let mut signed_tx = SignedTransaction::new();
-    let pv = H256::from_slice(&[20, 17]);
+    let pv = H512::from_slice(&[20, 17]);
 
     for i in 0..10000 {
         tx.set_data(format!("{}", i).as_bytes().to_vec());

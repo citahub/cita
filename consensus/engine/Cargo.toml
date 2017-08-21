@@ -7,7 +7,7 @@ authors = ["zhangsoledad <787953403@qq.com>"]
 libproto = {path = "../../share_libs/proto"}
 util = {path = "../../share_libs/util"}
 protobuf = { version = "^1.0.0" }
-cita-crypto = { path = "../../share_libs/crypto" }
+cita-ed25519 = { path = "../../share_libs/ed25519" }
 engine_json = { path = "../json" }
 proof = { path = "../proof" }
 pubsub = { path = "../../share_libs/pubsub" }

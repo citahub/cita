@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import time
+<<<<<<< c4f6c3c74e62821430fb3164ee26ced3a0eaf368
 from os import path
 
 from ethereum.tools.tester import Chain
@@ -56,6 +57,24 @@ def main():
     with open(auth_path, "r") as authority_file:
         for line in authority_file:
             authorities.append(line.strip('\n'))
+=======
+import binascii
+import pysodium
+  
+def make_json():
+    path = sys.argv[3]
+    if len(sys.argv)==5:
+        pubkey = sys.argv[4]
+        if pubkey[0:2] != "0x" and pubkey[0:2] != "0X":
+            pubkey = "0x"+pubkey
+    else:
+        secret_path = os.path.join(path, "privkey")
+        secret_key = open(secret_path, "r")
+        sec_key = secret_key.read()
+        pubkey = "0x"+binascii.b2a_hex(pysodium.crypto_sign_sk_to_pk(binascii.a2b_hex(sec_key)))
+    crypto = sys.argv[2]
+    identifier = sys.argv[1]
+>>>>>>> blake2b and ed25519
     data = dict()
     timestamp = int(time.time())
     data["prevhash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"

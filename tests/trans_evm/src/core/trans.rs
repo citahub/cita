@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crypto::*;
+use ed25519::*;
 use libproto::blockchain::{SignedTransaction, UnverifiedTransaction, Transaction};
 use protobuf::core::Message;
 use rustc_hex::FromHex;

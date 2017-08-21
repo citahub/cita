@@ -20,7 +20,7 @@ eth-secp256k1 = { git = "https://github.com/ethcore/rust-secp256k1" }
 clap = "2"
 amqp = "=0.0.20"
 pubsub = { path = "../../share_libs/pubsub" }
-cita-crypto = { path = "../../share_libs/crypto" }
+cita-ed25519 = { path = "../../share_libs/ed25519" }
 proof = { path = "../proof" }
 parking_lot = "0.4"
 time = "0.1.36"

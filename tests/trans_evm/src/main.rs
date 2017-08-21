@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![feature(plugin)]
-extern crate cita_crypto as crypto;
+extern crate cita_ed25519 as ed25519;
 extern crate libproto;
 extern crate protobuf;
 extern crate util;

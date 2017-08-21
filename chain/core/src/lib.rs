@@ -57,7 +57,7 @@ extern crate time;
 extern crate crossbeam;
 extern crate transient_hashmap;
 extern crate ethcore_io;
-extern crate cita_crypto;
+extern crate cita_ed25519;
 extern crate common_types as types;
 extern crate jsonrpc_types;
 

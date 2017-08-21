@@ -15,12 +15,10 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(dead_code)]
-use cita_crypto::{Signature, recover as ec_recover};
 use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160 as Ripemd160Digest;
 use crypto::sha2::Sha256 as Sha256Digest;
-use std::cmp::min;
-use util::{U256, H256, Hashable, BytesRef};
+use util::{U256, BytesRef};
 // use ethjson;
 
 /// Native implementation of a built-in contract.
@@ -87,7 +85,7 @@ impl Builtin {
 fn ethereum_builtin(name: &str) -> Box<Impl> {
     match name {
         "identity" => Box::new(Identity) as Box<Impl>,
-        "ecrecover" => Box::new(EcRecover) as Box<Impl>,
+        //"ecrecover" => Box::new(EcRecover) as Box<Impl>,
         "sha256" => Box::new(Sha256) as Box<Impl>,
         "ripemd160" => Box::new(Ripemd160) as Box<Impl>,
         _ => panic!("invalid builtin name: {}", name),
@@ -104,8 +102,8 @@ fn ethereum_builtin(name: &str) -> Box<Impl> {
 #[derive(Debug)]
 struct Identity;
 
-#[derive(Debug)]
-struct EcRecover;
+//#[derive(Debug)]
+//struct EcRecover;
 
 #[derive(Debug)]
 struct Sha256;
@@ -119,6 +117,7 @@ impl Impl for Identity {
     }
 }
 
+/*
 impl Impl for EcRecover {
     fn execute(&self, i: &[u8], output: &mut BytesRef) {
         let len = min(i.len(), 128);
@@ -146,6 +145,7 @@ impl Impl for EcRecover {
         }
     }
 }
+*/
 
 impl Impl for Sha256 {
     fn execute(&self, input: &[u8], output: &mut BytesRef) {
@@ -241,6 +241,7 @@ mod tests {
         assert_eq!(&o34[..], &(FromHex::from_hex("0000000000000000000000009c1185a5c5e9fc54612808977ee8f548b2258d31ffff").unwrap())[..]);
     }
 
+    /*
     #[test]
     fn ecrecover() {
         use rustc_serialize::hex::FromHex;
@@ -299,6 +300,7 @@ mod tests {
 		f.execute(&i_bad[..], &mut BytesRef::Fixed(&mut o[..]));
 		assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/
     }
+    */
 
     #[test]
     #[should_panic]

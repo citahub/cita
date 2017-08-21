@@ -16,16 +16,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, deserialize, Infinite};
-use crypto::Signature;
+use ed25519::Signature;
 use libproto::blockchain::{Proof, ProofType};
 use rustc_serialize::hex::ToHex;
+use util::H768;
 use std::fmt;
-use util::H520;
-use util::H520 as EthH520;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct AuthorityRoundProof {
-    pub signature: H520,
+    pub signature: H768,
     pub step: u64,
 }
 
@@ -33,7 +32,7 @@ impl AuthorityRoundProof {
     pub fn new(step: u64, signature: Signature) -> AuthorityRoundProof {
         AuthorityRoundProof {
             step: step,
-            signature: EthH520::from(signature.0).into(),
+            signature: H768::from(signature.0).into(),
         }
     }
 }
@@ -70,7 +69,7 @@ mod tests {
     fn proof_display() {
         let proof = AuthorityRoundProof::new(0, Signature::default());
         let string = format!("{}", proof);
-        assert_eq!(string, "step: 0, signature: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        assert_eq!(string, "step: 0, signature: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     }
 
     #[test]
