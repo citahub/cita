@@ -94,8 +94,7 @@ impl Sendtx {
     }
 
     pub fn random_generation(&self) -> Result<KeyPair, Error> {
-        let test1_privkey = H512::random();
-        KeyPair::from_privkey(test1_privkey)
+        Ok(KeyPair::gen_keypair())
     }
 
     pub fn send_data(&self, url: String, method: Methods) -> Response {
@@ -170,7 +169,6 @@ impl Sendtx {
         for index in 0..self.txnum {
             pos = (index as usize) % num;
             let url = v_url[pos].clone();
-            //let mut frompv = H256::from(H256::new());
             let keypair = self.random_generation().unwrap();
             let frompv = keypair.privkey();
             let tx = match action {

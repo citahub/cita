@@ -27,8 +27,7 @@ use protobuf::core::Message;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::time::{UNIX_EPOCH, Duration};
-//util::hash::{H256, Address, H520};
-use util::{H256, H512};
+use util::H256;
 use util::Hashable;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -67,8 +66,7 @@ impl Generateblock {
     }
 
     pub fn generate_tx(code: &str, address: String) -> SignedTransaction {
-        let test1_privkey = H512::random();
-        let keypair = KeyPair::from_privkey(H512::from(test1_privkey)).unwrap();
+        let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
 
         let data = code.from_hex().unwrap();
@@ -90,8 +88,7 @@ impl Generateblock {
     }
 
     pub fn build_block(txs: Vec<SignedTransaction>, pre_hash: H256, h: u64) -> (Vec<u8>, Block) {
-        let test1_privkey = H512::random();
-        let keypair = KeyPair::from_privkey(H512::from(test1_privkey)).unwrap();
+        let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
         let pk = keypair.pubkey();
         let sender = keypair.address().clone();

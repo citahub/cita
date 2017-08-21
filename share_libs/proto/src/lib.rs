@@ -293,7 +293,6 @@ impl BlockBody {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use util::H512;
 
     #[test]
     fn cmd_id_works() {
@@ -303,8 +302,7 @@ mod tests {
 
     #[test]
     fn create_tx() {
-        let test1_privkey = H512::random();
-        let keypair = KeyPair::from_privkey(test1_privkey).unwrap();
+        let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
 
         let data = vec![1];
