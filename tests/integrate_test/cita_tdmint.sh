@@ -13,7 +13,7 @@ cd ${CUR_PATH}/../../admintool/
 setup_node() {
     id=$1
     cd ${CUR_PATH}/../../admintool/release/node${id}
-    ./cita setup ${id}
+    sudo ./cita setup ${id}
 }
 
 start_node() {
