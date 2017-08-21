@@ -20,6 +20,8 @@
 extern crate util;
 extern crate rlp;
 extern crate bloomable;
+extern crate cita_crypto as crypto;
+extern crate libproto;
 #[cfg(test)]
 extern crate rustc_serialize;
 extern crate rustc_hex;
@@ -33,6 +35,7 @@ pub mod ids;
 pub mod log_entry;
 pub mod receipt;
 pub mod state_diff;
+pub mod transaction;
 
 /// Type for block number.
 pub type BlockNumber = u64;

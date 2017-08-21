@@ -39,7 +39,6 @@ extern crate docopt;
 extern crate cpuprofiler;
 extern crate jsonrpc_types;
 extern crate dotenv;
-extern crate transaction as cita_transaction;
 extern crate cita_log;
 extern crate threadpool;
 extern crate num_cpus;

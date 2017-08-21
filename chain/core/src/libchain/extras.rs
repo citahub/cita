@@ -20,11 +20,11 @@
 use bloomchain;
 use blooms::{GroupPosition, BloomGroup};
 use db::{Key, ConstKey};
-use header::BlockNumber;
-use libchain::block::Block;
+use header::{BlockNumber, Header};
+use libchain::block::BlockBody;
 use receipt::Receipt;
 use rlp::*;
-use std::ops::Deref;
+use std::ops::{Deref, Index};
 use util::*;
 
 /// Represents index of extra data in database
@@ -62,7 +62,15 @@ impl Key<BlockNumber> for ConstKey {
     }
 }
 
-impl Key<Block> for H256 {
+impl Key<Header> for H256 {
+    type Target = H256;
+
+    fn key(&self) -> H256 {
+        *self
+    }
+}
+
+impl Key<BlockBody> for H256 {
     type Target = H256;
 
     fn key(&self) -> H256 {
@@ -218,6 +226,13 @@ impl Encodable for BlockReceipts {
 impl HeapSizeOf for BlockReceipts {
     fn heap_size_of_children(&self) -> usize {
         self.receipts.heap_size_of_children()
+    }
+}
+
+impl Index<usize> for BlockReceipts {
+    type Output = Option<Receipt>;
+    fn index(&self, i: usize) -> &Option<Receipt> {
+        &self.receipts[i]
     }
 }
 
