@@ -19,9 +19,10 @@ use libproto::*;
 use libproto::blockchain::*;
 use protobuf::Message;
 use protobuf::RepeatedField;
-use pubsub::Pub;
 use tx_pool;
 use engine::{unix_now, AsMillis};
+use dispatch::PubType;
+use std::sync::mpsc::Sender;
 
 struct Situation {
     pub height: u64,
@@ -47,14 +48,14 @@ impl CandidatePool {
         self.1.height == (height - 1)
     }
 
-    pub fn broadcast_tx(&self, tx: &SignedTransaction, _pub: &mut Pub) -> Result<(), &'static str> {
+    pub fn broadcast_tx(&self, tx: &SignedTransaction, sender: Sender<PubType>) -> Result<(), &'static str> {
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
         trace!("broadcast new tx {:?}", tx);
-        _pub.publish("consensus.tx", msg.write_to_bytes().unwrap());
+        sender.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         Ok(())
     }
 
-    pub fn add_tx(&mut self, tx: &mut SignedTransaction, _pub: &mut Pub, is_from_broadcast: bool) {
+    pub fn add_tx(&mut self, tx: &mut SignedTransaction, sender: Sender<PubType>, is_from_broadcast: bool) {
         let mut content = blockchain::TxResponse::new();
         let ret = tx.recover();
         content.set_hash(tx.tx_hash.clone());
@@ -65,7 +66,7 @@ impl CandidatePool {
             let success = self.0.enqueue(tx.clone());
             if success {
                 content.set_result(String::from("4:OK").into_bytes());
-                self.broadcast_tx(tx, _pub).unwrap();
+                self.broadcast_tx(tx, sender.clone()).unwrap();
             } else {
                 content.set_result(String::from("4:DUP").into_bytes());
             }
@@ -74,7 +75,7 @@ impl CandidatePool {
         if !is_from_broadcast {
             let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
             trace!("response new tx {:?}", tx);
-            _pub.publish("consensus.rpc", msg.write_to_bytes().unwrap());
+            sender.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }
 
@@ -101,10 +102,10 @@ impl CandidatePool {
         block
     }
 
-    pub fn pub_block(&self, block: &Block, _pub: &mut Pub) {
+    pub fn pub_block(&self, block: &Block, sender: Sender<PubType>) {
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
         trace!("publish block {:?}", block);
-        _pub.publish("consensus.blk", msg.write_to_bytes().unwrap());
+        sender.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap()));
     }
 
     pub fn update_txpool(&mut self, txs: &[SignedTransaction]) {

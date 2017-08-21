@@ -37,7 +37,6 @@ extern crate env_logger;
 #[macro_use]
 extern crate scoped_log;
 extern crate pubsub;
-extern crate amqp;
 extern crate dotenv;
 extern crate cita_log;
 
@@ -46,12 +45,11 @@ mod machine;
 mod log_store;
 mod dispatch;
 
-use amqp::{Consumer, Channel, protocol, Basic};
 use docopt::Docopt;
 use libproto::{parse_msg, MsgClass, key_to_id};
-use pubsub::PubSub;
+use pubsub::start_pubsub;
 use raft_server::*;
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{channel, Receiver};
 use log::LogLevelFilter;
 use std::thread;
 
@@ -82,27 +80,6 @@ Options:
   -h --help   Show a help message.
 ";
 
-
-pub struct MyHandler {
-    tx: Sender<(u32, u32, MsgClass)>,
-}
-
-impl MyHandler {
-    pub fn new(tx: Sender<(u32, u32, MsgClass)>) -> Self {
-        MyHandler { tx: tx }
-    }
-}
-
-impl Consumer for MyHandler {
-    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, body: Vec<u8>) {
-        trace!("handle delivery id {:?} payload {:?}", deliver.routing_key, body);
-        let (cmd_id, _, content) = parse_msg(body.as_slice());
-        self.tx.send((key_to_id(deliver.routing_key.as_str()), cmd_id, content)).unwrap();
-        let _ = channel.basic_ack(deliver.delivery_tag, false);
-    }
-}
-
-
 fn main() {
     dotenv::dotenv().ok();
     // Always print backtrace on panic.
@@ -110,15 +87,20 @@ fn main() {
     cita_log::format(LogLevelFilter::Info);
     let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
     info!("CITA:raft");
+    let (tx_sub, rx_sub) = channel();
+    let (tx_pub, rx_pub) = channel();
     let (tx, rx) = channel();
-    let mut pubsub = PubSub::new();
-    pubsub.start_sub("consensus_cmd", vec!["chain.status", "consensus.default"], MyHandler::new(tx));
-    let mut _pub = pubsub.get_pub();
+    start_pubsub("consensus_cmd", vec!["chain.status", "consensus.default"], tx_sub, rx_pub);
+    thread::spawn(move || loop {
+        let (key, body) = rx_sub.recv().unwrap();
+        let (cmd_id, _, content) = parse_msg(body.as_slice());
+        tx.send((key_to_id(&key), cmd_id, content)).unwrap();
+    });
 
     let (mut server, mut event_loop) = server(&args);
     let actions = server.consensus.init();
     server.execute_actions(&mut event_loop, actions);
-    server.set_con(_pub);
+    server.set_pub(tx_pub);
     let eventloop_notifix = event_loop.channel();
     thread_handler(rx, eventloop_notifix);
     event_loop.run(&mut server);

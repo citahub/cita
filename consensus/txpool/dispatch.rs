@@ -20,20 +20,12 @@
 use candidate_pool::CandidatePool;
 use cmd::{Command, decode};
 use libproto;
-use libproto::*;
-use pubsub::Pub;
+use libproto::{MsgClass, submodules, topics};
 use std::sync::mpsc::{Sender, Receiver};
-use threadpool::*;
 
-pub fn extract(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id: u32, msg: Vec<u8>) {
-    let tx = tx.clone();
-    pool.execute(move || {
-                     let (cmd_id, origin, content) = parse_msg(msg.as_slice());
-                     tx.send((id, cmd_id, origin, content)).unwrap();
-                 });
-}
+pub type PubType = (String, Vec<u8>);
 
-pub fn dispatch(candidate_pool: &mut CandidatePool, _pub: &mut Pub, rx: &Receiver<(u32, u32, u32, MsgClass)>) {
+pub fn dispatch(candidate_pool: &mut CandidatePool, sender: Sender<PubType>, rx: &Receiver<(u32, u32, u32, MsgClass)>) {
     let (id, cmd_id, _origin, content_ext) = rx.recv().unwrap();
     match content_ext {
         MsgClass::REQUEST(req) => {}
@@ -47,9 +39,9 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, _pub: &mut Pub, rx: &Receive
         }
         MsgClass::TX(mut tx) => {
             if id == submodules::JSON_RPC {
-                candidate_pool.add_tx(&mut tx, _pub, false);
+                candidate_pool.add_tx(&mut tx, sender.clone(), false);
             } else {
-                candidate_pool.add_tx(&mut tx, _pub, true);
+                candidate_pool.add_tx(&mut tx, sender.clone(), true);
             }
         }
         MsgClass::TXRESPONSE(content) => {}
@@ -61,7 +53,7 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, _pub: &mut Pub, rx: &Receive
                         if candidate_pool.meet_conditions(height) {
                             info!("recieved command spawn new blk.");
                             let blk = candidate_pool.spawn_new_blk(height, hash);
-                            candidate_pool.pub_block(&blk, _pub);
+                            candidate_pool.pub_block(&blk, sender.clone());
                             let txs = blk.get_body().get_transactions();
                             candidate_pool.update_txpool(txs);
                         } else {

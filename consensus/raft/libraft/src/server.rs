@@ -40,7 +40,6 @@ use mio::tcp::TcpListener;
 use mio::util::Slab;
 use persistent_log::Log;
 use protobuf::core::Message;
-use pubsub::Pub;
 use state_machine::StateMachine;
 use std::{fmt, io};
 use std::collections::HashMap;
@@ -51,6 +50,7 @@ use std::sync::mpsc;
 use std::thread::{self, JoinHandle};
 
 const LISTENER: Token = Token(0);
+type PubType = (String, Vec<u8>);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum ServerTimeout {
@@ -99,7 +99,7 @@ where
     /// Currently registered reconnection timeouts.
     reconnection_timeouts: HashMap<Token, TimeoutHandle>,
 
-    con: Option<Pub>,
+    con: Option<mpsc::Sender<PubType>>,
 }
 
 /// The implementation of the Server.
@@ -145,8 +145,8 @@ where
         Ok((server, event_loop))
     }
 
-    pub fn set_con(&mut self, con: Pub) {
-        self.con = Some(con);
+    pub fn set_pub(&mut self, p: mpsc::Sender<PubType>) {
+        self.con = Some(p);
     }
 
     /// Runs a new Raft server in the current thread.
@@ -255,7 +255,7 @@ where
             info!("leader to spawn new blk, height: {}.", height);
             let msg = factory::create_msg(submodules::CONSENSUS_CMD, topics::DEFAULT, communication::MsgType::MSG, cmd::encode(&cmd::Command::SpawnBlk(height, hash)));
             if let Some(ref mut conn) = self.con {
-                conn.publish("consensus_cmd.default", msg.write_to_bytes().unwrap());
+                conn.send(("consensus_cmd.default".to_string(), msg.write_to_bytes().unwrap())).unwrap();
             } else {
                 panic!("connect tx_pool failed.");
             }

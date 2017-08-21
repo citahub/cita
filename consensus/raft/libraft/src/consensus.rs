@@ -143,7 +143,7 @@ pub struct Consensus<L, M> {
     candidate_state: CandidateState,
     /// State necessary while a `Follower`. Should not be used otherwise.
     follower_state: FollowerState,
-    /// Previous hash fo status
+    /// Previous hash of status
     prev_hash: Vec<u8>,
 }
 
