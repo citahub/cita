@@ -15,24 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::TopicMessage;
-use protobuf::Message;
-use pubsub::Pub;
-use std::sync::mpsc::Receiver;
-
-pub struct Publisher {
-    rx: Receiver<TopicMessage>,
-}
-
-impl Publisher {
-    pub fn new(rx: Receiver<TopicMessage>) -> Self {
-        Publisher { rx: rx }
-    }
-
-    pub fn run(&self, _pub: &mut Pub) {
-        loop {
-            let msg = self.rx.recv().unwrap();
-            _pub.publish(&msg.0, msg.1.write_to_bytes().unwrap());
-        }
-    }
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {}
 }

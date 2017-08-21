@@ -26,9 +26,9 @@ use libproto;
 use libproto::*;
 use libproto::blockchain::Status;
 use protobuf::Message;
-use pubsub::Pub;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
+use std::sync::mpsc::{Sender, Receiver};
 use std::thread;
 use std::time::Duration;
 
@@ -47,7 +47,7 @@ impl Synchronizer {
                  })
     }
 
-    pub fn sync(&self, _pub: &mut Pub) {
+    pub fn sync(&self, ctx_pub: Sender<(String, Vec<u8>)>) {
         let block_map = self.chain.block_map.read();
         if !block_map.is_empty() {
             let start_height = self.chain.get_current_height() + 1;
@@ -59,7 +59,7 @@ impl Synchronizer {
                     trace!("chain sync loop {:?}", height);
 
                     let value = block_map[&(height)].clone();
-                    self.add_block(_pub, value.1);
+                    self.add_block(ctx_pub.clone(), value.1);
                 } else {
                     trace!("chain sync break {:?}", height);
                     break;
@@ -69,7 +69,7 @@ impl Synchronizer {
         self.chain.is_sync.store(false, Ordering::SeqCst);
     }
 
-    pub fn sync_status(&self, _pub: &mut Pub) {
+    pub fn sync_status(&self, ctx_pub: Sender<(String, Vec<u8>)>) {
         self.chain.is_sync.store(false, Ordering::SeqCst);
         let current_hash = *self.chain.current_hash.read();
         let current_height = self.chain.get_current_height();
@@ -79,15 +79,15 @@ impl Synchronizer {
         status.set_height(current_height);
 
         let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
-        _pub.publish("chain.status", msg.write_to_bytes().unwrap());
+        ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
-    fn add_block(&self, _pub: &mut Pub, blk: Block) {
+    fn add_block(&self, ctx_pub: Sender<(String, Vec<u8>)>, blk: Block) {
         trace!("chain sync add blk-----{:?}", blk.get_header().get_height());
         if let Some(st) = self.chain.set_block(blk) {
             let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st);
             info!("chain after sync-----{:?}-----{:?}", self.chain.get_current_height(), self.chain.get_max_height());
-            _pub.publish("chain.status", msg.write_to_bytes().unwrap());
+            ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }
 }

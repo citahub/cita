@@ -7,14 +7,12 @@ members = ["devtools"
 ,"consensus/tdmint"
 ,"consensus/txpool"
 ,"consensus/raft"
+,"consensus/authority_round"
 ,"network"
 ,"tests/trans_evm"
 ,"tests/chain_performance"
-,"tests/amqp/request"
-,"tests/amqp/response"
-]
-exclude = [
-"share_libs/parity"
+,"tests/amqp"
+,"tests/latency"
 ]
 
 
