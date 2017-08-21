@@ -15,12 +15,13 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(dead_code)]
+use cita_ed25519::{Signature as ED_Signature, recover as ed_recover};
 use cita_secp256k1::{Signature, recover as ec_recover};
 use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160 as Ripemd160Digest;
 use crypto::sha2::Sha256 as Sha256Digest;
 use std::cmp::min;
-use util::{U256, H256, BytesRef, Hashable};
+use util::{U256, H256, BytesRef, Hashable, H768};
 // use ethjson;
 
 /// Native implementation of a built-in contract.
@@ -87,9 +88,10 @@ impl Builtin {
 fn ethereum_builtin(name: &str) -> Box<Impl> {
     match name {
         "identity" => Box::new(Identity) as Box<Impl>,
-        //"ecrecover" => Box::new(EcRecover) as Box<Impl>,
+        "ecrecover" => Box::new(EcRecover) as Box<Impl>,
         "sha256" => Box::new(Sha256) as Box<Impl>,
         "ripemd160" => Box::new(Ripemd160) as Box<Impl>,
+        "edrecover" => Box::new(EdRecover) as Box<Impl>,
         _ => panic!("invalid builtin name: {}", name),
     }
 }
@@ -112,6 +114,9 @@ struct Sha256;
 
 #[derive(Debug)]
 struct Ripemd160;
+
+#[derive(Debug)]
+struct EdRecover;
 
 impl Impl for Identity {
     fn execute(&self, input: &[u8], output: &mut BytesRef) {
@@ -168,6 +173,26 @@ impl Impl for Ripemd160 {
         sha.result(&mut out[12..32]);
 
         output.write(0, &out);
+    }
+}
+
+impl Impl for EdRecover {
+    fn execute(&self, i: &[u8], output: &mut BytesRef) {
+        let len = min(i.len(), 128);
+
+        let mut input = [0; 128];
+        input[..len].copy_from_slice(&i[..len]);
+
+        let hash = H256::from_slice(&input[0..32]);
+        let sig = H768::from_slice(&input[32..128]);
+
+
+        let s = ED_Signature::from(sig);
+        if let Ok(p) = ed_recover(&s, &hash.into()) {
+            let r = p.crypt_hash();
+            output.write(0, &[0; 12]);
+            output.write(12, &r[12..r.len()]);
+        }
     }
 }
 

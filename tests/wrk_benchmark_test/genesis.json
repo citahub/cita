@@ -1,7 +1,7 @@
 {
     "admin": {
         "identifier": "admin", 
-        "pubkey": "0xd759c02c02827cfb344de62be9f08cf5425ade4b879175b28a937febe900d6d7cc41b4d4ff472177fd4d8ffad0ab28b743d5eb4e24af41b4208aa4066c965af1", 
+        "pubkey": "0xcc41b4d4ff472177fd4d8ffad0ab28b743d5eb4e24af41b4208aa4066c965af1", 
         "crypto": "SECP"
     }, 
     "timestamp": 1501138351, 

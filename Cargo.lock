@@ -294,6 +294,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cita-secp256k1"
+version = "0.6.0"
+dependencies = [
+ "eth-secp256k1 0.5.6 (git+https://github.com/ethcore/rust-secp256k1)",
+ "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "util 0.6.0",
+]
+
+[[package]]
 name = "cita_log"
 version = "0.1.0"
 dependencies = [
@@ -439,6 +452,7 @@ dependencies = [
  "bn 0.4.4 (git+https://github.com/paritytech/bn)",
  "byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-ed25519 0.6.0",
+ "cita-secp256k1 0.6.0",
  "common-types 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
