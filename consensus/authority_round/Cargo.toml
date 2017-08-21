@@ -22,7 +22,6 @@ parking_lot = "0.4"
 log = "0.3.0"
 clap = "2"
 pubsub = { path = "../../share_libs/pubsub" }
-amqp = "=0.0.20"
 cpuprofiler = "0.0.3"
 cita_log = { path = "../../share_libs/cita_log" }
 dotenv = "0.10.0"

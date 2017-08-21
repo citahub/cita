@@ -23,7 +23,6 @@ use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
 use parking_lot::RwLock;
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
-use pubsub::Pub;
 use rustc_serialize::hex::ToHex;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
@@ -121,18 +120,18 @@ impl AuthorityRound {
         }
     }
 
-    pub fn pub_transaction(&self, tx: &SignedTransaction, _pub: &mut Pub) {
+    pub fn pub_transaction(&self, tx: &SignedTransaction, tx_pub: Sender<(String, Vec<u8>)>) {
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
         trace!("broadcast new tx {:?}", tx);
-        _pub.publish("consensus.tx", msg.write_to_bytes().unwrap());
+        tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
 
     //call by seal_block and update_head, broadcast block to other node and also pass to chain
-    pub fn pub_block(&self, block: &Block, _pub: &mut Pub) {
+    pub fn pub_block(&self, block: &Block, tx_pub: Sender<(String, Vec<u8>)>) {
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
         trace!("publish block {:?}", block.crypt_hash());
-        _pub.publish("consensus.blk", msg.write_to_bytes().unwrap());
+        tx_pub.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 }
 
@@ -200,7 +199,7 @@ impl Engine for AuthorityRound {
         }
     }
 
-    fn receive_new_block(&self, block: &Block, _pub: &mut Pub) {
+    fn receive_new_block(&self, block: &Block, tx_pub: Sender<(String, Vec<u8>)>) {
         if self.sealing.load(Ordering::SeqCst) {
             return ();
         }
@@ -211,14 +210,14 @@ impl Engine for AuthorityRound {
                 self.sealing.store(true, Ordering::SeqCst);
                 trace!("update_head height {:?}", height);
                 self.update_height();
-                self.pub_block(block, _pub);
+                self.pub_block(block, tx_pub);
                 let txs = block.get_body().get_transactions();
                 self.tx_pool.write().update(txs);
             }
         }
     }
 
-    fn receive_new_transaction(&self, tx: &SignedTransaction, _pub: &mut Pub, _origin: u32, from_broadcast: bool) {
+    fn receive_new_transaction(&self, tx: &SignedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool) {
         let mut content = blockchain::TxResponse::new();
         let hash: H256 = tx.crypt_hash();
         {
@@ -227,32 +226,47 @@ impl Engine for AuthorityRound {
             let success = tx_pool.enqueue(tx.clone());
             if success {
                 content.set_result(String::from("4:OK").into_bytes());
-                self.pub_transaction(tx, _pub);
+                self.pub_transaction(tx, tx_pub.clone());
             } else {
                 content.set_result(String::from("4:DUP").into_bytes());
             }
             if !from_broadcast {
                 let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
                 trace!("response new tx {:?}", tx);
-                _pub.publish("consensus.rpc", msg.write_to_bytes().unwrap());
+                tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
             }
         }
     }
 
     // call when time to seal block
-    fn new_block(&self, _pub: &mut Pub) {
+    fn new_block(&self, tx_pub: Sender<(String, Vec<u8>)>) {
         if self.sealing.load(Ordering::SeqCst) {
             return ();
         }
         if let Some(block) = self.generate_block() {
             self.sealing.store(true, Ordering::SeqCst);
             self.update_height();
-            self.pub_block(&block, _pub);
+            self.pub_block(&block, tx_pub);
         }
     }
 
     #[allow(unused_variables)]
     fn set_new_status(&self, height: usize, pre_hash: H256) {
+        unimplemented!()
+    }
+
+    #[allow(unused_variables)]
+    fn new_messages(&self, tx_pub: Sender<(String, Vec<u8>)>) {
+        unimplemented!()
+    }
+
+    #[allow(unused_variables)]
+    fn handle_message(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError> {
+        unimplemented!()
+    }
+
+    #[allow(unused_variables)]
+    fn handle_proposal(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError> {
         unimplemented!()
     }
 }

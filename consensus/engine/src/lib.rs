@@ -20,8 +20,6 @@ extern crate util;
 extern crate protobuf;
 extern crate cita_crypto as crypto;
 extern crate proof;
-extern crate amqp;
-extern crate pubsub;
 extern crate engine_json;
 
 mod error;
@@ -31,7 +29,7 @@ pub use error::*;
 pub use instrument::*;
 
 use libproto::blockchain::{Block, SignedTransaction, Status};
-use pubsub::Pub;
+use std::sync::mpsc::Sender;
 use std::time::Duration;
 use util::H256;
 use util::SemanticVersion;
@@ -47,25 +45,21 @@ pub trait Engine: Sync + Send {
 
     fn verify_block(&self, block: &Block) -> Result<(), EngineError>;
 
-    fn receive_new_transaction(&self, tx: &SignedTransaction, _pub: &mut Pub, _origin: u32, from_broadcast: bool);
+    fn receive_new_transaction(&self, tx: &SignedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool);
 
-    fn receive_new_block(&self, block: &Block, _pub: &mut Pub);
+    fn receive_new_block(&self, block: &Block, tx_pub: Sender<(String, Vec<u8>)>);
 
     fn receive_new_status(&self, status: Status);
 
-    fn new_block(&self, _pub: &mut Pub);
+    fn new_block(&self, tx_pub: Sender<(String, Vec<u8>)>);
 
     fn set_new_status(&self, height: usize, pre_hash: H256);
 
-    fn new_messages(&self, _pub: &mut Pub) {}
+    fn new_messages(&self, tx_pub: Sender<(String, Vec<u8>)>);
 
-    fn handle_message(&self, _message: Vec<u8>, _pub: &mut Pub) -> Result<(), EngineError> {
-        Ok(())
-    }
+    fn handle_message(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError>;
 
-    fn handle_proposal(&self, _message: Vec<u8>, _pub: &mut Pub) -> Result<(), EngineError> {
-        Ok(())
-    }
+    fn handle_proposal(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError>;
 }
 
 #[test]

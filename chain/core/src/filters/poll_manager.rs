@@ -86,9 +86,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::cell::Cell;
     use transient_hashmap::Timer;
-    use super::*;
 
     struct TestTimer<'a> {
         time: &'a Cell<i64>,

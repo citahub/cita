@@ -1,0 +1,13 @@
+[package]
+description = "CITA node."
+name = "latency"
+version = "0.1.0"
+authors = ["ptting <ptting@cryptape.com>"]
+
+[[bin]]
+path = "latency.rs"
+name = "latency"
+
+
+[dependencies]
+pubsub = { path = "../../share_libs/pubsub" }
