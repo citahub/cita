@@ -15,29 +15,39 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#[cfg(feature = "rabbitmq")]
+#[cfg(feature = "pubsub_rabbitmq")]
 extern crate pubsub_rabbitmq;
-extern crate dotenv;
+#[cfg(feature = "pubsub_zeromq")]
+extern crate pubsub_zeromq;
+extern crate dotenv
 
+use std::sync::mpsc::Sender;
+use std::sync::mpsc::Receiver;
 use dotenv::dotenv;
 
-#[cfg(feature = "rabbitmq")]
+#[cfg(feature = "pubsub_rabbitmq")]
 use pubsub_rabbitmq::start_rabbitmq;
-use std::sync::mpsc::Receiver;
-use std::sync::mpsc::Sender;
+
+#[cfg(feature = "pubsub_zeromq")]
+use pubsub_rabbitmq::start_rabbitmq;
 
 
-#[cfg(feature = "rabbitmq")]
+#[cfg(feature = "pubsub_rabbitmq")]
 pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
     dotenv().ok();
     start_rabbitmq(name, keys, tx, rx);
+}
+
+#[cfg(feature = "pubsub_zeromq")]
+pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
+    dotenv().ok();
+    start_zeromq(name, keys, tx, rx);
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use std::sync::mpsc::channel;
-
     #[test]
     fn basics() {
         let (ntx_sub, nrx_sub) = channel();
