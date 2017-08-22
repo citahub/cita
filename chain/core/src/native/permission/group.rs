@@ -1,4 +1,7 @@
 use super::switch::Switch;
+use super::operate::{Operate, check, union, diff};
+use super::action::ElementAction;
+
 
 #[derive(Clone, Debug)]
 pub struct Group {
@@ -12,13 +15,25 @@ pub struct Group {
     switch: Switch,
 }
 
+impl Operate for Group{
+    fn modify_element(&mut self, element: &Vec<String>, action: ElementAction) {
+        // check the permission
+        check(&self.name, &"update_group".to_string());
+        match action {
+            ElementAction::Add => self.add_user(element),
+            ElementAction::Delete => self.delete_user(element),
+        }
+    }
+}
+
+
 impl Group {
     pub fn new(name: String) -> Group {
         Group {
             name: name,
             users: vec![],
             groups: vec![],
-            switch: Switch::OFF,
+            switch: Switch::Off,
         }
     }
 
@@ -26,13 +41,21 @@ impl Group {
         self.switch = switch;
     }
 
-    pub fn add_user(&mut self, user: String) {
-        self.users.push(user);
+    fn add_user(&mut self, element: &Vec<String>) {
+        self.users = union(&self.users, element);
     }
 
-    pub fn delete_user(&mut self, user: String) -> Option<String> {
-        self.users.remove_item(&user)
+    fn delete_user(&mut self, element: &Vec<String>) {
+        self.users = diff(&self.users, element);
     }
+
+//    pub fn add_user(&mut self, user: String) {
+//        self.users.push(user);
+//    }
+//
+//    pub fn delete_user(&mut self, user: String) -> Option<String> {
+//        self.users.remove_item(&user)
+//    }
 
     pub fn is_exist_user(&self, user: &String) -> bool {
         for val in &self.users {
