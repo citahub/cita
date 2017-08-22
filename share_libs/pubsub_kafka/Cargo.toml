@@ -1,6 +1,26 @@
 [package]
 name = "pubsub_kafka"
 version = "0.1.0"
-authors = ["rink1969 <rink1969@cryptape.com>"]
+authors = ["lycbitbucket <liuyucheng@cryptape.com>"]
 
 [dependencies]
+rdkafka = "^0.12.0"
+rdkafka-sys="0.11.0-0"
+errno = "^0.1.8"
+futures = "^0.1.13"
+libc = "^0.2.0"
+log = "^0.3.0"
+serde = "^0.9.8"
+serde_derive = "^0.9.8"
+serde_json = "^0.9.8"
+clap = "^2.18.0"
+
+[dev-dependencies]
+chrono = "^0.4.0"
+clap = "^2.18.0"
+env_logger = "^0.3.0"
+futures-cpupool = "^0.1.2"
+rand = "^0.3.15"
+tokio-core = "^0.1.4"
+
+[features]
