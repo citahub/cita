@@ -198,10 +198,13 @@ impl Impl for EdRecover {
 
 #[cfg(test)]
 mod tests {
+    extern crate cita_ed25519;
+
     use super::{Builtin, Linear, ethereum_builtin, Pricer};
     // use ethjson;
-    use util::{U256, BytesRef};
     use util::hashable::HASH_NAME;
+    use util::{U256, H256, BytesRef};
+    use cita_ed25519::{KeyPair, sign as ED_sign, pubkey_to_address as ED_pubkey_to_address};
 
     #[test]
     fn identity() {
@@ -330,6 +333,28 @@ mod tests {
 		let mut o = [255u8; 32];
 		f.execute(&i_bad[..], &mut BytesRef::Fixed(&mut o[..]));
 		assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/
+    }
+
+    #[test]
+    fn edrecover() {
+        let key_pair = KeyPair::gen_keypair();
+        let message: [u8; 32] = [0x01, 0x02, 0x03, 0x04, 0x19, 0xab, 0xfe, 0x39, 0x6f, 0x28, 0x79, 0x00, 0x08, 0xdf, 0x9a, 0xef,
+                                 0xfb, 0x77, 0x42, 0xae, 0xad, 0xfc, 0xcf, 0x12, 0x24, 0x45, 0x29, 0x89, 0x29, 0x45, 0x3f, 0xf8];
+        let hash = H256::from(message);
+        let privkey = key_pair.privkey();
+        let pubkey = key_pair.pubkey();
+        let address = ED_pubkey_to_address(pubkey);
+        let signature = ED_sign(privkey, &hash).unwrap();
+        let mut buf = Vec::<u8>::with_capacity(128);
+        buf.extend_from_slice(&message[..]);
+        buf.extend_from_slice(&signature.0[..]);
+
+        let f = ethereum_builtin("edrecover");
+        let mut output = [255u8; 32];
+        f.execute(&buf, &mut BytesRef::Fixed(&mut output[..]));
+
+        assert_eq!(&output[0..12], &[0u8; 12]);
+        assert_eq!(&output[12..], &address.0[..]);
     }
 
     #[test]
