@@ -163,7 +163,7 @@ impl Transaction {
         Ok(Transaction {
                nonce: U256::from_str(plain_transaction.get_nonce()).map_err(|_| Error::ParseError)?,
                gas_price: U256::default(),
-               gas: U256::from(u64::max_value()),
+               gas: U256::from(u32::max_value()),
                action: {
                    let to = plain_transaction.get_to();
                    match to.is_empty() {
