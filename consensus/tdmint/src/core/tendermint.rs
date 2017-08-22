@@ -514,7 +514,7 @@ impl TenderMint {
                     return false;
                 }
 
-                info!(" height {} consensus time {:?} ", height, Instant::now() - self.htime);
+                info!(" ######### height {} consensus time {:?} ", height, Instant::now() - self.htime);
                 self.pub_block(self.locked_block.as_ref().unwrap());
                 {
                     //update tx pool
@@ -888,7 +888,7 @@ impl TenderMint {
             }
         } else if tminfo.step == Step::PrevoteWait {
 
-            info!("  height {} round {} prevote wait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
+            info!(" #########  height {} round {} prevote wait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
             self.change_state_step(tminfo.height, tminfo.round, Step::Precommit, false);
             self.pre_proc_precommit();
 
@@ -907,7 +907,7 @@ impl TenderMint {
                 self.pre_proc_precommit();
             }
         } else if tminfo.step == Step::PrecommitWait {
-            info!(" height {} round {} PrecommitWait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
+            info!(" ######### height {} round {} PrecommitWait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
             if self.pre_proc_commit(tminfo.height, tminfo.round) {
                 /*wait for new status*/
                 self.change_state_step(tminfo.height, tminfo.round, Step::Commit, false);
@@ -1015,7 +1015,7 @@ impl TenderMint {
             tv = ::std::time::Duration::new(0, 0);
         }
 
-        info!("height {} round {} chain status return time {:?} ", status_height, self.round, Instant::now() - self.htime);
+        info!(" ######### height {} round {} chain status return time {:?} ", status_height, self.round, Instant::now() - self.htime);
         WaitTimer::set_timer(self.timer_seter.clone(),
                              TimeoutInfo {
                                  timeval: tv,
