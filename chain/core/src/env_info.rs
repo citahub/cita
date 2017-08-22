@@ -51,7 +51,7 @@ impl Default for EnvInfo {
             author: Address::default(),
             timestamp: 0,
             difficulty: 0.into(),
-            gas_limit: 1_000_000.into(),
+            gas_limit: U256::from(u64::max_value()),
             last_hashes: Arc::new(vec![]),
             gas_used: 0.into(),
         }
