@@ -38,15 +38,21 @@ pub struct Connection {
 
 impl Connection {
     pub fn new(config: &config::NetConfig) -> Self {
-        let peers = config.peers.as_ref().unwrap();
         let id_card = config.id_card.unwrap();
         let mut peers_pair = Vec::default();
-        for peer in peers.iter() {
-            let id_card: u32 = peer.id_card.unwrap();
-            let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
-            let addr = addr.parse::<SocketAddr>().unwrap();
-            peers_pair.push((id_card, addr, Arc::new(RwLock::new(None))));
+        match config.peers.as_ref() {
+            Some(peers) => {
+                for peer in peers.iter() {
+                    let id_card: u32 = peer.id_card.unwrap();
+                    let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
+                    let addr = addr.parse::<SocketAddr>().unwrap();
+                    peers_pair.push((id_card, addr, Arc::new(RwLock::new(None))));
+                }
+            }
+            None => (),
+
         }
+
         Connection { id_card, peers_pair }
     }
 }

@@ -19,7 +19,7 @@ use bincode::{serialize, deserialize, Infinite};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub enum Command {
-    SpawnBlk(u64),
+    SpawnBlk(u64, Vec<u8>),
     PoolSituation(u64, Option<Vec<u8>>, Option<Vec<u8>>),
 }
 

@@ -45,8 +45,10 @@ test:
          BEGIN { passed=0; failed=0; ignored=0; measured=0; filter=0; } \
                { passed+=$$4; failed+=$$6; ignored+=$$8;  measured+=$$10; filter+=$$12; } \
          END   { printf "passed=%d; failed=%d; ignored=%d; measured=%d; filter=%d\n", passed, failed, ignored, measured, filter; }'
+	@echo "################################################################################"
 	@echo "failed testcase:"
 	@grep '\.\.\. FAILED' target/test.log ||true
+	@grep -q '\.\.\. FAILED' target/bench.log; if [ $$? -eq 0 ] ; then exit 1; fi;
 
 bench:
 	-rm -f target/bench.log

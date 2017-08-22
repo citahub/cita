@@ -127,11 +127,7 @@ macro_rules! setup_test {
 
 pub mod state_machine;
 pub mod persistent_log;
-pub mod messages_capnp {
-    #![allow(dead_code)]
-    include!(concat!(env!("OUT_DIR"), "/messages_capnp.rs"));
-}
-
+pub mod messages_capnp;
 mod backoff;
 mod client;
 mod connection;
