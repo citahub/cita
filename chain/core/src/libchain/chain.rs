@@ -937,7 +937,7 @@ mod tests {
     use super::*;
     use db;
     use libchain::block::{Block, BlockBody};
-    use libchain::genesis::{Spec, Admin};
+    use libchain::genesis::Spec;
     use libproto::blockchain;
     use rustc_serialize::hex::FromHex;
     use std::sync::Arc;
@@ -968,11 +968,8 @@ mod tests {
 
     }
 
-    fn init_chain() -> (Arc<Chain>, PrivKey) {
+    fn init_chain() -> Arc<Chain> {
         let _ = env_logger::init();
-        let privkey = PrivKey::from(H256::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0"));
-        let keypair = KeyPair::from_privkey(privkey).unwrap();
-        let pubkey = keypair.pubkey();
         let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
@@ -980,17 +977,12 @@ mod tests {
             spec: Spec {
                 prevhash: H256::from(0),
                 timestamp: 0,
-                admin: Admin {
-                    pubkey: *pubkey,
-                    crypto: privkey.hex(),
-                    identifier: String::from(""),
-                },
             },
             block: Block::default(),
         };
         let (sync_tx, _) = channel();
         let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
-        (chain, privkey)
+        chain
     }
 
     fn create_block(chain: &Chain, privkey: PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
@@ -1032,7 +1024,8 @@ mod tests {
 
     #[bench]
     fn bench_execute_block(b: &mut Bencher) {
-        let (chain, privkey) = init_chain();
+        let chain = init_chain();
+        let privkey = PrivKey::from(H256::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")); 
         let data = "60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
             .from_hex()
             .unwrap();
@@ -1064,7 +1057,8 @@ mod tests {
 
     #[test]
     fn test_contract() {
-        let (chain, privkey) = init_chain();
+        let chain = init_chain();
+        let privkey = PrivKey::from(H256::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0"));
         /*
             pragma solidity ^0.4.8;
             contract ConstructSol {
