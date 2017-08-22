@@ -830,7 +830,7 @@ impl Chain {
 
     pub fn set_block(&self, block: Block) -> Option<ProtoStatus> {
         let height = block.number();
-        trace!("set_block height = {:?}, hash = {:?}", blk_height, block.crypt_hash());
+        trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
         if self.validate_height(height) {
             let mut batch = self.db.transaction();
             if let Some(current_hash) = self.add_block(&mut batch, block) {
@@ -843,7 +843,7 @@ impl Chain {
                 let status = self.save_status(&mut batch);
 
                 self.db.write(batch).expect("DB write failed.");
-                info!("chain update {:?}", blk_height);
+                info!("chain update {:?}", height);
                 Some(status.protobuf())
             } else {
                 warn!("add block failed");
