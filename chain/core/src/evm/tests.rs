@@ -250,7 +250,7 @@ fn test_sha3(factory: super::Factory) {
     };
 
     assert_eq!(gas_left, U256::from(79_961));
-    assert_store(&ext, 0, "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+        assert_store(&ext, 0, "d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f");
 }
 
 evm_test!{test_address: test_address_jit, test_address_int}

@@ -947,6 +947,7 @@ mod tests {
     use types::transaction::SignedTransaction;
     use util::{U256, H256, H512, Address};
     use util::kvdb::{Database, DatabaseConfig};
+    //use util::hashable::HASH_NAME;
 
     #[test]
     fn test_heapsizeof() {
@@ -1158,9 +1159,13 @@ mod tests {
     #[test]
     fn test_contract() {
         let _ = env_logger::init();
-        let keypair = cita_ed25519::KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        let pubkey = keypair.pubkey();
+        //let keypair = cita_ed25519::KeyPair::gen_keypair();
+        //let privkey = keypair.privkey();
+        //let pubkey = keypair.pubkey();
+        let privkey = cita_ed25519::PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66");
+        let pubkey = cita_ed25519::PubKey::from("bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66");
+        println!("privkey: {:?}", privkey);
+        println!("pubkey: {:?}", pubkey);
         let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
@@ -1169,7 +1174,7 @@ mod tests {
                 prevhash: H256::from(0),
                 timestamp: 0,
                 admin: Admin {
-                    pubkey: *pubkey,
+                    pubkey: pubkey,
                     crypto: privkey.hex(),
                     identifier: String::from(""),
                 },
@@ -1216,46 +1221,13 @@ mod tests {
         println!("contract address: {}", contract_address);
         let log = &receipt.logs[0];
         assert_eq!(contract_address, log.address);
-        assert_eq!(contract_address, Address::from("6f3b2b355848918472d79b76f8b39729088a0d00"));
+        assert_eq!(contract_address, Address::from("b2f0aa00c6bc02a2b07646a1a213e1bed6fefff6"));
         // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 111, 59, 43, 53, 88, 72, 145, 132, 114, 215, 155, 118, 248, 179, 151, 41, 8, 138, 13, 0]
         println!("contract_address as slice {:?}", contract_address.to_vec().as_slice());
         assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
         assert_eq!(
             log.data,
-            Bytes::from(vec![
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                111,
-                59,
-                43,
-                53,
-                88,
-                72,
-                145,
-                132,
-                114,
-                215,
-                155,
-                118,
-                248,
-                179,
-                151,
-                41,
-                8,
-                138,
-                13,
-                0,
-            ])
+            Bytes::from(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 178, 240, 170, 0, 198, 188, 2, 162, 176, 118, 70, 161, 162, 19, 225, 190, 214, 254, 255, 246,])
         );
 
         // set a=10
