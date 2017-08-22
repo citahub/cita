@@ -38,7 +38,6 @@ extern crate rustc_serialize;
 extern crate proof;
 extern crate lru_cache;
 extern crate rlp;
-extern crate transaction as cita_transaction;
 extern crate bloomchain;
 extern crate bloomable;
 extern crate rustc_hex;

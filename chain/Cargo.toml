@@ -25,3 +25,4 @@ common-types = { path = "./types" }
 [[bin]]
 path = "main.rs"
 name = "chain"
+

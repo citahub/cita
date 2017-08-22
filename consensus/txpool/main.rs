@@ -31,72 +31,47 @@ extern crate bincode;
 extern crate pubsub;
 extern crate amqp;
 extern crate cita_log;
+extern crate engine;
+extern crate dotenv;
 
 mod candidate_pool;
 mod dispatch;
 mod cmd;
-use amqp::{Consumer, Channel, protocol, Basic};
 use candidate_pool::*;
-use libproto::MsgClass;
-use libproto::key_to_id;
+use libproto::{key_to_id, parse_msg};
 use log::LogLevelFilter;
-use pubsub::PubSub;
-use std::sync::mpsc::Sender;
+use pubsub::start_pubsub;
+use std::thread;
 
 use std::sync::mpsc::channel;
 use threadpool::ThreadPool;
 
-
-pub struct MyHandler {
-    pool: ThreadPool,
-    tx: Sender<(u32, u32, u32, MsgClass)>,
-}
-
-impl MyHandler {
-    pub fn new(pool: ThreadPool, tx: Sender<(u32, u32, u32, MsgClass)>) -> Self {
-        MyHandler { pool: pool, tx: tx }
-    }
-}
-
-impl Consumer for MyHandler {
-    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, _: protocol::basic::BasicProperties, body: Vec<u8>) {
-        info!("handle delivery id {:?} payload {:?}", deliver.routing_key, body);
-        dispatch::extract(&self.pool, &self.tx, key_to_id(deliver.routing_key.as_str()), body);
-        let _ = channel.basic_ack(deliver.delivery_tag, false);
-    }
-}
-
+const THREAD_POOL_NUMBER: usize = 2;
 
 fn main() {
+    dotenv::dotenv().ok();
     // Always print backtrace on panic.
     ::std::env::set_var("RUST_BACKTRACE", "1");
     cita_log::format(LogLevelFilter::Info);
     info!("CITA:txpool");
+    let (tx_sub, rx_sub) = channel();
+    let (tx_pub, rx_pub) = channel();
     let (tx, rx) = channel();
-    let pool = threadpool::ThreadPool::new(2);
-    let mut pubsub = PubSub::new();
-    //TODO msg must rewrite
-    pubsub.start_sub(
-        "consensus",
-        vec![
-            "net.*",
-            "consensus_cmd.default",
-            "consensus.blk",
-            "chain.status",
-            "jsonrpc.new_tx",
-        ],
-        MyHandler::new(pool, tx),
-    );
-    let mut _pub = pubsub.get_pub();
+    let keys = vec!["net.*", "consensus_cmd.default", "consensus.blk", "chain.status", "jsonrpc.new_tx"];
+    let pool = ThreadPool::new(THREAD_POOL_NUMBER);
+    start_pubsub("consensus", keys, tx_sub, rx_pub);
+    thread::spawn(move || loop {
+        let sender = tx.clone();
+        let (key, body) = rx_sub.recv().unwrap();
+        pool.execute(move || {
+            let (cmd_id, origin, content) = parse_msg(&body);
+            sender.send((key_to_id(&key), cmd_id, origin, content)).unwrap();
+        });
+    });
 
-    let (height, hash) = dispatch::wait(&rx);
     let mut candidate_pool = CandidatePool::new(0);
-    info!("Initialize height: {:?}, hash: {:?}", height, hash);
-    candidate_pool.update_height(height);
-    candidate_pool.update_hash(hash);
-    candidate_pool.reflect_situation(&mut _pub);
-
     loop {
-        dispatch::dispatch(&mut candidate_pool, &mut _pub, &rx);
+        let dispatcher = tx_pub.clone();
+        dispatch::dispatch(&mut candidate_pool, dispatcher, &rx);
     }
 }

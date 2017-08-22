@@ -20,7 +20,6 @@
 //! Unconfirmed sub-states are managed with `checkpoint`s which may be canonicalized
 //! or rolled back.
 
-use cita_transaction::eth_transaction::SignedTransaction;
 use engines::NullEngine;
 use env_info::EnvInfo;
 use error::Error;
@@ -33,6 +32,7 @@ use std::collections::hash_map::Entry;
 use std::fmt;
 use std::sync::Arc;
 use trace::FlatTrace;
+use types::transaction::SignedTransaction;
 use util::*;
 use util::trie;
 
@@ -759,7 +759,7 @@ mod tests {
         stx.sign(privkey);
 
         // 4) signed
-        let signed = SignedTransaction::new(stx).unwrap();
+        let signed = SignedTransaction::new(&stx).unwrap();
 
         // 5)
         let mut state = get_temp_state();

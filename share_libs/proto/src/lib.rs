@@ -18,7 +18,7 @@
 extern crate protobuf;
 extern crate util;
 extern crate rustc_serialize;
-extern crate bincode;
+extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
 extern crate cita_crypto;
@@ -34,6 +34,7 @@ use communication::*;
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 pub use request::*;
+use rlp::*;
 use rustc_serialize::hex::ToHex;
 use util::{H256, Hashable, H520, merklehash};
 use util::snappy;
@@ -240,6 +241,20 @@ impl blockchain::SignedTransaction {
     pub fn crypt_hash(&self) -> H256 {
         let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
         bytes.crypt_hash()
+    }
+}
+
+impl Eq for Proof {}
+
+impl Decodable for Proof {
+    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+        rlp.decoder().decode_value(|bytes| Ok(parse_from_bytes::<Proof>(&bytes).unwrap()))
+    }
+}
+
+impl Encodable for Proof {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.encoder().encode_value(&self.write_to_bytes().unwrap());
     }
 }
 

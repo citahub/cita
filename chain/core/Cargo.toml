@@ -34,7 +34,6 @@ crossbeam = "0.2"
 transient-hashmap = "0.4.0"
 
 ethcore-io = { path = "../../share_libs/io" }
-transaction = { path = "../../share_libs/transaction" }
 cita-crypto = { path = "../../share_libs/crypto" }
 
 protobuf = { version = "^1.0.0"}
