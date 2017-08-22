@@ -1,30 +1,30 @@
+#!/usr/bin/env python
+# coding=utf-8
+
+
 import os
-import copy
 import sys
-import random
-from secp256k1 import PrivateKey, PublicKey
-import rlp
-from rlp.utils import decode_hex, encode_hex 
-from utils import privtopub,privtoaddr
+from secp256k1 import PrivateKey
+from rlp.utils import decode_hex, encode_hex
+from utils import privtoaddr
 
-def mk_privkey(seed):
-    return sha3(seed)
 
-def mk_keys_addr():
-    if len(sys.argv)==2:
+def main():
+    if len(sys.argv) == 2:
         path = sys.argv[1]
     else:
-        path = os.path.join(sys.argv[1],"node" + sys.argv[2])
+        path = os.path.join(sys.argv[1], "node" + sys.argv[2])
     dump_path = os.path.join(path, "privkey")
-    privkey = PrivateKey() 
+    privkey = PrivateKey()
     sec_key = privkey.serialize()
-    f = open(dump_path, "w")
-    f.write(sec_key)
-    f.close()
+    with open(dump_path, "w") as f:
+        f.write(sec_key)
+
     auth_path = os.path.join(sys.argv[1], "authorities")
     authority = encode_hex(privtoaddr(decode_hex(sec_key)))
-    auth_file = open(auth_path, "a")
-    auth_file.write("0x" + authority + "\n")
-    auth_file.close()
+    with open(auth_path, "a") as auth_file:
+        auth_file.write("0x" + authority + "\n")
 
-mk_keys_addr()
+
+if __name__ == '__main__':
+    main()
