@@ -49,7 +49,6 @@ use uuid::Uuid;
 const ELECTION_MIN: u64 = 1500;
 const ELECTION_MAX: u64 = 3000;
 const HEARTBEAT_DURATION: u64 = 1000;
-const BLK_TIME: u64 = 3000;
 
 #[derive(Serialize, Deserialize)]
 pub enum Message {
@@ -65,7 +64,6 @@ pub enum ConsensusTimeout {
     Election,
     // A heartbeat timeout. Stable value.
     Heartbeat(ServerId),
-    SpawnBlk(ConsensusState),
 }
 
 impl ConsensusTimeout {
@@ -76,7 +74,6 @@ impl ConsensusTimeout {
                 rand::thread_rng().gen_range::<u64>(ELECTION_MIN, ELECTION_MAX)
             }
             ConsensusTimeout::Heartbeat(..) => HEARTBEAT_DURATION,
-            ConsensusTimeout::SpawnBlk(..) => BLK_TIME,
         }
     }
 }
@@ -94,6 +91,7 @@ pub struct Actions {
     pub timeouts: Vec<ConsensusTimeout>,
     /// Whether to clear outbound peer message queues.
     pub clear_peer_messages: bool,
+    /// Whether to gen new block
     pub is_new_blk: bool,
 }
 
@@ -145,6 +143,8 @@ pub struct Consensus<L, M> {
     candidate_state: CandidateState,
     /// State necessary while a `Follower`. Should not be used otherwise.
     follower_state: FollowerState,
+    /// Previous hash of status
+    prev_hash: Vec<u8>,
 }
 
 impl<L, M> Consensus<L, M>
@@ -166,6 +166,7 @@ where
             leader_state: leader_state,
             candidate_state: CandidateState::new(),
             follower_state: FollowerState::new(),
+            prev_hash: Vec::new(),
         }
     }
 
@@ -227,8 +228,6 @@ where
         match timeout {
             ConsensusTimeout::Election => self.election_timeout(actions),
             ConsensusTimeout::Heartbeat(peer) => self.heartbeat_timeout(peer, actions),
-            ConsensusTimeout::SpawnBlk(_) => self.spawn_blk_timeout(/* state, */
-                                                                    actions),
         }
     }
 
@@ -523,7 +522,8 @@ where
         } else if self.is_follower() {
             info!("self is follower.");
         } else {
-            if prev_log_index.0 != height + 1 {
+            self.prev_hash = hash.clone();
+            if prev_log_index.0 != height {
                 warn!("current log_index not equal height");
             }
             prev_log_index = LogIndex(height);
@@ -532,10 +532,10 @@ where
             let term = self.current_term();
             let log_index = LogIndex(height) + 1;
             self.log.append_entries(log_index, &[(term, hash.as_bytes())]).unwrap();
-            self.leader_state.proposals.push_back((from, log_index));
+            actions.is_new_blk = true;
             if self.peers.is_empty() {
                 scoped_debug!("ProposalRequest from client {}: entry {}", from, log_index);
-                self.advance_commit_index(actions);
+                self.commit();
             } else {
                 scoped_debug!("ProposalRequest from client {}: sending entry {} to peers", from, log_index);
                 let message = messages::append_entries_request(term, prev_log_index, prev_log_term, &[(term, hash.as_bytes())], self.commit_index);
@@ -551,6 +551,10 @@ where
 
     pub fn get_height(&self) -> u64 {
         self.latest_log_index().0
+    }
+
+    pub fn prev_hash(&self) -> Vec<u8> {
+        self.prev_hash.clone()
     }
 
     /// Applies a client proposal to the consensus state machine.
@@ -619,24 +623,12 @@ where
         actions.peer_messages.push((peer, Rc::new(message)));
     }
 
-    fn spawn_blk_timeout(
-        &self,
-        /*state: ConsensusState,*/
-        actions: &mut Actions,
-    ) {
-        if self.is_leader() {
-            actions.is_new_blk = true;
-            let timeout = ConsensusTimeout::SpawnBlk(ConsensusState::Leader);
-            actions.timeouts.push(timeout);
-        }
-    }
-
     /// Triggers an election timeout.
     fn election_timeout(&mut self, actions: &mut Actions) {
         scoped_assert!(!self.is_leader());
         if self.peers.is_empty() {
             // Solitary replica special case; jump straight to Leader state.
-            scoped_info!("ElectionTimeout: transitioning to Leader");
+            info!("ElectionTimeout: transitioning to Leader");
             scoped_assert!(self.is_follower());
             scoped_assert!(self.log.voted_for().unwrap().is_none());
             self.log.inc_current_term().unwrap();
@@ -645,14 +637,14 @@ where
             self.state = ConsensusState::Leader;
             self.leader_state.reinitialize(latest_log_index);
         } else {
-            scoped_info!("ElectionTimeout: transitioning to Candidate");
+            info!("ElectionTimeout: transitioning to Candidate");
             self.transition_to_candidate(actions);
         }
     }
 
     /// Transitions this consensus state machine to Leader state.
     fn transition_to_leader(&mut self, actions: &mut Actions) {
-        scoped_trace!("transitioning to Leader");
+        info!("transitioning to Leader");
         let current_term = self.current_term();
         let latest_log_index = self.latest_log_index();
         let latest_log_term = self.log.latest_log_term().unwrap();
@@ -666,13 +658,11 @@ where
 
         actions.clear_timeouts = true;
         actions.clear_peer_messages = true;
-        let timeout = ConsensusTimeout::SpawnBlk(ConsensusState::Leader);
-        actions.timeouts.push(timeout);
     }
 
     /// Transitions the consensus state machine to Candidate state.
     fn transition_to_candidate(&mut self, actions: &mut Actions) {
-        scoped_trace!("transitioning to Candidate");
+        info!("transitioning to Candidate");
         self.log.inc_current_term().unwrap();
         self.log.set_voted_for(self.id).unwrap();
         self.state = ConsensusState::Candidate;
@@ -690,19 +680,7 @@ where
 
     /// Advances the commit index and applies committed entries to the state machine.
     fn advance_commit_index(&mut self, actions: &mut Actions) {
-        scoped_assert!(self.is_leader());
-        let majority = self.majority();
-        // TODO: Figure out failure condition here.
-        while self.commit_index < self.log.latest_log_index().unwrap() {
-            if self.leader_state.count_match_indexes(self.commit_index + 1) >= majority {
-                self.commit_index = self.commit_index + 1;
-                scoped_debug!("commit index advanced to {}", self.commit_index);
-            } else {
-                break; // If there isn't a majority now, there won't be one later.
-            }
-        }
-
-        let results = self.apply_commits();
+        let results = self.commit();
 
         while let Some(&(client, index)) = self.leader_state.proposals.get(0) {
             if index <= self.commit_index {
@@ -717,6 +695,23 @@ where
                 break;
             }
         }
+    }
+
+    /// Advances the commit index and applies committed entries, but not reply to client
+    fn commit(&mut self) -> HashMap<LogIndex, Vec<u8>> {
+        assert!(self.is_leader());
+        let majority = self.majority();
+        // TODO: Figure out failure condition here.
+        while self.commit_index < self.log.latest_log_index().unwrap() {
+            if self.leader_state.count_match_indexes(self.commit_index + 1) >= majority {
+                self.commit_index = self.commit_index + 1;
+                scoped_debug!("commit index advanced to {}", self.commit_index);
+            } else {
+                break; // If there isn't a majority now, there won't be one later.
+            }
+        }
+
+        self.apply_commits()
     }
 
     /// Applies all committed but unapplied log entries to the state machine.  Returns the set of

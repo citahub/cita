@@ -37,9 +37,6 @@ keywords = [
 ]
 license = "MIT"
 
-# Builds Cap'n Proto messages
-build = "build.rs"
-
 # Dependencies
 [build-dependencies]
 capnpc = "0.5"
