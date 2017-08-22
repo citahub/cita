@@ -63,6 +63,7 @@ impl NullEngine {
             contracts: HashMap::new(),
         };
         engine.register(Address::from(0x400), Box::new(native::NowPay::new()));
+        engine.register(Address::from(0x800), Box::new(native::ZcPermission::new()));
         engine
     }
 }
