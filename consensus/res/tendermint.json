@@ -4,14 +4,16 @@
         "Tendermint": {
             "params": {
                 "authorities": [
-                    "0x5b073e9233944b5e729e46d618f0d8edf3d9c34a",
-                    "0x9cce34f7ab185c7aba1b7c8140d620b4bda941d6"
+                    "0xade3c7f4105e29c82f0a2b34c5f71abccfec882b", 
+                    "0x9bf6dfab8be3c985ca709a631a1913ec8e4c71b8", 
+                    "0x8857002718376aa54a18787f35b7ccc41982af33", 
+                    "0xbba0f6f3798efb739e082fdd9926ce78343c6ac2"
                 ],
                 "duration": 3,
-				"is_test": false,
-                "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
+                "is_test": false,
+                "signer": "6fd8b0583d3a83608672ce7fc0d0338da5b0f7e9eaf38b5768e97eca3f8af875558580321e42ef73412017319d2ec8ec9193383c66bb093e6c5cc090ac97547b",
                 "tx_pool_size": 0,
-		"block_tx_limit": 300,
+                "block_tx_limit": 300,
                 "tx_filter_size": 5000
             }
         }
