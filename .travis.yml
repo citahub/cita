@@ -10,13 +10,15 @@ jobs:
       script:
         - |
           set -e
+          sudo apt-get update -q
+          sudo apt-get install --allow-change-held-packages libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  rabbitmq-server  google-perftools jq
+          sudo /etc/init.d/rabbitmq-server restart
           echo '################################################################################'
           echo '1) clean'
           make clean
           echo '################################################################################'
           echo '2) setup'
-          sudo make setup1
-          make setup2
+          make setup
           echo '################################################################################'
           echo '3) format'
           make fmt

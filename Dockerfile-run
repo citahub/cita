@@ -1,0 +1,5 @@
+FROM ubuntu:16.04
+ENV PATH $PATH:/cita/bin
+COPY . /cita
+RUN echo "/cita/lib" > /etc/ld.so.conf.d/cita.conf \
+	&& ldconfig
