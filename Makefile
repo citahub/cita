@@ -1,7 +1,7 @@
 # 1) native development
 # 1.1) prerequirement
 #sudo apt-get install --force-yes libsnappy1v5 libsnappy-dev  capnproto  libgoogle-perftools-dev  \
-#    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq
+#    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq libsodium*
 # 1.2) make setup
 # 1.3) make clean
 # 1.4) make debug or make release
@@ -27,6 +27,7 @@ setup:
 	sudo rabbitmqctl add_vhost dev                                  >/dev/null 2>&1 || echo "ok"
 	sudo rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"    >/dev/null 2>&1
 	cargo install --force --vers 0.9.0 rustfmt
+	sudo pip install -r admintool/release/requirements.txt
 
 test:
 	$(CARGO) test --release --all --no-fail-fast 2>&1 |tee target/test.log

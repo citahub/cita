@@ -26,7 +26,7 @@ extern crate protobuf;
 extern crate log;
 extern crate clap;
 extern crate tx_pool;
-extern crate cita_crypto as crypto;
+extern crate cita_ed25519 as ed25519;
 extern crate proof;
 extern crate pubsub;
 extern crate engine_json;

@@ -16,12 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use BlockNumber;
-use crypto::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN};
+use ed25519::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN};
 use libproto::blockchain::{Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction, SignedTransaction as ProtoSignedTransaction, Crypto as ProtoCrypto};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{H256, Address, U256, Bytes, HeapSizeOf, H520, H512};
+use util::{H256, Address, U256, Bytes, HeapSizeOf, H768};
 
 // pub const STORE_ADDRESS: H160 =  H160( [0xff; 20] );
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
@@ -191,7 +191,7 @@ impl Transaction {
 
     // Specify the sender; this won't survive the serialize/deserialize process, but can be cloned.
     pub fn fake_sign(self, from: Address) -> SignedTransaction {
-        let signature = Signature::from_rsv(&H256::default(), &H256::default(), 0);
+        let signature = Signature::default();
         SignedTransaction {
             transaction: UnverifiedTransaction {
                 unsigned: self,
@@ -292,7 +292,7 @@ impl UnverifiedTransaction {
 
         Ok(UnverifiedTransaction {
                unsigned: Transaction::new(utx.get_transaction())?,
-               signature: Signature::from(H520::from(utx.get_signature())),
+               signature: Signature::from(H768::from(utx.get_signature())),
                crypto_type: CryptoType::from(utx.get_crypto()),
                hash: hash,
            })
@@ -391,7 +391,7 @@ impl SignedTransaction {
         }
 
         let tx_hash = H256::from(stx.get_tx_hash());
-        let public = H512::from_slice(stx.get_signer());
+        let public = H256::from_slice(stx.get_signer());
         let sender = pubkey_to_address(&public);
         Ok(SignedTransaction {
                transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,

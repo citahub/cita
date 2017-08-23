@@ -8,6 +8,6 @@ authors = ["Cryptape"]
 rlp = { path = "../../share_libs/rlp" }
 util = { path = "../../share_libs/util" }
 bloomable = { path = "../../share_libs/bloomable" }
-cita-crypto = { path = "../../share_libs/crypto" }
+cita-ed25519 = { path = "../../share_libs/ed25519" }
 libproto = { path = "../../share_libs/proto" }
 rustc-hex = "1.0"

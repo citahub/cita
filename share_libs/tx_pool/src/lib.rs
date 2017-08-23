@@ -18,7 +18,7 @@
 extern crate lru_cache;
 extern crate libproto;
 extern crate util;
-extern crate cita_crypto;
+extern crate cita_ed25519;
 
 pub mod filter;
 pub mod pool;

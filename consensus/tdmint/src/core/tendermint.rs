@@ -23,7 +23,7 @@ use core::voteset::{VoteCollector, ProposalCollector, VoteSet, Proposal, VoteMes
 use core::votetime::{WaitTimer, TimeoutInfo};
 use core::wal::Wal;
 
-use crypto::{Signature, sign, recover, pubkey_to_address};
+use ed25519::{Signature, sign, recover, pubkey_to_address};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto;
 use libproto::{communication, submodules, topics, MsgClass};
@@ -37,7 +37,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver, RecvError};
 use std::time::Instant;
-use util::{H256, H520};
+use util::{H256, H768};
 use util::Address;
 use util::Hashable;
 
@@ -205,7 +205,7 @@ impl TenderMint {
         let ref author = self.params.signer;
         let signature = sign(&author.privkey(), &message.crypt_hash().into()).unwrap();
         trace!("pub_proposal height {}, round {}, hash {}, signature {} ", self.height, self.round, message.crypt_hash(), signature);
-        let sig: H520 = signature.into();
+        let sig: H768 = signature.into();
         let bmsg = serialize(&(message, sig), Infinite).unwrap();
         msg.set_content(bmsg.clone());
         self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
@@ -542,7 +542,7 @@ impl TenderMint {
         let ref author = self.params.signer;
         let msg = serialize(&(height, round, step, author.address.clone(), hash.clone()), Infinite).unwrap();
         let signature = sign(&author.privkey(), &msg.crypt_hash().into()).unwrap();
-        let sig: H520 = signature.clone().into();
+        let sig: H768 = signature.clone().into();
         let msg = serialize(&(msg, sig), Infinite).unwrap();
 
         trace!("pub_and_broadcast_message pub {},{},{:?} self {},{},{:?} ", height, round, step, self.height, self.round, self.step);
@@ -594,7 +594,7 @@ impl TenderMint {
         if let Ok(decoded) = res {
             let (message, signature) = decoded;
             let message: Vec<u8> = message;
-            let signature: H520 = signature;
+            let signature: H768 = signature;
             let signature = Signature::from(signature);
             if let Ok(pubkey) = recover(&signature, &message.crypt_hash().into()) {
                 let decoded = deserialize(&message[..]).unwrap();
@@ -741,7 +741,7 @@ impl TenderMint {
         if let Ok(decoded) = res {
             let (message, signature) = decoded;
             let message: Vec<u8> = message;
-            let signature: H520 = signature;
+            let signature: H768 = signature;
             let signature = Signature::from(signature);
             trace!("handle proposal message {:?}", message.crypt_hash());
 

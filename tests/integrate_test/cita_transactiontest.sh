@@ -2,7 +2,6 @@
 set +e
 CUR_PATH=$(cd `dirname $0`; pwd)
 cd ${CUR_PATH}/../../admintool/
-./setup.sh
 ./admintool.sh
 
 setup_node() {
@@ -74,7 +73,7 @@ check_height_change
 cd ${CUR_PATH}/../wrk_benchmark_test/
 ./benchmark.sh
 sleep 10
-./benchmark.sh config_call.json 2
+./benchmark.sh config_call.json
 
 check_height_change
 

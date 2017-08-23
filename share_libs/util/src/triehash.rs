@@ -36,7 +36,7 @@ use vector::SharedPrefix;
 ///
 /// fn main() {
 /// 	let v = vec![From::from("doe"), From::from("reindeer")];
-/// 	let root = "e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3";
+/// 	let root = "2e23216dd9a4b1bfa60a274b3420871d6560d55f45abb578aeaa547c79f7948b";
 /// 	assert_eq!(ordered_trie_root(v), H256::from_str(root).unwrap());
 /// }
 /// ```
@@ -74,7 +74,7 @@ where
 /// 		(From::from("dogglesworth"), From::from("cat")),
 /// 	];
 ///
-/// 	let root = "8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3";
+/// 	let root = "82df7576318e4ab41bbe9b4e5c664c1d5e6d2558d4872ebdcce824ea91e004cb";
 /// 	assert_eq!(trie_root(v), H256::from_str(root).unwrap());
 /// }
 /// ```
@@ -109,7 +109,7 @@ where
 /// 		(From::from("dogglesworth"), From::from("cat")),
 /// 	];
 ///
-/// 	let root = "d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585";
+/// 	let root = "4fc4a4c6a187355054c79faace7e06619955ea670470c8d27a23ff59892c8ec6";
 /// 	assert_eq!(sec_trie_root(v), H256::from_str(root).unwrap());
 /// }
 /// ```
@@ -333,10 +333,26 @@ mod tests {
     use super::trie_root;
     use hash::H256;
     use std::str::FromStr;
+    use hashable::HASH_NAME;
 
     #[test]
     fn simple_test() {
-        assert_eq!(trie_root(vec![(b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec())]), H256::from_str("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab").unwrap());
+        if HASH_NAME == "sha3"{
+            assert_eq!(
+            trie_root(vec![
+                (b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec()),
+            ]),
+                H256::from_str("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab").unwrap()
+            );
+        }
+        else if HASH_NAME == "blake2b"{
+            assert_eq!(
+            trie_root(vec![
+                (b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec()),
+            ]),
+                H256::from_str("8901a2291955fc6eb443a0175ce2ab218157e571e29b09aaf3dc2da3946b2dfa").unwrap()
+            );
+        }
     }
 
     #[test]

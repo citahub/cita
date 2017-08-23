@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crypto::PrivKey;
+use ed25519::PrivKey;
 use util::Address;
 
 /// Authority params deserialization.
@@ -44,7 +44,7 @@ mod tests {
         let s = r#"{
             "duration": 3,
             "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
-            "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
+            "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
         }"#;
 
         let _deserialize: AuthorityRoundParams = serde_json::from_str(s).unwrap();
@@ -56,7 +56,7 @@ mod tests {
             "params": {
                 "duration": 3,
                 "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
-                "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
+                "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
             }
         }"#;
 

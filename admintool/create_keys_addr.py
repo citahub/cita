@@ -4,10 +4,9 @@
 
 import os
 import sys
-from secp256k1 import PrivateKey
-from rlp.utils import decode_hex, encode_hex
-from utils import privtoaddr
-
+import random
+import pysodium
+import binascii
 
 def main():
     if len(sys.argv) == 2:
@@ -15,16 +14,15 @@ def main():
     else:
         path = os.path.join(sys.argv[1], "node" + sys.argv[2])
     dump_path = os.path.join(path, "privkey")
-    privkey = PrivateKey()
-    sec_key = privkey.serialize()
-    with open(dump_path, "w") as f:
-        f.write(sec_key)
-
+    pk, sk = pysodium.crypto_sign_keypair()
+    f = open(dump_path, "w")
+    f.write(binascii.b2a_hex(sk))
+    f.close()
     auth_path = os.path.join(sys.argv[1], "authorities")
-    authority = encode_hex(privtoaddr(decode_hex(sec_key)))
-    with open(auth_path, "a") as auth_file:
-        auth_file.write("0x" + authority + "\n")
-
+    authority = binascii.b2a_hex(pysodium.crypto_generichash_blake2b_salt_personal(pk, key = "CryptapeCryptape")[12:])
+    auth_file = open(auth_path, "a")
+    auth_file.write("0x" + authority + "\n")
+    auth_file.close()
 
 if __name__ == '__main__':
     main()

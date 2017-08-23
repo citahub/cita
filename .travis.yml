@@ -10,8 +10,9 @@ jobs:
       script:
         - |
           set -e
+          sudo add-apt-repository ppa:chris-lea/libsodium -y
           sudo apt-get update -q
-          sudo apt-get install --allow-change-held-packages libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  rabbitmq-server  google-perftools jq
+          sudo apt-get install --allow-change-held-packages libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  rabbitmq-server  google-perftools jq libsodium*
           sudo /etc/init.d/rabbitmq-server restart
           echo '################################################################################'
           echo '1) clean'

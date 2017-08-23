@@ -183,6 +183,7 @@ impl Pool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use util::H512;
     use libproto::blockchain::{SignedTransaction, UnverifiedTransaction, Transaction};
 
     pub fn generate_tx(data: Vec<u8>, valid_until_block: u64) -> SignedTransaction {
@@ -192,7 +193,7 @@ mod tests {
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(valid_until_block);
 
-        let pv = H256::from_slice(&[20, 17]);
+        let pv = H512::from_slice(&[20,17]);
 
         let mut uv_tx = UnverifiedTransaction::new();
         uv_tx.set_transaction(tx);

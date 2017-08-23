@@ -525,7 +525,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 mod tests {
     extern crate libproto;
     extern crate env_logger;
-    extern crate cita_crypto as crypto;
+    extern crate cita_ed25519 as ed25519;
     extern crate protobuf;
     ////////////////////////////////////////////////////////////////////////////////
 

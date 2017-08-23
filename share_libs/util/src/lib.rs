@@ -19,8 +19,6 @@ extern crate rustc_hex;
 extern crate rand;
 extern crate rocksdb;
 extern crate env_logger;
-extern crate crypto as rcrypto;
-extern crate blake2b;
 extern crate elastic_array;
 extern crate time;
 extern crate devtools;
@@ -36,7 +34,10 @@ extern crate lru_cache;
 extern crate heapsize;
 extern crate itertools;
 extern crate ethcore_logger;
+#[cfg(feature = "sha3hash")]
 extern crate sha3;
+#[cfg(feature = "blake2bhash")]
+extern crate blake2b;
 
 #[macro_use]
 extern crate log as rlog;

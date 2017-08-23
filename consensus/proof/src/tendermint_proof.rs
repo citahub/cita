@@ -16,14 +16,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, deserialize, Infinite};
-use crypto::{Signature, recover, pubkey_to_address};
+use ed25519::{Signature, recover, pubkey_to_address};
 use libproto::blockchain::{Proof, ProofType};
+use util::{H256, Address, H768};
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::usize::MAX;
-use util::{H520, H256, Address};
 use util::Hashable;
 
 pub const DATA_PATH: &'static str = "DATA_PATH";
@@ -40,11 +40,11 @@ pub struct TendermintProof {
     pub proposal: H256,
     pub height: usize,
     pub round: usize,
-    pub commits: HashMap<Address, H520>,
+    pub commits: HashMap<Address, H768>,
 }
 
 impl TendermintProof {
-    pub fn new(height: usize, round: usize, proposal: H256, commits: HashMap<Address, H520>) -> TendermintProof {
+    pub fn new(height: usize, round: usize, proposal: H256, commits: HashMap<Address, H768>) -> TendermintProof {
         TendermintProof {
             height: height,
             round: round,

@@ -21,7 +21,7 @@ extern crate rustc_serialize;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
-extern crate cita_crypto;
+extern crate cita_ed25519 as ed25519;
 
 pub mod blockchain;
 pub mod communication;
@@ -29,14 +29,14 @@ pub mod request;
 pub mod into;
 
 use blockchain::*;
-use cita_crypto::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
+use ed25519::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
 use communication::*;
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 pub use request::*;
 use rlp::*;
 use rustc_serialize::hex::ToHex;
-use util::{H256, Hashable, H520, merklehash};
+use util::{H256, Hashable, H768, merklehash};
 use util::snappy;
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -217,7 +217,7 @@ impl blockchain::SignedTransaction {
         } else {
             match self.get_transaction_with_sig().get_crypto() {
                 Crypto::SECP => {
-                    let signature: Signature = H520::from_slice(self.get_transaction_with_sig().get_signature()).into();
+                    let signature: Signature = H768::from_slice(self.get_transaction_with_sig().get_signature()).into();
                     match recover(&signature, &hash) {
                         Ok(pubkey) => {
                             self.set_signer(pubkey.to_vec());
@@ -302,8 +302,7 @@ mod tests {
 
     #[test]
     fn create_tx() {
-        let test1_privkey = H256::random();
-        let keypair = KeyPair::from_privkey(H256::from(test1_privkey)).unwrap();
+        let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
 
         let data = vec![1];

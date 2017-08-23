@@ -15,16 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-
 use core::param::Param;
 use core::trans::*;
-use crypto::*;
+use ed25519::*;
 use hyper::Client;
 use hyper::client::Response;
 use hyper::status::StatusCode;
 use jsonrpc_types::response::*;
 use serde_json;
+use util::H512;
 use std::fmt;
 use std::fs::File;
 use std::io::Read;
@@ -35,7 +34,6 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 use std::thread;
 use std::time;
-use util::H256;
 
 static mut EXIT: bool = false;
 #[allow(dead_code, unused_assignments)]
@@ -91,13 +89,12 @@ impl Sendtx {
             Err(_) => panic!("read fail "),
             Ok(_) => println!("read successfully.[{}]", contents),
         }
-        let privkey = H256::from_str(contents.as_str()).unwrap();
-        KeyPair::from_privkey(H256::from(privkey))
+        let privkey = H512::from_str(contents.as_str()).unwrap();
+        KeyPair::from_privkey(privkey)
     }
 
     pub fn random_generation(&self) -> Result<KeyPair, Error> {
-        let test1_privkey = H256::random();
-        KeyPair::from_privkey(H256::from(test1_privkey))
+        Ok(KeyPair::gen_keypair())
     }
 
     pub fn send_data(&self, url: String, method: Methods) -> Response {
@@ -172,7 +169,6 @@ impl Sendtx {
         for index in 0..self.txnum {
             pos = (index as usize) % num;
             let url = v_url[pos].clone();
-            //let mut frompv = H256::from(H256::new());
             let keypair = self.random_generation().unwrap();
             let frompv = keypair.privkey();
             let tx = match action {

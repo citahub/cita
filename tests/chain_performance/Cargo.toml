@@ -12,7 +12,7 @@ clap = "2"
 libproto = { path = "../../share_libs/proto"}
 protobuf = { version = "^1.0.0" }
 rustc-serialize = "0.3"
-cita-crypto = { path = "../../share_libs/crypto" }
+cita-ed25519 = { path = "../../share_libs/ed25519" }
 util = { path = "../../share_libs/util" }
 dotenv = "0.10.0"
 uuid = { version = "0.4", features = ["v4"] }

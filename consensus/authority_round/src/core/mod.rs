@@ -21,7 +21,7 @@ pub mod spec;
 
 pub use self::authority_round::AuthorityRound;
 pub use self::spec::Spec;
-use crypto::{PrivKey, Signature, sign, recover, pubkey_to_address, Error as CryptoError};
+use ed25519::{PrivKey, Signature, sign, recover, pubkey_to_address, Error as CryptoError};
 pub use engine::*;
 pub use libproto::blockchain::{BlockHeader, Block, Transaction, BlockBody, Proof};
 use util::Address;

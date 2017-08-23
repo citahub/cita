@@ -18,7 +18,7 @@
 #![feature(test)]
 
 extern crate test;
-extern crate cita_crypto as crypto;
+extern crate cita_ed25519 as ed25519;
 extern crate libproto;
 extern crate protobuf;
 extern crate util;

@@ -17,12 +17,12 @@
 
 use super::{Step, Address};
 use bincode::{serialize, Infinite};
-use crypto::{recover, pubkey_to_address};
+use ed25519::{recover, pubkey_to_address};
 use libproto::blockchain::Block;
 use lru_cache::LruCache;
 use protobuf::core::parse_from_bytes;
 use std::collections::HashMap;
-use util::{H256, H520};
+use util::{H256, H768};
 use util::Hashable;
 
 //height -> round collector
@@ -190,7 +190,7 @@ impl VoteSet {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VoteMessage {
     pub proposal: Option<H256>,
-    pub signature: H520,
+    pub signature: H768,
 }
 
 #[derive(Debug)]
