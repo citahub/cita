@@ -1,7 +1,7 @@
 # 1) native development
 # 1.1) prerequirement
 #sudo apt-get install --force-yes libsnappy1v5 libsnappy-dev  capnproto  libgoogle-perftools-dev  \
-#    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq
+#    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq libsodium*
 # 1.2) make setup
 # 1.3) make clean
 # 1.4) make debug or make release
