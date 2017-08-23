@@ -154,7 +154,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 }
 
                 Request::transaction_count(tx_count) => {
-                    trace!("---transaction_count {:?}", tx_count);
+                    trace!("transaction count request from jsonrpc {:?}", tx_count);
                     //TODO 或许有错误返回给用户更好
                     let tx_count: CountAndCode = serde_json::from_str(&tx_count).expect("Invalid param");
                     let address = Address::from_slice(tx_count.address.as_ref());
@@ -172,7 +172,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 }
 
                 Request::code(code_content) => {
-                    trace!("---code {:?}", code_content);
+                    trace!("code request from josnrpc  {:?}", code_content);
                     let code_content: CountAndCode = serde_json::from_str(&code_content).expect("Invalid param");
 
                     let address = Address::from_slice(code_content.address.as_ref());
@@ -292,7 +292,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     trace!("request sync {:?}", start_height);
                     BigEndian::write_u64(&mut wtr, start_height);
                     let msg = factory::create_msg_ex(submodules::CHAIN, topics::SYNC_BLK, communication::MsgType::MSG, communication::OperateType::SINGLE, origin, wtr);
-                    trace!("-origin-{:?}---chain.sync---{:?}--", origin, communication::OperateType::SINGLE);
+                    trace!("origin {:?}, chain.sync: OperateType {:?}", origin, communication::OperateType::SINGLE);
                     ctx_pub.send(("chain.sync".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                     start_height += 1;
                     diff -= 1;
@@ -307,7 +307,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 trace!("Receive sync {:?} from node-{:?}", BigEndian::read_u64(&content), origin);
                 if let Some(block) = chain.block(BlockId::Number(BigEndian::read_u64(&content))) {
                     let msg = factory::create_msg_ex(submodules::CHAIN, topics::NEW_BLK, communication::MsgType::BLOCK, communication::OperateType::SINGLE, origin, block.protobuf().write_to_bytes().unwrap());
-                    trace!("-origin-{:?}---chain.blk---{:?}--", origin, communication::OperateType::SINGLE);
+                    trace!("origin {:?}, chain.blk: OperateType {:?}", origin, communication::OperateType::SINGLE);
                     ctx_pub.send(("chain.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
             } else {
