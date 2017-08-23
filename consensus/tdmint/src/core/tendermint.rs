@@ -130,11 +130,11 @@ impl TenderMint {
     pub fn new(s: Sender<PubType>, r: Receiver<TransType>, ts: Sender<TimeoutInfo>, rs: Receiver<TimeoutInfo>, params: TendermintParams, dispatch: Arc<Dispatchtx>) -> TenderMint {
         let proof = TendermintProof::default();
         if params.is_test {
-            trace!("----Run for test!----");
+            trace!("Run for test!");
         }
         let logpath = ::std::env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/wal";
 
-        trace!("----tx pool ----{}", params.tx_pool_size);
+        trace!("tx pool size {}", params.tx_pool_size);
         TenderMint {
             pub_sender: s,
             pub_recver: r,
@@ -204,7 +204,7 @@ impl TenderMint {
         let message = serialize(&(self.height, self.round, proposal), Infinite).unwrap();
         let ref author = self.params.signer;
         let signature = sign(&author.privkey(), &message.crypt_hash().into()).unwrap();
-        trace!("pub_proposal---{}---{}---{}---{}", self.height, self.round, message.crypt_hash(), signature);
+        trace!("pub_proposal height {}, round {}, hash {}, signature {} ", self.height, self.round, message.crypt_hash(), signature);
         let sig: H520 = signature.into();
         let bmsg = serialize(&(message, sig), Infinite).unwrap();
         msg.set_content(bmsg.clone());
@@ -242,7 +242,7 @@ impl TenderMint {
     }
 
     fn proc_prevote(&mut self, height: usize, round: usize) -> bool {
-        info!("proc_prevote begin --{} {} vs self {} {}", height, round, self.height, self.round);
+        info!("proc_prevote begin height {}, round {} vs self {}, round {}", height, round, self.height, self.round);
         if height < self.height || (height == self.height && round < self.round) || (height == self.height && self.round == round && self.step > Step::PrevoteWait) {
             return false;
         }
@@ -262,7 +262,7 @@ impl TenderMint {
                         if self.lock_round.is_some() {
                             if self.lock_round.unwrap() < round && round <= self.round {
                                 //we see new lock block unlock mine
-                                info!("unlock lock block------{:?}-----{:?}", height, hash);
+                                info!("unlock lock block height {:?}, hash {:?}", height, hash);
                                 self.lock_round = None;
                                 self.locked_vote = None;
                             }
@@ -357,7 +357,7 @@ impl TenderMint {
     }
 
     fn proc_precommit(&mut self, height: usize, round: usize) -> bool {
-        info!("proc_precommit begin --{} {} vs self {} {}", height, round, self.height, self.round);
+        info!("proc_precommit begin {} {} vs self {} {}", height, round, self.height, self.round);
         if height < self.height || (height == self.height && round < self.round) || (height == self.height && self.round == round && self.step > Step::PrecommitWait) {
             return false;
         }
@@ -644,7 +644,7 @@ impl TenderMint {
                     process up */
                     if h > self.height || (h == self.height && r >= self.round) {
                         //if h == self.height && r >= self.round {
-                        info!("handle_message get vote---{:?}---{:?}---{:?}---{:?}---{:?}---{}", h, r, step, sender, hash, signature);
+                        info!("handle_message get vote: height {:?}, round {:?}, step {:?}, sender {:?}, hash {:?}, signature {}", h, r, step, sender, hash, signature);
                         let ret = self.votes.add(h,
                                                  r,
                                                  step,
@@ -714,7 +714,7 @@ impl TenderMint {
             if self.lock_round.is_some() && proposal_lock_round.is_some() {
                 if self.lock_round.unwrap() < proposal_lock_round.unwrap() && proposal_lock_round.unwrap() < round {
                     //we see new lock block unlock mine
-                    info!("unlock lock block------{:?}-----{:?}", height, self.proposal);
+                    info!("unlock lock block: height {:?}, proposal {:?}", height, self.proposal);
                     self.clean_saved_info();
                 }
             }
@@ -728,7 +728,7 @@ impl TenderMint {
                 let block = parse_from_bytes::<Block>(&proposal.block).unwrap();
                 let block_hash = block.crypt_hash();
                 self.proposal = Some(block_hash.into());
-                info!("save the proposal's hash -----{:?}-- {}----{:?}", self.height, self.round, self.proposal.unwrap());
+                info!("save the proposal's hash: height {:?}, round {}, proposal {:?}", self.height, self.round, self.proposal.unwrap());
                 self.locked_block = Some(block);
             }
             return true;
@@ -792,7 +792,7 @@ impl TenderMint {
             let lock_blk = lock_blk.clone().unwrap();
             {
                 let lock_blk_hash = H256::from(lock_blk.crypt_hash());
-                info!("proposal lock block-----{:?}------{:?}", self.height, lock_blk_hash);
+                info!("proposal lock block: height {:?}, block hash {:?}", self.height, lock_blk_hash);
                 self.proposal = Some(lock_blk_hash);
             }
             let blk = lock_blk.write_to_bytes().unwrap();
@@ -804,7 +804,7 @@ impl TenderMint {
             trace!("pub proposal");
             let bmsg = self.pub_proposal(&proposal);
             self.wal_log.save(LOG_TYPE_PROPOSE, &bmsg).unwrap();
-            trace!("proposor vote locked block {},{}", self.height, self.round);
+            trace!("proposor vote locked block: height {}, round {}", self.height, self.round);
             self.proposals.add(self.height, self.round, proposal);
             return;
         }
@@ -814,7 +814,7 @@ impl TenderMint {
             if self.pre_hash.is_some() {
                 block.mut_header().set_prevhash(self.pre_hash.unwrap().0.to_vec());
             } else {
-                info!("in new_proposal,self.pre_hash is none {},{}", self.height, self.round);
+                info!("in new_proposal,self.pre_hash is none: height {}, round {}", self.height, self.round);
                 //block.mut_header().set_prevhash(H256::default().0.to_vec());
             }
 
@@ -825,7 +825,7 @@ impl TenderMint {
             }
             if self.height > INIT_HEIGHT {
                 if proof.height != self.height - 1 {
-                    warn!("proof is old,proof height {},round {}", proof.height, proof.round);
+                    warn!("proof is old,proof height {}, round {}", proof.height, proof.round);
                     return;
                 }
             }
@@ -844,7 +844,7 @@ impl TenderMint {
         block.mut_header().set_transactions_root(transactions_root.to_vec());
 
         let bh = block.crypt_hash();
-        info!("proposal new block------{:?}-----{:?}", self.height, bh);
+        info!("proposal new block: height {:?}, block hash {:?}", self.height, bh);
         let pro_hash = Some(bh);
         {
             self.proposal = pro_hash.map(|x| x.into());
@@ -888,7 +888,7 @@ impl TenderMint {
             }
         } else if tminfo.step == Step::PrevoteWait {
 
-            info!(" ######### height {} round {} prevote wait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
+            info!(" #########  height {} round {} prevote wait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
             self.change_state_step(tminfo.height, tminfo.round, Step::Precommit, false);
             self.pre_proc_precommit();
 
@@ -956,7 +956,7 @@ impl TenderMint {
                             if h == self.height && r == self.round && self.step < Step::PrevoteWait {
                                 let pres = self.proc_proposal(h, r);
                                 if !pres {
-                                    trace!("proc_proposal res false height {} round {}", h, r);
+                                    trace!("proc_proposal res false height {}, round {}", h, r);
                                 }
                             }
                         }
@@ -1123,7 +1123,7 @@ impl TenderMint {
                 let pre_hash = H256::from(H256::from_slice(&vec_out));
                 self.pre_hash = Some(pre_hash);
             } else if mtype == LOG_TYPE_COMMITS {
-                trace!(" wal proof begining ----------");
+                trace!(" wal proof begining!");
                 if let Ok(proof) = deserialize(&vec_out) {
                     trace!(" wal proof here {:?}", proof);
                     self.proof = proof;
