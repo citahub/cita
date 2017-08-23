@@ -5,22 +5,20 @@
 # 4) cita --status|--chain|--consensus
 # 5) cita --stop
 bins="network chain consensus_tendermint jsonrpc"
-log_dir="$(pwd)/log"
+log_dir="$(dirname $0)/log"
+data_dir="$(dirname $0)/data"
 
 function cita_setup() {
     mkdir -p ${log_dir}
 
     node=node$1
     echo "setup ${node}"
-    echo "WARN: This command will clean date of this node!!!"
 
     # rabbitmq
-    sudo rabbitmqctl add_vhost ${node}
-    sudo rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*"
-    sudo rabbitmqctl list_permissions -p ${node}
-
-    # clean up database and local data
-    rm -rf ./data
+    /etc/init.d/rabbitmq-server restart
+    rabbitmqctl add_vhost ${node}
+    rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*"
+    rabbitmqctl list_permissions -p ${node}
 }
 
 function cita_start() {
@@ -60,8 +58,8 @@ function cita_stop(){
 }
 
 function cita_restart() {
-	cita_setup $1
 	cita_stop $1
+	cita_setup $1
 	cita_start $1
 }
 
@@ -93,7 +91,9 @@ function cita_network() {
 
 function cita_clean(){
     node=node$1
-    rm -rf ${log_dir}/${node}.chain ${log_dir}/${node}.consensus ${log_dir}/${node}.network ${log_dir}/${node}.jsonrpc
+    rm -rf ${log_dir}
+    rm -rf ${data_dir}
+
 }
 
 function cita_disk(){
@@ -147,23 +147,7 @@ function cita_cpu(){
     pid_2=$(tail -3 .pid| head -1)
     pid_3=$(tail -2 .pid| head -1)
     pid_4=$(tail -1 .pid)
-    while :
-    do 
-        cpu_1=$(top -b -n 1 | grep $pid_1 | awk '{print $9}')
-        cpu_2=$(top -b -n 1 | grep $pid_2 | awk '{print $9}')
-        cpu_3=$(top -b -n 1| grep $pid_3 | awk '{print $9}')
-        cpu_4=$(top -b -n 1 | grep $pid_4 | awk '{print $9}')
-
-        cpu=$(echo $cpu_1+$cpu_2+$cpu_3+$cpu_4 | bc)
-
-        echo "the node cpu:$cpu%"
-        echo "the network cpu:$cpu_1%"
-        echo "the consensus_tende cpu:$cpu_2%"
-        echo "the jsonrpc cpu:$cpu_3%"
-        echo "the chain cpu:$cpu_4%"
-        echo 
-        sleep 3
-    done
+    top -b -p ${pid_1},${pid_2},${pid_3},${pid_4}|tee ${log_dir}/cpu.log
 }
 
 function cita_help(){
@@ -172,7 +156,7 @@ function cita_help(){
     echo
     echo "      command description:"
     echo
-    echo "      setup            setup cita run environment"
+    echo "      setup            setup cita run environment(require sudo privilege)"
     echo
     echo "      start            start cita"
     echo

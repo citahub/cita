@@ -1,2 +1,2 @@
-sudo apt-get install openssl 
-sudo apt-get install libyaml-dev
+apt-get install openssl
+apt-get install libyaml-dev
