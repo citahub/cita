@@ -17,5 +17,5 @@ RUN	git clone https://github.com/urugang/cita build				\
 	&& rm -rf /cita/build ~/.cargo ~/.rustup					\
 	&& apt-get purge -y --auto-remove							\
  	&& rm -rf /var/lib/apt/lists
-
+EXPOSE 1337 4000
 CMD /cita/release/node0/cita setup 0; /cita/release/node0/cita start 0; /cita/release/node0/cita cpu;

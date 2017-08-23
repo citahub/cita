@@ -30,13 +30,13 @@ setup1:
 	apt-get update -q
 	apt-get install -y --allow-unauthenticated solc
 	/etc/init.d/rabbitmq-server restart
+	-rabbitmqctl add_vhost dev
+	-rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"
 
 setup2:
 	curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04
 	- . ~/.cargo/env;cargo install --force --vers 0.9.0 rustfmt; cargo install --force --vers 0.0.1 cov
 	cp .env admintool
-	-rabbitmqctl add_vhost dev
-	-rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"
 
 test:
 	$(CARGO) test --release --all --no-fail-fast 2>&1 |tee target/test.log
