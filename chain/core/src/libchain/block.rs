@@ -36,6 +36,7 @@ use std::sync::Arc;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
 use util::{U256, H256, Address, merklehash, HeapSizeOf};
+use basic_types::LogBloom;
 
 /// Trait for a object that has a state database.
 pub trait Drain {
@@ -197,14 +198,11 @@ impl BlockBody {
 pub struct ClosedBlock {
     /// Protobuf Block
     pub block: Block,
-    /// Hash
-    pub hash: H256,
     // TODO: cache hash
     pub transactions_uni: HashMap<H256, TransactionAddress>,
     pub transactions_dup: HashMap<H256, TransactionAddress>,
     pub receipts: Vec<Option<Receipt>>,
     pub state: State<StateDB>,
-    // TODO: add blocks_blooms
 }
 
 impl Drain for ClosedBlock {
@@ -360,6 +358,14 @@ impl OpenBlock {
         self.set_state_root(state_root);
         self.set_receipts_root(receipts_root);
 
+        // blocks blooms
+        let log_bloom = self.receipts.clone().into_iter().filter_map(|r| r).fold(LogBloom::zero(), |mut b, r| {
+            b = &b | &r.log_bloom;
+            b
+        });
+
+        self.set_log_bloom(log_bloom);
+
         // Create TransactionAddress
         let hash = self.hash();
         let mut transactions_uni = HashMap::new();
@@ -375,7 +381,6 @@ impl OpenBlock {
 
         ClosedBlock {
             block: self.block.clone(),
-            hash: hash,
             transactions_uni: transactions_uni,
             transactions_dup: transactions_dup,
             receipts: self.receipts.clone(),

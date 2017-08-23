@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use basic_types::*;
 use bloomchain as bc;
 use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
@@ -630,19 +629,13 @@ impl Chain {
     /// 3. Receipts
     /// 4. Bloom
     //TODO: Separate commit and insert block
-    pub fn commit_block(&self, batch: &mut DBTransaction, mut block: ClosedBlock) {
+    pub fn commit_block(&self, batch: &mut DBTransaction, block: ClosedBlock) {
+
         let height = block.number();
         let hash = block.hash().clone();
-
         trace!("commit block in db {:?}, {:?}", hash, height);
 
-        // blocks blooms
-        let log_bloom = block.receipts.clone().into_iter().filter_map(|r| r).fold(LogBloom::zero(), |mut b, r| {
-            b = &b | &r.log_bloom;
-            b
-        });
-
-        block.set_log_bloom(log_bloom);
+        let log_bloom = *block.log_bloom();
 
         let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = match log_bloom.is_zero() {
             true => HashMap::new(),
@@ -819,7 +812,7 @@ impl Chain {
         if self.validate_hash(block.parent_hash()) {
             let mut open_block = self.execute_block(block);
             let closed_block = open_block.close();
-            let hash = closed_block.hash;
+            let hash = closed_block.hash();
             self.commit_block(batch, closed_block);
             self.update_last_hashes(&hash);
             Some(hash)
