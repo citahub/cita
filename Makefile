@@ -14,20 +14,35 @@ CARGO=RUSTFLAGS='-F warnings' cargo
 debug:
 	$(CARGO) build --all
 	mkdir -p admintool/release/bin
+	cp -f .env admintool/
 	find target/debug -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp {} admintool/release/bin \;
 
 release:
 	$(CARGO) build --release --all
 	mkdir -p admintool/release/bin
+	cp -f .env admintool/
 	find target/release -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp {} admintool/release/bin \;
 
-setup:
-	mkdir -p admintool/release/
-	cp .env admintool/release/
-	sudo rabbitmqctl add_vhost dev                                  >/dev/null 2>&1 || echo "ok"
-	sudo rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"    >/dev/null 2>&1
-	cargo install --force --vers 0.9.0 rustfmt
-	sudo -H pip install -r admintool/requirements.txt
+
+setup1:
+	apt-get update -q
+	apt-get install --allow-change-held-packages software-properties-common
+	add-apt-repository ppa:chris-lea/libsodium -y
+	apt-get update -q
+	apt-get install --allow-change-held-packages \
+		libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  \
+		rabbitmq-server  google-perftools jq libsodium*
+	wget https://github.com/ethereum/solidity/releases/download/v0.4.15/solc-static-linux
+	mv solc-static-linux /usr/local/bin/solc
+	chmod +x /usr/local/bin/solc
+	/etc/init.d/rabbitmq-server restart
+	-rabbitmqctl add_vhost dev
+	-rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"
+
+setup2:
+	curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04
+	- . ~/.cargo/env;cargo install --force --vers 0.9.0 rustfmt;
+	pip install -r admintool/requirements.txt --user
 
 test:
 	$(CARGO) test --release --all --no-fail-fast 2>&1 |tee target/test.log
