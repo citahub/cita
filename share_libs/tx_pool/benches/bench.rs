@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#![feature(test)]
+#![cfg_attr(test, feature(test))]
 extern crate tx_pool;
 extern crate test;
 extern crate libproto;

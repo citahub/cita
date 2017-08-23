@@ -17,7 +17,7 @@
 
 //! benchmarking for AVL and Trie
 // TODO: bench merklehash.
-#![feature(test)]
+#![cfg_attr(test, feature(test))]
 extern crate util;
 extern crate test;
 

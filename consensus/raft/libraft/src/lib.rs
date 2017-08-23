@@ -112,6 +112,8 @@ extern crate scoped_log;
 extern crate wrapped_enum;
 #[cfg(test)]
 extern crate env_logger;
+#[cfg(test)]
+extern crate test;
 
 /// Prepares the environment testing. Should be called as the first line of every test with the
 /// name of the test as the only argument.

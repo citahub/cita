@@ -15,11 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(plugin)]
+#![cfg_attr(test, feature(test))]
 #![feature(vec_remove_item)]
-#![feature(test)]
-#![allow(unused_extern_crates)]
-extern crate test;
 extern crate libproto;
 extern crate protobuf;
 extern crate byteorder;
@@ -53,6 +50,8 @@ extern crate cita_ed25519;
 extern crate common_types as types;
 extern crate jsonrpc_types;
 extern crate cita_secp256k1;
+#[cfg(test)]
+extern crate test;
 
 pub mod state;
 pub mod account_db;

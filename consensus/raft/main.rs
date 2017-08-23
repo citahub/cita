@@ -16,8 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // In order to use Serde we need to enable these nightly features.
-#![feature(plugin)]
-#![feature(custom_derive)]
 #![allow(unused_must_use)]
 
 extern crate libraft; // <--- Kind of a big deal for this!

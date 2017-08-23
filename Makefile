@@ -56,6 +56,7 @@ test:
 	@echo "################################################################################"
 	@echo "test result:"
 	@grep '\.\.\. FAILED' target/test.log ||true
+	@grep -q 'error\[' target/test.log; if [ $$? -eq 0 ] ; then exit 1; fi;
 	@grep -q '\.\.\. FAILED' target/test.log; if [ $$? -eq 0 ] ; then exit 1; fi;
 
 bench:

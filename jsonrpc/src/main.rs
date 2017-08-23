@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(plugin)]
 #![allow(unused_assignments, unused_must_use, deprecated, unused_extern_crates)]
 extern crate hyper;
 extern crate libproto;
