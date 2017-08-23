@@ -47,39 +47,58 @@ impl ZcPermission {
     // verify the application
     // fn verify_group(group: &string, action: &ElementAction);
     pub fn verify_group(params: &ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
+        let mut contract = ZcPermission {
+            functions: HashMap::<Signature, Box<Function>>::new(),
+            creator: vec![],
+            sender: vec![],
+            applicant_of_creator: vec![],
+            applicant_of_sender: vec![],
+        };
         if let Some(ref data) = params.data {
             if let Some(data) = data.get(36..68) {
                 match data[68] {
-                    0 => into_group(data.get(4..36).unwrap(), ext),
-                    1 => quit_group(data.get(4..36).unwrap(), ext),
+                    0 => into_group(data.get(4..36).unwrap(), ext, &mut contract),
+                    1 => quit_group(data.get(4..36).unwrap(), ext, &mut contract),
                     _ => false,
                 };
                 // let _ = ext.set_storage(H256::from(0), H256::from(data));
             }
         }       
         // verify the into application
-        fn into_group(group: &[u8], ext: &mut Ext) -> bool {
+        fn into_group(group: &[u8], ext: &mut Ext, contract: &mut ZcPermission) -> bool {
             match str::from_utf8(group).unwrap() {
                 "sender" => {
                     // ext.set_storage(H256::from(0), H256::from(data));
+                    for user in contract.applicant_of_sender.clone() {
+                        contract.sender.push(user);
+                    }
                     true
                 }
                 "creator" => {
                     // ext.set_storage(H256::from(0), H256::from(data));
+                    for user in contract.applicant_of_creator.clone() {
+                        contract.creator.push(user);
+                    }
                     true
                 },
                 _ => false,
             }
         }
         // verify the quit application
-        fn quit_group(group: &[u8], ext: &mut Ext) -> bool {
+        fn quit_group(group: &[u8], ext: &mut Ext, contract: &mut ZcPermission) -> bool {
             match str::from_utf8(group).unwrap() {
                 "sender" => {
                     // ext.set_storage(H256::from(0), H256::from(data));
+                    for user in contract.applicant_of_sender.clone() {
+                        contract.sender.remove_item(&user);
+                    }
                     true
                 },
                 "creator" => {
                     // ext.set_storage(H256::from(0), H256::from(data));
+                    for user in contract.applicant_of_creator.clone() {
+                        contract.creator.remove_item(&user);
+                    }
                     true
                 },
                 _ => false,
@@ -94,4 +113,5 @@ impl ZcPermission {
 
         Ok(GasLeft::Known(U256::from(0)))
     }
+    // undo: modify the group's users
 }
