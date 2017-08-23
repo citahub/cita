@@ -62,8 +62,8 @@ def main():
     data["timestamp"] = timestamp
 
     print "authorities", authorities
-    alloc = init_contracts(authorities)
-    data['alloc'] = alloc
+    #alloc = init_contracts(authorities)
+    data['alloc'] = {}
     dump_path = os.path.join(path.dirname(__file__), "genesis.json")
     with open(dump_path, "w") as f:
         json.dump(data, f, indent=4)

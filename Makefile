@@ -27,6 +27,7 @@ setup:
 	sudo rabbitmqctl add_vhost dev                                  >/dev/null 2>&1 || echo "ok"
 	sudo rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"    >/dev/null 2>&1
 	cargo install --force --vers 0.9.0 rustfmt
+	sudo pip install -r admintool/release/requirements.txt
 
 test:
 	$(CARGO) test --release --all --no-fail-fast 2>&1 |tee target/test.log
