@@ -18,7 +18,6 @@
 use bincode::{serialize, Infinite};
 use core::libchain::block::Block;
 use core::transaction::SignedTransaction;
-use crypto::*;
 use ed25519::*;
 use libproto::{factory, communication, topics, submodules};
 use libproto::blockchain::{SignedTransaction as ProtoSignedTransaction, UnverifiedTransaction, Transaction};

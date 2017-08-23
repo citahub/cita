@@ -1,6 +1,7 @@
 extern crate sodiumoxide;
 extern crate rustc_serialize;
 extern crate util;
+extern crate rlp;
 
 mod keypair;
 mod error;

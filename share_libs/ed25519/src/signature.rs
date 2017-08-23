@@ -4,6 +4,7 @@ use super::{PrivKey, PubKey, Address, Message, Error, KeyPair, pubkey_to_address
 use util::H768;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
+use rlp::*;
 
 pub struct Signature(pub [u8; 96]);
 
@@ -22,6 +23,23 @@ impl PartialEq for Signature {
         &self.0[..] == &rhs.0[..]
     }
 }
+
+impl Decodable for Signature {
+    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+        rlp.decoder().decode_value(|bytes| {
+            let mut sig = [0u8; 96];
+            sig[0..96].copy_from_slice(bytes);
+            Ok(Signature(sig))
+        })
+    }
+}
+
+impl Encodable for Signature {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.encoder().encode_value(&self.0[0..96]);
+    }
+}
+
 
 impl Eq for Signature {}
 

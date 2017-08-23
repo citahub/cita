@@ -74,7 +74,7 @@ check_height_change
 cd ${CUR_PATH}/../wrk_benchmark_test/
 ./benchmark.sh
 sleep 10
-./benchmark.sh config_call.json 2
+./benchmark.sh config_call.json
 
 check_height_change
 

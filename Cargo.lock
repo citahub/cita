@@ -367,7 +367,6 @@ name = "common-types"
 version = "0.1.0"
 dependencies = [
  "bloomable 0.1.0",
- "cita-crypto 0.6.0",
  "libproto 0.6.0",
  "rlp 0.2.0",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

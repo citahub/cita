@@ -21,7 +21,6 @@ use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use call_analytics::CallAnalytics;
-use cita_ed25519::pubkey_to_address;
 use db;
 use db::*;
 
@@ -937,7 +936,7 @@ mod tests {
     use super::*;
     use db;
     use libchain::block::{Block, BlockBody};
-    use libchain::genesis::{Spec, Admin};
+    use libchain::genesis::Spec;
     use libproto::blockchain;
     use rustc_serialize::hex::FromHex;
     use std::sync::Arc;
@@ -945,8 +944,9 @@ mod tests {
     use std::time::{UNIX_EPOCH, Instant};
     use test::{Bencher, black_box};
     use types::transaction::SignedTransaction;
-    use util::{U256, H256, H512, Address};
+    use util::{U256, H256, Address};
     use util::kvdb::{Database, DatabaseConfig};
+    use cita_ed25519::KeyPair;
     //use util::hashable::HASH_NAME;
 
     #[test]
@@ -969,11 +969,8 @@ mod tests {
 
     }
 
-    fn init_chain() -> (Arc<Chain>, PrivKey) {
+    fn init_chain() -> Arc<Chain> {
         let _ = env_logger::init();
-        let privkey = PrivKey::from(H256::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0"));
-        let keypair = KeyPair::from_privkey(privkey).unwrap();
-        let pubkey = keypair.pubkey();
         let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
@@ -981,17 +978,12 @@ mod tests {
             spec: Spec {
                 prevhash: H256::from(0),
                 timestamp: 0,
-                admin: Admin {
-                    pubkey: *pubkey,
-                    crypto: privkey.hex(),
-                    identifier: String::from(""),
-                },
             },
             block: Block::default(),
         };
         let (sync_tx, _) = channel();
         let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
-        (chain, privkey)
+        chain
     }
 
     fn create_block(chain: &Chain, privkey: &cita_ed25519::PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
@@ -1032,28 +1024,9 @@ mod tests {
 
     #[bench]
     fn bench_execute_block(b: &mut Bencher) {
-        let _ = env_logger::init();
-        let keypair = cita_ed25519::KeyPair::gen_keypair();
+        let chain = init_chain();
+        let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let pubkey = keypair.pubkey();
-        let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
-        let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-        let genesis = Genesis {
-            spec: Spec {
-                prevhash: H256::from(0),
-                timestamp: 0,
-                admin: Admin {
-                    pubkey: *pubkey,
-                    crypto: privkey.hex(),
-                    identifier: String::from(""),
-                },
-            },
-            block: Block::default(),
-            hash: H256::default(),
-        };
-        let (sync_tx, _) = channel();
-        let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
         let data = "60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
             .from_hex()
             .unwrap();
@@ -1085,28 +1058,9 @@ mod tests {
 
     #[test]
     fn test_code_at() {
-        let _ = env_logger::init();
         let keypair = cita_ed25519::KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let pubkey = keypair.pubkey();
-        let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
-        let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-        let genesis = Genesis {
-            spec: Spec {
-                prevhash: H256::from(0),
-                timestamp: 0,
-                admin: Admin {
-                    pubkey: *pubkey,
-                    crypto: privkey.hex(),
-                    identifier: String::from(""),
-                },
-            },
-            block: Block::default(),
-            hash: H256::default(),
-        };
-        let (sync_tx, _) = channel();
-        let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
+        let chain = init_chain();
         /*
 			pragma solidity ^0.4.8;
 
@@ -1144,10 +1098,9 @@ mod tests {
         let block = create_block(&chain, privkey, Address::from(0), data, (0, 1));
         chain.set_block(block.clone());
 
-        let txhash = H256::from_slice(block.get_body().get_transactions()[0].get_tx_hash());
-        let receipt = chain.transaction_address(&txhash)
-                           .and_then(|tx_address| chain.localized_receipt(txhash, tx_address))
-                           .unwrap();
+        let tx = &block.body.transactions[0];
+        let txhash = tx.hash();
+        let receipt = chain.localized_receipt(txhash).unwrap();
 
         let contract_address = receipt.contract_address.unwrap();
         println!("contract address: {}", contract_address);
@@ -1158,7 +1111,6 @@ mod tests {
 
     #[test]
     fn test_contract() {
-        let _ = env_logger::init();
         //let keypair = cita_ed25519::KeyPair::gen_keypair();
         //let privkey = keypair.privkey();
         //let pubkey = keypair.pubkey();
@@ -1166,24 +1118,7 @@ mod tests {
         let pubkey = cita_ed25519::PubKey::from("bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66");
         println!("privkey: {:?}", privkey);
         println!("pubkey: {:?}", pubkey);
-        let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
-        let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-        let genesis = Genesis {
-            spec: Spec {
-                prevhash: H256::from(0),
-                timestamp: 0,
-                admin: Admin {
-                    pubkey: pubkey,
-                    crypto: privkey.hex(),
-                    identifier: String::from(""),
-                },
-            },
-            block: Block::default(),
-            hash: H256::default(),
-        };
-        let (sync_tx, _) = channel();
-        let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
+        let chain = init_chain();
         /*
             pragma solidity ^0.4.8;
             contract ConstructSol {

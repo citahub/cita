@@ -1,2 +1,2 @@
 ethereum==2.0.4
-pysha3>=1.0.2
+pysodium
