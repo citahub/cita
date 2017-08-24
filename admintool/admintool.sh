@@ -124,6 +124,14 @@ if [ ! -f "$DATA_PATH" ]; then
     mkdir -p $DATA_PATH
 fi
 
+if [ -f "$DATA_PATH/authorities" ]; then
+    rm $DATA_PATH/authorities
+fi
+
+if [ -f "genesis.json" ]; then
+    rm genesis.json
+fi
+
 echo "Step 1: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
 do
@@ -147,13 +155,6 @@ do
     echo "End creating Node " $ID "Configuration!"
     cp genesis.json $DATA_PATH/node$ID/genesis.json
 done
-
-if [ -f "$DATA_PATH/authorities" ]; then
-    rm $DATA_PATH/authorities
-fi
-if [ -f "genesis.json" ]; then
-    rm genesis.json
-fi
 
 echo "Step 3: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
