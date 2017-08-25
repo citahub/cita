@@ -4,8 +4,9 @@ pub mod role;
 pub mod operate;
 pub mod switch;
 
-use self::action::ElementAction;
-use self::group::Group;
-use self::operate::Operate;
-use self::role::Role;
-use self::switch::Switch;
+pub use self::action::ElementAction;
+pub use self::group::Group;
+pub use self::operate::Operate;
+pub use self::role::Role;
+pub use self::switch::Switch;
+
