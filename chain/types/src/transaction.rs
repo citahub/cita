@@ -48,7 +48,7 @@ pub enum Action {
 
 impl Default for Action {
     fn default() -> Action {
-        Action::Create
+        Action::Store
     }
 }
 
@@ -163,7 +163,7 @@ impl Transaction {
         Ok(Transaction {
                nonce: U256::from_str(plain_transaction.get_nonce()).map_err(|_| Error::ParseError)?,
                gas_price: U256::default(),
-               gas: U256::from(u32::max_value()),
+               gas: U256::from(u64::max_value()/100000),
                action: {
                    let to = plain_transaction.get_to();
                    match to.is_empty() {
@@ -237,7 +237,7 @@ impl Transaction {
 }
 
 /// Signed transaction information without verified signature.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
     /// Plain Transaction.
     unsigned: Transaction,
@@ -333,7 +333,7 @@ impl UnverifiedTransaction {
 }
 
 /// A `UnverifiedTransaction` with successfully recovered `sender`.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct SignedTransaction {
     transaction: UnverifiedTransaction,
     sender: Address,
@@ -342,12 +342,19 @@ pub struct SignedTransaction {
 
 impl Decodable for SignedTransaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 2 {
+        if d.item_count()? != 5 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
-        let public = d.val_at(1)?;
+
+        let public: H256 = d.val_at(4)?;
+
         Ok(SignedTransaction {
-               transaction: d.val_at(0)?,
+               transaction: UnverifiedTransaction {
+                                unsigned: d.val_at(0)?,
+                                signature: d.val_at(1)?,
+                                crypto_type: d.val_at(2)?,
+                                hash: d.val_at(3)?,
+                            },
                sender: pubkey_to_address(&public),
                public: public,
            })
@@ -356,7 +363,13 @@ impl Decodable for SignedTransaction {
 
 impl Encodable for SignedTransaction {
     fn rlp_append(&self, s: &mut RlpStream) {
-        self.rlp_append_signed_transaction(s)
+        s.begin_list(5);
+        s.append(&self.unsigned);
+        s.append(&self.signature);
+        s.append(&self.crypto_type);
+        s.append(&self.hash);
+        //TODO: remove it
+        s.append(&self.public);
     }
 }
 
@@ -410,14 +423,6 @@ impl SignedTransaction {
         &self.public
     }
 
-    /// Append object with a signature into RLP stream
-    fn rlp_append_signed_transaction(&self, s: &mut RlpStream) {
-        s.begin_list(2);
-        s.append(&self.transaction);
-        //TODO: remove it
-        s.append(&self.public);
-    }
-
     ///get protobuf of signed transaction
     pub fn protobuf(&self) -> ProtoSignedTransaction {
         let mut stx = ProtoSignedTransaction::new();
@@ -426,5 +431,35 @@ impl SignedTransaction {
         stx.set_tx_hash(self.hash().to_vec());
         stx.set_signer(self.public.to_vec());
         stx
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rlp;
+
+    #[test]
+    fn test_encode_and_decode() {
+        let stx = SignedTransaction::default();
+        let stx_rlp = rlp::encode(&stx);
+        let stx: SignedTransaction = rlp::decode(&stx_rlp);
+        let stx_encoded = rlp::encode(&stx).into_vec();
+
+        assert_eq!(stx_rlp, stx_encoded);
+    }
+
+    #[test]
+    fn test_protobuf() {
+        let mut stx = SignedTransaction::default();
+        stx.gas = U256::from(u64::max_value()/100000);
+        let stx_rlp = rlp::encode(&stx);
+        let stx_proto = stx.protobuf();
+        let stx = SignedTransaction::new(&stx_proto).unwrap();
+        let stx_encoded = rlp::encode(&stx).into_vec();
+        let stx: SignedTransaction = rlp::decode(&stx_encoded);
+        let stx_encoded = rlp::encode(&stx).into_vec();
+
+        assert_eq!(stx_rlp, stx_encoded);
     }
 }
