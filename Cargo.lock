@@ -342,6 +342,7 @@ dependencies = [
 name = "cita-ed25519"
 version = "0.6.0"
 dependencies = [
+ "rlp 0.2.0",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "sodiumoxide 0.0.14 (git+https://github.com/cryptape/sodiumoxide.git)",
  "util 0.6.0",
@@ -421,6 +422,7 @@ name = "common-types"
 version = "0.1.0"
 dependencies = [
  "bloomable 0.1.0",
+ "cita-ed25519 0.6.0",
  "libproto 0.6.0",
  "rlp 0.2.0",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -966,7 +968,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "libproto"
 version = "0.6.0"
 dependencies = [
- "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-ed25519 0.6.0",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.2.0",
