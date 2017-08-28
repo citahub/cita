@@ -1,6 +1,10 @@
-use super::{PrivKey, PubKey, Address, Message, Error, KeyPair, pubkey_to_address};
+
+use super::{PrivKey, PubKey, Address, Message, Error, KeyPair, pubkey_to_address, SIGNATURE_BYTES_LEN};
 use rlp::*;
 use rustc_serialize::hex::ToHex;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{Visitor, SeqAccess, Error as SerdeError};
+use serde::ser::SerializeSeq;
 use sodiumoxide::crypto::sign::{sign_detached, verify_detached, SecretKey, Signature as EdSignature, PublicKey as EdPublicKey};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
@@ -40,6 +44,53 @@ impl Encodable for Signature {
     }
 }
 
+// TODO: Maybe it should be implemented with rust macro(https://github.com/rust-lang/rfcs/issues/1038)
+impl<'de> Deserialize<'de> for Signature {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct SignatureVisitor;
+
+        impl<'de> Visitor<'de> for SignatureVisitor {
+            type Value = Signature;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("ed25519 signature")
+            }
+
+            fn visit_seq<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                let mut signature = Signature([0u8; SIGNATURE_BYTES_LEN]);
+                for i in 0..SIGNATURE_BYTES_LEN {
+                    signature.0[i] = match visitor.next_element()? {
+                        Some(val) => val,
+                        None => return Err(SerdeError::invalid_length(SIGNATURE_BYTES_LEN, &self)),
+                    }
+                }
+                Ok(signature)
+            }
+        }
+
+        let visitor = SignatureVisitor;
+        deserializer.deserialize_seq(visitor)
+    }
+}
+
+impl Serialize for Signature {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(SIGNATURE_BYTES_LEN))?;
+        for i in 0..SIGNATURE_BYTES_LEN {
+            seq.serialize_element(&self.0[i])?;
+        }
+        seq.end()
+    }
+}
 
 impl Eq for Signature {}
 
@@ -79,6 +130,21 @@ impl From<[u8; 96]> for Signature {
 impl Into<[u8; 96]> for Signature {
     fn into(self) -> [u8; 96] {
         self.0
+    }
+}
+
+impl<'a> From<&'a [u8]> for Signature {
+    fn from(slice: &'a [u8]) -> Signature {
+        assert_eq!(slice.len(), SIGNATURE_BYTES_LEN);
+        let mut bytes = [0u8; 96];
+        bytes.copy_from_slice(&slice[..]);
+        Signature(bytes)
+    }
+}
+
+impl<'a> Into<&'a [u8]> for &'a Signature {
+    fn into(self) -> &'a [u8] {
+        &self.0[..]
     }
 }
 
@@ -148,6 +214,7 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bincode::{serialize, deserialize, Infinite};
 
     const MESSAGE: [u8; 32] = [
         0x01,
@@ -207,5 +274,25 @@ mod tests {
         let msg = Message::from_slice(&MESSAGE[..]);
         let sig = sign(keypair.privkey(), &msg).unwrap();
         assert_eq!(keypair.pubkey(), &recover(&sig, &msg).unwrap());
+    }
+
+    #[test]
+    fn test_into_slice() {
+        let keypair = KeyPair::gen_keypair();
+        let msg = Message::from_slice(&MESSAGE[..]);
+        let sig = sign(keypair.privkey(), &msg).unwrap();
+        let sig = &sig;
+        let slice: &[u8] = sig.into();
+        assert_eq!(Signature::from(slice), *sig);
+    }
+
+    #[test]
+    fn test_de_serialize() {
+        let keypair = KeyPair::gen_keypair();
+        let msg = Message::from_slice(&MESSAGE[..]);
+        let sig = sign(keypair.privkey(), &msg).unwrap();
+        let se_result = serialize(&sig, Infinite).unwrap();
+        let de_result: Signature = deserialize(&se_result).unwrap();
+        assert_eq!(sig, de_result);
     }
 }

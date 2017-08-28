@@ -1,6 +1,9 @@
+
 use super::{PrivKey, PubKey, Address};
 use error::Error;
+use rustc_serialize::hex::ToHex;
 use sodiumoxide::crypto::sign::{keypair_from_privkey, gen_keypair};
+use std::fmt;
 use util::{H160, Hashable};
 
 pub fn pubkey_to_address(pubkey: &PubKey) -> Address {
@@ -11,6 +14,14 @@ pub fn pubkey_to_address(pubkey: &PubKey) -> Address {
 pub struct KeyPair {
     privkey: PrivKey,
     pubkey: PubKey,
+}
+
+impl fmt::Display for KeyPair {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        writeln!(f, "privkey:  {}", self.privkey.0.to_hex())?;
+        writeln!(f, "pubkey:  {}", self.pubkey.0.to_hex())?;
+        write!(f, "address:  {}", self.address().0.to_hex())
+    }
 }
 
 impl KeyPair {

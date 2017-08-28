@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{PrivKey, PubKey, Address, SECP256K1, Error};
+use rand::thread_rng;
 use rustc_serialize::hex::ToHex;
 use secp256k1::key;
 use std::fmt;
@@ -57,14 +58,14 @@ impl KeyPair {
         Ok(keypair)
     }
 
-    pub fn from_keypair(sec: key::SecretKey, publ: key::PublicKey) -> Self {
+    pub fn gen_keypair() -> Self {
         let context = &SECP256K1;
-        let serialized = publ.serialize_vec(context, false);
+        let (s, p) = context.generate_keypair(&mut thread_rng()).unwrap();
+        let serialized = p.serialize_vec(context, false);
         let mut privkey = PrivKey::default();
-        privkey.0.copy_from_slice(&sec[0..32]);
+        privkey.0.copy_from_slice(&s[0..32]);
         let mut pubkey = PubKey::default();
         pubkey.0.copy_from_slice(&serialized[1..65]);
-
         KeyPair { privkey: privkey, pubkey: pubkey }
     }
 

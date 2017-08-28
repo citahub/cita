@@ -15,13 +15,13 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(dead_code)]
-use cita_ed25519::{Signature as ED_Signature, recover as ed_recover};
+use cita_ed25519::{Signature as ED_Signature, recover as ed_recover, Message as ED_Message};
 use cita_secp256k1::{Signature, recover as ec_recover};
 use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160 as Ripemd160Digest;
 use crypto::sha2::Sha256 as Sha256Digest;
 use std::cmp::min;
-use util::{U256, H256, BytesRef, Hashable, H768};
+use util::{U256, H256, BytesRef, Hashable};
 // use ethjson;
 
 /// Native implementation of a built-in contract.
@@ -183,12 +183,10 @@ impl Impl for EdRecover {
         let mut input = [0; 128];
         input[..len].copy_from_slice(&i[..len]);
 
-        let hash = H256::from_slice(&input[0..32]);
-        let sig = H768::from_slice(&input[32..128]);
+        let hash = ED_Message::from_slice(&input[0..32]);
+        let sig = ED_Signature::from(&input[32..128]);
 
-
-        let s = ED_Signature::from(sig);
-        if let Ok(p) = ed_recover(&s, &hash.into()) {
+        if let Ok(p) = ed_recover(&sig, &hash.into()) {
             let r = p.crypt_hash();
             output.write(0, &[0; 12]);
             output.write(12, &r[12..r.len()]);

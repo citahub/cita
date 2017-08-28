@@ -24,7 +24,7 @@ use util::H768;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct AuthorityRoundProof {
-    pub signature: H768,
+    pub signature: Signature,
     pub step: u64,
 }
 
@@ -32,7 +32,7 @@ impl AuthorityRoundProof {
     pub fn new(step: u64, signature: Signature) -> AuthorityRoundProof {
         AuthorityRoundProof {
             step: step,
-            signature: H768::from(signature.0).into(),
+            signature: signature,
         }
     }
 }

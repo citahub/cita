@@ -40,24 +40,23 @@ impl Filter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ed25519::{KeyPair, PrivKey};
     use libproto::blockchain::{SignedTransaction, UnverifiedTransaction, Transaction};
     use util::H512;
 
-    pub fn generate_tx(data: Vec<u8>, valid_until_block: u64) -> SignedTransaction {
+    pub fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(valid_until_block);
 
-        let pv = H512::from_slice(&[20, 17]);
-
         let mut uv_tx = UnverifiedTransaction::new();
         uv_tx.set_transaction(tx);
 
         let mut signed_tx = SignedTransaction::new();
         signed_tx.set_transaction_with_sig(uv_tx);
-        signed_tx.sign(pv);
+        signed_tx.sign(*privkey);
 
         signed_tx
     }
@@ -65,10 +64,13 @@ mod tests {
     #[test]
     fn basic() {
         let mut f = Filter::new(2);
-        let tx1 = generate_tx(vec![1], 0);
-        let tx2 = generate_tx(vec![1], 0);
-        let tx3 = generate_tx(vec![2], 0);
-        let tx4 = generate_tx(vec![3], 0);
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+
+        let tx1 = generate_tx(vec![1], 0, privkey);
+        let tx2 = generate_tx(vec![1], 0, privkey);
+        let tx3 = generate_tx(vec![2], 0, privkey);
+        let tx4 = generate_tx(vec![3], 0, privkey);
 
         assert_eq!(f.check(tx1.crypt_hash()), true);
         assert_eq!(f.check(tx2.crypt_hash()), false);

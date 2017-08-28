@@ -18,6 +18,7 @@
 use bincode::{serialize, deserialize, Infinite};
 use ed25519::{Signature, recover, pubkey_to_address};
 use libproto::blockchain::{Proof, ProofType};
+use util::{H256, Address};
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
@@ -40,11 +41,11 @@ pub struct TendermintProof {
     pub proposal: H256,
     pub height: usize,
     pub round: usize,
-    pub commits: HashMap<Address, H768>,
+    pub commits: HashMap<Address, Signature>,
 }
 
 impl TendermintProof {
-    pub fn new(height: usize, round: usize, proposal: H256, commits: HashMap<Address, H768>) -> TendermintProof {
+    pub fn new(height: usize, round: usize, proposal: H256, commits: HashMap<Address, Signature>) -> TendermintProof {
         TendermintProof {
             height: height,
             round: round,
