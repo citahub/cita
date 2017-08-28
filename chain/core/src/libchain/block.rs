@@ -231,7 +231,7 @@ pub struct ExecutedBlock {
     pub block: Block,
     pub receipts: Vec<Option<Receipt>>,
     pub state: State<StateDB>,
-    pub gas_used: U256,
+    pub current_gas_used: U256,
     traces: Option<Vec<Vec<FlatTrace>>>,
 }
 
@@ -255,7 +255,7 @@ impl ExecutedBlock {
             block: block,
             receipts: Default::default(),
             state: state,
-            gas_used: U256::default(),
+            current_gas_used: U256::zero(),
             traces: if tracing { Some(Vec::new()) } else { None },
         }
     }
@@ -311,7 +311,7 @@ impl OpenBlock {
             timestamp: self.timestamp(),
             difficulty: U256::default(),
             last_hashes: self.last_hashes.clone(),
-            gas_used: *self.gas_used(),
+            gas_used: self.current_gas_used,
             gas_limit: *self.gas_limit(),
         }
     }
@@ -322,6 +322,8 @@ impl OpenBlock {
             self.apply_transaction(&t);
         }
         self.state.commit().expect("commit trie error");
+        let gas_used = self.current_gas_used;
+        self.set_gas_used(gas_used);
     }
 
     pub fn apply_transaction(&mut self, t: &SignedTransaction) {
@@ -333,7 +335,7 @@ impl OpenBlock {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());
                 self.traces.as_mut().map(|tr| tr.push(trace));
-                self.set_gas_used(outcome.receipt.gas_used);
+                self.current_gas_used = outcome.receipt.gas_used;
                 self.receipts.push(Some(outcome.receipt));
                 self.tx_hashes.push(false);
             }
