@@ -131,13 +131,9 @@ pub trait TransactionHash {
 
 // TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
 // 所有直接unwrap的地方都可能会报错！
-// TODO: should keep current header
-// TODO: refactor: add header struct
-// TODO: refactor: add chain cache
 pub struct Chain {
     blooms_config: bc::Config,
-    pub current_hash: RwLock<H256>,
-    pub current_height: AtomicUsize,
+    pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
     pub max_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, (BlockSource, Block)>>,
@@ -192,8 +188,8 @@ pub fn get_chain(db: &KeyValueDB) -> Option<(H256, u64)> {
 
 impl Chain {
     fn save_status(&self, batch: &mut DBTransaction) -> Status {
-        let current_height = self.current_height.load(Ordering::SeqCst) as BlockNumber;
-        let current_hash = *self.current_hash.read();
+        let current_height = self.get_current_height();
+        let current_hash = self.get_current_hash();
 
         batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &current_hash);
         batch.write(db::COL_EXTRA, &ConstKey::CurrentHeight, &current_height);
@@ -245,8 +241,7 @@ impl Chain {
 
         let chain = Arc::new(Chain {
                                  blooms_config: blooms_config,
-                                 current_hash: RwLock::new(hash),
-                                 current_height: AtomicUsize::new(height as usize),
+                                 current_header: RwLock::new(genesis.block.header.clone()),
                                  is_sync: AtomicBool::new(false),
                                  max_height: AtomicUsize::new(0),
                                  block_map: RwLock::new(BTreeMap::new()),
@@ -271,6 +266,12 @@ impl Chain {
 
     // Get block header by hash
     pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
+        {
+            let header = self.current_header.read();
+            if header.hash() == hash {
+                return Some(header.clone());
+            }
+        }
         let result = self.db.read_with_cache(db::COL_HEADERS, &self.block_headers, &hash);
         self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
         result
@@ -293,6 +294,12 @@ impl Chain {
 
     /// Get raw block by height
     pub fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
+        {
+            let header = self.current_header.read();
+            if header.number() == number {
+                return Some(header.clone());
+            }
+        }
         self.block_hash(number).map_or(None, |h| self.block_header_by_hash(h))
     }
 
@@ -445,21 +452,29 @@ impl Chain {
     }
 
     pub fn get_current_height(&self) -> u64 {
-        self.current_height.load(Ordering::SeqCst) as u64
+        self.current_header.read().number()
+    }
+
+    pub fn get_current_hash(&self) -> H256 {
+        self.current_header.read().hash().clone()
     }
 
     pub fn get_max_height(&self) -> u64 {
         self.max_height.load(Ordering::SeqCst) as u64
     }
 
+    pub fn current_state_root(&self) -> H256 {
+        *self.current_header.read().state_root()
+    }
+
     pub fn validate_hash(&self, block_hash: &H256) -> bool {
-        let current_hash = *self.current_hash.read();
+        let current_hash = self.get_current_hash();
         trace!("validate_hash current_hash {:?} block_hash {:?}", current_hash, block_hash);
         current_hash == *block_hash
     }
 
     pub fn validate_height(&self, block_number: u64) -> bool {
-        let current_height = self.current_height.load(Ordering::SeqCst) as u64;
+        let current_height = self.get_current_height();
         trace!("validate_height current_height {:?} block_number {:?}", current_height, block_number - 1);
         current_height + 1 == block_number
     }
@@ -616,12 +631,6 @@ impl Chain {
         hashes.push_front(hash.clone());
     }
 
-    fn current_state_root(&self) -> H256 {
-        info!("current_hash: {:?}", self.current_hash.read().clone());
-        let block = self.block_by_hash(*self.current_hash.read()).expect("Current hash always stores in db.");
-        *block.state_root()
-    }
-
     /// Commit block in db, including:
     /// 1. Block including transactions
     /// 2. TransactionAddress
@@ -702,7 +711,6 @@ impl Chain {
         result
     }
 
-    // TODO: cache it after transact
     /// Get receipts of block with given hash.
     pub fn block_receipts(&self, hash: H256) -> Option<BlockReceipts> {
         let result = self.db.read_with_cache(db::COL_EXTRA, &self.block_receipts, &hash);
@@ -741,13 +749,9 @@ impl Chain {
         State::from_existing(db, root, U256::from(0), self.factories.clone()).ok()
     }
 
-    // TODO: cache state_root
     /// Get a copy of the best block's state.
     pub fn state(&self) -> State<StateDB> {
-        let hash = *self.current_hash.read();
-        self.block_header_by_hash(hash)
-            .map_or(None, |h| self.gen_state(*h.state_root()))
-            .expect("State root of current block always valid.")
+        self.gen_state(self.current_state_root()).expect("State root of current block is invalid.")
     }
 
     //get account
@@ -795,9 +799,8 @@ impl Chain {
     /// 1. Execute block
     /// 2. Commit block
     /// 3. Update cache
-    // TODO: Commit plain block type in db
     // TODO: move proof check to sync module
-    pub fn add_block(&self, batch: &mut DBTransaction, block: Block) -> Option<H256> {
+    pub fn add_block(&self, batch: &mut DBTransaction, block: Block) -> Option<Header> {
         let height = block.number();
         match block.proof_type() {
             Some(ProofType::Tendermint) => {
@@ -812,10 +815,10 @@ impl Chain {
         if self.validate_hash(block.parent_hash()) {
             let mut open_block = self.execute_block(block);
             let closed_block = open_block.close();
-            let hash = closed_block.hash();
+            let header = closed_block.header().clone();
             self.commit_block(batch, closed_block);
-            self.update_last_hashes(&hash);
-            Some(hash)
+            self.update_last_hashes(&header.hash());
+            Some(header)
         } else {
             None
         }
@@ -826,17 +829,18 @@ impl Chain {
         trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
         if self.validate_height(height) {
             let mut batch = self.db.transaction();
-            if let Some(current_hash) = self.add_block(&mut batch, block) {
-                trace!("set_block current_hash!!!!!!{:?} {:?}", height, H256::from(current_hash));
+            if let Some(header) = self.add_block(&mut batch, block) {
+
+                trace!("set_block current_hash!!!!!!{:?} {:?}", height, header.hash());
+               
                 {
-                    *self.current_hash.write() = current_hash;
+                    *self.current_header.write() = header;
                 }
-                self.current_height.fetch_add(1, Ordering::SeqCst);
 
                 let status = self.save_status(&mut batch);
 
                 self.db.write(batch).expect("DB write failed.");
-                info!("chain update {:?}", height);
+                info!("chain update {:?}", status.number);
                 Some(status.protobuf())
             } else {
                 warn!("add block failed");
@@ -848,7 +852,7 @@ impl Chain {
     }
 
     pub fn compare_status(&self, st: Status) -> (u64, u64) {
-        let current_height = self.current_height.load(Ordering::SeqCst) as u64;
+        let current_height = self.get_current_height();
         if st.number() > current_height {
             (current_height + 1, st.number() - current_height)
         } else {
@@ -981,7 +985,7 @@ mod tests {
     fn create_block(chain: &Chain, privkey: &cita_ed25519::PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
         let mut block = Block::new();
 
-        block.set_parent_hash(chain.current_hash.read().clone());
+        block.set_parent_hash(chain.get_current_hash());
         block.set_timestamp(UNIX_EPOCH.elapsed().unwrap().as_secs());
         block.set_number(chain.get_current_height() + 1);
         // header.proof= ?;
