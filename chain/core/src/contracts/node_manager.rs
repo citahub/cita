@@ -17,13 +17,13 @@
 
 //! Node manager.
 
-use ethabi::{Token, Param, Function, ParamType};
-use libchain::call_request::CallRequest;
+use util::*;
 use libchain::chain::Chain;
+use libchain::call_request::CallRequest;
+use types::ids::BlockId;
 use rustc_hex::FromHex;
 use std::str::FromStr;
-use types::ids::BlockId;
-use util::*;
+use ethabi::{Token, Param, Function, ParamType};
 
 // TODO: ethabi should be able to generate this.
 const METHOD_NAME: &'static [u8] = &*b"listNode()";
@@ -57,11 +57,10 @@ impl NodeManager {
         };
         let output = chain.cita_call(call_request, BlockId::Latest).unwrap();
         let decoded = INTERFACE.decode_output(output.as_slice());
-        let list = decoded.to_string().unwrap().as_slice();
+        let list = decoded.to_string().unwrap().as_bytes();
         let nodes = vec![];
-        for i in (0..(list / 20)) {
-            nodes.push(H160::from(list.as_slice().get(i * 20, i * 20 + 20)))
+        for (i, tx_hash) in (0..list/32) {
+            nodes.push(H160::from(list))
         }
-        nodes
     }
 }
