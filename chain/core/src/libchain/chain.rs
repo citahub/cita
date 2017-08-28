@@ -926,6 +926,7 @@ mod tests {
     extern crate test;
     use self::Chain;
     use super::*;
+    use cita_ed25519::KeyPair;
     use db;
     use libchain::block::{Block, BlockBody};
     use libchain::genesis::Spec;
@@ -938,7 +939,6 @@ mod tests {
     use types::transaction::SignedTransaction;
     use util::{U256, H256, Address};
     use util::kvdb::{Database, DatabaseConfig};
-    use cita_ed25519::KeyPair;
     //use util::hashable::HASH_NAME;
 
     #[test]
@@ -1155,7 +1155,40 @@ mod tests {
         assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
         assert_eq!(
             log.data,
-            Bytes::from(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 178, 240, 170, 0, 198, 188, 2, 162, 176, 118, 70, 161, 162, 19, 225, 190, 214, 254, 255, 246,])
+            Bytes::from(vec![
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                178,
+                240,
+                170,
+                0,
+                198,
+                188,
+                2,
+                162,
+                176,
+                118,
+                70,
+                161,
+                162,
+                19,
+                225,
+                190,
+                214,
+                254,
+                255,
+                246,
+            ])
         );
 
         // set a=10

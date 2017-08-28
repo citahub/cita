@@ -17,6 +17,7 @@ util = { path = "../../share_libs/util" }
 rustc-serialize = "0.3"
 lru-cache = "0.1.1"
 rlp = { path = "../../share_libs/rlp" }
+rlp_derive = { path = "../../share_libs/rlp_derive" }
 bloomchain = "0.1"
 ethcore-bloom-journal = { path = "../../share_libs/bloom" }
 bloomable = { path = "../../share_libs/bloomable" }

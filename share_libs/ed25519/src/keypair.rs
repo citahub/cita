@@ -1,6 +1,7 @@
-use sodiumoxide::crypto::sign::{keypair_from_privkey, gen_keypair};
+
 use super::{PrivKey, PubKey, Address};
 use error::Error;
+use sodiumoxide::crypto::sign::{keypair_from_privkey, gen_keypair};
 use util::{H160, Hashable};
 
 pub fn pubkey_to_address(pubkey: &PubKey) -> Address {
@@ -19,9 +20,9 @@ impl KeyPair {
         match keypair {
             None => Err(Error::InvalidPrivKey),
             Some((pk, sk)) => Ok(KeyPair {
-                privkey: PrivKey::from(sk.0),
-                pubkey: PubKey::from(pk.0),
-            }),
+                                     privkey: PrivKey::from(sk.0),
+                                     pubkey: PubKey::from(pk.0),
+                                 }),
         }
     }
 
