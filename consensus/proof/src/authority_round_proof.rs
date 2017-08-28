@@ -19,8 +19,8 @@ use bincode::{serialize, deserialize, Infinite};
 use ed25519::Signature;
 use libproto::blockchain::{Proof, ProofType};
 use rustc_serialize::hex::ToHex;
-use util::H768;
 use std::fmt;
+use util::H768;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct AuthorityRoundProof {

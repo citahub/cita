@@ -253,9 +253,9 @@ pub const HASH_EMPTY_LIST_RLP: H256 = H256(
 pub const BLAKE2BKEY: &str = "CryptapeCryptape";
 
 #[cfg(feature = "sha3hash")]
-pub const HASH_NAME: &str= "sha3";
+pub const HASH_NAME: &str = "sha3";
 #[cfg(feature = "blake2bhash")]
-pub const HASH_NAME: &str= "blake2b";
+pub const HASH_NAME: &str = "blake2b";
 
 pub trait Hashable {
     /// Calculate crypt HASH of this object.

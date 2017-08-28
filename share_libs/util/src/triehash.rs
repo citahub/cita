@@ -332,26 +332,15 @@ fn test_hex_prefix_encode() {
 mod tests {
     use super::trie_root;
     use hash::H256;
-    use std::str::FromStr;
     use hashable::HASH_NAME;
+    use std::str::FromStr;
 
     #[test]
     fn simple_test() {
-        if HASH_NAME == "sha3"{
-            assert_eq!(
-            trie_root(vec![
-                (b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec()),
-            ]),
-                H256::from_str("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab").unwrap()
-            );
-        }
-        else if HASH_NAME == "blake2b"{
-            assert_eq!(
-            trie_root(vec![
-                (b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec()),
-            ]),
-                H256::from_str("8901a2291955fc6eb443a0175ce2ab218157e571e29b09aaf3dc2da3946b2dfa").unwrap()
-            );
+        if HASH_NAME == "sha3" {
+            assert_eq!(trie_root(vec![(b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec())]), H256::from_str("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab").unwrap());
+        } else if HASH_NAME == "blake2b" {
+            assert_eq!(trie_root(vec![(b"A".to_vec(), b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_vec())]), H256::from_str("8901a2291955fc6eb443a0175ce2ab218157e571e29b09aaf3dc2da3946b2dfa").unwrap());
         }
     }
 

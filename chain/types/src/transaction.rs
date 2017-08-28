@@ -64,6 +64,17 @@ impl Decodable for Action {
     }
 }
 
+impl Encodable for Action {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        let store_addr: Address = STORE_ADDRESS.into();
+        match *self {
+            Action::Create => s.append_internal(&""),
+            Action::Call(ref addr) => s.append_internal(addr),
+            Action::Store => s.append_internal(&store_addr),
+        };
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// crypto type.
 pub enum CryptoType {
@@ -90,8 +101,8 @@ impl Decodable for CryptoType {
 impl Encodable for CryptoType {
     fn rlp_append(&self, s: &mut RlpStream) {
         match *self {
-            CryptoType::SECP => s.append(&(0 as u8)),
-            CryptoType::SM2 => s.append(&(1 as u8)),
+            CryptoType::SECP => s.append_internal(&(0 as u8)),
+            CryptoType::SM2 => s.append_internal(&(1 as u8)),
         };
     }
 }
@@ -163,7 +174,7 @@ impl Transaction {
         Ok(Transaction {
                nonce: U256::from_str(plain_transaction.get_nonce()).map_err(|_| Error::ParseError)?,
                gas_price: U256::default(),
-               gas: U256::from(u64::max_value()/100000),
+               gas: U256::from(u64::max_value() / 100000),
                action: {
                    let to = plain_transaction.get_to();
                    match to.is_empty() {
@@ -206,16 +217,11 @@ impl Transaction {
 
     /// Append object with a without signature into RLP stream
     pub fn rlp_append_unsigned_transaction(&self, s: &mut RlpStream) {
-        let store_addr: Address = STORE_ADDRESS.into();
         s.begin_list(7);
         s.append(&self.nonce);
         s.append(&self.gas_price);
         s.append(&self.gas);
-        match self.action {
-            Action::Create => s.append_empty_data(),
-            Action::Call(ref to) => s.append(to),
-            Action::Store => s.append(&store_addr),
-        };
+        s.append(&self.action);
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
@@ -340,31 +346,49 @@ pub struct SignedTransaction {
     public: Public,
 }
 
+/// RLP dose not support struct nesting well
 impl Decodable for SignedTransaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 5 {
+        if d.item_count()? != 11 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
 
-        let public: H256 = d.val_at(4)?;
+        let public: H256 = d.val_at(10)?;
 
         Ok(SignedTransaction {
                transaction: UnverifiedTransaction {
-                                unsigned: d.val_at(0)?,
-                                signature: d.val_at(1)?,
-                                crypto_type: d.val_at(2)?,
-                                hash: d.val_at(3)?,
-                            },
+                   unsigned: Transaction {
+                       nonce: d.val_at(0)?,
+                       gas_price: d.val_at(1)?,
+                       gas: d.val_at(2)?,
+                       action: d.val_at(3)?,
+                       value: d.val_at(4)?,
+                       data: d.val_at(5)?,
+                       block_limit: d.val_at(6)?,
+                   },
+                   signature: d.val_at(7)?,
+                   crypto_type: d.val_at(8)?,
+                   hash: d.val_at(9)?,
+               },
                sender: pubkey_to_address(&public),
                public: public,
            })
     }
 }
 
+/// RLP dose not support struct nesting well
 impl Encodable for SignedTransaction {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(5);
-        s.append(&self.unsigned);
+        s.begin_list(11);
+
+        s.append(&self.nonce);
+        s.append(&self.gas_price);
+        s.append(&self.gas);
+        s.append(&self.action);
+        s.append(&self.value);
+        s.append(&self.data);
+        s.append(&self.block_limit);
+
         s.append(&self.signature);
         s.append(&self.crypto_type);
         s.append(&self.hash);
@@ -442,6 +466,7 @@ mod tests {
     #[test]
     fn test_encode_and_decode() {
         let stx = SignedTransaction::default();
+        stx.data = vec![1; 200];
         let stx_rlp = rlp::encode(&stx);
         let stx: SignedTransaction = rlp::decode(&stx_rlp);
         let stx_encoded = rlp::encode(&stx).into_vec();
@@ -452,7 +477,7 @@ mod tests {
     #[test]
     fn test_protobuf() {
         let mut stx = SignedTransaction::default();
-        stx.gas = U256::from(u64::max_value()/100000);
+        stx.gas = U256::from(u64::max_value() / 100000);
         let stx_rlp = rlp::encode(&stx);
         let stx_proto = stx.protobuf();
         let stx = SignedTransaction::new(&stx_proto).unwrap();

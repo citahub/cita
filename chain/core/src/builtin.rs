@@ -201,10 +201,10 @@ mod tests {
     extern crate cita_ed25519;
 
     use super::{Builtin, Linear, ethereum_builtin, Pricer};
+    use cita_ed25519::{KeyPair, sign as ED_sign, pubkey_to_address as ED_pubkey_to_address};
+    use util::{U256, H256, BytesRef};
     // use ethjson;
     use util::hashable::HASH_NAME;
-    use util::{U256, H256, BytesRef};
-    use cita_ed25519::{KeyPair, sign as ED_sign, pubkey_to_address as ED_pubkey_to_address};
 
     #[test]
     fn identity() {
@@ -286,11 +286,10 @@ mod tests {
         let i = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
 
         let mut o = [255u8; 32];
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             f.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
             assert_eq!(&o[..], &(FromHex::from_hex("000000000000000000000000c08b5542d177ac6686946920409741463a15dddb").unwrap())[..]);
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             f.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
             assert_eq!(&o[..], &(FromHex::from_hex("0000000000000000000000009f374781e8bf2e7dc910b0ee56baf9c2d475f1d9").unwrap())[..]);
         }
@@ -338,8 +337,40 @@ mod tests {
     #[test]
     fn edrecover() {
         let key_pair = KeyPair::gen_keypair();
-        let message: [u8; 32] = [0x01, 0x02, 0x03, 0x04, 0x19, 0xab, 0xfe, 0x39, 0x6f, 0x28, 0x79, 0x00, 0x08, 0xdf, 0x9a, 0xef,
-                                 0xfb, 0x77, 0x42, 0xae, 0xad, 0xfc, 0xcf, 0x12, 0x24, 0x45, 0x29, 0x89, 0x29, 0x45, 0x3f, 0xf8];
+        let message: [u8; 32] = [
+            0x01,
+            0x02,
+            0x03,
+            0x04,
+            0x19,
+            0xab,
+            0xfe,
+            0x39,
+            0x6f,
+            0x28,
+            0x79,
+            0x00,
+            0x08,
+            0xdf,
+            0x9a,
+            0xef,
+            0xfb,
+            0x77,
+            0x42,
+            0xae,
+            0xad,
+            0xfc,
+            0xcf,
+            0x12,
+            0x24,
+            0x45,
+            0x29,
+            0x89,
+            0x29,
+            0x45,
+            0x3f,
+            0xf8,
+        ];
         let hash = H256::from(message);
         let privkey = key_pair.privkey();
         let pubkey = key_pair.pubkey();

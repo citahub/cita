@@ -460,10 +460,9 @@ mod tests {
         };
 
         let a = Account::from_rlp(&rlp);
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             assert_eq!(a.storage_root().unwrap().hex(), "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2");
-        }
-        else if HASH_NAME == "balec2b"{
+        } else if HASH_NAME == "balec2b" {
             assert_eq!(a.storage_root().unwrap().hex(), "f2294578afd49317eb0ac5349dbf9206abcfc1484b25b04aa68df925c629c3ef");
         }
         assert_eq!(a.storage_at(&Default::default(), &db.immutable(), &H256::from(&U256::from(0x00u64))).unwrap(), H256::from(&U256::from(0x1234u64)));
@@ -496,11 +495,10 @@ mod tests {
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         a.set_storage(0.into(), 0x1234.into());
         assert_eq!(a.storage_root(), None);
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
             assert_eq!(a.storage_root().unwrap().hex(), "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2");
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
             assert_eq!(a.storage_root().unwrap().hex(), "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b");
         }
@@ -516,11 +514,10 @@ mod tests {
         a.set_storage(1.into(), 0x1234.into());
         a.commit_storage(&Default::default(), &mut db).unwrap();
         a.set_storage(1.into(), 0.into());
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
             assert_eq!(a.storage_root().unwrap().hex(), "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2");
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
             assert_eq!(a.storage_root().unwrap().hex(), "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b");
         }
@@ -535,13 +532,12 @@ mod tests {
         assert_eq!(a.code_filth, Filth::Dirty);
         assert_eq!(a.code_size(), Some(3));
         a.commit_code(&mut db);
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             assert_eq!(a.code_hash().hex(), "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb");
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             assert_eq!(a.code_hash().hex(), "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845");
         }
-        
+
     }
 
     #[test]
@@ -553,19 +549,17 @@ mod tests {
         assert_eq!(a.code_filth, Filth::Dirty);
         a.commit_code(&mut db);
         assert_eq!(a.code_filth, Filth::Clean);
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             assert_eq!(a.code_hash().hex(), "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb");
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             assert_eq!(a.code_hash().hex(), "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845");
-        } 
+        }
         a.reset_code(vec![0x55]);
         assert_eq!(a.code_filth, Filth::Dirty);
         a.commit_code(&mut db);
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             assert_eq!(a.code_hash().hex(), "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be");
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             assert_eq!(a.code_hash().hex(), "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01");
         }
     }
@@ -582,10 +576,9 @@ mod tests {
     #[test]
     fn new_account() {
         let a = Account::new(U256::from(0u8), HashMap::new(), Bytes::new());
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             assert_eq!(a.rlp().to_hex(), "f84380a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             assert_eq!(a.rlp().to_hex(), "f84380a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f");
         }
         assert_eq!(a.nonce(), &U256::from(0u8));
@@ -596,10 +589,9 @@ mod tests {
     #[test]
     fn create_account() {
         let a = Account::new(U256::from(0u8), HashMap::new(), Bytes::new());
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             assert_eq!(a.rlp().to_hex(), "f84380a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             assert_eq!(a.rlp().to_hex(), "f84380a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f");
         }
     }

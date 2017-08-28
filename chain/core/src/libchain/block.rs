@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use basic_types::LogBloom;
 use env_info::EnvInfo;
 use env_info::LastHashes;
 use error::{Error, ExecutionError};
@@ -36,7 +37,6 @@ use std::sync::Arc;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
 use util::{U256, H256, Address, merklehash, HeapSizeOf};
-use basic_types::LogBloom;
 
 /// Trait for a object that has a state database.
 pub trait Drain {
@@ -133,23 +133,12 @@ impl Block {
 
 
 /// body of block.
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, RlpEncodableWrapper, RlpDecodableWrapper)]
 pub struct BlockBody {
     /// The transactions in this body.
     pub transactions: Vec<SignedTransaction>,
 }
 
-impl Decodable for BlockBody {
-    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        Ok(BlockBody { transactions: rlp.as_list()? })
-    }
-}
-
-impl Encodable for BlockBody {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        s.append_list(&self.transactions);
-    }
-}
 
 impl HeapSizeOf for BlockBody {
     fn heap_size_of_children(&self) -> usize {
@@ -389,4 +378,24 @@ impl OpenBlock {
             state: self.state.clone(),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rlp;
+
+    #[test]
+    fn test_encode_and_decode() {
+        let mut stx = SignedTransaction::default();
+        stx.data = vec![1; 200];
+        let transactions = vec![stx; 200];
+        let body = BlockBody { transactions: transactions };
+        let body_rlp = rlp::encode(&body);
+        let body: BlockBody = rlp::decode(&body_rlp);
+        let body_encoded = rlp::encode(&body).into_vec();
+
+        assert_eq!(body_rlp, body_encoded);
+    }
+
 }

@@ -1,10 +1,11 @@
+
+use super::{PrivKey, PubKey, Address, Message, Error, KeyPair, pubkey_to_address};
+use rlp::*;
 use rustc_serialize::hex::ToHex;
 use sodiumoxide::crypto::sign::{sign_detached, verify_detached, SecretKey, Signature as EdSignature, PublicKey as EdPublicKey};
-use super::{PrivKey, PubKey, Address, Message, Error, KeyPair, pubkey_to_address};
-use util::H768;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
-use rlp::*;
+use util::H768;
 
 pub struct Signature(pub [u8; 96]);
 
@@ -27,10 +28,10 @@ impl PartialEq for Signature {
 impl Decodable for Signature {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         rlp.decoder().decode_value(|bytes| {
-            let mut sig = [0u8; 96];
-            sig[0..96].copy_from_slice(bytes);
-            Ok(Signature(sig))
-        })
+                                       let mut sig = [0u8; 96];
+                                       sig[0..96].copy_from_slice(bytes);
+                                       Ok(Signature(sig))
+                                   })
     }
 }
 
@@ -46,9 +47,9 @@ impl Eq for Signature {}
 impl fmt::Debug for Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         f.debug_struct("Signature")
-            .field("signature", &self.0[0..64].to_hex())
-            .field("pubkey", &self.0[64..96].to_hex())
-            .finish()
+         .field("signature", &self.0[0..64].to_hex())
+         .field("pubkey", &self.0[64..96].to_hex())
+         .finish()
     }
 }
 
@@ -123,15 +124,9 @@ pub fn sign(privkey: &PrivKey, message: &Message) -> Result<Signature, Error> {
 pub fn recover(signature: &Signature, message: &Message) -> Result<PubKey, Error> {
     let sig = signature.sig();
     let pubkey = signature.pk();
-    let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(),
-                                   message.as_ref(),
-                                   &EdPublicKey::from_slice(&pubkey).unwrap());
+    let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(), message.as_ref(), &EdPublicKey::from_slice(&pubkey).unwrap());
 
-    if !is_valid {
-        Err(Error::InvalidSignature)
-    } else {
-        Ok(PubKey::from_slice(&pubkey))
-    }
+    if !is_valid { Err(Error::InvalidSignature) } else { Ok(PubKey::from_slice(&pubkey)) }
 }
 
 pub fn verify_public(pubkey: &PubKey, signature: &Signature, message: &Message) -> Result<bool, Error> {
@@ -141,14 +136,8 @@ pub fn verify_public(pubkey: &PubKey, signature: &Signature, message: &Message) 
         return Err(Error::InvalidPubKey);
     }
 
-    let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(),
-                                   message.as_ref(),
-                                   &EdPublicKey::from_slice(&pubkey).unwrap());
-    if !is_valid {
-        Err(Error::InvalidSignature)
-    } else {
-        Ok(true)
-    }
+    let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(), message.as_ref(), &EdPublicKey::from_slice(&pubkey).unwrap());
+    if !is_valid { Err(Error::InvalidSignature) } else { Ok(true) }
 }
 
 pub fn verify_address(address: &Address, signature: &Signature, message: &Message) -> Result<bool, Error> {
@@ -161,8 +150,40 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 mod tests {
     use super::*;
 
-    const MESSAGE: [u8; 32] = [0x01, 0x02, 0x03, 0x04, 0x19, 0xab, 0xfe, 0x39, 0x6f, 0x28, 0x79, 0x00, 0x08, 0xdf, 0x9a, 0xef,
-                               0xfb, 0x77, 0x42, 0xae, 0xad, 0xfc, 0xcf, 0x12, 0x24, 0x45, 0x29, 0x89, 0x29, 0x45, 0x3f, 0xf8];
+    const MESSAGE: [u8; 32] = [
+        0x01,
+        0x02,
+        0x03,
+        0x04,
+        0x19,
+        0xab,
+        0xfe,
+        0x39,
+        0x6f,
+        0x28,
+        0x79,
+        0x00,
+        0x08,
+        0xdf,
+        0x9a,
+        0xef,
+        0xfb,
+        0x77,
+        0x42,
+        0xae,
+        0xad,
+        0xfc,
+        0xcf,
+        0x12,
+        0x24,
+        0x45,
+        0x29,
+        0x89,
+        0x29,
+        0x45,
+        0x3f,
+        0xf8,
+    ];
 
     #[test]
     fn test_sign_verify() {

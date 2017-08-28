@@ -29,8 +29,8 @@ pub mod request;
 pub mod into;
 
 use blockchain::*;
-use ed25519::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
 use communication::*;
+use ed25519::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 pub use request::*;

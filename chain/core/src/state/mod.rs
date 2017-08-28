@@ -1806,10 +1806,9 @@ mod tests {
         let a = Address::zero();
         state.require(&a, false).unwrap();
         state.commit().unwrap();
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             assert_eq!(state.root().hex(), "42d8434e6d43bbdfa67dee7c7ef5c17159056e7727ac1ad5ba9928aeb9eb0112");
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             assert_eq!(state.root().hex(), "a989e73cbcbb961ac9777ca453449c42a0c008c70ef16326b7d4c96681f5d90d");
         }
     }
@@ -1849,11 +1848,10 @@ mod tests {
     #[test]
     fn create_empty() {
         let mut state = get_temp_state();
-        if HASH_NAME == "sha3"{
+        if HASH_NAME == "sha3" {
             state.commit().unwrap();
             assert_eq!(state.root().hex(), "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
-        }
-        else if HASH_NAME == "blake2b"{
+        } else if HASH_NAME == "blake2b" {
             state.commit().unwrap();
             assert_eq!(state.root().hex(), "c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9af");
         }

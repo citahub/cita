@@ -18,12 +18,12 @@
 use bincode::{serialize, deserialize, Infinite};
 use ed25519::{Signature, recover, pubkey_to_address};
 use libproto::blockchain::{Proof, ProofType};
-use util::{H256, Address, H768};
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::usize::MAX;
+use util::{H256, Address, H768};
 use util::Hashable;
 
 pub const DATA_PATH: &'static str = "DATA_PATH";

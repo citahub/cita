@@ -151,15 +151,7 @@ mod test {
         assert_eq!(Term::from(0), store.latest_log_term().unwrap());
 
         // [0.1, 0.2, 0.3, 1.4]
-        store.append_entries(
-            LogIndex(1),
-            &[
-                (Term::from(0), &[1]),
-                (Term::from(0), &[2]),
-                (Term::from(0), &[3]),
-                (Term::from(1), &[4]),
-            ],
-        )
+        store.append_entries(LogIndex(1), &[(Term::from(0), &[1]), (Term::from(0), &[2]), (Term::from(0), &[3]), (Term::from(1), &[4])])
              .unwrap();
         assert_eq!(LogIndex::from(4), store.latest_log_index().unwrap());
         assert_eq!(Term::from(1), store.latest_log_term().unwrap());

@@ -23,11 +23,11 @@ extern crate libproto;
 extern crate util;
 extern crate cita_ed25519 as ed25519;
 
+use ed25519::KeyPair;
 use libproto::blockchain::{Transaction, UnverifiedTransaction, SignedTransaction};
 use std::time::SystemTime;
 use test::Bencher;
 use tx_pool::pool::*;
-use ed25519::KeyPair;
 
 #[bench]
 fn bench_base(b: &mut Bencher) {

@@ -15,14 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use dispatch::PubType;
+use engine::{unix_now, AsMillis};
 use libproto::*;
 use libproto::blockchain::*;
 use protobuf::Message;
 use protobuf::RepeatedField;
-use tx_pool;
-use engine::{unix_now, AsMillis};
-use dispatch::PubType;
 use std::sync::mpsc::Sender;
+use tx_pool;
 
 struct Situation {
     pub height: u64,
@@ -33,11 +33,7 @@ pub struct CandidatePool(tx_pool::Pool, Situation);
 
 impl CandidatePool {
     pub fn new(height: u64) -> Self {
-        CandidatePool(tx_pool::Pool::new(10000, 3000),
-                      Situation {
-                          height: height,
-                          hash: None,
-                      })
+        CandidatePool(tx_pool::Pool::new(10000, 3000), Situation { height: height, hash: None })
     }
 
     pub fn get_height(&self) -> u64 {

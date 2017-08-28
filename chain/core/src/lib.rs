@@ -38,6 +38,9 @@ extern crate rustc_serialize;
 extern crate proof;
 extern crate lru_cache;
 extern crate rlp;
+
+#[macro_use]
+extern crate rlp_derive;
 extern crate bloomchain;
 extern crate bloomable;
 extern crate rustc_hex;

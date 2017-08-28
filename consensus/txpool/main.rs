@@ -41,9 +41,9 @@ use candidate_pool::*;
 use libproto::{key_to_id, parse_msg};
 use log::LogLevelFilter;
 use pubsub::start_pubsub;
-use std::thread;
 
 use std::sync::mpsc::channel;
+use std::thread;
 use threadpool::ThreadPool;
 
 const THREAD_POOL_NUMBER: usize = 2;
@@ -61,13 +61,13 @@ fn main() {
     let pool = ThreadPool::new(THREAD_POOL_NUMBER);
     start_pubsub("consensus", keys, tx_sub, rx_pub);
     thread::spawn(move || loop {
-        let sender = tx.clone();
-        let (key, body) = rx_sub.recv().unwrap();
-        pool.execute(move || {
-            let (cmd_id, origin, content) = parse_msg(&body);
-            sender.send((key_to_id(&key), cmd_id, origin, content)).unwrap();
-        });
-    });
+                      let sender = tx.clone();
+                      let (key, body) = rx_sub.recv().unwrap();
+                      pool.execute(move || {
+                                       let (cmd_id, origin, content) = parse_msg(&body);
+                                       sender.send((key_to_id(&key), cmd_id, origin, content)).unwrap();
+                                   });
+                  });
 
     let mut candidate_pool = CandidatePool::new(0);
     loop {
