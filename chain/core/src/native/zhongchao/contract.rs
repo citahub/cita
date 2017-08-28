@@ -1,15 +1,31 @@
+// CITA
+// Copyright 2016-2017 Cryptape Technologies LLC.
+
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 ///
 /// zhongchao contract
-///
-///
 ///
 
 use super::*;
 use native::permission::action::ElementAction;
 use std::str;
-use util::ToPretty;
+use rustc_hex::ToHex;
 
 // 用户拥有的group name
+
 pub struct UserGroup {
     groups: HashMap<String, Vec<String>>,
 }
@@ -37,11 +53,11 @@ impl GroupRole {
 pub struct ZcPermission {
     // Key is signature of function in the contract, value is contract function
     functions: HashMap<Signature, Box<Function>>,
-    // Group that has 'creat' permission
+    // Group that has 'create' permission
     creator: Vec<String>,
     // Group that has 'send' permission
     sender: Vec<String>,
-    // 申请加入含creat的Group的user
+    // 申请加入含create的Group的user
     applicant_of_creator: Vec<String>,
     // 申请加入含send的Group的user
     applicant_of_sender: Vec<String>,
@@ -118,7 +134,7 @@ impl ZcPermission {
 
     // query the permission
     // data(0..4) is signature of function, (4..36) is group's name.
-    pub fn query_group(params: &ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
+    pub fn query_group(params: & ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
         // TODO：后面用storage_at获取变量值，删除下面contract
         let mut contract = ZcPermission {
             functions: HashMap::<Signature, Box<Function>>::new(),
@@ -129,17 +145,20 @@ impl ZcPermission {
             groups: HashMap::<String, Vec<String>>::new(),
             roles: HashMap::<String, Vec<String>>::new(),
         };
-        let user = params.sender.to_hex();
         let groups = contract.groups;
+
+        let user = params.sender.to_hex();
         match groups.get(&user) {
-            Some(ref group) => {
-               let _ug =  group.clone();
+            Some(group) => {
+                let ug = group.clone();
+//                let ret_code = ZcPermission::to_u8(ug).as_bytes();
+//                Ok(GasLeft::NeedsReturn(U256::from(0), ret_code))
             },
             None => {}
         }
-
         Ok(GasLeft::Known(U256::from(0)))
     }
+
 
     // query the role of the group
     // fn query_role(group: String) -> Vec<String>
@@ -159,13 +178,17 @@ impl ZcPermission {
         if let Some(ref data) = params.data {
             let group = data.get(4..36).unwrap();
             match roles.get(&String::from_utf8(group.to_vec()).unwrap()) {
-                Some(ref role) => {
-                    let _role = role.clone();
+                Some(role) => {
+                    let group_role = role.clone();
+//                    let ret_code = ZcPermission::to_u8(group_role).as_bytes();
+//                    Ok(GasLeft::NeedsReturn(U256::from(0), ret_code))
+                    Ok(GasLeft::Known(U256::from(0)))
                 },
-                None => {}
+                None => Ok(GasLeft::Known(U256::from(0)))
             }
+        } else {
+            Ok(GasLeft::Known(U256::from(0)))
         }
-        Ok(GasLeft::Known(U256::from(0)))
     }
 
     // grant the role to a user
@@ -315,25 +338,17 @@ impl ZcPermission {
             _ => false,
         }
     }
-    // verify the quit application
-//    pub fn quit_group(group: &[u8], ext: &mut Ext, contract: &mut ZcPermission) -> bool {
-//        match str::from_utf8(group).unwrap() {
-//            "sender" => {
-//                // ext.set_storage(H256::from(0), H256::from(data));
-//                for user in contract.applicant_of_sender.clone() {
-//                    contract.sender.remove_item(&user);
-//                }
-//                true
-//            },
-//            "creator" => {
-//                // ext.set_storage(H256::from(0), H256::from(data));
-//                for user in contract.applicant_of_creator.clone() {
-//                    contract.creator.remove_item(&user);
-//                }
-//                true
-//            },
-//            _ => false,
-//        }
-//    }
+
+    // convert Vec<String> to &[u8], every string followed by a blank
+    pub fn to_u8(groups: Vec<String>) -> String {
+        let mut res = String::new();
+        let ug = groups.clone();
+        for gr in ug {
+            res.push_str(&gr);
+            res.push_str(" ");
+        }
+        res
+    }
+
 
 }
