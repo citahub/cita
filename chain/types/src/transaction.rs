@@ -465,7 +465,7 @@ mod tests {
 
     #[test]
     fn test_encode_and_decode() {
-        let stx = SignedTransaction::default();
+        let mut stx = SignedTransaction::default();
         stx.data = vec![1; 200];
         let stx_rlp = rlp::encode(&stx);
         let stx: SignedTransaction = rlp::decode(&stx_rlp);
