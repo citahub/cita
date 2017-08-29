@@ -104,8 +104,6 @@ impl<T> DBList<T> {
 pub enum ConstKey {
     /// Current block hash.
     CurrentHash,
-    /// Current block height.
-    CurrentHeight,
 }
 
 /// Modes for updating caches.

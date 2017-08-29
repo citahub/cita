@@ -161,27 +161,19 @@ pub struct Chain {
 pub fn save_genesis(db: &KeyValueDB, genesis: &Genesis) -> Result<(), String> {
     let mut batch = db.transaction();
     let hash = genesis.block.hash();
-    let height: BlockNumber = 0;
     batch.write(db::COL_HEADERS, &hash, genesis.block.header());
     batch.write(db::COL_BODIES, &hash, genesis.block.body());
     batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &hash);
-    batch.write(db::COL_EXTRA, &ConstKey::CurrentHeight, &height);
-    batch.write(db::COL_EXTRA, &height, &hash);
     db.write(batch)
 }
 
 /// Get latest status
-pub fn get_chain(db: &KeyValueDB) -> Option<(H256, u64)> {
-    let current_hash = db.read(db::COL_EXTRA, &ConstKey::CurrentHash);
-    if let Some(hash) = current_hash {
-        let current_height = db.read(db::COL_EXTRA, &ConstKey::CurrentHeight);
-        if let Some(height) = current_height {
-            Some((hash, height))
-        } else {
-            warn!("not expected get_chain.");
-            None
-        }
+pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
+    let h: Option<H256> = db.read(db::COL_EXTRA, &ConstKey::CurrentHash);
+    if let Some(hash) = h {
+        db.read(db::COL_HEADERS, &hash)
     } else {
+        warn!("not expected get_chain.");
         None
     }
 }
@@ -192,8 +184,6 @@ impl Chain {
         let current_hash = self.get_current_hash();
 
         batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &current_hash);
-        batch.write(db::COL_EXTRA, &ConstKey::CurrentHeight, &current_height);
-
         //return status
         let mut status = Status::new();
         status.set_hash(current_hash);
@@ -219,29 +209,29 @@ impl Chain {
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
         };
 
-        let mut header = Header::default();
-        match get_chain(&*db) {
-            Some((hs, ht)) => {
-                header.set_number(ht);
-                header.set_hash(hs);
+        let header = match get_chain(&*db) {
+            Some(header) => {
+                header
             }
             _ => {
                 let _ = genesis.lazy_execute();
                 save_genesis(&*db, &genesis).expect("Failed to save genesis.");
                 info!("init genesis {:?}", genesis);
-                header = genesis.block.header.clone();
+                genesis.block.header.clone()
             }
-        }
+        };
 
         let mut status = Status::new();
         status.set_hash(header.hash().clone());
         status.set_number(header.number());
+        let max_height = AtomicUsize::new(0);
+        max_height.store(header.number() as usize, Ordering::SeqCst);
 
         let chain = Arc::new(Chain {
                                  blooms_config: blooms_config,
                                  current_header: RwLock::new(header),
                                  is_sync: AtomicBool::new(false),
-                                 max_height: AtomicUsize::new(0),
+                                 max_height: max_height,
                                  block_map: RwLock::new(BTreeMap::new()),
                                  block_headers: RwLock::new(HashMap::new()),
                                  block_bodies: RwLock::new(HashMap::new()),
@@ -280,7 +270,7 @@ impl Chain {
 
             //query is store in chain
             for (address, contract) in genesis.spec.alloc {
-                for (key, values) in contract.storage {
+                for (key, _values) in contract.storage {
                     let result = state.storage_at(&address.as_bytes().into(), &key.as_bytes().into());
                     info!("address = {:?}, key = {:?}, result = {:?}", address, key, result);
                 }
@@ -858,7 +848,7 @@ impl Chain {
             if let Some(header) = self.add_block(&mut batch, block) {
 
                 trace!("set_block current_hash!!!!!!{:?} {:?}", height, header.hash());
-               
+
                 {
                     *self.current_header.write() = header;
                 }
