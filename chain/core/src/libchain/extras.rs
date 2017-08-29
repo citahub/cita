@@ -46,18 +46,6 @@ impl Key<H256> for ConstKey {
     fn key(&self) -> H256 {
         match *self {
             ConstKey::CurrentHash => H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f66"),
-            ConstKey::CurrentHeight => H256::from("7c51fe15f894cac47b744d0cf615ef89457f86ac2f8298e7cddf3cddab1c86d4"),
-        }
-    }
-}
-
-impl Key<BlockNumber> for ConstKey {
-    type Target = H256;
-
-    fn key(&self) -> H256 {
-        match *self {
-            ConstKey::CurrentHash => H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f66"),
-            ConstKey::CurrentHeight => H256::from("7c51fe15f894cac47b744d0cf615ef89457f86ac2f8298e7cddf3cddab1c86d4"),
         }
     }
 }

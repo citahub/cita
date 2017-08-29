@@ -21,7 +21,6 @@ extern crate threadpool;
 #[macro_use]
 extern crate log;
 extern crate libproto;
-extern crate amqp;
 extern crate pubsub;
 extern crate util;
 extern crate clap;
