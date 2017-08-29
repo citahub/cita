@@ -72,6 +72,7 @@ impl Generateblock {
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_nonce("0".to_string());
+        tx.set_quota("a7c5ac471b47".to_string());
         //设置空，则创建合约
         tx.set_to(address);
         tx.set_valid_until_block(99999);

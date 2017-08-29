@@ -1001,7 +1001,8 @@ mod tests {
             }
             tx.set_nonce(U256::from(i).to_hex());
             tx.set_data(data.clone());
-            tx.set_valid_until_block(0);
+            tx.set_valid_until_block(100);
+            tx.set_quota("a7c5ac471b47".to_string());
 
             let mut uv_tx = blockchain::UnverifiedTransaction::new();
             uv_tx.set_transaction(tx);
