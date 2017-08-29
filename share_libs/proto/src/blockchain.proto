@@ -67,3 +67,7 @@ message Block {
     BlockHeader header = 2;
     BlockBody body = 3;
 }
+
+message Nodes {
+    repeated bytes nodes = 1;
+}

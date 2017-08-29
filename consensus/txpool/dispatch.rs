@@ -66,5 +66,8 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, sender: Sender<PubType>, rx:
                 }
             }
         }
+        MsgClass::NODES(nodes) => {
+            info!("txtool MsgClass nodes is {:?}", nodes)
+        }
     }
 }

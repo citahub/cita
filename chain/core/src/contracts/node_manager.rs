@@ -17,13 +17,19 @@
 
 //! Node manager.
 
-use util::*;
-use libchain::chain::Chain;
+use ethabi::{Token, Param, Function, ParamType};
 use libchain::call_request::CallRequest;
-use types::ids::BlockId;
+use libchain::chain::Chain;
+use libproto::*;
+use libproto::blockchain::Nodes as ProtoNodes;
+use libproto::factory::*;
+use protobuf::{RepeatedField, Message};
 use rustc_hex::FromHex;
 use std::str::FromStr;
-use ethabi::{Token, Param, Function, ParamType};
+use std::sync::Arc;
+use std::sync::mpsc::{channel, Sender};
+use types::ids::BlockId;
+use util::*;
 
 // TODO: ethabi should be able to generate this.
 const METHOD_NAME: &'static [u8] = &*b"listNode()";
@@ -42,25 +48,35 @@ lazy_static! {
 		};
 }
 
-struct NodeManager {
-    list: Vec<H160>,
+#[derive(PartialEq, Clone, Debug)]
+pub struct NodeManager {
+    list: Vec<Address>,
 }
 
 impl NodeManager {
+    pub fn new() -> Self {
+        NodeManager { list: vec![] }
+    }
+
     fn pull(&mut self) {}
 
-    pub fn read(&self, chain: Chain) -> Vec<Address> {
-        let call_request = CallRequest {
-            from: None,
-            to: *CONTRACT_ADDRESS,
-            data: Some(METHOD_NAME_HASH.to_vec()),
-        };
-        let output = chain.cita_call(call_request, BlockId::Latest).unwrap();
-        let decoded = INTERFACE.decode_output(output.as_slice());
-        let list = decoded.to_string().unwrap().as_bytes();
-        let nodes = vec![];
-        for (i, tx_hash) in (0..list/32) {
-            nodes.push(H160::from(list))
-        }
+    pub fn read(&self, chain: &Chain) -> Vec<Address> {
+        // let call_request = CallRequest {
+        //     from: None,
+        //     to: *CONTRACT_ADDRESS,
+        //     data: Some(METHOD_NAME_HASH.to_vec()),
+        // };
+        // let output = chain.cita_call(call_request, BlockId::Latest).unwrap();
+        // let decoded = INTERFACE.decode_output(output.as_slice());
+        // let list = decoded.unwrap().to_string().unwrap().as_bytes();
+        // let nodes = vec![];
+        // for (i, tx_hash) in (0..list/32) {
+        //     nodes.push(H160::from(list));
+        // }
+
+        vec![
+            H160::from_str("00000000000000000000000000000000013241a2").unwrap(),
+            H160::from_str("999325645d5c23b72af4fce6c512d752ccc8a354").unwrap(),
+        ]
     }
 }

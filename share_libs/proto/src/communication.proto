@@ -10,6 +10,7 @@ enum MsgType {
     MSG = 6;
     RESPONSE = 7;
     TX_RESPONSE = 8;
+    NODES = 9;
 }
 
 enum OperateType{

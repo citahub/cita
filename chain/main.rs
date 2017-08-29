@@ -95,6 +95,7 @@ fn main() {
 
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
     ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+
     let synchronizer = Synchronizer::new(chain.clone());
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
@@ -111,6 +112,7 @@ fn main() {
                           synchronizer.sync_status(ctx_pub.clone());
                       }
                   });
+
     //garbage collect
     let mut i: u32 = 0;
     loop {

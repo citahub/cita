@@ -2598,6 +2598,181 @@ impl ::protobuf::reflect::ProtobufValue for Block {
     }
 }
 
+#[derive(PartialEq,Clone,Default)]
+pub struct Nodes {
+    // message fields
+    pub nodes: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
+    // special fields
+    unknown_fields: ::protobuf::UnknownFields,
+    cached_size: ::protobuf::CachedSize,
+}
+
+// see codegen.rs for the explanation why impl Sync explicitly
+unsafe impl ::std::marker::Sync for Nodes {}
+
+impl Nodes {
+    pub fn new() -> Nodes {
+        ::std::default::Default::default()
+    }
+
+    pub fn default_instance() -> &'static Nodes {
+        static mut instance: ::protobuf::lazy::Lazy<Nodes> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const Nodes,
+        };
+        unsafe {
+            instance.get(Nodes::new)
+        }
+    }
+
+    // repeated bytes nodes = 1;
+
+    pub fn clear_nodes(&mut self) {
+        self.nodes.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_nodes(&mut self, v: ::protobuf::RepeatedField<::std::vec::Vec<u8>>) {
+        self.nodes = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_nodes(&mut self) -> &mut ::protobuf::RepeatedField<::std::vec::Vec<u8>> {
+        &mut self.nodes
+    }
+
+    // Take field
+    pub fn take_nodes(&mut self) -> ::protobuf::RepeatedField<::std::vec::Vec<u8>> {
+        ::std::mem::replace(&mut self.nodes, ::protobuf::RepeatedField::new())
+    }
+
+    pub fn get_nodes(&self) -> &[::std::vec::Vec<u8>] {
+        &self.nodes
+    }
+
+    fn get_nodes_for_reflect(&self) -> &::protobuf::RepeatedField<::std::vec::Vec<u8>> {
+        &self.nodes
+    }
+
+    fn mut_nodes_for_reflect(&mut self) -> &mut ::protobuf::RepeatedField<::std::vec::Vec<u8>> {
+        &mut self.nodes
+    }
+}
+
+impl ::protobuf::Message for Nodes {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_repeated_bytes_into(wire_type, is, &mut self.nodes)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        for value in &self.nodes {
+            my_size += ::protobuf::rt::bytes_size(1, &value);
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
+        for v in &self.nodes {
+            os.write_bytes(1, &v)?;
+        };
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &::std::any::Any {
+        self as &::std::any::Any
+    }
+    fn as_any_mut(&mut self) -> &mut ::std::any::Any {
+        self as &mut ::std::any::Any
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<::std::any::Any> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        ::protobuf::MessageStatic::descriptor_static(None::<Self>)
+    }
+}
+
+impl ::protobuf::MessageStatic for Nodes {
+    fn new() -> Nodes {
+        Nodes::new()
+    }
+
+    fn descriptor_static(_: ::std::option::Option<Nodes>) -> &'static ::protobuf::reflect::MessageDescriptor {
+        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const ::protobuf::reflect::MessageDescriptor,
+        };
+        unsafe {
+            descriptor.get(|| {
+                let mut fields = ::std::vec::Vec::new();
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
+                    "nodes",
+                    Nodes::get_nodes_for_reflect,
+                    Nodes::mut_nodes_for_reflect,
+                ));
+                ::protobuf::reflect::MessageDescriptor::new::<Nodes>(
+                    "Nodes",
+                    fields,
+                    file_descriptor_proto()
+                )
+            })
+        }
+    }
+}
+
+impl ::protobuf::Clear for Nodes {
+    fn clear(&mut self) {
+        self.clear_nodes();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for Nodes {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for Nodes {
+    fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
+        ::protobuf::reflect::ProtobufValueRef::Message(self)
+    }
+}
+
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
 pub enum ProofType {
     AuthorityRound = 0,
@@ -2738,29 +2913,30 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     edTransactionR\x0ctransactions\"g\n\x05Block\x12\x18\n\x07version\x18\
     \x01\x20\x01(\rR\x07version\x12$\n\x06header\x18\x02\x20\x01(\x0b2\x0c.B\
     lockHeaderR\x06header\x12\x1e\n\x04body\x18\x03\x20\x01(\x0b2\n.BlockBod\
-    yR\x04body*9\n\tProofType\x12\x12\n\x0eAuthorityRound\x10\0\x12\x08\n\
-    \x04Raft\x10\x01\x12\x0e\n\nTendermint\x10\x02*\x1b\n\x06Crypto\x12\x08\
-    \n\x04SECP\x10\0\x12\x07\n\x03SM2\x10\x01J\xcc\x13\n\x06\x12\x04\0\0D\
-    \x01\n\x08\n\x01\x0c\x12\x03\0\0\x12\n\n\n\x02\x05\0\x12\x04\x02\0\x06\
-    \x01\n\n\n\x03\x05\0\x01\x12\x03\x02\x05\x0e\n\x0b\n\x04\x05\0\x02\0\x12\
-    \x03\x03\x04\x17\n\x0c\n\x05\x05\0\x02\0\x01\x12\x03\x03\x04\x12\n\x0c\n\
-    \x05\x05\0\x02\0\x02\x12\x03\x03\x15\x16\n\x0b\n\x04\x05\0\x02\x01\x12\
-    \x03\x04\x04\r\n\x0c\n\x05\x05\0\x02\x01\x01\x12\x03\x04\x04\x08\n\x0c\n\
-    \x05\x05\0\x02\x01\x02\x12\x03\x04\x0b\x0c\n\x0b\n\x04\x05\0\x02\x02\x12\
-    \x03\x05\x04\x13\n\x0c\n\x05\x05\0\x02\x02\x01\x12\x03\x05\x04\x0e\n\x0c\
-    \n\x05\x05\0\x02\x02\x02\x12\x03\x05\x11\x12\n\n\n\x02\x04\0\x12\x04\x08\
-    \0\x0b\x01\n\n\n\x03\x04\0\x01\x12\x03\x08\x08\r\n\x0b\n\x04\x04\0\x02\0\
-    \x12\x03\t\x04\x16\n\r\n\x05\x04\0\x02\0\x04\x12\x04\t\x04\x08\x0f\n\x0c\
-    \n\x05\x04\0\x02\0\x05\x12\x03\t\x04\t\n\x0c\n\x05\x04\0\x02\0\x01\x12\
-    \x03\t\n\x11\n\x0c\n\x05\x04\0\x02\0\x03\x12\x03\t\x14\x15\n\x0b\n\x04\
-    \x04\0\x02\x01\x12\x03\n\x04\x17\n\r\n\x05\x04\0\x02\x01\x04\x12\x04\n\
-    \x04\t\x16\n\x0c\n\x05\x04\0\x02\x01\x06\x12\x03\n\x04\r\n\x0c\n\x05\x04\
-    \0\x02\x01\x01\x12\x03\n\x0e\x12\n\x0c\n\x05\x04\0\x02\x01\x03\x12\x03\n\
-    \x15\x16\n\n\n\x02\x04\x01\x12\x04\r\0\x16\x01\n\n\n\x03\x04\x01\x01\x12\
-    \x03\r\x08\x13\n\x0b\n\x04\x04\x01\x02\0\x12\x03\x0e\x04\x17\n\r\n\x05\
-    \x04\x01\x02\0\x04\x12\x04\x0e\x04\r\x15\n\x0c\n\x05\x04\x01\x02\0\x05\
-    \x12\x03\x0e\x04\t\n\x0c\n\x05\x04\x01\x02\0\x01\x12\x03\x0e\n\x12\n\x0c\
-    \n\x05\x04\x01\x02\0\x03\x12\x03\x0e\x15\x16\n\x0b\n\x04\x04\x01\x02\x01\
+    yR\x04body\"\x1d\n\x05Nodes\x12\x14\n\x05nodes\x18\x01\x20\x03(\x0cR\x05\
+    nodes*9\n\tProofType\x12\x12\n\x0eAuthorityRound\x10\0\x12\x08\n\x04Raft\
+    \x10\x01\x12\x0e\n\nTendermint\x10\x02*\x1b\n\x06Crypto\x12\x08\n\x04SEC\
+    P\x10\0\x12\x07\n\x03SM2\x10\x01J\xa9\x14\n\x06\x12\x04\0\0H\x01\n\x08\n\
+    \x01\x0c\x12\x03\0\0\x12\n\n\n\x02\x05\0\x12\x04\x02\0\x06\x01\n\n\n\x03\
+    \x05\0\x01\x12\x03\x02\x05\x0e\n\x0b\n\x04\x05\0\x02\0\x12\x03\x03\x04\
+    \x17\n\x0c\n\x05\x05\0\x02\0\x01\x12\x03\x03\x04\x12\n\x0c\n\x05\x05\0\
+    \x02\0\x02\x12\x03\x03\x15\x16\n\x0b\n\x04\x05\0\x02\x01\x12\x03\x04\x04\
+    \r\n\x0c\n\x05\x05\0\x02\x01\x01\x12\x03\x04\x04\x08\n\x0c\n\x05\x05\0\
+    \x02\x01\x02\x12\x03\x04\x0b\x0c\n\x0b\n\x04\x05\0\x02\x02\x12\x03\x05\
+    \x04\x13\n\x0c\n\x05\x05\0\x02\x02\x01\x12\x03\x05\x04\x0e\n\x0c\n\x05\
+    \x05\0\x02\x02\x02\x12\x03\x05\x11\x12\n\n\n\x02\x04\0\x12\x04\x08\0\x0b\
+    \x01\n\n\n\x03\x04\0\x01\x12\x03\x08\x08\r\n\x0b\n\x04\x04\0\x02\0\x12\
+    \x03\t\x04\x16\n\r\n\x05\x04\0\x02\0\x04\x12\x04\t\x04\x08\x0f\n\x0c\n\
+    \x05\x04\0\x02\0\x05\x12\x03\t\x04\t\n\x0c\n\x05\x04\0\x02\0\x01\x12\x03\
+    \t\n\x11\n\x0c\n\x05\x04\0\x02\0\x03\x12\x03\t\x14\x15\n\x0b\n\x04\x04\0\
+    \x02\x01\x12\x03\n\x04\x17\n\r\n\x05\x04\0\x02\x01\x04\x12\x04\n\x04\t\
+    \x16\n\x0c\n\x05\x04\0\x02\x01\x06\x12\x03\n\x04\r\n\x0c\n\x05\x04\0\x02\
+    \x01\x01\x12\x03\n\x0e\x12\n\x0c\n\x05\x04\0\x02\x01\x03\x12\x03\n\x15\
+    \x16\n\n\n\x02\x04\x01\x12\x04\r\0\x16\x01\n\n\n\x03\x04\x01\x01\x12\x03\
+    \r\x08\x13\n\x0b\n\x04\x04\x01\x02\0\x12\x03\x0e\x04\x17\n\r\n\x05\x04\
+    \x01\x02\0\x04\x12\x04\x0e\x04\r\x15\n\x0c\n\x05\x04\x01\x02\0\x05\x12\
+    \x03\x0e\x04\t\n\x0c\n\x05\x04\x01\x02\0\x01\x12\x03\x0e\n\x12\n\x0c\n\
+    \x05\x04\x01\x02\0\x03\x12\x03\x0e\x15\x16\n\x0b\n\x04\x04\x01\x02\x01\
     \x12\x03\x0f\x04\x19\n\r\n\x05\x04\x01\x02\x01\x04\x12\x04\x0f\x04\x0e\
     \x17\n\x0c\n\x05\x04\x01\x02\x01\x05\x12\x03\x0f\x04\n\n\x0c\n\x05\x04\
     \x01\x02\x01\x01\x12\x03\x0f\x0b\x14\n\x0c\n\x05\x04\x01\x02\x01\x03\x12\
@@ -2859,7 +3035,11 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x02\x12\x03C\x04\x17\n\r\n\x05\x04\x08\x02\x02\x04\x12\x04C\x04B\x1b\n\
     \x0c\n\x05\x04\x08\x02\x02\x06\x12\x03C\x04\r\n\x0c\n\x05\x04\x08\x02\
     \x02\x01\x12\x03C\x0e\x12\n\x0c\n\x05\x04\x08\x02\x02\x03\x12\x03C\x15\
-    \x16b\x06proto3\
+    \x16\n\n\n\x02\x04\t\x12\x04F\0H\x01\n\n\n\x03\x04\t\x01\x12\x03F\x08\r\
+    \n\x0b\n\x04\x04\t\x02\0\x12\x03G\x04\x1d\n\x0c\n\x05\x04\t\x02\0\x04\
+    \x12\x03G\x04\x0c\n\x0c\n\x05\x04\t\x02\0\x05\x12\x03G\r\x12\n\x0c\n\x05\
+    \x04\t\x02\0\x01\x12\x03G\x13\x18\n\x0c\n\x05\x04\t\x02\0\x03\x12\x03G\
+    \x1b\x1cb\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

@@ -20,6 +20,7 @@ use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use call_analytics::CallAnalytics;
+use contracts::node_manager::NodeManager;
 use db;
 use db::*;
 
@@ -38,9 +39,10 @@ use libchain::extras::*;
 
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
-use libproto::blockchain::{ProofType, Status as ProtoStatus};
+use libproto::blockchain::{ProofType, Status as ProtoStatus, Nodes as ProtoNodes};
 use libproto::request::FullTransaction;
 use proof::TendermintProof;
+use protobuf::RepeatedField;
 use receipt::{Receipt, LocalizedReceipt};
 use state::State;
 use state_db::StateDB;
@@ -824,7 +826,7 @@ impl Chain {
         }
     }
 
-    pub fn set_block(&self, block: Block) -> Option<ProtoStatus> {
+    pub fn set_block(&self, block: Block) -> (Option<ProtoStatus>, Option<ProtoNodes>) {
         let height = block.number();
         trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
         if self.validate_height(height) {
@@ -832,22 +834,28 @@ impl Chain {
             if let Some(header) = self.add_block(&mut batch, block) {
 
                 trace!("set_block current_hash!!!!!!{:?} {:?}", height, header.hash());
-               
+
                 {
                     *self.current_header.write() = header;
                 }
 
                 let status = self.save_status(&mut batch);
 
+                let node_manager = NodeManager::new();
+                let nodes: Vec<Address> = node_manager.read(self);
+                let mut proto_nodes = ProtoNodes::new();
+                let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
+                proto_nodes.set_nodes(RepeatedField::from_vec(node_list));
+
                 self.db.write(batch).expect("DB write failed.");
-                info!("chain update {:?}", status.number);
-                Some(status.protobuf())
+                info!("chain update {:?}", height);
+                (Some(status.protobuf()), Some(proto_nodes))
             } else {
                 warn!("add block failed");
-                None
+                (None, None)
             }
         } else {
-            None
+            (None, None)
         }
     }
 
