@@ -16,26 +16,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![feature(plugin)]
-#[allow(deprecated)]
-#[allow(unused_assignments)]
-#[allow(unused_must_use)]
-extern crate futures;
+#![allow(unused_assignments, unused_must_use, deprecated, unused_extern_crates)]
 extern crate hyper;
 extern crate libproto;
 extern crate protobuf;
-extern crate uuid;
 #[macro_use]
 extern crate log;
 extern crate util;
 extern crate serde_json;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate rustc_serialize;
+extern crate serde;
 extern crate pubsub;
-extern crate time;
-extern crate proof;
-extern crate docopt;
 extern crate cpuprofiler;
 extern crate jsonrpc_types;
 extern crate dotenv;

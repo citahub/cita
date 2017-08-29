@@ -15,15 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(test)]
-
-extern crate test;
 extern crate cita_ed25519 as ed25519;
 extern crate libproto;
 extern crate protobuf;
 extern crate util;
 extern crate rustc_serialize;
-extern crate serde_json;
 extern crate proof;
 extern crate clap;
 extern crate core;

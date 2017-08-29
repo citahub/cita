@@ -15,10 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#![allow(unused_extern_crates)]
 #![feature(plugin)]
-//#![cfg_attr(test)]
-extern crate futures;
-extern crate hyper;
 extern crate libproto;
 extern crate protobuf;
 extern crate uuid;
@@ -31,9 +29,6 @@ extern crate bincode;
 extern crate serde_json;
 extern crate serde;
 extern crate rustc_serialize;
-extern crate amqp;
-extern crate pubsub;
-extern crate time;
 extern crate proof;
 extern crate common_types as types;
 

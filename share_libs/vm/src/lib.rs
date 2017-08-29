@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate libproto;
-extern crate threadpool;
 extern crate util;
 
 pub mod precompile;
