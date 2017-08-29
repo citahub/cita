@@ -7,20 +7,20 @@ import os
 import time
 from os import path
 
-#from ethereum.tools.tester import Chain
-#from ethereum.tools._solidity import (
-#    get_solidity,
-#    compile_file,
-#    solidity_get_contract_data,
-#)
-#from ethereum.abi import ContractTranslator
+from ethereum.tools.tester import Chain
+from ethereum.tools._solidity import (
+   get_solidity,
+   compile_file,
+   solidity_get_contract_data,
+)
+from ethereum.abi import ContractTranslator
 
-#SOLIDITY_AVAILABLE = get_solidity() is not None
-#CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
-#CONTRACTS = {
-#    '0x00000000000000000000000000000000013241a2': {'file': 'node_manager.sol',
-#                                                   'name': 'NodeManager'}
-#}
+SOLIDITY_AVAILABLE = get_solidity() is not None
+CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
+CONTRACTS = {
+   '0x00000000000000000000000000000000013241a2': {'file': 'node_manager.sol',
+                                                  'name': 'NodeManager'}
+}
 
 
 def init_contracts(nodes):
@@ -62,8 +62,8 @@ def main():
     data["timestamp"] = timestamp
 
     print "authorities", authorities
-    #alloc = init_contracts(authorities)
-    data['alloc'] = {}
+    alloc = init_contracts(authorities)
+    data['alloc'] = alloc
     dump_path = os.path.join(path.dirname(__file__), "genesis.json")
     with open(dump_path, "w") as f:
         json.dump(data, f, indent=4)
