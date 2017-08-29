@@ -432,33 +432,6 @@ mod tests {
     }
 
     #[test]
-    fn test_rpc_0x() {
-        let rpc1 = RpcRequest {
-            jsonrpc: Some(Version::V2),
-            method: method::CITA_SEND_TRANSACTION.to_owned(),
-            id: Id::Str("2".to_string()),
-            params: Params::Array(vec![
-                Value::from("0a540a0f0a03313233120130189f8d0622010112416a9b0881216be79608d319d9036b09f157949e1e4d54a479b314cea0a52b20ee6fa0aac4486e23f5ba6cae35bb6a44090828f826c0866d704e926cb8904af885011220406b9490d3357ca7bfa8af64de45a2dd4a626b071388296bb5ca76817fc1484b1a40841de155ac4aacc27e9068cefbae5108a0210ebeaed06a293cf5e26cd806e03f50d7887fd3321745b4f6b81e4d45822d72da2adf0a9f3a870619af88fdf17db3".to_owned()),
-            ]),
-        };
-
-        let rpc2 = RpcRequest {
-            jsonrpc: Some(Version::V2),
-            method: method::CITA_SEND_TRANSACTION.to_owned(),
-            id: Id::Str("2".to_string()),
-            params: Params::Array(vec![
-                Value::from("0x0a540a0f0a03313233120130189f8d0622010112416a9b0881216be79608d319d9036b09f157949e1e4d54a479b314cea0a52b20ee6fa0aac4486e23f5ba6cae35bb6a44090828f826c0866d704e926cb8904af885011220406b9490d3357ca7bfa8af64de45a2dd4a626b071388296bb5ca76817fc1484b1a40841de155ac4aacc27e9068cefbae5108a0210ebeaed06a293cf5e26cd806e03f50d7887fd3321745b4f6b81e4d45822d72da2adf0a9f3a870619af88fdf17db3".to_owned()),
-            ]),
-        };
-
-        let handler = MethodHandler;
-        let result1: Result<blockchain::SignedTransaction, Error> = handler.send_transaction(rpc1);
-        let result2: Result<blockchain::SignedTransaction, Error> = handler.send_transaction(rpc2);
-        assert!(result1.is_ok());
-        assert!(result2.is_ok());
-    }
-
-    #[test]
     fn test_rpc_request_parse() {
         let rpc = "{\"id\":\"-8799978260242268161\",\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[\"1\",\"0x0a2833616538386665333730633339333834666331366461326339653736386366356432343935623438120d31343932353139393038393631\"]}";
 
