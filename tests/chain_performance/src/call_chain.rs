@@ -47,7 +47,7 @@ impl Callchain {
     }
 
     pub fn get_pre_hash(&self) -> H256 {
-        *self.chain.current_hash.read()
+        self.chain.get_current_hash()
     }
 
     pub fn get_contract_address(&self, hash: H256) -> H160 {
