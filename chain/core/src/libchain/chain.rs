@@ -219,29 +219,27 @@ impl Chain {
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
         };
 
-        let height;
-        let hash;
+        let mut header = Header::default();
         match get_chain(&*db) {
             Some((hs, ht)) => {
-                hash = hs;
-                height = ht;
+                header.set_number(ht);
+                header.set_hash(hs);
             }
             _ => {
                 let _ = genesis.lazy_execute();
                 save_genesis(&*db, &genesis).expect("Failed to save genesis.");
                 info!("init genesis {:?}", genesis);
-                hash = genesis.block.hash();
-                height = 0;
+                header = genesis.block.header.clone();
             }
         }
 
         let mut status = Status::new();
-        status.set_hash(hash);
-        status.set_number(height);
+        status.set_hash(header.hash().clone());
+        status.set_number(header.number());
 
         let chain = Arc::new(Chain {
                                  blooms_config: blooms_config,
-                                 current_header: RwLock::new(genesis.block.header.clone()),
+                                 current_header: RwLock::new(header),
                                  is_sync: AtomicBool::new(false),
                                  max_height: AtomicUsize::new(0),
                                  block_map: RwLock::new(BTreeMap::new()),
@@ -260,8 +258,36 @@ impl Chain {
                                  polls_filter: Arc::new(Mutex::new(PollManager::new())),
                              });
 
-        chain.build_last_hashes(Some(hash), height);
+        chain.build_last_hashes(Some(status.hash().clone()), status.number());
+        chain.first_init(genesis);
         (chain, status.protobuf())
+    }
+
+    //chain first init and chain heigth = zero。
+    //init contracts or to do other thing
+    pub fn first_init(&self, genesis: Genesis) {
+        if 0 == self.get_current_height() {
+            info!("**** begin **** \n");
+            info!("chain first init, to do init contracts on height eq zero");
+            let mut state = self.state();
+            for (address, contract) in genesis.spec.alloc.clone() {
+                let _ = state.init_code(&address.as_bytes().into(), contract.code.into_bytes()).expect("init code fail");
+                for (key, values) in contract.storage.clone() {
+                    state.set_storage(&address.as_bytes().into(), key.as_bytes().into(), values.as_bytes().into())
+                         .expect("init code set_storage fail");
+                }
+            }
+
+            //query is store in chain
+            for (address, contract) in genesis.spec.alloc {
+                for (key, values) in contract.storage {
+                    let result = state.storage_at(&address.as_bytes().into(), &key.as_bytes().into());
+                    info!("address = {:?}, key = {:?}, result = {:?}", address, key, result);
+                }
+            }
+
+            info!("**** end **** \n");
+        }
     }
 
     // Get block header by hash

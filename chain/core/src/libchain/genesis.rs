@@ -17,13 +17,22 @@
 
 use libchain::block::Block;
 use serde_json;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use util::H256;
 use util::HASH_NULL_RLP;
 
+#[derive(Debug, PartialEq, Deserialize, Clone)]
+pub struct Contracts {
+    pub nonce: String,
+    pub code: String,
+    pub storage: HashMap<String, String>,
+}
+
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Spec {
+    pub alloc: HashMap<String, Contracts>,
     pub prevhash: H256,
     pub timestamp: u64,
 }
