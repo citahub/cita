@@ -832,7 +832,7 @@ impl Chain {
             if let Some(header) = self.add_block(&mut batch, block) {
 
                 trace!("set_block current_hash!!!!!!{:?} {:?}", height, header.hash());
-               
+
                 {
                     *self.current_header.write() = header;
                 }

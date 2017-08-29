@@ -1,4 +1,3 @@
-
 use super::{PrivKey, PubKey, Address, Message, Error, KeyPair, pubkey_to_address};
 use rlp::*;
 use rustc_serialize::hex::ToHex;

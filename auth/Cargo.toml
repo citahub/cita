@@ -1,0 +1,13 @@
+[package]
+name = "auth"
+version = "0.1.0"
+authors = ["rink1969 <rink1969@cryptape.com>"]
+
+[dependencies]
+clap = "2"
+log = "0.3"
+dotenv = "0.10.0"
+cpuprofiler = "0.0.3"
+util = { path = "../share_libs/util"}
+pubsub = { path = "../share_libs/pubsub" }
+cita_log = { path = "../share_libs/cita_log" }
