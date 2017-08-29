@@ -1,9 +1,8 @@
+# <img src="https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true" width="256">
+
+[![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=master)](https://travis-ci.org/cryptape/cita)
+
 **[中文文档](http://cita.readthedocs.io/zh_CN/latest/)**
-
-[![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=master)](https://travis-ci.org/cryptape/cita)
-
-<img src="https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true" width="256">
 
 ## What is CITA
 
