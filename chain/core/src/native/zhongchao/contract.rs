@@ -70,6 +70,7 @@ impl ZcPermission {
 //        contract.functions.insert(4, Box::new(ZcPermission::grant_role));
 //        contract.functions.insert(5, Box::new(ZcPermission::revoke_role));
 //        contract.functions.insert(6, Box::new(ZcPermission::quit_group));
+//        contract.functions.insert(7, Box::new(ZcPermission::check_user_in));
         contract
     }
 
@@ -88,8 +89,44 @@ impl ZcPermission {
         };
 
         // init
-        contract.sender.push(user_send);
-        contract.creator.push(user_creat);
+        contract.sender.push(user_send.to_string());
+        contract.creator.push(user_creat.to_string());
+    }
+
+    // check_user_in(group);
+    pub fn check_user_in(params: &ActionParams, ext: &mut Ext) -> bool {
+        // TODO：后面用storage_at获取变量值，删除下面contract
+        // undo: check the permission
+        let mut contract = ZcPermission {
+            functions: HashMap::<Signature, Box<Function>>::new(),
+            creator: vec![],
+            sender: vec![],
+            applicant_of_creator: vec![],
+            applicant_of_sender: vec![],
+            groups: HashMap::<String, Vec<String>>::new(),
+            roles: HashMap::<String, Vec<String>>::new(),
+        };
+        let groups = contract.groups;
+
+        let user = params.clone().sender.to_hex();
+        let data = params.clone().data.unwrap_or("error".as_bytes().to_owned());
+        // TODO unwrap()
+        let gr = String::from_utf8(data.get(4..36).unwrap().to_vec()).unwrap();
+        match groups.get(&user) {
+            Some(group) => {
+                let ug = group.clone();
+                if ug.contains(&gr) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+                //                let ret_code = ZcPermission::to_u8(ug).as_bytes();
+                //                Ok(GasLeft::NeedsReturn(U256::from(0), ret_code))
+            },
+            None => { return false; }
+        }
+//        Ok(GasLeft::Known(U256::from(0)))
     }
 
     // apply to into/quit the group
@@ -135,7 +172,6 @@ impl ZcPermission {
     }
 
     // query the permission
-    // data(0..4) is signature of function, (4..36) is group's name.
     pub fn query_group(params: & ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
         // TODO：后面用storage_at获取变量值，删除下面contract
         // undo: check the permission
