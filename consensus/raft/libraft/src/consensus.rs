@@ -805,7 +805,6 @@ where
 #[cfg(test)]
 mod tests {
     extern crate env_logger;
-    extern crate test;
 
     use ClientId;
     use LogIndex;

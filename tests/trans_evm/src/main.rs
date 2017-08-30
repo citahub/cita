@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #![allow(unused_extern_crates)]
-#![feature(plugin)]
 extern crate cita_ed25519 as ed25519;
 extern crate libproto;
 extern crate protobuf;

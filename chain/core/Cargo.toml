@@ -52,3 +52,4 @@ rand = "0.3"
 cpuprofiler = "0.0.3"
 devtools = { path = "../../devtools" }
 mktemp = "0.3.1"
+env_logger="*"

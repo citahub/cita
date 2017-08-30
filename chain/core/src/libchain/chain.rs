@@ -944,7 +944,6 @@ mod tests {
     extern crate cita_ed25519;
     extern crate env_logger;
     extern crate mktemp;
-    extern crate test;
     use self::Chain;
     use super::*;
     use cita_ed25519::KeyPair;
