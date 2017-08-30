@@ -18,11 +18,9 @@
 #![feature(mpsc_select)]
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate libproto;
 extern crate util;
 extern crate threadpool;
-extern crate rustc_serialize;
 extern crate protobuf;
 #[macro_use]
 extern crate log;
@@ -30,18 +28,15 @@ extern crate clap;
 extern crate tx_pool;
 extern crate cita_ed25519 as ed25519;
 extern crate proof;
-extern crate amqp;
 extern crate pubsub;
 extern crate bincode;
-extern crate parking_lot;
-extern crate time;
-extern crate engine_json;
 extern crate engine;
 extern crate lru_cache;
 extern crate dotenv;
 extern crate core as chain_core;
 extern crate cita_log;
 extern crate cpuprofiler;
+extern crate engine_json;
 
 use clap::App;
 use log::LogLevelFilter;

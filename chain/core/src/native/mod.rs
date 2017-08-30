@@ -33,7 +33,7 @@ pub type Function = Fn(&ActionParams, &mut Ext) -> evm::Result<GasLeft<'static>>
 // Contract
 pub trait Contract: Sync + Send {
     fn get_function(&self, hash: &Signature) -> Option<&Box<Function>>;
-    fn exec(&self, params: &ActionParams, mut ext: &mut Ext) {
+    fn exec(&self, params: &ActionParams, ext: &mut Ext) {
         if let Some(data) = params.clone().data.unwrap().get(0..4) {
             let signature = data.iter().fold(0u32, |acc, &x| (acc << 8) + (x as u32));
             if let Some(exec_call) = self.get_function(&signature) {

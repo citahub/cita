@@ -940,6 +940,7 @@ impl Chain {
 
 #[cfg(test)]
 mod tests {
+    #![allow(unused_must_use, deprecated, unused_extern_crates)]
     extern crate cita_ed25519;
     extern crate env_logger;
     extern crate mktemp;
@@ -988,6 +989,7 @@ mod tests {
         let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
         let genesis = Genesis {
             spec: Spec {
+                alloc: HashMap::new(),
                 prevhash: H256::from(0),
                 timestamp: 0,
             },

@@ -1,4 +1,3 @@
-
 use super::{PrivKey, PubKey, Address};
 use error::Error;
 use sodiumoxide::crypto::sign::{keypair_from_privkey, gen_keypair};
