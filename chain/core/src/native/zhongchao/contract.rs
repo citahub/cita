@@ -24,32 +24,11 @@ use native::permission::action::ElementAction;
 use std::str;
 use rustc_hex::ToHex;
 
-// 用户拥有的group name
-
-pub struct UserGroup {
-    groups: HashMap<String, Vec<String>>,
-}
-
-impl UserGroup {
-    pub fn new() -> Self {
-        UserGroup {
-            groups: HashMap::new(),
-        }
-    }
-}
-
-pub struct GroupRole {
-    roles: HashMap<String, Vec<String>>,
-}
-
-impl GroupRole {
-    pub fn new() -> Self {
-        GroupRole {
-            roles: HashMap::new(),
-        }
-    }
-}
-
+// undo: check
+// check_user_in(group);
+// check_has_role(group, role);
+// check_permission(group, permission);
+//
 pub struct ZcPermission {
     // Key is signature of function in the contract, value is contract function
     functions: HashMap<Signature, Box<Function>>,
@@ -87,9 +66,31 @@ impl ZcPermission {
         contract.functions.insert(0, Box::new(ZcPermission::apply_group));
         contract.functions.insert(1, Box::new(ZcPermission::verify_group));
 //        contract.functions.insert(2, Box::new(ZcPermission::query_group));
+//        contract.functions.insert(3, Box::new(ZcPermission::query_role));
+//        contract.functions.insert(4, Box::new(ZcPermission::grant_role));
+//        contract.functions.insert(5, Box::new(ZcPermission::revoke_role));
+//        contract.functions.insert(6, Box::new(ZcPermission::quit_group));
         contract
     }
 
+    // init
+    // just init one user for each group: sender and creator
+    // !! need to discuss
+    pub fn init(user_send: &String, user_creat: &String, ext:&mut Ext)  {
+        let mut contract = ZcPermission {
+            functions: HashMap::<Signature, Box<Function>>::new(),
+            creator: vec![],
+            sender: vec![],
+            applicant_of_creator: vec![],
+            applicant_of_sender: vec![],
+            groups: HashMap::<String, Vec<String>>::new(),
+            roles: HashMap::<String, Vec<String>>::new(),
+        };
+
+        // init
+        contract.sender.push(user_send);
+        contract.creator.push(user_creat);
+    }
 
     // apply to into/quit the group
     pub fn apply_group(params: &ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
@@ -115,6 +116,7 @@ impl ZcPermission {
     // fn verify_group(group: &string);
     pub fn verify_group(params: &ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
         // TODO：后面用storage_at获取变量值，删除下面contract
+        // undo: check the permission
         let mut contract = ZcPermission {
             functions: HashMap::<Signature, Box<Function>>::new(),
             creator: vec![],
@@ -136,6 +138,7 @@ impl ZcPermission {
     // data(0..4) is signature of function, (4..36) is group's name.
     pub fn query_group(params: & ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
         // TODO：后面用storage_at获取变量值，删除下面contract
+        // undo: check the permission
         let mut contract = ZcPermission {
             functions: HashMap::<Signature, Box<Function>>::new(),
             creator: vec![],
@@ -164,6 +167,7 @@ impl ZcPermission {
     // fn query_role(group: String) -> Vec<String>
     pub fn query_role(params: &ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
         // TODO：后面用storage_at获取变量值，删除下面contract
+        // undo: check the permission
         let mut contract = ZcPermission {
             functions: HashMap::<Signature, Box<Function>>::new(),
             creator: vec![],
@@ -349,6 +353,4 @@ impl ZcPermission {
         }
         res
     }
-
-
 }
