@@ -40,9 +40,8 @@ impl Filter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ed25519::{KeyPair, PrivKey};
+    use crypto::{KeyPair, PrivKey, CreateKey};
     use libproto::blockchain::{SignedTransaction, UnverifiedTransaction, Transaction};
-    use util::H512;
 
     pub fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
         let mut tx = Transaction::new();

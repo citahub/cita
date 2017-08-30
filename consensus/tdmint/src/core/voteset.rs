@@ -17,7 +17,7 @@
 
 use super::{Step, Address};
 use bincode::{serialize, Infinite};
-use ed25519::{recover, pubkey_to_address, Signature};
+use crypto::{Sign, pubkey_to_address, Signature};
 use libproto::blockchain::Block;
 use lru_cache::LruCache;
 use protobuf::core::parse_from_bytes;
@@ -158,7 +158,8 @@ impl VoteSet {
         for (sender, vote) in &self.votes_by_sender {
             if authorities.contains(sender) {
                 let msg = serialize(&(h, r, step, sender, vote.proposal), Infinite).unwrap();
-                if let Ok(pubkey) = recover(&vote.signature, &msg.crypt_hash().into()) {
+                let signature = &vote.signature;
+                if let Ok(pubkey) = signature.recover(&msg.crypt_hash().into()) {
                     if pubkey_to_address(&pubkey) == sender.clone() {
                         let mut hash = H256::default();
                         if let Some(h) = vote.proposal {

@@ -22,6 +22,7 @@ use secp256k1::key;
 use std::fmt;
 use util::H160 as Hash160;
 use util::Hashable;
+use util::crypto::CreateKey;
 
 pub fn pubkey_to_address(pubkey: &PubKey) -> Address {
     Address::from(Hash160::from(pubkey.crypt_hash()))
@@ -42,9 +43,13 @@ impl fmt::Display for KeyPair {
     }
 }
 
-impl KeyPair {
+impl CreateKey for KeyPair {
+    type PrivKey = PrivKey;
+    type PubKey = PubKey;
+    type Error = Error;
+
     /// Create a pair from secret key
-    pub fn from_privkey(privkey: PrivKey) -> Result<KeyPair, Error> {
+    fn from_privkey(privkey: Self::PrivKey) -> Result<Self, Self::Error> {
         let context = &SECP256K1;
         let s: key::SecretKey = key::SecretKey::from_slice(context, &privkey.0[..])?;
         let pubkey = key::PublicKey::from_secret_key(context, &s)?;
@@ -58,7 +63,7 @@ impl KeyPair {
         Ok(keypair)
     }
 
-    pub fn gen_keypair() -> Self {
+    fn gen_keypair() -> Self {
         let context = &SECP256K1;
         let (s, p) = context.generate_keypair(&mut thread_rng()).unwrap();
         let serialized = p.serialize_vec(context, false);
@@ -69,15 +74,15 @@ impl KeyPair {
         KeyPair { privkey: privkey, pubkey: pubkey }
     }
 
-    pub fn privkey(&self) -> &PrivKey {
+    fn privkey(&self) -> &Self::PrivKey {
         &self.privkey
     }
 
-    pub fn pubkey(&self) -> &PubKey {
+    fn pubkey(&self) -> &Self::PubKey {
         &self.pubkey
     }
 
-    pub fn address(&self) -> Address {
+    fn address(&self) -> Address {
         pubkey_to_address(&self.pubkey)
     }
 }
@@ -87,6 +92,7 @@ mod tests {
     use super::{KeyPair, PrivKey};
     use std::str::FromStr;
     use util::H256 as Hash256;
+    use util::crypto::CreateKey;
 
     #[test]
     fn from_privkey() {

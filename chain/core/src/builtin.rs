@@ -15,13 +15,14 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(dead_code)]
-use cita_ed25519::{Signature as ED_Signature, recover as ed_recover, Message as ED_Message};
-use cita_secp256k1::{Signature, recover as ec_recover};
+use cita_ed25519::{Signature as ED_Signature, Message as ED_Message};
+use cita_secp256k1::Signature;
 use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160 as Ripemd160Digest;
 use crypto::sha2::Sha256 as Sha256Digest;
 use std::cmp::min;
 use util::{U256, H256, BytesRef, Hashable};
+use util::crypto::Sign;
 // use ethjson;
 
 /// Native implementation of a built-in contract.
@@ -143,7 +144,7 @@ impl Impl for EcRecover {
 
         let s = Signature::from_rsv(&r.into(), &s.into(), bit);
         if s.is_valid() {
-            if let Ok(p) = ec_recover(&s, &hash.into()) {
+            if let Ok(p) = s.recover(&hash.into()) {
                 let r = p.crypt_hash();
                 output.write(0, &[0; 12]);
                 output.write(12, &r[12..r.len()]);
@@ -186,7 +187,7 @@ impl Impl for EdRecover {
         let hash = ED_Message::from_slice(&input[0..32]);
         let sig = ED_Signature::from(&input[32..128]);
 
-        if let Ok(p) = ed_recover(&sig, &hash.into()) {
+        if let Ok(p) = sig.recover(&hash.into()) {
             let r = p.crypt_hash();
             output.write(0, &[0; 12]);
             output.write(12, &r[12..r.len()]);
@@ -199,8 +200,9 @@ mod tests {
     extern crate cita_ed25519;
 
     use super::{Builtin, Linear, ethereum_builtin, Pricer};
-    use cita_ed25519::{KeyPair, sign as ED_sign, pubkey_to_address as ED_pubkey_to_address};
+    use cita_ed25519::{Signature, KeyPair, pubkey_to_address as ED_pubkey_to_address};
     use util::{U256, H256, BytesRef};
+    use util::crypto::{Sign, CreateKey};
     // use ethjson;
     use util::hashable::HASH_NAME;
 
@@ -373,7 +375,7 @@ mod tests {
         let privkey = key_pair.privkey();
         let pubkey = key_pair.pubkey();
         let address = ED_pubkey_to_address(pubkey);
-        let signature = ED_sign(privkey, &hash).unwrap();
+        let signature = Signature::sign(privkey, &hash).unwrap();
         let mut buf = Vec::<u8>::with_capacity(128);
         buf.extend_from_slice(&message[..]);
         buf.extend_from_slice(&signature.0[..]);

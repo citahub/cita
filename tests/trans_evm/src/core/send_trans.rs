@@ -17,7 +17,7 @@
 
 use core::param::Param;
 use core::trans::*;
-use ed25519::*;
+use crypto::*;
 use hyper::Client;
 use hyper::client::Response;
 use hyper::status::StatusCode;
@@ -33,7 +33,6 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 use std::thread;
 use std::time;
-use util::H512;
 
 static mut EXIT: bool = false;
 #[allow(dead_code, unused_assignments)]

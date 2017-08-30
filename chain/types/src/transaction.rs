@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use BlockNumber;
-use ed25519::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, PubKey};
+use crypto::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, PubKey};
 use libproto::blockchain::{Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction, SignedTransaction as ProtoSignedTransaction, Crypto as ProtoCrypto};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
@@ -353,7 +353,7 @@ impl Decodable for SignedTransaction {
             return Err(DecoderError::RlpIncorrectListLen);
         }
 
-        let public: PubKey = d.val_at(4)?;
+        let public: PubKey = d.val_at(10)?;
 
         Ok(SignedTransaction {
                transaction: UnverifiedTransaction {

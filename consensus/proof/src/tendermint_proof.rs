@@ -16,15 +16,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, deserialize, Infinite};
-use ed25519::{Signature, recover, pubkey_to_address};
+use crypto::{Signature, Sign, pubkey_to_address};
 use libproto::blockchain::{Proof, ProofType};
-use util::{H256, Address};
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::usize::MAX;
-use util::{H256, Address, H768};
+use util::{H256, Address};
 use util::Hashable;
 
 pub const DATA_PATH: &'static str = "DATA_PATH";
@@ -106,7 +105,8 @@ impl TendermintProof {
         self.commits.iter().all(|(sender, sig)| {
             if authorities.contains(sender) {
                 let msg = serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())), Infinite).unwrap();
-                if let Ok(pubkey) = recover(&Signature(sig.0.into()), &msg.crypt_hash().into()) {
+                let signature = Signature(sig.0.into());
+                if let Ok(pubkey) = signature.recover(&msg.crypt_hash().into()) {
                     return pubkey_to_address(&pubkey) == sender.clone().into();
                 }
             }
@@ -123,7 +123,8 @@ impl TendermintProof {
         }
         self.commits.iter().all(|(sender, sig)| {
                                     let msg = serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())), Infinite).unwrap();
-                                    if let Ok(pubkey) = recover(&Signature(sig.0.into()), &msg.crypt_hash().into()) {
+                                    let signature = Signature(sig.0.into());
+                                    if let Ok(pubkey) = signature.recover(&msg.crypt_hash().into()) {
                                         return pubkey_to_address(&pubkey) == sender.clone().into();
                                     }
                                     false

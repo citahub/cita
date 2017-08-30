@@ -1,4 +1,3 @@
-
 use super::{PrivKey, PubKey, Address, Message, Error, KeyPair, pubkey_to_address, SIGNATURE_BYTES_LEN};
 use rlp::*;
 use rustc_serialize::hex::ToHex;
@@ -9,6 +8,7 @@ use sodiumoxide::crypto::sign::{sign_detached, verify_detached, SecretKey, Signa
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 use util::H768;
+use util::crypto::{Sign, CreateKey};
 
 pub struct Signature(pub [u8; 96]);
 
@@ -174,47 +174,55 @@ impl DerefMut for Signature {
     }
 }
 
-pub fn sign(privkey: &PrivKey, message: &Message) -> Result<Signature, Error> {
-    let keypair = KeyPair::from_privkey(*privkey)?;
-    let secret_key = SecretKey::from_slice(privkey.as_ref()).unwrap();
-    let pubkey = keypair.pubkey();
-    let mut ret = [0u8; 96];
-    let sig = sign_detached(message.as_ref(), &secret_key);
+impl Sign for Signature {
+    type PrivKey = PrivKey;
+    type PubKey = PubKey;
+    type Message = Message;
+    type Error = Error;
 
-    ret[0..64].copy_from_slice(&sig.0[..]);
-    ret[64..96].copy_from_slice(&pubkey.as_ref()[..]);
-    Ok(Signature(ret))
-}
+    fn sign(privkey: &Self::PrivKey, message: &Self::Message) -> Result<Self, Self::Error> {
+        let keypair = KeyPair::from_privkey(*privkey)?;
+        let secret_key = SecretKey::from_slice(privkey.as_ref()).unwrap();
+        let pubkey = keypair.pubkey();
+        let mut ret = [0u8; 96];
+        let sig = sign_detached(message.as_ref(), &secret_key);
 
-pub fn recover(signature: &Signature, message: &Message) -> Result<PubKey, Error> {
-    let sig = signature.sig();
-    let pubkey = signature.pk();
-    let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(), message.as_ref(), &EdPublicKey::from_slice(&pubkey).unwrap());
-
-    if !is_valid { Err(Error::InvalidSignature) } else { Ok(PubKey::from_slice(&pubkey)) }
-}
-
-pub fn verify_public(pubkey: &PubKey, signature: &Signature, message: &Message) -> Result<bool, Error> {
-    let sig = signature.sig();
-    let pk = signature.pk();
-    if pk != pubkey.as_ref() {
-        return Err(Error::InvalidPubKey);
+        ret[0..64].copy_from_slice(&sig.0[..]);
+        ret[64..96].copy_from_slice(&pubkey.as_ref()[..]);
+        Ok(Signature(ret))
     }
 
-    let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(), message.as_ref(), &EdPublicKey::from_slice(&pubkey).unwrap());
-    if !is_valid { Err(Error::InvalidSignature) } else { Ok(true) }
-}
+    fn recover(&self, message: &Self::Message) -> Result<Self::PubKey, Self::Error> {
+        let sig = self.sig();
+        let pubkey = self.pk();
+        let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(), message.as_ref(), &EdPublicKey::from_slice(&pubkey).unwrap());
 
-pub fn verify_address(address: &Address, signature: &Signature, message: &Message) -> Result<bool, Error> {
-    let pubkey = recover(signature, message)?;
-    let recover_address = pubkey_to_address(&pubkey);
-    Ok(address == &recover_address)
+        if !is_valid { Err(Error::InvalidSignature) } else { Ok(PubKey::from_slice(&pubkey)) }
+    }
+
+    fn verify_public(&self, pubkey: &Self::PubKey, message: &Self::Message) -> Result<bool, Self::Error> {
+        let sig = self.sig();
+        let pk = self.pk();
+        if pk != pubkey.as_ref() {
+            return Err(Error::InvalidPubKey);
+        }
+
+        let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(), message.as_ref(), &EdPublicKey::from_slice(&pubkey).unwrap());
+        if !is_valid { Err(Error::InvalidSignature) } else { Ok(true) }
+    }
+
+    fn verify_address(&self, address: &Address, message: &Message) -> Result<bool, Self::Error> {
+        let pubkey = self.recover(message)?;
+        let recover_address = pubkey_to_address(&pubkey);
+        Ok(address == &recover_address)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use bincode::{serialize, deserialize, Infinite};
+    use util::crypto::CreateKey;
 
     const MESSAGE: [u8; 32] = [
         0x01,
@@ -255,8 +263,8 @@ mod tests {
     fn test_sign_verify() {
         let keypair = KeyPair::gen_keypair();
         let msg = Message::from_slice(&MESSAGE[..]);
-        let sig = sign(keypair.privkey(), &msg).unwrap();
-        assert!(verify_public(keypair.pubkey(), &sig, &msg).unwrap());
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
+        assert!(sig.verify_public(keypair.pubkey(), &msg).unwrap());
     }
 
     #[test]
@@ -264,23 +272,23 @@ mod tests {
         let keypair = KeyPair::gen_keypair();
         let address = pubkey_to_address(keypair.pubkey());
         let msg = Message::from_slice(&MESSAGE[..]);
-        let sig = sign(keypair.privkey(), &msg).unwrap();
-        assert!(verify_address(&address, &sig, &msg).unwrap());
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
+        assert!(sig.verify_address(&address, &msg).unwrap());
     }
 
     #[test]
     fn test_recover() {
         let keypair = KeyPair::gen_keypair();
         let msg = Message::from_slice(&MESSAGE[..]);
-        let sig = sign(keypair.privkey(), &msg).unwrap();
-        assert_eq!(keypair.pubkey(), &recover(&sig, &msg).unwrap());
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
+        assert_eq!(keypair.pubkey(), &sig.recover(&msg).unwrap());
     }
 
     #[test]
     fn test_into_slice() {
         let keypair = KeyPair::gen_keypair();
         let msg = Message::from_slice(&MESSAGE[..]);
-        let sig = sign(keypair.privkey(), &msg).unwrap();
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
         let sig = &sig;
         let slice: &[u8] = sig.into();
         assert_eq!(Signature::from(slice), *sig);
@@ -290,7 +298,7 @@ mod tests {
     fn test_de_serialize() {
         let keypair = KeyPair::gen_keypair();
         let msg = Message::from_slice(&MESSAGE[..]);
-        let sig = sign(keypair.privkey(), &msg).unwrap();
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
         let se_result = serialize(&sig, Infinite).unwrap();
         let de_result: Signature = deserialize(&se_result).unwrap();
         assert_eq!(sig, de_result);

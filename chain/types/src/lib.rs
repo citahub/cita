@@ -18,7 +18,7 @@
 extern crate util;
 extern crate rlp;
 extern crate bloomable;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 extern crate libproto;
 extern crate rustc_hex;
 pub mod account_diff;

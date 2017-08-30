@@ -1,10 +1,10 @@
-
 use super::{PrivKey, PubKey, Address};
 use error::Error;
 use rustc_serialize::hex::ToHex;
 use sodiumoxide::crypto::sign::{keypair_from_privkey, gen_keypair};
 use std::fmt;
 use util::{H160, Hashable};
+use util::crypto::CreateKey;
 
 pub fn pubkey_to_address(pubkey: &PubKey) -> Address {
     Address::from(H160::from(pubkey.crypt_hash()))
@@ -24,8 +24,12 @@ impl fmt::Display for KeyPair {
     }
 }
 
-impl KeyPair {
-    pub fn from_privkey(privkey: PrivKey) -> Result<Self, Error> {
+impl CreateKey for KeyPair {
+    type PrivKey = PrivKey;
+    type PubKey = PubKey;
+    type Error = Error;
+
+    fn from_privkey(privkey: Self::PrivKey) -> Result<Self, Self::Error> {
         let keypair = keypair_from_privkey(privkey.as_ref());
         match keypair {
             None => Err(Error::InvalidPrivKey),
@@ -36,7 +40,7 @@ impl KeyPair {
         }
     }
 
-    pub fn gen_keypair() -> Self {
+    fn gen_keypair() -> Self {
         let (pk, sk) = gen_keypair();
         KeyPair {
             privkey: PrivKey::from(sk.0),
@@ -44,15 +48,15 @@ impl KeyPair {
         }
     }
 
-    pub fn privkey(&self) -> &PrivKey {
+    fn privkey(&self) -> &Self::PrivKey {
         &self.privkey
     }
 
-    pub fn pubkey(&self) -> &PubKey {
+    fn pubkey(&self) -> &Self::PubKey {
         &self.pubkey
     }
 
-    pub fn address(&self) -> Address {
+    fn address(&self) -> Address {
         pubkey_to_address(&self.pubkey)
     }
 }
@@ -60,6 +64,7 @@ impl KeyPair {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use util::crypto::CreateKey;
 
     #[test]
     fn test_from_privkey() {

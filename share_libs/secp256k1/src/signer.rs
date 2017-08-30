@@ -15,22 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{PrivKey, KeyPair, PubKey, Address};
+use super::{PrivKey, KeyPair, Address};
+use util::crypto::CreateKey;
 
 #[derive(Default)]
 pub struct Signer {
     pub keypair: KeyPair,
     pub address: Address,
-}
-
-impl Signer {
-    pub fn privkey(&self) -> &PrivKey {
-        self.keypair.privkey()
-    }
-
-    pub fn pubkey(&self) -> &PubKey {
-        self.keypair.pubkey()
-    }
 }
 
 impl From<PrivKey> for Signer {
