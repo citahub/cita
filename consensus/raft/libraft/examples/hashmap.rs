@@ -27,8 +27,6 @@
 //! simple testing one. We should improve this in the future.
 
 // In order to use Serde we need to enable these nightly features.
-#![feature(plugin)]
-#![feature(custom_derive)]
 
 extern crate libraft; // <--- Kind of a big deal for this!
 extern crate env_logger;

@@ -15,17 +15,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use bincode::{serialize, deserialize, Infinite};
+use bincode::deserialize;
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub enum Command {
-    SpawnBlk(u64),
+    SpawnBlk(u64, Vec<u8>),
     PoolSituation(u64, Option<Vec<u8>>, Option<Vec<u8>>),
 }
 
+/*
 pub fn encode(cmd: &Command) -> Vec<u8> {
     serialize(cmd, Infinite).unwrap()
 }
+*/
 
 pub fn decode(bin: &[u8]) -> Command {
     deserialize(bin).unwrap()

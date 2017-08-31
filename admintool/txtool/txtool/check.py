@@ -6,20 +6,16 @@
 
 
 from jsonrpcclient.http_client import HTTPClient
-from url_util import endpoint, host, ping
+from url_util import endpoint
 # '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":1}'
 
 
-# TODO retry 3 times when error.
 def check_cita_status():
     result_status = False
     try:
-        if ping(host()):
-            url = endpoint()
-            response = HTTPClient(url).request("cita_blockNumber", "")
-            result_status = response > 0
-        else:
-            result_status = False
+        url = endpoint()
+        response = HTTPClient(url).request("cita_blockNumber", "")
+        result_status = response > 0
     except:
         result_status = False
     finally:

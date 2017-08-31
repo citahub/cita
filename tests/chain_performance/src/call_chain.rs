@@ -47,14 +47,11 @@ impl Callchain {
     }
 
     pub fn get_pre_hash(&self) -> H256 {
-        *self.chain.current_hash.read()
+        self.chain.get_current_hash()
     }
 
     pub fn get_contract_address(&self, hash: H256) -> H160 {
-        let receipt = self.chain
-                          .transaction_address(&hash)
-                          .and_then(|tx_address| self.chain.localized_receipt(hash, tx_address))
-                          .unwrap();
+        let receipt = self.chain.localized_receipt(hash).unwrap();
         match receipt.contract_address {
             Some(contract_address) => contract_address,
             None => panic!("contract_address error"),
@@ -62,9 +59,6 @@ impl Callchain {
     }
 
     pub fn get_receipt(&self, hash: H256) -> LocalizedReceipt {
-        self.chain
-            .transaction_address(&hash)
-            .and_then(|tx_address| self.chain.localized_receipt(hash, tx_address))
-            .unwrap()
+        self.chain.localized_receipt(hash).unwrap()
     }
 }

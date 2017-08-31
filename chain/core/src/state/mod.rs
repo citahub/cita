@@ -20,7 +20,6 @@
 //! Unconfirmed sub-states are managed with `checkpoint`s which may be canonicalized
 //! or rolled back.
 
-use cita_transaction::eth_transaction::SignedTransaction;
 use engines::NullEngine;
 use env_info::EnvInfo;
 use error::Error;
@@ -33,6 +32,7 @@ use std::collections::hash_map::Entry;
 use std::fmt;
 use std::sync::Arc;
 use trace::FlatTrace;
+use types::transaction::SignedTransaction;
 use util::*;
 use util::trie;
 
@@ -641,7 +641,7 @@ impl<B: Backend> State<B> {
 
         // at this point the entry is guaranteed to be in the cache.
         Ok(RefMut::map(self.cache.borrow_mut(), |c| {
-            let mut entry = c.get_mut(a).expect("entry known to exist in the cache; qed");
+            let entry = c.get_mut(a).expect("entry known to exist in the cache; qed");
 
             match &mut entry.account {
                 &mut Some(ref mut acc) => not_default(acc),
@@ -702,7 +702,7 @@ impl Clone for State<StateDB> {
 #[cfg(test)]
 mod tests {
     extern crate libproto;
-    extern crate cita_crypto;
+    extern crate cita_ed25519;
     extern crate protobuf;
     extern crate env_logger;
     ////////////////////////////////////////////////////////////////////////////////
@@ -713,7 +713,8 @@ mod tests {
     use rustc_hex::FromHex;
     use std::sync::Arc;
     use tests::helpers::*;
-    use util::{H256, Address};
+    use util::{H256, H512, Address};
+    use util::hashable::HASH_NAME;
 
     #[test]
     fn should_apply_create_transaction() {
@@ -753,13 +754,13 @@ mod tests {
         uv_tx.set_transaction(tx);
 
         // 2) stx = (from, content(code, nonce, signature))
-        let privkey = cita_crypto::PrivKey::from(H256::from("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"));
+        let privkey = cita_ed25519::PrivKey::from(H512::random());
         let mut stx = blockchain::SignedTransaction::new();
         stx.set_transaction_with_sig(uv_tx);
         stx.sign(privkey);
 
         // 4) signed
-        let signed = SignedTransaction::new(stx).unwrap();
+        let signed = SignedTransaction::new(&stx).unwrap();
 
         // 5)
         let mut state = get_temp_state();
@@ -1805,7 +1806,11 @@ mod tests {
         let a = Address::zero();
         state.require(&a, false).unwrap();
         state.commit().unwrap();
-        assert_eq!(state.root().hex(), "42d8434e6d43bbdfa67dee7c7ef5c17159056e7727ac1ad5ba9928aeb9eb0112");
+        if HASH_NAME == "sha3" {
+            assert_eq!(state.root().hex(), "42d8434e6d43bbdfa67dee7c7ef5c17159056e7727ac1ad5ba9928aeb9eb0112");
+        } else if HASH_NAME == "blake2b" {
+            assert_eq!(state.root().hex(), "a989e73cbcbb961ac9777ca453449c42a0c008c70ef16326b7d4c96681f5d90d");
+        }
     }
 
     #[test]
@@ -1843,8 +1848,13 @@ mod tests {
     #[test]
     fn create_empty() {
         let mut state = get_temp_state();
-        state.commit().unwrap();
-        assert_eq!(state.root().hex(), "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
+        if HASH_NAME == "sha3" {
+            state.commit().unwrap();
+            assert_eq!(state.root().hex(), "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
+        } else if HASH_NAME == "blake2b" {
+            state.commit().unwrap();
+            assert_eq!(state.root().hex(), "c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9af");
+        }
     }
 
     #[test]

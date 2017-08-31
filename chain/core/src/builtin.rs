@@ -15,12 +15,13 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(dead_code)]
-use cita_crypto::{Signature, recover as ec_recover};
+use cita_ed25519::{Signature as ED_Signature, recover as ed_recover};
+use cita_secp256k1::{Signature, recover as ec_recover};
 use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160 as Ripemd160Digest;
 use crypto::sha2::Sha256 as Sha256Digest;
 use std::cmp::min;
-use util::{U256, H256, Hashable, BytesRef};
+use util::{U256, H256, BytesRef, Hashable, H768};
 // use ethjson;
 
 /// Native implementation of a built-in contract.
@@ -90,6 +91,7 @@ fn ethereum_builtin(name: &str) -> Box<Impl> {
         "ecrecover" => Box::new(EcRecover) as Box<Impl>,
         "sha256" => Box::new(Sha256) as Box<Impl>,
         "ripemd160" => Box::new(Ripemd160) as Box<Impl>,
+        "edrecover" => Box::new(EdRecover) as Box<Impl>,
         _ => panic!("invalid builtin name: {}", name),
     }
 }
@@ -112,6 +114,9 @@ struct Sha256;
 
 #[derive(Debug)]
 struct Ripemd160;
+
+#[derive(Debug)]
+struct EdRecover;
 
 impl Impl for Identity {
     fn execute(&self, input: &[u8], output: &mut BytesRef) {
@@ -171,11 +176,35 @@ impl Impl for Ripemd160 {
     }
 }
 
+impl Impl for EdRecover {
+    fn execute(&self, i: &[u8], output: &mut BytesRef) {
+        let len = min(i.len(), 128);
+
+        let mut input = [0; 128];
+        input[..len].copy_from_slice(&i[..len]);
+
+        let hash = H256::from_slice(&input[0..32]);
+        let sig = H768::from_slice(&input[32..128]);
+
+
+        let s = ED_Signature::from(sig);
+        if let Ok(p) = ed_recover(&s, &hash.into()) {
+            let r = p.crypt_hash();
+            output.write(0, &[0; 12]);
+            output.write(12, &r[12..r.len()]);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    extern crate cita_ed25519;
+
     use super::{Builtin, Linear, ethereum_builtin, Pricer};
+    use cita_ed25519::{KeyPair, sign as ED_sign, pubkey_to_address as ED_pubkey_to_address};
+    use util::{U256, H256, BytesRef};
     // use ethjson;
-    use util::{U256, BytesRef};
+    use util::hashable::HASH_NAME;
 
     #[test]
     fn identity() {
@@ -257,8 +286,13 @@ mod tests {
         let i = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
 
         let mut o = [255u8; 32];
-        f.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
-        assert_eq!(&o[..], &(FromHex::from_hex("000000000000000000000000c08b5542d177ac6686946920409741463a15dddb").unwrap())[..]);
+        if HASH_NAME == "sha3" {
+            f.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
+            assert_eq!(&o[..], &(FromHex::from_hex("000000000000000000000000c08b5542d177ac6686946920409741463a15dddb").unwrap())[..]);
+        } else if HASH_NAME == "blake2b" {
+            f.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
+            assert_eq!(&o[..], &(FromHex::from_hex("0000000000000000000000009f374781e8bf2e7dc910b0ee56baf9c2d475f1d9").unwrap())[..]);
+        }
 
         let mut o8 = [255u8; 8];
         f.execute(&i[..], &mut BytesRef::Fixed(&mut o8[..]));
@@ -266,7 +300,7 @@ mod tests {
 
         let mut o34 = [255u8; 34];
         f.execute(&i[..], &mut BytesRef::Fixed(&mut o34[..]));
-        assert_eq!(&o34[..], &(FromHex::from_hex("000000000000000000000000c08b5542d177ac6686946920409741463a15dddbffff").unwrap())[..]);
+        assert_eq!(&o34[..], &(FromHex::from_hex("0000000000000000000000009f374781e8bf2e7dc910b0ee56baf9c2d475f1d9ffff").unwrap())[..]);
 
         let i_bad = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001a650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
         let mut o = [255u8; 32];
@@ -298,6 +332,60 @@ mod tests {
 		let mut o = [255u8; 32];
 		f.execute(&i_bad[..], &mut BytesRef::Fixed(&mut o[..]));
 		assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/
+    }
+
+    #[test]
+    fn edrecover() {
+        let key_pair = KeyPair::gen_keypair();
+        let message: [u8; 32] = [
+            0x01,
+            0x02,
+            0x03,
+            0x04,
+            0x19,
+            0xab,
+            0xfe,
+            0x39,
+            0x6f,
+            0x28,
+            0x79,
+            0x00,
+            0x08,
+            0xdf,
+            0x9a,
+            0xef,
+            0xfb,
+            0x77,
+            0x42,
+            0xae,
+            0xad,
+            0xfc,
+            0xcf,
+            0x12,
+            0x24,
+            0x45,
+            0x29,
+            0x89,
+            0x29,
+            0x45,
+            0x3f,
+            0xf8,
+        ];
+        let hash = H256::from(message);
+        let privkey = key_pair.privkey();
+        let pubkey = key_pair.pubkey();
+        let address = ED_pubkey_to_address(pubkey);
+        let signature = ED_sign(privkey, &hash).unwrap();
+        let mut buf = Vec::<u8>::with_capacity(128);
+        buf.extend_from_slice(&message[..]);
+        buf.extend_from_slice(&signature.0[..]);
+
+        let f = ethereum_builtin("edrecover");
+        let mut output = [255u8; 32];
+        f.execute(&buf, &mut BytesRef::Fixed(&mut output[..]));
+
+        assert_eq!(&output[0..12], &[0u8; 12]);
+        assert_eq!(&output[12..], &address.0[..]);
     }
 
     #[test]

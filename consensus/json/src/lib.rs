@@ -15,11 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#![allow(unused_extern_crates)]
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
-extern crate cita_crypto as crypto;
+extern crate cita_ed25519 as ed25519;
 extern crate util;
 
 mod engine;

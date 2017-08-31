@@ -1,6 +1,5 @@
 
 import ConfigParser
-import pyping
 try:
     import httplib
 except:

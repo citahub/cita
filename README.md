@@ -1,10 +1,10 @@
+# <img src="https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true" width="256">
+
+[![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=master)](https://travis-ci.org/cryptape/cita)
+
 **[中文文档](http://cita.readthedocs.io/zh_CN/latest/)**
 
-[![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=master)](https://travis-ci.org/cryptape/cita)
-
 ## What is CITA
-![](https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true)
 
 CITA (Cryptape Inter-enterprise Trust Automation) is a fast and scalable blockchain solution for production, upon which enterprise users could easily build their own blockchain applications.
 
@@ -48,6 +48,6 @@ CITA is currently under the GPLv3 license. See the LICENSE file for details.
 
 ## Credits
 
-<img src="https://github.com/cryptape/assets/blob/master/cryptape-logo-transparency.png?raw=true" width="250">
+<img src="https://github.com/cryptape/assets/blob/master/cryptape-thinking.png?raw=true">
 
 CITA is created by Cryptape LLC with :heart:.

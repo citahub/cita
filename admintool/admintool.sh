@@ -1,14 +1,13 @@
 #!/bin/bash
+set -e
+
 display_help()
 {
     echo 
-    echo "usage: $0 -a admin_id -p admin_pubkey -l ip_list -n consensus_name -m crypto_method -d block_duration -t -b block_tx_limit -f tx_filter_size"
+    echo "usage: $0 -a admin_id -l ip_list -n consensus_name -m crypto_method -d block_duration -t -b block_tx_limit -f tx_filter_size"
     echo "option:"
     echo "-a admin_id    admin identifier"
     echo "    default value is 'admin'"
-    echo
-    echo "-p admin_pubkey    set admin pubkey"
-    echo "    default value is random generated"
     echo
     echo "-l ip_list     list all the node's IP and port"
     echo "    default value is '127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003'"
@@ -46,12 +45,10 @@ display_help()
 }
 
 # parse options
-while getopts 'a:p:l:n:m:d:tb:f:c:h:w:P:' OPT; do
+while getopts 'a:l:n:m:d:tb:f:c:h:w:P:' OPT; do
     case $OPT in
         a)
             ADMIN_ID="$OPTARG";;
-        p)
-            ADMIN_PUBKEY="$OPTARG";;
         l)
             IP_LIST="$OPTARG";;
         n)
@@ -127,17 +124,15 @@ if [ ! -f "$DATA_PATH" ]; then
     mkdir -p $DATA_PATH
 fi
 
-echo "Step 1: ********************************************************"
-echo "Start Genesis Block's Configuration creating!"
-python create_keys_addr.py $DATA_PATH 
-python create_genesis.py $ADMIN_ID $CRYPTO_METHOD $DATA_PATH $ADMIN_PUBKEY
-
 if [ -f "$DATA_PATH/authorities" ]; then
     rm $DATA_PATH/authorities
 fi
 
-echo "End for Genesis Block Configuration creating!"
-echo "Step 2: ********************************************************"
+if [ -f "genesis.json" ]; then
+    rm genesis.json
+fi
+
+echo "Step 1: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
 do
     mkdir -p $DATA_PATH/node$ID
@@ -145,27 +140,23 @@ do
     python create_keys_addr.py $DATA_PATH $ID 
     echo "[PrivateKey Path] : " $DATA_PATH/node$ID
     echo "End generating private Key for Node" $ID "!"
-    cp $DATA_PATH/genesis.json $DATA_PATH/node$ID/
     echo "Start creating Network Node" $ID "Configuration!"
     python create_network_config.py $DATA_PATH $ID $SIZE $IP_LIST
     echo "End creating Network Node" $ID "Configuration!"
     echo "########################################################"
 done
-echo "Step 3: ********************************************************"
+echo "Step 2: ********************************************************"
+
+python create_genesis.py --authorities "$DATA_PATH/authorities"
 for ((ID=0;ID<$SIZE;ID++))
 do
     echo "Start creating Node " $ID " Configuration!"
     python create_node_config.py $DATA_PATH $CONSENSUS_NAME $ID $DURATION $IS_TEST $BLOCK_TX_LIMIT $TX_FILTER_SIZE $TX_POOL_SIZE
     echo "End creating Node " $ID "Configuration!"
+    cp genesis.json $DATA_PATH/node$ID/genesis.json
 done
 
-if [ -f "$DATA_PATH/authorities" ]; then
-    rm $DATA_PATH/authorities
-fi
-if [ -f "$DATA_PATH/genesis.json" ]; then
-    rm $DATA_PATH/genesis.json
-fi
-echo "Step 4: ********************************************************"
+echo "Step 3: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
 do
     echo "Start creating Node " $ID " env!"
@@ -192,7 +183,7 @@ done
 
 
 echo "JsonRpc Configuration creating!"
-echo "Step 5: ********************************************************"
+echo "Step 4: ********************************************************"
 
 HTTP_PORT=1337
 HTTP_ENABLE="true"

@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crypto::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN};
+use ed25519::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN};
 use error::Error;
 use libproto::blockchain::{Transaction as ProtoTransaction, SignedTransaction as ProtoSignedTransaction};
 use std::ops::Deref;
 use std::str::FromStr;
-use util::{H256, Address, U256, Bytes, HeapSizeOf, H520, H512};
+use util::{H256, Address, U256, Bytes, HeapSizeOf, H768};
 
 // pub const STORE_ADDRESS: Address =  H160( [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff] );
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffff";
@@ -98,7 +98,7 @@ impl VMTransaction {
 
     // Specify the sender; this won't survive the serialize/deserialize process, but can be cloned.
     pub fn fake_sign(self, from: Address) -> SignedTransaction {
-        let signature = Signature::from_rsv(&H256::default(), &H256::default(), 0);
+        let signature = Signature::default();
         SignedTransaction {
             transaction: self,
             tx_hash: 0.into(),
@@ -146,8 +146,8 @@ impl SignedTransaction {
         }
 
         let tx_hash = H256::from_slice(&stx.tx_hash);
-        let signature: Signature = H520::from_slice(stx.get_transaction_with_sig().get_signature()).into();
-        let public = H512::from_slice(&stx.signer);
+        let signature: Signature = H768::from_slice(stx.get_transaction_with_sig().get_signature()).into();
+        let public = H256::from_slice(&stx.signer);
         let sender = pubkey_to_address(&public);
         Ok(SignedTransaction {
                transaction: VMTransaction::new(stx.mut_transaction_with_sig().take_transaction(), tx_hash.clone())?,

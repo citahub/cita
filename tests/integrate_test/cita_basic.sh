@@ -2,8 +2,7 @@
 set +e
 CUR_PATH=$(cd `dirname $0`; pwd)
 cd ${CUR_PATH}/../../admintool/
-./setup.sh
-./admintool.sh -p 0x8ce0db0b0359ffc5866ba61903cc2518c3675ef2cf380a7e54bde7ea20e6fa1ab45b7617346cd11b7610001ee6ae5b0155c41cad9527cbcdff44ec67848943a4
+./admintool.sh
 
 setup_node() {
     id=$1
@@ -73,6 +72,30 @@ check_height_stop () {
     fi
 }
 
+create_contract() {
+    cd ${CUR_PATH}/../wrk_benchmark_test/
+    echo "create contract"
+    ./benchmark.sh
+    if [ $? -ne 0 ]
+    then  
+        exit
+    fi
+}
+
+send_tx() {
+    cd ${CUR_PATH}/../wrk_benchmark_test/
+    while [ 0 -le 1 ]
+    do
+        echo "call contract"
+        ./benchmark.sh config_call.json >/dev/null
+        if [ $? -ne 0 ]
+        then  
+            exit
+        fi
+        sleep 5
+    done
+}
+
 echo "###start nodes..."
 (setup_node 0;start_node 0) &
 (setup_node 1;start_node 1) &
@@ -83,6 +106,9 @@ echo "###wait for start..."
 sleep 120
 echo `date`
 check_height_change
+create_contract
+(send_tx)&
+pid=$!
 
 echo "###stop node3..."
 stop_node 3
@@ -152,6 +178,7 @@ if [ $node0_height -ne $node3_height ]; then
     exit 1
 fi
 
+kill -9 $pid
 stop_all
 echo "###Test OK"
 exit 0

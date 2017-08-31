@@ -42,7 +42,7 @@ pub struct Synchronizer {
 impl Synchronizer {
     pub fn new(chain: Arc<Chain>) -> Arc<Synchronizer> {
         Arc::new(Synchronizer {
-                     height_marker: AtomicUsize::new(chain.current_height.load(Ordering::Relaxed)),
+                     height_marker: AtomicUsize::new(chain.get_current_height() as usize),
                      chain: chain,
                  })
     }
@@ -71,7 +71,7 @@ impl Synchronizer {
 
     pub fn sync_status(&self, ctx_pub: Sender<(String, Vec<u8>)>) {
         self.chain.is_sync.store(false, Ordering::SeqCst);
-        let current_hash = *self.chain.current_hash.read();
+        let current_hash = self.chain.get_current_hash();
         let current_height = self.chain.get_current_height();
         info!("sync_status {:?}, {:?}", current_hash, current_height);
         let mut status = Status::new();
@@ -83,10 +83,10 @@ impl Synchronizer {
     }
 
     fn add_block(&self, ctx_pub: Sender<(String, Vec<u8>)>, blk: Block) {
-        trace!("chain sync add blk-----{:?}", blk.get_header().get_height());
+        trace!("chain sync add blk {:?}", blk.number());
         if let Some(st) = self.chain.set_block(blk) {
-            let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st);
-            info!("chain after sync-----{:?}-----{:?}", self.chain.get_current_height(), self.chain.get_max_height());
+            let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st.write_to_bytes().unwrap());
+            info!("chain after sync current height {:?}  known height{:?}", self.chain.get_current_height(), self.chain.get_max_height());
             ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }

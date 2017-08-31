@@ -27,6 +27,8 @@ function cita_start() {
     node=node$1
     if [ ! -n "$2" ]; then
         echo "starting ${node}"
+        nohup bin/auth			                             >${log_dir}/${node}.auth       2>&1 &
+        echo $! >> .pid
         nohup bin/network			    -c network.toml	     >${log_dir}/${node}.network    2>&1 &
         echo $! >> .pid
         nohup bin/consensus_tendermint	-c consensus.json	 >${log_dir}/${node}.consensus  2>&1 &
@@ -37,9 +39,11 @@ function cita_start() {
         echo $! >> .pid
     else
         echo "starting ${node} debug"
-        RUST_LOG= nohup bin/network -c network.toml	     >${log_dir}/${node}.network    2>&1 &
+        RUST_LOG=auth=trace    nohup bin/auth			                 >${log_dir}/${node}.auth       2>&1 &
         echo $! >> .pid
-        RUST_LOG=consensus_tendermint nohup bin/consensus_tendermint	-c consensus.json	 >${log_dir}/${node}.consensus  2>&1 &
+        RUST_LOG=network=trace nohup bin/network -c network.toml	     >${log_dir}/${node}.network    2>&1 &
+        echo $! >> .pid
+        RUST_LOG=consensus_tendermint,proof,txpool,engine=trace nohup bin/consensus_tendermint	-c consensus.json	 >${log_dir}/${node}.consensus  2>&1 &
         echo $! >> .pid
         RUST_LOG=jsonrpc,jsonrpc_types,transaction=trace nohup bin/jsonrpc -c jsonrpc.json	 >${log_dir}/${node}.jsonrpc    2>&1 &
         echo $! >> .pid
@@ -96,72 +100,17 @@ function cita_clean(){
     rm -rf ${log_dir}/${node}.chain ${log_dir}/${node}.consensus ${log_dir}/${node}.network ${log_dir}/${node}.jsonrpc
 }
 
-function cita_disk(){
+function cita_stat(){
+    stat_cmd="pidstat -r -u -d"
+    for pid in $(cat .pid)
+    do
+        stat_cmd=$stat_cmd" -p ${pid}"
+    done
     while :
     do
-        echo
+        $stat_cmd
         echo
         echo "disk usage bytes $(du -s ./data)"
-        sleep 3
-    done
-}
-
-function cita_ram(){ 
-
-    pid_1=$(tail -4 .pid| head -1)
-    pid_2=$(tail -3 .pid| head -1)
-    pid_3=$(tail -2 .pid| head -1)
-    pid_4=$(tail -1 .pid)
-    while :
-    do
-        mem_link=$(free | grep "Mem" | awk '{print $2}')
-        mem_total=$[$mem_link*1024]
-        echo "the total memory:$mem_total"
-        vsize_1=$(cat /proc/$pid_1/stat | awk '{print $23}')   
-        vsize_2=$(cat /proc/$pid_2/stat | awk '{print $23}') 
-        vsize_3=$(cat /proc/$pid_3/stat | awk '{print $23}') 
-        vsize_4=$(cat /proc/$pid_4/stat | awk '{print $23}')  
-        rss_1=$(cat /proc/$pid_1/stat | awk '{print $24}')   
-        rss_2=$(cat /proc/$pid_2/stat | awk '{print $24}') 
-        rss_3=$(cat /proc/$pid_3/stat | awk '{print $24}') 
-        rss_4=$(cat /proc/$pid_4/stat | awk '{print $24}')
-
-        mem_node_total=$[vsize_1+vsize_2+vsize_3+vsize_4+rss_1+rss_2+rss_3+rss_4]
-        mem_network=$[vsize_1+rss_1]
-        mem_consensus_tende=$[vsize_2+rss_2]
-        mem_jsonrpc=$[vsize_3+rss_3]
-        mem_chain=$[vsize_4+rss_4]
-
-        echo "the node memory:$mem_node_total"
-        echo "the network memory:$mem_network"
-        echo "the consensus_tende memory:$mem_consensus_tende"
-        echo "the jsonrpc memory:$mem_jsonrpc"
-        echo "the chain memory:$mem_chain"
-        echo 
-        sleep 3
-    done
-}
-
-function cita_cpu(){
-    pid_1=$(tail -4 .pid| head -1)
-    pid_2=$(tail -3 .pid| head -1)
-    pid_3=$(tail -2 .pid| head -1)
-    pid_4=$(tail -1 .pid)
-    while :
-    do 
-        cpu_1=$(top -b -n 1 | grep $pid_1 | awk '{print $9}')
-        cpu_2=$(top -b -n 1 | grep $pid_2 | awk '{print $9}')
-        cpu_3=$(top -b -n 1| grep $pid_3 | awk '{print $9}')
-        cpu_4=$(top -b -n 1 | grep $pid_4 | awk '{print $9}')
-
-        cpu=$(echo $cpu_1+$cpu_2+$cpu_3+$cpu_4 | bc)
-
-        echo "the node cpu:$cpu%"
-        echo "the network cpu:$cpu_1%"
-        echo "the consensus_tende cpu:$cpu_2%"
-        echo "the jsonrpc cpu:$cpu_3%"
-        echo "the chain cpu:$cpu_4%"
-        echo 
         sleep 3
     done
 }
@@ -194,11 +143,7 @@ function cita_help(){
     echo
     echo "      version          display cita version"
     echo
-    echo "      cpu              display cita's cpu information"
-    echo
-    echo "      ram              display cita's ram information"
-    echo
-    echo "      disk             display cita's disk information"
+    echo "      stat             display cita's cpu/ram/io/disk information"
     echo
     echo "      help             display help information"
     echo
@@ -224,9 +169,7 @@ else
         clean) cita_clean $2;;
         network) cita_network $2;;
         version) echo "0.9";;
-        cpu) cita_cpu $2;;
-        ram) cita_ram $2;;
-        disk) cita_disk $2;;
+        stat) cita_stat $2;;
         help) cita_help ;;
         *) cita_help;;
     esac

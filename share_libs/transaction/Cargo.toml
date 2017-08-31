@@ -6,7 +6,7 @@ authors = ["u2 <zhangyaning1985@gmail.com>"]
 [dependencies]
 sha3 = { path = "../sha3"}
 util = { path = "../util"}
-cita-crypto = { path = "../crypto" }
+cita-ed25519 = { path = "../ed25519" }
 libproto = { path = "../proto" }
 rustc-serialize = "0.3"
 protobuf = { version = "^1.0.0"}

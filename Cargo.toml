@@ -1,10 +1,13 @@
 [workspace]
 members = ["devtools"
+,"auth"
 ,"jsonrpc"
 ,"chain"
 ,"chain/core"
 ,"chain/types"
 ,"consensus/tdmint"
+,"consensus/txpool"
+,"consensus/raft"
 ,"consensus/authority_round"
 ,"network"
 ,"tests/trans_evm"

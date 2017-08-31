@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(deprecated,unused_assignments, unused_must_use)]
 use base_hanlder::BaseHandler;
 use jsonrpc_types::Id;
 use jsonrpc_types::method;

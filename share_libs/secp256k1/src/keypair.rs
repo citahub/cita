@@ -92,12 +92,4 @@ mod tests {
         let privkey = PrivKey::from(Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap());
         let _ = KeyPair::from_privkey(privkey).unwrap();
     }
-
-    #[test]
-    fn keypair_display() {
-        let expected = "privkey:  a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65\npubkey:  8ce0db0b0359ffc5866ba61903cc2518c3675ef2cf380a7e54bde7ea20e6fa1ab45b7617346cd11b7610001ee6ae5b0155c41cad9527cbcdff44ec67848943a4\naddress:  5b073e9233944b5e729e46d618f0d8edf3d9c34a".to_owned();
-        let privkey = PrivKey::from(Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap());
-        let kp = KeyPair::from_privkey(privkey).unwrap();
-        assert_eq!(format!("{}", kp), expected);
-    }
 }

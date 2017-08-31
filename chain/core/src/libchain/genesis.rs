@@ -15,32 +15,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::blockchain::Block;
+use libchain::block::Block;
 use serde_json;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
-use util::{H256, H512};
+use util::H256;
 use util::HASH_NULL_RLP;
 
-#[derive(Debug, PartialEq, Deserialize)]
-pub struct Spec {
-    pub prevhash: H256,
-    pub timestamp: u64,
-    pub admin: Admin,
+#[derive(Debug, PartialEq, Deserialize, Clone)]
+pub struct Contracts {
+    pub nonce: String,
+    pub code: String,
+    pub storage: HashMap<String, String>,
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
-pub struct Admin {
-    pub pubkey: H512,
-    pub crypto: String,
-    pub identifier: String,
+pub struct Spec {
+    pub alloc: HashMap<String, Contracts>,
+    pub prevhash: H256,
+    pub timestamp: u64,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Genesis {
     pub spec: Spec,
     pub block: Block,
-    pub hash: H256,
 }
 
 impl Genesis {
@@ -51,20 +51,18 @@ impl Genesis {
         Genesis {
             spec: spec,
             block: Block::default(),
-            hash: H256::default(),
         }
     }
 
     pub fn lazy_execute(&mut self) -> Result<(), &str> {
         self.block.set_version(0);
-        self.block.mut_header().set_prevhash(self.spec.prevhash.0.to_vec());
-        self.block.mut_header().set_timestamp(self.spec.timestamp);
-        self.block.mut_header().set_height(0);
-        self.block.mut_header().set_state_root(HASH_NULL_RLP.to_vec());
+        self.block.set_parent_hash(self.spec.prevhash);
+        self.block.set_timestamp(self.spec.timestamp);
+        self.block.set_number(0);
+        self.block.set_state_root(HASH_NULL_RLP);
 
         info!("genesis state {:?}", HASH_NULL_RLP);
 
-        self.hash = self.block.crypt_hash().into();
         Ok(())
     }
 }

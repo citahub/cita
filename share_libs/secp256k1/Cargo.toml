@@ -1,5 +1,5 @@
 [package]
-name = "cita-crypto"
+name = "cita-secp256k1"
 version = "0.6.0"
 authors = []
 

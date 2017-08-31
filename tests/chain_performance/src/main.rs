@@ -15,15 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(test)]
-
-extern crate test;
-extern crate cita_crypto as crypto;
+extern crate cita_ed25519 as ed25519;
 extern crate libproto;
 extern crate protobuf;
 extern crate util;
 extern crate rustc_serialize;
-extern crate serde_json;
 extern crate proof;
 extern crate clap;
 extern crate core;
@@ -61,7 +57,7 @@ fn create_contract(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_prof
     let code = "60606040523415600e57600080fd5b5b5b5b60948061001f6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603d575b600080fd5b3415604757600080fd5b605b6004808035906020019091905050605d565b005b806000819055505b505600a165627a7a72305820c471b4376626da2540b2374e8b4110501051c426ff46814a6170ce9e219e49a80029";
     let mut contract_address = "".to_string();
     if flag != 0 {
-        contract_address = "ffffffffffffffffffff".to_string();
+        contract_address = "ffffffffffffffffffffffffffffffffffffffff".to_string();
     }
     let mut txs = Vec::new();
     for _ in 0..block_tx_num - 1 {
@@ -69,7 +65,7 @@ fn create_contract(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_prof
         txs.push(tx);
     }
     let tx = Generateblock::generate_tx(code, contract_address.clone());
-    let hash = H256::from_slice(tx.get_tx_hash());
+    let hash = tx.hash();
     txs.push(tx);
 
     //构造block
@@ -97,7 +93,7 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
     let mut txs = Vec::new();
     let mut hash = H256::default();
     let tx = Generateblock::generate_tx(code.clone(), contract_address.clone());
-    hash = H256::from_slice(tx.get_tx_hash());
+    hash = tx.hash();
     txs.push(tx);
 
     //构造block
@@ -116,7 +112,7 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
         txs.push(tx);
     }
     let tx = Generateblock::generate_tx(code.clone(), contract_address.clone());
-    hash = H256::from_slice(tx.get_tx_hash());
+    hash = tx.hash();
     txs.push(tx);
 
     let h = call.get_height() + 1;

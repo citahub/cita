@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{Engine, EngineError, Signable, unix_now, AsMillis};
-use crypto::{Signature, Signer};
+use ed25519::{Signature, Signer};
 use engine_json;
 use libproto::*;
 use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};

@@ -1,30 +1,28 @@
+#!/usr/bin/env python
+# coding=utf-8
+
+
 import os
-import copy
 import sys
 import random
-from secp256k1 import PrivateKey, PublicKey
-import rlp
-from rlp.utils import decode_hex, encode_hex 
-from utils import privtopub,privtoaddr
+import pysodium
+import binascii
 
-def mk_privkey(seed):
-    return sha3(seed)
-
-def mk_keys_addr():
-    if len(sys.argv)==2:
+def main():
+    if len(sys.argv) == 2:
         path = sys.argv[1]
     else:
-        path = os.path.join(sys.argv[1],"node" + sys.argv[2])
+        path = os.path.join(sys.argv[1], "node" + sys.argv[2])
     dump_path = os.path.join(path, "privkey")
-    privkey = PrivateKey() 
-    sec_key = privkey.serialize()
+    pk, sk = pysodium.crypto_sign_keypair()
     f = open(dump_path, "w")
-    f.write(sec_key)
+    f.write(binascii.b2a_hex(sk))
     f.close()
     auth_path = os.path.join(sys.argv[1], "authorities")
-    authority = encode_hex(privtoaddr(decode_hex(sec_key)))
+    authority = binascii.b2a_hex(pysodium.crypto_generichash_blake2b_salt_personal(pk, key = "CryptapeCryptape")[12:])
     auth_file = open(auth_path, "a")
     auth_file.write("0x" + authority + "\n")
     auth_file.close()
 
-mk_keys_addr()
+if __name__ == '__main__':
+    main()

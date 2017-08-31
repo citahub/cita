@@ -30,7 +30,7 @@ pub fn handle_rpc(con: &Connection, tx_pub: &Sender<(String, Vec<u8>)>, payload:
     if let Ok(msg) = parse_from_bytes::<communication::Message>(payload) {
         let t = msg.get_field_type();
         let cid = msg.get_cmd_id();
-        info!("-----cmd_id--------{:?}--------------", display_cmd(cid));
+        trace!("recive MQ messsage from {:?} module", display_cmd(cid));
         if cid == cmd_id(submodules::JSON_RPC, topics::REQUEST) && t == MsgType::REQUEST {
             let mut ts = parse_from_bytes::<Request>(msg.get_content()).unwrap();
             let mut response = request::Response::new();
@@ -78,7 +78,6 @@ pub fn is_need_proc(payload: &[u8]) -> (String, bool, communication::Message) {
 }
 
 pub fn net_msg_handler(payload: CitaRequest, mysender: &MySender) -> Result<Vec<u8>, io::Error> {
-    //info!("--------net_msg_handler-----------{:?}-", payload);
     trace!("SERVER get msg: {:?}", payload);
     if let (topic, true, msg) = is_need_proc(payload.as_ref()) {
         info!("recive msg from origin = {:?}", msg.get_origin());

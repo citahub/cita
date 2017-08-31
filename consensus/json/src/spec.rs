@@ -58,7 +58,7 @@ mod tests {
                             "0x9cce34f7ab185c7aba1b7c8140d620b4bda941d6"
                         ],
                         "duration": 3000,
-                        "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
+                        "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
                     }
                 }
             }
@@ -75,7 +75,7 @@ mod tests {
                     "params": {
                         "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
                         "duration": 3,
-                        "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
+                        "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
 			            "tx_pool_size": 0,
 			            "block_tx_limit": 300,
 			            "tx_filter_size": 100000,

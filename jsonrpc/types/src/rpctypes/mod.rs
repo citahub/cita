@@ -16,10 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //TODO: rpc types应该独立出来。和jsonrpc的抽象没有关系。
-
-extern crate serde;
-extern crate serde_json;
-
 pub mod receipt;
 pub mod log;
 pub mod block_number;

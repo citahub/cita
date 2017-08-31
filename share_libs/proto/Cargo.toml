@@ -6,10 +6,10 @@ authors = ["gguoss"]
 
 [dependencies]
 protobuf = { version = "^1.0.0"}
-cita-crypto = { path = "../crypto"}
+cita-ed25519 = { path = "../ed25519"}
 util = { path = "../util"}
 rustc-serialize = "0.3"
-bincode = "0.8.0"
+rlp = { path = "../rlp"}
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"

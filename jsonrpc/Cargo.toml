@@ -13,21 +13,15 @@ parking_lot = "0.4.4"
 
 libproto = { path = "../share_libs/proto" }
 protobuf = { version = "^1.0.0" }
-uuid = { version = "0.4", features = ["v4"] }
 log = "0.3"
 util = { path = "../share_libs/util"}
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-rustc-serialize = "0.3"
 pubsub = { path = "../share_libs/pubsub" }
-time = "0.1"
-proof = { path = "../consensus/proof" }
-docopt = "0.7"
 cpuprofiler = "0.0.3"
 jsonrpc_types = { path = "types" }
 dotenv = "0.10.0"
-transaction = { path = "../share_libs/transaction" }
 cita_log =  { path = "../share_libs/cita_log" }
 clap = "2"
 

@@ -17,7 +17,7 @@
 //! General error types for use in ethcore.
 
 use basic_types::LogBloom;
-use cita_crypto::Error as EthkeyError;
+use cita_ed25519::Error as EthkeyError;
 use ethcore_io::*;
 
 pub use executed::{ExecutionError, CallError};

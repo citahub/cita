@@ -21,7 +21,6 @@ extern crate threadpool;
 #[macro_use]
 extern crate log;
 extern crate libproto;
-extern crate amqp;
 extern crate pubsub;
 extern crate util;
 extern crate clap;
@@ -43,6 +42,7 @@ use core::libchain::{submodules, key_to_id};
 use core::libchain::Genesis;
 use forward::*;
 use log::LogLevelFilter;
+use protobuf::Message;
 use pubsub::start_pubsub;
 use std::env;
 use std::sync::Arc;
@@ -92,7 +92,7 @@ fn main() {
     let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx);
     let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st.write_to_bytes().unwrap());
 
-    info!("init status {:?}, {:?}", st.height, st.hash);
+    info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
     ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     let synchronizer = Synchronizer::new(chain.clone());
     let chain1 = chain.clone();

@@ -1,6 +1,6 @@
 #usage: start demo nodes
 #       ./cita_start.sh 
-#       ./cita_start.sh debug
+#       ./cita_start.sh tendermint debug
 #!/bin/bash
 set +e
 consensus=$1

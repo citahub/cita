@@ -7,7 +7,6 @@ sudo rabbitmqctl stop_app
 sudo rabbitmqctl reset
 sudo rabbitmqctl start_app
 cd ${CUR_PATH}/../../admintool/
-./setup.sh
 ./admintool.sh -b 5000
 
 setup_node() {

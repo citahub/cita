@@ -17,6 +17,7 @@ util = { path = "../../share_libs/util" }
 rustc-serialize = "0.3"
 lru-cache = "0.1.1"
 rlp = { path = "../../share_libs/rlp" }
+rlp_derive = { path = "../../share_libs/rlp_derive" }
 bloomchain = "0.1"
 ethcore-bloom-journal = { path = "../../share_libs/bloom" }
 bloomable = { path = "../../share_libs/bloomable" }
@@ -34,8 +35,8 @@ crossbeam = "0.2"
 transient-hashmap = "0.4.0"
 
 ethcore-io = { path = "../../share_libs/io" }
-transaction = { path = "../../share_libs/transaction" }
-cita-crypto = { path = "../../share_libs/crypto" }
+cita-ed25519 = { path = "../../share_libs/ed25519" }
+cita-secp256k1 = { path = "../../share_libs/secp256k1" }
 
 protobuf = { version = "^1.0.0"}
 threadpool = "1.3.2"
@@ -51,3 +52,4 @@ rand = "0.3"
 cpuprofiler = "0.0.3"
 devtools = { path = "../../devtools" }
 mktemp = "0.3.1"
+env_logger="*"

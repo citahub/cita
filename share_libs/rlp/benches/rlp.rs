@@ -12,7 +12,7 @@
 //! multirust run nightly cargo bench
 //! ```
 
-#![feature(test)]
+#![cfg_attr(test, feature(test))]
 
 extern crate test;
 extern crate bigint;
