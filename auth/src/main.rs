@@ -24,8 +24,10 @@ extern crate pubsub;
 extern crate cpuprofiler;
 extern crate libproto;
 extern crate cache_2q;
+extern crate util;
 
 pub mod handler;
+pub mod verify;
 
 use clap::App;
 use cpuprofiler::PROFILER;
@@ -36,6 +38,7 @@ use pubsub::start_pubsub;
 use std::env;
 use std::sync::mpsc::channel;
 use std::thread;
+use verify::Verifyer;
 
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
@@ -72,15 +75,17 @@ fn main() {
 
     profifer(flag_prof_start, flag_prof_duration);
 
+    let v = Verifyer::new();
+
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("auth", vec!["*.verify_req", "*.verify_req_batch", "chain.status"], tx_sub, rx_pub);
+    start_pubsub("auth", vec!["*.verify_req", "chain.status"], tx_sub, rx_pub);
 
-    tx_pub.send(("auth.verify_req".to_string(), vec![0])).unwrap();
+    //tx_pub.send(("auth.verify_resp".to_string(), vec![0])).unwrap();
 
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
         info!("get {} : {:?}", key, msg);
-        handle_msg(msg);
+        handle_msg(msg, tx_pub, v);
     }
 }
