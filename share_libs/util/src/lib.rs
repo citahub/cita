@@ -58,6 +58,7 @@ pub mod nibblevec;
 pub mod semantic_version;
 pub mod snappy;
 pub mod cache;
+pub mod crypto;
 
 
 pub use ansi_term::{Colour, Style};

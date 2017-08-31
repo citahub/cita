@@ -16,24 +16,20 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, deserialize, Infinite};
-use ed25519::Signature;
+use crypto::Signature;
 use libproto::blockchain::{Proof, ProofType};
 use rustc_serialize::hex::ToHex;
 use std::fmt;
-use util::H768;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct AuthorityRoundProof {
-    pub signature: H768,
+    pub signature: Signature,
     pub step: u64,
 }
 
 impl AuthorityRoundProof {
     pub fn new(step: u64, signature: Signature) -> AuthorityRoundProof {
-        AuthorityRoundProof {
-            step: step,
-            signature: H768::from(signature.0).into(),
-        }
+        AuthorityRoundProof { step: step, signature: signature }
     }
 }
 

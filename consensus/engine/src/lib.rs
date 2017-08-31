@@ -17,7 +17,7 @@
 
 extern crate libproto;
 extern crate util;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 
 mod error;
 mod instrument;

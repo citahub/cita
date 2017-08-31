@@ -18,7 +18,7 @@
 use bincode::{serialize, Infinite};
 use core::libchain::block::Block;
 use core::transaction::SignedTransaction;
-use ed25519::*;
+use crypto::*;
 use libproto::{factory, communication, topics, submodules};
 use libproto::blockchain::{SignedTransaction as ProtoSignedTransaction, UnverifiedTransaction, Transaction};
 use proof::TendermintProof;
@@ -104,7 +104,7 @@ impl Generateblock {
         proof.proposal = H256::default();
         let mut commits = HashMap::new();
         let msg = serialize(&(proof.height, proof.round, Step::Precommit, sender.clone(), Some(proof.proposal.clone())), Infinite).unwrap();
-        let signature = sign(pv, &msg.crypt_hash().into()).unwrap();
+        let signature = Signature::sign(pv, &msg.crypt_hash().into()).unwrap();
         commits.insert((*sender).into(), signature.into());
         proof.commits = commits;
         block.set_proof(proof.into());

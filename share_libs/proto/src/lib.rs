@@ -21,7 +21,7 @@ extern crate rustc_serialize;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 
 pub mod blockchain;
 pub mod communication;
@@ -30,13 +30,13 @@ pub mod into;
 
 use blockchain::*;
 use communication::*;
-use ed25519::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
+use crypto::{PrivKey, Signature, KeyPair, SIGNATURE_BYTES_LEN, Message as SignMessage, CreateKey, Sign};
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 pub use request::*;
 use rlp::*;
 use rustc_serialize::hex::ToHex;
-use util::{H256, Hashable, H768, merklehash};
+use util::{H256, Hashable, merklehash};
 use util::snappy;
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -200,7 +200,7 @@ impl blockchain::SignedTransaction {
 
         let bytes = self.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
         let hash = bytes.crypt_hash();
-        let signature = sign(&sk, &H256::from(hash)).unwrap();
+        let signature = Signature::sign(&sk, &SignMessage::from(hash)).unwrap();
         self.mut_transaction_with_sig().set_signature(signature.to_vec());
         self.mut_transaction_with_sig().set_crypto(Crypto::SECP);
         self.set_signer(pubkey.to_vec());
@@ -217,8 +217,8 @@ impl blockchain::SignedTransaction {
         } else {
             match self.get_transaction_with_sig().get_crypto() {
                 Crypto::SECP => {
-                    let signature: Signature = H768::from_slice(self.get_transaction_with_sig().get_signature()).into();
-                    match recover(&signature, &hash) {
+                    let signature = Signature::from(self.get_transaction_with_sig().get_signature());
+                    match signature.recover(&hash) {
                         Ok(pubkey) => {
                             self.set_signer(pubkey.to_vec());
                         }

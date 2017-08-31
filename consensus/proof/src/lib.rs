@@ -18,7 +18,7 @@
 extern crate libproto;
 extern crate util;
 extern crate bincode;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 extern crate rustc_serialize;
 #[macro_use]
 extern crate serde_derive;
@@ -68,7 +68,7 @@ mod tests {
     use super::CitaProof;
     use super::authority_round_proof::AuthorityRoundProof;
     use super::tendermint_proof::TendermintProof;
-    use ed25519::Signature;
+    use crypto::Signature;
     use libproto::blockchain::Proof;
     use std::collections::HashMap;
     use util::*;

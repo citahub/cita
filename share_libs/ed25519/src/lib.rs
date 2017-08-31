@@ -2,6 +2,9 @@ extern crate sodiumoxide;
 extern crate rustc_serialize;
 extern crate util;
 extern crate rlp;
+extern crate serde;
+#[cfg(test)]
+extern crate bincode;
 
 mod keypair;
 mod error;

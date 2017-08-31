@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{Engine, EngineError, Signable, unix_now, AsMillis};
-use ed25519::{Signature, Signer};
+use crypto::{Signature, Signer, CreateKey};
 use engine_json;
 use libproto::*;
 use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
@@ -89,7 +89,7 @@ impl AuthorityRound {
     }
 
     pub fn generate_proof(&self, body: &mut BlockBody, step: u64) -> Proof {
-        let signature = body.sign_with_privkey(self.params.signer.privkey()).unwrap();
+        let signature = body.sign_with_privkey(self.params.signer.keypair.privkey()).unwrap();
         let proof: Proof = AuthorityRoundProof::new(step, signature).into();
         proof
     }
