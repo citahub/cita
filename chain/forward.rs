@@ -265,16 +265,12 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
             };
 
             if blk_height > current_height && blk_height < current_height + 300 {
-                if !guard.contains_key(&blk_height) || (guard.contains_key(&blk_height) && guard[&blk_height].0 == BlockSource::NET) {
+                if !guard.contains_key(&blk_height) || (guard.contains_key(&blk_height) && guard[&blk_height].0 == BlockSource::NET && source == BlockSource::CONSENSUS) {
                     trace!("block insert {:?}", blk_height);
                     guard.insert(blk_height, (source, Block::from(block)));
                     let _ = chain.sync_sender.lock().send(blk_height);
                 }
 
-
-                if !chain.get_current_height() < chain.get_max_height() {
-                    chain.is_sync.store(false, Ordering::SeqCst);
-                }
             }
         }
         MsgClass::TX(content) => {}
