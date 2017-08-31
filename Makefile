@@ -27,7 +27,7 @@ release:
 setup1:
 	apt-get update -q
 	apt-get install --allow-change-held-packages software-properties-common
-	add-apt-repository ppa:chris-lea/libsodium -y
+	if [ $$(lsb_release -s -c) = "trusty" ]; then add-apt-repository ppa:chris-lea/libsodium -y ; fi;
 	apt-get update -q
 	apt-get install --allow-change-held-packages \
 		libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  \
