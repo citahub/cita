@@ -23,8 +23,10 @@ extern crate dotenv;
 extern crate pubsub;
 extern crate cpuprofiler;
 extern crate libproto;
+extern crate cita_crypto;
 
 pub mod handler;
+pub mod verifier;
 
 use clap::App;
 use cpuprofiler::PROFILER;
@@ -77,9 +79,10 @@ fn main() {
 
     tx_pub.send(("auth.verify_req".to_string(), vec![0])).unwrap();
 
+
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
         info!("get {} : {:?}", key, msg);
-        handle_msg(msg);
+        handle_msg(msg,tx_pub );
     }
 }
