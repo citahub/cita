@@ -36,30 +36,51 @@ pub struct AuthorityRound {
 
 #[cfg(test)]
 mod tests {
+    extern crate cita_crypto as crypto;
+
     use super::super::*;
+    use crypto::SIGNATURE_NAME;
     use serde_json;
+
+    fn generate_signer() -> String {
+        if SIGNATURE_NAME == "ed25519" {
+            "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65".to_string()
+        } else if SIGNATURE_NAME == "secp256k1" {
+            "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65".to_string()
+        } else {
+            "".to_string()
+        }
+    }
 
     #[test]
     fn poa_params_deserialization() {
-        let s = r#"{
-            "duration": 3,
-            "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
-            "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
-        }"#;
+        let signer = generate_signer();
+        let s = format!(
+            r#"{{
+                "duration": 3,
+                "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
+                "signer": "{}"
+            }}"#,
+            signer
+        );
 
-        let _deserialize: AuthorityRoundParams = serde_json::from_str(s).unwrap();
+        let _deserialize: AuthorityRoundParams = serde_json::from_str(&s).unwrap();
     }
 
     #[test]
     fn poa_deserialization() {
-        let s = r#"{
-            "params": {
-                "duration": 3,
-                "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
-                "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
-            }
-        }"#;
+        let signer = generate_signer();
+        let s = format!(
+            r#"{{
+                "params": {{
+                    "duration": 3,
+                    "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
+                    "signer": "{}"
+                }}
+            }}"#,
+            signer
+        );
 
-        let _deserialize: AuthorityRound = serde_json::from_str(s).unwrap();
+        let _deserialize: AuthorityRound = serde_json::from_str(&s).unwrap();
     }
 }

@@ -58,14 +58,21 @@ impl fmt::Display for AuthorityRoundProof {
 
 #[cfg(test)]
 mod tests {
+    extern crate cita_crypto as crypto;
+
     use super::{Signature, AuthorityRoundProof};
+    use crypto::SIGNATURE_NAME;
     use libproto::blockchain::Proof;
 
     #[test]
     fn proof_display() {
         let proof = AuthorityRoundProof::new(0, Signature::default());
         let string = format!("{}", proof);
-        assert_eq!(string, "step: 0, signature: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        if SIGNATURE_NAME == "ed25519" {
+            assert_eq!(string, "step: 0, signature: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        } else if SIGNATURE_NAME == "secp256k1" {
+            assert_eq!(string, "step: 0, signature: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        }
     }
 
     #[test]
