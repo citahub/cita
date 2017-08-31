@@ -314,5 +314,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 warn!("other content.");
             }
         }
+        MsgClass::VERIFYREQ(req) => {}
+        MsgClass::VERIFYRESP(resp) => {}
     }
 }

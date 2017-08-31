@@ -66,5 +66,7 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, sender: Sender<PubType>, rx:
                 }
             }
         }
+        MsgClass::VERIFYREQ(req) => {}
+        MsgClass::VERIFYRESP(resp) => {}
     }
 }
