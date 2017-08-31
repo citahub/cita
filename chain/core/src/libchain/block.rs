@@ -187,7 +187,6 @@ impl BlockBody {
 pub struct ClosedBlock {
     /// Protobuf Block
     pub block: Block,
-    // TODO: cache hash
     pub transactions_uni: HashMap<H256, TransactionAddress>,
     pub transactions_dup: HashMap<H256, TransactionAddress>,
     pub receipts: Vec<Option<Receipt>>,
