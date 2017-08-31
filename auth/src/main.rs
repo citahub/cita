@@ -14,18 +14,22 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 extern crate cita_log;
+extern crate protobuf;
 #[macro_use]
 extern crate log;
 extern crate clap;
 extern crate dotenv;
 extern crate pubsub;
 extern crate cpuprofiler;
+extern crate libproto;
+
+pub mod handler;
 
 use clap::App;
 use cpuprofiler::PROFILER;
 use dotenv::dotenv;
+use handler::handle_msg;
 use log::LogLevelFilter;
 use pubsub::start_pubsub;
 use std::env;
@@ -69,12 +73,13 @@ fn main() {
 
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("auth", vec!["*.verify_req", "*.verify_req_batch"], tx_sub, rx_pub);
+    start_pubsub("auth", vec!["*.verify_req", "*.verify_req_batch", "chain.status"], tx_sub, rx_pub);
 
     tx_pub.send(("auth.verify_req".to_string(), vec![0])).unwrap();
 
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
         info!("get {} : {:?}", key, msg);
+        handle_msg(msg);
     }
 }
