@@ -7,3 +7,4 @@ protobuf==3.4.0
 pathlib==1.0.1
 ecdsa
 pysha3>=1.0.2
+pysodium
