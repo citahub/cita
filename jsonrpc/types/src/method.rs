@@ -432,6 +432,21 @@ mod tests {
     }
 
     #[test]
+    fn test_cita_send_transaction() {
+        let rpc = RpcRequest {
+            jsonrpc: Some(Version::V2),
+            method: method::CITA_SEND_TRANSACTION.to_owned(),
+            id: Id::Str("2".to_string()),
+            params: Params::Array(vec![
+                Value::from("0x0a81010a1d0a033132331201301a0c613763356163343731623437209f8d062a01011260b3cf414a7abe01729890d40ba2a10811af4e48e74f16ea2397dfdb609fc311bf81c35bb10b5f790879d782b17ccb31896af30958fb02670352332c46996aef09b2a0f7852f7129d72d57db882f3b6b26a5a3ccd90b1abed5fe1f8ef652ccb89b12206dc0247fe5d8d4521bf75b3895e9cab3720aee654922f3f995c250a859feca351a20b2a0f7852f7129d72d57db882f3b6b26a5a3ccd90b1abed5fe1f8ef652ccb89b".to_owned()),
+            ]),
+        };
+        let handler = MethodHandler;
+        let result: Result<blockchain::SignedTransaction, Error> = handler.send_transaction(rpc);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_rpc_request_parse() {
         let rpc = "{\"id\":\"-8799978260242268161\",\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[\"1\",\"0x0a2833616538386665333730633339333834666331366461326339653736386366356432343935623438120d31343932353139393038393631\"]}";
 
