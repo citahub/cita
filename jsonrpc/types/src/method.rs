@@ -163,12 +163,12 @@ impl MethodHandler {
         let data = clean_0x(&params.0);
         data.from_hex()
             .map_err(|_err| {
-                         let err_msg = format!("send_transaction param data error: {:?}", _err);
+                         let err_msg = format!("param not hex string : {:?}", _err);
                          Error::parse_error_msg(err_msg.as_ref())
                      })
             .and_then(|content| {
                           parse_from_bytes::<blockchain::SignedTransaction>(&content[..]).map_err(|_err| {
-                                                                                                      let err_msg = format!("send_transaction parse protobuf SignedTransaction data error : {:?}", _err);
+                                                                                                      let err_msg = format!("parse protobuf SignedTransaction data error : {:?}", _err);
                                                                                                       Error::parse_error_msg(err_msg.as_ref())
                                                                                                   })
                       })
@@ -194,7 +194,7 @@ impl MethodHandler {
     pub fn get_block_by_hash(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let (hash_0x, is_block): (String, bool) = req_rpc.params.parse()?;
-        let hash = H256::from_str(clean_0x(&hash_0x)).unwrap();
+        let hash = H256::from_str(clean_0x(&hash_0x)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
         serde_json::to_string(&BlockParamsByHash::new(hash.to_vec(), is_block))
             .map_err(|err| Error::invalid_params(err.to_string()))
             .map(|block_hash| {
@@ -220,7 +220,7 @@ impl MethodHandler {
     pub fn get_transaction(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let params: (String,) = req_rpc.params.parse()?;
-        let hash = H256::from_str(clean_0x(&params.0)).unwrap();
+        let hash = H256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
         request.set_transaction(hash.0.to_vec());
         Ok(request)
     }
@@ -270,7 +270,7 @@ impl MethodHandler {
     pub fn get_transaction_receipt(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let params: (String,) = req_rpc.params.parse()?;
-        let hash = H256::from_str(clean_0x(&params.0)).unwrap();
+        let hash = H256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
         request.set_transaction_receipt(hash.0.to_vec());
         Ok(request)
     }
@@ -305,7 +305,7 @@ impl MethodHandler {
     pub fn new_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let params: (Filter,) = req_rpc.params.parse()?;
-        let filter = serde_json::to_string(&params.0).map_err(|_| Error::invalid_params("new_filter param error"))?;
+        let filter = serde_json::to_string(&params.0).expect("new_filter param error");
         request.set_new_filter(serde_json::to_string(&filter).unwrap());
         Ok(request)
     }
@@ -320,8 +320,7 @@ impl MethodHandler {
     pub fn uninstall_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let params: (String,) = req_rpc.params.parse()?;
-        let filter_id = U256::from_str(clean_0x(&params.0))
-            .map_err(|_| Error::invalid_params("uninstall_filter param error"))?;
+        let filter_id = U256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
         request.set_uninstall_filter(filter_id.into());
         Ok(request)
     }
@@ -329,8 +328,7 @@ impl MethodHandler {
     pub fn get_filter_changes(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let params: (String,) = req_rpc.params.parse()?;
-        let filter_id = U256::from_str(clean_0x(&params.0))
-            .map_err(|_| Error::invalid_params("get_filter_changes param error"))?;
+        let filter_id = U256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
         request.set_filter_changes(filter_id.into());
         Ok(request)
     }
@@ -338,8 +336,7 @@ impl MethodHandler {
     pub fn get_filter_logs(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let params: (String,) = req_rpc.params.parse()?;
-        let filter_id = U256::from_str(clean_0x(&params.0))
-            .map_err(|_| Error::invalid_params("get_filter_logs param error"))?;
+        let filter_id = U256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
         request.set_filter_logs(filter_id.into());
         Ok(request)
     }
