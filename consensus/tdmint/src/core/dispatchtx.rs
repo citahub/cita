@@ -28,6 +28,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 use tx_pool::Pool;
+use util::H256;
 
 pub struct Dispatchtx {
     tx_pool: Arc<RwLock<Pool>>,
@@ -105,34 +106,36 @@ impl Dispatchtx {
                       });
     }
 
-    fn receive_new_transaction(&self, tx: &mut SignedTransaction, tx_pub: Sender<(String, Vec<u8>)>, from_broadcast: bool, recover: bool) {
+    fn receive_new_transaction(&self, result: Result<SignedTransaction, H256>, tx_pub: Sender<(String, Vec<u8>)>, from_broadcast: bool) {
+        let recover = result.is_ok();
         if from_broadcast {
             if recover {
-                let _ = self.add_tx_to_pool(tx);
+                let _ = self.add_tx_to_pool(&result.unwrap());
             }
         } else {
             let mut content = TxResponse::new();
-            content.set_hash(tx.tx_hash.clone());
             if !recover {
+                content.set_hash(result.unwrap_err().to_vec());
                 content.set_result(String::from("BAD SIG").into_bytes());
             } else {
+                let tx = result.unwrap();
+                content.set_hash(tx.tx_hash.clone());
                 if self.tx_flow_control() {
                     content.set_result(String::from("BUSY").into_bytes());
                 } else {
-                    let success = self.add_tx_to_pool(tx);
+                    let success = self.add_tx_to_pool(&tx);
                     if success {
                         //info!("receive_new_transaction {:?}", hash);
                         content.set_result(String::from("4:OK").into_bytes());
-                        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
+                        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.get_transaction_with_sig().write_to_bytes().unwrap());
                         tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-
                     } else {
                         content.set_result(String::from("4:DUP").into_bytes());
                     }
                 }
             }
             let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
-            //trace!("response new tx {:?}", tx);
+            trace!("response new tx {:?}", content.get_hash());
             tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }
@@ -142,15 +145,11 @@ impl Dispatchtx {
         self.wal.read(&mut tx_pool)
     }
 
-    pub fn process(&self, rx: &Receiver<(u32, bool, SignedTransaction)>, tx_pub: Sender<(String, Vec<u8>)>) {
+    pub fn process(&self, rx: &Receiver<(u32, Result<SignedTransaction, H256>)>, tx_pub: Sender<(String, Vec<u8>)>) {
         let res = rx.recv().unwrap();
-        let (id, recover, mut tx) = res;
+        let (id, result) = res;
         let from_broadcast = id == submodules::NET;
-        if from_broadcast {
-            self.receive_new_transaction(&mut tx, tx_pub, from_broadcast, recover);
-        } else {
-            self.receive_new_transaction(&mut tx, tx_pub, from_broadcast, recover);
-        }
+        self.receive_new_transaction(result, tx_pub, from_broadcast);
     }
 }
 

@@ -44,33 +44,38 @@ impl CandidatePool {
         self.1.height == (height - 1)
     }
 
-    pub fn broadcast_tx(&self, tx: &SignedTransaction, sender: Sender<PubType>) -> Result<(), &'static str> {
+    pub fn broadcast_tx(&self, tx: &UnverifiedTransaction, sender: Sender<PubType>) -> Result<(), &'static str> {
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
         trace!("broadcast new tx {:?}", tx);
         sender.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         Ok(())
     }
 
-    pub fn add_tx(&mut self, tx: &mut SignedTransaction, sender: Sender<PubType>, is_from_broadcast: bool) {
+    pub fn add_tx(&mut self, unverified_tx: &UnverifiedTransaction, sender: Sender<PubType>, is_from_broadcast: bool) {
         let mut content = blockchain::TxResponse::new();
-        let ret = tx.recover();
-        content.set_hash(tx.tx_hash.clone());
-        if !ret {
-            warn!("Transaction with bad signature, tx: {:?}", tx);
-            content.set_result(String::from("BAG SIG").into_bytes());
-        } else {
-            let success = self.0.enqueue(tx.clone());
-            if success {
-                content.set_result(String::from("4:OK").into_bytes());
-                self.broadcast_tx(tx, sender.clone()).unwrap();
-            } else {
-                content.set_result(String::from("4:DUP").into_bytes());
+        let trans = SignedTransaction::verify_transaction(unverified_tx.clone());
+
+        match trans {
+            Err(hash) => {
+                content.set_hash(hash.to_vec());
+                warn!("Transaction with bad signature, tx: {:?}", hash);
+                content.set_result(String::from("BAG SIG").into_bytes());
+            }
+            Ok(tx) => {
+                content.set_hash(tx.tx_hash.clone());
+                let success = self.0.enqueue(tx.clone());
+                if success {
+                    content.set_result(String::from("4:OK").into_bytes());
+                    self.broadcast_tx(unverified_tx, sender.clone()).unwrap();
+                } else {
+                    content.set_result(String::from("4:DUP").into_bytes());
+                }
             }
         }
 
+        // Response RPC
         if !is_from_broadcast {
             let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
-            trace!("response new tx {:?}", tx);
             sender.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }

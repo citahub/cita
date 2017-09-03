@@ -60,7 +60,7 @@ impl From<PTransaction> for RpcTransaction {
 
         RpcTransaction {
             hash: H256::from_slice(stx.get_tx_hash()),
-            content: Bytes(stx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap()),
+            content: Bytes(stx.get_transaction_with_sig().write_to_bytes().unwrap()),
             block_number: U256::from(ptransaction.block_number),
             block_hash: bhash,
             index: U256::from(ptransaction.index),
@@ -72,7 +72,7 @@ impl From<ProtoSignedTransaction> for FullTransaction {
     fn from(stx: ProtoSignedTransaction) -> Self {
         FullTransaction {
             hash: H256::from_slice(stx.get_tx_hash()),
-            content: Bytes(stx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap()),
+            content: Bytes(stx.get_transaction_with_sig().write_to_bytes().unwrap()),
         }
     }
 }

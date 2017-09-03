@@ -41,7 +41,7 @@ impl Filter {
 mod tests {
     use super::*;
     use crypto::{KeyPair, PrivKey, CreateKey};
-    use libproto::blockchain::{SignedTransaction, UnverifiedTransaction, Transaction};
+    use libproto::blockchain::{SignedTransaction, Transaction};
 
     pub fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
         let mut tx = Transaction::new();
@@ -51,14 +51,7 @@ mod tests {
         tx.set_valid_until_block(valid_until_block);
         tx.set_quota("a7c5ac471b47".to_string());
 
-        let mut uv_tx = UnverifiedTransaction::new();
-        uv_tx.set_transaction(tx);
-
-        let mut signed_tx = SignedTransaction::new();
-        signed_tx.set_transaction_with_sig(uv_tx);
-        signed_tx.sign(*privkey);
-
-        signed_tx
+        tx.sign(*privkey)
     }
 
     #[test]

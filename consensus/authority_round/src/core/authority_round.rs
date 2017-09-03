@@ -19,7 +19,7 @@ use super::{Engine, EngineError, Signable, unix_now, AsMillis};
 use crypto::{Signature, Signer, CreateKey};
 use engine_json;
 use libproto::*;
-use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
+use libproto::blockchain::{BlockBody, Proof, Block, UnverifiedTransaction, SignedTransaction, Status};
 use parking_lot::RwLock;
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
@@ -217,7 +217,7 @@ impl Engine for AuthorityRound {
         }
     }
 
-    fn receive_new_transaction(&self, tx: &SignedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool) {
+    fn receive_new_transaction(&self, tx: &UnverifiedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool) {
         let mut content = blockchain::TxResponse::new();
         let hash: H256 = tx.crypt_hash();
         {

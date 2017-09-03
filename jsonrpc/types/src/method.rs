@@ -30,7 +30,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub enum RpcReqType {
-    TX(blockchain::SignedTransaction),
+    TX(blockchain::UnverifiedTransaction),
     REQ(reqlib::Request),
 }
 
@@ -158,7 +158,7 @@ impl MethodHandler {
 
 
 impl MethodHandler {
-    pub fn send_transaction(&self, req_rpc: RpcRequest) -> Result<blockchain::SignedTransaction, Error> {
+    pub fn send_transaction(&self, req_rpc: RpcRequest) -> Result<blockchain::UnverifiedTransaction, Error> {
         let params: (String,) = req_rpc.params.parse()?;
         let data = clean_0x(&params.0);
         data.from_hex()
@@ -167,10 +167,10 @@ impl MethodHandler {
                          Error::parse_error_msg(err_msg.as_ref())
                      })
             .and_then(|content| {
-                          parse_from_bytes::<blockchain::SignedTransaction>(&content[..]).map_err(|_err| {
-                                                                                                      let err_msg = format!("parse protobuf SignedTransaction data error : {:?}", _err);
-                                                                                                      Error::parse_error_msg(err_msg.as_ref())
-                                                                                                  })
+                          parse_from_bytes::<blockchain::UnverifiedTransaction>(&content[..]).map_err(|_err| {
+                                                                                                          let err_msg = format!("parse protobuf UnverifiedTransaction data error : {:?}", _err);
+                                                                                                          Error::parse_error_msg(err_msg.as_ref())
+                                                                                                      })
                       })
 
     }
@@ -449,8 +449,10 @@ mod tests {
             ]),
         };
         let handler = MethodHandler;
-        let result: Result<blockchain::SignedTransaction, Error> = handler.send_transaction(rpc);
-        assert!(result.is_ok());
+        let result1: Result<blockchain::UnverifiedTransaction, Error> = handler.send_transaction(rpc1);
+        let result2: Result<blockchain::UnverifiedTransaction, Error> = handler.send_transaction(rpc2);
+        assert!(result1.is_ok());
+        assert!(result2.is_ok());
     }
 
     #[test]

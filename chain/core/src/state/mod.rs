@@ -753,15 +753,10 @@ mod tests {
                         .from_hex()
                         .unwrap());
 
-        let mut uv_tx = blockchain::UnverifiedTransaction::new();
-        uv_tx.set_transaction(tx);
-
         // 2) stx = (from, content(code, nonce, signature))
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let mut stx = blockchain::SignedTransaction::new();
-        stx.set_transaction_with_sig(uv_tx);
-        stx.sign(*privkey);
+        let stx = tx.sign(*privkey);
 
         // 4) signed
         let signed = SignedTransaction::new(&stx).unwrap();
