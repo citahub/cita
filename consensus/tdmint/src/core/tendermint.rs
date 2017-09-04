@@ -970,8 +970,8 @@ impl TenderMint {
                     trace!("get new local status {:?}", status.height);
                     self.receive_new_status(status);
                 }
-                MsgClass::NODES(nodes) => {
-                    info!("tendermint nodes is {:?}", nodes);
+                MsgClass::RICHSTATUS(rich_status) => {
+                    info!("tendermint rich_status is {:?}", rich_status);
                 }
                 _ => {}
             }

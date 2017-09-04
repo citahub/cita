@@ -57,7 +57,7 @@ fn main() {
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
     let (tx, rx) = channel();
-    let keys = vec!["net.*", "consensus_cmd.default", "consensus.blk", "chain.status", "jsonrpc.new_tx"];
+    let keys = vec!["net.*", "consensus_cmd.default", "consensus.blk", "chain.richstatus", "jsonrpc.new_tx"];
     let pool = ThreadPool::new(THREAD_POOL_NUMBER);
     start_pubsub("consensus", keys, tx_sub, rx_pub);
     thread::spawn(move || loop {
