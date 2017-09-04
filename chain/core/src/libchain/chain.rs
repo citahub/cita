@@ -1184,7 +1184,7 @@ mod tests {
         if SIGNATURE_NAME == "ed25519" {
             assert_eq!(contract_address, Address::from("b2f0aa00c6bc02a2b07646a1a213e1bed6fefff6"));
         } else if SIGNATURE_NAME == "secp256k1" {
-            assert_eq!(contract_address, Address::from("bc1b3ac5e6207379e4474e7d38fdc76ef094c04d"));
+            assert_eq!(contract_address, Address::from("893ed563bbe983e04441792e7ae866d4134adfd7"));
         };
         println!("contract_address as slice {:?}", contract_address.to_vec().as_slice());
         if SIGNATURE_NAME == "ed25519" {
@@ -1228,7 +1228,7 @@ mod tests {
                 ])
             );
         } else if SIGNATURE_NAME == "secp256k1" {
-            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 27, 58, 197, 230, 32, 115, 121, 228, 71, 78, 125, 56, 253, 199, 110, 240, 148, 192, 77]
+            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 137, 62, 213, 99, 187, 233, 131, 224, 68, 65, 121, 46, 122, 232, 102, 212, 19, 74, 223, 215]
             assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
             assert_eq!(
                 log.data,
@@ -1245,26 +1245,26 @@ mod tests {
                     0,
                     0,
                     0,
-                    188,
-                    27,
-                    58,
-                    197,
-                    230,
-                    32,
-                    115,
+                    137,
+                    62,
+                    213,
+                    99,
+                    187,
+                    233,
+                    131,
+                    224,
+                    68,
+                    65,
                     121,
-                    228,
-                    71,
-                    78,
-                    125,
-                    56,
-                    253,
-                    199,
-                    110,
-                    240,
-                    148,
-                    192,
-                    77,
+                    46,
+                    122,
+                    232,
+                    102,
+                    212,
+                    19,
+                    74,
+                    223,
+                    215,
                 ])
             );
         };

@@ -36,7 +36,13 @@ use vector::SharedPrefix;
 ///
 /// fn main() {
 /// 	let v = vec![From::from("doe"), From::from("reindeer")];
-/// 	let root = "2e23216dd9a4b1bfa60a274b3420871d6560d55f45abb578aeaa547c79f7948b";
+///     let root = if HASH_NAME == "sha3" {
+///         "e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3"
+///     } else if HASH_NAME == "blake2b" {
+/// 	    "2e23216dd9a4b1bfa60a274b3420871d6560d55f45abb578aeaa547c79f7948b"
+///     } else {
+///         ""
+///     };
 /// 	assert_eq!(ordered_trie_root(v), H256::from_str(root).unwrap());
 /// }
 /// ```
@@ -74,7 +80,13 @@ where
 /// 		(From::from("dogglesworth"), From::from("cat")),
 /// 	];
 ///
-/// 	let root = "82df7576318e4ab41bbe9b4e5c664c1d5e6d2558d4872ebdcce824ea91e004cb";
+///     let root = if HASH_NAME == "sha3" {
+///         "8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3"
+///     } else if HASH_NAME == "blake2b" {
+/// 	    "82df7576318e4ab41bbe9b4e5c664c1d5e6d2558d4872ebdcce824ea91e004cb"
+///     } else {
+///         ""
+///     };
 /// 	assert_eq!(trie_root(v), H256::from_str(root).unwrap());
 /// }
 /// ```
@@ -108,8 +120,13 @@ where
 /// 		(From::from("dog"), From::from("puppy")),
 /// 		(From::from("dogglesworth"), From::from("cat")),
 /// 	];
-///
-/// 	let root = "4fc4a4c6a187355054c79faace7e06619955ea670470c8d27a23ff59892c8ec6";
+///     let root = if HASH_NAME == "sha3" {
+///         "d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585"
+///     } else if HASH_NAME == "blake2b" {
+/// 	    "4fc4a4c6a187355054c79faace7e06619955ea670470c8d27a23ff59892c8ec6"
+///     } else {
+///         ""
+///     };
 /// 	assert_eq!(sec_trie_root(v), H256::from_str(root).unwrap());
 /// }
 /// ```

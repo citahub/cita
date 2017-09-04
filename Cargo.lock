@@ -582,6 +582,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "create_key_addr"
+version = "0.1.0"
+dependencies = [
+ "cita-crypto 0.1.0",
+ "util 0.6.0",
+]
+
+[[package]]
 name = "crossbeam"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"

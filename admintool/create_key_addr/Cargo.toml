@@ -1,0 +1,8 @@
+[package]
+name = "create_key_addr"
+version = "0.1.0"
+authors = ["lbqds <lbqds@cryptape.com>"]
+
+[dependencies]
+cita-crypto = { path = "../../share_libs/crypto" }
+util = { path = "../../share_libs/util" }
