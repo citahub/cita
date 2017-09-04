@@ -233,11 +233,6 @@ impl Header {
         self.note_dirty();
     }
 
-    ///uesed set header hash with height eq zero
-    pub fn set_hash(&mut self, hash: H256) {
-        self.hash = HashWrap(Cell::new(Some(hash)));
-    }
-
     /// Get the hash of this header (sha3 of the RLP).
     pub fn hash(&self) -> H256 {
         let hash = self.hash.get();

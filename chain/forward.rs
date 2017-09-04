@@ -50,7 +50,7 @@ pub fn chain_pool(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id:
 // TODO: RPC Errors
 pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>, ctx_pub: Sender<(String, Vec<u8>)>) {
     let (id, cmd_id, origin, content_ext) = rx.recv().unwrap();
-    trace!("chain_result call {:?} {:?}", id, cmd_id);
+    trace!("chain_result call {:?} {:?}", id_to_key(id), cmd_id);
     match content_ext {
         MsgClass::REQUEST(mut req) => {
             let mut response = request::Response::new();

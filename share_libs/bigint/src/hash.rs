@@ -137,6 +137,17 @@ macro_rules! impl_hash {
 				}
 				ret
 			}
+
+			pub fn from_any_str(hex_str: &str) -> Result<$from, FromHexError> {
+                let a = clean_0x(hex_str).from_hex()?;
+                let mut ret = [0; $size];
+                if a.len() > $size{
+                    ret.copy_from_slice(&a.as_slice()[a.len() - $size..a.len()]);
+                }else{
+                    &ret[$size - a.len()..$size].copy_from_slice(a.as_slice());
+                }
+                Ok($from(ret))
+            }
 		}
 
 		impl FromStr for $from {
@@ -609,5 +620,28 @@ mod tests {
         assert_eq!(r_ref, u);
         let r: U256 = From::from(h);
         assert_eq!(r, u);
+    }
+
+    #[test]
+    fn test_from_str() {
+        let u = 100u64;
+        let h = H64::from_str("0000000000000064");
+        assert_eq!(H64::from(u), h.unwrap());
+    }
+
+    #[test]
+    fn test_from_any_str() {
+        let u = 100u64;
+        assert_eq!(H64::from(u), H64::from_any_str("64").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("00000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0x000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0x00000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0x0000000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("00000000000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0000000000000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0x000000000000000000000064").unwrap());
     }
 }
