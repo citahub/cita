@@ -25,6 +25,7 @@ use state_db::StateDB;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
+use std::sync::Arc;
 use util::{Address, H256, U256};
 use util::kvdb::KeyValueDB;
 
@@ -59,7 +60,7 @@ impl Genesis {
         }
     }
 
-    pub fn lazy_execute(&mut self, state_db: &StateDB, factories: &Factories) {
+    pub fn lazy_execute(&mut self, state_db: &StateDB, factories: &Factories) -> Result<(), String> {
         let mut state = State::from_existing(state_db.boxed_clone(), self.block.state_root().clone(), U256::from(0), factories.clone()).expect("state db error");
         self.block.set_version(0);
         self.block.set_parent_hash(self.spec.prevhash);
@@ -94,9 +95,12 @@ impl Genesis {
         let root = state.root().clone();
         trace!("root {:?}", root);
         self.block.set_state_root(root);
+        let db = state.clone().db();
+        let journal_db = db.journal_db();
+        self.save(state, journal_db.backing())
     }
 
-    pub fn save_genesis(&mut self, db: &KeyValueDB) -> Result<(), String> {
+    fn save(&mut self, state: State<StateDB>, db: &Arc<KeyValueDB>) -> Result<(), String> {
         let mut batch = db.transaction();
         let hash = self.block.hash();
         let height = self.block.number();
@@ -104,6 +108,7 @@ impl Genesis {
         batch.write(db::COL_BODIES, &hash, self.block.body());
         batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &hash);
         batch.write(db::COL_EXTRA, &height, &hash);
+        state.db().journal_under(&mut batch, height, &hash).expect("DB commit failed");
         db.write(batch)
     }
 }

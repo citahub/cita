@@ -204,8 +204,7 @@ impl Chain {
                 header
             }
             _ => {
-                genesis.lazy_execute(&state_db, &factories);
-                genesis.save_genesis(&*db).expect("Failed to save genesis.");
+                genesis.lazy_execute(&state_db, &factories).expect("Failed to save genesis.");
                 info!("init genesis {:?}", genesis);
                 genesis.block.header().clone()
             }
@@ -237,6 +236,7 @@ impl Chain {
                                  last_hashes: RwLock::new(VecDeque::new()),
                                  polls_filter: Arc::new(Mutex::new(PollManager::new())),
                              });
+
 
         chain.build_last_hashes(Some(status.hash().clone()), status.number());
         (chain, status.protobuf())
@@ -276,16 +276,6 @@ impl Chain {
             BlockId::Hash(hash) => self.block_number_by_hash(hash),
             BlockId::Earliest => Some(0),
             BlockId::Latest => Some(self.get_current_height()),
-        }
-    }
-    
-    // Get block header by hash
-    pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
-        {
-            let header = self.current_header.read();
-            if header.hash() == hash {
-                return Some(header.clone());
-            }
         }
     }
 
