@@ -951,7 +951,7 @@ mod tests {
     extern crate mktemp;
     use self::Chain;
     use super::*;
-    use cita_crypto::{KeyPair, PrivKey};
+    use cita_crypto::{KeyPair, PrivKey, SIGNATURE_NAME};
     use db;
     use libchain::block::{Block, BlockBody};
     use libchain::genesis::Spec;
@@ -1133,8 +1133,13 @@ mod tests {
         //let keypair = KeyPair::gen_keypair();
         //let privkey = keypair.privkey();
         //let pubkey = keypair.pubkey();
-        let privkey = PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66");
-        //let pubkey = PubKey::from("bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66");
+        let privkey = if SIGNATURE_NAME == "ed25519" {
+            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+        } else if SIGNATURE_NAME == "secp256k1" {
+            PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
+        } else {
+            panic!("unexcepted signature algorithm");
+        };
         println!("privkey: {:?}", privkey);
         let chain = init_chain();
 
@@ -1175,47 +1180,93 @@ mod tests {
         println!("contract address: {}", contract_address);
         let log = &receipt.logs[0];
         assert_eq!(contract_address, log.address);
-        assert_eq!(contract_address, Address::from("b2f0aa00c6bc02a2b07646a1a213e1bed6fefff6"));
-        // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 111, 59, 43, 53, 88, 72, 145, 132, 114, 215, 155, 118, 248, 179, 151, 41, 8, 138, 13, 0]
+        if SIGNATURE_NAME == "ed25519" {
+            assert_eq!(contract_address, Address::from("b2f0aa00c6bc02a2b07646a1a213e1bed6fefff6"));
+        } else if SIGNATURE_NAME == "secp256k1" {
+            assert_eq!(contract_address, Address::from("bc1b3ac5e6207379e4474e7d38fdc76ef094c04d"));
+        };
         println!("contract_address as slice {:?}", contract_address.to_vec().as_slice());
-        assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
-        assert_eq!(
-            log.data,
-            Bytes::from(vec![
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                178,
-                240,
-                170,
-                0,
-                198,
-                188,
-                2,
-                162,
-                176,
-                118,
-                70,
-                161,
-                162,
-                19,
-                225,
-                190,
-                214,
-                254,
-                255,
-                246,
-            ])
-        );
+        if SIGNATURE_NAME == "ed25519" {
+            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 111, 59, 43, 53, 88, 72, 145, 132, 114, 215, 155, 118, 248, 179, 151, 41, 8, 138, 13, 0]
+            assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
+            assert_eq!(
+                log.data,
+                Bytes::from(vec![
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    178,
+                    240,
+                    170,
+                    0,
+                    198,
+                    188,
+                    2,
+                    162,
+                    176,
+                    118,
+                    70,
+                    161,
+                    162,
+                    19,
+                    225,
+                    190,
+                    214,
+                    254,
+                    255,
+                    246,
+                ])
+            );
+        } else if SIGNATURE_NAME == "secp256k1" {
+            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 27, 58, 197, 230, 32, 115, 121, 228, 71, 78, 125, 56, 253, 199, 110, 240, 148, 192, 77]
+            assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
+            assert_eq!(
+                log.data,
+                Bytes::from(vec![
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    188,
+                    27,
+                    58,
+                    197,
+                    230,
+                    32,
+                    115,
+                    121,
+                    228,
+                    71,
+                    78,
+                    125,
+                    56,
+                    253,
+                    199,
+                    110,
+                    240,
+                    148,
+                    192,
+                    77,
+                ])
+            );
+        };
 
         // set a=10
         let data = "60fe47b1000000000000000000000000000000000000000000000000000000000000000a".from_hex().unwrap();
