@@ -439,30 +439,18 @@ mod tests {
     }
 
     #[test]
-    fn test_rpc_0x() {
-        let rpc1 = RpcRequest {
+    fn test_cita_send_transaction() {
+        let rpc = RpcRequest {
             jsonrpc: Some(Version::V2),
             method: method::CITA_SEND_TRANSACTION.to_owned(),
             id: Id::Str("2".to_string()),
             params: Params::Array(vec![
-                Value::from("0a540a0f0a03313233120130189f8d0622010112416a9b0881216be79608d319d9036b09f157949e1e4d54a479b314cea0a52b20ee6fa0aac4486e23f5ba6cae35bb6a44090828f826c0866d704e926cb8904af885011220406b9490d3357ca7bfa8af64de45a2dd4a626b071388296bb5ca76817fc1484b1a40841de155ac4aacc27e9068cefbae5108a0210ebeaed06a293cf5e26cd806e03f50d7887fd3321745b4f6b81e4d45822d72da2adf0a9f3a870619af88fdf17db3".to_owned()),
+                Value::from("0x0a81010a1d0a033132331201301a0c613763356163343731623437209f8d062a01011260b3cf414a7abe01729890d40ba2a10811af4e48e74f16ea2397dfdb609fc311bf81c35bb10b5f790879d782b17ccb31896af30958fb02670352332c46996aef09b2a0f7852f7129d72d57db882f3b6b26a5a3ccd90b1abed5fe1f8ef652ccb89b12206dc0247fe5d8d4521bf75b3895e9cab3720aee654922f3f995c250a859feca351a20b2a0f7852f7129d72d57db882f3b6b26a5a3ccd90b1abed5fe1f8ef652ccb89b".to_owned()),
             ]),
         };
-
-        let rpc2 = RpcRequest {
-            jsonrpc: Some(Version::V2),
-            method: method::CITA_SEND_TRANSACTION.to_owned(),
-            id: Id::Str("2".to_string()),
-            params: Params::Array(vec![
-                Value::from("0x0a540a0f0a03313233120130189f8d0622010112416a9b0881216be79608d319d9036b09f157949e1e4d54a479b314cea0a52b20ee6fa0aac4486e23f5ba6cae35bb6a44090828f826c0866d704e926cb8904af885011220406b9490d3357ca7bfa8af64de45a2dd4a626b071388296bb5ca76817fc1484b1a40841de155ac4aacc27e9068cefbae5108a0210ebeaed06a293cf5e26cd806e03f50d7887fd3321745b4f6b81e4d45822d72da2adf0a9f3a870619af88fdf17db3".to_owned()),
-            ]),
-        };
-
         let handler = MethodHandler;
-        let result1: Result<blockchain::SignedTransaction, Error> = handler.send_transaction(rpc1);
-        let result2: Result<blockchain::SignedTransaction, Error> = handler.send_transaction(rpc2);
-        assert!(result1.is_ok());
-        assert!(result2.is_ok());
+        let result: Result<blockchain::SignedTransaction, Error> = handler.send_transaction(rpc);
+        assert!(result.is_ok());
     }
 
     #[test]

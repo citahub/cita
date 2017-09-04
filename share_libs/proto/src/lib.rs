@@ -325,6 +325,7 @@ mod tests {
         tx.set_nonce("0".to_string());
         tx.set_to("123".to_string());
         tx.set_valid_until_block(99999);
+        tx.set_quota("a7c5ac471b47".to_string());
 
         let mut uv_tx = UnverifiedTransaction::new();
         uv_tx.set_transaction(tx);

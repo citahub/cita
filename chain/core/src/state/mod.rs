@@ -747,7 +747,8 @@ mod tests {
         let mut tx = blockchain::Transaction::new();
         tx.set_to(String::from(""));
         tx.set_nonce(U256::from(0).to_hex());
-        tx.set_valid_until_block(0);
+        tx.set_valid_until_block(100);
+        tx.set_quota("a7c5ac471b47".to_string());
         tx.set_data("60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
                         .from_hex()
                         .unwrap());

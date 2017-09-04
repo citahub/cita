@@ -53,6 +53,11 @@ fn bench_enqueue(b: &mut Bencher) {
     let pv = keypair.privkey();
     for i in 0..10000 {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
+        tx.set_to("1234567".to_string());
+        tx.set_nonce("0".to_string());
+        tx.set_valid_until_block(99999);
+        tx.set_quota("a7c5ac471b47".to_string());
+
         uv_tx.set_transaction(tx.clone());
         signed_tx.set_transaction_with_sig(uv_tx.clone());
         signed_tx.sign(*pv);
@@ -75,6 +80,11 @@ fn bench_package(b: &mut Bencher) {
     let pv = keypair.privkey();
     for i in 0..10000 {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
+        tx.set_to("1234567".to_string());
+        tx.set_nonce("0".to_string());
+        tx.set_valid_until_block(99999);
+        tx.set_quota("a7c5ac471b47".to_string());
+
         uv_tx.set_transaction(tx.clone());
         signed_tx.set_transaction_with_sig(uv_tx.clone());
         signed_tx.sign(*pv);
@@ -99,6 +109,11 @@ fn bench_update(b: &mut Bencher) {
 
     for i in 0..10000 {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
+        tx.set_to("1234567".to_string());
+        tx.set_nonce("0".to_string());
+        tx.set_valid_until_block(99999);
+        tx.set_quota("a7c5ac471b47".to_string());
+
         uv_tx.set_transaction(tx.clone());
         signed_tx.set_transaction_with_sig(uv_tx.clone());
         signed_tx.sign(*pv);
