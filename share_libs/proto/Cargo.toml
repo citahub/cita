@@ -6,7 +6,7 @@ authors = ["gguoss"]
 
 [dependencies]
 protobuf = { version = "^1.0.0"}
-cita-ed25519 = { path = "../ed25519"}
+cita-crypto = { path = "../crypto"}
 util = { path = "../util"}
 rustc-serialize = "0.3"
 rlp = { path = "../rlp"}

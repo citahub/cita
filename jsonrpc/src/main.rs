@@ -15,27 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(plugin)]
-#[allow(deprecated)]
-#[allow(unused_assignments)]
-#[allow(unused_must_use)]
-extern crate futures;
+#![allow(unused_assignments, unused_must_use, deprecated, unused_extern_crates)]
 extern crate hyper;
 extern crate libproto;
 extern crate protobuf;
-extern crate uuid;
 #[macro_use]
 extern crate log;
 extern crate util;
 extern crate serde_json;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate rustc_serialize;
+extern crate serde;
 extern crate pubsub;
-extern crate time;
-extern crate proof;
-extern crate docopt;
 extern crate cpuprofiler;
 extern crate jsonrpc_types;
 extern crate dotenv;
@@ -57,7 +48,7 @@ use clap::App;
 use config::ProfileConfig;
 use cpuprofiler::PROFILER;
 use dotenv::dotenv;
-use http_handler::RpcHandler;
+use http_handler::HttpHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
 use log::LogLevelFilter;
@@ -141,7 +132,7 @@ fn main() {
             let url = http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
             let arc_tx = Arc::new(Mutex::new(sender_mq_http));
             info!("Http Listening on {}", url);
-            let _ = Server::http(url).unwrap().handle_threads(RpcHandler {
+            let _ = Server::http(url).unwrap().handle_threads(HttpHandler {
                                                                   responses: http_responses,
                                                                   tx: arc_tx,
                                                                   tx_responses: http_tx_responses,

@@ -641,7 +641,7 @@ impl<B: Backend> State<B> {
 
         // at this point the entry is guaranteed to be in the cache.
         Ok(RefMut::map(self.cache.borrow_mut(), |c| {
-            let mut entry = c.get_mut(a).expect("entry known to exist in the cache; qed");
+            let entry = c.get_mut(a).expect("entry known to exist in the cache; qed");
 
             match &mut entry.account {
                 &mut Some(ref mut acc) => not_default(acc),
@@ -702,18 +702,20 @@ impl Clone for State<StateDB> {
 #[cfg(test)]
 mod tests {
     extern crate libproto;
-    extern crate cita_ed25519;
+    extern crate cita_crypto;
     extern crate protobuf;
     extern crate env_logger;
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::libproto::blockchain;
     use super::*;
+    use cita_crypto::KeyPair;
     use env_info::EnvInfo;
     use rustc_hex::FromHex;
     use std::sync::Arc;
     use tests::helpers::*;
-    use util::{H256, H512, Address};
+    use util::{H256, Address};
+    use util::crypto::CreateKey;
     use util::hashable::HASH_NAME;
 
     #[test]
@@ -754,10 +756,11 @@ mod tests {
         uv_tx.set_transaction(tx);
 
         // 2) stx = (from, content(code, nonce, signature))
-        let privkey = cita_ed25519::PrivKey::from(H512::random());
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
         let mut stx = blockchain::SignedTransaction::new();
         stx.set_transaction_with_sig(uv_tx);
-        stx.sign(privkey);
+        stx.sign(*privkey);
 
         // 4) signed
         let signed = SignedTransaction::new(&stx).unwrap();

@@ -16,12 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use BlockNumber;
-use ed25519::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN};
+use crypto::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, PubKey};
 use libproto::blockchain::{Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction, SignedTransaction as ProtoSignedTransaction, Crypto as ProtoCrypto};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{H256, Address, U256, Bytes, HeapSizeOf, H768};
+use util::{H256, Address, U256, Bytes, HeapSizeOf};
 
 // pub const STORE_ADDRESS: H160 =  H160( [0xff; 20] );
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
@@ -298,7 +298,7 @@ impl UnverifiedTransaction {
 
         Ok(UnverifiedTransaction {
                unsigned: Transaction::new(utx.get_transaction())?,
-               signature: Signature::from(H768::from(utx.get_signature())),
+               signature: Signature::from(utx.get_signature()),
                crypto_type: CryptoType::from(utx.get_crypto()),
                hash: hash,
            })
@@ -353,7 +353,7 @@ impl Decodable for SignedTransaction {
             return Err(DecoderError::RlpIncorrectListLen);
         }
 
-        let public: H256 = d.val_at(10)?;
+        let public: PubKey = d.val_at(10)?;
 
         Ok(SignedTransaction {
                transaction: UnverifiedTransaction {
@@ -428,7 +428,7 @@ impl SignedTransaction {
         }
 
         let tx_hash = H256::from(stx.get_tx_hash());
-        let public = H256::from_slice(stx.get_signer());
+        let public = PubKey::from_slice(stx.get_signer());
         let sender = pubkey_to_address(&public);
         Ok(SignedTransaction {
                transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,
@@ -465,7 +465,7 @@ mod tests {
 
     #[test]
     fn test_encode_and_decode() {
-        let stx = SignedTransaction::default();
+        let mut stx = SignedTransaction::default();
         stx.data = vec![1; 200];
         let stx_rlp = rlp::encode(&stx);
         let stx: SignedTransaction = rlp::decode(&stx_rlp);

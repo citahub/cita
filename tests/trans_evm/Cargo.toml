@@ -8,16 +8,12 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 clap = "2"
-
 libproto = { path = "../../share_libs/proto"}
 protobuf = { version = "^1.0.0" }
-rustc-serialize = "0.3"
-cita-ed25519 = { path = "../../share_libs/ed25519" }
+cita-crypto = { path = "../../share_libs/crypto" }
 util = { path = "../../share_libs/util" }
 dotenv = "0.10.0"
-uuid = { version = "0.4", features = ["v4"] }
 hyper =  "0.10.7"
-log = "0.3.0"
 cita_log = { path = "../../share_libs/cita_log" }
 jsonrpc_types = { path = "../../jsonrpc/types" }
 rustc-hex = "1.0"

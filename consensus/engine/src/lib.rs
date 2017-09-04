@@ -17,10 +17,7 @@
 
 extern crate libproto;
 extern crate util;
-extern crate protobuf;
-extern crate cita_ed25519 as ed25519;
-extern crate proof;
-extern crate engine_json;
+extern crate cita_crypto as crypto;
 
 mod error;
 mod instrument;

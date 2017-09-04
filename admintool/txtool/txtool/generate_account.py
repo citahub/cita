@@ -4,11 +4,12 @@
 from __future__ import print_function
 import sys
 import binascii
+import argparse
 from pathlib import Path
 from util import which, run_command
 from ecdsa import SigningKey, SECP256k1
 import sha3
-
+import pysodium
 
 # 检查是否安装了openssl
 openssl_installed = which("openssl")
@@ -42,8 +43,13 @@ def save_address(address):
     address_file.write(address)
     address_file.close()
 
+def generate(newcrypto=False):
+    if newcrypto:
+        _generate_new()
+    else:
+        _generate_old()
 
-def main():
+def _generate_old():
     keccak = sha3.keccak_256()
     priv = SigningKey.generate(curve=SECP256k1)
     pub = priv.get_verifying_key().to_string()
@@ -55,6 +61,22 @@ def main():
     save_pubkey(binascii.hexlify(pub))
     save_address(address)
 
+def _generate_new():
+    pk, sk = pysodium.crypto_sign_keypair()
+    save_privkey(binascii.b2a_hex(sk))
+
+    save_pubkey(binascii.b2a_hex(pk))
+
+    address = binascii.b2a_hex(pysodium.crypto_generichash_blake2b_salt_personal(pk, key = "CryptapeCryptape")[12:])
+    save_address(address)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--newcrypto', dest='newcrypto', action='store_true')
+    parser.add_argument('--no-newcrypto', dest='newcrypto', action='store_false')
+    parser.set_defaults(newcrypto=False)
+    args = parser.parse_args()
+    generate(args.newcrypto)
 
 if __name__ == "__main__":
     main()

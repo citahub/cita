@@ -16,24 +16,20 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, deserialize, Infinite};
-use ed25519::Signature;
+use crypto::Signature;
 use libproto::blockchain::{Proof, ProofType};
 use rustc_serialize::hex::ToHex;
 use std::fmt;
-use util::H768;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct AuthorityRoundProof {
-    pub signature: H768,
+    pub signature: Signature,
     pub step: u64,
 }
 
 impl AuthorityRoundProof {
     pub fn new(step: u64, signature: Signature) -> AuthorityRoundProof {
-        AuthorityRoundProof {
-            step: step,
-            signature: H768::from(signature.0).into(),
-        }
+        AuthorityRoundProof { step: step, signature: signature }
     }
 }
 
@@ -62,14 +58,21 @@ impl fmt::Display for AuthorityRoundProof {
 
 #[cfg(test)]
 mod tests {
+    extern crate cita_crypto as crypto;
+
     use super::{Signature, AuthorityRoundProof};
+    use crypto::SIGNATURE_NAME;
     use libproto::blockchain::Proof;
 
     #[test]
     fn proof_display() {
         let proof = AuthorityRoundProof::new(0, Signature::default());
         let string = format!("{}", proof);
-        assert_eq!(string, "step: 0, signature: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        if SIGNATURE_NAME == "ed25519" {
+            assert_eq!(string, "step: 0, signature: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        } else if SIGNATURE_NAME == "secp256k1" {
+            assert_eq!(string, "step: 0, signature: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        }
     }
 
     #[test]

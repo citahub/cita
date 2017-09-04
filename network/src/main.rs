@@ -14,14 +14,12 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#![feature(plugin)]
+#![allow(deprecated)]
 #[macro_use]
 extern crate log;
 extern crate clap;
 extern crate futures;
 extern crate tokio_io;
-extern crate tokio_core;
 extern crate tokio_proto;
 extern crate tokio_service;
 extern crate byteorder;
@@ -30,7 +28,6 @@ extern crate parking_lot;
 extern crate libproto;
 extern crate protobuf;
 extern crate pubsub;
-extern crate util;
 extern crate dotenv;
 extern crate cita_log;
 extern crate bytes;

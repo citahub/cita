@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{Engine, EngineError, Signable, unix_now, AsMillis};
-use ed25519::{Signature, Signer};
+use crypto::{Signature, Signer, CreateKey};
 use engine_json;
 use libproto::*;
 use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
@@ -89,7 +89,7 @@ impl AuthorityRound {
     }
 
     pub fn generate_proof(&self, body: &mut BlockBody, step: u64) -> Proof {
-        let signature = body.sign_with_privkey(self.params.signer.privkey()).unwrap();
+        let signature = body.sign_with_privkey(self.params.signer.keypair.privkey()).unwrap();
         let proof: Proof = AuthorityRoundProof::new(step, signature).into();
         proof
     }
@@ -274,11 +274,21 @@ impl Engine for AuthorityRound {
 
 #[cfg(test)]
 mod tests {
+    extern crate cita_crypto as crypto;
+
     use super::super::Spec;
+    use crypto::SIGNATURE_NAME;
 
     #[test]
     fn has_valid_metadata() {
-        let test_spec = ::std::env::current_dir().unwrap().join("../res/authority_round.json");
+        let config_path = if SIGNATURE_NAME == "ed25519" {
+            "../res/authority_round.json".to_string()
+        } else if SIGNATURE_NAME == "secp256k1" {
+            "../res/authority_round_secp256k1.json".to_string()
+        } else {
+            "not exist".to_string()
+        };
+        let test_spec = ::std::env::current_dir().unwrap().join(&config_path);
         println!("{}", test_spec.display());
         let engine = Spec::new_test_round(test_spec.to_str().unwrap()).engine;
         assert!(!engine.name().is_empty());

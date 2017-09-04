@@ -69,5 +69,7 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, sender: Sender<PubType>, rx:
         MsgClass::RICHSTATUS(rich_status) => {
             info!("txtool MsgClass rich_status is {:?}", rich_status)
         }
+        MsgClass::VERIFYREQ(req) => {}
+        MsgClass::VERIFYRESP(resp) => {}
     }
 }

@@ -20,16 +20,12 @@ extern crate threadpool;
 extern crate tx_pool;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
 extern crate libproto;
-extern crate util;
 extern crate protobuf;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate bincode;
 extern crate pubsub;
-extern crate amqp;
 extern crate cita_log;
 extern crate engine;
 extern crate dotenv;

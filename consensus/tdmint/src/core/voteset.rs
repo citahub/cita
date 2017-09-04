@@ -17,13 +17,12 @@
 
 use super::{Step, Address};
 use bincode::{serialize, Infinite};
-use ed25519::{recover, pubkey_to_address};
+use crypto::{Sign, pubkey_to_address, Signature};
 use libproto::blockchain::Block;
 use lru_cache::LruCache;
 use protobuf::core::parse_from_bytes;
 use std::collections::HashMap;
-use util::{H256, H768};
-use util::Hashable;
+use util::{H256, Hashable};
 
 //height -> round collector
 #[derive(Debug)]
@@ -159,7 +158,8 @@ impl VoteSet {
         for (sender, vote) in &self.votes_by_sender {
             if authorities.contains(sender) {
                 let msg = serialize(&(h, r, step, sender, vote.proposal), Infinite).unwrap();
-                if let Ok(pubkey) = recover(&vote.signature.into(), &msg.crypt_hash().into()) {
+                let signature = &vote.signature;
+                if let Ok(pubkey) = signature.recover(&msg.crypt_hash().into()) {
                     if pubkey_to_address(&pubkey) == sender.clone() {
                         let mut hash = H256::default();
                         if let Some(h) = vote.proposal {
@@ -190,7 +190,7 @@ impl VoteSet {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VoteMessage {
     pub proposal: Option<H256>,
-    pub signature: H768,
+    pub signature: Signature,
 }
 
 #[derive(Debug)]

@@ -15,25 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(plugin)]
+#![cfg_attr(test, feature(test))]
 #![feature(vec_remove_item)]
-#![feature(test)]
-extern crate test;
 extern crate libproto;
 extern crate protobuf;
-extern crate threadpool;
 extern crate byteorder;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
-extern crate pubsub;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate serde_json;
 extern crate vm;
 extern crate util;
-extern crate dotenv;
 extern crate rustc_serialize;
 extern crate proof;
 extern crate lru_cache;
@@ -45,17 +38,10 @@ extern crate bloomchain;
 extern crate bloomable;
 extern crate rustc_hex;
 
-extern crate bincode;
-extern crate ethcore_bloom_journal as bloom_journal;
 #[macro_use]
 extern crate lazy_static;
 extern crate bit_set;
 extern crate crypto;
-extern crate num;
-extern crate rand;
-extern crate futures;
-extern crate ethkey;
-extern crate bn;
 extern crate time;
 extern crate crossbeam;
 extern crate transient_hashmap;
@@ -65,6 +51,10 @@ extern crate common_types as types;
 extern crate jsonrpc_types;
 extern crate cita_secp256k1;
 extern crate ethabi;
+#[cfg(test)]
+extern crate test;
+#[cfg(test)]
+extern crate cita_crypto;
 
 pub mod state;
 pub mod account_db;
