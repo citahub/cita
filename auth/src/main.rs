@@ -23,8 +23,10 @@ extern crate dotenv;
 extern crate pubsub;
 extern crate cpuprofiler;
 extern crate libproto;
-
+extern crate cita_crypto as crypto;
+extern crate util;
 pub mod handler;
+pub mod verifier;
 
 use clap::App;
 use cpuprofiler::PROFILER;
@@ -35,6 +37,7 @@ use pubsub::start_pubsub;
 use std::env;
 use std::sync::mpsc::channel;
 use std::thread;
+use verifier::Verifier;
 
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
@@ -75,11 +78,93 @@ fn main() {
     let (tx_pub, rx_pub) = channel();
     start_pubsub("auth", vec!["*.verify_req", "*.verify_req_batch", "chain.status"], tx_sub, rx_pub);
 
-    tx_pub.send(("auth.verify_req".to_string(), vec![0])).unwrap();
 
+    let verifier = Verifier::new();
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
         info!("get {} : {:?}", key, msg);
-        handle_msg(msg);
+        handle_msg(msg, &tx_pub, &verifier);
+
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crypto::*;
+    use libproto::*;
+    use libproto::blockchain::*;
+    use protobuf::{Message, RepeatedField};
+    use util::Hashable;
+    pub fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
+        let mut tx = Transaction::new();
+        tx.set_data(data);
+        tx.set_to("1234567".to_string());
+        tx.set_nonce("0".to_string());
+        tx.set_valid_until_block(valid_until_block);
+
+        let mut uv_tx = UnverifiedTransaction::new();
+        uv_tx.set_transaction(tx);
+
+        let mut signed_tx = SignedTransaction::new();
+        signed_tx.set_transaction_with_sig(uv_tx);
+        signed_tx.sign(*privkey);
+
+        signed_tx
+    }
+
+
+
+
+    #[test]
+    fn verify_tx() {
+        //create verify message
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let pubkey = keypair.pubkey();
+        let tx = generate_tx(vec![1], 999, privkey);
+        let mut msg = VerifyReqMsg::new();
+        msg.set_valid_until_block(999);
+
+        let signature = tx.get_transaction_with_sig().get_signature().to_vec();
+        msg.set_signature(signature);
+
+
+        let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
+        let hash = bytes.crypt_hash().to_vec();
+
+        msg.set_tx_hash(hash.to_vec());
+        msg.set_hash(hash);
+
+
+
+        let mut vmsg = VerifyReq::new();
+        vmsg.set_reqs(RepeatedField::from_slice(&[msg]));
+
+
+        //verify tx
+
+        let mut v = Verifier::new();
+        v.set_height(5);
+        let (tx_sub, rx_sub) = channel();
+        let (tx_pub, rx_pub) = channel();
+        let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_REQ, communication::MsgType::VERIFY_REQ, vmsg.write_to_bytes().unwrap());
+        tx_sub.send(("auth.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+        let (_, msg) = rx_sub.recv().unwrap();
+        handle_msg(msg, &tx_pub, &v);
+        let (key1, resp_msg) = rx_pub.recv().unwrap();
+        println!("get {} : {:?}", key1, resp_msg);
+        let (_, _, content) = parse_msg(resp_msg.as_slice());
+        match content {
+            MsgClass::VERIFYRESP(resps) => {
+                for resp in resps.get_resps() {
+                    assert_eq!(resp.get_ret(), Ret::Ok);
+                    assert_eq!(pubkey.to_vec(), resp.get_signer());
+                }
+            }
+
+            _ => {}
+        }
     }
 }

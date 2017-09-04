@@ -1,54 +1,40 @@
-extern crate util;
 extern crate protobuf;
-#[macro_use]
-extern crate cita_crypto as crypto;
-
-use std::sync::mpsc::Sender;
-
+use crypto::{PubKey, Signature, Sign, Error};
 use libproto::auth::*;
-use crypto::{PubKey, Signature, SIGNATURE_BYTES_LEN};
+use std::result::Result;
+use util::H256;
 
-
-pub struct verifier {
-   height: Option<u64>,
-
+pub struct Verifier {
+    height: Option<u64>,
 }
 
-impl verifier {
+impl Verifier {
+    pub fn new() -> Self {
+        Verifier { height: None }
+    }
 
- pub fn new() -> Self {
-     verifier {
-        height: None,
-     }
- }
+    pub fn set_height(&mut self, h: u64) {
+        self.height = Some(h);
 
-  pub fn set_height(&mut self, h: u64) {
-      self.height = Some(h);      
-  
-  }
+    }
 
-  pub fn verify_sig(&self, req:VerifyReqMsg) -> Result<Pubkey, Error> {
-            let hash = req.get_hash();     
-            let sig = req.get_signature();
-            if sig.len() != SIGNATURE_BYTES_LEN {
-                Err("signature err");
-            } else {
-                match sig.recover(&hash) {
-                  Ok(pubkey) => Ok(pubkey),
-                  Err(x) => Err(Error::from(x)),                                                                             
-                }
-            }
-   }
-  
+    pub fn verify_sig(&self, req: &VerifyReqMsg) -> Result<PubKey, Error> {
+        let hash = H256::from(req.get_hash());
+        let sig = Signature::from(req.get_signature());
+        match sig.recover(&hash) {
+            Ok(pubkey) => Ok(pubkey),
+            _ => Err(Error::InvalidSignature),
+        }
 
-  pub fn verify_vub(&self, height:u64) {
-         if height < self.height.unwrap() && !self.height.is_none() {
-             return true;
-         }
-         else{ 
-             return false; 
-         }      
+    }
 
-  }
 
+    pub fn verify_valid_until_block(&self, valid_until_block: u64) -> bool {
+        if !self.height.is_none() && (valid_until_block == 0 || valid_until_block < self.height.unwrap()) {
+            return true;
+        } else {
+            return false;
+        }
+
+    }
 }

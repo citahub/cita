@@ -1,43 +1,51 @@
 use libproto::*;
-use libproto::communication::*;
-use protobuf::core::parse_from_bytes;
+use protobuf::{Message, RepeatedField};
+use std::sync::mpsc::Sender;
+use verifier::Verifier;
 
 
-pub fn handle_msg(payload: Vec<u8>) {
 
-            let (_, _, content) = parse_msg(payload.as_slice());
-            match content {
-                MsgClass::STATUS(status) => {
-                    let height = status.get_height();
-                    info!("got height {:?}", height);
+pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, v: &Verifier) {
+    let (_, _, content) = parse_msg(payload.as_slice());
+    match content {
+        MsgClass::STATUS(status) => {
+            let height = status.get_height();
+            info!("got height {:?}", height);
+        }
+        MsgClass::VERIFYREQ(req) => {
+            trace!("got verify request {:?}", req);
+            let req_msgs = req.get_reqs();
+            let mut resps = Vec::new();
+            for req in req_msgs {
+                let mut resp = VerifyRespMsg::new();
+                if v.verify_valid_until_block(req.get_valid_until_block()) {
+                    resp.set_ret(Ret::Ok);
+                } else {
+                    resp.set_ret(Ret::OutOfTime);
                 }
-                MsgClass::VERIFYREQ(req) => {
-                   let req_msgs= req.get_reqs();
-                   for req in req_msgs {
-                     verify_sig(req)
-                     verify_vub(req)    
-                   }
-                
-                
-                }        
-                _ => {}
+
+                match v.verify_sig(req) {
+                    Ok(pubkey) => {
+                        resp.set_signer(pubkey.to_vec());
+                        resp.set_ret(Ret::Ok);
+                        resps.push(resp)
+                    }
+                    Err(_) => {
+                        resp.set_ret(Ret::BadSig);
+                        resps.push(resp)
+                    }
+                }
+                let mut vresp = VerifyResp::new();
+                vresp.set_resps(RepeatedField::from_slice(&resps));
+
+                let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_RESP, communication::MsgType::VERIFY_RESP, vresp.write_to_bytes().unwrap());
+                tx_pub.send(("auth.verify_resp".to_string(), msg.write_to_bytes().unwrap())).unwrap();
             }
 
+        }
+        _ => {}
+    }
 
-}
-    
-       
-pub fn verify_sig(req:VerifyReqMsg) -> Result<Pubkey, Error> {
-            let mut ret = true;
-            let hash = req.get_hash()     
-            let sig = req.get_signature()
-            if sig.len() != SIGNATURE_BYTES_LEN {
-                ret =false;
-            } else {
-                match sig.recover(&hash)
-                  Ok(pubkey) => {
-                    ret = pubkey;
-                  }    
-            }
-            ret 
+
+
 }
