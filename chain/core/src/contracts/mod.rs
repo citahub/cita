@@ -18,3 +18,5 @@
 //! System contracts.
 
 pub mod node_manager;
+
+pub use self::node_manager::NodeManager;

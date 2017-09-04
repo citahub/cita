@@ -39,7 +39,7 @@ use libchain::extras::*;
 
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
-use libproto::blockchain::{ProofType, Status as ProtoStatus, Nodes as ProtoNodes};
+use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus};
 use libproto::request::FullTransaction;
 use proof::TendermintProof;
 use protobuf::RepeatedField;
@@ -56,11 +56,12 @@ use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LogEntry, LocalizedLogEntry};
 use types::transaction::{SignedTransaction, Transaction, Action};
-use util::{journaldb, H256, U256, H2048, Address, Bytes};
+use util::{journaldb, H256, U256, H2048, Address, Bytes, H160};
 use util::{RwLock, Mutex};
 use util::HeapSizeOf;
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
+use std::str::FromStr;
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
@@ -89,7 +90,7 @@ pub struct Status {
 }
 
 impl Status {
-    fn new() -> Status {
+    fn new() -> Self {
         Status { number: 0, hash: H256::default() }
     }
 
@@ -109,10 +110,53 @@ impl Status {
         self.number = n;
     }
 
+    #[allow(dead_code)]
     fn protobuf(&self) -> ProtoStatus {
         let mut ps = ProtoStatus::new();
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
+        ps
+    }
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct RichStatus {
+    number: u64,
+    hash: H256,
+    nodes: Vec<Address>,
+}
+
+impl RichStatus {
+    fn new() -> Self {
+        RichStatus { number: 0, hash: H256::default(), nodes: vec![] }
+    }
+
+    fn hash(&self) -> &H256 {
+        &self.hash
+    }
+
+    fn number(&self) -> u64 {
+        self.number
+    }
+
+    fn set_hash(&mut self, h: H256) {
+        self.hash = h;
+    }
+
+    fn set_number(&mut self, n: u64) {
+        self.number = n;
+    }
+
+    fn set_nodes(&mut self, nodes: Vec<Address>) {
+        self.nodes = nodes
+    }
+
+    fn protobuf(&self) -> ProtoRichStatus {
+        let mut ps = ProtoRichStatus::new();
+        ps.set_height(self.number());
+        ps.set_hash(self.hash().to_vec());
+        let node_list = self.nodes.clone().into_iter().map(|address| address.to_vec()).collect();
+        ps.set_nodes(RepeatedField::from_vec(node_list));
         ps
     }
 }
@@ -203,7 +247,7 @@ impl Chain {
         status
     }
 
-    pub fn init_chain(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>) -> (Arc<Chain>, ProtoStatus) {
+    pub fn init_chain(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>) -> (Arc<Chain>, ProtoRichStatus) {
         // 400 is the avarage size of the key
         let cache_man = CacheManager::new(1 << 14, 1 << 20, 400);
 
@@ -237,11 +281,7 @@ impl Chain {
             }
         }
 
-        let mut status = Status::new();
-        status.set_hash(hash);
-        status.set_number(height);
-
-        let chain = Arc::new(Chain {
+        let raw_chain = Chain {
                                  blooms_config: blooms_config,
                                  current_header: RwLock::new(genesis.block.header.clone()),
                                  is_sync: AtomicBool::new(false),
@@ -260,7 +300,14 @@ impl Chain {
                                  sync_sender: Mutex::new(sync_sender),
                                  last_hashes: RwLock::new(VecDeque::new()),
                                  polls_filter: Arc::new(Mutex::new(PollManager::new())),
-                             });
+                             };
+
+        let mut status = RichStatus::new();
+        status.set_hash(hash);
+        status.set_number(height);
+        let nodes :Vec<Address> = raw_chain.read();
+        status.set_nodes(nodes);
+        let chain = Arc::new(raw_chain);
 
         chain.build_last_hashes(Some(hash), height);
         (chain, status.protobuf())
@@ -826,7 +873,7 @@ impl Chain {
         }
     }
 
-    pub fn set_block(&self, block: Block) -> (Option<ProtoStatus>, Option<ProtoNodes>) {
+    pub fn set_block(&self, block: Block) -> Option<ProtoRichStatus> {
         let height = block.number();
         trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
         if self.validate_height(height) {
@@ -841,21 +888,21 @@ impl Chain {
 
                 let status = self.save_status(&mut batch);
 
-                let node_manager = NodeManager::new();
-                let nodes: Vec<Address> = node_manager.read(self);
-                let mut proto_nodes = ProtoNodes::new();
-                let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
-                proto_nodes.set_nodes(RepeatedField::from_vec(node_list));
+                let nodes: Vec<Address> = self.read();
+                let mut rich_status = RichStatus::new();
+                rich_status.set_hash(*status.hash());
+                rich_status.set_number(status.number());
+                rich_status.set_nodes(nodes);
 
                 self.db.write(batch).expect("DB write failed.");
                 info!("chain update {:?}", height);
-                (Some(status.protobuf()), Some(proto_nodes))
+                Some(rich_status.protobuf())
             } else {
                 warn!("add block failed");
-                (None, None)
+                None
             }
         } else {
-            (None, None)
+            None
         }
     }
 
@@ -927,6 +974,15 @@ impl Chain {
 
     pub fn poll_filter(&self) -> Arc<Mutex<PollManager<PollFilter>>> {
         self.polls_filter.clone()
+    }
+}
+
+impl NodeManager for Chain {
+    fn read(&self) -> Vec<Address> {
+        vec![
+            H160::from_str("00000000000000000000000000000000013241a2").unwrap(),
+            H160::from_str("999325645d5c23b72af4fce6c512d752ccc8a354").unwrap(),
+        ]
     }
 }
 

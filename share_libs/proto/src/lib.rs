@@ -63,7 +63,7 @@ pub mod topics {
     pub const TX_RESPONSE: u16 = 7;
     pub const CONSENSUS_MSG: u16 = 8;
     pub const NEW_PROPOSAL: u16 = 9;
-    pub const NODES: u16 = 10;
+    pub const RICH_STATUS: u16 = 10;
 }
 
 #[derive(Debug)]
@@ -77,7 +77,7 @@ pub enum MsgClass {
     TXRESPONSE(TxResponse),
     STATUS(Status),
     MSG(Vec<u8>),
-    NODES(Nodes),
+    RICHSTATUS(RichStatus),
 }
 
 pub fn topic_to_string(top: u16) -> &'static str {
@@ -92,7 +92,7 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::TX_RESPONSE => "tx_response",
         topics::CONSENSUS_MSG => "consensus_msg",
         topics::NEW_PROPOSAL => "new_proposal",
-        topics::NODES => "nodes",
+        topics::RICH_STATUS => "rich_status",
         _ => "",
     }
 }
@@ -190,7 +190,7 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
             content.extend_from_slice(&content_msg);
             MsgClass::MSG(content)
         }
-        MsgType::NODES => MsgClass::NODES(parse_from_bytes::<Nodes>(&content_msg).unwrap()),
+        MsgType::RICH_STATUS => MsgClass::RICHSTATUS(parse_from_bytes::<RichStatus>(&content_msg).unwrap()),
     };
 
     (msg.get_cmd_id(), msg.get_origin(), msg_class)

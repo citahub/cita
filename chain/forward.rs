@@ -314,7 +314,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 warn!("other content.");
             }
         }
-        MsgClass::NODES(nodes) => {
+        MsgClass::RICHSTATUS(nodes) => {
             info!("forward dispatch nodes is {:?}", nodes);
         }
     }

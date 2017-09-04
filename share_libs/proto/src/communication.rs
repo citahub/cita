@@ -397,7 +397,7 @@ pub enum MsgType {
     MSG = 6,
     RESPONSE = 7,
     TX_RESPONSE = 8,
-    NODES = 9,
+    RICH_STATUS = 9,
 }
 
 impl ::protobuf::ProtobufEnum for MsgType {
@@ -416,7 +416,7 @@ impl ::protobuf::ProtobufEnum for MsgType {
             6 => ::std::option::Option::Some(MsgType::MSG),
             7 => ::std::option::Option::Some(MsgType::RESPONSE),
             8 => ::std::option::Option::Some(MsgType::TX_RESPONSE),
-            9 => ::std::option::Option::Some(MsgType::NODES),
+            9 => ::std::option::Option::Some(MsgType::RICH_STATUS),
             _ => ::std::option::Option::None
         }
     }
@@ -432,7 +432,7 @@ impl ::protobuf::ProtobufEnum for MsgType {
             MsgType::MSG,
             MsgType::RESPONSE,
             MsgType::TX_RESPONSE,
-            MsgType::NODES,
+            MsgType::RICH_STATUS,
         ];
         values
     }

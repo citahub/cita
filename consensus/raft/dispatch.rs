@@ -49,7 +49,7 @@ pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, M
                 }
             }
         }
-        MsgClass::NODES(nodes) => {
+        MsgClass::RICHSTATUS(nodes) => {
             info!("raft dispatch nodes is {:?}", nodes);
         }
     }
