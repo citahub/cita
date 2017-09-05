@@ -62,11 +62,21 @@ impl Spec {
 
 #[cfg(test)]
 mod tests {
+    extern crate cita_crypto as crypto;
+
     use super::Spec;
+    use crypto::SIGNATURE_NAME;
 
     #[test]
     fn has_valid_metadata() {
-        let test_spec = ::std::env::current_dir().unwrap().join("../res/tendermint.json");
+        let config_path = if SIGNATURE_NAME == "ed25519" {
+            "../res/tendermint.json".to_string()
+        } else if SIGNATURE_NAME == "secp256k1" {
+            "../res/tendermint_secp256k1.json".to_string()
+        } else {
+            "not exist".to_string()
+        };
+        let test_spec = ::std::env::current_dir().unwrap().join(&config_path);
         println!("{}", test_spec.display());
         let spec = Spec::new_test_tendermint(test_spec.to_str().unwrap());
         assert_eq!(spec.name, "TestTendermint");

@@ -495,12 +495,11 @@ impl_serde_for_bigint!(H160);
 impl_serde_for_bigint!(H256);
 impl_serde_for_bigint!(H512);
 impl_serde_for_bigint!(H520);
-impl_serde_for_bigint!(H768);
 impl_serde_for_bigint!(H2048);
 impl_serde_for_bigint!(U256);
 
 #[cfg(feature = "heapsizeof")]
-known_heap_size!(0, H32, H64, H128, H160, H256, H264, H512, H520, H768, H1024, H2048);
+known_heap_size!(0, H32, H64, H128, H160, H256, H264, H512, H520, H1024, H2048);
 // Specialized HashMap and HashSet
 
 /// Hasher that just takes 8 bytes of the provided value.

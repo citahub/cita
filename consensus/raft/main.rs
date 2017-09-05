@@ -16,24 +16,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // In order to use Serde we need to enable these nightly features.
-#![feature(plugin)]
-#![feature(custom_derive)]
 #![allow(unused_must_use)]
 
 extern crate libraft; // <--- Kind of a big deal for this!
 extern crate docopt;
 extern crate serde_json;
 extern crate rustc_serialize;
-extern crate serde;
 extern crate mio;
 #[macro_use]
 extern crate serde_derive;
-
-extern crate threadpool;
 extern crate libproto;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
 #[macro_use]
 extern crate scoped_log;
 extern crate pubsub;
@@ -90,7 +84,7 @@ fn main() {
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
     let (tx, rx) = channel();
-    start_pubsub("consensus_cmd", vec!["chain.status", "consensus.default"], tx_sub, rx_pub);
+    start_pubsub("consensus_cmd", vec!["chain.richstatus", "consensus.default"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let (cmd_id, _, content) = parse_msg(body.as_slice());

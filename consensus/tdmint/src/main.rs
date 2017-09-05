@@ -18,24 +18,18 @@
 #![feature(mpsc_select)]
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate libproto;
 extern crate util;
 extern crate threadpool;
-extern crate rustc_serialize;
 extern crate protobuf;
 #[macro_use]
 extern crate log;
 extern crate clap;
 extern crate tx_pool;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 extern crate proof;
-extern crate amqp;
 extern crate pubsub;
 extern crate bincode;
-extern crate parking_lot;
-extern crate time;
-extern crate engine_json;
 extern crate engine;
 extern crate lru_cache;
 extern crate dotenv;
@@ -43,6 +37,7 @@ extern crate core as chain_core;
 extern crate cita_log;
 extern crate cpuprofiler;
 extern crate authority_manage;
+extern crate engine_json;
 
 use clap::App;
 use log::LogLevelFilter;
@@ -115,7 +110,7 @@ fn main() {
     let (mq2main, main4mq) = channel();
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("consensus", vec!["net.msg", "chain.status", "chain.nodes"], tx_sub, rx_pub);
+    start_pubsub("consensus", vec!["net.msg", "chain.richstatus"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let tx = mq2main.clone();

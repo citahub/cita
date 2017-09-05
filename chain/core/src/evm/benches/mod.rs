@@ -20,12 +20,11 @@
 //! multirust run nightly cargo bench
 //! ```
 
-extern crate test;
 
-use self::test::{Bencher, black_box};
 use action_params::ActionParams;
 use evm::{self, Factory, VMType};
 use evm::tests::FakeExt;
+use test::{Bencher, black_box};
 
 use util::*;
 

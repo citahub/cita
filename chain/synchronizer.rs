@@ -84,10 +84,12 @@ impl Synchronizer {
 
     fn add_block(&self, ctx_pub: Sender<(String, Vec<u8>)>, blk: Block) {
         trace!("chain sync add blk {:?}", blk.number());
-        if let Some(st) = self.chain.set_block(blk) {
-            let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st.write_to_bytes().unwrap());
+        let status = self.chain.set_block(blk);
+
+        if let Some(status) = status {
+            let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, status.write_to_bytes().unwrap());
             info!("chain after sync current height {:?}  known height{:?}", self.chain.get_current_height(), self.chain.get_max_height());
-            ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }
 }

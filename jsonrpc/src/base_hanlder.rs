@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(deprecated,unused_assignments, unused_must_use)]
 use jsonrpc_types::error::Error;
 use jsonrpc_types::request::RpcRequest;
 use serde_json;
@@ -39,10 +38,10 @@ pub trait BaseHandler {
         topic
     }
 
-    fn into_json(body: String) -> Result<RpcRequest, Error> {
+    fn into_rpc(body: String) -> Result<RpcRequest, Error> {
         let rpc: Result<RpcRequest, serde_json::Error> = serde_json::from_str(&body);
         match rpc {
-            Err(_err_msg) => Err(Error::parse_error()),
+            Err(_err_msg) => Err(Error::from(_err_msg)),
             Ok(rpc) => Ok(rpc),
         }
     }

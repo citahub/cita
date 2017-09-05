@@ -20,16 +20,12 @@ extern crate threadpool;
 extern crate tx_pool;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
 extern crate libproto;
-extern crate util;
 extern crate protobuf;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate bincode;
 extern crate pubsub;
-extern crate amqp;
 extern crate cita_log;
 extern crate engine;
 extern crate dotenv;
@@ -57,7 +53,7 @@ fn main() {
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
     let (tx, rx) = channel();
-    let keys = vec!["net.*", "consensus_cmd.default", "consensus.blk", "chain.status", "jsonrpc.new_tx"];
+    let keys = vec!["net.*", "consensus_cmd.default", "consensus.blk", "chain.richstatus", "jsonrpc.new_tx"];
     let pool = ThreadPool::new(THREAD_POOL_NUMBER);
     start_pubsub("consensus", keys, tx_sub, rx_pub);
     thread::spawn(move || loop {

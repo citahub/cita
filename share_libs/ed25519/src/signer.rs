@@ -1,19 +1,10 @@
-use super::{PubKey, PrivKey, KeyPair, Address};
+use super::{PrivKey, KeyPair, Address};
+use util::crypto::CreateKey;
 
 #[derive(Default)]
 pub struct Signer {
     pub keypair: KeyPair,
     pub address: Address,
-}
-
-impl Signer {
-    pub fn privkey(&self) -> &PrivKey {
-        self.keypair.privkey()
-    }
-
-    pub fn pubkey(&self) -> &PubKey {
-        self.keypair.pubkey()
-    }
 }
 
 impl From<PrivKey> for Signer {
@@ -29,6 +20,7 @@ impl From<PrivKey> for Signer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use util::crypto::CreateKey;
 
     #[test]
     fn test_signer() {

@@ -89,6 +89,7 @@
 //! you wish to only read data and not have it pass through the persisted log.
 //!
 
+#![allow(unused_extern_crates)]
 #![cfg_attr(test, feature(test))]
 extern crate bufstream;
 extern crate capnp;
@@ -100,7 +101,6 @@ extern crate libproto;
 extern crate protobuf;
 extern crate serde;
 extern crate serde_json;
-extern crate pubsub;
 #[macro_use]
 extern crate log;
 #[macro_use]
@@ -112,6 +112,8 @@ extern crate scoped_log;
 extern crate wrapped_enum;
 #[cfg(test)]
 extern crate env_logger;
+#[cfg(test)]
+extern crate test;
 
 /// Prepares the environment testing. Should be called as the first line of every test with the
 /// name of the test as the only argument.

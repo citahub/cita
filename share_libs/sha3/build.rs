@@ -18,6 +18,7 @@
 
 // Bring in a dependency on an externally maintained `gcc` package which manages
 // invoking the C compiler.
+#![allow(deprecated)]
 extern crate gcc;
 
 fn main() {

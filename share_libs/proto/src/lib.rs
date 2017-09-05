@@ -21,22 +21,24 @@ extern crate rustc_serialize;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 
 pub mod blockchain;
 pub mod communication;
 pub mod request;
 pub mod into;
+pub mod auth;
 
+pub use auth::*;
 use blockchain::*;
-use ed25519::{sign, PrivKey, recover, Signature, KeyPair, SIGNATURE_BYTES_LEN};
 use communication::*;
+use crypto::{PrivKey, Signature, KeyPair, SIGNATURE_BYTES_LEN, Message as SignMessage, CreateKey, Sign};
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 pub use request::*;
 use rlp::*;
 use rustc_serialize::hex::ToHex;
-use util::{H256, Hashable, H768, merklehash};
+use util::{H256, Hashable, merklehash};
 use util::snappy;
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -50,6 +52,7 @@ pub mod submodules {
     pub const CHAIN: u32 = 3;
     pub const CONSENSUS: u32 = 4;
     pub const CONSENSUS_CMD: u32 = 5;
+    pub const AUTH: u32 = 6;
 }
 
 pub mod topics {
@@ -63,7 +66,9 @@ pub mod topics {
     pub const TX_RESPONSE: u16 = 7;
     pub const CONSENSUS_MSG: u16 = 8;
     pub const NEW_PROPOSAL: u16 = 9;
-    pub const NODES_CHANGE: u16 = 10;
+    pub const RICH_STATUS: u16 = 10;
+    pub const VERIFY_REQ: u16 = 11;
+    pub const VERIFY_RESP: u16 = 12;
 }
 
 #[derive(Debug)]
@@ -76,8 +81,10 @@ pub enum MsgClass {
     TX(SignedTransaction),
     TXRESPONSE(TxResponse),
     STATUS(Status),
+    VERIFYREQ(VerifyReq),
+    VERIFYRESP(VerifyResp),
     MSG(Vec<u8>),
-    NODES(Nodes),
+    RICHSTATUS(RichStatus),
 }
 
 pub fn topic_to_string(top: u16) -> &'static str {
@@ -92,7 +99,9 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::TX_RESPONSE => "tx_response",
         topics::CONSENSUS_MSG => "consensus_msg",
         topics::NEW_PROPOSAL => "new_proposal",
-        topics::NODES_CHANGE => "nodes_change",
+        topics::RICH_STATUS => "rich_status",
+        topics::VERIFY_REQ => "verify_req",
+        topics::VERIFY_RESP => "verify_resp",
         _ => "",
     }
 }
@@ -104,6 +113,7 @@ pub fn id_to_key(id: u32) -> &'static str {
         submodules::CHAIN => "chain",
         submodules::CONSENSUS => "consensus",
         submodules::CONSENSUS_CMD => "consensus_cmd",
+        submodules::AUTH => "auth",
         _ => "",
     }
 }
@@ -119,6 +129,8 @@ pub fn key_to_id(key: &str) -> u32 {
         submodules::CONSENSUS_CMD
     } else if key.starts_with("consensus") {
         submodules::CONSENSUS
+    } else if key.starts_with("auth") {
+        submodules::AUTH
     } else {
         0
     }
@@ -185,12 +197,14 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::BLOCK => MsgClass::BLOCK(parse_from_bytes::<Block>(&content_msg).unwrap()),
         MsgType::TX => MsgClass::TX(parse_from_bytes::<SignedTransaction>(&content_msg).unwrap()),
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
+        MsgType::VERIFY_REQ => MsgClass::VERIFYREQ(parse_from_bytes::<VerifyReq>(&content_msg).unwrap()),
+        MsgType::VERIFY_RESP => MsgClass::VERIFYRESP(parse_from_bytes::<VerifyResp>(&content_msg).unwrap()),
         MsgType::MSG => {
             let mut content = Vec::new();
             content.extend_from_slice(&content_msg);
             MsgClass::MSG(content)
         }
-        MsgType::NODES => MsgClass::NODES(parse_from_bytes::<Nodes>(&content_msg).unwrap()),
+        MsgType::RICH_STATUS => MsgClass::RICHSTATUS(parse_from_bytes::<RichStatus>(&content_msg).unwrap()),
     };
 
     (msg.get_cmd_id(), msg.get_origin(), msg_class)
@@ -204,7 +218,7 @@ impl blockchain::SignedTransaction {
 
         let bytes = self.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
         let hash = bytes.crypt_hash();
-        let signature = sign(&sk, &H256::from(hash)).unwrap();
+        let signature = Signature::sign(&sk, &SignMessage::from(hash)).unwrap();
         self.mut_transaction_with_sig().set_signature(signature.to_vec());
         self.mut_transaction_with_sig().set_crypto(Crypto::SECP);
         self.set_signer(pubkey.to_vec());
@@ -221,8 +235,8 @@ impl blockchain::SignedTransaction {
         } else {
             match self.get_transaction_with_sig().get_crypto() {
                 Crypto::SECP => {
-                    let signature: Signature = H768::from_slice(self.get_transaction_with_sig().get_signature()).into();
-                    match recover(&signature, &hash) {
+                    let signature = Signature::from(self.get_transaction_with_sig().get_signature());
+                    match signature.recover(&hash) {
                         Ok(pubkey) => {
                             self.set_signer(pubkey.to_vec());
                         }

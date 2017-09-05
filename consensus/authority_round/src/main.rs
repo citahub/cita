@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate serde;
-extern crate serde_json;
 extern crate libproto;
 extern crate util;
 extern crate threadpool;
@@ -26,7 +24,7 @@ extern crate protobuf;
 extern crate log;
 extern crate clap;
 extern crate tx_pool;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 extern crate proof;
 extern crate pubsub;
 extern crate engine_json;
@@ -48,6 +46,7 @@ use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::{Duration, Instant};
+extern crate authority_manage;
 
 fn main() {
     dotenv::dotenv().ok();
@@ -98,7 +97,7 @@ fn main() {
     let (tx, rx) = channel();
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("consensus", vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.status"], tx_sub, rx_pub);
+    start_pubsub("consensus", vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.richstatus"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let tx = tx.clone();

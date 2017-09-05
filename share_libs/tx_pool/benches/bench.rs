@@ -16,14 +16,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#![feature(test)]
+#![cfg_attr(test, feature(test))]
 extern crate tx_pool;
 extern crate test;
 extern crate libproto;
 extern crate util;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 
-use ed25519::KeyPair;
+use crypto::{KeyPair, CreateKey};
 use libproto::blockchain::{Transaction, UnverifiedTransaction, SignedTransaction};
 use std::time::SystemTime;
 use test::Bencher;

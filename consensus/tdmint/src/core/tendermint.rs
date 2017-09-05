@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use authority_manage::AuthorityManage;
 use bincode::{serialize, deserialize, Infinite};
 use core::dispatchtx::Dispatchtx;
 use core::params::TendermintParams;
@@ -23,11 +24,11 @@ use core::voteset::{VoteCollector, ProposalCollector, VoteSet, Proposal, VoteMes
 use core::votetime::{WaitTimer, TimeoutInfo};
 use core::wal::Wal;
 
-use ed25519::{Signature, sign, recover, pubkey_to_address};
+use crypto::{CreateKey, Signature, Sign, pubkey_to_address};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto;
 use libproto::{communication, submodules, topics, MsgClass};
-use libproto::blockchain::{Block, SignedTransaction, Status};
+use libproto::blockchain::{Block, SignedTransaction, RichStatus};
 
 //use tx_pool::Pool;
 use proof::TendermintProof;
@@ -37,10 +38,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver, RecvError};
 use std::time::Instant;
-use util::{H256, H768};
-use util::Address;
-use util::Hashable;
-use authority_manage::AuthorityManage;
+use util::{H256, Address, Hashable};
 
 const INIT_HEIGHT: usize = 1;
 const INIT_ROUND: usize = 0;
@@ -171,7 +169,7 @@ impl TenderMint {
         //let ref p = self.params;
         let ref p = self.auth_manage;
         if p.authority_n == 0 {
-            info!("================= {}", p.authority_n);
+            info!("authority_n is {}", p.authority_n);
             return Err(EngineError::NotAuthorized(Address::zero()));
         }
         let proposer_nonce = height + round;
@@ -211,10 +209,9 @@ impl TenderMint {
 
         let message = serialize(&(self.height, self.round, proposal), Infinite).unwrap();
         let ref author = self.params.signer;
-        let signature = sign(&author.privkey(), &message.crypt_hash().into()).unwrap();
+        let signature = Signature::sign(&author.keypair.privkey(), &message.crypt_hash().into()).unwrap();
         trace!("pub_proposal height {}, round {}, hash {}, signature {} ", self.height, self.round, message.crypt_hash(), signature);
-        let sig: H768 = signature.into();
-        let bmsg = serialize(&(message, sig), Infinite).unwrap();
+        let bmsg = serialize(&(message, signature), Infinite).unwrap();
         msg.set_content(bmsg.clone());
         self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         bmsg
@@ -486,7 +483,7 @@ impl TenderMint {
                     }
                     if vote.proposal.unwrap() == hash {
                         num = num + 1;
-                        commits.insert(*sender, vote.signature);
+                        commits.insert(*sender, vote.signature.clone());
                     }
                 }
             }
@@ -549,8 +546,8 @@ impl TenderMint {
     fn pub_and_broadcast_message(&mut self, height: usize, round: usize, step: Step, hash: Option<H256>) {
         let ref author = self.params.signer;
         let msg = serialize(&(height, round, step, author.address.clone(), hash.clone()), Infinite).unwrap();
-        let signature = sign(&author.privkey(), &msg.crypt_hash().into()).unwrap();
-        let sig: H768 = signature.clone().into();
+        let signature = Signature::sign(&author.keypair.privkey(), &msg.crypt_hash().into()).unwrap();
+        let sig = signature.clone();
         let msg = serialize(&(msg, sig), Infinite).unwrap();
 
         trace!("pub_and_broadcast_message pub {},{},{:?} self {},{},{:?} ", height, round, step, self.height, self.round, self.step);
@@ -601,11 +598,9 @@ impl TenderMint {
         let log_msg = message.clone();
         let res = deserialize(&message[..]);
         if let Ok(decoded) = res {
-            let (message, signature) = decoded;
-            let message: Vec<u8> = message;
-            let signature: H768 = signature;
+            let (message, signature): (Vec<u8>, &[u8]) = decoded;
             let signature = Signature::from(signature);
-            if let Ok(pubkey) = recover(&signature, &message.crypt_hash().into()) {
+            if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
                 let decoded = deserialize(&message[..]).unwrap();
                 let (h, r, step, sender, hash) = decoded;
                 trace!("handle_message  parse over sender:{:?}  h:{} r:{} s:{:?} vs self {} {} {:?}", sender, h, r, step, self.height, self.round, self.step);
@@ -710,9 +705,8 @@ impl TenderMint {
                 if self.auth_manage.authority_h_old == height - 1 {
                     if !proof.check(height - 1, &self.auth_manage.authorities_old) {
                         return false;
-                    }                    
-                }
-                else {
+                    }
+                } else {
                     if !proof.check(height - 1, &self.auth_manage.authorities) {
                         return false;
                     }
@@ -756,13 +750,11 @@ impl TenderMint {
     fn handle_proposal(&mut self, msg: Vec<u8>, wal_flag: bool) -> Result<(usize, usize), EngineError> {
         let res = deserialize(&msg[..]);
         if let Ok(decoded) = res {
-            let (message, signature) = decoded;
-            let message: Vec<u8> = message;
-            let signature: H768 = signature;
+            let (message, signature): (Vec<u8>, &[u8]) = decoded;
             let signature = Signature::from(signature);
             trace!("handle proposal message {:?}", message.crypt_hash());
 
-            if let Ok(pubkey) = recover(&signature, &message.crypt_hash().into()) {
+            if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
                 let decoded = deserialize(&message[..]).unwrap();
                 let (height, round, proposal) = decoded;
                 trace!("handle_proposal height {:?}, round {:?} sender {:?}", height, round, pubkey_to_address(&pubkey));
@@ -983,25 +975,20 @@ impl TenderMint {
             }
         } else {
             match content_ext {
-                MsgClass::STATUS(status) => {
-                    trace!("get new local status {:?}", status.height);
-                    self.receive_new_status(status);
-                }
                 //接受chain发送的 authorities_list
-                MsgClass::NODES(nodes) => {
-                    
-                    let authorities: Vec<Address> =  nodes.get_nodes().into_iter().map(|node| Address::from(node.get_address())).collect();
-                    info!("tendermint authorities is {:?}", authorities);
-                    if self.auth_manage.authorities != authorities {
-                        self.auth_manage.receive_authorities_list(self.height, authorities);
-                    }
+                MsgClass::RICHSTATUS(rich_status) => {
+                    trace!("get new local status {:?}", rich_status.height);
+                    self.receive_new_status(rich_status.clone());
+                    let authorities: Vec<Address> = rich_status.get_nodes().into_iter().map(|node| Address::from_slice(node)).collect();
+                    trace!("authorities: [{:?}]", authorities);
+                    self.auth_manage.receive_authorities_list(self.height, authorities);
                 }
                 _ => {}
             }
         }
     }
 
-    fn receive_new_status(&mut self, status: Status) {
+    fn receive_new_status(&mut self, status: RichStatus) {
         let status_height = status.height as usize;
         let height = self.height;
         let round = self.round;

@@ -87,7 +87,7 @@ impl MutBuf {
                     0 => return Result::Err(io::Error::new(io::ErrorKind::UnexpectedEof, "failed to fill whole buffer")),
                     n => {
                         self.offset += n;
-                        let mut tmp = buf;
+                        let tmp = buf;
                         buf = &mut tmp[n..];
                     }
                 }

@@ -15,17 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(unused_features)]
-#![feature(rustc_private)]
 extern crate util;
 extern crate rlp;
 extern crate bloomable;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 extern crate libproto;
-#[cfg(test)]
-extern crate rustc_serialize;
 extern crate rustc_hex;
-
 pub mod account_diff;
 pub mod basic_account;
 pub mod blockchain_info;

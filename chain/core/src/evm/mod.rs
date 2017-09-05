@@ -27,7 +27,7 @@ mod instructions;
 mod jit;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 #[cfg(all(feature = "benches", test))]
 mod benches;
 

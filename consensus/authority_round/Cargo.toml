@@ -5,16 +5,14 @@ authors = []
 
 [dependencies]
 threadpool = "1.3.2"
-serde = "1.0"
 serde_derive = "1.0"
-serde_json = "1.0"
 bincode = "0.8.0"
 libproto = {path = "../../share_libs/proto"}
 util = {path = "../../share_libs/util"}
 tx_pool = {path = "../../share_libs/tx_pool"}
 rustc-serialize = "0.3"
 protobuf = { version = "^1.0.0" }
-cita-ed25519 = { path = "../../share_libs/ed25519" }
+cita-crypto = { path = "../../share_libs/crypto" }
 engine_json = { path = "../json" }
 engine = { path = "../engine" }
 proof = { path = "../proof" }
@@ -25,3 +23,4 @@ pubsub = { path = "../../share_libs/pubsub" }
 cpuprofiler = "0.0.3"
 cita_log = { path = "../../share_libs/cita_log" }
 dotenv = "0.10.0"
+authority_manage = { path = "../authority_manage" }
