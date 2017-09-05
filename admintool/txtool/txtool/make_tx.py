@@ -180,7 +180,6 @@ def main():
     data = generate_deploy_data(
         bytecode, privkey, remove_hex_0x(receiver), blake2b_ed25519)
     print("deploy code保存到../output/transaction/deploycode")
-    print(data)
     save_deploy(data)
 
 

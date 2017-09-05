@@ -27,6 +27,12 @@ message Status {
     uint64 height = 2;
 }
 
+message RichStatus {
+    bytes hash = 1;
+    uint64 height = 2;
+    repeated bytes nodes = 3;
+}
+
 enum Crypto {
     SECP = 0;
     SM2 = 1; 

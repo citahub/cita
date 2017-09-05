@@ -66,8 +66,9 @@ pub mod topics {
     pub const TX_RESPONSE: u16 = 7;
     pub const CONSENSUS_MSG: u16 = 8;
     pub const NEW_PROPOSAL: u16 = 9;
-    pub const VERIFY_REQ: u16 = 10;
-    pub const VERIFY_RESP: u16 = 11;
+    pub const RICH_STATUS: u16 = 10;
+    pub const VERIFY_REQ: u16 = 11;
+    pub const VERIFY_RESP: u16 = 12;
 }
 
 #[derive(Debug)]
@@ -83,6 +84,7 @@ pub enum MsgClass {
     VERIFYREQ(VerifyReq),
     VERIFYRESP(VerifyResp),
     MSG(Vec<u8>),
+    RICHSTATUS(RichStatus),
 }
 
 pub fn topic_to_string(top: u16) -> &'static str {
@@ -97,6 +99,7 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::TX_RESPONSE => "tx_response",
         topics::CONSENSUS_MSG => "consensus_msg",
         topics::NEW_PROPOSAL => "new_proposal",
+        topics::RICH_STATUS => "rich_status",
         topics::VERIFY_REQ => "verify_req",
         topics::VERIFY_RESP => "verify_resp",
         _ => "",
@@ -201,6 +204,7 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
             content.extend_from_slice(&content_msg);
             MsgClass::MSG(content)
         }
+        MsgType::RICH_STATUS => MsgClass::RICHSTATUS(parse_from_bytes::<RichStatus>(&content_msg).unwrap()),
     };
 
     (msg.get_cmd_id(), msg.get_origin(), msg_class)
