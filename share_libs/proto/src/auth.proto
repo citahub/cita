@@ -28,4 +28,7 @@ message VerifyResp {
     repeated VerifyRespMsg resps = 1;
 }
 
-
+message BlockTxHashes {
+    uint64 height = 1;
+    repeated bytes tx_hashes = 2;
+}

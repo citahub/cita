@@ -73,6 +73,7 @@ pub mod topics {
     pub const NEW_PROPOSAL: u16 = 9;
     pub const VERIFY_REQ: u16 = 10;
     pub const VERIFY_RESP: u16 = 11;
+    pub const BLOCK_TXHASHES: u16 = 12;
 }
 
 #[derive(Debug)]
@@ -87,6 +88,7 @@ pub enum MsgClass {
     STATUS(Status),
     VERIFYREQ(VerifyReq),
     VERIFYRESP(VerifyResp),
+    BLOCKTXHASHES(BlockTxHashes),
     MSG(Vec<u8>),
 }
 
@@ -104,6 +106,7 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::NEW_PROPOSAL => "new_proposal",
         topics::VERIFY_REQ => "verify_req",
         topics::VERIFY_RESP => "verify_resp",
+        topics::BLOCK_TXHASHES => "block_txhashes",
         _ => "",
     }
 }

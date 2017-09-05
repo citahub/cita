@@ -79,7 +79,7 @@ fn main() {
 
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("auth", vec!["*.verify_req", "chain.status"], tx_sub, rx_pub);
+    start_pubsub("auth", vec!["*.verify_req", "chain.txhashes"], tx_sub, rx_pub);
 
     //tx_pub.send(("auth.verify_resp".to_string(), vec![0])).unwrap();
 
