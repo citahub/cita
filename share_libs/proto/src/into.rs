@@ -30,7 +30,7 @@ impl Into<communication::Message> for request::Request {
     }
 }
 
-impl Into<communication::Message> for blockchain::SignedTransaction {
+impl Into<communication::Message> for blockchain::UnverifiedTransaction {
     fn into(self) -> communication::Message {
         let msg = factory::create_msg(submodules::JSON_RPC, topics::NEW_TX, communication::MsgType::TX, self.write_to_bytes().unwrap());
         msg

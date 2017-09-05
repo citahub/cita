@@ -20,7 +20,7 @@ use core::libchain::block::Block;
 use core::transaction::SignedTransaction;
 use crypto::*;
 use libproto::{factory, communication, topics, submodules};
-use libproto::blockchain::{SignedTransaction as ProtoSignedTransaction, UnverifiedTransaction, Transaction};
+use libproto::blockchain::Transaction;
 use proof::TendermintProof;
 use protobuf::core::Message;
 use rustc_serialize::hex::FromHex;
@@ -72,17 +72,11 @@ impl Generateblock {
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_nonce("0".to_string());
-        tx.set_quota("a7c5ac471b47".to_string());
+        tx.set_quota(999999);
         //设置空，则创建合约
         tx.set_to(address);
         tx.set_valid_until_block(99999);
-
-        let mut uv_tx = UnverifiedTransaction::new();
-        uv_tx.set_transaction(tx);
-
-        let mut signed_tx = ProtoSignedTransaction::new();
-        signed_tx.set_transaction_with_sig(uv_tx);
-        signed_tx.sign(pv.clone());
+        let signed_tx = tx.sign(*pv);
 
         SignedTransaction::new(&signed_tx).unwrap()
     }

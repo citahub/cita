@@ -22,6 +22,9 @@ extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
 extern crate cita_crypto as crypto;
+extern crate ethcore_logger;
+#[macro_use]
+extern crate log as rlog;
 
 pub mod blockchain;
 pub mod communication;
@@ -32,12 +35,14 @@ pub mod auth;
 pub use auth::*;
 use blockchain::*;
 use communication::*;
-use crypto::{PrivKey, Signature, KeyPair, SIGNATURE_BYTES_LEN, Message as SignMessage, CreateKey, Sign};
+use crypto::{PrivKey, PubKey, Signature, KeyPair, SIGNATURE_BYTES_LEN, Message as SignMessage, CreateKey, Sign};
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 pub use request::*;
 use rlp::*;
 use rustc_serialize::hex::ToHex;
+use std::ops::Deref;
+use std::result::Result::Err;
 use util::{H256, Hashable, merklehash};
 use util::snappy;
 
@@ -77,7 +82,7 @@ pub enum MsgClass {
     HEADER(BlockHeader),
     BODY(BlockBody),
     BLOCK(Block),
-    TX(SignedTransaction),
+    TX(UnverifiedTransaction),
     TXRESPONSE(TxResponse),
     STATUS(Status),
     VERIFYREQ(VerifyReq),
@@ -192,7 +197,7 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::HEADER => MsgClass::HEADER(parse_from_bytes::<BlockHeader>(&content_msg).unwrap()),
         MsgType::BODY => MsgClass::BODY(parse_from_bytes::<BlockBody>(&content_msg).unwrap()),
         MsgType::BLOCK => MsgClass::BLOCK(parse_from_bytes::<Block>(&content_msg).unwrap()),
-        MsgType::TX => MsgClass::TX(parse_from_bytes::<SignedTransaction>(&content_msg).unwrap()),
+        MsgType::TX => MsgClass::TX(parse_from_bytes::<UnverifiedTransaction>(&content_msg).unwrap()),
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
         MsgType::VERIFY_REQ => MsgClass::VERIFYREQ(parse_from_bytes::<VerifyReq>(&content_msg).unwrap()),
         MsgType::VERIFY_RESP => MsgClass::VERIFYRESP(parse_from_bytes::<VerifyResp>(&content_msg).unwrap()),
@@ -206,55 +211,93 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
     (msg.get_cmd_id(), msg.get_origin(), msg_class)
 }
 
-
-impl blockchain::SignedTransaction {
-    pub fn sign(&mut self, sk: PrivKey) {
+impl blockchain::Transaction {
+    /// Signs the transaction by PrivKey.
+    pub fn sign(&self, sk: PrivKey) -> SignedTransaction {
         let keypair = KeyPair::from_privkey(sk).unwrap();
         let pubkey = keypair.pubkey();
+        let unverified_tx = self.build_unverified(sk);
 
-        let bytes = self.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
-        let hash = bytes.crypt_hash();
-        let signature = Signature::sign(&sk, &SignMessage::from(hash)).unwrap();
-        self.mut_transaction_with_sig().set_signature(signature.to_vec());
-        self.mut_transaction_with_sig().set_crypto(Crypto::SECP);
-        self.set_signer(pubkey.to_vec());
-        let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
-        self.set_tx_hash(bytes.crypt_hash().to_vec());
+        // Build SignedTransaction
+        let mut signed_tx = SignedTransaction::new();
+        signed_tx.set_signer(pubkey.to_vec());
+        let bytes = unverified_tx.write_to_bytes().unwrap();
+        signed_tx.set_tx_hash(bytes.crypt_hash().to_vec());
+        signed_tx.set_transaction_with_sig(unverified_tx);
+        signed_tx
     }
 
-    pub fn recover(&mut self) -> bool {
-        let mut ret = true;
-        let bytes = self.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
+    /// Build UnverifiedTransaction
+    pub fn build_unverified(&self, sk: PrivKey) -> UnverifiedTransaction {
+        let mut unverified_tx = UnverifiedTransaction::new();
+        let bytes = self.write_to_bytes().unwrap();
         let hash = bytes.crypt_hash();
-        if self.get_transaction_with_sig().get_signature().len() != SIGNATURE_BYTES_LEN {
-            ret = false;
+        unverified_tx.set_transaction(self.clone());
+        let signature = Signature::sign(&sk, &SignMessage::from(hash)).unwrap();
+        unverified_tx.set_signature(signature.to_vec());
+        unverified_tx.set_crypto(Crypto::SECP);
+        unverified_tx
+    }
+}
+
+impl blockchain::UnverifiedTransaction {
+    /// Try to recover the public key.
+    pub fn recover_public(&self) -> Result<(PubKey, H256), (H256, String)> {
+        let bytes = self.get_transaction().write_to_bytes().unwrap();
+        let hash = bytes.crypt_hash();
+        let tx_hash = self.crypt_hash();
+        if self.get_signature().len() != SIGNATURE_BYTES_LEN {
+            trace!("Invalid signature length {}", hash);
+            Err((hash, String::from("Invalid signature length")))
         } else {
-            match self.get_transaction_with_sig().get_crypto() {
+            match self.get_crypto() {
                 Crypto::SECP => {
-                    let signature = Signature::from(self.get_transaction_with_sig().get_signature());
+                    let signature = Signature::from(self.get_signature());
                     match signature.recover(&hash) {
                         Ok(pubkey) => {
-                            self.set_signer(pubkey.to_vec());
+                            Ok((pubkey, tx_hash))
                         }
                         _ => {
-                            ret = false;
+                            trace!("Recover error {}", tx_hash);
+                            Err((tx_hash, String::from("Recover error")))
                         }
                     }
                 }
                 _ => {
-                    ret = false;
+                    trace!("Unexpected crypto {}", tx_hash);
+                    Err((tx_hash, String::from("Unexpected crypto")))
                 }
             }
         }
-
-        let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
-        self.set_tx_hash(bytes.crypt_hash().to_vec());
-        ret
     }
 
     pub fn crypt_hash(&self) -> H256 {
-        let bytes = self.get_transaction_with_sig().write_to_bytes().unwrap();
+        let bytes = self.write_to_bytes().unwrap();
         bytes.crypt_hash()
+    }
+}
+
+impl Deref for SignedTransaction {
+    type Target = UnverifiedTransaction;
+
+    fn deref(&self) -> &Self::Target {
+        &self.get_transaction_with_sig()
+    }
+}
+
+impl blockchain::SignedTransaction {
+    /// Try to verify transaction and recover sender.
+    pub fn verify_transaction(transaction: UnverifiedTransaction) -> Result<Self, H256> {
+        let (public, tx_hash) = transaction.recover_public().map_err(|(hash, _)| hash)?;
+        let mut signed_tx = SignedTransaction::new();
+        signed_tx.set_signer(public.to_vec());
+        signed_tx.set_tx_hash(tx_hash.to_vec());
+        signed_tx.set_transaction_with_sig(transaction);
+        Ok(signed_tx)
+    }
+
+    pub fn crypt_hash(&self) -> H256 {
+        H256::from(self.tx_hash.as_slice())
     }
 }
 
@@ -325,15 +368,9 @@ mod tests {
         tx.set_nonce("0".to_string());
         tx.set_to("123".to_string());
         tx.set_valid_until_block(99999);
-        tx.set_quota("a7c5ac471b47".to_string());
+        tx.set_quota(999999999);
 
-        let mut uv_tx = UnverifiedTransaction::new();
-        uv_tx.set_transaction(tx);
-
-        let mut signed_tx = SignedTransaction::new();
-        signed_tx.set_transaction_with_sig(uv_tx);
-        signed_tx.sign(pv.clone());
-
-        println!("{}", signed_tx.write_to_bytes().unwrap().to_hex())
+        let signed_tx = tx.sign(*pv);
+        assert_eq!(signed_tx.crypt_hash(), signed_tx.get_transaction_with_sig().crypt_hash());
     }
 }

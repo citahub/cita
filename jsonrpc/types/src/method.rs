@@ -30,7 +30,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub enum RpcReqType {
-    TX(blockchain::SignedTransaction),
+    TX(blockchain::UnverifiedTransaction),
     REQ(reqlib::Request),
 }
 
@@ -124,8 +124,12 @@ impl MethodHandler {
                 Ok(RpcReqType::REQ(gc))
             }
             method::CITA_SEND_TRANSACTION => {
-                let tx = self.send_transaction(rpc)?;
-                Ok(RpcReqType::TX(tx))
+                let unverified_tx = self.send_transaction(rpc)?;
+                {
+                    let tx = unverified_tx.get_transaction();
+                    trace!("SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}", tx.get_nonce(), tx.get_valid_until_block(), tx.get_data(), tx.get_quota(), tx.get_to());
+                }
+                Ok(RpcReqType::TX(unverified_tx))
             }
 
             method::ETH_NEW_FILTER => {
@@ -158,7 +162,7 @@ impl MethodHandler {
 
 
 impl MethodHandler {
-    pub fn send_transaction(&self, req_rpc: RpcRequest) -> Result<blockchain::SignedTransaction, Error> {
+    pub fn send_transaction(&self, req_rpc: RpcRequest) -> Result<blockchain::UnverifiedTransaction, Error> {
         let params: (String,) = req_rpc.params.parse()?;
         let data = clean_0x(&params.0);
         data.from_hex()
@@ -167,10 +171,10 @@ impl MethodHandler {
                          Error::parse_error_msg(err_msg.as_ref())
                      })
             .and_then(|content| {
-                          parse_from_bytes::<blockchain::SignedTransaction>(&content[..]).map_err(|_err| {
-                                                                                                      let err_msg = format!("parse protobuf SignedTransaction data error : {:?}", _err);
-                                                                                                      Error::parse_error_msg(err_msg.as_ref())
-                                                                                                  })
+                          parse_from_bytes::<blockchain::UnverifiedTransaction>(&content[..]).map_err(|_err| {
+                                                                                                          let err_msg = format!("parse protobuf UnverifiedTransaction data error : {:?}", _err);
+                                                                                                          Error::parse_error_msg(err_msg.as_ref())
+                                                                                                      })
                       })
 
     }
@@ -348,14 +352,16 @@ mod tests {
     use super::*;
     use Id;
     use bytes::Bytes;
+    use libproto::blockchain::UnverifiedTransaction;
     use libproto::request;
     use method::MethodHandler;
     use params::Params;
+    use protobuf::Message;
     use request::Version;
     use serde_json;
     use serde_json::Value;
     use util::H160 as Hash160;
-
+    use util::ToPretty;
 
     #[test]
     fn test_rpc_serialize() {
@@ -439,18 +445,28 @@ mod tests {
     }
 
     #[test]
-    fn test_cita_send_transaction() {
-        let rpc = RpcRequest {
+    fn test_rpc_0x() {
+        let utx = UnverifiedTransaction::new();
+        let utx_string = utx.write_to_bytes().unwrap();
+
+        let rpc1 = RpcRequest {
             jsonrpc: Some(Version::V2),
             method: method::CITA_SEND_TRANSACTION.to_owned(),
             id: Id::Str("2".to_string()),
-            params: Params::Array(vec![
-                Value::from("0x0a81010a1d0a033132331201301a0c613763356163343731623437209f8d062a01011260b3cf414a7abe01729890d40ba2a10811af4e48e74f16ea2397dfdb609fc311bf81c35bb10b5f790879d782b17ccb31896af30958fb02670352332c46996aef09b2a0f7852f7129d72d57db882f3b6b26a5a3ccd90b1abed5fe1f8ef652ccb89b12206dc0247fe5d8d4521bf75b3895e9cab3720aee654922f3f995c250a859feca351a20b2a0f7852f7129d72d57db882f3b6b26a5a3ccd90b1abed5fe1f8ef652ccb89b".to_owned()),
-            ]),
+            params: Params::Array(vec![Value::from(utx_string.to_hex().to_owned())]),
+        };
+
+        let rpc2 = RpcRequest {
+            jsonrpc: Some(Version::V2),
+            method: method::CITA_SEND_TRANSACTION.to_owned(),
+            id: Id::Str("2".to_string()),
+            params: Params::Array(vec![Value::from(clean_0x(&utx_string.to_hex()).to_owned())]),
         };
         let handler = MethodHandler;
-        let result: Result<blockchain::SignedTransaction, Error> = handler.send_transaction(rpc);
-        assert!(result.is_ok());
+        let result1: Result<blockchain::UnverifiedTransaction, Error> = handler.send_transaction(rpc1);
+        let result2: Result<blockchain::UnverifiedTransaction, Error> = handler.send_transaction(rpc2);
+        assert!(result1.is_ok());
+        assert!(result2.is_ok());
     }
 
     #[test]
