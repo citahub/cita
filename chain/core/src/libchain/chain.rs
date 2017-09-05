@@ -242,33 +242,6 @@ impl Chain {
         (chain, status.protobuf())
     }
 
-    //chain first init and chain heigth = zero。
-    //init contracts or to do other thing
-    pub fn first_init(&self, genesis: Genesis) {
-        if 0 == self.get_current_height() {
-            info!("**** begin **** \n");
-            info!("chain first init, to do init contracts on height eq zero");
-            let mut state = self.state();
-            for (address, contract) in genesis.spec.alloc.clone() {
-                let _ = state.init_code(&address.as_bytes().into(), contract.code.into_bytes()).expect("init code fail");
-                for (key, values) in contract.storage.clone() {
-                    state.set_storage(&address.as_bytes().into(), key.as_bytes().into(), values.as_bytes().into())
-                         .expect("init code set_storage fail");
-                }
-            }
-
-            //query is store in chain
-            for (address, contract) in genesis.spec.alloc {
-                for (key, _values) in contract.storage {
-                    let result = state.storage_at(&address.as_bytes().into(), &key.as_bytes().into());
-                    info!("address = {:?}, key = {:?}, result = {:?}", address, key, result);
-                }
-            }
-
-            info!("**** end **** \n");
-        }
-    }
-
     /// Get block number by BlockId
     fn block_number(&self, id: BlockId) -> Option<BlockNumber> {
         match id {
