@@ -38,7 +38,7 @@ use pubsub::start_pubsub;
 use std::env;
 use std::sync::mpsc::channel;
 use std::thread;
-use verify::Verifyer;
+use verify::Verifier;
 
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
@@ -75,7 +75,7 @@ fn main() {
 
     profifer(flag_prof_start, flag_prof_duration);
 
-    let v = Verifyer::new();
+    let mut verifier = Verifier::new();
 
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
@@ -86,6 +86,6 @@ fn main() {
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
         info!("get {} : {:?}", key, msg);
-        handle_msg(msg, tx_pub, v);
+        handle_msg(msg, &tx_pub, &mut verifier);
     }
 }
