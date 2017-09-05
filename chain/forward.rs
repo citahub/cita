@@ -316,5 +316,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
         }
         MsgClass::VERIFYREQ(req) => {}
         MsgClass::VERIFYRESP(resp) => {}
+        MsgClass::BLOCKTXHASHES(block_tx_hashes) => {}
     }
 }

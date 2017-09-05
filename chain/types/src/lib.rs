@@ -20,7 +20,6 @@ extern crate rlp;
 extern crate bloomable;
 extern crate cita_crypto as crypto;
 extern crate libproto;
-extern crate rustc_hex;
 pub mod account_diff;
 pub mod basic_account;
 pub mod blockchain_info;

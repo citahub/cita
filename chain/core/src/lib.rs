@@ -25,9 +25,7 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-extern crate vm;
 extern crate util;
-extern crate rustc_serialize;
 extern crate proof;
 extern crate lru_cache;
 extern crate rlp;
@@ -36,7 +34,6 @@ extern crate rlp;
 extern crate rlp_derive;
 extern crate bloomchain;
 extern crate bloomable;
-extern crate rustc_hex;
 
 #[macro_use]
 extern crate lazy_static;

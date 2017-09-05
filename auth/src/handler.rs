@@ -17,12 +17,12 @@
 
 use libproto::*;
 use libproto::communication::*;
+use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 use std::sync::mpsc::Sender;
-use verify::Verifier;
-use protobuf::{Message, RepeatedField};
-use util::H256;
 use std::vec::*;
+use util::H256;
+use verify::Verifier;
 
 pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier: &mut Verifier) {
 
@@ -58,7 +58,7 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
                             resp.set_ret(Ret::Ok);
                             resp.set_tx_hash(req.get_tx_hash().to_vec());
                             resps.push(resp);
-                        }                        
+                        }
                     }
                     let mut vresq = VerifyResp::new();
                     vresq.set_resps(RepeatedField::from_slice(&resps));

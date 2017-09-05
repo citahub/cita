@@ -95,6 +95,7 @@ fn main() {
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
     ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     let synchronizer = Synchronizer::new(chain.clone());
+    synchronizer.sync_block_tx_hashes(st.get_height(), ctx_pub.clone());
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
     thread::spawn(move || loop {

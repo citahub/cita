@@ -204,6 +204,7 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
         MsgType::VERIFY_REQ => MsgClass::VERIFYREQ(parse_from_bytes::<VerifyReq>(&content_msg).unwrap()),
         MsgType::VERIFY_RESP => MsgClass::VERIFYRESP(parse_from_bytes::<VerifyResp>(&content_msg).unwrap()),
+        MsgType::BLOCK_TXHASHES => MsgClass::BLOCKTXHASHES(parse_from_bytes::<BlockTxHashes>(&content_msg).unwrap()),
         MsgType::MSG => {
             let mut content = Vec::new();
             content.extend_from_slice(&content_msg);
