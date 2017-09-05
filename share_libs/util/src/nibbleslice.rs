@@ -32,12 +32,12 @@ use std::fmt;
 ///   let d1 = &[0x01u8, 0x23, 0x45];
 ///   let d2 = &[0x34u8, 0x50, 0x12];
 ///   let d3 = &[0x00u8, 0x12];
-///   let n1 = NibbleSlice::new(d1);			// 0,1,2,3,4,5
-///   let n2 = NibbleSlice::new(d2);			// 3,4,5,0,1,2
-///   let n3 = NibbleSlice::new_offset(d3, 1);	// 0,1,2
-///   assert!(n1 > n3);							// 0,1,2,... > 0,1,2
-///   assert!(n1 < n2);							// 0,... < 3,...
-///   assert!(n2.mid(3) == n3);					// 0,1,2 == 0,1,2
+///   let n1 = NibbleSlice::new(d1);            // 0,1,2,3,4,5
+///   let n2 = NibbleSlice::new(d2);            // 3,4,5,0,1,2
+///   let n3 = NibbleSlice::new_offset(d3, 1);    // 0,1,2
+///   assert!(n1 > n3);                            // 0,1,2,... > 0,1,2
+///   assert!(n1 < n2);                            // 0,... < 3,...
+///   assert!(n2.mid(3) == n3);                    // 0,1,2 == 0,1,2
 ///   assert!(n1.starts_with(&n3));
 ///   assert_eq!(n1.common_prefix(&n3), 3);
 ///   assert_eq!(n2.mid(3).common_prefix(&n1), 3);
@@ -98,20 +98,20 @@ where
     }
 
     /*pub fn new_composed_bytes_offset(a: &NibbleSlice, b: &NibbleSlice) -> (Bytes, usize) {
-		let r: Vec<u8>::with_capacity((a.len() + b.len() + 1) / 2);
-		let mut i = (a.len() + b.len()) % 2;
-		while i < a.len() {
-			match i % 2 {
-				0 => ,
-				1 => ,
-			}
-			i += 1;
-		}
-		while i < a.len() + b.len() {
-			i += 1;
-		}
-		(r, a.len() + b.len())
-	}*/
+        let r: Vec<u8>::with_capacity((a.len() + b.len() + 1) / 2);
+        let mut i = (a.len() + b.len()) % 2;
+        while i < a.len() {
+            match i % 2 {
+                0 => ,
+                1 => ,
+            }
+            i += 1;
+        }
+        while i < a.len() + b.len() {
+            i += 1;
+        }
+        (r, a.len() + b.len())
+    }*/
 
     /// Get an iterator for the series of nibbles.
     pub fn iter(&'a self) -> NibbleSliceIterator<'a> {

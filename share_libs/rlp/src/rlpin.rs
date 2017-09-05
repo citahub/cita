@@ -46,10 +46,10 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	let dog = rlp.at(1).as_raw();
-    /// 	assert_eq!(dog, &[0x83, b'd', b'o', b'g']);
+    ///     let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
+    ///     let rlp = Rlp::new(&data);
+    ///     let dog = rlp.at(1).as_raw();
+    ///     assert_eq!(dog, &[0x83, b'd', b'o', b'g']);
     /// }
     /// ```
     pub fn as_raw(&'view self) -> &'a [u8] {
@@ -78,11 +78,11 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	assert_eq!(rlp.item_count(), 2);
-    /// 	let view = rlp.at(1);
-    /// 	assert_eq!(view.item_count(), 0);
+    ///     let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
+    ///     let rlp = Rlp::new(&data);
+    ///     assert_eq!(rlp.item_count(), 2);
+    ///     let view = rlp.at(1);
+    ///     assert_eq!(view.item_count(), 0);
     /// }
     /// ```
     pub fn item_count(&self) -> usize {
@@ -96,11 +96,11 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	assert_eq!(rlp.size(), 0);
-    /// 	let view = rlp.at(1);
-    /// 	assert_eq!(view.size(), 3);
+    ///     let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
+    ///     let rlp = Rlp::new(&data);
+    ///     assert_eq!(rlp.size(), 0);
+    ///     let view = rlp.at(1);
+    ///     assert_eq!(view.size(), 3);
     /// }
     /// ```
     pub fn size(&self) -> usize {
@@ -117,10 +117,10 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	let dog: String = rlp.at(1).as_val();
-    /// 	assert_eq!(dog, "dog".to_string());
+    ///     let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
+    ///     let rlp = Rlp::new(&data);
+    ///     let dog: String = rlp.at(1).as_val();
+    ///     assert_eq!(dog, "dog".to_string());
     /// }
     /// ```
     pub fn at(&'view self, index: usize) -> Rlp<'a> {
@@ -134,9 +134,9 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	assert!(rlp.is_null());
+    ///     let data = vec![];
+    ///     let rlp = Rlp::new(&data);
+    ///     assert!(rlp.is_null());
     /// }
     /// ```
     pub fn is_null(&self) -> bool {
@@ -150,9 +150,9 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![0xc0];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	assert!(rlp.is_empty());
+    ///     let data = vec![0xc0];
+    ///     let rlp = Rlp::new(&data);
+    ///     assert!(rlp.is_empty());
     /// }
     /// ```
     pub fn is_empty(&self) -> bool {
@@ -166,9 +166,9 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	assert!(rlp.is_list());
+    ///     let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
+    ///     let rlp = Rlp::new(&data);
+    ///     assert!(rlp.is_list());
     /// }
     /// ```
     pub fn is_list(&self) -> bool {
@@ -182,9 +182,9 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	assert!(rlp.at(1).is_data());
+    ///     let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
+    ///     let rlp = Rlp::new(&data);
+    ///     assert!(rlp.at(1).is_data());
     /// }
     /// ```
     pub fn is_data(&self) -> bool {
@@ -198,10 +198,10 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![0xc1, 0x10];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	assert_eq!(rlp.is_int(), false);
-    /// 	assert_eq!(rlp.at(0).is_int(), true);
+    ///     let data = vec![0xc1, 0x10];
+    ///     let rlp = Rlp::new(&data);
+    ///     assert_eq!(rlp.is_int(), false);
+    ///     assert_eq!(rlp.at(0).is_int(), true);
     /// }
     /// ```
     pub fn is_int(&self) -> bool {
@@ -215,9 +215,9 @@ where
     /// use rlp::*;
     ///
     /// fn main () {
-    /// 	let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
-    /// 	let rlp = Rlp::new(&data);
-    /// 	let strings: Vec<String> = rlp.iter().map(| i | i.as_val()).collect();
+    ///     let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
+    ///     let rlp = Rlp::new(&data);
+    ///     let strings: Vec<String> = rlp.iter().map(| i | i.as_val()).collect();
     /// }
     /// ```
     pub fn iter(&'view self) -> RlpIterator<'a, 'view> {

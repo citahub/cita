@@ -68,21 +68,21 @@ impl Builtin {
 }
 
 // impl From<ethjson::spec::Builtin> for Builtin {
-// 	fn from(b: ethjson::spec::Builtin) -> Self {
-// 		let pricer = match b.pricing {
-// 			ethjson::spec::Pricing::Linear(linear) => {
-// 				Box::new(Linear {
-// 					base: linear.base,
-// 					word: linear.word,
-// 				})
-// 			}
-// 		};
+//     fn from(b: ethjson::spec::Builtin) -> Self {
+//         let pricer = match b.pricing {
+//             ethjson::spec::Pricing::Linear(linear) => {
+//                 Box::new(Linear {
+//                     base: linear.base,
+//                     word: linear.word,
+//                 })
+//             }
+//         };
 
-// 		Builtin {
-// 			pricer: pricer,
-// 			native: ethereum_builtin(&b.name),
-// 		}
-// 	}
+//         Builtin {
+//             pricer: pricer,
+//             native: ethereum_builtin(&b.name),
+//         }
+//     }
 // }
 
 // Ethereum builtin creator.
@@ -274,12 +274,12 @@ mod tests {
     fn ecrecover() {
         use rustc_serialize::hex::FromHex;
         /*let k = KeyPair::from_secret(b"test".crypt_hash()).unwrap();
-		let a: Address = From::from(k.public().crypt_hash());
-		println!("Address: {}", a);
-		let m = b"hello world".crypt_hash();
-		println!("Message: {}", m);
-		let s = k.sign(&m).unwrap();
-		println!("Signed: {}", s);*/
+        let a: Address = From::from(k.public().crypt_hash());
+        println!("Address: {}", a);
+        let m = b"hello world".crypt_hash();
+        println!("Message: {}", m);
+        let s = k.sign(&m).unwrap();
+        println!("Signed: {}", s);*/
 
         let f = ethereum_builtin("ecrecover");
 
@@ -332,10 +332,10 @@ mod tests {
         assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);
 
         // TODO: Should this (corrupted version of the above) fail rather than returning some address?
-	/*	let i_bad = FromHex::from_hex("48173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
-		let mut o = [255u8; 32];
-		f.execute(&i_bad[..], &mut BytesRef::Fixed(&mut o[..]));
-		assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/
+    /*    let i_bad = FromHex::from_hex("48173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
+        let mut o = [255u8; 32];
+        f.execute(&i_bad[..], &mut BytesRef::Fixed(&mut o[..]));
+        assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/
     }
 
     #[test]
@@ -419,22 +419,22 @@ mod tests {
 
     // #[test]
     // fn from_json() {
-    // 	let b = Builtin::from(ethjson::spec::Builtin {
-    // 		name: "identity".to_owned(),
-    // 		pricing: ethjson::spec::Pricing::Linear(ethjson::spec::Linear {
-    // 			base: 10,
-    // 			word: 20,
-    // 		})
-    // 	});
+    //     let b = Builtin::from(ethjson::spec::Builtin {
+    //         name: "identity".to_owned(),
+    //         pricing: ethjson::spec::Pricing::Linear(ethjson::spec::Linear {
+    //             base: 10,
+    //             word: 20,
+    //         })
+    //     });
 
-    // 	assert_eq!(b.cost(0), U256::from(10));
-    // 	assert_eq!(b.cost(1), U256::from(30));
-    // 	assert_eq!(b.cost(32), U256::from(30));
-    // 	assert_eq!(b.cost(33), U256::from(50));
+    //     assert_eq!(b.cost(0), U256::from(10));
+    //     assert_eq!(b.cost(1), U256::from(30));
+    //     assert_eq!(b.cost(32), U256::from(30));
+    //     assert_eq!(b.cost(33), U256::from(50));
 
-    // 	let i = [0u8, 1, 2, 3];
-    // 	let mut o = [255u8; 4];
-    // 	b.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
-    // 	assert_eq!(i, o);
+    //     let i = [0u8, 1, 2, 3];
+    //     let mut o = [255u8; 4];
+    //     b.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
+    //     assert_eq!(i, o);
     // }
 }

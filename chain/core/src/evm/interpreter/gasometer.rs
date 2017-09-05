@@ -23,11 +23,11 @@ use std::cmp;
 use util::*;
 
 macro_rules! overflowing {
-	($x: expr) => {{
-		let (v, overflow) = $x;
-		if overflow { return Err(evm::Error::OutOfGas); }
-		v
-	}}
+    ($x: expr) => {{
+        let (v, overflow) = $x;
+        if overflow { return Err(evm::Error::OutOfGas); }
+        v
+    }}
 }
 
 #[cfg_attr(feature = "dev", allow(enum_variant_names))]

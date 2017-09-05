@@ -203,8 +203,8 @@ impl JournalDB for ArchiveDB {
 
 #[cfg(test)]
 mod tests {
-	#![cfg_attr(feature="dev", allow(blacklisted_name))]
-	#![cfg_attr(feature="dev", allow(similar_names))]
+    #![cfg_attr(feature="dev", allow(blacklisted_name))]
+    #![cfg_attr(feature="dev", allow(similar_names))]
 
     use super::*;
     use {Hashable, H32};

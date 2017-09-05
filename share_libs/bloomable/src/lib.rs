@@ -65,61 +65,61 @@ pub trait Bloomable: Sized + Default + DerefMut<Target = [u8]> {
 }
 
 macro_rules! impl_bloomable_for_hash {
-	($name: ident, $size: expr) => {
-		impl Bloomable for $name {
-			fn shift_bloomed<'a, T>(&'a mut self, b: &T) -> &'a mut Self where T: Bloomable {
-				let bp: Self = b.bloom_part($size);
-				let new_self = &bp | self;
+    ($name: ident, $size: expr) => {
+        impl Bloomable for $name {
+            fn shift_bloomed<'a, T>(&'a mut self, b: &T) -> &'a mut Self where T: Bloomable {
+                let bp: Self = b.bloom_part($size);
+                let new_self = &bp | self;
 
-				self.0 = new_self.0;
-				self
-			}
+                self.0 = new_self.0;
+                self
+            }
 
-			fn bloom_part<T>(&self, m: usize) -> T where T: Bloomable + Default {
-				// numbers of bits
-				// TODO: move it to some constant
-				let p = 3;
+            fn bloom_part<T>(&self, m: usize) -> T where T: Bloomable + Default {
+                // numbers of bits
+                // TODO: move it to some constant
+                let p = 3;
 
-				let bloom_bits = m * 8;
-				let mask = bloom_bits - 1;
-				let bloom_bytes = (log2(bloom_bits) + 7) / 8;
+                let bloom_bits = m * 8;
+                let mask = bloom_bits - 1;
+                let bloom_bytes = (log2(bloom_bits) + 7) / 8;
 
-				// must be a power of 2
-				assert_eq!(m & (m - 1), 0);
-				// out of range
-				assert!(p * bloom_bytes <= $size);
+                // must be a power of 2
+                assert_eq!(m & (m - 1), 0);
+                // out of range
+                assert!(p * bloom_bytes <= $size);
 
-				// return type
-				let mut ret = T::default();
+                // return type
+                let mut ret = T::default();
 
-				// 'ptr' to out slice
-				let mut ptr = 0;
+                // 'ptr' to out slice
+                let mut ptr = 0;
 
-				// set p number of bits,
-				// p is equal 3 according to yellowpaper
-				for _ in 0..p {
-					let mut index = 0 as usize;
-					for _ in 0..bloom_bytes {
-						index = (index << 8) | self.0[ptr] as usize;
-						ptr += 1;
-					}
-					index &= mask;
-					ret[m - 1 - index / 8] |= 1 << (index % 8);
-				}
+                // set p number of bits,
+                // p is equal 3 according to yellowpaper
+                for _ in 0..p {
+                    let mut index = 0 as usize;
+                    for _ in 0..bloom_bytes {
+                        index = (index << 8) | self.0[ptr] as usize;
+                        ptr += 1;
+                    }
+                    index &= mask;
+                    ret[m - 1 - index / 8] |= 1 << (index % 8);
+                }
 
-				ret
-			}
+                ret
+            }
 
-			fn contains_bloomed<T>(&self, b: &T) -> bool where T: Bloomable {
-				let bp: Self = b.bloom_part($size);
-				self.contains(&bp)
-			}
+            fn contains_bloomed<T>(&self, b: &T) -> bool where T: Bloomable {
+                let bp: Self = b.bloom_part($size);
+                self.contains(&bp)
+            }
 
-			fn from_bloomed<T>(b: &T) -> Self where T: Bloomable {
-				b.bloom_part($size)
-			}
-		}
-	}
+            fn from_bloomed<T>(b: &T) -> Self where T: Bloomable {
+                b.bloom_part($size)
+            }
+        }
+    }
 }
 
 impl_bloomable_for_hash!(H64, 8);

@@ -201,7 +201,7 @@ pub enum TrieSpec {
     Generic,
     /// Secure trie.
     Secure,
-    ///	Secure trie with fat database.
+    ///    Secure trie with fat database.
     Fat,
 }
 
@@ -230,13 +230,13 @@ pub enum TrieKinds<'db> {
 
 // wrapper macro for making the match easier to deal with.
 macro_rules! wrapper {
-	($me: ident, $f_name: ident, $($param: ident),*) => {
-		match *$me {
-			TrieKinds::Generic(ref t) => t.$f_name($($param),*),
-			TrieKinds::Secure(ref t) => t.$f_name($($param),*),
-			TrieKinds::Fat(ref t) => t.$f_name($($param),*),
-		}
-	}
+    ($me: ident, $f_name: ident, $($param: ident),*) => {
+        match *$me {
+            TrieKinds::Generic(ref t) => t.$f_name($($param),*),
+            TrieKinds::Secure(ref t) => t.$f_name($($param),*),
+            TrieKinds::Fat(ref t) => t.$f_name($($param),*),
+        }
+    }
 }
 
 impl<'db> Trie for TrieKinds<'db> {

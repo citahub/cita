@@ -121,42 +121,42 @@ impl Decodable for u8 {
 }
 
 macro_rules! impl_encodable_for_u {
-	($name: ident, $func: ident, $size: expr) => {
-		impl Encodable for $name {
-			fn rlp_append(&self, s: &mut RlpStream) {
-				let leading_empty_bytes = self.leading_zeros() as usize / 8;
-				let mut buffer = [0u8; $size];
-				BigEndian::$func(&mut buffer, *self);
-				s.encoder().encode_value(&buffer[leading_empty_bytes..]);
-			}
-		}
-	}
+    ($name: ident, $func: ident, $size: expr) => {
+        impl Encodable for $name {
+            fn rlp_append(&self, s: &mut RlpStream) {
+                let leading_empty_bytes = self.leading_zeros() as usize / 8;
+                let mut buffer = [0u8; $size];
+                BigEndian::$func(&mut buffer, *self);
+                s.encoder().encode_value(&buffer[leading_empty_bytes..]);
+            }
+        }
+    }
 }
 
 macro_rules! impl_decodable_for_u {
-	($name: ident) => {
-		impl Decodable for $name {
-			fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-				rlp.decoder().decode_value(|bytes| {
-					match bytes.len() {
-						0 | 1 => u8::decode(rlp).map(|v| v as $name),
-						l if l <= mem::size_of::<$name>() => {
-							if bytes[0] == 0 {
-								return Err(DecoderError::RlpInvalidIndirection);
-							}
-							let mut res = 0 as $name;
-							for i in 0..l {
-								let shift = (l - 1 - i) * 8;
-								res = res + ((bytes[i] as $name) << shift);
-							}
-							Ok(res)
-						}
-						_ => Err(DecoderError::RlpIsTooBig),
-					}
-				})
-			}
-		}
-	}
+    ($name: ident) => {
+        impl Decodable for $name {
+            fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+                rlp.decoder().decode_value(|bytes| {
+                    match bytes.len() {
+                        0 | 1 => u8::decode(rlp).map(|v| v as $name),
+                        l if l <= mem::size_of::<$name>() => {
+                            if bytes[0] == 0 {
+                                return Err(DecoderError::RlpInvalidIndirection);
+                            }
+                            let mut res = 0 as $name;
+                            for i in 0..l {
+                                let shift = (l - 1 - i) * 8;
+                                res = res + ((bytes[i] as $name) << shift);
+                            }
+                            Ok(res)
+                        }
+                        _ => Err(DecoderError::RlpIsTooBig),
+                    }
+                })
+            }
+        }
+    }
 }
 
 impl_encodable_for_u!(u16, write_u16, 2);
@@ -180,31 +180,31 @@ impl Decodable for usize {
 }
 
 macro_rules! impl_encodable_for_hash {
-	($name: ident) => {
-		impl Encodable for $name {
-			fn rlp_append(&self, s: &mut RlpStream) {
-				s.encoder().encode_value(self);
-			}
-		}
-	}
+    ($name: ident) => {
+        impl Encodable for $name {
+            fn rlp_append(&self, s: &mut RlpStream) {
+                s.encoder().encode_value(self);
+            }
+        }
+    }
 }
 
 macro_rules! impl_decodable_for_hash {
-	($name: ident, $size: expr) => {
-		impl Decodable for $name {
-			fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-				rlp.decoder().decode_value(|bytes| match bytes.len().cmp(&$size) {
-					cmp::Ordering::Less => Err(DecoderError::RlpIsTooShort),
-					cmp::Ordering::Greater => Err(DecoderError::RlpIsTooBig),
-					cmp::Ordering::Equal => {
-						let mut t = [0u8; $size];
-						t.copy_from_slice(bytes);
-						Ok($name(t))
-					}
-				})
-			}
-		}
-	}
+    ($name: ident, $size: expr) => {
+        impl Decodable for $name {
+            fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+                rlp.decoder().decode_value(|bytes| match bytes.len().cmp(&$size) {
+                    cmp::Ordering::Less => Err(DecoderError::RlpIsTooShort),
+                    cmp::Ordering::Greater => Err(DecoderError::RlpIsTooBig),
+                    cmp::Ordering::Equal => {
+                        let mut t = [0u8; $size];
+                        t.copy_from_slice(bytes);
+                        Ok($name(t))
+                    }
+                })
+            }
+        }
+    }
 }
 
 impl_encodable_for_hash!(H64);
@@ -224,34 +224,34 @@ impl_decodable_for_hash!(H520, 65);
 impl_decodable_for_hash!(H2048, 256);
 
 macro_rules! impl_encodable_for_uint {
-	($name: ident, $size: expr) => {
-		impl Encodable for $name {
-			fn rlp_append(&self, s: &mut RlpStream) {
-				let leading_empty_bytes = $size - (self.bits() + 7) / 8;
-				let mut buffer = [0u8; $size];
-				self.to_big_endian(&mut buffer);
-				s.encoder().encode_value(&buffer[leading_empty_bytes..]);
-			}
-		}
-	}
+    ($name: ident, $size: expr) => {
+        impl Encodable for $name {
+            fn rlp_append(&self, s: &mut RlpStream) {
+                let leading_empty_bytes = $size - (self.bits() + 7) / 8;
+                let mut buffer = [0u8; $size];
+                self.to_big_endian(&mut buffer);
+                s.encoder().encode_value(&buffer[leading_empty_bytes..]);
+            }
+        }
+    }
 }
 
 macro_rules! impl_decodable_for_uint {
-	($name: ident, $size: expr) => {
-		impl Decodable for $name {
-			fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-				rlp.decoder().decode_value(|bytes| {
-					if !bytes.is_empty() && bytes[0] == 0 {
-						Err(DecoderError::RlpInvalidIndirection)
-					} else if bytes.len() <= $size {
-						Ok($name::from(bytes))
-					} else {
-						Err(DecoderError::RlpIsTooBig)
-					}
-				})
-			}
-		}
-	}
+    ($name: ident, $size: expr) => {
+        impl Decodable for $name {
+            fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+                rlp.decoder().decode_value(|bytes| {
+                    if !bytes.is_empty() && bytes[0] == 0 {
+                        Err(DecoderError::RlpInvalidIndirection)
+                    } else if bytes.len() <= $size {
+                        Ok($name::from(bytes))
+                    } else {
+                        Err(DecoderError::RlpIsTooBig)
+                    }
+                })
+            }
+        }
+    }
 }
 
 impl_encodable_for_uint!(U256, 32);

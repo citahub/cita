@@ -314,7 +314,7 @@ impl UnverifiedTransaction {
         s.append(&self.hash);
     }
 
-    ///	Reference to unsigned part of this transaction.
+    ///    Reference to unsigned part of this transaction.
     pub fn as_unsigned(&self) -> &Transaction {
         &self.unsigned
     }
