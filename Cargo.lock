@@ -459,6 +459,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "consensus_poa"
+version = "0.6.0"
+dependencies = [
+ "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cita-crypto 0.1.0",
+ "cita_log 0.1.0",
+ "clap 2.26.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "engine 0.6.0",
+ "engine_json 0.6.0",
+ "libproto 0.6.0",
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parking_lot 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proof 0.6.0",
+ "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pubsub 0.6.0",
+ "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "threadpool 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tx_pool 0.6.0",
+ "util 0.6.0",
+]
+
+[[package]]
 name = "consensus_tendermint"
 version = "0.1.0"
 dependencies = [
