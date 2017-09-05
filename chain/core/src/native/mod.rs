@@ -24,7 +24,7 @@ mod zhongchao;
 pub use self::nowpay::nowpay::NowPay;
 pub use self::zhongchao::contract::ZcPermission;
 use action_params::ActionParams;
-use evm::{self, Ext, GasLeft};
+use evm::{self, Ext, GasLeft, Error};
 use std::boxed::Box;
 use std::collections::HashMap;
 use util::{H256, U256};
