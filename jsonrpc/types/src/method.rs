@@ -124,8 +124,12 @@ impl MethodHandler {
                 Ok(RpcReqType::REQ(gc))
             }
             method::CITA_SEND_TRANSACTION => {
-                let tx = self.send_transaction(rpc)?;
-                Ok(RpcReqType::TX(tx))
+                let unverified_tx = self.send_transaction(rpc)?;
+                {
+                    let tx = unverified_tx.get_transaction();
+                    trace!("SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}", tx.get_nonce(), tx.get_valid_until_block(), tx.get_data(), tx.get_quota(), tx.get_to());
+                }
+                Ok(RpcReqType::TX(unverified_tx))
             }
 
             method::ETH_NEW_FILTER => {

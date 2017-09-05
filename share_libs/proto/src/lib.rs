@@ -368,7 +368,7 @@ mod tests {
         tx.set_nonce("0".to_string());
         tx.set_to("123".to_string());
         tx.set_valid_until_block(99999);
-        tx.set_quota("a7c5ac471b47".to_string());
+        tx.set_quota(999999999);
 
         let signed_tx = tx.sign(*pv);
         assert_eq!(signed_tx.crypt_hash(), signed_tx.get_transaction_with_sig().crypt_hash());

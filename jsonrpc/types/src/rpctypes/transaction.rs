@@ -58,9 +58,13 @@ impl From<PTransaction> for RpcTransaction {
         let mut bhash: H256 = H256::default();
         bhash.0.clone_from_slice(ptransaction.block_hash.as_slice());
 
+        let unverified_tx = stx.get_transaction_with_sig();
+        let tx = unverified_tx.get_transaction();
+        trace!("GET ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}", tx.get_nonce(), tx.get_valid_until_block(), tx.get_data(), tx.get_quota(), tx.get_to());
+
         RpcTransaction {
             hash: H256::from_slice(stx.get_tx_hash()),
-            content: Bytes(stx.get_transaction_with_sig().write_to_bytes().unwrap()),
+            content: Bytes(unverified_tx.write_to_bytes().unwrap()),
             block_number: U256::from(ptransaction.block_number),
             block_hash: bhash,
             index: U256::from(ptransaction.index),

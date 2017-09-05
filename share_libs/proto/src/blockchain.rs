@@ -984,7 +984,7 @@ pub struct Transaction {
     // message fields
     pub to: ::std::string::String,
     pub nonce: ::std::string::String,
-    pub quota: ::std::string::String,
+    pub quota: u64,
     pub valid_until_block: u64,
     pub data: ::std::vec::Vec<u8>,
     // special fields
@@ -1078,37 +1078,26 @@ impl Transaction {
         &mut self.nonce
     }
 
-    // string quota = 3;
+    // uint64 quota = 3;
 
     pub fn clear_quota(&mut self) {
-        self.quota.clear();
+        self.quota = 0;
     }
 
     // Param is passed by value, moved
-    pub fn set_quota(&mut self, v: ::std::string::String) {
+    pub fn set_quota(&mut self, v: u64) {
         self.quota = v;
     }
 
-    // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_quota(&mut self) -> &mut ::std::string::String {
-        &mut self.quota
+    pub fn get_quota(&self) -> u64 {
+        self.quota
     }
 
-    // Take field
-    pub fn take_quota(&mut self) -> ::std::string::String {
-        ::std::mem::replace(&mut self.quota, ::std::string::String::new())
-    }
-
-    pub fn get_quota(&self) -> &str {
+    fn get_quota_for_reflect(&self) -> &u64 {
         &self.quota
     }
 
-    fn get_quota_for_reflect(&self) -> &::std::string::String {
-        &self.quota
-    }
-
-    fn mut_quota_for_reflect(&mut self) -> &mut ::std::string::String {
+    fn mut_quota_for_reflect(&mut self) -> &mut u64 {
         &mut self.quota
     }
 
@@ -1186,7 +1175,11 @@ impl ::protobuf::Message for Transaction {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.nonce)?;
                 },
                 3 => {
-                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.quota)?;
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint64()?;
+                    self.quota = tmp;
                 },
                 4 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
@@ -1216,8 +1209,8 @@ impl ::protobuf::Message for Transaction {
         if !self.nonce.is_empty() {
             my_size += ::protobuf::rt::string_size(2, &self.nonce);
         }
-        if !self.quota.is_empty() {
-            my_size += ::protobuf::rt::string_size(3, &self.quota);
+        if self.quota != 0 {
+            my_size += ::protobuf::rt::value_size(3, self.quota, ::protobuf::wire_format::WireTypeVarint);
         }
         if self.valid_until_block != 0 {
             my_size += ::protobuf::rt::value_size(4, self.valid_until_block, ::protobuf::wire_format::WireTypeVarint);
@@ -1237,8 +1230,8 @@ impl ::protobuf::Message for Transaction {
         if !self.nonce.is_empty() {
             os.write_string(2, &self.nonce)?;
         }
-        if !self.quota.is_empty() {
-            os.write_string(3, &self.quota)?;
+        if self.quota != 0 {
+            os.write_uint64(3, self.quota)?;
         }
         if self.valid_until_block != 0 {
             os.write_uint64(4, self.valid_until_block)?;
@@ -1300,7 +1293,7 @@ impl ::protobuf::MessageStatic for Transaction {
                     Transaction::get_nonce_for_reflect,
                     Transaction::mut_nonce_for_reflect,
                 ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
                     "quota",
                     Transaction::get_quota_for_reflect,
                     Transaction::mut_quota_for_reflect,
@@ -2757,7 +2750,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \"4\n\x06Status\x12\x12\n\x04hash\x18\x01\x20\x01(\x0cR\x04hash\x12\x16\
     \n\x06height\x18\x02\x20\x01(\x04R\x06height\"\x89\x01\n\x0bTransaction\
     \x12\x0e\n\x02to\x18\x01\x20\x01(\tR\x02to\x12\x14\n\x05nonce\x18\x02\
-    \x20\x01(\tR\x05nonce\x12\x14\n\x05quota\x18\x03\x20\x01(\tR\x05quota\
+    \x20\x01(\tR\x05nonce\x12\x14\n\x05quota\x18\x03\x20\x01(\x04R\x05quota\
     \x12*\n\x11valid_until_block\x18\x04\x20\x01(\x04R\x0fvalidUntilBlock\
     \x12\x12\n\x04data\x18\x05\x20\x01(\x0cR\x04data\"\x86\x01\n\x15Unverifi\
     edTransaction\x12.\n\x0btransaction\x18\x01\x20\x01(\x0b2\x0c.Transactio\

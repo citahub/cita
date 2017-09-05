@@ -56,7 +56,7 @@ fn bench_enqueue(b: &mut Bencher) {
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(99999);
-        tx.set_quota("a7c5ac471b47".to_string());
+        tx.set_quota(999999999);
 
         uv_tx.set_transaction(tx.clone());
         signed_tx.set_transaction_with_sig(uv_tx.clone());
@@ -83,7 +83,7 @@ fn bench_package(b: &mut Bencher) {
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(99999);
-        tx.set_quota("a7c5ac471b47".to_string());
+        tx.set_quota(9999999999);
 
         uv_tx.set_transaction(tx.clone());
         signed_tx.set_transaction_with_sig(uv_tx.clone());
@@ -112,7 +112,7 @@ fn bench_update(b: &mut Bencher) {
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(99999);
-        tx.set_quota("a7c5ac471b47".to_string());
+        tx.set_quota(999999999);
 
         uv_tx.set_transaction(tx.clone());
         signed_tx.set_transaction_with_sig(uv_tx.clone());

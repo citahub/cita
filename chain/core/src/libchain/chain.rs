@@ -988,7 +988,7 @@ mod tests {
             tx.set_nonce(U256::from(i).to_hex());
             tx.set_data(data.clone());
             tx.set_valid_until_block(100);
-            tx.set_quota("a7c5ac471b47".to_string());
+            tx.set_quota(184467440737095);
 
             let stx = tx.sign(*privkey);
             let new_tx = SignedTransaction::new(&stx).unwrap();
