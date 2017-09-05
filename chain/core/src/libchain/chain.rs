@@ -157,15 +157,6 @@ pub struct Chain {
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 }
 
-pub fn save_genesis(db: &KeyValueDB, genesis: &Genesis) -> Result<(), String> {
-    let mut batch = db.transaction();
-    let hash = genesis.block.hash();
-    batch.write(db::COL_HEADERS, &hash, genesis.block.header());
-    batch.write(db::COL_BODIES, &hash, genesis.block.body());
-    batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &hash);
-    db.write(batch)
-}
-
 /// Get latest status
 pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
     let h: Option<H256> = db.read(db::COL_EXTRA, &ConstKey::CurrentHash);
@@ -213,10 +204,9 @@ impl Chain {
                 header
             }
             _ => {
-                let _ = genesis.lazy_execute();
-                save_genesis(&*db, &genesis).expect("Failed to save genesis.");
+                genesis.lazy_execute(&state_db, &factories).expect("Failed to save genesis.");
                 info!("init genesis {:?}", genesis);
-                genesis.block.header.clone()
+                genesis.block.header().clone()
             }
         };
 
@@ -247,8 +237,8 @@ impl Chain {
                                  polls_filter: Arc::new(Mutex::new(PollManager::new())),
                              });
 
+
         chain.build_last_hashes(Some(status.hash().clone()), status.number());
-        chain.first_init(genesis);
         (chain, status.protobuf())
     }
 
