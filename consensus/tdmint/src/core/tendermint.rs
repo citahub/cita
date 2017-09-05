@@ -40,6 +40,7 @@ use std::time::Instant;
 use util::{H256, H768};
 use util::Address;
 use util::Hashable;
+use authority_manage::AuthorityManage;
 
 const INIT_HEIGHT: usize = 1;
 const INIT_ROUND: usize = 0;
@@ -124,6 +125,7 @@ pub struct TenderMint {
     dispatch: Arc<Dispatchtx>,
 
     htime: Instant,
+    auth_manage: AuthorityManage,
 }
 
 impl TenderMint {
@@ -161,11 +163,17 @@ impl TenderMint {
             //sync_ok : true,
             dispatch: dispatch,
             htime: Instant::now(),
+            auth_manage: AuthorityManage::new(),
         }
     }
 
     fn is_round_proposer(&self, height: usize, round: usize, address: &Address) -> Result<(), EngineError> {
-        let ref p = self.params;
+        //let ref p = self.params;
+        let ref p = self.auth_manage;
+        if p.authority_n == 0 {
+            info!("================= {}", p.authority_n);
+            return Err(EngineError::NotAuthorized(Address::zero()));
+        }
         let proposer_nonce = height + round;
         let proposer = p.authorities
                         .get(proposer_nonce % p.authority_n)
@@ -318,11 +326,11 @@ impl TenderMint {
     }
 
     fn is_above_threshold(&self, n: &usize) -> bool {
-        *n > self.params.authority_n * 2 / 3
+        *n > self.auth_manage.authority_n * 2 / 3
     }
 
     fn is_all_vote(&self, n: &usize) -> bool {
-        *n == self.params.authority_n
+        *n == self.auth_manage.authority_n
     }
 
     fn pre_proc_precommit(&mut self) {
@@ -562,7 +570,8 @@ impl TenderMint {
     }
 
     fn is_authority(&self, address: &Address) -> bool {
-        self.params.authorities.contains(address.into())
+        //self.params.authorities.contains(address.into())
+        self.auth_manage.authorities.contains(address.into())
     }
 
     fn change_state_step(&mut self, height: usize, round: usize, s: Step, newflag: bool) {
@@ -676,7 +685,8 @@ impl TenderMint {
         if let Some(proposal) = proposal {
             trace!("proc proposal height {},round {} self {} {} ", height, round, self.height, self.round);
             //proposal check
-            if !proposal.check(height, &self.params.authorities) {
+            //if !proposal.check(height, &self.params.authorities) {
+            if !proposal.check(height, &self.auth_manage.authorities) {
                 trace!("proc proposal check error");
                 return false;
             }
@@ -697,8 +707,15 @@ impl TenderMint {
                 let block_proof = block.get_header().get_proof();
                 let proof = TendermintProof::from(block_proof.clone());
                 info!(" proof is {:?}  {} {}", proof, height, round);
-                if !proof.check(height - 1, &self.params.authorities) {
-                    return false;
+                if self.auth_manage.authority_h_old == height - 1 {
+                    if !proof.check(height - 1, &self.auth_manage.authorities_old) {
+                        return false;
+                    }                    
+                }
+                else {
+                    if !proof.check(height - 1, &self.auth_manage.authorities) {
+                        return false;
+                    }
                 }
                 if self.proof.height != height - 1 {
                     self.proof = proof;
@@ -969,6 +986,15 @@ impl TenderMint {
                 MsgClass::STATUS(status) => {
                     trace!("get new local status {:?}", status.height);
                     self.receive_new_status(status);
+                }
+                //接受chain发送的 authorities_list
+                MsgClass::NODES(nodes) => {
+                    
+                    let authorities: Vec<Address> =  nodes.get_nodes().into_iter().map(|node| Address::from(node.get_address())).collect();
+                    info!("tendermint authorities is {:?}", authorities);
+                    if self.auth_manage.authorities != authorities {
+                        self.auth_manage.receive_authorities_list(self.height, authorities);
+                    }
                 }
                 _ => {}
             }

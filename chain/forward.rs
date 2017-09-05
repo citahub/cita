@@ -25,8 +25,8 @@ use jsonrpc_types::rpctypes;
 use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, CountAndCode, BlockNumber, BlockParamsByNumber, BlockParamsByHash, RpcBlock};
 use libproto;
 pub use libproto::*;
-pub use libproto::request::Request_oneof_req as Request;
 use protobuf::Message;
+pub use libproto::request::Request_oneof_req as Request;
 use serde_json;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -313,6 +313,9 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
             } else {
                 warn!("other content.");
             }
+        }
+        MsgClass::NODES(nodes) => {
+            info!("forward dispatch nodes is {:?}", nodes);
         }
     }
 }

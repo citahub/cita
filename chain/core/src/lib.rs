@@ -64,6 +64,7 @@ extern crate cita_ed25519;
 extern crate common_types as types;
 extern crate jsonrpc_types;
 extern crate cita_secp256k1;
+extern crate ethabi;
 
 pub mod state;
 pub mod account_db;
@@ -94,6 +95,7 @@ pub mod native;
 
 pub mod libchain;
 pub mod filters;
+pub mod contracts;
 
 pub use factory::*;
 pub use types::*;

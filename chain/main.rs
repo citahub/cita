@@ -21,6 +21,7 @@ extern crate threadpool;
 #[macro_use]
 extern crate log;
 extern crate libproto;
+extern crate amqp;
 extern crate pubsub;
 extern crate util;
 extern crate clap;
@@ -52,6 +53,7 @@ use std::time;
 use std::time::Duration;
 use synchronizer::Synchronizer;
 use util::kvdb::{Database, DatabaseConfig};
+use core::contracts::node_manager::send_nodes;
 
 pub const DATA_PATH: &'static str = "DATA_PATH";
 
@@ -94,6 +96,9 @@ fn main() {
 
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
     ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+
+    send_nodes(chain.clone(), ctx_pub.clone());
+
     let synchronizer = Synchronizer::new(chain.clone());
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
@@ -102,6 +107,7 @@ fn main() {
                       forward::chain_result(chain, &rx, ctx_pub1.clone());
                   });
 
+    let chain_clone_before_move = chain.clone();
     thread::spawn(move || loop {
                       let notify = sync_rx.recv_timeout(Duration::new(8, 0));
                       if notify.is_ok() {
@@ -109,7 +115,10 @@ fn main() {
                       } else {
                           synchronizer.sync_status(ctx_pub.clone());
                       }
+                    
+                      send_nodes(chain_clone_before_move.clone(), ctx_pub.clone());
                   });
+
     //garbage collect
     let mut i: u32 = 0;
     loop {

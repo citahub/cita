@@ -67,3 +67,10 @@ message Block {
     BlockHeader header = 2;
     BlockBody body = 3;
 }
+
+message Nodes {
+    message Node {
+        bytes address = 1;   // H160 address
+    }
+    repeated Node nodes = 1;
+}
