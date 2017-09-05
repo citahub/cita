@@ -120,7 +120,7 @@ impl AuthorityRound {
         }
     }
 
-    pub fn pub_transaction(&self, tx: &SignedTransaction, tx_pub: Sender<(String, Vec<u8>)>) {
+    pub fn pub_transaction(&self, tx: &UnverifiedTransaction, tx_pub: Sender<(String, Vec<u8>)>) {
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
         trace!("broadcast new tx {:?}", tx);
         tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
@@ -217,24 +217,33 @@ impl Engine for AuthorityRound {
         }
     }
 
-    fn receive_new_transaction(&self, tx: &UnverifiedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool) {
+    fn receive_new_transaction(&self, unverified_tx: &UnverifiedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool) {
+        let result = SignedTransaction::verify_transaction(unverified_tx.clone());
         let mut content = blockchain::TxResponse::new();
-        let hash: H256 = tx.crypt_hash();
-        {
-            let mut tx_pool = self.tx_pool.write();
-            content.set_hash(hash.to_vec());
-            let success = tx_pool.enqueue(tx.clone());
-            if success {
-                content.set_result(String::from("4:OK").into_bytes());
-                self.pub_transaction(tx, tx_pub.clone());
-            } else {
-                content.set_result(String::from("4:DUP").into_bytes());
+        match result {
+            Err(hash) => {
+                content.set_hash(hash.to_vec());
+                warn!("Transaction with bad signature, tx: {:?}", hash);
+                content.set_result(String::from("BAG SIG").into_bytes());
             }
-            if !from_broadcast {
-                let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
-                trace!("response new tx {:?}", tx);
-                tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            Ok(tx) => {
+                content.set_hash(tx.tx_hash.clone());
+                let mut tx_pool = self.tx_pool.write();
+                let success = tx_pool.enqueue(tx.clone());
+                if success {
+                    content.set_result(String::from("4:OK").into_bytes());
+                    if !from_broadcast {
+                        self.pub_transaction(unverified_tx, tx_pub.clone());
+                    }
+                } else {
+                    content.set_result(String::from("4:DUP").into_bytes());
+                }
             }
+        }
+
+        if !from_broadcast {
+            let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
+            tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }
 
