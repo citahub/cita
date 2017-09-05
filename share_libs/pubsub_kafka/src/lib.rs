@@ -14,7 +14,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 extern crate kafka;
 extern crate env_logger;
 
@@ -27,57 +26,69 @@ use kafka::error::Error as kafkaError;
 use::std::sync::mpsc::Receiver;
 use::std::sync::mpsc::Sender;
 use std::thread;
-pub fn start_kafkamq(name:&str,keys:Vec<&str>,tx:Sender<(String,Vec<u8>)>,rx:Receiver<(String,Vec<u8>)>){
+
+pub fn start_kafkamq(name:&str,keys:Vec<String>,tx:Sender<(String,Vec<u8>)>,rx:Receiver<(String,Vec<u8>)>){
+    println!("into start_kafkamq");
     env_logger::init().unwrap();
-    //let brokers:Vec<String> = "localhost:9092";
     let mut brokers:Vec<String> = Vec::new();
-    brokers.push("localhost:9092".to_owned());
-    //let brokers="localhost:9092";
+    brokers.push("localhost:9092".to_string());
     let group = "my-group".to_owned(); 
 //producer thread
+    let brokers1 = brokers.clone();
     let  _=thread::Builder::new().name("publisher".to_string()).spawn(move || {
+        println!("producer thread running!");
+        let mut tmp = 0;
        loop{
-            let ret = rx.recv();
+           tmp=tmp+1;
+           println!("tmp:{}",tmp);
+            let mut ret = rx.recv();
             if ret.is_err(){
+                println!("break!!!!!");
                 break;
             }
             let(topic,msg)=ret.unwrap(); 
-        if let Err(e) = produce_message(&msg, &topic, brokers) {
+            println!("{},{:?}",topic,msg);
+        if let Err(e) = produce_message(&msg, &topic, brokers1.clone()) {
             println!("Failed producing messages: {}", e);
         }
                 
         }
+        
     });
 //comsumer thread
-    let _=thread::Builder::new().name("subscriber".to_string()).spawn(move ||{  
-    for topic in keys
-    {
-        let mut con = try!(Consumer::from_hosts(brokers)
+    let brokers2 = brokers.clone();
+    let _=thread::Builder::new().name("subscriber".to_string()).spawn(move ||{
+        println!("consumer thread running!");
+     for topic in keys
+     {
+        let mut con =    Consumer::from_hosts(brokers2.clone())
                         .with_topic(topic.to_string())
-                        .with_group(group)
+                        //.with_group(group)
                         .with_fallback_offset(FetchOffset::Earliest)
                         .with_offset_storage(GroupOffsetStorage::Kafka)
-                        .create());
+                        .create().unwrap();
+
+        
         loop{
-            let mss = try!(con.poll());
+            let mss = con.poll().unwrap();
             if mss.is_empty(){
                 println!("No Messages available right now.");
-                return Ok(());
             }
             for ms in mss.iter(){
                 for m in ms.messages(){
-                    //println!("{}:{}@{}:{}",ms.topic(),ms.partition(),m.offset,str::from_UTF8(m.value));
+                    println!("{:?}",m.value);
                     let _=tx.send((topic.to_string(),m.value.to_vec()));
-                }
-                //let _=tx.send((topic.to_string(),mss));  
+                } 
                 let _=con.consume_messageset(ms);
             
             }
-            try!(con.commit_consumed());
+            con.commit_consumed().unwrap();
         }
+        
     }
     });
 }
+
 fn produce_message<'a,'b>(data:&'a[u8],topic:&'b str,brokers:Vec<String>)->Result<(),kafkaError>{
     println!("About to publish a message at {:?} to: {}", brokers, topic);
 
@@ -95,31 +106,3 @@ fn produce_message<'a,'b>(data:&'a[u8],topic:&'b str,brokers:Vec<String>)->Resul
 
     Ok(())
 }
-
-// fn consume_messages(keys:Vec<&str>,brokers:Vec<String>)->Result<(),kafkaError>{
-//     for topic in keys
-//     {
-//         let mut con = try!(Consumer::from_hosts(brokers)
-//                         .with_topic(topic)
-//                         .with_group(group)
-//                         .with_fallback_offset(FetchOffset::Earliest)
-//                         .with_offset_storage(GroupOffsetStorage::kafka)
-//                         .create());
-//         loop{
-//             let mss = try!(con.poll());
-//             if mss.is_empty(){
-//                 println!("No Messages available right now.");
-//                 return Ok();
-//             }
-            // for ms in mss.iter(){
-            //     for m in mss.messages(){
-            //         println!("{}:{}@{}:{}",ms.topic(),ms.partition(),m.offset,str::from_UTF8(m.value));
-            //     }
-            //     let _=con.consume_messageset(ms);
-
-    //             let _=tx.send(topic,ms.value);
-    //         }
-    //         try!(con.commit_consumed());
-    //     }
-    // }
-// }
