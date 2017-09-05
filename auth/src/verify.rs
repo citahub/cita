@@ -1,4 +1,3 @@
-
 use std::collections::HashMap;
 use util::H256;
 
@@ -21,8 +20,7 @@ impl Verifier {
     }
 
     pub fn update_hashes(&mut self, h: u64, hashes: Vec<H256>) {
-        trace!("update block's tx hashes for height:{} and the current low height:{} and latest height:{}",
-               h, self.height_low.unwrap(), self.height_latest.unwrap());
+        trace!("update block's tx hashes for height:{} and the current low height:{} and latest height:{}", h, self.height_low.unwrap(), self.height_latest.unwrap());
         //check whether greater than the threshold value
         if (h - self.height_low.unwrap() + 1) > BLOCKLIMIT {
             //self.hashes.truncate(BLOCKLIMIT as usize);
@@ -32,12 +30,12 @@ impl Verifier {
             }
             self.height_low = Some(h - BLOCKLIMIT + 1);
         }
-        self.hashes.insert(h,hashes);
+        self.hashes.insert(h, hashes);
         self.height_latest = Some(h);
 
     }
 
-    pub fn check_hash_exist(&self, hash: &H256) -> bool  {
+    pub fn check_hash_exist(&self, hash: &H256) -> bool {
         for (_, hashes) in self.hashes.iter() {
             if hashes.contains(hash) {
                 return true;

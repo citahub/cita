@@ -25,12 +25,13 @@ use core::libchain::chain::Chain;
 use libproto;
 use libproto::*;
 use libproto::blockchain::Status;
-use protobuf::Message;
+use protobuf::{Message, RepeatedField};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::{Sender, Receiver};
 use std::thread;
 use std::time::Duration;
+use types::ids::BlockId;
 
 const BATCH_SYNC: u64 = 120;
 
@@ -80,6 +81,8 @@ impl Synchronizer {
 
         let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
         ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+
+        self.sync_block_tx_hashes(current_height, ctx_pub);
     }
 
     fn add_block(&self, ctx_pub: Sender<(String, Vec<u8>)>, blk: Block) {
@@ -88,6 +91,26 @@ impl Synchronizer {
             let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st.write_to_bytes().unwrap());
             info!("chain after sync current height {:?}  known height{:?}", self.chain.get_current_height(), self.chain.get_max_height());
             ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            let block_height = st.get_height();
+            self.sync_block_tx_hashes(block_height, ctx_pub);
+        }
+    }
+
+    pub fn sync_block_tx_hashes(&self, block_height: u64, ctx_pub: Sender<(String, Vec<u8>)>) {
+        if let Some(tx_hashes) = self.chain.transaction_hashes(BlockId::Number(block_height)) {
+            //prepare and send the block tx hashes to auth
+            let mut block_tx_hashes = BlockTxHashes::new();
+            block_tx_hashes.set_height(block_height);
+            let mut tx_hashes_in_u8 = Vec::new();
+            for tx_hash_in_h256 in tx_hashes.iter() {
+                tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
+            }
+            block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
+
+            let msg = factory::create_msg(submodules::CHAIN, topics::BLOCK_TXHASHES, communication::MsgType::BLOCK_TXHASHES, block_tx_hashes.write_to_bytes().unwrap());
+
+            ctx_pub.send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            trace!("sync block's tx hashes for height:{}", block_height);
         }
     }
 }
