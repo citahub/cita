@@ -19,8 +19,8 @@ pub use self::inner::*;
 #[cfg(not(feature = "evm-debug"))]
 mod inner {
     macro_rules! evm_debug {
-		($x: expr) => {}
-	}
+        ($x: expr) => {}
+    }
 
     pub struct EvmInformant;
     impl EvmInformant {
@@ -45,10 +45,10 @@ mod inner {
     use util::U256;
 
     macro_rules! evm_debug {
-		($x: expr) => {
-			$x
-		}
-	}
+        ($x: expr) => {
+            $x
+        }
+    }
 
     fn print(data: String) {
         if cfg!(feature = "evm-debug-tests") {
@@ -92,13 +92,13 @@ mod inner {
             self.last_instruction = Instant::now();
 
             print(format!("{}[0x{:<3x}][{:>19}(0x{:<2x}) Gas Left: {:6?} (Previous took: {:10}μs)",
-				&self.spacing,
-				pc,
-				Self::color(instruction, info.name),
-				instruction,
-				current_gas,
-				Self::as_micro(&time),
-			));
+                &self.spacing,
+                pc,
+                Self::color(instruction, info.name),
+                instruction,
+                current_gas,
+                Self::as_micro(&time),
+            ));
 
             if info.args > 0 {
                 for (idx, item) in stack.peek_top(info.args).iter().enumerate() {
@@ -124,12 +124,12 @@ mod inner {
             for (instruction, stats) in stats.into_iter() {
                 let info = infos[instruction as usize];
                 print(format!("{}-------{:>19}(0x{:<2x}) count: {:4}, avg: {:10}μs",
-					self.spacing,
-					Self::color(instruction, info.name),
-					instruction,
-					stats.count,
-					stats.avg(),
-				));
+                    self.spacing,
+                    Self::color(instruction, info.name),
+                    instruction,
+                    stats.count,
+                    stats.avg(),
+                ));
             }
         }
     }

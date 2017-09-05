@@ -35,15 +35,15 @@ use vector::SharedPrefix;
 /// use util::*;
 ///
 /// fn main() {
-/// 	let v = vec![From::from("doe"), From::from("reindeer")];
+///     let v = vec![From::from("doe"), From::from("reindeer")];
 ///     let root = if HASH_NAME == "sha3" {
 ///         "e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3"
 ///     } else if HASH_NAME == "blake2b" {
-/// 	    "2e23216dd9a4b1bfa60a274b3420871d6560d55f45abb578aeaa547c79f7948b"
+///         "2e23216dd9a4b1bfa60a274b3420871d6560d55f45abb578aeaa547c79f7948b"
 ///     } else {
 ///         ""
 ///     };
-/// 	assert_eq!(ordered_trie_root(v), H256::from_str(root).unwrap());
+///     assert_eq!(ordered_trie_root(v), H256::from_str(root).unwrap());
 /// }
 /// ```
 pub fn ordered_trie_root<I>(input: I) -> H256
@@ -51,16 +51,16 @@ where
     I: IntoIterator<Item = Vec<u8>>,
 {
     let gen_input = input
-		// first put elements into btree to sort them by nibbles
-		// optimize it later
-		.into_iter()
-		.enumerate()
-		.map(|(i, vec)| (rlp::encode(&i).into_vec(), vec))
-		.collect::<BTreeMap<_, _>>()
-		// then move them to a vector
-		.into_iter()
-		.map(|(k, v)| (as_nibbles(&k), v) )
-		.collect();
+        // first put elements into btree to sort them by nibbles
+        // optimize it later
+        .into_iter()
+        .enumerate()
+        .map(|(i, vec)| (rlp::encode(&i).into_vec(), vec))
+        .collect::<BTreeMap<_, _>>()
+        // then move them to a vector
+        .into_iter()
+        .map(|(k, v)| (as_nibbles(&k), v) )
+        .collect();
 
     gen_trie_root(gen_input)
 }
@@ -74,20 +74,20 @@ where
 /// use util::*;
 ///
 /// fn main() {
-/// 	let v = vec![
-/// 		(From::from("doe"), From::from("reindeer")),
-/// 		(From::from("dog"), From::from("puppy")),
-/// 		(From::from("dogglesworth"), From::from("cat")),
-/// 	];
+///     let v = vec![
+///         (From::from("doe"), From::from("reindeer")),
+///         (From::from("dog"), From::from("puppy")),
+///         (From::from("dogglesworth"), From::from("cat")),
+///     ];
 ///
 ///     let root = if HASH_NAME == "sha3" {
 ///         "8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3"
 ///     } else if HASH_NAME == "blake2b" {
-/// 	    "82df7576318e4ab41bbe9b4e5c664c1d5e6d2558d4872ebdcce824ea91e004cb"
+///         "82df7576318e4ab41bbe9b4e5c664c1d5e6d2558d4872ebdcce824ea91e004cb"
 ///     } else {
 ///         ""
 ///     };
-/// 	assert_eq!(trie_root(v), H256::from_str(root).unwrap());
+///     assert_eq!(trie_root(v), H256::from_str(root).unwrap());
 /// }
 /// ```
 pub fn trie_root<I>(input: I) -> H256
@@ -95,13 +95,13 @@ where
     I: IntoIterator<Item = (Vec<u8>, Vec<u8>)>,
 {
     let gen_input = input
-		// first put elements into btree to sort them and to remove duplicates
-		.into_iter()
-		.collect::<BTreeMap<_, _>>()
-		// then move them to a vector
-		.into_iter()
-		.map(|(k, v)| (as_nibbles(&k), v) )
-		.collect();
+        // first put elements into btree to sort them and to remove duplicates
+        .into_iter()
+        .collect::<BTreeMap<_, _>>()
+        // then move them to a vector
+        .into_iter()
+        .map(|(k, v)| (as_nibbles(&k), v) )
+        .collect();
 
     gen_trie_root(gen_input)
 }
@@ -115,31 +115,31 @@ where
 /// use util::*;
 ///
 /// fn main() {
-/// 	let v = vec![
-/// 		(From::from("doe"), From::from("reindeer")),
-/// 		(From::from("dog"), From::from("puppy")),
-/// 		(From::from("dogglesworth"), From::from("cat")),
-/// 	];
+///     let v = vec![
+///         (From::from("doe"), From::from("reindeer")),
+///         (From::from("dog"), From::from("puppy")),
+///         (From::from("dogglesworth"), From::from("cat")),
+///     ];
 ///     let root = if HASH_NAME == "sha3" {
 ///         "d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585"
 ///     } else if HASH_NAME == "blake2b" {
-/// 	    "4fc4a4c6a187355054c79faace7e06619955ea670470c8d27a23ff59892c8ec6"
+///         "4fc4a4c6a187355054c79faace7e06619955ea670470c8d27a23ff59892c8ec6"
 ///     } else {
 ///         ""
 ///     };
-/// 	assert_eq!(sec_trie_root(v), H256::from_str(root).unwrap());
+///     assert_eq!(sec_trie_root(v), H256::from_str(root).unwrap());
 /// }
 /// ```
 pub fn sec_trie_root(input: Vec<(Vec<u8>, Vec<u8>)>) -> H256 {
     let gen_input = input
-		// first put elements into btree to sort them and to remove duplicates
-		.into_iter()
-		.map(|(k, v)| (k.crypt_hash().to_vec(), v))
-		.collect::<BTreeMap<_, _>>()
-		// then move them to a vector
-		.into_iter()
-		.map(|(k, v)| (as_nibbles(&k), v) )
-		.collect();
+        // first put elements into btree to sort them and to remove duplicates
+        .into_iter()
+        .map(|(k, v)| (k.crypt_hash().to_vec(), v))
+        .collect::<BTreeMap<_, _>>()
+        // then move them to a vector
+        .into_iter()
+        .map(|(k, v)| (as_nibbles(&k), v) )
+        .collect();
 
     gen_trie_root(gen_input)
 }
@@ -232,12 +232,12 @@ fn hash256rlp(input: &[(Vec<u8>, Vec<u8>)], pre_len: usize, stream: &mut RlpStre
 
     // get length of the longest shared prefix in slice keys
     let shared_prefix = input.iter()
-		// skip first element
-		.skip(1)
-		// get minimum number of shared nibbles between first and each successive
-		.fold(key.len(), | acc, &(ref k, _) | {
-			cmp::min(key.shared_prefix_len(k), acc)
-		});
+        // skip first element
+        .skip(1)
+        // get minimum number of shared nibbles between first and each successive
+        .fold(key.len(), | acc, &(ref k, _) | {
+            cmp::min(key.shared_prefix_len(k), acc)
+        });
 
     // if shared prefix is higher than current prefix append its
     // new part of the key to the stream

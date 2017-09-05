@@ -1072,34 +1072,34 @@ mod tests {
         let privkey = keypair.privkey();
         let chain = init_chain();
         /*
-			pragma solidity ^0.4.8;
+            pragma solidity ^0.4.8;
 
-			contract mortal {
-				/* Define variable owner of the type address*/
-				address owner;
+            contract mortal {
+                /* Define variable owner of the type address*/
+                address owner;
 
-				/* this function is executed at initialization and sets the owner of the contract */
-				function mortal() { owner = msg.sender; }
+                /* this function is executed at initialization and sets the owner of the contract */
+                function mortal() { owner = msg.sender; }
 
-				/* Function to recover the funds on the contract */
-				function kill() { if (msg.sender == owner) selfdestruct(owner); }
-			}
+                /* Function to recover the funds on the contract */
+                function kill() { if (msg.sender == owner) selfdestruct(owner); }
+            }
 
-			contract greeter is mortal {
-				/* define variable greeting of the type string */
-				string greeting;
+            contract greeter is mortal {
+                /* define variable greeting of the type string */
+                string greeting;
 
-				/* this runs when the contract is executed */
-				function greeter(string _greeting) public {
-					greeting = _greeting;
-				}
-
-				/* main function */
-				function greet() constant returns (string) {
-					return greeting;
+                /* this runs when the contract is executed */
+                function greeter(string _greeting) public {
+                    greeting = _greeting;
                 }
-			}
-		*/
+
+                /* main function */
+                function greet() constant returns (string) {
+                    return greeting;
+                }
+            }
+        */
         let data = "6060604052341561000f57600080fd5b5b336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505b5b61010c806100616000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806341c0e1b514603d575b600080fd5b3415604757600080fd5b604d604f565b005b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141560dd576000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16ff5b5b5600a165627a7a72305820de567cec1777627b898689638799169aacaf87d3ea313a0d8dab5758bac937670029"
             .from_hex()
             .unwrap();
@@ -1153,7 +1153,7 @@ mod tests {
                     return a;
                 }
             }
-		*/
+        */
         let data = "6060604052341561000f57600080fd5b5b7fb8f132fb6526e0405f3ce4f3bab301f1d4409b1e7f2c01c2037d6cf845c831cb30604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a15b5b610107806100846000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11460475780636d4ce63c146067575b600080fd5b3415605157600080fd5b60656004808035906020019091905050608d565b005b3415607157600080fd5b607760d1565b6040518082815260200191505060405180910390f35b806000819055507fa17a9e66f0c355e3aa3b9ea969991204d6b1d2e62a47877f612cb2371d79e06a6000546040518082815260200191505060405180910390a15b50565b6000805490505b905600a165627a7a72305820bb7224faec63935671f0b4722064773ccae237bec4f6fbb252c362f2192dca900029"
             .from_hex()
             .unwrap();

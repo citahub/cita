@@ -28,12 +28,12 @@ decsha3(512)
 /*** Constants. ***/
 static const uint8_t rho[24] = \
   { 1,  3,   6, 10, 15, 21,
-	28, 36, 45, 55,  2, 14,
-	27, 41, 56,  8, 25, 43,
-	62, 18, 39, 61, 20, 44};
+    28, 36, 45, 55,  2, 14,
+    27, 41, 56,  8, 25, 43,
+    62, 18, 39, 61, 20, 44};
 static const uint8_t pi[24] = \
   {10,  7, 11, 17, 18, 3,
-	5, 16,  8, 21, 24, 4,
+    5, 16,  8, 21, 24, 4,
    15, 23, 19, 13, 12, 2,
    20, 14, 22,  9, 6,  1};
 static const uint64_t RC[24] = \
@@ -62,30 +62,30 @@ static inline void keccakf(void* state) {
   int i;
 
   for (i = 0; i < 24; i++) {
-	// Theta
-	FOR5(x, 1,
-		 b[x] = 0;
-		 FOR5(y, 5,
-			  b[x] ^= a[x + y]; ))
-	FOR5(x, 1,
-		 FOR5(y, 5,
-			  a[y + x] ^= b[(x + 4) % 5] ^ rol(b[(x + 1) % 5], 1); ))
-	// Rho and pi
-	t = a[1];
-	x = 0;
-	REPEAT24(b[0] = a[pi[x]];
-			 a[pi[x]] = rol(t, rho[x]);
-			 t = b[0];
-			 x++; )
-	// Chi
-	FOR5(y,
-	   5,
-	   FOR5(x, 1,
-			b[x] = a[y + x];)
-	   FOR5(x, 1,
-			a[y + x] = b[x] ^ ((~b[(x + 1) % 5]) & b[(x + 2) % 5]); ))
-	// Iota
-	a[0] ^= RC[i];
+    // Theta
+    FOR5(x, 1,
+         b[x] = 0;
+         FOR5(y, 5,
+              b[x] ^= a[x + y]; ))
+    FOR5(x, 1,
+         FOR5(y, 5,
+              a[y + x] ^= b[(x + 4) % 5] ^ rol(b[(x + 1) % 5], 1); ))
+    // Rho and pi
+    t = a[1];
+    x = 0;
+    REPEAT24(b[0] = a[pi[x]];
+             a[pi[x]] = rol(t, rho[x]);
+             t = b[0];
+             x++; )
+    // Chi
+    FOR5(y,
+       5,
+       FOR5(x, 1,
+            b[x] = a[y + x];)
+       FOR5(x, 1,
+            a[y + x] = b[x] ^ ((~b[(x + 1) % 5]) & b[(x + 2) % 5]); ))
+    // Iota
+    a[0] ^= RC[i];
   }
 }
 
@@ -98,15 +98,15 @@ static inline void keccakf(void* state) {
   _({size_t i; for (i = 0; i < L; i += ST) { S; }})
 #define mkapply_ds(NAME, S)                                          \
   static inline void NAME(uint8_t* dst,                              \
-						  const uint8_t* src,                        \
-						  size_t len) {                              \
-	FOR(i, 1, len, S);                                               \
+                          const uint8_t* src,                        \
+                          size_t len) {                              \
+    FOR(i, 1, len, S);                                               \
   }
 #define mkapply_sd(NAME, S)                                          \
   static inline void NAME(const uint8_t* src,                        \
-						  uint8_t* dst,                              \
-						  size_t len) {                              \
-	FOR(i, 1, len, S);                                               \
+                          uint8_t* dst,                              \
+                          size_t len) {                              \
+    FOR(i, 1, len, S);                                               \
   }
 
 mkapply_ds(xorin, dst[i] ^= src[i])  // xorin
@@ -118,18 +118,18 @@ mkapply_sd(setout, dst[i] = src[i])  // setout
 // Fold P*F over the full blocks of an input.
 #define foldP(I, L, F) \
   while (L >= rate) {  \
-	F(a, I, rate);     \
-	P(a);              \
-	I += rate;         \
-	L -= rate;         \
+    F(a, I, rate);     \
+    P(a);              \
+    I += rate;         \
+    L -= rate;         \
   }
 
 /** The sponge-based hash construction. **/
 static inline int hash(uint8_t* out, size_t outlen,
-					   const uint8_t* in, size_t inlen,
-					   size_t rate, uint8_t delim) {
+                       const uint8_t* in, size_t inlen,
+                       size_t rate, uint8_t delim) {
   if ((out == NULL) || ((in == NULL) && inlen != 0) || (rate >= Plen)) {
-	return -1;
+    return -1;
   }
   uint8_t a[Plen] = {0};
   // Absorb input.
@@ -151,16 +151,16 @@ static inline int hash(uint8_t* out, size_t outlen,
 /*** Helper macros to define SHA3 and SHAKE instances. ***/
 #define defshake(bits)                                            \
   int shake##bits(uint8_t* out, size_t outlen,                    \
-				  const uint8_t* in, size_t inlen) {              \
-	return hash(out, outlen, in, inlen, 200 - (bits / 4), 0x1f);  \
+                  const uint8_t* in, size_t inlen) {              \
+    return hash(out, outlen, in, inlen, 200 - (bits / 4), 0x1f);  \
   }
 #define defsha3(bits)                                             \
   int sha3_##bits(uint8_t* out, size_t outlen,                    \
-				  const uint8_t* in, size_t inlen) {              \
-	if (outlen > (bits/8)) {                                      \
-	  return -1;                                                  \
-	}                                                             \
-	return hash(out, outlen, in, inlen, 200 - (bits / 4), 0x01);  \
+                  const uint8_t* in, size_t inlen) {              \
+    if (outlen > (bits/8)) {                                      \
+      return -1;                                                  \
+    }                                                             \
+    return hash(out, outlen, in, inlen, 200 - (bits / 4), 0x01);  \
   }
 
 /*** FIPS202 SHAKE VOFs ***/

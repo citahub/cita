@@ -101,15 +101,15 @@ pub trait HashDB: AsHashDB + Send + Sync {
     ///   let mut m = MemoryDB::new();
     ///   let d = "Hello world!".as_bytes();
     ///   let key = &d.crypt_hash();
-    ///   m.remove(key);	// OK - we now owe an insertion.
+    ///   m.remove(key);    // OK - we now owe an insertion.
     ///   assert!(!m.contains(key));
-    ///   m.remove(key);	// OK - we now owe two insertions.
+    ///   m.remove(key);    // OK - we now owe two insertions.
     ///   assert!(!m.contains(key));
-    ///   m.insert(d);	// OK - still owed.
+    ///   m.insert(d);    // OK - still owed.
     ///   assert!(!m.contains(key));
-    ///   m.insert(d);	// OK - now it's "empty" again.
+    ///   m.insert(d);    // OK - now it's "empty" again.
     ///   assert!(!m.contains(key));
-    ///   m.insert(d);	// OK - now we've
+    ///   m.insert(d);    // OK - now we've
     ///   assert_eq!(m.get(key).unwrap(), d);
     /// }
     /// ```
