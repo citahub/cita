@@ -22,6 +22,7 @@ use std::sync::mpsc::Sender;
 use verify::Verifier;
 use protobuf::{Message, RepeatedField};
 use util::H256;
+use std::vec::*;
 
 pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier: &mut Verifier) {
 
@@ -31,10 +32,16 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
         if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) && t == MsgType::STATUS {
             let (_, _, content) = parse_msg(payload.as_slice());
             match content {
-                MsgClass::STATUS(status) => {
-                    let height = status.get_height();
+                MsgClass::BLOCKTXHASHES(block_tx_hashes) => {
+                    let height = block_tx_hashes.get_height();
                     trace!("got height {:?}", height);
-                    verifier.set_height(height);
+                    let tx_hashes = block_tx_hashes.get_tx_hashes();
+                    let mut tx_hashes_in_h256: Vec<H256> = Vec::new();
+                    for data in tx_hashes.iter() {
+                        tx_hashes_in_h256.push(H256::from_slice(data));
+                    }
+                    verifier.update_hashes(height, tx_hashes_in_h256);
+
                 }
                 MsgClass::VERIFYREQ(req) => {
                     trace!("get verify request {:?}", req);
