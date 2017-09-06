@@ -28,7 +28,8 @@
 // use std::sync::Arc;
 // use std::sync::mpsc::{channel, Sender};
 // use types::ids::BlockId;
-use util::{Address};
+
+use util::Address;
 // use std::collections::HashSet;
 
 // TODO: ethabi should be able to generate this.

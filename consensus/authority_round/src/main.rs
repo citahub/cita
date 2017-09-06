@@ -46,6 +46,7 @@ use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::{Duration, Instant};
+extern crate authority_manage;
 
 fn main() {
     dotenv::dotenv().ok();

@@ -16,10 +16,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{Engine, EngineError, Signable, unix_now, AsMillis};
+use authority_manage::AuthorityManage;
 use crypto::{Signature, Signer, CreateKey};
 use engine_json;
 use libproto::*;
-use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
+use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, RichStatus};
 use parking_lot::RwLock;
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
@@ -58,6 +59,7 @@ pub struct AuthorityRound {
     sealing: AtomicBool,
     step: AtomicUsize,
     ready: Mutex<Sender<usize>>,
+    auth_manage: RwLock<AuthorityManage>,
 }
 
 impl AuthorityRound {
@@ -74,6 +76,7 @@ impl AuthorityRound {
                                   sealing: AtomicBool::new(false),
                                   step: AtomicUsize::new(INIT_STEP),
                                   ready: Mutex::new(ready),
+                                  auth_manage: RwLock::new(AuthorityManage::new()),
                               });
         Ok(engine)
     }
@@ -84,7 +87,8 @@ impl AuthorityRound {
     }
 
     pub fn is_sealer(&self, nonce: u64) -> bool {
-        let authority = nonce % self.params.authority_n;
+        //let authority = nonce % self.params.authority_n;
+        let authority = nonce % self.auth_manage.read().authority_n as u64;
         authority == self.position
     }
 
@@ -160,7 +164,8 @@ impl Engine for AuthorityRound {
         let proof = AuthorityRoundProof::from(block.get_header().get_proof().clone());
         let signature = Signature::from(proof.signature);
         let author = block.get_body().recover_address_with_signature(&signature).unwrap();
-        if !self.params.authorities.contains(&author) {
+        //if !self.params.authorities.contains(&author) {
+        if !self.auth_manage.read().authorities.contains(&author) {
             trace!("verify_block author {:?}", author.to_hex());
             return Err(EngineError::NotAuthorized(author))?;
         }
@@ -171,11 +176,15 @@ impl Engine for AuthorityRound {
         Ok(())
     }
 
-    fn receive_new_status(&self, status: Status) {
+    fn receive_new_status(&self, status: RichStatus) {
         self.step.store(status.height as usize, Ordering::SeqCst);
         let new_height = (status.height + 1) as usize;
         let height = self.height.load(Ordering::SeqCst);
         trace!("new_status status {:?} height {:?}", status, height);
+
+        let authorities: Vec<Address> = status.get_nodes().into_iter().map(|node| Address::from_slice(node)).collect();
+        self.auth_manage.write().receive_authorities_list(height, authorities);
+
         if new_height == INIT_HEIGHT {
             self.height.store(new_height, Ordering::SeqCst);
             self.sealing.store(false, Ordering::SeqCst);
@@ -281,6 +290,7 @@ mod tests {
 
     #[test]
     fn has_valid_metadata() {
+        ::std::env::set_var("DATA_PATH", "./data");
         let config_path = if SIGNATURE_NAME == "ed25519" {
             "../res/authority_round.json".to_string()
         } else if SIGNATURE_NAME == "secp256k1" {

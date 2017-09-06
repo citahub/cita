@@ -49,6 +49,7 @@ use state_db::StateDB;
 
 use std::collections::{BTreeMap, VecDeque};
 use std::collections::{HashMap, HashSet};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
@@ -61,7 +62,6 @@ use util::{RwLock, Mutex};
 use util::HeapSizeOf;
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
-use std::str::FromStr;
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
@@ -128,7 +128,11 @@ pub struct RichStatus {
 
 impl RichStatus {
     fn new() -> Self {
-        RichStatus { number: 0, hash: H256::default(), nodes: vec![] }
+        RichStatus {
+            number: 0,
+            hash: H256::default(),
+            nodes: vec![],
+        }
     }
 
     fn hash(&self) -> &H256 {
@@ -269,30 +273,30 @@ impl Chain {
         let max_height = AtomicUsize::new(0);
         max_height.store(header.number() as usize, Ordering::SeqCst);
         let raw_chain = Chain {
-                                 blooms_config: blooms_config,
-                                 current_header: RwLock::new(header.clone()),
-                                 is_sync: AtomicBool::new(false),
-                                 max_height: max_height,
-                                 block_map: RwLock::new(BTreeMap::new()),
-                                 block_headers: RwLock::new(HashMap::new()),
-                                 block_bodies: RwLock::new(HashMap::new()),
-                                 block_hashes: RwLock::new(HashMap::new()),
-                                 transaction_addresses: RwLock::new(HashMap::new()),
-                                 blocks_blooms: RwLock::new(HashMap::new()),
-                                 block_receipts: RwLock::new(HashMap::new()),
-                                 cache_man: Mutex::new(cache_man),
-                                 db: db,
-                                 state_db: state_db,
-                                 factories: factories,
-                                 sync_sender: Mutex::new(sync_sender),
-                                 last_hashes: RwLock::new(VecDeque::new()),
-                                 polls_filter: Arc::new(Mutex::new(PollManager::new())),
-                             };
+            blooms_config: blooms_config,
+            current_header: RwLock::new(header.clone()),
+            is_sync: AtomicBool::new(false),
+            max_height: max_height,
+            block_map: RwLock::new(BTreeMap::new()),
+            block_headers: RwLock::new(HashMap::new()),
+            block_bodies: RwLock::new(HashMap::new()),
+            block_hashes: RwLock::new(HashMap::new()),
+            transaction_addresses: RwLock::new(HashMap::new()),
+            blocks_blooms: RwLock::new(HashMap::new()),
+            block_receipts: RwLock::new(HashMap::new()),
+            cache_man: Mutex::new(cache_man),
+            db: db,
+            state_db: state_db,
+            factories: factories,
+            sync_sender: Mutex::new(sync_sender),
+            last_hashes: RwLock::new(VecDeque::new()),
+            polls_filter: Arc::new(Mutex::new(PollManager::new())),
+        };
 
         let mut status = RichStatus::new();
         status.set_hash(header.clone().hash());
         status.set_number(header.clone().number());
-        let nodes :Vec<Address> = raw_chain.read();
+        let nodes: Vec<Address> = raw_chain.read();
         status.set_nodes(nodes);
         let chain = Arc::new(raw_chain);
 
@@ -1001,8 +1005,10 @@ impl Chain {
 impl NodeManager for Chain {
     fn read(&self) -> Vec<Address> {
         vec![
-            H160::from_str("00000000000000000000000000000000013241a2").unwrap(),
-            H160::from_str("999325645d5c23b72af4fce6c512d752ccc8a354").unwrap(),
+            H160::from_str("3650a344a004de80088b832251b8c5cd55ee4165").unwrap(),
+            H160::from_str("7966730b4b5f8c5548e7bd8fedaaa53a2297a553").unwrap(),
+            H160::from_str("a1282f6edd569636b74a927c215b05485939de8e").unwrap(),
+            H160::from_str("fa6021cb37f913b454e89ac955fe34479f259864").unwrap(),
         ]
     }
 }
