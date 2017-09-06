@@ -50,7 +50,7 @@ pub use self::signature::{sign, verify_public, verify_address, recover, Signatur
 use bigint::{H160, H256, H512};
 
 lazy_static! {
-	pub static ref SECP256K1: secp256k1::Secp256k1 = secp256k1::Secp256k1::new();
+    pub static ref SECP256K1: secp256k1::Secp256k1 = secp256k1::Secp256k1::new();
 }
 
 /// Uninstantiatable error type for infallible generators.

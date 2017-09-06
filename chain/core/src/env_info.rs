@@ -59,18 +59,18 @@ impl Default for EnvInfo {
 }
 
 // impl From<ethjson::vm::Env> for EnvInfo {
-// 	fn from(e: ethjson::vm::Env) -> Self {
-// 		let number = e.number.into();
-// 		EnvInfo {
-// 			number: number,
-// 			author: e.author.into(),
-// 			difficulty: e.difficulty.into(),
-// 			gas_limit: e.gas_limit.into(),
-// 			timestamp: e.timestamp.into(),
-// 			last_hashes: Arc::new((1..cmp::min(number + 1, 257)).map(|i| format!("{}", number - i).as_bytes().crypt_hash()).collect()),
-// 			gas_used: U256::default(),
-// 		}
-// 	}
+//     fn from(e: ethjson::vm::Env) -> Self {
+//         let number = e.number.into();
+//         EnvInfo {
+//             number: number,
+//             author: e.author.into(),
+//             difficulty: e.difficulty.into(),
+//             gas_limit: e.gas_limit.into(),
+//             timestamp: e.timestamp.into(),
+//             last_hashes: Arc::new((1..cmp::min(number + 1, 257)).map(|i| format!("{}", number - i).as_bytes().crypt_hash()).collect()),
+//             gas_used: U256::default(),
+//         }
+//     }
 // }
 
 #[cfg(test)]
@@ -85,19 +85,19 @@ mod tests {
 
     // #[test]
     // fn it_serializes_form_json() {
-    // 	let env_info = EnvInfo::from(ethjson::vm::Env {
-    // 		author: ethjson::hash::Address(Address::from_str("000000f00000000f000000000000f00000000f00").unwrap()),
-    // 		number: ethjson::uint::Uint(U256::from(1_112_339)),
-    // 		difficulty: ethjson::uint::Uint(U256::from(50_000)),
-    // 		gas_limit: ethjson::uint::Uint(U256::from(40_000)),
-    // 		timestamp: ethjson::uint::Uint(U256::from(1_100))
-    // 	});
+    //     let env_info = EnvInfo::from(ethjson::vm::Env {
+    //         author: ethjson::hash::Address(Address::from_str("000000f00000000f000000000000f00000000f00").unwrap()),
+    //         number: ethjson::uint::Uint(U256::from(1_112_339)),
+    //         difficulty: ethjson::uint::Uint(U256::from(50_000)),
+    //         gas_limit: ethjson::uint::Uint(U256::from(40_000)),
+    //         timestamp: ethjson::uint::Uint(U256::from(1_100))
+    //     });
 
-    // 	assert_eq!(env_info.number, 1112339);
-    // 	assert_eq!(env_info.author, Address::from_str("000000f00000000f000000000000f00000000f00").unwrap());
-    // 	assert_eq!(env_info.gas_limit, 40000.into());
-    // 	assert_eq!(env_info.difficulty, 50000.into());
-    // 	assert_eq!(env_info.gas_used, 0.into());
+    //     assert_eq!(env_info.number, 1112339);
+    //     assert_eq!(env_info.author, Address::from_str("000000f00000000f000000000000f00000000f00").unwrap());
+    //     assert_eq!(env_info.gas_limit, 40000.into());
+    //     assert_eq!(env_info.difficulty, 50000.into());
+    //     assert_eq!(env_info.gas_used, 0.into());
     // }
 
     #[test]

@@ -250,7 +250,7 @@ where
         // valid (canon):  retracted 0, enacted 1 => false, true,
         // valid (branch): retracted 0, enacted 0 => false, false,
         // valid (bbcc):   retracted 1, enacted 1 => true, true,
-        // invalid:	       retracted 1, enacted 0 => true, false,
+        // invalid:           retracted 1, enacted 0 => true, false,
         let ret = request.retracted != 0;
         let ena = !request.enacted.is_empty();
         assert!(!(ret && !ena));
@@ -265,18 +265,18 @@ where
             let range_end = range_start + request.retracted;
             let replaced_range = range_start..range_end;
             let enacted_blooms = request.enacted
-				.iter()
-				// all traces are expected to be found here. That's why `expect` has been used
-				// instead of `filter_map`. If some traces haven't been found, it meens that
-				// traces database is corrupted or incomplete.
-				.map(|block_hash| if block_hash == &request.block_hash {
-					request.traces.bloom()
-				} else {
-					self.traces(block_hash).expect("Traces database is incomplete.").bloom()
-				})
-				.map(blooms::Bloom::from)
-				.map(Into::into)
-				.collect();
+                .iter()
+                // all traces are expected to be found here. That's why `expect` has been used
+                // instead of `filter_map`. If some traces haven't been found, it meens that
+                // traces database is corrupted or incomplete.
+                .map(|block_hash| if block_hash == &request.block_hash {
+                    request.traces.bloom()
+                } else {
+                    self.traces(block_hash).expect("Traces database is incomplete.").bloom()
+                })
+                .map(blooms::Bloom::from)
+                .map(Into::into)
+                .collect();
 
             let chain = BloomGroupChain::new(self.bloom_config, self);
             let trace_blooms = chain.replace(&replaced_range, enacted_blooms);
@@ -308,25 +308,25 @@ where
         let trace_position_deq = VecDeque::from(trace_position);
         self.extras.block_hash(block_number).and_then(|block_hash| {
             self.transactions_traces(&block_hash)
-				.and_then(|traces| traces.into_iter().nth(tx_position))
-				.map(Into::<Vec<FlatTrace>>::into)
-				// this may and should be optimized
-				.and_then(|traces| traces.into_iter().find(|trace| trace.trace_address == trace_position_deq))
-				.map(|trace| {
-					let tx_hash = self.extras.transaction_hash(block_number, tx_position)
-						.expect("Expected to find transaction hash. Database is probably corrupted");
+                .and_then(|traces| traces.into_iter().nth(tx_position))
+                .map(Into::<Vec<FlatTrace>>::into)
+                // this may and should be optimized
+                .and_then(|traces| traces.into_iter().find(|trace| trace.trace_address == trace_position_deq))
+                .map(|trace| {
+                    let tx_hash = self.extras.transaction_hash(block_number, tx_position)
+                        .expect("Expected to find transaction hash. Database is probably corrupted");
 
-					LocalizedTrace {
-						action: trace.action,
-						result: trace.result,
-						subtraces: trace.subtraces,
-						trace_address: trace.trace_address.into_iter().collect(),
-						transaction_number: tx_position,
-						transaction_hash: tx_hash,
-						block_number: block_number,
-						block_hash: block_hash,
-					}
-				})
+                    LocalizedTrace {
+                        action: trace.action,
+                        result: trace.result,
+                        subtraces: trace.subtraces,
+                        trace_address: trace.trace_address.into_iter().collect(),
+                        transaction_number: tx_position,
+                        transaction_hash: tx_hash,
+                        block_number: block_number,
+                        block_hash: block_hash,
+                    }
+                })
         })
     }
 

@@ -87,7 +87,7 @@ impl Handler for WsHandler {
             let req_id = Id::Null;
             let jsonrpc_version = None;
 
-            let err = match WsHandler::into_json(msg.into_text().unwrap()) {
+            let err = match WsHandler::into_rpc(msg.into_text().unwrap()) {
                 Err(err) => Err(err),
                 Ok(rpc) => {
                     let req_id = rpc.id.clone();

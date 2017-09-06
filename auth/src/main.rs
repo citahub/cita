@@ -25,6 +25,8 @@ extern crate cpuprofiler;
 extern crate libproto;
 extern crate cita_crypto as crypto;
 extern crate util;
+extern crate cache_2q;
+
 pub mod handler;
 pub mod verifier;
 

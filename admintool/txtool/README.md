@@ -13,10 +13,9 @@ $ pip install -r requirements.txt
 $ bash requirements_sudo.sh
 ```
 
-
 ### 检查CITA是否正常启动
 ```
-$ sudo python check.py
+$ python check.py
 ```
 
 ### net_peerCount
@@ -31,12 +30,18 @@ $ python peer_count.py
 $ python block_number.py
 ```
 
-### 生成账户信息
+### 生成账户信息(账户信息保存在output/accounts目录)
+
+使用secp256k1签名算法和sha3 hash
 
 ```
 $ python generate_account.py
+```
 
-账户信息保存在output/accounts目录
+使用ed25519签名算法和blake2b hash
+
+```
+$ python generate_account.py --newcrypto
 ```
 
 ### 编译合约
@@ -82,38 +87,45 @@ $ python compile.py -p "get()"
 
 ### 构造交易
 
+使用secp256k1签名算法和sha3 hash
 ```
 $ python make_tx.py
 
 $ python make_tx.py --bytecode `contract bytecode` --privkey `privatekey` --receiver `transaction to`
 ```
+使用ed25519签名算法和blake2b hash
+
+```
+$ python make_tx.py --newcrypto
+
+$ python make_tx.py --bytecode `contract bytecode` --privkey `privatekey` --receiver `transaction to` --newcrypto
+```
+
 
 ### 发送交易
+交易相关的信息保存在output/transaction目录
 
 ```
 $ python send_tx.py
 
-交易相关的信息保存在output/transaction目录
-
 $ python send_tx.py `deploycode`
 
-$ python send_tx.py `deploycode1` `deploycode2` `deploycode3` ...
+$ python send_tx.py --codes `deploycode1` `deploycode2` `deploycode3` ...
 ```
 
 ### 获取交易
+交易的hash使用output/transaction/hash文件中的值
 
 ```
 $ python get_tx.py
-交易的hash使用output/transaction/hash文件中的值
 
-$python get_tx.py `transaction_hash`
+$python get_tx.py --tx `transaction_hash`
 ```
 
 ### cita_getBlockByHash
 
 ```
 $ python block_by_hash.py hash --detail
-或者
 $ python block_by_hash.py hash --no-detail
 ```
 
@@ -121,7 +133,6 @@ $ python block_by_hash.py hash --no-detail
 
 ```
 $ python block_by_number.py number --detail
-或者
 $ python block_by_number.py number --no-detail
 ```
 
@@ -129,8 +140,7 @@ $ python block_by_number.py number --no-detail
 
 ```
 $ python get_receipt.py
-
-$ python get_receipt.py `transaction_hash`
+$ python get_receipt.py --tx `transaction_hash`
 ```
 
 ### eth_getTransactionCount

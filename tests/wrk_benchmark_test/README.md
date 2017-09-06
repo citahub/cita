@@ -18,10 +18,10 @@
 #增加随机端口设置延迟 参数1:端口  参数2:延迟多少毫秒 参数3:多少秒随机tc(延迟、丢失、重复、损坏)一次 参数4: tc设置类型(delay:延迟, loss:丢包, dup:重复, corrupt:损坏)
 
 #例如
-	./setPortDelay.sh 4000 1000 5 delay
+    ./setPortDelay.sh 4000 1000 5 delay
 #注意：参数4:delay时，参数2表示延迟多少毫秒; loss时,参数2表示多少几率丢失;dup时,参数2表示多少几率重复;corrupt时,参数2表示多少几率损失;
 #如下表示20%的几率丢失
-	./setPortDelay.sh 4000 20 5 loss
+    ./setPortDelay.sh 4000 20 5 loss
 
 
 

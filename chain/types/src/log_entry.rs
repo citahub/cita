@@ -73,13 +73,13 @@ impl LogEntry {
 }
 
 // impl From<ethjson::state::Log> for LogEntry {
-// 	fn from(l: ethjson::state::Log) -> Self {
-// 		LogEntry {
-// 			address: l.address.into(),
-// 			topics: l.topics.into_iter().map(Into::into).collect(),
-// 			data: l.data.into(),
-// 		}
-// 	}
+//     fn from(l: ethjson::state::Log) -> Self {
+//         LogEntry {
+//             address: l.address.into(),
+//             topics: l.topics.into_iter().map(Into::into).collect(),
+//             data: l.data.into(),
+//         }
+//     }
 // }
 
 /// Log localized in a blockchain.
