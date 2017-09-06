@@ -29,8 +29,9 @@ setup1:
 	apt-get install --allow-change-held-packages software-properties-common
 	if [ $$(lsb_release -s -c) = "trusty" ]; then add-apt-repository ppa:chris-lea/libsodium -y ; fi;
 	apt-get update -q
+	apt-get build-dep build-essential
 	apt-get install --allow-change-held-packages \
-		libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  \
+	 	pkg-config libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  \
 		rabbitmq-server  google-perftools jq libsodium*
 	wget https://github.com/ethereum/solidity/releases/download/v0.4.15/solc-static-linux
 	mv solc-static-linux /usr/local/bin/solc
