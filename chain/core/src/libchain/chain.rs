@@ -423,10 +423,6 @@ impl Chain {
 
             let contract_address = match stx.action() {
                 &Action::Create => Some(contract_address(&stx.sender(), stx.nonce())),
-                &Action::Store => {
-                    let store_addr: Address = STORE_ADDRESS.into();
-                    Some(store_addr)
-                }
                 _ => None,
             };
 
