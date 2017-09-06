@@ -16,25 +16,53 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use libproto::*;
-use libproto::communication::*;
-use protobuf::core::parse_from_bytes;
+use protobuf::{Message, RepeatedField};
+use std::sync::mpsc::Sender;
+use verifier::Verifier;
 
 
-pub fn handle_msg(payload: Vec<u8>) {
 
-    if let Ok(msg) = parse_from_bytes::<communication::Message>(payload.as_ref()) {
-        let t = msg.get_field_type();
-        let cid = msg.get_cmd_id();
-        if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) && t == MsgType::STATUS {
-            let (_, _, content) = parse_msg(payload.as_slice());
-            match content {
-                MsgClass::STATUS(status) => {
-                    let height = status.get_height();
-                    info!("got height {:?}", height);
-                }
-                _ => {}
-            }
+pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, v: &Verifier) {
+    let (_, _, content) = parse_msg(payload.as_slice());
+    match content {
+        MsgClass::STATUS(status) => {
+            let height = status.get_height();
+            info!("got height {:?}", height);
         }
+        MsgClass::VERIFYREQ(req) => {
+            trace!("got verify request {:?}", req);
+            let req_msgs = req.get_reqs();
+            let mut resps = Vec::new();
+            for req in req_msgs {
+                let mut resp = VerifyRespMsg::new();
+                if v.verify_valid_until_block(req.get_valid_until_block()) {
+                    resp.set_ret(Ret::Ok);
+                } else {
+                    resp.set_ret(Ret::OutOfTime);
+                }
+
+                match v.verify_sig(req) {
+                    Ok(pubkey) => {
+                        resp.set_signer(pubkey.to_vec());
+                        resp.set_ret(Ret::Ok);
+                        resps.push(resp)
+                    }
+                    Err(_) => {
+                        resp.set_ret(Ret::BadSig);
+                        resps.push(resp)
+                    }
+                }
+                let mut vresp = VerifyResp::new();
+                vresp.set_resps(RepeatedField::from_slice(&resps));
+
+                let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_RESP, communication::MsgType::VERIFY_RESP, vresp.write_to_bytes().unwrap());
+                tx_pub.send(("auth.verify_resp".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            }
+
+        }
+        _ => {}
     }
+
+
 
 }
