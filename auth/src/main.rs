@@ -41,6 +41,7 @@ use std::env;
 use std::sync::mpsc::channel;
 use std::thread;
 use verify::Verifier;
+use cache::VerifyCache;
 
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
@@ -78,6 +79,7 @@ fn main() {
     profifer(flag_prof_start, flag_prof_duration);
 
     let mut verifier = Verifier::new();
+    let mut cache = VerifyCache::new(1000);
 
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
@@ -88,7 +90,7 @@ fn main() {
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
         info!("get {} : {:?}", key, msg);
-        handle_msg(msg, &tx_pub, &mut verifier);
+        handle_msg(msg, &tx_pub, &mut verifier, &mut cache);
     }
 }
 
@@ -139,10 +141,52 @@ mod tests {
         let (tx_pub, rx_pub) = channel();
         //verify tx
         let mut v = Verifier::new();
+        let mut c = VerifyCache::new(1000);
         v.update_hashes(1, vec![], &tx_pub);
 
-        //let (_, msg) = rx_sub.recv().unwrap();
-        handle_msg(generate_msg(tx), &tx_pub, &mut v);
+        handle_msg(generate_msg(tx), &tx_pub, &mut v, &mut c);
+        let (key1, resp_msg) = rx_pub.recv().unwrap();
+        println!("get {} : {:?}", key1, resp_msg);
+        let (_, _, content) = parse_msg(resp_msg.as_slice());
+        match content {
+            MsgClass::VERIFYRESP(resps) => {
+                for resp in resps.get_resps() {
+                    assert_eq!(resp.get_ret(), Ret::Ok);
+                    assert_eq!(pubkey.to_vec(), resp.get_signer());
+                }
+            }
+            _ => {panic!("test failed")}
+        }
+    }
+
+    #[test]
+    fn verify_tx_cache() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let pubkey = keypair.pubkey();
+        let tx = generate_tx(vec![1], 999, privkey);
+
+        let (tx_pub, rx_pub) = channel();
+        //verify tx
+        let mut v = Verifier::new();
+        let mut c = VerifyCache::new(1000);
+        v.update_hashes(1, vec![], &tx_pub);
+
+        handle_msg(generate_msg(tx.clone()), &tx_pub, &mut v, &mut c);
+        let (key1, resp_msg) = rx_pub.recv().unwrap();
+        println!("get {} : {:?}", key1, resp_msg);
+        let (_, _, content) = parse_msg(resp_msg.as_slice());
+        match content {
+            MsgClass::VERIFYRESP(resps) => {
+                for resp in resps.get_resps() {
+                    assert_eq!(resp.get_ret(), Ret::Ok);
+                    assert_eq!(pubkey.to_vec(), resp.get_signer());
+                }
+            }
+            _ => {panic!("test failed")}
+        }
+
+        handle_msg(generate_msg(tx), &tx_pub, &mut v, &mut c);
         let (key1, resp_msg) = rx_pub.recv().unwrap();
         println!("get {} : {:?}", key1, resp_msg);
         let (_, _, content) = parse_msg(resp_msg.as_slice());
