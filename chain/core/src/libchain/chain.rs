@@ -912,6 +912,7 @@ mod tests {
     extern crate cita_crypto;
     extern crate env_logger;
     extern crate mktemp;
+    extern crate rustc_serialize;
     use self::Chain;
     use super::*;
     use cita_crypto::{KeyPair, PrivKey, SIGNATURE_NAME};
@@ -919,7 +920,7 @@ mod tests {
     use libchain::block::{Block, BlockBody};
     use libchain::genesis::Spec;
     use libproto::blockchain;
-    use rustc_serialize::hex::FromHex;
+    use self::rustc_serialize::hex::FromHex;
     use std::sync::Arc;
     use std::sync::mpsc::channel;
     use std::time::{UNIX_EPOCH, Instant};
