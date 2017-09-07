@@ -81,8 +81,6 @@ impl Synchronizer {
 
         let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
         ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-
-        self.sync_block_tx_hashes(current_height, ctx_pub);
     }
 
     fn add_block(&self, ctx_pub: Sender<(String, Vec<u8>)>, blk: Block) {

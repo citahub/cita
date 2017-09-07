@@ -74,6 +74,7 @@ pub mod topics {
     pub const VERIFY_REQ: u16 = 10;
     pub const VERIFY_RESP: u16 = 11;
     pub const BLOCK_TXHASHES: u16 = 12;
+    pub const BLOCK_TXHASHES_REQ: u16 = 13; 
 }
 
 #[derive(Debug)]
@@ -89,6 +90,7 @@ pub enum MsgClass {
     VERIFYREQ(VerifyReq),
     VERIFYRESP(VerifyResp),
     BLOCKTXHASHES(BlockTxHashes),
+    BLOCKTXHASHESREQ(BlockTxHashesReq),
     MSG(Vec<u8>),
 }
 
@@ -107,6 +109,7 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::VERIFY_REQ => "verify_req",
         topics::VERIFY_RESP => "verify_resp",
         topics::BLOCK_TXHASHES => "block_txhashes",
+        topics::BLOCK_TXHASHES_REQ => "block_txhashes_req",
         _ => "",
     }
 }
@@ -205,6 +208,7 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::VERIFY_REQ => MsgClass::VERIFYREQ(parse_from_bytes::<VerifyReq>(&content_msg).unwrap()),
         MsgType::VERIFY_RESP => MsgClass::VERIFYRESP(parse_from_bytes::<VerifyResp>(&content_msg).unwrap()),
         MsgType::BLOCK_TXHASHES => MsgClass::BLOCKTXHASHES(parse_from_bytes::<BlockTxHashes>(&content_msg).unwrap()),
+        MsgType::BLOCK_TXHASHES_REQ => MsgClass::BLOCKTXHASHESREQ(parse_from_bytes::<BlockTxHashesReq>(&content_msg).unwrap()),
         MsgType::MSG => {
             let mut content = Vec::new();
             content.extend_from_slice(&content_msg);

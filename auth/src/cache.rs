@@ -4,12 +4,13 @@ use util::H256;
 
 #[derive(Debug)]
 pub struct VerifyCache {
-    inner: Cache,
+    inner: Cache<H256, VerifyRespMsg>,
 }
 
 impl VerifyCache {
     pub fn new(size: usize) -> Self {
-        VerifyCache {inner: Cache::new(size)}
+        // size x4  because cache_2q 
+        VerifyCache {inner: Cache::new(size * 4)}
     }
 
     pub fn insert(&mut self, tx_hash: H256, resp: VerifyRespMsg) {
@@ -17,7 +18,7 @@ impl VerifyCache {
     }
 
     pub fn get(&self, tx_hash: &H256) -> Option<&VerifyRespMsg> {
-        self.inner.get(tx_hash)
+        self.inner.peek(tx_hash)
     }
 }
 
@@ -26,9 +27,9 @@ impl VerifyCache {
 fn basic() {
     let mut cache = VerifyCache::new(2);
 
-    let hash1 = H256::random();
-    let hash2 = H256::random();
-    let hash3 = H256::random();
+    let hash1 = H256::from_slice(&vec![1]);
+    let hash2 = H256::from_slice(&vec![2]);
+    let hash3 = H256::from_slice(&vec![3]);
 
     let mut resp1 = VerifyRespMsg::new();
     resp1.set_tx_hash(hash1.to_vec());
@@ -42,6 +43,6 @@ fn basic() {
     cache.insert(hash3.clone(), resp3.clone());
 
     assert_eq!(cache.get(&hash1), None);
-    assert_eq!(cache.get(&hash2), Some(resp2));
-    assert_eq!(cache.get(&hash3), Some(resp3));
+    assert_eq!(cache.get(&hash2), Some(&resp2));
+    assert_eq!(cache.get(&hash3), Some(&resp3));
 }

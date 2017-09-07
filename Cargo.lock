@@ -99,6 +99,7 @@ name = "auth"
 version = "0.1.0"
 dependencies = [
  "cache_2q 0.8.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cita-crypto 0.1.0",
  "cita_log 0.1.0",
  "clap 2.26.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
