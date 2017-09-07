@@ -283,6 +283,9 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 warn!("other content.");
             }
         }
+        MsgClass::RICHSTATUS(rich_status) => {
+            info!("forward dispatch rich_status is {:?}", rich_status);
+        }
         MsgClass::VERIFYREQ(req) => {}
         MsgClass::VERIFYRESP(resp) => {}
         _ => {

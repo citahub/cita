@@ -84,7 +84,7 @@ fn main() {
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
     let (tx, rx) = channel();
-    start_pubsub("consensus_cmd", vec!["chain.status", "consensus.default"], tx_sub, rx_pub);
+    start_pubsub("consensus_cmd", vec!["chain.richstatus", "consensus.default"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let (cmd_id, _, content) = parse_msg(body.as_slice());
