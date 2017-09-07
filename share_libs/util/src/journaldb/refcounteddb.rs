@@ -232,8 +232,8 @@ impl JournalDB for RefCountedDB {
 
 #[cfg(test)]
 mod tests {
-	#![cfg_attr(feature="dev", allow(blacklisted_name))]
-	#![cfg_attr(feature="dev", allow(similar_names))]
+    #![cfg_attr(feature="dev", allow(blacklisted_name))]
+    #![cfg_attr(feature="dev", allow(similar_names))]
 
     use super::*;
     use super::super::traits::JournalDB;

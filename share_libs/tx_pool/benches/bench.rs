@@ -21,9 +21,9 @@ extern crate tx_pool;
 extern crate test;
 extern crate libproto;
 extern crate util;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 
-use ed25519::KeyPair;
+use crypto::{KeyPair, CreateKey};
 use libproto::blockchain::{Transaction, UnverifiedTransaction, SignedTransaction};
 use std::time::SystemTime;
 use test::Bencher;
@@ -53,6 +53,11 @@ fn bench_enqueue(b: &mut Bencher) {
     let pv = keypair.privkey();
     for i in 0..10000 {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
+        tx.set_to("1234567".to_string());
+        tx.set_nonce("0".to_string());
+        tx.set_valid_until_block(99999);
+        tx.set_quota(999999999);
+
         uv_tx.set_transaction(tx.clone());
         signed_tx.set_transaction_with_sig(uv_tx.clone());
         signed_tx.sign(*pv);
@@ -75,6 +80,11 @@ fn bench_package(b: &mut Bencher) {
     let pv = keypair.privkey();
     for i in 0..10000 {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
+        tx.set_to("1234567".to_string());
+        tx.set_nonce("0".to_string());
+        tx.set_valid_until_block(99999);
+        tx.set_quota(9999999999);
+
         uv_tx.set_transaction(tx.clone());
         signed_tx.set_transaction_with_sig(uv_tx.clone());
         signed_tx.sign(*pv);
@@ -99,6 +109,11 @@ fn bench_update(b: &mut Bencher) {
 
     for i in 0..10000 {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
+        tx.set_to("1234567".to_string());
+        tx.set_nonce("0".to_string());
+        tx.set_valid_until_block(99999);
+        tx.set_quota(999999999);
+
         uv_tx.set_transaction(tx.clone());
         signed_tx.set_transaction_with_sig(uv_tx.clone());
         signed_tx.sign(*pv);

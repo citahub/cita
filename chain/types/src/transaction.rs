@@ -16,12 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use BlockNumber;
-use ed25519::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN};
+use crypto::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, PubKey};
 use libproto::blockchain::{Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction, SignedTransaction as ProtoSignedTransaction, Crypto as ProtoCrypto};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{H256, Address, U256, Bytes, HeapSizeOf, H768};
+use util::{H256, Address, U256, Bytes, HeapSizeOf};
 
 // pub const STORE_ADDRESS: H160 =  H160( [0xff; 20] );
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
@@ -174,7 +174,7 @@ impl Transaction {
         Ok(Transaction {
                nonce: U256::from_str(plain_transaction.get_nonce()).map_err(|_| Error::ParseError)?,
                gas_price: U256::default(),
-               gas: U256::from(u64::max_value() / 100000),
+               gas: U256::from(plain_transaction.get_quota()),
                action: {
                    let to = plain_transaction.get_to();
                    match to.is_empty() {
@@ -233,6 +233,7 @@ impl Transaction {
         pt.set_nonce(self.nonce.to_hex());
         pt.set_valid_until_block(self.block_limit);
         pt.set_data(self.data.clone());
+        pt.set_quota(self.gas.as_u64());
         match self.action {
             Action::Create => pt.clear_to(),
             Action::Call(ref to) => pt.set_to(to.hex()),
@@ -298,7 +299,7 @@ impl UnverifiedTransaction {
 
         Ok(UnverifiedTransaction {
                unsigned: Transaction::new(utx.get_transaction())?,
-               signature: Signature::from(H768::from(utx.get_signature())),
+               signature: Signature::from(utx.get_signature()),
                crypto_type: CryptoType::from(utx.get_crypto()),
                hash: hash,
            })
@@ -313,7 +314,7 @@ impl UnverifiedTransaction {
         s.append(&self.hash);
     }
 
-    ///	Reference to unsigned part of this transaction.
+    ///    Reference to unsigned part of this transaction.
     pub fn as_unsigned(&self) -> &Transaction {
         &self.unsigned
     }
@@ -353,7 +354,7 @@ impl Decodable for SignedTransaction {
             return Err(DecoderError::RlpIncorrectListLen);
         }
 
-        let public: H256 = d.val_at(10)?;
+        let public: PubKey = d.val_at(10)?;
 
         Ok(SignedTransaction {
                transaction: UnverifiedTransaction {
@@ -428,7 +429,7 @@ impl SignedTransaction {
         }
 
         let tx_hash = H256::from(stx.get_tx_hash());
-        let public = H256::from_slice(stx.get_signer());
+        let public = PubKey::from_slice(stx.get_signer());
         let sender = pubkey_to_address(&public);
         Ok(SignedTransaction {
                transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,

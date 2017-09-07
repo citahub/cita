@@ -15,16 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{PrivKey, PubKey, SECP256K1, Error, Message, pubkey_to_address, Address};
-use rustc_serialize::hex::{ToHex, FromHex};
+use super::{PrivKey, PubKey, SECP256K1, Error, Message, pubkey_to_address, Address, SIGNATURE_BYTES_LEN};
+use rlp::*;
+use rustc_serialize::hex::ToHex;
 use secp256k1::{Message as SecpMessage, RecoverableSignature, RecoveryId, Error as SecpError};
 use secp256k1::key::{SecretKey, PublicKey};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{Error as SerdeError, Visitor, SeqAccess};
+use serde::ser::SerializeSeq;
 use std::{mem, fmt};
 use std::cmp::PartialEq;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
-use std::str::FromStr;
 use util::{H520, H256};
+use util::crypto::Sign;
 
 pub struct Signature(pub [u8; 65]);
 
@@ -72,6 +76,70 @@ impl PartialEq for Signature {
     }
 }
 
+impl Decodable for Signature {
+    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+        rlp.decoder().decode_value(|bytes| {
+                                       let mut sig = [0u8; 65];
+                                       sig[0..65].copy_from_slice(bytes);
+                                       Ok(Signature(sig))
+                                   })
+    }
+}
+
+impl Encodable for Signature {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.encoder().encode_value(&self.0[0..65]);
+    }
+}
+
+// TODO: Maybe it should be implemented with rust macro(https://github.com/rust-lang/rfcs/issues/1038)
+impl<'de> Deserialize<'de> for Signature {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct SignatureVisitor;
+
+        impl<'de> Visitor<'de> for SignatureVisitor {
+            type Value = Signature;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("secp256k1 signature")
+            }
+
+            fn visit_seq<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                let mut signature = Signature([0u8; SIGNATURE_BYTES_LEN]);
+                for i in 0..SIGNATURE_BYTES_LEN {
+                    signature.0[i] = match visitor.next_element()? {
+                        Some(val) => val,
+                        None => return Err(SerdeError::invalid_length(SIGNATURE_BYTES_LEN, &self)),
+                    }
+                }
+                Ok(signature)
+            }
+        }
+
+        let visitor = SignatureVisitor;
+        deserializer.deserialize_seq(visitor)
+    }
+}
+
+impl Serialize for Signature {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(SIGNATURE_BYTES_LEN))?;
+        for i in 0..SIGNATURE_BYTES_LEN {
+            seq.serialize_element(&self.0[i])?;
+        }
+        seq.end()
+    }
+}
+
 // manual implementation required in Rust 1.13+, see `std::cmp::AssertParamIsEq`.
 impl Eq for Signature {}
 
@@ -89,21 +157,6 @@ impl fmt::Debug for Signature {
 impl fmt::Display for Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.to_hex())
-    }
-}
-
-impl FromStr for Signature {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.from_hex() {
-            Ok(ref hex) if hex.len() == 65 => {
-                let mut data = [0; 65];
-                data.copy_from_slice(&hex[0..65]);
-                Ok(Signature(data))
-            }
-            _ => Err(Error::InvalidSignature),
-        }
     }
 }
 
@@ -134,6 +187,21 @@ impl From<[u8; 65]> for Signature {
 impl Into<[u8; 65]> for Signature {
     fn into(self) -> [u8; 65] {
         self.0
+    }
+}
+
+impl<'a> From<&'a [u8]> for Signature {
+    fn from(slice: &'a [u8]) -> Signature {
+        assert_eq!(slice.len(), SIGNATURE_BYTES_LEN);
+        let mut bytes = [0u8; 65];
+        bytes.copy_from_slice(&slice[..]);
+        Signature(bytes)
+    }
+}
+
+impl<'a> Into<&'a [u8]> for &'a Signature {
+    fn into(self) -> &'a [u8] {
+        &self.0[..]
     }
 }
 
@@ -213,30 +281,111 @@ pub fn recover(signature: &Signature, message: &Message) -> Result<PubKey, Error
     Ok(pubkey)
 }
 
+impl Sign for Signature {
+    type PrivKey = PrivKey;
+    type PubKey = PubKey;
+    type Message = Message;
+    type Error = Error;
+
+    fn sign(privkey: &Self::PrivKey, message: &Self::Message) -> Result<Self, Self::Error> {
+        let context = &SECP256K1;
+        // no way to create from raw byte array.
+        let sec: &SecretKey = unsafe { mem::transmute(privkey) };
+        let s = context.sign_recoverable(&SecpMessage::from_slice(&message.0[..])?, sec)?;
+        let (rec_id, data) = s.serialize_compact(context);
+        let mut data_arr = [0; 65];
+
+        // no need to check if s is low, it always is
+        data_arr[0..64].copy_from_slice(&data[0..64]);
+        data_arr[64] = rec_id.to_i32() as u8;
+        Ok(Signature(data_arr))
+    }
+
+    fn recover(&self, message: &Message) -> Result<Self::PubKey, Error> {
+        let context = &SECP256K1;
+        let rsig = RecoverableSignature::from_compact(context, &self.0[0..64], RecoveryId::from_i32(self.0[64] as i32)?)?;
+        let publ = context.recover(&SecpMessage::from_slice(&message.0[..])?, &rsig)?;
+        let serialized = publ.serialize_vec(context, false);
+
+        let mut pubkey = PubKey::default();
+        pubkey.0.copy_from_slice(&serialized[1..65]);
+        Ok(pubkey)
+    }
+
+    fn verify_public(&self, pubkey: &Self::PubKey, message: &Self::Message) -> Result<bool, Self::Error> {
+        let context = &SECP256K1;
+        let rsig = RecoverableSignature::from_compact(context, &self.0[0..64], RecoveryId::from_i32(self.0[64] as i32)?)?;
+        let sig = rsig.to_standard(context);
+
+        let pdata: [u8; 65] = {
+            let mut temp = [4u8; 65];
+            temp[1..65].copy_from_slice(pubkey);
+            temp
+        };
+
+        let publ = PublicKey::from_slice(context, &pdata)?;
+        match context.verify(&SecpMessage::from_slice(&message.0[..])?, &sig, &publ) {
+            Ok(_) => Ok(true),
+            Err(SecpError::IncorrectSignature) => Ok(false),
+            Err(x) => Err(Error::from(x)),
+        }
+    }
+
+    fn verify_address(&self, address: &Address, message: &Self::Message) -> Result<bool, Self::Error> {
+        let pubkey = self.recover(message)?;
+        let recovered_address = pubkey_to_address(&pubkey);
+        Ok(address == &recovered_address)
+    }
+}
 
 #[cfg(test)]
 mod tests {
-    use super::{SECP256K1, Signature, sign};
+    use super::{Signature, Message};
     use super::super::KeyPair;
-    use rand::os::OsRng;
-    use std::str::FromStr;
-    use util::H256;
+    use bincode::{serialize, deserialize, Infinite};
+    use util::crypto::{CreateKey, Sign};
 
-    fn generate() -> Result<KeyPair, &'static str> {
-        let context = &SECP256K1;
-        let mut rng = OsRng::new().unwrap();
-        let (sec, publ) = context.generate_keypair(&mut rng).unwrap();
-
-        Ok(KeyPair::from_keypair(sec, publ))
+    #[test]
+    fn test_sign_verify() {
+        let keypair = KeyPair::gen_keypair();
+        let msg = Message::default();
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
+        assert!(sig.verify_public(keypair.pubkey(), &msg).unwrap());
     }
 
     #[test]
-    fn signature_to_and_from_str() {
-        let keypair = generate().unwrap();
-        let message = H256::default();
-        let signature = sign(keypair.privkey().into(), &message.into()).unwrap();
-        let string = format!("{}", signature);
-        let deserialized = Signature::from_str(&string).unwrap();
-        assert_eq!(signature, deserialized);
+    fn test_verify_address() {
+        let keypair = KeyPair::gen_keypair();
+        let msg = Message::default();
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
+        assert_eq!(keypair.pubkey(), &sig.recover(&msg).unwrap());
+    }
+
+    #[test]
+    fn test_recover() {
+        let keypair = KeyPair::gen_keypair();
+        let msg = Message::default();
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
+        assert_eq!(keypair.pubkey(), &sig.recover(&msg).unwrap());
+    }
+
+    #[test]
+    fn test_into_slice() {
+        let keypair = KeyPair::gen_keypair();
+        let msg = Message::default();
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
+        let sig = &sig;
+        let slice: &[u8] = sig.into();
+        assert_eq!(Signature::from(slice), *sig);
+    }
+
+    #[test]
+    fn test_de_serialize() {
+        let keypair = KeyPair::gen_keypair();
+        let message = Message::default();
+        let signature = Signature::sign(keypair.privkey().into(), &message.into()).unwrap();
+        let se_result = serialize(&signature, Infinite).unwrap();
+        let de_result: Signature = deserialize(&se_result).unwrap();
+        assert_eq!(signature, de_result);
     }
 }

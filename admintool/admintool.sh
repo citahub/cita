@@ -119,6 +119,7 @@ if [ ! -n "$TX_POOL_SIZE" ]; then
 fi
 
 DATA_PATH=`pwd`/release
+CREATE_KEY_ADDR_PATH=$DATA_PATH/bin/create_key_addr
 
 if [ ! -f "$DATA_PATH" ]; then
     mkdir -p $DATA_PATH
@@ -137,7 +138,7 @@ for ((ID=0;ID<$SIZE;ID++))
 do
     mkdir -p $DATA_PATH/node$ID
     echo "Start generating private Key for Node" $ID "!"
-    python create_keys_addr.py $DATA_PATH $ID 
+    python create_keys_addr.py $DATA_PATH $ID $CREATE_KEY_ADDR_PATH
     echo "[PrivateKey Path] : " $DATA_PATH/node$ID
     echo "End generating private Key for Node" $ID "!"
     echo "Start creating Network Node" $ID "Configuration!"

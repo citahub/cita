@@ -5,7 +5,7 @@ authors = ["zhangsoledad <787953403@qq.com>"]
 
 [dependencies]
 libproto = {path = "../../share_libs/proto"}
-cita-ed25519 = { path = "../../share_libs/ed25519" }
+cita-crypto = { path = "../../share_libs/crypto" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"

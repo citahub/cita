@@ -31,11 +31,11 @@ fn main() {
     f.write_all(
         format!(
             "
-		/// Returns compiler version.
-		pub fn rustc_version() -> &'static str {{
-			\"{}\"
-		}}
-	",
+        /// Returns compiler version.
+        pub fn rustc_version() -> &'static str {{
+            \"{}\"
+        }}
+    ",
             rustc_version::version()
         )
         .as_bytes(),

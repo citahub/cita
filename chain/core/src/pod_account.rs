@@ -87,10 +87,10 @@ impl PodAccount {
 impl fmt::Display for PodAccount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(nonce={}; code={} bytes, #{}; storage={} items)",
-			self.nonce,
-			self.code.as_ref().map_or(0, |c| c.len()),
-			self.code.as_ref().map_or_else(H256::new, |c| c.crypt_hash()),
-			self.storage.len(),
-		)
+            self.nonce,
+            self.code.as_ref().map_or(0, |c| c.len()),
+            self.code.as_ref().map_or_else(H256::new, |c| c.crypt_hash()),
+            self.storage.len(),
+        )
     }
 }

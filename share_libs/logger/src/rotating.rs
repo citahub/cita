@@ -24,18 +24,18 @@ use rlog::LogLevelFilter;
 use std::env;
 
 lazy_static! {
-	static ref LOG_DUMMY: () = {
-		let mut builder = LogBuilder::new();
-		builder.filter(None, LogLevelFilter::Info);
+    static ref LOG_DUMMY: () = {
+        let mut builder = LogBuilder::new();
+        builder.filter(None, LogLevelFilter::Info);
 
-		if let Ok(log) = env::var("RUST_LOG") {
-			builder.parse(&log);
-		}
+        if let Ok(log) = env::var("RUST_LOG") {
+            builder.parse(&log);
+        }
 
-		if builder.init().is_ok() {
-			println!("logger initialized");
-		}
-	};
+        if builder.init().is_ok() {
+            println!("logger initialized");
+        }
+    };
 }
 
 /// Intialize log with default settings

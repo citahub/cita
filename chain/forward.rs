@@ -50,7 +50,7 @@ pub fn chain_pool(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id:
 // TODO: RPC Errors
 pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>, ctx_pub: Sender<(String, Vec<u8>)>) {
     let (id, cmd_id, origin, content_ext) = rx.recv().unwrap();
-    trace!("chain_result call {:?} {:?}", id, cmd_id);
+    trace!("chain_result call {:?} {:?}", id_to_key(id), cmd_id);
     match content_ext {
         MsgClass::REQUEST(mut req) => {
             let mut response = request::Response::new();
@@ -136,7 +136,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     trace!("Chainvm Call {:?}", call);
                     let block_id: BlockNumber = serde_json::from_str(&(call.height)).expect("Invalid param");
                     let call_request = CallRequest::from(call);
-                    let result = chain.cita_call(call_request, block_id.into());
+                    let result = chain.eth_call(call_request, block_id.into());
                     response.set_call_result(result.unwrap_or_default());
                     let msg: communication::Message = response.into();
                     ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
@@ -252,25 +252,25 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
 
             let current_height = chain.get_current_height();
             let max_height = chain.get_max_height();
-            let blk_heght = block.get_header().get_height();
+            let blk_height = block.get_header().get_height();
 
             let new_map = guard.split_off(&current_height);
             *guard = new_map;
 
 
-            trace!("received block: block_number:{:?} current_height: {:?} max_height: {:?}", blk_heght, current_height, max_height);
+            trace!("received block: block_number:{:?} current_height: {:?} max_height: {:?}", blk_height, current_height, max_height);
             let source = match id {
                 submodules::CONSENSUS => BlockSource::CONSENSUS,
                 _ => BlockSource::NET,
             };
-            if blk_heght > current_height && blk_heght < current_height + 300 && !guard.contains_key(&blk_heght) {
-                trace!("block insert {:?}", blk_heght);
-                guard.insert(blk_heght, (source, Block::from(block)));
-                let _ = chain.sync_sender.lock().send(blk_heght);
-            }
 
-            if !chain.get_current_height() < chain.get_max_height() {
-                chain.is_sync.store(false, Ordering::SeqCst);
+            if blk_height > current_height && blk_height < current_height + 300 {
+                if !guard.contains_key(&blk_height) || (guard.contains_key(&blk_height) && guard[&blk_height].0 == BlockSource::NET && source == BlockSource::CONSENSUS) {
+                    trace!("block insert {:?}", blk_height);
+                    guard.insert(blk_height, (source, Block::from(block)));
+                    let _ = chain.sync_sender.lock().send(blk_height);
+                }
+
             }
         }
         MsgClass::TX(content) => {}
@@ -314,5 +314,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 warn!("other content.");
             }
         }
+        MsgClass::VERIFYREQ(req) => {}
+        MsgClass::VERIFYRESP(resp) => {}
     }
 }

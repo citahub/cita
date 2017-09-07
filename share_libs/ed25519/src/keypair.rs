@@ -1,7 +1,27 @@
+// CITA
+// Copyright 2016-2017 Cryptape Technologies LLC.
+
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 use super::{PrivKey, PubKey, Address};
 use error::Error;
+use rustc_serialize::hex::ToHex;
 use sodiumoxide::crypto::sign::{keypair_from_privkey, gen_keypair};
+use std::fmt;
 use util::{H160, Hashable};
+use util::crypto::CreateKey;
 
 pub fn pubkey_to_address(pubkey: &PubKey) -> Address {
     Address::from(H160::from(pubkey.crypt_hash()))
@@ -13,8 +33,20 @@ pub struct KeyPair {
     pubkey: PubKey,
 }
 
-impl KeyPair {
-    pub fn from_privkey(privkey: PrivKey) -> Result<Self, Error> {
+impl fmt::Display for KeyPair {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        writeln!(f, "privkey:  {}", self.privkey.0.to_hex())?;
+        writeln!(f, "pubkey:  {}", self.pubkey.0.to_hex())?;
+        write!(f, "address:  {}", self.address().0.to_hex())
+    }
+}
+
+impl CreateKey for KeyPair {
+    type PrivKey = PrivKey;
+    type PubKey = PubKey;
+    type Error = Error;
+
+    fn from_privkey(privkey: Self::PrivKey) -> Result<Self, Self::Error> {
         let keypair = keypair_from_privkey(privkey.as_ref());
         match keypair {
             None => Err(Error::InvalidPrivKey),
@@ -25,7 +57,7 @@ impl KeyPair {
         }
     }
 
-    pub fn gen_keypair() -> Self {
+    fn gen_keypair() -> Self {
         let (pk, sk) = gen_keypair();
         KeyPair {
             privkey: PrivKey::from(sk.0),
@@ -33,15 +65,15 @@ impl KeyPair {
         }
     }
 
-    pub fn privkey(&self) -> &PrivKey {
+    fn privkey(&self) -> &Self::PrivKey {
         &self.privkey
     }
 
-    pub fn pubkey(&self) -> &PubKey {
+    fn pubkey(&self) -> &Self::PubKey {
         &self.pubkey
     }
 
-    pub fn address(&self) -> Address {
+    fn address(&self) -> Address {
         pubkey_to_address(&self.pubkey)
     }
 }
@@ -49,6 +81,7 @@ impl KeyPair {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use util::crypto::CreateKey;
 
     #[test]
     fn test_from_privkey() {

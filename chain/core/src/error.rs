@@ -349,11 +349,11 @@ where
 /*#![feature(concat_idents)]
 macro_rules! assimilate {
     ($name:ident) => (
-		impl From<concat_idents!($name, Error)> for Error {
-			fn from(err: concat_idents!($name, Error)) -> Error {
-				Error:: $name (err)
-			}
-		}
+        impl From<concat_idents!($name, Error)> for Error {
+            fn from(err: concat_idents!($name, Error)) -> Error {
+                Error:: $name (err)
+            }
+        }
     )
 }
 assimilate!(FromHex);

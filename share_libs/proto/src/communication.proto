@@ -10,6 +10,8 @@ enum MsgType {
     MSG = 6;
     RESPONSE = 7;
     TX_RESPONSE = 8;
+    VERIFY_REQ = 9;
+    VERIFY_RESP = 10;
 }
 
 enum OperateType{

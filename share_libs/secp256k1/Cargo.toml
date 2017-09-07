@@ -8,6 +8,8 @@ eth-secp256k1 = { git = "https://github.com/ethcore/rust-secp256k1" }
 lazy_static = "0.2"
 rustc-serialize = "0.3"
 util = {path = "../../share_libs/util"}
+rlp = { path = "../rlp" }
 rand = "0.3"
 serde = "1.0"
 serde_json = "1.0"
+bincode = "0.8"

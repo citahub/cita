@@ -1,0 +1,15 @@
+{
+    "name": "TestPOA",
+    "engine": {
+        "AuthorityRound": {
+            "params": {
+                "authorities": [
+                    "0x5b073e9233944b5e729e46d618f0d8edf3d9c34a",
+                    "0xe287920d416e68687518e874c81eea852088a219"
+                ],
+                "duration": 3000,
+                "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
+            }
+        }
+    }
+}

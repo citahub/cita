@@ -15,13 +15,14 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(dead_code)]
-use cita_ed25519::{Signature as ED_Signature, recover as ed_recover};
-use cita_secp256k1::{Signature, recover as ec_recover};
+use cita_ed25519::{Signature as ED_Signature, Message as ED_Message};
+use cita_secp256k1::Signature;
 use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160 as Ripemd160Digest;
 use crypto::sha2::Sha256 as Sha256Digest;
 use std::cmp::min;
-use util::{U256, H256, BytesRef, Hashable, H768};
+use util::{U256, H256, BytesRef, Hashable};
+use util::crypto::Sign;
 // use ethjson;
 
 /// Native implementation of a built-in contract.
@@ -67,21 +68,21 @@ impl Builtin {
 }
 
 // impl From<ethjson::spec::Builtin> for Builtin {
-// 	fn from(b: ethjson::spec::Builtin) -> Self {
-// 		let pricer = match b.pricing {
-// 			ethjson::spec::Pricing::Linear(linear) => {
-// 				Box::new(Linear {
-// 					base: linear.base,
-// 					word: linear.word,
-// 				})
-// 			}
-// 		};
+//     fn from(b: ethjson::spec::Builtin) -> Self {
+//         let pricer = match b.pricing {
+//             ethjson::spec::Pricing::Linear(linear) => {
+//                 Box::new(Linear {
+//                     base: linear.base,
+//                     word: linear.word,
+//                 })
+//             }
+//         };
 
-// 		Builtin {
-// 			pricer: pricer,
-// 			native: ethereum_builtin(&b.name),
-// 		}
-// 	}
+//         Builtin {
+//             pricer: pricer,
+//             native: ethereum_builtin(&b.name),
+//         }
+//     }
 // }
 
 // Ethereum builtin creator.
@@ -143,7 +144,7 @@ impl Impl for EcRecover {
 
         let s = Signature::from_rsv(&r.into(), &s.into(), bit);
         if s.is_valid() {
-            if let Ok(p) = ec_recover(&s, &hash.into()) {
+            if let Ok(p) = s.recover(&hash.into()) {
                 let r = p.crypt_hash();
                 output.write(0, &[0; 12]);
                 output.write(12, &r[12..r.len()]);
@@ -183,12 +184,10 @@ impl Impl for EdRecover {
         let mut input = [0; 128];
         input[..len].copy_from_slice(&i[..len]);
 
-        let hash = H256::from_slice(&input[0..32]);
-        let sig = H768::from_slice(&input[32..128]);
+        let hash = ED_Message::from_slice(&input[0..32]);
+        let sig = ED_Signature::from(&input[32..128]);
 
-
-        let s = ED_Signature::from(sig);
-        if let Ok(p) = ed_recover(&s, &hash.into()) {
+        if let Ok(p) = sig.recover(&hash.into()) {
             let r = p.crypt_hash();
             output.write(0, &[0; 12]);
             output.write(12, &r[12..r.len()]);
@@ -201,8 +200,9 @@ mod tests {
     extern crate cita_ed25519;
 
     use super::{Builtin, Linear, ethereum_builtin, Pricer};
-    use cita_ed25519::{KeyPair, sign as ED_sign, pubkey_to_address as ED_pubkey_to_address};
+    use cita_ed25519::{Signature, KeyPair, pubkey_to_address as ED_pubkey_to_address};
     use util::{U256, H256, BytesRef};
+    use util::crypto::{Sign, CreateKey};
     // use ethjson;
     use util::hashable::HASH_NAME;
 
@@ -274,12 +274,12 @@ mod tests {
     fn ecrecover() {
         use rustc_serialize::hex::FromHex;
         /*let k = KeyPair::from_secret(b"test".crypt_hash()).unwrap();
-		let a: Address = From::from(k.public().crypt_hash());
-		println!("Address: {}", a);
-		let m = b"hello world".crypt_hash();
-		println!("Message: {}", m);
-		let s = k.sign(&m).unwrap();
-		println!("Signed: {}", s);*/
+        let a: Address = From::from(k.public().crypt_hash());
+        println!("Address: {}", a);
+        let m = b"hello world".crypt_hash();
+        println!("Message: {}", m);
+        let s = k.sign(&m).unwrap();
+        println!("Signed: {}", s);*/
 
         let f = ethereum_builtin("ecrecover");
 
@@ -300,7 +300,11 @@ mod tests {
 
         let mut o34 = [255u8; 34];
         f.execute(&i[..], &mut BytesRef::Fixed(&mut o34[..]));
-        assert_eq!(&o34[..], &(FromHex::from_hex("0000000000000000000000009f374781e8bf2e7dc910b0ee56baf9c2d475f1d9ffff").unwrap())[..]);
+        if HASH_NAME == "sha3" {
+            assert_eq!(&o34[..], &(FromHex::from_hex("000000000000000000000000c08b5542d177ac6686946920409741463a15dddbffff").unwrap())[..]);
+        } else if HASH_NAME == "blake2b" {
+            assert_eq!(&o34[..], &(FromHex::from_hex("0000000000000000000000009f374781e8bf2e7dc910b0ee56baf9c2d475f1d9ffff").unwrap())[..]);
+        }
 
         let i_bad = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001a650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
         let mut o = [255u8; 32];
@@ -328,10 +332,10 @@ mod tests {
         assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);
 
         // TODO: Should this (corrupted version of the above) fail rather than returning some address?
-	/*	let i_bad = FromHex::from_hex("48173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
-		let mut o = [255u8; 32];
-		f.execute(&i_bad[..], &mut BytesRef::Fixed(&mut o[..]));
-		assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/
+    /*    let i_bad = FromHex::from_hex("48173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
+        let mut o = [255u8; 32];
+        f.execute(&i_bad[..], &mut BytesRef::Fixed(&mut o[..]));
+        assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/
     }
 
     #[test]
@@ -375,7 +379,7 @@ mod tests {
         let privkey = key_pair.privkey();
         let pubkey = key_pair.pubkey();
         let address = ED_pubkey_to_address(pubkey);
-        let signature = ED_sign(privkey, &hash).unwrap();
+        let signature = Signature::sign(privkey, &hash).unwrap();
         let mut buf = Vec::<u8>::with_capacity(128);
         buf.extend_from_slice(&message[..]);
         buf.extend_from_slice(&signature.0[..]);
@@ -415,22 +419,22 @@ mod tests {
 
     // #[test]
     // fn from_json() {
-    // 	let b = Builtin::from(ethjson::spec::Builtin {
-    // 		name: "identity".to_owned(),
-    // 		pricing: ethjson::spec::Pricing::Linear(ethjson::spec::Linear {
-    // 			base: 10,
-    // 			word: 20,
-    // 		})
-    // 	});
+    //     let b = Builtin::from(ethjson::spec::Builtin {
+    //         name: "identity".to_owned(),
+    //         pricing: ethjson::spec::Pricing::Linear(ethjson::spec::Linear {
+    //             base: 10,
+    //             word: 20,
+    //         })
+    //     });
 
-    // 	assert_eq!(b.cost(0), U256::from(10));
-    // 	assert_eq!(b.cost(1), U256::from(30));
-    // 	assert_eq!(b.cost(32), U256::from(30));
-    // 	assert_eq!(b.cost(33), U256::from(50));
+    //     assert_eq!(b.cost(0), U256::from(10));
+    //     assert_eq!(b.cost(1), U256::from(30));
+    //     assert_eq!(b.cost(32), U256::from(30));
+    //     assert_eq!(b.cost(33), U256::from(50));
 
-    // 	let i = [0u8, 1, 2, 3];
-    // 	let mut o = [255u8; 4];
-    // 	b.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
-    // 	assert_eq!(i, o);
+    //     let i = [0u8, 1, 2, 3];
+    //     let mut o = [255u8; 4];
+    //     b.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
+    //     assert_eq!(i, o);
     // }
 }

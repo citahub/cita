@@ -37,11 +37,11 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, sender: Sender<PubType>, rx:
                 if block.get_header().get_height() < candidate_pool.get_height() {}
             }
         }
-        MsgClass::TX(mut tx) => {
+        MsgClass::TX(tx) => {
             if id == submodules::JSON_RPC {
-                candidate_pool.add_tx(&mut tx, sender.clone(), false);
+                candidate_pool.add_tx(&tx, sender.clone(), false);
             } else {
-                candidate_pool.add_tx(&mut tx, sender.clone(), true);
+                candidate_pool.add_tx(&tx, sender.clone(), true);
             }
         }
         MsgClass::TXRESPONSE(content) => {}
@@ -66,5 +66,7 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, sender: Sender<PubType>, rx:
                 }
             }
         }
+        MsgClass::VERIFYREQ(req) => {}
+        MsgClass::VERIFYRESP(resp) => {}
     }
 }

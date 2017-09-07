@@ -17,7 +17,7 @@
 
 extern crate libproto;
 extern crate util;
-extern crate cita_ed25519 as ed25519;
+extern crate cita_crypto as crypto;
 
 mod error;
 mod instrument;
@@ -25,7 +25,7 @@ mod instrument;
 pub use error::*;
 pub use instrument::*;
 
-use libproto::blockchain::{Block, SignedTransaction, Status};
+use libproto::blockchain::{Block, UnverifiedTransaction, Status};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use util::H256;
@@ -42,7 +42,7 @@ pub trait Engine: Sync + Send {
 
     fn verify_block(&self, block: &Block) -> Result<(), EngineError>;
 
-    fn receive_new_transaction(&self, tx: &SignedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool);
+    fn receive_new_transaction(&self, tx: &UnverifiedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool);
 
     fn receive_new_block(&self, block: &Block, tx_pub: Sender<(String, Vec<u8>)>);
 
