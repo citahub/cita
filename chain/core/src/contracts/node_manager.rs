@@ -17,7 +17,6 @@
 
 //! Node manager.
 
-#![allow(dead_code)]
 use libchain::call_request::CallRequest;
 use libchain::chain::Chain;
 use sha3::sha3_256;
@@ -40,12 +39,10 @@ lazy_static! {
     static ref CONTRACT_ADDRESS: H160 = H160::from_str("0x00000000000000000000000000000000013241a2").unwrap();
 }
 
-struct NodeManager {
-    list: Vec<H160>,
-}
+pub struct NodeManager {}
 
 impl NodeManager {
-    pub fn read(&self, chain: Chain) -> Vec<Address> {
+    pub fn read(chain: &Chain) -> Vec<Address> {
         let call_request = CallRequest {
             from: None,
             to: *CONTRACT_ADDRESS,

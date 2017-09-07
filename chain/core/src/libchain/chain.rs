@@ -49,7 +49,6 @@ use state_db::StateDB;
 
 use std::collections::{BTreeMap, VecDeque};
 use std::collections::{HashMap, HashSet};
-use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
@@ -57,7 +56,7 @@ use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LogEntry, LocalizedLogEntry};
 use types::transaction::{SignedTransaction, Transaction, Action};
-use util::{journaldb, H256, U256, H2048, Address, Bytes, H160};
+use util::{journaldb, H256, U256, H2048, Address, Bytes};
 use util::{RwLock, Mutex};
 use util::HeapSizeOf;
 use util::kvdb::*;
@@ -296,7 +295,7 @@ impl Chain {
         let mut status = RichStatus::new();
         status.set_hash(header.clone().hash());
         status.set_number(header.clone().number());
-        let nodes: Vec<Address> = raw_chain.read();
+        let nodes: Vec<Address> = NodeManager::read(&raw_chain);
         status.set_nodes(nodes);
         let chain = Arc::new(raw_chain);
 
@@ -913,7 +912,7 @@ impl Chain {
 
                 let status = self.save_status(&mut batch);
 
-                let nodes: Vec<Address> = self.read();
+                let nodes: Vec<Address> = NodeManager::read(&self);
                 let mut rich_status = RichStatus::new();
                 rich_status.set_hash(*status.hash());
                 rich_status.set_number(status.number());
@@ -999,17 +998,6 @@ impl Chain {
 
     pub fn poll_filter(&self) -> Arc<Mutex<PollManager<PollFilter>>> {
         self.polls_filter.clone()
-    }
-}
-
-impl NodeManager for Chain {
-    fn read(&self) -> Vec<Address> {
-        vec![
-            H160::from_str("3650a344a004de80088b832251b8c5cd55ee4165").unwrap(),
-            H160::from_str("7966730b4b5f8c5548e7bd8fedaaa53a2297a553").unwrap(),
-            H160::from_str("a1282f6edd569636b74a927c215b05485939de8e").unwrap(),
-            H160::from_str("fa6021cb37f913b454e89ac955fe34479f259864").unwrap(),
-        ]
     }
 }
 
