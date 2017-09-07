@@ -4,32 +4,36 @@ import "blockchain.proto";
 
 enum Ret {
     Ok = 0;
-    Dup = 1;
-    OutOfTime = 2;
-    BadSig = 3;
-    NotReady = 4;
+    Err = 1;
+    Dup = 2;
+    OutOfTime = 3;
+    BadSig = 4;
+    NotReady = 5;
 }
 
-message VerifyReqMsg {
+message VerifyTxReq {
     uint64 valid_until_block = 1;
     bytes hash = 2;
     bytes signature = 3;
     Crypto crypto = 4;
     bytes tx_hash = 5;
+    bytes signer = 6; //public key only set in BlockReq
 }
 
-message VerifyReq {
-    repeated VerifyReqMsg reqs = 1;
-}
-
-message VerifyRespMsg {
+message VerifyTxResp {
     bytes tx_hash = 1;
     Ret ret = 2;
-    bytes signer = 3; //public key
+    bytes signer = 3; //public key only set in TxResp
 }
 
-message VerifyResp {
-    repeated VerifyRespMsg resps = 1;
+message VerifyBlockReq {
+    uint64 id = 1;
+    repeated VerifyTxReq reqs = 2;
+}
+
+message VerifyBlockResp {
+    uint64 id = 1;
+    Ret ret = 2;
 }
 
 message BlockTxHashes {

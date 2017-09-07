@@ -314,8 +314,10 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 warn!("other content.");
             }
         }
-        MsgClass::VERIFYREQ(req) => {}
-        MsgClass::VERIFYRESP(resp) => {}
+        MsgClass::VERIFYTXREQ(req) => {}
+        MsgClass::VERIFYTXRESP(resp) => {}
+        MsgClass::VERIFYBLKREQ(req) => {}
+        MsgClass::VERIFYBLKRESP(resp) => {}
         MsgClass::BLOCKTXHASHES(block_tx_hashes) => {}
         MsgClass::BLOCKTXHASHESREQ(block_tx_hashes_req) => {
             let block_height = block_tx_hashes_req.get_height();
