@@ -97,6 +97,7 @@ function cita_network() {
 
 function cita_clean(){
     node=node$1
+    rm -rf $(pwd)/data
     rm -rf ${log_dir}/${node}.chain ${log_dir}/${node}.consensus ${log_dir}/${node}.network ${log_dir}/${node}.jsonrpc
 }
 
