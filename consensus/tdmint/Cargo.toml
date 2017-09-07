@@ -29,3 +29,4 @@ lru-cache = "0.1"
 cita_log = { path = "../../share_libs/cita_log" }
 core = { path = "../../chain/core" }
 cpuprofiler = "0.0.3"
+uuid = { version = "0.4", features = ["v4"] }

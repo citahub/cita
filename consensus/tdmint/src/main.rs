@@ -37,6 +37,7 @@ extern crate core as chain_core;
 extern crate cita_log;
 extern crate cpuprofiler;
 extern crate engine_json;
+extern crate uuid;
 
 use clap::App;
 use log::LogLevelFilter;

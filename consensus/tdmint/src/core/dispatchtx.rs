@@ -16,11 +16,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate threadpool;
-
 use core::txhandler::TxHandler;
 use core::txwal::Txwal;
 use libproto::{submodules, topics, factory, communication};
 use libproto::blockchain::{TxResponse, SignedTransaction};
+use libproto::key_to_id;
 use protobuf::Message;
 use pubsub::start_pubsub;
 use std::sync::{RwLock, Arc};
@@ -85,7 +85,6 @@ impl Dispatchtx {
     }
 
     pub fn tx_flow_control(&self) -> bool {
-
         if self.pool_limit == 0 {
             return false;
         }
@@ -157,16 +156,16 @@ pub fn sub_new_tx(dispatch: Arc<Dispatchtx>, num_thds: usize) {
     let _ = thread::Builder::new().name("consensus_new_tx".to_string()).spawn(move || {
         let (tx, rx) = channel();
         let threadpool = threadpool::ThreadPool::with_name("consensus_recv_tx_pool".to_string(), num_thds);
-        let mut handler = TxHandler::new(threadpool, tx);
         let (tx_sub, rx_sub) = channel();
         let (tx_pub, rx_pub) = channel();
-        start_pubsub("consensus_tx", vec!["net.tx", "jsonrpc.new_tx"], tx_sub, rx_pub);
+        let mut handler = TxHandler::new(threadpool, tx, tx_pub.clone());
+        start_pubsub("consensus_tx", vec!["net.tx", "jsonrpc.new_tx", "chain.role"], tx_sub, rx_pub);
         thread::spawn(move || loop {
                           let (key, body) = rx_sub.recv().unwrap();
-                          handler.handle(key, body);
+                          handler.receive(key_to_id(key), body);
                       });
         loop {
-            dispatch.process(&rx, tx_pub.clone());
+            dispatch.process(&rx, tx_pub);
         }
     });
 }
