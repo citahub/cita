@@ -79,7 +79,7 @@ fn main() {
     let pool = threadpool::ThreadPool::new(10);
     let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request", "*.blk_tx_hashs_req"], ctx_sub, crx_pub);
+    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request", "*.blk_tx_hashs_req", "verify_blk_chain"], ctx_sub, crx_pub);
     thread::spawn(move || loop {
                       let (key, msg) = crx_sub.recv().unwrap();
                       forward::chain_pool(&pool, &tx, key_to_id(&key), msg);
@@ -98,9 +98,9 @@ fn main() {
     synchronizer.sync_block_tx_hashes(st.get_height(), ctx_pub.clone());
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
+    let mut auth_handler = AuthHandler::new(chain1.clone(), rx, ctx_pub1.clone());
     thread::spawn(move || loop {
-                      let chain = chain1.clone();
-                      forward::chain_result(chain, &rx, ctx_pub1.clone());
+                      auth_handler.chain_result();
                   });
 
     thread::spawn(move || loop {

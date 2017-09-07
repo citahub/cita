@@ -40,10 +40,13 @@ impl Verifier {
     }
 
     pub fn update_hashes(&mut self, h: u64, hashes: Vec<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
+        if h == 0 {
+            return;
+        }
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
             self.height_low =  if h < BLOCKLIMIT {
-                Some(1)
+                Some(0)
             } else {
                 Some(h - BLOCKLIMIT + 1)
             };
