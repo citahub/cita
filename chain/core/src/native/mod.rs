@@ -17,18 +17,22 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+mod nowpay;
+mod permission;
+mod zhongchao;
 
-////////////////////////////////////////////////////////////////////////////////
-
+pub use self::nowpay::nowpay::NowPay;
+pub use self::zhongchao::contract::ZcPermission;
 use action_params::ActionParams;
-use evm::{self, Ext, GasLeft};
+use evm::{self, Ext, GasLeft, Error};
+use std::boxed::Box;
 use std::collections::HashMap;
 use util::{H256, U256};
 
 ////////////////////////////////////////////////////////////////////////////////
 pub type Signature = u32;
 pub type Function = Fn(&ActionParams, &mut Ext) -> evm::Result<GasLeft<'static>> + Sync + Send;
-pub mod types;
+pub mod storage;
 ////////////////////////////////////////////////////////////////////////////////
 // Contract
 pub trait Contract: Sync + Send {
@@ -46,33 +50,5 @@ pub trait Contract: Sync + Send {
                 }
             }
         }
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// NowPay
-pub struct NowPay {
-    functions: HashMap<Signature, Box<Function>>,
-}
-
-impl Contract for NowPay {
-    fn get_function(&self, hash: &Signature) -> Option<&Box<Function>> {
-        self.functions.get(hash)
-    }
-}
-
-impl NowPay {
-    pub fn new() -> Self {
-        let mut contract = NowPay { functions: HashMap::<Signature, Box<Function>>::new() };
-        contract.functions.insert(0, Box::new(NowPay::set_value));
-        contract
-    }
-    pub fn set_value(params: &ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
-        if let Some(ref data) = params.data {
-            if let Some(data) = data.get(4..32) {
-                let _ = ext.set_storage(H256::from(0), H256::from(data));
-            }
-        }
-        Ok(GasLeft::Known(U256::from(0)))
     }
 }
