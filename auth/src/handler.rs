@@ -21,8 +21,9 @@ use std::sync::mpsc::Sender;
 use std::vec::*;
 use util::H256;
 use verify::Verifier;
+use cache::VerifyCache;
 
-pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier: &mut Verifier) {
+pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier: &mut Verifier, cache: &mut VerifyCache) {
     let (_cmdid, _origin, content) = parse_msg(payload.as_slice());
     match content {
         MsgClass::BLOCKTXHASHES(block_tx_hashes) => {
@@ -39,15 +40,21 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
             trace!("get verify request {:?}", req);
             let mut resps = Vec::new();
             for req in req.get_reqs() {
-                let ret = verifier.check_hash_exist(&H256::from_slice(req.get_tx_hash()));
+                let tx_hash = H256::from_slice(req.get_tx_hash());
+                if let Some(resp) = cache.get(&tx_hash) {
+                    resps.push(resp.clone());
+                    continue;
+                }
+                let ret = verifier.check_hash_exist(&tx_hash);
                 if ret {
                     let mut resp = VerifyRespMsg::new();
+                    resp.set_tx_hash(req.get_tx_hash().to_vec());
                     if verifier.is_inited() {
                         resp.set_ret(Ret::Dup);
+                        cache.insert(tx_hash, resp.clone());
                     } else {
                         resp.set_ret(Ret::NotReady);
-                    }                            
-                    resp.set_tx_hash(req.get_tx_hash().to_vec());
+                    }                    
                     resps.push(resp);
                     continue;
                 } 
@@ -56,6 +63,7 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
                     let mut resp = VerifyRespMsg::new();
                     resp.set_ret(Ret::BadSig);                            
                     resp.set_tx_hash(req.get_tx_hash().to_vec());
+                    cache.insert(tx_hash, resp.clone());
                     resps.push(resp);
                     continue;
                 }
@@ -63,6 +71,7 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
                     let mut resp = VerifyRespMsg::new();
                     resp.set_ret(Ret::OutOfTime);                            
                     resp.set_tx_hash(req.get_tx_hash().to_vec());
+                    cache.insert(tx_hash, resp.clone());
                     resps.push(resp);
                     continue;
                 }
@@ -72,6 +81,7 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
                     resp.set_ret(Ret::Ok);
                     resp.set_tx_hash(req.get_tx_hash().to_vec());
                     resp.set_signer(ret.unwrap().to_vec());
+                    cache.insert(tx_hash, resp.clone());
                     resps.push(resp);
                 }
             }

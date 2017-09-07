@@ -31,6 +31,14 @@ impl Verifier {
         self.inited
     }
 
+    pub fn get_height_latest(&self) -> Option<u64> {
+        self.height_latest
+    }
+
+    pub fn get_height_low(&self) -> Option<u64> {
+        self.height_low
+    }
+
     pub fn update_hashes(&mut self, h: u64, hashes: Vec<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
@@ -97,9 +105,43 @@ impl Verifier {
     }
 
     pub fn verify_valid_until_block(&self, valid_until_block: u64) -> bool {
-        if !self.inited {
-            return false;
+        valid_until_block == 0 || valid_until_block > self.height_latest.unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::mpsc::channel;
+
+    #[test]
+    fn verify_init() {
+        let mut v = Verifier::new();
+        assert_eq!(v.is_inited(), false);
+        let (tx_pub, _) = channel();
+        v.update_hashes(1, vec![], &tx_pub);
+        assert_eq!(v.is_inited(), true);
+        assert_eq!(v.get_height_latest(), Some(1));
+        assert_eq!(v.get_height_low(),  Some(1));
+    }
+
+    #[test]
+    fn verify_update() {
+        let mut v = Verifier::new();
+        let (tx_pub, _) = channel();
+        v.update_hashes(100, vec![], &tx_pub);
+        assert_eq!(v.is_inited(), false);
+        assert_eq!(v.get_height_latest(),  Some(100));
+        assert_eq!(v.get_height_low(),  Some(1));
+        for i in 1..99 {
+            v.update_hashes(i, vec![], &tx_pub);
         }
-        (valid_until_block == 0 || valid_until_block > self.height_latest.unwrap())
+        assert_eq!(v.is_inited(), false);
+        v.update_hashes(99, vec![], &tx_pub);
+        assert_eq!(v.is_inited(), true);
+
+        v.update_hashes(101, vec![], &tx_pub);
+        assert_eq!(v.get_height_latest(),  Some(101));
+        assert_eq!(v.get_height_low(),  Some(2));
     }
 }
