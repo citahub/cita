@@ -38,7 +38,7 @@
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct Message {
     // message fields
     pub cmd_id: u32,
@@ -64,9 +64,7 @@ impl Message {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const Message,
         };
-        unsafe {
-            instance.get(Message::new)
-        }
+        unsafe { instance.get(Message::new) }
     }
 
     // uint32 cmd_id = 1;
@@ -211,34 +209,34 @@ impl ::protobuf::Message for Message {
                     }
                     let tmp = is.read_uint32()?;
                     self.cmd_id = tmp;
-                },
+                }
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_enum()?;
                     self.field_type = tmp;
-                },
+                }
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint32()?;
                     self.origin = tmp;
-                },
+                }
                 4 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_enum()?;
                     self.operate = tmp;
-                },
+                }
                 5 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.content)?;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -328,36 +326,12 @@ impl ::protobuf::MessageStatic for Message {
         unsafe {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
-                    "cmd_id",
-                    Message::get_cmd_id_for_reflect,
-                    Message::mut_cmd_id_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<MsgType>>(
-                    "type",
-                    Message::get_field_type_for_reflect,
-                    Message::mut_field_type_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
-                    "origin",
-                    Message::get_origin_for_reflect,
-                    Message::mut_origin_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<OperateType>>(
-                    "operate",
-                    Message::get_operate_for_reflect,
-                    Message::mut_operate_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "content",
-                    Message::get_content_for_reflect,
-                    Message::mut_content_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<Message>(
-                    "Message",
-                    fields,
-                    file_descriptor_proto()
-                )
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>("cmd_id", Message::get_cmd_id_for_reflect, Message::mut_cmd_id_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<MsgType>>("type", Message::get_field_type_for_reflect, Message::mut_field_type_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>("origin", Message::get_origin_for_reflect, Message::mut_origin_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<OperateType>>("operate", Message::get_operate_for_reflect, Message::mut_operate_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("content", Message::get_content_for_reflect, Message::mut_content_for_reflect));
+                ::protobuf::reflect::MessageDescriptor::new::<Message>("Message", fields, file_descriptor_proto())
             })
         }
     }
@@ -386,7 +360,7 @@ impl ::protobuf::reflect::ProtobufValue for Message {
     }
 }
 
-#[derive(Clone,PartialEq,Eq,Debug,Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum MsgType {
     REQUEST = 0,
     HEADER = 1,
@@ -397,8 +371,9 @@ pub enum MsgType {
     MSG = 6,
     RESPONSE = 7,
     TX_RESPONSE = 8,
-    VERIFY_REQ = 9,
-    VERIFY_RESP = 10,
+    RICH_STATUS = 9,
+    VERIFY_REQ = 10,
+    VERIFY_RESP = 11,
 }
 
 impl ::protobuf::ProtobufEnum for MsgType {
@@ -417,9 +392,10 @@ impl ::protobuf::ProtobufEnum for MsgType {
             6 => ::std::option::Option::Some(MsgType::MSG),
             7 => ::std::option::Option::Some(MsgType::RESPONSE),
             8 => ::std::option::Option::Some(MsgType::TX_RESPONSE),
-            9 => ::std::option::Option::Some(MsgType::VERIFY_REQ),
-            10 => ::std::option::Option::Some(MsgType::VERIFY_RESP),
-            _ => ::std::option::Option::None
+            9 => ::std::option::Option::Some(MsgType::RICH_STATUS),
+            10 => ::std::option::Option::Some(MsgType::VERIFY_REQ),
+            11 => ::std::option::Option::Some(MsgType::VERIFY_RESP),
+            _ => ::std::option::Option::None,
         }
     }
 
@@ -434,6 +410,7 @@ impl ::protobuf::ProtobufEnum for MsgType {
             MsgType::MSG,
             MsgType::RESPONSE,
             MsgType::TX_RESPONSE,
+            MsgType::RICH_STATUS,
             MsgType::VERIFY_REQ,
             MsgType::VERIFY_RESP,
         ];
@@ -445,16 +422,11 @@ impl ::protobuf::ProtobufEnum for MsgType {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,
         };
-        unsafe {
-            descriptor.get(|| {
-                ::protobuf::reflect::EnumDescriptor::new("MsgType", file_descriptor_proto())
-            })
-        }
+        unsafe { descriptor.get(|| ::protobuf::reflect::EnumDescriptor::new("MsgType", file_descriptor_proto())) }
     }
 }
 
-impl ::std::marker::Copy for MsgType {
-}
+impl ::std::marker::Copy for MsgType {}
 
 impl ::std::default::Default for MsgType {
     fn default() -> Self {
@@ -468,7 +440,7 @@ impl ::protobuf::reflect::ProtobufValue for MsgType {
     }
 }
 
-#[derive(Clone,PartialEq,Eq,Debug,Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum OperateType {
     BROADCAST = 0,
     SINGLE = 1,
@@ -485,16 +457,12 @@ impl ::protobuf::ProtobufEnum for OperateType {
             0 => ::std::option::Option::Some(OperateType::BROADCAST),
             1 => ::std::option::Option::Some(OperateType::SINGLE),
             2 => ::std::option::Option::Some(OperateType::SUBTRACT),
-            _ => ::std::option::Option::None
+            _ => ::std::option::Option::None,
         }
     }
 
     fn values() -> &'static [Self] {
-        static values: &'static [OperateType] = &[
-            OperateType::BROADCAST,
-            OperateType::SINGLE,
-            OperateType::SUBTRACT,
-        ];
+        static values: &'static [OperateType] = &[OperateType::BROADCAST, OperateType::SINGLE, OperateType::SUBTRACT];
         values
     }
 
@@ -503,16 +471,11 @@ impl ::protobuf::ProtobufEnum for OperateType {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,
         };
-        unsafe {
-            descriptor.get(|| {
-                ::protobuf::reflect::EnumDescriptor::new("OperateType", file_descriptor_proto())
-            })
-        }
+        unsafe { descriptor.get(|| ::protobuf::reflect::EnumDescriptor::new("OperateType", file_descriptor_proto())) }
     }
 }
 
-impl ::std::marker::Copy for OperateType {
-}
+impl ::std::marker::Copy for OperateType {}
 
 impl ::std::default::Default for OperateType {
     fn default() -> Self {
@@ -600,9 +563,5 @@ fn parse_descriptor_proto() -> ::protobuf::descriptor::FileDescriptorProto {
 }
 
 pub fn file_descriptor_proto() -> &'static ::protobuf::descriptor::FileDescriptorProto {
-    unsafe {
-        file_descriptor_proto_lazy.get(|| {
-            parse_descriptor_proto()
-        })
-    }
+    unsafe { file_descriptor_proto_lazy.get(|| parse_descriptor_proto()) }
 }

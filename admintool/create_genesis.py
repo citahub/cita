@@ -6,6 +6,7 @@ import json
 import os
 import time
 from os import path
+import binascii
 
 from ethereum.tools.tester import Chain
 from ethereum.tools._solidity import (
@@ -37,6 +38,7 @@ def init_contracts(nodes):
 
         ct = ContractTranslator(simple_data['abi'])
         extra = (ct.encode_constructor_arguments([nodes]) if nodes else b'')
+        print(binascii.hexlify(simple_data['bin'] + extra))
         abi_address = tester_state.contract(simple_data['bin'] + extra)
         tester_state.mine()
         account = tester_state.chain.state.account_to_dict(abi_address)

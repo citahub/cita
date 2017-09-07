@@ -46,6 +46,7 @@ use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::{Duration, Instant};
+extern crate authority_manage;
 
 fn main() {
     dotenv::dotenv().ok();
@@ -96,7 +97,7 @@ fn main() {
     let (tx, rx) = channel();
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("consensus", vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.status"], tx_sub, rx_pub);
+    start_pubsub("consensus", vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.richstatus"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let tx = tx.clone();
