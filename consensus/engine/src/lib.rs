@@ -25,7 +25,7 @@ mod instrument;
 pub use error::*;
 pub use instrument::*;
 
-use libproto::blockchain::{Block, UnverifiedTransaction, Status};
+use libproto::blockchain::{Block, UnverifiedTransaction, RichStatus};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use util::H256;
