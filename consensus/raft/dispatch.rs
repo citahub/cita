@@ -52,5 +52,6 @@ pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, M
         MsgClass::VERIFYREQ(req) => {}
         MsgClass::VERIFYRESP(resp) => {}
         MsgClass::BLOCKTXHASHES(txhashes) => {}
+        MsgClass::BLOCKTXHASHESREQ(req) => {}
     }
 }

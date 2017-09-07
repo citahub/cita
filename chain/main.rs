@@ -79,7 +79,7 @@ fn main() {
     let pool = threadpool::ThreadPool::new(10);
     let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request"], ctx_sub, crx_pub);
+    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request", "*.blk_tx_hashs_req"], ctx_sub, crx_pub);
     thread::spawn(move || loop {
                       let (key, msg) = crx_sub.recv().unwrap();
                       forward::chain_pool(&pool, &tx, key_to_id(&key), msg);

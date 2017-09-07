@@ -25,9 +25,11 @@ extern crate cpuprofiler;
 extern crate libproto;
 extern crate cache_2q;
 extern crate util;
+extern crate cita_crypto as crypto;
 
 pub mod handler;
 pub mod verify;
+pub mod cache;
 
 use clap::App;
 use cpuprofiler::PROFILER;
@@ -87,5 +89,71 @@ fn main() {
         let (key, msg) = rx_sub.recv().unwrap();
         info!("get {} : {:?}", key, msg);
         handle_msg(msg, &tx_pub, &mut verifier);
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crypto::*;
+    use libproto::*;
+    use libproto::blockchain::*;
+    use protobuf::{Message, RepeatedField};
+    use util::Hashable;
+
+    fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
+        let mut tx = Transaction::new();
+        tx.set_data(data);
+        tx.set_to("1234567".to_string());
+        tx.set_nonce("0".to_string());
+        tx.set_valid_until_block(valid_until_block);
+        let signed_tx = tx.sign(*privkey); 
+        signed_tx
+    }
+
+    fn generate_msg(tx: SignedTransaction) -> Vec<u8> {
+        //create verify message
+        let mut msg = VerifyReqMsg::new();
+        msg.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
+        let signature = tx.get_transaction_with_sig().get_signature().to_vec();
+        msg.set_signature(signature);
+        let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
+        let hash = bytes.crypt_hash().to_vec();
+        msg.set_hash(hash);
+        msg.set_tx_hash(tx.get_tx_hash().to_vec());
+
+        let mut vmsg = VerifyReq::new();
+        vmsg.set_reqs(RepeatedField::from_slice(&[msg]));
+        let msg = factory::create_msg(submodules::CHAIN, topics::VERIFY_REQ, communication::MsgType::VERIFY_REQ, vmsg.write_to_bytes().unwrap());
+        msg.write_to_bytes().unwrap()
+    }
+
+    #[test]
+    fn verify_tx_ok() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let pubkey = keypair.pubkey();
+        let tx = generate_tx(vec![1], 999, privkey);
+
+        let (tx_pub, rx_pub) = channel();
+        //verify tx
+        let mut v = Verifier::new();
+        v.update_hashes(1, vec![], &tx_pub);
+
+        //let (_, msg) = rx_sub.recv().unwrap();
+        handle_msg(generate_msg(tx), &tx_pub, &mut v);
+        let (key1, resp_msg) = rx_pub.recv().unwrap();
+        println!("get {} : {:?}", key1, resp_msg);
+        let (_, _, content) = parse_msg(resp_msg.as_slice());
+        match content {
+            MsgClass::VERIFYRESP(resps) => {
+                for resp in resps.get_resps() {
+                    assert_eq!(resp.get_ret(), Ret::Ok);
+                    assert_eq!(pubkey.to_vec(), resp.get_signer());
+                }
+            }
+            _ => {panic!("test failed")}
+        }
     }
 }

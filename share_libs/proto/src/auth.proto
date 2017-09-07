@@ -1,17 +1,21 @@
 syntax = "proto3";
 
+import "blockchain.proto";
+
 enum Ret {
     Ok = 0;
     Dup = 1;
     OutOfTime = 2;
     BadSig = 3;
+    NotReady = 4;
 }
 
 message VerifyReqMsg {
     uint64 valid_until_block = 1;
     bytes hash = 2;
     bytes signature = 3;
-    bytes tx_hash = 4;
+    Crypto crypto = 4;
+    bytes tx_hash = 5;
 }
 
 message VerifyReq {
@@ -31,4 +35,8 @@ message VerifyResp {
 message BlockTxHashes {
     uint64 height = 1;
     repeated bytes tx_hashes = 2;
+}
+
+message BlockTxHashesReq {
+    uint64 height = 1;
 }
