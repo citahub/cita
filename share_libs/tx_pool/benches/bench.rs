@@ -47,8 +47,6 @@ fn bench_enqueue(b: &mut Bencher) {
     let start = SystemTime::now();
     let mut p = Pool::new(5000, 1000);
     let mut tx = Transaction::new();
-    let mut uv_tx = UnverifiedTransaction::new();
-    let mut signed_tx = SignedTransaction::new();
     let keypair = KeyPair::gen_keypair();
     let pv = keypair.privkey();
     for i in 0..10000 {
@@ -57,11 +55,7 @@ fn bench_enqueue(b: &mut Bencher) {
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(99999);
         tx.set_quota(999999999);
-
-        uv_tx.set_transaction(tx.clone());
-        signed_tx.set_transaction_with_sig(uv_tx.clone());
-        signed_tx.sign(*pv);
-        p.enqueue(signed_tx.clone());
+        p.enqueue(tx.sign(*pv));
     }
     let sys_time = SystemTime::now();
     let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
@@ -74,8 +68,6 @@ fn bench_package(b: &mut Bencher) {
     let start = SystemTime::now();
     let mut p = Pool::new(5000, 1000);
     let mut tx = Transaction::new();
-    let mut uv_tx = UnverifiedTransaction::new();
-    let mut signed_tx = SignedTransaction::new();
     let keypair = KeyPair::gen_keypair();
     let pv = keypair.privkey();
     for i in 0..10000 {
@@ -84,11 +76,7 @@ fn bench_package(b: &mut Bencher) {
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(99999);
         tx.set_quota(9999999999);
-
-        uv_tx.set_transaction(tx.clone());
-        signed_tx.set_transaction_with_sig(uv_tx.clone());
-        signed_tx.sign(*pv);
-        p.enqueue(signed_tx.clone());
+        p.enqueue(tx.sign(*pv));
     }
     p.package(666);
     let sys_time = SystemTime::now();
@@ -102,8 +90,6 @@ fn bench_update(b: &mut Bencher) {
     let start = SystemTime::now();
     let mut p = Pool::new(5000, 1000);
     let mut tx = Transaction::new();
-    let mut uv_tx = UnverifiedTransaction::new();
-    let mut signed_tx = SignedTransaction::new();
     let keypair = KeyPair::gen_keypair();
     let pv = keypair.privkey();
 
@@ -113,11 +99,7 @@ fn bench_update(b: &mut Bencher) {
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(99999);
         tx.set_quota(999999999);
-
-        uv_tx.set_transaction(tx.clone());
-        signed_tx.set_transaction_with_sig(uv_tx.clone());
-        signed_tx.sign(*pv);
-        p.enqueue(signed_tx.clone());
+        p.enqueue(tx.sign(*pv));
     }
     let txs = p.package(666);
     p.update(&txs);
