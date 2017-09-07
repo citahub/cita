@@ -528,6 +528,7 @@ mod tests {
     extern crate env_logger;
     extern crate cita_ed25519 as ed25519;
     extern crate protobuf;
+    extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::mktemp::Temp;
@@ -536,7 +537,7 @@ mod tests {
     use engines::NullEngine;
     use env_info::EnvInfo;
     use evm::{Factory, VMType};
-    use rustc_hex::FromHex;
+    use self::rustc_hex::FromHex;
     use state::Substate;
     use std::fs::File;
     use std::io::Read;

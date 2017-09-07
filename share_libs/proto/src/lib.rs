@@ -295,7 +295,7 @@ impl blockchain::UnverifiedTransaction {
         let tx_hash = self.crypt_hash();
         if self.get_signature().len() != SIGNATURE_BYTES_LEN {
             trace!("Invalid signature length {}", hash);
-            Err((hash, String::from("Invalid signature length")))
+            Err((tx_hash, String::from("Invalid signature length")))
         } else {
             match self.get_crypto() {
                 Crypto::SECP => {
