@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 mod nowpay;
-mod permission;
+// mod permission;
 mod zhongchao;
 
 pub use self::nowpay::nowpay::NowPay;
