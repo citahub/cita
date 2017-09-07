@@ -20,7 +20,6 @@ contract NodeManager is NodeInterface {
     event NewNode(address _node);
     event ApproveNode(address _node);
     event DeleteNode(address _node);
-    event GetStatus(address _node);
 
     // setup
     function NodeManager(address[] _nodes) {
@@ -95,7 +94,6 @@ contract NodeManager is NodeInterface {
 
     // get the status of the node
     function getStatus(address _node) constant returns (uint8) {
-        GetStatus(_node);
         return uint8(status[_node]);
     }
 
