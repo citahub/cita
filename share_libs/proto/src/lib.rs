@@ -227,7 +227,7 @@ impl blockchain::Transaction {
         signed_tx
     }
 
-    /// Build UnverifiedTransaction
+    /// Build UnverifiedTransaction by PrivKey
     pub fn build_unverified(&self, sk: PrivKey) -> UnverifiedTransaction {
         let mut unverified_tx = UnverifiedTransaction::new();
         let bytes = self.write_to_bytes().unwrap();

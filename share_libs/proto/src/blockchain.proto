@@ -32,7 +32,7 @@ enum Crypto {
     SM2 = 1; 
 }
 
-message Transaction {
+message Transaction {//raw transaction
     string to = 1;
     string nonce = 2;
     uint64 quota = 3;
@@ -42,14 +42,14 @@ message Transaction {
 
 message UnverifiedTransaction {
     Transaction transaction = 1;
-    bytes signature = 2;
+    bytes signature = 2;//sender's signature
     Crypto crypto = 3;
 }
 
 message SignedTransaction {
     UnverifiedTransaction transaction_with_sig = 1;
-    bytes tx_hash = 2;  // SignedTransaction hash
-    bytes signer = 3; //public key
+    bytes tx_hash = 2;  //UnverifiedTransaction's hash, not raw transaction hash!
+    bytes signer = 3; //sender's public key
 }
 
 // data precompile API
