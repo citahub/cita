@@ -48,6 +48,6 @@ CITA is currently under the GPLv3 license. See the LICENSE file for details.
 
 ## Credits
 
-<img src="https://github.com/cryptape/assets/blob/master/cryptape-thinking.png?raw=true">
+<img src="https://github.com/cryptape/assets/blob/master/cryptape-thinking-ape.png?raw=true">
 
 CITA is created by Cryptape LLC with :heart:.

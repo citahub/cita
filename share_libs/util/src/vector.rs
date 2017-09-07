@@ -19,14 +19,14 @@
 /// Returns len of prefix shared with elem
 ///
 /// ```rust
-///	extern crate util;
-///	use util::vector::SharedPrefix;
+///    extern crate util;
+///    use util::vector::SharedPrefix;
 ///
-///	fn main () {
-///		let a = vec![1,2,3,3,5];
-///		let b = vec![1,2,3];
-///		assert_eq!(a.shared_prefix_len(&b), 3);
-///	}
+///    fn main () {
+///        let a = vec![1,2,3,3,5];
+///        let b = vec![1,2,3];
+///        assert_eq!(a.shared_prefix_len(&b), 3);
+///    }
 /// ```
 pub trait SharedPrefix<T> {
     /// Get common prefix length

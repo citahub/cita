@@ -174,7 +174,7 @@ impl Transaction {
         Ok(Transaction {
                nonce: U256::from_str(plain_transaction.get_nonce()).map_err(|_| Error::ParseError)?,
                gas_price: U256::default(),
-               gas: U256::from(u64::max_value() / 100000),
+               gas: U256::from(plain_transaction.get_quota()),
                action: {
                    let to = plain_transaction.get_to();
                    match to.is_empty() {
@@ -233,6 +233,7 @@ impl Transaction {
         pt.set_nonce(self.nonce.to_hex());
         pt.set_valid_until_block(self.block_limit);
         pt.set_data(self.data.clone());
+        pt.set_quota(self.gas.as_u64());
         match self.action {
             Action::Create => pt.clear_to(),
             Action::Call(ref to) => pt.set_to(to.hex()),
@@ -313,7 +314,7 @@ impl UnverifiedTransaction {
         s.append(&self.hash);
     }
 
-    ///	Reference to unsigned part of this transaction.
+    ///    Reference to unsigned part of this transaction.
     pub fn as_unsigned(&self) -> &Transaction {
         &self.unsigned
     }

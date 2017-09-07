@@ -92,13 +92,8 @@ def _blake2b_ed25519_deploy_data(bytecode, privatekey, receiver=None):
     unverify_tx.signature = hex2bytes(signature)
     unverify_tx.crypto = Crypto.Value('SECP')
 
-    signed_transaction = SignedTransaction()
-    signed_transaction.transaction_with_sig.CopyFrom(unverify_tx)
-    signed_transaction.tx_hash = _blake2b(unverify_tx.SerializeToString())
-    signed_transaction.signer = binascii.b2a_hex(pubkey)
-    # print(binascii.hexlify(pub))
-
-    return binascii.hexlify(signed_transaction.SerializeToString())
+    print("unverify_tx is {}".format(binascii.hexlify(unverify_tx.SerializeToString())))
+    return binascii.hexlify(unverify_tx.SerializeToString())
 
 
 def _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver=None):
@@ -111,12 +106,14 @@ def _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver=None):
     tx = Transaction()
     tx.valid_until_block = 4294967296
     tx.nonce = nonce
+    tx.quota = 99999999999
     if receiver is not None:
         tx.to = receiver
     tx.data = hex2bytes(bytecode)
 
     message = sha3(tx.SerializeToString())
 
+    print("message: {}".format(message))
     sign_recover = privkey.ecdsa_sign_recoverable(message, raw=True)
     sig = privkey.ecdsa_recoverable_serialize(sign_recover)
 
@@ -128,14 +125,8 @@ def _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver=None):
     unverify_tx.signature = hex2bytes(signature)
     unverify_tx.crypto = Crypto.Value('SECP')
 
-    signed_transaction = SignedTransaction()
-    signed_transaction.transaction_with_sig.CopyFrom(unverify_tx)
-    signed_transaction.tx_hash = sha3(unverify_tx.SerializeToString())
-    pub = recover_pub(hex2bytes(privatekey))
-    signed_transaction.signer = pub
-    # print(binascii.hexlify(pub))
-
-    return binascii.hexlify(signed_transaction.SerializeToString())
+    print("unverify_tx is {}".format(binascii.hexlify(unverify_tx.SerializeToString())))
+    return binascii.hexlify(unverify_tx.SerializeToString())
 
 
 def parse_arguments():

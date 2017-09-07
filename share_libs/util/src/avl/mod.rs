@@ -206,7 +206,7 @@ pub enum AVLSpec {
     Generic,
     /// Secure AVL.
     Secure,
-    ///	Secure AVL with fat database.
+    ///    Secure AVL with fat database.
     Fat,
 }
 
@@ -235,13 +235,13 @@ pub enum AVLKinds<'db> {
 
 // wrapper macro for making the match easier to deal with.
 macro_rules! wrapper {
-	($me: ident, $f_name: ident, $($param: ident),*) => {
-		match *$me {
-			AVLKinds::Generic(ref t) => t.$f_name($($param),*),
-			AVLKinds::Secure(ref t) => t.$f_name($($param),*),
-			AVLKinds::Fat(ref t) => t.$f_name($($param),*),
-		}
-	}
+    ($me: ident, $f_name: ident, $($param: ident),*) => {
+        match *$me {
+            AVLKinds::Generic(ref t) => t.$f_name($($param),*),
+            AVLKinds::Secure(ref t) => t.$f_name($($param),*),
+            AVLKinds::Fat(ref t) => t.$f_name($($param),*),
+        }
+    }
 }
 
 impl<'db> AVL for AVLKinds<'db> {

@@ -23,6 +23,7 @@ extern crate dotenv;
 extern crate pubsub;
 extern crate cpuprofiler;
 extern crate libproto;
+extern crate cache_2q;
 
 pub mod handler;
 

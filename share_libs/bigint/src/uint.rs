@@ -45,422 +45,422 @@ pub enum FromDecStrErr {
 }
 
 macro_rules! impl_map_from {
-	($thing:ident, $from:ty, $to:ty) => {
-		impl From<$from> for $thing {
-			fn from(value: $from) -> $thing {
-				From::from(value as $to)
-			}
-		}
-	}
+    ($thing:ident, $from:ty, $to:ty) => {
+        impl From<$from> for $thing {
+            fn from(value: $from) -> $thing {
+                From::from(value as $to)
+            }
+        }
+    }
 }
 
 #[cfg(not(all(asm_available, target_arch = "x86_64")))]
 macro_rules! uint_overflowing_add {
-	($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
-	})
+    ($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => ({
+        uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
+    })
 }
 
 macro_rules! uint_overflowing_add_reg {
-	($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => ({
-		let $name(ref me) = $self_expr;
-		let $name(ref you) = $other;
+    ($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => ({
+        let $name(ref me) = $self_expr;
+        let $name(ref you) = $other;
 
-		let mut ret = [0u64; $n_words];
-		let mut carry = 0u64;
+        let mut ret = [0u64; $n_words];
+        let mut carry = 0u64;
 
-		for i in 0..$n_words {
-			let (res1, overflow1) = me[i].overflowing_add(you[i]);
-			let (res2, overflow2) = res1.overflowing_add(carry);
+        for i in 0..$n_words {
+            let (res1, overflow1) = me[i].overflowing_add(you[i]);
+            let (res2, overflow2) = res1.overflowing_add(carry);
 
-			ret[i] = res2;
-			carry = overflow1 as u64 + overflow2 as u64;
-		}
+            ret[i] = res2;
+            carry = overflow1 as u64 + overflow2 as u64;
+        }
 
-		($name(ret), carry > 0)
-	})
+        ($name(ret), carry > 0)
+    })
 }
 
 #[cfg(all(asm_available, target_arch = "x86_64"))]
 macro_rules! uint_overflowing_add {
-	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
-		let self_t: &[u64; $n_words] = &$self_expr.0;
-		let other_t: &[u64; $n_words] = &$other.0;
+    (U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+        let self_t: &[u64; $n_words] = &$self_expr.0;
+        let other_t: &[u64; $n_words] = &$other.0;
 
-		let overflow: u8;
-		unsafe {
-			asm!("
-				add $9, $0
-				adc $10, $1
-				adc $11, $2
-				adc $12, $3
-				setc %al
-				"
-			: "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]), "={al}"(overflow)
-			: "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
-			  "mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3])
-			:
-			:
-			);
-		}
-		(U256(result), overflow != 0)
-	});
-	(U512, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
-		let self_t: &[u64; $n_words] = &$self_expr.0;
-		let other_t: &[u64; $n_words] = &$other.0;
+        let overflow: u8;
+        unsafe {
+            asm!("
+                add $9, $0
+                adc $10, $1
+                adc $11, $2
+                adc $12, $3
+                setc %al
+                "
+            : "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]), "={al}"(overflow)
+            : "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
+              "mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3])
+            :
+            :
+            );
+        }
+        (U256(result), overflow != 0)
+    });
+    (U512, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+        let self_t: &[u64; $n_words] = &$self_expr.0;
+        let other_t: &[u64; $n_words] = &$other.0;
 
-		let overflow: u8;
+        let overflow: u8;
 
-		unsafe {
-			asm!("
-				add $15, $0
-				adc $16, $1
-				adc $17, $2
-				adc $18, $3
-				lodsq
-				adc $11, %rax
-				stosq
-				lodsq
-				adc $12, %rax
-				stosq
-				lodsq
-				adc $13, %rax
-				stosq
-				lodsq
-				adc $14, %rax
-				stosq
-				setc %al
+        unsafe {
+            asm!("
+                add $15, $0
+                adc $16, $1
+                adc $17, $2
+                adc $18, $3
+                lodsq
+                adc $11, %rax
+                stosq
+                lodsq
+                adc $12, %rax
+                stosq
+                lodsq
+                adc $13, %rax
+                stosq
+                lodsq
+                adc $14, %rax
+                stosq
+                setc %al
 
-				": "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]),
+                ": "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]),
 
-			  "={al}"(overflow) /* $0 - $4 */
+              "={al}"(overflow) /* $0 - $4 */
 
             : "{rdi}"(&result[4] as *const u64) /* $5 */
-			  "{rsi}"(&other_t[4] as *const u64) /* $6 */
-			  "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
-		  	  "m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
-			  /* $7 - $14 */
+              "{rsi}"(&other_t[4] as *const u64) /* $6 */
+              "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
+                "m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
+              /* $7 - $14 */
 
-			  "mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3]),
+              "mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3]),
               "m"(other_t[4]), "m"(other_t[5]), "m"(other_t[6]), "m"(other_t[7]) /* $15 - $22 */
-			: "rdi", "rsi"
-			:
-			);
-		}
-		(U512(result), overflow != 0)
-	});
+            : "rdi", "rsi"
+            :
+            );
+        }
+        (U512(result), overflow != 0)
+    });
 
-	($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => (
-		uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
-	)
+    ($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => (
+        uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
+    )
 }
 
 #[cfg(not(all(asm_available, target_arch = "x86_64")))]
 macro_rules! uint_overflowing_sub {
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
-	})
+    ($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
+    })
 }
 
 macro_rules! uint_overflowing_sub_reg {
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let $name(ref me) = $self_expr;
-		let $name(ref you) = $other;
+    ($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        let $name(ref me) = $self_expr;
+        let $name(ref you) = $other;
 
-		let mut ret = [0u64; $n_words];
-		let mut carry = 0u64;
+        let mut ret = [0u64; $n_words];
+        let mut carry = 0u64;
 
-		for i in 0..$n_words {
-			let (res1, overflow1) = me[i].overflowing_sub(you[i]);
-			let (res2, overflow2) = res1.overflowing_sub(carry);
+        for i in 0..$n_words {
+            let (res1, overflow1) = me[i].overflowing_sub(you[i]);
+            let (res2, overflow2) = res1.overflowing_sub(carry);
 
-			ret[i] = res2;
-			carry = overflow1 as u64 + overflow2 as u64;
-		}
+            ret[i] = res2;
+            carry = overflow1 as u64 + overflow2 as u64;
+        }
 
-		($name(ret), carry > 0)
+        ($name(ret), carry > 0)
 
-	})
+    })
 }
 
 #[cfg(all(asm_available, target_arch = "x86_64"))]
 macro_rules! uint_overflowing_sub {
-	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
-		let self_t: &[u64; $n_words] = &$self_expr.0;
-		let other_t: &[u64; $n_words] = &$other.0;
+    (U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+        let self_t: &[u64; $n_words] = &$self_expr.0;
+        let other_t: &[u64; $n_words] = &$other.0;
 
-		let overflow: u8;
-		unsafe {
-			asm!("
-				sub $9, $0
-				sbb $10, $1
-				sbb $11, $2
-				sbb $12, $3
-				setb %al
-				"
-				: "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]), "={al}"(overflow)
-				: "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]), "mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3])
-				:
-				:
-			);
-		}
-		(U256(result), overflow != 0)
-	});
-	(U512, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
-		let self_t: &[u64; $n_words] = &$self_expr.0;
-		let other_t: &[u64; $n_words] = &$other.0;
+        let overflow: u8;
+        unsafe {
+            asm!("
+                sub $9, $0
+                sbb $10, $1
+                sbb $11, $2
+                sbb $12, $3
+                setb %al
+                "
+                : "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]), "={al}"(overflow)
+                : "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]), "mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3])
+                :
+                :
+            );
+        }
+        (U256(result), overflow != 0)
+    });
+    (U512, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+        let self_t: &[u64; $n_words] = &$self_expr.0;
+        let other_t: &[u64; $n_words] = &$other.0;
 
-		let overflow: u8;
+        let overflow: u8;
 
-		unsafe {
-			asm!("
-				sub $15, $0
-				sbb $16, $1
-				sbb $17, $2
-				sbb $18, $3
-				lodsq
-				sbb $19, %rax
-				stosq
-				lodsq
-				sbb $20, %rax
-				stosq
-				lodsq
-				sbb $21, %rax
-				stosq
-				lodsq
-				sbb $22, %rax
-				stosq
-				setb %al
-				"
-			: "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]),
+        unsafe {
+            asm!("
+                sub $15, $0
+                sbb $16, $1
+                sbb $17, $2
+                sbb $18, $3
+                lodsq
+                sbb $19, %rax
+                stosq
+                lodsq
+                sbb $20, %rax
+                stosq
+                lodsq
+                sbb $21, %rax
+                stosq
+                lodsq
+                sbb $22, %rax
+                stosq
+                setb %al
+                "
+            : "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]),
 
-			  "={al}"(overflow) /* $0 - $4 */
+              "={al}"(overflow) /* $0 - $4 */
 
-			: "{rdi}"(&result[4] as *const u64) /* $5 */
-		 	 "{rsi}"(&self_t[4] as *const u64) /* $6 */
-			  "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
-			  "m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
-			  /* $7 - $14 */
+            : "{rdi}"(&result[4] as *const u64) /* $5 */
+              "{rsi}"(&self_t[4] as *const u64) /* $6 */
+              "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
+              "m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
+              /* $7 - $14 */
 
-			  "m"(other_t[0]), "m"(other_t[1]), "m"(other_t[2]), "m"(other_t[3]),
-			  "m"(other_t[4]), "m"(other_t[5]), "m"(other_t[6]), "m"(other_t[7]) /* $15 - $22 */
-			: "rdi", "rsi"
-			:
-			);
-		}
-		(U512(result), overflow != 0)
-	});
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
-	})
+              "m"(other_t[0]), "m"(other_t[1]), "m"(other_t[2]), "m"(other_t[3]),
+              "m"(other_t[4]), "m"(other_t[5]), "m"(other_t[6]), "m"(other_t[7]) /* $15 - $22 */
+            : "rdi", "rsi"
+            :
+            );
+        }
+        (U512(result), overflow != 0)
+    });
+    ($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
+    })
 }
 
 #[cfg(all(asm_available, target_arch = "x86_64"))]
 macro_rules! uint_overflowing_mul {
-	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
-		let self_t: &[u64; $n_words] = &$self_expr.0;
-		let other_t: &[u64; $n_words] = &$other.0;
+    (U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+        let self_t: &[u64; $n_words] = &$self_expr.0;
+        let other_t: &[u64; $n_words] = &$other.0;
 
-		let overflow: u64;
-		unsafe {
-			asm!("
-				mov $5, %rax
-				mulq $9
-				mov %rax, $0
-				mov %rdx, $1
+        let overflow: u64;
+        unsafe {
+            asm!("
+                mov $5, %rax
+                mulq $9
+                mov %rax, $0
+                mov %rdx, $1
 
-				mov $5, %rax
-				mulq $10
-				add %rax, $1
-				adc $$0, %rdx
-				mov %rdx, $2
+                mov $5, %rax
+                mulq $10
+                add %rax, $1
+                adc $$0, %rdx
+                mov %rdx, $2
 
-				mov $5, %rax
-				mulq $11
-				add %rax, $2
-				adc $$0, %rdx
-				mov %rdx, $3
+                mov $5, %rax
+                mulq $11
+                add %rax, $2
+                adc $$0, %rdx
+                mov %rdx, $3
 
-				mov $5, %rax
-				mulq $12
-				add %rax, $3
-				adc $$0, %rdx
-				mov %rdx, %rcx
+                mov $5, %rax
+                mulq $12
+                add %rax, $3
+                adc $$0, %rdx
+                mov %rdx, %rcx
 
-				mov $6, %rax
-				mulq $9
-				add %rax, $1
-				adc %rdx, $2
-				adc $$0, $3
-				adc $$0, %rcx
+                mov $6, %rax
+                mulq $9
+                add %rax, $1
+                adc %rdx, $2
+                adc $$0, $3
+                adc $$0, %rcx
 
-				mov $6, %rax
-				mulq $10
-				add %rax, $2
-				adc %rdx, $3
-				adc $$0, %rcx
-				adc $$0, $3
-				adc $$0, %rcx
+                mov $6, %rax
+                mulq $10
+                add %rax, $2
+                adc %rdx, $3
+                adc $$0, %rcx
+                adc $$0, $3
+                adc $$0, %rcx
 
-				mov $6, %rax
-				mulq $11
-				add %rax, $3
-				adc $$0, %rdx
-				or %rdx, %rcx
+                mov $6, %rax
+                mulq $11
+                add %rax, $3
+                adc $$0, %rdx
+                or %rdx, %rcx
 
-				mov $7, %rax
-				mulq $9
-				add %rax, $2
-				adc %rdx, $3
-				adc $$0, %rcx
+                mov $7, %rax
+                mulq $9
+                add %rax, $2
+                adc %rdx, $3
+                adc $$0, %rcx
 
-				mov $7, %rax
-				mulq $10
-				add %rax, $3
-				adc $$0, %rdx
-				or %rdx, %rcx
+                mov $7, %rax
+                mulq $10
+                add %rax, $3
+                adc $$0, %rdx
+                or %rdx, %rcx
 
-				mov $8, %rax
-				mulq $9
-				add %rax, $3
-				or %rdx, %rcx
+                mov $8, %rax
+                mulq $9
+                add %rax, $3
+                or %rdx, %rcx
 
-				cmpq $$0, %rcx
-				jne 2f
+                cmpq $$0, %rcx
+                jne 2f
 
-				mov $8, %rcx
-				jrcxz 12f
+                mov $8, %rcx
+                jrcxz 12f
 
-				mov $12, %rcx
-				mov $11, %rax
-				or %rax, %rcx
-				mov $10, %rax
-				or %rax, %rcx
-				jmp 2f
+                mov $12, %rcx
+                mov $11, %rax
+                or %rax, %rcx
+                mov $10, %rax
+                or %rax, %rcx
+                jmp 2f
 
-				12:
-				mov $12, %rcx
-				jrcxz 11f
+                12:
+                mov $12, %rcx
+                jrcxz 11f
 
-				mov $7, %rcx
-				mov $6, %rax
-				or %rax, %rcx
+                mov $7, %rcx
+                mov $6, %rax
+                or %rax, %rcx
 
-				cmpq $$0, %rcx
-				jne 2f
+                cmpq $$0, %rcx
+                jne 2f
 
-				11:
-				mov $11, %rcx
-				jrcxz 2f
-				mov $7, %rcx
+                11:
+                mov $11, %rcx
+                jrcxz 2f
+                mov $7, %rcx
 
-				2:
-				"
-				: /* $0 */ "={r8}"(result[0]), /* $1 */ "={r9}"(result[1]), /* $2 */ "={r10}"(result[2]),
-				  /* $3 */ "={r11}"(result[3]), /* $4 */  "={rcx}"(overflow)
+                2:
+                "
+                : /* $0 */ "={r8}"(result[0]), /* $1 */ "={r9}"(result[1]), /* $2 */ "={r10}"(result[2]),
+                  /* $3 */ "={r11}"(result[3]), /* $4 */  "={rcx}"(overflow)
 
-				: /* $5 */ "m"(self_t[0]), /* $6 */ "m"(self_t[1]), /* $7 */  "m"(self_t[2]),
-				  /* $8 */ "m"(self_t[3]), /* $9 */ "m"(other_t[0]), /* $10 */ "m"(other_t[1]),
-				  /* $11 */ "m"(other_t[2]), /* $12 */ "m"(other_t[3])
-           		: "rax", "rdx"
-				:
+                : /* $5 */ "m"(self_t[0]), /* $6 */ "m"(self_t[1]), /* $7 */  "m"(self_t[2]),
+                  /* $8 */ "m"(self_t[3]), /* $9 */ "m"(other_t[0]), /* $10 */ "m"(other_t[1]),
+                  /* $11 */ "m"(other_t[2]), /* $12 */ "m"(other_t[3])
+                   : "rax", "rdx"
+                :
 
-			);
-		}
-		(U256(result), overflow > 0)
-	});
-	($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => (
-		uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
-	)
+            );
+        }
+        (U256(result), overflow > 0)
+    });
+    ($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => (
+        uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
+    )
 }
 
 #[cfg(not(all(asm_available, target_arch = "x86_64")))]
 macro_rules! uint_overflowing_mul {
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
-	})
+    ($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
+    })
 }
 
 macro_rules! uint_overflowing_mul_reg {
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let $name(ref me) = $self_expr;
-		let $name(ref you) = $other;
-		let mut ret = [0u64; 2*$n_words];
+    ($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+        let $name(ref me) = $self_expr;
+        let $name(ref you) = $other;
+        let mut ret = [0u64; 2*$n_words];
 
-		for i in 0..$n_words {
-			if you[i] == 0 {
-				continue;
-			}
+        for i in 0..$n_words {
+            if you[i] == 0 {
+                continue;
+            }
 
-			let mut carry2 = 0u64;
-			let (b_u, b_l) = split(you[i]);
+            let mut carry2 = 0u64;
+            let (b_u, b_l) = split(you[i]);
 
-			for j in 0..$n_words {
-				if me[j] == 0 && carry2 == 0 {
-					continue;
-				}
+            for j in 0..$n_words {
+                if me[j] == 0 && carry2 == 0 {
+                    continue;
+                }
 
-				let a = split(me[j]);
+                let a = split(me[j]);
 
-				// multiply parts
-				let (c_l, overflow_l) = mul_u32(a, b_l, ret[i + j]);
-				let (c_u, overflow_u) = mul_u32(a, b_u, c_l >> 32);
-				ret[i + j] = (c_l & 0xFFFFFFFF) + (c_u << 32);
+                // multiply parts
+                let (c_l, overflow_l) = mul_u32(a, b_l, ret[i + j]);
+                let (c_u, overflow_u) = mul_u32(a, b_u, c_l >> 32);
+                ret[i + j] = (c_l & 0xFFFFFFFF) + (c_u << 32);
 
-				// No overflow here
-				let res = (c_u >> 32) + (overflow_u << 32);
-				// possible overflows
-				let (res, o1) = res.overflowing_add(overflow_l);
-				let (res, o2) = res.overflowing_add(carry2);
-				let (res, o3) = res.overflowing_add(ret[i + j + 1]);
-				ret[i + j + 1] = res;
+                // No overflow here
+                let res = (c_u >> 32) + (overflow_u << 32);
+                // possible overflows
+                let (res, o1) = res.overflowing_add(overflow_l);
+                let (res, o2) = res.overflowing_add(carry2);
+                let (res, o3) = res.overflowing_add(ret[i + j + 1]);
+                ret[i + j + 1] = res;
 
-				// Only single overflow possible there
-				carry2 = (o1 | o2 | o3) as u64;
-			}
-		}
+                // Only single overflow possible there
+                carry2 = (o1 | o2 | o3) as u64;
+            }
+        }
 
-		let mut res = [0u64; $n_words];
-		let mut overflow = false;
-		for i in 0..$n_words {
-			res[i] = ret[i];
-		}
+        let mut res = [0u64; $n_words];
+        let mut overflow = false;
+        for i in 0..$n_words {
+            res[i] = ret[i];
+        }
 
-		for i in $n_words..2*$n_words {
-			overflow |= ret[i] != 0;
-		}
+        for i in $n_words..2*$n_words {
+            overflow |= ret[i] != 0;
+        }
 
-		($name(res), overflow)
-	})
+        ($name(res), overflow)
+    })
 }
 
 macro_rules! overflowing {
-	($op: expr, $overflow: expr) => (
-		{
-			let (overflow_x, overflow_overflow) = $op;
-			$overflow |= overflow_overflow;
-			overflow_x
-		}
-	);
-	($op: expr) => (
-		{
-			let (overflow_x, _overflow_overflow) = $op;
-			overflow_x
-		}
-	);
+    ($op: expr, $overflow: expr) => (
+        {
+            let (overflow_x, overflow_overflow) = $op;
+            $overflow |= overflow_overflow;
+            overflow_x
+        }
+    );
+    ($op: expr) => (
+        {
+            let (overflow_x, _overflow_overflow) = $op;
+            overflow_x
+        }
+    );
 }
 
 macro_rules! panic_on_overflow {
-	($name: expr) => {
-		if $name {
-			panic!("arithmetic operation overflow")
-		}
-	}
+    ($name: expr) => {
+        if $name {
+            panic!("arithmetic operation overflow")
+        }
+    }
 }
 
 #[inline(always)]
@@ -481,640 +481,640 @@ fn split(a: u64) -> (u64, u64) {
 }
 
 macro_rules! construct_uint {
-	($name:ident, $n_words:expr) => (
-		/// Little-endian large integer type
-		#[repr(C)]
-		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
-		pub struct $name(pub [u64; $n_words]);
-
-		impl $name {
-			/// Convert from a decimal string.
-			pub fn from_dec_str(value: &str) -> Result<Self, FromDecStrErr> {
-				if !value.bytes().all(|b| b >= 48 && b <= 57) {
-					return Err(FromDecStrErr::InvalidCharacter)
-				}
-
-				let mut res = Self::default();
-				for b in value.bytes().map(|b| b - 48) {
-					let (r, overflow) = res.overflowing_mul_u32(10);
-					if overflow {
-						return Err(FromDecStrErr::InvalidLength);
-					}
-					let (r, overflow) = r.overflowing_add(b.into());
-					if overflow {
-						return Err(FromDecStrErr::InvalidLength);
-					}
-					res = r;
-				}
-				Ok(res)
-			}
-
-			/// Conversion to u32
-			#[inline]
-			pub fn low_u32(&self) -> u32 {
-				let &$name(ref arr) = self;
-				arr[0] as u32
-			}
-
-			/// Conversion to u64
-			#[inline]
-			pub fn low_u64(&self) -> u64 {
-				let &$name(ref arr) = self;
-				arr[0]
-			}
-
-			/// Conversion to u32 with overflow checking
-			///
-			/// # Panics
-			///
-			/// Panics if the number is larger than 2^32.
-			#[inline]
-			pub fn as_u32(&self) -> u32 {
-				let &$name(ref arr) = self;
-				if (arr[0] & (0xffffffffu64 << 32)) != 0 {
-					panic!("Integer overflow when casting U256")
-				}
-				self.as_u64() as u32
-			}
-
-			/// Conversion to u64 with overflow checking
-			///
-			/// # Panics
-			///
-			/// Panics if the number is larger than 2^64.
-			#[inline]
-			pub fn as_u64(&self) -> u64 {
-				let &$name(ref arr) = self;
-				for i in 1..$n_words {
-					if arr[i] != 0 {
-						panic!("Integer overflow when casting U256")
-					}
-				}
-				arr[0]
-			}
-
-			/// Whether this is zero.
-			#[inline]
-			pub fn is_zero(&self) -> bool {
-				let &$name(ref arr) = self;
-				for i in 0..$n_words { if arr[i] != 0 { return false; } }
-				return true;
-			}
-
-			/// Return the least number of bits needed to represent the number
-			#[inline]
-			pub fn bits(&self) -> usize {
-				let &$name(ref arr) = self;
-				for i in 1..$n_words {
-					if arr[$n_words - i] > 0 { return (0x40 * ($n_words - i + 1)) - arr[$n_words - i].leading_zeros() as usize; }
-				}
-				0x40 - arr[0].leading_zeros() as usize
-			}
-
-			/// Return if specific bit is set.
-			///
-			/// # Panics
-			///
-			/// Panics if `index` exceeds the bit width of the number.
-			#[inline]
-			pub fn bit(&self, index: usize) -> bool {
-				let &$name(ref arr) = self;
-				arr[index / 64] & (1 << (index % 64)) != 0
-			}
-
-			/// Return specific byte.
-			///
-			/// # Panics
-			///
-			/// Panics if `index` exceeds the byte width of the number.
-			#[inline]
-			pub fn byte(&self, index: usize) -> u8 {
-				let &$name(ref arr) = self;
-				(arr[index / 8] >> (((index % 8)) * 8)) as u8
-			}
-
-			/// Write to the slice in big-endian format.
-			#[inline]
-			pub fn to_big_endian(&self, bytes: &mut [u8]) {
-				debug_assert!($n_words * 8 == bytes.len());
-				for i in 0..$n_words {
-					BigEndian::write_u64(&mut bytes[8 * i..], self.0[$n_words - i - 1]);
-				}
-			}
-
-			/// Write to the slice in little-endian format.
-			#[inline]
-			pub fn to_little_endian(&self, bytes: &mut [u8]) {
-				debug_assert!($n_words * 8 == bytes.len());
-				for i in 0..$n_words {
-					LittleEndian::write_u64(&mut bytes[8 * i..], self.0[i]);
-				}
-			}
-
-			/// Convert to hex string.
-			#[inline]
-			pub fn to_hex(&self) -> String {
-				if self.is_zero() { return "0".to_owned(); }	// special case.
-				let mut bytes = [0u8; 8 * $n_words];
-				self.to_big_endian(&mut bytes);
-				let bp7 = self.bits() + 7;
-				let len = cmp::max(bp7 / 8, 1);
-				let bytes_hex = bytes[bytes.len() - len..].to_hex();
-				(&bytes_hex[1 - bp7 % 8 / 4..]).to_owned()
-			}
-
-			/// Create `10**n` as this type.
-			///
-			/// # Panics
-			///
-			/// Panics if the result overflows the type.
-			#[inline]
-			pub fn exp10(n: usize) -> Self {
-				match n {
-					0 => Self::from(1u64),
-					_ => Self::exp10(n - 1).mul_u32(10)
-				}
-			}
-
-			/// Zero (additive identity) of this type.
-			#[inline]
-			pub fn zero() -> Self {
-				From::from(0u64)
-			}
-
-			/// One (multiplicative identity) of this type.
-			#[inline]
-			pub fn one() -> Self {
-				From::from(1u64)
-			}
-
-			/// The maximum value which can be inhabited by this type.
-			#[inline]
-			pub fn max_value() -> Self {
-				let mut result = [0; $n_words];
-				for i in 0..$n_words {
-					result[i] = u64::max_value();
-				}
-				$name(result)
-			}
-
-			/// Fast exponentation by squaring
-			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
-			///
-			/// # Panics
-			///
-			/// Panics if the result overflows the type.
-			pub fn pow(self, expon: Self) -> Self {
-				if expon.is_zero() {
-					return Self::one()
-				}
-				let is_even = |x : &Self| x.low_u64() & 1 == 0;
-
-				let u_one = Self::one();
-				let mut y = u_one;
-				let mut n = expon;
-				let mut x = self;
-				while n > u_one {
-					if is_even(&n) {
-						x = x * x;
-						n = n >> 1;
-					} else {
-						y = x * y;
-						x = x * x;
-						// to reduce odd number by 1 we should just clear the last bit
-						n.0[$n_words-1] = n.0[$n_words-1] & ((!0u64)>>1);
-						n = n >> 1;
-					}
-				}
-				x * y
-			}
-
-			/// Fast exponentation by squaring
-			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
-			pub fn overflowing_pow(self, expon: Self) -> (Self, bool) {
-				if expon.is_zero() { return (Self::one(), false) }
-
-				let is_even = |x : &Self| x.low_u64() & 1 == 0;
-
-				let u_one = Self::one();
-				let mut y = u_one;
-				let mut n = expon;
-				let mut x = self;
-				let mut overflow = false;
-
-				while n > u_one {
-					if is_even(&n) {
-						x = overflowing!(x.overflowing_mul(x), overflow);
-						n = n >> 1;
-					} else {
-						y = overflowing!(x.overflowing_mul(y), overflow);
-						x = overflowing!(x.overflowing_mul(x), overflow);
-						n = (n - u_one) >> 1;
-					}
-				}
-				let res = overflowing!(x.overflowing_mul(y), overflow);
-				(res, overflow)
-			}
-
-			/// Optimized instructions
-			#[inline(always)]
-			pub fn overflowing_add(self, other: $name) -> ($name, bool) {
-				uint_overflowing_add!($name, $n_words, self, other)
-			}
-
-			/// Addition which saturates at the maximum value.
-			pub fn saturating_add(self, other: $name) -> $name {
-				match self.overflowing_add(other) {
-					(_, true) => $name::max_value(),
-					(val, false) => val,
-				}
-			}
-
-			/// Subtraction which underflows and returns a flag if it does.
-			#[inline(always)]
-			pub fn overflowing_sub(self, other: $name) -> ($name, bool) {
-				uint_overflowing_sub!($name, $n_words, self, other)
-			}
-
-			/// Subtraction which saturates at zero.
-			pub fn saturating_sub(self, other: $name) -> $name {
-				match self.overflowing_sub(other) {
-					(_, true) => $name::zero(),
-					(val, false) => val,
-				}
-			}
-
-			/// Multiply with overflow, returning a flag if it does.
-			#[inline(always)]
-			pub fn overflowing_mul(self, other: $name) -> ($name, bool) {
-				uint_overflowing_mul!($name, $n_words, self, other)
-			}
-
-			/// Multiplication which saturates at the maximum value..
-			pub fn saturating_mul(self, other: $name) -> $name {
-				match self.overflowing_mul(other) {
-					(_, true) => $name::max_value(),
-					(val, false) => val,
-				}
-			}
-
-			/// Division with overflow
-			pub fn overflowing_div(self, other: $name) -> ($name, bool) {
-				(self / other, false)
-			}
-
-			/// Modulus with overflow.
-			pub fn overflowing_rem(self, other: $name) -> ($name, bool) {
-				(self % other, false)
-			}
-
-			/// Negation with overflow.
-			pub fn overflowing_neg(self) -> ($name, bool) {
-				(!self, true)
-			}
-		}
-
-		impl $name {
-			/// Multiplication by u32
-			#[allow(dead_code)] // not used when multiplied with inline assembly
-			fn mul_u32(self, other: u32) -> Self {
-				let (ret, overflow) = self.overflowing_mul_u32(other);
-				panic_on_overflow!(overflow);
-				ret
-			}
-
-			/// Overflowing multiplication by u32
-			#[allow(dead_code)] // not used when multiplied with inline assembly
-			fn overflowing_mul_u32(self, other: u32) -> (Self, bool) {
-				let $name(ref arr) = self;
-				let mut ret = [0u64; $n_words];
-				let mut carry = 0;
-				let o = other as u64;
-
-				for i in 0..$n_words {
-					let (res, carry2) = mul_u32(split(arr[i]), o, carry);
-					ret[i] = res;
-					carry = carry2;
-				}
-
-				($name(ret), carry > 0)
-			}
-		}
-
-		impl Default for $name {
-			fn default() -> Self {
-				$name::zero()
-			}
-		}
-
-		impl From<u64> for $name {
-			fn from(value: u64) -> $name {
-				let mut ret = [0; $n_words];
-				ret[0] = value;
-				$name(ret)
-			}
-		}
-
-
-		impl_map_from!($name, u8, u64);
-		impl_map_from!($name, u16, u64);
-		impl_map_from!($name, u32, u64);
-		impl_map_from!($name, usize, u64);
-
-		impl From<i64> for $name {
-			fn from(value: i64) -> $name {
-				match value >= 0 {
-					true => From::from(value as u64),
-					false => { panic!("Unsigned integer can't be created from negative value"); }
-				}
-			}
-		}
-
-		impl_map_from!($name, i8, i64);
-		impl_map_from!($name, i16, i64);
-		impl_map_from!($name, i32, i64);
-		impl_map_from!($name, isize, i64);
-
-		impl<'a> From<&'a [u8]> for $name {
-			fn from(bytes: &[u8]) -> $name {
-				assert!($n_words * 8 >= bytes.len());
-
-				let mut ret = [0; $n_words];
-				for i in 0..bytes.len() {
-					let rev = bytes.len() - 1 - i;
-					let pos = rev / 8;
-					ret[pos] += (bytes[i] as u64) << ((rev % 8) * 8);
-				}
-				$name(ret)
-			}
-		}
-
-		impl str::FromStr for $name {
-			type Err = FromHexError;
-
-			fn from_str(value: &str) -> Result<$name, Self::Err> {
-				let bytes: Vec<u8> = match value.len() % 2 == 0 {
-					true => try!(value.from_hex()),
-					false => try!(("0".to_owned() + value).from_hex())
-				};
-
-				let bytes_ref: &[u8] = &bytes;
-				Ok(From::from(bytes_ref))
-			}
-		}
-
-		impl Add<$name> for $name {
-			type Output = $name;
-
-			fn add(self, other: $name) -> $name {
-				let (result, overflow) = self.overflowing_add(other);
-				panic_on_overflow!(overflow);
-				result
-			}
-		}
-
-		impl Sub<$name> for $name {
-			type Output = $name;
-
-			#[inline]
-			fn sub(self, other: $name) -> $name {
-				let (result, overflow) = self.overflowing_sub(other);
-				panic_on_overflow!(overflow);
-				result
-			}
-		}
-
-		impl Mul<$name> for $name {
-			type Output = $name;
-
-			fn mul(self, other: $name) -> $name {
-				let (result, overflow) = self.overflowing_mul(other);
-				panic_on_overflow!(overflow);
-				result
-			}
-		}
-
-		impl Div<$name> for $name {
-			type Output = $name;
-
-			fn div(self, other: $name) -> $name {
-				let mut sub_copy = self;
-				let mut shift_copy = other;
-				let mut ret = [0u64; $n_words];
-
-				let my_bits = self.bits();
-				let your_bits = other.bits();
-
-				// Check for division by 0
-				assert!(your_bits != 0);
-
-				// Early return in case we are dividing by a larger number than us
-				if my_bits < your_bits {
-					return $name(ret);
-				}
-
-				// Bitwise long division
-				let mut shift = my_bits - your_bits;
-				shift_copy = shift_copy << shift;
-				loop {
-					if sub_copy >= shift_copy {
-						ret[shift / 64] |= 1 << (shift % 64);
-						sub_copy = overflowing!(sub_copy.overflowing_sub(shift_copy));
-					}
-					shift_copy = shift_copy >> 1;
-					if shift == 0 { break; }
-					shift -= 1;
-				}
-
-				$name(ret)
-			}
-		}
-
-		impl Rem<$name> for $name {
-			type Output = $name;
-
-			fn rem(self, other: $name) -> $name {
-				let times = self / other;
-				self - (times * other)
-			}
-		}
-
-		impl BitAnd<$name> for $name {
-			type Output = $name;
-
-			#[inline]
-			fn bitand(self, other: $name) -> $name {
-				let $name(ref arr1) = self;
-				let $name(ref arr2) = other;
-				let mut ret = [0u64; $n_words];
-				for i in 0..$n_words {
-					ret[i] = arr1[i] & arr2[i];
-				}
-				$name(ret)
-			}
-		}
-
-		impl BitXor<$name> for $name {
-			type Output = $name;
-
-			#[inline]
-			fn bitxor(self, other: $name) -> $name {
-				let $name(ref arr1) = self;
-				let $name(ref arr2) = other;
-				let mut ret = [0u64; $n_words];
-				for i in 0..$n_words {
-					ret[i] = arr1[i] ^ arr2[i];
-				}
-				$name(ret)
-			}
-		}
-
-		impl BitOr<$name> for $name {
-			type Output = $name;
-
-			#[inline]
-			fn bitor(self, other: $name) -> $name {
-				let $name(ref arr1) = self;
-				let $name(ref arr2) = other;
-				let mut ret = [0u64; $n_words];
-				for i in 0..$n_words {
-					ret[i] = arr1[i] | arr2[i];
-				}
-				$name(ret)
-			}
-		}
-
-		impl Not for $name {
-			type Output = $name;
-
-			#[inline]
-			fn not(self) -> $name {
-				let $name(ref arr) = self;
-				let mut ret = [0u64; $n_words];
-				for i in 0..$n_words {
-					ret[i] = !arr[i];
-				}
-				$name(ret)
-			}
-		}
-
-		impl Shl<usize> for $name {
-			type Output = $name;
-
-			fn shl(self, shift: usize) -> $name {
-				let $name(ref original) = self;
-				let mut ret = [0u64; $n_words];
-				let word_shift = shift / 64;
-				let bit_shift = shift % 64;
-
-				// shift
-				for i in word_shift..$n_words {
-					ret[i] = original[i - word_shift] << bit_shift;
-				}
-				// carry
-				if bit_shift > 0 {
-					for i in word_shift+1..$n_words {
-						ret[i] += original[i - 1 - word_shift] >> (64 - bit_shift);
-					}
-				}
-				$name(ret)
-			}
-		}
-
-		impl Shr<usize> for $name {
-			type Output = $name;
-
-			fn shr(self, shift: usize) -> $name {
-				let $name(ref original) = self;
-				let mut ret = [0u64; $n_words];
-				let word_shift = shift / 64;
-				let bit_shift = shift % 64;
-
-				// shift
-				for i in word_shift..$n_words {
-					ret[i - word_shift] = original[i] >> bit_shift;
-				}
-
-				// Carry
-				if bit_shift > 0 {
-					for i in word_shift+1..$n_words {
-						ret[i - word_shift - 1] += original[i] << (64 - bit_shift);
-					}
-				}
-
-				$name(ret)
-			}
-		}
-
-		impl Ord for $name {
-			fn cmp(&self, other: &$name) -> Ordering {
-				let &$name(ref me) = self;
-				let &$name(ref you) = other;
-				let mut i = $n_words;
-				while i > 0 {
-					i -= 1;
-					if me[i] < you[i] { return Ordering::Less; }
-					if me[i] > you[i] { return Ordering::Greater; }
-				}
-				Ordering::Equal
-			}
-		}
-
-		impl PartialOrd for $name {
-			fn partial_cmp(&self, other: &$name) -> Option<Ordering> {
-				Some(self.cmp(other))
-			}
-		}
-
-		impl fmt::Debug for $name {
-			fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-				fmt::Display::fmt(self, f)
-			}
-		}
-
-		impl fmt::Display for $name {
-			fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-				if self.is_zero() {
-					return write!(f, "0");
-				}
-
-				let mut s = String::new();
-				let mut current = *self;
-				let ten = $name::from(10);
-
-				while !current.is_zero() {
-					s = format!("{}{}", (current % ten).low_u32(), s);
-					current = current / ten;
-				}
-
-				write!(f, "{}", s)
-			}
-		}
-
-		impl fmt::LowerHex for $name {
-			fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-				let &$name(ref data) = self;
-				try!(write!(f, "0x"));
-				let mut latch = false;
-				for ch in data.iter().rev() {
-					for x in 0..16 {
-						let nibble = (ch & (15u64 << ((15 - x) * 4) as u64)) >> (((15 - x) * 4) as u64);
-						if !latch { latch = nibble != 0 }
-						if latch {
-							try!(write!(f, "{:x}", nibble));
-						}
-					}
-				}
-				Ok(())
-			}
-		}
-
-		impl From<&'static str> for $name {
-			fn from(s: &'static str) -> Self {
-				s.parse().unwrap()
-			}
-		}
-	);
+    ($name:ident, $n_words:expr) => (
+        /// Little-endian large integer type
+        #[repr(C)]
+        #[derive(Copy, Clone, Eq, PartialEq, Hash)]
+        pub struct $name(pub [u64; $n_words]);
+
+        impl $name {
+            /// Convert from a decimal string.
+            pub fn from_dec_str(value: &str) -> Result<Self, FromDecStrErr> {
+                if !value.bytes().all(|b| b >= 48 && b <= 57) {
+                    return Err(FromDecStrErr::InvalidCharacter)
+                }
+
+                let mut res = Self::default();
+                for b in value.bytes().map(|b| b - 48) {
+                    let (r, overflow) = res.overflowing_mul_u32(10);
+                    if overflow {
+                        return Err(FromDecStrErr::InvalidLength);
+                    }
+                    let (r, overflow) = r.overflowing_add(b.into());
+                    if overflow {
+                        return Err(FromDecStrErr::InvalidLength);
+                    }
+                    res = r;
+                }
+                Ok(res)
+            }
+
+            /// Conversion to u32
+            #[inline]
+            pub fn low_u32(&self) -> u32 {
+                let &$name(ref arr) = self;
+                arr[0] as u32
+            }
+
+            /// Conversion to u64
+            #[inline]
+            pub fn low_u64(&self) -> u64 {
+                let &$name(ref arr) = self;
+                arr[0]
+            }
+
+            /// Conversion to u32 with overflow checking
+            ///
+            /// # Panics
+            ///
+            /// Panics if the number is larger than 2^32.
+            #[inline]
+            pub fn as_u32(&self) -> u32 {
+                let &$name(ref arr) = self;
+                if (arr[0] & (0xffffffffu64 << 32)) != 0 {
+                    panic!("Integer overflow when casting U256")
+                }
+                self.as_u64() as u32
+            }
+
+            /// Conversion to u64 with overflow checking
+            ///
+            /// # Panics
+            ///
+            /// Panics if the number is larger than 2^64.
+            #[inline]
+            pub fn as_u64(&self) -> u64 {
+                let &$name(ref arr) = self;
+                for i in 1..$n_words {
+                    if arr[i] != 0 {
+                        panic!("Integer overflow when casting U256")
+                    }
+                }
+                arr[0]
+            }
+
+            /// Whether this is zero.
+            #[inline]
+            pub fn is_zero(&self) -> bool {
+                let &$name(ref arr) = self;
+                for i in 0..$n_words { if arr[i] != 0 { return false; } }
+                return true;
+            }
+
+            /// Return the least number of bits needed to represent the number
+            #[inline]
+            pub fn bits(&self) -> usize {
+                let &$name(ref arr) = self;
+                for i in 1..$n_words {
+                    if arr[$n_words - i] > 0 { return (0x40 * ($n_words - i + 1)) - arr[$n_words - i].leading_zeros() as usize; }
+                }
+                0x40 - arr[0].leading_zeros() as usize
+            }
+
+            /// Return if specific bit is set.
+            ///
+            /// # Panics
+            ///
+            /// Panics if `index` exceeds the bit width of the number.
+            #[inline]
+            pub fn bit(&self, index: usize) -> bool {
+                let &$name(ref arr) = self;
+                arr[index / 64] & (1 << (index % 64)) != 0
+            }
+
+            /// Return specific byte.
+            ///
+            /// # Panics
+            ///
+            /// Panics if `index` exceeds the byte width of the number.
+            #[inline]
+            pub fn byte(&self, index: usize) -> u8 {
+                let &$name(ref arr) = self;
+                (arr[index / 8] >> (((index % 8)) * 8)) as u8
+            }
+
+            /// Write to the slice in big-endian format.
+            #[inline]
+            pub fn to_big_endian(&self, bytes: &mut [u8]) {
+                debug_assert!($n_words * 8 == bytes.len());
+                for i in 0..$n_words {
+                    BigEndian::write_u64(&mut bytes[8 * i..], self.0[$n_words - i - 1]);
+                }
+            }
+
+            /// Write to the slice in little-endian format.
+            #[inline]
+            pub fn to_little_endian(&self, bytes: &mut [u8]) {
+                debug_assert!($n_words * 8 == bytes.len());
+                for i in 0..$n_words {
+                    LittleEndian::write_u64(&mut bytes[8 * i..], self.0[i]);
+                }
+            }
+
+            /// Convert to hex string.
+            #[inline]
+            pub fn to_hex(&self) -> String {
+                if self.is_zero() { return "0".to_owned(); }    // special case.
+                let mut bytes = [0u8; 8 * $n_words];
+                self.to_big_endian(&mut bytes);
+                let bp7 = self.bits() + 7;
+                let len = cmp::max(bp7 / 8, 1);
+                let bytes_hex = bytes[bytes.len() - len..].to_hex();
+                (&bytes_hex[1 - bp7 % 8 / 4..]).to_owned()
+            }
+
+            /// Create `10**n` as this type.
+            ///
+            /// # Panics
+            ///
+            /// Panics if the result overflows the type.
+            #[inline]
+            pub fn exp10(n: usize) -> Self {
+                match n {
+                    0 => Self::from(1u64),
+                    _ => Self::exp10(n - 1).mul_u32(10)
+                }
+            }
+
+            /// Zero (additive identity) of this type.
+            #[inline]
+            pub fn zero() -> Self {
+                From::from(0u64)
+            }
+
+            /// One (multiplicative identity) of this type.
+            #[inline]
+            pub fn one() -> Self {
+                From::from(1u64)
+            }
+
+            /// The maximum value which can be inhabited by this type.
+            #[inline]
+            pub fn max_value() -> Self {
+                let mut result = [0; $n_words];
+                for i in 0..$n_words {
+                    result[i] = u64::max_value();
+                }
+                $name(result)
+            }
+
+            /// Fast exponentation by squaring
+            /// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+            ///
+            /// # Panics
+            ///
+            /// Panics if the result overflows the type.
+            pub fn pow(self, expon: Self) -> Self {
+                if expon.is_zero() {
+                    return Self::one()
+                }
+                let is_even = |x : &Self| x.low_u64() & 1 == 0;
+
+                let u_one = Self::one();
+                let mut y = u_one;
+                let mut n = expon;
+                let mut x = self;
+                while n > u_one {
+                    if is_even(&n) {
+                        x = x * x;
+                        n = n >> 1;
+                    } else {
+                        y = x * y;
+                        x = x * x;
+                        // to reduce odd number by 1 we should just clear the last bit
+                        n.0[$n_words-1] = n.0[$n_words-1] & ((!0u64)>>1);
+                        n = n >> 1;
+                    }
+                }
+                x * y
+            }
+
+            /// Fast exponentation by squaring
+            /// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+            pub fn overflowing_pow(self, expon: Self) -> (Self, bool) {
+                if expon.is_zero() { return (Self::one(), false) }
+
+                let is_even = |x : &Self| x.low_u64() & 1 == 0;
+
+                let u_one = Self::one();
+                let mut y = u_one;
+                let mut n = expon;
+                let mut x = self;
+                let mut overflow = false;
+
+                while n > u_one {
+                    if is_even(&n) {
+                        x = overflowing!(x.overflowing_mul(x), overflow);
+                        n = n >> 1;
+                    } else {
+                        y = overflowing!(x.overflowing_mul(y), overflow);
+                        x = overflowing!(x.overflowing_mul(x), overflow);
+                        n = (n - u_one) >> 1;
+                    }
+                }
+                let res = overflowing!(x.overflowing_mul(y), overflow);
+                (res, overflow)
+            }
+
+            /// Optimized instructions
+            #[inline(always)]
+            pub fn overflowing_add(self, other: $name) -> ($name, bool) {
+                uint_overflowing_add!($name, $n_words, self, other)
+            }
+
+            /// Addition which saturates at the maximum value.
+            pub fn saturating_add(self, other: $name) -> $name {
+                match self.overflowing_add(other) {
+                    (_, true) => $name::max_value(),
+                    (val, false) => val,
+                }
+            }
+
+            /// Subtraction which underflows and returns a flag if it does.
+            #[inline(always)]
+            pub fn overflowing_sub(self, other: $name) -> ($name, bool) {
+                uint_overflowing_sub!($name, $n_words, self, other)
+            }
+
+            /// Subtraction which saturates at zero.
+            pub fn saturating_sub(self, other: $name) -> $name {
+                match self.overflowing_sub(other) {
+                    (_, true) => $name::zero(),
+                    (val, false) => val,
+                }
+            }
+
+            /// Multiply with overflow, returning a flag if it does.
+            #[inline(always)]
+            pub fn overflowing_mul(self, other: $name) -> ($name, bool) {
+                uint_overflowing_mul!($name, $n_words, self, other)
+            }
+
+            /// Multiplication which saturates at the maximum value..
+            pub fn saturating_mul(self, other: $name) -> $name {
+                match self.overflowing_mul(other) {
+                    (_, true) => $name::max_value(),
+                    (val, false) => val,
+                }
+            }
+
+            /// Division with overflow
+            pub fn overflowing_div(self, other: $name) -> ($name, bool) {
+                (self / other, false)
+            }
+
+            /// Modulus with overflow.
+            pub fn overflowing_rem(self, other: $name) -> ($name, bool) {
+                (self % other, false)
+            }
+
+            /// Negation with overflow.
+            pub fn overflowing_neg(self) -> ($name, bool) {
+                (!self, true)
+            }
+        }
+
+        impl $name {
+            /// Multiplication by u32
+            #[allow(dead_code)] // not used when multiplied with inline assembly
+            fn mul_u32(self, other: u32) -> Self {
+                let (ret, overflow) = self.overflowing_mul_u32(other);
+                panic_on_overflow!(overflow);
+                ret
+            }
+
+            /// Overflowing multiplication by u32
+            #[allow(dead_code)] // not used when multiplied with inline assembly
+            fn overflowing_mul_u32(self, other: u32) -> (Self, bool) {
+                let $name(ref arr) = self;
+                let mut ret = [0u64; $n_words];
+                let mut carry = 0;
+                let o = other as u64;
+
+                for i in 0..$n_words {
+                    let (res, carry2) = mul_u32(split(arr[i]), o, carry);
+                    ret[i] = res;
+                    carry = carry2;
+                }
+
+                ($name(ret), carry > 0)
+            }
+        }
+
+        impl Default for $name {
+            fn default() -> Self {
+                $name::zero()
+            }
+        }
+
+        impl From<u64> for $name {
+            fn from(value: u64) -> $name {
+                let mut ret = [0; $n_words];
+                ret[0] = value;
+                $name(ret)
+            }
+        }
+
+
+        impl_map_from!($name, u8, u64);
+        impl_map_from!($name, u16, u64);
+        impl_map_from!($name, u32, u64);
+        impl_map_from!($name, usize, u64);
+
+        impl From<i64> for $name {
+            fn from(value: i64) -> $name {
+                match value >= 0 {
+                    true => From::from(value as u64),
+                    false => { panic!("Unsigned integer can't be created from negative value"); }
+                }
+            }
+        }
+
+        impl_map_from!($name, i8, i64);
+        impl_map_from!($name, i16, i64);
+        impl_map_from!($name, i32, i64);
+        impl_map_from!($name, isize, i64);
+
+        impl<'a> From<&'a [u8]> for $name {
+            fn from(bytes: &[u8]) -> $name {
+                assert!($n_words * 8 >= bytes.len());
+
+                let mut ret = [0; $n_words];
+                for i in 0..bytes.len() {
+                    let rev = bytes.len() - 1 - i;
+                    let pos = rev / 8;
+                    ret[pos] += (bytes[i] as u64) << ((rev % 8) * 8);
+                }
+                $name(ret)
+            }
+        }
+
+        impl str::FromStr for $name {
+            type Err = FromHexError;
+
+            fn from_str(value: &str) -> Result<$name, Self::Err> {
+                let bytes: Vec<u8> = match value.len() % 2 == 0 {
+                    true => try!(value.from_hex()),
+                    false => try!(("0".to_owned() + value).from_hex())
+                };
+
+                let bytes_ref: &[u8] = &bytes;
+                Ok(From::from(bytes_ref))
+            }
+        }
+
+        impl Add<$name> for $name {
+            type Output = $name;
+
+            fn add(self, other: $name) -> $name {
+                let (result, overflow) = self.overflowing_add(other);
+                panic_on_overflow!(overflow);
+                result
+            }
+        }
+
+        impl Sub<$name> for $name {
+            type Output = $name;
+
+            #[inline]
+            fn sub(self, other: $name) -> $name {
+                let (result, overflow) = self.overflowing_sub(other);
+                panic_on_overflow!(overflow);
+                result
+            }
+        }
+
+        impl Mul<$name> for $name {
+            type Output = $name;
+
+            fn mul(self, other: $name) -> $name {
+                let (result, overflow) = self.overflowing_mul(other);
+                panic_on_overflow!(overflow);
+                result
+            }
+        }
+
+        impl Div<$name> for $name {
+            type Output = $name;
+
+            fn div(self, other: $name) -> $name {
+                let mut sub_copy = self;
+                let mut shift_copy = other;
+                let mut ret = [0u64; $n_words];
+
+                let my_bits = self.bits();
+                let your_bits = other.bits();
+
+                // Check for division by 0
+                assert!(your_bits != 0);
+
+                // Early return in case we are dividing by a larger number than us
+                if my_bits < your_bits {
+                    return $name(ret);
+                }
+
+                // Bitwise long division
+                let mut shift = my_bits - your_bits;
+                shift_copy = shift_copy << shift;
+                loop {
+                    if sub_copy >= shift_copy {
+                        ret[shift / 64] |= 1 << (shift % 64);
+                        sub_copy = overflowing!(sub_copy.overflowing_sub(shift_copy));
+                    }
+                    shift_copy = shift_copy >> 1;
+                    if shift == 0 { break; }
+                    shift -= 1;
+                }
+
+                $name(ret)
+            }
+        }
+
+        impl Rem<$name> for $name {
+            type Output = $name;
+
+            fn rem(self, other: $name) -> $name {
+                let times = self / other;
+                self - (times * other)
+            }
+        }
+
+        impl BitAnd<$name> for $name {
+            type Output = $name;
+
+            #[inline]
+            fn bitand(self, other: $name) -> $name {
+                let $name(ref arr1) = self;
+                let $name(ref arr2) = other;
+                let mut ret = [0u64; $n_words];
+                for i in 0..$n_words {
+                    ret[i] = arr1[i] & arr2[i];
+                }
+                $name(ret)
+            }
+        }
+
+        impl BitXor<$name> for $name {
+            type Output = $name;
+
+            #[inline]
+            fn bitxor(self, other: $name) -> $name {
+                let $name(ref arr1) = self;
+                let $name(ref arr2) = other;
+                let mut ret = [0u64; $n_words];
+                for i in 0..$n_words {
+                    ret[i] = arr1[i] ^ arr2[i];
+                }
+                $name(ret)
+            }
+        }
+
+        impl BitOr<$name> for $name {
+            type Output = $name;
+
+            #[inline]
+            fn bitor(self, other: $name) -> $name {
+                let $name(ref arr1) = self;
+                let $name(ref arr2) = other;
+                let mut ret = [0u64; $n_words];
+                for i in 0..$n_words {
+                    ret[i] = arr1[i] | arr2[i];
+                }
+                $name(ret)
+            }
+        }
+
+        impl Not for $name {
+            type Output = $name;
+
+            #[inline]
+            fn not(self) -> $name {
+                let $name(ref arr) = self;
+                let mut ret = [0u64; $n_words];
+                for i in 0..$n_words {
+                    ret[i] = !arr[i];
+                }
+                $name(ret)
+            }
+        }
+
+        impl Shl<usize> for $name {
+            type Output = $name;
+
+            fn shl(self, shift: usize) -> $name {
+                let $name(ref original) = self;
+                let mut ret = [0u64; $n_words];
+                let word_shift = shift / 64;
+                let bit_shift = shift % 64;
+
+                // shift
+                for i in word_shift..$n_words {
+                    ret[i] = original[i - word_shift] << bit_shift;
+                }
+                // carry
+                if bit_shift > 0 {
+                    for i in word_shift+1..$n_words {
+                        ret[i] += original[i - 1 - word_shift] >> (64 - bit_shift);
+                    }
+                }
+                $name(ret)
+            }
+        }
+
+        impl Shr<usize> for $name {
+            type Output = $name;
+
+            fn shr(self, shift: usize) -> $name {
+                let $name(ref original) = self;
+                let mut ret = [0u64; $n_words];
+                let word_shift = shift / 64;
+                let bit_shift = shift % 64;
+
+                // shift
+                for i in word_shift..$n_words {
+                    ret[i - word_shift] = original[i] >> bit_shift;
+                }
+
+                // Carry
+                if bit_shift > 0 {
+                    for i in word_shift+1..$n_words {
+                        ret[i - word_shift - 1] += original[i] << (64 - bit_shift);
+                    }
+                }
+
+                $name(ret)
+            }
+        }
+
+        impl Ord for $name {
+            fn cmp(&self, other: &$name) -> Ordering {
+                let &$name(ref me) = self;
+                let &$name(ref you) = other;
+                let mut i = $n_words;
+                while i > 0 {
+                    i -= 1;
+                    if me[i] < you[i] { return Ordering::Less; }
+                    if me[i] > you[i] { return Ordering::Greater; }
+                }
+                Ordering::Equal
+            }
+        }
+
+        impl PartialOrd for $name {
+            fn partial_cmp(&self, other: &$name) -> Option<Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+
+        impl fmt::Debug for $name {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                fmt::Display::fmt(self, f)
+            }
+        }
+
+        impl fmt::Display for $name {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                if self.is_zero() {
+                    return write!(f, "0");
+                }
+
+                let mut s = String::new();
+                let mut current = *self;
+                let ten = $name::from(10);
+
+                while !current.is_zero() {
+                    s = format!("{}{}", (current % ten).low_u32(), s);
+                    current = current / ten;
+                }
+
+                write!(f, "{}", s)
+            }
+        }
+
+        impl fmt::LowerHex for $name {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                let &$name(ref data) = self;
+                try!(write!(f, "0x"));
+                let mut latch = false;
+                for ch in data.iter().rev() {
+                    for x in 0..16 {
+                        let nibble = (ch & (15u64 << ((15 - x) * 4) as u64)) >> (((15 - x) * 4) as u64);
+                        if !latch { latch = nibble != 0 }
+                        if latch {
+                            try!(write!(f, "{:x}", nibble));
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
+
+        impl From<&'static str> for $name {
+            fn from(s: &'static str) -> Self {
+                s.parse().unwrap()
+            }
+        }
+    );
 }
 
 construct_uint!(U512, 8);
@@ -1131,132 +1131,132 @@ impl U256 {
         let mut result: [u64; 8] = unsafe { ::std::mem::uninitialized() };
         unsafe {
             asm!("
-				mov $8, %rax
-				mulq $12
-				mov %rax, $0
-				mov %rdx, $1
+                mov $8, %rax
+                mulq $12
+                mov %rax, $0
+                mov %rdx, $1
 
-				mov $8, %rax
-				mulq $13
-				add %rax, $1
-				adc $$0, %rdx
-				mov %rdx, $2
+                mov $8, %rax
+                mulq $13
+                add %rax, $1
+                adc $$0, %rdx
+                mov %rdx, $2
 
-				mov $8, %rax
-				mulq $14
-				add %rax, $2
-				adc $$0, %rdx
-				mov %rdx, $3
+                mov $8, %rax
+                mulq $14
+                add %rax, $2
+                adc $$0, %rdx
+                mov %rdx, $3
 
-				mov $8, %rax
-				mulq $15
-				add %rax, $3
-				adc $$0, %rdx
-				mov %rdx, $4
+                mov $8, %rax
+                mulq $15
+                add %rax, $3
+                adc $$0, %rdx
+                mov %rdx, $4
 
-				mov $9, %rax
-				mulq $12
-				add %rax, $1
-				adc %rdx, $2
-				adc $$0, $3
-				adc $$0, $4
-				xor $5, $5
-				adc $$0, $5
-				xor $6, $6
-				adc $$0, $6
-				xor $7, $7
-				adc $$0, $7
+                mov $9, %rax
+                mulq $12
+                add %rax, $1
+                adc %rdx, $2
+                adc $$0, $3
+                adc $$0, $4
+                xor $5, $5
+                adc $$0, $5
+                xor $6, $6
+                adc $$0, $6
+                xor $7, $7
+                adc $$0, $7
 
-				mov $9, %rax
-				mulq $13
-				add %rax, $2
-				adc %rdx, $3
-				adc $$0, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
+                mov $9, %rax
+                mulq $13
+                add %rax, $2
+                adc %rdx, $3
+                adc $$0, $4
+                adc $$0, $5
+                adc $$0, $6
+                adc $$0, $7
 
-				mov $9, %rax
-				mulq $14
-				add %rax, $3
-				adc %rdx, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
+                mov $9, %rax
+                mulq $14
+                add %rax, $3
+                adc %rdx, $4
+                adc $$0, $5
+                adc $$0, $6
+                adc $$0, $7
 
-				mov $9, %rax
-				mulq $15
-				add %rax, $4
-				adc %rdx, $5
-				adc $$0, $6
-				adc $$0, $7
+                mov $9, %rax
+                mulq $15
+                add %rax, $4
+                adc %rdx, $5
+                adc $$0, $6
+                adc $$0, $7
 
-				mov $10, %rax
-				mulq $12
-				add %rax, $2
-				adc %rdx, $3
-				adc $$0, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
+                mov $10, %rax
+                mulq $12
+                add %rax, $2
+                adc %rdx, $3
+                adc $$0, $4
+                adc $$0, $5
+                adc $$0, $6
+                adc $$0, $7
 
-				mov $10, %rax
-				mulq $13
-				add %rax, $3
-				adc %rdx, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
+                mov $10, %rax
+                mulq $13
+                add %rax, $3
+                adc %rdx, $4
+                adc $$0, $5
+                adc $$0, $6
+                adc $$0, $7
 
-				mov $10, %rax
-				mulq $14
-				add %rax, $4
-				adc %rdx, $5
-				adc $$0, $6
-				adc $$0, $7
+                mov $10, %rax
+                mulq $14
+                add %rax, $4
+                adc %rdx, $5
+                adc $$0, $6
+                adc $$0, $7
 
-				mov $10, %rax
-				mulq $15
-				add %rax, $5
-				adc %rdx, $6
-				adc $$0, $7
+                mov $10, %rax
+                mulq $15
+                add %rax, $5
+                adc %rdx, $6
+                adc $$0, $7
 
-				mov $11, %rax
-				mulq $12
-				add %rax, $3
-				adc %rdx, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
+                mov $11, %rax
+                mulq $12
+                add %rax, $3
+                adc %rdx, $4
+                adc $$0, $5
+                adc $$0, $6
+                adc $$0, $7
 
-				mov $11, %rax
-				mulq $13
-				add %rax, $4
-				adc %rdx, $5
-				adc $$0, $6
-				adc $$0, $7
+                mov $11, %rax
+                mulq $13
+                add %rax, $4
+                adc %rdx, $5
+                adc $$0, $6
+                adc $$0, $7
 
-				mov $11, %rax
-				mulq $14
-				add %rax, $5
-				adc %rdx, $6
-				adc $$0, $7
+                mov $11, %rax
+                mulq $14
+                add %rax, $5
+                adc %rdx, $6
+                adc $$0, $7
 
-				mov $11, %rax
-				mulq $15
-				add %rax, $6
-				adc %rdx, $7
-				"
+                mov $11, %rax
+                mulq $15
+                add %rax, $6
+                adc %rdx, $7
+                "
             : /* $0 */ "={r8}"(result[0]), /* $1 */ "={r9}"(result[1]), /* $2 */ "={r10}"(result[2]),
-			  /* $3 */ "={r11}"(result[3]), /* $4 */ "={r12}"(result[4]), /* $5 */ "={r13}"(result[5]),
-			  /* $6 */ "={r14}"(result[6]), /* $7 */ "={r15}"(result[7])
+              /* $3 */ "={r11}"(result[3]), /* $4 */ "={r12}"(result[4]), /* $5 */ "={r13}"(result[5]),
+              /* $6 */ "={r14}"(result[6]), /* $7 */ "={r15}"(result[7])
 
             : /* $8 */ "m"(self_t[0]), /* $9 */ "m"(self_t[1]), /* $10 */  "m"(self_t[2]),
-			  /* $11 */ "m"(self_t[3]), /* $12 */ "m"(other_t[0]), /* $13 */ "m"(other_t[1]),
-			  /* $14 */ "m"(other_t[2]), /* $15 */ "m"(other_t[3])
-			: "rax", "rdx"
-			:
-			);
+              /* $11 */ "m"(self_t[3]), /* $12 */ "m"(other_t[0]), /* $13 */ "m"(other_t[1]),
+              /* $14 */ "m"(other_t[2]), /* $15 */ "m"(other_t[3])
+            : "rax", "rdx"
+            :
+            );
         }
         U512(result)
     }
@@ -1679,8 +1679,8 @@ mod tests {
     #[test]
     fn uint256_overflowing_pow() {
         // assert_eq!(
-        // 	U256::from(2).overflowing_pow(U256::from(0xff)),
-        // 	(U256::from_str("8000000000000000000000000000000000000000000000000000000000000000").unwrap(), false)
+        //     U256::from(2).overflowing_pow(U256::from(0xff)),
+        //     (U256::from_str("8000000000000000000000000000000000000000000000000000000000000000").unwrap(), false)
         // );
         assert_eq!(U256::from(2).overflowing_pow(U256::from(0x100)), (U256::zero(), true));
     }

@@ -206,15 +206,6 @@ pub struct Chain {
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 }
 
-pub fn save_genesis(db: &KeyValueDB, genesis: &Genesis) -> Result<(), String> {
-    let mut batch = db.transaction();
-    let hash = genesis.block.hash();
-    batch.write(db::COL_HEADERS, &hash, genesis.block.header());
-    batch.write(db::COL_BODIES, &hash, genesis.block.body());
-    batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &hash);
-    db.write(batch)
-}
-
 /// Get latest status
 pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
     let h: Option<H256> = db.read(db::COL_EXTRA, &ConstKey::CurrentHash);
@@ -262,10 +253,9 @@ impl Chain {
                 header
             }
             _ => {
-                let _ = genesis.lazy_execute();
-                save_genesis(&*db, &genesis).expect("Failed to save genesis.");
+                genesis.lazy_execute(&state_db, &factories).expect("Failed to save genesis.");
                 info!("init genesis {:?}", genesis);
-                genesis.block.header.clone()
+                genesis.block.header().clone()
             }
         };
 
@@ -299,36 +289,9 @@ impl Chain {
         status.set_nodes(nodes);
         let chain = Arc::new(raw_chain);
 
+
         chain.build_last_hashes(Some(status.hash().clone()), status.number());
-        chain.first_init(genesis);
         (chain, status.protobuf())
-    }
-
-    //chain first init and chain heigth = zero。
-    //init contracts or to do other thing
-    pub fn first_init(&self, genesis: Genesis) {
-        if 0 == self.get_current_height() {
-            info!("**** begin **** \n");
-            info!("chain first init, to do init contracts on height eq zero");
-            let mut state = self.state();
-            for (address, contract) in genesis.spec.alloc.clone() {
-                let _ = state.init_code(&address.as_bytes().into(), contract.code.into_bytes()).expect("init code fail");
-                for (key, values) in contract.storage.clone() {
-                    state.set_storage(&address.as_bytes().into(), key.as_bytes().into(), values.as_bytes().into())
-                         .expect("init code set_storage fail");
-                }
-            }
-
-            //query is store in chain
-            for (address, contract) in genesis.spec.alloc {
-                for (key, _values) in contract.storage {
-                    let result = state.storage_at(&address.as_bytes().into(), &key.as_bytes().into());
-                    info!("address = {:?}, key = {:?}, result = {:?}", address, key, result);
-                }
-            }
-
-            info!("**** end **** \n");
-        }
     }
 
     /// Get block number by BlockId
@@ -1081,17 +1044,12 @@ mod tests {
             }
             tx.set_nonce(U256::from(i).to_hex());
             tx.set_data(data.clone());
-            tx.set_valid_until_block(0);
+            tx.set_valid_until_block(100);
+            tx.set_quota(184467440737095);
 
-            let mut uv_tx = blockchain::UnverifiedTransaction::new();
-            uv_tx.set_transaction(tx);
-
-            let mut stx = blockchain::SignedTransaction::new();
-            stx.set_transaction_with_sig(uv_tx);
-            stx.sign(*privkey);
+            let stx = tx.sign(*privkey);
             let new_tx = SignedTransaction::new(&stx).unwrap();
             txs.push(new_tx);
-
         }
         body.set_transactions(txs);
         block.set_body(body);
@@ -1138,34 +1096,34 @@ mod tests {
         let privkey = keypair.privkey();
         let chain = init_chain();
         /*
-			pragma solidity ^0.4.8;
+            pragma solidity ^0.4.8;
 
-			contract mortal {
-				/* Define variable owner of the type address*/
-				address owner;
+            contract mortal {
+                /* Define variable owner of the type address*/
+                address owner;
 
-				/* this function is executed at initialization and sets the owner of the contract */
-				function mortal() { owner = msg.sender; }
+                /* this function is executed at initialization and sets the owner of the contract */
+                function mortal() { owner = msg.sender; }
 
-				/* Function to recover the funds on the contract */
-				function kill() { if (msg.sender == owner) selfdestruct(owner); }
-			}
+                /* Function to recover the funds on the contract */
+                function kill() { if (msg.sender == owner) selfdestruct(owner); }
+            }
 
-			contract greeter is mortal {
-				/* define variable greeting of the type string */
-				string greeting;
+            contract greeter is mortal {
+                /* define variable greeting of the type string */
+                string greeting;
 
-				/* this runs when the contract is executed */
-				function greeter(string _greeting) public {
-					greeting = _greeting;
-				}
-
-				/* main function */
-				function greet() constant returns (string) {
-					return greeting;
+                /* this runs when the contract is executed */
+                function greeter(string _greeting) public {
+                    greeting = _greeting;
                 }
-			}
-		*/
+
+                /* main function */
+                function greet() constant returns (string) {
+                    return greeting;
+                }
+            }
+        */
         let data = "6060604052341561000f57600080fd5b5b336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505b5b61010c806100616000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806341c0e1b514603d575b600080fd5b3415604757600080fd5b604d604f565b005b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141560dd576000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16ff5b5b5600a165627a7a72305820de567cec1777627b898689638799169aacaf87d3ea313a0d8dab5758bac937670029"
             .from_hex()
             .unwrap();
@@ -1219,7 +1177,7 @@ mod tests {
                     return a;
                 }
             }
-		*/
+        */
         let data = "6060604052341561000f57600080fd5b5b7fb8f132fb6526e0405f3ce4f3bab301f1d4409b1e7f2c01c2037d6cf845c831cb30604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a15b5b610107806100846000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11460475780636d4ce63c146067575b600080fd5b3415605157600080fd5b60656004808035906020019091905050608d565b005b3415607157600080fd5b607760d1565b6040518082815260200191505060405180910390f35b806000819055507fa17a9e66f0c355e3aa3b9ea969991204d6b1d2e62a47877f612cb2371d79e06a6000546040518082815260200191505060405180910390a15b50565b6000805490505b905600a165627a7a72305820bb7224faec63935671f0b4722064773ccae237bec4f6fbb252c362f2192dca900029"
             .from_hex()
             .unwrap();
@@ -1240,7 +1198,7 @@ mod tests {
         if SIGNATURE_NAME == "ed25519" {
             assert_eq!(contract_address, Address::from("b2f0aa00c6bc02a2b07646a1a213e1bed6fefff6"));
         } else if SIGNATURE_NAME == "secp256k1" {
-            assert_eq!(contract_address, Address::from("bc1b3ac5e6207379e4474e7d38fdc76ef094c04d"));
+            assert_eq!(contract_address, Address::from("893ed563bbe983e04441792e7ae866d4134adfd7"));
         };
         println!("contract_address as slice {:?}", contract_address.to_vec().as_slice());
         if SIGNATURE_NAME == "ed25519" {
@@ -1284,7 +1242,7 @@ mod tests {
                 ])
             );
         } else if SIGNATURE_NAME == "secp256k1" {
-            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 27, 58, 197, 230, 32, 115, 121, 228, 71, 78, 125, 56, 253, 199, 110, 240, 148, 192, 77]
+            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 137, 62, 213, 99, 187, 233, 131, 224, 68, 65, 121, 46, 122, 232, 102, 212, 19, 74, 223, 215]
             assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
             assert_eq!(
                 log.data,
@@ -1301,26 +1259,26 @@ mod tests {
                     0,
                     0,
                     0,
-                    188,
-                    27,
-                    58,
-                    197,
-                    230,
-                    32,
-                    115,
+                    137,
+                    62,
+                    213,
+                    99,
+                    187,
+                    233,
+                    131,
+                    224,
+                    68,
+                    65,
                     121,
-                    228,
-                    71,
-                    78,
-                    125,
-                    56,
-                    253,
-                    199,
-                    110,
-                    240,
-                    148,
-                    192,
-                    77,
+                    46,
+                    122,
+                    232,
+                    102,
+                    212,
+                    19,
+                    74,
+                    223,
+                    215,
                 ])
             );
         };
