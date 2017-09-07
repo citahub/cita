@@ -25,7 +25,7 @@ mod instrument;
 pub use error::*;
 pub use instrument::*;
 
-use libproto::blockchain::{Block, SignedTransaction, Status};
+use libproto::blockchain::{Block, SignedTransaction, RichStatus};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use util::H256;
@@ -46,7 +46,7 @@ pub trait Engine: Sync + Send {
 
     fn receive_new_block(&self, block: &Block, tx_pub: Sender<(String, Vec<u8>)>);
 
-    fn receive_new_status(&self, status: Status);
+    fn receive_new_status(&self, status: RichStatus);
 
     fn new_block(&self, tx_pub: Sender<(String, Vec<u8>)>);
 

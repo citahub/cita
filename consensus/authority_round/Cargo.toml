@@ -23,3 +23,4 @@ pubsub = { path = "../../share_libs/pubsub" }
 cpuprofiler = "0.0.3"
 cita_log = { path = "../../share_libs/cita_log" }
 dotenv = "0.10.0"
+authority_manage = { path = "../authority_manage" }

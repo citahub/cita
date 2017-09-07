@@ -52,6 +52,7 @@ use std::time;
 use std::time::Duration;
 use synchronizer::Synchronizer;
 use util::kvdb::{Database, DatabaseConfig};
+use libproto::blockchain::Status;
 
 pub const DATA_PATH: &'static str = "DATA_PATH";
 
@@ -90,10 +91,16 @@ fn main() {
     let genesis = Genesis::init(config_path);
     let (sync_tx, sync_rx) = channel();
     let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx);
-    let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st.write_to_bytes().unwrap());
 
+    let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, st.write_to_bytes().unwrap());
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
-    ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+    ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+
+    let status : Status = st.into();
+    let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
+    trace!("chain.status {:?}, {:?}", status.get_height(), status.get_hash());
+    ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
+
     let synchronizer = Synchronizer::new(chain.clone());
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
@@ -110,6 +117,7 @@ fn main() {
                           synchronizer.sync_status(ctx_pub.clone());
                       }
                   });
+
     //garbage collect
     let mut i: u32 = 0;
     loop {
