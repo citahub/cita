@@ -4,7 +4,7 @@ use util::H256;
 
 #[derive(Debug)]
 pub struct VerifyCache {
-    inner: Cache<H256, VerifyRespMsg>,
+    inner: Cache<H256, VerifyTxResp>,
 }
 
 impl VerifyCache {
@@ -13,11 +13,11 @@ impl VerifyCache {
         VerifyCache {inner: Cache::new(size * 4)}
     }
 
-    pub fn insert(&mut self, tx_hash: H256, resp: VerifyRespMsg) {
+    pub fn insert(&mut self, tx_hash: H256, resp: VerifyTxResp) {
         self.inner.insert(tx_hash, resp);
     }
 
-    pub fn get(&self, tx_hash: &H256) -> Option<&VerifyRespMsg> {
+    pub fn get(&self, tx_hash: &H256) -> Option<&VerifyTxResp> {
         self.inner.peek(tx_hash)
     }
 }
@@ -31,11 +31,11 @@ fn basic() {
     let hash2 = H256::from_slice(&vec![2]);
     let hash3 = H256::from_slice(&vec![3]);
 
-    let mut resp1 = VerifyRespMsg::new();
+    let mut resp1 = VerifyTxResp::new();
     resp1.set_tx_hash(hash1.to_vec());
-    let mut resp2 = VerifyRespMsg::new();
+    let mut resp2 = VerifyTxResp::new();
     resp2.set_tx_hash(hash2.to_vec());
-    let mut resp3 = VerifyRespMsg::new();
+    let mut resp3 = VerifyTxResp::new();
     resp3.set_tx_hash(hash3.to_vec());
 
     cache.insert(hash1.clone(), resp1.clone());

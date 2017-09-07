@@ -116,18 +116,35 @@ mod tests {
 
     fn generate_msg(tx: SignedTransaction) -> Vec<u8> {
         //create verify message
-        let mut msg = VerifyReqMsg::new();
-        msg.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
+        let mut req = VerifyTxReq::new();
+        req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
         let signature = tx.get_transaction_with_sig().get_signature().to_vec();
-        msg.set_signature(signature);
+        req.set_signature(signature);
         let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
         let hash = bytes.crypt_hash().to_vec();
-        msg.set_hash(hash);
-        msg.set_tx_hash(tx.get_tx_hash().to_vec());
+        req.set_hash(hash);
+        req.set_tx_hash(tx.get_tx_hash().to_vec());
 
-        let mut vmsg = VerifyReq::new();
-        vmsg.set_reqs(RepeatedField::from_slice(&[msg]));
-        let msg = factory::create_msg(submodules::CHAIN, topics::VERIFY_REQ, communication::MsgType::VERIFY_REQ, vmsg.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_TX_REQ, communication::MsgType::VERIFY_TX_REQ, req.write_to_bytes().unwrap());
+        msg.write_to_bytes().unwrap()
+    }
+
+    fn generate_blk_msg(tx: SignedTransaction) -> Vec<u8> {
+        //create verify message
+        let mut req = VerifyTxReq::new();
+        req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
+        let signature = tx.get_transaction_with_sig().get_signature().to_vec();
+        req.set_signature(signature);
+        let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
+        let hash = bytes.crypt_hash().to_vec();
+        req.set_hash(hash);
+        req.set_tx_hash(tx.get_tx_hash().to_vec());
+
+        let mut blkreq = VerifyBlockReq::new();
+        blkreq.set_id(0);
+        blkreq.set_reqs(RepeatedField::from_slice(&[req]));
+
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, blkreq.write_to_bytes().unwrap());
         msg.write_to_bytes().unwrap()
     }
 
@@ -147,13 +164,12 @@ mod tests {
         handle_msg(generate_msg(tx), &tx_pub, &mut v, &mut c);
         let (key1, resp_msg) = rx_pub.recv().unwrap();
         println!("get {} : {:?}", key1, resp_msg);
+        assert_eq!(key1, "verify_tx_consensus".to_owned());
         let (_, _, content) = parse_msg(resp_msg.as_slice());
         match content {
-            MsgClass::VERIFYRESP(resps) => {
-                for resp in resps.get_resps() {
-                    assert_eq!(resp.get_ret(), Ret::Ok);
-                    assert_eq!(pubkey.to_vec(), resp.get_signer());
-                }
+            MsgClass::VERIFYTXRESP(resp) => {
+                assert_eq!(resp.get_ret(), Ret::Ok);
+                assert_eq!(pubkey.to_vec(), resp.get_signer());
             }
             _ => {panic!("test failed")}
         }
@@ -177,11 +193,9 @@ mod tests {
         println!("get {} : {:?}", key1, resp_msg);
         let (_, _, content) = parse_msg(resp_msg.as_slice());
         match content {
-            MsgClass::VERIFYRESP(resps) => {
-                for resp in resps.get_resps() {
-                    assert_eq!(resp.get_ret(), Ret::Ok);
-                    assert_eq!(pubkey.to_vec(), resp.get_signer());
-                }
+            MsgClass::VERIFYTXRESP(resp) => {
+                assert_eq!(resp.get_ret(), Ret::Ok);
+                assert_eq!(pubkey.to_vec(), resp.get_signer());
             }
             _ => {panic!("test failed")}
         }
@@ -191,11 +205,35 @@ mod tests {
         println!("get {} : {:?}", key1, resp_msg);
         let (_, _, content) = parse_msg(resp_msg.as_slice());
         match content {
-            MsgClass::VERIFYRESP(resps) => {
-                for resp in resps.get_resps() {
-                    assert_eq!(resp.get_ret(), Ret::Ok);
-                    assert_eq!(pubkey.to_vec(), resp.get_signer());
-                }
+            MsgClass::VERIFYTXRESP(resp) => {
+                assert_eq!(resp.get_ret(), Ret::Ok);
+                assert_eq!(pubkey.to_vec(), resp.get_signer());
+            }
+            _ => {panic!("test failed")}
+        }
+    }
+
+    #[test]
+    fn verify_blk_ok() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let tx = generate_tx(vec![1], 999, privkey);
+
+        let (tx_pub, rx_pub) = channel();
+        //verify tx
+        let mut v = Verifier::new();
+        let mut c = VerifyCache::new(1000);
+        v.update_hashes(1, vec![], &tx_pub);
+
+        handle_msg(generate_blk_msg(tx), &tx_pub, &mut v, &mut c);
+        let (key1, resp_msg) = rx_pub.recv().unwrap();
+        println!("get {} : {:?}", key1, resp_msg);
+        assert_eq!(key1, "verify_blk_consensus".to_owned());
+        let (_, _, content) = parse_msg(resp_msg.as_slice());
+        match content {
+            MsgClass::VERIFYBLKRESP(resp) => {
+                assert_eq!(resp.get_ret(), Ret::Ok);
+                assert_eq!(resp.get_id(), 0);
             }
             _ => {panic!("test failed")}
         }

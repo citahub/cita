@@ -71,10 +71,12 @@ pub mod topics {
     pub const TX_RESPONSE: u16 = 7;
     pub const CONSENSUS_MSG: u16 = 8;
     pub const NEW_PROPOSAL: u16 = 9;
-    pub const VERIFY_REQ: u16 = 10;
-    pub const VERIFY_RESP: u16 = 11;
-    pub const BLOCK_TXHASHES: u16 = 12;
-    pub const BLOCK_TXHASHES_REQ: u16 = 13; 
+    pub const VERIFY_TX_REQ: u16 = 10;
+    pub const VERIFY_TX_RESP: u16 = 11;
+    pub const VERIFY_BLK_REQ: u16 = 12;
+    pub const VERIFY_BLK_RESP: u16 = 13;
+    pub const BLOCK_TXHASHES: u16 = 14;
+    pub const BLOCK_TXHASHES_REQ: u16 = 15; 
 }
 
 #[derive(Debug)]
@@ -87,8 +89,10 @@ pub enum MsgClass {
     TX(UnverifiedTransaction),
     TXRESPONSE(TxResponse),
     STATUS(Status),
-    VERIFYREQ(VerifyReq),
-    VERIFYRESP(VerifyResp),
+    VERIFYTXREQ(VerifyTxReq),
+    VERIFYTXRESP(VerifyTxResp),
+    VERIFYBLKREQ(VerifyBlockReq),
+    VERIFYBLKRESP(VerifyBlockResp),
     BLOCKTXHASHES(BlockTxHashes),
     BLOCKTXHASHESREQ(BlockTxHashesReq),
     MSG(Vec<u8>),
@@ -106,8 +110,10 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::TX_RESPONSE => "tx_response",
         topics::CONSENSUS_MSG => "consensus_msg",
         topics::NEW_PROPOSAL => "new_proposal",
-        topics::VERIFY_REQ => "verify_req",
-        topics::VERIFY_RESP => "verify_resp",
+        topics::VERIFY_TX_REQ => "verify_tx_req",
+        topics::VERIFY_TX_RESP => "verify_tx_resp",
+        topics::VERIFY_BLK_REQ => "verify_blk_req",
+        topics::VERIFY_BLK_RESP => "verify_blk_resp",
         topics::BLOCK_TXHASHES => "block_txhashes",
         topics::BLOCK_TXHASHES_REQ => "block_txhashes_req",
         _ => "",
@@ -205,8 +211,10 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::BLOCK => MsgClass::BLOCK(parse_from_bytes::<Block>(&content_msg).unwrap()),
         MsgType::TX => MsgClass::TX(parse_from_bytes::<UnverifiedTransaction>(&content_msg).unwrap()),
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
-        MsgType::VERIFY_REQ => MsgClass::VERIFYREQ(parse_from_bytes::<VerifyReq>(&content_msg).unwrap()),
-        MsgType::VERIFY_RESP => MsgClass::VERIFYRESP(parse_from_bytes::<VerifyResp>(&content_msg).unwrap()),
+        MsgType::VERIFY_TX_REQ => MsgClass::VERIFYTXREQ(parse_from_bytes::<VerifyTxReq>(&content_msg).unwrap()),
+        MsgType::VERIFY_TX_RESP => MsgClass::VERIFYTXRESP(parse_from_bytes::<VerifyTxResp>(&content_msg).unwrap()),
+        MsgType::VERIFY_BLK_REQ => MsgClass::VERIFYBLKREQ(parse_from_bytes::<VerifyBlockReq>(&content_msg).unwrap()),
+        MsgType::VERIFY_BLK_RESP => MsgClass::VERIFYBLKRESP(parse_from_bytes::<VerifyBlockResp>(&content_msg).unwrap()),
         MsgType::BLOCK_TXHASHES => MsgClass::BLOCKTXHASHES(parse_from_bytes::<BlockTxHashes>(&content_msg).unwrap()),
         MsgType::BLOCK_TXHASHES_REQ => MsgClass::BLOCKTXHASHESREQ(parse_from_bytes::<BlockTxHashesReq>(&content_msg).unwrap()),
         MsgType::MSG => {

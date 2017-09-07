@@ -90,7 +90,7 @@ impl Verifier {
         return false;
     }
 
-    pub fn verify_sig(&self, req: &VerifyReqMsg) -> Result<PubKey, ()> {
+    pub fn verify_sig(&self, req: &VerifyTxReq) -> Result<PubKey, ()> {
         let hash = H256::from(req.get_hash());
         let sig = Signature::from(req.get_signature());
         match req.get_crypto() {
@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn verify_update() {
         let mut v = Verifier::new();
-        let (tx_pub, _) = channel();
+        let (tx_pub, _rx_pub) = channel();
         v.update_hashes(100, vec![], &tx_pub);
         assert_eq!(v.is_inited(), false);
         assert_eq!(v.get_height_latest(),  Some(100));

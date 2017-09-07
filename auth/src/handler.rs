@@ -16,15 +16,64 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use libproto::*;
-use protobuf::{Message, RepeatedField};
+use protobuf::Message;
 use std::sync::mpsc::Sender;
 use std::vec::*;
 use util::H256;
 use verify::Verifier;
 use cache::VerifyCache;
 
+
+fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
+    let mut resp = VerifyTxResp::new();
+    resp.set_tx_hash(req.get_tx_hash().to_vec());
+
+    if !verifier.verify_valid_until_block(req.get_valid_until_block()) {
+        resp.set_ret(Ret::OutOfTime);                            
+        return resp;
+    }
+
+    let tx_hash = H256::from_slice(req.get_tx_hash());
+    let ret = verifier.check_hash_exist(&tx_hash);
+    if ret {
+        if verifier.is_inited() {
+            resp.set_ret(Ret::Dup);
+        } else {
+            resp.set_ret(Ret::NotReady);
+        }                    
+        return resp;
+    }
+    let ret = verifier.verify_sig(req);
+    if ret.is_err() {
+        resp.set_ret(Ret::BadSig);                            
+        return resp;
+    }
+    //check signer if req have
+    let req_signer = req.get_signer();
+    if req_signer.len() != 0 {
+        if req_signer != ret.unwrap().to_vec().as_slice() {
+            resp.set_ret(Ret::BadSig);                            
+            return resp;
+        }
+    }
+    resp.set_signer(ret.unwrap().to_vec());
+    resp.set_ret(Ret::Ok);
+    resp
+}
+
+fn get_key(submodule: u32, is_blk: bool) -> String {
+    "verify".to_owned() + 
+    if is_blk {
+        "_blk_"
+    } else {
+        "_tx_"
+    } +
+    id_to_key(submodule)
+}
+
 pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier: &mut Verifier, cache: &mut VerifyCache) {
-    let (_cmdid, _origin, content) = parse_msg(payload.as_slice());
+    let (cmdid, _origin, content) = parse_msg(payload.as_slice());
+    let (submodule, _topic) = de_cmd_id(cmdid);
     match content {
         MsgClass::BLOCKTXHASHES(block_tx_hashes) => {
             let height = block_tx_hashes.get_height();
@@ -36,59 +85,44 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
             }
             verifier.update_hashes(height, tx_hashes_in_h256, tx_pub);
         }
-        MsgClass::VERIFYREQ(req) => {
+        MsgClass::VERIFYTXREQ(req) => {
             trace!("get verify request {:?}", req);
-            let mut resps = Vec::new();
-            for req in req.get_reqs() {
+            let tx_hash = H256::from_slice(req.get_tx_hash());
+            if let Some(resp) = cache.get(&tx_hash) {
+                let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_TX_RESP, communication::MsgType::VERIFY_TX_RESP, resp.write_to_bytes().unwrap());
+                tx_pub.send((get_key(submodule, false), msg.write_to_bytes().unwrap())).unwrap();
+                return;
+            }
+            let resp = verfiy_tx(&req, verifier);
+            let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_TX_RESP, communication::MsgType::VERIFY_TX_RESP, resp.write_to_bytes().unwrap());
+            tx_pub.send((get_key(submodule, false), msg.write_to_bytes().unwrap())).unwrap();
+            cache.insert(tx_hash, resp);
+        }
+        MsgClass::VERIFYBLKREQ(blkreq) => {
+            let id = blkreq.get_id();
+            let mut blkresp = VerifyBlockResp::new();
+            blkresp.set_id(id);
+            blkresp.set_ret(Ret::Ok);
+            for req in blkreq.get_reqs() {
                 let tx_hash = H256::from_slice(req.get_tx_hash());
                 if let Some(resp) = cache.get(&tx_hash) {
-                    resps.push(resp.clone());
+                    if resp.get_ret() == Ret::Ok {
+                        continue;
+                    }
+                    blkresp.set_ret(Ret::Err);
+                    break;
+                }
+                let resp = verfiy_tx(req, verifier);
+                let ret = resp.get_ret();
+                cache.insert(tx_hash, resp);
+                if ret == Ret::Ok {
                     continue;
                 }
-                let ret = verifier.check_hash_exist(&tx_hash);
-                if ret {
-                    let mut resp = VerifyRespMsg::new();
-                    resp.set_tx_hash(req.get_tx_hash().to_vec());
-                    if verifier.is_inited() {
-                        resp.set_ret(Ret::Dup);
-                        cache.insert(tx_hash, resp.clone());
-                    } else {
-                        resp.set_ret(Ret::NotReady);
-                    }                    
-                    resps.push(resp);
-                    continue;
-                } 
-                let ret = verifier.verify_sig(req);
-                if ret.is_err() {
-                    let mut resp = VerifyRespMsg::new();
-                    resp.set_ret(Ret::BadSig);                            
-                    resp.set_tx_hash(req.get_tx_hash().to_vec());
-                    cache.insert(tx_hash, resp.clone());
-                    resps.push(resp);
-                    continue;
-                }
-                if !verifier.verify_valid_until_block(req.get_valid_until_block()) {
-                    let mut resp = VerifyRespMsg::new();
-                    resp.set_ret(Ret::OutOfTime);                            
-                    resp.set_tx_hash(req.get_tx_hash().to_vec());
-                    cache.insert(tx_hash, resp.clone());
-                    resps.push(resp);
-                    continue;
-                }
-                //ok
-                {
-                    let mut resp = VerifyRespMsg::new();
-                    resp.set_ret(Ret::Ok);
-                    resp.set_tx_hash(req.get_tx_hash().to_vec());
-                    resp.set_signer(ret.unwrap().to_vec());
-                    cache.insert(tx_hash, resp.clone());
-                    resps.push(resp);
-                }
+                blkresp.set_ret(Ret::Err);
+                break;
             }
-            let mut vresq = VerifyResp::new();
-            vresq.set_resps(RepeatedField::from_slice(&resps));
-            let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_RESP, communication::MsgType::VERIFY_RESP, vresq.write_to_bytes().unwrap());
-            tx_pub.send(("auth.verify_resp".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
+            tx_pub.send((get_key(submodule, true), msg.write_to_bytes().unwrap())).unwrap();
         }
         _ => {}
     }
