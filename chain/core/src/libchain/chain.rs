@@ -1035,7 +1035,6 @@ mod tests {
     use util::{U256, H256, Address};
     use util::crypto::CreateKey;
     use util::kvdb::{Database, DatabaseConfig};
-    //use util::hashable::HASH_NAME;
 
     #[test]
     fn test_heapsizeof() {

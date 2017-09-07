@@ -50,7 +50,8 @@ extern crate cita_ed25519;
 extern crate common_types as types;
 extern crate jsonrpc_types;
 extern crate cita_secp256k1;
-extern crate ethabi;
+extern crate sha3;
+
 #[cfg(test)]
 extern crate test;
 #[cfg(test)]
