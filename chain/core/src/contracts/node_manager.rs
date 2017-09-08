@@ -56,12 +56,14 @@ impl NodeManager {
         // 2. Convert data to vec<address>
         if let Ok(output) = output {
             trace!("read nodes list output: {:?}", output);
-            let len_len = U256::from(&output[0..32]).as_u64() as usize;
-            if len_len <= 32 {
-                let len = U256::from(&output[32..32 + len_len]).as_u64() as usize;
-                let num = len / 20;
-                for i in 0..num {
-                    nodes.push(H160::from(&output[32 + len_len + i * 20..32 + len_len + (i + 1) * 20]));
+            if output.len() > 0 {
+                let len_len = U256::from(&output[0..32]).as_u64() as usize;
+                if len_len <= 32 {
+                    let len = U256::from(&output[32..32 + len_len]).as_u64() as usize;
+                    let num = len / 20;
+                    for i in 0..num {
+                        nodes.push(H160::from(&output[32 + len_len + i * 20..32 + len_len + (i + 1) * 20]));
+                    }
                 }
             }
         }
@@ -185,6 +187,14 @@ mod tests {
                 println!("nodes: {:?}", nodes);
             }
         }
-        assert_eq!(nodes, vec![H160::from(0xdd19c4f035c847d49aef6fc35f7fc3b3c801f3f7), H160::from(0x553d3c7059f118dbf6379971941050fb2757db34), H160::from(0x94b3a300a1e294d1bb11b4ad76080417a1377ff7), H160::from(0x5f26faf1e9cab2c647f76ac6e9eb2d8743e065c8)])
+        assert_eq!(
+            nodes,
+            vec![
+                H160::from_str("dd19c4f035c847d49aef6fc35f7fc3b3c801f3f7").unwrap(),
+                H160::from_str("553d3c7059f118dbf6379971941050fb2757db34").unwrap(),
+                H160::from_str("94b3a300a1e294d1bb11b4ad76080417a1377ff7").unwrap(),
+                H160::from_str("5f26faf1e9cab2c647f76ac6e9eb2d8743e065c8").unwrap(),
+            ]
+        )
     }
 }
