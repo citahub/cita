@@ -41,6 +41,7 @@ use core::libchain;
 use core::libchain::{submodules, key_to_id};
 use core::libchain::Genesis;
 use forward::*;
+use libproto::blockchain::Status;
 use log::LogLevelFilter;
 use protobuf::Message;
 use pubsub::start_pubsub;
@@ -52,7 +53,6 @@ use std::time;
 use std::time::Duration;
 use synchronizer::Synchronizer;
 use util::kvdb::{Database, DatabaseConfig};
-use libproto::blockchain::Status;
 
 pub const DATA_PATH: &'static str = "DATA_PATH";
 
@@ -80,7 +80,7 @@ fn main() {
     let pool = threadpool::ThreadPool::new(10);
     let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request", "consensus.role"], ctx_sub, crx_pub);
+    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request"], ctx_sub, crx_pub);
     thread::spawn(move || loop {
                       let (key, msg) = crx_sub.recv().unwrap();
                       forward::chain_pool(&pool, &tx, key_to_id(&key), msg);
@@ -96,7 +96,7 @@ fn main() {
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
     ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
 
-    let status : Status = st.into();
+    let status: Status = st.into();
     let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
     trace!("chain.status {:?}, {:?}", status.get_height(), status.get_hash());
     ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();

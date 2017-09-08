@@ -91,7 +91,7 @@ impl Synchronizer {
             trace!("chain after sync current height {:?}  known height{:?}", self.chain.get_current_height(), self.chain.get_max_height());
             ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
 
-            let status : Status = rich_status.into();
+            let status: Status = rich_status.into();
             let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
             trace!("add_block chain.status {:?}, {:?}", status.get_height(), status.get_hash());
             ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();

@@ -27,7 +27,7 @@ pub struct Role {
 }
 
 impl Operate for Role {
-    fn modify_element(&mut self, element: &Vec<String>, action: ElementAction){
+    fn modify_element(&mut self, element: &Vec<String>, action: ElementAction) {
         // check the permission
         check(&self.name, &"update_group".to_string());
         match action {
@@ -45,5 +45,4 @@ impl Role {
     pub fn delete_permission(&mut self, element: &Vec<String>) {
         self.permissions = diff(&self.permissions, element);
     }
-
 }

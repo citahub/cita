@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::switch::Switch;
-use super::operate::{Operate, check, union, diff};
 use super::action::ElementAction;
+use super::operate::{Operate, check, union, diff};
+use super::switch::Switch;
 
 
 #[derive(Clone, Debug)]
@@ -32,7 +32,7 @@ pub struct Group {
     switch: Switch,
 }
 
-impl Operate for Group{
+impl Operate for Group {
     fn modify_element(&mut self, element: &Vec<String>, action: ElementAction) {
         // check the permission
         check(&self.name, &"update_group".to_string());
@@ -66,13 +66,13 @@ impl Group {
         self.users = diff(&self.users, element);
     }
 
-//    pub fn add_user(&mut self, user: String) {
-//        self.users.push(user);
-//    }
-//
-//    pub fn delete_user(&mut self, user: String) -> Option<String> {
-//        self.users.remove_item(&user)
-//    }
+    //    pub fn add_user(&mut self, user: String) {
+    //        self.users.push(user);
+    //    }
+    //
+    //    pub fn delete_user(&mut self, user: String) -> Option<String> {
+    //        self.users.remove_item(&user)
+    //    }
 
     pub fn is_exist_user(&self, user: &String) -> bool {
         for val in &self.users {

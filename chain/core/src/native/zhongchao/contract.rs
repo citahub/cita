@@ -20,10 +20,10 @@
 ///
 
 use super::*;
-use native::permission::action::ElementAction;
-use std::str;
-use rustc_hex::ToHex;
 use super::storage::{Array, Scalar, Map};
+use native::permission::action::ElementAction;
+use rustc_hex::ToHex;
+use std::str;
 
 pub struct ZcPermission {
     // Key is signature of function in the contract, value is contract function
@@ -69,7 +69,7 @@ impl ZcPermission {
     }
 
     // TODO init
-    pub fn init(user_send: &String, user_create: &String, ext: &mut Ext)  {
+    pub fn init(user_send: &String, user_create: &String, ext: &mut Ext) {
 
         let send_array = Array::new(H256::from(1));
         let create_array = Array::new(H256::from(0));
@@ -107,13 +107,13 @@ impl ZcPermission {
                 let length = apply_sender.get_len(ext).unwrap();
                 apply_sender.set_bytes(ext, length, user.clone());
                 true
-            },
+            }
             "creator" => {
                 let apply_creator = Array::new(H256::from(2));
                 let length = apply_creator.get_len(ext).unwrap();
                 apply_creator.set_bytes(ext, length, user.clone());
                 true
-            },
+            }
             _ => false,
         }
     }
@@ -135,7 +135,7 @@ impl ZcPermission {
                 // when verified all the application, set length to zero
                 apply_sender.set_len(ext, 0u64);
                 true
-            },
+            }
             "creator" => {
                 let create_group = Array::new(H256::from(0));
                 let group_length = create_group.get_len(ext).unwrap();
@@ -149,7 +149,7 @@ impl ZcPermission {
                 }
                 apply_creator.set_len(ext, 0u64);
                 true
-            },
+            }
             _ => false,
         }
     }
@@ -190,7 +190,7 @@ impl ZcPermission {
     }
 
     // query the permission
-    pub fn query_group(params: & ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
+    pub fn query_group(params: &ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
         // TODO add return value to 'ret'
         let sender = params.sender.to_hex();
         if let Some(ref data) = params.data {
@@ -355,5 +355,4 @@ impl ZcPermission {
         }
         Ok(GasLeft::Known(U256::from(0)))
     }
-
 }

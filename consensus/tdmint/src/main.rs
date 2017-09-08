@@ -38,7 +38,6 @@ extern crate cita_log;
 extern crate cpuprofiler;
 extern crate authority_manage;
 extern crate engine_json;
-extern crate uuid;
 
 use clap::App;
 use log::LogLevelFilter;
@@ -125,6 +124,7 @@ fn main() {
     //main tendermint loop module
     let spec = Spec::new_test_tendermint(config_path);
     let dispatch = Arc::new(Dispatchtx::new(spec.params.tx_filter_size, spec.params.block_tx_limit, spec.params.tx_pool_size));
+
     sub_new_tx(dispatch.clone(), tx_pool_thread_num);
     info!("main loop start **** ");
     let mainthd = thread::spawn(move || {

@@ -18,22 +18,69 @@
 extern crate util;
 extern crate bincode;
 extern crate rustc_serialize;
-
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+extern crate libproto;
 mod wal;
 
 use bincode::{serialize, deserialize, Infinite};
+use libproto::blockchain::RichStatus;
+use std::collections::HashMap;
+use std::convert::From;
 use util::Address;
 use wal::Wal;
 
 const DATA_PATH: &'static str = "DATA_PATH";
 const LOG_TYPE_AUTHORITIES: u8 = 1;
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct AuthManageInfo {
+    pub nodes: Vec<Address>,
+    pub roles: HashMap<Address, Vec<String>>,
+}
+
+impl AuthManageInfo {
+    pub fn new() -> AuthManageInfo {
+        AuthManageInfo {
+            nodes: vec![],
+            roles: HashMap::new(),
+        }
+
+    }
+
+    pub fn into(self, height: u64, hash: Vec<u8>) -> RichStatus {
+        let mut status = RichStatus::new();
+        status.set_data(serde_json::to_string(&self).expect("rich status serde error!"));
+        status.set_hash(hash);
+        status.set_height(height);
+        status
+    }
+
+    pub fn into_string(self) -> String {
+        serde_json::to_string(&self).expect("rich status serde error!")
+    }
+
+    pub fn clear(&mut self) {
+        self.nodes.clear();
+        self.roles.clear();
+    }
+}
+
+impl From<RichStatus> for AuthManageInfo {
+    fn from(auth: RichStatus) -> AuthManageInfo {
+        serde_json::from_str(auth.get_data()).expect("rich status serde error!")
+    }
+}
+
+
 #[derive(Debug)]
 pub struct AuthorityManage {
-    pub authorities: Vec<Address>,
-    pub authority_n: usize,
     authorities_log: Wal,
-    pub authorities_old: Vec<Address>,
+    pub authorities: AuthManageInfo,
+    pub authority_n: usize,
+    pub authorities_old: AuthManageInfo,
     pub authority_n_old: usize,
     pub authority_h_old: usize,
 }
@@ -43,10 +90,10 @@ impl AuthorityManage {
         let logpath = ::std::env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/authorities";
 
         let mut authority_manage = AuthorityManage {
-            authorities: Vec::new(),
-            authority_n: 0,
             authorities_log: Wal::new(&*logpath).unwrap(),
-            authorities_old: Vec::new(),
+            authorities: AuthManageInfo::new(),
+            authority_n: 0,
+            authorities_old: AuthManageInfo::new(),
             authority_n_old: 0,
             authority_h_old: 0,
         };
@@ -55,14 +102,14 @@ impl AuthorityManage {
         if !vec_out.is_empty() {
             //out 转换成authorities;
             if let Ok((h, authorities_old, authorities)) = deserialize(&(vec_out[0].1)) {
-                let auth_old: Vec<Address> = authorities_old;
-                let auth: Vec<Address> = authorities;
+                let auth_old: AuthManageInfo = authorities_old;
+                let auth: AuthManageInfo = authorities;
 
-                authority_manage.authorities.extend_from_slice(&auth);
-                authority_manage.authority_n = authority_manage.authorities.len();
+                authority_manage.authorities = auth;
+                authority_manage.authority_n = authority_manage.authorities.nodes.len();
 
-                authority_manage.authorities_old.extend_from_slice(&auth_old);
-                authority_manage.authority_n_old = authority_manage.authorities_old.len();
+                authority_manage.authorities_old = auth_old;
+                authority_manage.authority_n_old = authority_manage.authorities_old.nodes.len();
                 authority_manage.authority_h_old = h;
             }
         }
@@ -70,18 +117,15 @@ impl AuthorityManage {
         authority_manage
     }
 
-    pub fn receive_authorities_list(&mut self, height: usize, authorities: Vec<Address>) {
+    pub fn receive_authorities_list(&mut self, height: usize, authorities: AuthManageInfo) {
 
         if self.authorities != authorities {
-
-            self.authorities_old.clear();
-            self.authorities_old.extend_from_slice(&self.authorities);
+            let mut authorities = authorities;
+            std::mem::swap(&mut self.authorities, &mut authorities);
+            self.authorities_old = authorities;
             self.authority_n_old = self.authority_n;
             self.authority_h_old = height;
-
-            self.authorities.clear();
-            self.authorities.extend_from_slice(&authorities);
-            self.authority_n = self.authorities.len();
+            self.authority_n = self.authorities.nodes.len();
 
             let bmsg = serialize(&(height, self.authority_n_old.clone(), self.authorities.clone()), Infinite).unwrap();
             let _ = self.authorities_log.save(LOG_TYPE_AUTHORITIES, &bmsg);

@@ -29,6 +29,7 @@
 // use std::sync::mpsc::{channel, Sender};
 // use types::ids::BlockId;
 
+use authority_manage::AuthManageInfo;
 use util::Address;
 // use std::collections::HashSet;
 
@@ -50,7 +51,7 @@ use util::Address;
 // }
 
 pub trait NodeManager {
-    fn read(&self) -> Vec<Address>;
+    fn read(&self) -> AuthManageInfo;
 
     // fn add_node(&self, node: Address) -> Vec<Address>;
     // fn add_nodes(&self, nodes: HashSet<Address>) -> Vec<Address>;

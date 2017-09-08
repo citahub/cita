@@ -37,13 +37,13 @@ pub fn union(one: &Vec<String>, other: &Vec<String>) -> Vec<String> {
 }
 
 // intersection of two string vector and return a new string vector
-pub fn intersection(one: &Vec<String>, other: &Vec<String>) -> Vec<String>{
+pub fn intersection(one: &Vec<String>, other: &Vec<String>) -> Vec<String> {
 
     vec![]
 }
 
 // diff of two string vector and return a new string vector
-pub fn diff(one: &Vec<String>, other: &Vec<String>) -> Vec<String>{
+pub fn diff(one: &Vec<String>, other: &Vec<String>) -> Vec<String> {
 
     vec![]
 }

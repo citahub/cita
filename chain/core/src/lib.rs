@@ -55,6 +55,7 @@ extern crate ethabi;
 extern crate test;
 #[cfg(test)]
 extern crate cita_crypto;
+extern crate authority_manage;
 
 pub mod state;
 pub mod account_db;

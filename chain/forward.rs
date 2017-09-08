@@ -56,7 +56,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
         MsgClass::REQUEST(mut req) => {
             let mut response = request::Response::new();
             response.set_request_id(req.take_request_id());
-            let mut topic = "chain.rpc".to_string();
+            let topic = "chain.rpc".to_string();
             match req.req.clone().unwrap() {
                 // TODO: should check the result, parse it first!
                 Request::block_number(_) => {
@@ -128,9 +128,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let call_request = CallRequest::from(call);
                     let result = chain.eth_call(call_request, block_id.into());
                     response.set_call_result(result.unwrap_or_default());
-                    if id == submodules::CONSENSUS {
-                        topic = "chain.role".to_string();
-                    }
                 }
 
                 Request::filter(encoded) => {

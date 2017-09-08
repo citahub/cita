@@ -26,4 +26,3 @@ pub use self::group::Group;
 pub use self::operate::Operate;
 pub use self::role::Role;
 pub use self::switch::Switch;
-

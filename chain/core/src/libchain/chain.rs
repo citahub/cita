@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use authority_manage::AuthManageInfo;
 use bloomchain as bc;
 use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
@@ -40,7 +41,9 @@ use libchain::extras::*;
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
 use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus};
+use libproto::factory;
 use libproto::request::FullTransaction;
+
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{Receipt, LocalizedReceipt};
@@ -115,52 +118,6 @@ impl Status {
         let mut ps = ProtoStatus::new();
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
-        ps
-    }
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct RichStatus {
-    number: u64,
-    hash: H256,
-    nodes: Vec<Address>,
-}
-
-impl RichStatus {
-    fn new() -> Self {
-        RichStatus {
-            number: 0,
-            hash: H256::default(),
-            nodes: vec![],
-        }
-    }
-
-    fn hash(&self) -> &H256 {
-        &self.hash
-    }
-
-    fn number(&self) -> u64 {
-        self.number
-    }
-
-    fn set_hash(&mut self, h: H256) {
-        self.hash = h;
-    }
-
-    fn set_number(&mut self, n: u64) {
-        self.number = n;
-    }
-
-    fn set_nodes(&mut self, nodes: Vec<Address>) {
-        self.nodes = nodes
-    }
-
-    fn protobuf(&self) -> ProtoRichStatus {
-        let mut ps = ProtoRichStatus::new();
-        ps.set_height(self.number());
-        ps.set_hash(self.hash().to_vec());
-        let node_list = self.nodes.clone().into_iter().map(|address| address.to_vec()).collect();
-        ps.set_nodes(RepeatedField::from_vec(node_list));
         ps
     }
 }
@@ -283,16 +240,10 @@ impl Chain {
             polls_filter: Arc::new(Mutex::new(PollManager::new())),
         };
 
-        let mut status = RichStatus::new();
-        status.set_hash(header.clone().hash());
-        status.set_number(header.clone().number());
-        let nodes: Vec<Address> = raw_chain.read();
-        status.set_nodes(nodes);
-        let chain = Arc::new(raw_chain);
 
-
-        chain.build_last_hashes(Some(status.hash().clone()), status.number());
-        (chain, status.protobuf())
+        let status = factory::crate_rich_status(header.hash(), header.number(), raw_chain.read().into_string());
+        raw_chain.build_last_hashes(Some(header.hash()), header.number());
+        (Arc::new(raw_chain), status)
     }
 
     /// Get block number by BlockId
@@ -875,16 +826,10 @@ impl Chain {
                 }
 
                 let status = self.save_status(&mut batch);
-
-                let nodes: Vec<Address> = self.read();
-                let mut rich_status = RichStatus::new();
-                rich_status.set_hash(*status.hash());
-                rich_status.set_number(status.number());
-                rich_status.set_nodes(nodes);
-
+                let rich_status = factory::crate_rich_status(status.hash().clone(), status.number(), self.read().into_string());
                 self.db.write(batch).expect("DB write failed.");
                 info!("chain update {:?}", height);
-                Some(rich_status.protobuf())
+                Some(rich_status)
             } else {
                 warn!("add block failed");
                 None
@@ -966,13 +911,16 @@ impl Chain {
 }
 
 impl NodeManager for Chain {
-    fn read(&self) -> Vec<Address> {
-        vec![
-            H160::from_str("3650a344a004de80088b832251b8c5cd55ee4165").unwrap(),
-            H160::from_str("7966730b4b5f8c5548e7bd8fedaaa53a2297a553").unwrap(),
-            H160::from_str("a1282f6edd569636b74a927c215b05485939de8e").unwrap(),
-            H160::from_str("fa6021cb37f913b454e89ac955fe34479f259864").unwrap(),
-        ]
+    fn read(&self) -> AuthManageInfo {
+        AuthManageInfo {
+            nodes: vec![
+                H160::from_str("3650a344a004de80088b832251b8c5cd55ee4165").unwrap(),
+                H160::from_str("7966730b4b5f8c5548e7bd8fedaaa53a2297a553").unwrap(),
+                H160::from_str("a1282f6edd569636b74a927c215b05485939de8e").unwrap(),
+                H160::from_str("fa6021cb37f913b454e89ac955fe34479f259864").unwrap(),
+            ],
+            roles: HashMap::new(),
+        }
     }
 }
 
