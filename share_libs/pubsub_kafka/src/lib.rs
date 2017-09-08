@@ -1,108 +1,209 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+#[macro_use] extern crate log;
+extern crate clap;
+extern crate futures;
+extern crate rdkafka;
+extern crate rdkafka_sys;
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-extern crate kafka;
-extern crate env_logger;
-
-use std::time::Duration;
-
-use kafka::producer::{Producer,Record,RequiredAcks};
-use kafka::consumer::{Consumer,FetchOffset,GroupOffsetStorage};
-use kafka::error::Error as kafkaError;
-
-use::std::sync::mpsc::Receiver;
-use::std::sync::mpsc::Sender;
 use std::thread;
+use std::sync::mpsc::Receiver;
+use std::sync::mpsc::Sender;
+use clap::{App, Arg};
+use futures::*;
 
-pub fn start_kafkamq(name:&str,keys:Vec<String>,tx:Sender<(String,Vec<u8>)>,rx:Receiver<(String,Vec<u8>)>){
-    println!("into start_kafkamq");
-    env_logger::init().unwrap();
-    let mut brokers:Vec<String> = Vec::new();
-    brokers.push("localhost:9092".to_string());
-    let group = "my-group".to_owned(); 
-//producer thread
-    let brokers1 = brokers.clone();
-    let  _=thread::Builder::new().name("publisher".to_string()).spawn(move || {
-        println!("producer thread running!");
-        let mut tmp = 0;
-       loop{
-           tmp=tmp+1;
-           println!("tmp:{}",tmp);
-            let mut ret = rx.recv();
-            if ret.is_err(){
-                println!("break!!!!!");
-                break;
-            }
-            let(topic,msg)=ret.unwrap(); 
-            println!("{},{:?}",topic,msg);
-        if let Err(e) = produce_message(&msg, &topic, brokers1.clone()) {
-            println!("Failed producing messages: {}", e);
-        }
-                
-        }
-        
-    });
-//comsumer thread
-    let brokers2 = brokers.clone();
-    let _=thread::Builder::new().name("subscriber".to_string()).spawn(move ||{
-        println!("consumer thread running!");
-     for topic in keys
-     {
-        let mut con =    Consumer::from_hosts(brokers2.clone())
-                        .with_topic(topic.to_string())
-                        //.with_group(group)
-                        .with_fallback_offset(FetchOffset::Earliest)
-                        .with_offset_storage(GroupOffsetStorage::Kafka)
-                        .create().unwrap();
+use rdkafka::Message;
+use rdkafka::client::{Context};
+use rdkafka::consumer::{Consumer, ConsumerContext, CommitMode, Rebalance};
+use rdkafka::consumer::stream_consumer::StreamConsumer;
+use rdkafka::config::{ClientConfig, TopicConfig, RDKafkaLogLevel};
+use rdkafka::producer::FutureProducer;
+use rdkafka::error::KafkaResult;
 
-        
-        loop{
-            let mss = con.poll().unwrap();
-            if mss.is_empty(){
-                println!("No Messages available right now.");
-            }
-            for ms in mss.iter(){
-                for m in ms.messages(){
-                    println!("{:?}",m.value);
-                    let _=tx.send((topic.to_string(),m.value.to_vec()));
-                } 
-                let _=con.consume_messageset(ms);
-            
-            }
-            con.commit_consumed().unwrap();
-        }
-        
+// The Context can be used to change the behavior of producers and consumers by adding callbacks
+// that will be executed by librdkafka.
+// This particular ConsumerContext sets up custom callbacks to log rebalancing events.
+struct ConsumerContextExample;
+
+impl Context for ConsumerContextExample {}
+
+impl ConsumerContext for ConsumerContextExample {
+    fn pre_rebalance(&self, rebalance: &Rebalance) {
+        info!("Pre rebalance {:?}", rebalance);
     }
+
+    fn post_rebalance(&self, rebalance: &Rebalance) {
+        info!("Post rebalance {:?}", rebalance);
+    }
+
+    fn commit_callback(&self, _result: KafkaResult<()>, _offsets: *mut rdkafka_sys::RDKafkaTopicPartitionList) {
+        info!("Committing offsets");
+    }
+}
+
+
+
+
+//producer thread 
+pub fn  start_kafka(name: &str, keys: Vec<&str>, tx: Sender<(String,Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
+    println!("start kafka!");
+    let brokers = "localhost:9092";
+    let _ = thread::Builder::new().name("publisher".to_string()).spawn(move || {
+        let producer = ClientConfig::new()
+            .set("bootstrap.servers", brokers)
+            .set("group.id","example_consumer_group_id")
+            .set_default_topic_config(TopicConfig::new()
+                .set("produce.offset.report", "true")
+                .finalize())
+            .create::<FutureProducer<_>>()
+            .expect("Producer creation error");
+
+        loop {
+            let ret = rx.recv();
+            if ret.is_err() {
+                break;
+            }   
+                    let (topic, msg) = ret.unwrap();  
+            println!("topic:{},msg:{:?}",topic,msg);   
+            let futures = (0..5)
+                .map(|i| {
+                    let value = format!("Message {}", i);
+                    // The send operation on the topic returns a future, that will be completed once the
+                    // result or failure from Kafka will be received.
+                    producer.send_copy(&topic, None, Some(&value), Some(&msg), None)
+                        .map(move |delivery_status| {   // This will be executed onw the result is received
+                            info!("Delivery status for message {} received", i);
+                            delivery_status
+                        })
+                })
+                .collect::<Vec<_>>();
+
+            // This loop will wait until all delivery statuses have been received received.
+            for future in futures {
+                info!("Future completed. Result: {:?}", future.wait());
+            } 
+        }     
+       
+                
     });
-}
 
-fn produce_message<'a,'b>(data:&'a[u8],topic:&'b str,brokers:Vec<String>)->Result<(),kafkaError>{
-    println!("About to publish a message at {:?} to: {}", brokers, topic);
 
-    let mut producer = try!(Producer::from_hosts(brokers.to_owned())
-                            .with_ack_timeout(Duration::from_secs(1))
-                            .with_required_acks(RequiredAcks::One)
-                            .create());
-    try!(producer.send(&Record {
-                           topic: topic,
-                           partition: -1,
-                           key: (),
-                           value: data,
-                       }));
-    try!(producer.send(&Record::from_value(topic, data)));
 
-    Ok(())
-}
+
+// A type alias with your custom consumer can be created for convenience.
+// type LoggingConsumer = StreamConsumer<ConsumerContextExample>;
+
+// let matches = App::new("consumer example")
+//         .version(option_env!("CARGO_PKG_VERSION").unwrap_or(""))
+//         .about("Simple command line consumer")
+//         .arg(Arg::with_name("group-id")
+//              .short("g")
+//              .long("group-id")
+//              .help("Consumer group id")
+//              .takes_value(true)
+//              .default_value("example_consumer_group_id"))
+//         .get_matches();
+
+// let group_id = matches.value_of("group-id").unwrap();
+// let topics = "hello";
+// let brokers = "localhost:9092";
+
+// let context = ConsumerContextExample;
+//     let consumer = ClientConfig::new()
+//         .set("group.id", group_id)
+//         .set("bootstrap.servers", brokers)
+//         .set("enable.partition.eof", "false")
+//         .set("session.timeout.ms", "6000")
+//         .set("enable.auto.commit", "true")
+//         .set("statistics.interval.ms", "30000")
+//         .set_log_level(RDKafkaLogLevel::Debug)
+//         .create_with_context::<_, LoggingConsumer>(context)
+//         .expect("Consumer creation failed");
+
+ 
+        
+
+
+// //consumer thread
+//     let _ = thread::Builder::new().name("subscriber".to_string()).spawn(move || {
+//         consumer.subscribe(&[topics])
+//         .expect("Can't subscribe to specified topics");
+//         println!("topic:{}",topics);
+
+//  // consumer.start() returns a stream. The stream can be used ot chain together expensive steps,
+//     // such as complex computations on a thread pool or asynchronous IO.
+//         let message_stream = consumer.start();
+//         println!("message_staream");
+//         for message in message_stream.wait() {
+//             println!("into message_stream");
+//             match message {
+//                 Err(_) => {
+//                     warn!("Error while reading from stream.");
+//                     println!("err");
+//                 },
+//                 Ok(Ok(m)) => {
+//                     println!("ok branch");
+//                     println!("{:?}",m);
+//                     let key = match m.key_view::<[u8]>() {
+//                         None => &[],
+//                         Some(Ok(s)) => s,
+//                         Some(Err(e)) => {
+//                             warn!("Error while deserializing message key: {:?}", e);
+//                             println!("Error while deserializing message key: {:?}", e);
+//                             &[]
+//                         },
+//                     };
+//                     let payload = match m.payload_view::<str>() {
+//                         None => "",
+//                         Some(Ok(s)) => s,
+//                         Some(Err(e)) => {
+//                             warn!("Error while deserializing message payload: {:?}", e);
+//                             println!("Error while deserializing message payload: {:?}", e);
+//                             ""
+//                         },
+//                     };
+//                     info!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}",
+//                         key, payload, m.topic(), m.partition(), m.offset());
+//                     println!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}",
+//                         key, payload, m.topic(), m.partition(), m.offset());
+//                     consumer.commit_message(&m, CommitMode::Async).unwrap();
+//                 },
+//                 Ok(Err(e)) => {
+//                     println!("kafka error");
+//                     warn!("Kafka error: {}", e);
+//                 },
+//             };
+//         }
+//     });
+ }
+// fn produce(brokers: &str, topic_name: &str) {
+//     let producer = ClientConfig::new()
+//         .set("bootstrap.servers", brokers)
+//         .set("group.id","example_consumer_group_id")
+//         .set_default_topic_config(TopicConfig::new()
+//             .set("produce.offset.report", "true")
+//             .finalize())
+//         .create::<FutureProducer<_>>()
+//         .expect("Producer creation error");
+
+//     // This loop is non blocking: all messages will be sent one after the other, without waiting
+//     // for the results.
+//     let futures = (0..5)
+//         .map(|i| {
+//             let value = format!("Message {}", i);
+//             // The send operation on the topic returns a future, that will be completed once the
+//             // result or failure from Kafka will be received.
+//             producer.send_copy(topic_name, None, Some(&value), Some(&vec![0, 1, 2, 3]), None)
+//                 .map(move |delivery_status| {   // This will be executed onw the result is received
+//                     info!("Delivery status for message {} received", i);
+//                     delivery_status
+//                 })
+//         })
+//         .collect::<Vec<_>>();
+
+//     // This loop will wait until all delivery statuses have been received received.
+//    for future in futures {
+//         info!("Future completed. Result: {:?}", future.wait());
+//     }
+// }
+
+                                                                                                              
+
