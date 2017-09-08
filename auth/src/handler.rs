@@ -107,7 +107,6 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
                 let tx_hash = H256::from_slice(req.get_tx_hash());
                 if let Some(resp) = cache.get(&tx_hash) {
                     if resp.get_ret() == Ret::Ok {
-                        trace!("tx {:?} verify result: {:?}", tx_hash, resp);
                         continue;
                     }
                     blkresp.set_ret(Ret::Err);
@@ -115,10 +114,11 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
                 }
                 let resp = verfiy_tx(req, verifier);
                 let ret = resp.get_ret();
-                cache.insert(tx_hash, resp);
+                cache.insert(tx_hash, resp.clone());
                 if ret == Ret::Ok {
                     continue;
                 }
+                trace!("tx {:?} verify result: {:?}", tx_hash, resp);
                 blkresp.set_ret(Ret::Err);
                 break;
             }

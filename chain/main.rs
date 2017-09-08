@@ -98,10 +98,10 @@ fn main() {
     synchronizer.sync_block_tx_hashes(st.get_height(), ctx_pub.clone());
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
-    let mut auth_handler = AuthHandler::new(chain1.clone(), rx, ctx_pub1.clone());
     thread::spawn(move || loop {
-                      auth_handler.chain_result();
-                  });
+        let chain = chain1.clone();
+        forward::chain_result(chain, &rx, ctx_pub1.clone());
+    });
 
     thread::spawn(move || loop {
                       let notify = sync_rx.recv_timeout(Duration::new(8, 0));

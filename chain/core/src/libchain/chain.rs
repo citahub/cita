@@ -135,7 +135,7 @@ pub struct Chain {
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
     pub max_height: AtomicUsize,
-    pub block_map: RwLock<BTreeMap<u64, (BlockSource, Block)>>,
+    pub block_map: RwLock<BTreeMap<u64, (BlockSource, Block, bool)>>,
     pub db: Arc<KeyValueDB>,
     pub sync_sender: Mutex<Sender<u64>>,
     pub state_db: StateDB,
