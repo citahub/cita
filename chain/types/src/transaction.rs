@@ -172,7 +172,7 @@ impl Transaction {
     pub fn new(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
         // let nonce = plain_transaction.nonce.parse::<u32>().map_err(|_| Error::ParseError)?;
         Ok(Transaction {
-               nonce: U256::from_str(plain_transaction.get_nonce()).map_err(|_| Error::ParseError)?,
+               nonce: U256::from_str(plain_transaction.get_nonce()).expect("raw transaction nonce parse error!!"),
                gas_price: U256::default(),
                gas: U256::from(plain_transaction.get_quota()),
                action: {
@@ -181,7 +181,7 @@ impl Transaction {
                        true => Action::Create,
                        false => match to {
                            STORE_ADDRESS => Action::Store,
-                           _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
+                           _ => Action::Call(Address::from_str(to).expect("address parse error!!")),
                        },
                    }
                },
