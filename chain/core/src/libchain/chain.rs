@@ -285,12 +285,11 @@ impl Chain {
         let mut status = RichStatus::new();
         status.set_hash(header.clone().hash());
         status.set_number(header.clone().number());
-        let nodes: Vec<Address> = NodeManager::read(&raw_chain);
-        status.set_nodes(nodes);
+
         let chain = Arc::new(raw_chain);
-
-
         chain.build_last_hashes(Some(status.hash().clone()), status.number());
+        let nodes: Vec<Address> = NodeManager::read(&chain);
+        status.set_nodes(nodes);
         (chain, status.protobuf())
     }
 
