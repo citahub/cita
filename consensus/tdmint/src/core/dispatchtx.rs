@@ -110,6 +110,7 @@ impl Dispatchtx {
     fn receive_new_transaction(&self, signed_tx: Option<SignedTransaction>, result: Option<(H256, Ret)>, tx_pub: Sender<(String, Vec<u8>)>) {
         let mut is_busy = false;
         let mut is_success = false;
+        let tx_is_valid = signed_tx.is_some();
         signed_tx.map(|signed_tx| {
             is_busy = self.tx_flow_control();
             if !is_busy {
@@ -117,6 +118,7 @@ impl Dispatchtx {
             }
         });
 
+        // tx from net, we don't need to reply
         if result.is_none() {
             return;
         }
@@ -134,13 +136,14 @@ impl Dispatchtx {
         };
         tx_response.set_result(ret.into_bytes());
 
-        if !is_success {
-            tx_response.set_result(String::from("4:DUP").into_bytes());
+        if tx_is_valid {
+            if is_busy {
+                tx_response.set_result(String::from("BUSY").into_bytes());
+            } else if !is_success {
+                tx_response.set_result(String::from("4:DUP").into_bytes());
+            }
         }
 
-        if is_busy {
-            tx_response.set_result(String::from("BUSY").into_bytes());
-        }
         let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, tx_response.write_to_bytes().unwrap());
         trace!("response new tx {:?}", tx_response.get_hash());
         tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();

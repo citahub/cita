@@ -62,6 +62,7 @@ impl TxHandler {
                         txs.insert(hash, (id, unverified_tx.clone()));
                     }
                     let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_TX_REQ, communication::MsgType::VERIFY_TX_REQ, verify_tx_req.write_to_bytes().unwrap());
+                    trace!("send verify req, hash: {:?}", hash);
                     tx_pub.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
                 MsgClass::VERIFYTXRESP(resp) => {
@@ -71,6 +72,7 @@ impl TxHandler {
                         let mut txs = unverified.lock().unwrap();
                         txs.remove(&tx_hash)
                     };
+                    trace!("receive verify resp, hash: {:?}, ret: {:?}", tx_hash, resp.get_ret());
 
                     unverified_tx.map(|(id, unverified_tx)| {
                         let mut signed_tx_op: Option<SignedTransaction> = None;
