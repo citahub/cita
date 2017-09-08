@@ -153,13 +153,13 @@ mod tests {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         let pubkey = keypair.pubkey();
-        let tx = generate_tx(vec![1], 999, privkey);
+        let tx = generate_tx(vec![1], 99, privkey);
 
         let (tx_pub, rx_pub) = channel();
         //verify tx
         let mut v = Verifier::new();
         let mut c = VerifyCache::new(1000);
-        v.update_hashes(1, vec![], &tx_pub);
+        v.update_hashes(0, vec![], &tx_pub);
 
         handle_msg(generate_msg(tx), &tx_pub, &mut v, &mut c);
         let (key1, resp_msg) = rx_pub.recv().unwrap();
@@ -180,13 +180,13 @@ mod tests {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         let pubkey = keypair.pubkey();
-        let tx = generate_tx(vec![1], 999, privkey);
+        let tx = generate_tx(vec![1], 99, privkey);
 
         let (tx_pub, rx_pub) = channel();
         //verify tx
         let mut v = Verifier::new();
         let mut c = VerifyCache::new(1000);
-        v.update_hashes(1, vec![], &tx_pub);
+        v.update_hashes(0, vec![], &tx_pub);
 
         handle_msg(generate_msg(tx.clone()), &tx_pub, &mut v, &mut c);
         let (key1, resp_msg) = rx_pub.recv().unwrap();
@@ -217,13 +217,13 @@ mod tests {
     fn verify_blk_ok() {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let tx = generate_tx(vec![1], 999, privkey);
+        let tx = generate_tx(vec![1], 99, privkey);
 
         let (tx_pub, rx_pub) = channel();
         //verify tx
         let mut v = Verifier::new();
         let mut c = VerifyCache::new(1000);
-        v.update_hashes(1, vec![], &tx_pub);
+        v.update_hashes(0, vec![], &tx_pub);
 
         handle_msg(generate_blk_msg(tx), &tx_pub, &mut v, &mut c);
         let (key1, resp_msg) = rx_pub.recv().unwrap();

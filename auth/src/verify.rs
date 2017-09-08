@@ -40,9 +40,6 @@ impl Verifier {
     }
 
     pub fn update_hashes(&mut self, h: u64, hashes: Vec<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
-        if h == 0 {
-            return;
-        }
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
             self.height_low =  if h < BLOCKLIMIT {
@@ -50,7 +47,7 @@ impl Verifier {
             } else {
                 Some(h - BLOCKLIMIT + 1)
             };
-            for i in self.height_low.unwrap()..(h - 1) {
+            for i in self.height_low.unwrap()..h {
                 let mut req = BlockTxHashesReq::new();
                 req.set_height(i as u64);
                 let msg = factory::create_msg(submodules::AUTH, topics::BLOCK_TXHASHES_REQ, communication::MsgType::BLOCK_TXHASHES_REQ, req.write_to_bytes().unwrap());
@@ -108,7 +105,8 @@ impl Verifier {
     }
 
     pub fn verify_valid_until_block(&self, valid_until_block: u64) -> bool {
-        valid_until_block == 0 || valid_until_block > self.height_latest.unwrap()
+        let height = self.height_latest.unwrap();
+        valid_until_block > height && valid_until_block <= (height + BLOCKLIMIT)
     }
 }
 
@@ -122,9 +120,9 @@ mod tests {
         let mut v = Verifier::new();
         assert_eq!(v.is_inited(), false);
         let (tx_pub, _) = channel();
-        v.update_hashes(1, vec![], &tx_pub);
+        v.update_hashes(0, vec![], &tx_pub);
         assert_eq!(v.is_inited(), true);
-        assert_eq!(v.get_height_latest(), Some(1));
+        assert_eq!(v.get_height_latest(), Some(0));
         assert_eq!(v.get_height_low(),  Some(0));
     }
 
@@ -135,8 +133,8 @@ mod tests {
         v.update_hashes(100, vec![], &tx_pub);
         assert_eq!(v.is_inited(), false);
         assert_eq!(v.get_height_latest(),  Some(100));
-        assert_eq!(v.get_height_low(),  Some(0));
-        for i in 1..99 {
+        assert_eq!(v.get_height_low(),  Some(1));
+        for i in 0..99 {
             v.update_hashes(i, vec![], &tx_pub);
         }
         assert_eq!(v.is_inited(), false);
