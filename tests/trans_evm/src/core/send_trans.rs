@@ -170,16 +170,17 @@ impl Sendtx {
             let url = v_url[pos].clone();
             let keypair = self.random_generation().unwrap();
             let frompv = keypair.privkey();
+            let curh = self.get_height(url.clone());
             let tx = match action {
                 Action::Create => {
-                    Trans::generate_tx(&self.code, sender.clone(), frompv)
+                    Trans::generate_tx(&self.code, sender.clone(), frompv, curh)
                 }
                 Action::Call => {
                     //读取合约地址
-                    Trans::generate_tx(&self.code, sender.clone(), &frompv)
+                    Trans::generate_tx(&self.code, sender.clone(), &frompv, curh)
                 }
                 Action::Store => {
-                    Trans::generate_tx(&self.code, sender.clone(), frompv)
+                    Trans::generate_tx(&self.code, sender.clone(), frompv, curh)
                 }
             };
             {

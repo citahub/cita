@@ -90,7 +90,7 @@ send_tx() {
         ./benchmark.sh config_call.json >/dev/null
         if [ $? -ne 0 ]
         then  
-            exit
+            echo "call contract error"
         fi
         sleep 5
     done

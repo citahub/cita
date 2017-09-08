@@ -11,6 +11,7 @@ from secp256k1 import PrivateKey
 from ethereum.utils import sha3
 from tx_count import get_transaction_count
 import pysodium
+from block_number import block_number
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
@@ -54,23 +55,23 @@ def get_nonce(sender):
     return str(nonce)
 
 
-def generate_deploy_data(bytecode, privatekey, receiver=None, newcrypto=False):
+def generate_deploy_data(current_height, bytecode, privatekey, receiver=None, newcrypto=False):
     if newcrypto:
-        data = _blake2b_ed25519_deploy_data(bytecode, privatekey, receiver)
+        data = _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver)
     else:
-        data = _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver)
+        data = _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver)
 
     return data
 
 
-def _blake2b_ed25519_deploy_data(bytecode, privatekey, receiver=None):
+def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver=None):
     sender = get_sender()
     print(sender)
     nonce = get_nonce(sender)
     print("nonce is {}".format(nonce))
 
     tx = Transaction()
-    tx.valid_until_block = 4294967296
+    tx.valid_until_block = current_height + 88
     tx.nonce = nonce
     if receiver is not None:
         tx.to = receiver
@@ -96,7 +97,7 @@ def _blake2b_ed25519_deploy_data(bytecode, privatekey, receiver=None):
     return binascii.hexlify(unverify_tx.SerializeToString())
 
 
-def _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver=None):
+def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver=None):
     privkey = PrivateKey(hex2bytes(privatekey))
     sender = get_sender()
     print(sender)
@@ -104,7 +105,7 @@ def _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver=None):
     print("nonce is {}".format(nonce))
 
     tx = Transaction()
-    tx.valid_until_block = 4294967296
+    tx.valid_until_block = current_height + 88
     tx.nonce = nonce
     tx.quota = 99999999999
     if receiver is not None:
@@ -168,8 +169,9 @@ def main():
     blake2b_ed25519 = parse_arguments().newcrypto
     print(blake2b_ed25519)
     bytecode, privkey, receiver = _params_or_default()
+    current_height = int(block_number(), 16)
     data = generate_deploy_data(
-        bytecode, privkey, remove_hex_0x(receiver), blake2b_ed25519)
+        current_height, bytecode, privkey, remove_hex_0x(receiver), blake2b_ed25519)
     print("deploy code保存到../output/transaction/deploycode")
     print(data)
     save_deploy(data)
