@@ -62,7 +62,7 @@ impl Verifier {
             if h > current_height {
                 self.height_latest = Some(h);
                 self.height_low =  if h < BLOCKLIMIT {
-                    Some(1)
+                    Some(0)
                 } else {
                     Some(h - BLOCKLIMIT + 1)
                 };
@@ -125,7 +125,7 @@ mod tests {
         v.update_hashes(1, vec![], &tx_pub);
         assert_eq!(v.is_inited(), true);
         assert_eq!(v.get_height_latest(), Some(1));
-        assert_eq!(v.get_height_low(),  Some(1));
+        assert_eq!(v.get_height_low(),  Some(0));
     }
 
     #[test]
@@ -135,7 +135,7 @@ mod tests {
         v.update_hashes(100, vec![], &tx_pub);
         assert_eq!(v.is_inited(), false);
         assert_eq!(v.get_height_latest(),  Some(100));
-        assert_eq!(v.get_height_low(),  Some(1));
+        assert_eq!(v.get_height_low(),  Some(0));
         for i in 1..99 {
             v.update_hashes(i, vec![], &tx_pub);
         }

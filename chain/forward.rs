@@ -271,6 +271,8 @@ impl AuthHandler {
             MsgClass::BLOCK(block) => {
                 if id == submodules::NET {
                     let verify_req = block_verify_req(&block, self.verify_id);
+                    let blk_height = block.get_header().get_height();
+                    trace!("verify blk req, id: {}, height: {}", self.verify_id, blk_height);
                     self.unverified_blocks.insert(self.verify_id, block.clone());
                     self.verify_id += 1;
                     let msg = factory::create_msg(submodules::CHAIN, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
@@ -348,6 +350,7 @@ impl AuthHandler {
                 let verify_id = resp.get_id();
                 let block = self.unverified_blocks.remove(&verify_id);
                 block.map(|block| {
+                    trace!("receive blk verify response, id: {}, ret: {:?}, blk height: {}", verify_id, resp.get_ret(), block.get_header().get_height());
                     if resp.get_ret() == Ret::Ok {
                         let current_height = chain.get_current_height();
                         let mut guard = chain.block_map.write();

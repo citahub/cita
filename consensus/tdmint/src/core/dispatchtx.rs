@@ -124,7 +124,14 @@ impl Dispatchtx {
         let (hash, ret) = result.unwrap();
         let mut tx_response = TxResponse::new();
         tx_response.set_hash(hash.to_vec());
-        let ret = format!("{:?}", ret);
+        let ret = match ret {
+            Ret::Ok => "4:OK".to_string(),
+            Ret::Dup => "4:DUP".to_string(),
+            Ret::NotReady => "Not Ready".to_string(),
+            Ret::OutOfTime => "Out ot Time".to_string(),
+            Ret::BadSig => "BAD SIG".to_string(),
+            Ret::Err => "Err".to_string(),
+        };
         tx_response.set_result(ret.into_bytes());
 
         if !is_success {

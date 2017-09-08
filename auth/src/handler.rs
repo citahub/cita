@@ -107,6 +107,7 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
                 let tx_hash = H256::from_slice(req.get_tx_hash());
                 if let Some(resp) = cache.get(&tx_hash) {
                     if resp.get_ret() == Ret::Ok {
+                        trace!("tx {:?} verify result: {:?}", tx_hash, resp);
                         continue;
                     }
                     blkresp.set_ret(Ret::Err);
@@ -122,6 +123,7 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
                 break;
             }
             let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
+            trace!("receive verify blk req, id: {}, ret: {:?}, from: {}", id, blkresp.get_ret(), submodule);
             tx_pub.send((get_key(submodule, true), msg.write_to_bytes().unwrap())).unwrap();
         }
         _ => {}
