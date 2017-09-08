@@ -53,9 +53,9 @@ pub fn process(engine: Arc<Engine>, rx: &Receiver<(u32, u32, u32, MsgClass)>, tx
                 trace!("get new local tx {:?}", tx);
                 engine.receive_new_transaction(&tx, tx_pub, _origin, from_broadcast);
             }
-            MsgClass::STATUS(status) => {
-                trace!("get new local status {:?}", status.height);
-                engine.receive_new_status(status);
+            MsgClass::RICHSTATUS(rich_status) => {
+                trace!("get new local status {:?}", rich_status.height);
+                engine.receive_new_status(rich_status);
             }
             _ => {}
         }

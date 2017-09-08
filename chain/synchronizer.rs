@@ -24,7 +24,7 @@ use core::libchain::block::Block;
 use core::libchain::chain::Chain;
 use libproto;
 use libproto::*;
-use libproto::blockchain::Status;
+use libproto::blockchain::{Status, RichStatus};
 use protobuf::Message;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
@@ -84,10 +84,17 @@ impl Synchronizer {
 
     fn add_block(&self, ctx_pub: Sender<(String, Vec<u8>)>, blk: Block) {
         trace!("chain sync add blk {:?}", blk.number());
-        if let Some(st) = self.chain.set_block(blk) {
-            let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st.write_to_bytes().unwrap());
-            info!("chain after sync current height {:?}  known height{:?}", self.chain.get_current_height(), self.chain.get_max_height());
-            ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+        let rich_status = self.chain.set_block(blk);
+
+        if let Some(rich_status) = rich_status {
+            let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
+            trace!("chain after sync current height {:?}  known height{:?}", self.chain.get_current_height(), self.chain.get_max_height());
+            ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+
+            let status : Status = rich_status.into();
+            let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
+            trace!("add_block chain.status {:?}, {:?}", status.get_height(), status.get_hash());
+            ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
         }
     }
 }

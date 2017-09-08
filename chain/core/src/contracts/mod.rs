@@ -15,15 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod cache;
-pub mod chain;
-pub mod transaction;
-pub mod block;
-pub mod genesis;
-mod extras;
-pub mod call_request;
+//! System contracts.
 
-pub use self::genesis::Genesis;
-pub use libproto::*;
-pub use log::*;
-pub use util::journaldb;
+pub mod node_manager;
