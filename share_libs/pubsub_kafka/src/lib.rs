@@ -50,7 +50,6 @@ pub fn  start_kafka(name: & str, keys: Vec<String>, tx: Sender<(String,Vec<u8>)>
         println!("this is publisher");
         let producer = ClientConfig::new()
             .set("bootstrap.servers", brokers)
-            .set("group.id","example_consumer_group_id")
             .set_default_topic_config(TopicConfig::new()
                 .set("produce.offset.report", "true")
                 .finalize())
@@ -63,10 +62,8 @@ pub fn  start_kafka(name: & str, keys: Vec<String>, tx: Sender<(String,Vec<u8>)>
                 break;
             }   
             let (topic, msg) = ret.unwrap();  
-           println!("topic:{},msg:{:?}",topic,msg);   
-            let futures = (0..1)
-                .map(|i| {
-                    let value = format!("Message {}", 1);
+           println!("topic:{},msg:{:?}",topic,msg);
+
                     // The send operation on the topic returns a future, that will be completed once the
                     // result or failure from Kafka will be received.
                     producer.send_copy(&topic, None, Some(&msg), Some(&vec![0,1,2,3]), None)
@@ -74,10 +71,8 @@ pub fn  start_kafka(name: & str, keys: Vec<String>, tx: Sender<(String,Vec<u8>)>
                             println!("Delivery status for message {} received", 1);
                             delivery_status
                         }).wait();
-                })
-                .collect::<Vec<_>>();         
+       
         }
-            "hello"
      });
      //thread::sleep(Duration::new(10,0));
 
@@ -86,86 +81,78 @@ pub fn  start_kafka(name: & str, keys: Vec<String>, tx: Sender<(String,Vec<u8>)>
 //A type alias with your custom consumer can be created for convenience.
  type LoggingConsumer = StreamConsumer<ConsumerContextExample>;
 
-let matches = App::new("consumer example")
-        .version(option_env!("CARGO_PKG_VERSION").unwrap_or(""))
-        .about("Simple command line consumer")
-        .arg(Arg::with_name("group-id")
-             .short("g")
-             .long("group-id")
-             .help("Consumer group id")
-             .takes_value(true)
-             .default_value("example_consumer_group_id"))
-        .get_matches();
-
-let group_id = matches.value_of("group-id").unwrap();
 //let topics = "network.newtx";
 let brokers = "localhost:9092";
 
 let context = ConsumerContextExample;
-    let consumer = ClientConfig::new()
-        .set("group.id", group_id)
+
+        let consumer = ClientConfig::new()
+        .set("group.id", "example_consumer_group_id")
         .set("bootstrap.servers", brokers)
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .set("enable.auto.commit", "true")
         .set("statistics.interval.ms", "30000")
+        .set_default_topic_config(TopicConfig::new()
+            .set("auto.offset.reset", "smallest")
+            .finalize())
         .set_log_level(RDKafkaLogLevel::Debug)
         .create_with_context::<_, LoggingConsumer>(context)
         .expect("Consumer creation failed");
 
- 
-        
-
-
 //consumer thread
-    let _ = thread::Builder::new().name("subscriber".to_string()).spawn(move || {
-        for topics in keys{
-           consumer.subscribe(&[&topics])
-             .expect("Can't subscribe to specified topics");
-             // consumer.start() returns a stream. The stream can be used ot chain together expensive steps,
-            // such as complex computations on a thread pool or asynchronous IO.
-                let message_stream = consumer.start();
-                for message in message_stream.wait() {
-                    match message {
-                        Err(_) => {
-                            warn!("Error while reading from stream.");
-                            println!("err");
-                        },
-                        Ok(Ok(m)) => {
-                            let key = match m.key_view::<[u8]>() {
-                                None => &[],
-                                Some(Ok(s)) => s,
-                                Some(Err(e)) => {
-                                    warn!("Error while deserializing message key: {:?}", e);
-                                    println!("Error while deserializing message key: {:?}", e);
-                                    &[]
-                                },
-                            };
-                            let payload = match m.payload_view::<str>() {
-                                None => "",
-                                Some(Ok(s)) => s,
-                                Some(Err(e)) => {
-                                    warn!("Error while deserializing message payload: {:?}", e);
-                                    println!("Error while deserializing message payload: {:?}", e);
-                                    ""
-                                },
-                            };
+let keys_str = keys.clone();
 
-                            tx.send((m.topic().to_string(),payload.as_bytes().to_vec()));
-                            info!("key: '{:?}', payload: '{:?}', topic: {}, partition: {}, offset: {}",
-                                key, payload.as_bytes(), m.topic(), m.partition(), m.offset());
-                            println!("key: '{:?}', payload: '{:?}', topic: {}, partition: {}, offset: {}",
-                                key, payload.as_bytes(), m.topic(), m.partition(), m.offset());
-                            consumer.commit_message(&m, CommitMode::Async).unwrap();
-                        },
-                        Ok(Err(e)) => {
-                            warn!("Kafka error: {}", e);
-                        },
-                    };
-                }     
+    let _ = thread::Builder::new().name("subscriber".to_string()).spawn(move || {
+        loop {
+            let keys_str = keys_str.clone();
+            let keys = keys_str.iter().map(|elem| &elem[..]).collect::<Vec<_>>();
+            consumer.subscribe(keys.as_slice())
+                .expect("Can't subscribe to specified topics");
+                // consumer.start() returns a stream. The stream can be used ot chain together expensive steps,
+                // such as complex computations on a thread pool or asynchronous IO.
+                    let message_stream = consumer.start();
+                    for message in message_stream.wait() {
+                        match message {
+                            Err(_) => {
+                                warn!("Error while reading from stream.");
+                                println!("err");
+                            },
+                            Ok(Ok(m)) => {
+                                let key = match m.key_view::<[u8]>() {
+                                    None => &[],
+                                    Some(Ok(s)) => s,
+                                    Some(Err(e)) => {
+                                        warn!("Error while deserializing message key: {:?}", e);
+                                        println!("Error while deserializing message key: {:?}", e);
+                                        &[]
+                                    },
+                                };
+                                let payload = match m.payload_view::<str>() {
+                                    None => "",
+                                    Some(Ok(s)) => s,
+                                    Some(Err(e)) => {
+                                        warn!("Error while deserializing message payload: {:?}", e);
+                                        println!("Error while deserializing message payload: {:?}", e);
+                                        ""
+                                    },
+                                };
+
+                                tx.send((m.topic().to_string(),payload.as_bytes().to_vec()));
+                                info!("key: '{:?}', payload: '{:?}', topic: {}, partition: {}, offset: {}",
+                                    key, payload.as_bytes(), m.topic(), m.partition(), m.offset());
+                                println!("key: '{:?}', payload: '{:?}', topic: {}, partition: {}, offset: {}",
+                                    key, payload.as_bytes(), m.topic(), m.partition(), m.offset());
+                                consumer.commit_message(&m, CommitMode::Async).unwrap();
+                            },
+                            Ok(Err(e)) => {
+                                warn!("Kafka error: {}", e);
+                            },
+                        };
+                    }     
+            
         }
-    });
-    thread::sleep(Duration::new(10,0));
+        });
   }
 
 

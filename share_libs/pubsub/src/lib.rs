@@ -56,35 +56,57 @@ pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, 
 mod test { 
     use super::*;
     use std::sync::mpsc::channel;
-    #[test]``
+    use std::collections::HashMap;
+    #[test]
     fn basics() {
-           let (ntx_sub, nrx_sub) = channel();
-           let (ntx_pub, nrx_pub) = channel();
-           start_pubsub("network", vec!["chain.newtx", "chain.newblk"], ntx_sub, nrx_pub);
-           ntx_pub.send(("chain.newtx".to_string(), vec![3])).unwrap();
-           assert_eq!(nrx_sub.recv().unwrap(), ("chain.newtx".to_string(), vec![3]));
+        //    let (ntx_sub, nrx_sub) = channel();
+        //    let (ntx_pub, nrx_pub) = channel();
+        //    start_pubsub("network", vec!["chain.newtx", "chain.newblk"], ntx_sub, nrx_pub);
+        //    ntx_pub.send(("chain.newtx".to_string(), vec![3])).unwrap();
+        //    assert_eq!(nrx_sub.recv().unwrap(), ("chain.newtx".to_string(), vec![3]));
 
-//         let (ntx_sub, nrx_sub) = channel();
-//         let (ntx_pub, nrx_pub) = channel();
-//         start_pubsub("network", vec!["chain.newtx", "chain.newblk"], ntx_sub, nrx_pub);
+        let (ntx_sub, nrx_sub) = channel();
+        let (ntx_pub, nrx_pub) = channel();
+        start_pubsub("network", vec!["chain.newtx", "chain.newblk"], ntx_sub, nrx_pub);
 
-//         let (ctx_sub, crx_sub) = channel();
-//         let (ctx_pub, crx_pub) = channel();
-//         start_pubsub("chain", vec!["network.newtx", "network.newblk"], ctx_sub, crx_pub);
+        let (ctx_sub, crx_sub) = channel();
+        let (ctx_pub, crx_pub) = channel();
+        start_pubsub("chain", vec!["network.newtx", "network.newblk"], ctx_sub, crx_pub);
 
-//         ntx_pub.send(("network.newtx".to_string(), vec![1])).unwrap();
-//         ntx_pub.send(("network.newblk".to_string(), vec![2])).unwrap();
+        ntx_pub.send(("network.newtx".to_string(), vec![49])).unwrap();
+        ntx_pub.send(("network.newblk".to_string(), vec![50])).unwrap();
 
-//         ctx_pub.send(("chain.newtx".to_string(), vec![3])).unwrap();
-//         ctx_pub.send(("chain.newblk".to_string(), vec![4])).unwrap();
+        ctx_pub.send(("chain.newtx".to_string(), vec![51])).unwrap();
+        ctx_pub.send(("chain.newblk".to_string(), vec![52])).unwrap();
 
-//         assert_eq!(crx_sub.recv().unwrap(), ("network.newtx".to_string(), vec![1]));
-//         assert_eq!(crx_sub.recv().unwrap(), ("network.newblk".to_string(), vec![2]));
+        // assert_eq!(crx_sub.recv().unwrap(), ("network.newtx".to_string(), vec![49]));
+        // assert_eq!(crx_sub.recv().unwrap(), ("network.newblk".to_string(), vec![50]));
 
-//         assert_eq!(nrx_sub.recv().unwrap(), ("chain.newtx".to_string(), vec![3]));
-//         assert_eq!(nrx_sub.recv().unwrap(), ("chain.newblk".to_string(), vec![4]));
+        // assert_eq!(nrx_sub.recv().unwrap(), ("chain.newtx".to_string(), vec![51]));
+        // assert_eq!(nrx_sub.recv().unwrap(), ("chain.newblk".to_string(), vec![52]));
 
-                
+        let mut chain = HashMap::new();
+        let (key1, msg1) = crx_sub.recv().unwrap();
+        chain.insert(key1, msg1);
+        let (key2, msg2) = crx_sub.recv().unwrap();
+        chain.insert(key2, msg2);
+
+        let mut network = HashMap::new();
+        let (key3, msg3) = nrx_sub.recv().unwrap();
+        network.insert(key3, msg3);
+        let (key4, msg4) = nrx_sub.recv().unwrap();
+        network.insert(key4, msg4);
+
+        assert_eq!(chain.get(&"network.newtx".to_string()).unwrap(), &vec![49]);
+        assert_eq!(chain.get(&"network.newblk".to_string()).unwrap(), &vec![50]);
+
+        assert_eq!(network.get(&"chain.newtx".to_string()).unwrap(), &vec![51]);
+        assert_eq!(network.get(&"chain.newblk".to_string()).unwrap(), &vec![52]);
+
+        // loop {
+        //     println!("{:?}",crx_sub.recv().unwrap());
+        //     println!("{:?}",nrx_sub.recv().unwrap());
+        // }
 
     }
 }
