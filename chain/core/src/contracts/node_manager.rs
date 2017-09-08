@@ -62,7 +62,10 @@ impl NodeManager {
                     let len = U256::from(&output[32..32 + len_len]).as_u64() as usize;
                     let num = len / 20;
                     for i in 0..num {
-                        nodes.push(H160::from(&output[32 + len_len + i * 20..32 + len_len + (i + 1) * 20]));
+                        let node = H160::from(&output[32 + len_len + i * 20..32 + len_len + (i + 1) * 20]);
+                        if node != H160::default() {
+                            nodes.push(node);
+                        }
                     }
                 }
             }
