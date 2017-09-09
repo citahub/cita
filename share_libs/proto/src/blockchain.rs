@@ -980,6 +980,274 @@ impl ::protobuf::reflect::ProtobufValue for Status {
 }
 
 #[derive(PartialEq,Clone,Default)]
+pub struct RichStatus {
+    // message fields
+    pub hash: ::std::vec::Vec<u8>,
+    pub height: u64,
+    pub nodes: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
+    // special fields
+    unknown_fields: ::protobuf::UnknownFields,
+    cached_size: ::protobuf::CachedSize,
+}
+
+// see codegen.rs for the explanation why impl Sync explicitly
+unsafe impl ::std::marker::Sync for RichStatus {}
+
+impl RichStatus {
+    pub fn new() -> RichStatus {
+        ::std::default::Default::default()
+    }
+
+    pub fn default_instance() -> &'static RichStatus {
+        static mut instance: ::protobuf::lazy::Lazy<RichStatus> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const RichStatus,
+        };
+        unsafe {
+            instance.get(RichStatus::new)
+        }
+    }
+
+    // bytes hash = 1;
+
+    pub fn clear_hash(&mut self) {
+        self.hash.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_hash(&mut self, v: ::std::vec::Vec<u8>) {
+        self.hash = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_hash(&mut self) -> &mut ::std::vec::Vec<u8> {
+        &mut self.hash
+    }
+
+    // Take field
+    pub fn take_hash(&mut self) -> ::std::vec::Vec<u8> {
+        ::std::mem::replace(&mut self.hash, ::std::vec::Vec::new())
+    }
+
+    pub fn get_hash(&self) -> &[u8] {
+        &self.hash
+    }
+
+    fn get_hash_for_reflect(&self) -> &::std::vec::Vec<u8> {
+        &self.hash
+    }
+
+    fn mut_hash_for_reflect(&mut self) -> &mut ::std::vec::Vec<u8> {
+        &mut self.hash
+    }
+
+    // uint64 height = 2;
+
+    pub fn clear_height(&mut self) {
+        self.height = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_height(&mut self, v: u64) {
+        self.height = v;
+    }
+
+    pub fn get_height(&self) -> u64 {
+        self.height
+    }
+
+    fn get_height_for_reflect(&self) -> &u64 {
+        &self.height
+    }
+
+    fn mut_height_for_reflect(&mut self) -> &mut u64 {
+        &mut self.height
+    }
+
+    // repeated bytes nodes = 3;
+
+    pub fn clear_nodes(&mut self) {
+        self.nodes.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_nodes(&mut self, v: ::protobuf::RepeatedField<::std::vec::Vec<u8>>) {
+        self.nodes = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_nodes(&mut self) -> &mut ::protobuf::RepeatedField<::std::vec::Vec<u8>> {
+        &mut self.nodes
+    }
+
+    // Take field
+    pub fn take_nodes(&mut self) -> ::protobuf::RepeatedField<::std::vec::Vec<u8>> {
+        ::std::mem::replace(&mut self.nodes, ::protobuf::RepeatedField::new())
+    }
+
+    pub fn get_nodes(&self) -> &[::std::vec::Vec<u8>] {
+        &self.nodes
+    }
+
+    fn get_nodes_for_reflect(&self) -> &::protobuf::RepeatedField<::std::vec::Vec<u8>> {
+        &self.nodes
+    }
+
+    fn mut_nodes_for_reflect(&mut self) -> &mut ::protobuf::RepeatedField<::std::vec::Vec<u8>> {
+        &mut self.nodes
+    }
+}
+
+impl ::protobuf::Message for RichStatus {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.hash)?;
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint64()?;
+                    self.height = tmp;
+                },
+                3 => {
+                    ::protobuf::rt::read_repeated_bytes_into(wire_type, is, &mut self.nodes)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if !self.hash.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(1, &self.hash);
+        }
+        if self.height != 0 {
+            my_size += ::protobuf::rt::value_size(2, self.height, ::protobuf::wire_format::WireTypeVarint);
+        }
+        for value in &self.nodes {
+            my_size += ::protobuf::rt::bytes_size(3, &value);
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
+        if !self.hash.is_empty() {
+            os.write_bytes(1, &self.hash)?;
+        }
+        if self.height != 0 {
+            os.write_uint64(2, self.height)?;
+        }
+        for v in &self.nodes {
+            os.write_bytes(3, &v)?;
+        };
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &::std::any::Any {
+        self as &::std::any::Any
+    }
+    fn as_any_mut(&mut self) -> &mut ::std::any::Any {
+        self as &mut ::std::any::Any
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<::std::any::Any> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        ::protobuf::MessageStatic::descriptor_static(None::<Self>)
+    }
+}
+
+impl ::protobuf::MessageStatic for RichStatus {
+    fn new() -> RichStatus {
+        RichStatus::new()
+    }
+
+    fn descriptor_static(_: ::std::option::Option<RichStatus>) -> &'static ::protobuf::reflect::MessageDescriptor {
+        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const ::protobuf::reflect::MessageDescriptor,
+        };
+        unsafe {
+            descriptor.get(|| {
+                let mut fields = ::std::vec::Vec::new();
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
+                    "hash",
+                    RichStatus::get_hash_for_reflect,
+                    RichStatus::mut_hash_for_reflect,
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
+                    "height",
+                    RichStatus::get_height_for_reflect,
+                    RichStatus::mut_height_for_reflect,
+                ));
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
+                    "nodes",
+                    RichStatus::get_nodes_for_reflect,
+                    RichStatus::mut_nodes_for_reflect,
+                ));
+                ::protobuf::reflect::MessageDescriptor::new::<RichStatus>(
+                    "RichStatus",
+                    fields,
+                    file_descriptor_proto()
+                )
+            })
+        }
+    }
+}
+
+impl ::protobuf::Clear for RichStatus {
+    fn clear(&mut self) {
+        self.clear_hash();
+        self.clear_height();
+        self.clear_nodes();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for RichStatus {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for RichStatus {
+    fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
+        ::protobuf::reflect::ProtobufValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
 pub struct Transaction {
     // message fields
     pub to: ::std::string::String,

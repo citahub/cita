@@ -36,6 +36,7 @@ extern crate dotenv;
 extern crate core as chain_core;
 extern crate cita_log;
 extern crate cpuprofiler;
+extern crate authority_manage;
 extern crate engine_json;
 
 use clap::App;
@@ -109,7 +110,7 @@ fn main() {
     let (mq2main, main4mq) = channel();
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("consensus", vec!["net.msg", "chain.status"], tx_sub, rx_pub);
+    start_pubsub("consensus", vec!["net.msg", "chain.richstatus"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let tx = mq2main.clone();

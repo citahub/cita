@@ -17,6 +17,7 @@
 
 use super::*;
 use blockchain;
+use blockchain::{Status, RichStatus};
 use communication;
 use protobuf::Message;
 use request;
@@ -41,5 +42,15 @@ impl Into<communication::Message> for request::Response {
     fn into(self) -> communication::Message {
         let msg = factory::create_msg(submodules::CHAIN, topics::RESPONSE, communication::MsgType::RESPONSE, self.write_to_bytes().unwrap());
         msg
+    }
+}
+
+impl From<RichStatus> for Status {
+    fn from(rich_status: RichStatus) -> Self {
+        let mut status = Status::new();
+        status.hash = rich_status.get_hash().to_vec();
+        status.height = rich_status.get_height();
+        
+        status
     }
 }

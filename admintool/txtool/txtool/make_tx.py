@@ -131,10 +131,10 @@ def _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver=None):
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bytecode", help="Compiled contract bytecode.")
+    parser.add_argument("--code", help="Compiled contract bytecode.")
     parser.add_argument(
         "--privkey", help="private key genearted by secp256k1 alogrithm.")
-    parser.add_argument("--receiver", help="transaction to")
+    parser.add_argument("--to", help="transaction to")
     parser.add_argument('--newcrypto', dest='newcrypto',
                         action='store_true', help="Use ed25519 and blake2b.")
     parser.add_argument('--no-newcrypto', dest='newcrypto',
@@ -147,9 +147,9 @@ def parse_arguments():
 
 def _params_or_default():
     opts = parse_arguments()
-    bytecode = opts.bytecode
+    bytecode = opts.code
     privkey = opts.privkey
-    receiver = opts.receiver
+    receiver = opts.to
 
     if bytecode is None:
         bytecode = bin_code()
@@ -169,9 +169,8 @@ def main():
     print(blake2b_ed25519)
     bytecode, privkey, receiver = _params_or_default()
     data = generate_deploy_data(
-        bytecode, privkey, remove_hex_0x(receiver), blake2b_ed25519)
+        remove_hex_0x(bytecode), privkey, remove_hex_0x(receiver), blake2b_ed25519)
     print("deploy code保存到../output/transaction/deploycode")
-    print(data)
     save_deploy(data)
 
 
