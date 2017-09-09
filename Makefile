@@ -14,13 +14,13 @@ CARGO=RUSTFLAGS='-F warnings' cargo
 debug:
 	$(CARGO) build --all
 	mkdir -p admintool/release/bin
-	cp -f .env admintool/
+	cp -f .env admintool/release
 	find target/debug -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp {} admintool/release/bin \;
 
 release:
 	$(CARGO) build --release --all
 	mkdir -p admintool/release/bin
-	cp -f .env admintool/
+	cp -f .env admintool/release
 	find target/release -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp {} admintool/release/bin \;
 
 

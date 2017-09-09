@@ -10,7 +10,6 @@ if [ ! -n "$consensus" ]; then
 fi
 CUR_PATH=$(cd `dirname $0`; pwd)
 cd ${CUR_PATH}/../../admintool/
-./setup.sh
 ./admintool.sh -n $consensus
 
 setup_node() {
