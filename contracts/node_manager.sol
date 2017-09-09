@@ -14,8 +14,8 @@ contract NodeManager is NodeInterface {
     // the status of the node: ready, start, not in list/close, maybe there is more
     mapping(address => NodeStatus) public status;
 
-    // array for querying the consensus node list
-    address[] nodes_of_start; 
+    // consensus node list
+    address[] nodes;
 
     event NewNode(address _node);
     event ApproveNode(address _node);
@@ -26,7 +26,7 @@ contract NodeManager is NodeInterface {
         // initialize the address to Start
         for (uint i = 0; i < _nodes.length; i++) {
             status[_nodes[i]] = NodeStatus.Start;
-            nodes_of_start.push(_nodes[i]);
+            nodes.push(_nodes[i]);
         }
     }
 
@@ -54,7 +54,7 @@ contract NodeManager is NodeInterface {
         }
 
         status[_node] = NodeStatus.Start;
-        nodes_of_start.push(_node);
+        nodes.push(_node);
         ApproveNode(_node);
         // assert(status[_node] == NodeStatus.Start);
         return true;
@@ -68,14 +68,20 @@ contract NodeManager is NodeInterface {
             return false;
         }
 
+        var index = nodeIndex(_node);
         // not found
-        if (nodeIndex(_node) == nodes_of_start.length) {
+        if (index >= nodes.length) {
             return false;
         }
 
         status[_node] = NodeStatus.Close;
-        // also delete it in the array 
-        delete nodes_of_start[nodeIndex(_node)];
+        // remove the gap
+        for (uint i = index; i < nodes.length - 1; i++) {
+            nodes[i] = nodes[i + 1];
+        }
+        // also delete the last element
+        delete nodes[nodes.length - 1];
+        nodes.length--;
         DeleteNode(_node);
         // assert(status[_node] == NodeStatus.Close);
         return true;
@@ -83,7 +89,7 @@ contract NodeManager is NodeInterface {
 
     // list the node of the Start
     function listNode() constant returns (string) {
-        return concatNodes(nodes_of_start);
+        return concatNodes(nodes);
     }
 
     // get the status of the node
@@ -105,8 +111,8 @@ contract NodeManager is NodeInterface {
     // interface: get the index in the nodes_of_start array
     function nodeIndex(address _node) internal returns (uint) {
         // find the index of the member 
-        for (uint i = 0; i < nodes_of_start.length; i++) {
-            if (_node == nodes_of_start[i]) {
+        for (uint i = 0; i < nodes.length; i++) {
+            if (_node == nodes[i]) {
                 return i;
             }
         }
