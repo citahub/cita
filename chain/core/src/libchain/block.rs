@@ -317,7 +317,6 @@ impl OpenBlock {
     pub fn apply_transaction(&mut self, t: &SignedTransaction) {
         let env_info = self.env_info();
         let has_traces = self.traces.is_some();
-        info!("env_info says gas_used={}", env_info.gas_used);
         match self.state.apply(&env_info, &t, has_traces) {
             Ok(outcome) => {
                 let trace = outcome.trace;

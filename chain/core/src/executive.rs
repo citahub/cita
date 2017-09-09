@@ -26,6 +26,7 @@ use evm::{self, Ext, Factory, Finalize, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use executed::CallType;
 use externalities::*;
+use native::Factory as NativeFactory;
 use state::{State, Substate};
 use state::backend::Backend as StateBackend;
 use std::cmp;
@@ -68,27 +69,30 @@ pub struct Executive<'a, B: 'a + StateBackend> {
     engine: &'a Engine,
     vm_factory: &'a Factory,
     depth: usize,
+    native_factory: &'a NativeFactory,
 }
 
 impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Basic constructor.
-    pub fn new(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory) -> Self {
+    pub fn new(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory) -> Self {
         Executive {
             state: state,
             info: info,
             engine: engine,
             vm_factory: vm_factory,
+            native_factory: native_factory,
             depth: 0,
         }
     }
 
     /// Populates executive from parent properties. Increments executive depth.
-    pub fn from_parent(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, parent_depth: usize) -> Self {
+    pub fn from_parent(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, parent_depth: usize) -> Self {
         Executive {
             state: state,
             info: info,
             engine: engine,
             vm_factory: vm_factory,
+            native_factory: native_factory,
             depth: parent_depth + 1,
         }
     }
@@ -99,7 +103,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         T: Tracer,
         V: VMTracer,
     {
-        Externalities::new(self.state, self.info, self.engine, self.vm_factory, self.depth, origin_info, substate, output, tracer, vm_tracer)
+        Externalities::new(self.state, self.info, self.engine, self.vm_factory, self.native_factory, self.depth, origin_info, substate, output, tracer, vm_tracer)
     }
 
     /// This function should be used to execute transaction.
@@ -267,21 +271,17 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // backup used in case of running out of gas
         self.state.checkpoint();
 
-        if let Some(contract) = self.engine.get_native_contract(&params.code_address) {
-
-            //let cost = self.engine.cost_of_builtin(&params.code_address, data);
+        if let Some(mut contract) = self.native_factory.new_contract(params.code_address) {
             let cost = U256::from(100);
             if cost <= params.gas {
-                // part of substate that may be reverted
                 let mut unconfirmed_substate = Substate::new();
                 let mut subvmtracer = vm_tracer.prepare_subtrace(params.code.as_ref().expect("scope is conditional on params.code.is_some(); qed"));
                 let mut trace_output = tracer.prepare_trace_output();
                 let output_policy = OutputPolicy::Return(output, trace_output.as_mut());
-                {
+                let res = {
                     let mut ext = self.as_externalities(OriginInfo::from(&params), &mut unconfirmed_substate, output_policy, tracer, &mut subvmtracer);
-                    contract.exec(&params, &mut ext);
-                }
-                let res = Ok(params.gas - cost);
+                    contract.exec(params, &mut ext).finalize(ext)
+                };
                 self.enact_result(&res, substate, unconfirmed_substate);
                 return res;
             }
@@ -532,12 +532,12 @@ mod tests {
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::mktemp::Temp;
+    use self::rustc_hex::FromHex;
     use super::*;
     use action_params::{ActionParams, ActionValue};
     use engines::NullEngine;
     use env_info::EnvInfo;
     use evm::{Factory, VMType};
-    use self::rustc_hex::FromHex;
     use state::Substate;
     use std::fs::File;
     use std::io::Read;
@@ -606,6 +606,7 @@ contract AbiTest {
         let runtime_code = content.as_str().from_hex().unwrap();
 
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
         let contract_address = contract_address(&sender, &nonce);
         let mut params = ActionParams::default();
         params.address = contract_address.clone();
@@ -623,7 +624,7 @@ contract AbiTest {
         let mut vm_tracer = ExecutiveVMTracer::toplevel();
 
         {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory);
+            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
             let _ = ex.create(params.clone(), &mut substate, &mut tracer, &mut vm_tracer);
         }
 
@@ -685,6 +686,7 @@ contract AbiTest {
 
 
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
         let mut tracer = ExecutiveTracer::default();
         let mut vm_tracer = ExecutiveVMTracer::toplevel();
 
@@ -703,7 +705,7 @@ contract AbiTest {
         let engine = NullEngine::default();
         let mut substate = Substate::new();
         {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory);
+            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
             let mut out = vec![];
             let _ = ex.call(params, &mut substate, BytesRef::Fixed(&mut out), &mut tracer, &mut vm_tracer);
         };
