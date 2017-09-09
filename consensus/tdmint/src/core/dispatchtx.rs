@@ -19,7 +19,7 @@ extern crate threadpool;
 use authority_manage::AuthorityManage;
 use core::txhandler::TxHandler;
 use core::txwal::Txwal;
-use crypto::pubkey_to_address;
+use crypto::{pubkey_to_address, PubKey};
 use libproto::{submodules, topics, factory, communication};
 use libproto::blockchain::{TxResponse, SignedTransaction};
 use libproto::key_to_id;
@@ -127,7 +127,7 @@ impl Dispatchtx {
                 content.set_result(String::from("BAD SIG").into_bytes());
             } else {
                 let tx = result.unwrap();
-                match self.check_promisssion(tx) {
+                match self.check_permisssion(tx) {
                     Ok(tx) => {
                         content.set_hash(tx.tx_hash.clone());
                         if self.tx_flow_control() {
@@ -168,15 +168,15 @@ impl Dispatchtx {
         self.receive_new_transaction(result, tx_pub, from_broadcast);
     }
 
-    pub fn check_promisssion(&self, mut tx: SignedTransaction) -> Result<SignedTransaction, (Vec<u8>, &str)> {
-        match self.auth_manage.read().authorities.roles.get(&pubkey_to_address(&H256::from(tx.get_signer()))) {
+    pub fn check_permisssion(&self, mut tx: SignedTransaction) -> Result<SignedTransaction, (Vec<u8>, &str)> {
+        match self.auth_manage.read().authorities.roles.get(&pubkey_to_address(&PubKey::from(tx.get_signer()))) {
             Some(role) => {
                 if tx.get_transaction().get_to() == "" {
                     //create contract
                     if role == &vec!["sender".to_string(), "creator".to_string()] {
                         Ok(tx)
                     } else {
-                        Err((tx.take_tx_hash(), "create contract must have sender and creator promisssion!"))
+                        Err((tx.take_tx_hash(), "create contract must have sender and creator permisssion!"))
                     }
 
                 } else {
@@ -184,12 +184,12 @@ impl Dispatchtx {
                     if role == &vec!["sender".to_string()] {
                         Ok(tx)
                     } else {
-                        Err((tx.take_tx_hash(), "create contract must have sender promisssion!"))
+                        Err((tx.take_tx_hash(), "create contract must have sender permisssion!"))
                     }
                 }
             }
 
-            None => Err((tx.take_tx_hash(), "exsit promisssion!")),
+            None => Err((tx.take_tx_hash(), "exsit permisssion!")),
         }
 
     }

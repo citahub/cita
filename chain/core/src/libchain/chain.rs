@@ -52,7 +52,6 @@ use state_db::StateDB;
 
 use std::collections::{BTreeMap, VecDeque};
 use std::collections::{HashMap, HashSet};
-use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
@@ -60,7 +59,7 @@ use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LogEntry, LocalizedLogEntry};
 use types::transaction::{SignedTransaction, Transaction, Action};
-use util::{journaldb, H256, U256, H2048, Address, Bytes, H160};
+use util::{journaldb, H256, U256, H2048, Address, Bytes};
 use util::{RwLock, Mutex};
 use util::HeapSizeOf;
 use util::kvdb::*;
@@ -93,7 +92,7 @@ pub struct Status {
 }
 
 impl Status {
-    fn new() -> Self {
+    fn new() -> Status {
         Status { number: 0, hash: H256::default() }
     }
 
@@ -113,7 +112,6 @@ impl Status {
         self.number = n;
     }
 
-    #[allow(dead_code)]
     fn protobuf(&self) -> ProtoStatus {
         let mut ps = ProtoStatus::new();
         ps.set_height(self.number());
@@ -241,7 +239,7 @@ impl Chain {
         };
 
 
-        let status = factory::crate_rich_status(header.hash(), header.number(), raw_chain.read().into_string());
+        let status = factory::crate_rich_status(header.hash(), header.number(), NodeManager::read(&raw_chain).into_string());
         raw_chain.build_last_hashes(Some(header.hash()), header.number());
         (Arc::new(raw_chain), status)
     }
@@ -826,7 +824,7 @@ impl Chain {
                 }
 
                 let status = self.save_status(&mut batch);
-                let rich_status = factory::crate_rich_status(status.hash().clone(), status.number(), self.read().into_string());
+                let rich_status = factory::crate_rich_status(status.hash().clone(), status.number(), NodeManager::read(&self).into_string());
                 self.db.write(batch).expect("DB write failed.");
                 info!("chain update {:?}", height);
                 Some(rich_status)
@@ -910,20 +908,6 @@ impl Chain {
     }
 }
 
-impl NodeManager for Chain {
-    fn read(&self) -> AuthManageInfo {
-        AuthManageInfo {
-            nodes: vec![
-                H160::from_str("3650a344a004de80088b832251b8c5cd55ee4165").unwrap(),
-                H160::from_str("7966730b4b5f8c5548e7bd8fedaaa53a2297a553").unwrap(),
-                H160::from_str("a1282f6edd569636b74a927c215b05485939de8e").unwrap(),
-                H160::from_str("fa6021cb37f913b454e89ac955fe34479f259864").unwrap(),
-            ],
-            roles: HashMap::new(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(unused_must_use, deprecated, unused_extern_crates)]
@@ -946,7 +930,6 @@ mod tests {
     use util::{U256, H256, Address};
     use util::crypto::CreateKey;
     use util::kvdb::{Database, DatabaseConfig};
-    //use util::hashable::HASH_NAME;
 
     #[test]
     fn test_heapsizeof() {

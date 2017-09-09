@@ -20,7 +20,6 @@ contract NodeManager is NodeInterface {
     event NewNode(address _node);
     event ApproveNode(address _node);
     event DeleteNode(address _node);
-    event GetStatus(address _node);
 
     // setup
     function NodeManager(address[] _nodes) {
@@ -35,12 +34,10 @@ contract NodeManager is NodeInterface {
     function newNode(address _node) returns (bool) {
         // should not add the started node, what about the already added node
         // require(status[_node] == NodeStatus.Close);
-        if (status[_node] == NodeStatus.Ready) {
-            NewNode(_node);
+        if (status[_node] == NodeStatus.Ready || status[_node] == NodeStatus.Start) {
             return false; 
         }
 
-        require(status[_node] != NodeStatus.Start);
         status[_node] = NodeStatus.Ready;
         NewNode(_node);
         // test
@@ -53,7 +50,6 @@ contract NodeManager is NodeInterface {
         // the status should be ready
         // require(status[_node] == NodeStatus.Ready);
         if (status[_node] != NodeStatus.Ready) {
-            ApproveNode(_node);
             return false;
         }
 
@@ -69,19 +65,16 @@ contract NodeManager is NodeInterface {
     function deleteNode(address _node) returns (bool) {
         // require(status[_node] == NodeStatus.Start);
         if (status[_node] != NodeStatus.Start) {
-            DeleteNode(_node);
+            return false;
+        }
+
+        // not found
+        if (nodeIndex(_node) == nodes_of_start.length) {
             return false;
         }
 
         status[_node] = NodeStatus.Close;
         // also delete it in the array 
-
-        // not found
-        if (nodeIndex(_node) == nodes_of_start.length) {
-            DeleteNode(_node);
-            return false;
-        }
-
         delete nodes_of_start[nodeIndex(_node)];
         DeleteNode(_node);
         // assert(status[_node] == NodeStatus.Close);
@@ -95,7 +88,6 @@ contract NodeManager is NodeInterface {
 
     // get the status of the node
     function getStatus(address _node) constant returns (uint8) {
-        GetStatus(_node);
         return uint8(status[_node]);
     }
 

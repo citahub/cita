@@ -38,13 +38,22 @@ def call(params):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "sender", help="20 bytes ethereum compatiable address.")
+        "--sender", help="20 bytes ethereum compatiable address.")
     parser.add_argument("to", help="20 bytes ethereum compatiable address.")
     parser.add_argument("data", help="compiled solidity function.")
-    parser.add_argument("number", help="block number")
+    parser.add_argument("number", help="block number", nargs='?')
 
     args = parser.parse_args()
-    params = build_params(args.sender, args.to, args.data, args.number)
+
+    sender = args.sender
+    if args.sender is None:
+        sender = ""
+    
+    number = args.number
+    if args.number is None:
+        number = 'latest'
+
+    params = build_params(sender, args.to, args.data, number)
     resp = call(params)
     if resp is not None:
         print resp

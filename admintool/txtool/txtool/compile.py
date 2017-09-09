@@ -9,21 +9,18 @@ from util import findDict, run_command, path_leaf, add_hex_0x, solidity_file_dir
 import simplejson
 
 def save_abi(abi):
-    abiFile = open("../output/compiled/abi", "w+")
-    abiFile.write(abi)
-    abiFile.close()
+    with open("../output/compiled/abi", "w+") as abifile:
+        simplejson.dump(abi, abifile, indent=4)
 
 
 def save_bincode(code):
-    code_file = open("../output/compiled/bytecode", "w+")
-    code_file.write(code)
-    code_file.close()
+    with open("../output/compiled/bytecode", "w+") as code_file:
+        code_file.write(code)
 
 
 def save_functions(data):
-    data_file = open("../output/compiled/functions", "w+")
-    simplejson.dump(data, data_file)
-    data_file.close()
+    with open("../output/compiled/functions", "w+") as func_file:
+        simplejson.dump(data, func_file, indent=4)
 
 
 def read_functions():
@@ -51,21 +48,26 @@ def main():
             'sources': {'standard.sol': {'content': solidity_source}}
         })
         print "abi保存到output/compiled/abi文件中"
-        save_abi(str(findDict(output['contracts'], 'abi')))
+        save_abi(findDict(output['contracts'], 'abi'))
         print "bincode保存到output/compiled/bytecode"
         save_bincode(str(findDict(output, 'object')))
+
+        save_functions(findDict(output, 'methodIdentifiers'))
     elif parsed.file:
         # TODO: 错误处理 文件格式检查
         print parsed.file
         paths = solidity_file_dirname(parsed.file)
+        origin_path = os.getcwd()
         if paths is not None:
             filename, basepath, fullpath = paths
+            os.chdir(basepath)
             output = compile_standard({
                 'language': 'Solidity',
                 'sources': {filename: {'urls': [fullpath]}},
             }, allow_paths=basepath)
+            os.chdir(origin_path)
             print "abi保存到output/compiled/abi文件中"
-            save_abi(str(findDict(output['contracts'], 'abi')))
+            save_abi(findDict(output['contracts'], 'abi'))
             print "bincode保存到output/compiled/bytecode"
             save_bincode(str(findDict(output, 'object')))
         

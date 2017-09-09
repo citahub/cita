@@ -15,22 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-
-
-use byteorder::{BigEndian, ByteOrder};
+use core::contracts::node_manager::NodeManager;
 use core::libchain::block::Block;
 use core::libchain::chain::Chain;
-use libproto;
 use libproto::*;
-use libproto::blockchain::{Status, RichStatus};
+use libproto::blockchain::Status;
 use protobuf::Message;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
-use std::sync::mpsc::{Sender, Receiver};
-use std::thread;
-use std::time::Duration;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::mpsc::Sender;
 
 const BATCH_SYNC: u64 = 120;
 
@@ -73,13 +66,19 @@ impl Synchronizer {
         self.chain.is_sync.store(false, Ordering::SeqCst);
         let current_hash = self.chain.get_current_hash();
         let current_height = self.chain.get_current_height();
-        info!("sync_status {:?}, {:?}", current_hash, current_height);
-        let mut status = Status::new();
-        status.set_hash(current_hash.0.to_vec());
-        status.set_height(current_height);
+        let max_height = self.chain.get_max_height();
+        trace!("chain sync status: current height {:?}  known height{:?}", current_height, max_height);
 
-        let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
-        ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+        let rich_status = factory::crate_rich_status(current_hash.clone(), current_height, NodeManager::read(&self.chain).into_string());
+        drop(self);
+        let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
+        ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+
+        let mut status: Status = Status::new();
+        status.set_hash(current_hash.to_vec());
+        status.set_height(current_height);
+        let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
+        ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
     }
 
     fn add_block(&self, ctx_pub: Sender<(String, Vec<u8>)>, blk: Block) {
@@ -87,13 +86,15 @@ impl Synchronizer {
         let rich_status = self.chain.set_block(blk);
 
         if let Some(rich_status) = rich_status {
+            let mut status = Status::new();
+            status.set_hash(rich_status.get_hash().to_vec());
+            status.set_height(rich_status.get_height());
+
             let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
-            trace!("chain after sync current height {:?}  known height{:?}", self.chain.get_current_height(), self.chain.get_max_height());
             ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
 
-            let status: Status = rich_status.into();
             let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
-            trace!("add_block chain.status {:?}, {:?}", status.get_height(), status.get_hash());
+            trace!("add_block chain.status height = {:?}, hash = {:?}", status.get_height(), status.get_hash());
             ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
         }
     }

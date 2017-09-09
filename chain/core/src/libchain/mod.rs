@@ -19,7 +19,7 @@ pub mod cache;
 pub mod chain;
 pub mod transaction;
 pub mod block;
-mod genesis;
+pub mod genesis;
 mod extras;
 pub mod call_request;
 
