@@ -15,13 +15,13 @@ debug:
 	$(CARGO) build --all
 	mkdir -p admintool/release/bin
 	cp -f .env admintool/release
-	find target/debug -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp {} admintool/release/bin \;
+	find target/debug -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp -f {} admintool/release/bin \;
 
 release:
 	$(CARGO) build --release --all
 	mkdir -p admintool/release/bin
 	cp -f .env admintool/release
-	find target/release -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp {} admintool/release/bin \;
+	find target/release -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp -f {} admintool/release/bin \;
 
 
 setup1:

@@ -293,7 +293,9 @@ impl OpenBlock {
             last_hashes: last_hashes,
             tx_hashes: Vec::new(),
             account_gas_limit: account_gas_limit.common_gas_limit.into(),
-            account_gas: account_gas_limit.specific_gas_limit.iter().fold(HashMap::new(), |mut acc, (key, value)| {
+            account_gas: account_gas_limit.specific_gas_limit
+                                          .iter()
+                                          .fold(HashMap::new(), |mut acc, (key, value)| {
                 acc.insert(*key, (*value).into());
                 acc
             }),
@@ -334,8 +336,7 @@ impl OpenBlock {
         env_info.account_gas_limit = *self.account_gas.get(t.sender()).expect("account should exist in account_gas_limit");
 
         let has_traces = self.traces.is_some();
-        info!("env_info says gas_used={}", env_info.gas_used);
-        match self.state.apply(&env_info, &t, has_traces, switch) {
+        match self.state.apply(&env_info, &t, has_traces) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());
@@ -398,7 +399,11 @@ impl OpenBlock {
         self.set_receipts_root(receipts_root);
 
         // blocks blooms
-        let log_bloom = self.receipts.clone().into_iter().filter_map(|r| r).fold(LogBloom::zero(), |mut b, r| {
+        let log_bloom = self.receipts
+                            .clone()
+                            .into_iter()
+                            .filter_map(|r| r)
+                            .fold(LogBloom::zero(), |mut b, r| {
             b = &b | &r.log_bloom;
             b
         });
