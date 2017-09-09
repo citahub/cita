@@ -12,7 +12,7 @@ function cita_setup() {
 
     node=node$1
     echo "setup ${node}"
-    echo "WARN: This command will clean date of this node!!!"
+    echo "WARN: This command will clean data of this node!!!"
 
     # rabbitmq
     sudo rabbitmqctl add_vhost ${node}
