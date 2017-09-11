@@ -22,6 +22,8 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use util::H256;
 
+pub const BLOCKLIMIT: u64 = 100;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Strategy {
     FIFO,
@@ -155,7 +157,8 @@ impl Pool {
                 let hash = order.unwrap().hash;
                 let tx = self.txs.get(&hash);
                 if let Some(tx) = tx {
-                    if tx.get_transaction_with_sig().get_transaction().valid_until_block == 0 || tx.get_transaction_with_sig().get_transaction().valid_until_block >= height {
+                    if tx.get_transaction_with_sig().get_transaction().valid_until_block >= height &&
+                        tx.get_transaction_with_sig().get_transaction().valid_until_block < (height + BLOCKLIMIT) {
                         tx_list.push(tx.clone());
                         n = n - 1;
                         if n == 0 {
@@ -203,9 +206,9 @@ mod tests {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
 
-        let tx1 = generate_tx(vec![1], 999, privkey);
-        let tx2 = generate_tx(vec![1], 999, privkey);
-        let tx3 = generate_tx(vec![2], 999, privkey);
+        let tx1 = generate_tx(vec![1], 99, privkey);
+        let tx2 = generate_tx(vec![1], 99, privkey);
+        let tx3 = generate_tx(vec![2], 99, privkey);
         let tx4 = generate_tx(vec![3], 5, privkey);
 
         assert_eq!(p.enqueue(tx1.clone()), true);

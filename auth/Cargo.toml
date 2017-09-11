@@ -14,3 +14,4 @@ cita_log = { path = "../share_libs/cita_log" }
 libproto = { path = "../share_libs/proto" }
 protobuf = { version = "^1.0.0"}
 cache_2q = "0.8.4"
+cita-crypto = { path = "../share_libs/crypto"}

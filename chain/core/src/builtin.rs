@@ -198,6 +198,7 @@ impl Impl for EdRecover {
 #[cfg(test)]
 mod tests {
     extern crate cita_ed25519;
+    extern crate rustc_serialize;
 
     use super::{Builtin, Linear, ethereum_builtin, Pricer};
     use cita_ed25519::{Signature, KeyPair, pubkey_to_address as ED_pubkey_to_address};
@@ -228,7 +229,7 @@ mod tests {
 
     #[test]
     fn sha256() {
-        use rustc_serialize::hex::FromHex;
+        use self::rustc_serialize::hex::FromHex;
         let f = ethereum_builtin("sha256");
 
         let i = [0u8; 0];
@@ -252,7 +253,7 @@ mod tests {
 
     #[test]
     fn ripemd160() {
-        use rustc_serialize::hex::FromHex;
+        use self::rustc_serialize::hex::FromHex;
         let f = ethereum_builtin("ripemd160");
 
         let i = [0u8; 0];
@@ -272,7 +273,7 @@ mod tests {
 
     #[test]
     fn ecrecover() {
-        use rustc_serialize::hex::FromHex;
+        use self::rustc_serialize::hex::FromHex;
         /*let k = KeyPair::from_secret(b"test".crypt_hash()).unwrap();
         let a: Address = From::from(k.public().crypt_hash());
         println!("Address: {}", a);

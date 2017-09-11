@@ -26,7 +26,7 @@ use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as Rpc
 use libproto;
 pub use libproto::*;
 pub use libproto::request::Request_oneof_req as Request;
-use protobuf::Message;
+use protobuf::{Message, RepeatedField};
 use serde_json;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -83,7 +83,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     }
                     let msg: communication::Message = response.into();
                     ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-
                 }
 
                 Request::block_by_height(block_height) => {
@@ -168,7 +167,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     };
                     let msg: communication::Message = response.into();
                     ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-
                 }
 
                 Request::code(code_content) => {
@@ -193,7 +191,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     };
                     let msg: communication::Message = response.into();
                     ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-
                 }
 
                 Request::new_filter(new_filter) => {
@@ -267,7 +264,8 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
             if blk_height > current_height && blk_height < current_height + 300 {
                 if !guard.contains_key(&blk_height) || (guard.contains_key(&blk_height) && guard[&blk_height].0 == BlockSource::NET && source == BlockSource::CONSENSUS) {
                     trace!("block insert {:?}", blk_height);
-                    guard.insert(blk_height, (source, Block::from(block)));
+                    let is_verified = source == BlockSource::CONSENSUS;
+                    guard.insert(blk_height, (source, Block::from(block), is_verified));
                     let _ = chain.sync_sender.lock().send(blk_height);
                 }
 
@@ -314,7 +312,43 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 warn!("other content.");
             }
         }
-        MsgClass::VERIFYREQ(req) => {}
-        MsgClass::VERIFYRESP(resp) => {}
+        MsgClass::VERIFYTXREQ(req) => {}
+        MsgClass::VERIFYTXRESP(resp) => {}
+        MsgClass::VERIFYBLKREQ(req) => {}
+        MsgClass::VERIFYBLKRESP(resp) => {
+            let next_height = chain.get_current_height() + 1;
+            trace!("receive verify response, next height: {}, result: {:?}", next_height, resp.get_ret());
+            if resp.get_ret() == Ret::Ok {
+                let mut guard = chain.block_map.write();
+                if let Some(status) = guard.get_mut(&next_height) {
+                    status.2 = true;
+                };
+                let _ = chain.sync_sender.lock().send(next_height);
+            } else {
+                let mut guard = chain.block_map.write();
+                let _ = guard.remove(&next_height);
+            }
+        }
+        MsgClass::BLOCKTXHASHES(block_tx_hashes) => {}
+        MsgClass::BLOCKTXHASHESREQ(block_tx_hashes_req) => {
+            let block_height = block_tx_hashes_req.get_height();
+            if let Some(tx_hashes) = chain.transaction_hashes(BlockId::Number(block_height)) {
+                //prepare and send the block tx hashes to auth
+                let mut block_tx_hashes = BlockTxHashes::new();
+                block_tx_hashes.set_height(block_height);
+                let mut tx_hashes_in_u8 = Vec::new();
+                for tx_hash_in_h256 in tx_hashes.iter() {
+                    tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
+                }
+                block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
+
+                let msg = factory::create_msg(submodules::CHAIN, topics::BLOCK_TXHASHES, communication::MsgType::BLOCK_TXHASHES, block_tx_hashes.write_to_bytes().unwrap());
+
+                ctx_pub.send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                trace!("response block's tx hashes for height:{}", block_height);
+            } else {
+                warn!("get block's tx hashes for height:{} error", block_height);
+            }
+        }
     }
 }

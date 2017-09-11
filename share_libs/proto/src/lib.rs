@@ -36,7 +36,7 @@ pub use auth::*;
 use blockchain::*;
 use communication::*;
 use crypto::{PrivKey, PubKey, Signature, KeyPair, SIGNATURE_BYTES_LEN, Message as SignMessage, CreateKey, Sign};
-use protobuf::Message;
+use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 pub use request::*;
 use rlp::*;
@@ -71,8 +71,12 @@ pub mod topics {
     pub const TX_RESPONSE: u16 = 7;
     pub const CONSENSUS_MSG: u16 = 8;
     pub const NEW_PROPOSAL: u16 = 9;
-    pub const VERIFY_REQ: u16 = 10;
-    pub const VERIFY_RESP: u16 = 11;
+    pub const VERIFY_TX_REQ: u16 = 10;
+    pub const VERIFY_TX_RESP: u16 = 11;
+    pub const VERIFY_BLK_REQ: u16 = 12;
+    pub const VERIFY_BLK_RESP: u16 = 13;
+    pub const BLOCK_TXHASHES: u16 = 14;
+    pub const BLOCK_TXHASHES_REQ: u16 = 15; 
 }
 
 #[derive(Debug)]
@@ -85,8 +89,12 @@ pub enum MsgClass {
     TX(UnverifiedTransaction),
     TXRESPONSE(TxResponse),
     STATUS(Status),
-    VERIFYREQ(VerifyReq),
-    VERIFYRESP(VerifyResp),
+    VERIFYTXREQ(VerifyTxReq),
+    VERIFYTXRESP(VerifyTxResp),
+    VERIFYBLKREQ(VerifyBlockReq),
+    VERIFYBLKRESP(VerifyBlockResp),
+    BLOCKTXHASHES(BlockTxHashes),
+    BLOCKTXHASHESREQ(BlockTxHashesReq),
     MSG(Vec<u8>),
 }
 
@@ -102,8 +110,12 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::TX_RESPONSE => "tx_response",
         topics::CONSENSUS_MSG => "consensus_msg",
         topics::NEW_PROPOSAL => "new_proposal",
-        topics::VERIFY_REQ => "verify_req",
-        topics::VERIFY_RESP => "verify_resp",
+        topics::VERIFY_TX_REQ => "verify_tx_req",
+        topics::VERIFY_TX_RESP => "verify_tx_resp",
+        topics::VERIFY_BLK_REQ => "verify_blk_req",
+        topics::VERIFY_BLK_RESP => "verify_blk_resp",
+        topics::BLOCK_TXHASHES => "block_txhashes",
+        topics::BLOCK_TXHASHES_REQ => "block_txhashes_req",
         _ => "",
     }
 }
@@ -182,6 +194,37 @@ pub mod factory {
 type CmdId = u32;
 type Origin = u32;
 
+pub fn tx_verify_req_msg(unverified_tx: &UnverifiedTransaction) -> VerifyTxReq {
+    let bytes = unverified_tx.get_transaction().write_to_bytes().unwrap();
+    let hash = bytes.crypt_hash();
+    let mut verify_tx_req = VerifyTxReq::new();
+    verify_tx_req.set_valid_until_block(unverified_tx.get_transaction().get_valid_until_block());
+    // tx hash
+    verify_tx_req.set_hash(hash.to_vec());
+    verify_tx_req.set_crypto(unverified_tx.get_crypto());
+    verify_tx_req.set_signature(unverified_tx.get_signature().to_vec());
+    // unverified tx hash
+    let tx_hash = unverified_tx.crypt_hash();
+    verify_tx_req.set_tx_hash(tx_hash.to_vec());
+    verify_tx_req
+}
+
+pub fn block_verify_req(block: &Block, request_id: u64) -> VerifyBlockReq {
+    let mut reqs: Vec<VerifyTxReq> = Vec::new();
+    let signed_txs = block.get_body().get_transactions();
+    for signed_tx in signed_txs {
+        let signer = signed_tx.get_signer();
+        let unverified_tx = signed_tx.get_transaction_with_sig();
+        let mut verify_tx_req = tx_verify_req_msg(unverified_tx);
+        verify_tx_req.set_signer(signer.to_vec());
+        reqs.push(verify_tx_req);
+    }
+    let mut verify_blk_req = VerifyBlockReq::new();
+    verify_blk_req.set_id(request_id);
+    verify_blk_req.set_reqs(RepeatedField::from_vec(reqs));
+    verify_blk_req
+}
+
 pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
     let mut msg = parse_from_bytes::<communication::Message>(msg.as_ref()).unwrap();
     let content_msg = msg.take_content();
@@ -199,8 +242,12 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::BLOCK => MsgClass::BLOCK(parse_from_bytes::<Block>(&content_msg).unwrap()),
         MsgType::TX => MsgClass::TX(parse_from_bytes::<UnverifiedTransaction>(&content_msg).unwrap()),
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
-        MsgType::VERIFY_REQ => MsgClass::VERIFYREQ(parse_from_bytes::<VerifyReq>(&content_msg).unwrap()),
-        MsgType::VERIFY_RESP => MsgClass::VERIFYRESP(parse_from_bytes::<VerifyResp>(&content_msg).unwrap()),
+        MsgType::VERIFY_TX_REQ => MsgClass::VERIFYTXREQ(parse_from_bytes::<VerifyTxReq>(&content_msg).unwrap()),
+        MsgType::VERIFY_TX_RESP => MsgClass::VERIFYTXRESP(parse_from_bytes::<VerifyTxResp>(&content_msg).unwrap()),
+        MsgType::VERIFY_BLK_REQ => MsgClass::VERIFYBLKREQ(parse_from_bytes::<VerifyBlockReq>(&content_msg).unwrap()),
+        MsgType::VERIFY_BLK_RESP => MsgClass::VERIFYBLKRESP(parse_from_bytes::<VerifyBlockResp>(&content_msg).unwrap()),
+        MsgType::BLOCK_TXHASHES => MsgClass::BLOCKTXHASHES(parse_from_bytes::<BlockTxHashes>(&content_msg).unwrap()),
+        MsgType::BLOCK_TXHASHES_REQ => MsgClass::BLOCKTXHASHESREQ(parse_from_bytes::<BlockTxHashesReq>(&content_msg).unwrap()),
         MsgType::MSG => {
             let mut content = Vec::new();
             content.extend_from_slice(&content_msg);

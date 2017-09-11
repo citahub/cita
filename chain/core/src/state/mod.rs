@@ -483,7 +483,7 @@ impl<B: Backend> State<B> {
         let options = TransactOptions {
             tracing: tracing,
             vm_tracing: false,
-            check_nonce: true,
+            check_nonce: false,
         };
         let vm_factory = self.factories.vm.clone();
         let e = Executive::new(self, env_info, engine, &vm_factory).transact(t, options)?;
@@ -705,13 +705,14 @@ mod tests {
     extern crate cita_crypto;
     extern crate protobuf;
     extern crate env_logger;
+    extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::libproto::blockchain;
     use super::*;
     use cita_crypto::KeyPair;
     use env_info::EnvInfo;
-    use rustc_hex::FromHex;
+    use self::rustc_hex::FromHex;
     use std::sync::Arc;
     use tests::helpers::*;
     use util::{H256, Address};

@@ -26,7 +26,7 @@ use core::wal::Wal;
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto;
-use libproto::{communication, submodules, topics, MsgClass};
+use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
 use libproto::blockchain::{Block, SignedTransaction, Status};
 
 //use tx_pool::Pool;
@@ -122,6 +122,10 @@ pub struct TenderMint {
     dispatch: Arc<Dispatchtx>,
 
     htime: Instant,
+
+    /// An auto-increment id used for distinguish verify_resp
+    verify_id: u64,
+    unverified_msg: HashMap<u64, Vec<u8>>,
 }
 
 impl TenderMint {
@@ -159,6 +163,8 @@ impl TenderMint {
             //sync_ok : true,
             dispatch: dispatch,
             htime: Instant::now(),
+            verify_id: 0,
+            unverified_msg: HashMap::new(),
         }
     }
 
@@ -731,6 +737,25 @@ impl TenderMint {
         return false;
     }
 
+    fn verify_req(&mut self, msg: &[u8]) {
+        let res = deserialize(msg);
+        if let Ok(decoded) = res {
+            let (message, signature): (Vec<u8>, &[u8]) = decoded;
+            let signature = Signature::from(signature);
+            if let Ok(_) = signature.recover(&message.crypt_hash().into()) {
+                let decoded = deserialize(&message).unwrap();
+                let (_, _, proposal): (usize, usize, Proposal) = decoded;
+                if let Ok(block) = parse_from_bytes::<Block>(&proposal.block) {
+                    let verify_req = block_verify_req(&block, self.verify_id);
+                    self.unverified_msg.insert(self.verify_id, msg.to_vec());
+                    self.verify_id += 1;
+                    let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
+                    self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                }
+            }
+        }
+    }
+
     fn handle_proposal(&mut self, msg: Vec<u8>, wal_flag: bool) -> Result<(usize, usize), EngineError> {
         let res = deserialize(&msg[..]);
         if let Ok(decoded) = res {
@@ -942,17 +967,7 @@ impl TenderMint {
 
                 ID_NEW_PROPOSAL => {
                     if let MsgClass::MSG(msg) = content_ext {
-                        trace!("receive proposal");
-                        let res = self.handle_proposal(msg, false);
-                        if let Ok((h, r)) = res {
-                            trace!("handle_proposal {:?}", (h, r));
-                            if h == self.height && r == self.round && self.step < Step::PrevoteWait {
-                                let pres = self.proc_proposal(h, r);
-                                if !pres {
-                                    trace!("proc_proposal res false height {}, round {}", h, r);
-                                }
-                            }
-                        }
+                        self.verify_req(&msg);
                     }
                 }
                 _ => {}
@@ -962,6 +977,25 @@ impl TenderMint {
                 MsgClass::STATUS(status) => {
                     trace!("get new local status {:?}", status.height);
                     self.receive_new_status(status);
+                }
+                MsgClass::VERIFYBLKRESP(resp) => {
+                    let verify_id = resp.get_id();
+                    let msg = self.unverified_msg.remove(&verify_id);
+                    let ret = resp.get_ret();
+                    msg.map(|msg| {
+                        if ret == auth::Ret::Ok {
+                            let res = self.handle_proposal(msg, false);
+                            if let Ok((h, r)) = res {
+                                trace!("handle_proposal {:?}", (h, r));
+                                if h == self.height && r == self.round && self.step < Step::PrevoteWait {
+                                    let pres = self.proc_proposal(h, r);
+                                    if !pres {
+                                        trace!("proc_proposal res false height {}, round {}", h, r);
+                                    }
+                                }
+                            }
+                        }
+                    });
                 }
                 _ => {}
             }
