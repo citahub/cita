@@ -445,7 +445,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rpc_0x() {
+    fn test_cita_send_transaction() {
         let utx = UnverifiedTransaction::new();
         let utx_string = utx.write_to_bytes().unwrap();
 

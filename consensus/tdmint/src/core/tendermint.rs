@@ -25,7 +25,6 @@ use core::wal::Wal;
 
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
-use libproto;
 use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
 use libproto::blockchain::{Block, SignedTransaction, Status};
 
@@ -184,33 +183,23 @@ impl TenderMint {
         }
     }
 
-    /*    pub fn pub_transaction(&mut self, tx: &SignedTransaction) {
-        let mut msg = communication::Message::new();
-        msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::NEW_TX));
-        msg.set_field_type(communication::MsgType::TX);
-        msg.set_content(tx.write_to_bytes().unwrap());
-        MQWork::send2pub(&self.pub_sender ,("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
-    }
-*/
+    //    pub fn pub_transaction(&mut self, tx: &SignedTransaction) {
+    //        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
+    //        MQWork::send2pub(&self.pub_sender, ("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
+    //    }
+
     pub fn pub_block(&self, block: &Block) {
-        let mut msg = communication::Message::new();
-        msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::NEW_BLK));
-        msg.set_field_type(communication::MsgType::BLOCK);
-        msg.set_content(block.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
         self.pub_sender.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
     pub fn pub_proposal(&self, proposal: &Proposal) -> Vec<u8> {
-        let mut msg = communication::Message::new();
-        msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL));
-        msg.set_field_type(communication::MsgType::MSG);
-
         let message = serialize(&(self.height, self.round, proposal), Infinite).unwrap();
         let ref author = self.params.signer;
         let signature = Signature::sign(&author.keypair.privkey(), &message.crypt_hash().into()).unwrap();
         trace!("pub_proposal height {}, round {}, hash {}, signature {} ", self.height, self.round, message.crypt_hash(), signature);
         let bmsg = serialize(&(message, signature), Infinite).unwrap();
-        msg.set_content(bmsg.clone());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_PROPOSAL, communication::MsgType::MSG, bmsg.clone());
         self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         bmsg
     }
@@ -534,10 +523,7 @@ impl TenderMint {
 
 
     fn pub_message(&self, message: Vec<u8>) {
-        let mut msg = communication::Message::new();
-        msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG));
-        msg.set_field_type(communication::MsgType::MSG);
-        msg.set_content(message);
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::CONSENSUS_MSG, communication::MsgType::MSG, message);
         self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
@@ -982,20 +968,18 @@ impl TenderMint {
                     let verify_id = resp.get_id();
                     let msg = self.unverified_msg.remove(&verify_id);
                     let ret = resp.get_ret();
-                    msg.map(|msg| {
-                        if ret == auth::Ret::Ok {
-                            let res = self.handle_proposal(msg, false);
-                            if let Ok((h, r)) = res {
-                                trace!("handle_proposal {:?}", (h, r));
-                                if h == self.height && r == self.round && self.step < Step::PrevoteWait {
-                                    let pres = self.proc_proposal(h, r);
-                                    if !pres {
-                                        trace!("proc_proposal res false height {}, round {}", h, r);
+                    msg.map(|msg| if ret == auth::Ret::Ok {
+                                let res = self.handle_proposal(msg, false);
+                                if let Ok((h, r)) = res {
+                                    trace!("handle_proposal {:?}", (h, r));
+                                    if h == self.height && r == self.round && self.step < Step::PrevoteWait {
+                                        let pres = self.proc_proposal(h, r);
+                                        if !pres {
+                                            trace!("proc_proposal res false height {}, round {}", h, r);
+                                        }
                                     }
                                 }
-                            }
-                        }
-                    });
+                            });
                 }
                 _ => {}
             }

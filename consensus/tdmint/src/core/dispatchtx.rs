@@ -20,8 +20,8 @@ extern crate threadpool;
 use core::txhandler::TxHandler;
 use core::txwal::Txwal;
 use libproto::{submodules, topics, factory, communication};
-use libproto::blockchain::{TxResponse, SignedTransaction};
 use libproto::auth::Ret;
+use libproto::blockchain::{TxResponse, SignedTransaction};
 use protobuf::Message;
 use pubsub::start_pubsub;
 use std::sync::{RwLock, Arc};
@@ -107,16 +107,17 @@ impl Dispatchtx {
                       });
     }
 
+    //TODO error return JsonRpc
     fn receive_new_transaction(&self, signed_tx: Option<SignedTransaction>, result: Option<(H256, Ret)>, tx_pub: Sender<(String, Vec<u8>)>) {
         let mut is_busy = false;
         let mut is_success = false;
         let tx_is_valid = signed_tx.is_some();
         signed_tx.map(|signed_tx| {
-            is_busy = self.tx_flow_control();
-            if !is_busy {
-                is_success = self.add_tx_to_pool(&signed_tx);
-            }
-        });
+                          is_busy = self.tx_flow_control();
+                          if !is_busy {
+                              is_success = self.add_tx_to_pool(&signed_tx);
+                          }
+                      });
 
         // tx from net, we don't need to reply
         if result.is_none() {

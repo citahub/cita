@@ -24,34 +24,38 @@ use protobuf::RepeatedField;
 use std::sync::mpsc::Sender;
 use tx_pool;
 
-struct Situation {
-    pub height: u64,
-    pub hash: Option<Vec<u8>>,
+pub struct CandidatePool {
+    pool: tx_pool::Pool,
+    height: u64,
+    sender: Sender<PubType>,
 }
 
-pub struct CandidatePool(tx_pool::Pool, Situation);
-
 impl CandidatePool {
-    pub fn new(height: u64) -> Self {
-        CandidatePool(tx_pool::Pool::new(10000, 3000), Situation { height: height, hash: None })
+    pub fn new(sender: Sender<PubType>) -> Self {
+        CandidatePool {
+            pool: tx_pool::Pool::new(10000, 3000),
+            height: 0,
+            sender: sender,
+        }
     }
 
+
     pub fn get_height(&self) -> u64 {
-        self.1.height
+        self.height
     }
 
     pub fn meet_conditions(&self, height: u64) -> bool {
-        self.1.height == (height - 1)
+        self.height == (height - 1)
     }
 
-    pub fn broadcast_tx(&self, tx: &UnverifiedTransaction, sender: Sender<PubType>) -> Result<(), &'static str> {
+    pub fn broadcast_tx(&self, tx: &UnverifiedTransaction) {
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
         trace!("broadcast new tx {:?}", tx);
-        sender.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-        Ok(())
+        self.sender.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
     }
 
-    pub fn add_tx(&mut self, unverified_tx: &UnverifiedTransaction, sender: Sender<PubType>, is_from_broadcast: bool) {
+    //TODO error return JsonRpc
+    pub fn add_tx(&mut self, unverified_tx: &UnverifiedTransaction, is_from_broadcast: bool) {
         let mut content = blockchain::TxResponse::new();
         let trans = SignedTransaction::verify_transaction(unverified_tx.clone());
 
@@ -59,14 +63,16 @@ impl CandidatePool {
             Err(hash) => {
                 content.set_hash(hash.to_vec());
                 warn!("Transaction with bad signature, tx: {:?}", hash);
+                //TODO this is error for done !!!
                 content.set_result(String::from("BAG SIG").into_bytes());
             }
+
             Ok(tx) => {
                 content.set_hash(tx.tx_hash.clone());
-                let success = self.0.enqueue(tx.clone());
+                let success = self.pool.enqueue(tx);
                 if success {
                     content.set_result(String::from("4:OK").into_bytes());
-                    self.broadcast_tx(unverified_tx, sender.clone()).unwrap();
+                    self.broadcast_tx(unverified_tx);
                 } else {
                     content.set_result(String::from("4:DUP").into_bytes());
                 }
@@ -76,25 +82,25 @@ impl CandidatePool {
         // Response RPC
         if !is_from_broadcast {
             let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
-            sender.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            self.sender.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }
 
     pub fn spawn_new_blk(&mut self, height: u64, hash: Vec<u8>) -> Block {
         let mut block = Block::new();
         info!("spawn new blk height:{:?}.", height);
-        if height != self.1.height + 1 {
-            warn!("block height is not match, expect: {}, but get {}", height, self.1.height);
+        if height != self.height + 1 {
+            warn!("block height is not match, expect: {}, but get {}", height, self.height);
         }
         let mut proof = Proof::new();
         proof.set_field_type(ProofType::Raft);
 
-        self.1.height = height;
-        block.mut_header().set_height(self.1.height);
+        self.height = height;
+        block.mut_header().set_height(self.height);
         let block_time = unix_now();
-        let txs: Vec<SignedTransaction> = self.0.package(height);
-        block.mut_header().set_prevhash(hash);
+        let txs: Vec<SignedTransaction> = self.pool.package(height);
 
+        block.mut_header().set_prevhash(hash);
         block.mut_header().set_timestamp(block_time.as_millis());
         block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
         let transaction_root = block.mut_body().transactions_root();
@@ -103,14 +109,14 @@ impl CandidatePool {
         block
     }
 
-    pub fn pub_block(&self, block: &Block, sender: Sender<PubType>) {
+    pub fn pub_block(&self, block: &Block) {
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
         trace!("publish block {:?}", block);
-        sender.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap()));
+        self.sender.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap()));
     }
 
     pub fn update_txpool(&mut self, txs: &[SignedTransaction]) {
-        info!("update txpool, current txpool size: {}", self.0.len());
-        self.0.update(txs);
+        trace!("update txpool, current txpool size: {}", self.pool.len());
+        self.pool.update(txs);
     }
 }
