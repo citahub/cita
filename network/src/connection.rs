@@ -30,10 +30,16 @@ use std::thread;
 use std::time::Duration;
 
 const TIMEOUT: u64 = 15;
+//表示线程已经运行
+type ThreadRuned = Arc<RwLock<bool>>;
+//已经运行的线程是否结束
+type ThreadExit = Arc<RwLock<bool>>;
 
+#[derive(Clone)]
 pub struct Connection {
     pub id_card: u32,
-    pub peers_pair: Vec<(u32, SocketAddr, Arc<RwLock<Option<TcpStream>>>)>,
+    pub peers_pair: Vec<(u32, SocketAddr, Arc<RwLock<Option<TcpStream>>>, ThreadRuned, ThreadExit)>,
+    pub remove_addr: Arc<RwLock<Vec<SocketAddr>>>,
 }
 
 impl Connection {
@@ -46,22 +52,96 @@ impl Connection {
                     let id_card: u32 = peer.id_card.unwrap();
                     let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
                     let addr = addr.parse::<SocketAddr>().unwrap();
-                    peers_pair.push((id_card, addr, Arc::new(RwLock::new(None))));
+                    peers_pair.push((id_card, addr, Arc::new(RwLock::new(None)), Arc::new(RwLock::new(false)), Arc::new(RwLock::new(false))));
                 }
             }
             None => (),
 
         }
 
-        Connection { id_card, peers_pair }
+        Connection {
+            id_card,
+            peers_pair,
+            remove_addr: Arc::new(RwLock::new(Vec::default())),
+        }
+    }
+
+    pub fn update(&mut self, config: &config::NetConfig) {
+        //添加更新的配置到self
+        match config.peers.as_ref() {
+            Some(peers) => {
+                let peers_addr: Vec<SocketAddr> = self.peers_pair.clone().into_iter().map(|peers_pair| peers_pair.1).rev().collect();
+                let mut config_addr = Vec::new();
+                for peer in peers.iter() {
+                    let id_card: u32 = peer.id_card.unwrap();
+                    let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
+                    let addr = addr.parse::<SocketAddr>().unwrap();
+                    config_addr.push(addr);
+                    if peers_addr.contains(&addr) {
+                        continue;
+                    }
+                    self.peers_pair
+                        .push((id_card, addr, Arc::new(RwLock::new(None)), Arc::new(RwLock::new(false)), Arc::new(RwLock::new(false))));
+                }
+                for &(_, addr, _, _, ref thread_exit) in &self.peers_pair {
+                    if config_addr.contains(&addr) {
+                        continue;
+                    }
+                    let thread_exit = &mut *thread_exit.as_ref().write();
+                    *thread_exit = true;
+                }
+            }
+            None => (),
+        }
+    }
+
+    pub fn del_peer(&mut self) {
+        let remove_addr = &mut *self.remove_addr.as_ref().write();
+        if !remove_addr.is_empty() {
+            let mut index = 0;
+            let mut len = self.peers_pair.len();
+            loop {
+                if index >= len {
+                    break;
+                }
+                if remove_addr.contains(&self.peers_pair[index].1) {
+                    self.peers_pair.remove(index);
+                    len = self.peers_pair.len();
+                } else {
+                    index += 1;
+                }
+            }
+            remove_addr.clear();
+        }
     }
 }
 
 pub fn do_connect(con: &Connection) {
-    for &(_, addr, ref stream) in &con.peers_pair {
+    for &(_, addr, ref stream, ref thread_run, ref thread_exit) in &con.peers_pair {
         let stream_lock = stream.clone();
+        let thread_run_lock = thread_run.clone();
+        let thread_exit_lock = thread_exit.clone();
+        if *thread_run.read() {
+            continue;
+        }
+
+        let remove_addr_lock = con.remove_addr.clone();
+
         thread::spawn(move || loop {
                           {
+                              if *thread_exit_lock.read() {
+                                  let remove_addr = &mut *remove_addr_lock.as_ref().write();
+                                  trace!("{:?} thread exit", addr);
+                                  remove_addr.push(addr);
+                                  let stream_opt = &mut *stream_lock.as_ref().write();
+                                  *stream_opt = None;
+                                  break;
+                              }
+                              {
+                                  let thread_run = &mut *thread_run_lock.as_ref().write();
+                                  *thread_run = true;
+                              }
+
                               let stream_opt = &mut *stream_lock.as_ref().write();
                               if stream_opt.is_none() {
                                   trace!("connet {:?}", addr);
@@ -114,7 +194,7 @@ pub fn broadcast(con: &Connection, mut msg: communication::Message) {
         }
     };
     let mut peers = vec![];
-    for &(id_card, _, ref stream) in &con.peers_pair {
+    for &(id_card, _, ref stream, _, _) in &con.peers_pair {
         if is_send(id_card, origin, operate) {
             peers.push(id_card);
             send_msg(stream);
@@ -128,11 +208,12 @@ pub fn is_send(id_card: u32, origin: u32, operate: communication::OperateType) -
     operate == communication::OperateType::BROADCAST || (operate == communication::OperateType::SINGLE && id_card == origin) || (operate == communication::OperateType::SUBTRACT && origin != id_card)
 }
 
-pub fn start_client(con: Arc<Connection>, rx: Receiver<communication::Message>) {
+pub fn start_client(con: Arc<RwLock<Connection>>, rx: Receiver<communication::Message>) {
     thread::spawn(move || {
                       info!("start client!");
                       loop {
                           let msg = rx.recv().unwrap();
+                          let con = &*con.as_ref().read();
                           broadcast(&con, msg);
                       }
                   });

@@ -17,6 +17,7 @@ parking_lot = "0.4"
 log = "0.3"
 dotenv = "0.10.0"
 bytes = "0.4"
+patrol = "0.3.0"
 libproto = { path = "../share_libs/proto" }
 protobuf = { version = "^1.0.0"}
 util = { path = "../share_libs/util"}

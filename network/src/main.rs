@@ -31,6 +31,7 @@ extern crate pubsub;
 extern crate dotenv;
 extern crate cita_log;
 extern crate bytes;
+extern crate patrol;
 
 pub mod config;
 pub mod server;
@@ -41,16 +42,47 @@ pub mod msghandle;
 
 use clap::{App, SubCommand};
 use config::NetConfig;
-use connection::{Connection, do_connect, start_client};
+use connection::{Connection, do_connect as connect, start_client};
 use dotenv::dotenv;
 use log::LogLevelFilter;
 use msghandle::{is_need_proc, handle_rpc};
+use parking_lot::RwLock;
+use patrol::{make_targets, spawn};
 use pubsub::start_pubsub;
 use server::MySender;
 use server::start_server;
 use std::env;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
+use std::thread;
+use std::time::Duration;
+
+
+pub fn do_connect(config_path: &str, con: Arc<RwLock<Connection>>) {
+
+    let do_con_lock = con.clone();
+    {
+        let do_con = &mut *do_con_lock.as_ref().write();
+        connect(do_con);
+    }
+
+    let config_file: String = "./".to_string() + config_path;
+    let target = make_targets(&[&config_file]);
+    let rx = spawn(target);
+
+    thread::spawn(move || loop {
+                      let event = rx.recv_timeout(Duration::new(10, 0));
+                      if event.is_ok() {
+                          let config = NetConfig::new(&config_file);
+
+                          let con = &mut *con.as_ref().write();
+                          con.update(&config);
+                          connect(&con);
+                          //let con = &mut *con.as_ref().write();
+                          con.del_peer();
+                      }
+                  });
+}
 
 fn main() {
     dotenv().ok();
@@ -96,10 +128,12 @@ fn main() {
 
     // connect peers
     let con = Connection::new(&config);
-    do_connect(&con);
+    let con_lock = Arc::new(RwLock::new(con));
+    //do_connect(&con);
+    do_connect(config_path, con_lock.clone());
     let (ctx, crx) = channel();
-    let con = Arc::new(con);
-    start_client(con.clone(), crx);
+    //let con = Arc::new(con);
+    start_client(con_lock.clone(), crx);
 
     loop {
         // msg from mq need proc before broadcast
@@ -108,6 +142,7 @@ fn main() {
         if let (_, true, msg) = is_need_proc(body.as_ref()) {
             ctx.send(msg).unwrap();
         }
+        let con = &*con_lock.as_ref().read();
         handle_rpc(&con, &ctx_pub, body.as_ref());
     }
 }

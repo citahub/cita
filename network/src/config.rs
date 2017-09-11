@@ -38,7 +38,10 @@ pub struct PeerConfig {
 
 impl NetConfig {
     pub fn new(path: &str) -> Self {
-        let config_file = File::open(path).unwrap();
+        let config_file = match File::open(path) {
+            Ok(config_file) => config_file,
+            Err(_) => panic!("file [{}] does not exist", path),
+        };
         let mut fconfig = BufReader::new(config_file);
         let mut content = String::new();
         fconfig.read_to_string(&mut content).unwrap();
