@@ -5,10 +5,8 @@ extern crate rdkafka;
 extern crate rdkafka_sys;
 
 use std::thread;
-use std::time::Duration;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
-use clap::{App, Arg};
 use futures::*;
 
 use rdkafka::Message;
@@ -44,7 +42,7 @@ impl ConsumerContext for ConsumerContextExample {
 
 
 //producer thread 
-pub fn  start_kafka(name: & str, keys: Vec<String>, tx: Sender<(String,Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
+pub fn  start_kafka(_: & str, keys: Vec<String>, tx: Sender<(String,Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
     let brokers = "localhost:9092";
     let _ = thread::Builder::new().name("publisher".to_string()).spawn(move || {
         println!("this is publisher");
@@ -66,7 +64,7 @@ pub fn  start_kafka(name: & str, keys: Vec<String>, tx: Sender<(String,Vec<u8>)>
 
                     // The send operation on the topic returns a future, that will be completed once the
                     // result or failure from Kafka will be received.
-                    producer.send_copy(&topic, None, Some(&msg), Some(&vec![0,1,2,3]), None)
+                    let _ = producer.send_copy(&topic, None, Some(&msg), Some(&vec![0,1,2,3]), None)
                         .map(move |delivery_status| {   // This will be executed onw the result is received
                             println!("Delivery status for message {} received", 1);
                             delivery_status
@@ -138,7 +136,7 @@ let keys_str = keys.clone();
                                     },
                                 };
 
-                                tx.send((m.topic().to_string(),payload.as_bytes().to_vec()));
+                                let _ = tx.send((m.topic().to_string(),payload.as_bytes().to_vec()));
                                 info!("key: '{:?}', payload: '{:?}', topic: {}, partition: {}, offset: {}",
                                     key, payload.as_bytes(), m.topic(), m.partition(), m.offset());
                                 println!("key: '{:?}', payload: '{:?}', topic: {}, partition: {}, offset: {}",

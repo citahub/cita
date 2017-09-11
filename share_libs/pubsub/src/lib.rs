@@ -24,7 +24,6 @@ extern crate dotenv;
 
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
-use dotenv::dotenv;
 
 #[cfg(feature = "pubsub_rabbitmq")]
 use pubsub_rabbitmq::start_rabbitmq;
@@ -59,11 +58,6 @@ mod test {
     use std::collections::HashMap;
     #[test]
     fn basics() {
-        //    let (ntx_sub, nrx_sub) = channel();
-        //    let (ntx_pub, nrx_pub) = channel();
-        //    start_pubsub("network", vec!["chain.newtx", "chain.newblk"], ntx_sub, nrx_pub);
-        //    ntx_pub.send(("chain.newtx".to_string(), vec![3])).unwrap();
-        //    assert_eq!(nrx_sub.recv().unwrap(), ("chain.newtx".to_string(), vec![3]));
 
         let (ntx_sub, nrx_sub) = channel();
         let (ntx_pub, nrx_pub) = channel();
@@ -79,11 +73,6 @@ mod test {
         ctx_pub.send(("chain.newtx".to_string(), vec![51])).unwrap();
         ctx_pub.send(("chain.newblk".to_string(), vec![52])).unwrap();
 
-        // assert_eq!(crx_sub.recv().unwrap(), ("network.newtx".to_string(), vec![49]));
-        // assert_eq!(crx_sub.recv().unwrap(), ("network.newblk".to_string(), vec![50]));
-
-        // assert_eq!(nrx_sub.recv().unwrap(), ("chain.newtx".to_string(), vec![51]));
-        // assert_eq!(nrx_sub.recv().unwrap(), ("chain.newblk".to_string(), vec![52]));
 
         let mut chain = HashMap::new();
         let (key1, msg1) = crx_sub.recv().unwrap();
@@ -103,10 +92,6 @@ mod test {
         assert_eq!(network.get(&"chain.newtx".to_string()).unwrap(), &vec![51]);
         assert_eq!(network.get(&"chain.newblk".to_string()).unwrap(), &vec![52]);
 
-        // loop {
-        //     println!("{:?}",crx_sub.recv().unwrap());
-        //     println!("{:?}",nrx_sub.recv().unwrap());
-        // }
 
     }
 }
