@@ -17,9 +17,11 @@
 
 //! Node manager.
 
+use authority_manage::AuthManageInfo;
 use libchain::call_request::CallRequest;
 use libchain::chain::Chain;
 use sha3::sha3_256;
+use std::collections::HashMap;
 use std::str::FromStr;
 use types::ids::BlockId;
 use util::*;
@@ -42,7 +44,14 @@ lazy_static! {
 pub struct NodeManager {}
 
 impl NodeManager {
-    pub fn read(chain: &Chain) -> Vec<Address> {
+    pub fn read(chain: &Chain) -> AuthManageInfo {
+        AuthManageInfo {
+            nodes: NodeManager::query_node(chain),
+            roles: NodeManager::query_role(chain),
+        }
+    }
+
+    fn query_node(chain: &Chain) -> Vec<Address> {
         let call_request = CallRequest {
             from: None,
             to: *CONTRACT_ADDRESS,
@@ -72,6 +81,15 @@ impl NodeManager {
         }
         trace!("nodes: {:?}", nodes);
         nodes
+    }
+
+    fn query_role(chain: &Chain) -> HashMap<Address, Vec<String>> {
+        let mut role = HashMap::new();
+        role.insert(Address::from_str("dd19c4f035c847d49aef6fc35f7fc3b3c801f3f7").unwrap(), vec!["sender".to_string(), "creator".to_string()]);
+        role.insert(Address::from_str("553d3c7059f118dbf6379971941050fb2757db34").unwrap(), vec!["sender".to_string()]);
+        role
+
+
     }
 }
 

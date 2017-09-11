@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use authority_manage::AuthManageInfo;
 use bloomchain as bc;
 use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
@@ -40,7 +41,9 @@ use libchain::extras::*;
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
 use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus};
+use libproto::factory;
 use libproto::request::FullTransaction;
+
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{Receipt, LocalizedReceipt};
@@ -89,7 +92,7 @@ pub struct Status {
 }
 
 impl Status {
-    fn new() -> Self {
+    fn new() -> Status {
         Status { number: 0, hash: H256::default() }
     }
 
@@ -109,57 +112,10 @@ impl Status {
         self.number = n;
     }
 
-    #[allow(dead_code)]
     fn protobuf(&self) -> ProtoStatus {
         let mut ps = ProtoStatus::new();
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
-        ps
-    }
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct RichStatus {
-    number: u64,
-    hash: H256,
-    nodes: Vec<Address>,
-}
-
-impl RichStatus {
-    fn new() -> Self {
-        RichStatus {
-            number: 0,
-            hash: H256::default(),
-            nodes: vec![],
-        }
-    }
-
-    fn hash(&self) -> &H256 {
-        &self.hash
-    }
-
-    fn number(&self) -> u64 {
-        self.number
-    }
-
-    fn set_hash(&mut self, h: H256) {
-        self.hash = h;
-    }
-
-    fn set_number(&mut self, n: u64) {
-        self.number = n;
-    }
-
-    fn set_nodes(&mut self, nodes: Vec<Address>) {
-        self.nodes = nodes
-    }
-
-    fn protobuf(&self) -> ProtoRichStatus {
-        let mut ps = ProtoRichStatus::new();
-        ps.set_height(self.number());
-        ps.set_hash(self.hash().to_vec());
-        let node_list = self.nodes.clone().into_iter().map(|address| address.to_vec()).collect();
-        ps.set_nodes(RepeatedField::from_vec(node_list));
         ps
     }
 }
@@ -282,15 +238,10 @@ impl Chain {
             polls_filter: Arc::new(Mutex::new(PollManager::new())),
         };
 
-        let mut status = RichStatus::new();
-        status.set_hash(header.clone().hash());
-        status.set_number(header.clone().number());
 
-        let chain = Arc::new(raw_chain);
-        chain.build_last_hashes(Some(status.hash().clone()), status.number());
-        let nodes: Vec<Address> = NodeManager::read(&chain);
-        status.set_nodes(nodes);
-        (chain, status.protobuf())
+        let status = factory::crate_rich_status(header.hash(), header.number(), NodeManager::read(&raw_chain).into_string());
+        raw_chain.build_last_hashes(Some(header.hash()), header.number());
+        (Arc::new(raw_chain), status)
     }
 
     /// Get block number by BlockId
@@ -873,16 +824,10 @@ impl Chain {
                 }
 
                 let status = self.save_status(&mut batch);
-
-                let nodes: Vec<Address> = NodeManager::read(&self);
-                let mut rich_status = RichStatus::new();
-                rich_status.set_hash(*status.hash());
-                rich_status.set_number(status.number());
-                rich_status.set_nodes(nodes);
-
+                let rich_status = factory::crate_rich_status(status.hash().clone(), status.number(), NodeManager::read(&self).into_string());
                 self.db.write(batch).expect("DB write failed.");
                 info!("chain update {:?}", height);
-                Some(rich_status.protobuf())
+                Some(rich_status)
             } else {
                 warn!("add block failed");
                 None

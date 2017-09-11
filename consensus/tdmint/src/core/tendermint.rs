@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use authority_manage::AuthorityManage;
+use authority_manage::{AuthorityManage, AuthManageInfo};
 use bincode::{serialize, deserialize, Infinite};
 use core::dispatchtx::Dispatchtx;
 use core::params::TendermintParams;
@@ -38,7 +38,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver, RecvError};
 use std::time::Instant;
-use util::{H256, Address, Hashable};
+use util::{H256, Address, Hashable, RwLock};
 
 const INIT_HEIGHT: usize = 1;
 const INIT_ROUND: usize = 0;
@@ -123,7 +123,7 @@ pub struct TenderMint {
     dispatch: Arc<Dispatchtx>,
 
     htime: Instant,
-    auth_manage: AuthorityManage,
+    auth_manage: Arc<RwLock<AuthorityManage>>,
 }
 
 impl TenderMint {
@@ -159,21 +159,22 @@ impl TenderMint {
             last_commit_round: None,
             //To be used later
             //sync_ok : true,
-            dispatch: dispatch,
+            dispatch: dispatch.clone(),
             htime: Instant::now(),
-            auth_manage: AuthorityManage::new(),
+            auth_manage: dispatch.get_auth_manages(),
         }
     }
 
     fn is_round_proposer(&self, height: usize, round: usize, address: &Address) -> Result<(), EngineError> {
         //let ref p = self.params;
-        let ref p = self.auth_manage;
+        let ref p = self.auth_manage.read();
         if p.authority_n == 0 {
             info!("authority_n is {}", p.authority_n);
             return Err(EngineError::NotAuthorized(Address::zero()));
         }
         let proposer_nonce = height + round;
         let proposer = p.authorities
+                        .nodes
                         .get(proposer_nonce % p.authority_n)
                         .expect("There are authority_n authorities; taking number modulo authority_n gives number in authority_n range; qed");
         if proposer == address {
@@ -323,11 +324,11 @@ impl TenderMint {
     }
 
     fn is_above_threshold(&self, n: &usize) -> bool {
-        *n > self.auth_manage.authority_n * 2 / 3
+        *n > self.auth_manage.read().authority_n * 2 / 3
     }
 
     fn is_all_vote(&self, n: &usize) -> bool {
-        *n == self.auth_manage.authority_n
+        *n == self.auth_manage.read().authority_n
     }
 
     fn pre_proc_precommit(&mut self) {
@@ -568,7 +569,7 @@ impl TenderMint {
 
     fn is_authority(&self, address: &Address) -> bool {
         //self.params.authorities.contains(address.into())
-        self.auth_manage.authorities.contains(address.into())
+        self.auth_manage.read().authorities.nodes.contains(address.into())
     }
 
     fn change_state_step(&mut self, height: usize, round: usize, s: Step, newflag: bool) {
@@ -681,7 +682,7 @@ impl TenderMint {
             trace!("proc proposal height {},round {} self {} {} ", height, round, self.height, self.round);
             //proposal check
             //if !proposal.check(height, &self.params.authorities) {
-            if !proposal.check(height, &self.auth_manage.authorities) {
+            if !proposal.check(height, &self.auth_manage.read().authorities.nodes) {
                 trace!("proc proposal check error");
                 return false;
             }
@@ -702,12 +703,12 @@ impl TenderMint {
                 let block_proof = block.get_header().get_proof();
                 let proof = TendermintProof::from(block_proof.clone());
                 info!(" proof is {:?}  {} {}", proof, height, round);
-                if self.auth_manage.authority_h_old == height - 1 {
-                    if !proof.check(height - 1, &self.auth_manage.authorities_old) {
+                if self.auth_manage.read().authority_h_old == height - 1 {
+                    if !proof.check(height - 1, &self.auth_manage.read().authorities_old.nodes) {
                         return false;
                     }
                 } else {
-                    if !proof.check(height - 1, &self.auth_manage.authorities) {
+                    if !proof.check(height - 1, &self.auth_manage.read().authorities.nodes) {
                         return false;
                     }
                 }
@@ -979,9 +980,9 @@ impl TenderMint {
                 MsgClass::RICHSTATUS(rich_status) => {
                     trace!("get new local status {:?}", rich_status.height);
                     self.receive_new_status(rich_status.clone());
-                    let authorities: Vec<Address> = rich_status.get_nodes().into_iter().map(|node| Address::from_slice(node)).collect();
-                    trace!("authorities: [{:?}]", authorities);
-                    self.auth_manage.receive_authorities_list(self.height, authorities);
+                    let auth_info: AuthManageInfo = AuthManageInfo::from(rich_status);
+                    trace!("authorities: [{:?}]", auth_info);
+                    self.auth_manage.write().receive_authorities_list(self.height, auth_info);
                 }
                 _ => {}
             }

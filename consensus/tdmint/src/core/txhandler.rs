@@ -15,13 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::blockchain::{SignedTransaction, UnverifiedTransaction};
-use libproto::communication::{Message, MsgType};
-use libproto::key_to_id;
-use protobuf::core::parse_from_bytes;
+use libproto::{self as libproto, MsgClass};
+use libproto::blockchain::SignedTransaction;
 use std::sync::mpsc::Sender;
 use threadpool::ThreadPool;
-use util::{snappy, H256};
+use util::H256;
 
 pub type TransType = (u32, Result<SignedTransaction, H256>);
 
@@ -35,24 +33,16 @@ impl TxHandler {
         TxHandler { pool: pool, tx: tx }
     }
 
-    pub fn receive(pool: &ThreadPool, tx: &Sender<TransType>, id: u32, msg: Vec<u8>) {
-        let tx = tx.clone();
-        pool.execute(move || {
-            let mut msg = parse_from_bytes::<Message>(msg.as_ref()).unwrap();
-            let content_msg = msg.take_content();
-            let content_msg = snappy::cita_decompress(content_msg);
-            match msg.get_field_type() {
-                MsgType::TX => {
-                    let unverified_tx = parse_from_bytes::<UnverifiedTransaction>(&content_msg).unwrap();
-                    let trans = SignedTransaction::verify_transaction(unverified_tx);
-                    tx.send((id, trans)).unwrap();
+    pub fn receive(&self, id: u32, msg: Vec<u8>) {
+        let tx_sender = self.tx.clone();
+        self.pool.execute(move || {
+            let (_, _, msg) = libproto::parse_msg(&msg);
+            match msg {
+                MsgClass::TX(unverified_tx) => {
+                    tx_sender.send((id, SignedTransaction::verify_transaction(unverified_tx))).unwrap();
                 }
-                _ => info!("recv msg type[{:?}] error", msg.get_field_type()),
+                _ => info!("recv msg type[{:?}] error", msg),
             };
         });
-    }
-    pub fn handle(&mut self, key: String, body: Vec<u8>) {
-        //trace!("************ handle delivery id {:?} {:?} ",deliver.routing_key,deliver.delivery_tag);
-        TxHandler::receive(&self.pool, &self.tx, key_to_id(&key), body);
     }
 }

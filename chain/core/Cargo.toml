@@ -48,6 +48,9 @@ dotenv = "0.10.0"
 proof = { path = "../../consensus/proof" }
 common-types = { path = "../types" }
 jsonrpc_types = { path = "../../jsonrpc/types"}
+ethabi = "4.0.0"
+authority_manage = { path = "../../consensus/authority_manage" }
+
 
 [dev-dependencies]
 rand = "0.3"

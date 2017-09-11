@@ -180,6 +180,14 @@ pub mod factory {
         msg.set_operate(operate);
         msg
     }
+
+    pub fn crate_rich_status(hash: H256, height: u64, data: String) -> RichStatus {
+        let mut status = RichStatus::new();
+        status.set_height(height);
+        status.set_hash(Vec::from(hash.as_ref()));
+        status.set_data(data);
+        status
+    }
 }
 
 type CmdId = u32;

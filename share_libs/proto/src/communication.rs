@@ -38,7 +38,7 @@
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 
-#[derive(PartialEq, Clone, Default)]
+#[derive(PartialEq,Clone,Default)]
 pub struct Message {
     // message fields
     pub cmd_id: u32,
@@ -64,7 +64,9 @@ impl Message {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const Message,
         };
-        unsafe { instance.get(Message::new) }
+        unsafe {
+            instance.get(Message::new)
+        }
     }
 
     // uint32 cmd_id = 1;
@@ -209,34 +211,34 @@ impl ::protobuf::Message for Message {
                     }
                     let tmp = is.read_uint32()?;
                     self.cmd_id = tmp;
-                }
+                },
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_enum()?;
                     self.field_type = tmp;
-                }
+                },
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint32()?;
                     self.origin = tmp;
-                }
+                },
                 4 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_enum()?;
                     self.operate = tmp;
-                }
+                },
                 5 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.content)?;
-                }
+                },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                }
+                },
             };
         }
         ::std::result::Result::Ok(())
@@ -326,12 +328,36 @@ impl ::protobuf::MessageStatic for Message {
         unsafe {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>("cmd_id", Message::get_cmd_id_for_reflect, Message::mut_cmd_id_for_reflect));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<MsgType>>("type", Message::get_field_type_for_reflect, Message::mut_field_type_for_reflect));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>("origin", Message::get_origin_for_reflect, Message::mut_origin_for_reflect));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<OperateType>>("operate", Message::get_operate_for_reflect, Message::mut_operate_for_reflect));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("content", Message::get_content_for_reflect, Message::mut_content_for_reflect));
-                ::protobuf::reflect::MessageDescriptor::new::<Message>("Message", fields, file_descriptor_proto())
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
+                    "cmd_id",
+                    Message::get_cmd_id_for_reflect,
+                    Message::mut_cmd_id_for_reflect,
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<MsgType>>(
+                    "type",
+                    Message::get_field_type_for_reflect,
+                    Message::mut_field_type_for_reflect,
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
+                    "origin",
+                    Message::get_origin_for_reflect,
+                    Message::mut_origin_for_reflect,
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<OperateType>>(
+                    "operate",
+                    Message::get_operate_for_reflect,
+                    Message::mut_operate_for_reflect,
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
+                    "content",
+                    Message::get_content_for_reflect,
+                    Message::mut_content_for_reflect,
+                ));
+                ::protobuf::reflect::MessageDescriptor::new::<Message>(
+                    "Message",
+                    fields,
+                    file_descriptor_proto()
+                )
             })
         }
     }
@@ -360,7 +386,7 @@ impl ::protobuf::reflect::ProtobufValue for Message {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Clone,PartialEq,Eq,Debug,Hash)]
 pub enum MsgType {
     REQUEST = 0,
     HEADER = 1,
@@ -395,7 +421,7 @@ impl ::protobuf::ProtobufEnum for MsgType {
             9 => ::std::option::Option::Some(MsgType::RICH_STATUS),
             10 => ::std::option::Option::Some(MsgType::VERIFY_REQ),
             11 => ::std::option::Option::Some(MsgType::VERIFY_RESP),
-            _ => ::std::option::Option::None,
+            _ => ::std::option::Option::None
         }
     }
 
@@ -422,11 +448,16 @@ impl ::protobuf::ProtobufEnum for MsgType {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,
         };
-        unsafe { descriptor.get(|| ::protobuf::reflect::EnumDescriptor::new("MsgType", file_descriptor_proto())) }
+        unsafe {
+            descriptor.get(|| {
+                ::protobuf::reflect::EnumDescriptor::new("MsgType", file_descriptor_proto())
+            })
+        }
     }
 }
 
-impl ::std::marker::Copy for MsgType {}
+impl ::std::marker::Copy for MsgType {
+}
 
 impl ::std::default::Default for MsgType {
     fn default() -> Self {
@@ -440,7 +471,7 @@ impl ::protobuf::reflect::ProtobufValue for MsgType {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Clone,PartialEq,Eq,Debug,Hash)]
 pub enum OperateType {
     BROADCAST = 0,
     SINGLE = 1,
@@ -457,12 +488,16 @@ impl ::protobuf::ProtobufEnum for OperateType {
             0 => ::std::option::Option::Some(OperateType::BROADCAST),
             1 => ::std::option::Option::Some(OperateType::SINGLE),
             2 => ::std::option::Option::Some(OperateType::SUBTRACT),
-            _ => ::std::option::Option::None,
+            _ => ::std::option::Option::None
         }
     }
 
     fn values() -> &'static [Self] {
-        static values: &'static [OperateType] = &[OperateType::BROADCAST, OperateType::SINGLE, OperateType::SUBTRACT];
+        static values: &'static [OperateType] = &[
+            OperateType::BROADCAST,
+            OperateType::SINGLE,
+            OperateType::SUBTRACT,
+        ];
         values
     }
 
@@ -471,11 +506,16 @@ impl ::protobuf::ProtobufEnum for OperateType {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,
         };
-        unsafe { descriptor.get(|| ::protobuf::reflect::EnumDescriptor::new("OperateType", file_descriptor_proto())) }
+        unsafe {
+            descriptor.get(|| {
+                ::protobuf::reflect::EnumDescriptor::new("OperateType", file_descriptor_proto())
+            })
+        }
     }
 }
 
-impl ::std::marker::Copy for OperateType {}
+impl ::std::marker::Copy for OperateType {
+}
 
 impl ::std::default::Default for OperateType {
     fn default() -> Self {
@@ -494,63 +534,65 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x01\x20\x01(\rR\x05cmdId\x12\x1c\n\x04type\x18\x02\x20\x01(\x0e2\x08.Ms\
     gTypeR\x04type\x12\x16\n\x06origin\x18\x03\x20\x01(\rR\x06origin\x12&\n\
     \x07operate\x18\x04\x20\x01(\x0e2\x0c.OperateTypeR\x07operate\x12\x18\n\
-    \x07content\x18\x05\x20\x01(\x0cR\x07content*\x94\x01\n\x07MsgType\x12\
+    \x07content\x18\x05\x20\x01(\x0cR\x07content*\xa5\x01\n\x07MsgType\x12\
     \x0b\n\x07REQUEST\x10\0\x12\n\n\x06HEADER\x10\x01\x12\x08\n\x04BODY\x10\
     \x02\x12\t\n\x05BLOCK\x10\x03\x12\x06\n\x02TX\x10\x04\x12\n\n\x06STATUS\
     \x10\x05\x12\x07\n\x03MSG\x10\x06\x12\x0c\n\x08RESPONSE\x10\x07\x12\x0f\
-    \n\x0bTX_RESPONSE\x10\x08\x12\x0e\n\nVERIFY_REQ\x10\t\x12\x0f\n\x0bVERIF\
-    Y_RESP\x10\n*6\n\x0bOperateType\x12\r\n\tBROADCAST\x10\0\x12\n\n\x06SING\
-    LE\x10\x01\x12\x0c\n\x08SUBTRACT\x10\x02J\xf6\x07\n\x06\x12\x04\0\0\x1c\
-    \x01\n\x08\n\x01\x0c\x12\x03\0\0\x12\n\n\n\x02\x05\0\x12\x04\x02\0\x0e\
-    \x01\n\n\n\x03\x05\0\x01\x12\x03\x02\x05\x0c\n\x0b\n\x04\x05\0\x02\0\x12\
-    \x03\x03\x04\x10\n\x0c\n\x05\x05\0\x02\0\x01\x12\x03\x03\x04\x0b\n\x0c\n\
-    \x05\x05\0\x02\0\x02\x12\x03\x03\x0e\x0f\n\x0b\n\x04\x05\0\x02\x01\x12\
-    \x03\x04\x04\x0f\n\x0c\n\x05\x05\0\x02\x01\x01\x12\x03\x04\x04\n\n\x0c\n\
-    \x05\x05\0\x02\x01\x02\x12\x03\x04\r\x0e\n\x0b\n\x04\x05\0\x02\x02\x12\
-    \x03\x05\x04\r\n\x0c\n\x05\x05\0\x02\x02\x01\x12\x03\x05\x04\x08\n\x0c\n\
-    \x05\x05\0\x02\x02\x02\x12\x03\x05\x0b\x0c\n\x0b\n\x04\x05\0\x02\x03\x12\
-    \x03\x06\x04\x0e\n\x0c\n\x05\x05\0\x02\x03\x01\x12\x03\x06\x04\t\n\x0c\n\
-    \x05\x05\0\x02\x03\x02\x12\x03\x06\x0c\r\n\x0b\n\x04\x05\0\x02\x04\x12\
-    \x03\x07\x04\x0b\n\x0c\n\x05\x05\0\x02\x04\x01\x12\x03\x07\x04\x06\n\x0c\
-    \n\x05\x05\0\x02\x04\x02\x12\x03\x07\t\n\n\x0b\n\x04\x05\0\x02\x05\x12\
-    \x03\x08\x04\x0f\n\x0c\n\x05\x05\0\x02\x05\x01\x12\x03\x08\x04\n\n\x0c\n\
-    \x05\x05\0\x02\x05\x02\x12\x03\x08\r\x0e\n\x0b\n\x04\x05\0\x02\x06\x12\
-    \x03\t\x04\x0c\n\x0c\n\x05\x05\0\x02\x06\x01\x12\x03\t\x04\x07\n\x0c\n\
-    \x05\x05\0\x02\x06\x02\x12\x03\t\n\x0b\n\x0b\n\x04\x05\0\x02\x07\x12\x03\
-    \n\x04\x11\n\x0c\n\x05\x05\0\x02\x07\x01\x12\x03\n\x04\x0c\n\x0c\n\x05\
-    \x05\0\x02\x07\x02\x12\x03\n\x0f\x10\n\x0b\n\x04\x05\0\x02\x08\x12\x03\
-    \x0b\x04\x14\n\x0c\n\x05\x05\0\x02\x08\x01\x12\x03\x0b\x04\x0f\n\x0c\n\
-    \x05\x05\0\x02\x08\x02\x12\x03\x0b\x12\x13\n\x0b\n\x04\x05\0\x02\t\x12\
-    \x03\x0c\x04\x13\n\x0c\n\x05\x05\0\x02\t\x01\x12\x03\x0c\x04\x0e\n\x0c\n\
-    \x05\x05\0\x02\t\x02\x12\x03\x0c\x11\x12\n\x0b\n\x04\x05\0\x02\n\x12\x03\
-    \r\x04\x15\n\x0c\n\x05\x05\0\x02\n\x01\x12\x03\r\x04\x0f\n\x0c\n\x05\x05\
-    \0\x02\n\x02\x12\x03\r\x12\x14\n\n\n\x02\x05\x01\x12\x04\x10\0\x14\x01\n\
-    \n\n\x03\x05\x01\x01\x12\x03\x10\x05\x10\n\x0b\n\x04\x05\x01\x02\0\x12\
-    \x03\x11\x04\x12\n\x0c\n\x05\x05\x01\x02\0\x01\x12\x03\x11\x04\r\n\x0c\n\
-    \x05\x05\x01\x02\0\x02\x12\x03\x11\x10\x11\n\x0b\n\x04\x05\x01\x02\x01\
-    \x12\x03\x12\x04\x0f\n\x0c\n\x05\x05\x01\x02\x01\x01\x12\x03\x12\x04\n\n\
-    \x0c\n\x05\x05\x01\x02\x01\x02\x12\x03\x12\r\x0e\n\x0b\n\x04\x05\x01\x02\
-    \x02\x12\x03\x13\x04\x11\n\x0c\n\x05\x05\x01\x02\x02\x01\x12\x03\x13\x04\
-    \x0c\n\x0c\n\x05\x05\x01\x02\x02\x02\x12\x03\x13\x0f\x10\n\n\n\x02\x04\0\
-    \x12\x04\x16\0\x1c\x01\n\n\n\x03\x04\0\x01\x12\x03\x16\x08\x0f\n\x0b\n\
-    \x04\x04\0\x02\0\x12\x03\x17\x04\x16\n\r\n\x05\x04\0\x02\0\x04\x12\x04\
-    \x17\x04\x16\x11\n\x0c\n\x05\x04\0\x02\0\x05\x12\x03\x17\x04\n\n\x0c\n\
-    \x05\x04\0\x02\0\x01\x12\x03\x17\x0b\x11\n\x0c\n\x05\x04\0\x02\0\x03\x12\
-    \x03\x17\x14\x15\n\x0b\n\x04\x04\0\x02\x01\x12\x03\x18\x04\x15\n\r\n\x05\
-    \x04\0\x02\x01\x04\x12\x04\x18\x04\x17\x16\n\x0c\n\x05\x04\0\x02\x01\x06\
-    \x12\x03\x18\x04\x0b\n\x0c\n\x05\x04\0\x02\x01\x01\x12\x03\x18\x0c\x10\n\
-    \x0c\n\x05\x04\0\x02\x01\x03\x12\x03\x18\x13\x14\n\x0b\n\x04\x04\0\x02\
-    \x02\x12\x03\x19\x04\x16\n\r\n\x05\x04\0\x02\x02\x04\x12\x04\x19\x04\x18\
-    \x15\n\x0c\n\x05\x04\0\x02\x02\x05\x12\x03\x19\x04\n\n\x0c\n\x05\x04\0\
-    \x02\x02\x01\x12\x03\x19\x0b\x11\n\x0c\n\x05\x04\0\x02\x02\x03\x12\x03\
-    \x19\x14\x15\n\x0b\n\x04\x04\0\x02\x03\x12\x03\x1a\x04\x1c\n\r\n\x05\x04\
-    \0\x02\x03\x04\x12\x04\x1a\x04\x19\x16\n\x0c\n\x05\x04\0\x02\x03\x06\x12\
-    \x03\x1a\x04\x0f\n\x0c\n\x05\x04\0\x02\x03\x01\x12\x03\x1a\x10\x17\n\x0c\
-    \n\x05\x04\0\x02\x03\x03\x12\x03\x1a\x1a\x1b\n\x0b\n\x04\x04\0\x02\x04\
-    \x12\x03\x1b\x04\x16\n\r\n\x05\x04\0\x02\x04\x04\x12\x04\x1b\x04\x1a\x1c\
-    \n\x0c\n\x05\x04\0\x02\x04\x05\x12\x03\x1b\x04\t\n\x0c\n\x05\x04\0\x02\
-    \x04\x01\x12\x03\x1b\n\x11\n\x0c\n\x05\x04\0\x02\x04\x03\x12\x03\x1b\x14\
-    \x15b\x06proto3\
+    \n\x0bTX_RESPONSE\x10\x08\x12\x0f\n\x0bRICH_STATUS\x10\t\x12\x0e\n\nVERI\
+    FY_REQ\x10\n\x12\x0f\n\x0bVERIFY_RESP\x10\x0b*6\n\x0bOperateType\x12\r\n\
+    \tBROADCAST\x10\0\x12\n\n\x06SINGLE\x10\x01\x12\x0c\n\x08SUBTRACT\x10\
+    \x02J\x9f\x08\n\x06\x12\x04\0\0\x1d\x01\n\x08\n\x01\x0c\x12\x03\0\0\x12\
+    \n\n\n\x02\x05\0\x12\x04\x02\0\x0f\x01\n\n\n\x03\x05\0\x01\x12\x03\x02\
+    \x05\x0c\n\x0b\n\x04\x05\0\x02\0\x12\x03\x03\x04\x10\n\x0c\n\x05\x05\0\
+    \x02\0\x01\x12\x03\x03\x04\x0b\n\x0c\n\x05\x05\0\x02\0\x02\x12\x03\x03\
+    \x0e\x0f\n\x0b\n\x04\x05\0\x02\x01\x12\x03\x04\x04\x0f\n\x0c\n\x05\x05\0\
+    \x02\x01\x01\x12\x03\x04\x04\n\n\x0c\n\x05\x05\0\x02\x01\x02\x12\x03\x04\
+    \r\x0e\n\x0b\n\x04\x05\0\x02\x02\x12\x03\x05\x04\r\n\x0c\n\x05\x05\0\x02\
+    \x02\x01\x12\x03\x05\x04\x08\n\x0c\n\x05\x05\0\x02\x02\x02\x12\x03\x05\
+    \x0b\x0c\n\x0b\n\x04\x05\0\x02\x03\x12\x03\x06\x04\x0e\n\x0c\n\x05\x05\0\
+    \x02\x03\x01\x12\x03\x06\x04\t\n\x0c\n\x05\x05\0\x02\x03\x02\x12\x03\x06\
+    \x0c\r\n\x0b\n\x04\x05\0\x02\x04\x12\x03\x07\x04\x0b\n\x0c\n\x05\x05\0\
+    \x02\x04\x01\x12\x03\x07\x04\x06\n\x0c\n\x05\x05\0\x02\x04\x02\x12\x03\
+    \x07\t\n\n\x0b\n\x04\x05\0\x02\x05\x12\x03\x08\x04\x0f\n\x0c\n\x05\x05\0\
+    \x02\x05\x01\x12\x03\x08\x04\n\n\x0c\n\x05\x05\0\x02\x05\x02\x12\x03\x08\
+    \r\x0e\n\x0b\n\x04\x05\0\x02\x06\x12\x03\t\x04\x0c\n\x0c\n\x05\x05\0\x02\
+    \x06\x01\x12\x03\t\x04\x07\n\x0c\n\x05\x05\0\x02\x06\x02\x12\x03\t\n\x0b\
+    \n\x0b\n\x04\x05\0\x02\x07\x12\x03\n\x04\x11\n\x0c\n\x05\x05\0\x02\x07\
+    \x01\x12\x03\n\x04\x0c\n\x0c\n\x05\x05\0\x02\x07\x02\x12\x03\n\x0f\x10\n\
+    \x0b\n\x04\x05\0\x02\x08\x12\x03\x0b\x04\x14\n\x0c\n\x05\x05\0\x02\x08\
+    \x01\x12\x03\x0b\x04\x0f\n\x0c\n\x05\x05\0\x02\x08\x02\x12\x03\x0b\x12\
+    \x13\n\x0b\n\x04\x05\0\x02\t\x12\x03\x0c\x04\x14\n\x0c\n\x05\x05\0\x02\t\
+    \x01\x12\x03\x0c\x04\x0f\n\x0c\n\x05\x05\0\x02\t\x02\x12\x03\x0c\x12\x13\
+    \n\x0b\n\x04\x05\0\x02\n\x12\x03\r\x04\x14\n\x0c\n\x05\x05\0\x02\n\x01\
+    \x12\x03\r\x04\x0e\n\x0c\n\x05\x05\0\x02\n\x02\x12\x03\r\x11\x13\n\x0b\n\
+    \x04\x05\0\x02\x0b\x12\x03\x0e\x04\x15\n\x0c\n\x05\x05\0\x02\x0b\x01\x12\
+    \x03\x0e\x04\x0f\n\x0c\n\x05\x05\0\x02\x0b\x02\x12\x03\x0e\x12\x14\n\n\n\
+    \x02\x05\x01\x12\x04\x11\0\x15\x01\n\n\n\x03\x05\x01\x01\x12\x03\x11\x05\
+    \x10\n\x0b\n\x04\x05\x01\x02\0\x12\x03\x12\x04\x12\n\x0c\n\x05\x05\x01\
+    \x02\0\x01\x12\x03\x12\x04\r\n\x0c\n\x05\x05\x01\x02\0\x02\x12\x03\x12\
+    \x10\x11\n\x0b\n\x04\x05\x01\x02\x01\x12\x03\x13\x04\x0f\n\x0c\n\x05\x05\
+    \x01\x02\x01\x01\x12\x03\x13\x04\n\n\x0c\n\x05\x05\x01\x02\x01\x02\x12\
+    \x03\x13\r\x0e\n\x0b\n\x04\x05\x01\x02\x02\x12\x03\x14\x04\x11\n\x0c\n\
+    \x05\x05\x01\x02\x02\x01\x12\x03\x14\x04\x0c\n\x0c\n\x05\x05\x01\x02\x02\
+    \x02\x12\x03\x14\x0f\x10\n\n\n\x02\x04\0\x12\x04\x17\0\x1d\x01\n\n\n\x03\
+    \x04\0\x01\x12\x03\x17\x08\x0f\n\x0b\n\x04\x04\0\x02\0\x12\x03\x18\x04\
+    \x16\n\r\n\x05\x04\0\x02\0\x04\x12\x04\x18\x04\x17\x11\n\x0c\n\x05\x04\0\
+    \x02\0\x05\x12\x03\x18\x04\n\n\x0c\n\x05\x04\0\x02\0\x01\x12\x03\x18\x0b\
+    \x11\n\x0c\n\x05\x04\0\x02\0\x03\x12\x03\x18\x14\x15\n\x0b\n\x04\x04\0\
+    \x02\x01\x12\x03\x19\x04\x15\n\r\n\x05\x04\0\x02\x01\x04\x12\x04\x19\x04\
+    \x18\x16\n\x0c\n\x05\x04\0\x02\x01\x06\x12\x03\x19\x04\x0b\n\x0c\n\x05\
+    \x04\0\x02\x01\x01\x12\x03\x19\x0c\x10\n\x0c\n\x05\x04\0\x02\x01\x03\x12\
+    \x03\x19\x13\x14\n\x0b\n\x04\x04\0\x02\x02\x12\x03\x1a\x04\x16\n\r\n\x05\
+    \x04\0\x02\x02\x04\x12\x04\x1a\x04\x19\x15\n\x0c\n\x05\x04\0\x02\x02\x05\
+    \x12\x03\x1a\x04\n\n\x0c\n\x05\x04\0\x02\x02\x01\x12\x03\x1a\x0b\x11\n\
+    \x0c\n\x05\x04\0\x02\x02\x03\x12\x03\x1a\x14\x15\n\x0b\n\x04\x04\0\x02\
+    \x03\x12\x03\x1b\x04\x1c\n\r\n\x05\x04\0\x02\x03\x04\x12\x04\x1b\x04\x1a\
+    \x16\n\x0c\n\x05\x04\0\x02\x03\x06\x12\x03\x1b\x04\x0f\n\x0c\n\x05\x04\0\
+    \x02\x03\x01\x12\x03\x1b\x10\x17\n\x0c\n\x05\x04\0\x02\x03\x03\x12\x03\
+    \x1b\x1a\x1b\n\x0b\n\x04\x04\0\x02\x04\x12\x03\x1c\x04\x16\n\r\n\x05\x04\
+    \0\x02\x04\x04\x12\x04\x1c\x04\x1b\x1c\n\x0c\n\x05\x04\0\x02\x04\x05\x12\
+    \x03\x1c\x04\t\n\x0c\n\x05\x04\0\x02\x04\x01\x12\x03\x1c\n\x11\n\x0c\n\
+    \x05\x04\0\x02\x04\x03\x12\x03\x1c\x14\x15b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
@@ -563,5 +605,9 @@ fn parse_descriptor_proto() -> ::protobuf::descriptor::FileDescriptorProto {
 }
 
 pub fn file_descriptor_proto() -> &'static ::protobuf::descriptor::FileDescriptorProto {
-    unsafe { file_descriptor_proto_lazy.get(|| parse_descriptor_proto()) }
+    unsafe {
+        file_descriptor_proto_lazy.get(|| {
+            parse_descriptor_proto()
+        })
+    }
 }

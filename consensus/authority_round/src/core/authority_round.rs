@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{Engine, EngineError, Signable, unix_now, AsMillis};
-use authority_manage::AuthorityManage;
+use authority_manage::{AuthorityManage, AuthManageInfo};
 use crypto::{Signature, Signer, CreateKey};
 use engine_json;
 use libproto::*;
@@ -165,7 +165,7 @@ impl Engine for AuthorityRound {
         let signature = Signature::from(proof.signature);
         let author = block.get_body().recover_address_with_signature(&signature).unwrap();
         //if !self.params.authorities.contains(&author) {
-        if !self.auth_manage.read().authorities.contains(&author) {
+        if !self.auth_manage.read().authorities.nodes.contains(&author) {
             trace!("verify_block author {:?}", author.to_hex());
             return Err(EngineError::NotAuthorized(author))?;
         }
@@ -182,8 +182,7 @@ impl Engine for AuthorityRound {
         let height = self.height.load(Ordering::SeqCst);
         trace!("new_status status {:?} height {:?}", status, height);
 
-        let authorities: Vec<Address> = status.get_nodes().into_iter().map(|node| Address::from_slice(node)).collect();
-        self.auth_manage.write().receive_authorities_list(height, authorities);
+        self.auth_manage.write().receive_authorities_list(height, AuthManageInfo::from(status.clone()));
 
         if new_height == INIT_HEIGHT {
             self.height.store(new_height, Ordering::SeqCst);
@@ -195,7 +194,7 @@ impl Engine for AuthorityRound {
         }
         if new_height >= height {
             self.height.store(new_height, Ordering::SeqCst);
-            let pre_hash = H256::from_slice(&status.hash);
+            let pre_hash = H256::from_slice(status.get_hash());
             {
                 trace!("new_status hash is {:?}", pre_hash);
                 *self.pre_hash.write() = Some(pre_hash);

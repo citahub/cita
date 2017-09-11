@@ -21,7 +21,6 @@ jsonrpc_types = { path = "../jsonrpc/types" }
 core = { path = "./core" }
 common-types = { path = "./types" }
 
-
 [[bin]]
 path = "main.rs"
 name = "chain"
