@@ -17,6 +17,7 @@
 
 //! Node manager.
 
+use super::parse_string_to_addresses;
 use libchain::call_request::CallRequest;
 use libchain::chain::Chain;
 use sha3::sha3_256;
@@ -50,26 +51,9 @@ impl NodeManager {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = chain.eth_call(call_request, BlockId::Latest);
-        let mut nodes = Vec::new();
-        // 1. Get return data
-        // 2. Convert data to vec<address>
-        if let Ok(output) = output {
-            trace!("read nodes list output: {:?}", output);
-            if output.len() > 0 {
-                let len_len = U256::from(&output[0..32]).as_u64() as usize;
-                if len_len <= 32 {
-                    let len = U256::from(&output[32..32 + len_len]).as_u64() as usize;
-                    let num = len / 20;
-                    for i in 0..num {
-                        let node = H160::from(&output[32 + len_len + i * 20..32 + len_len + (i + 1) * 20]);
-                        if node != H160::default() {
-                            nodes.push(node);
-                        }
-                    }
-                }
-            }
-        }
+        let output = chain.eth_call(call_request, BlockId::Latest).unwrap();
+        trace!("output: {:?}", output);
+        let nodes: Vec<Address> = parse_string_to_addresses(&output);
         trace!("nodes: {:?}", nodes);
         nodes
     }
@@ -96,6 +80,7 @@ mod tests {
     use util::{U256, H256, Address};
     use util::kvdb::{Database, DatabaseConfig};
 
+    // TODO: Load from genesis json file
     fn init_chain() -> Arc<Chain> {
         let _ = env_logger::init();
         let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();

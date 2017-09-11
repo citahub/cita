@@ -18,3 +18,23 @@
 //! System contracts.
 
 pub mod node_manager;
+use util::{Address, U256, H160};
+
+/// Parse solidity return data `String` to rust `Vec<Address>`
+pub fn parse_string_to_addresses(data: &Vec<u8>) -> Vec<Address> {
+    let mut nodes = Vec::new();
+    if data.len() > 0 {
+        let len_len = U256::from(&data[0..32]).as_u64() as usize;
+        if len_len <= 32 {
+            let len = U256::from(&data[32..32 + len_len]).as_u64() as usize;
+            let num = len / 20;
+            for i in 0..num {
+                let node = H160::from(&data[32 + len_len + i * 20..32 + len_len + (i + 1) * 20]);
+                if node != H160::default() {
+                    nodes.push(node);
+                }
+            }
+        }
+    }
+    nodes
+}
