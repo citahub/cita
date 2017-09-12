@@ -914,13 +914,13 @@ mod tests {
     extern crate mktemp;
     extern crate rustc_serialize;
     use self::Chain;
+    use self::rustc_serialize::hex::FromHex;
     use super::*;
     use cita_crypto::{KeyPair, PrivKey, SIGNATURE_NAME};
     use db;
     use libchain::block::{Block, BlockBody};
     use libchain::genesis::Spec;
     use libproto::blockchain;
-    use self::rustc_serialize::hex::FromHex;
     use std::sync::Arc;
     use std::sync::mpsc::channel;
     use std::time::{UNIX_EPOCH, Instant};

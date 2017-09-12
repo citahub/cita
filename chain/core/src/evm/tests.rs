@@ -16,11 +16,11 @@
 
 extern crate rustc_hex;
 
+use self::rustc_hex::FromHex;
 use action_params::{ActionParams, ActionValue};
 use env_info::EnvInfo;
 use evm::{self, Ext, Schedule, Factory, GasLeft, VMType, ContractCreateResult, MessageCallResult};
 use executed::CallType;
-use self::rustc_hex::FromHex;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;

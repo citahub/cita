@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(unused_must_use)]
+#![allow(unused_must_use, unused_variables, dead_code, unreachable_patterns, unused_imports)]
 extern crate threadpool;
 extern crate tx_pool;
 #[macro_use]
@@ -65,9 +65,8 @@ fn main() {
                                    });
                   });
 
-    let mut candidate_pool = CandidatePool::new(0);
+    let mut candidate_pool = CandidatePool::new(tx_pub.clone());
     loop {
-        let dispatcher = tx_pub.clone();
-        dispatch::dispatch(&mut candidate_pool, dispatcher, &rx);
+        dispatch::dispatch(&mut candidate_pool, &rx);
     }
 }

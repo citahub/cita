@@ -157,8 +157,7 @@ impl Pool {
                 let hash = order.unwrap().hash;
                 let tx = self.txs.get(&hash);
                 if let Some(tx) = tx {
-                    if tx.get_transaction_with_sig().get_transaction().valid_until_block >= height &&
-                        tx.get_transaction_with_sig().get_transaction().valid_until_block < (height + BLOCKLIMIT) {
+                    if tx.get_transaction_with_sig().get_transaction().valid_until_block >= height && tx.get_transaction_with_sig().get_transaction().valid_until_block < (height + BLOCKLIMIT) {
                         tx_list.push(tx.clone());
                         n = n - 1;
                         if n == 0 {

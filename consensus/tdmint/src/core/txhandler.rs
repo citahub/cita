@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::blockchain::{SignedTransaction, UnverifiedTransaction};
 use libproto::{key_to_id, parse_msg, MsgClass, factory, submodules, topics, communication, tx_verify_req_msg};
 use libproto::auth::Ret;
+use libproto::blockchain::{SignedTransaction, UnverifiedTransaction};
 use protobuf::Message;
 use std::collections::HashMap;
-use std::sync::mpsc::Sender;
 use std::sync::{Mutex, Arc};
+use std::sync::mpsc::Sender;
 use threadpool::ThreadPool;
 use util::H256;
 
@@ -42,7 +42,7 @@ impl TxHandler {
             pool: pool,
             tx: tx,
             tx_pub: tx_pub,
-            unverified: Arc::new(Mutex::new(HashMap::new()))
+            unverified: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 

@@ -709,10 +709,10 @@ mod tests {
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::libproto::blockchain;
+    use self::rustc_hex::FromHex;
     use super::*;
     use cita_crypto::KeyPair;
     use env_info::EnvInfo;
-    use self::rustc_hex::FromHex;
     use std::sync::Arc;
     use tests::helpers::*;
     use util::{H256, Address};

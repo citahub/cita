@@ -532,12 +532,12 @@ mod tests {
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::mktemp::Temp;
+    use self::rustc_hex::FromHex;
     use super::*;
     use action_params::{ActionParams, ActionValue};
     use engines::NullEngine;
     use env_info::EnvInfo;
     use evm::{Factory, VMType};
-    use self::rustc_hex::FromHex;
     use state::Substate;
     use std::fs::File;
     use std::io::Read;
