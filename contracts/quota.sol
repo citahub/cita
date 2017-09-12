@@ -6,8 +6,6 @@ contract QutotaInterface {
     mapping (bytes32 => bool) is_global;
     mapping (bytes32 => bytes32) global;
     mapping (address => mapping(bytes32 => bytes32)) special;
-    address[] special_accounts_array;
-    mapping (address => bool) special_accouts_mapping;
 
     modifier onlyAdmin {
         if (admins[msg.sender]) {
@@ -50,8 +48,6 @@ contract Quota is QutotaInterface {
         global["blockGasLimit"] = bytes32(61415926);
         global["accountGasLimit"] = bytes32(25141592);
         special[_account]["accountGasLimit"] = bytes32(61415926);
-        special_accounts_array.push(_account);
-        special_accouts_mapping[_account] = true;
     }
 
     function addAdmin(address _account) onlyAdmin returns (bool) {
@@ -111,10 +107,6 @@ contract Quota is QutotaInterface {
         bytes32 key = bytes32("accountGasLimit");
         bytes32 value = bytes32(_value);
         special[_account]["accountGasLimit"] = value;
-        if (!special_accouts_mapping[_account]) {
-            special_accounts_array.push(_account);
-            special_accouts_mapping[_account] = true;
-        }
         SetSpecialEvent(
             _account, 
             key, 
@@ -122,10 +114,6 @@ contract Quota is QutotaInterface {
             msg.sender
         );
         return true;
-    }
-
-    function getAllGasLimit() {
-        
     }
 
     function getData(bytes32 key) constant returns (bytes32) {
