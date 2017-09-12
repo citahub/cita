@@ -18,6 +18,11 @@
 //! System contracts.
 
 pub mod node_manager;
+pub mod account_manager;
+
+pub use self::account_manager::AccountManager;
+pub use self::node_manager::NodeManager;
+
 use util::{Address, U256, H160};
 
 /// Parse solidity return data `String` to rust `Vec<Address>`
