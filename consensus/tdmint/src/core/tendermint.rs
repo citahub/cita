@@ -124,6 +124,7 @@ pub struct TenderMint {
 
     htime: Instant,
     auth_manage: AuthorityManage,
+    consensus_power: bool,
 }
 
 impl TenderMint {
@@ -162,6 +163,7 @@ impl TenderMint {
             dispatch: dispatch,
             htime: Instant::now(),
             auth_manage: AuthorityManage::new(),
+            consensus_power: false,
         }
     }
 
@@ -939,7 +941,7 @@ impl TenderMint {
     pub fn process(&mut self, info: TransType) {
         let (id, cmd_id, content_ext) = info;
         let from_broadcast = id == submodules::NET;
-        if from_broadcast {
+        if from_broadcast && self.consensus_power {
             match cmd_id {
                 ID_CONSENSUS_MSG => {
                     //trace!("net receive_new_consensus msg");
@@ -981,6 +983,12 @@ impl TenderMint {
                     self.receive_new_status(rich_status.clone());
                     let authorities: Vec<Address> = rich_status.get_nodes().into_iter().map(|node| Address::from_slice(node)).collect();
                     trace!("authorities: [{:?}]", authorities);
+                    if authorities.contains(&self.params.signer.address) {
+                        self.consensus_power = true;
+                    } else {
+                        trace!("address[{:?}] is not consensus power !", self.params.signer.address);
+                        self.consensus_power = false;
+                    }
                     self.auth_manage.receive_authorities_list(self.height, authorities);
                 }
                 _ => {}
