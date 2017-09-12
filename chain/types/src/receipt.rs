@@ -23,6 +23,36 @@ use rlp::*;
 use util::{H256, U256, Address};
 use util::HeapSizeOf;
 
+#[derive(Debug, PartialEq, Clone, Copy, Eq)]
+pub enum ReceiptError {
+    OutOfGas,
+}
+
+impl ReceiptError {
+    /// Returns human-readable description
+    pub fn description(&self) -> String {
+        let desc = match *self {
+            ReceiptError::OutOfGas => "Out of Gas",
+        };
+        desc.to_string()
+    }
+}
+
+impl Decodable for ReceiptError {
+    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+        match rlp.as_val::<u8>()? {
+            0 => Ok(ReceiptError::OutOfGas),
+            _ => Err(DecoderError::Custom("Unknown Receipt error.")),
+        }
+    }
+}
+
+impl Encodable for ReceiptError {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.append(&(*self as u8));
+    }
+}
+
 /// Information describing execution of a transaction.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Receipt {
@@ -34,11 +64,13 @@ pub struct Receipt {
     pub log_bloom: LogBloom,
     /// The logs stemming from this transaction.
     pub logs: Vec<LogEntry>,
+    /// Transaction transact error
+    pub error: Option<ReceiptError>,
 }
 
 impl Receipt {
     /// Create a new receipt.
-    pub fn new(state_root: Option<H256>, gas_used: U256, logs: Vec<LogEntry>) -> Receipt {
+    pub fn new(state_root: Option<H256>, gas_used: U256, logs: Vec<LogEntry>, error: Option<ReceiptError>) -> Receipt {
         Receipt {
             state_root: state_root,
             gas_used: gas_used,
@@ -47,6 +79,7 @@ impl Receipt {
                 b
             }), //TODO: use |= operator
             logs: logs,
+            error: error,
         }
     }
 }
@@ -62,6 +95,7 @@ impl Encodable for Receipt {
         s.append(&self.gas_used);
         s.append(&self.log_bloom);
         s.append_list(&self.logs);
+        s.append(&self.error);
     }
 }
 
@@ -73,6 +107,7 @@ impl Decodable for Receipt {
                    gas_used: rlp.val_at(0)?,
                    log_bloom: rlp.val_at(1)?,
                    logs: rlp.list_at(2)?,
+                   error: rlp.val_at(3)?,
                })
         } else {
             Ok(Receipt {
@@ -80,6 +115,7 @@ impl Decodable for Receipt {
                    gas_used: rlp.val_at(1)?,
                    log_bloom: rlp.val_at(2)?,
                    logs: rlp.list_at(3)?,
+                   error: rlp.val_at(4)?,
                })
         }
     }
