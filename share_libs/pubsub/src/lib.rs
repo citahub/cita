@@ -22,17 +22,17 @@ extern crate pubsub_rabbitmq;
 extern crate pubsub_zeromq;
 extern crate dotenv;
 
-use std::sync::mpsc::Sender;
-use std::sync::mpsc::Receiver;
+
+#[cfg(feature = "pubsub_kafka")]
+use pubsub_kafka::start_kafka;
 
 #[cfg(feature = "pubsub_rabbitmq")]
 use pubsub_rabbitmq::start_rabbitmq;
 
 #[cfg(feature = "pubsub_zeromq")]
 use pubsub_zeromq::start_zeromq;
-
-#[cfg(feature="pubsub_kafka")]
-use pubsub_kafka::start_kafka;
+use std::sync::mpsc::Receiver;
+use std::sync::mpsc::Sender;
 
 #[cfg(feature = "pubsub_rabbitmq")]
 pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
@@ -46,16 +46,16 @@ pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, 
     start_zeromq(name, keys, tx, rx);
 }
 #[cfg(feature = "pubsub_kafka")]
-pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>){
+pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
     let keys = keys.iter().map(|elem| elem.to_string()).collect::<Vec<_>>();
     start_kafka(name, keys, tx, rx);
 }
-     
+
 #[cfg(test)]
-mod test { 
+mod test {
     use super::*;
-    use std::sync::mpsc::channel;
     use std::collections::HashMap;
+    use std::sync::mpsc::channel;
     #[test]
     fn basics() {
 
