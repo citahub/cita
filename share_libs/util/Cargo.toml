@@ -32,7 +32,7 @@ lru-cache = "0.1.0"
 ethcore-logger = { path = "../logger" }
 
 [features]
-default = ["blake2bhash"]
+default = ["sha3hash"]
 sha3hash = ["sha3"]
 blake2bhash = ["blake2b"]
 
