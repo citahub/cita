@@ -21,8 +21,7 @@ use libproto::blockchain::Block as ProtoBlock;
 use libproto::blockchain::BlockHeader as ProtoBlockHeader;
 use proof::CitaProof;
 use protobuf::core::parse_from_bytes;
-use util::H256;
-use util::U256;
+use util::{H256, U256};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct BlockBody {
@@ -43,7 +42,7 @@ pub struct BlockHeader {
     pub receipts_root: H256,
     #[serde(rename = "gasUsed")]
     pub gas_used: U256,
-    pub proof: CitaProof,
+    pub proof: Option<CitaProof>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -56,6 +55,12 @@ pub struct Block {
 
 impl From<ProtoBlockHeader> for BlockHeader {
     fn from(proto_header: ProtoBlockHeader) -> Self {
+        let proof = match proto_header.get_height() {
+            0 => None,
+            _ => Some(proto_header.clone().take_proof().into()),
+        };
+        trace!("number = {}, proof = {:?}", U256::from(proto_header.get_height()), proof);
+
         BlockHeader {
             timestamp: proto_header.timestamp,
             prev_hash: H256::from(proto_header.get_prevhash()),
@@ -64,7 +69,7 @@ impl From<ProtoBlockHeader> for BlockHeader {
             transactions_root: H256::from(proto_header.get_transactions_root()),
             receipts_root: H256::from(proto_header.get_receipts_root()),
             gas_used: U256::from(proto_header.get_gas_used()),
-            proof: proto_header.clone().take_proof().into(),
+            proof: proof,
         }
     }
 }
