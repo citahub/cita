@@ -140,10 +140,10 @@ impl Pool {
         self.update_order_set(&hash_list);
     }
 
-    pub fn package(&mut self, height: u64) -> Vec<SignedTransaction> {
+    pub fn package(&mut self, height: u64, block_gas_limit: u64) -> Vec<SignedTransaction> {
         let mut tx_list = Vec::new();
         let mut invalid_tx_list = Vec::new();
-        let mut n = self.package_limit;
+        let mut n = block_gas_limit;
 
         {
             let mut iter = self.order_set.iter();
@@ -156,11 +156,15 @@ impl Pool {
                 let tx = self.txs.get(&hash);
                 if let Some(tx) = tx {
                     if tx.get_transaction_with_sig().get_transaction().valid_until_block == 0 || tx.get_transaction_with_sig().get_transaction().valid_until_block >= height {
-                        tx_list.push(tx.clone());
-                        n = n - 1;
-                        if n == 0 {
+                        let quota = tx.get_transaction_with_sig().get_transaction().quota;
+                        if n <= quota {
+                            if tx_list.is_empty() {
+                                tx_list.push(tx.clone());
+                            }
                             break;
                         }
+                        n = n - quota;
+                        tx_list.push(tx.clone());
                     } else {
                         invalid_tx_list.push(tx.clone());
                     }
@@ -192,7 +196,7 @@ mod tests {
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(valid_until_block);
-        tx.set_quota(184467440737095);
+        tx.set_quota(20);
 
         tx.sign(*privkey)
     }
@@ -215,11 +219,11 @@ mod tests {
         assert_eq!(p.len(), 3);
         p.update(&vec![tx1.clone()]);
         assert_eq!(p.len(), 2);
-        assert_eq!(p.package(5), vec![tx3.clone()]);
+        assert_eq!(p.package(5, 30), vec![tx3.clone()]);
         p.update(&vec![tx3.clone()]);
-        assert_eq!(p.package(5), vec![tx4]);
+        assert_eq!(p.package(5, 30), vec![tx4]);
         assert_eq!(p.len(), 1);
-        assert_eq!(p.package(6), vec![]);
+        assert_eq!(p.package(6, 30), vec![]);
         assert_eq!(p.len(), 0);
     }
 }

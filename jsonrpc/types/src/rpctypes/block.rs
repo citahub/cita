@@ -42,6 +42,7 @@ pub struct BlockHeader {
     pub receipts_root: H256,
     #[serde(rename = "gasUsed")]
     pub gas_used: U256,
+    pub gas_limit: U256,
     pub proof: Option<CitaProof>,
 }
 
@@ -69,6 +70,7 @@ impl From<ProtoBlockHeader> for BlockHeader {
             transactions_root: H256::from(proto_header.get_transactions_root()),
             receipts_root: H256::from(proto_header.get_receipts_root()),
             gas_used: U256::from(proto_header.get_gas_used()),
+            gas_limit: U256::from(proto_header.get_gas_limit()),
             proof: proof,
         }
     }
