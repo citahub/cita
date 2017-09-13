@@ -1,0 +1,16 @@
+1.首先确保机器上安装java
+    用java -version验证是否安装，否则下载最新java
+    http://www.oracle.com/technetwork/java/javase/downloads/index.html
+    配置相关环境变量(略)
+2.下载安装kafka(kafka_2.11-0.10.2.0版本)
+    到如下网址http://kafka.apache.org/downloads.html
+3.关闭kafka消息持久化功能
+    进入kafka目录下   打开/config/server.properties, 修改log.retention.hours=0,目的是关闭kafka消息持久化功能.
+4.启动相关服务（zookeeper,kafka）
+    kafka 依赖于zookeeper,所以先启动zookeeper，然后启动kafka,在kafka目录下执行
+         启动zookeeper: bin/zkServer.sh start
+
+         启动kafka: bin/kafka-server-start.sh config/server.properties
+
+
+完成！
