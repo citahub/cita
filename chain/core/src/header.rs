@@ -109,7 +109,7 @@ impl From<BlockHeader> for Header {
             receipts_root: H256::default(),
             log_bloom: ZERO_LOGBLOOM,
             gas_used: U256::zero(),
-            gas_limit: U256::from(u64::max_value()),
+            gas_limit: U256::from(bh.get_block_gas_limit()),
             proof: bh.get_proof().clone(),
             version: 0,
             hash: HashWrap(Cell::new(None)),

@@ -78,6 +78,9 @@ impl Synchronizer {
         rich_status.set_height(current_height);
         let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
         rich_status.set_nodes(RepeatedField::from_vec(node_list));
+        //设置获取的block limit
+        let block_gas_limit = 30000;
+        rich_status.set_block_gas_limit(block_gas_limit);
 
         let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
         trace!("chain after sync current height {:?}  known height{:?}", current_height, max_height);
