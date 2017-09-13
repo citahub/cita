@@ -748,12 +748,16 @@ impl Chain {
     /// generate block's final state.
     pub fn gen_state(&self, root: H256) -> Option<State<StateDB>> {
         let db = self.state_db.boxed_clone();
+
         State::from_existing(db, root, U256::from(0), self.factories.clone()).ok()
     }
 
     /// Get a copy of the best block's state.
     pub fn state(&self) -> State<StateDB> {
-        self.gen_state(self.current_state_root()).expect("State root of current block is invalid.")
+        let mut state = self.gen_state(self.current_state_root()).unwrap();
+        state.senders = AccountManager::load_senders(self);
+        state.creators = AccountManager::load_creators(self);
+        state
     }
 
     /// Get code by address

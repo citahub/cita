@@ -146,6 +146,7 @@ pub enum ExecutionError {
         /// Actual balance.
         got: U512,
     },
+    AccountPermission(String),
     /// Returned when internal evm error occurs.
     Internal(String),
     /// Returned when generic transaction occurs
@@ -173,6 +174,7 @@ impl fmt::Display for ExecutionError {
             NotEnoughCash { ref required, ref got } => format!("Cost of transaction exceeds sender balance. {} is required but the sender only has {}", required, got),
             Internal(ref msg) => msg.clone(),
             TransactionMalformed(ref err) => format!("Malformed transaction: {}", err),
+            AccountPermission(ref str) => format!("No permission: {}", str),
         };
 
         f.write_fmt(format_args!("Transaction execution error ({}).", msg))
