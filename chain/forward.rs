@@ -26,6 +26,7 @@ use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as Rpc
 use libproto;
 pub use libproto::*;
 pub use libproto::request::Request_oneof_req as Request;
+
 use protobuf::{Message, RepeatedField};
 use serde_json;
 use std::sync::Arc;
