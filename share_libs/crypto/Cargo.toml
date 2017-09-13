@@ -1,14 +1,14 @@
 [package]
 name = "cita-crypto"
-version = "0.6.0"
-authors = []
+version = "0.1.0"
+authors = ["lbqds <lbqds@cryptape.com>"]
 
 [dependencies]
-eth-secp256k1 = { git = "https://github.com/ethcore/rust-secp256k1" }
-lazy_static = "0.2"
-rustc-serialize = "0.3"
-util = {path = "../util"}
-rlp = {path = "../rlp"}
-rand = "0.3"
-serde = "1.0"
-serde_json = "1.0"
+cita-ed25519 = { path = "../ed25519", optional = true }
+cita-secp256k1 = { path = "../secp256k1", optional = true }
+util = { path = "../util" }
+
+[features]
+default = ["secp256k1"]
+ed25519 = ["cita-ed25519"]
+secp256k1 = ["cita-secp256k1"]

@@ -478,18 +478,18 @@ impl<B: Backend> State<B> {
     /// Execute a given transaction.
     /// This will change the state accordingly.
     pub fn apply(&mut self, env_info: &EnvInfo, t: &SignedTransaction, tracing: bool) -> ApplyResult {
-        //		let old = self.to_pod();
+        //        let old = self.to_pod();
         let engine = &NullEngine::default();
         let options = TransactOptions {
             tracing: tracing,
             vm_tracing: false,
-            check_nonce: true,
+            check_nonce: false,
         };
         let vm_factory = self.factories.vm.clone();
         let e = Executive::new(self, env_info, engine, &vm_factory).transact(t, options)?;
 
         // TODO uncomment once to_pod() works correctly.
-        //		trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
+        //        trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
 
         let receipt = Receipt::new(None, e.cumulative_gas_used, e.logs);
         trace!(target: "state", "Transaction receipt: {:?}", receipt);
@@ -641,7 +641,7 @@ impl<B: Backend> State<B> {
 
         // at this point the entry is guaranteed to be in the cache.
         Ok(RefMut::map(self.cache.borrow_mut(), |c| {
-            let mut entry = c.get_mut(a).expect("entry known to exist in the cache; qed");
+            let entry = c.get_mut(a).expect("entry known to exist in the cache; qed");
 
             match &mut entry.account {
                 &mut Some(ref mut acc) => not_default(acc),
@@ -705,58 +705,59 @@ mod tests {
     extern crate cita_crypto;
     extern crate protobuf;
     extern crate env_logger;
+    extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::libproto::blockchain;
+    use self::rustc_hex::FromHex;
     use super::*;
+    use cita_crypto::KeyPair;
     use env_info::EnvInfo;
-    use rustc_hex::FromHex;
     use std::sync::Arc;
     use tests::helpers::*;
     use util::{H256, Address};
+    use util::crypto::CreateKey;
+    use util::hashable::HASH_NAME;
 
     #[test]
     fn should_apply_create_transaction() {
         /*
-		~/codes/parity-contract-demo $ cat contracts/AbiTest.sol
-		pragma solidity ^0.4.8;
-		contract AbiTest {
-		  uint balance;
-		  function AbiTest() {}
-		  function setValue(uint value) {
-			balance = value;
-		  }
-		}
-		~/codes/parity-contract-demo $ solc contracts/AbiTest.sol  --bin-runtime --bin --hash
-		Warning: This is a pre-release compiler version, please do not use it in production.
+        ~/codes/parity-contract-demo $ cat contracts/AbiTest.sol
+        pragma solidity ^0.4.8;
+        contract AbiTest {
+          uint balance;
+          function AbiTest() {}
+          function setValue(uint value) {
+            balance = value;
+          }
+        }
+        ~/codes/parity-contract-demo $ solc contracts/AbiTest.sol  --bin-runtime --bin --hash
+        Warning: This is a pre-release compiler version, please do not use it in production.
 
-		======= contracts/AbiTest.sol:AbiTest =======
-		Binary:
-		60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
-		Binary of the runtime part:
-		60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
-		Function signatures:
-		55241077: setValue(uint256)
-		 */
+        ======= contracts/AbiTest.sol:AbiTest =======
+        Binary:
+        60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
+        Binary of the runtime part:
+        60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
+        Function signatures:
+        55241077: setValue(uint256)
+         */
         let _ = env_logger::init();
 
         // 1) tx = (to, data(code), nonce, valid_until_block)
         let mut tx = blockchain::Transaction::new();
         tx.set_to(String::from(""));
         tx.set_nonce(U256::from(0).to_hex());
-        tx.set_valid_until_block(0);
+        tx.set_valid_until_block(100);
+        tx.set_quota(184467440737095);
         tx.set_data("60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
                         .from_hex()
                         .unwrap());
 
-        let mut uv_tx = blockchain::UnverifiedTransaction::new();
-        uv_tx.set_transaction(tx);
-
         // 2) stx = (from, content(code, nonce, signature))
-        let privkey = cita_crypto::PrivKey::from(H256::from("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"));
-        let mut stx = blockchain::SignedTransaction::new();
-        stx.set_transaction_with_sig(uv_tx);
-        stx.sign(privkey);
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let stx = tx.sign(*privkey);
 
         // 4) signed
         let signed = SignedTransaction::new(&stx).unwrap();
@@ -818,16 +819,16 @@ mod tests {
     //         .unwrap();
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		action: trace::Action::Create(trace::Create {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			value: 100.into(),
-    // 			gas: 78792.into(),
-    // 			init: vec![91, 96, 0, 86],
-    // 		}),
-    // 		result: trace::Res::FailedCreate(TraceError::OutOfGas),
-    // 		subtraces: 0
-    // 	}];
+    //         trace_address: Default::default(),
+    //         action: trace::Action::Create(trace::Create {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             value: 100.into(),
+    //             gas: 78792.into(),
+    //             init: vec![91, 96, 0, 86],
+    //         }),
+    //         result: trace::Res::FailedCreate(TraceError::OutOfGas),
+    //         subtraces: 0
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -860,21 +861,21 @@ mod tests {
     //         .unwrap();
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(3),
-    // 			output: vec![]
-    // 		}),
-    // 		subtraces: 0,
-    // 	}];
+    //         trace_address: Default::default(),
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(3),
+    //             output: vec![]
+    //         }),
+    //         subtraces: 0,
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -904,21 +905,21 @@ mod tests {
     //         .unwrap();
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(0),
-    // 			output: vec![]
-    // 		}),
-    // 		subtraces: 0,
-    // 	}];
+    //         trace_address: Default::default(),
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(0),
+    //             output: vec![]
+    //         }),
+    //         subtraces: 0,
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -946,21 +947,21 @@ mod tests {
     //     let result = state.apply(&info, engine, &t, true).unwrap();
 
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: "0000000000000000000000000000000000000001".into(),
-    // 			value: 0.into(),
-    // 			gas: 79_000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(3000),
-    // 			output: vec![]
-    // 		}),
-    // 		subtraces: 0,
-    // 	}];
+    //         trace_address: Default::default(),
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: "0000000000000000000000000000000000000001".into(),
+    //             value: 0.into(),
+    //             gas: 79_000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(3000),
+    //             output: vec![]
+    //         }),
+    //         subtraces: 0,
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -992,21 +993,21 @@ mod tests {
     //     let result = state.apply(&info, engine, &t, true).unwrap();
 
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 0.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(28_061),
-    // 			output: vec![]
-    // 		}),
-    // 		subtraces: 0,
-    // 	}];
+    //         trace_address: Default::default(),
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 0.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(28_061),
+    //             output: vec![]
+    //         }),
+    //         subtraces: 0,
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1041,36 +1042,36 @@ mod tests {
     //     let result = state.apply(&info, engine, &t, true).unwrap();
 
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		subtraces: 1,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 0.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: 64.into(),
-    // 			output: vec![]
-    // 		}),
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0].into_iter().collect(),
-    // 		subtraces: 0,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: 0xa.into(),
-    // 			to: 0xa.into(),
-    // 			value: 0.into(),
-    // 			gas: 4096.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::CallCode,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: 3.into(),
-    // 			output: vec![],
-    // 		}),
-    // 	}];
+    //         trace_address: Default::default(),
+    //         subtraces: 1,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 0.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: 64.into(),
+    //             output: vec![]
+    //         }),
+    //     }, FlatTrace {
+    //         trace_address: vec![0].into_iter().collect(),
+    //         subtraces: 0,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: 0xa.into(),
+    //             to: 0xa.into(),
+    //             value: 0.into(),
+    //             gas: 4096.into(),
+    //             input: vec![],
+    //             call_type: CallType::CallCode,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: 3.into(),
+    //             output: vec![],
+    //         }),
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1109,36 +1110,36 @@ mod tests {
     //     let result = state.apply(&info, engine, &t, true).unwrap();
 
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		subtraces: 1,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 0.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(61),
-    // 			output: vec![]
-    // 		}),
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0].into_iter().collect(),
-    // 		subtraces: 0,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 0.into(),
-    // 			gas: 32768.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::DelegateCall,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: 3.into(),
-    // 			output: vec![],
-    // 		}),
-    // 	}];
+    //         trace_address: Default::default(),
+    //         subtraces: 1,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 0.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(61),
+    //             output: vec![]
+    //         }),
+    //     }, FlatTrace {
+    //         trace_address: vec![0].into_iter().collect(),
+    //         subtraces: 0,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 0.into(),
+    //             gas: 32768.into(),
+    //             input: vec![],
+    //             call_type: CallType::DelegateCall,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: 3.into(),
+    //             output: vec![],
+    //         }),
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1171,18 +1172,18 @@ mod tests {
     //         .unwrap();
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::FailedCall(TraceError::OutOfGas),
-    // 		subtraces: 0,
-    // 	}];
+    //         trace_address: Default::default(),
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::FailedCall(TraceError::OutOfGas),
+    //         subtraces: 0,
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1220,36 +1221,36 @@ mod tests {
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
 
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		subtraces: 1,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(69),
-    // 			output: vec![]
-    // 		}),
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0].into_iter().collect(),
-    // 		subtraces: 0,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: 0xa.into(),
-    // 			to: 0xb.into(),
-    // 			value: 0.into(),
-    // 			gas: 78934.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(3),
-    // 			output: vec![]
-    // 		}),
-    // 	}];
+    //         trace_address: Default::default(),
+    //         subtraces: 1,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(69),
+    //             output: vec![]
+    //         }),
+    //     }, FlatTrace {
+    //         trace_address: vec![0].into_iter().collect(),
+    //         subtraces: 0,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: 0xa.into(),
+    //             to: 0xb.into(),
+    //             value: 0.into(),
+    //             gas: 78934.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(3),
+    //             output: vec![]
+    //         }),
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1283,33 +1284,33 @@ mod tests {
     //         .unwrap();
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		subtraces: 1,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(31761),
-    // 			output: vec![]
-    // 		}),
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0].into_iter().collect(),
-    // 		subtraces: 0,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: 0xa.into(),
-    // 			to: 0xb.into(),
-    // 			value: 69.into(),
-    // 			gas: 2300.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult::default()),
-    // 	}];
+    //         trace_address: Default::default(),
+    //         subtraces: 1,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(31761),
+    //             output: vec![]
+    //         }),
+    //     }, FlatTrace {
+    //         trace_address: vec![0].into_iter().collect(),
+    //         subtraces: 0,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: 0xa.into(),
+    //             to: 0xb.into(),
+    //             value: 69.into(),
+    //             gas: 2300.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult::default()),
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1343,21 +1344,21 @@ mod tests {
     //         .unwrap();
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		subtraces: 0,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(31761),
-    // 			output: vec![]
-    // 		}),
-    // 	}];
+    //         trace_address: Default::default(),
+    //         subtraces: 0,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(31761),
+    //             output: vec![]
+    //         }),
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1394,33 +1395,33 @@ mod tests {
     //         .unwrap();
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		subtraces: 1,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(79_000),
-    // 			output: vec![]
-    // 		}),
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0].into_iter().collect(),
-    // 		subtraces: 0,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: 0xa.into(),
-    // 			to: 0xb.into(),
-    // 			value: 0.into(),
-    // 			gas: 78934.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::FailedCall(TraceError::OutOfGas),
-    // 	}];
+    //         trace_address: Default::default(),
+    //         subtraces: 1,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(79_000),
+    //             output: vec![]
+    //         }),
+    //     }, FlatTrace {
+    //         trace_address: vec![0].into_iter().collect(),
+    //         subtraces: 0,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: 0xa.into(),
+    //             to: 0xb.into(),
+    //             value: 0.into(),
+    //             gas: 78934.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::FailedCall(TraceError::OutOfGas),
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1461,51 +1462,51 @@ mod tests {
     //         .unwrap();
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		subtraces: 1,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(135),
-    // 			output: vec![]
-    // 		}),
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0].into_iter().collect(),
-    // 		subtraces: 1,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: 0xa.into(),
-    // 			to: 0xb.into(),
-    // 			value: 0.into(),
-    // 			gas: 78934.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(69),
-    // 			output: vec![]
-    // 		}),
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0, 0].into_iter().collect(),
-    // 		subtraces: 0,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: 0xb.into(),
-    // 			to: 0xc.into(),
-    // 			value: 0.into(),
-    // 			gas: 78868.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(3),
-    // 			output: vec![]
-    // 		}),
-    // 	}];
+    //         trace_address: Default::default(),
+    //         subtraces: 1,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(135),
+    //             output: vec![]
+    //         }),
+    //     }, FlatTrace {
+    //         trace_address: vec![0].into_iter().collect(),
+    //         subtraces: 1,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: 0xa.into(),
+    //             to: 0xb.into(),
+    //             value: 0.into(),
+    //             gas: 78934.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(69),
+    //             output: vec![]
+    //         }),
+    //     }, FlatTrace {
+    //         trace_address: vec![0, 0].into_iter().collect(),
+    //         subtraces: 0,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: 0xb.into(),
+    //             to: 0xc.into(),
+    //             value: 0.into(),
+    //             gas: 78868.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(3),
+    //             output: vec![]
+    //         }),
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1547,48 +1548,48 @@ mod tests {
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
 
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		subtraces: 1,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(79_000),
-    // 			output: vec![]
-    // 		})
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0].into_iter().collect(),
-    // 		subtraces: 1,
-    // 			action: trace::Action::Call(trace::Call {
-    // 			from: 0xa.into(),
-    // 			to: 0xb.into(),
-    // 			value: 0.into(),
-    // 			gas: 78934.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::FailedCall(TraceError::OutOfGas),
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0, 0].into_iter().collect(),
-    // 		subtraces: 0,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: 0xb.into(),
-    // 			to: 0xc.into(),
-    // 			value: 0.into(),
-    // 			gas: 78868.into(),
-    // 			call_type: CallType::Call,
-    // 			input: vec![],
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: U256::from(3),
-    // 			output: vec![]
-    // 		}),
-    // 	}];
+    //         trace_address: Default::default(),
+    //         subtraces: 1,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(79_000),
+    //             output: vec![]
+    //         })
+    //     }, FlatTrace {
+    //         trace_address: vec![0].into_iter().collect(),
+    //         subtraces: 1,
+    //             action: trace::Action::Call(trace::Call {
+    //             from: 0xa.into(),
+    //             to: 0xb.into(),
+    //             value: 0.into(),
+    //             gas: 78934.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::FailedCall(TraceError::OutOfGas),
+    //     }, FlatTrace {
+    //         trace_address: vec![0, 0].into_iter().collect(),
+    //         subtraces: 0,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: 0xb.into(),
+    //             to: 0xc.into(),
+    //             value: 0.into(),
+    //             gas: 78868.into(),
+    //             call_type: CallType::Call,
+    //             input: vec![],
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: U256::from(3),
+    //             output: vec![]
+    //         }),
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1625,30 +1626,30 @@ mod tests {
     //         .unwrap();
     //     let result = state.apply(&info, &engine, &t, true).unwrap();
     //     let expected_trace = vec![FlatTrace {
-    // 		trace_address: Default::default(),
-    // 		subtraces: 1,
-    // 		action: trace::Action::Call(trace::Call {
-    // 			from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    // 			to: 0xa.into(),
-    // 			value: 100.into(),
-    // 			gas: 79000.into(),
-    // 			input: vec![],
-    // 			call_type: CallType::Call,
-    // 		}),
-    // 		result: trace::Res::Call(trace::CallResult {
-    // 			gas_used: 3.into(),
-    // 			output: vec![]
-    // 		}),
-    // 	}, FlatTrace {
-    // 		trace_address: vec![0].into_iter().collect(),
-    // 		subtraces: 0,
-    // 		action: trace::Action::Suicide(trace::Suicide {
-    // 			address: 0xa.into(),
-    // 			refund_address: 0xb.into(),
-    // 			balance: 150.into(),
-    // 		}),
-    // 		result: trace::Res::None,
-    // 	}];
+    //         trace_address: Default::default(),
+    //         subtraces: 1,
+    //         action: trace::Action::Call(trace::Call {
+    //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
+    //             to: 0xa.into(),
+    //             value: 100.into(),
+    //             gas: 79000.into(),
+    //             input: vec![],
+    //             call_type: CallType::Call,
+    //         }),
+    //         result: trace::Res::Call(trace::CallResult {
+    //             gas_used: 3.into(),
+    //             output: vec![]
+    //         }),
+    //     }, FlatTrace {
+    //         trace_address: vec![0].into_iter().collect(),
+    //         subtraces: 0,
+    //         action: trace::Action::Suicide(trace::Suicide {
+    //             address: 0xa.into(),
+    //             refund_address: 0xb.into(),
+    //             balance: 150.into(),
+    //         }),
+    //         result: trace::Res::None,
+    //     }];
 
     //     assert_eq!(result.trace, expected_trace);
     // }
@@ -1805,7 +1806,11 @@ mod tests {
         let a = Address::zero();
         state.require(&a, false).unwrap();
         state.commit().unwrap();
-        assert_eq!(state.root().hex(), "42d8434e6d43bbdfa67dee7c7ef5c17159056e7727ac1ad5ba9928aeb9eb0112");
+        if HASH_NAME == "sha3" {
+            assert_eq!(state.root().hex(), "42d8434e6d43bbdfa67dee7c7ef5c17159056e7727ac1ad5ba9928aeb9eb0112");
+        } else if HASH_NAME == "blake2b" {
+            assert_eq!(state.root().hex(), "a989e73cbcbb961ac9777ca453449c42a0c008c70ef16326b7d4c96681f5d90d");
+        }
     }
 
     #[test]
@@ -1843,8 +1848,13 @@ mod tests {
     #[test]
     fn create_empty() {
         let mut state = get_temp_state();
-        state.commit().unwrap();
-        assert_eq!(state.root().hex(), "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
+        if HASH_NAME == "sha3" {
+            state.commit().unwrap();
+            assert_eq!(state.root().hex(), "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
+        } else if HASH_NAME == "blake2b" {
+            state.commit().unwrap();
+            assert_eq!(state.root().hex(), "c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9af");
+        }
     }
 
     #[test]

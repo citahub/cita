@@ -6,19 +6,17 @@ dist: trusty
 sudo: true
 jobs:
   include:
-    - stage: build & test
+    - stage: build & test1
       script:
         - |
           set -e
-          sudo apt-get update -q
-          sudo apt-get install --allow-change-held-packages libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  rabbitmq-server  google-perftools jq
-          sudo /etc/init.d/rabbitmq-server restart
           echo '################################################################################'
           echo '1) clean'
           make clean
           echo '################################################################################'
           echo '2) setup'
-          make setup
+          sudo make setup1
+          make setup2
           echo '################################################################################'
           echo '3) format'
           make fmt
@@ -28,3 +26,23 @@ jobs:
           echo '################################################################################'
           echo '5) unit test'
           make test
+    - stage: build & test2
+      script:
+        - |
+          set -e
+          echo '################################################################################'
+          echo '1) clean'
+          make clean
+          echo '################################################################################'
+          echo '2) setup'
+          sudo make setup1
+          make setup2
+          echo '################################################################################'
+          echo '3) format'
+          make fmt
+          echo '################################################################################'
+          echo '4) build'
+          make release
+          echo '################################################################################'
+          echo '6) unit test(ed25519/balke2b)'
+          make test_ed25519_blake2b

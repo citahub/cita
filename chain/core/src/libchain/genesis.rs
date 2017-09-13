@@ -15,25 +15,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+use db::{self as db, Writable, ConstKey};
+use factory::Factories;
 use libchain::block::Block;
 use serde_json;
+use state::State;
+use state_db::StateDB;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
-use util::{H256, H512};
-use util::HASH_NULL_RLP;
+use std::sync::Arc;
+use util::{Address, H256, U256};
+use util::kvdb::KeyValueDB;
 
-#[derive(Debug, PartialEq, Deserialize)]
-pub struct Spec {
-    pub prevhash: H256,
-    pub timestamp: u64,
-    pub admin: Admin,
+#[derive(Debug, PartialEq, Deserialize, Clone)]
+pub struct Contract {
+    pub nonce: String,
+    pub code: String,
+    pub storage: HashMap<String, String>,
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
-pub struct Admin {
-    pub pubkey: H512,
-    pub crypto: String,
-    pub identifier: String,
+pub struct Spec {
+    pub alloc: HashMap<String, Contract>,
+    pub prevhash: H256,
+    pub timestamp: u64,
 }
 
 #[derive(Debug, PartialEq)]
@@ -53,15 +60,55 @@ impl Genesis {
         }
     }
 
-    pub fn lazy_execute(&mut self) -> Result<(), &str> {
+    pub fn lazy_execute(&mut self, state_db: &StateDB, factories: &Factories) -> Result<(), String> {
+        let mut state = State::from_existing(state_db.boxed_clone(), self.block.state_root().clone(), U256::from(0), factories.clone()).expect("state db error");
         self.block.set_version(0);
         self.block.set_parent_hash(self.spec.prevhash);
         self.block.set_timestamp(self.spec.timestamp);
         self.block.set_number(0);
-        self.block.set_state_root(HASH_NULL_RLP);
 
-        info!("genesis state {:?}", HASH_NULL_RLP);
+        info!("**** begin **** \n");
+        info!("chain first init, to do init contracts on height eq zero");
+        for (address, contract) in self.spec.alloc.clone() {
+            let address = Address::from_any_str(address.as_str()).unwrap();
 
-        Ok(())
+            state.new_contract(&address, U256::from(0));
+            let _ = state.init_code(&address, contract.code.as_bytes().into()).expect("init code fail");
+
+            for (key, values) in contract.storage.clone() {
+                state.set_storage(&address, H256::from_any_str(key.as_ref()).unwrap(), H256::from_any_str(values.as_ref()).unwrap())
+                     .expect("init code set_storage fail");
+            }
+        }
+        state.commit().expect("state commit error");
+        //query is store in chain
+        for (address, contract) in &self.spec.alloc {
+            let address = Address::from_any_str(address.as_str()).unwrap();
+            for (key, values) in &contract.storage {
+                let result = state.storage_at(&address, &H256::from_any_str(key.as_ref()).unwrap());
+                info!("address = {:?}, key = {:?}, result = {:?}", address, key, result);
+                assert_eq!(H256::from_any_str(values.as_ref()).unwrap(), result.expect("storage error"));
+            }
+        }
+
+        info!("**** end **** \n");
+        let root = state.root().clone();
+        trace!("root {:?}", root);
+        self.block.set_state_root(root);
+        let db = state.clone().db();
+        let journal_db = db.journal_db();
+        self.save(state, journal_db.backing())
+    }
+
+    fn save(&mut self, state: State<StateDB>, db: &Arc<KeyValueDB>) -> Result<(), String> {
+        let mut batch = db.transaction();
+        let hash = self.block.hash();
+        let height = self.block.number();
+        batch.write(db::COL_HEADERS, &hash, self.block.header());
+        batch.write(db::COL_BODIES, &hash, self.block.body());
+        batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &hash);
+        batch.write(db::COL_EXTRA, &height, &hash);
+        state.db().journal_under(&mut batch, height, &hash).expect("DB commit failed");
+        db.write(batch)
     }
 }

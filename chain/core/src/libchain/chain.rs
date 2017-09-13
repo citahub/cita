@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use basic_types::*;
 use bloomchain as bc;
 use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
@@ -125,23 +124,18 @@ impl bc::group::BloomGroupDatabase for Chain {
     }
 }
 
-// TODO: Chain Errors
 pub trait TransactionHash {
     fn transaction_hashes(&self) -> Vec<H256>;
 }
 
 // TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
 // 所有直接unwrap的地方都可能会报错！
-// TODO: should keep current header
-// TODO: refactor: add header struct
-// TODO: refactor: add chain cache
 pub struct Chain {
     blooms_config: bc::Config,
-    pub current_hash: RwLock<H256>,
-    pub current_height: AtomicUsize,
+    pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
     pub max_height: AtomicUsize,
-    pub block_map: RwLock<BTreeMap<u64, (BlockSource, Block)>>,
+    pub block_map: RwLock<BTreeMap<u64, (BlockSource, Block, bool)>>,
     pub db: Arc<KeyValueDB>,
     pub sync_sender: Mutex<Sender<u64>>,
     pub state_db: StateDB,
@@ -163,42 +157,23 @@ pub struct Chain {
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 }
 
-pub fn save_genesis(db: &KeyValueDB, genesis: &Genesis) -> Result<(), String> {
-    let mut batch = db.transaction();
-    let hash = genesis.block.hash();
-    let height: BlockNumber = 0;
-    batch.write(db::COL_HEADERS, &hash, genesis.block.header());
-    batch.write(db::COL_BODIES, &hash, genesis.block.body());
-    batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &hash);
-    batch.write(db::COL_EXTRA, &ConstKey::CurrentHeight, &height);
-    batch.write(db::COL_EXTRA, &height, &hash);
-    db.write(batch)
-}
-
 /// Get latest status
-pub fn get_chain(db: &KeyValueDB) -> Option<(H256, u64)> {
-    let current_hash = db.read(db::COL_EXTRA, &ConstKey::CurrentHash);
-    if let Some(hash) = current_hash {
-        let current_height = db.read(db::COL_EXTRA, &ConstKey::CurrentHeight);
-        if let Some(height) = current_height {
-            Some((hash, height))
-        } else {
-            warn!("not expected get_chain.");
-            None
-        }
+pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
+    let h: Option<H256> = db.read(db::COL_EXTRA, &ConstKey::CurrentHash);
+    if let Some(hash) = h {
+        db.read(db::COL_HEADERS, &hash)
     } else {
+        warn!("not expected get_chain.");
         None
     }
 }
 
 impl Chain {
     fn save_status(&self, batch: &mut DBTransaction) -> Status {
-        let current_height = self.current_height.load(Ordering::SeqCst) as BlockNumber;
-        let current_hash = *self.current_hash.read();
+        let current_height = self.get_current_height();
+        let current_hash = self.get_current_hash();
 
         batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &current_hash);
-        batch.write(db::COL_EXTRA, &ConstKey::CurrentHeight, &current_height);
-
         //return status
         let mut status = Status::new();
         status.set_hash(current_hash);
@@ -224,32 +199,28 @@ impl Chain {
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
         };
 
-        let height;
-        let hash;
-        match get_chain(&*db) {
-            Some((hs, ht)) => {
-                hash = hs;
-                height = ht;
+        let header = match get_chain(&*db) {
+            Some(header) => {
+                header
             }
             _ => {
-                let _ = genesis.lazy_execute();
-                save_genesis(&*db, &genesis).expect("Failed to save genesis.");
+                genesis.lazy_execute(&state_db, &factories).expect("Failed to save genesis.");
                 info!("init genesis {:?}", genesis);
-                hash = genesis.block.hash();
-                height = 0;
+                genesis.block.header().clone()
             }
-        }
+        };
 
         let mut status = Status::new();
-        status.set_hash(hash);
-        status.set_number(height);
+        status.set_hash(header.hash().clone());
+        status.set_number(header.number());
+        let max_height = AtomicUsize::new(0);
+        max_height.store(header.number() as usize, Ordering::SeqCst);
 
         let chain = Arc::new(Chain {
                                  blooms_config: blooms_config,
-                                 current_hash: RwLock::new(hash),
-                                 current_height: AtomicUsize::new(height as usize),
+                                 current_header: RwLock::new(header),
                                  is_sync: AtomicBool::new(false),
-                                 max_height: AtomicUsize::new(0),
+                                 max_height: max_height,
                                  block_map: RwLock::new(BTreeMap::new()),
                                  block_headers: RwLock::new(HashMap::new()),
                                  block_bodies: RwLock::new(HashMap::new()),
@@ -266,72 +237,31 @@ impl Chain {
                                  polls_filter: Arc::new(Mutex::new(PollManager::new())),
                              });
 
-        chain.build_last_hashes(Some(hash), height);
+
+        chain.build_last_hashes(Some(status.hash().clone()), status.number());
         (chain, status.protobuf())
     }
 
-    // Get block header by hash
-    pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
-        let result = self.db.read_with_cache(db::COL_HEADERS, &self.block_headers, &hash);
-        self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
-        result
-    }
-
-    // Get block body by hash
-    pub fn block_body_by_hash(&self, hash: H256) -> Option<BlockBody> {
-        let result = self.db.read_with_cache(db::COL_BODIES, &self.block_bodies, &hash);
-        self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
-        result
-    }
-
-    // Get block by hash
-    pub fn block_by_hash(&self, hash: H256) -> Option<Block> {
-        match (self.block_header_by_hash(hash), self.block_body_by_hash(hash)) {
-            (Some(h), Some(b)) => Some(Block { header: h, body: b }),
-            _ => None,
+    /// Get block number by BlockId
+    fn block_number(&self, id: BlockId) -> Option<BlockNumber> {
+        match id {
+            BlockId::Number(number) => Some(number),
+            BlockId::Hash(hash) => self.block_number_by_hash(hash),
+            BlockId::Earliest => Some(0),
+            BlockId::Latest => Some(self.get_current_height()),
         }
     }
 
-    /// Get raw block by height
-    pub fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
-        self.block_hash(number).map_or(None, |h| self.block_header_by_hash(h))
-    }
-
-    /// Get raw block by height
-    pub fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
-        self.block_hash(number).map_or(None, |h| self.block_body_by_hash(h))
-    }
-
-    /// Get raw block by height
-    pub fn block_by_height(&self, number: BlockNumber) -> Option<Block> {
-        self.block_hash(number).map_or(None, |h| self.block_by_hash(h))
-    }
-
-    // Get block hash by height
+    // Get block hash by number
     pub fn block_hash(&self, index: BlockNumber) -> Option<H256> {
         let result = self.db.read_with_cache(db::COL_EXTRA, &self.block_hashes, &index);
         self.cache_man.lock().note_used(CacheId::BlockHashes(index));
         result
     }
 
-    /// Get block header by BlockId
-    pub fn block_header(&self, id: BlockId) -> Option<Header> {
-        match id {
-            BlockId::Hash(hash) => self.block_header_by_hash(hash),
-            BlockId::Number(number) => self.block_header_by_height(number),
-            BlockId::Earliest => self.block_header_by_height(0),
-            BlockId::Latest => self.block_header_by_height(self.get_current_height()),
-        }
-    }
-
-    /// Get block body by BlockId
-    pub fn block_body(&self, id: BlockId) -> Option<BlockBody> {
-        match id {
-            BlockId::Hash(hash) => self.block_body_by_hash(hash),
-            BlockId::Number(number) => self.block_body_by_height(number),
-            BlockId::Earliest => self.block_body_by_height(0),
-            BlockId::Latest => self.block_body_by_height(self.get_current_height()),
-        }
+    /// Get block number by hash.
+    fn block_number_by_hash(&self, hash: H256) -> Option<BlockNumber> {
+        self.block_header_by_hash(hash).map_or(None, |h| Some(h.number()))
     }
 
     /// Get block by BlockId
@@ -344,19 +274,104 @@ impl Chain {
         }
     }
 
-    pub fn signed_transaction_by_address(&self, hash: H256, index: usize) -> Option<SignedTransaction> {
-        self.block_body_by_hash(hash).map(|body| body.transactions()[index].clone())
+    // Get block by hash
+    pub fn block_by_hash(&self, hash: H256) -> Option<Block> {
+        match (self.block_header_by_hash(hash), self.block_body_by_hash(hash)) {
+            (Some(h), Some(b)) => Some(Block { header: h, body: b }),
+            _ => None,
+        }
     }
 
-    pub fn signed_transaction(&self, hash: TransactionId) -> Option<SignedTransaction> {
-        self.transaction_address(hash).map_or(None, |addr| {
-            let index = addr.index;
-            let hash = addr.block_hash;
-            self.signed_transaction_by_address(hash, index)
-        })
+    /// Get block by height
+    pub fn block_by_height(&self, number: BlockNumber) -> Option<Block> {
+        self.block_hash(number).map_or(None, |h| self.block_by_hash(h))
+    }
+
+    /// Get block header by BlockId
+    fn block_header(&self, id: BlockId) -> Option<Header> {
+        match id {
+            BlockId::Hash(hash) => self.block_header_by_hash(hash),
+            BlockId::Number(number) => self.block_header_by_height(number),
+            BlockId::Earliest => self.block_header_by_height(0),
+            BlockId::Latest => self.block_header_by_height(self.get_current_height()),
+        }
+    }
+
+    // Get block header by hash
+    fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
+        {
+            let header = self.current_header.read();
+            if header.hash() == hash {
+                return Some(header.clone());
+            }
+        }
+        let result = self.db.read_with_cache(db::COL_HEADERS, &self.block_headers, &hash);
+        self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
+        result
+    }
+
+    /// Get block header by height
+    fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
+        {
+            let header = self.current_header.read();
+            if header.number() == number {
+                return Some(header.clone());
+            }
+        }
+        self.block_hash(number).map_or(None, |h| self.block_header_by_hash(h))
+    }
+
+    /// Get block body by BlockId
+    fn block_body(&self, id: BlockId) -> Option<BlockBody> {
+        match id {
+            BlockId::Hash(hash) => self.block_body_by_hash(hash),
+            BlockId::Number(number) => self.block_body_by_height(number),
+            BlockId::Earliest => self.block_body_by_height(0),
+            BlockId::Latest => self.block_body_by_height(self.get_current_height()),
+        }
+    }
+
+    // Get block body by hash
+    fn block_body_by_hash(&self, hash: H256) -> Option<BlockBody> {
+        let result = self.db.read_with_cache(db::COL_BODIES, &self.block_bodies, &hash);
+        self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
+        result
+    }
+
+    /// Get block body by height
+    fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
+        self.block_hash(number).map_or(None, |h| self.block_body_by_hash(h))
     }
 
     /// Get transaction by hash
+    pub fn transaction(&self, hash: TransactionId) -> Option<SignedTransaction> {
+        self.transaction_address(hash).map_or(None, |addr| {
+            let index = addr.index;
+            let hash = addr.block_hash;
+            self.transaction_by_address(hash, index)
+        })
+    }
+
+    /// Get address of transaction by hash.
+    fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
+        let result = self.db
+                         .read_list_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash)
+                         .map(|v| v[0].clone());
+        self.cache_man.lock().note_used(CacheId::TransactionAddresses(hash));
+        result
+    }
+
+    /// Get transaction by address
+    fn transaction_by_address(&self, hash: H256, index: usize) -> Option<SignedTransaction> {
+        self.block_body_by_hash(hash).map(|body| body.transactions()[index].clone())
+    }
+
+    /// Get transaction hashes by block hash
+    pub fn transaction_hashes(&self, id: BlockId) -> Option<Vec<H256>> {
+        self.block_body(id).map(|body| body.transaction_hashes())
+    }
+
+    /// Get full transaction by hash
     pub fn full_transaction(&self, hash: TransactionId) -> Option<FullTransaction> {
         self.transaction_address(hash).map_or(None, |addr| {
             let index = addr.index;
@@ -403,7 +418,7 @@ impl Chain {
 
         last_receipt.and_then(|last_receipt| {
             // Get sender
-            let stx = self.signed_transaction_by_address(hash, index).unwrap();
+            let stx = self.transaction_by_address(hash, index).unwrap();
             let number = self.block_number_by_hash(hash).unwrap_or(0);
 
             let contract_address = match stx.action() {
@@ -446,37 +461,19 @@ impl Chain {
     }
 
     pub fn get_current_height(&self) -> u64 {
-        self.current_height.load(Ordering::SeqCst) as u64
+        self.current_header.read().number()
+    }
+
+    pub fn get_current_hash(&self) -> H256 {
+        self.current_header.read().hash().clone()
     }
 
     pub fn get_max_height(&self) -> u64 {
         self.max_height.load(Ordering::SeqCst) as u64
     }
 
-    pub fn validate_hash(&self, block_hash: &H256) -> bool {
-        let current_hash = *self.current_hash.read();
-        trace!("validate_hash current_hash {:?} block_hash {:?}", current_hash, block_hash);
-        current_hash == *block_hash
-    }
-
-    pub fn validate_height(&self, block_number: u64) -> bool {
-        let current_height = self.current_height.load(Ordering::SeqCst) as u64;
-        trace!("validate_height current_height {:?} block_number {:?}", current_height, block_number - 1);
-        current_height + 1 == block_number
-    }
-
-    /// Execute block in vm
-    fn execute_block(&self, block: Block) -> OpenBlock {
-        let current_state_root = self.current_state_root();
-        let last_hashes = self.last_hashes();
-        let mut open_block = OpenBlock::new(self.factories.clone(), false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
-        open_block.apply_transactions();
-
-        open_block
-    }
-
-    fn last_hashes(&self) -> LastHashes {
-        LastHashes::from(self.last_hashes.read().clone())
+    pub fn current_state_root(&self) -> H256 {
+        *self.current_header.read().state_root()
     }
 
     pub fn logs<F>(&self, mut blocks: Vec<BlockNumber>, matches: F, limit: Option<usize>) -> Vec<LocalizedLogEntry>
@@ -533,11 +530,6 @@ impl Chain {
         logs
     }
 
-    /// Get the number of given block's hash.
-    pub fn block_number_by_hash(&self, hash: H256) -> Option<BlockNumber> {
-        self.block_header_by_hash(hash).map_or(None, |h| Some(h.number()))
-    }
-
     /// Returns numbers of blocks containing given bloom.
     pub fn blocks_with_bloom(&self, bloom: &H2048, from_block: BlockNumber, to_block: BlockNumber) -> Vec<BlockNumber> {
         let range = from_block as bc::Number..to_block as bc::Number;
@@ -546,15 +538,6 @@ impl Chain {
              .into_iter()
              .map(|b| b as BlockNumber)
              .collect()
-    }
-
-    fn block_number(&self, id: BlockId) -> Option<BlockNumber> {
-        match id {
-            BlockId::Number(number) => Some(number),
-            BlockId::Hash(hash) => self.block_number_by_hash(hash),
-            BlockId::Earliest => Some(0),
-            BlockId::Latest => Some(self.get_current_height()),
-        }
     }
 
     /// Returns numbers of blocks containing given bloom by blockId.
@@ -577,7 +560,11 @@ impl Chain {
         self.logs(blocks, |entry| filter.matches(entry), filter.limit)
     }
 
-    /// Build last 256 hashes.
+    fn last_hashes(&self) -> LastHashes {
+        LastHashes::from(self.last_hashes.read().clone())
+    }
+
+    /// Build last 256 block hashes.
     fn build_last_hashes(&self, prevhash: Option<H256>, parent_height: u64) -> Arc<LastHashes> {
         let parent_hash = prevhash.unwrap_or_else(|| self.block_hash(parent_height).expect("Block height always valid."));
         {
@@ -617,32 +604,19 @@ impl Chain {
         hashes.push_front(hash.clone());
     }
 
-    fn current_state_root(&self) -> H256 {
-        info!("current_hash: {:?}", self.current_hash.read().clone());
-        let block = self.block_by_hash(*self.current_hash.read()).expect("Current hash always stores in db.");
-        *block.state_root()
-    }
-
     /// Commit block in db, including:
     /// 1. Block including transactions
     /// 2. TransactionAddress
     /// 3. State
     /// 3. Receipts
     /// 4. Bloom
-    //TODO: Separate commit and insert block
-    pub fn commit_block(&self, batch: &mut DBTransaction, mut block: ClosedBlock) {
+    pub fn commit_block(&self, batch: &mut DBTransaction, block: ClosedBlock) {
+
         let height = block.number();
         let hash = block.hash().clone();
-
         trace!("commit block in db {:?}, {:?}", hash, height);
 
-        // blocks blooms
-        let log_bloom = block.receipts.clone().into_iter().filter_map(|r| r).fold(LogBloom::zero(), |mut b, r| {
-            b = &b | &r.log_bloom;
-            b
-        });
-
-        block.set_log_bloom(log_bloom);
+        let log_bloom = *block.log_bloom();
 
         let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = match log_bloom.is_zero() {
             true => HashMap::new(),
@@ -700,16 +674,6 @@ impl Chain {
 
     }
 
-    /// Get the address of transaction with given hash.
-    pub fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
-        let result = self.db
-                         .read_list_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash)
-                         .map(|v| v[0].clone());
-        self.cache_man.lock().note_used(CacheId::TransactionAddresses(hash));
-        result
-    }
-
-    // TODO: cache it after transact
     /// Get receipts of block with given hash.
     pub fn block_receipts(&self, hash: H256) -> Option<BlockReceipts> {
         let result = self.db.read_with_cache(db::COL_EXTRA, &self.block_receipts, &hash);
@@ -717,7 +681,38 @@ impl Chain {
         result
     }
 
-    pub fn cita_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
+    /// Get transaction receipt.
+    pub fn transaction_receipt(&self, address: &TransactionAddress) -> Option<Receipt> {
+        self.block_receipts(address.block_hash.clone()).map_or(None, |r| r.receipts[address.index].clone())
+    }
+
+    /// Attempt to get a copy of a specific block's final state.
+    pub fn state_at(&self, id: BlockId) -> Option<State<StateDB>> {
+        self.block_header(id).map_or(None, |h| self.gen_state(*h.state_root()))
+    }
+
+    /// generate block's final state.
+    pub fn gen_state(&self, root: H256) -> Option<State<StateDB>> {
+        let db = self.state_db.boxed_clone();
+        State::from_existing(db, root, U256::from(0), self.factories.clone()).ok()
+    }
+
+    /// Get a copy of the best block's state.
+    pub fn state(&self) -> State<StateDB> {
+        self.gen_state(self.current_state_root()).expect("State root of current block is invalid.")
+    }
+
+    /// Get code by address
+    pub fn code_at(&self, address: &Address, id: BlockId) -> Option<Option<Bytes>> {
+        self.state_at(id).and_then(|s| s.code(address).ok()).map(|c| c.map(|c| (&*c).clone()))
+    }
+
+    /// Get transaction count by address
+    pub fn nonce(&self, address: &Address, id: BlockId) -> Option<U256> {
+        self.state_at(id).and_then(|s| s.nonce(address).ok())
+    }
+
+    pub fn eth_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
         let signed = self.sign_call(request);
         let result = self.call(&signed, id, Default::default());
         result.map(|b| b.output.into()).or_else(|_| Err(String::from("Call Error")))
@@ -735,36 +730,6 @@ impl Chain {
             block_limit: u64::max_value(),
         }
         .fake_sign(from)
-    }
-
-    /// Attempt to get a copy of a specific block's final state.
-    pub fn state_at(&self, id: BlockId) -> Option<State<StateDB>> {
-        self.block_header(id).map_or(None, |h| self.gen_state(*h.state_root()))
-    }
-
-    /// generate block's final state.
-    pub fn gen_state(&self, root: H256) -> Option<State<StateDB>> {
-        let db = self.state_db.boxed_clone();
-        State::from_existing(db, root, U256::from(0), self.factories.clone()).ok()
-    }
-
-    // TODO: cache state_root
-    /// Get a copy of the best block's state.
-    pub fn state(&self) -> State<StateDB> {
-        let hash = *self.current_hash.read();
-        self.block_header_by_hash(hash)
-            .map_or(None, |h| self.gen_state(*h.state_root()))
-            .expect("State root of current block always valid.")
-    }
-
-    //get account
-    pub fn code_at(&self, address: &Address, id: BlockId) -> Option<Option<Bytes>> {
-        self.state_at(id).and_then(|s| s.code(address).ok()).map(|c| c.map(|c| (&*c).clone()))
-    }
-
-    //account  transaction count
-    pub fn nonce(&self, address: &Address, id: BlockId) -> Option<U256> {
-        self.state_at(id).and_then(|s| s.nonce(address).ok())
     }
 
     fn call(&self, t: &SignedTransaction, block_id: BlockId, analytics: CallAnalytics) -> Result<Executed, CallError> {
@@ -793,18 +758,33 @@ impl Chain {
         Ok(ret)
     }
 
-    /// Get transaction receipt.
-    pub fn transaction_receipt(&self, address: &TransactionAddress) -> Option<Receipt> {
-        self.block_receipts(address.block_hash.clone()).map_or(None, |r| r.receipts[address.index].clone())
+    pub fn validate_hash(&self, block_hash: &H256) -> bool {
+        let current_hash = self.get_current_hash();
+        trace!("validate_hash current_hash {:?} block_hash {:?}", current_hash, block_hash);
+        current_hash == *block_hash
+    }
+
+    pub fn validate_height(&self, block_number: u64) -> bool {
+        let current_height = self.get_current_height();
+        trace!("validate_height current_height {:?} block_number {:?}", current_height, block_number - 1);
+        current_height + 1 == block_number
+    }
+
+    /// Execute block in vm
+    fn execute_block(&self, block: Block) -> OpenBlock {
+        let current_state_root = self.current_state_root();
+        let last_hashes = self.last_hashes();
+        let mut open_block = OpenBlock::new(self.factories.clone(), false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
+        open_block.apply_transactions();
+
+        open_block
     }
 
     /// Add block to chain:
     /// 1. Execute block
     /// 2. Commit block
     /// 3. Update cache
-    // TODO: Commit plain block type in db
-    // TODO: move proof check to sync module
-    pub fn add_block(&self, batch: &mut DBTransaction, block: Block) -> Option<H256> {
+    pub fn add_block(&self, batch: &mut DBTransaction, block: Block) -> Option<Header> {
         let height = block.number();
         match block.proof_type() {
             Some(ProofType::Tendermint) => {
@@ -819,10 +799,10 @@ impl Chain {
         if self.validate_hash(block.parent_hash()) {
             let mut open_block = self.execute_block(block);
             let closed_block = open_block.close();
-            let hash = closed_block.hash;
+            let header = closed_block.header().clone();
             self.commit_block(batch, closed_block);
-            self.update_last_hashes(&hash);
-            Some(hash)
+            self.update_last_hashes(&header.hash());
+            Some(header)
         } else {
             None
         }
@@ -830,21 +810,21 @@ impl Chain {
 
     pub fn set_block(&self, block: Block) -> Option<ProtoStatus> {
         let height = block.number();
-        trace!("set_block-----{:?}-----{:?}", height, block.hash());
+        trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
         if self.validate_height(height) {
             let mut batch = self.db.transaction();
-            if let Some(current_hash) = self.add_block(&mut batch, block) {
-                trace!("set_block current_hash!!!!!!{:?} {:?}", height, H256::from(current_hash));
+            if let Some(header) = self.add_block(&mut batch, block) {
+
+                trace!("set_block current_hash!!!!!!{:?} {:?}", height, header.hash());
+
                 {
-                    *self.current_hash.write() = current_hash;
+                    *self.current_header.write() = header;
                 }
-                self.current_height.fetch_add(1, Ordering::SeqCst);
 
                 let status = self.save_status(&mut batch);
 
                 self.db.write(batch).expect("DB write failed.");
-
-                info!("-------chain update {:?}-------", height);
+                info!("chain update {:?}", status.number);
                 Some(status.protobuf())
             } else {
                 warn!("add block failed");
@@ -856,7 +836,7 @@ impl Chain {
     }
 
     pub fn compare_status(&self, st: Status) -> (u64, u64) {
-        let current_height = self.current_height.load(Ordering::SeqCst) as u64;
+        let current_height = self.get_current_height();
         if st.number() > current_height {
             (current_height + 1, st.number() - current_height)
         } else {
@@ -928,25 +908,28 @@ impl Chain {
 
 #[cfg(test)]
 mod tests {
+    #![allow(unused_must_use, deprecated, unused_extern_crates)]
     extern crate cita_crypto;
     extern crate env_logger;
     extern crate mktemp;
-    extern crate test;
+    extern crate rustc_serialize;
     use self::Chain;
-    use self::cita_crypto::*;
+    use self::rustc_serialize::hex::FromHex;
     use super::*;
+    use cita_crypto::{KeyPair, PrivKey, SIGNATURE_NAME};
     use db;
     use libchain::block::{Block, BlockBody};
-    use libchain::genesis::{Spec, Admin};
+    use libchain::genesis::Spec;
     use libproto::blockchain;
-    use rustc_serialize::hex::FromHex;
     use std::sync::Arc;
     use std::sync::mpsc::channel;
     use std::time::{UNIX_EPOCH, Instant};
     use test::{Bencher, black_box};
     use types::transaction::SignedTransaction;
     use util::{U256, H256, Address};
+    use util::crypto::CreateKey;
     use util::kvdb::{Database, DatabaseConfig};
+    //use util::hashable::HASH_NAME;
 
     #[test]
     fn test_heapsizeof() {
@@ -968,35 +951,28 @@ mod tests {
 
     }
 
-    fn init_chain() -> (Arc<Chain>, PrivKey) {
+    fn init_chain() -> Arc<Chain> {
         let _ = env_logger::init();
-        let privkey = PrivKey::from(H256::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0"));
-        let keypair = KeyPair::from_privkey(privkey).unwrap();
-        let pubkey = keypair.pubkey();
         let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
         let genesis = Genesis {
             spec: Spec {
+                alloc: HashMap::new(),
                 prevhash: H256::from(0),
                 timestamp: 0,
-                admin: Admin {
-                    pubkey: *pubkey,
-                    crypto: privkey.hex(),
-                    identifier: String::from(""),
-                },
             },
             block: Block::default(),
         };
         let (sync_tx, _) = channel();
         let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
-        (chain, privkey)
+        chain
     }
 
-    fn create_block(chain: &Chain, privkey: PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
+    fn create_block(chain: &Chain, privkey: &PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
         let mut block = Block::new();
 
-        block.set_parent_hash(chain.current_hash.read().clone());
+        block.set_parent_hash(chain.get_current_hash());
         block.set_timestamp(UNIX_EPOCH.elapsed().unwrap().as_secs());
         block.set_number(chain.get_current_height() + 1);
         // header.proof= ?;
@@ -1004,7 +980,6 @@ mod tests {
         let mut body = BlockBody::new();
         let mut txs = Vec::new();
         for i in nonce.0..nonce.1 {
-            // 1) tx = (to, data(code), nonce)
             let mut tx = blockchain::Transaction::new();
             if to == Address::from(0) {
                 tx.set_to(String::from(""));
@@ -1013,15 +988,10 @@ mod tests {
             }
             tx.set_nonce(U256::from(i).to_hex());
             tx.set_data(data.clone());
-            tx.set_valid_until_block(0);
+            tx.set_valid_until_block(100);
+            tx.set_quota(184467440737095);
 
-            let mut uv_tx = blockchain::UnverifiedTransaction::new();
-            uv_tx.set_transaction(tx);
-
-            // 2) stx = (from, content(code, nonce, signature))
-            let mut stx = blockchain::SignedTransaction::new();
-            stx.set_transaction_with_sig(uv_tx);
-            stx.sign(privkey);
+            let stx = tx.sign(*privkey);
             let new_tx = SignedTransaction::new(&stx).unwrap();
             txs.push(new_tx);
         }
@@ -1032,7 +1002,9 @@ mod tests {
 
     #[bench]
     fn bench_execute_block(b: &mut Bencher) {
-        let (chain, privkey) = init_chain();
+        let chain = init_chain();
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
         let data = "60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
             .from_hex()
             .unwrap();
@@ -1063,8 +1035,73 @@ mod tests {
     }
 
     #[test]
+    fn test_code_at() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let chain = init_chain();
+        /*
+            pragma solidity ^0.4.8;
+
+            contract mortal {
+                /* Define variable owner of the type address*/
+                address owner;
+
+                /* this function is executed at initialization and sets the owner of the contract */
+                function mortal() { owner = msg.sender; }
+
+                /* Function to recover the funds on the contract */
+                function kill() { if (msg.sender == owner) selfdestruct(owner); }
+            }
+
+            contract greeter is mortal {
+                /* define variable greeting of the type string */
+                string greeting;
+
+                /* this runs when the contract is executed */
+                function greeter(string _greeting) public {
+                    greeting = _greeting;
+                }
+
+                /* main function */
+                function greet() constant returns (string) {
+                    return greeting;
+                }
+            }
+        */
+        let data = "6060604052341561000f57600080fd5b5b336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505b5b61010c806100616000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806341c0e1b514603d575b600080fd5b3415604757600080fd5b604d604f565b005b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141560dd576000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16ff5b5b5600a165627a7a72305820de567cec1777627b898689638799169aacaf87d3ea313a0d8dab5758bac937670029"
+            .from_hex()
+            .unwrap();
+        println!("data: {:?}", data);
+
+        let block = create_block(&chain, privkey, Address::from(0), data, (0, 1));
+        chain.set_block(block.clone());
+
+        let tx = &block.body.transactions[0];
+        let txhash = tx.hash();
+        let receipt = chain.localized_receipt(txhash).unwrap();
+
+        let contract_address = receipt.contract_address.unwrap();
+        println!("contract address: {}", contract_address);
+        let code = chain.code_at(&contract_address, BlockId::Latest);
+        assert!(code.is_some());
+        assert!(code.unwrap().is_some());
+    }
+
+    #[test]
     fn test_contract() {
-        let (chain, privkey) = init_chain();
+        //let keypair = KeyPair::gen_keypair();
+        //let privkey = keypair.privkey();
+        //let pubkey = keypair.pubkey();
+        let privkey = if SIGNATURE_NAME == "ed25519" {
+            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+        } else if SIGNATURE_NAME == "secp256k1" {
+            PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
+        } else {
+            panic!("unexcepted signature algorithm");
+        };
+        println!("privkey: {:?}", privkey);
+        let chain = init_chain();
+
         /*
             pragma solidity ^0.4.8;
             contract ConstructSol {
@@ -1084,14 +1121,14 @@ mod tests {
                     return a;
                 }
             }
-		*/
+        */
         let data = "6060604052341561000f57600080fd5b5b7fb8f132fb6526e0405f3ce4f3bab301f1d4409b1e7f2c01c2037d6cf845c831cb30604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a15b5b610107806100846000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11460475780636d4ce63c146067575b600080fd5b3415605157600080fd5b60656004808035906020019091905050608d565b005b3415607157600080fd5b607760d1565b6040518082815260200191505060405180910390f35b806000819055507fa17a9e66f0c355e3aa3b9ea969991204d6b1d2e62a47877f612cb2371d79e06a6000546040518082815260200191505060405180910390a15b50565b6000805490505b905600a165627a7a72305820bb7224faec63935671f0b4722064773ccae237bec4f6fbb252c362f2192dca900029"
             .from_hex()
             .unwrap();
 
         println!("data: {:?}", data);
 
-        let block = create_block(&chain, privkey, Address::from(0), data, (0, 1));
+        let block = create_block(&chain, &privkey, Address::from(0), data, (0, 1));
         chain.set_block(block.clone());
 
         let txhash = block.body().transactions()[0].hash();
@@ -1102,15 +1139,97 @@ mod tests {
         println!("contract address: {}", contract_address);
         let log = &receipt.logs[0];
         assert_eq!(contract_address, log.address);
+        if SIGNATURE_NAME == "ed25519" {
+            assert_eq!(contract_address, Address::from("b2f0aa00c6bc02a2b07646a1a213e1bed6fefff6"));
+        } else if SIGNATURE_NAME == "secp256k1" {
+            assert_eq!(contract_address, Address::from("893ed563bbe983e04441792e7ae866d4134adfd7"));
+        };
         println!("contract_address as slice {:?}", contract_address.to_vec().as_slice());
-        assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
-        let code = chain.code_at(&contract_address, BlockId::Latest);
-        assert!(code.is_some());
-        assert!(code.unwrap().is_some());
+        if SIGNATURE_NAME == "ed25519" {
+            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 111, 59, 43, 53, 88, 72, 145, 132, 114, 215, 155, 118, 248, 179, 151, 41, 8, 138, 13, 0]
+            assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
+            assert_eq!(
+                log.data,
+                Bytes::from(vec![
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    178,
+                    240,
+                    170,
+                    0,
+                    198,
+                    188,
+                    2,
+                    162,
+                    176,
+                    118,
+                    70,
+                    161,
+                    162,
+                    19,
+                    225,
+                    190,
+                    214,
+                    254,
+                    255,
+                    246,
+                ])
+            );
+        } else if SIGNATURE_NAME == "secp256k1" {
+            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 137, 62, 213, 99, 187, 233, 131, 224, 68, 65, 121, 46, 122, 232, 102, 212, 19, 74, 223, 215]
+            assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
+            assert_eq!(
+                log.data,
+                Bytes::from(vec![
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    137,
+                    62,
+                    213,
+                    99,
+                    187,
+                    233,
+                    131,
+                    224,
+                    68,
+                    65,
+                    121,
+                    46,
+                    122,
+                    232,
+                    102,
+                    212,
+                    19,
+                    74,
+                    223,
+                    215,
+                ])
+            );
+        };
 
         // set a=10
         let data = "60fe47b1000000000000000000000000000000000000000000000000000000000000000a".from_hex().unwrap();
-        let block = create_block(&chain, privkey, contract_address, data, (1, 2));
+        let block = create_block(&chain, &privkey, contract_address, data, (1, 2));
         chain.set_block(block.clone());
         let txhash = block.body().transactions()[0].hash();
         let receipt = chain.localized_receipt(txhash).unwrap();
@@ -1123,7 +1242,7 @@ mod tests {
             to: contract_address,
             data: Some(data.into()),
         };
-        let call_result = chain.cita_call(call_request, BlockId::Latest);
+        let call_result = chain.eth_call(call_request, BlockId::Latest);
         assert_eq!(call_result, Ok(Bytes::from(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10])));
         println!("call_result: {:?}", call_result);
     }

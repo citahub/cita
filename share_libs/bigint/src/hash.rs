@@ -28,346 +28,357 @@ pub fn clean_0x(s: &str) -> &str {
 }
 
 macro_rules! impl_hash {
-	($from: ident, $size: expr) => {
-		#[repr(C)]
-		/// Unformatted binary data of fixed length.
-		pub struct $from (pub [u8; $size]);
+    ($from: ident, $size: expr) => {
+        #[repr(C)]
+        /// Unformatted binary data of fixed length.
+        pub struct $from (pub [u8; $size]);
 
 
-		impl From<[u8; $size]> for $from {
-			fn from(bytes: [u8; $size]) -> Self {
-				$from(bytes)
-			}
-		}
+        impl From<[u8; $size]> for $from {
+            fn from(bytes: [u8; $size]) -> Self {
+                $from(bytes)
+            }
+        }
 
-		impl From<$from> for [u8; $size] {
-			fn from(s: $from) -> Self {
-				s.0
-			}
-		}
+        impl From<$from> for [u8; $size] {
+            fn from(s: $from) -> Self {
+                s.0
+            }
+        }
 
-		impl Deref for $from {
-			type Target = [u8];
+        impl Deref for $from {
+            type Target = [u8];
 
-			#[inline]
-			fn deref(&self) -> &[u8] {
-				&self.0
-			}
-		}
+            #[inline]
+            fn deref(&self) -> &[u8] {
+                &self.0
+            }
+        }
 
-		impl AsRef<[u8]> for $from {
-			#[inline]
-			fn as_ref(&self) -> &[u8] {
-				&self.0
-			}
-		}
+        impl AsRef<[u8]> for $from {
+            #[inline]
+            fn as_ref(&self) -> &[u8] {
+                &self.0
+            }
+        }
 
-		impl DerefMut for $from {
-			#[inline]
-			fn deref_mut(&mut self) -> &mut [u8] {
-				&mut self.0
-			}
-		}
+        impl DerefMut for $from {
+            #[inline]
+            fn deref_mut(&mut self) -> &mut [u8] {
+                &mut self.0
+            }
+        }
 
-		impl $from {
-			/// Create a new, zero-initialised, instance.
-			pub fn new() -> $from {
-				$from([0; $size])
-			}
+        impl $from {
+            /// Create a new, zero-initialised, instance.
+            pub fn new() -> $from {
+                $from([0; $size])
+            }
 
-			/// Synonym for `new()`. Prefer to new as it's more readable.
-			pub fn zero() -> $from {
-				$from([0; $size])
-			}
+            /// Synonym for `new()`. Prefer to new as it's more readable.
+            pub fn zero() -> $from {
+                $from([0; $size])
+            }
 
-			/// Create a new, cryptographically random, instance.
-			pub fn random() -> $from {
-				let mut hash = $from::new();
-				hash.randomize();
-				hash
-			}
+            /// Create a new, cryptographically random, instance.
+            pub fn random() -> $from {
+                let mut hash = $from::new();
+                hash.randomize();
+                hash
+            }
 
-			/// Assign self have a cryptographically random value.
-			pub fn randomize(&mut self) {
-				let mut rng = OsRng::new().unwrap();
-				*self= $from::rand(&mut rng);
-			}
+            /// Assign self have a cryptographically random value.
+            pub fn randomize(&mut self) {
+                let mut rng = OsRng::new().unwrap();
+                *self= $from::rand(&mut rng);
+            }
 
-			/// Get the size of this object in bytes.
-			pub fn len() -> usize {
-				$size
-			}
+            /// Get the size of this object in bytes.
+            pub fn len() -> usize {
+                $size
+            }
 
-			#[inline]
-			/// Assign self to be of the same value as a slice of bytes of length `len()`.
-			pub fn clone_from_slice(&mut self, src: &[u8]) -> usize {
-				let min = cmp::min($size, src.len());
-				self.0[..min].copy_from_slice(&src[..min]);
-				min
-			}
+            #[inline]
+            /// Assign self to be of the same value as a slice of bytes of length `len()`.
+            pub fn clone_from_slice(&mut self, src: &[u8]) -> usize {
+                let min = cmp::min($size, src.len());
+                self.0[..min].copy_from_slice(&src[..min]);
+                min
+            }
 
-			/// Convert a slice of bytes of length `len()` to an instance of this type.
-			pub fn from_slice(src: &[u8]) -> Self {
-				let mut r = Self::new();
-				r.clone_from_slice(src);
-				r
-			}
+            /// Convert a slice of bytes of length `len()` to an instance of this type.
+            pub fn from_slice(src: &[u8]) -> Self {
+                let mut r = Self::new();
+                r.clone_from_slice(src);
+                r
+            }
 
-			/// Copy the data of this object into some mutable slice of length `len()`.
-			pub fn copy_to(&self, dest: &mut[u8]) {
-				let min = cmp::min($size, dest.len());
-				dest[..min].copy_from_slice(&self.0[..min]);
-			}
+            /// Copy the data of this object into some mutable slice of length `len()`.
+            pub fn copy_to(&self, dest: &mut[u8]) {
+                let min = cmp::min($size, dest.len());
+                dest[..min].copy_from_slice(&self.0[..min]);
+            }
 
-			/// Returns `true` if all bits set in `b` are also set in `self`.
-			pub fn contains<'a>(&'a self, b: &'a Self) -> bool {
-				&(b & self) == b
-			}
+            /// Returns `true` if all bits set in `b` are also set in `self`.
+            pub fn contains<'a>(&'a self, b: &'a Self) -> bool {
+                &(b & self) == b
+            }
 
-			/// Returns `true` if no bits are set.
-			pub fn is_zero(&self) -> bool {
-				self.eq(&Self::new())
-			}
+            /// Returns `true` if no bits are set.
+            pub fn is_zero(&self) -> bool {
+                self.eq(&Self::new())
+            }
 
-			/// Returns the lowest 8 bytes interpreted as a BigEndian integer.
-			pub fn low_u64(&self) -> u64 {
-				let mut ret = 0u64;
-				for i in 0..min($size, 8) {
-					ret |= (self.0[$size - 1 - i] as u64) << (i * 8);
-				}
-				ret
-			}
-		}
+            /// Returns the lowest 8 bytes interpreted as a BigEndian integer.
+            pub fn low_u64(&self) -> u64 {
+                let mut ret = 0u64;
+                for i in 0..min($size, 8) {
+                    ret |= (self.0[$size - 1 - i] as u64) << (i * 8);
+                }
+                ret
+            }
 
-		impl FromStr for $from {
-			type Err = FromHexError;
+            pub fn from_any_str(hex_str: &str) -> Result<$from, FromHexError> {
+                let a = clean_0x(hex_str).from_hex()?;
+                let mut ret = [0; $size];
+                if a.len() > $size{
+                    ret.copy_from_slice(&a.as_slice()[a.len() - $size..a.len()]);
+                }else{
+                    &ret[$size - a.len()..$size].copy_from_slice(a.as_slice());
+                }
+                Ok($from(ret))
+            }
+        }
 
-			fn from_str(s: &str) -> Result<$from, FromHexError> {
-				let a = s.from_hex()?;
-				if a.len() != $size {
-					return Err(FromHexError::InvalidHexLength);
-				}
+        impl FromStr for $from {
+            type Err = FromHexError;
 
-				let mut ret = [0;$size];
-				ret.copy_from_slice(&a);
-				Ok($from(ret))
-			}
-		}
+            fn from_str(s: &str) -> Result<$from, FromHexError> {
+                let a = s.from_hex()?;
+                if a.len() != $size {
+                    return Err(FromHexError::InvalidHexLength);
+                }
 
-		impl fmt::Debug for $from {
-			fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-				for i in &self.0[..] {
-					write!(f, "{:02x}", i)?;
-				}
-				Ok(())
-			}
-		}
+                let mut ret = [0;$size];
+                ret.copy_from_slice(&a);
+                Ok($from(ret))
+            }
+        }
 
-		impl fmt::Display for $from {
-			fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-				for i in &self.0[0..2] {
-					write!(f, "{:02x}", i)?;
-				}
-				write!(f, "…")?;
-				for i in &self.0[$size - 2..$size] {
-					write!(f, "{:02x}", i)?;
-				}
-				Ok(())
-			}
-		}
+        impl fmt::Debug for $from {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                for i in &self.0[..] {
+                    write!(f, "{:02x}", i)?;
+                }
+                Ok(())
+            }
+        }
 
-		impl Copy for $from {}
-		#[cfg_attr(feature="dev", allow(expl_impl_clone_on_copy))]
-		impl Clone for $from {
-			fn clone(&self) -> $from {
-				let mut ret = $from::new();
-				ret.0.copy_from_slice(&self.0);
-				ret
-			}
-		}
+        impl fmt::Display for $from {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                for i in &self.0[0..2] {
+                    write!(f, "{:02x}", i)?;
+                }
+                write!(f, "…")?;
+                for i in &self.0[$size - 2..$size] {
+                    write!(f, "{:02x}", i)?;
+                }
+                Ok(())
+            }
+        }
 
-		impl Eq for $from {}
+        impl Copy for $from {}
+        #[cfg_attr(feature="dev", allow(expl_impl_clone_on_copy))]
+        impl Clone for $from {
+            fn clone(&self) -> $from {
+                let mut ret = $from::new();
+                ret.0.copy_from_slice(&self.0);
+                ret
+            }
+        }
 
-		impl PartialEq for $from {
-			fn eq(&self, other: &Self) -> bool {
-				unsafe { memcmp(self.0.as_ptr() as *const c_void, other.0.as_ptr() as *const c_void, $size) == 0 }
-			}
-		}
+        impl Eq for $from {}
 
-		impl Ord for $from {
-			fn cmp(&self, other: &Self) -> Ordering {
-				let r = unsafe { memcmp(self.0.as_ptr() as *const c_void, other.0.as_ptr() as *const c_void, $size) };
-				if r < 0 { return Ordering::Less }
-				if r > 0 { return Ordering::Greater }
-				return Ordering::Equal;
-			}
-		}
+        impl PartialEq for $from {
+            fn eq(&self, other: &Self) -> bool {
+                unsafe { memcmp(self.0.as_ptr() as *const c_void, other.0.as_ptr() as *const c_void, $size) == 0 }
+            }
+        }
 
-		impl PartialOrd for $from {
-			fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-				Some(self.cmp(other))
-			}
-		}
+        impl Ord for $from {
+            fn cmp(&self, other: &Self) -> Ordering {
+                let r = unsafe { memcmp(self.0.as_ptr() as *const c_void, other.0.as_ptr() as *const c_void, $size) };
+                if r < 0 { return Ordering::Less }
+                if r > 0 { return Ordering::Greater }
+                return Ordering::Equal;
+            }
+        }
 
-		impl Hash for $from {
-			fn hash<H>(&self, state: &mut H) where H: Hasher {
-				state.write(&self.0);
-				state.finish();
-			}
-		}
+        impl PartialOrd for $from {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                Some(self.cmp(other))
+            }
+        }
 
-		impl Index<usize> for $from {
-			type Output = u8;
+        impl Hash for $from {
+            fn hash<H>(&self, state: &mut H) where H: Hasher {
+                state.write(&self.0);
+                state.finish();
+            }
+        }
 
-			fn index(&self, index: usize) -> &u8 {
-				&self.0[index]
-			}
-		}
-		impl IndexMut<usize> for $from {
-			fn index_mut(&mut self, index: usize) -> &mut u8 {
-				&mut self.0[index]
-			}
-		}
-		impl Index<ops::Range<usize>> for $from {
-			type Output = [u8];
+        impl Index<usize> for $from {
+            type Output = u8;
 
-			fn index(&self, index: ops::Range<usize>) -> &[u8] {
-				&self.0[index]
-			}
-		}
-		impl IndexMut<ops::Range<usize>> for $from {
-			fn index_mut(&mut self, index: ops::Range<usize>) -> &mut [u8] {
-				&mut self.0[index]
-			}
-		}
-		impl Index<ops::RangeFull> for $from {
-			type Output = [u8];
+            fn index(&self, index: usize) -> &u8 {
+                &self.0[index]
+            }
+        }
+        impl IndexMut<usize> for $from {
+            fn index_mut(&mut self, index: usize) -> &mut u8 {
+                &mut self.0[index]
+            }
+        }
+        impl Index<ops::Range<usize>> for $from {
+            type Output = [u8];
 
-			fn index(&self, _index: ops::RangeFull) -> &[u8] {
-				&self.0
-			}
-		}
-		impl IndexMut<ops::RangeFull> for $from {
-			fn index_mut(&mut self, _index: ops::RangeFull) -> &mut [u8] {
-				&mut self.0
-			}
-		}
+            fn index(&self, index: ops::Range<usize>) -> &[u8] {
+                &self.0[index]
+            }
+        }
+        impl IndexMut<ops::Range<usize>> for $from {
+            fn index_mut(&mut self, index: ops::Range<usize>) -> &mut [u8] {
+                &mut self.0[index]
+            }
+        }
+        impl Index<ops::RangeFull> for $from {
+            type Output = [u8];
 
-		/// `BitOr` on references
-		impl<'a> BitOr for &'a $from {
-			type Output = $from;
+            fn index(&self, _index: ops::RangeFull) -> &[u8] {
+                &self.0
+            }
+        }
+        impl IndexMut<ops::RangeFull> for $from {
+            fn index_mut(&mut self, _index: ops::RangeFull) -> &mut [u8] {
+                &mut self.0
+            }
+        }
 
-			fn bitor(self, rhs: Self) -> Self::Output {
-				let mut ret: $from = $from::default();
-				for i in 0..$size {
-					ret.0[i] = self.0[i] | rhs.0[i];
-				}
-				ret
-			}
-		}
+        /// `BitOr` on references
+        impl<'a> BitOr for &'a $from {
+            type Output = $from;
 
-		/// Moving `BitOr`
-		impl BitOr for $from {
-			type Output = $from;
+            fn bitor(self, rhs: Self) -> Self::Output {
+                let mut ret: $from = $from::default();
+                for i in 0..$size {
+                    ret.0[i] = self.0[i] | rhs.0[i];
+                }
+                ret
+            }
+        }
 
-			fn bitor(self, rhs: Self) -> Self::Output {
-				&self | &rhs
-			}
-		}
+        /// Moving `BitOr`
+        impl BitOr for $from {
+            type Output = $from;
 
-		/// `BitAnd` on references
-		impl <'a> BitAnd for &'a $from {
-			type Output = $from;
+            fn bitor(self, rhs: Self) -> Self::Output {
+                &self | &rhs
+            }
+        }
 
-			fn bitand(self, rhs: Self) -> Self::Output {
-				let mut ret: $from = $from::default();
-				for i in 0..$size {
-					ret.0[i] = self.0[i] & rhs.0[i];
-				}
-				ret
-			}
-		}
+        /// `BitAnd` on references
+        impl <'a> BitAnd for &'a $from {
+            type Output = $from;
 
-		/// Moving `BitAnd`
-		impl BitAnd for $from {
-			type Output = $from;
+            fn bitand(self, rhs: Self) -> Self::Output {
+                let mut ret: $from = $from::default();
+                for i in 0..$size {
+                    ret.0[i] = self.0[i] & rhs.0[i];
+                }
+                ret
+            }
+        }
 
-			fn bitand(self, rhs: Self) -> Self::Output {
-				&self & &rhs
-			}
-		}
+        /// Moving `BitAnd`
+        impl BitAnd for $from {
+            type Output = $from;
 
-		/// `BitXor` on references
-		impl <'a> BitXor for &'a $from {
-			type Output = $from;
+            fn bitand(self, rhs: Self) -> Self::Output {
+                &self & &rhs
+            }
+        }
 
-			fn bitxor(self, rhs: Self) -> Self::Output {
-				let mut ret: $from = $from::default();
-				for i in 0..$size {
-					ret.0[i] = self.0[i] ^ rhs.0[i];
-				}
-				ret
-			}
-		}
+        /// `BitXor` on references
+        impl <'a> BitXor for &'a $from {
+            type Output = $from;
 
-		/// Moving `BitXor`
-		impl BitXor for $from {
-			type Output = $from;
+            fn bitxor(self, rhs: Self) -> Self::Output {
+                let mut ret: $from = $from::default();
+                for i in 0..$size {
+                    ret.0[i] = self.0[i] ^ rhs.0[i];
+                }
+                ret
+            }
+        }
 
-			fn bitxor(self, rhs: Self) -> Self::Output {
-				&self ^ &rhs
-			}
-		}
+        /// Moving `BitXor`
+        impl BitXor for $from {
+            type Output = $from;
 
-		impl $from {
-			/// Get a hex representation.
-			pub fn hex(&self) -> String {
-				format!("{:?}", self)
-			}
-		}
+            fn bitxor(self, rhs: Self) -> Self::Output {
+                &self ^ &rhs
+            }
+        }
 
-		impl Default for $from {
-			fn default() -> Self { $from::new() }
-		}
+        impl $from {
+            /// Get a hex representation.
+            pub fn hex(&self) -> String {
+                format!("{:?}", self)
+            }
+        }
 
-		impl From<u64> for $from {
-			fn from(mut value: u64) -> $from {
-				let mut ret = $from::new();
-				for i in 0..8 {
-					if i < $size {
-						ret.0[$size - i - 1] = (value & 0xff) as u8;
-						value >>= 8;
-					}
-				}
-				ret
-			}
-		}
+        impl Default for $from {
+            fn default() -> Self { $from::new() }
+        }
 
-		impl From<&'static str> for $from {
-			fn from(s: &'static str) -> $from {
-				let s = clean_0x(s);
-				if s.len() % 2 == 1 {
-					("0".to_owned() + s).parse().unwrap()
-				} else {
-					s.parse().unwrap()
-				}
-			}
-		}
+        impl From<u64> for $from {
+            fn from(mut value: u64) -> $from {
+                let mut ret = $from::new();
+                for i in 0..8 {
+                    if i < $size {
+                        ret.0[$size - i - 1] = (value & 0xff) as u8;
+                        value >>= 8;
+                    }
+                }
+                ret
+            }
+        }
 
-		impl<'a> From<&'a [u8]> for $from {
-			fn from(s: &'a [u8]) -> $from {
-				$from::from_slice(s)
-			}
-		}
+        impl From<&'static str> for $from {
+            fn from(s: &'static str) -> $from {
+                let s = clean_0x(s);
+                if s.len() % 2 == 1 {
+                    ("0".to_owned() + s).parse().unwrap()
+                } else {
+                    s.parse().unwrap()
+                }
+            }
+        }
 
-		impl Rand for $from {
-			fn rand<R: Rng>(r: &mut R) -> Self {
-				let mut hash = $from::new();
-				r.fill_bytes(&mut hash.0);
-				hash
-			}
-		}
-	}
+        impl<'a> From<&'a [u8]> for $from {
+            fn from(s: &'a [u8]) -> $from {
+                $from::from_slice(s)
+            }
+        }
+
+        impl Rand for $from {
+            fn rand<R: Rng>(r: &mut R) -> Self {
+                let mut hash = $from::new();
+                r.fill_bytes(&mut hash.0);
+                hash
+            }
+        }
+    }
 }
 
 impl From<U256> for H256 {
@@ -438,13 +449,14 @@ impl_hash!(H256, 32);
 impl_hash!(H264, 33);
 impl_hash!(H512, 64);
 impl_hash!(H520, 65);
+impl_hash!(H768, 96);
 impl_hash!(H1024, 128);
 impl_hash!(H2048, 256);
 
 
 macro_rules! impl_serde_for_bigint {
-	($from: ident) => {
-		impl<'de> Deserialize<'de> for $from {
+    ($from: ident) => {
+        impl<'de> Deserialize<'de> for $from {
             fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
                 struct HashVisitor;
 
@@ -486,7 +498,7 @@ macro_rules! impl_serde_for_bigint {
                 serializer.serialize_str(&hex)
             }
         }
-	}
+    }
 }
 
 impl_serde_for_bigint!(H64);
@@ -608,5 +620,28 @@ mod tests {
         assert_eq!(r_ref, u);
         let r: U256 = From::from(h);
         assert_eq!(r, u);
+    }
+
+    #[test]
+    fn test_from_str() {
+        let u = 100u64;
+        let h = H64::from_str("0000000000000064");
+        assert_eq!(H64::from(u), h.unwrap());
+    }
+
+    #[test]
+    fn test_from_any_str() {
+        let u = 100u64;
+        assert_eq!(H64::from(u), H64::from_any_str("64").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("00000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0x000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0x00000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0x0000000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("00000000000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0000000000000000000064").unwrap());
+        assert_eq!(H64::from(u), H64::from_any_str("0x000000000000000000000064").unwrap());
     }
 }

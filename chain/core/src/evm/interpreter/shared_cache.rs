@@ -86,18 +86,24 @@ impl Default for SharedCache {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    extern crate rustc_hex;
 
-#[test]
-fn test_find_jump_destinations() {
-    use rustc_hex::FromHex;
-    // given
-    let code = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff5b01600055"
-        .from_hex()
-        .unwrap();
+    use self::rustc_hex::FromHex;
+    use super::SharedCache;
 
-    // when
-    let valid_jump_destinations = SharedCache::find_jump_destinations(&code);
+    #[test]
+    fn test_find_jump_destinations() {
+        // given
+        let code = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff5b01600055"
+            .from_hex()
+            .unwrap();
 
-    // then
-    assert!(valid_jump_destinations.contains(66));
+        // when
+        let valid_jump_destinations = SharedCache::find_jump_destinations(&code);
+
+        // then
+        assert!(valid_jump_destinations.contains(66));
+    }
 }

@@ -16,12 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use BlockNumber;
-use crypto::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN};
+use crypto::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, PubKey};
 use libproto::blockchain::{Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction, SignedTransaction as ProtoSignedTransaction, Crypto as ProtoCrypto};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{H256, Address, U256, Bytes, HeapSizeOf, H520, H512};
+use util::{H256, Address, U256, Bytes, HeapSizeOf};
 
 // pub const STORE_ADDRESS: H160 =  H160( [0xff; 20] );
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
@@ -48,7 +48,7 @@ pub enum Action {
 
 impl Default for Action {
     fn default() -> Action {
-        Action::Create
+        Action::Store
     }
 }
 
@@ -61,6 +61,17 @@ impl Decodable for Action {
             let addr: Address = rlp.as_val()?;
             if addr == store_addr { Ok(Action::Store) } else { Ok(Action::Call(addr)) }
         }
+    }
+}
+
+impl Encodable for Action {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        let store_addr: Address = STORE_ADDRESS.into();
+        match *self {
+            Action::Create => s.append_internal(&""),
+            Action::Call(ref addr) => s.append_internal(addr),
+            Action::Store => s.append_internal(&store_addr),
+        };
     }
 }
 
@@ -90,8 +101,8 @@ impl Decodable for CryptoType {
 impl Encodable for CryptoType {
     fn rlp_append(&self, s: &mut RlpStream) {
         match *self {
-            CryptoType::SECP => s.append(&(0 as u8)),
-            CryptoType::SM2 => s.append(&(1 as u8)),
+            CryptoType::SECP => s.append_internal(&(0 as u8)),
+            CryptoType::SM2 => s.append_internal(&(1 as u8)),
         };
     }
 }
@@ -163,7 +174,7 @@ impl Transaction {
         Ok(Transaction {
                nonce: U256::from_str(plain_transaction.get_nonce()).map_err(|_| Error::ParseError)?,
                gas_price: U256::default(),
-               gas: U256::from(u64::max_value()),
+               gas: U256::from(plain_transaction.get_quota()),
                action: {
                    let to = plain_transaction.get_to();
                    match to.is_empty() {
@@ -191,7 +202,7 @@ impl Transaction {
 
     // Specify the sender; this won't survive the serialize/deserialize process, but can be cloned.
     pub fn fake_sign(self, from: Address) -> SignedTransaction {
-        let signature = Signature::from_rsv(&H256::default(), &H256::default(), 0);
+        let signature = Signature::default();
         SignedTransaction {
             transaction: UnverifiedTransaction {
                 unsigned: self,
@@ -206,16 +217,11 @@ impl Transaction {
 
     /// Append object with a without signature into RLP stream
     pub fn rlp_append_unsigned_transaction(&self, s: &mut RlpStream) {
-        let store_addr: Address = STORE_ADDRESS.into();
         s.begin_list(7);
         s.append(&self.nonce);
         s.append(&self.gas_price);
         s.append(&self.gas);
-        match self.action {
-            Action::Create => s.append_empty_data(),
-            Action::Call(ref to) => s.append(to),
-            Action::Store => s.append(&store_addr),
-        };
+        s.append(&self.action);
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
@@ -227,6 +233,7 @@ impl Transaction {
         pt.set_nonce(self.nonce.to_hex());
         pt.set_valid_until_block(self.block_limit);
         pt.set_data(self.data.clone());
+        pt.set_quota(self.gas.as_u64());
         match self.action {
             Action::Create => pt.clear_to(),
             Action::Call(ref to) => pt.set_to(to.hex()),
@@ -237,7 +244,7 @@ impl Transaction {
 }
 
 /// Signed transaction information without verified signature.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
     /// Plain Transaction.
     unsigned: Transaction,
@@ -292,7 +299,7 @@ impl UnverifiedTransaction {
 
         Ok(UnverifiedTransaction {
                unsigned: Transaction::new(utx.get_transaction())?,
-               signature: Signature::from(H520::from(utx.get_signature())),
+               signature: Signature::from(utx.get_signature()),
                crypto_type: CryptoType::from(utx.get_crypto()),
                hash: hash,
            })
@@ -307,7 +314,7 @@ impl UnverifiedTransaction {
         s.append(&self.hash);
     }
 
-    ///	Reference to unsigned part of this transaction.
+    ///    Reference to unsigned part of this transaction.
     pub fn as_unsigned(&self) -> &Transaction {
         &self.unsigned
     }
@@ -333,30 +340,61 @@ impl UnverifiedTransaction {
 }
 
 /// A `UnverifiedTransaction` with successfully recovered `sender`.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct SignedTransaction {
     transaction: UnverifiedTransaction,
     sender: Address,
     public: Public,
 }
 
+/// RLP dose not support struct nesting well
 impl Decodable for SignedTransaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 2 {
+        if d.item_count()? != 11 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
-        let public = d.val_at(1)?;
+
+        let public: PubKey = d.val_at(10)?;
+
         Ok(SignedTransaction {
-               transaction: d.val_at(0)?,
+               transaction: UnverifiedTransaction {
+                   unsigned: Transaction {
+                       nonce: d.val_at(0)?,
+                       gas_price: d.val_at(1)?,
+                       gas: d.val_at(2)?,
+                       action: d.val_at(3)?,
+                       value: d.val_at(4)?,
+                       data: d.val_at(5)?,
+                       block_limit: d.val_at(6)?,
+                   },
+                   signature: d.val_at(7)?,
+                   crypto_type: d.val_at(8)?,
+                   hash: d.val_at(9)?,
+               },
                sender: pubkey_to_address(&public),
                public: public,
            })
     }
 }
 
+/// RLP dose not support struct nesting well
 impl Encodable for SignedTransaction {
     fn rlp_append(&self, s: &mut RlpStream) {
-        self.rlp_append_signed_transaction(s)
+        s.begin_list(11);
+
+        s.append(&self.nonce);
+        s.append(&self.gas_price);
+        s.append(&self.gas);
+        s.append(&self.action);
+        s.append(&self.value);
+        s.append(&self.data);
+        s.append(&self.block_limit);
+
+        s.append(&self.signature);
+        s.append(&self.crypto_type);
+        s.append(&self.hash);
+        //TODO: remove it
+        s.append(&self.public);
     }
 }
 
@@ -391,7 +429,7 @@ impl SignedTransaction {
         }
 
         let tx_hash = H256::from(stx.get_tx_hash());
-        let public = H512::from_slice(stx.get_signer());
+        let public = PubKey::from_slice(stx.get_signer());
         let sender = pubkey_to_address(&public);
         Ok(SignedTransaction {
                transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,
@@ -410,14 +448,6 @@ impl SignedTransaction {
         &self.public
     }
 
-    /// Append object with a signature into RLP stream
-    fn rlp_append_signed_transaction(&self, s: &mut RlpStream) {
-        s.begin_list(2);
-        s.append(&self.transaction);
-        //TODO: remove it
-        s.append(&self.public);
-    }
-
     ///get protobuf of signed transaction
     pub fn protobuf(&self) -> ProtoSignedTransaction {
         let mut stx = ProtoSignedTransaction::new();
@@ -426,5 +456,36 @@ impl SignedTransaction {
         stx.set_tx_hash(self.hash().to_vec());
         stx.set_signer(self.public.to_vec());
         stx
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rlp;
+
+    #[test]
+    fn test_encode_and_decode() {
+        let mut stx = SignedTransaction::default();
+        stx.data = vec![1; 200];
+        let stx_rlp = rlp::encode(&stx);
+        let stx: SignedTransaction = rlp::decode(&stx_rlp);
+        let stx_encoded = rlp::encode(&stx).into_vec();
+
+        assert_eq!(stx_rlp, stx_encoded);
+    }
+
+    #[test]
+    fn test_protobuf() {
+        let mut stx = SignedTransaction::default();
+        stx.gas = U256::from(u64::max_value() / 100000);
+        let stx_rlp = rlp::encode(&stx);
+        let stx_proto = stx.protobuf();
+        let stx = SignedTransaction::new(&stx_proto).unwrap();
+        let stx_encoded = rlp::encode(&stx).into_vec();
+        let stx: SignedTransaction = rlp::decode(&stx_encoded);
+        let stx_encoded = rlp::encode(&stx).into_vec();
+
+        assert_eq!(stx_rlp, stx_encoded);
     }
 }

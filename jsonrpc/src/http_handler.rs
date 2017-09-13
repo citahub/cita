@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(deprecated,unused_assignments, unused_must_use)]
-
 use base_hanlder::{BaseHandler, RpcResult};
 use hyper::Post;
 use hyper::server::{Handler, Request, Response};
@@ -41,9 +39,9 @@ use std::thread;
 use std::time::Duration;
 use util::H256;
 
-impl BaseHandler for RpcHandler {}
+impl BaseHandler for HttpHandler {}
 
-pub struct RpcHandler {
+pub struct HttpHandler {
     pub tx: Arc<Mutex<Sender<(String, Vec<u8>)>>>,
     pub responses: Arc<RwLock<HashMap<Vec<u8>, request::Response>>>,
     pub tx_responses: Arc<RwLock<HashMap<H256, blockchain::TxResponse>>>,
@@ -53,7 +51,7 @@ pub struct RpcHandler {
 }
 
 
-impl RpcHandler {
+impl HttpHandler {
     pub fn pase_url(&self, mut req: Request) -> Result<String, Error> {
         let uri = req.uri.clone();
         let method = req.method.clone();
@@ -76,12 +74,12 @@ impl RpcHandler {
 
 
     pub fn deal_req(&self, post_data: String) -> Result<RpcSuccess, RpcFailure> {
-        match RpcHandler::into_json(post_data) {
+        match HttpHandler::into_rpc(post_data) {
             Err(err) => Err(RpcFailure::from(err)),
             Ok(rpc) => {
                 let req_id = rpc.id.clone();
                 let jsonrpc_version = rpc.jsonrpc.clone();
-                let topic = RpcHandler::select_topic(&rpc.method);
+                let topic = HttpHandler::select_topic(&rpc.method);
                 match self.method_handler.from_req(rpc)? {
                     method::RpcReqType::TX(tx) => {
                         let hash = tx.crypt_hash();
@@ -145,7 +143,7 @@ impl RpcHandler {
 
 
 
-impl Handler for RpcHandler {
+impl Handler for HttpHandler {
     fn handle(&self, req: Request, res: Response) {
         //TODO 不允许在这里做业务处理。
         let data = match self.pase_url(req) {
@@ -161,6 +159,6 @@ impl Handler for RpcHandler {
 
         //TODO
         trace!("respone data {:?}", data);
-        res.send(data.unwrap().as_ref());
+        res.send(data.expect("return client's respone data unwrap error").as_ref());
     }
 }

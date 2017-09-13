@@ -15,10 +15,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::path::Path;
+use std::fmt;
 
-extern crate capnpc;
+#[derive(Debug)]
+pub enum Error {
+    InvalidPrivKey,
+    InvalidPubKey,
+    InvalidMessage,
+    InvalidSignature,
+}
 
-fn main() {
-    ::capnpc::compile(Path::new("src"), &[Path::new("src/messages.capnp")]).unwrap();
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let message = match *self {
+            Error::InvalidPrivKey => "Invalid Private Key",
+            Error::InvalidPubKey => "Invalid Public Key",
+            Error::InvalidMessage => "Invalid Message",
+            Error::InvalidSignature => "Invalid Signature",
+        };
+        f.write_fmt(format_args!("Crypto error: {}", message))
+    }
 }

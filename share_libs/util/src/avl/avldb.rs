@@ -267,7 +267,7 @@ impl<'a> Iterator for AVLDBIterator<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let b = match self.trail.last_mut() {
-                Some(mut b) => {
+                Some(b) => {
                     b.increment();
                     b.clone()
                 }

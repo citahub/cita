@@ -7,7 +7,6 @@ sudo rabbitmqctl stop_app
 sudo rabbitmqctl reset
 sudo rabbitmqctl start_app
 cd ${CUR_PATH}/../../admintool/
-./setup.sh
 ./admintool.sh -b 5000
 
 setup_node() {
@@ -78,7 +77,7 @@ start_consensus_cmd()
 {
     id=$1
     cd ${CUR_PATH}/../../admintool/release/node${id}
-    RUST_LOG=consensus_tendermint bin/consensus_tendermint -c consensus.json	 >log/node${id}.consensus  2>&1 &
+    RUST_LOG=consensus_tendermint bin/consensus_tendermint -c consensus.json     >log/node${id}.consensus  2>&1 &
     echo $! > consensus_tendermint.pid
 }
 

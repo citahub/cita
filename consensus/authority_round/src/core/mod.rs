@@ -21,7 +21,7 @@ pub mod spec;
 
 pub use self::authority_round::AuthorityRound;
 pub use self::spec::Spec;
-use crypto::{PrivKey, Signature, sign, recover, pubkey_to_address, Error as CryptoError};
+use crypto::{PrivKey, Signature, Sign, pubkey_to_address, Error as CryptoError};
 pub use engine::*;
 pub use libproto::blockchain::{BlockHeader, Block, Transaction, BlockBody, Proof};
 use util::Address;
@@ -30,10 +30,10 @@ use util::H256;
 pub trait Signable {
     fn bare_hash(&self) -> H256;
     fn sign_with_privkey(&self, privkey: &PrivKey) -> Result<Signature, CryptoError> {
-        sign(privkey, &self.bare_hash().into())
+        Signature::sign(privkey, &self.bare_hash().into())
     }
     fn recover_address_with_signature(&self, signature: &Signature) -> Result<Address, CryptoError> {
-        let pubkey = recover(signature, &self.bare_hash().into()).unwrap();
+        let pubkey = signature.recover(&self.bare_hash().into()).unwrap();
         Ok(pubkey_to_address(&pubkey).into())
     }
 }

@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+import "blockchain.proto";
+
+enum Ret {
+    Ok = 0;
+    Err = 1;
+    Dup = 2;
+    OutOfTime = 3;
+    BadSig = 4;
+    NotReady = 5;
+}
+
+message VerifyTxReq {
+    uint64 valid_until_block = 1;
+    bytes hash = 2;
+    bytes signature = 3;
+    Crypto crypto = 4;
+    bytes tx_hash = 5;
+    bytes signer = 6; //public key only set in BlockReq
+}
+
+message VerifyTxResp {
+    bytes tx_hash = 1;
+    Ret ret = 2;
+    bytes signer = 3; //public key only set in TxResp
+}
+
+message VerifyBlockReq {
+    uint64 id = 1;
+    repeated VerifyTxReq reqs = 2;
+}
+
+message VerifyBlockResp {
+    uint64 id = 1;
+    Ret ret = 2;
+}
+
+message BlockTxHashes {
+    uint64 height = 1;
+    repeated bytes tx_hashes = 2;
+}
+
+message BlockTxHashesReq {
+    uint64 height = 1;
+}

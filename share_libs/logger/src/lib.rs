@@ -58,7 +58,7 @@ impl Default for Config {
 }
 
 lazy_static! {
-	static ref ROTATING_LOGGER : Mutex<Weak<RotatingLogger>> = Mutex::new(Default::default());
+    static ref ROTATING_LOGGER : Mutex<Weak<RotatingLogger>> = Mutex::new(Default::default());
 }
 
 /// Sets up the logger
@@ -134,22 +134,22 @@ pub fn setup_log(config: &Config) -> Result<Arc<RotatingLogger>, String> {
 
     builder.format(format);
     builder.init()
-		.and_then(|_| {
-			*ROTATING_LOGGER.lock() = Arc::downgrade(&logs);
-			Ok(logs)
-		})
-		// couldn't create new logger - try to fall back on previous logger.
-		.or_else(|err| match ROTATING_LOGGER.lock().upgrade() {
-			Some(l) => Ok(l),
-			// no previous logger. fatal.
-			None => Err(format!("{:?}", err)),
-		})
+        .and_then(|_| {
+            *ROTATING_LOGGER.lock() = Arc::downgrade(&logs);
+            Ok(logs)
+        })
+        // couldn't create new logger - try to fall back on previous logger.
+        .or_else(|err| match ROTATING_LOGGER.lock().upgrade() {
+            Some(l) => Ok(l),
+            // no previous logger. fatal.
+            None => Err(format!("{:?}", err)),
+        })
 }
 
 fn kill_color(s: &str) -> String {
     lazy_static! {
-		static ref RE: Regex = Regex::new("\x1b\\[[^m]+m").unwrap();
-	}
+        static ref RE: Regex = Regex::new("\x1b\\[[^m]+m").unwrap();
+    }
     RE.replace_all(s, "").to_string()
 }
 

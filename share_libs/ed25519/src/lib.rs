@@ -15,30 +15,33 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{PrivKey, KeyPair, PubKey, Address};
+extern crate sodiumoxide;
+extern crate rustc_serialize;
+extern crate util;
+extern crate rlp;
+extern crate serde;
+#[cfg(test)]
+extern crate bincode;
 
-#[derive(Default)]
-pub struct Signer {
-    pub keypair: KeyPair,
-    pub address: Address,
-}
+mod keypair;
+mod error;
+mod signature;
+mod signer;
 
-impl Signer {
-    pub fn privkey(&self) -> &PrivKey {
-        self.keypair.privkey()
-    }
+use util::{H256, H512, Address};
 
-    pub fn pubkey(&self) -> &PubKey {
-        self.keypair.pubkey()
-    }
-}
+pub const ADDR_BYTES_LEN: usize = 20;
+pub const PUBKEY_BYTES_LEN: usize = 32;
+pub const PRIVKEY_BYTES_LEN: usize = 64;
+pub const SIGNATURE_BYTES_LEN: usize = 96;
+pub const HASH_BYTES_LEN: usize = 32;
 
-impl From<PrivKey> for Signer {
-    fn from(k: PrivKey) -> Self {
-        let keypair = KeyPair::from_privkey(k).unwrap();
-        Signer {
-            address: keypair.address().clone(),
-            keypair: keypair,
-        }
-    }
-}
+pub type PrivKey = H512;
+pub type PubKey = H256;
+pub type Message = H256;
+pub type Public = H256;
+
+pub use self::error::*;
+pub use self::keypair::*;
+pub use self::signature::*;
+pub use self::signer::*;

@@ -43,47 +43,68 @@ impl Spec {
 
 #[cfg(test)]
 mod tests {
+    extern crate cita_crypto as crypto;
+
     use super::Spec;
+    use crypto::SIGNATURE_NAME;
     use serde_json;
+
+    fn generate_signer() -> String {
+        if SIGNATURE_NAME == "ed25519" {
+            "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65".to_string()
+        } else if SIGNATURE_NAME == "secp256k1" {
+            "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65".to_string()
+        } else {
+            "".to_string()
+        }
+    }
 
     #[test]
     fn poa_spec_deserialization() {
-        let s = r#"{
-            "name": "TestPOA",
-            "engine": {
-                "AuthorityRound": {
-                    "params": {
-                        "authorities": [
-                            "0x5b073e9233944b5e729e46d618f0d8edf3d9c34a",
-                            "0x9cce34f7ab185c7aba1b7c8140d620b4bda941d6"
-                        ],
-                        "duration": 3000,
-                        "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65"
-                    }
-                }
-            }
-        }"#;
-        let _deserialized: Spec = serde_json::from_str(s).unwrap();
+        let signer = generate_signer();
+        let s = format!(
+            r#"{{
+                "name": "TestPOA",
+                "engine": {{
+                    "AuthorityRound": {{
+                        "params": {{
+                            "authorities": [
+                                "0x5b073e9233944b5e729e46d618f0d8edf3d9c34a",
+                                "0x9cce34f7ab185c7aba1b7c8140d620b4bda941d6"
+                            ],
+                            "duration": 3000,
+                            "signer": "{}"
+                        }}
+                    }}
+                }}
+            }}"#,
+            signer
+        );
+        let _deserialized: Spec = serde_json::from_str(&s).unwrap();
     }
 
     #[test]
     fn tendermint_spec_deserialization() {
-        let s = r#"{
-            "name": "TestTendermint",
-            "engine": {
-                "Tendermint": {
-                    "params": {
-                        "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
-                        "duration": 3,
-                        "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
-			            "tx_pool_size": 0,
-			            "block_tx_limit": 300,
-			            "tx_filter_size": 100000,
-                        "is_test": true
-                    }
-                }
-            }
-        }"#;
-        let _deserialized: Spec = serde_json::from_str(s).unwrap();
+        let signer = generate_signer();
+        let s = format!(
+            r#"{{
+                "name": "TestTendermint",
+                "engine": {{
+                    "Tendermint": {{
+                        "params": {{
+                            "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
+                            "duration": 3,
+                            "signer": "{}",
+                            "tx_pool_size": 0,
+                            "block_tx_limit": 300,
+                            "tx_filter_size": 100000,
+                            "is_test": true
+                        }}
+                    }}
+                }}
+            }}"#,
+            signer
+        );
+        let _deserialized: Spec = serde_json::from_str(&s).unwrap();
     }
 }

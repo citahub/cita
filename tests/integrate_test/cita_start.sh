@@ -1,6 +1,6 @@
 #usage: start demo nodes
 #       ./cita_start.sh 
-#       ./cita_start.sh debug
+#       ./cita_start.sh tendermint debug
 #!/bin/bash
 set +e
 consensus=$1
@@ -10,7 +10,6 @@ if [ ! -n "$consensus" ]; then
 fi
 CUR_PATH=$(cd `dirname $0`; pwd)
 cd ${CUR_PATH}/../../admintool/
-./setup.sh
 ./admintool.sh -n $consensus
 
 setup_node() {

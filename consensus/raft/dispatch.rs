@@ -34,19 +34,26 @@ pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, M
         MsgClass::TXRESPONSE(content) => {}
         MsgClass::STATUS(status) => {
             if id == submodules::CHAIN {
-                info!("receved new status.");
+                info!("received new status.");
                 notifix.send(NotifyMessage::NewStatus(status.hash, status.height));
             }
         }
         MsgClass::MSG(content) => {
             match decode(&content) {
-                Command::SpawnBlk(_) => {
+                Command::SpawnBlk(..) => {
                     info!("not expected");
                 }
                 Command::PoolSituation(height, hash, proof) => {
+                    info!("receive pool situation");
                     notifix.send(NotifyMessage::NewStatus(hash.unwrap(), height));
                 }
             }
         }
+        MsgClass::VERIFYTXREQ(req) => {}
+        MsgClass::VERIFYTXRESP(resp) => {}
+        MsgClass::VERIFYBLKREQ(req) => {}
+        MsgClass::VERIFYBLKRESP(resp) => {}
+        MsgClass::BLOCKTXHASHES(txhashes) => {}
+        MsgClass::BLOCKTXHASHESREQ(req) => {}
     }
 }

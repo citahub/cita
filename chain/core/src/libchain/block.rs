@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use basic_types::LogBloom;
 use env_info::EnvInfo;
 use env_info::LastHashes;
 use error::{Error, ExecutionError};
@@ -132,23 +133,12 @@ impl Block {
 
 
 /// body of block.
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, RlpEncodableWrapper, RlpDecodableWrapper)]
 pub struct BlockBody {
     /// The transactions in this body.
     pub transactions: Vec<SignedTransaction>,
 }
 
-impl Decodable for BlockBody {
-    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        Ok(BlockBody { transactions: rlp.as_list()? })
-    }
-}
-
-impl Encodable for BlockBody {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        s.append_list(&self.transactions);
-    }
-}
 
 impl HeapSizeOf for BlockBody {
     fn heap_size_of_children(&self) -> usize {
@@ -197,14 +187,10 @@ impl BlockBody {
 pub struct ClosedBlock {
     /// Protobuf Block
     pub block: Block,
-    /// Hash
-    pub hash: H256,
-    // TODO: cache hash
     pub transactions_uni: HashMap<H256, TransactionAddress>,
     pub transactions_dup: HashMap<H256, TransactionAddress>,
     pub receipts: Vec<Option<Receipt>>,
     pub state: State<StateDB>,
-    // TODO: add blocks_blooms
 }
 
 impl Drain for ClosedBlock {
@@ -233,7 +219,7 @@ pub struct ExecutedBlock {
     pub block: Block,
     pub receipts: Vec<Option<Receipt>>,
     pub state: State<StateDB>,
-    pub gas_used: U256,
+    pub current_gas_used: U256,
     traces: Option<Vec<Vec<FlatTrace>>>,
 }
 
@@ -257,7 +243,7 @@ impl ExecutedBlock {
             block: block,
             receipts: Default::default(),
             state: state,
-            gas_used: U256::default(),
+            current_gas_used: U256::zero(),
             traces: if tracing { Some(Vec::new()) } else { None },
         }
     }
@@ -313,7 +299,7 @@ impl OpenBlock {
             timestamp: self.timestamp(),
             difficulty: U256::default(),
             last_hashes: self.last_hashes.clone(),
-            gas_used: *self.gas_used(),
+            gas_used: self.current_gas_used,
             gas_limit: *self.gas_limit(),
         }
     }
@@ -324,6 +310,8 @@ impl OpenBlock {
             self.apply_transaction(&t);
         }
         self.state.commit().expect("commit trie error");
+        let gas_used = self.current_gas_used;
+        self.set_gas_used(gas_used);
     }
 
     pub fn apply_transaction(&mut self, t: &SignedTransaction) {
@@ -335,7 +323,7 @@ impl OpenBlock {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());
                 self.traces.as_mut().map(|tr| tr.push(trace));
-                self.set_gas_used(outcome.receipt.gas_used);
+                self.current_gas_used = outcome.receipt.gas_used;
                 self.receipts.push(Some(outcome.receipt));
                 self.tx_hashes.push(false);
             }
@@ -360,6 +348,14 @@ impl OpenBlock {
         self.set_state_root(state_root);
         self.set_receipts_root(receipts_root);
 
+        // blocks blooms
+        let log_bloom = self.receipts.clone().into_iter().filter_map(|r| r).fold(LogBloom::zero(), |mut b, r| {
+            b = &b | &r.log_bloom;
+            b
+        });
+
+        self.set_log_bloom(log_bloom);
+
         // Create TransactionAddress
         let hash = self.hash();
         let mut transactions_uni = HashMap::new();
@@ -375,11 +371,30 @@ impl OpenBlock {
 
         ClosedBlock {
             block: self.block.clone(),
-            hash: hash,
             transactions_uni: transactions_uni,
             transactions_dup: transactions_dup,
             receipts: self.receipts.clone(),
             state: self.state.clone(),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rlp;
+
+    #[test]
+    fn test_encode_and_decode() {
+        let mut stx = SignedTransaction::default();
+        stx.data = vec![1; 200];
+        let transactions = vec![stx; 200];
+        let body = BlockBody { transactions: transactions };
+        let body_rlp = rlp::encode(&body);
+        let body: BlockBody = rlp::decode(&body_rlp);
+        let body_encoded = rlp::encode(&body).into_vec();
+
+        assert_eq!(body_rlp, body_encoded);
+    }
+
 }

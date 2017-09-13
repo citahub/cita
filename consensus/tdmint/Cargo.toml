@@ -16,7 +16,6 @@ rustc-serialize = "0.3"
 tx_pool = {path = "../../share_libs/tx_pool"}
 protobuf = { version = "^1.0.0" }
 log = "0.3"
-eth-secp256k1 = { git = "https://github.com/ethcore/rust-secp256k1" }
 clap = "2"
 amqp = "=0.0.20"
 pubsub = { path = "../../share_libs/pubsub" }

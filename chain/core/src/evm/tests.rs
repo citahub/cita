@@ -14,11 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+extern crate rustc_hex;
+
+use self::rustc_hex::FromHex;
 use action_params::{ActionParams, ActionValue};
 use env_info::EnvInfo;
 use evm::{self, Ext, Schedule, Factory, GasLeft, VMType, ContractCreateResult, MessageCallResult};
 use executed::CallType;
-use rustc_hex::FromHex;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -250,7 +252,11 @@ fn test_sha3(factory: super::Factory) {
     };
 
     assert_eq!(gas_left, U256::from(79_961));
-    assert_store(&ext, 0, "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+    if HASH_NAME == "blake2b" {
+        assert_store(&ext, 0, "d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f");
+    } else if HASH_NAME == "sha3" {
+        assert_store(&ext, 0, "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+    }
 }
 
 evm_test!{test_address: test_address_jit, test_address_int}

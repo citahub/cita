@@ -14,14 +14,12 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#![feature(plugin)]
+#![allow(unused_extern_crates)]
 extern crate cita_crypto as crypto;
 extern crate libproto;
 extern crate protobuf;
 extern crate util;
-extern crate uuid;
-extern crate rustc_serialize;
+extern crate serde;
 extern crate hyper;
 extern crate serde_json;
 extern crate jsonrpc_types;

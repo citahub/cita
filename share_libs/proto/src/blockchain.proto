@@ -35,8 +35,9 @@ enum Crypto {
 message Transaction {
     string to = 1;
     string nonce = 2;
-    uint64 valid_until_block = 3;
-    bytes data = 4;
+    uint64 quota = 3;
+    uint64 valid_until_block = 4;
+    bytes data = 5;
 }
 
 message UnverifiedTransaction {

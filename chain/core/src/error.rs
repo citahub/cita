@@ -17,7 +17,7 @@
 //! General error types for use in ethcore.
 
 use basic_types::LogBloom;
-use cita_crypto::Error as EthkeyError;
+use cita_ed25519::Error as EthkeyError;
 use ethcore_io::*;
 
 pub use executed::{ExecutionError, CallError};
@@ -349,11 +349,11 @@ where
 /*#![feature(concat_idents)]
 macro_rules! assimilate {
     ($name:ident) => (
-		impl From<concat_idents!($name, Error)> for Error {
-			fn from(err: concat_idents!($name, Error)) -> Error {
-				Error:: $name (err)
-			}
-		}
+        impl From<concat_idents!($name, Error)> for Error {
+            fn from(err: concat_idents!($name, Error)) -> Error {
+                Error:: $name (err)
+            }
+        }
     )
 }
 assimilate!(FromHex);

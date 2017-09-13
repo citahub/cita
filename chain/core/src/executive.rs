@@ -302,7 +302,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 // trace only top level calls to builtins to avoid DDoS attacks
                 if self.depth == 0 {
                     let mut trace_output = tracer.prepare_trace_output();
-                    if let Some(mut out) = trace_output.as_mut() {
+                    if let Some(out) = trace_output.as_mut() {
                         *out = output.to_owned();
                     }
 
@@ -523,61 +523,95 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
 #[cfg(test)]
 mod tests {
+    extern crate mktemp;
     extern crate libproto;
     extern crate env_logger;
-    extern crate cita_crypto as crypto;
+    extern crate cita_ed25519 as ed25519;
     extern crate protobuf;
+    extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 
+    use self::mktemp::Temp;
+    use self::rustc_hex::FromHex;
     use super::*;
     use action_params::{ActionParams, ActionValue};
     use engines::NullEngine;
     use env_info::EnvInfo;
     use evm::{Factory, VMType};
-    use rustc_hex::FromHex;
     use state::Substate;
+    use std::fs::File;
+    use std::io::Read;
+    use std::io::Write;
+    use std::ops::Deref;
+    use std::process::Command;
     use std::str::FromStr;
     use std::sync::Arc;
     use tests::helpers::*;
-    use trace::{ExecutiveTracer, VMTracer, ExecutiveVMTracer};
+    use trace::{ExecutiveTracer, ExecutiveVMTracer};
     use util::{H256, U256, Address};
-
     #[test]
     fn test_create_contract() {
-        /*
-        ~/codes/parity-contract-demo $ cat contracts/AbiTest.sol
-        pragma solidity ^0.4.8;
-        contract AbiTest {
-          uint balance;
-          function AbiTest() {}
-          function setValue(uint value) {
-            balance = value;
-          }
-        }
-        ~/codes/parity-contract-demo $ solc contracts/AbiTest.sol  --bin-runtime --bin --hash
-        Warning: This is a pre-release compiler version, please do not use it in production.
-
-        ======= contracts/AbiTest.sol:AbiTest =======
-        Binary:
-        60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
-        Binary of the runtime part:
-        60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
-        Function signatures:
-        55241077: setValue(uint256)
-         */
         let _ = env_logger::init();
-        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
-        let deploy_code = "60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
-            .from_hex()
-            .unwrap();
-
+        let contract_name = "AbiTest";
+        let contract = br#"
+pragma solidity ^0.4.8;
+contract AbiTest {
+  uint balance;
+  function AbiTest() {}
+  function setValue(uint value) {
+    balance = value;
+  }
+}
+"#;
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let contract_address = contract_address(&sender, &U256::zero());
+        let nonce = U256::zero();
+        let gas_required = U256::from(100_000);
+
+        // input and output of solc command
+        let contract_file = Temp::new_file().unwrap().to_path_buf();
+        let output_dir = Temp::new_dir().unwrap().to_path_buf();
+        let deploy_code_file = output_dir.clone().join([contract_name, ".bin"].join(""));
+        let runtime_code_file = output_dir.clone().join([contract_name, ".bin-runtime"].join(""));
+
+        // prepare contract file
+        let mut file = File::create(contract_file.clone()).unwrap();
+        let mut content = String::new();
+        file.write_all(contract).expect("failed to write");
+
+        // execute solc command
+        Command::new("solc")
+            .arg(contract_file.clone())
+            .arg("--bin")
+            .arg("--bin-runtime")
+            .arg("-o")
+            .arg(output_dir)
+            .output()
+            .expect("failed to execute solc");
+
+        // read deploy code
+        File::open(deploy_code_file)
+            .expect("failed to open deploy code file!")
+            .read_to_string(&mut content)
+            .expect("failed to read binary");
+        println!("deploy code: {}", content);
+        let deploy_code = content.as_str().from_hex().unwrap();
+
+        // read runtime code
+        let mut content = String::new();
+        File::open(runtime_code_file)
+            .expect("failed to open deploy code file!")
+            .read_to_string(&mut content)
+            .expect("failed to read binary");
+        println!("runtime code: {}", content);
+        let runtime_code = content.as_str().from_hex().unwrap();
+
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let contract_address = contract_address(&sender, &nonce);
         let mut params = ActionParams::default();
         params.address = contract_address.clone();
         params.sender = sender.clone();
         params.origin = sender.clone();
-        params.gas = U256::from(100_000);
+        params.gas = gas_required;
         params.code = Some(Arc::new(deploy_code));
         params.value = ActionValue::Apparent(0.into());
         let mut state = get_temp_state();
@@ -588,63 +622,78 @@ mod tests {
         let mut tracer = ExecutiveTracer::default();
         let mut vm_tracer = ExecutiveVMTracer::toplevel();
 
-        let gas_left = {
+        {
             let mut ex = Executive::new(&mut state, &info, &engine, &factory);
-            ex.create(params.clone(), &mut substate, &mut tracer, &mut vm_tracer).unwrap()
-        };
+            let _ = ex.create(params.clone(), &mut substate, &mut tracer, &mut vm_tracer);
+        }
 
-        println!("{:?}", state.code(&contract_address).unwrap());
-        println!("{:?}", vm_tracer.drain().unwrap());
-        let runtime_code = "60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
-            .from_hex()
-            .unwrap();
-        assert_eq!(state.code(&contract_address).unwrap().unwrap(), Arc::new(runtime_code));
-        assert_eq!(gas_left, U256::from(71_521));
+        assert_eq!(state.code(&contract_address).unwrap().unwrap().deref(), &runtime_code);
     }
 
     #[test]
     fn test_call_contract() {
         let _ = env_logger::init();
-        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
-        let mut tracer = ExecutiveTracer::default();
-        let mut vm_tracer = ExecutiveVMTracer::toplevel();
-
-        /*
-        ~/codes/parity-contract-demo $ cat contracts/AbiTest.sol
-        pragma solidity ^0.4.8;
-        contract AbiTest {
-          uint balance;
-          function AbiTest() {}
-          function setValue(uint value) {
-            balance = value;
-          }
-        }
-        ~/codes/parity-contract-demo $ solc contracts/AbiTest.sol  --bin-runtime --hash
-        Warning: This is a pre-release compiler version, please do not use it in production.
-
-        ======= contracts/AbiTest.sol:AbiTest =======
-        Binary of the runtime part:
-        60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
-        Function signatures:
-        55241077: setValue(uint256)
-         */
-        let contract_code = "60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
-            .from_hex()
-            .unwrap();
-        let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+        let _ = env_logger::init();
+        let contract_name = "AbiTest";
+        let contract = br#"
+pragma solidity ^0.4.8;
+contract AbiTest {
+  uint balance;
+  function AbiTest() {}
+  function setValue(uint value) {
+    balance = value;
+  }
+}
+"#;
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
+        let gas_required = U256::from(100_000);
+        let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
         // big endian: value=0x12345678
         let data = format!("{}{}", "55241077", "0000000000000000000000000000000000000000000000000000000012345678")
             .from_hex()
             .unwrap();
 
 
+
+        // input and output of solc command
+        let contract_file = Temp::new_file().unwrap().to_path_buf();
+        let output_dir = Temp::new_dir().unwrap().to_path_buf();
+        let runtime_code_file = output_dir.clone().join([contract_name, ".bin-runtime"].join(""));
+
+        // prepare contract file
+        let mut file = File::create(contract_file.clone()).unwrap();
+        file.write_all(contract).expect("failed to write");
+
+        // execute solc command
+        Command::new("solc")
+            .arg(contract_file.clone())
+            .arg("--bin")
+            .arg("--bin-runtime")
+            .arg("-o")
+            .arg(output_dir)
+            .output()
+            .expect("failed to execute solc");
+
+        // read runtime code
+        let mut content = String::new();
+        File::open(runtime_code_file)
+            .expect("failed to open deploy code file!")
+            .read_to_string(&mut content)
+            .expect("failed to read binary");
+        println!("runtime code: {}", content);
+        let runtime_code = content.as_str().from_hex().unwrap();
+
+
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let mut tracer = ExecutiveTracer::default();
+        let mut vm_tracer = ExecutiveVMTracer::toplevel();
+
         let mut state = get_temp_state();
-        state.init_code(&contract_addr, contract_code.clone()).unwrap();
+        state.init_code(&contract_addr, runtime_code.clone()).unwrap();
         let mut params = ActionParams::default();
         params.address = contract_addr.clone();
         params.sender = sender.clone();
-        params.gas = U256::from(100_000);
+        params.gas = gas_required;
         params.code = state.code(&contract_addr).unwrap();
         params.code_hash = state.code_hash(&contract_addr).unwrap();
         params.value = ActionValue::Transfer(U256::from(0));
@@ -653,12 +702,12 @@ mod tests {
         let info = EnvInfo::default();
         let engine = NullEngine::default();
         let mut substate = Substate::new();
-        let gas_left = {
+        {
             let mut ex = Executive::new(&mut state, &info, &engine, &factory);
             let mut out = vec![];
-            ex.call(params, &mut substate, BytesRef::Fixed(&mut out), &mut tracer, &mut vm_tracer).unwrap()
+            let _ = ex.call(params, &mut substate, BytesRef::Fixed(&mut out), &mut tracer, &mut vm_tracer);
         };
-        assert_eq!(gas_left, U256::from(79842));
+
         assert_eq!(
             state
                 .storage_at(&contract_addr, &H256::from(&U256::from(0)))  // it was supposed that value's address is balance.

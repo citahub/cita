@@ -23,10 +23,9 @@ use core::voteset::{VoteCollector, ProposalCollector, VoteSet, Proposal, VoteMes
 use core::votetime::{WaitTimer, TimeoutInfo};
 use core::wal::Wal;
 
-use crypto::{Signature, sign, recover, pubkey_to_address};
+use crypto::{CreateKey, Signature, Sign, pubkey_to_address};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
-use libproto;
-use libproto::{communication, submodules, topics, MsgClass};
+use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
 use libproto::blockchain::{Block, SignedTransaction, Status};
 
 //use tx_pool::Pool;
@@ -37,9 +36,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver, RecvError};
 use std::time::Instant;
-use util::{H256, H520};
-use util::Address;
-use util::Hashable;
+use util::{H256, Address, Hashable};
 
 const INIT_HEIGHT: usize = 1;
 const INIT_ROUND: usize = 0;
@@ -124,17 +121,21 @@ pub struct TenderMint {
     dispatch: Arc<Dispatchtx>,
 
     htime: Instant,
+
+    /// An auto-increment id used for distinguish verify_resp
+    verify_id: u64,
+    unverified_msg: HashMap<u64, Vec<u8>>,
 }
 
 impl TenderMint {
     pub fn new(s: Sender<PubType>, r: Receiver<TransType>, ts: Sender<TimeoutInfo>, rs: Receiver<TimeoutInfo>, params: TendermintParams, dispatch: Arc<Dispatchtx>) -> TenderMint {
         let proof = TendermintProof::default();
         if params.is_test {
-            trace!("----Run for test!----");
+            trace!("Run for test!");
         }
         let logpath = ::std::env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/wal";
 
-        trace!("----tx pool ----{}", params.tx_pool_size);
+        trace!("tx pool size {}", params.tx_pool_size);
         TenderMint {
             pub_sender: s,
             pub_recver: r,
@@ -161,6 +162,8 @@ impl TenderMint {
             //sync_ok : true,
             dispatch: dispatch,
             htime: Instant::now(),
+            verify_id: 0,
+            unverified_msg: HashMap::new(),
         }
     }
 
@@ -180,34 +183,23 @@ impl TenderMint {
         }
     }
 
-    /*    pub fn pub_transaction(&mut self, tx: &SignedTransaction) {
-        let mut msg = communication::Message::new();
-        msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::NEW_TX));
-        msg.set_field_type(communication::MsgType::TX);
-        msg.set_content(tx.write_to_bytes().unwrap());
-        MQWork::send2pub(&self.pub_sender ,("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
-    }
-*/
+    //    pub fn pub_transaction(&mut self, tx: &SignedTransaction) {
+    //        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
+    //        MQWork::send2pub(&self.pub_sender, ("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
+    //    }
+
     pub fn pub_block(&self, block: &Block) {
-        let mut msg = communication::Message::new();
-        msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::NEW_BLK));
-        msg.set_field_type(communication::MsgType::BLOCK);
-        msg.set_content(block.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
         self.pub_sender.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
     pub fn pub_proposal(&self, proposal: &Proposal) -> Vec<u8> {
-        let mut msg = communication::Message::new();
-        msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL));
-        msg.set_field_type(communication::MsgType::MSG);
-
         let message = serialize(&(self.height, self.round, proposal), Infinite).unwrap();
         let ref author = self.params.signer;
-        let signature = sign(&author.privkey(), &message.crypt_hash().into()).unwrap();
-        trace!("pub_proposal---{}---{}---{}---{}", self.height, self.round, message.crypt_hash(), signature);
-        let sig: H520 = signature.into();
-        let bmsg = serialize(&(message, sig), Infinite).unwrap();
-        msg.set_content(bmsg.clone());
+        let signature = Signature::sign(&author.keypair.privkey(), &message.crypt_hash().into()).unwrap();
+        trace!("pub_proposal height {}, round {}, hash {}, signature {} ", self.height, self.round, message.crypt_hash(), signature);
+        let bmsg = serialize(&(message, signature), Infinite).unwrap();
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_PROPOSAL, communication::MsgType::MSG, bmsg.clone());
         self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         bmsg
     }
@@ -242,7 +234,7 @@ impl TenderMint {
     }
 
     fn proc_prevote(&mut self, height: usize, round: usize) -> bool {
-        info!("proc_prevote begin --{} {} vs self {} {}", height, round, self.height, self.round);
+        info!("proc_prevote begin height {}, round {} vs self {}, round {}", height, round, self.height, self.round);
         if height < self.height || (height == self.height && round < self.round) || (height == self.height && self.round == round && self.step > Step::PrevoteWait) {
             return false;
         }
@@ -262,7 +254,7 @@ impl TenderMint {
                         if self.lock_round.is_some() {
                             if self.lock_round.unwrap() < round && round <= self.round {
                                 //we see new lock block unlock mine
-                                info!("unlock lock block------{:?}-----{:?}", height, hash);
+                                info!("unlock lock block height {:?}, hash {:?}", height, hash);
                                 self.lock_round = None;
                                 self.locked_vote = None;
                             }
@@ -357,7 +349,7 @@ impl TenderMint {
     }
 
     fn proc_precommit(&mut self, height: usize, round: usize) -> bool {
-        info!("proc_precommit begin --{} {} vs self {} {}", height, round, self.height, self.round);
+        info!("proc_precommit begin {} {} vs self {} {}", height, round, self.height, self.round);
         if height < self.height || (height == self.height && round < self.round) || (height == self.height && self.round == round && self.step > Step::PrecommitWait) {
             return false;
         }
@@ -478,7 +470,7 @@ impl TenderMint {
                     }
                     if vote.proposal.unwrap() == hash {
                         num = num + 1;
-                        commits.insert(*sender, vote.signature);
+                        commits.insert(*sender, vote.signature.clone());
                     }
                 }
             }
@@ -531,18 +523,15 @@ impl TenderMint {
 
 
     fn pub_message(&self, message: Vec<u8>) {
-        let mut msg = communication::Message::new();
-        msg.set_cmd_id(libproto::cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG));
-        msg.set_field_type(communication::MsgType::MSG);
-        msg.set_content(message);
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::CONSENSUS_MSG, communication::MsgType::MSG, message);
         self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
     fn pub_and_broadcast_message(&mut self, height: usize, round: usize, step: Step, hash: Option<H256>) {
         let ref author = self.params.signer;
         let msg = serialize(&(height, round, step, author.address.clone(), hash.clone()), Infinite).unwrap();
-        let signature = sign(&author.privkey(), &msg.crypt_hash().into()).unwrap();
-        let sig: H520 = signature.clone().into();
+        let signature = Signature::sign(&author.keypair.privkey(), &msg.crypt_hash().into()).unwrap();
+        let sig = signature.clone();
         let msg = serialize(&(msg, sig), Infinite).unwrap();
 
         trace!("pub_and_broadcast_message pub {},{},{:?} self {},{},{:?} ", height, round, step, self.height, self.round, self.step);
@@ -592,11 +581,9 @@ impl TenderMint {
         let log_msg = message.clone();
         let res = deserialize(&message[..]);
         if let Ok(decoded) = res {
-            let (message, signature) = decoded;
-            let message: Vec<u8> = message;
-            let signature: H520 = signature;
+            let (message, signature): (Vec<u8>, &[u8]) = decoded;
             let signature = Signature::from(signature);
-            if let Ok(pubkey) = recover(&signature, &message.crypt_hash().into()) {
+            if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
                 let decoded = deserialize(&message[..]).unwrap();
                 let (h, r, step, sender, hash) = decoded;
                 trace!("handle_message  parse over sender:{:?}  h:{} r:{} s:{:?} vs self {} {} {:?}", sender, h, r, step, self.height, self.round, self.step);
@@ -644,7 +631,7 @@ impl TenderMint {
                     process up */
                     if h > self.height || (h == self.height && r >= self.round) {
                         //if h == self.height && r >= self.round {
-                        info!("handle_message get vote---{:?}---{:?}---{:?}---{:?}---{:?}---{}", h, r, step, sender, hash, signature);
+                        info!("handle_message get vote: height {:?}, round {:?}, step {:?}, sender {:?}, hash {:?}, signature {}", h, r, step, sender, hash, signature);
                         let ret = self.votes.add(h,
                                                  r,
                                                  step,
@@ -714,7 +701,7 @@ impl TenderMint {
             if self.lock_round.is_some() && proposal_lock_round.is_some() {
                 if self.lock_round.unwrap() < proposal_lock_round.unwrap() && proposal_lock_round.unwrap() < round {
                     //we see new lock block unlock mine
-                    info!("unlock lock block------{:?}-----{:?}", height, self.proposal);
+                    info!("unlock lock block: height {:?}, proposal {:?}", height, self.proposal);
                     self.clean_saved_info();
                 }
             }
@@ -728,7 +715,7 @@ impl TenderMint {
                 let block = parse_from_bytes::<Block>(&proposal.block).unwrap();
                 let block_hash = block.crypt_hash();
                 self.proposal = Some(block_hash.into());
-                info!("save the proposal's hash -----{:?}-- {}----{:?}", self.height, self.round, self.proposal.unwrap());
+                info!("save the proposal's hash: height {:?}, round {}, proposal {:?}", self.height, self.round, self.proposal.unwrap());
                 self.locked_block = Some(block);
             }
             return true;
@@ -736,16 +723,33 @@ impl TenderMint {
         return false;
     }
 
+    fn verify_req(&mut self, msg: &[u8]) {
+        let res = deserialize(msg);
+        if let Ok(decoded) = res {
+            let (message, signature): (Vec<u8>, &[u8]) = decoded;
+            let signature = Signature::from(signature);
+            if let Ok(_) = signature.recover(&message.crypt_hash().into()) {
+                let decoded = deserialize(&message).unwrap();
+                let (_, _, proposal): (usize, usize, Proposal) = decoded;
+                if let Ok(block) = parse_from_bytes::<Block>(&proposal.block) {
+                    let verify_req = block_verify_req(&block, self.verify_id);
+                    self.unverified_msg.insert(self.verify_id, msg.to_vec());
+                    self.verify_id += 1;
+                    let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
+                    self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                }
+            }
+        }
+    }
+
     fn handle_proposal(&mut self, msg: Vec<u8>, wal_flag: bool) -> Result<(usize, usize), EngineError> {
         let res = deserialize(&msg[..]);
         if let Ok(decoded) = res {
-            let (message, signature) = decoded;
-            let message: Vec<u8> = message;
-            let signature: H520 = signature;
+            let (message, signature): (Vec<u8>, &[u8]) = decoded;
             let signature = Signature::from(signature);
             trace!("handle proposal message {:?}", message.crypt_hash());
 
-            if let Ok(pubkey) = recover(&signature, &message.crypt_hash().into()) {
+            if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
                 let decoded = deserialize(&message[..]).unwrap();
                 let (height, round, proposal) = decoded;
                 trace!("handle_proposal height {:?}, round {:?} sender {:?}", height, round, pubkey_to_address(&pubkey));
@@ -792,7 +796,7 @@ impl TenderMint {
             let lock_blk = lock_blk.clone().unwrap();
             {
                 let lock_blk_hash = H256::from(lock_blk.crypt_hash());
-                info!("proposal lock block-----{:?}------{:?}", self.height, lock_blk_hash);
+                info!("proposal lock block: height {:?}, block hash {:?}", self.height, lock_blk_hash);
                 self.proposal = Some(lock_blk_hash);
             }
             let blk = lock_blk.write_to_bytes().unwrap();
@@ -804,7 +808,7 @@ impl TenderMint {
             trace!("pub proposal");
             let bmsg = self.pub_proposal(&proposal);
             self.wal_log.save(LOG_TYPE_PROPOSE, &bmsg).unwrap();
-            trace!("proposor vote locked block {},{}", self.height, self.round);
+            trace!("proposor vote locked block: height {}, round {}", self.height, self.round);
             self.proposals.add(self.height, self.round, proposal);
             return;
         }
@@ -814,7 +818,7 @@ impl TenderMint {
             if self.pre_hash.is_some() {
                 block.mut_header().set_prevhash(self.pre_hash.unwrap().0.to_vec());
             } else {
-                info!("in new_proposal,self.pre_hash is none {},{}", self.height, self.round);
+                info!("in new_proposal,self.pre_hash is none: height {}, round {}", self.height, self.round);
                 //block.mut_header().set_prevhash(H256::default().0.to_vec());
             }
 
@@ -825,7 +829,7 @@ impl TenderMint {
             }
             if self.height > INIT_HEIGHT {
                 if proof.height != self.height - 1 {
-                    warn!("proof is old,proof height {},round {}", proof.height, proof.round);
+                    warn!("proof is old,proof height {}, round {}", proof.height, proof.round);
                     return;
                 }
             }
@@ -844,7 +848,7 @@ impl TenderMint {
         block.mut_header().set_transactions_root(transactions_root.to_vec());
 
         let bh = block.crypt_hash();
-        info!("proposal new block------{:?}-----{:?}", self.height, bh);
+        info!("proposal new block: height {:?}, block hash {:?}", self.height, bh);
         let pro_hash = Some(bh);
         {
             self.proposal = pro_hash.map(|x| x.into());
@@ -888,7 +892,7 @@ impl TenderMint {
             }
         } else if tminfo.step == Step::PrevoteWait {
 
-            info!(" ######### height {} round {} prevote wait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
+            info!(" #########  height {} round {} prevote wait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
             self.change_state_step(tminfo.height, tminfo.round, Step::Precommit, false);
             self.pre_proc_precommit();
 
@@ -949,17 +953,7 @@ impl TenderMint {
 
                 ID_NEW_PROPOSAL => {
                     if let MsgClass::MSG(msg) = content_ext {
-                        trace!("receive proposal");
-                        let res = self.handle_proposal(msg, false);
-                        if let Ok((h, r)) = res {
-                            trace!("handle_proposal {:?}", (h, r));
-                            if h == self.height && r == self.round && self.step < Step::PrevoteWait {
-                                let pres = self.proc_proposal(h, r);
-                                if !pres {
-                                    trace!("proc_proposal res false height {} round {}", h, r);
-                                }
-                            }
-                        }
+                        self.verify_req(&msg);
                     }
                 }
                 _ => {}
@@ -969,6 +963,23 @@ impl TenderMint {
                 MsgClass::STATUS(status) => {
                     trace!("get new local status {:?}", status.height);
                     self.receive_new_status(status);
+                }
+                MsgClass::VERIFYBLKRESP(resp) => {
+                    let verify_id = resp.get_id();
+                    let msg = self.unverified_msg.remove(&verify_id);
+                    let ret = resp.get_ret();
+                    msg.map(|msg| if ret == auth::Ret::Ok {
+                                let res = self.handle_proposal(msg, false);
+                                if let Ok((h, r)) = res {
+                                    trace!("handle_proposal {:?}", (h, r));
+                                    if h == self.height && r == self.round && self.step < Step::PrevoteWait {
+                                        let pres = self.proc_proposal(h, r);
+                                        if !pres {
+                                            trace!("proc_proposal res false height {}, round {}", h, r);
+                                        }
+                                    }
+                                }
+                            });
                 }
                 _ => {}
             }
@@ -1123,7 +1134,7 @@ impl TenderMint {
                 let pre_hash = H256::from(H256::from_slice(&vec_out));
                 self.pre_hash = Some(pre_hash);
             } else if mtype == LOG_TYPE_COMMITS {
-                trace!(" wal proof begining ----------");
+                trace!(" wal proof begining!");
                 if let Ok(proof) = deserialize(&vec_out) {
                     trace!(" wal proof here {:?}", proof);
                     self.proof = proof;

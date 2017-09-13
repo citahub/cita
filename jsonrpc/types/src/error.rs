@@ -164,6 +164,14 @@ impl Error {
             data: None,
         }
     }
+
+    pub fn parse_error_msg(err_msg: &str) -> Error {
+        Error {
+            code: ErrorCode::ParseError,
+            message: err_msg.to_string(),
+            data: Some(Value::Null),
+        }
+    }
 }
 
 

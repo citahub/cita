@@ -1,30 +1,21 @@
+#!/usr/bin/env python
+# coding=utf-8
+
+
 import os
-import copy
 import sys
-import random
-from secp256k1 import PrivateKey, PublicKey
-import rlp
-from rlp.utils import decode_hex, encode_hex 
-from utils import privtopub,privtoaddr
+from subprocess import call
 
-def mk_privkey(seed):
-    return sha3(seed)
-
-def mk_keys_addr():
-    if len(sys.argv)==2:
+def main():
+    if len(sys.argv) == 2:
         path = sys.argv[1]
     else:
-        path = os.path.join(sys.argv[1],"node" + sys.argv[2])
+        path = os.path.join(sys.argv[1], "node" + sys.argv[2])
+    command = sys.argv[3]
     dump_path = os.path.join(path, "privkey")
-    privkey = PrivateKey() 
-    sec_key = privkey.serialize()
-    f = open(dump_path, "w")
-    f.write(sec_key)
-    f.close()
     auth_path = os.path.join(sys.argv[1], "authorities")
-    authority = encode_hex(privtoaddr(decode_hex(sec_key)))
-    auth_file = open(auth_path, "a")
-    auth_file.write("0x" + authority + "\n")
-    auth_file.close()
+    cmd = "%s %s %s" % (command, dump_path, auth_path)
+    call(cmd, shell=True)
 
-mk_keys_addr()
+if __name__ == '__main__':
+    main()

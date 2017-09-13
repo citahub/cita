@@ -1,0 +1,12 @@
+[package]
+name = "cita-ed25519"
+version = "0.6.0"
+authors = ["wangyifu <lbqds@cryptape.com>"]
+
+[dependencies]
+rustc-serialize = "0.3"
+sodiumoxide = { git = "https://github.com/cryptape/sodiumoxide.git" }
+util = { path = "../util" }
+rlp = { path = "../rlp" }
+serde = "1.0"
+bincode = "0.8.0"

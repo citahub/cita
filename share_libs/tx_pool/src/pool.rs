@@ -22,6 +22,8 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use util::H256;
 
+pub const BLOCKLIMIT: u64 = 100;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Strategy {
     FIFO,
@@ -155,7 +157,7 @@ impl Pool {
                 let hash = order.unwrap().hash;
                 let tx = self.txs.get(&hash);
                 if let Some(tx) = tx {
-                    if tx.get_transaction_with_sig().get_transaction().valid_until_block == 0 || tx.get_transaction_with_sig().get_transaction().valid_until_block >= height {
+                    if tx.get_transaction_with_sig().get_transaction().valid_until_block >= height && tx.get_transaction_with_sig().get_transaction().valid_until_block < (height + BLOCKLIMIT) {
                         tx_list.push(tx.clone());
                         n = n - 1;
                         if n == 0 {
@@ -183,34 +185,30 @@ impl Pool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use libproto::blockchain::{SignedTransaction, UnverifiedTransaction, Transaction};
+    use crypto::{KeyPair, PrivKey, CreateKey};
+    use libproto::blockchain::{SignedTransaction, Transaction};
 
-    pub fn generate_tx(data: Vec<u8>, valid_until_block: u64) -> SignedTransaction {
+    pub fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(valid_until_block);
+        tx.set_quota(184467440737095);
 
-        let pv = H256::from_slice(&[20, 17]);
-
-        let mut uv_tx = UnverifiedTransaction::new();
-        uv_tx.set_transaction(tx);
-
-        let mut signed_tx = SignedTransaction::new();
-        signed_tx.set_transaction_with_sig(uv_tx);
-        signed_tx.sign(pv);
-
-        signed_tx
+        tx.sign(*privkey)
     }
 
     #[test]
     fn basic() {
         let mut p = Pool::new(2, 1);
-        let tx1 = generate_tx(vec![1], 999);
-        let tx2 = generate_tx(vec![1], 999);
-        let tx3 = generate_tx(vec![2], 999);
-        let tx4 = generate_tx(vec![3], 5);
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+
+        let tx1 = generate_tx(vec![1], 99, privkey);
+        let tx2 = generate_tx(vec![1], 99, privkey);
+        let tx3 = generate_tx(vec![2], 99, privkey);
+        let tx4 = generate_tx(vec![3], 5, privkey);
 
         assert_eq!(p.enqueue(tx1.clone()), true);
         assert_eq!(p.enqueue(tx2.clone()), false);

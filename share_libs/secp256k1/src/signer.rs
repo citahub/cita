@@ -15,6 +15,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use super::{PrivKey, KeyPair, Address};
+use util::crypto::CreateKey;
 
+#[derive(Default)]
+pub struct Signer {
+    pub keypair: KeyPair,
+    pub address: Address,
+}
 
-
+impl From<PrivKey> for Signer {
+    fn from(k: PrivKey) -> Self {
+        let keypair = KeyPair::from_privkey(k).unwrap();
+        Signer {
+            address: keypair.address().clone(),
+            keypair: keypair,
+        }
+    }
+}

@@ -20,13 +20,12 @@ use core::libchain::block::Block;
 use core::transaction::SignedTransaction;
 use crypto::*;
 use libproto::{factory, communication, topics, submodules};
-use libproto::blockchain::{SignedTransaction as ProtoSignedTransaction, UnverifiedTransaction, Transaction};
+use libproto::blockchain::Transaction;
 use proof::TendermintProof;
 use protobuf::core::Message;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::time::{UNIX_EPOCH, Duration};
-//util::hash::{H256, Address, H520};
 use util::H256;
 use util::Hashable;
 
@@ -66,31 +65,24 @@ impl Generateblock {
     }
 
     pub fn generate_tx(code: &str, address: String) -> SignedTransaction {
-        let test1_privkey = H256::random();
-        let keypair = KeyPair::from_privkey(H256::from(test1_privkey)).unwrap();
+        let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
 
         let data = code.from_hex().unwrap();
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_nonce("0".to_string());
+        tx.set_quota(999999);
         //设置空，则创建合约
         tx.set_to(address);
         tx.set_valid_until_block(99999);
-
-        let mut uv_tx = UnverifiedTransaction::new();
-        uv_tx.set_transaction(tx);
-
-        let mut signed_tx = ProtoSignedTransaction::new();
-        signed_tx.set_transaction_with_sig(uv_tx);
-        signed_tx.sign(pv.clone());
+        let signed_tx = tx.sign(*pv);
 
         SignedTransaction::new(&signed_tx).unwrap()
     }
 
     pub fn build_block(txs: Vec<SignedTransaction>, pre_hash: H256, h: u64) -> (Vec<u8>, Block) {
-        let test1_privkey = H256::random();
-        let keypair = KeyPair::from_privkey(H256::from(test1_privkey)).unwrap();
+        let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
         let pk = keypair.pubkey();
         let sender = keypair.address().clone();
@@ -107,7 +99,7 @@ impl Generateblock {
         proof.proposal = H256::default();
         let mut commits = HashMap::new();
         let msg = serialize(&(proof.height, proof.round, Step::Precommit, sender.clone(), Some(proof.proposal.clone())), Infinite).unwrap();
-        let signature = sign(pv, &msg.crypt_hash().into()).unwrap();
+        let signature = Signature::sign(pv, &msg.crypt_hash().into()).unwrap();
         commits.insert((*sender).into(), signature.into());
         proof.commits = commits;
         block.set_proof(proof.into());

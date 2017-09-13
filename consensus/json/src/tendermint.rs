@@ -52,38 +52,59 @@ pub struct Tendermint {
 
 #[cfg(test)]
 mod tests {
+    extern crate cita_crypto as crypto;
+
     use super::*;
+    use crypto::SIGNATURE_NAME;
     use serde_json;
 
-    #[test]
-    fn tendermint_params_deserialization() {
-        let s = r#"{
-            "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
-            "duration": 3,
-            "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
-            "block_tx_limit": 1000,
-            "tx_filter_size": 5000,
-            "tx_pool_size": 50000,
-            "is_test": true
-        }"#;
-
-        let _deserialize: TendermintParams = serde_json::from_str(s).unwrap();
+    fn generate_signer() -> String {
+        if SIGNATURE_NAME == "ed25519" {
+            "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65".to_string()
+        } else if SIGNATURE_NAME == "secp256k1" {
+            "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65".to_string()
+        } else {
+            "".to_string()
+        }
     }
 
     #[test]
-    fn tendermint_deserialization() {
-        let s = r#"{
-            "params": {
+    fn tendermint_params_deserialization() {
+        let signer = generate_signer();
+        let s = format!(
+            r#"{{
                 "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
                 "duration": 3,
-                "signer": "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65",
+                "signer": "{}",
                 "block_tx_limit": 1000,
                 "tx_filter_size": 5000,
                 "tx_pool_size": 50000,
                 "is_test": true
-            }
-        }"#;
+            }}"#,
+            signer
+        );
 
-        let _deserialize: Tendermint = serde_json::from_str(s).unwrap();
+        let _deserialize: TendermintParams = serde_json::from_str(&s).unwrap();
+    }
+
+    #[test]
+    fn tendermint_deserialization() {
+        let signer = generate_signer();
+        let s = format!(
+            r#"{{
+                "params": {{
+                    "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
+                    "duration": 3,
+                    "signer": "{}",
+                    "block_tx_limit": 1000,
+                    "tx_filter_size": 5000,
+                    "tx_pool_size": 50000,
+                    "is_test": true
+                }}
+            }}"#,
+            signer
+        );
+
+        let _deserialize: Tendermint = serde_json::from_str(&s).unwrap();
     }
 }

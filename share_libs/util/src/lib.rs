@@ -14,29 +14,26 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+#![allow(unused_extern_crates)]
 extern crate rustc_hex;
-extern crate rand;
 extern crate rocksdb;
-extern crate env_logger;
-extern crate crypto as rcrypto;
-extern crate blake2b;
 extern crate elastic_array;
-extern crate time;
-extern crate devtools;
 extern crate libc;
 extern crate target_info;
 extern crate bigint;
 extern crate parking_lot;
 extern crate ansi_term;
-extern crate tiny_keccak;
 extern crate rlp;
 extern crate regex;
 extern crate lru_cache;
 extern crate heapsize;
 extern crate itertools;
+extern crate devtools;
 extern crate ethcore_logger;
+#[cfg(feature = "sha3hash")]
 extern crate sha3;
+#[cfg(feature = "blake2bhash")]
+extern crate blake2b;
 
 #[macro_use]
 extern crate log as rlog;
@@ -61,6 +58,7 @@ pub mod nibblevec;
 pub mod semantic_version;
 pub mod snappy;
 pub mod cache;
+pub mod crypto;
 
 
 pub use ansi_term::{Colour, Style};

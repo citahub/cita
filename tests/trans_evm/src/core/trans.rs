@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::*;
-use libproto::blockchain::{SignedTransaction, UnverifiedTransaction, Transaction};
+use libproto::blockchain::{UnverifiedTransaction, Transaction};
 use protobuf::core::Message;
 use rustc_hex::FromHex;
 use util::*;
@@ -24,7 +24,7 @@ use util::*;
 #[allow(dead_code, unused_variables)]
 #[derive(Clone, Debug)]
 pub enum Methods {
-    Sendtx(SignedTransaction),
+    Sendtx(UnverifiedTransaction),
     Height,
     Blockbyheiht(u64),
     Trans(String),
@@ -44,7 +44,7 @@ impl Trans {
         Trans { tx: Transaction::new() }
     }
 
-    pub fn generate_tx(code: &str, address: String, pv: &PrivKey) -> SignedTransaction {
+    pub fn generate_tx(code: &str, address: String, pv: &PrivKey, curh: u64) -> UnverifiedTransaction {
 
         let data = code.from_hex().unwrap();
 
@@ -53,16 +53,10 @@ impl Trans {
         //设置空，则创建合约
         tx.set_to(address);
         tx.set_nonce("0".to_string());
-        tx.set_valid_until_block(99999);
+        tx.set_valid_until_block(curh + 88);
+        tx.set_quota(99999999999);
 
-        let mut uv_tx = UnverifiedTransaction::new();
-        uv_tx.set_transaction(tx);
-
-        let mut signed_tx = SignedTransaction::new();
-        signed_tx.set_transaction_with_sig(uv_tx);
-        signed_tx.sign(pv.clone());
-
-        signed_tx
+        tx.sign(*pv).take_transaction_with_sig()
     }
 
     pub fn generate_tx_data(method: Methods) -> String {
