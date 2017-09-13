@@ -27,7 +27,7 @@ use libchain::extras::TransactionAddress;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use protobuf::RepeatedField;
-use receipt::Receipt;
+use receipt::{Receipt, ReceiptError};
 use rlp::*;
 use state::State;
 use state_db::StateDB;
@@ -328,6 +328,16 @@ impl OpenBlock {
             }
             Err(Error::Execution(ExecutionError::InvalidNonce { expected: _, got: _ })) => {
                 self.receipts.push(None);
+                self.tx_hashes.push(true);
+            }
+            Err(Error::Execution(ExecutionError::NotEnoughBaseGas { required: _, got })) => {
+                let receipt = Receipt::new(None, got, Vec::new(), Some(ReceiptError::OutOfGas));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(true);
+            }
+            Err(Error::Execution(ExecutionError::BlockGasLimitReached { gas_limit: _, gas_used, gas: _ })) => {
+                let receipt = Receipt::new(None, gas_used, Vec::new(), Some(ReceiptError::OutOfGas));
+                self.receipts.push(Some(receipt));
                 self.tx_hashes.push(true);
             }
             Err(_) => {
