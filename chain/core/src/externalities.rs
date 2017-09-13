@@ -254,6 +254,7 @@ where
     where
         Self: Sized,
     {
+        trace!("ret gas={}, data={:?}", gas, data);
         let handle_copy = |to: &mut Option<&mut Bytes>| { to.as_mut().map(|b| **b = data.to_owned()); };
         match self.output {
             OutputPolicy::Return(BytesRef::Fixed(ref mut slice), ref mut copy) => {
