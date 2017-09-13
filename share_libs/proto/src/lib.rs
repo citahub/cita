@@ -68,16 +68,14 @@ pub mod topics {
     pub const NEW_STATUS: u16 = 3;
     pub const SYNC_BLK: u16 = 4;
     pub const RESPONSE: u16 = 5;
-    pub const NEW_TX: u16 = 6;
-    pub const TX_RESPONSE: u16 = 7;
-    pub const CONSENSUS_MSG: u16 = 8;
-    pub const NEW_PROPOSAL: u16 = 9;
-    pub const VERIFY_TX_REQ: u16 = 10;
-    pub const VERIFY_TX_RESP: u16 = 11;
-    pub const VERIFY_BLK_REQ: u16 = 12;
-    pub const VERIFY_BLK_RESP: u16 = 13;
-    pub const BLOCK_TXHASHES: u16 = 14;
-    pub const BLOCK_TXHASHES_REQ: u16 = 15;
+    pub const CONSENSUS_MSG: u16 = 6;
+    pub const NEW_PROPOSAL: u16 = 7;
+    pub const VERIFY_TX_REQ: u16 = 8;
+    pub const VERIFY_TX_RESP: u16 = 9;
+    pub const VERIFY_BLK_REQ: u16 = 10;
+    pub const VERIFY_BLK_RESP: u16 = 11;
+    pub const BLOCK_TXHASHES: u16 = 12;
+    pub const BLOCK_TXHASHES_REQ: u16 = 13;
 }
 
 #[derive(Debug)]
@@ -104,8 +102,6 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::NEW_STATUS => "new_status",
         topics::SYNC_BLK => "sync_blk",
         topics::RESPONSE => "response",
-        topics::NEW_TX => "new_tx",
-        topics::TX_RESPONSE => "tx_response",
         topics::CONSENSUS_MSG => "consensus_msg",
         topics::NEW_PROPOSAL => "new_proposal",
         topics::VERIFY_TX_REQ => "verify_tx_req",

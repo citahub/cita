@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::{key_to_id, parse_msg, MsgClass, factory, submodules, topics, communication, tx_verify_req_msg};
+use libproto::{key_to_id, parse_msg, MsgClass, factory, submodules, topics, communication, tx_verify_req_msg, Request};
 use libproto::auth::Ret;
-use libproto::blockchain::{SignedTransaction, UnverifiedTransaction};
+use libproto::blockchain::{SignedTransaction};
 use protobuf::Message;
 use std::collections::HashMap;
 use std::sync::{Mutex, Arc};
@@ -25,16 +25,14 @@ use std::sync::mpsc::Sender;
 use threadpool::ThreadPool;
 use util::H256;
 
-pub type TransType = (Option<SignedTransaction>, Option<(H256, Ret)>);
+pub type TransType = (Option<SignedTransaction>, Option<(H256, Vec<u8>, Ret)>);
 
 pub struct TxHandler {
     pool: ThreadPool,
     tx: Sender<TransType>,
     tx_pub: Sender<(String, Vec<u8>)>,
-    unverified: Arc<Mutex<HashMap<H256, (u32, UnverifiedTransaction)>>>,
+    unverified: Arc<Mutex<HashMap<H256, (u32, Request)>>>,
 }
-
-
 
 impl TxHandler {
     pub fn new(pool: ThreadPool, tx: Sender<TransType>, tx_pub: Sender<(String, Vec<u8>)>) -> Self {
@@ -53,13 +51,13 @@ impl TxHandler {
         self.pool.execute(move || {
             let (_, _, msg) = parse_msg(&msg);
             match msg {
-                MsgClass::TX(unverified_tx) => {
+                MsgClass::REQUEST(tx_req) => {
                     let id = key_to_id(&key);
-                    let verify_tx_req = tx_verify_req_msg(&unverified_tx);
+                    let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
                     let hash: H256 = verify_tx_req.get_tx_hash().into();
                     {
                         let mut txs = unverified.lock().unwrap();
-                        txs.insert(hash, (id, unverified_tx.clone()));
+                        txs.insert(hash, (id, tx_req));
                     }
                     let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_TX_REQ, communication::MsgType::VERIFY_TX_REQ, verify_tx_req.write_to_bytes().unwrap());
                     trace!("send verify req, hash: {:?}, tx from: {}", hash, key);
@@ -74,19 +72,19 @@ impl TxHandler {
                     };
                     trace!("receive verify resp, hash: {:?}, ret: {:?}", tx_hash, resp.get_ret());
 
-                    unverified_tx.map(|(id, unverified_tx)| {
+                    unverified_tx.map(|(id, mut req)| {
                         let mut signed_tx_op: Option<SignedTransaction> = None;
-                        let mut result = (tx_hash.clone(), Ret::Ok);
+                        let mut result = (tx_hash, req.request_id.clone(), Ret::Ok);
                         match resp.get_ret() {
                             Ret::Ok => {
                                 let mut signed_tx = SignedTransaction::new();
-                                signed_tx.set_transaction_with_sig(unverified_tx);
+                                signed_tx.set_transaction_with_sig(req.take_un_tx());
                                 signed_tx.set_signer(resp.get_signer().to_vec());
                                 signed_tx.set_tx_hash(tx_hash.to_vec());
                                 signed_tx_op = Some(signed_tx);
 
                             }
-                            ret @ _ => result.1 = ret,
+                            ret @ _ => result.2 = ret,
                         }
 
                         if id == submodules::NET {

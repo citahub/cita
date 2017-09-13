@@ -81,7 +81,7 @@ impl CandidatePool {
 
         // Response RPC
         if !is_from_broadcast {
-            let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
+            let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, content.write_to_bytes().unwrap());
             self.sender.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }

@@ -19,9 +19,9 @@ extern crate threadpool;
 
 use core::txhandler::TxHandler;
 use core::txwal::Txwal;
-use libproto::{submodules, topics, factory, communication};
+use libproto::{submodules, topics, factory, communication, Response};
 use libproto::auth::Ret;
-use libproto::blockchain::{TxResponse, SignedTransaction};
+use libproto::blockchain::SignedTransaction;
 use protobuf::Message;
 use pubsub::start_pubsub;
 use std::sync::{RwLock, Arc};
@@ -107,18 +107,14 @@ impl Dispatchtx {
                       });
     }
 
-    //TODO error return JsonRpc
-    fn receive_new_transaction(&self, signed_tx: Option<SignedTransaction>, result: Option<(H256, Ret)>, tx_pub: Sender<(String, Vec<u8>)>) {
-        let mut error_msg: Option<String> = None;
-        signed_tx.map(|signed_tx| if self.tx_flow_control() {
-                          error_msg = Some(String::from("BUSY"));
-                      } else {
-                          let is_success = self.add_tx_to_pool(&signed_tx);
-                          if is_success {
-                              let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, signed_tx.get_transaction_with_sig().write_to_bytes().unwrap());
-                              tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-                          } else {
-                              error_msg = Some(String::from("4:DUP"));
+    fn receive_new_transaction(&self, signed_tx: Option<SignedTransaction>, result: Option<(H256, Vec<u8>, Ret)>, tx_pub: Sender<(String, Vec<u8>)>) {
+        let mut is_busy = false;
+        let mut is_success = false;
+        let tx_is_valid = signed_tx.is_some();
+        signed_tx.map(|signed_tx| {
+                          is_busy = self.tx_flow_control();
+                          if !is_busy {
+                              is_success = self.add_tx_to_pool(&signed_tx);
                           }
                       });
 
@@ -127,9 +123,9 @@ impl Dispatchtx {
             return;
         }
 
-        let (hash, ret) = result.unwrap();
-        let mut tx_response = TxResponse::new();
-        tx_response.set_hash(hash.to_vec());
+        let (hash, req_id, ret) = result.unwrap();
+        let mut tx_response = Response::new();
+        tx_response.set_request_id(req_id);
         let ret = match ret {
             Ret::Ok => "4:OK".to_string(),
             Ret::Dup => "4:DUP".to_string(),
@@ -138,13 +134,21 @@ impl Dispatchtx {
             Ret::BadSig => "BAD SIG".to_string(),
             Ret::Err => "Err".to_string(),
         };
-        tx_response.set_result(ret.into_bytes());
+        //TODO error return
+        tx_response.set_tx_state(ret);
 
-        if error_msg.is_some() {
-            tx_response.set_result(error_msg.unwrap().into_bytes());
+        if tx_is_valid {
+            if is_busy {
+                tx_response.set_tx_state(String::from("BUSY"));
+            } else if !is_success {
+                tx_response.set_error_msg(String::from("4:DUP"));
+                tx_response.set_code(3);
+
+            }
         }
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, tx_response.write_to_bytes().unwrap());
-        trace!("response new tx {:?}", tx_response.get_hash());
+
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, tx_response.write_to_bytes().unwrap());
+        trace!("response new tx {:?}", tx_response);
         tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
@@ -153,7 +157,7 @@ impl Dispatchtx {
         self.wal.read(&mut tx_pool)
     }
 
-    pub fn process(&self, rx: &Receiver<(Option<SignedTransaction>, Option<(H256, Ret)>)>, tx_pub: Sender<(String, Vec<u8>)>) {
+    pub fn process(&self, rx: &Receiver<(Option<SignedTransaction>, Option<(H256, Vec<u8>, Ret)>)>, tx_pub: Sender<(String, Vec<u8>)>) {
         let res = rx.recv().unwrap();
         let (signed_tx, result) = res;
         self.receive_new_transaction(signed_tx, result, tx_pub);

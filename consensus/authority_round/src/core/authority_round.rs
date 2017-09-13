@@ -121,7 +121,7 @@ impl AuthorityRound {
     }
 
     pub fn pub_transaction(&self, tx: &UnverifiedTransaction, tx_pub: Sender<(String, Vec<u8>)>) {
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::REQUEST, communication::MsgType::REQUEST, tx.write_to_bytes().unwrap());
         trace!("broadcast new tx {:?}", tx);
         tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
@@ -242,7 +242,7 @@ impl Engine for AuthorityRound {
         }
 
         if !from_broadcast {
-            let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, content.write_to_bytes().unwrap());
+            let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, content.write_to_bytes().unwrap());
             tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }
