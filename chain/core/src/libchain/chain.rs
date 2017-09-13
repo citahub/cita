@@ -20,7 +20,7 @@ use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use call_analytics::CallAnalytics;
-use contracts::node_manager::NodeManager;
+use contracts::{NodeManager, AccountManager};
 use db;
 use db::*;
 
@@ -201,6 +201,8 @@ pub struct Chain {
     transaction_addresses: RwLock<HashMap<TransactionId, DBList<TransactionAddress>>>,
     blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
     block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
+    senders: RwLock<HashMap<Address, bool>>,
+    creators: RwLock<HashMap<Address, bool>>,
 
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
@@ -280,6 +282,8 @@ impl Chain {
             sync_sender: Mutex::new(sync_sender),
             last_hashes: RwLock::new(VecDeque::new()),
             polls_filter: Arc::new(Mutex::new(PollManager::new())),
+            senders: RwLock::new(HashMap::new()),
+            creators: RwLock::new(HashMap::new()),
         };
 
         let mut status = RichStatus::new();
@@ -697,7 +701,6 @@ impl Chain {
             batch.extend_with_cache(db::COL_EXTRA, &mut *write_blooms, blocks_blooms.clone(), CacheUpdatePolicy::Overwrite);
             batch.extend_with_cache_append(db::COL_EXTRA, &*self.db, &mut *write_txs, block.transactions_uni.clone(), AppendPolicy::Overwrite);
             batch.extend_with_cache_append(db::COL_EXTRA, &*self.db, &mut *write_txs, block.transactions_dup.clone(), AppendPolicy::Update);
-
         }
 
         //note used
@@ -872,15 +875,23 @@ impl Chain {
                     *self.current_header.write() = header;
                 }
 
+                // DB write
                 let status = self.save_status(&mut batch);
+                self.db.write(batch).expect("DB write failed.");
 
+                // Reload consensus nodes
                 let nodes: Vec<Address> = NodeManager::read(&self);
                 let mut rich_status = RichStatus::new();
                 rich_status.set_hash(*status.hash());
                 rich_status.set_number(status.number());
                 rich_status.set_nodes(nodes);
 
-                self.db.write(batch).expect("DB write failed.");
+                // Reload senders and creators cache
+                let mut senders = self.senders.write();
+                let mut creators = self.creators.write();
+                *senders = AccountManager::load_senders(self);
+                *creators = AccountManager::load_creators(self);
+
                 info!("chain update {:?}", height);
                 Some(rich_status.protobuf())
             } else {
