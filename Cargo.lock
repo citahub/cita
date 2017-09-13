@@ -108,6 +108,7 @@ dependencies = [
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0",
+ "threadpool 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0",
 ]
 

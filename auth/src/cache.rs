@@ -22,6 +22,45 @@ impl VerifyCache {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum VerifyResult {
+    VerifyOngoing,
+    VerifyFailed,
+    VerifySucceeded,
+}
+
+#[derive(Debug)]
+pub struct BlockVerifyStatus {
+    pub block_verify_result: VerifyResult,
+    pub verify_success_cnt_required: usize,
+    pub verify_success_cnt_capture: usize,
+}
+
+#[derive(Debug)]
+pub struct VerifyBlockCache {
+    inner: Cache<u64, BlockVerifyStatus>,
+}
+
+impl VerifyBlockCache {
+    pub fn new(size: usize) -> Self {
+        VerifyBlockCache {
+            inner: Cache::new(size * 4)
+        }
+    }
+
+    pub fn insert(&mut self, block_heiht: u64, result: BlockVerifyStatus) {
+        self.inner.insert(block_heiht, result);
+    }
+
+    pub fn get(&self, block_height: u64) -> Option<&BlockVerifyStatus> {
+        self.inner.peek(&block_height)
+    }
+
+    pub fn get_mut(&mut self, block_height: u64) -> Option<&mut BlockVerifyStatus> {
+        (&mut self.inner).get_mut(&block_height)
+    }
+}
+
 
 #[test]
 fn basic() {

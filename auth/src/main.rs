@@ -26,6 +26,7 @@ extern crate libproto;
 extern crate cache_2q;
 extern crate util;
 extern crate cita_crypto as crypto;
+extern crate threadpool;
 
 pub mod handler;
 pub mod verify;
@@ -34,14 +35,16 @@ pub mod cache;
 use clap::App;
 use cpuprofiler::PROFILER;
 use dotenv::dotenv;
-use handler::handle_msg;
 use log::LogLevelFilter;
 use pubsub::start_pubsub;
 use std::env;
 use std::sync::mpsc::channel;
 use std::thread;
 use verify::Verifier;
-use cache::VerifyCache;
+use cache::{VerifyCache, VerifyBlockCache, VerifyResult};
+use handler::{verify_tx_service, VerifyType, handle_remote_msg, handle_verificaton_result};
+use util::RwLock;
+use std::sync::Arc;
 
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
@@ -69,28 +72,63 @@ fn main() {
         .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
+        .args_from_usage("-n, --tx_verify_thread_num=[10] 'transaction verification thread count'")
         .args_from_usage("--prof-start=[0] 'Specify the start time of profiling, zero means no profiling'")
         .args_from_usage("--prof-duration=[0] 'Specify the duration for profiling, zero means no profiling'")
         .get_matches();
 
+    let tx_verify_thread_num = matches.value_of("tx_verify_thread_num").unwrap_or("10").parse::<usize>().unwrap();
     let flag_prof_start = matches.value_of("prof-start").unwrap_or("0").parse::<u64>().unwrap();
     let flag_prof_duration = matches.value_of("prof-duration").unwrap_or("0").parse::<u64>().unwrap();
+    let threadpool = threadpool::ThreadPool::new(tx_verify_thread_num);
 
     profifer(flag_prof_start, flag_prof_duration);
 
-    let mut verifier = Verifier::new();
-    let mut cache = VerifyCache::new(1000);
+    let verifier = Arc::new(RwLock::new(Verifier::new()));
+    let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
+    let block_cache = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
 
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
     start_pubsub("auth", vec!["*.verify_req", "chain.txhashes"], tx_sub, rx_pub);
 
-    //tx_pub.send(("auth.verify_resp".to_string(), vec![0])).unwrap();
+    let (req_sender, req_receiver) = channel();
+//    let (resp_sender_single, resp_receiver_single) = channel();
+//    let (resp_sender_block, resp_receiver_block) = channel();
+    let (resp_sender, resp_receiver) = channel();
+    let verifier_clone = verifier.clone();
+    let block_cache_clone = block_cache.clone();
+    let cache_clone = cache.clone();
+    thread::spawn(move || loop {
+        let (verify_type, id , verify_req, sub_module) = req_receiver.recv().unwrap();
+        //once one of the verification request within block verification,
+        // the other requests within the same block should be cancelled.
+        if VerifyType::BlockVerify == verify_type &&
+            VerifyResult::VerifyFailed == block_cache_clone.read().get(id).unwrap().block_verify_result {
+            continue;
+        }
+        let pool = threadpool.clone();
+        let verifier_clone_222 = verifier_clone.clone();
+        let cache_clone_222 = cache_clone.clone();
+        let resp_sender_clone = resp_sender.clone();
+        pool.execute(move || {
+            let resp = verify_tx_service(verify_req, verifier_clone_222, cache_clone_222);
+            resp_sender_clone.send((verify_type, id, resp, sub_module)).unwrap();
+        });
+    });
 
-    loop {
+
+    let tx_pub_clone = tx_pub.clone();
+    let block_cache_clone_111 = block_cache.clone();
+    thread::spawn(move || loop {
         let (key, msg) = rx_sub.recv().unwrap();
         info!("get {} : {:?}", key, msg);
-        handle_msg(msg, &tx_pub, &mut verifier, &mut cache);
+        let block_cache_clone_222 = block_cache_clone_111.clone();
+        handle_remote_msg(msg, verifier.clone(), req_sender.clone(), tx_pub_clone.clone(), block_cache_clone_222);
+    });
+
+    loop {
+        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache.clone());
     }
 }
 
