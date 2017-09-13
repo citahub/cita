@@ -50,7 +50,7 @@ impl From<RichStatus> for Status {
         let mut status = Status::new();
         status.hash = rich_status.get_hash().to_vec();
         status.height = rich_status.get_height();
-        
+
         status
     }
 }
