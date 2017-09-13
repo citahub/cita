@@ -51,6 +51,9 @@ pub struct Receipt {
     /// Logs bloom
     #[serde(rename = "logsBloom")]
     pub logs_bloom: Bloom,
+    /// Receipt error message
+    #[serde(rename = "errorMessage")]
+    pub error_message: Option<String>,
 }
 
 impl From<LocalizedReceipt> for Receipt {
@@ -66,6 +69,7 @@ impl From<LocalizedReceipt> for Receipt {
             logs: r.logs.into_iter().map(Into::into).collect(),
             state_root: r.state_root.map(Into::into),
             logs_bloom: r.log_bloom.into(),
+            error_message: r.error.map(|error| error.description()),
         }
     }
 }
@@ -83,6 +87,7 @@ impl From<RichReceipt> for Receipt {
             logs: r.logs.into_iter().map(Into::into).collect(),
             state_root: r.state_root.map(Into::into),
             logs_bloom: r.log_bloom.into(),
+            error_message: r.error.map(|error| error.description()),
         }
     }
 }
@@ -100,6 +105,7 @@ impl From<EthReceipt> for Receipt {
             logs: r.logs.into_iter().map(Into::into).collect(),
             state_root: r.state_root.map(Into::into),
             logs_bloom: r.log_bloom.into(),
+            error_message: r.error.map(|error| error.description()),
         }
     }
 }
@@ -139,6 +145,7 @@ mod tests {
             ],
             logs_bloom: Hash2048::from(15).into(),
             state_root: Some(Hash256::from(10).into()),
+            error_message: None,
         };
 
         let serialized = serde_json::to_string(&receipt).unwrap();
@@ -174,6 +181,7 @@ mod tests {
             ],
             logs_bloom: Hash2048::from(15).into(),
             state_root: Some(Hash256::from(10).into()),
+            error_message: None,
         };
 
         println!("{:?}", receipt);

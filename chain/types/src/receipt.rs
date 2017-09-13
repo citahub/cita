@@ -26,13 +26,17 @@ use util::HeapSizeOf;
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
     OutOfGas,
+    NoTransactionPermission,
+    NoContractPermission,
 }
 
 impl ReceiptError {
     /// Returns human-readable description
     pub fn description(&self) -> String {
         let desc = match *self {
-            ReceiptError::OutOfGas => "Out of Gas",
+            ReceiptError::OutOfGas => "Out of gas.",
+            ReceiptError::NoTransactionPermission => "No transaction permission.",
+            ReceiptError::NoContractPermission => "No contract permission.",
         };
         desc.to_string()
     }
@@ -42,6 +46,8 @@ impl Decodable for ReceiptError {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         match rlp.as_val::<u8>()? {
             0 => Ok(ReceiptError::OutOfGas),
+            1 => Ok(ReceiptError::NoTransactionPermission),
+            2 => Ok(ReceiptError::NoContractPermission),
             _ => Err(DecoderError::Custom("Unknown Receipt error.")),
         }
     }
@@ -146,6 +152,8 @@ pub struct RichReceipt {
     pub log_bloom: LogBloom,
     /// State root
     pub state_root: Option<H256>,
+    /// Receipt error
+    pub error: Option<ReceiptError>,
 }
 
 /// Receipt with additional info.
@@ -171,16 +179,18 @@ pub struct LocalizedReceipt {
     pub log_bloom: LogBloom,
     /// State root
     pub state_root: Option<H256>,
+    /// Receipt error
+    pub error: Option<ReceiptError>,
 }
 
 #[cfg(test)]
 mod tests {
     extern crate rustc_hex;
 
+    use self::rustc_hex::{ToHex, FromHex};
     use super::Receipt;
     use log_entry::LogEntry;
     use util::hashable::HASH_NAME;
-    use rustc_hex::{ToHex, FromHex};
 
     #[test]
     fn test_no_state_root() {
@@ -225,7 +235,7 @@ mod tests {
                     data: vec![0u8; 32],
                 },
             ],
-            None
+            None,
         );
         let encoded = ::rlp::encode(&r);
         let slice: &[u8] = &encoded;
