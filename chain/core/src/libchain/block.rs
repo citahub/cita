@@ -336,7 +336,7 @@ impl OpenBlock {
         env_info.account_gas_limit = *self.account_gas.get(t.sender()).expect("account should exist in account_gas_limit");
 
         let has_traces = self.traces.is_some();
-        match self.state.apply(&env_info, &t, has_traces) {
+        match self.state.apply(&env_info, &t, has_traces, switch) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());

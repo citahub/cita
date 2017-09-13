@@ -61,10 +61,9 @@ test:
 	@grep -q '\.\.\. FAILED' target/test.log; if [ $$? -eq 0 ] ; then exit 1; fi;
 
 bench:
-	-rm -f target/bench.log
-	find chain  consensus  devtools jsonrpc network share_libs tests              \
+	@-rm -f target/bench.log
+	@find chain  consensus  devtools jsonrpc network share_libs tests              \
           -name 'Cargo.toml'                                                      \
-          -not -path 'share_libs/parity/*'                                        \
           -not -path 'consensus/raft/*'                                           \
           -not -path 'consensus/capnp_nonblock/*'                                 \
           -exec cargo bench --manifest-path {} 2>&1 \; |tee -a target/bench.log
@@ -73,9 +72,8 @@ bench:
 	@grep -A 2  'error\[' target/bench.log || exit 0
 	@echo "################################################################################"
 	@echo "bench result:"
-	@grep '\.\.\. ' target/bench.log|grep -v 'ignored'|grep -v 'bench_execute_block' || exit 0
-	@grep -A 4 'libchain::chain::tests::bench_execute_block' target/bench.log || exit 0
-	grep -q 'error\[' target/bench.log; if [ $$? -eq 0 ] ; then exit 1; fi;
+	@grep '\.\.\. bench: ' target/bench.log||exit 0
+	@grep -q 'error\[' target/bench.log; if [ $$? -eq 0 ] ; then exit 1; fi;
 
 fmt:
 	cargo fmt --all
