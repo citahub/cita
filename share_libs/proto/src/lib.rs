@@ -30,6 +30,7 @@ pub mod communication;
 pub mod request;
 pub mod into;
 pub mod auth;
+pub mod response;
 
 pub use auth::*;
 use blockchain::*;
@@ -38,6 +39,7 @@ use crypto::{PrivKey, PubKey, Signature, KeyPair, SIGNATURE_BYTES_LEN, Message a
 use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 pub use request::*;
+pub use response::*;
 use rlp::*;
 use rustc_serialize::hex::ToHex;
 use std::ops::Deref;
@@ -83,10 +85,7 @@ pub enum MsgClass {
     REQUEST(Request),
     RESPONSE(Response),
     HEADER(BlockHeader),
-    BODY(BlockBody),
     BLOCK(Block),
-    TX(UnverifiedTransaction),
-    TXRESPONSE(TxResponse),
     STATUS(Status),
     VERIFYTXREQ(VerifyTxReq),
     VERIFYTXRESP(VerifyTxResp),
@@ -233,13 +232,8 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::RESPONSE => {
             MsgClass::RESPONSE(parse_from_bytes::<Response>(&content_msg).unwrap())
         }
-        MsgType::TX_RESPONSE => {
-            MsgClass::TXRESPONSE(parse_from_bytes::<TxResponse>(&content_msg).unwrap())
-        }
         MsgType::HEADER => MsgClass::HEADER(parse_from_bytes::<BlockHeader>(&content_msg).unwrap()),
-        MsgType::BODY => MsgClass::BODY(parse_from_bytes::<BlockBody>(&content_msg).unwrap()),
         MsgType::BLOCK => MsgClass::BLOCK(parse_from_bytes::<Block>(&content_msg).unwrap()),
-        MsgType::TX => MsgClass::TX(parse_from_bytes::<UnverifiedTransaction>(&content_msg).unwrap()),
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
         MsgType::VERIFY_TX_REQ => MsgClass::VERIFYTXREQ(parse_from_bytes::<VerifyTxReq>(&content_msg).unwrap()),
         MsgType::VERIFY_TX_RESP => MsgClass::VERIFYTXRESP(parse_from_bytes::<VerifyTxResp>(&content_msg).unwrap()),

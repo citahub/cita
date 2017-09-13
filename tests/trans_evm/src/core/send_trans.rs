@@ -114,21 +114,21 @@ impl Sendtx {
                 let deserialized: RpcSuccess = deserialized;
                 ret = match deserialized.result {
 
-                    ResponseBody::BlockNumber(hei) => (format!("{}", hei), true),
-                    ResponseBody::Transaction(RpcTransaction) => {
+                    RusultBody::BlockNumber(hei) => (format!("{}", hei), true),
+                    RusultBody::Transaction(RpcTransaction) => {
                         //let transaction = RpcTransaction.transaction;
                         let content = RpcTransaction.content;
                         if !content.to_vec().is_empty() { (String::new(), true) } else { (String::new(), false) }
                     }
 
-                    ResponseBody::FullBlock(full_block) => {
+                    RusultBody::FullBlock(full_block) => {
                         //let block = full_block.block;
                         let body = full_block.body;
                         let transactions = body.transactions;
                         (format!("{}", transactions.len()), true)
                     }
 
-                    ResponseBody::TxResponse(TxResponse) => {
+                    RusultBody::TxResponse(TxResponse) => {
                         if TxResponse.status == "4:OK" {
                             let hash = TxResponse.hash;
                             (format!("{:?}", hash), true)
@@ -138,7 +138,7 @@ impl Sendtx {
                         }
                     }
 
-                    ResponseBody::Receipt(Receipt) => {
+                    RusultBody::Receipt(Receipt) => {
 
                         match Receipt.contract_address {
                             Some(contract_address) => (format!("{:?}", contract_address), true),

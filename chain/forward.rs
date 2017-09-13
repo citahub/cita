@@ -22,7 +22,7 @@ use core::filters::eth_filter::EthFilter;
 use core::libchain::call_request::CallRequest;
 pub use core::libchain::chain::*;
 use jsonrpc_types::rpctypes;
-use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, CountAndCode, BlockNumber, BlockParamsByNumber, BlockParamsByHash, RpcBlock};
+use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, CountOrCode, BlockNumber, BlockParamsByNumber, BlockParamsByHash, RpcBlock};
 use libproto;
 pub use libproto::*;
 pub use libproto::request::Request_oneof_req as Request;
@@ -53,7 +53,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
     trace!("chain_result call {:?} {:?}", id_to_key(id), cmd_id);
     match content_ext {
         MsgClass::REQUEST(mut req) => {
-            let mut response = request::Response::new();
+            let mut response = response::Response::new();
             response.set_request_id(req.take_request_id());
             let topic = "chain.rpc".to_string();
             match req.req.clone().unwrap() {
@@ -142,7 +142,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 Request::transaction_count(tx_count) => {
                     trace!("transaction count request from jsonrpc {:?}", tx_count);
                     //TODO 或许有错误返回给用户更好
-                    let tx_count: CountAndCode = serde_json::from_str(&tx_count).expect("Invalid param");
+                    let tx_count: CountOrCode = serde_json::from_str(&tx_count).expect("Invalid param");
                     let address = Address::from_slice(tx_count.address.as_ref());
                     match chain.nonce(&address, tx_count.block_id.into()) {
                         Some(nonce) => {
@@ -156,14 +156,14 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
 
                 Request::code(code_content) => {
                     trace!("code request from josnrpc  {:?}", code_content);
-                    let code_content: CountAndCode = serde_json::from_str(&code_content).expect("Invalid param");
+                    let code_content: CountOrCode = serde_json::from_str(&code_content).expect("Invalid param");
 
                     let address = Address::from_slice(code_content.address.as_ref());
                     match chain.code_at(&address, code_content.block_id.into()) {
                         Some(code) => {
                             match code {
                                 Some(code) => {
-                                    response.set_code(code);
+                                    response.set_contract_code(code);
                                 }
                                 None => {
                                     response.set_none(true);
@@ -211,7 +211,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     response.set_filter_logs(serde_json::to_vec(&log).unwrap());
                 }
                 _ => {
-                    error!("error msg!!!!");
+                    error!("mtach error Request_oneof_req msg!!!!");
                 }
             };
             let msg: communication::Message = response.into();

@@ -33,7 +33,7 @@ pub fn handle_rpc(con: &Connection, tx_pub: &Sender<(String, Vec<u8>)>, payload:
         trace!("recive MQ messsage from {:?} module", display_cmd(cid));
         if cid == cmd_id(submodules::JSON_RPC, topics::REQUEST) && t == MsgType::REQUEST {
             let mut ts = parse_from_bytes::<Request>(msg.get_content()).unwrap();
-            let mut response = request::Response::new();
+            let mut response = Response::new();
             response.set_request_id(ts.take_request_id());
             if ts.has_peercount() {
                 let peercount = con.peers_pair.iter().filter(|x| x.2.as_ref().read().is_some()).count();
