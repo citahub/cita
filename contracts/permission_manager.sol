@@ -41,7 +41,7 @@ contract PermissionManager is PermissionInterface {
         if (_permission != uint8(user_permission[msg.sender]) || _permission == uint8(user_permission[_user])) 
             return false; 
 
-        if (_permission == uint8(UserPermission.Send) && uint8(user_permission[_user]) == UserPermission.None) {
+        if (_permission == uint8(UserPermission.Send) && user_permission[_user] == UserPermission.None) {
             senders.push(_user);
             user_permission[_user] = UserPermission.Send;
         }
