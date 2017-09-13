@@ -40,6 +40,7 @@ use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
 use libproto::blockchain::{ProofType, Status as ProtoStatus};
 use libproto::request::FullTransaction;
+use native::Factory as NativeFactory;
 use proof::TendermintProof;
 use receipt::{Receipt, LocalizedReceipt};
 use state::State;
@@ -188,6 +189,7 @@ impl Chain {
         let trie_factory = TrieFactory::new(TrieSpec::Generic);
         let factories = Factories {
             vm: EvmFactory::default(),
+            native: NativeFactory::default(),
             trie: trie_factory,
             accountdb: Default::default(),
         };
@@ -753,7 +755,8 @@ impl Chain {
             vm_tracing: analytics.vm_tracing,
             check_nonce: false,
         };
-        let ret = Executive::new(&mut state, &env_info, &engine, &self.factories.vm).transact(t, options)?;
+        let ret = Executive::new(&mut state, &env_info, &engine, &self.factories.vm, &self.factories.native)
+            .transact(t, options)?;
 
         Ok(ret)
     }

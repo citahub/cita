@@ -17,6 +17,7 @@
 
 use account_db::Factory as AccountFactory;
 use evm::Factory as EvmFactory;
+use native::Factory as NativeFactory;
 use util::trie::TrieFactory;
 
 /// Collection of factories.
@@ -24,6 +25,7 @@ use util::trie::TrieFactory;
 pub struct Factories {
     /// factory for evm.
     pub vm: EvmFactory,
+    pub native: NativeFactory,
     /// factory for tries.
     pub trie: TrieFactory,
     /// factory for account databases.
