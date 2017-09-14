@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 import argparse
 import binascii
 from pathlib import Path
@@ -11,6 +11,7 @@ from secp256k1 import PrivateKey
 from ethereum.utils import sha3
 from tx_count import get_transaction_count
 import pysodium
+from generate_account import generate
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
@@ -36,7 +37,12 @@ def private_key():
         return privkey
 
 
-def get_sender():
+def get_sender(privkey=None, newcrypto=False):
+    generate(privkey, newcrypto)
+    return _sender_from_file()
+
+
+def _sender_from_file():
     with open("../output/accounts/address", 'r') as addressfile:
         address = addressfile.read()
         return address
@@ -64,7 +70,7 @@ def generate_deploy_data(bytecode, privatekey, receiver=None, newcrypto=False):
 
 
 def _blake2b_ed25519_deploy_data(bytecode, privatekey, receiver=None):
-    sender = get_sender()
+    sender = get_sender(private_key, True)
     print(sender)
     nonce = get_nonce(sender)
     print("nonce is {}".format(nonce))
@@ -98,7 +104,7 @@ def _blake2b_ed25519_deploy_data(bytecode, privatekey, receiver=None):
 
 def _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver=None):
     privkey = PrivateKey(hex2bytes(privatekey))
-    sender = get_sender()
+    sender = get_sender(privatekey, False)
     print(sender)
     nonce = get_nonce(sender)
     print("nonce is {}".format(nonce))
@@ -153,9 +159,6 @@ def _params_or_default():
 
     if bytecode is None:
         bytecode = bin_code()
-
-    if privkey is None:
-        privkey = private_key()
 
     return (bytecode, privkey, receiver)
 
