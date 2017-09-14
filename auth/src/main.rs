@@ -101,10 +101,12 @@ fn main() {
     let cache_clone = cache.clone();
     thread::spawn(move || loop {
         let (verify_type, id , verify_req, sub_module) = req_receiver.recv().unwrap();
+        trace!("(verify_type, id , verify_req, sub_module) is:{:?}, {:?}, {:?}, {:?}", verify_type, id , verify_req, sub_module);
         //once one of the verification request within block verification,
         // the other requests within the same block should be cancelled.
         if VerifyType::BlockVerify == verify_type &&
             VerifyResult::VerifyFailed == block_cache_clone.read().get(id).unwrap().block_verify_result {
+            trace!("skip the tx verification due to failed already for block id:{} ", id);
             continue;
         }
         let pool = threadpool.clone();
@@ -122,7 +124,7 @@ fn main() {
     let block_cache_clone_111 = block_cache.clone();
     thread::spawn(move || loop {
         let (key, msg) = rx_sub.recv().unwrap();
-        info!("get {} : {:?}", key, msg);
+        info!("get key: {} and msg: {:?}", key, msg);
         let block_cache_clone_222 = block_cache_clone_111.clone();
         handle_remote_msg(msg, verifier.clone(), req_sender.clone(), tx_pub_clone.clone(), block_cache_clone_222);
     });
