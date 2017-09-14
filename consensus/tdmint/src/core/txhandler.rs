@@ -62,7 +62,7 @@ impl TxHandler {
                         txs.insert(hash, (id, unverified_tx.clone()));
                     }
                     let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_TX_REQ, communication::MsgType::VERIFY_TX_REQ, verify_tx_req.write_to_bytes().unwrap());
-                    trace!("send verify req, hash: {:?}", hash);
+                    trace!("send verify req, hash: {:?}, tx from: {}", hash, key);
                     tx_pub.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
                 MsgClass::VERIFYTXRESP(resp) => {
