@@ -26,7 +26,7 @@ use core::wal::Wal;
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
-use libproto::blockchain::{Block, SignedTransaction, Status};
+use libproto::blockchain::{Block, SignedTransaction, Status, BlockWithProof};
 
 //use tx_pool::Pool;
 use proof::TendermintProof;
@@ -183,13 +183,8 @@ impl TenderMint {
         }
     }
 
-    //    pub fn pub_transaction(&mut self, tx: &SignedTransaction) {
-    //        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
-    //        MQWork::send2pub(&self.pub_sender, ("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
-    //    }
-
-    pub fn pub_block(&self, block: &Block) {
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
+    pub fn pub_block(&self, block: &BlockWithProof) {
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_PROOF_BLOCK, communication::MsgType::BLOCK_WITH_PROOF, block.write_to_bytes().unwrap());
         self.pub_sender.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
@@ -498,23 +493,28 @@ impl TenderMint {
                 if let Some(proof) = res {
                     self.proof = proof.clone();
                     self.save_wal_proof();
-                /*{
+                    /*{
                         self.locked_block.as_mut().unwrap().mut_header().set_proof1(proof.into());
                     }*/
+
+                    let mut proof_blk = BlockWithProof::new();
+                    let blk = self.locked_block.clone();
+                    proof_blk.set_blk(blk.unwrap());
+                    proof_blk.set_proof(proof.into());
+
+                    info!(" ######### height {} consensus time {:?} ", height, Instant::now() - self.htime);
+                    self.pub_block(&proof_blk);
+                    {
+                        //update tx pool
+                        let txs = self.locked_block.as_ref().unwrap().get_body().get_transactions();
+                        //self.tx_pool.update(txs);
+                        self.dispatch.del_txs_from_pool(txs.to_vec());
+                    }
+                    return true;
                 } else {
                     info!("commit_block proof not ok");
                     return false;
                 }
-
-                info!(" ######### height {} consensus time {:?} ", height, Instant::now() - self.htime);
-                self.pub_block(self.locked_block.as_ref().unwrap());
-                {
-                    //update tx pool
-                    let txs = self.locked_block.as_ref().unwrap().get_body().get_transactions();
-                    //self.tx_pool.update(txs);
-                    self.dispatch.del_txs_from_pool(txs.to_vec());
-                }
-                return true;
             }
         }
         //goto next round
