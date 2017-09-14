@@ -3,5 +3,7 @@ name = "pubsub_zeromq"
 version = "0.1.0"
 authors = ["rink1969 <rink1969@cryptape.com>"]
 
-[dependencies]
-zmq="0.8"
+[dependencies.zmq]
+version = "0.8"
+default-features = false
+features = []
