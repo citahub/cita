@@ -49,7 +49,7 @@ impl Synchronizer {
     }
 
     pub fn sync(&self, ctx_pub: Sender<(String, Vec<u8>)>) {
-        let block_map = self.chain.block_map.read();
+        let mut block_map = self.chain.block_map.write();
         if !block_map.is_empty() {
             let start_height = self.chain.get_current_height() + 1;
             if !self.chain.is_sync.load(Ordering::SeqCst) {
@@ -57,17 +57,26 @@ impl Synchronizer {
             }
             for height in start_height..start_height + BATCH_SYNC {
                 if block_map.contains_key(&height) {
-                    trace!("chain sync loop {:?}", height);
                     let value = block_map[&(height)].clone();
                     let block = value.1;
                     let is_verified = value.2;
+                    trace!("chain sync loop for height:{:?}, is it verified:{}", height, is_verified);
                     if !is_verified {
                         let proto_block = block.protobuf();
-                        let verify_req = block_verify_req(&proto_block, 0);
-                        let blk_height = proto_block.get_header().get_height();
-                        trace!("verify blk req, height: {}",  blk_height);
-                        let msg = factory::create_msg(submodules::CHAIN, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
-                        ctx_pub.send(("chain.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                        let len = proto_block.get_body().get_transactions().len();
+                        trace!("block height:{} has {} txs", height, len);
+                        if len > 0 {
+                            let verify_req = block_verify_req(&proto_block, 0);
+                            let blk_height = proto_block.get_header().get_height();
+                            trace!("verify blk req, height: {}",  blk_height);
+                            let msg = factory::create_msg(submodules::CHAIN, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
+                            ctx_pub.send(("chain.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                        } else {
+                            if let Some(status) = block_map.get_mut(&height) {
+                                status.2 = true;
+                            };
+                            let _ = self.chain.sync_sender.lock().send(height);
+                        }
                         break;
                     } else {
                         self.add_block(ctx_pub.clone(), block);

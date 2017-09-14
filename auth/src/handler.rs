@@ -22,7 +22,7 @@ use std::sync::Arc;
 use std::vec::*;
 use util::{H256, RwLock};
 use verify::Verifier;
-use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus};
+use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus, BlockVerifyId};
 use protobuf::core::parse_from_bytes;
 
 
@@ -122,7 +122,11 @@ pub fn handle_remote_msg(payload: Vec<u8>,
                 };
                 let id = blkreq.get_id();
                 trace!("id: {}, and block_verify_status: {:?}", id, block_verify_status);
-                block_cache.write().insert(id, block_verify_status);
+                let request_id = BlockVerifyId {
+                    request_id: id,
+                    sub_module: submodule,
+                };
+                block_cache.write().insert(request_id, block_verify_status);
                 for req in blkreq.get_reqs() {
                     tx_req.send((VerifyType::BlockVerify, id, req.clone(), submodule)).unwrap();
                 }
@@ -147,8 +151,12 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
             tx_pub.send((get_key(sub_module, false), msg.write_to_bytes().unwrap())).unwrap();
         }
         VerifyType::BlockVerify => {
+            let request_id = BlockVerifyId {
+                request_id: id,
+                sub_module: sub_module,
+            };
             if Ret::Ok != resp.get_ret() {
-                if let Some(block_verify_status) = block_cache.write().get_mut(id) {
+                if let Some(block_verify_status) = block_cache.write().get_mut(&request_id) {
                     block_verify_status.block_verify_result = VerifyResult::VerifyFailed;
 
                     let mut blkresp = VerifyBlockResp::new();
@@ -156,13 +164,13 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                     blkresp.set_ret(resp.get_ret());
 
                     let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
-                    trace!("Failed to do verify blk req for block id: {}, ret: {:?}, from: {}", id, blkresp.get_ret(), submodules::CHAIN);
+                    trace!("Failed to do verify blk req for block id: {}, ret: {:?}, from: {}", id, blkresp.get_ret(), sub_module);
                     tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
                 } else {
-                    error!("Failed to get block verify status for block height: {:?}", id);
+                    error!("Failed to get block verify status for request id: {:?} from submodule {}", id, sub_module);
                 }
             } else {
-                if let Some(block_verify_status) = block_cache.write().get_mut(id) {
+                if let Some(block_verify_status) = block_cache.write().get_mut(&request_id) {
                     block_verify_status.verify_success_cnt_capture += 1;
                     if block_verify_status.verify_success_cnt_capture == block_verify_status.verify_success_cnt_required {
                         let mut blkresp = VerifyBlockResp::new();
@@ -170,11 +178,11 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                         blkresp.set_ret(resp.get_ret());
 
                         let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
-                        trace!("Succeed to do verify blk req for block id: {}, ret: {:?}, from: {}", id, blkresp.get_ret(), submodules::CHAIN);
+                        trace!("Succeed to do verify blk req for block id: {}, ret: {:?}, from: {}", id, blkresp.get_ret(), sub_module);
                         tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
                     }
                 } else {
-                    error!("Failed to get block verify status for block height: {:?}", id);
+                    error!("Failed to get block verify status for request id: {:?} from submodule {}", id, sub_module);
                 }
 
             }

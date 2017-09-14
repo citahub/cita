@@ -36,9 +36,16 @@ pub struct BlockVerifyStatus {
     pub verify_success_cnt_capture: usize,
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub struct BlockVerifyId {
+    pub request_id: u64,
+    pub sub_module: u32,
+}
+
+
 #[derive(Debug)]
 pub struct VerifyBlockCache {
-    inner: Cache<u64, BlockVerifyStatus>,
+    inner: Cache<BlockVerifyId, BlockVerifyStatus>,
 }
 
 impl VerifyBlockCache {
@@ -48,16 +55,16 @@ impl VerifyBlockCache {
         }
     }
 
-    pub fn insert(&mut self, block_heiht: u64, result: BlockVerifyStatus) {
-        self.inner.insert(block_heiht, result);
+    pub fn insert(&mut self, block_verify_id: BlockVerifyId, result: BlockVerifyStatus) {
+        self.inner.insert(block_verify_id, result);
     }
 
-    pub fn get(&self, block_height: u64) -> Option<&BlockVerifyStatus> {
-        self.inner.peek(&block_height)
+    pub fn get(&self, block_verify_id: &BlockVerifyId) -> Option<&BlockVerifyStatus> {
+        self.inner.peek(block_verify_id)
     }
 
-    pub fn get_mut(&mut self, block_height: u64) -> Option<&mut BlockVerifyStatus> {
-        (&mut self.inner).get_mut(&block_height)
+    pub fn get_mut(&mut self, block_verify_id: &BlockVerifyId) -> Option<&mut BlockVerifyStatus> {
+        (&mut self.inner).get_mut(block_verify_id)
     }
 }
 

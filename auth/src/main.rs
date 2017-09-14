@@ -41,7 +41,7 @@ use std::env;
 use std::sync::mpsc::channel;
 use std::thread;
 use verify::Verifier;
-use cache::{VerifyCache, VerifyBlockCache, VerifyResult};
+use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyId};
 use handler::{verify_tx_service, VerifyType, handle_remote_msg, handle_verificaton_result};
 use util::RwLock;
 use std::sync::Arc;
@@ -104,8 +104,12 @@ fn main() {
         trace!("(verify_type, id , verify_req, sub_module) is:{:?}, {:?}, {:?}, {:?}", verify_type, id , verify_req, sub_module);
         //once one of the verification request within block verification,
         // the other requests within the same block should be cancelled.
+        let request_id = BlockVerifyId {
+            request_id: id,
+            sub_module: sub_module,
+        };
         if VerifyType::BlockVerify == verify_type &&
-            VerifyResult::VerifyFailed == block_cache_clone.read().get(id).unwrap().block_verify_result {
+            VerifyResult::VerifyFailed == block_cache_clone.read().get(&request_id).unwrap().block_verify_result {
             trace!("skip the tx verification due to failed already for block id:{} ", id);
             continue;
         }
