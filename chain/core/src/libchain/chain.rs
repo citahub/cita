@@ -757,6 +757,7 @@ impl Chain {
     }
 
     /// Attempt to get a copy of a specific block's final state.
+    // TODO: Add senders and creators?
     pub fn state_at(&self, id: BlockId) -> Option<State<StateDB>> {
         self.block_header(id).map_or(None, |h| self.gen_state(*h.state_root()))
     }
@@ -848,7 +849,9 @@ impl Chain {
     fn execute_block(&self, block: Block) -> OpenBlock {
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let mut open_block = OpenBlock::new(self.factories.clone(), false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
+        let senders = self.senders.read().clone();
+        let creators = self.creators.read().clone();
+        let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
         open_block.apply_transactions();
 
         open_block

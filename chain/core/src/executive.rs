@@ -147,6 +147,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
 
         // check contract create/call permission
+        trace!("executive creators: {:?}, sender: {:?}", self.state.creators, *sender);
+
         match t.action {
             Action::Create => if *sender != Address::zero() && !self.state.creators.contains_key(&sender) {
                 return Err(From::from(ExecutionError::NoContractPermission));

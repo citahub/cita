@@ -279,9 +279,12 @@ impl DerefMut for OpenBlock {
     }
 }
 
+/// TODO: Move senders, creators to env info?
 impl OpenBlock {
-    pub fn new(factories: Factories, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>) -> Result<Self, Error> {
-        let state = State::from_existing(db, state_root, U256::default(), factories)?;
+    pub fn new(factories: Factories, senders: HashMap<Address, bool>, creators: HashMap<Address, bool>, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>) -> Result<Self, Error> {
+        let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
+        state.senders = senders;
+        state.creators = creators;
         let r = OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes: last_hashes,
