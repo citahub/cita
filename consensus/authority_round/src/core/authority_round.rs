@@ -221,7 +221,7 @@ impl Engine for AuthorityRound {
         let unverified_tx = tx_req.get_un_tx();
         let result = SignedTransaction::verify_transaction(unverified_tx.clone());
         let mut response = Response::new();
-        let error_code = 4;
+        let error_code = submodules::CONSENSUS as i64;
         response.set_request_id(tx_req.get_request_id().to_vec());
         match result {
             Err(hash) => {

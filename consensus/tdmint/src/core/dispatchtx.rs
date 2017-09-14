@@ -129,7 +129,7 @@ impl Dispatchtx {
                     let mut response = Response::new();
                     response.set_request_id(request_id);
                     if error_msg.is_some() {
-                        response.set_code(4);
+                        response.set_code(submodules::CONSENSUS as i64);
                         tx_response.status = error_msg.unwrap();
                         let error_msg = serde_json::to_string(&tx_response).unwrap();
                         response.set_error_msg(error_msg);
@@ -147,7 +147,7 @@ impl Dispatchtx {
                 result.map(|tx_response| {
                     let mut response = Response::new();
                     response.set_request_id(request_id);
-                    response.set_code(6);
+                    response.set_code(submodules::AUTH as i64);
                     let error_msg = serde_json::to_string(&tx_response).unwrap();
                     response.set_error_msg(error_msg);
 

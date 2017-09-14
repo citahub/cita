@@ -56,12 +56,11 @@ impl CandidatePool {
         self.sender.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
     }
 
-    //TODO error return JsonRpc
     pub fn add_tx(&mut self, tx_req: &Request, is_from_broadcast: bool) {
         let unverified_tx = tx_req.get_un_tx();
         let trans = SignedTransaction::verify_transaction(unverified_tx.clone());
         let mut response = Response::new();
-        let error_code = 4;
+        let error_code = submodules::CONSENSUS as i64;
         response.set_request_id(tx_req.get_request_id().to_vec());
 
         match trans {
