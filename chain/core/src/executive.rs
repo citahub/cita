@@ -105,25 +105,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// This function should be used to execute transaction.
     pub fn transact(&'a mut self, t: &SignedTransaction, options: TransactOptions) -> Result<Executed, ExecutionError> {
         let check = options.check_nonce;
-        match options.tracing {
-            true => {
-                match options.vm_tracing {
-                    true => {
-                        self.transact_with_tracer(t, check, ExecutiveTracer::default(), ExecutiveVMTracer::toplevel())
-                    }
-                    false => {
-                        self.transact_with_tracer(t, check, ExecutiveTracer::default(), NoopVMTracer)
-                    }
-                }
-            }
-            false => {
-                match options.vm_tracing {
-                    true => {
-                        self.transact_with_tracer(t, check, NoopTracer, ExecutiveVMTracer::toplevel())
-                    }
-                    false => self.transact_with_tracer(t, check, NoopTracer, NoopVMTracer),
-                }
-            }
+        match (options.tracing, options.vm_tracing) {
+            (true, true) => self.transact_with_tracer(t, check, ExecutiveTracer::default(), ExecutiveVMTracer::toplevel()),
+            (true, false) => self.transact_with_tracer(t, check, ExecutiveTracer::default(), NoopVMTracer),
+            (false, true) => self.transact_with_tracer(t, check, NoopTracer, ExecutiveVMTracer::toplevel()),
+            (false, false) => self.transact_with_tracer(t, check, NoopTracer, NoopVMTracer),
         }
     }
 
@@ -158,6 +144,16 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // validate transaction nonce
         if check_nonce && t.nonce != nonce {
             return Err(From::from(ExecutionError::InvalidNonce { expected: nonce, got: t.nonce }));
+        }
+
+        // check contract create/call permission
+        match t.action {
+            Action::Create => if *sender != Address::zero() && !self.state.creators.contains_key(&sender) {
+                return Err(From::from(ExecutionError::NoContractPermission));
+            },
+            _ => if *sender != Address::zero() && !self.state.senders.contains_key(sender) && !self.state.creators.contains_key(&sender) {
+                return Err(From::from(ExecutionError::NoTransactionPermission));
+            },
         }
 
         // TODO: we might need bigints here, or at least check overflows.

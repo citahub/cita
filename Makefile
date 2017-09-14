@@ -46,7 +46,7 @@ setup2:
 	pip install -r admintool/requirements.txt --user
 
 test:
-	$(CARGO) test --release --all --no-fail-fast 2>&1 |tee target/test.log
+	$(CARGO) test --all --exclude chain::core::contracts::node_manager::tests::test_node_manager_contract chain::core::libchain::chain::tests::bench_execute_block chain::core::libchain::chain::tests::test_code_at chain::core::libchain::chain::tests::test_contract chain::core::state::tests::should_apply_create_transaction --no-fail-fast 2>&1 |tee target/test.log
 	@grep 'test result' target/test.log |awk '\
          BEGIN { passed=0; failed=0; ignored=0; measured=0; filter=0; } \
                { passed+=$$4; failed+=$$6; ignored+=$$8;  measured+=$$10; filter+=$$12; } \
