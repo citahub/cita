@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::{key_to_id, parse_msg, MsgClass, factory, submodules, topics, communication, tx_verify_req_msg, Request};
+use libproto::{key_to_id, parse_msg, MsgClass, factory, submodules, topics, communication, tx_verify_req_msg, Request, TxResponse};
 use libproto::auth::Ret;
 use libproto::blockchain::{SignedTransaction};
 use protobuf::Message;
@@ -25,7 +25,8 @@ use std::sync::mpsc::Sender;
 use threadpool::ThreadPool;
 use util::H256;
 
-pub type TransType = (Option<SignedTransaction>, Option<(H256, Vec<u8>, Ret)>);
+/// request_id, signed transaction, tx response
+pub type TransType = (Vec<u8>, Option<SignedTransaction>, Option<TxResponse>);
 
 pub struct TxHandler {
     pool: ThreadPool,
@@ -74,7 +75,6 @@ impl TxHandler {
 
                     unverified_tx.map(|(id, mut req)| {
                         let mut signed_tx_op: Option<SignedTransaction> = None;
-                        let mut result = (tx_hash, req.request_id.clone(), Ret::Ok);
                         match resp.get_ret() {
                             Ret::Ok => {
                                 let mut signed_tx = SignedTransaction::new();
@@ -82,15 +82,17 @@ impl TxHandler {
                                 signed_tx.set_signer(resp.get_signer().to_vec());
                                 signed_tx.set_tx_hash(tx_hash.to_vec());
                                 signed_tx_op = Some(signed_tx);
-
                             }
-                            ret @ _ => result.2 = ret,
+                            _ => {},
                         }
 
+                        let request_id = req.get_request_id().to_vec();
                         if id == submodules::NET {
-                            tx.send((signed_tx_op, None)).unwrap();
+                            tx.send((request_id, signed_tx_op, None)).unwrap();
                         } else {
-                            tx.send((signed_tx_op, Some(result))).unwrap();
+                            let result = format!("{:?}", resp.get_ret());
+                            let tx_response = TxResponse::new(tx_hash, result);
+                            tx.send((request_id, signed_tx_op, Some(tx_response))).unwrap();
                         }
                     });
                 }

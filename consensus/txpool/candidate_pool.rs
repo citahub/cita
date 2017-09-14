@@ -22,7 +22,9 @@ use libproto::blockchain::*;
 use protobuf::Message;
 use protobuf::RepeatedField;
 use std::sync::mpsc::Sender;
+use serde_json;
 use tx_pool;
+use util::H256;
 
 pub struct CandidatePool {
     pool: tx_pool::Pool,
@@ -48,40 +50,49 @@ impl CandidatePool {
         self.height == (height - 1)
     }
 
-    pub fn broadcast_tx(&self, tx: &UnverifiedTransaction) {
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
-        trace!("broadcast new tx {:?}", tx);
+    pub fn broadcast_tx(&self, tx_req: &Request) {
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::REQUEST, communication::MsgType::REQUEST, tx_req.write_to_bytes().unwrap());
+        trace!("broadcast new tx {:?}", tx_req);
         self.sender.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
     }
 
     //TODO error return JsonRpc
-    pub fn add_tx(&mut self, unverified_tx: &UnverifiedTransaction, is_from_broadcast: bool) {
-        let mut content = blockchain::TxResponse::new();
+    pub fn add_tx(&mut self, tx_req: &Request, is_from_broadcast: bool) {
+        let unverified_tx = tx_req.get_un_tx();
         let trans = SignedTransaction::verify_transaction(unverified_tx.clone());
+        let mut response = Response::new();
+        let error_code = 4;
+        response.set_request_id(tx_req.get_request_id().to_vec());
 
         match trans {
             Err(hash) => {
-                content.set_hash(hash.to_vec());
+                response.set_code(error_code);
                 warn!("Transaction with bad signature, tx: {:?}", hash);
-                //TODO this is error for done !!!
-                content.set_result(String::from("BAG SIG").into_bytes());
+                let tx_response = TxResponse::new(hash, String::from("BadSig"));
+                let error_msg = serde_json::to_string(&tx_response).unwrap();
+                response.set_error_msg(error_msg);
             }
 
             Ok(tx) => {
-                content.set_hash(tx.tx_hash.clone());
+                let hash = H256::from_slice(&tx.tx_hash);
                 let success = self.pool.enqueue(tx);
                 if success {
-                    content.set_result(String::from("4:OK").into_bytes());
-                    self.broadcast_tx(unverified_tx);
+                    let tx_response = TxResponse::new(hash.clone(), String::from("Ok"));
+                    let tx_state = serde_json::to_string(&tx_response).unwrap();
+                    response.set_tx_state(tx_state);
+                    self.broadcast_tx(tx_req);
                 } else {
-                    content.set_result(String::from("4:DUP").into_bytes());
+                    response.set_code(error_code);
+                    let tx_response = TxResponse::new(hash, String::from("Dup"));
+                    let error_msg = serde_json::to_string(&tx_response).unwrap();
+                    response.set_error_msg(error_msg);
                 }
             }
         }
 
         // Response RPC
         if !is_from_broadcast {
-            let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, content.write_to_bytes().unwrap());
+            let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
             self.sender.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }

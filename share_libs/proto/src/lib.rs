@@ -47,6 +47,22 @@ use std::result::Result::Err;
 use util::{H256, Hashable, merklehash};
 use util::snappy;
 
+//TODO respone contain error
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct TxResponse {
+    pub hash: H256,
+    pub status: String,
+}
+
+impl TxResponse {
+    pub fn new(hash: H256, status: String) -> Self {
+        TxResponse {
+            hash: hash,
+            status: status,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct State(pub Vec<Vec<u8>>);
 
@@ -389,8 +405,8 @@ mod tests {
 
     #[test]
     fn cmd_id_works() {
-        assert_eq!(cmd_id(submodules::JSON_RPC, topics::NEW_TX), 0x10006);
-        assert_eq!(cmd_id(submodules::CHAIN, topics::NEW_TX), 0x30006);
+        assert_eq!(cmd_id(submodules::JSON_RPC, topics::REQUEST), 0x10001);
+        assert_eq!(cmd_id(submodules::CHAIN, topics::RESPONSE), 0x30005);
     }
 
     #[test]

@@ -18,6 +18,7 @@
 use Id;
 use bytes::Bytes;
 use error::Error;
+use libproto::TxResponse;
 use libproto::response::{Response_oneof_data, Response};
 use request::Version;
 use rpctypes::{Receipt, Log, RpcTransaction, Block, RpcBlock};
@@ -25,16 +26,8 @@ use serde::{Serializer, Deserializer, Deserialize, Serialize};
 use serde::de::Error as SError;
 use serde_json;
 use serde_json::{Value, from_value};
-use std::string::String;
 use std::vec::Vec;
-use util::{H256, U256};
-
-//TODO respone contain error
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct TxResponse {
-    pub hash: H256,
-    pub status: String,
-}
+use util::U256;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
@@ -45,7 +38,7 @@ pub enum RusultBody {
     Null,
     Receipt(Receipt),
     Transaction(RpcTransaction),
-    TxResponse(String),
+    TxResponse(TxResponse),
     PeerCount(U256),
     CallResult(Bytes),
     Logs(Vec<Log>),
@@ -116,7 +109,10 @@ impl Output {
             0 => {
                 //success
                 match data.data.unwrap() {
-                    Response_oneof_data::tx_state(tx_state) => success.set_result(RusultBody::TxResponse(tx_state)).to_out(),
+                    Response_oneof_data::tx_state(tx_state) => {
+                        let tx_response = serde_json::from_str(&tx_state).unwrap();
+                        success.set_result(RusultBody::TxResponse(tx_response)).to_out()
+                    },
                     Response_oneof_data::block_number(bn) => success.set_result(RusultBody::BlockNumber(U256::from(bn))).to_out(),
                     Response_oneof_data::none(_) => success.to_out(),
                     Response_oneof_data::block(rpc_block) => {

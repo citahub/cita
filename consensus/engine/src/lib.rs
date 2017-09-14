@@ -25,7 +25,8 @@ mod instrument;
 pub use error::*;
 pub use instrument::*;
 
-use libproto::blockchain::{Block, UnverifiedTransaction, Status};
+use libproto::blockchain::{Block, Status};
+use libproto::Request;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use util::H256;
@@ -42,7 +43,7 @@ pub trait Engine: Sync + Send {
 
     fn verify_block(&self, block: &Block) -> Result<(), EngineError>;
 
-    fn receive_new_transaction(&self, tx: &UnverifiedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool);
+    fn receive_new_transaction(&self, tx_req: &Request, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool);
 
     fn receive_new_block(&self, block: &Block, tx_pub: Sender<(String, Vec<u8>)>);
 

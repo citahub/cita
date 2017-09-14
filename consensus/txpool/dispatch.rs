@@ -35,11 +35,11 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, rx: &Receiver<(u32, u32, u32
                 if block.get_header().get_height() < candidate_pool.get_height() {}
             }
         }
-        MsgClass::TX(tx) => {
+        MsgClass::REQUEST(tx_req) => {
             if id == submodules::JSON_RPC {
-                candidate_pool.add_tx(&tx, false);
+                candidate_pool.add_tx(&tx_req, false);
             } else {
-                candidate_pool.add_tx(&tx, true);
+                candidate_pool.add_tx(&tx_req, true);
             }
         }
         MsgClass::MSG(content) => {

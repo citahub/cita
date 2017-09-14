@@ -54,11 +54,6 @@ message SignedTransaction {
 
 // data precompile API
 
-message TxResponse {
-    bytes hash = 1;
-    bytes result = 2;
-}
-
 message BlockBody {
     repeated SignedTransaction transactions = 1;
 }

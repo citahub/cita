@@ -24,9 +24,6 @@ use std::sync::mpsc::Receiver;
 pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, MsgClass)>) {
     let (id, cmd_id, content_ext) = rx.recv().unwrap();
     match content_ext {
-        _ => {
-            error!("error content!!!");
-        }
         MsgClass::STATUS(status) => {
             if id == submodules::CHAIN {
                 info!("received new status.");
@@ -44,6 +41,8 @@ pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, M
                 }
             }
         }
-
+        _ => {
+            error!("error content!!!");
+        }
     }
 }

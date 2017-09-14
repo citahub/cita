@@ -128,9 +128,9 @@ impl Sendtx {
                         (format!("{}", transactions.len()), true)
                     }
 
-                    RusultBody::TxResponse(TxResponse) => {
-                        if TxResponse.status == "4:OK" {
-                            let hash = TxResponse.hash;
+                    RusultBody::TxResponse(response) => {
+                        if response.status == "Ok" {
+                            let hash = response.hash;
                             (format!("{:?}", hash), true)
                         } else {
                             println!("cita_sendTransaction : {:?}", buf);

@@ -16,10 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
-use blockchain;
 use communication;
 use protobuf::Message;
-use request;
 use submodules;
 use topics;
 

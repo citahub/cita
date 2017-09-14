@@ -22,7 +22,7 @@ use hyper::uri::RequestUri::AbsolutePath;
 use jsonrpc_types::{RpcRequest, method};
 use jsonrpc_types::error::Error;
 use jsonrpc_types::response::{RpcSuccess, RpcFailure, Output};
-use libproto::response;
+use libproto::{response, communication};
 use parking_lot::{RwLock, Mutex};
 use protobuf::Message;
 use serde_json;
@@ -81,9 +81,10 @@ impl HttpHandler {
             Ok(req) => {
                 let request_id = req.request_id.clone();
                 {
-                    self.tx.lock().send((topic, req.write_to_bytes().unwrap())).unwrap();
+                    let message: communication::Message = req.into();
+                    self.tx.lock().send((topic, message.write_to_bytes().unwrap())).unwrap();
                 }
-                trace!("wait response {:?}", req.get_request_id());
+                trace!("wait response {:?}", request_id);
                 let mut timeout_count = 0;
                 loop {
                     timeout_count = timeout_count + 1;

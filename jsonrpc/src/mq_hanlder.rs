@@ -17,7 +17,7 @@
 
 use base_hanlder::{TransferType, ReqInfo};
 use jsonrpc_types::response::Output;
-use libproto::{submodules, topics, parse_msg, cmd_id, display_cmd, MsgClass, Request, Response};
+use libproto::{parse_msg, display_cmd, MsgClass, Response};
 use num_cpus;
 use parking_lot::{RwLock, Mutex};
 use serde_json;

@@ -19,7 +19,7 @@ use super::{Engine, EngineError, Signable, unix_now, AsMillis};
 use crypto::{Signature, Signer, CreateKey};
 use engine_json;
 use libproto::*;
-use libproto::blockchain::{BlockBody, Proof, Block, UnverifiedTransaction, SignedTransaction, Status};
+use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
 use parking_lot::RwLock;
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
@@ -28,10 +28,10 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
+use serde_json;
 use tx_pool::Pool;
-use util::Address;
+use util::{Address, H256};
 
-use util::H256;
 const INIT_HEIGHT: usize = 1;
 const INIT_STEP: usize = 0;
 
@@ -120,9 +120,9 @@ impl AuthorityRound {
         }
     }
 
-    pub fn pub_transaction(&self, tx: &UnverifiedTransaction, tx_pub: Sender<(String, Vec<u8>)>) {
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::REQUEST, communication::MsgType::REQUEST, tx.write_to_bytes().unwrap());
-        trace!("broadcast new tx {:?}", tx);
+    pub fn pub_transaction(&self, tx_req: &Request, tx_pub: Sender<(String, Vec<u8>)>) {
+        let msg = factory::create_msg(submodules::CONSENSUS, topics::REQUEST, communication::MsgType::REQUEST, tx_req.write_to_bytes().unwrap());
+        trace!("broadcast new tx {:?}", tx_req);
         tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
@@ -217,32 +217,40 @@ impl Engine for AuthorityRound {
         }
     }
 
-    fn receive_new_transaction(&self, unverified_tx: &UnverifiedTransaction, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool) {
+    fn receive_new_transaction(&self, tx_req: &Request, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool) {
+        let unverified_tx = tx_req.get_un_tx();
         let result = SignedTransaction::verify_transaction(unverified_tx.clone());
-        let mut content = blockchain::TxResponse::new();
+        let mut response = Response::new();
+        let error_code = 4;
+        response.set_request_id(tx_req.get_request_id().to_vec());
         match result {
             Err(hash) => {
-                content.set_hash(hash.to_vec());
+                let tx_response = TxResponse::new(hash, String::from("BadSig"));
+                response.set_code(error_code);
                 warn!("Transaction with bad signature, tx: {:?}", hash);
-                content.set_result(String::from("BAG SIG").into_bytes());
+                let error_msg = serde_json::to_string(&tx_response).unwrap();
+                response.set_error_msg(error_msg);
             }
             Ok(tx) => {
-                content.set_hash(tx.tx_hash.clone());
+                let hash = H256::from_slice(&tx.tx_hash);
                 let mut tx_pool = self.tx_pool.write();
-                let success = tx_pool.enqueue(tx.clone());
+                let success = tx_pool.enqueue(tx);
                 if success {
-                    content.set_result(String::from("4:OK").into_bytes());
-                    if !from_broadcast {
-                        self.pub_transaction(unverified_tx, tx_pub.clone());
-                    }
+                    let tx_response = TxResponse::new(hash.clone(), String::from("Ok"));
+                    let tx_state = serde_json::to_string(&tx_response).unwrap();
+                    response.set_tx_state(tx_state);
+                    self.pub_transaction(tx_req, tx_pub.clone());
                 } else {
-                    content.set_result(String::from("4:DUP").into_bytes());
+                    response.set_code(error_code);
+                    let tx_response = TxResponse::new(hash, String::from("Dup"));
+                    let error_msg = serde_json::to_string(&tx_response).unwrap();
+                    response.set_error_msg(error_msg);
                 }
             }
         }
 
         if !from_broadcast {
-            let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, content.write_to_bytes().unwrap());
+            let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
             tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
     }

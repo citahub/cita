@@ -24,11 +24,13 @@ extern crate libproto;
 extern crate protobuf;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 extern crate bincode;
 extern crate pubsub;
 extern crate cita_log;
 extern crate engine;
 extern crate dotenv;
+extern crate util;
 
 mod candidate_pool;
 mod dispatch;

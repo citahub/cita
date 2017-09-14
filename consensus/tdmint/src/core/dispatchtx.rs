@@ -17,10 +17,9 @@
 
 extern crate threadpool;
 
-use core::txhandler::TxHandler;
+use core::txhandler::{TxHandler, TransType};
 use core::txwal::Txwal;
-use libproto::{submodules, topics, factory, communication, Response};
-use libproto::auth::Ret;
+use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request};
 use libproto::blockchain::SignedTransaction;
 use protobuf::Message;
 use pubsub::start_pubsub;
@@ -28,8 +27,8 @@ use std::sync::{RwLock, Arc};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
+use serde_json;
 use tx_pool::Pool;
-use util::H256;
 
 pub struct Dispatchtx {
     tx_pool: Arc<RwLock<Pool>>,
@@ -107,49 +106,57 @@ impl Dispatchtx {
                       });
     }
 
-    fn receive_new_transaction(&self, signed_tx: Option<SignedTransaction>, result: Option<(H256, Vec<u8>, Ret)>, tx_pub: Sender<(String, Vec<u8>)>) {
-        let mut is_busy = false;
-        let mut is_success = false;
-        let tx_is_valid = signed_tx.is_some();
-        signed_tx.map(|signed_tx| {
-                          is_busy = self.tx_flow_control();
-                          if !is_busy {
-                              is_success = self.add_tx_to_pool(&signed_tx);
-                          }
-                      });
+    fn receive_new_transaction(&self, request_id: Vec<u8>, signed_tx: Option<SignedTransaction>, result: Option<TxResponse>, tx_pub: Sender<(String, Vec<u8>)>) {
+        match signed_tx {
+            //Verify ok
+            Some(tx) => {
+                let mut error_msg: Option<String> = None;
+                if self.tx_flow_control() {
+                    error_msg = Some(String::from("Busy"));
+                } else {
+                    if self.add_tx_to_pool(&tx) {
+                        let mut request = Request::new();
+                        request.set_request_id(request_id.clone());
+                        request.set_un_tx(tx.get_transaction_with_sig().clone());
+                        let msg = factory::create_msg(submodules::CONSENSUS, topics::REQUEST, communication::MsgType::REQUEST, request.write_to_bytes().unwrap());
+                        tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                    } else {
+                        error_msg = Some(String::from("Dup"));
+                    }
+                }
 
-        // tx from net, we don't need to reply
-        if result.is_none() {
-            return;
-        }
+                result.map(|mut tx_response| {
+                    let mut response = Response::new();
+                    response.set_request_id(request_id);
+                    if error_msg.is_some() {
+                        response.set_code(4);
+                        tx_response.status = error_msg.unwrap();
+                        let error_msg = serde_json::to_string(&tx_response).unwrap();
+                        response.set_error_msg(error_msg);
+                    } else {
+                        let tx_state = serde_json::to_string(&tx_response).unwrap();
+                        response.set_tx_state(tx_state);
+                    }
+                    let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
+                    trace!("response new tx {:?}", response);
+                    tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                });
+            }
+            //Verify failed
+            None => {
+                result.map(|tx_response| {
+                    let mut response = Response::new();
+                    response.set_request_id(request_id);
+                    response.set_code(6);
+                    let error_msg = serde_json::to_string(&tx_response).unwrap();
+                    response.set_error_msg(error_msg);
 
-        let (hash, req_id, ret) = result.unwrap();
-        let mut tx_response = Response::new();
-        tx_response.set_request_id(req_id);
-        let ret = match ret {
-            Ret::Ok => "4:OK".to_string(),
-            Ret::Dup => "4:DUP".to_string(),
-            Ret::NotReady => "Not Ready".to_string(),
-            Ret::OutOfTime => "Out ot Time".to_string(),
-            Ret::BadSig => "BAD SIG".to_string(),
-            Ret::Err => "Err".to_string(),
-        };
-        //TODO error return
-        tx_response.set_tx_state(ret);
-
-        if tx_is_valid {
-            if is_busy {
-                tx_response.set_tx_state(String::from("BUSY"));
-            } else if !is_success {
-                tx_response.set_error_msg(String::from("4:DUP"));
-                tx_response.set_code(3);
-
+                    let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
+                    trace!("response new tx {:?}", response);
+                    tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                });
             }
         }
-
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, tx_response.write_to_bytes().unwrap());
-        trace!("response new tx {:?}", tx_response);
-        tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
     pub fn read_tx_from_wal(&mut self) -> u64 {
@@ -157,10 +164,10 @@ impl Dispatchtx {
         self.wal.read(&mut tx_pool)
     }
 
-    pub fn process(&self, rx: &Receiver<(Option<SignedTransaction>, Option<(H256, Vec<u8>, Ret)>)>, tx_pub: Sender<(String, Vec<u8>)>) {
+    pub fn process(&self, rx: &Receiver<TransType>, tx_pub: Sender<(String, Vec<u8>)>) {
         let res = rx.recv().unwrap();
-        let (signed_tx, result) = res;
-        self.receive_new_transaction(signed_tx, result, tx_pub);
+        let (request_id, signed_tx, result) = res;
+        self.receive_new_transaction(request_id, signed_tx, result, tx_pub);
     }
 }
 
