@@ -122,6 +122,7 @@ impl Status {
 pub struct RichStatus {
     number: u64,
     hash: H256,
+    block_gas_limit: u64,
     nodes: Vec<Address>,
 }
 
@@ -130,6 +131,7 @@ impl RichStatus {
         RichStatus {
             number: 0,
             hash: H256::default(),
+            block_gas_limit: 0,
             nodes: vec![],
         }
     }
@@ -154,12 +156,17 @@ impl RichStatus {
         self.nodes = nodes
     }
 
+    fn set_block_gas_limit(&mut self, block_gas_limit: u64) {
+        self.block_gas_limit = block_gas_limit;
+    }
+
     fn protobuf(&self) -> ProtoRichStatus {
         let mut ps = ProtoRichStatus::new();
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
         let node_list = self.nodes.clone().into_iter().map(|address| address.to_vec()).collect();
         ps.set_nodes(RepeatedField::from_vec(node_list));
+        ps.set_block_gas_limit(self.block_gas_limit);
         ps
     }
 }
@@ -294,6 +301,9 @@ impl Chain {
         chain.build_last_hashes(Some(status.hash().clone()), status.number());
         let nodes: Vec<Address> = NodeManager::read(&chain);
         status.set_nodes(nodes);
+        //设置获取的block limit
+        let block_gas_limit = 30000;
+        status.set_block_gas_limit(block_gas_limit);
         (chain, status.protobuf())
     }
 

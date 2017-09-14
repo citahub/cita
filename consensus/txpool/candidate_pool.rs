@@ -80,7 +80,7 @@ impl CandidatePool {
         }
     }
 
-    pub fn spawn_new_blk(&mut self, height: u64, hash: Vec<u8>) -> Block {
+    pub fn spawn_new_blk(&mut self, height: u64, hash: Vec<u8>, block_gas_limit: u64) -> Block {
         let mut block = Block::new();
         info!("spawn new blk height:{:?}.", height);
         if height != self.1.height + 1 {
@@ -92,7 +92,7 @@ impl CandidatePool {
         self.1.height = height;
         block.mut_header().set_height(self.1.height);
         let block_time = unix_now();
-        let txs: Vec<SignedTransaction> = self.0.package(height);
+        let txs: Vec<SignedTransaction> = self.0.package(height, block_gas_limit);
         block.mut_header().set_prevhash(hash);
 
         block.mut_header().set_timestamp(block_time.as_millis());

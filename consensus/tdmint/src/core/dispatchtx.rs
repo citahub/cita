@@ -73,13 +73,13 @@ impl Dispatchtx {
         success
     }
 
-    pub fn get_txs_from_pool(&self, height: u64) -> Vec<SignedTransaction> {
+    pub fn get_txs_from_pool(&self, height: u64, block_gas_limit: u64) -> Vec<SignedTransaction> {
         if self.data_from_pool.load(Ordering::SeqCst) {
             self.data_from_pool.store(false, Ordering::SeqCst);
             Vec::new()
         } else {
             let mut tx_pool = self.tx_pool.write().unwrap();
-            let txs = tx_pool.package(height);
+            let txs = tx_pool.package(height, block_gas_limit);
             txs
         }
     }

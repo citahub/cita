@@ -52,7 +52,8 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, sender: Sender<PubType>, rx:
                     Command::SpawnBlk(height, hash) => {
                         if candidate_pool.meet_conditions(height) {
                             info!("recieved command spawn new blk.");
-                            let blk = candidate_pool.spawn_new_blk(height, hash);
+                            //todo 参数三
+                            let blk = candidate_pool.spawn_new_blk(height, hash, 30000000);
                             candidate_pool.pub_block(&blk, sender.clone());
                             let txs = blk.get_body().get_transactions();
                             candidate_pool.update_txpool(txs);
