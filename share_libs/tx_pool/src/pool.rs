@@ -15,8 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crypto::{pubkey_to_address, PubKey};
 use filter::Filter;
-use libproto::blockchain::SignedTransaction;
+use libproto::blockchain::{SignedTransaction, AccountGasLimit};
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
@@ -140,11 +141,13 @@ impl Pool {
         self.update_order_set(&hash_list);
     }
 
-    pub fn package(&mut self, height: u64) -> Vec<SignedTransaction> {
+    pub fn package(&mut self, height: u64, block_gas_limit: u64, account_gas_limit: AccountGasLimit) -> Vec<SignedTransaction> {
         let mut tx_list = Vec::new();
         let mut invalid_tx_list = Vec::new();
-        let mut n = self.package_limit;
-
+        let mut n = block_gas_limit;
+        let mut common_gas_limit = account_gas_limit.get_common_gas_limit();
+        let mut specific_gas_used = account_gas_limit.get_specific_gas_limit().clone();
+        let mut account_gas_used: HashMap<String, u64> = HashMap::new();
         {
             let mut iter = self.order_set.iter();
             loop {
@@ -156,11 +159,36 @@ impl Pool {
                 let tx = self.txs.get(&hash);
                 if let Some(tx) = tx {
                     if tx.get_transaction_with_sig().get_transaction().valid_until_block == 0 || tx.get_transaction_with_sig().get_transaction().valid_until_block >= height {
-                        tx_list.push(tx.clone());
-                        n = n - 1;
-                        if n == 0 {
+                        let quota = tx.get_transaction_with_sig().get_transaction().quota;
+                        let signer = pubkey_to_address(&PubKey::from(tx.get_signer())).hex();
+                        if n <= quota {
+                            if tx_list.is_empty() {
+                                tx_list.push(tx.clone());
+                            }
                             break;
                         }
+                        if account_gas_used.contains_key(&signer) {
+                            let value = account_gas_used.get_mut(&signer).unwrap();
+                            if *value < quota {
+                                continue;
+                            }
+                            *value = *value - quota;
+                        } else {
+                            if let Some(value) = specific_gas_used.get_mut(&signer) {
+                                common_gas_limit = *value;
+                            }
+
+                            let mut _remainder = 0;
+                            if quota < common_gas_limit {
+                                _remainder = common_gas_limit - quota;
+                            } else {
+                                _remainder = 0;
+                            }
+                            account_gas_used.insert(signer, _remainder);
+                        }
+
+                        n = n - quota;
+                        tx_list.push(tx.clone());
                     } else {
                         invalid_tx_list.push(tx.clone());
                     }
@@ -182,9 +210,10 @@ impl Pool {
 //FIXME
 #[cfg(test)]
 mod tests {
+    extern crate cita_crypto as crypto;
     use super::*;
     use crypto::{KeyPair, PrivKey, CreateKey};
-    use libproto::blockchain::{SignedTransaction, Transaction};
+    use libproto::blockchain::{SignedTransaction, Transaction, AccountGasLimit};
 
     pub fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
         let mut tx = Transaction::new();
@@ -192,7 +221,7 @@ mod tests {
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(valid_until_block);
-        tx.set_quota(184467440737095);
+        tx.set_quota(20);
 
         tx.sign(*privkey)
     }
@@ -208,6 +237,10 @@ mod tests {
         let tx3 = generate_tx(vec![2], 999, privkey);
         let tx4 = generate_tx(vec![3], 5, privkey);
 
+        let mut account_gas_limit = AccountGasLimit::new();
+        account_gas_limit.set_common_gas_limit(10000);
+        account_gas_limit.set_specific_gas_limit(HashMap::new());
+
         assert_eq!(p.enqueue(tx1.clone()), true);
         assert_eq!(p.enqueue(tx2.clone()), false);
         assert_eq!(p.enqueue(tx3.clone()), true);
@@ -215,11 +248,11 @@ mod tests {
         assert_eq!(p.len(), 3);
         p.update(&vec![tx1.clone()]);
         assert_eq!(p.len(), 2);
-        assert_eq!(p.package(5), vec![tx3.clone()]);
+        assert_eq!(p.package(5, 30, account_gas_limit.clone()), vec![tx3.clone()]);
         p.update(&vec![tx3.clone()]);
-        assert_eq!(p.package(5), vec![tx4]);
+        assert_eq!(p.package(5, 30, account_gas_limit.clone()), vec![tx4]);
         assert_eq!(p.len(), 1);
-        assert_eq!(p.package(6), vec![]);
+        assert_eq!(p.package(6, 30, account_gas_limit.clone()), vec![]);
         assert_eq!(p.len(), 0);
     }
 }

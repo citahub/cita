@@ -20,7 +20,7 @@ use authority_manage::AuthorityManage;
 use crypto::{Signature, Signer, CreateKey};
 use engine_json;
 use libproto::*;
-use libproto::blockchain::{BlockBody, Proof, Block, UnverifiedTransaction, SignedTransaction, RichStatus};
+use libproto::blockchain::{BlockBody, Proof, Block, UnverifiedTransaction, SignedTransaction, RichStatus, AccountGasLimit};
 use parking_lot::RwLock;
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
@@ -60,6 +60,8 @@ pub struct AuthorityRound {
     step: AtomicUsize,
     ready: Mutex<Sender<usize>>,
     auth_manage: RwLock<AuthorityManage>,
+    block_gas_limit: RwLock<u64>,
+    account_gas_limit: RwLock<AccountGasLimit>,
 }
 
 impl AuthorityRound {
@@ -77,6 +79,8 @@ impl AuthorityRound {
                                   step: AtomicUsize::new(INIT_STEP),
                                   ready: Mutex::new(ready),
                                   auth_manage: RwLock::new(AuthorityManage::new()),
+                                  block_gas_limit: RwLock::new(0),
+                                  account_gas_limit: RwLock::new(AccountGasLimit::new()),
                               });
         Ok(engine)
     }
@@ -109,13 +113,16 @@ impl AuthorityRound {
             block.mut_header().set_prevhash(pre_hash.unwrap().to_vec());
             {
                 let mut tx_pool = self.tx_pool.write();
-                let txs: Vec<SignedTransaction> = tx_pool.package(height);
+                let block_gas_limit = self.block_gas_limit.read();
+                let account_gas_limit = self.account_gas_limit.read();
+                let txs: Vec<SignedTransaction> = tx_pool.package(height, *block_gas_limit, account_gas_limit.clone());
                 block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
                 let proof = self.generate_proof(block.mut_body(), step);
                 block.mut_header().set_timestamp(block_time.as_millis());
                 let transactions_root = block.get_body().transactions_root();
                 block.mut_header().set_transactions_root(transactions_root.to_vec());
                 block.mut_header().set_proof(proof);
+                block.mut_header().set_gas_limit(*block_gas_limit);
             }
             trace!("generate_block {:?}", block.crypt_hash());
             Some(block)
@@ -183,8 +190,11 @@ impl Engine for AuthorityRound {
         trace!("new_status status {:?} height {:?}", status, height);
 
         let authorities: Vec<Address> = status.get_nodes().into_iter().map(|node| Address::from_slice(node)).collect();
-        self.auth_manage.write().receive_authorities_list(height, authorities);
-
+        {
+            self.auth_manage.write().receive_authorities_list(height, authorities);
+            *self.block_gas_limit.write() = status.block_gas_limit;
+            *self.account_gas_limit.write() = status.get_account_gas_limit().clone();
+        }
         if new_height == INIT_HEIGHT {
             self.height.store(new_height, Ordering::SeqCst);
             self.sealing.store(false, Ordering::SeqCst);

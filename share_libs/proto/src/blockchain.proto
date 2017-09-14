@@ -19,7 +19,8 @@ message BlockHeader {
     bytes transactions_root = 5;
     bytes receipts_root = 6;
     uint64 gas_used = 7;
-    Proof proof = 8;
+    uint64 gas_limit = 8;
+    Proof proof = 9;
 }
 
 message Status {
@@ -27,10 +28,17 @@ message Status {
     uint64 height = 2;
 }
 
+message AccountGasLimit {
+    uint64 common_gas_limit = 1;
+    map<string,uint64> specific_gas_limit = 2;
+}
+
 message RichStatus {
     bytes hash = 1;
     uint64 height = 2;
-    repeated bytes nodes = 3;
+    uint64 block_gas_limit = 3;
+    AccountGasLimit account_gas_limit = 4;
+    repeated bytes nodes = 5;
 }
 
 enum Crypto {
