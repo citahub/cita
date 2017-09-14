@@ -138,21 +138,21 @@ contract Quota is QutotaInterface {
     }
 
     function getSpecialUsers() constant returns (string) {
-        concatUser(special_users);
+        return concatUser(special_users);
     }
 
     function getUsersQuota() constant returns (string) {
-        concatUser(special_users);
+        return concatBytes(users_quota);
     }
 
     // cancat address
-    function concatBytes(bytes32[] _users) internal returns (string userList) {
+    function concatBytes(bytes32[] _users) internal returns (string bytes32List) {
         if (_users.length > 0) {
-            userList = bytes32ToString(_users[0]);
+            bytes32List = bytes32ToString(_users[0]);
         }
 
         for (uint i = 1; i < _users.length; i++) {
-            userList = userList.toSlice().concat(bytes32ToString(_users[i]).toSlice());
+            bytes32List = bytes32List.toSlice().concat(bytes32ToString(_users[i]).toSlice());
         }
     }
 
