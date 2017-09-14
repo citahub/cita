@@ -226,7 +226,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let index = rpctypes::Index(filter_id as usize);
                     let log = chain.filter_changes(index).unwrap();
                     trace!("Log is: {:?}", log);
-                    response.set_filter_changes(serde_json::to_vec(&log).unwrap());
+                    response.set_filter_changes(serde_json::to_string(&log).unwrap());
                     let msg: communication::Message = response.into();
                     ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
@@ -236,7 +236,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let index = rpctypes::Index(filter_id as usize);
                     let log = chain.filter_logs(index).unwrap_or(vec![]);
                     trace!("Log is: {:?}", log);
-                    response.set_filter_logs(serde_json::to_vec(&log).unwrap());
+                    response.set_filter_logs(serde_json::to_string(&log).unwrap());
                     let msg: communication::Message = response.into();
                     ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }

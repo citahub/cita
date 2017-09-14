@@ -53,8 +53,8 @@ pub enum ResponseBody {
     Code(Bytes),
     FilterId(U256),
     UninstallFliter(bool),
-    FilterChanges(Bytes),
-    FilterLog(Bytes),
+    FilterChanges(Vec<Log>),
+    FilterLog(Vec<Log>),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -94,23 +94,24 @@ impl From<ResponseResult> for ResponseBody {
             ResponseResult::ts(x) => ResponseBody::Transaction(RpcTransaction::from(x)),
             ResponseResult::peercount(x) => ResponseBody::PeerCount(U256::from(x)),
             ResponseResult::call_result(x) => ResponseBody::CallResult(Bytes::from(x)),
-            ResponseResult::logs(serialized) => {
-                serde_json::from_str::<Vec<Log>>(&serialized)
-                    .ok()
-                    .map_or(ResponseBody::Null, |logs| ResponseBody::Logs(logs))
-            }
-            ResponseResult::receipt(serialized) => {
-                serde_json::from_str::<Receipt>(&serialized)
-                    .ok()
-                    .map_or(ResponseBody::Null, |receipt| ResponseBody::Receipt(receipt))
-            }
+            ResponseResult::logs(log) => serde_json::from_str::<Vec<Log>>(&log)
+                .ok()
+                .map_or(ResponseBody::Null, |logs| ResponseBody::Logs(logs)),
+            ResponseResult::receipt(serialized) => serde_json::from_str::<Receipt>(&serialized)
+                .ok()
+                .map_or(ResponseBody::Null, |receipt| ResponseBody::Receipt(receipt)),
+
             ResponseResult::transaction_count(x) => ResponseBody::TranactionCount(U256::from(x)),
             ResponseResult::code(x) => ResponseBody::Code(Bytes::from(x)),
-
             ResponseResult::filter_id(id) => ResponseBody::FilterId(U256::from(id)),
-            ResponseResult::uninstall_filter(x) => ResponseBody::UninstallFliter(x),
-            ResponseResult::filter_changes(x) => ResponseBody::FilterChanges(Bytes::from(x)),
-            ResponseResult::filter_logs(x) => ResponseBody::FilterLog(Bytes::from(x)),
+            ResponseResult::uninstall_filter(is_uninstall) => ResponseBody::UninstallFliter(is_uninstall),
+            ResponseResult::filter_changes(log) => serde_json::from_str::<Vec<Log>>(&log)
+                .ok()
+                .map_or(ResponseBody::Null, |logs| ResponseBody::FilterChanges(logs)),
+            ResponseResult::filter_logs(log) => serde_json::from_str::<Vec<Log>>(&log)
+                .ok()
+                .map_or(ResponseBody::Null, |logs| ResponseBody::FilterLog(logs)),
+
         }
     }
 }

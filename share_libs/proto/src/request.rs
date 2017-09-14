@@ -1837,8 +1837,8 @@ pub enum Response_oneof_result {
     code(::std::vec::Vec<u8>),
     filter_id(u64),
     uninstall_filter(bool),
-    filter_changes(::std::vec::Vec<u8>),
-    filter_logs(::std::vec::Vec<u8>),
+    filter_changes(::std::string::String),
+    filter_logs(::std::string::String),
 }
 
 impl Response {
@@ -2334,7 +2334,7 @@ impl Response {
         }
     }
 
-    // bytes filter_changes = 14;
+    // string filter_changes = 14;
 
     pub fn clear_filter_changes(&mut self) {
         self.result = ::std::option::Option::None;
@@ -2348,15 +2348,15 @@ impl Response {
     }
 
     // Param is passed by value, moved
-    pub fn set_filter_changes(&mut self, v: ::std::vec::Vec<u8>) {
+    pub fn set_filter_changes(&mut self, v: ::std::string::String) {
         self.result = ::std::option::Option::Some(Response_oneof_result::filter_changes(v))
     }
 
     // Mutable pointer to the field.
-    pub fn mut_filter_changes(&mut self) -> &mut ::std::vec::Vec<u8> {
+    pub fn mut_filter_changes(&mut self) -> &mut ::std::string::String {
         if let ::std::option::Option::Some(Response_oneof_result::filter_changes(_)) = self.result {
         } else {
-            self.result = ::std::option::Option::Some(Response_oneof_result::filter_changes(::std::vec::Vec::new()));
+            self.result = ::std::option::Option::Some(Response_oneof_result::filter_changes(::std::string::String::new()));
         }
         match self.result {
             ::std::option::Option::Some(Response_oneof_result::filter_changes(ref mut v)) => v,
@@ -2365,25 +2365,25 @@ impl Response {
     }
 
     // Take field
-    pub fn take_filter_changes(&mut self) -> ::std::vec::Vec<u8> {
+    pub fn take_filter_changes(&mut self) -> ::std::string::String {
         if self.has_filter_changes() {
             match self.result.take() {
                 ::std::option::Option::Some(Response_oneof_result::filter_changes(v)) => v,
                 _ => panic!(),
             }
         } else {
-            ::std::vec::Vec::new()
+            ::std::string::String::new()
         }
     }
 
-    pub fn get_filter_changes(&self) -> &[u8] {
+    pub fn get_filter_changes(&self) -> &str {
         match self.result {
             ::std::option::Option::Some(Response_oneof_result::filter_changes(ref v)) => v,
-            _ => &[],
+            _ => "",
         }
     }
 
-    // bytes filter_logs = 15;
+    // string filter_logs = 15;
 
     pub fn clear_filter_logs(&mut self) {
         self.result = ::std::option::Option::None;
@@ -2397,15 +2397,15 @@ impl Response {
     }
 
     // Param is passed by value, moved
-    pub fn set_filter_logs(&mut self, v: ::std::vec::Vec<u8>) {
+    pub fn set_filter_logs(&mut self, v: ::std::string::String) {
         self.result = ::std::option::Option::Some(Response_oneof_result::filter_logs(v))
     }
 
     // Mutable pointer to the field.
-    pub fn mut_filter_logs(&mut self) -> &mut ::std::vec::Vec<u8> {
+    pub fn mut_filter_logs(&mut self) -> &mut ::std::string::String {
         if let ::std::option::Option::Some(Response_oneof_result::filter_logs(_)) = self.result {
         } else {
-            self.result = ::std::option::Option::Some(Response_oneof_result::filter_logs(::std::vec::Vec::new()));
+            self.result = ::std::option::Option::Some(Response_oneof_result::filter_logs(::std::string::String::new()));
         }
         match self.result {
             ::std::option::Option::Some(Response_oneof_result::filter_logs(ref mut v)) => v,
@@ -2414,21 +2414,21 @@ impl Response {
     }
 
     // Take field
-    pub fn take_filter_logs(&mut self) -> ::std::vec::Vec<u8> {
+    pub fn take_filter_logs(&mut self) -> ::std::string::String {
         if self.has_filter_logs() {
             match self.result.take() {
                 ::std::option::Option::Some(Response_oneof_result::filter_logs(v)) => v,
                 _ => panic!(),
             }
         } else {
-            ::std::vec::Vec::new()
+            ::std::string::String::new()
         }
     }
 
-    pub fn get_filter_logs(&self) -> &[u8] {
+    pub fn get_filter_logs(&self) -> &str {
         match self.result {
             ::std::option::Option::Some(Response_oneof_result::filter_logs(ref v)) => v,
-            _ => &[],
+            _ => "",
         }
     }
 }
@@ -2526,13 +2526,13 @@ impl ::protobuf::Message for Response {
                     if wire_type != ::protobuf::wire_format::WireTypeLengthDelimited {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    self.result = ::std::option::Option::Some(Response_oneof_result::filter_changes(is.read_bytes()?));
+                    self.result = ::std::option::Option::Some(Response_oneof_result::filter_changes(is.read_string()?));
                 },
                 15 => {
                     if wire_type != ::protobuf::wire_format::WireTypeLengthDelimited {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    self.result = ::std::option::Option::Some(Response_oneof_result::filter_logs(is.read_bytes()?));
+                    self.result = ::std::option::Option::Some(Response_oneof_result::filter_logs(is.read_string()?));
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -2589,10 +2589,10 @@ impl ::protobuf::Message for Response {
                     my_size += 2;
                 },
                 &Response_oneof_result::filter_changes(ref v) => {
-                    my_size += ::protobuf::rt::bytes_size(14, &v);
+                    my_size += ::protobuf::rt::string_size(14, &v);
                 },
                 &Response_oneof_result::filter_logs(ref v) => {
-                    my_size += ::protobuf::rt::bytes_size(15, &v);
+                    my_size += ::protobuf::rt::string_size(15, &v);
                 },
             };
         }
@@ -2646,10 +2646,10 @@ impl ::protobuf::Message for Response {
                     os.write_bool(13, v)?;
                 },
                 &Response_oneof_result::filter_changes(ref v) => {
-                    os.write_bytes(14, v)?;
+                    os.write_string(14, v)?;
                 },
                 &Response_oneof_result::filter_logs(ref v) => {
-                    os.write_bytes(15, v)?;
+                    os.write_string(15, v)?;
                 },
             };
         }
@@ -2762,12 +2762,12 @@ impl ::protobuf::MessageStatic for Response {
                     Response::has_uninstall_filter,
                     Response::get_uninstall_filter,
                 ));
-                fields.push(::protobuf::reflect::accessor::make_singular_bytes_accessor::<_>(
+                fields.push(::protobuf::reflect::accessor::make_singular_string_accessor::<_>(
                     "filter_changes",
                     Response::has_filter_changes,
                     Response::get_filter_changes,
                 ));
-                fields.push(::protobuf::reflect::accessor::make_singular_bytes_accessor::<_>(
+                fields.push(::protobuf::reflect::accessor::make_singular_string_accessor::<_>(
                     "filter_logs",
                     Response::has_filter_logs,
                     Response::get_filter_logs,
@@ -2904,23 +2904,23 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     transaction_count\x18\n\x20\x01(\x04H\0R\x10transactionCount\x12\x14\n\
     \x04code\x18\x0b\x20\x01(\x0cH\0R\x04code\x12\x1d\n\tfilter_id\x18\x0c\
     \x20\x01(\x04H\0R\x08filterId\x12+\n\x10uninstall_filter\x18\r\x20\x01(\
-    \x08H\0R\x0funinstallFilter\x12'\n\x0efilter_changes\x18\x0e\x20\x01(\
-    \x0cH\0R\rfilterChanges\x12!\n\x0bfilter_logs\x18\x0f\x20\x01(\x0cH\0R\n\
-    filterLogsB\x08\n\x06result*$\n\x08BlockTag\x12\n\n\x06Latest\x10\0\x12\
-    \x0c\n\x08Earliest\x10\x01J\xcd\x14\n\x06\x12\x04\0\0?\x01\n\x08\n\x01\
-    \x0c\x12\x03\0\0\x12\n\t\n\x02\x03\0\x12\x03\x02\x07\x19\n\n\n\x02\x05\0\
-    \x12\x04\x04\0\x07\x01\n\n\n\x03\x05\0\x01\x12\x03\x04\x05\r\n\x0b\n\x04\
-    \x05\0\x02\0\x12\x03\x05\x04\x0f\n\x0c\n\x05\x05\0\x02\0\x01\x12\x03\x05\
-    \x04\n\n\x0c\n\x05\x05\0\x02\0\x02\x12\x03\x05\r\x0e\n\x0b\n\x04\x05\0\
-    \x02\x01\x12\x03\x06\x04\x11\n\x0c\n\x05\x05\0\x02\x01\x01\x12\x03\x06\
-    \x04\x0c\n\x0c\n\x05\x05\0\x02\x01\x02\x12\x03\x06\x0f\x10\n\n\n\x02\x04\
-    \0\x12\x04\t\0\x0e\x01\n\n\n\x03\x04\0\x01\x12\x03\t\x08\x0c\n\x0b\n\x04\
-    \x04\0\x02\0\x12\x03\n\x04\x13\n\r\n\x05\x04\0\x02\0\x04\x12\x04\n\x04\t\
-    \x0e\n\x0c\n\x05\x04\0\x02\0\x05\x12\x03\n\x04\t\n\x0c\n\x05\x04\0\x02\0\
-    \x01\x12\x03\n\n\x0e\n\x0c\n\x05\x04\0\x02\0\x03\x12\x03\n\x11\x12\n\x0b\
-    \n\x04\x04\0\x02\x01\x12\x03\x0b\x04\x11\n\r\n\x05\x04\0\x02\x01\x04\x12\
-    \x04\x0b\x04\n\x13\n\x0c\n\x05\x04\0\x02\x01\x05\x12\x03\x0b\x04\t\n\x0c\
-    \n\x05\x04\0\x02\x01\x01\x12\x03\x0b\n\x0c\n\x0c\n\x05\x04\0\x02\x01\x03\
+    \x08H\0R\x0funinstallFilter\x12'\n\x0efilter_changes\x18\x0e\x20\x01(\tH\
+    \0R\rfilterChanges\x12!\n\x0bfilter_logs\x18\x0f\x20\x01(\tH\0R\nfilterL\
+    ogsB\x08\n\x06result*$\n\x08BlockTag\x12\n\n\x06Latest\x10\0\x12\x0c\n\
+    \x08Earliest\x10\x01J\xcd\x14\n\x06\x12\x04\0\0?\x01\n\x08\n\x01\x0c\x12\
+    \x03\0\0\x12\n\t\n\x02\x03\0\x12\x03\x02\x07\x19\n\n\n\x02\x05\0\x12\x04\
+    \x04\0\x07\x01\n\n\n\x03\x05\0\x01\x12\x03\x04\x05\r\n\x0b\n\x04\x05\0\
+    \x02\0\x12\x03\x05\x04\x0f\n\x0c\n\x05\x05\0\x02\0\x01\x12\x03\x05\x04\n\
+    \n\x0c\n\x05\x05\0\x02\0\x02\x12\x03\x05\r\x0e\n\x0b\n\x04\x05\0\x02\x01\
+    \x12\x03\x06\x04\x11\n\x0c\n\x05\x05\0\x02\x01\x01\x12\x03\x06\x04\x0c\n\
+    \x0c\n\x05\x05\0\x02\x01\x02\x12\x03\x06\x0f\x10\n\n\n\x02\x04\0\x12\x04\
+    \t\0\x0e\x01\n\n\n\x03\x04\0\x01\x12\x03\t\x08\x0c\n\x0b\n\x04\x04\0\x02\
+    \0\x12\x03\n\x04\x13\n\r\n\x05\x04\0\x02\0\x04\x12\x04\n\x04\t\x0e\n\x0c\
+    \n\x05\x04\0\x02\0\x05\x12\x03\n\x04\t\n\x0c\n\x05\x04\0\x02\0\x01\x12\
+    \x03\n\n\x0e\n\x0c\n\x05\x04\0\x02\0\x03\x12\x03\n\x11\x12\n\x0b\n\x04\
+    \x04\0\x02\x01\x12\x03\x0b\x04\x11\n\r\n\x05\x04\0\x02\x01\x04\x12\x04\
+    \x0b\x04\n\x13\n\x0c\n\x05\x04\0\x02\x01\x05\x12\x03\x0b\x04\t\n\x0c\n\
+    \x05\x04\0\x02\x01\x01\x12\x03\x0b\n\x0c\n\x0c\n\x05\x04\0\x02\x01\x03\
     \x12\x03\x0b\x0f\x10\n\x0b\n\x04\x04\0\x02\x02\x12\x03\x0c\x04\x13\n\r\n\
     \x05\x04\0\x02\x02\x04\x12\x04\x0c\x04\x0b\x11\n\x0c\n\x05\x04\0\x02\x02\
     \x05\x12\x03\x0c\x04\t\n\x0c\n\x05\x04\0\x02\x02\x01\x12\x03\x0c\n\x0e\n\
@@ -3030,12 +3030,12 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x03\x02\x0b\x03\x12\x03:\x1b\x1d\n\x0b\n\x04\x04\x03\x02\x0c\x12\x03;\
     \x08#\n\x0c\n\x05\x04\x03\x02\x0c\x05\x12\x03;\x08\x0c\n\x0c\n\x05\x04\
     \x03\x02\x0c\x01\x12\x03;\r\x1d\n\x0c\n\x05\x04\x03\x02\x0c\x03\x12\x03;\
-    \x20\"\n\x0b\n\x04\x04\x03\x02\r\x12\x03<\x08\"\n\x0c\n\x05\x04\x03\x02\
-    \r\x05\x12\x03<\x08\r\n\x0c\n\x05\x04\x03\x02\r\x01\x12\x03<\x0e\x1c\n\
-    \x0c\n\x05\x04\x03\x02\r\x03\x12\x03<\x1f!\n\x0b\n\x04\x04\x03\x02\x0e\
-    \x12\x03=\x08\x1f\n\x0c\n\x05\x04\x03\x02\x0e\x05\x12\x03=\x08\r\n\x0c\n\
-    \x05\x04\x03\x02\x0e\x01\x12\x03=\x0e\x19\n\x0c\n\x05\x04\x03\x02\x0e\
-    \x03\x12\x03=\x1c\x1eb\x06proto3\
+    \x20\"\n\x0b\n\x04\x04\x03\x02\r\x12\x03<\x08#\n\x0c\n\x05\x04\x03\x02\r\
+    \x05\x12\x03<\x08\x0e\n\x0c\n\x05\x04\x03\x02\r\x01\x12\x03<\x0f\x1d\n\
+    \x0c\n\x05\x04\x03\x02\r\x03\x12\x03<\x20\"\n\x0b\n\x04\x04\x03\x02\x0e\
+    \x12\x03=\x08\x20\n\x0c\n\x05\x04\x03\x02\x0e\x05\x12\x03=\x08\x0e\n\x0c\
+    \n\x05\x04\x03\x02\x0e\x01\x12\x03=\x0f\x1a\n\x0c\n\x05\x04\x03\x02\x0e\
+    \x03\x12\x03=\x1d\x1fb\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
