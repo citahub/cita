@@ -49,11 +49,12 @@ pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, M
                 }
             }
         }
-        MsgClass::VERIFYTXREQ(req) => {}
+        _ => {}
+        /*MsgClass::VERIFYTXREQ(req) => {}
         MsgClass::VERIFYTXRESP(resp) => {}
         MsgClass::VERIFYBLKREQ(req) => {}
         MsgClass::VERIFYBLKRESP(resp) => {}
         MsgClass::BLOCKTXHASHES(txhashes) => {}
-        MsgClass::BLOCKTXHASHESREQ(req) => {}
+        MsgClass::BLOCKTXHASHESREQ(req) => {}*/
     }
 }
