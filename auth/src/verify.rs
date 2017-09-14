@@ -1,11 +1,29 @@
-use std::collections::HashMap;
+// CITA
+// Copyright 2016-2017 Cryptape Technologies LLC.
+
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 use crypto::{PubKey, Signature, Sign};
 use libproto::*;
 use libproto::blockchain::*;
-use std::result::Result;
-use util::H256;
-use std::sync::mpsc::Sender;
 use protobuf::Message;
+use std::collections::HashMap;
+use std::result::Result;
+use std::sync::mpsc::Sender;
+use util::H256;
 
 pub const BLOCKLIMIT: u64 = 100;
 
@@ -42,11 +60,7 @@ impl Verifier {
     pub fn update_hashes(&mut self, h: u64, hashes: Vec<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
-            self.height_low =  if h < BLOCKLIMIT {
-                Some(0)
-            } else {
-                Some(h - BLOCKLIMIT + 1)
-            };
+            self.height_low = if h < BLOCKLIMIT { Some(0) } else { Some(h - BLOCKLIMIT + 1) };
             for i in self.height_low.unwrap()..h {
                 let mut req = BlockTxHashesReq::new();
                 req.set_height(i as u64);
@@ -58,11 +72,7 @@ impl Verifier {
             let current_height_low = self.height_low.unwrap();
             if h > current_height {
                 self.height_latest = Some(h);
-                self.height_low =  if h < BLOCKLIMIT {
-                    Some(0)
-                } else {
-                    Some(h - BLOCKLIMIT + 1)
-                };
+                self.height_low = if h < BLOCKLIMIT { Some(0) } else { Some(h - BLOCKLIMIT + 1) };
                 for i in current_height_low..self.height_low.unwrap() {
                     self.hashes.remove(&i);
                 }
@@ -123,7 +133,7 @@ mod tests {
         v.update_hashes(0, vec![], &tx_pub);
         assert_eq!(v.is_inited(), true);
         assert_eq!(v.get_height_latest(), Some(0));
-        assert_eq!(v.get_height_low(),  Some(0));
+        assert_eq!(v.get_height_low(), Some(0));
     }
 
     #[test]
@@ -132,8 +142,8 @@ mod tests {
         let (tx_pub, _rx_pub) = channel();
         v.update_hashes(100, vec![], &tx_pub);
         assert_eq!(v.is_inited(), false);
-        assert_eq!(v.get_height_latest(),  Some(100));
-        assert_eq!(v.get_height_low(),  Some(1));
+        assert_eq!(v.get_height_latest(), Some(100));
+        assert_eq!(v.get_height_low(), Some(1));
         for i in 0..99 {
             v.update_hashes(i, vec![], &tx_pub);
         }
@@ -142,7 +152,7 @@ mod tests {
         assert_eq!(v.is_inited(), true);
 
         v.update_hashes(101, vec![], &tx_pub);
-        assert_eq!(v.get_height_latest(),  Some(101));
-        assert_eq!(v.get_height_low(),  Some(2));
+        assert_eq!(v.get_height_latest(), Some(101));
+        assert_eq!(v.get_height_low(), Some(2));
     }
 }

@@ -14,7 +14,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 use libproto::*;
 use protobuf::Message;
 use std::sync::mpsc::{Sender, Receiver};
@@ -39,7 +38,7 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     trace!("verfiy_tx:begin to verify tx with VerifyTxReq: {:?}", req);
 
     if !verifier.verify_valid_until_block(req.get_valid_until_block()) {
-        resp.set_ret(Ret::OutOfTime);                            
+        resp.set_ret(Ret::OutOfTime);
         return resp;
     }
 
@@ -50,19 +49,19 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
             resp.set_ret(Ret::Dup);
         } else {
             resp.set_ret(Ret::NotReady);
-        }                    
+        }
         return resp;
     }
     let ret = verifier.verify_sig(req);
     if ret.is_err() {
-        resp.set_ret(Ret::BadSig);                            
+        resp.set_ret(Ret::BadSig);
         return resp;
     }
     //check signer if req have
     let req_signer = req.get_signer();
     if req_signer.len() != 0 {
         if req_signer != ret.unwrap().to_vec().as_slice() {
-            resp.set_ret(Ret::BadSig);                            
+            resp.set_ret(Ret::BadSig);
             return resp;
         }
     }
@@ -74,13 +73,7 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
 }
 
 fn get_key(submodule: u32, is_blk: bool) -> String {
-    "verify".to_owned() + 
-    if is_blk {
-        "_blk_"
-    } else {
-        "_tx_"
-    } +
-    id_to_key(submodule)
+    "verify".to_owned() + if is_blk { "_blk_" } else { "_tx_" } + id_to_key(submodule)
 }
 
 pub fn handle_remote_msg(payload: Vec<u8>,

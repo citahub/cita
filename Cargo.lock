@@ -1008,7 +1008,6 @@ name = "libproto"
 version = "0.6.0"
 dependencies = [
  "cita-crypto 0.1.0",
- "ethcore-logger 1.8.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.2.0",

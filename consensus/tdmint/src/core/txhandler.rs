@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::blockchain::{SignedTransaction, UnverifiedTransaction};
 use libproto::{key_to_id, parse_msg, MsgClass, factory, submodules, topics, communication, tx_verify_req_msg};
 use libproto::auth::Ret;
+use libproto::blockchain::{SignedTransaction, UnverifiedTransaction};
 use protobuf::Message;
 use std::collections::HashMap;
-use std::sync::mpsc::Sender;
 use std::sync::{Mutex, Arc};
+use std::sync::mpsc::Sender;
 use threadpool::ThreadPool;
 use util::H256;
 
@@ -42,7 +42,7 @@ impl TxHandler {
             pool: pool,
             tx: tx,
             tx_pub: tx_pub,
-            unverified: Arc::new(Mutex::new(HashMap::new()))
+            unverified: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -62,7 +62,7 @@ impl TxHandler {
                         txs.insert(hash, (id, unverified_tx.clone()));
                     }
                     let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_TX_REQ, communication::MsgType::VERIFY_TX_REQ, verify_tx_req.write_to_bytes().unwrap());
-                    trace!("send verify req, hash: {:?}", hash);
+                    trace!("send verify req, hash: {:?}, tx from: {}", hash, key);
                     tx_pub.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
                 MsgClass::VERIFYTXRESP(resp) => {

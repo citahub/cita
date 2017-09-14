@@ -20,8 +20,8 @@ extern crate threadpool;
 use core::txhandler::TxHandler;
 use core::txwal::Txwal;
 use libproto::{submodules, topics, factory, communication};
-use libproto::blockchain::{TxResponse, SignedTransaction};
 use libproto::auth::Ret;
+use libproto::blockchain::{TxResponse, SignedTransaction};
 use protobuf::Message;
 use pubsub::start_pubsub;
 use std::sync::{RwLock, Arc};
@@ -107,16 +107,22 @@ impl Dispatchtx {
                       });
     }
 
+    //TODO error return JsonRpc
     fn receive_new_transaction(&self, signed_tx: Option<SignedTransaction>, result: Option<(H256, Ret)>, tx_pub: Sender<(String, Vec<u8>)>) {
-        let mut is_busy = false;
-        let mut is_success = false;
-        let tx_is_valid = signed_tx.is_some();
+        let mut error_msg: Option<String> = None;
         signed_tx.map(|signed_tx| {
-            is_busy = self.tx_flow_control();
-            if !is_busy {
-                is_success = self.add_tx_to_pool(&signed_tx);
-            }
-        });
+                          if self.tx_flow_control() {
+                              error_msg = Some(String::from("BUSY"));
+                          } else {
+                              let is_success = self.add_tx_to_pool(&signed_tx);
+                              if is_success {
+                                  let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, signed_tx.get_transaction_with_sig().write_to_bytes().unwrap());
+                                  tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                              } else {
+                                  error_msg = Some(String::from("4:DUP"));
+                              }
+                          }
+                      });
 
         // tx from net, we don't need to reply
         if result.is_none() {
@@ -136,14 +142,9 @@ impl Dispatchtx {
         };
         tx_response.set_result(ret.into_bytes());
 
-        if tx_is_valid {
-            if is_busy {
-                tx_response.set_result(String::from("BUSY").into_bytes());
-            } else if !is_success {
-                tx_response.set_result(String::from("4:DUP").into_bytes());
-            }
+        if error_msg.is_some() {
+            tx_response.set_result(error_msg.unwrap().into_bytes());
         }
-
         let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, tx_response.write_to_bytes().unwrap());
         trace!("response new tx {:?}", tx_response.get_hash());
         tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();

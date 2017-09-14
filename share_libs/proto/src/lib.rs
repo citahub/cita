@@ -22,7 +22,6 @@ extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
 extern crate cita_crypto as crypto;
-extern crate ethcore_logger;
 #[macro_use]
 extern crate log as rlog;
 
@@ -76,7 +75,7 @@ pub mod topics {
     pub const VERIFY_BLK_REQ: u16 = 12;
     pub const VERIFY_BLK_RESP: u16 = 13;
     pub const BLOCK_TXHASHES: u16 = 14;
-    pub const BLOCK_TXHASHES_REQ: u16 = 15; 
+    pub const BLOCK_TXHASHES_REQ: u16 = 15;
 }
 
 #[derive(Debug)]

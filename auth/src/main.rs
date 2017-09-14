@@ -154,7 +154,7 @@ mod tests {
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(valid_until_block);
-        let signed_tx = tx.sign(*privkey); 
+        let signed_tx = tx.sign(*privkey);
         signed_tx
     }
 
@@ -215,7 +215,9 @@ mod tests {
                 assert_eq!(resp.get_ret(), Ret::Ok);
                 assert_eq!(pubkey.to_vec(), resp.get_signer());
             }
-            _ => {panic!("test failed")}
+            _ => {
+                panic!("test failed")
+            }
         }
     }
 
@@ -241,7 +243,9 @@ mod tests {
                 assert_eq!(resp.get_ret(), Ret::Ok);
                 assert_eq!(pubkey.to_vec(), resp.get_signer());
             }
-            _ => {panic!("test failed")}
+            _ => {
+                panic!("test failed")
+            }
         }
 
         handle_msg(generate_msg(tx), &tx_pub, &mut v, &mut c);
@@ -253,7 +257,9 @@ mod tests {
                 assert_eq!(resp.get_ret(), Ret::Ok);
                 assert_eq!(pubkey.to_vec(), resp.get_signer());
             }
-            _ => {panic!("test failed")}
+            _ => {
+                panic!("test failed")
+            }
         }
     }
 
@@ -279,7 +285,9 @@ mod tests {
                 assert_eq!(resp.get_ret(), Ret::Ok);
                 assert_eq!(resp.get_id(), 0);
             }
-            _ => {panic!("test failed")}
+            _ => {
+                panic!("test failed")
+            }
         }
     }
 }

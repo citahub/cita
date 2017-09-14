@@ -55,14 +55,13 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
         MsgClass::REQUEST(mut req) => {
             let mut response = request::Response::new();
             response.set_request_id(req.take_request_id());
+            let topic = "chain.rpc".to_string();
             match req.req.clone().unwrap() {
                 // TODO: should check the result, parse it first!
                 Request::block_number(_) => {
                     // let sys_time = SystemTime::now();
                     let height = chain.get_current_height();
                     response.set_block_number(height);
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::block_by_hash(rpc) => {
@@ -81,13 +80,10 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                             response.set_none(true);
                         }
                     }
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::block_by_height(block_height) => {
                     let block_height: BlockParamsByNumber = serde_json::from_str(&block_height).expect("Invalid param");
-
                     let include_txs = block_height.include_txs;
                     match chain.block(block_height.block_id.into()) {
                         Some(block) => {
@@ -101,9 +97,8 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                             response.set_none(true);
                         }
                     }
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
+
                 Request::transaction(hash) => {
                     match chain.full_transaction(H256::from_slice(&hash)) {
                         Some(ts) => {
@@ -113,9 +108,8 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                             response.set_none(true);
                         }
                     }
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
+
                 Request::transaction_receipt(hash) => {
                     let tx_hash = H256::from_slice(&hash);
                     let receipt = chain.localized_receipt(tx_hash);
@@ -126,9 +120,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     } else {
                         response.set_none(true);
                     }
-
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::call(call) => {
@@ -137,8 +128,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let call_request = CallRequest::from(call);
                     let result = chain.eth_call(call_request, block_id.into());
                     response.set_call_result(result.unwrap_or_default());
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::filter(encoded) => {
@@ -148,8 +137,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let logs = chain.get_logs(filter);
                     let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
                     response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::transaction_count(tx_count) => {
@@ -165,8 +152,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                             response.set_none(true);
                         }
                     };
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::code(code_content) => {
@@ -189,8 +174,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                             response.set_none(true);
                         }
                     };
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::new_filter(new_filter) => {
@@ -198,15 +181,11 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let new_filter: RpcFilter = serde_json::from_str(&new_filter).expect("Invalid param");
                     trace!("new_filter {:?}", new_filter);
                     response.set_filter_id(chain.new_filter(new_filter) as u64);
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::new_block_filter(_) => {
                     let block_filter = chain.new_block_filter();
                     response.set_filter_id(block_filter as u64);
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::uninstall_filter(filter_id) => {
@@ -214,8 +193,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let index = rpctypes::Index(filter_id as usize);
                     let b = chain.uninstall_filter(index);
                     response.set_uninstall_filter(b);
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::filter_changes(filter_id) => {
@@ -224,8 +201,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let log = chain.filter_changes(index).unwrap();
                     trace!("Log is: {:?}", log);
                     response.set_filter_changes(serde_json::to_vec(&log).unwrap());
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
 
                 Request::filter_logs(filter_id) => {
@@ -234,16 +209,15 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let log = chain.filter_logs(index).unwrap_or(vec![]);
                     trace!("Log is: {:?}", log);
                     response.set_filter_logs(serde_json::to_vec(&log).unwrap());
-                    let msg: communication::Message = response.into();
-                    ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
-
-                _ => {}
-            }
+                _ => {
+                    error!("error msg!!!!");
+                }
+            };
+            let msg: communication::Message = response.into();
+            ctx_pub.send((topic, msg.write_to_bytes().unwrap())).unwrap();
         }
-        MsgClass::RESPONSE(rep) => {}
-        MsgClass::HEADER(header) => {}
-        MsgClass::BODY(body) => {}
+
         MsgClass::BLOCK(block) => {
             let mut guard = chain.block_map.write();
 
@@ -271,8 +245,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
 
             }
         }
-        MsgClass::TX(content) => {}
-        MsgClass::TXRESPONSE(content) => {}
+
         MsgClass::STATUS(status) => {
             let status_height = status.get_height();
             if status_height > chain.get_max_height() {
@@ -300,6 +273,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 }
             }
         }
+
         MsgClass::MSG(content) => {
             if libproto::cmd_id(submodules::CHAIN, topics::SYNC_BLK) == cmd_id {
                 trace!("Receive sync {:?} from node-{:?}", BigEndian::read_u64(&content), origin);
@@ -312,9 +286,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 warn!("other content.");
             }
         }
-        MsgClass::VERIFYTXREQ(req) => {}
-        MsgClass::VERIFYTXRESP(resp) => {}
-        MsgClass::VERIFYBLKREQ(req) => {}
+
         MsgClass::VERIFYBLKRESP(resp) => {
             let next_height = chain.get_current_height() + 1;
             trace!("receive verify response, next height: {}, result: {:?}", next_height, resp.get_ret());
@@ -329,7 +301,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 let _ = guard.remove(&next_height);
             }
         }
-        MsgClass::BLOCKTXHASHES(block_tx_hashes) => {}
+
         MsgClass::BLOCKTXHASHESREQ(block_tx_hashes_req) => {
             let block_height = block_tx_hashes_req.get_height();
             if let Some(tx_hashes) = chain.transaction_hashes(BlockId::Number(block_height)) {
@@ -349,6 +321,10 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
             } else {
                 warn!("get block's tx hashes for height:{} error", block_height);
             }
+        }
+
+        _ => {
+            error!("error MsgClass!!!!");
         }
     }
 }

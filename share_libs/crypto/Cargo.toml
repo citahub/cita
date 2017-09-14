@@ -9,6 +9,6 @@ cita-secp256k1 = { path = "../secp256k1", optional = true }
 util = { path = "../util" }
 
 [features]
-default = ["ed25519"]
+default = ["secp256k1"]
 ed25519 = ["cita-ed25519"]
 secp256k1 = ["cita-secp256k1"]
