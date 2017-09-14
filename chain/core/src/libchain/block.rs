@@ -331,6 +331,16 @@ impl OpenBlock {
                 self.receipts.push(None);
                 self.tx_hashes.push(true);
             }
+            Err(Error::Execution(ExecutionError::NoTransactionPermission)) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoTransactionPermission));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(true);
+            }
+            Err(Error::Execution(ExecutionError::NoContractPermission)) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoContractPermission));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(true);
+            }
             Err(Error::Execution(ExecutionError::NotEnoughBaseGas { required: _, got })) => {
                 let receipt = Receipt::new(None, got, Vec::new(), Some(ReceiptError::OutOfGas));
                 self.receipts.push(Some(receipt));

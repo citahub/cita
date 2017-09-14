@@ -755,8 +755,8 @@ impl Chain {
     /// Get a copy of the best block's state.
     pub fn state(&self) -> State<StateDB> {
         let mut state = self.gen_state(self.current_state_root()).unwrap();
-        state.senders = AccountManager::load_senders(self);
-        state.creators = AccountManager::load_creators(self);
+        state.senders = self.senders.read().clone();
+        state.creators = self.creators.read().clone();
         state
     }
 

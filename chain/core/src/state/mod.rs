@@ -198,7 +198,9 @@ pub struct State<B: Backend> {
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
     account_start_nonce: U256,
     factories: Factories,
+    // transaction permissions
     pub senders: HashMap<Address, bool>,
+    // contract permissions
     pub creators: HashMap<Address, bool>,
 }
 

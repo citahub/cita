@@ -149,12 +149,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // check contract create/call permission
         match t.action {
             Action::Create => if *sender != Address::zero() && !self.state.creators.contains_key(&sender) {
-                return Err(From::from(ExecutionError::AccountPermission(String::from("no create permission"))));
+                return Err(From::from(ExecutionError::NoContractPermission));
             },
-            Action::Call(_) => if *sender != Address::zero() && !self.state.senders.contains_key(sender) {
-                return Err(From::from(ExecutionError::AccountPermission(String::from("no call permission"))));
+            _ => if *sender != Address::zero() && !self.state.senders.contains_key(sender) && !self.state.creators.contains_key(&sender) {
+                return Err(From::from(ExecutionError::NoTransactionPermission));
             },
-            _ => {}
         }
 
         // TODO: we might need bigints here, or at least check overflows.
