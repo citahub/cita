@@ -56,7 +56,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
             let mut response = response::Response::new();
             response.set_request_id(req.take_request_id());
             let topic = "chain.rpc".to_string();
-            match req.req.clone().unwrap() {
+            match req.req.unwrap() {
                 // TODO: should check the result, parse it first!
                 Request::block_number(_) => {
                     // let sys_time = SystemTime::now();
@@ -65,21 +65,29 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 }
 
                 Request::block_by_hash(rpc) => {
-                    let rpc: BlockParamsByHash = serde_json::from_str(&rpc).expect("Invalid param");
-                    let hash = rpc.hash;
-                    let include_txs = rpc.include_txs;
-                    match chain.block_by_hash(H256::from(hash.as_slice())) {
-                        Some(block) => {
-                            let rpc_block = RpcBlock::new(hash, include_txs, block.protobuf().write_to_bytes().unwrap());
-                            //TODO，发生错误了，应该加错原因给rpc,通知客户
-                            serde_json::to_string(&rpc_block)
-                                .map(|data| response.set_block(data))
-                                .map_err(|_| response.set_none(true));
+                    //let rpc: BlockParamsByHash = serde_json::from_str(&rpc);
+                    match serde_json::from_str::<BlockParamsByHash>(&rpc) {
+                        Ok(param) => {
+                            let hash = param.hash;
+                            let include_txs = param.include_txs;
+                            match chain.block_by_hash(H256::from(hash.as_slice())) {
+                                Some(block) => {
+                                    let rpc_block = RpcBlock::new(hash, include_txs, block.protobuf().write_to_bytes().unwrap());
+                                    serde_json::to_string(&rpc_block).map(|data| response.set_block(data)).map_err(|err| {
+                                                                                                                       response.set_code(submodules::CHAIN as i64);
+                                                                                                                       response.set_error_msg(format!("{:?}", err));
+                                                                                                                   });
+                                }
+                                None => {
+                                    response.set_none(true)
+                                }
+                            }
                         }
-                        None => {
-                            response.set_none(true);
+                        Err(err) => {
+                            response.set_block(format!("{:?}", err));
+                            response.set_code(submodules::CHAIN as i64);
                         }
-                    }
+                    };
                 }
 
                 Request::block_by_height(block_height) => {
@@ -88,10 +96,10 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     match chain.block(block_height.block_id.into()) {
                         Some(block) => {
                             let rpc_block = RpcBlock::new(block.hash().to_vec(), include_txs, block.protobuf().write_to_bytes().unwrap());
-                            //TODO，发生错误了，应该加错原因给rpc,通知客户
-                            serde_json::to_string(&rpc_block)
-                                .map(|data| response.set_block(data))
-                                .map_err(|_| response.set_none(true));
+                            serde_json::to_string(&rpc_block).map(|data| response.set_block(data)).map_err(|err| {
+                                                                                                               response.set_code(submodules::CHAIN as i64);
+                                                                                                               response.set_error_msg(format!("{:?}", err));
+                                                                                                           });
                         }
                         None => {
                             response.set_none(true);
@@ -124,56 +132,82 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
 
                 Request::call(call) => {
                     trace!("Chainvm Call {:?}", call);
-                    let block_id: BlockNumber = serde_json::from_str(&(call.height)).expect("Invalid param");
-                    let call_request = CallRequest::from(call);
-                    let result = chain.eth_call(call_request, block_id.into());
-                    response.set_call_result(result.unwrap_or_default());
+                    serde_json::from_str::<BlockNumber>(&call.height)
+                        .map(|block_id| {
+                            let call_request = CallRequest::from(call);
+                            chain.eth_call(call_request, block_id.into())
+                                 .map(|ok| { response.set_call_result(ok); })
+                                 .map_err(|err| {
+                                              response.set_code(submodules::CHAIN as i64);
+                                              response.set_error_msg(err);
+                                          })
+                        })
+                        .map_err(|err| {
+                                     response.set_code(submodules::CHAIN as i64);
+                                     response.set_error_msg(format!("{:?}", err));
+                                 });
                 }
 
                 Request::filter(encoded) => {
                     trace!("filter: {:?}", encoded);
-                    let rpc_filter: RpcFilter = serde_json::from_str(&encoded).expect("Invalid filter");
-                    let filter: Filter = rpc_filter.into();
-                    let logs = chain.get_logs(filter);
-                    let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
-                    response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
+                    serde_json::from_str::<RpcFilter>(&encoded)
+                        .map_err(|err| {
+                                     response.set_code(submodules::CHAIN as i64);
+                                     response.set_error_msg(format!("{:?}", err));
+                                 })
+                        .map(|rpc_filter| {
+                                 let filter: Filter = rpc_filter.into();
+                                 let logs = chain.get_logs(filter);
+                                 let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
+                                 response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
+                             });
                 }
 
                 Request::transaction_count(tx_count) => {
                     trace!("transaction count request from jsonrpc {:?}", tx_count);
-                    //TODO 或许有错误返回给用户更好
-                    let tx_count: CountOrCode = serde_json::from_str(&tx_count).expect("Invalid param");
-                    let address = Address::from_slice(tx_count.address.as_ref());
-                    match chain.nonce(&address, tx_count.block_id.into()) {
-                        Some(nonce) => {
-                            response.set_transaction_count(u64::from(nonce));
-                        }
-                        None => {
-                            response.set_none(true);
-                        }
-                    };
+                    serde_json::from_str::<CountOrCode>(&tx_count)
+                        .map_err(|err| {
+                                     response.set_code(submodules::CHAIN as i64);
+                                     response.set_error_msg(format!("{:?}", err));
+                                 })
+                        .map(|tx_count| {
+                            let address = Address::from_slice(tx_count.address.as_ref());
+                            match chain.nonce(&address, tx_count.block_id.into()) {
+                                Some(nonce) => {
+                                    response.set_transaction_count(u64::from(nonce));
+                                }
+                                None => {
+                                    response.set_transaction_count(0);
+                                }
+                            };
+                        });
                 }
 
                 Request::code(code_content) => {
                     trace!("code request from josnrpc  {:?}", code_content);
-                    let code_content: CountOrCode = serde_json::from_str(&code_content).expect("Invalid param");
-
-                    let address = Address::from_slice(code_content.address.as_ref());
-                    match chain.code_at(&address, code_content.block_id.into()) {
-                        Some(code) => {
-                            match code {
+                    serde_json::from_str::<CountOrCode>(&code_content)
+                        .map_err(|err| {
+                                     response.set_code(submodules::CHAIN as i64);
+                                     response.set_error_msg(format!("{:?}", err));
+                                 })
+                        .map(|code_content| {
+                            let address = Address::from_slice(code_content.address.as_ref());
+                            match chain.code_at(&address, code_content.block_id.into()) {
                                 Some(code) => {
-                                    response.set_contract_code(code);
+                                    match code {
+                                        Some(code) => {
+                                            response.set_contract_code(code);
+                                        }
+                                        None => {
+                                            response.set_contract_code(vec![]);
+                                        }
+                                    }
                                 }
                                 None => {
-                                    response.set_none(true);
+                                    response.set_contract_code(vec![]);
                                 }
-                            }
-                        }
-                        None => {
-                            response.set_none(true);
-                        }
-                    };
+                            };
+                        });
                 }
 
                 Request::new_filter(new_filter) => {

@@ -17,7 +17,7 @@
 
 use libproto::{key_to_id, parse_msg, MsgClass, factory, submodules, topics, communication, tx_verify_req_msg, Request, TxResponse};
 use libproto::auth::Ret;
-use libproto::blockchain::{SignedTransaction};
+use libproto::blockchain::SignedTransaction;
 use protobuf::Message;
 use std::collections::HashMap;
 use std::sync::{Mutex, Arc};
