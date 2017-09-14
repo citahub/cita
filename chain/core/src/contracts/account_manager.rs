@@ -20,13 +20,14 @@
 use super::parse_string_to_addresses;
 use libchain::call_request::CallRequest;
 use libchain::chain::Chain;
+use rustc_hex::FromHex;
 use sha3::sha3_256;
 use std::collections::HashMap;
 use std::str::FromStr;
 use types::ids::BlockId;
 use util::*;
 
-const METHOD_NAME: &'static [u8] = &*b"queryUsersOfPermission(uint256)";
+const METHOD_NAME: &'static [u8] = &*b"queryUsersOfPermission(uint8)";
 
 
 lazy_static! {
@@ -39,9 +40,9 @@ lazy_static! {
         let func = out[0..4].to_vec();
         func
 	};
-    static ref QUERY_TX: Vec<u8> = String::from("0000000000000000000000000000000000000000000000000000000000000002").into_bytes();
-    static ref QUERY_CONTRACT: Vec<u8> = String::from("0000000000000000000000000000000000000000000000000000000000000001").into_bytes();
-    static ref CONTRACT_ADDRESS: H160 = H160::from_str("0x00000000000000000000000000000000013241a4").unwrap();
+    static ref QUERY_TX: Vec<u8> = "0000000000000000000000000000000000000000000000000000000000000001".from_hex().unwrap().into();
+    static ref QUERY_CONTRACT: Vec<u8> = "0000000000000000000000000000000000000000000000000000000000000002".from_hex().unwrap().into();
+    static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a4").unwrap();
 }
 
 pub struct AccountManager {}
