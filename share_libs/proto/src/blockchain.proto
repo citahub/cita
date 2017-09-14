@@ -68,3 +68,8 @@ message Block {
     BlockHeader header = 2;
     BlockBody body = 3;
 }
+
+message BlockWithProof {
+    Block blk = 1;
+    Proof proof = 2;
+}
