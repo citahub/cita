@@ -59,18 +59,23 @@ impl Synchronizer {
                 if block_map.contains_key(&height) {
                     trace!("chain sync loop {:?}", height);
                     let value = block_map[&(height)].clone();
+                    let proof_ok = value.0;
                     let block = value.1;
                     let is_verified = value.2;
-                    if !is_verified {
-                        let proto_block = block.protobuf();
-                        let verify_req = block_verify_req(&proto_block, 0);
-                        let blk_height = proto_block.get_header().get_height();
-                        trace!("verify blk req, height: {}", blk_height);
-                        let msg = factory::create_msg(submodules::CHAIN, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
-                        ctx_pub.send(("chain.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-                        break;
+                    if proof_ok {
+                        if !is_verified {
+                            let proto_block = block.protobuf();
+                            let verify_req = block_verify_req(&proto_block, 0);
+                            let blk_height = proto_block.get_header().get_height();
+                            trace!("verify blk req, height: {}", blk_height);
+                            let msg = factory::create_msg(submodules::CHAIN, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
+                            ctx_pub.send(("chain.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                            break;
+                        } else {
+                            self.add_block(ctx_pub.clone(), block);
+                        }
                     } else {
-                        self.add_block(ctx_pub.clone(), block);
+                        trace!("chain proof not ok height: {}, wait next sync", height);
                     }
                 } else {
                     trace!("chain sync break {:?}", height);
