@@ -20,7 +20,7 @@ use authority_manage::AuthorityManage;
 use crypto::{Signature, Signer, CreateKey};
 use engine_json;
 use libproto::*;
-use libproto::blockchain::{BlockBody, Proof, Block, UnverifiedTransaction, SignedTransaction, RichStatus};
+use libproto::blockchain::{BlockBody, Proof, Block, UnverifiedTransaction, SignedTransaction, RichStatus, AccountGasLimit};
 use parking_lot::RwLock;
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
@@ -61,6 +61,7 @@ pub struct AuthorityRound {
     ready: Mutex<Sender<usize>>,
     auth_manage: RwLock<AuthorityManage>,
     block_gas_limit: RwLock<u64>,
+    account_gas_limit: RwLock<AccountGasLimit>,
 }
 
 impl AuthorityRound {
@@ -79,6 +80,7 @@ impl AuthorityRound {
                                   ready: Mutex::new(ready),
                                   auth_manage: RwLock::new(AuthorityManage::new()),
                                   block_gas_limit: RwLock::new(0),
+                                  account_gas_limit: RwLock::new(AccountGasLimit::new()),
                               });
         Ok(engine)
     }
@@ -112,7 +114,8 @@ impl AuthorityRound {
             {
                 let mut tx_pool = self.tx_pool.write();
                 let block_gas_limit = self.block_gas_limit.read();
-                let txs: Vec<SignedTransaction> = tx_pool.package(height, *block_gas_limit);
+                let account_gas_limit = self.account_gas_limit.read();
+                let txs: Vec<SignedTransaction> = tx_pool.package(height, *block_gas_limit, account_gas_limit.clone());
                 block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
                 let proof = self.generate_proof(block.mut_body(), step);
                 block.mut_header().set_timestamp(block_time.as_millis());
@@ -190,6 +193,7 @@ impl Engine for AuthorityRound {
         {
             self.auth_manage.write().receive_authorities_list(height, authorities);
             *self.block_gas_limit.write() = status.block_gas_limit;
+            *self.account_gas_limit.write() = status.get_account_gas_limit().clone();
         }
         if new_height == INIT_HEIGHT {
             self.height.store(new_height, Ordering::SeqCst);

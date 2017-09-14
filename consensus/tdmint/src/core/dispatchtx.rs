@@ -20,7 +20,7 @@ extern crate threadpool;
 use core::txhandler::TxHandler;
 use core::txwal::Txwal;
 use libproto::{submodules, topics, factory, communication};
-use libproto::blockchain::{TxResponse, SignedTransaction};
+use libproto::blockchain::{TxResponse, SignedTransaction, AccountGasLimit};
 use protobuf::Message;
 use pubsub::start_pubsub;
 use std::sync::{RwLock, Arc};
@@ -73,13 +73,13 @@ impl Dispatchtx {
         success
     }
 
-    pub fn get_txs_from_pool(&self, height: u64, block_gas_limit: u64) -> Vec<SignedTransaction> {
+    pub fn get_txs_from_pool(&self, height: u64, block_gas_limit: u64, account_gas_limit: AccountGasLimit) -> Vec<SignedTransaction> {
         if self.data_from_pool.load(Ordering::SeqCst) {
             self.data_from_pool.store(false, Ordering::SeqCst);
             Vec::new()
         } else {
             let mut tx_pool = self.tx_pool.write().unwrap();
-            let txs = tx_pool.package(height, block_gas_limit);
+            let txs = tx_pool.package(height, block_gas_limit, account_gas_limit);
             txs
         }
     }

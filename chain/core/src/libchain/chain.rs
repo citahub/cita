@@ -39,7 +39,7 @@ use libchain::extras::*;
 
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
-use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus};
+use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus, AccountGasLimit as ProtoAccountGasLimit};
 use libproto::request::FullTransaction;
 use proof::TendermintProof;
 use protobuf::RepeatedField;
@@ -118,11 +118,43 @@ impl Status {
     }
 }
 
+#[derive(PartialEq, Clone, Default, Debug)]
+pub struct AccountGasLimit {
+    pub common_gas_limit: u64,
+    pub specific_gas_limit: HashMap<String, u64>,
+}
+
+impl AccountGasLimit {
+    pub fn new() -> Self {
+        AccountGasLimit {
+            common_gas_limit: 0,
+            specific_gas_limit: HashMap::new(),
+        }
+    }
+
+    pub fn set_common_gas_limit(&mut self, v: u64) {
+        self.common_gas_limit = v;
+    }
+
+    pub fn get_common_gas_limit(&self) -> u64 {
+        self.common_gas_limit
+    }
+
+    pub fn set_specific_gas_limit(&mut self, v: HashMap<String, u64>) {
+        self.specific_gas_limit = v;
+    }
+
+    pub fn get_specific_gas_limit(&self) -> &HashMap<String, u64> {
+        &self.specific_gas_limit
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub struct RichStatus {
     number: u64,
     hash: H256,
     block_gas_limit: u64,
+    account_gas_limit: AccountGasLimit,
     nodes: Vec<Address>,
 }
 
@@ -133,6 +165,7 @@ impl RichStatus {
             hash: H256::default(),
             block_gas_limit: 0,
             nodes: vec![],
+            account_gas_limit: AccountGasLimit::new(),
         }
     }
 
@@ -160,13 +193,21 @@ impl RichStatus {
         self.block_gas_limit = block_gas_limit;
     }
 
+    fn set_account_gas_limit(&mut self, account_gas_limit: AccountGasLimit) {
+        self.account_gas_limit = account_gas_limit;
+    }
+
     fn protobuf(&self) -> ProtoRichStatus {
         let mut ps = ProtoRichStatus::new();
+        let mut account_gas_limit = ProtoAccountGasLimit::new();
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
         let node_list = self.nodes.clone().into_iter().map(|address| address.to_vec()).collect();
         ps.set_nodes(RepeatedField::from_vec(node_list));
         ps.set_block_gas_limit(self.block_gas_limit);
+        account_gas_limit.set_common_gas_limit(self.account_gas_limit.get_common_gas_limit());
+        account_gas_limit.set_specific_gas_limit(self.account_gas_limit.get_specific_gas_limit().clone());
+        ps.set_account_gas_limit(account_gas_limit);
         ps
     }
 }
@@ -308,8 +349,16 @@ impl Chain {
         status.set_number(header.number());
         status.set_nodes(nodes);
         //设置获取的block limit
-        let block_gas_limit = 30000;
+        let block_gas_limit = 5000000000;
         status.set_block_gas_limit(block_gas_limit);
+
+        //todo
+        let mut account_gas_limit = AccountGasLimit::new();
+        account_gas_limit.set_common_gas_limit(30000);
+        account_gas_limit.set_specific_gas_limit(HashMap::new());
+
+        status.set_account_gas_limit(account_gas_limit);
+
         (chain, status.protobuf())
     }
 
@@ -921,6 +970,17 @@ impl Chain {
                 rich_status.set_hash(*status.hash());
                 rich_status.set_number(status.number());
                 rich_status.set_nodes(self.nodes.read().clone());
+
+                //设置获取的block limit
+                let block_gas_limit = 5000000000;
+                rich_status.set_block_gas_limit(block_gas_limit);
+
+                //todo
+                let mut account_gas_limit = AccountGasLimit::new();
+                account_gas_limit.set_common_gas_limit(30000);
+                account_gas_limit.set_specific_gas_limit(HashMap::new());
+                rich_status.set_account_gas_limit(account_gas_limit);
+
 
                 info!("chain update {:?}", height);
                 Some(rich_status.protobuf())

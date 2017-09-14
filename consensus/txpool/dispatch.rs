@@ -21,6 +21,7 @@ use candidate_pool::CandidatePool;
 use cmd::{Command, decode};
 use libproto;
 use libproto::{MsgClass, submodules, topics};
+use libproto::blockchain::AccountGasLimit;
 use std::sync::mpsc::{Sender, Receiver};
 
 pub type PubType = (String, Vec<u8>);
@@ -52,8 +53,10 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, sender: Sender<PubType>, rx:
                     Command::SpawnBlk(height, hash) => {
                         if candidate_pool.meet_conditions(height) {
                             info!("recieved command spawn new blk.");
-                            //todo 参数三
-                            let blk = candidate_pool.spawn_new_blk(height, hash, 30000000);
+                            //todo 参数三 参数四
+                            let mut account_gas_limit = AccountGasLimit::new();
+                            account_gas_limit.set_common_gas_limit(30000);
+                            let blk = candidate_pool.spawn_new_blk(height, hash, 30000000, account_gas_limit);
                             candidate_pool.pub_block(&blk, sender.clone());
                             let txs = blk.get_body().get_transactions();
                             candidate_pool.update_txpool(txs);

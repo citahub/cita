@@ -28,7 +28,7 @@ use crypto::{CreateKey, Signature, Sign, pubkey_to_address};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto;
 use libproto::{communication, submodules, topics, MsgClass};
-use libproto::blockchain::{Block, SignedTransaction, RichStatus};
+use libproto::blockchain::{Block, SignedTransaction, RichStatus, AccountGasLimit};
 
 //use tx_pool::Pool;
 use proof::TendermintProof;
@@ -126,6 +126,7 @@ pub struct TenderMint {
     auth_manage: AuthorityManage,
     consensus_power: bool,
     block_gas_limit: u64,
+    account_gas_limit: AccountGasLimit,
 }
 
 impl TenderMint {
@@ -166,6 +167,7 @@ impl TenderMint {
             auth_manage: AuthorityManage::new(),
             consensus_power: false,
             block_gas_limit: 0,
+            account_gas_limit: AccountGasLimit::new(),
         }
     }
 
@@ -846,7 +848,8 @@ impl TenderMint {
         }
         {
             //let txs: Vec<SignedTransaction> = self.tx_pool.package(self.height as u64);
-            let txs: Vec<SignedTransaction> = self.dispatch.get_txs_from_pool(self.height as u64, self.block_gas_limit);
+            let txs: Vec<SignedTransaction> = self.dispatch
+                                                  .get_txs_from_pool(self.height as u64, self.block_gas_limit, self.account_gas_limit.clone());
             trace!("new proposal height {:?} tx len {:?}", self.height, txs.len());
             block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
         }
@@ -1025,6 +1028,7 @@ impl TenderMint {
         }
         //设置blocklmit
         self.block_gas_limit = status.block_gas_limit;
+        self.account_gas_limit = status.get_account_gas_limit().clone();
         // try my effor to save proof,when I skipping commit_blcok by the chain sending new status.
         if self.proof.height != height {
             if let Some(hash) = self.proposal {
