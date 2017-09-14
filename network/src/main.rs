@@ -31,7 +31,7 @@ extern crate pubsub;
 extern crate dotenv;
 extern crate cita_log;
 extern crate bytes;
-extern crate patrol;
+extern crate notify;
 
 pub mod config;
 pub mod server;
@@ -46,8 +46,8 @@ use connection::{Connection, do_connect as connect, start_client};
 use dotenv::dotenv;
 use log::LogLevelFilter;
 use msghandle::{is_need_proc, handle_rpc};
+use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use parking_lot::RwLock;
-use patrol::{make_targets, spawn};
 use pubsub::start_pubsub;
 use server::MySender;
 use server::start_server;
@@ -67,19 +67,22 @@ pub fn do_connect(config_path: &str, con: Arc<RwLock<Connection>>) {
     }
 
     let config_file: String = "./".to_string() + config_path;
-    let target = make_targets(&[&config_file]);
-    let rx = spawn(target);
+    let (tx, rx) = channel();
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(5)).unwrap();
+    let _ = watcher.watch(config_file.clone(), RecursiveMode::Recursive).unwrap();
 
     thread::spawn(move || loop {
-                      let event = rx.recv_timeout(Duration::new(10, 0));
-                      if event.is_ok() {
-                          let config = NetConfig::new(&config_file);
+                      match rx.recv() {
+                          Ok(_) => {
+                              let config = NetConfig::new(&config_file);
 
-                          let con = &mut *con.as_ref().write();
-                          con.update(&config);
-                          connect(&con);
-                          //let con = &mut *con.as_ref().write();
-                          con.del_peer();
+                              let con = &mut *con.as_ref().write();
+                              con.update(&config);
+                              connect(&con);
+                              //let con = &mut *con.as_ref().write();
+                              con.del_peer();
+                          }
+                          Err(e) => info!("watch error: {:?}", e),
                       }
                   });
 }
