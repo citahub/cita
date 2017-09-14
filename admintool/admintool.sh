@@ -119,6 +119,7 @@ if [ ! -n "$TX_POOL_SIZE" ]; then
 fi
 
 DATA_PATH=`pwd`/release
+INIT_DATA_PATH=`pwd`
 CREATE_KEY_ADDR_PATH=$DATA_PATH/bin/create_key_addr
 
 if [ ! -f "$DATA_PATH" ]; then
@@ -131,6 +132,10 @@ fi
 
 if [ -f "genesis.json" ]; then
     rm genesis.json
+fi
+
+if [ ! -e "$INIT_DATA_PATH/init_data.json" ]; then
+    cp $INIT_DATA_PATH/init_data_example.json $DATA_PATH/init_data.json
 fi
 
 echo "Step 1: ********************************************************"
@@ -148,7 +153,7 @@ do
 done
 echo "Step 2: ********************************************************"
 
-python create_genesis.py --authorities "$DATA_PATH/authorities"
+python create_genesis.py --authorities "$DATA_PATH/authorities" --init_data "$DATA_PATH/init_data.json"
 for ((ID=0;ID<$SIZE;ID++))
 do
     echo "Start creating Node " $ID " Configuration!"
