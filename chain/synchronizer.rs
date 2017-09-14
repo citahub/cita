@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use core::contracts::node_manager::NodeManager;
 use core::libchain::block::Block;
 use core::libchain::chain::Chain;
 use libproto::*;
@@ -68,7 +67,7 @@ impl Synchronizer {
         let current_hash = self.chain.get_current_hash();
         let current_height = self.chain.get_current_height();
         let max_height = self.chain.get_max_height();
-        let nodes: Vec<Address> = NodeManager::read(&self.chain);
+        let nodes: Vec<Address> = self.chain.nodes.read().clone();
 
         drop(self);
         info!("sync_status {:?}, {:?}", current_hash, current_height);
