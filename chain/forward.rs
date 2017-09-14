@@ -25,20 +25,20 @@ use jsonrpc_types::rpctypes;
 use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, CountAndCode, BlockNumber, BlockParamsByNumber, BlockParamsByHash, RpcBlock};
 use libproto;
 pub use libproto::*;
+use libproto::blockchain::Block as ProtobufBlock;
 pub use libproto::request::Request_oneof_req as Request;
 use protobuf::{Message, RepeatedField};
 use serde_json;
 use std::sync::Arc;
-use std::u64::MAX;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::{Sender, Receiver};
+use std::u64::MAX;
 use std::vec::Vec;
 use threadpool::*;
 use types::filter::Filter;
 use types::ids::BlockId;
 use util::Address;
 use util::H256;
-use libproto::blockchain::{Block as ProtobufBlock};
 // pub const CHAIN_PUB: u32 = 3;
 
 pub fn chain_pool(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id: u32, msg: Vec<u8>) {
@@ -235,10 +235,9 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
             trace!("received proof block: block_number:{:?} current_height: {:?} max_height: {:?}", blk_height, current_height, max_height);
 
             if blk_height > current_height && blk_height < current_height + 300 {
-                if !guard.contains_key(&blk_height) || (guard.contains_key(&blk_height) && guard[&blk_height].2 == false) {
+                if !guard.contains_key(&blk_height) || (guard.contains_key(&blk_height) && (guard[&blk_height].0 == false || guard[&blk_height].2 == false)) {
                     trace!("block insert {:?}", blk_height);
-                    //let is_verified = source == BlockSource::CONSENSUS;
-                    guard.insert(blk_height, (true,Block::from(block.clone()), true,Some(proof.clone())));
+                    guard.insert(blk_height, (true, Block::from(block.clone()), true, Some(proof.clone())));
                     let _ = chain.sync_sender.lock().send(blk_height);
                 }
             }
@@ -248,12 +247,8 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
             let current_height = chain.get_current_height();
             let max_height = chain.get_max_height();
             let blk_height = problock.get_header().get_height();
-            let mut proof_height: u64 = 0;
-
             let block = Block::from(problock);
-            if Chain::check_block_proof(&block,blk_height as usize -1) {
-                proof_height = blk_height -1;
-            }
+            let proof_height = Chain::check_block_proof(&block, 0) as u64;
 
             if blk_height == MAX {
                 if proof_height > 0 {
@@ -261,6 +256,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     if let Some(info) = guard.get_mut(&proof_height) {
                         info.0 = true;
                         let _ = chain.sync_sender.lock().send(proof_height);
+                        trace!("blk_height == MAX proof height {}", proof_height);
                     }
                 }
                 return;
@@ -268,14 +264,20 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
 
             trace!("received block: block_number:{:?} current_height: {:?} max_height: {:?}", blk_height, current_height, max_height);
             if blk_height > current_height && blk_height < current_height + 300 {
+                let min_height = {
+                    if proof_height == 0 { current_height } else { ::std::cmp::min(current_height, proof_height) }
+                };
 
                 let mut guard = chain.block_map.write();
-                let new_map = guard.split_off(&current_height);
+                let new_map = guard.split_off(&min_height);
                 *guard = new_map;
-                if !guard.contains_key(&blk_height)  {
-                    trace!("block insert {:?}", blk_height);
-                    guard.insert(blk_height, (false, block, false,None));
-                    let _ = chain.sync_sender.lock().send(blk_height);
+                if !guard.contains_key(&blk_height) {
+                    trace!("block insert {:?} no proof and not verified", blk_height);
+                    guard.insert(blk_height, (false, block, false, None));
+                }
+                if let Some(info) = guard.get_mut(&proof_height) {
+                    info.0 = true;
+                    let _ = chain.sync_sender.lock().send(proof_height);
                 }
             }
         }
@@ -312,14 +314,13 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
             if libproto::cmd_id(submodules::CHAIN, topics::SYNC_BLK) == cmd_id {
 
                 let height = BigEndian::read_u64(&content);
-                trace!("Receive sync {:?} from node-{:?}",height , origin);
+                trace!("Receive sync {:?} from node-{:?}", height, origin);
                 if let Some(block) = chain.block(BlockId::Number(height)) {
                     let msg = factory::create_msg_ex(submodules::CHAIN, topics::NEW_BLK, communication::MsgType::BLOCK, communication::OperateType::SINGLE, origin, block.protobuf().write_to_bytes().unwrap());
                     trace!("origin {:?}, chain.blk: OperateType {:?}", origin, communication::OperateType::SINGLE);
                     ctx_pub.send(("chain.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
 
-                    if height == chain.get_max_height() {
-
+                    if height == chain.get_current_height() {
                         let mut proof_block = ProtobufBlock::new();
                         let mut flag = false;
                         {

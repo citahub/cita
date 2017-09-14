@@ -38,7 +38,7 @@ use libchain::extras::*;
 
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
-use libproto::blockchain::{ProofType, Status as ProtoStatus,Proof as ProtoProof};
+use libproto::blockchain::{ProofType, Status as ProtoStatus, Proof as ProtoProof};
 use libproto::request::FullTransaction;
 use native::Factory as NativeFactory;
 use proof::TendermintProof;
@@ -137,7 +137,7 @@ pub struct Chain {
     pub is_sync: AtomicBool,
     pub max_height: AtomicUsize,
     //BtreeMap key: block height  Value: proof check ,block, is_verified, proof
-    pub block_map: RwLock<BTreeMap<u64, (bool, Block, bool,Option<ProtoProof>)>>,
+    pub block_map: RwLock<BTreeMap<u64, (bool, Block, bool, Option<ProtoProof>)>>,
     pub db: Arc<KeyValueDB>,
     pub sync_sender: Mutex<Sender<u64>>,
     pub state_db: StateDB,
@@ -756,8 +756,11 @@ impl Chain {
             vm_tracing: analytics.vm_tracing,
             check_nonce: false,
         };
+
         let ret = Executive::new(&mut state, &env_info, &engine, &self.factories.vm, &self.factories.native)
             .transact(t, options)?;
+
+        //let ret = Executive::new(&mut state, &env_info, &engine, &self.factories.vm).transact(t, options)?;
 
         Ok(ret)
     }
@@ -784,18 +787,26 @@ impl Chain {
         open_block
     }
 
-
-    pub fn check_block_proof(block: &Block,height :usize) -> bool {
+    /*
+    check the proof of height. when height==0,check the proof inner height.
+    */
+    pub fn check_block_proof(block: &Block, height: usize) -> usize {
         match block.proof_type() {
             Some(ProofType::Tendermint) => {
                 let proof = TendermintProof::from(block.proof().clone());
-                if !proof.simple_check(height ) {
-                    return false;
+                let mut check_height = proof.height;
+                if height > 0 {
+                    check_height = height;
+                }
+                if proof.simple_check(check_height) {
+                    return check_height;
                 }
             }
-            _ => {}
+            _ => {
+                return height;
+            }
         }
-        return true;
+        return 0;
     }
 
     /// Add block to chain:
@@ -804,19 +815,10 @@ impl Chain {
     /// 3. Update cache
     pub fn add_block(&self, batch: &mut DBTransaction, block: Block) -> Option<Header> {
         let height = block.number();
-        let res = Chain::check_block_proof(&block,height as usize-1);
-        if !res {
+        let res = Chain::check_block_proof(&block, height as usize - 1);
+        if res == 0 {
             return None;
         }
-        /*match block.proof_type() {
-            Some(ProofType::Tendermint) => {
-                let proof = TendermintProof::from(block.proof().clone());
-                if !proof.simple_check(height as usize - 1) {
-                    return None;
-                }
-            }
-            _ => {}
-        }*/
 
         if self.validate_hash(block.parent_hash()) {
             let mut open_block = self.execute_block(block);
