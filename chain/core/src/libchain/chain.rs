@@ -201,8 +201,10 @@ pub struct Chain {
     transaction_addresses: RwLock<HashMap<TransactionId, DBList<TransactionAddress>>>,
     blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
     block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
+    // System contract config cache
     senders: RwLock<HashMap<Address, bool>>,
     creators: RwLock<HashMap<Address, bool>>,
+    pub nodes: RwLock<Vec<Address>>,
 
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
@@ -284,15 +286,19 @@ impl Chain {
             polls_filter: Arc::new(Mutex::new(PollManager::new())),
             senders: RwLock::new(HashMap::new()),
             creators: RwLock::new(HashMap::new()),
+            nodes: RwLock::new(Vec::new()),
         };
 
+        // Build chain config
+        let chain = Arc::new(raw_chain);
+        chain.build_last_hashes(Some(header.hash().clone()), header.number());
+        chain.reload_config();
+        let nodes: Vec<Address> = chain.nodes.read().clone();
+
+        // Generate status
         let mut status = RichStatus::new();
         status.set_hash(header.clone().hash());
         status.set_number(header.clone().number());
-
-        let chain = Arc::new(raw_chain);
-        chain.build_last_hashes(Some(status.hash().clone()), status.number());
-        let nodes: Vec<Address> = NodeManager::read(&chain);
         status.set_nodes(nodes);
         (chain, status.protobuf())
     }
@@ -866,6 +872,19 @@ impl Chain {
         }
     }
 
+    /// Reload system config from system contract
+    pub fn reload_config(&self) {
+        // Reload senders and creators cache
+        let mut senders = self.senders.write();
+        let mut creators = self.creators.write();
+        *senders = AccountManager::load_senders(self);
+        *creators = AccountManager::load_creators(self);
+
+        // Reload consensus nodes cache
+        let mut nodes = self.nodes.write();
+        *nodes = NodeManager::read(self);
+    }
+
     pub fn set_block(&self, block: Block) -> Option<ProtoRichStatus> {
         let height = block.number();
         trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
@@ -883,18 +902,12 @@ impl Chain {
                 let status = self.save_status(&mut batch);
                 self.db.write(batch).expect("DB write failed.");
 
-                // Reload consensus nodes
-                let nodes: Vec<Address> = NodeManager::read(&self);
+                // reload_config
+                self.reload_config();
                 let mut rich_status = RichStatus::new();
                 rich_status.set_hash(*status.hash());
                 rich_status.set_number(status.number());
-                rich_status.set_nodes(nodes);
-
-                // Reload senders and creators cache
-                let mut senders = self.senders.write();
-                let mut creators = self.creators.write();
-                *senders = AccountManager::load_senders(self);
-                *creators = AccountManager::load_creators(self);
+                rich_status.set_nodes(self.nodes.read().clone());
 
                 info!("chain update {:?}", height);
                 Some(rich_status.protobuf())
