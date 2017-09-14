@@ -1546,6 +1546,7 @@ dependencies = [
 name = "pubsub_zeromq"
 version = "0.1.0"
 dependencies = [
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "zmq 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

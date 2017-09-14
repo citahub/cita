@@ -16,9 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate zmq;
+#[macro_use]
+extern crate log;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 use std::thread;
+//use util::log::error;
 pub fn start_zeromq(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
     let context = zmq::Context::new();
     //pub
@@ -28,7 +31,7 @@ pub fn start_zeromq(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, 
         "chain" => assert!(publisher.bind("tcp://*:5564").is_ok()),
         "jsonrpc" => assert!(publisher.bind("tcp://*:5565").is_ok()),
         "consensus" => assert!(publisher.bind("tcp://*:5566").is_ok()),
-        _ => println!("Error"),
+        _ => error!("not hava {} module !",name),
     }
 
     let _ = thread::Builder::new().name("publisher".to_string()).spawn(move || loop {
@@ -77,7 +80,7 @@ pub fn start_zeromq(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, 
                 3
             }
             _ => {
-                println!("Error");
+                error!("invalid  flag!");
                 -1
             }
         }

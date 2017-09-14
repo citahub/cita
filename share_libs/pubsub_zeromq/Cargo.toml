@@ -7,3 +7,6 @@ authors = ["rink1969 <rink1969@cryptape.com>"]
 version = "0.8"
 default-features = false
 features = []
+
+[dependencies]
+log = "0.3"

@@ -46,7 +46,6 @@ impl ConsumerContext for ConsumerContextExample {
 pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
     let brokers = "localhost:9092";
     let _ = thread::Builder::new().name("publisher".to_string()).spawn(move || {
-        println!("this is publisher");
         let producer = ClientConfig::new()
             .set("bootstrap.servers", brokers)
             .set_default_topic_config(TopicConfig::new().set("produce.offset.report", "true").finalize())
@@ -59,14 +58,13 @@ pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx
                 break;
             }
             let (topic, msg) = ret.unwrap();
-            println!("topic:{},msg:{:?}", topic, msg);
 
             // The send operation on the topic returns a future, that will be completed once the
             // result or failure from Kafka will be received.
             let _ = producer.send_copy(&topic, None, Some(&msg), Some(&vec![0, 1, 2, 3]), None)
                 .map(move |delivery_status| {
                     // This will be executed onw the result is received
-                    println!("Delivery status for message {} received", 1);
+                    //println!("Delivery status for message {} received", 1);
                     delivery_status
                 })
                 .wait();
@@ -112,7 +110,6 @@ pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx
                 match message {
                     Err(_) => {
                         warn!("Error while reading from stream.");
-                        println!("err");
                     }
                     Ok(Ok(m)) => {
                         let key = match m.key_view::<[u8]>() {
@@ -120,7 +117,6 @@ pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx
                             Some(Ok(s)) => s,
                             Some(Err(e)) => {
                                 warn!("Error while deserializing message key: {:?}", e);
-                                println!("Error while deserializing message key: {:?}", e);
                                 &[]
                             }
                         };
@@ -129,14 +125,12 @@ pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx
                             Some(Ok(s)) => s,
                             Some(Err(e)) => {
                                 warn!("Error while deserializing message payload: {:?}", e);
-                                println!("Error while deserializing message payload: {:?}", e);
                                 ""
                             }
                         };
 
                         let _ = tx.send((m.topic().to_string(), payload.as_bytes().to_vec()));
-                        info!("key: '{:?}', payload: '{:?}', topic: {}, partition: {}, offset: {}", key, payload.as_bytes(), m.topic(), m.partition(), m.offset());
-                        println!("key: '{:?}', payload: '{:?}', topic: {}, partition: {}, offset: {}", key, payload.as_bytes(), m.topic(), m.partition(), m.offset());
+                        trace!("key: '{:?}', payload: '{:?}', topic: {}, partition: {}, offset: {}", key, payload.as_bytes(), m.topic(), m.partition(), m.offset());
                         consumer.commit_message(&m, CommitMode::Async).unwrap();
                     }
                     Ok(Err(e)) => {
