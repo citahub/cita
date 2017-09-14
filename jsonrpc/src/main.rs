@@ -117,14 +117,14 @@ fn main() {
     start_pubsub("jsonrpc", vec!["*.rpc"], tx_sub, rx_pub);
 
     //mq
-    let mut new_subscriber = mq_hanlder::MqHandler::new();
+    let mut mq_hanlder = mq_hanlder::MqHandler::new();
 
     //http
     if config.http_config.enable {
-        new_subscriber.set_http_or_ws(TransferType::HTTP, 0);
+        mq_hanlder.set_http_or_ws(TransferType::HTTP, 0);
         let http_responses = Arc::new(RwLock::new(HashMap::with_capacity(1000)));
         let http_tx_responses = Arc::new(RwLock::new(HashMap::with_capacity(1000)));
-        new_subscriber.set_http(http_tx_responses.clone(), http_responses.clone());
+        mq_hanlder.set_http(http_tx_responses.clone(), http_responses.clone());
 
         let http_config = config.http_config.clone();
         let sender_mq_http = tx_pub.clone();
@@ -146,10 +146,10 @@ fn main() {
 
     //ws
     if config.ws_config.enable {
-        new_subscriber.set_http_or_ws(TransferType::WEBSOCKET, 0);
+        mq_hanlder.set_http_or_ws(TransferType::WEBSOCKET, 0);
         let ws_responses = Arc::new(Mutex::new(HashMap::with_capacity(1000)));
         let ws_tx_responses = Arc::new(Mutex::new(HashMap::with_capacity(1000)));
-        new_subscriber.set_ws(ws_tx_responses.clone(), ws_responses.clone());
+        mq_hanlder.set_ws(ws_tx_responses.clone(), ws_responses.clone());
 
         let ws_config = config.ws_config.clone();
         thread::spawn(move || {
@@ -165,6 +165,6 @@ fn main() {
 
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
-        new_subscriber.handle(key, msg);
+        mq_hanlder.handle(key, msg);
     }
 }

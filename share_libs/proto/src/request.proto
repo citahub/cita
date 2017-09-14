@@ -58,8 +58,8 @@ message Response {
         bytes code = 11;
         uint64 filter_id = 12;
         bool uninstall_filter = 13;
-        bytes filter_changes = 14;
-        bytes filter_logs = 15;
+        string filter_changes = 14;
+        string filter_logs = 15;
     }
 }
 
