@@ -38,7 +38,7 @@ use libchain::extras::*;
 
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
-use libproto::blockchain::{ProofType, Status as ProtoStatus};
+use libproto::blockchain::{ProofType, Status as ProtoStatus,Proof as ProtoProof};
 use libproto::request::FullTransaction;
 use native::Factory as NativeFactory;
 use proof::TendermintProof;
@@ -136,7 +136,8 @@ pub struct Chain {
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
     pub max_height: AtomicUsize,
-    pub block_map: RwLock<BTreeMap<u64, (BlockSource, Block, bool)>>,
+    //BtreeMap key: block height  Value: proof check ,block, is_verified, proof
+    pub block_map: RwLock<BTreeMap<u64, (bool, Block, bool,Option<ProtoProof>)>>,
     pub db: Arc<KeyValueDB>,
     pub sync_sender: Mutex<Sender<u64>>,
     pub state_db: StateDB,
@@ -783,13 +784,31 @@ impl Chain {
         open_block
     }
 
+
+    pub fn check_block_proof(block: &Block,height :usize) -> bool {
+        match block.proof_type() {
+            Some(ProofType::Tendermint) => {
+                let proof = TendermintProof::from(block.proof().clone());
+                if !proof.simple_check(height ) {
+                    return false;
+                }
+            }
+            _ => {}
+        }
+        return true;
+    }
+
     /// Add block to chain:
     /// 1. Execute block
     /// 2. Commit block
     /// 3. Update cache
     pub fn add_block(&self, batch: &mut DBTransaction, block: Block) -> Option<Header> {
         let height = block.number();
-        match block.proof_type() {
+        let res = Chain::check_block_proof(&block,height as usize-1);
+        if !res {
+            return None;
+        }
+        /*match block.proof_type() {
             Some(ProofType::Tendermint) => {
                 let proof = TendermintProof::from(block.proof().clone());
                 if !proof.simple_check(height as usize - 1) {
@@ -797,7 +816,7 @@ impl Chain {
                 }
             }
             _ => {}
-        }
+        }*/
 
         if self.validate_hash(block.parent_hash()) {
             let mut open_block = self.execute_block(block);
