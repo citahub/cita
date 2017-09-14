@@ -476,14 +476,13 @@ impl Chain {
             let stx = self.transaction_by_address(hash, index).unwrap();
             let number = self.block_number_by_hash(hash).unwrap_or(0);
 
-            let contract_address = match stx.action() {
-                &Action::Create => Some(contract_address(&stx.sender(), stx.nonce())),
-                &Action::Store => {
-                    let store_addr: Address = STORE_ADDRESS.into();
-                    Some(store_addr)
-                }
-                _ => None,
-            };
+            let mut contract_addr = None;
+            if last_receipt.error.is_none() {
+                contract_addr = match stx.action() {
+                    &Action::Create => Some(contract_address(&stx.sender(), stx.nonce())),
+                    _ => None,
+                };
+            }
 
             let receipt = LocalizedReceipt {
                 transaction_hash: id,
@@ -492,7 +491,7 @@ impl Chain {
                 block_number: number,
                 cumulative_gas_used: last_receipt.gas_used,
                 gas_used: last_receipt.gas_used - prior_gas_used,
-                contract_address: contract_address,
+                contract_address: contract_addr,
                 logs: last_receipt.logs
                                   .into_iter()
                                   .enumerate()
@@ -510,6 +509,7 @@ impl Chain {
                                   .collect(),
                 log_bloom: last_receipt.log_bloom,
                 state_root: last_receipt.state_root,
+                error: last_receipt.error,
             };
             Some(receipt)
         })
