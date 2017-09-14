@@ -9,8 +9,7 @@
 # 1.6) refer to env.sh
 
 ################################################################################
-#CARGO=RUSTFLAGS='-F warnings' cargo
-CARGO=cargo
+CARGO=RUSTFLAGS='-F warnings' cargo
 
 debug:
 	$(CARGO) build --all
