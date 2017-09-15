@@ -73,10 +73,11 @@ impl Synchronizer {
         let block_gas_limit = 500000000;
         //todo (get account gas limit. key: Address  value: account_gas_limit)
         let mut specific_gas_limit = HashMap::new();
-        specific_gas_limit.insert(Address::new().hex(), 30000);
+        specific_gas_limit.insert(Address::new().hex(), 30000000);
         let mut account_gas_limit = AccountGasLimit::new();
         account_gas_limit.set_common_gas_limit(1000000);
         account_gas_limit.set_specific_gas_limit(specific_gas_limit);
+
 
         drop(self);
         info!("sync_status {:?}, {:?}", current_hash, current_height);

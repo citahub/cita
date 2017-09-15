@@ -21,7 +21,7 @@ use libproto::blockchain::{SignedTransaction, AccountGasLimit};
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
-use util::H256;
+use util::{H256, Address};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Strategy {
@@ -145,9 +145,9 @@ impl Pool {
         let mut tx_list = Vec::new();
         let mut invalid_tx_list = Vec::new();
         let mut n = block_gas_limit;
-        let mut common_gas_limit = account_gas_limit.get_common_gas_limit();
-        let mut specific_gas_used = account_gas_limit.get_specific_gas_limit().clone();
-        let mut account_gas_used: HashMap<String, u64> = HashMap::new();
+        let mut gas_limit = account_gas_limit.get_common_gas_limit();
+        let mut specific_gas_limit = account_gas_limit.get_specific_gas_limit().clone();
+        let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
         {
             let mut iter = self.order_set.iter();
             loop {
@@ -160,7 +160,7 @@ impl Pool {
                 if let Some(tx) = tx {
                     if tx.get_transaction_with_sig().get_transaction().valid_until_block == 0 || tx.get_transaction_with_sig().get_transaction().valid_until_block >= height {
                         let quota = tx.get_transaction_with_sig().get_transaction().quota;
-                        let signer = pubkey_to_address(&PubKey::from(tx.get_signer())).hex();
+                        let signer = pubkey_to_address(&PubKey::from(tx.get_signer()));
                         if n <= quota {
                             if tx_list.is_empty() {
                                 tx_list.push(tx.clone());
@@ -174,17 +174,17 @@ impl Pool {
                             }
                             *value = *value - quota;
                         } else {
-                            if let Some(value) = specific_gas_used.get_mut(&signer) {
-                                common_gas_limit = *value;
+                            if let Some(value) = specific_gas_limit.get_mut(&signer.hex()) {
+                                gas_limit = *value;
                             }
 
                             let mut _remainder = 0;
-                            if quota < common_gas_limit {
-                                _remainder = common_gas_limit - quota;
+                            if quota < gas_limit {
+                                _remainder = gas_limit - quota;
                             } else {
                                 _remainder = 0;
                             }
-                            account_gas_used.insert(signer, _remainder);
+                            account_gas_used.insert(Address::from(signer), _remainder);
                         }
 
                         n = n - quota;
