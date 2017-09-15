@@ -38,9 +38,9 @@ use libchain::extras::*;
 
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
+use libproto::FullTransaction;
 use libproto::blockchain::{ProofType, Status as ProtoStatus};
 use native::Factory as NativeFactory;
-use libproto::FullTransaction;
 use proof::TendermintProof;
 use receipt::{Receipt, LocalizedReceipt};
 use state::State;

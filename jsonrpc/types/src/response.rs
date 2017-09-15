@@ -112,7 +112,7 @@ impl Output {
                     Response_oneof_data::tx_state(tx_state) => {
                         let tx_response = serde_json::from_str(&tx_state).unwrap();
                         success.set_result(RusultBody::TxResponse(tx_response)).to_out()
-                    },
+                    }
                     Response_oneof_data::block_number(bn) => success.set_result(RusultBody::BlockNumber(U256::from(bn))).to_out(),
                     Response_oneof_data::none(_) => success.to_out(),
                     Response_oneof_data::block(rpc_block) => {

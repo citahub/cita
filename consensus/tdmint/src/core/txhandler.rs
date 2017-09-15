@@ -83,7 +83,7 @@ impl TxHandler {
                                 signed_tx.set_tx_hash(tx_hash.to_vec());
                                 signed_tx_op = Some(signed_tx);
                             }
-                            _ => {},
+                            _ => {}
                         }
 
                         let request_id = req.get_request_id().to_vec();

@@ -21,8 +21,8 @@ use libproto::*;
 use libproto::blockchain::*;
 use protobuf::Message;
 use protobuf::RepeatedField;
-use std::sync::mpsc::Sender;
 use serde_json;
+use std::sync::mpsc::Sender;
 use tx_pool;
 use util::H256;
 

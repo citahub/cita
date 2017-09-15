@@ -24,9 +24,9 @@ mod instrument;
 
 pub use error::*;
 pub use instrument::*;
+use libproto::Request;
 
 use libproto::blockchain::{Block, Status};
-use libproto::Request;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use util::H256;

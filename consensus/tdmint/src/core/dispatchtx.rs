@@ -23,11 +23,11 @@ use libproto::{submodules, topics, factory, communication, Response, TxResponse,
 use libproto::blockchain::SignedTransaction;
 use protobuf::Message;
 use pubsub::start_pubsub;
+use serde_json;
 use std::sync::{RwLock, Arc};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
-use serde_json;
 use tx_pool::Pool;
 
 pub struct Dispatchtx {

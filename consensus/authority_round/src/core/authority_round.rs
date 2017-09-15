@@ -24,11 +24,11 @@ use parking_lot::RwLock;
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
 use rustc_serialize::hex::ToHex;
+use serde_json;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
-use serde_json;
 use tx_pool::Pool;
 use util::{Address, H256};
 

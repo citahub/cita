@@ -56,10 +56,7 @@ pub struct TxResponse {
 
 impl TxResponse {
     pub fn new(hash: H256, status: String) -> Self {
-        TxResponse {
-            hash: hash,
-            status: status,
-        }
+        TxResponse { hash: hash, status: status }
     }
 }
 
