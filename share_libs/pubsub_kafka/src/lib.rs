@@ -26,16 +26,14 @@ struct ConsumerContextExample;
 impl Context for ConsumerContextExample {}
 
 impl ConsumerContext for ConsumerContextExample {
-    fn pre_rebalance(&self, rebalance: &Rebalance) {
-        info!("Pre rebalance {:?}", rebalance);
-    }
+    fn pre_rebalance(&self, rebalance: &Rebalance) {trace!("Pre rebalance {:?}", rebalance); }
 
     fn post_rebalance(&self, rebalance: &Rebalance) {
-        info!("Post rebalance {:?}", rebalance);
+        trace!("Post rebalance {:?}", rebalance);
     }
 
     fn commit_callback(&self, _result: KafkaResult<()>, _offsets: *mut rdkafka_sys::RDKafkaTopicPartitionList) {
-        info!("Committing offsets");
+        trace!("Committing offsets");
     }
 }
 
@@ -109,14 +107,14 @@ pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx
             for message in message_stream.wait() {
                 match message {
                     Err(_) => {
-                        warn!("Error while reading from stream.");
+                        trace!("Error while reading from stream.");
                     }
                     Ok(Ok(m)) => {
                         let key = match m.key_view::<[u8]>() {
                             None => &[],
                             Some(Ok(s)) => s,
                             Some(Err(e)) => {
-                                warn!("Error while deserializing message key: {:?}", e);
+                                trace!("Error while deserializing message key: {:?}", e);
                                 &[]
                             }
                         };
@@ -124,7 +122,7 @@ pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx
                             None => "",
                             Some(Ok(s)) => s,
                             Some(Err(e)) => {
-                                warn!("Error while deserializing message payload: {:?}", e);
+                                trace!("Error while deserializing message payload: {:?}", e);
                                 ""
                             }
                         };
@@ -134,7 +132,7 @@ pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx
                         consumer.commit_message(&m, CommitMode::Async).unwrap();
                     }
                     Ok(Err(e)) => {
-                        warn!("Kafka error: {}", e);
+                        trace!("Kafka error: {}", e);
                     }
                 };
             }
