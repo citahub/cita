@@ -42,7 +42,17 @@ use util::*;
 const STACK_SIZE_PER_DEPTH: usize = 24 * 1024;
 
 /// Returns new address created from address and given nonce.
-pub fn contract_address(address: &Address, nonce: &U256) -> Address {
+pub fn contract_address(address: &Address, nonce: &String, block_limit: u64) -> Address {
+    use rlp::RlpStream;
+
+    let mut stream = RlpStream::new_list(3);
+    stream.append(address);
+    stream.append(nonce);
+    stream.append(&block_limit);
+    From::from(stream.out().crypt_hash())
+}
+
+pub fn contract_address_inner(address: &Address, nonce: &U256) -> Address {
     use rlp::RlpStream;
 
     let mut stream = RlpStream::new_list(2);
@@ -132,13 +142,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Execute transaction/call with tracing enabled
-    pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, check_nonce: bool, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
+    pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, _check_nonce: bool, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
     where
         T: Tracer,
         V: VMTracer,
     {
         let sender = t.sender();
-        let nonce = self.state.nonce(&sender)?;
 
         // let schedule = self.engine.schedule(self.info);
         // let base_gas_required = U256::from(t.gas_required(&schedule));
@@ -158,10 +167,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                                       required: base_gas_required,
                                       got: t.gas,
                                   }));
-        }
-        // validate transaction nonce
-        if check_nonce && t.nonce != nonce {
-            return Err(From::from(ExecutionError::InvalidNonce { expected: nonce, got: t.nonce }));
         }
 
         // TODO: we might need bigints here, or at least check overflows.
@@ -192,7 +197,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 (Ok(t.gas), vec![])
             }
             Action::Create => {
-                let new_address = contract_address(&sender, &nonce);
+                let new_address = contract_address(&sender, &t.nonce, t.block_limit);
                 let params = ActionParams {
                     code_address: new_address.clone(),
                     code_hash: t.data.crypt_hash(),
@@ -558,13 +563,14 @@ contract AbiTest {
 }
 "#;
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let nonce = U256::zero();
+        let nonce = "random";
+        let block_limit: u64 = 99;
         let gas_required = U256::from(100_000);
 
         let (deploy_code, runtime_code) = solc("AbiTest", source);
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
         let native_factory = NativeFactory::default();
-        let contract_address = contract_address(&sender, &nonce);
+        let contract_address = contract_address(&sender, &nonce.to_owned(), block_limit);
         let mut params = ActionParams::default();
         params.address = contract_address.clone();
         params.sender = sender.clone();

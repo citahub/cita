@@ -121,7 +121,7 @@ impl From<ProtoCrypto> for CryptoType {
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Transaction {
     /// Nonce.
-    pub nonce: U256,
+    pub nonce: String,
     /// Gas price.
     pub gas_price: U256,
     /// Gas paid up front for transaction execution.
@@ -170,9 +170,8 @@ impl Encodable for Transaction {
 // it's not a good design.
 impl Transaction {
     pub fn new(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
-        // let nonce = plain_transaction.nonce.parse::<u32>().map_err(|_| Error::ParseError)?;
         Ok(Transaction {
-               nonce: U256::from_str(plain_transaction.get_nonce()).map_err(|_| Error::ParseError)?,
+               nonce: plain_transaction.get_nonce().to_owned(),
                gas_price: U256::default(),
                gas: U256::from(plain_transaction.get_quota()),
                action: {
@@ -192,7 +191,7 @@ impl Transaction {
 
     }
 
-    pub fn nonce(&self) -> &U256 {
+    pub fn nonce(&self) -> &String {
         &self.nonce
     }
 
@@ -230,7 +229,7 @@ impl Transaction {
     /// get the protobuf transaction
     pub fn proto_transaction(&self) -> ProtoTransaction {
         let mut pt = ProtoTransaction::new();
-        pt.set_nonce(self.nonce.to_hex());
+        pt.set_nonce(self.nonce.clone());
         pt.set_valid_until_block(self.block_limit);
         pt.set_data(self.data.clone());
         pt.set_quota(self.gas.as_u64());

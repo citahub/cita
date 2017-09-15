@@ -424,7 +424,7 @@ impl Chain {
             let number = self.block_number_by_hash(hash).unwrap_or(0);
 
             let contract_address = match stx.action() {
-                &Action::Create => Some(contract_address(&stx.sender(), stx.nonce())),
+                &Action::Create => Some(contract_address(&stx.sender(), stx.nonce(), stx.block_limit)),
                 &Action::Store => {
                     let store_addr: Address = STORE_ADDRESS.into();
                     Some(store_addr)
@@ -723,7 +723,7 @@ impl Chain {
     fn sign_call(&self, request: CallRequest) -> SignedTransaction {
         let from = request.from.unwrap_or(Address::zero());
         Transaction {
-            nonce: U256::zero(),
+            nonce: "heihei".to_owned(),
             action: Action::Call(request.to),
             gas: U256::from(50_000_000),
             gas_price: U256::zero(),
@@ -1026,6 +1026,95 @@ mod tests {
 
         let log = &receipt.logs[0];
         assert_eq!(contract_address, log.address);
+        if SIGNATURE_NAME == "ed25519" {
+            assert_eq!(contract_address, Address::from("4b37116a159f8065737d3af05007b30e5052124d"));
+        } else if SIGNATURE_NAME == "secp256k1" {
+            assert_eq!(contract_address, Address::from("f97dbb567e7fb799a4e4abdc7a8070b339bfbe38"));
+        };
+        println!("contract_address as slice {:?}", contract_address.to_vec().as_slice());
+        if SIGNATURE_NAME == "ed25519" {
+            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 111, 59, 43, 53, 88, 72, 145, 132, 114, 215, 155, 118, 248, 179, 151, 41, 8, 138, 13, 0]
+            assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
+            assert_eq!(
+                log.data,
+                Bytes::from(vec![
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    75,
+                    55,
+                    17,
+                    106,
+                    21,
+                    159,
+                    128,
+                    101,
+                    115,
+                    125,
+                    58,
+                    240,
+                    80,
+                    7,
+                    179,
+                    14,
+                    80,
+                    82,
+                    18,
+                    77,
+                ])
+            );
+        } else if SIGNATURE_NAME == "secp256k1" {
+            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 137, 62, 213, 99, 187, 233, 131, 224, 68, 65, 121, 46, 122, 232, 102, 212, 19, 74, 223, 215]
+            assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
+            assert_eq!(
+                log.data,
+                Bytes::from(vec![
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    249,
+                    125,
+                    187,
+                    86,
+                    126,
+                    127,
+                    183,
+                    153,
+                    164,
+                    228,
+                    171,
+                    220,
+                    122,
+                    128,
+                    112,
+                    179,
+                    57,
+                    191,
+                    190,
+                    56,
+                ])
+            );
+        };
+
+        // set a=10
         let data = "60fe47b1000000000000000000000000000000000000000000000000000000000000000a".from_hex().unwrap();
         let block = create_block(&chain, contract_address, &data, (1, 2));
         chain.set_block(block.clone());

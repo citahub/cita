@@ -340,10 +340,12 @@ impl Sign for Signature {
 
 #[cfg(test)]
 mod tests {
-    use super::{Signature, Message};
+    use super::{Signature, Message, PrivKey};
     use super::super::KeyPair;
     use bincode::{serialize, deserialize, Infinite};
     use util::crypto::{CreateKey, Sign};
+    use util::{H256, Hashable};
+    use std::str::FromStr;
 
     #[test]
     fn test_sign_verify() {
@@ -387,5 +389,15 @@ mod tests {
         let se_result = serialize(&signature, Infinite).unwrap();
         let de_result: Signature = deserialize(&se_result).unwrap();
         assert_eq!(signature, de_result);
+    }
+
+    #[test]
+    fn test_show_signature() {
+        let sk = PrivKey::from(H256::from_str("80762b900f072d199e35ea9b1ee0e2e631a87762f8855b32d4ec13e37a3a65c1").unwrap());
+        let str = "".to_owned();
+        let message = str.crypt_hash();
+        println!("message {:?}", message);
+        let signature = Signature::sign(&sk, &message.into()).unwrap();
+        println!("signature {:?}", signature);
     }
 }
