@@ -28,11 +28,17 @@ message Status {
     uint64 height = 2;
 }
 
+message AccountGasLimit {
+    uint64 common_gas_limit = 1;
+    map<string,uint64> specific_gas_limit = 2;
+}
+
 message RichStatus {
     bytes hash = 1;
     uint64 height = 2;
     uint64 block_gas_limit = 3;
-    repeated bytes nodes = 4;
+    AccountGasLimit account_gas_limit = 4;
+    repeated bytes nodes = 5;
 }
 
 enum Crypto {

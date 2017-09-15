@@ -68,6 +68,8 @@ impl Synchronizer {
         let current_height = self.chain.get_current_height();
         let max_height = self.chain.get_max_height();
         let nodes: Vec<Address> = self.chain.nodes.read().clone();
+        let block_gas_limit = self.chain.block_gas_limit.read().clone();
+        let account_gas_limit = self.chain.account_gas_limit.read().clone();
 
         drop(self);
         info!("sync_status {:?}, {:?}", current_hash, current_height);
@@ -77,6 +79,8 @@ impl Synchronizer {
         rich_status.set_height(current_height);
         let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
         rich_status.set_nodes(RepeatedField::from_vec(node_list));
+        rich_status.set_block_gas_limit(block_gas_limit);
+        rich_status.set_account_gas_limit(account_gas_limit.into());
 
         let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
         trace!("chain after sync current height {:?}  known height{:?}", current_height, max_height);
