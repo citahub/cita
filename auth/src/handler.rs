@@ -24,14 +24,9 @@ use util::H256;
 use verify::Verifier;
 
 
-fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
+fn verify_sig(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     let mut resp = VerifyTxResp::new();
     resp.set_tx_hash(req.get_tx_hash().to_vec());
-
-    if !verifier.verify_valid_until_block(req.get_valid_until_block()) {
-        resp.set_ret(Ret::OutOfTime);
-        return resp;
-    }
 
     let tx_hash = H256::from_slice(req.get_tx_hash());
     let ret = verifier.check_hash_exist(&tx_hash);
@@ -61,6 +56,32 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     resp
 }
 
+fn verify_tx(req: &VerifyTxReq, verifier: &Verifier, cache: &mut VerifyCache) -> VerifyTxResp {
+    let tx_hash = H256::from_slice(req.get_tx_hash());
+    let mut response = VerifyTxResp::new();
+    response.set_tx_hash(req.get_tx_hash().to_vec());
+    if !verifier.verify_valid_until_block(req.get_valid_until_block()) {
+        response.set_ret(Ret::OutOfTime);
+    } else {
+        let (cached_response, need_cache) = match cache.get(&tx_hash) {
+            Some(resp) => (resp.clone(), false),
+            None => (verify_sig(&req, verifier), true),
+        };
+
+        if cached_response.get_ret() == Ret::Ok {
+            response.set_ret(Ret::Ok);
+            response.set_signer(cached_response.get_signer().to_vec());
+        } else {
+            response.set_ret(cached_response.get_ret());
+        }
+
+        if need_cache {
+            cache.insert(tx_hash, cached_response);
+        }
+    }
+    response
+}
+
 fn get_key(submodule: u32, is_blk: bool) -> String {
     "verify".to_owned() + if is_blk { "_blk_" } else { "_tx_" } + id_to_key(submodule)
 }
@@ -81,16 +102,10 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
         }
         MsgClass::VERIFYTXREQ(req) => {
             trace!("get verify request {:?}", req);
-            let tx_hash = H256::from_slice(req.get_tx_hash());
-            if let Some(resp) = cache.get(&tx_hash) {
-                let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_TX_RESP, communication::MsgType::VERIFY_TX_RESP, resp.write_to_bytes().unwrap());
-                tx_pub.send((get_key(submodule, false), msg.write_to_bytes().unwrap())).unwrap();
-                return;
-            }
-            let resp = verfiy_tx(&req, verifier);
-            let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_TX_RESP, communication::MsgType::VERIFY_TX_RESP, resp.write_to_bytes().unwrap());
+            let response = verify_tx(&req, verifier, cache);
+            trace!("tx {:?} verify result: {:?}", H256::from_slice(req.get_tx_hash()), response);
+            let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_TX_RESP, communication::MsgType::VERIFY_TX_RESP, response.write_to_bytes().unwrap());
             tx_pub.send((get_key(submodule, false), msg.write_to_bytes().unwrap())).unwrap();
-            cache.insert(tx_hash, resp);
         }
         MsgClass::VERIFYBLKREQ(blkreq) => {
             let id = blkreq.get_id();
@@ -98,23 +113,12 @@ pub fn handle_msg(payload: Vec<u8>, tx_pub: &Sender<(String, Vec<u8>)>, verifier
             blkresp.set_id(id);
             blkresp.set_ret(Ret::Ok);
             for req in blkreq.get_reqs() {
-                let tx_hash = H256::from_slice(req.get_tx_hash());
-                if let Some(resp) = cache.get(&tx_hash) {
-                    if resp.get_ret() == Ret::Ok {
-                        continue;
-                    }
+                let response = verify_tx(&req, verifier, cache);
+                if response.get_ret() != Ret::Ok {
+                    trace!("tx {:?} verify result: {:?}", H256::from_slice(req.get_tx_hash()), response);
                     blkresp.set_ret(Ret::Err);
                     break;
                 }
-                let resp = verfiy_tx(req, verifier);
-                let ret = resp.get_ret();
-                cache.insert(tx_hash, resp.clone());
-                if ret == Ret::Ok {
-                    continue;
-                }
-                trace!("tx {:?} verify result: {:?}", tx_hash, resp);
-                blkresp.set_ret(Ret::Err);
-                break;
             }
             let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
             trace!("receive verify blk req, id: {}, ret: {:?}, from: {}", id, blkresp.get_ret(), submodule);
