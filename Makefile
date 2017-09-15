@@ -1,7 +1,7 @@
 # 1) native development
 # 1.1) prerequirement
 #sudo apt-get install --force-yes libsnappy1v5 libsnappy-dev  capnproto  libgoogle-perftools-dev  \
-#    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq libsodium*
+#    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq libsodium*  libzmq3-dev
 # 1.2) make setup
 # 1.3) make clean
 # 1.4) make debug or make release
@@ -32,7 +32,7 @@ setup1:
 	apt-get build-dep build-essential
 	apt-get install --allow-change-held-packages \
 	 	pkg-config libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  \
-		rabbitmq-server  google-perftools jq libsodium*
+		rabbitmq-server  google-perftools jq libsodium* libzmq3-dev
 	wget https://github.com/ethereum/solidity/releases/download/v0.4.15/solc-static-linux
 	mv solc-static-linux /usr/local/bin/solc
 	chmod +x /usr/local/bin/solc
