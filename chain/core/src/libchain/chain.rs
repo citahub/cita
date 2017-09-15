@@ -298,14 +298,14 @@ impl Chain {
 
         // Build chain config
         let chain = Arc::new(raw_chain);
-        chain.build_last_hashes(Some(header.hash().clone()), header.number());
+        chain.build_last_hashes(Some(header.hash()), header.number());
         chain.reload_config();
         let nodes: Vec<Address> = chain.nodes.read().clone();
 
         // Generate status
         let mut status = RichStatus::new();
-        status.set_hash(header.clone().hash());
-        status.set_number(header.clone().number());
+        status.set_hash(header.hash());
+        status.set_number(header.number());
         status.set_nodes(nodes);
         //设置获取的block limit
         let block_gas_limit = 30000;
@@ -481,7 +481,7 @@ impl Chain {
         receipts.retain(|ref r| r.is_some());
 
         let prior_gas_used = match receipts.last() {
-            Some(&Some(ref r)) => r.gas_used.clone(),
+            Some(&Some(ref r)) => r.gas_used,
             _ => 0.into(),
         };
 
@@ -536,7 +536,7 @@ impl Chain {
     }
 
     pub fn get_current_hash(&self) -> H256 {
-        self.current_header.read().hash().clone()
+        self.current_header.read().hash()
     }
 
     pub fn get_max_height(&self) -> u64 {
