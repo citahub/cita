@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::LogBloom;
+use contracts::quota_manager::AccountGasLimit;
 use env_info::EnvInfo;
 use env_info::LastHashes;
 use error::{Error, ExecutionError};
@@ -23,7 +24,6 @@ use factory::Factories;
 use header::*;
 use libchain::chain::TransactionHash;
 use libchain::extras::TransactionAddress;
-
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use protobuf::RepeatedField;
@@ -37,7 +37,6 @@ use std::sync::Arc;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
 use util::{U256, H256, Address, merklehash, HeapSizeOf};
-
 /// Trait for a object that has a state database.
 pub trait Drain {
     /// Drop this object and return the underlieing database.
@@ -263,6 +262,8 @@ pub struct OpenBlock {
     exec_block: ExecutedBlock,
     last_hashes: Arc<LastHashes>,
     tx_hashes: Vec<bool>,
+    account_gas_limit: U256,
+    account_gas: HashMap<Address, U256>,
 }
 
 impl Deref for OpenBlock {
@@ -281,7 +282,7 @@ impl DerefMut for OpenBlock {
 
 /// TODO: Move senders, creators to env info?
 impl OpenBlock {
-    pub fn new(factories: Factories, senders: HashMap<Address, bool>, creators: HashMap<Address, bool>, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>) -> Result<Self, Error> {
+    pub fn new(factories: Factories, senders: HashMap<Address, bool>, creators: HashMap<Address, bool>, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>, account_gas_limit: &AccountGasLimit) -> Result<Self, Error> {
         let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
         state.senders = senders;
         state.creators = creators;
@@ -289,8 +290,12 @@ impl OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes: last_hashes,
             tx_hashes: Vec::new(),
+            account_gas_limit: account_gas_limit.common_gas_limit.into(),
+            account_gas: account_gas_limit.specific_gas_limit.iter().fold(HashMap::new(), |mut acc, (key, value)| {
+                acc.insert(*key, (*value).into());
+                acc
+            }),
         };
-
         Ok(r)
     }
 
@@ -304,6 +309,7 @@ impl OpenBlock {
             last_hashes: self.last_hashes.clone(),
             gas_used: self.current_gas_used,
             gas_limit: *self.gas_limit(),
+            account_gas_limit: 0.into(),
         }
     }
 
@@ -318,7 +324,19 @@ impl OpenBlock {
     }
 
     pub fn apply_transaction(&mut self, t: &SignedTransaction) {
-        let env_info = self.env_info();
+        let mut env_info = self.env_info();
+        if !self.account_gas.contains_key(&t.sender()) {
+            self.account_gas.insert(*t.sender(), self.account_gas_limit);
+            env_info.account_gas_limit = self.account_gas_limit;
+        }
+        env_info.account_gas_limit = *self.account_gas.get(t.sender()).expect("account should exist in account_gas_limit");
+
+        // if let Some(ref account_gas_limit) = self.account_gas.get(&t.sender()) {
+        //     env_info.account_gas_limit = **account_gas_limit;
+        // } else {
+        //     self.account_gas.insert(*t.sender(), self.account_gas_limit);
+        //     env_info.account_gas_limit = self.account_gas_limit;
+        // }
         let has_traces = self.traces.is_some();
         info!("env_info says gas_used={}", env_info.gas_used);
         match self.state.apply(&env_info, &t, has_traces) {
@@ -327,6 +345,9 @@ impl OpenBlock {
                 trace!("apply signed transaction {} success", t.hash());
                 self.traces.as_mut().map(|tr| tr.push(trace));
                 self.current_gas_used = outcome.receipt.gas_used;
+                if let Some(mut value) = self.account_gas.get_mut(t.sender()) {
+                    *value = *value - outcome.receipt.gas_used;
+                }
                 self.receipts.push(Some(outcome.receipt));
                 self.tx_hashes.push(false);
             }

@@ -224,7 +224,6 @@ pub struct Chain {
     pub nodes: RwLock<Vec<Address>>,
     pub block_gas_limit: AtomicUsize,
     pub account_gas_limit: RwLock<AccountGasLimit>,
-
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 }
@@ -836,6 +835,7 @@ impl Chain {
             last_hashes: last_hashes,
             gas_used: *header.gas_used(),
             gas_limit: *header.gas_limit(),
+            account_gas_limit: 1000000.into(), //TODO: account_gas_limit
         };
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
@@ -869,7 +869,7 @@ impl Chain {
         let last_hashes = self.last_hashes();
         let senders = self.senders.read().clone();
         let creators = self.creators.read().clone();
-        let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
+        let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into(), &self.account_gas_limit.read().clone()).unwrap();
         open_block.apply_transactions();
 
         open_block

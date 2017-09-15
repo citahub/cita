@@ -42,6 +42,7 @@ pub struct EnvInfo {
     pub last_hashes: Arc<LastHashes>,
     /// The gas used.
     pub gas_used: U256,
+    pub account_gas_limit: U256,
 }
 
 impl Default for EnvInfo {
@@ -54,6 +55,7 @@ impl Default for EnvInfo {
             gas_limit: U256::from(u64::max_value()),
             last_hashes: Arc::new(vec![]),
             gas_used: 0.into(),
+            account_gas_limit: 0.into(),
         }
     }
 }
