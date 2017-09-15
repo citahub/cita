@@ -208,8 +208,10 @@ pub struct Chain {
     transaction_addresses: RwLock<HashMap<TransactionId, DBList<TransactionAddress>>>,
     blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
     block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
+    // System contract config cache
     senders: RwLock<HashMap<Address, bool>>,
     creators: RwLock<HashMap<Address, bool>>,
+    pub nodes: RwLock<Vec<Address>>,
 
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
@@ -291,15 +293,19 @@ impl Chain {
             polls_filter: Arc::new(Mutex::new(PollManager::new())),
             senders: RwLock::new(HashMap::new()),
             creators: RwLock::new(HashMap::new()),
+            nodes: RwLock::new(Vec::new()),
         };
 
-        let mut status = RichStatus::new();
-        status.set_hash(header.clone().hash());
-        status.set_number(header.clone().number());
-
+        // Build chain config
         let chain = Arc::new(raw_chain);
-        chain.build_last_hashes(Some(status.hash().clone()), status.number());
-        let nodes: Vec<Address> = NodeManager::read(&chain);
+        chain.build_last_hashes(Some(header.hash()), header.number());
+        chain.reload_config();
+        let nodes: Vec<Address> = chain.nodes.read().clone();
+
+        // Generate status
+        let mut status = RichStatus::new();
+        status.set_hash(header.hash());
+        status.set_number(header.number());
         status.set_nodes(nodes);
         //设置获取的block limit
         let block_gas_limit = 30000;
@@ -475,7 +481,7 @@ impl Chain {
         receipts.retain(|ref r| r.is_some());
 
         let prior_gas_used = match receipts.last() {
-            Some(&Some(ref r)) => r.gas_used.clone(),
+            Some(&Some(ref r)) => r.gas_used,
             _ => 0.into(),
         };
 
@@ -530,7 +536,7 @@ impl Chain {
     }
 
     pub fn get_current_hash(&self) -> H256 {
-        self.current_header.read().hash().clone()
+        self.current_header.read().hash()
     }
 
     pub fn get_max_height(&self) -> u64 {
@@ -751,6 +757,7 @@ impl Chain {
     }
 
     /// Attempt to get a copy of a specific block's final state.
+    // TODO: Add senders and creators?
     pub fn state_at(&self, id: BlockId) -> Option<State<StateDB>> {
         self.block_header(id).map_or(None, |h| self.gen_state(*h.state_root()))
     }
@@ -842,7 +849,9 @@ impl Chain {
     fn execute_block(&self, block: Block) -> OpenBlock {
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let mut open_block = OpenBlock::new(self.factories.clone(), false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
+        let senders = self.senders.read().clone();
+        let creators = self.creators.read().clone();
+        let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
         open_block.apply_transactions();
 
         open_block
@@ -876,6 +885,19 @@ impl Chain {
         }
     }
 
+    /// Reload system config from system contract
+    pub fn reload_config(&self) {
+        // Reload senders and creators cache
+        let mut senders = self.senders.write();
+        let mut creators = self.creators.write();
+        *senders = AccountManager::load_senders(self);
+        *creators = AccountManager::load_creators(self);
+
+        // Reload consensus nodes cache
+        let mut nodes = self.nodes.write();
+        *nodes = NodeManager::read(self);
+    }
+
     pub fn set_block(&self, block: Block) -> Option<ProtoRichStatus> {
         let height = block.number();
         trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
@@ -893,18 +915,12 @@ impl Chain {
                 let status = self.save_status(&mut batch);
                 self.db.write(batch).expect("DB write failed.");
 
-                // Reload consensus nodes
-                let nodes: Vec<Address> = NodeManager::read(&self);
+                // reload_config
+                self.reload_config();
                 let mut rich_status = RichStatus::new();
                 rich_status.set_hash(*status.hash());
                 rich_status.set_number(status.number());
-                rich_status.set_nodes(nodes);
-
-                // Reload senders and creators cache
-                let mut senders = self.senders.write();
-                let mut creators = self.creators.write();
-                *senders = AccountManager::load_senders(self);
-                *creators = AccountManager::load_creators(self);
+                rich_status.set_nodes(self.nodes.read().clone());
 
                 info!("chain update {:?}", height);
                 Some(rich_status.protobuf())
