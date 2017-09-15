@@ -18,9 +18,8 @@
 use core::libchain::block::Block;
 use core::libchain::chain::Chain;
 use libproto::*;
-use libproto::blockchain::{Status, RichStatus, AccountGasLimit};
+use libproto::blockchain::{Status, RichStatus};
 use protobuf::{Message, RepeatedField};
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
@@ -69,15 +68,8 @@ impl Synchronizer {
         let current_height = self.chain.get_current_height();
         let max_height = self.chain.get_max_height();
         let nodes: Vec<Address> = self.chain.nodes.read().clone();
-        //todo get block gas limit
-        let block_gas_limit = 500000000;
-        //todo (get account gas limit. key: Address  value: account_gas_limit)
-        let mut specific_gas_limit = HashMap::new();
-        specific_gas_limit.insert(Address::new().hex(), 30000000);
-        let mut account_gas_limit = AccountGasLimit::new();
-        account_gas_limit.set_common_gas_limit(1000000);
-        account_gas_limit.set_specific_gas_limit(specific_gas_limit);
-
+        let block_gas_limit = self.chain.block_gas_limit.read().clone();
+        let account_gas_limit = self.chain.account_gas_limit.read().clone();
 
         drop(self);
         info!("sync_status {:?}, {:?}", current_hash, current_height);
@@ -88,7 +80,7 @@ impl Synchronizer {
         let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
         rich_status.set_nodes(RepeatedField::from_vec(node_list));
         rich_status.set_block_gas_limit(block_gas_limit);
-        rich_status.set_account_gas_limit(account_gas_limit);
+        rich_status.set_account_gas_limit(account_gas_limit.into());
 
         let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
         trace!("chain after sync current height {:?}  known height{:?}", current_height, max_height);
