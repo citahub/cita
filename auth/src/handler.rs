@@ -22,7 +22,6 @@ use std::vec::*;
 use util::{H256, RwLock};
 use verify::Verifier;
 use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus, BlockVerifyId};
-use protobuf::core::parse_from_bytes;
 
 
 #[derive(Debug, PartialEq)]
@@ -35,7 +34,6 @@ pub enum VerifyType {
 fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     let mut resp = VerifyTxResp::new();
     resp.set_tx_hash(req.get_tx_hash().to_vec());
-    trace!("verfiy_tx:begin to verify tx with VerifyTxReq: {:?}", req);
 
     if !verifier.verify_valid_until_block(req.get_valid_until_block()) {
         resp.set_ret(Ret::OutOfTime);
@@ -67,7 +65,6 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     }
     resp.set_signer(ret.unwrap().to_vec());
     resp.set_ret(Ret::Ok);
-    trace!("verfiy_tx's result:{:?}", resp);
     trace!("verfiy_tx's result:tx_hash={:?}, ret={:?}, signer={:?}", resp.get_tx_hash(), resp.get_ret(), resp.get_signer());
     resp
 }
@@ -81,10 +78,6 @@ pub fn handle_remote_msg(payload: Vec<u8>,
                          tx_req: Sender<(VerifyType, u64, VerifyTxReq, u32)>,
                          tx_pub: Sender<(String, Vec<u8>)>,
                          block_cache: Arc<RwLock<VerifyBlockCache>>) {
-    ////debug code
-    let mut_msg = parse_from_bytes::<communication::Message>(payload.as_slice().as_ref()).unwrap();
-    trace!("The msg type is:{:?}", mut_msg.get_field_type());
-    ////
     let (cmdid, _origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
     //let tx_req_block = tx_req.clone();
@@ -114,7 +107,7 @@ pub fn handle_remote_msg(payload: Vec<u8>,
                     verify_success_cnt_capture: 0,
                 };
                 let id = blkreq.get_id();
-                trace!("id: {}, and block_verify_status: {:?}", id, block_verify_status);
+                trace!("block verify request id: {}, and the init block_verify_status: {:?}", id, block_verify_status);
                 let request_id = BlockVerifyId {
                     request_id: id,
                     sub_module: submodule,
@@ -135,11 +128,9 @@ pub fn handle_remote_msg(payload: Vec<u8>,
 pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32)>,
                                  tx_pub: &Sender<(String, Vec<u8>)>,
                                  block_cache: Arc<RwLock<VerifyBlockCache>>) {
-    trace!("enter handle_verificaton_result");
     let (verify_type, id, resp, sub_module) = result_receiver.recv().unwrap();
     match verify_type {
         VerifyType::SingleVerify => {
-            trace!("Finish single tx's verification with the response: {:?}", resp);
             let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_TX_RESP, communication::MsgType::VERIFY_TX_RESP, resp.write_to_bytes().unwrap());
             tx_pub.send((get_key(sub_module, false), msg.write_to_bytes().unwrap())).unwrap();
         }
@@ -185,7 +176,6 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
 }
 
 pub fn verify_tx_service(req: VerifyTxReq, verifier :Arc<RwLock<Verifier>>, cache :Arc<RwLock<VerifyCache>>) -> VerifyTxResp {
-    trace!("Enter verify_tx_service");
     let tx_hash = H256::from_slice(req.get_tx_hash());
     //First,check the tx from the hash
     //if let Some(resp) = cache.read().get(&tx_hash) {
@@ -193,10 +183,8 @@ pub fn verify_tx_service(req: VerifyTxReq, verifier :Arc<RwLock<Verifier>>, cach
         trace!("Tx already exists with hash: {:?}", tx_hash);
         resp
     } else {
-        trace!("Begin to do verfiy_tx for tx with hash: {:?}", tx_hash);
         let resp = verfiy_tx(&req, &verifier.read());
         cache.write().insert(H256::from_slice(resp.get_tx_hash()), resp.clone());
-        trace!("Finish insert resp to cache for tx with hash: {:?}", tx_hash);
         resp
     }
 }
