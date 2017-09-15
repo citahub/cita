@@ -41,7 +41,8 @@ contract QutotaInterface {
     function getData(bytes32) constant returns (bytes32) { }
     function getSpecialUsers() constant returns (string) { }
     function getUsersQuota() constant returns (string) { }
-
+    function getblockGasLimit() constant returns (bytes32) { }
+    function getAccountGasLimit() constant returns (bytes32) { }
 
     event SetGlobalEvent(bytes32 indexed key, bytes32 indexed value, address indexed _sender);
     event SetIsGlobalEvent(bytes32 indexed key, bool indexed value, address indexed _sender);
@@ -143,6 +144,14 @@ contract Quota is QutotaInterface {
 
     function getUsersQuota() constant returns (string) {
         return concatBytes(users_quota);
+    }
+
+    function getblockGasLimit() constant returns (bytes32) {
+        return global["blockGasLimit"];
+    }
+
+    function getAccountGasLimit() constant returns (bytes32) {
+        return global["accountGasLimit"];
     }
 
     // cancat address
