@@ -20,7 +20,7 @@ use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use call_analytics::CallAnalytics;
-use contracts::{NodeManager, AccountManager};
+use contracts::{NodeManager, AccountManager, QuotaManager, AccountGasLimit};
 use db;
 use db::*;
 
@@ -39,7 +39,7 @@ use libchain::extras::*;
 
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
-use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus, AccountGasLimit as ProtoAccountGasLimit};
+use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus};
 use libproto::request::FullTransaction;
 use proof::TendermintProof;
 use protobuf::RepeatedField;
@@ -115,47 +115,6 @@ impl Status {
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
         ps
-    }
-}
-
-#[derive(PartialEq, Clone, Default, Debug)]
-pub struct AccountGasLimit {
-    pub common_gas_limit: u64,
-    pub specific_gas_limit: HashMap<Address, u64>,
-}
-
-impl AccountGasLimit {
-    pub fn new() -> Self {
-        AccountGasLimit {
-            common_gas_limit: 4294967296,
-            specific_gas_limit: HashMap::new(),
-        }
-    }
-
-    pub fn set_common_gas_limit(&mut self, v: u64) {
-        self.common_gas_limit = v;
-    }
-
-    pub fn get_common_gas_limit(&self) -> u64 {
-        self.common_gas_limit
-    }
-
-    pub fn set_specific_gas_limit(&mut self, v: HashMap<Address, u64>) {
-        self.specific_gas_limit = v;
-    }
-
-    pub fn get_specific_gas_limit(&self) -> &HashMap<Address, u64> {
-        &self.specific_gas_limit
-    }
-}
-
-impl Into<ProtoAccountGasLimit> for AccountGasLimit {
-    fn into(self) -> ProtoAccountGasLimit {
-        let mut r = ProtoAccountGasLimit::new();
-        r.common_gas_limit = self.common_gas_limit;
-        let specific_gas_limit: HashMap<String, u64> = self.get_specific_gas_limit().iter().map(|(k, v)| (k.hex(), *v)).collect();
-        r.set_specific_gas_limit(specific_gas_limit);
-        r
     }
 }
 
@@ -263,7 +222,7 @@ pub struct Chain {
     senders: RwLock<HashMap<Address, bool>>,
     creators: RwLock<HashMap<Address, bool>>,
     pub nodes: RwLock<Vec<Address>>,
-    pub block_gas_limit: RwLock<u64>,
+    pub block_gas_limit: AtomicUsize,
     pub account_gas_limit: RwLock<AccountGasLimit>,
 
     cache_man: Mutex<CacheManager<CacheId>>,
@@ -347,7 +306,7 @@ impl Chain {
             senders: RwLock::new(HashMap::new()),
             creators: RwLock::new(HashMap::new()),
             nodes: RwLock::new(Vec::new()),
-            block_gas_limit: RwLock::new(18446744073709551615),
+            block_gas_limit: AtomicUsize::new(18446744073709551615),
             account_gas_limit: RwLock::new(AccountGasLimit::new()),
         };
 
@@ -355,22 +314,18 @@ impl Chain {
         let chain = Arc::new(raw_chain);
         chain.build_last_hashes(Some(header.hash()), header.number());
         chain.reload_config();
-        let nodes: Vec<Address> = chain.nodes.read().clone();
 
         // Generate status
         let mut status = RichStatus::new();
         status.set_hash(header.hash());
         status.set_number(header.number());
+        let nodes: Vec<Address> = chain.nodes.read().to_vec();
         status.set_nodes(nodes);
-        //设置获取的block limit
-        let block_gas_limit = 5000000000;
+        // Set BlockGasLimit
+        let block_gas_limit: u64 = chain.block_gas_limit.load(Ordering::SeqCst) as u64;
         status.set_block_gas_limit(block_gas_limit);
-
-        //todo
-        let mut account_gas_limit = AccountGasLimit::new();
-        account_gas_limit.set_common_gas_limit(30000);
-        account_gas_limit.set_specific_gas_limit(HashMap::new());
-
+        // Set AccountGasLimit
+        let account_gas_limit = chain.account_gas_limit.read().clone();
         status.set_account_gas_limit(account_gas_limit);
 
         (chain, status.protobuf())
@@ -961,13 +916,15 @@ impl Chain {
         *nodes = NodeManager::read(self);
 
         // Reload BlockGasLimit cache
-        let mut block_gas_limit = self.block_gas_limit.write();
-        *block_gas_limit = 50000000000000;
+        let block_gas_limit = QuotaManager::block_gas_limit(self);
+        self.block_gas_limit.swap(block_gas_limit as usize, Ordering::SeqCst);
 
         // Reload AccountGasLimit cache
+        let common_gas_limit = QuotaManager::account_gas_limit(self);
         let mut account_gas_limit = self.account_gas_limit.write();
-        account_gas_limit.set_common_gas_limit(3000000);
-        account_gas_limit.set_specific_gas_limit(HashMap::new());
+        account_gas_limit.set_common_gas_limit(common_gas_limit);
+        let specific = QuotaManager::specific(self);
+        account_gas_limit.set_specific_gas_limit(specific);
     }
 
     pub fn set_block(&self, block: Block) -> Option<ProtoRichStatus> {
@@ -989,11 +946,12 @@ impl Chain {
 
                 // reload_config
                 self.reload_config();
+
                 let mut rich_status = RichStatus::new();
                 rich_status.set_hash(*status.hash());
                 rich_status.set_number(status.number());
                 rich_status.set_nodes(self.nodes.read().clone());
-                rich_status.set_block_gas_limit(self.block_gas_limit.read().clone());
+                rich_status.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
                 rich_status.set_account_gas_limit(self.account_gas_limit.read().clone().into());
 
                 info!("chain update {:?}", height);
