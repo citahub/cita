@@ -23,20 +23,25 @@ use rlp::*;
 use util::{H256, U256, Address};
 use util::HeapSizeOf;
 
+// TODO: Add evm errors?
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
-    OutOfGas,
     NoTransactionPermission,
     NoContractPermission,
+    NotEnoughBaseGas,
+    BlockGasLimitReached,
+    AccountGasLimitReached,
 }
 
 impl ReceiptError {
     /// Returns human-readable description
     pub fn description(&self) -> String {
         let desc = match *self {
-            ReceiptError::OutOfGas => "Out of gas.",
             ReceiptError::NoTransactionPermission => "No transaction permission.",
             ReceiptError::NoContractPermission => "No contract permission.",
+            ReceiptError::NotEnoughBaseGas => "Not enough base gas.",
+            ReceiptError::BlockGasLimitReached => "Block gas limit reached.",
+            ReceiptError::AccountGasLimitReached => "Account gas limit reached.",
         };
         desc.to_string()
     }
@@ -45,9 +50,11 @@ impl ReceiptError {
 impl Decodable for ReceiptError {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         match rlp.as_val::<u8>()? {
-            0 => Ok(ReceiptError::OutOfGas),
-            1 => Ok(ReceiptError::NoTransactionPermission),
-            2 => Ok(ReceiptError::NoContractPermission),
+            0 => Ok(ReceiptError::NoTransactionPermission),
+            1 => Ok(ReceiptError::NoContractPermission),
+            2 => Ok(ReceiptError::NotEnoughBaseGas),
+            3 => Ok(ReceiptError::BlockGasLimitReached),
+            4 => Ok(ReceiptError::AccountGasLimitReached),
             _ => Err(DecoderError::Custom("Unknown Receipt error.")),
         }
     }

@@ -122,9 +122,34 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let sender = t.sender();
         let nonce = self.state.nonce(&sender)?;
 
-        // let schedule = self.engine.schedule(self.info);
-        // let base_gas_required = U256::from(t.gas_required(&schedule));
+        // validate transaction nonce
+        if check_nonce && t.nonce != nonce {
+            return Err(From::from(ExecutionError::InvalidNonce { expected: nonce, got: t.nonce }));
+        }
+
+        // NOTE: there can be no invalid transactions from this point.
+        self.state.inc_nonce(&sender)?;
+
+        // check contract create/call permission
+        trace!("executive creators: {:?}, senders: {:?}", self.state.creators, self.state.senders);
+
+        match t.action {
+            Action::Create => if *sender != Address::zero() && !self.state.creators.contains_key(&sender) {
+                return Err(From::from(ExecutionError::NoContractPermission));
+            },
+            _ => if *sender != Address::zero() && !self.state.senders.contains_key(sender) && !self.state.creators.contains_key(&sender) {
+                return Err(From::from(ExecutionError::NoTransactionPermission));
+            },
+        }
+
         let base_gas_required = U256::from(100); // `CREATE` transaction cost
+
+        if t.action != Action::Store && t.gas < base_gas_required {
+            return Err(From::from(ExecutionError::NotEnoughBaseGas {
+                                      required: base_gas_required,
+                                      got: t.gas,
+                                  }));
+        }
 
         // validate if transaction fits into given block
         if self.info.gas_used + t.gas > self.info.gas_limit {
@@ -141,50 +166,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                                   }));
         }
 
-        if t.action != Action::Store && t.gas < base_gas_required {
-            return Err(From::from(ExecutionError::NotEnoughBaseGas {
-                                      required: base_gas_required,
-                                      got: t.gas,
-                                  }));
-        }
-        // validate transaction nonce
-        if check_nonce && t.nonce != nonce {
-            return Err(From::from(ExecutionError::InvalidNonce { expected: nonce, got: t.nonce }));
-        }
-
-        // check contract create/call permission
-        trace!("executive creators: {:?}, senders: {:?}", self.state.creators, self.state.senders);
-
-        match t.action {
-            Action::Create => if *sender != Address::zero() && !self.state.creators.contains_key(&sender) {
-                return Err(From::from(ExecutionError::NoContractPermission));
-            },
-            _ => if *sender != Address::zero() && !self.state.senders.contains_key(sender) && !self.state.creators.contains_key(&sender) {
-                return Err(From::from(ExecutionError::NoTransactionPermission));
-            },
-        }
-
-        // TODO: we might need bigints here, or at least check overflows.
-        /*
-        let balance = self.state.balance(&sender)?;
-         */
-        /*
-        let gas_cost = t.gas.full_mul(t.gas_price);
-        let total_cost = U512::from(t.value) + gas_cost;
-
-        // avoid unaffordable transactions
-
-        let balance512 = U512::from(balance);
-        if balance512 < total_cost {
-        return Err(From::from(ExecutionError::NotEnoughCash { required: total_cost, got: balance512 }));
-    }
-         */
-
-        // NOTE: there can be no invalid transactions from this point.
-        self.state.inc_nonce(&sender)?;
-        /*
-        self.state.sub_balance(&sender, &U256::from(gas_cost))?;
-         */
         let mut substate = Substate::new();
 
         let (gas_left, output) = match t.action {

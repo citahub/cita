@@ -92,7 +92,7 @@ impl ContractCallExt for Chain {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = self.eth_call(call_request, BlockId::Latest).unwrap();
+        let output = self.eth_call(call_request, BlockId::Latest).expect(&format!("eth call address: {}", address));
 
         output
     }

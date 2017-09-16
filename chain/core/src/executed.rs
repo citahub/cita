@@ -131,7 +131,12 @@ pub enum ExecutionError {
         /// Amount of gas in block.
         gas: U256,
     },
-    AccountGasLimitReached { gas_limit: U256, gas: U256 },
+    AccountGasLimitReached {
+        /// Account Gas limit left
+        gas_limit: U256,
+        /// Amount of gas in transaction
+        gas: U256,
+    },
     /// Returned when transaction nonce does not match state nonce.
     InvalidNonce {
         /// Nonce expected.
@@ -179,7 +184,6 @@ impl fmt::Display for ExecutionError {
             TransactionMalformed(ref err) => format!("Malformed transaction: {}", err),
             NoTransactionPermission => format!("No transaction permission"),
             NoContractPermission => format!("No contract permission"),
-
         };
 
         f.write_fmt(format_args!("Transaction execution error ({}).", msg))

@@ -117,7 +117,7 @@ def _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver=None):
     tx = Transaction()
     tx.valid_until_block = 4294967296
     tx.nonce = nonce
-    tx.quota = 99999999999
+    tx.quota = 9999999
     if receiver is not None:
         tx.to = receiver
     tx.data = hex2bytes(bytecode)

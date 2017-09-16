@@ -51,7 +51,7 @@ impl NodeManager {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = chain.eth_call(call_request, BlockId::Latest).unwrap();
+        let output = chain.eth_call(call_request, BlockId::Latest).expect("load nodes eth call");
         trace!("nodemanager output: {:?}", output);
         let nodes: Vec<Address> = parse_string_to_addresses(&output);
         trace!("nodemanager nodes: {:?}", nodes);
@@ -61,7 +61,6 @@ impl NodeManager {
 
 #[cfg(test)]
 mod tests {
-    //#![allow(unused_must_use, unused_extern_crates)]
     extern crate env_logger;
     extern crate mktemp;
     use self::Chain;
@@ -131,6 +130,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_node_manager_contract() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
             PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")

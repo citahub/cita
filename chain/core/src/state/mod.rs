@@ -729,6 +729,7 @@ mod tests {
     use util::hashable::HASH_NAME;
 
     #[test]
+    #[ignore]
     fn should_apply_create_transaction() {
         /*
         ~/codes/parity-contract-demo $ cat contracts/AbiTest.sol
