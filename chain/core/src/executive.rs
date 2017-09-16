@@ -134,6 +134,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                                       gas: t.gas,
                                   }));
         }
+        if t.gas > self.info.account_gas_limit {
+            return Err(From::from(ExecutionError::AccountGasLimitReached {
+                                      gas_limit: self.info.account_gas_limit,
+                                      gas: t.gas,
+                                  }));
+        }
 
         if t.action != Action::Store && t.gas < base_gas_required {
             return Err(From::from(ExecutionError::NotEnoughBaseGas {
