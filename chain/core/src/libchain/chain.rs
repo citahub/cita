@@ -1130,6 +1130,7 @@ mod tests {
     }
 
     #[bench]
+    #[ignore]
     fn bench_execute_block(b: &mut Bencher) {
         let chain = init_chain();
         let keypair = KeyPair::gen_keypair();
@@ -1164,6 +1165,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_code_at() {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
@@ -1217,6 +1219,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_contract() {
         //let keypair = KeyPair::gen_keypair();
         //let privkey = keypair.privkey();
