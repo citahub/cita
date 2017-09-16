@@ -67,9 +67,7 @@ pub struct VerifyBlockCache {
 
 impl VerifyBlockCache {
     pub fn new(size: usize) -> Self {
-        VerifyBlockCache {
-            inner: Cache::new(size * 4)
-        }
+        VerifyBlockCache { inner: Cache::new(size * 4) }
     }
 
     pub fn insert(&mut self, block_verify_id: BlockVerifyId, result: BlockVerifyStatus) {

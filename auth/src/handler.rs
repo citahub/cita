@@ -14,14 +14,15 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus, BlockVerifyId};
 use libproto::*;
 use protobuf::Message;
-use std::sync::mpsc::{Sender, Receiver};
 use std::sync::Arc;
+use std::sync::mpsc::{Sender, Receiver};
 use std::vec::*;
 use util::{H256, RwLock};
 use verify::Verifier;
-use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus, BlockVerifyId};
 
 
 #[derive(Debug, PartialEq)]
@@ -73,11 +74,7 @@ fn get_key(submodule: u32, is_blk: bool) -> String {
     "verify".to_owned() + if is_blk { "_blk_" } else { "_tx_" } + id_to_key(submodule)
 }
 
-pub fn handle_remote_msg(payload: Vec<u8>,
-                         verifier: Arc<RwLock<Verifier>>,
-                         tx_req: Sender<(VerifyType, u64, VerifyTxReq, u32)>,
-                         tx_pub: Sender<(String, Vec<u8>)>,
-                         block_cache: Arc<RwLock<VerifyBlockCache>>) {
+pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req: Sender<(VerifyType, u64, VerifyTxReq, u32)>, tx_pub: Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>) {
     let (cmdid, _origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
     //let tx_req_block = tx_req.clone();
@@ -117,17 +114,14 @@ pub fn handle_remote_msg(payload: Vec<u8>,
                     tx_req.send((VerifyType::BlockVerify, id, req.clone(), submodule)).unwrap();
                 }
             } else {
-                error!("Wrong block verification request with 0 tx for block verify request id: {} from sub_module: {}",
-                       blkreq.get_id(), submodule);
+                error!("Wrong block verification request with 0 tx for block verify request id: {} from sub_module: {}", blkreq.get_id(), submodule);
             }
         }
         _ => {}
     }
 }
 
-pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32)>,
-                                 tx_pub: &Sender<(String, Vec<u8>)>,
-                                 block_cache: Arc<RwLock<VerifyBlockCache>>) {
+pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32)>, tx_pub: &Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>) {
     let (verify_type, id, resp, sub_module) = result_receiver.recv().unwrap();
     match verify_type {
         VerifyType::SingleVerify => {
@@ -175,7 +169,7 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
     }
 }
 
-pub fn verify_tx_service(req: VerifyTxReq, verifier :Arc<RwLock<Verifier>>, cache :Arc<RwLock<VerifyCache>>) -> VerifyTxResp {
+pub fn verify_tx_service(req: VerifyTxReq, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<VerifyCache>>) -> VerifyTxResp {
     let tx_hash = H256::from_slice(req.get_tx_hash());
     //First,check the tx from the hash
     //if let Some(resp) = cache.read().get(&tx_hash) {
@@ -189,10 +183,6 @@ pub fn verify_tx_service(req: VerifyTxReq, verifier :Arc<RwLock<Verifier>>, cach
     }
 }
 
-fn get_resp_from_cache(tx_hash :&H256, cache :Arc<RwLock<VerifyCache>>) -> Option<VerifyTxResp> {
-    if let Some(resp) = cache.read().get(tx_hash) {
-        Some(resp.clone())
-    } else {
-        None
-    }
+fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<VerifyCache>>) -> Option<VerifyTxResp> {
+    if let Some(resp) = cache.read().get(tx_hash) { Some(resp.clone()) } else { None }
 }
