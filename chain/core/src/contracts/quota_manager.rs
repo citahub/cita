@@ -48,7 +48,6 @@ lazy_static! {
     static ref USERS_METHOD_HASH: Vec<u8> = encode_contract_name(USERS_METHOD_NAME);
     static ref BLOCK_GAS_LIMIT_HASH: Vec<u8> = encode_contract_name(BLOCK_GAS_LIMIT);
     static ref ACCOUNT_GAS_LIMIT_HASH: Vec<u8> = encode_contract_name(ACCOUNT_GAS_LIMIT);
-   
     static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a3").unwrap();
 }
 
@@ -99,7 +98,7 @@ impl QuotaManager {
     /// Special account gas limit
     pub fn specific(chain: &Chain) -> HashMap<Address, u64> {
         let users = QuotaManager::users(chain);
-        let quota = QuotaManager::read(chain);
+        let quota = QuotaManager::quota(chain);
         let mut specific = HashMap::new();
         for (k, v) in users.iter().zip(quota.iter()) {
             specific.insert(k.clone(), v.clone());
@@ -108,7 +107,7 @@ impl QuotaManager {
     }
 
     /// Quota array
-    pub fn read(chain: &Chain) -> Vec<u64> {
+    pub fn quota(chain: &Chain) -> Vec<u64> {
         let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*QUOTA_ENCODED.as_slice());
         trace!("quota output: {:?}", output);
 
@@ -284,7 +283,7 @@ mod tests {
         let output = chain.call_contract_method(&contract_address, &*QUOTA_ENCODED.as_slice());
         let quota = parse_string_to_quota(&output);
 
-        assert_eq!(quota, vec!["03a921f6"]);
+        assert_eq!(quota, vec![61415926]);
     }
 
     #[test]
