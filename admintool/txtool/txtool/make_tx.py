@@ -103,8 +103,13 @@ def _blake2b_ed25519_deploy_data(bytecode, privatekey, receiver=None):
 
 
 def _sha3_secp256k1_deploy_data(bytecode, privatekey, receiver=None):
-    privkey = PrivateKey(hex2bytes(privatekey))
     sender = get_sender(privatekey, False)
+    if privatekey is None:
+        temp = private_key()
+        privkey = PrivateKey(hex2bytes(temp))
+    else:
+        privkey = PrivateKey(hex2bytes(privatekey))
+
     print(sender)
     nonce = get_nonce(sender)
     print("nonce is {}".format(nonce))
