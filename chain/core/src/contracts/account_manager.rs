@@ -59,7 +59,7 @@ impl AccountManager {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = chain.eth_call(call_request, BlockId::Latest).unwrap();
+        let output = chain.eth_call(call_request, BlockId::Latest).expect("load senders eth call");
         trace!("read account which has tx permission output: {:?}", output);
         let accounts: Vec<Address> = parse_string_to_addresses(&output);
         trace!("accounts: {:?}", accounts);
@@ -80,7 +80,7 @@ impl AccountManager {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = chain.eth_call(call_request, BlockId::Latest).unwrap();
+        let output = chain.eth_call(call_request, BlockId::Latest).expect("load creators eth call");
         trace!("read account which has contract permission output: {:?}", output);
         let accounts: Vec<Address> = parse_string_to_addresses(&output);
         trace!("accounts: {:?}", accounts);

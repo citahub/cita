@@ -51,7 +51,7 @@ impl NodeManager {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = chain.eth_call(call_request, BlockId::Latest).unwrap();
+        let output = chain.eth_call(call_request, BlockId::Latest).expect("load nodes eth call");
         trace!("nodemanager output: {:?}", output);
         let nodes: Vec<Address> = parse_string_to_addresses(&output);
         trace!("nodemanager nodes: {:?}", nodes);

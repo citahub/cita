@@ -331,12 +331,6 @@ impl OpenBlock {
         }
         env_info.account_gas_limit = *self.account_gas.get(t.sender()).expect("account should exist in account_gas_limit");
 
-        // if let Some(ref account_gas_limit) = self.account_gas.get(&t.sender()) {
-        //     env_info.account_gas_limit = **account_gas_limit;
-        // } else {
-        //     self.account_gas.insert(*t.sender(), self.account_gas_limit);
-        //     env_info.account_gas_limit = self.account_gas_limit;
-        // }
         let has_traces = self.traces.is_some();
         info!("env_info says gas_used={}", env_info.gas_used);
         match self.state.apply(&env_info, &t, has_traces) {
@@ -358,22 +352,31 @@ impl OpenBlock {
             Err(Error::Execution(ExecutionError::NoTransactionPermission)) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoTransactionPermission));
                 self.receipts.push(Some(receipt));
-                self.tx_hashes.push(true);
+                self.tx_hashes.push(false);
             }
             Err(Error::Execution(ExecutionError::NoContractPermission)) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoContractPermission));
                 self.receipts.push(Some(receipt));
-                self.tx_hashes.push(true);
+                self.tx_hashes.push(false);
             }
-            Err(Error::Execution(ExecutionError::NotEnoughBaseGas { required: _, got })) => {
-                let receipt = Receipt::new(None, got, Vec::new(), Some(ReceiptError::OutOfGas));
+            Err(Error::Execution(ExecutionError::NotEnoughBaseGas { required: _, got: _ })) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NotEnoughBaseGas));
                 self.receipts.push(Some(receipt));
-                self.tx_hashes.push(true);
+                self.tx_hashes.push(false);
             }
-            Err(Error::Execution(ExecutionError::BlockGasLimitReached { gas_limit: _, gas_used, gas: _ })) => {
-                let receipt = Receipt::new(None, gas_used, Vec::new(), Some(ReceiptError::OutOfGas));
+            Err(Error::Execution(ExecutionError::BlockGasLimitReached {
+                                     gas_limit: _,
+                                     gas_used: _,
+                                     gas: _,
+                                 })) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::BlockGasLimitReached));
                 self.receipts.push(Some(receipt));
-                self.tx_hashes.push(true);
+                self.tx_hashes.push(false);
+            }
+            Err(Error::Execution(ExecutionError::AccountGasLimitReached { gas_limit: _, gas: _ })) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::AccountGasLimitReached));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
             }
             Err(_) => {
                 self.receipts.push(None);
