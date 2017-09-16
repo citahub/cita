@@ -68,7 +68,7 @@ impl Synchronizer {
         let current_height = self.chain.get_current_height();
         let max_height = self.chain.get_max_height();
         let nodes: Vec<Address> = self.chain.nodes.read().clone();
-        let block_gas_limit = self.chain.block_gas_limit.read().clone();
+        let block_gas_limit = self.chain.block_gas_limit.load(Ordering::SeqCst) as u64;
         let account_gas_limit = self.chain.account_gas_limit.read().clone();
 
         drop(self);

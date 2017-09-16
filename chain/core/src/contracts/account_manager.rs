@@ -45,7 +45,7 @@ lazy_static! {
     static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a4").unwrap();
 }
 
-pub struct AccountManager {}
+pub struct AccountManager;
 
 impl AccountManager {
     pub fn load_senders(chain: &Chain) -> HashMap<Address, bool> {

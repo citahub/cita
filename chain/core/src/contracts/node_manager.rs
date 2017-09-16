@@ -40,7 +40,7 @@ lazy_static! {
     static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a2").unwrap();
 }
 
-pub struct NodeManager {}
+pub struct NodeManager;
 
 impl NodeManager {
     pub fn read(chain: &Chain) -> Vec<Address> {
@@ -52,9 +52,9 @@ impl NodeManager {
 
         trace!("data: {:?}", call_request.data);
         let output = chain.eth_call(call_request, BlockId::Latest).unwrap();
-        trace!("output: {:?}", output);
+        trace!("nodemanager output: {:?}", output);
         let nodes: Vec<Address> = parse_string_to_addresses(&output);
-        trace!("nodes: {:?}", nodes);
+        trace!("nodemanager nodes: {:?}", nodes);
         nodes
     }
 }
