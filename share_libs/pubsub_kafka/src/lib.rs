@@ -26,7 +26,9 @@ struct ConsumerContextExample;
 impl Context for ConsumerContextExample {}
 
 impl ConsumerContext for ConsumerContextExample {
-    fn pre_rebalance(&self, rebalance: &Rebalance) {trace!("Pre rebalance {:?}", rebalance); }
+    fn pre_rebalance(&self, rebalance: &Rebalance) {
+        trace!("Pre rebalance {:?}", rebalance);
+    }
 
     fn post_rebalance(&self, rebalance: &Rebalance) {
         trace!("Post rebalance {:?}", rebalance);
@@ -60,12 +62,12 @@ pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx
             // The send operation on the topic returns a future, that will be completed once the
             // result or failure from Kafka will be received.
             let _ = producer.send_copy(&topic, None, Some(&msg), Some(&vec![0, 1, 2, 3]), None)
-                .map(move |delivery_status| {
-                    // This will be executed onw the result is received
-                    //println!("Delivery status for message {} received", 1);
-                    delivery_status
-                })
-                .wait();
+                            .map(move |delivery_status| {
+                                     // This will be executed onw the result is received
+                                     //println!("Delivery status for message {} received", 1);
+                                     delivery_status
+                                 })
+                            .wait();
 
         }
     });

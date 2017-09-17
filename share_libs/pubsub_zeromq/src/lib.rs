@@ -31,19 +31,19 @@ pub fn start_zeromq(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, 
         "chain" => assert!(publisher.bind("tcp://*:5564").is_ok()),
         "jsonrpc" => assert!(publisher.bind("tcp://*:5565").is_ok()),
         "consensus" => assert!(publisher.bind("tcp://*:5566").is_ok()),
-        _ => error!("not hava {} module !",name),
+        _ => error!("not hava {} module !", name),
     }
 
     let _ = thread::Builder::new().name("publisher".to_string()).spawn(move || loop {
-        let ret = rx.recv();
+                                                                           let ret = rx.recv();
 
-        if ret.is_err() {
-            break;
-        }
-        let (topic, msg) = ret.unwrap();
-        publisher.send_multipart(&[&(topic.into_bytes())], zmq::SNDMORE).unwrap();
-        publisher.send(&msg, 0).unwrap();
-    });
+                                                                           if ret.is_err() {
+                                                                               break;
+                                                                           }
+                                                                           let (topic, msg) = ret.unwrap();
+                                                                           publisher.send_multipart(&[&(topic.into_bytes())], zmq::SNDMORE).unwrap();
+                                                                           publisher.send(&msg, 0).unwrap();
+                                                                       });
 
 
     //sub
@@ -88,35 +88,35 @@ pub fn start_zeromq(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, 
 
     let _ = thread::Builder::new().name("subscriber".to_string()).spawn(move || loop {
 
-        match flag {
-            0 => {
-                let topic = network_subscriber.recv_string(0).unwrap().unwrap();
-                let msg = network_subscriber.recv_bytes(0).unwrap();
-                let _ = tx.send((topic, msg));
-            }
+                                                                            match flag {
+                                                                                0 => {
+                                                                                    let topic = network_subscriber.recv_string(0).unwrap().unwrap();
+                                                                                    let msg = network_subscriber.recv_bytes(0).unwrap();
+                                                                                    let _ = tx.send((topic, msg));
+                                                                                }
 
-            1 => {
-                let topic = chain_subscriber.recv_string(0).unwrap().unwrap();
-                let msg = chain_subscriber.recv_bytes(0).unwrap();
-                let _ = tx.send((topic, msg));
-            }
+                                                                                1 => {
+                                                                                    let topic = chain_subscriber.recv_string(0).unwrap().unwrap();
+                                                                                    let msg = chain_subscriber.recv_bytes(0).unwrap();
+                                                                                    let _ = tx.send((topic, msg));
+                                                                                }
 
-            2 => {
-                let topic = jsonrpc_subscriber.recv_string(0).unwrap().unwrap();
-                let msg = jsonrpc_subscriber.recv_bytes(0).unwrap();
-                let _ = tx.send((topic, msg));
-            }
+                                                                                2 => {
+                                                                                    let topic = jsonrpc_subscriber.recv_string(0).unwrap().unwrap();
+                                                                                    let msg = jsonrpc_subscriber.recv_bytes(0).unwrap();
+                                                                                    let _ = tx.send((topic, msg));
+                                                                                }
 
-            3 => {
-                let topic = consensus_subscriber.recv_string(0).unwrap().unwrap();
-                let msg = consensus_subscriber.recv_bytes(0).unwrap();
-                let _ = tx.send((topic, msg));
-            }
+                                                                                3 => {
+                                                                                    let topic = consensus_subscriber.recv_string(0).unwrap().unwrap();
+                                                                                    let msg = consensus_subscriber.recv_bytes(0).unwrap();
+                                                                                    let _ = tx.send((topic, msg));
+                                                                                }
 
-            _ => {
-                break;
-            }
-        }
+                                                                                _ => {
+                                                                                    break;
+                                                                                }
+                                                                            }
 
-    });
+                                                                        });
 }

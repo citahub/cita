@@ -23,26 +23,23 @@ release:
 	cp -f .env admintool/release
 	find target/release -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp -f {} admintool/release/bin \;
 
-
 setup1:
 	apt-get update -q
 	apt-get install --allow-change-held-packages software-properties-common
-	if [ $$(lsb_release -s -c) = "trusty" ]; then add-apt-repository ppa:chris-lea/libsodium -y ; fi;
+	if [ $$(lsb_release -s -c) = "trusty" ]; then add-apt-repository -y ppa:chris-lea/libsodium; fi;
+	add-apt-repository -y ppa:ethereum/ethereum
 	apt-get update -q
 	apt-get build-dep build-essential
-	apt-get install --allow-change-held-packages \
+	apt-get install -y \
 	 	pkg-config libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  \
-		rabbitmq-server  google-perftools jq libsodium* libzmq3-dev
-	wget https://github.com/ethereum/solidity/releases/download/v0.4.15/solc-static-linux
-	mv solc-static-linux /usr/local/bin/solc
-	chmod +x /usr/local/bin/solc
+		rabbitmq-server  google-perftools jq libsodium* libzmq3-dev solc
 	/etc/init.d/rabbitmq-server restart
 	-rabbitmqctl add_vhost dev
 	-rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"
 
 setup2:
-	curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04
-	- . ~/.cargo/env;cargo install --force --vers 0.9.0 rustfmt;
+	which cargo; if [ $$? -ne 0 ]; then curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04; fi;
+	which rustfmt; if [ $$? -ne 0 ]; then cargo install --force --vers 0.9.0 rustfmt; fi;
 	pip install -r admintool/requirements.txt --user
 
 test:
@@ -95,7 +92,7 @@ bench:
 	@grep -q 'error\[' target/bench.log; if [ $$? -eq 0 ] ; then exit 1; fi;
 
 fmt:
-	cargo fmt --all
+	cargo fmt --all -- --write-mode diff
 
 cov:
 	cargo cov test --all --no-fail-fast
