@@ -43,7 +43,6 @@ sha3 = { path = "../../share_libs/sha3" }
 protobuf = { version = "^1.0.0"}
 threadpool = "1.3.2"
 pubsub = { path = "../../share_libs/pubsub" }
-vm = { path = "../../share_libs/vm" }
 dotenv = "0.10.0"
 proof = { path = "../../consensus/proof" }
 common-types = { path = "../types" }
