@@ -234,9 +234,9 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
             trace!("received proof block: block_number:{:?} current_height: {:?} max_height: {:?}", blk_height, current_height, max_height);
 
             if blk_height > current_height && blk_height < current_height + 300 {
-                if !guard.contains_key(&blk_height) || (guard.contains_key(&blk_height) && (guard[&blk_height].0 == false || guard[&blk_height].2 == false)) {
+                if !guard.contains_key(&blk_height) || (guard.contains_key(&blk_height) && guard[&blk_height].2 == false) {
                     trace!("block insert {:?}", blk_height);
-                    guard.insert(blk_height, (true, Block::from(block.clone()), true, Some(proof.clone())));
+                    guard.insert(blk_height, (Some(proof.clone()), Block::from(block.clone()), true));
                     let _ = chain.sync_sender.lock().send(blk_height);
                 }
             }
@@ -254,7 +254,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let proof_height = check_height as u64;
                     let mut guard = chain.block_map.write();
                     if let Some(info) = guard.get_mut(&proof_height) {
-                        info.0 = true;
+                        info.2 = true;
                         let _ = chain.sync_sender.lock().send(proof_height);
                         trace!("blk_height == MAX proof height {}", proof_height);
                     }
@@ -273,10 +273,10 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                 *guard = new_map;
                 if !guard.contains_key(&blk_height) {
                     trace!("block insert {:?} no proof and not verified", blk_height);
-                    guard.insert(blk_height, (false, block, false, None));
+                    guard.insert(blk_height, (None, block, false));
                 }
                 if let Some(info) = guard.get_mut(&proof_height) {
-                    info.0 = true;
+                    info.2 = true;
                     let _ = chain.sync_sender.lock().send(proof_height);
                 }
             }
@@ -326,7 +326,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                         {
                             let guard = chain.block_map.read();
                             if let Some(info) = guard.get(&height) {
-                                if let Some(proof) = info.3.clone() {
+                                if let Some(proof) = info.0.clone() {
                                     proof_block.mut_header().set_proof(proof);
                                     flag = true;
                                 }
@@ -338,26 +338,10 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                             trace!("max height {:?}, chain.blk: OperateType {:?}", height, communication::OperateType::SINGLE);
                             ctx_pub.send(("chain.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                         }
-
                     }
                 }
             } else {
                 warn!("other content.");
-            }
-        }
-
-        MsgClass::VERIFYBLKRESP(resp) => {
-            let next_height = chain.get_current_height() + 1;
-            trace!("receive verify response, next height: {}, result: {:?}", next_height, resp.get_ret());
-            if resp.get_ret() == Ret::Ok {
-                let mut guard = chain.block_map.write();
-                if let Some(status) = guard.get_mut(&next_height) {
-                    status.2 = true;
-                };
-                let _ = chain.sync_sender.lock().send(next_height);
-            } else {
-                let mut guard = chain.block_map.write();
-                let _ = guard.remove(&next_height);
             }
         }
 

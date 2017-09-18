@@ -136,8 +136,8 @@ pub struct Chain {
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
     pub max_height: AtomicUsize,
-    //BtreeMap key: block height  Value: proof check ,block, is_verified, proof
-    pub block_map: RwLock<BTreeMap<u64, (bool, Block, bool, Option<ProtoProof>)>>,
+    //BtreeMap key: block height  Value: proof if ,block, is_verified
+    pub block_map: RwLock<BTreeMap<u64, (Option<ProtoProof>, Block, bool)>>,
     pub db: Arc<KeyValueDB>,
     pub sync_sender: Mutex<Sender<u64>>,
     pub state_db: StateDB,
