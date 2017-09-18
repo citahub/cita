@@ -13,6 +13,7 @@ enum MsgType {
     VERIFY_BLK_RESP = 9;
     BLOCK_TXHASHES = 10;
     BLOCK_TXHASHES_REQ = 11;
+    BLOCK_WITH_PROOF = 12;
 }
 
 enum OperateType{
