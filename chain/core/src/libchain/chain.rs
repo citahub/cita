@@ -959,7 +959,7 @@ impl Chain {
                 Some(rich_status.protobuf())
             } else {
                 let mut guard = self.block_map.write();
-                let _  = guard.remove(&height);
+                let _ = guard.remove(&height);
                 warn!("add block failed");
                 None
             }
@@ -1047,19 +1047,22 @@ mod tests {
     extern crate mktemp;
     use self::Chain;
     use super::*;
-    use cita_crypto::{KeyPair, PrivKey, SIGNATURE_NAME};
+    use cita_crypto::{PrivKey, SIGNATURE_NAME};
     use db;
     use libchain::block::{Block, BlockBody};
     use libchain::genesis::Spec;
     use libproto::blockchain;
     use rustc_serialize::hex::FromHex;
+    use serde_json;
+
+    use std::fs::File;
+    use std::io::BufReader;
     use std::sync::Arc;
     use std::sync::mpsc::channel;
     use std::time::{UNIX_EPOCH, Instant};
     use test::{Bencher, black_box};
     use types::transaction::SignedTransaction;
     use util::{U256, H256, Address};
-    use util::crypto::CreateKey;
     use util::kvdb::{Database, DatabaseConfig};
 
     #[test]
@@ -1083,18 +1086,19 @@ mod tests {
     }
 
     fn init_chain() -> Arc<Chain> {
+        // Load from genesis json file
+        let genesis_file = File::open("genesis.json").unwrap();
+        let fconfig = BufReader::new(genesis_file);
+        let spec: Spec = serde_json::from_reader(fconfig).expect("Failed to load genesis.");
+        let genesis = Genesis {
+            spec: spec,
+            block: Block::default(),
+        };
+
         let _ = env_logger::init();
         let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-        let genesis = Genesis {
-            spec: Spec {
-                alloc: HashMap::new(),
-                prevhash: H256::from(0),
-                timestamp: 0,
-            },
-            block: Block::default(),
-        };
         let (sync_tx, _) = channel();
         let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
         chain
@@ -1120,7 +1124,7 @@ mod tests {
             tx.set_nonce(U256::from(i).to_hex());
             tx.set_data(data.clone());
             tx.set_valid_until_block(100);
-            tx.set_quota(184467440737095);
+            tx.set_quota(1844674);
 
             let stx = tx.sign(*privkey);
             let new_tx = SignedTransaction::new(&stx).unwrap();
@@ -1132,20 +1136,27 @@ mod tests {
     }
 
     #[bench]
-    #[ignore]
     fn bench_execute_block(b: &mut Bencher) {
+        let privkey = if SIGNATURE_NAME == "ed25519" {
+            // TODO: fix this privkey
+            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+        } else if SIGNATURE_NAME == "secp256k1" {
+            PrivKey::from("352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214")
+        } else {
+            panic!("unexcepted signature algorithm");
+        };
         let chain = init_chain();
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
+
         let data = "60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
             .from_hex()
             .unwrap();
 
-        let block = create_block(&chain, privkey, Address::from(0), data, (0, 1));
+        let block = create_block(&chain, &privkey, Address::from(0), data, (0, 1));
         chain.set_block(block.clone());
 
         let txhash = block.body().transactions()[0].hash();
         let receipt = chain.localized_receipt(txhash).expect("no receipt found");
+        println!("localized receipt: {:?}", receipt);
         let to = receipt.contract_address.unwrap();
         let data = format!("{}{}", "55241077", "0000000000000000000000000000000000000000000000000000000012345678")
             .from_hex()
@@ -1153,7 +1164,7 @@ mod tests {
         println!("passsss");
         let bench = |tpb: u32| {
             let start = Instant::now();
-            let block = create_block(&chain, privkey, to, data.clone(), (1, tpb + 1));
+            let block = create_block(&chain, &privkey, to, data.clone(), (1, tpb + 1));
             black_box(chain.execute_block(block));
             let elapsed = start.elapsed();
             let tps = u64::from(tpb) * 1_000_000_000 / (elapsed.as_secs() * 1_000_000_000 + u64::from(elapsed.subsec_nanos()));
@@ -1167,10 +1178,16 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_code_at() {
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
+        let privkey = if SIGNATURE_NAME == "ed25519" {
+            // TODO: fix this privkey
+            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+        } else if SIGNATURE_NAME == "secp256k1" {
+            PrivKey::from("352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214")
+        } else {
+            panic!("unexcepted signature algorithm");
+        };
+
         let chain = init_chain();
         /*
             pragma solidity ^0.4.8;
@@ -1206,7 +1223,7 @@ mod tests {
             .unwrap();
         println!("data: {:?}", data);
 
-        let block = create_block(&chain, privkey, Address::from(0), data, (0, 1));
+        let block = create_block(&chain, &privkey, Address::from(0), data, (0, 1));
         chain.set_block(block.clone());
 
         let tx = &block.body.transactions[0];
@@ -1221,7 +1238,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_contract() {
         //let keypair = KeyPair::gen_keypair();
         //let privkey = keypair.privkey();
@@ -1229,7 +1245,7 @@ mod tests {
         let privkey = if SIGNATURE_NAME == "ed25519" {
             PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
         } else if SIGNATURE_NAME == "secp256k1" {
-            PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
+            PrivKey::from("352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214")
         } else {
             panic!("unexcepted signature algorithm");
         };
@@ -1273,10 +1289,11 @@ mod tests {
         println!("contract address: {}", contract_address);
         let log = &receipt.logs[0];
         assert_eq!(contract_address, log.address);
+        // TODO: fix this
         if SIGNATURE_NAME == "ed25519" {
             assert_eq!(contract_address, Address::from("b2f0aa00c6bc02a2b07646a1a213e1bed6fefff6"));
         } else if SIGNATURE_NAME == "secp256k1" {
-            assert_eq!(contract_address, Address::from("893ed563bbe983e04441792e7ae866d4134adfd7"));
+            assert_eq!(contract_address, Address::from("73552bc4e960a1d53013b40074569ea05b950b4d"));
         };
         println!("contract_address as slice {:?}", contract_address.to_vec().as_slice());
         if SIGNATURE_NAME == "ed25519" {
@@ -1337,26 +1354,26 @@ mod tests {
                     0,
                     0,
                     0,
-                    137,
-                    62,
-                    213,
-                    99,
-                    187,
+                    115,
+                    85,
+                    43,
+                    196,
                     233,
-                    131,
-                    224,
-                    68,
-                    65,
-                    121,
-                    46,
-                    122,
-                    232,
-                    102,
-                    212,
+                    96,
+                    161,
+                    213,
+                    48,
                     19,
-                    74,
-                    223,
-                    215,
+                    180,
+                    0,
+                    116,
+                    86,
+                    158,
+                    160,
+                    91,
+                    149,
+                    11,
+                    77,
                 ])
             );
         };
