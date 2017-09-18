@@ -194,7 +194,7 @@ mod tests {
         let mut req = VerifyTxReq::new();
         req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
         let mut signature = tx.get_transaction_with_sig().get_signature().to_vec();
-        signature[0] = 0;
+        signature[0] = signature[0] + 1;
         req.set_signature(signature);
         let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
         let hash = bytes.crypt_hash().to_vec();
