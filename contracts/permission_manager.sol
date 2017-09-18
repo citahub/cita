@@ -58,7 +58,7 @@ contract PermissionManager is PermissionInterface {
     // revoke the role 
     function revokePermission(address _user, uint8 _permission) returns (bool) {
         // require sender and user both have the permission 
-        if (_permission != uint8(user_permission[msg.sender]) || _permission != uint8(user_permission[_user])) 
+        if (_permission != uint8(user_permission[msg.sender]) || _permission != uint8(user_permission[_user]) || msg.sender == _user) 
             return false; 
 
         user_permission[_user] = UserPermission.None;

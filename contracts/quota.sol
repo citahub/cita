@@ -24,7 +24,16 @@ contract QutotaInterface {
 
     modifier checkLimit(uint _v) {
         uint maxLimit = 2 ** 63 - 1;
-        if (_v > maxLimit) {
+        uint baseLimit = 2 ** 22 - 1;
+        if (_v > maxLimit || _v < baseLimit) {
+            revert();
+        }
+        _;
+    }
+
+    modifier checkBlockLimit(uint _v) {
+        uint blockLimit = 2 ** 25 -1;
+        if (_v < blockLimit) {
             revert();
         }
         _;
@@ -35,7 +44,7 @@ contract QutotaInterface {
     function setIsGlobal(bytes32, bool) onlyAdmin returns (bool) { }
     function setGlobal(bytes32, bytes32) onlyAdmin returns (bool) { }
     function setSpecial(address, bytes32, bytes32) onlyAdmin returns (bool) { }
-    function setBlockGasLimit(uint _value) onlyAdmin checkLimit(_value) returns (bool) { }
+    function setBlockGasLimit(uint _value) onlyAdmin checkLimit(_value) checkBlockLimit(_value) returns (bool) { }
     function setGlobalAccountGasLimit(uint _value) onlyAdmin checkLimit(_value) returns (bool) { }
     function setAccountGasLimit(address, uint _value) onlyAdmin checkLimit(_value) returns (bool) { }
     function getData(bytes32) constant returns (bytes32) { }
