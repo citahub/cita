@@ -39,7 +39,8 @@ use libchain::extras::*;
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
 use libproto::FullTransaction;
-use libproto::blockchain::{ProofType, Status as ProtoStatus};
+use libproto::blockchain::{ProofType, Status as ProtoStatus, Proof as ProtoProof};
+
 use native::Factory as NativeFactory;
 use proof::TendermintProof;
 use receipt::{Receipt, LocalizedReceipt};
@@ -136,7 +137,8 @@ pub struct Chain {
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
     pub max_height: AtomicUsize,
-    pub block_map: RwLock<BTreeMap<u64, (BlockSource, Block, bool)>>,
+    //BtreeMap key: block height  Value: proof if ,block, is_verified
+    pub block_map: RwLock<BTreeMap<u64, (Option<ProtoProof>, Block, bool)>>,
     pub db: Arc<KeyValueDB>,
     pub sync_sender: Mutex<Sender<u64>>,
     pub state_db: StateDB,
@@ -755,6 +757,7 @@ impl Chain {
             vm_tracing: analytics.vm_tracing,
             check_nonce: false,
         };
+
         let ret = Executive::new(&mut state, &env_info, &engine, &self.factories.vm, &self.factories.native)
             .transact(t, options)?;
 
@@ -783,20 +786,41 @@ impl Chain {
         open_block
     }
 
+    /*
+    check the proof of height. when height==0,check the proof inner height.
+    */
+    pub fn check_block_proof(block: &Block, height: usize) -> usize {
+        match block.proof_type() {
+            Some(ProofType::Tendermint) => {
+                let proof = TendermintProof::from(block.proof().clone());
+                //block height 1's proof is height MAX
+                if proof.height == ::std::usize::MAX {
+                    return 0;
+                }
+                let mut check_height = proof.height;
+                if height > 0 {
+                    check_height = height;
+                }
+                if proof.simple_check(check_height) {
+                    return check_height;
+                }
+            }
+            _ => {
+                return height;
+            }
+        }
+        return ::std::usize::MAX;
+    }
+
     /// Add block to chain:
     /// 1. Execute block
     /// 2. Commit block
     /// 3. Update cache
     pub fn add_block(&self, batch: &mut DBTransaction, block: Block) -> Option<Header> {
         let height = block.number();
-        match block.proof_type() {
-            Some(ProofType::Tendermint) => {
-                let proof = TendermintProof::from(block.proof().clone());
-                if !proof.simple_check(height as usize - 1) {
-                    return None;
-                }
-            }
-            _ => {}
+        let res = Chain::check_block_proof(&block, height as usize - 1);
+        if res == ::std::usize::MAX {
+            return None;
         }
 
         if self.validate_hash(block.parent_hash()) {

@@ -88,7 +88,6 @@ fn main() {
             "consensus.blk",
             "jsonrpc.request",
             "*.blk_tx_hashs_req",
-            "verify_blk_chain",
         ],
         ctx_sub,
         crx_pub,
