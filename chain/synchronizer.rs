@@ -65,6 +65,7 @@ impl Synchronizer {
                         self.add_block(ctx_pub.clone(), block);
                     } else {
                         trace!("chain proof not ok height: {}, wait next sync", height);
+                        break;
                     }
                 } else {
                     trace!("chain sync break {:?}", height);
