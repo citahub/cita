@@ -1,7 +1,7 @@
 # 1) native development
 # 1.1) prerequirement
 #sudo apt-get install --force-yes libsnappy1v5 libsnappy-dev  capnproto  libgoogle-perftools-dev  \
-#    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq libsodium*
+#    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq libsodium*  libzmq3-dev
 # 1.2) make setup
 # 1.3) make clean
 # 1.4) make debug or make release
@@ -23,26 +23,23 @@ release:
 	cp -f .env admintool/release
 	find target/release -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp -f {} admintool/release/bin \;
 
-
 setup1:
 	apt-get update -q
 	apt-get install --allow-change-held-packages software-properties-common
-	if [ $$(lsb_release -s -c) = "trusty" ]; then add-apt-repository ppa:chris-lea/libsodium -y ; fi;
+	if [ $$(lsb_release -s -c) = "trusty" ]; then add-apt-repository -y ppa:chris-lea/libsodium; fi;
+	add-apt-repository -y ppa:ethereum/ethereum
 	apt-get update -q
 	apt-get build-dep build-essential
-	apt-get install --allow-change-held-packages \
+	apt-get install -y \
 	 	pkg-config libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  \
-		rabbitmq-server  google-perftools jq libsodium*
-	wget https://github.com/ethereum/solidity/releases/download/v0.4.15/solc-static-linux
-	mv solc-static-linux /usr/local/bin/solc
-	chmod +x /usr/local/bin/solc
+		rabbitmq-server  google-perftools jq libsodium* libzmq3-dev solc
 	/etc/init.d/rabbitmq-server restart
 	-rabbitmqctl add_vhost dev
 	-rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"
 
 setup2:
-	curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04
-	- . ~/.cargo/env;cargo install --force --vers 0.9.0 rustfmt;
+	which cargo; if [ $$? -ne 0 ]; then curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04; fi;
+	which rustfmt; if [ $$? -ne 0 ]; then cargo install --force --vers 0.9.0 rustfmt; fi;
 	pip install -r admintool/requirements.txt --user
 
 test:
@@ -80,10 +77,9 @@ test_ed25519_blake2b:
 	@grep -q '\.\.\. FAILED' target/test.log; if [ $$? -eq 0 ] ; then exit 1; fi;
 
 bench:
-	-rm -f target/bench.log
-	find chain  consensus  devtools jsonrpc network share_libs tests              \
+	@-rm -f target/bench.log
+	@find chain  consensus  devtools jsonrpc network share_libs tests              \
           -name 'Cargo.toml'                                                      \
-          -not -path 'share_libs/parity/*'                                        \
           -not -path 'consensus/raft/*'                                           \
           -not -path 'consensus/capnp_nonblock/*'                                 \
           -exec cargo bench --manifest-path {} 2>&1 \; |tee -a target/bench.log
@@ -92,12 +88,11 @@ bench:
 	@grep -A 2  'error\[' target/bench.log || exit 0
 	@echo "################################################################################"
 	@echo "bench result:"
-	@grep '\.\.\. ' target/bench.log|grep -v 'ignored'|grep -v 'bench_execute_block' || exit 0
-	@grep -A 4 'libchain::chain::tests::bench_execute_block' target/bench.log || exit 0
-	grep -q 'error\[' target/bench.log; if [ $$? -eq 0 ] ; then exit 1; fi;
+	@grep '\.\.\. bench: ' target/bench.log||exit 0
+	@grep -q 'error\[' target/bench.log; if [ $$? -eq 0 ] ; then exit 1; fi;
 
 fmt:
-	cargo fmt --all
+	cargo fmt --all -- --write-mode diff
 
 cov:
 	cargo cov test --all --no-fail-fast

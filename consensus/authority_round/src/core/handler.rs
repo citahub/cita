@@ -36,9 +36,9 @@ pub fn process(engine: Arc<Engine>, rx: &Receiver<(u32, u32, u32, MsgClass)>, tx
         trace!("from_broadcast cmd_id {:?}", cmd_id);
         if (cmd_id >> 16) == submodules::CONSENSUS {
             match content_ext {
-                MsgClass::TX(tx) => {
-                    trace!("get new broadcast tx {:?}", tx);
-                    engine.receive_new_transaction(&tx, tx_pub, _origin, from_broadcast);
+                MsgClass::REQUEST(tx_req) => {
+                    trace!("get new broadcast tx {:?}", tx_req);
+                    engine.receive_new_transaction(&tx_req, tx_pub, _origin, from_broadcast);
                 }
                 MsgClass::BLOCK(block) => {
                     trace!("get new broadcast block {:?}", block);
@@ -49,9 +49,9 @@ pub fn process(engine: Arc<Engine>, rx: &Receiver<(u32, u32, u32, MsgClass)>, tx
         }
     } else {
         match content_ext {
-            MsgClass::TX(tx) => {
-                trace!("get new local tx {:?}", tx);
-                engine.receive_new_transaction(&tx, tx_pub, _origin, from_broadcast);
+            MsgClass::REQUEST(tx_req) => {
+                trace!("get new local tx {:?}", tx_req);
+                engine.receive_new_transaction(&tx_req, tx_pub, _origin, from_broadcast);
             }
             MsgClass::STATUS(status) => {
                 trace!("get new local status {:?}", status.height);

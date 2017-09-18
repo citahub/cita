@@ -24,7 +24,6 @@ use std::vec::*;
 use util::{H256, RwLock};
 use verify::Verifier;
 
-
 #[derive(Debug, PartialEq)]
 pub enum VerifyType {
     SingleVerify,
@@ -35,11 +34,6 @@ pub enum VerifyType {
 fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     let mut resp = VerifyTxResp::new();
     resp.set_tx_hash(req.get_tx_hash().to_vec());
-
-    if !verifier.verify_valid_until_block(req.get_valid_until_block()) {
-        resp.set_ret(Ret::OutOfTime);
-        return resp;
-    }
 
     let tx_hash = H256::from_slice(req.get_tx_hash());
     let ret = verifier.check_hash_exist(&tx_hash);
@@ -68,6 +62,36 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     resp.set_ret(Ret::Ok);
     trace!("verfiy_tx's result:tx_hash={:?}, ret={:?}, signer={:?}", resp.get_tx_hash(), resp.get_ret(), resp.get_signer());
     resp
+}
+
+pub fn verify_tx_service(req: VerifyTxReq, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<VerifyCache>>) -> VerifyTxResp {
+    let tx_hash = H256::from_slice(req.get_tx_hash());
+    let mut response = VerifyTxResp::new();
+    response.set_tx_hash(req.get_tx_hash().to_vec());
+    if !verifier.read().verify_valid_until_block(req.get_valid_until_block()) {
+        response.set_ret(Ret::OutOfTime);
+    } else {
+        let (cached_response, need_cache) = match get_resp_from_cache(&tx_hash, cache.clone()) {
+            Some(resp) => (resp.clone(), false),
+            None => (verfiy_tx(&req, &verifier.read()), true),
+        };
+
+        if cached_response.get_ret() == Ret::Ok {
+            response.set_ret(Ret::Ok);
+            response.set_signer(cached_response.get_signer().to_vec());
+        } else {
+            response.set_ret(cached_response.get_ret());
+        }
+
+        if need_cache {
+            cache.write().insert(tx_hash, cached_response);
+        }
+    }
+    response
+}
+
+fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<VerifyCache>>) -> Option<VerifyTxResp> {
+    if let Some(resp) = cache.read().get(tx_hash) { Some(resp.clone()) } else { None }
 }
 
 fn get_key(submodule: u32, is_blk: bool) -> String {
@@ -167,22 +191,4 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
 
         }
     }
-}
-
-pub fn verify_tx_service(req: VerifyTxReq, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<VerifyCache>>) -> VerifyTxResp {
-    let tx_hash = H256::from_slice(req.get_tx_hash());
-    //First,check the tx from the hash
-    //if let Some(resp) = cache.read().get(&tx_hash) {
-    if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
-        trace!("Tx already exists with hash: {:?}", tx_hash);
-        resp
-    } else {
-        let resp = verfiy_tx(&req, &verifier.read());
-        cache.write().insert(H256::from_slice(resp.get_tx_hash()), resp.clone());
-        resp
-    }
-}
-
-fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<VerifyCache>>) -> Option<VerifyTxResp> {
-    if let Some(resp) = cache.read().get(tx_hash) { Some(resp.clone()) } else { None }
 }

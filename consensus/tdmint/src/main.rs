@@ -18,6 +18,7 @@
 #![feature(mpsc_select)]
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 extern crate libproto;
 extern crate util;
 extern crate threadpool;

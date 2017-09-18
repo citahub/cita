@@ -183,10 +183,6 @@ impl TenderMint {
         }
     }
 
-    //    pub fn pub_transaction(&mut self, tx: &SignedTransaction) {
-    //        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, tx.write_to_bytes().unwrap());
-    //        MQWork::send2pub(&self.pub_sender, ("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
-    //    }
 
     pub fn pub_block(&self, block: &Block) {
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());

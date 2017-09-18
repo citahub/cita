@@ -30,6 +30,7 @@ pub mod communication;
 pub mod request;
 pub mod into;
 pub mod auth;
+pub mod response;
 
 pub use auth::*;
 use blockchain::*;
@@ -38,12 +39,26 @@ use crypto::{PrivKey, PubKey, Signature, KeyPair, SIGNATURE_BYTES_LEN, Message a
 use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 pub use request::*;
+pub use response::*;
 use rlp::*;
 use rustc_serialize::hex::ToHex;
 use std::ops::Deref;
 use std::result::Result::Err;
 use util::{H256, Hashable, merklehash};
 use util::snappy;
+
+//TODO respone contain error
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct TxResponse {
+    pub hash: H256,
+    pub status: String,
+}
+
+impl TxResponse {
+    pub fn new(hash: H256, status: String) -> Self {
+        TxResponse { hash: hash, status: status }
+    }
+}
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct State(pub Vec<Vec<u8>>);
@@ -66,16 +81,14 @@ pub mod topics {
     pub const NEW_STATUS: u16 = 3;
     pub const SYNC_BLK: u16 = 4;
     pub const RESPONSE: u16 = 5;
-    pub const NEW_TX: u16 = 6;
-    pub const TX_RESPONSE: u16 = 7;
-    pub const CONSENSUS_MSG: u16 = 8;
-    pub const NEW_PROPOSAL: u16 = 9;
-    pub const VERIFY_TX_REQ: u16 = 10;
-    pub const VERIFY_TX_RESP: u16 = 11;
-    pub const VERIFY_BLK_REQ: u16 = 12;
-    pub const VERIFY_BLK_RESP: u16 = 13;
-    pub const BLOCK_TXHASHES: u16 = 14;
-    pub const BLOCK_TXHASHES_REQ: u16 = 15;
+    pub const CONSENSUS_MSG: u16 = 6;
+    pub const NEW_PROPOSAL: u16 = 7;
+    pub const VERIFY_TX_REQ: u16 = 8;
+    pub const VERIFY_TX_RESP: u16 = 9;
+    pub const VERIFY_BLK_REQ: u16 = 10;
+    pub const VERIFY_BLK_RESP: u16 = 11;
+    pub const BLOCK_TXHASHES: u16 = 12;
+    pub const BLOCK_TXHASHES_REQ: u16 = 13;
 }
 
 #[derive(Debug)]
@@ -83,10 +96,7 @@ pub enum MsgClass {
     REQUEST(Request),
     RESPONSE(Response),
     HEADER(BlockHeader),
-    BODY(BlockBody),
     BLOCK(Block),
-    TX(UnverifiedTransaction),
-    TXRESPONSE(TxResponse),
     STATUS(Status),
     VERIFYTXREQ(VerifyTxReq),
     VERIFYTXRESP(VerifyTxResp),
@@ -105,8 +115,6 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::NEW_STATUS => "new_status",
         topics::SYNC_BLK => "sync_blk",
         topics::RESPONSE => "response",
-        topics::NEW_TX => "new_tx",
-        topics::TX_RESPONSE => "tx_response",
         topics::CONSENSUS_MSG => "consensus_msg",
         topics::NEW_PROPOSAL => "new_proposal",
         topics::VERIFY_TX_REQ => "verify_tx_req",
@@ -233,13 +241,8 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::RESPONSE => {
             MsgClass::RESPONSE(parse_from_bytes::<Response>(&content_msg).unwrap())
         }
-        MsgType::TX_RESPONSE => {
-            MsgClass::TXRESPONSE(parse_from_bytes::<TxResponse>(&content_msg).unwrap())
-        }
         MsgType::HEADER => MsgClass::HEADER(parse_from_bytes::<BlockHeader>(&content_msg).unwrap()),
-        MsgType::BODY => MsgClass::BODY(parse_from_bytes::<BlockBody>(&content_msg).unwrap()),
         MsgType::BLOCK => MsgClass::BLOCK(parse_from_bytes::<Block>(&content_msg).unwrap()),
-        MsgType::TX => MsgClass::TX(parse_from_bytes::<UnverifiedTransaction>(&content_msg).unwrap()),
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
         MsgType::VERIFY_TX_REQ => MsgClass::VERIFYTXREQ(parse_from_bytes::<VerifyTxReq>(&content_msg).unwrap()),
         MsgType::VERIFY_TX_RESP => MsgClass::VERIFYTXRESP(parse_from_bytes::<VerifyTxResp>(&content_msg).unwrap()),
@@ -399,8 +402,8 @@ mod tests {
 
     #[test]
     fn cmd_id_works() {
-        assert_eq!(cmd_id(submodules::JSON_RPC, topics::NEW_TX), 0x10006);
-        assert_eq!(cmd_id(submodules::CHAIN, topics::NEW_TX), 0x30006);
+        assert_eq!(cmd_id(submodules::JSON_RPC, topics::REQUEST), 0x10001);
+        assert_eq!(cmd_id(submodules::CHAIN, topics::RESPONSE), 0x30005);
     }
 
     #[test]

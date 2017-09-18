@@ -38,8 +38,8 @@ use libchain::extras::*;
 
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
+use libproto::FullTransaction;
 use libproto::blockchain::{ProofType, Status as ProtoStatus};
-use libproto::request::FullTransaction;
 use native::Factory as NativeFactory;
 use proof::TendermintProof;
 use receipt::{Receipt, LocalizedReceipt};
@@ -424,7 +424,7 @@ impl Chain {
             let number = self.block_number_by_hash(hash).unwrap_or(0);
 
             let contract_address = match stx.action() {
-                &Action::Create => Some(contract_address(&stx.sender(), stx.nonce())),
+                &Action::Create => Some(contract_address(&stx.sender(), stx.nonce(), stx.block_limit)),
                 &Action::Store => {
                     let store_addr: Address = STORE_ADDRESS.into();
                     Some(store_addr)
@@ -723,7 +723,7 @@ impl Chain {
     fn sign_call(&self, request: CallRequest) -> SignedTransaction {
         let from = request.from.unwrap_or(Address::zero());
         Transaction {
-            nonce: U256::zero(),
+            nonce: "heihei".to_owned(),
             action: Action::Call(request.to),
             gas: U256::from(50_000_000),
             gas_price: U256::zero(),
@@ -911,28 +911,18 @@ impl Chain {
 
 #[cfg(test)]
 mod tests {
-    #![allow(unused_must_use, deprecated, unused_extern_crates)]
+    extern crate bincode;
+    extern crate serde;
     extern crate cita_crypto;
-    extern crate env_logger;
-    extern crate mktemp;
     extern crate rustc_serialize;
-    use self::Chain;
+
     use self::rustc_serialize::hex::FromHex;
     use super::*;
-    use cita_crypto::{KeyPair, PrivKey, SIGNATURE_NAME};
-    use db;
-    use libchain::block::{Block, BlockBody};
-    use libchain::genesis::Spec;
-    use libproto::blockchain;
-    use std::sync::Arc;
-    use std::sync::mpsc::channel;
-    use std::time::{UNIX_EPOCH, Instant};
-    use test::{Bencher, black_box};
-    use types::transaction::SignedTransaction;
-    use util::{U256, H256, Address};
-    use util::crypto::CreateKey;
-    use util::kvdb::{Database, DatabaseConfig};
-    //use util::hashable::HASH_NAME;
+    use std::env;
+    use test::Bencher;
+    use tests::helpers::{init_chain, bench_chain, solc, create_block};
+    use util::{H256, Address};
+
 
     #[test]
     fn test_heapsizeof() {
@@ -954,95 +944,10 @@ mod tests {
 
     }
 
-    fn init_chain() -> Arc<Chain> {
-        let _ = env_logger::init();
-        let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
-        let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-        let genesis = Genesis {
-            spec: Spec {
-                alloc: HashMap::new(),
-                prevhash: H256::from(0),
-                timestamp: 0,
-            },
-            block: Block::default(),
-        };
-        let (sync_tx, _) = channel();
-        let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
-        chain
-    }
-
-    fn create_block(chain: &Chain, privkey: &PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
-        let mut block = Block::new();
-
-        block.set_parent_hash(chain.get_current_hash());
-        block.set_timestamp(UNIX_EPOCH.elapsed().unwrap().as_secs());
-        block.set_number(chain.get_current_height() + 1);
-        // header.proof= ?;
-
-        let mut body = BlockBody::new();
-        let mut txs = Vec::new();
-        for i in nonce.0..nonce.1 {
-            let mut tx = blockchain::Transaction::new();
-            if to == Address::from(0) {
-                tx.set_to(String::from(""));
-            } else {
-                tx.set_to(to.hex());
-            }
-            tx.set_nonce(U256::from(i).to_hex());
-            tx.set_data(data.clone());
-            tx.set_valid_until_block(100);
-            tx.set_quota(184467440737095);
-
-            let stx = tx.sign(*privkey);
-            let new_tx = SignedTransaction::new(&stx).unwrap();
-            txs.push(new_tx);
-        }
-        body.set_transactions(txs);
-        block.set_body(body);
-        block
-    }
-
-    #[bench]
-    fn bench_execute_block(b: &mut Bencher) {
-        let chain = init_chain();
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        let data = "60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
-            .from_hex()
-            .unwrap();
-
-        let block = create_block(&chain, privkey, Address::from(0), data, (0, 1));
-        chain.set_block(block.clone());
-
-        let txhash = block.body().transactions()[0].hash();
-        let receipt = chain.localized_receipt(txhash).expect("no receipt found");
-        let to = receipt.contract_address.unwrap();
-        let data = format!("{}{}", "55241077", "0000000000000000000000000000000000000000000000000000000012345678")
-            .from_hex()
-            .unwrap();
-        println!("passsss");
-        let bench = |tpb: u32| {
-            let start = Instant::now();
-            let block = create_block(&chain, privkey, to, data.clone(), (1, tpb + 1));
-            black_box(chain.execute_block(block));
-            let elapsed = start.elapsed();
-            let tps = u64::from(tpb) * 1_000_000_000 / (elapsed.as_secs() * 1_000_000_000 + u64::from(elapsed.subsec_nanos()));
-            println!("tpb: {:>6}, tps: {:>6}", tpb, tps);
-        };
-        bench(3000);
-        bench(5000);
-        bench(10000);
-        bench(20000);
-        b.iter(|| {});
-    }
-
     #[test]
     fn test_code_at() {
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
         let chain = init_chain();
-        /*
+        let source = r#"
             pragma solidity ^0.4.8;
 
             contract mortal {
@@ -1070,13 +975,11 @@ mod tests {
                     return greeting;
                 }
             }
-        */
-        let data = "6060604052341561000f57600080fd5b5b336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505b5b61010c806100616000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806341c0e1b514603d575b600080fd5b3415604757600080fd5b604d604f565b005b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141560dd576000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16ff5b5b5600a165627a7a72305820de567cec1777627b898689638799169aacaf87d3ea313a0d8dab5758bac937670029"
-            .from_hex()
-            .unwrap();
+"#;
+        let (data, _) = solc("mortal", source);
         println!("data: {:?}", data);
 
-        let block = create_block(&chain, privkey, Address::from(0), data, (0, 1));
+        let block = create_block(&chain, Address::from(0), &data, (0, 1));
         chain.set_block(block.clone());
 
         let tx = &block.body.transactions[0];
@@ -1092,20 +995,8 @@ mod tests {
 
     #[test]
     fn test_contract() {
-        //let keypair = KeyPair::gen_keypair();
-        //let privkey = keypair.privkey();
-        //let pubkey = keypair.pubkey();
-        let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
-        } else if SIGNATURE_NAME == "secp256k1" {
-            PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
-        } else {
-            panic!("unexcepted signature algorithm");
-        };
-        println!("privkey: {:?}", privkey);
         let chain = init_chain();
-
-        /*
+        let source = r#"
             pragma solidity ^0.4.8;
             contract ConstructSol {
                 uint a;
@@ -1124,115 +1015,21 @@ mod tests {
                     return a;
                 }
             }
-        */
-        let data = "6060604052341561000f57600080fd5b5b7fb8f132fb6526e0405f3ce4f3bab301f1d4409b1e7f2c01c2037d6cf845c831cb30604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a15b5b610107806100846000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11460475780636d4ce63c146067575b600080fd5b3415605157600080fd5b60656004808035906020019091905050608d565b005b3415607157600080fd5b607760d1565b6040518082815260200191505060405180910390f35b806000819055507fa17a9e66f0c355e3aa3b9ea969991204d6b1d2e62a47877f612cb2371d79e06a6000546040518082815260200191505060405180910390a15b50565b6000805490505b905600a165627a7a72305820bb7224faec63935671f0b4722064773ccae237bec4f6fbb252c362f2192dca900029"
-            .from_hex()
-            .unwrap();
-
-        println!("data: {:?}", data);
-
-        let block = create_block(&chain, &privkey, Address::from(0), data, (0, 1));
+        "#;
+        let (data, _) = solc("ConstructSol", source);
+        let block = create_block(&chain, Address::from(0), &data, (0, 1));
         chain.set_block(block.clone());
 
         let txhash = block.body().transactions()[0].hash();
         let receipt = chain.localized_receipt(txhash).unwrap();
-
-        println!("{:?}", receipt);
         let contract_address = receipt.contract_address.unwrap();
-        println!("contract address: {}", contract_address);
+
         let log = &receipt.logs[0];
         assert_eq!(contract_address, log.address);
-        if SIGNATURE_NAME == "ed25519" {
-            assert_eq!(contract_address, Address::from("b2f0aa00c6bc02a2b07646a1a213e1bed6fefff6"));
-        } else if SIGNATURE_NAME == "secp256k1" {
-            assert_eq!(contract_address, Address::from("893ed563bbe983e04441792e7ae866d4134adfd7"));
-        };
-        println!("contract_address as slice {:?}", contract_address.to_vec().as_slice());
-        if SIGNATURE_NAME == "ed25519" {
-            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 111, 59, 43, 53, 88, 72, 145, 132, 114, 215, 155, 118, 248, 179, 151, 41, 8, 138, 13, 0]
-            assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
-            assert_eq!(
-                log.data,
-                Bytes::from(vec![
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    178,
-                    240,
-                    170,
-                    0,
-                    198,
-                    188,
-                    2,
-                    162,
-                    176,
-                    118,
-                    70,
-                    161,
-                    162,
-                    19,
-                    225,
-                    190,
-                    214,
-                    254,
-                    255,
-                    246,
-                ])
-            );
-        } else if SIGNATURE_NAME == "secp256k1" {
-            // log data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 137, 62, 213, 99, 187, 233, 131, 224, 68, 65, 121, 46, 122, 232, 102, 212, 19, 74, 223, 215]
-            assert!(log.data.as_slice().ends_with(contract_address.to_vec().as_slice()));
-            assert_eq!(
-                log.data,
-                Bytes::from(vec![
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    137,
-                    62,
-                    213,
-                    99,
-                    187,
-                    233,
-                    131,
-                    224,
-                    68,
-                    65,
-                    121,
-                    46,
-                    122,
-                    232,
-                    102,
-                    212,
-                    19,
-                    74,
-                    223,
-                    215,
-                ])
-            );
-        };
 
         // set a=10
         let data = "60fe47b1000000000000000000000000000000000000000000000000000000000000000a".from_hex().unwrap();
-        let block = create_block(&chain, &privkey, contract_address, data, (1, 2));
+        let block = create_block(&chain, contract_address, &data, (1, 2));
         chain.set_block(block.clone());
         let txhash = block.body().transactions()[0].hash();
         let receipt = chain.localized_receipt(txhash).unwrap();
@@ -1248,5 +1045,134 @@ mod tests {
         let call_result = chain.eth_call(call_request, BlockId::Latest);
         assert_eq!(call_result, Ok(Bytes::from(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10])));
         println!("call_result: {:?}", call_result);
+    }
+
+    fn bench_simple_storage(name: &str, data: &Vec<u8>) {
+        let bench_mode = env::args().find(|x| x.contains("--bench")).is_some();
+        let source = r#"
+pragma solidity ^0.4.0;
+
+contract SimpleStorage {
+  uint uint_value;             // 0
+  string string_value;// 1
+  uint[] array_value;//2
+  mapping (uint => uint) public map_value;//3
+
+  function SimpleStorage() {
+    uint_value = 0;
+    string_value='string';
+    array_value= new uint[](3);
+    map_value[0]= 0;
+  }
+
+  /* 0) uint */
+  function uint_set(uint value) {
+    uint_value =  value;
+  }
+
+  function uint_get() returns (uint) {
+    return uint_value;
+  }
+
+  /* 1) string */
+  function string_set(string  value) {
+    string_value =  value;
+  }
+
+  function string_get() returns (string) {
+    return string_value;
+  }
+
+  /* 2 array*/
+  function array_set(uint index, uint value) {
+    array_value[index]=  value;
+  }
+
+  function array_get(uint  index) returns (uint) {
+    return array_value[index];
+  }
+
+  /* 3) map */
+  function map_set(uint key, uint value) {
+    map_value[key] = value;
+  }
+
+  function map_get(uint key) returns (uint) {
+    return map_value[key];
+  }
+}"#;
+        let (code, _) = solc("SimpleStorage", source);
+        let tpb = if bench_mode { 10000 } else { 1 };
+        println!("pass");
+        let evm = bench_chain(&code, &data, tpb, Address::zero());
+        let native = bench_chain(&code, &data, tpb, Address::from(0x400));
+        println!("test {:20} ... bench: {:5} tpb {:10} tps(evm) {:10} tps(native) {:3.2}% ", name, tpb, evm, native, native as f32 / evm as f32 * 100.0);
+    }
+
+    #[bench]
+    fn bench_uint_set(b: &mut Bencher) {
+        let name = "bench_uint_set";
+        let data = "aa91543e000000000000000000000000000000000000000000000000000000000000000a".from_hex().unwrap();
+        bench_simple_storage(name, &data);
+        b.iter(|| {});
+    }
+
+    #[bench]
+    fn bench_uint_get(b: &mut Bencher) {
+        let name = "bench_uint_get";
+        let data = "aa91543e000000000000000000000000000000000000000000000000000000000000000a".from_hex().unwrap();
+        bench_simple_storage(name, &data);
+        b.iter(|| {});
+    }
+    #[bench]
+    fn bench_string_set(b: &mut Bencher) {
+        let name = "bench_string_set";
+        let data = "c9615770000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033132330000000000000000000000000000000000000000000000000000000000"
+            .from_hex()
+            .unwrap();
+        bench_simple_storage(name, &data);
+        b.iter(|| {});
+    }
+
+    #[bench]
+    fn bench_string_get(b: &mut Bencher) {
+        let name = "bench_string_get";
+        let data = "e3135d14".from_hex().unwrap();
+        bench_simple_storage(name, &data);
+        b.iter(|| {});
+    }
+    #[bench]
+    fn bench_array_set(b: &mut Bencher) {
+        let name = "bench_array_set";
+        let data = "118b229c0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000b"
+            .from_hex()
+            .unwrap();
+        bench_simple_storage(name, &data);
+        b.iter(|| {});
+    }
+
+    #[bench]
+    fn bench_array_get(b: &mut Bencher) {
+        let name = "bench_array_get";
+        let data = "180a4bbf0000000000000000000000000000000000000000000000000000000000000001".from_hex().unwrap();
+        bench_simple_storage(name, &data);
+        b.iter(|| {});
+    }
+    #[bench]
+    fn bench_map_set(b: &mut Bencher) {
+        let name = "bench_map_set";
+        let data = "118b229c0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000c"
+            .from_hex()
+            .unwrap();
+        bench_simple_storage(name, &data);
+        b.iter(|| {});
+    }
+
+    #[bench]
+    fn bench_map_get(b: &mut Bencher) {
+        let name = "bench_map_get";
+        let data = "180a4bbf0000000000000000000000000000000000000000000000000000000000000001".from_hex().unwrap();
+        bench_simple_storage(name, &data);
+        b.iter(|| {});
     }
 }

@@ -748,8 +748,10 @@ mod tests {
         // 1) tx = (to, data(code), nonce, valid_until_block)
         let mut tx = blockchain::Transaction::new();
         tx.set_to(String::from(""));
-        tx.set_nonce(U256::from(0).to_hex());
-        tx.set_valid_until_block(100);
+        let nonce = "haha".to_owned();
+        tx.set_nonce(nonce.clone());
+        let block_limit = 100;
+        tx.set_valid_until_block(block_limit);
         tx.set_quota(184467440737095);
         tx.set_data("60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
                         .from_hex()
@@ -767,7 +769,7 @@ mod tests {
         let mut state = get_temp_state();
         let info = EnvInfo::default();
         //info.gas_limit = U256::from(100_000);
-        let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(0));
+        let contract_address = ::executive::contract_address(&signed.sender(), &nonce, block_limit);
         let result = state.apply(&info, &signed, true).unwrap();
         println!("{:?}", state.code(&contract_address).unwrap().unwrap());
         println!("{:?}", result.trace);

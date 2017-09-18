@@ -19,23 +19,23 @@ use super::BlockNumber;
 use std::default::Default;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct CountAndCode {
+pub struct CountOrCode {
     pub address: ::std::vec::Vec<u8>,
     pub block_id: BlockNumber,
 }
 
-impl CountAndCode {
-    pub fn new(address: Vec<u8>, block_id: BlockNumber) -> CountAndCode {
-        CountAndCode {
+impl CountOrCode {
+    pub fn new(address: Vec<u8>, block_id: BlockNumber) -> CountOrCode {
+        CountOrCode {
             address: address,
             block_id: block_id,
         }
     }
 }
 
-impl Default for CountAndCode {
-    fn default() -> CountAndCode {
-        CountAndCode {
+impl Default for CountOrCode {
+    fn default() -> CountOrCode {
+        CountOrCode {
             address: vec![],
             block_id: BlockNumber::default(),
         }
