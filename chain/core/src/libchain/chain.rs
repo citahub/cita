@@ -935,7 +935,7 @@ impl Chain {
             let mut batch = self.db.transaction();
             if let Some(header) = self.add_block(&mut batch, block) {
 
-                trace!("set_block current_hash!!!!!!{:?} {:?}", height, header.hash());
+                trace!("set_block current_hash!!!!!! height={:?}, header={:?}, header={:?}", height, header.hash(), header);
 
                 {
                     *self.current_header.write() = header;
