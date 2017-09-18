@@ -15,8 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use jsonrpc_types::Id;
 use jsonrpc_types::error::Error;
 use jsonrpc_types::request::RpcRequest;
+use jsonrpc_types::request::Version;
 use serde_json;
 use std::result;
 
@@ -58,6 +60,21 @@ pub enum TransferType {
 impl Default for TransferType {
     fn default() -> TransferType {
         TransferType::ALL
+    }
+}
+
+
+#[derive(Debug, Clone)]
+pub struct ReqInfo {
+    pub jsonrpc: Option<Version>,
+    pub id: Id,
+}
+
+unsafe impl Send for ReqInfo {}
+
+impl ReqInfo {
+    pub fn new(jsonrpc: Option<Version>, id: Id) -> ReqInfo {
+        ReqInfo { jsonrpc: jsonrpc, id: id }
     }
 }
 

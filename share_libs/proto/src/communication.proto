@@ -3,19 +3,16 @@ syntax = "proto3";
 enum MsgType {
     REQUEST = 0;
     HEADER = 1;
-    BODY = 2;
-    BLOCK = 3;
-    TX = 4;
-    STATUS = 5;
-    MSG = 6;
-    RESPONSE = 7;
-    TX_RESPONSE = 8;
-    VERIFY_TX_REQ = 9;
-    VERIFY_TX_RESP = 10;
-    VERIFY_BLK_REQ = 11;
-    VERIFY_BLK_RESP = 12;
-    BLOCK_TXHASHES = 13;
-    BLOCK_TXHASHES_REQ = 14;
+    BLOCK = 2;
+    STATUS = 3;
+    MSG = 4;
+    RESPONSE = 5;
+    VERIFY_TX_REQ = 6;
+    VERIFY_TX_RESP = 7;
+    VERIFY_BLK_REQ = 8;
+    VERIFY_BLK_RESP = 9;
+    BLOCK_TXHASHES = 10;
+    BLOCK_TXHASHES_REQ = 11;
 }
 
 enum OperateType{

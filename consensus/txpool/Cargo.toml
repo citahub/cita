@@ -15,6 +15,7 @@ env_logger = "0.3"
 bincode = "0.8"
 serde_derive = "1.0"
 serde = "1.0"
+serde_json = "1.0"
 amqp = "=0.0.20"
 pubsub = { path = "../../share_libs/pubsub" }
 cita_log = { path = "../../share_libs/cita_log" }

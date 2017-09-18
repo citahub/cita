@@ -343,9 +343,9 @@ mod tests {
     use super::{Signature, Message, PrivKey};
     use super::super::KeyPair;
     use bincode::{serialize, deserialize, Infinite};
-    use util::crypto::{CreateKey, Sign};
-    use util::{H256, Hashable};
     use std::str::FromStr;
+    use util::{H256, Hashable};
+    use util::crypto::{CreateKey, Sign};
 
     #[test]
     fn test_sign_verify() {

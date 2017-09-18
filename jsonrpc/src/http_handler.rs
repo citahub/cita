@@ -15,41 +15,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use base_hanlder::{BaseHandler, RpcResult};
+use base_hanlder::BaseHandler;
 use hyper::Post;
 use hyper::server::{Handler, Request, Response};
 use hyper::uri::RequestUri::AbsolutePath;
+use jsonrpc_types::{RpcRequest, method};
 use jsonrpc_types::error::Error;
-use jsonrpc_types::method;
-use jsonrpc_types::response::{self as cita_response, RpcSuccess, RpcFailure};
-use libproto::{blockchain, request};
-use libproto::communication;
+use jsonrpc_types::response::{RpcSuccess, RpcFailure, Output};
+use libproto::{response, communication};
 use parking_lot::{RwLock, Mutex};
 use protobuf::Message;
 use serde_json;
-use std::cmp::Eq;
 use std::collections::HashMap;
-use std::fmt::Debug;
-use std::hash::Hash;
 use std::io::Read;
 use std::result;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
-use util::H256;
 
 impl BaseHandler for HttpHandler {}
 
 pub struct HttpHandler {
     pub tx: Arc<Mutex<Sender<(String, Vec<u8>)>>>,
-    pub responses: Arc<RwLock<HashMap<Vec<u8>, request::Response>>>,
-    pub tx_responses: Arc<RwLock<HashMap<H256, blockchain::TxResponse>>>,
+    //TODO 定时清理工作
+    pub responses: Arc<RwLock<HashMap<Vec<u8>, response::Response>>>,
     pub sleep_duration: usize,
     pub timeout_count: usize,
     pub method_handler: method::MethodHandler,
 }
-
 
 impl HttpHandler {
     pub fn pase_url(&self, mut req: Request) -> Result<String, Error> {
@@ -72,70 +66,46 @@ impl HttpHandler {
         }
     }
 
-
     pub fn deal_req(&self, post_data: String) -> Result<RpcSuccess, RpcFailure> {
         match HttpHandler::into_rpc(post_data) {
             Err(err) => Err(RpcFailure::from(err)),
-            Ok(rpc) => {
-                let req_id = rpc.id.clone();
-                let jsonrpc_version = rpc.jsonrpc.clone();
-                let topic = HttpHandler::select_topic(&rpc.method);
-                match self.method_handler.from_req(rpc)? {
-                    method::RpcReqType::TX(tx) => {
-                        let hash = tx.crypt_hash();
-                        self.send_mq(topic, tx.into(), self.tx_responses.clone(), hash)
-                            .map_err(|err_data| RpcFailure::from_options(req_id.clone(), jsonrpc_version.clone(), err_data))
-                            .map(|data| {
-                                     RpcSuccess {
-                                         jsonrpc: jsonrpc_version,
-                                         id: req_id,
-                                         result: cita_response::ResponseBody::from(data), //TODO
-                                     }
-                                 })
-                    }
-                    method::RpcReqType::REQ(req) => {
-                        let key = req.request_id.clone();
-                        self.send_mq(topic, req.into(), self.responses.clone(), key)
-                            .map_err(|err_data| RpcFailure::from_options(req_id.clone(), jsonrpc_version.clone(), err_data))
-                            .map(|data| {
-                                     RpcSuccess {
-                                         jsonrpc: jsonrpc_version,
-                                         id: req_id,
-                                         result: cita_response::ResponseBody::from(data.result.expect("chain response error")), //TODO
-                                     }
-                                 })
-                    }
-                }
-            }
+            Ok(rpc) => self.send_mq(rpc),
         }
     }
 
-
-    pub fn send_mq<K, V>(&self, topic: String, req: communication::Message, responses: Arc<RwLock<HashMap<K, V>>>, key: K) -> RpcResult<V>
-    where
-        K: Eq + Hash + Debug,
-    {
-        {
-            let tx = self.tx.clone();
-            tx.lock().send((topic, req.write_to_bytes().unwrap())).unwrap();
-        }
-        trace!("wait response {:?}", key);
-        let mut timeout_count = 0;
-        loop {
-            timeout_count = timeout_count + 1;
-            if timeout_count > self.timeout_count {
-                //TODO
-                return Err(Error::server_error(-32099, "system time out,please resend"));
-            }
-            thread::sleep(Duration::new(0, (self.sleep_duration * 1000000) as u32));
-            if responses.read().contains_key(&key) {
-                let mut responses = responses.write();
-                if let Some(res) = responses.remove(&key) {
-                    return Ok(res);
-                } else {
-                    //TODO
-                    return Err(Error::invalid_params("duplicated transaction,please wait a while "));
+    pub fn send_mq(&self, rpc: RpcRequest) -> Result<RpcSuccess, RpcFailure> {
+        let id = rpc.id.clone();
+        let jsonrpc_version = rpc.jsonrpc.clone();
+        let topic = HttpHandler::select_topic(&rpc.method);
+        match self.method_handler.from_req(rpc) {
+            Ok(req) => {
+                let request_id = req.request_id.clone();
+                {
+                    let msg: communication::Message = req.into();
+                    self.tx.lock().send((topic, msg.write_to_bytes().unwrap())).unwrap();
                 }
+                trace!("wait response {:?}", String::from_utf8(request_id.clone()));
+                let mut timeout_count = 0;
+                loop {
+                    timeout_count = timeout_count + 1;
+                    if timeout_count > self.timeout_count {
+                        return Err(RpcFailure::from_options(id, jsonrpc_version, Error::server_error(-32099, "system time out,please resend")));
+                    }
+                    thread::sleep(Duration::new(0, (self.sleep_duration * 1000000) as u32));
+                    if self.responses.read().contains_key(&request_id) {
+                        let mut responses = self.responses.write();
+                        if let Some(res) = responses.remove(&request_id) {
+                            match Output::from(res, id, jsonrpc_version) {
+                                Output::Success(success) => return Ok(success),
+                                Output::Failure(failure) => return Err(failure),
+                            }
+                        }
+                    }
+                }
+            }
+
+            Err(err) => {
+                Err(RpcFailure::from_options(id, jsonrpc_version, err))
             }
         }
     }
@@ -149,7 +119,7 @@ impl Handler for HttpHandler {
         let data = match self.pase_url(req) {
             Err(err) => serde_json::to_string(&RpcFailure::from(err)),
             Ok(body) => {
-                trace!("Request data {:?}", body);
+                trace!("JsonRpc recive raw Request data {:?}", body);
                 match self.deal_req(body) {
                     Ok(ret) => serde_json::to_string(&ret),
                     Err(err) => serde_json::to_string(&err),
@@ -158,7 +128,7 @@ impl Handler for HttpHandler {
         };
 
         //TODO
-        trace!("respone data {:?}", data);
+        trace!("JsonRpc respone data {:?}", data);
         res.send(data.expect("return client's respone data unwrap error").as_ref());
     }
 }

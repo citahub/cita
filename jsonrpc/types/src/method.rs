@@ -20,7 +20,7 @@ use super::{Params, Error, RpcRequest};
 use libproto::blockchain;
 use libproto::request as reqlib;
 use protobuf::core::parse_from_bytes;
-use rpctypes::{BlockNumber, CallRequest, Filter, CountAndCode, BlockParamsByHash, BlockParamsByNumber};
+use rpctypes::{BlockNumber, CallRequest, Filter, CountOrCode, BlockParamsByHash, BlockParamsByNumber};
 use rustc_serialize::hex::FromHex;
 use serde_json;
 use std::str::FromStr;
@@ -28,11 +28,6 @@ use util::{H256, H160, U256};
 use util::clean_0x;
 use uuid::Uuid;
 
-#[derive(Debug, Clone)]
-pub enum RpcReqType {
-    TX(blockchain::UnverifiedTransaction),
-    REQ(reqlib::Request),
-}
 
 
 pub mod method {
@@ -81,78 +76,58 @@ impl MethodHandler {
         request
     }
 
-    pub fn from_req(&self, rpc: RpcRequest) -> Result<RpcReqType, Error> {
+    pub fn from_req(&self, rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         match rpc.method.as_str() {
             method::CITA_BLOCK_BUMBER => {
-                let number = self.block_number(rpc)?;
-                Ok(RpcReqType::REQ(number))
+                self.block_number(rpc)
             }
             method::NET_PEER_COUNT => {
-                let peer = self.peer_count(rpc)?;
-                Ok(RpcReqType::REQ(peer))
+                self.peer_count(rpc)
             }
             method::CITA_GET_BLOCK_BY_HASH => {
-                let block = self.get_block_by_hash(rpc)?;
-                Ok(RpcReqType::REQ(block))
+                self.get_block_by_hash(rpc)
             }
             method::CITA_GET_BLOCK_BY_NUMBER => {
-                let bn = self.get_block_by_number(rpc)?;
-                Ok(RpcReqType::REQ(bn))
+                self.get_block_by_number(rpc)
             }
             method::CITA_GET_TRANSACTION => {
-                let gt = self.get_transaction(rpc)?;
-                Ok(RpcReqType::REQ(gt))
+                self.get_transaction(rpc)
             }
             method::ETH_CALL => {
-                let call = self.call(rpc)?;
-                Ok(RpcReqType::REQ(call))
+                self.call(rpc)
             }
             method::ETH_GET_LOGS => {
-                let gl = self.get_logs(rpc)?;
-                Ok(RpcReqType::REQ(gl))
+                self.get_logs(rpc)
             }
             method::ETH_GET_TRANSACTION_RECEIPT => {
-                let gt = self.get_transaction_receipt(rpc)?;
-                Ok(RpcReqType::REQ(gt))
+                self.get_transaction_receipt(rpc)
             }
             method::ETH_GET_TRANSACTION_COUNT => {
-                let gt = self.get_transaction_count(rpc)?;
-                Ok(RpcReqType::REQ(gt))
+                self.get_transaction_count(rpc)
             }
             method::ETH_GET_CODE => {
-                let gc = self.get_code(rpc)?;
-                Ok(RpcReqType::REQ(gc))
+                self.get_code(rpc)
             }
             method::CITA_SEND_TRANSACTION => {
-                let unverified_tx = self.send_transaction(rpc)?;
-                {
-                    let tx = unverified_tx.get_transaction();
-                    trace!("SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}", tx.get_nonce(), tx.get_valid_until_block(), tx.get_data(), tx.get_quota(), tx.get_to());
-                }
-                Ok(RpcReqType::TX(unverified_tx))
+                self.send_transaction(rpc)
             }
 
             method::ETH_NEW_FILTER => {
-                let new_filter = self.new_filter(rpc)?;
-                Ok(RpcReqType::REQ(new_filter))
+                self.new_filter(rpc)
             }
 
             method::ETH_NEW_BLOCK_FILTER => {
-                let new_block_filter = self.new_block_filter(rpc)?;
-                Ok(RpcReqType::REQ(new_block_filter))
+                self.new_block_filter(rpc)
             }
 
             method::ETH_UNINSTALL_FILTER => {
-                let uninstall_filter = self.uninstall_filter(rpc)?;
-                Ok(RpcReqType::REQ(uninstall_filter))
+                self.uninstall_filter(rpc)
             }
             method::ETH_GET_FILTER_CHANGES => {
-                let changes = self.get_filter_changes(rpc)?;
-                Ok(RpcReqType::REQ(changes))
+                self.get_filter_changes(rpc)
             }
             method::ETH_GET_FILTER_LOGS => {
-                let filter = self.get_filter_logs(rpc)?;
-                Ok(RpcReqType::REQ(filter))
+                self.get_filter_logs(rpc)
             }
 
             _ => Err(Error::method_not_found()),
@@ -162,21 +137,28 @@ impl MethodHandler {
 
 
 impl MethodHandler {
-    pub fn send_transaction(&self, req_rpc: RpcRequest) -> Result<blockchain::UnverifiedTransaction, Error> {
+    pub fn send_transaction(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        let mut request = self.create_request();
         let params: (String,) = req_rpc.params.parse()?;
         let data = clean_0x(&params.0);
-        data.from_hex()
-            .map_err(|_err| {
-                         let err_msg = format!("param not hex string : {:?}", _err);
-                         Error::parse_error_msg(err_msg.as_ref())
-                     })
-            .and_then(|content| {
-                          parse_from_bytes::<blockchain::UnverifiedTransaction>(&content[..]).map_err(|_err| {
-                                                                                                          let err_msg = format!("parse protobuf UnverifiedTransaction data error : {:?}", _err);
-                                                                                                          Error::parse_error_msg(err_msg.as_ref())
-                                                                                                      })
-                      })
+        let un_tx = data.from_hex()
+                        .map_err(|_err| {
+                                     let err_msg = format!("param not hex string : {:?}", _err);
+                                     Error::parse_error_msg(err_msg.as_ref())
+                                 })
+                        .and_then(|content| {
+                                      parse_from_bytes::<blockchain::UnverifiedTransaction>(&content[..]).map_err(|_err| {
+                                                                                                                      let err_msg = format!("parse protobuf UnverifiedTransaction data error : {:?}", _err);
+                                                                                                                      Error::parse_error_msg(err_msg.as_ref())
+                                                                                                                  })
+                                  })?;
 
+        {
+            let tx = un_tx.get_transaction();
+            trace!("SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}", tx.get_nonce(), tx.get_valid_until_block(), tx.get_data(), tx.get_quota(), tx.get_to());
+        }
+        request.set_un_tx(un_tx);
+        Ok(request)
     }
 
 
@@ -282,16 +264,16 @@ impl MethodHandler {
 
     pub fn get_transaction_count(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
-        let tx_count = self.code_count(req_rpc)?;
-        trace!("code_count {:?}", tx_count);
+        let tx_count = self.code_or_count(req_rpc)?;
+        trace!("count = {:?}", tx_count);
         request.set_transaction_count(tx_count);
         Ok(request)
     }
 
 
-    fn code_count(&self, req_rpc: RpcRequest) -> Result<String, Error> {
+    fn code_or_count(&self, req_rpc: RpcRequest) -> Result<String, Error> {
         let (address, number): (H160, BlockNumber) = req_rpc.params.parse()?;
-        let count_code = CountAndCode::new(address.to_vec(), number);
+        let count_code = CountOrCode::new(address.to_vec(), number);
         match serde_json::to_string(&count_code) {
             Ok(data) => Ok(data),
             Err(err) => Err(Error::invalid_params(format!("{:?}", err))),// return error information
@@ -301,7 +283,7 @@ impl MethodHandler {
 
     pub fn get_code(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
-        let code = self.code_count(req_rpc)?;
+        let code = self.code_or_count(req_rpc)?;
         request.set_code(code);
         Ok(request)
     }
@@ -463,8 +445,8 @@ mod tests {
             params: Params::Array(vec![Value::from(clean_0x(&utx_string.to_hex()).to_owned())]),
         };
         let handler = MethodHandler;
-        let result1: Result<blockchain::UnverifiedTransaction, Error> = handler.send_transaction(rpc1);
-        let result2: Result<blockchain::UnverifiedTransaction, Error> = handler.send_transaction(rpc2);
+        let result1: Result<reqlib::Request, Error> = handler.send_transaction(rpc1);
+        let result2: Result<reqlib::Request, Error> = handler.send_transaction(rpc2);
         assert!(result1.is_ok());
         assert!(result2.is_ok());
     }
