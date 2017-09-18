@@ -165,7 +165,7 @@ where
     fn create(&mut self, gas: &U256, value: &U256, code: &[u8]) -> evm::ContractCreateResult {
         // create new contract address
         let address = match self.state.nonce(&self.origin_info.address) {
-            Ok(nonce) => contract_address(&self.origin_info.address, &nonce),
+            Ok(nonce) => contract_address_inner(&self.origin_info.address, &nonce),
             Err(e) => {
                 debug!(target: "ext", "Database corruption encountered: {:?}", e);
                 return evm::ContractCreateResult::Failed;
