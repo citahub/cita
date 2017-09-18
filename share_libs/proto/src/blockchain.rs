@@ -1,20 +1,3 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 // This file is generated. Do not edit
 // @generated
 
@@ -139,7 +122,7 @@ impl ::protobuf::Message for Proof {
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_enum()?;
                     self.field_type = tmp;
                 },
@@ -157,10 +140,10 @@ impl ::protobuf::Message for Proof {
         let mut my_size = 0;
         if !self.content.is_empty() {
             my_size += ::protobuf::rt::bytes_size(1, &self.content);
-        };
+        }
         if self.field_type != ProofType::AuthorityRound {
             my_size += ::protobuf::rt::enum_size(2, self.field_type);
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -169,10 +152,10 @@ impl ::protobuf::Message for Proof {
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
         if !self.content.is_empty() {
             os.write_bytes(1, &self.content)?;
-        };
+        }
         if self.field_type != ProofType::AuthorityRound {
             os.write_enum(2, self.field_type.value())?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -267,7 +250,7 @@ pub struct BlockHeader {
     pub transactions_root: ::std::vec::Vec<u8>,
     pub receipts_root: ::std::vec::Vec<u8>,
     pub gas_used: u64,
-    proof: ::protobuf::SingularPtrField<Proof>,
+    pub proof: ::protobuf::SingularPtrField<Proof>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -516,7 +499,7 @@ impl BlockHeader {
     pub fn mut_proof(&mut self) -> &mut Proof {
         if self.proof.is_none() {
             self.proof.set_default();
-        };
+        }
         self.proof.as_mut().unwrap()
     }
 
@@ -540,6 +523,11 @@ impl BlockHeader {
 
 impl ::protobuf::Message for BlockHeader {
     fn is_initialized(&self) -> bool {
+        for v in &self.proof {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
         true
     }
 
@@ -553,14 +541,14 @@ impl ::protobuf::Message for BlockHeader {
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_uint64()?;
                     self.timestamp = tmp;
                 },
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_uint64()?;
                     self.height = tmp;
                 },
@@ -576,7 +564,7 @@ impl ::protobuf::Message for BlockHeader {
                 7 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_uint64()?;
                     self.gas_used = tmp;
                 },
@@ -597,29 +585,29 @@ impl ::protobuf::Message for BlockHeader {
         let mut my_size = 0;
         if !self.prevhash.is_empty() {
             my_size += ::protobuf::rt::bytes_size(1, &self.prevhash);
-        };
+        }
         if self.timestamp != 0 {
             my_size += ::protobuf::rt::value_size(2, self.timestamp, ::protobuf::wire_format::WireTypeVarint);
-        };
+        }
         if self.height != 0 {
             my_size += ::protobuf::rt::value_size(3, self.height, ::protobuf::wire_format::WireTypeVarint);
-        };
+        }
         if !self.state_root.is_empty() {
             my_size += ::protobuf::rt::bytes_size(4, &self.state_root);
-        };
+        }
         if !self.transactions_root.is_empty() {
             my_size += ::protobuf::rt::bytes_size(5, &self.transactions_root);
-        };
+        }
         if !self.receipts_root.is_empty() {
             my_size += ::protobuf::rt::bytes_size(6, &self.receipts_root);
-        };
+        }
         if self.gas_used != 0 {
             my_size += ::protobuf::rt::value_size(7, self.gas_used, ::protobuf::wire_format::WireTypeVarint);
-        };
-        if let Some(v) = self.proof.as_ref() {
+        }
+        if let Some(ref v) = self.proof.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -628,30 +616,30 @@ impl ::protobuf::Message for BlockHeader {
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
         if !self.prevhash.is_empty() {
             os.write_bytes(1, &self.prevhash)?;
-        };
+        }
         if self.timestamp != 0 {
             os.write_uint64(2, self.timestamp)?;
-        };
+        }
         if self.height != 0 {
             os.write_uint64(3, self.height)?;
-        };
+        }
         if !self.state_root.is_empty() {
             os.write_bytes(4, &self.state_root)?;
-        };
+        }
         if !self.transactions_root.is_empty() {
             os.write_bytes(5, &self.transactions_root)?;
-        };
+        }
         if !self.receipts_root.is_empty() {
             os.write_bytes(6, &self.receipts_root)?;
-        };
+        }
         if self.gas_used != 0 {
             os.write_uint64(7, self.gas_used)?;
-        };
-        if let Some(v) = self.proof.as_ref() {
+        }
+        if let Some(ref v) = self.proof.as_ref() {
             os.write_tag(8, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -873,7 +861,7 @@ impl ::protobuf::Message for Status {
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_uint64()?;
                     self.height = tmp;
                 },
@@ -891,10 +879,10 @@ impl ::protobuf::Message for Status {
         let mut my_size = 0;
         if !self.hash.is_empty() {
             my_size += ::protobuf::rt::bytes_size(1, &self.hash);
-        };
+        }
         if self.height != 0 {
             my_size += ::protobuf::rt::value_size(2, self.height, ::protobuf::wire_format::WireTypeVarint);
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -903,10 +891,10 @@ impl ::protobuf::Message for Status {
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
         if !self.hash.is_empty() {
             os.write_bytes(1, &self.hash)?;
-        };
+        }
         if self.height != 0 {
             os.write_uint64(2, self.height)?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -1189,14 +1177,14 @@ impl ::protobuf::Message for Transaction {
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_uint64()?;
                     self.quota = tmp;
                 },
                 4 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_uint64()?;
                     self.valid_until_block = tmp;
                 },
@@ -1217,19 +1205,19 @@ impl ::protobuf::Message for Transaction {
         let mut my_size = 0;
         if !self.to.is_empty() {
             my_size += ::protobuf::rt::string_size(1, &self.to);
-        };
+        }
         if !self.nonce.is_empty() {
             my_size += ::protobuf::rt::string_size(2, &self.nonce);
-        };
+        }
         if self.quota != 0 {
             my_size += ::protobuf::rt::value_size(3, self.quota, ::protobuf::wire_format::WireTypeVarint);
-        };
+        }
         if self.valid_until_block != 0 {
             my_size += ::protobuf::rt::value_size(4, self.valid_until_block, ::protobuf::wire_format::WireTypeVarint);
-        };
+        }
         if !self.data.is_empty() {
             my_size += ::protobuf::rt::bytes_size(5, &self.data);
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -1238,19 +1226,19 @@ impl ::protobuf::Message for Transaction {
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
         if !self.to.is_empty() {
             os.write_string(1, &self.to)?;
-        };
+        }
         if !self.nonce.is_empty() {
             os.write_string(2, &self.nonce)?;
-        };
+        }
         if self.quota != 0 {
             os.write_uint64(3, self.quota)?;
-        };
+        }
         if self.valid_until_block != 0 {
             os.write_uint64(4, self.valid_until_block)?;
-        };
+        }
         if !self.data.is_empty() {
             os.write_bytes(5, &self.data)?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -1356,7 +1344,7 @@ impl ::protobuf::reflect::ProtobufValue for Transaction {
 #[derive(PartialEq,Clone,Default)]
 pub struct UnverifiedTransaction {
     // message fields
-    transaction: ::protobuf::SingularPtrField<Transaction>,
+    pub transaction: ::protobuf::SingularPtrField<Transaction>,
     pub signature: ::std::vec::Vec<u8>,
     pub crypto: Crypto,
     // special fields
@@ -1402,7 +1390,7 @@ impl UnverifiedTransaction {
     pub fn mut_transaction(&mut self) -> &mut Transaction {
         if self.transaction.is_none() {
             self.transaction.set_default();
-        };
+        }
         self.transaction.as_mut().unwrap()
     }
 
@@ -1483,6 +1471,11 @@ impl UnverifiedTransaction {
 
 impl ::protobuf::Message for UnverifiedTransaction {
     fn is_initialized(&self) -> bool {
+        for v in &self.transaction {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
         true
     }
 
@@ -1499,7 +1492,7 @@ impl ::protobuf::Message for UnverifiedTransaction {
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_enum()?;
                     self.crypto = tmp;
                 },
@@ -1515,33 +1508,33 @@ impl ::protobuf::Message for UnverifiedTransaction {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if let Some(v) = self.transaction.as_ref() {
+        if let Some(ref v) = self.transaction.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        };
+        }
         if !self.signature.is_empty() {
             my_size += ::protobuf::rt::bytes_size(2, &self.signature);
-        };
+        }
         if self.crypto != Crypto::SECP {
             my_size += ::protobuf::rt::enum_size(3, self.crypto);
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
-        if let Some(v) = self.transaction.as_ref() {
+        if let Some(ref v) = self.transaction.as_ref() {
             os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        };
+        }
         if !self.signature.is_empty() {
             os.write_bytes(2, &self.signature)?;
-        };
+        }
         if self.crypto != Crypto::SECP {
             os.write_enum(3, self.crypto.value())?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -1635,7 +1628,7 @@ impl ::protobuf::reflect::ProtobufValue for UnverifiedTransaction {
 #[derive(PartialEq,Clone,Default)]
 pub struct SignedTransaction {
     // message fields
-    transaction_with_sig: ::protobuf::SingularPtrField<UnverifiedTransaction>,
+    pub transaction_with_sig: ::protobuf::SingularPtrField<UnverifiedTransaction>,
     pub tx_hash: ::std::vec::Vec<u8>,
     pub signer: ::std::vec::Vec<u8>,
     // special fields
@@ -1681,7 +1674,7 @@ impl SignedTransaction {
     pub fn mut_transaction_with_sig(&mut self) -> &mut UnverifiedTransaction {
         if self.transaction_with_sig.is_none() {
             self.transaction_with_sig.set_default();
-        };
+        }
         self.transaction_with_sig.as_mut().unwrap()
     }
 
@@ -1773,6 +1766,11 @@ impl SignedTransaction {
 
 impl ::protobuf::Message for SignedTransaction {
     fn is_initialized(&self) -> bool {
+        for v in &self.transaction_with_sig {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
         true
     }
 
@@ -1801,33 +1799,33 @@ impl ::protobuf::Message for SignedTransaction {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if let Some(v) = self.transaction_with_sig.as_ref() {
+        if let Some(ref v) = self.transaction_with_sig.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        };
+        }
         if !self.tx_hash.is_empty() {
             my_size += ::protobuf::rt::bytes_size(2, &self.tx_hash);
-        };
+        }
         if !self.signer.is_empty() {
             my_size += ::protobuf::rt::bytes_size(3, &self.signer);
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
-        if let Some(v) = self.transaction_with_sig.as_ref() {
+        if let Some(ref v) = self.transaction_with_sig.as_ref() {
             os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        };
+        }
         if !self.tx_hash.is_empty() {
             os.write_bytes(2, &self.tx_hash)?;
-        };
+        }
         if !self.signer.is_empty() {
             os.write_bytes(3, &self.signer)?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -1919,235 +1917,9 @@ impl ::protobuf::reflect::ProtobufValue for SignedTransaction {
 }
 
 #[derive(PartialEq,Clone,Default)]
-pub struct TxResponse {
-    // message fields
-    pub hash: ::std::vec::Vec<u8>,
-    pub result: ::std::vec::Vec<u8>,
-    // special fields
-    unknown_fields: ::protobuf::UnknownFields,
-    cached_size: ::protobuf::CachedSize,
-}
-
-// see codegen.rs for the explanation why impl Sync explicitly
-unsafe impl ::std::marker::Sync for TxResponse {}
-
-impl TxResponse {
-    pub fn new() -> TxResponse {
-        ::std::default::Default::default()
-    }
-
-    pub fn default_instance() -> &'static TxResponse {
-        static mut instance: ::protobuf::lazy::Lazy<TxResponse> = ::protobuf::lazy::Lazy {
-            lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const TxResponse,
-        };
-        unsafe {
-            instance.get(TxResponse::new)
-        }
-    }
-
-    // bytes hash = 1;
-
-    pub fn clear_hash(&mut self) {
-        self.hash.clear();
-    }
-
-    // Param is passed by value, moved
-    pub fn set_hash(&mut self, v: ::std::vec::Vec<u8>) {
-        self.hash = v;
-    }
-
-    // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_hash(&mut self) -> &mut ::std::vec::Vec<u8> {
-        &mut self.hash
-    }
-
-    // Take field
-    pub fn take_hash(&mut self) -> ::std::vec::Vec<u8> {
-        ::std::mem::replace(&mut self.hash, ::std::vec::Vec::new())
-    }
-
-    pub fn get_hash(&self) -> &[u8] {
-        &self.hash
-    }
-
-    fn get_hash_for_reflect(&self) -> &::std::vec::Vec<u8> {
-        &self.hash
-    }
-
-    fn mut_hash_for_reflect(&mut self) -> &mut ::std::vec::Vec<u8> {
-        &mut self.hash
-    }
-
-    // bytes result = 2;
-
-    pub fn clear_result(&mut self) {
-        self.result.clear();
-    }
-
-    // Param is passed by value, moved
-    pub fn set_result(&mut self, v: ::std::vec::Vec<u8>) {
-        self.result = v;
-    }
-
-    // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_result(&mut self) -> &mut ::std::vec::Vec<u8> {
-        &mut self.result
-    }
-
-    // Take field
-    pub fn take_result(&mut self) -> ::std::vec::Vec<u8> {
-        ::std::mem::replace(&mut self.result, ::std::vec::Vec::new())
-    }
-
-    pub fn get_result(&self) -> &[u8] {
-        &self.result
-    }
-
-    fn get_result_for_reflect(&self) -> &::std::vec::Vec<u8> {
-        &self.result
-    }
-
-    fn mut_result_for_reflect(&mut self) -> &mut ::std::vec::Vec<u8> {
-        &mut self.result
-    }
-}
-
-impl ::protobuf::Message for TxResponse {
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream) -> ::protobuf::ProtobufResult<()> {
-        while !is.eof()? {
-            let (field_number, wire_type) = is.read_tag_unpack()?;
-            match field_number {
-                1 => {
-                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.hash)?;
-                },
-                2 => {
-                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.result)?;
-                },
-                _ => {
-                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u32 {
-        let mut my_size = 0;
-        if !self.hash.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(1, &self.hash);
-        };
-        if !self.result.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(2, &self.result);
-        };
-        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
-        self.cached_size.set(my_size);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
-        if !self.hash.is_empty() {
-            os.write_bytes(1, &self.hash)?;
-        };
-        if !self.result.is_empty() {
-            os.write_bytes(2, &self.result)?;
-        };
-        os.write_unknown_fields(self.get_unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn get_cached_size(&self) -> u32 {
-        self.cached_size.get()
-    }
-
-    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
-        &self.unknown_fields
-    }
-
-    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
-        &mut self.unknown_fields
-    }
-
-    fn as_any(&self) -> &::std::any::Any {
-        self as &::std::any::Any
-    }
-    fn as_any_mut(&mut self) -> &mut ::std::any::Any {
-        self as &mut ::std::any::Any
-    }
-    fn into_any(self: Box<Self>) -> ::std::boxed::Box<::std::any::Any> {
-        self
-    }
-
-    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
-        ::protobuf::MessageStatic::descriptor_static(None::<Self>)
-    }
-}
-
-impl ::protobuf::MessageStatic for TxResponse {
-    fn new() -> TxResponse {
-        TxResponse::new()
-    }
-
-    fn descriptor_static(_: ::std::option::Option<TxResponse>) -> &'static ::protobuf::reflect::MessageDescriptor {
-        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy {
-            lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const ::protobuf::reflect::MessageDescriptor,
-        };
-        unsafe {
-            descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "hash",
-                    TxResponse::get_hash_for_reflect,
-                    TxResponse::mut_hash_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "result",
-                    TxResponse::get_result_for_reflect,
-                    TxResponse::mut_result_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<TxResponse>(
-                    "TxResponse",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
-        }
-    }
-}
-
-impl ::protobuf::Clear for TxResponse {
-    fn clear(&mut self) {
-        self.clear_hash();
-        self.clear_result();
-        self.unknown_fields.clear();
-    }
-}
-
-impl ::std::fmt::Debug for TxResponse {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for TxResponse {
-    fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
-        ::protobuf::reflect::ProtobufValueRef::Message(self)
-    }
-}
-
-#[derive(PartialEq,Clone,Default)]
 pub struct BlockBody {
     // message fields
-    transactions: ::protobuf::RepeatedField<SignedTransaction>,
+    pub transactions: ::protobuf::RepeatedField<SignedTransaction>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -2207,6 +1979,11 @@ impl BlockBody {
 
 impl ::protobuf::Message for BlockBody {
     fn is_initialized(&self) -> bool {
+        for v in &self.transactions {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
         true
     }
 
@@ -2326,8 +2103,8 @@ impl ::protobuf::reflect::ProtobufValue for BlockBody {
 pub struct Block {
     // message fields
     pub version: u32,
-    header: ::protobuf::SingularPtrField<BlockHeader>,
-    body: ::protobuf::SingularPtrField<BlockBody>,
+    pub header: ::protobuf::SingularPtrField<BlockHeader>,
+    pub body: ::protobuf::SingularPtrField<BlockBody>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -2394,7 +2171,7 @@ impl Block {
     pub fn mut_header(&mut self) -> &mut BlockHeader {
         if self.header.is_none() {
             self.header.set_default();
-        };
+        }
         self.header.as_mut().unwrap()
     }
 
@@ -2435,7 +2212,7 @@ impl Block {
     pub fn mut_body(&mut self) -> &mut BlockBody {
         if self.body.is_none() {
             self.body.set_default();
-        };
+        }
         self.body.as_mut().unwrap()
     }
 
@@ -2459,6 +2236,16 @@ impl Block {
 
 impl ::protobuf::Message for Block {
     fn is_initialized(&self) -> bool {
+        for v in &self.header {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.body {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
         true
     }
 
@@ -2469,7 +2256,7 @@ impl ::protobuf::Message for Block {
                 1 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_uint32()?;
                     self.version = tmp;
                 },
@@ -2493,15 +2280,15 @@ impl ::protobuf::Message for Block {
         let mut my_size = 0;
         if self.version != 0 {
             my_size += ::protobuf::rt::value_size(1, self.version, ::protobuf::wire_format::WireTypeVarint);
-        };
-        if let Some(v) = self.header.as_ref() {
+        }
+        if let Some(ref v) = self.header.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        };
-        if let Some(v) = self.body.as_ref() {
+        }
+        if let Some(ref v) = self.body.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -2510,17 +2297,17 @@ impl ::protobuf::Message for Block {
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
         if self.version != 0 {
             os.write_uint32(1, self.version)?;
-        };
-        if let Some(v) = self.header.as_ref() {
+        }
+        if let Some(ref v) = self.header.as_ref() {
             os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        };
-        if let Some(v) = self.body.as_ref() {
+        }
+        if let Some(ref v) = self.body.as_ref() {
             os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -2887,7 +2674,7 @@ impl ::protobuf::ProtobufEnum for ProofType {
         values
     }
 
-    fn enum_descriptor_static(_: Option<ProofType>) -> &'static ::protobuf::reflect::EnumDescriptor {
+    fn enum_descriptor_static(_: ::std::option::Option<ProofType>) -> &'static ::protobuf::reflect::EnumDescriptor {
         static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::EnumDescriptor> = ::protobuf::lazy::Lazy {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,
@@ -2942,7 +2729,7 @@ impl ::protobuf::ProtobufEnum for Crypto {
         values
     }
 
-    fn enum_descriptor_static(_: Option<Crypto>) -> &'static ::protobuf::reflect::EnumDescriptor {
+    fn enum_descriptor_static(_: ::std::option::Option<Crypto>) -> &'static ::protobuf::reflect::EnumDescriptor {
         static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::EnumDescriptor> = ::protobuf::lazy::Lazy {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,

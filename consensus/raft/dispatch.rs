@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(unused_variables)]
-
 use libproto::*;
 use libraft::{NotifyMessage, Command, decode};
 use mio;
@@ -25,13 +24,6 @@ use std::sync::mpsc::Receiver;
 pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, MsgClass)>) {
     let (id, cmd_id, content_ext) = rx.recv().unwrap();
     match content_ext {
-        MsgClass::REQUEST(req) => {}
-        MsgClass::RESPONSE(rep) => {}
-        MsgClass::HEADER(header) => {}
-        MsgClass::BODY(body) => {}
-        MsgClass::BLOCK(block) => {}
-        MsgClass::TX(tx) => {}
-        MsgClass::TXRESPONSE(content) => {}
         MsgClass::STATUS(status) => {
             if id == submodules::CHAIN {
                 info!("received new status.");
@@ -49,12 +41,8 @@ pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, M
                 }
             }
         }
-        _ => {}
-        /*MsgClass::VERIFYTXREQ(req) => {}
-        MsgClass::VERIFYTXRESP(resp) => {}
-        MsgClass::VERIFYBLKREQ(req) => {}
-        MsgClass::VERIFYBLKRESP(resp) => {}
-        MsgClass::BLOCKTXHASHES(txhashes) => {}
-        MsgClass::BLOCKTXHASHESREQ(req) => {}*/
+        _ => {
+            error!("error content!!!");
+        }
     }
 }

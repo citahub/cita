@@ -208,28 +208,28 @@ impl ::protobuf::Message for Message {
                 1 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_uint32()?;
                     self.cmd_id = tmp;
                 },
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_enum()?;
                     self.field_type = tmp;
                 },
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_uint32()?;
                     self.origin = tmp;
                 },
                 4 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    };
+                    }
                     let tmp = is.read_enum()?;
                     self.operate = tmp;
                 },
@@ -250,19 +250,19 @@ impl ::protobuf::Message for Message {
         let mut my_size = 0;
         if self.cmd_id != 0 {
             my_size += ::protobuf::rt::value_size(1, self.cmd_id, ::protobuf::wire_format::WireTypeVarint);
-        };
+        }
         if self.field_type != MsgType::REQUEST {
             my_size += ::protobuf::rt::enum_size(2, self.field_type);
-        };
+        }
         if self.origin != 0 {
             my_size += ::protobuf::rt::value_size(3, self.origin, ::protobuf::wire_format::WireTypeVarint);
-        };
+        }
         if self.operate != OperateType::BROADCAST {
             my_size += ::protobuf::rt::enum_size(4, self.operate);
-        };
+        }
         if !self.content.is_empty() {
             my_size += ::protobuf::rt::bytes_size(5, &self.content);
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -271,19 +271,19 @@ impl ::protobuf::Message for Message {
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
         if self.cmd_id != 0 {
             os.write_uint32(1, self.cmd_id)?;
-        };
+        }
         if self.field_type != MsgType::REQUEST {
             os.write_enum(2, self.field_type.value())?;
-        };
+        }
         if self.origin != 0 {
             os.write_uint32(3, self.origin)?;
-        };
+        }
         if self.operate != OperateType::BROADCAST {
             os.write_enum(4, self.operate.value())?;
-        };
+        }
         if !self.content.is_empty() {
             os.write_bytes(5, &self.content)?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -390,20 +390,17 @@ impl ::protobuf::reflect::ProtobufValue for Message {
 pub enum MsgType {
     REQUEST = 0,
     HEADER = 1,
-    BODY = 2,
-    BLOCK = 3,
-    TX = 4,
-    STATUS = 5,
-    MSG = 6,
-    RESPONSE = 7,
-    TX_RESPONSE = 8,
-    VERIFY_TX_REQ = 9,
-    VERIFY_TX_RESP = 10,
-    VERIFY_BLK_REQ = 11,
-    VERIFY_BLK_RESP = 12,
-    BLOCK_TXHASHES = 13,
-    BLOCK_TXHASHES_REQ = 14,
-    BLOCK_WITH_PROOF = 15,
+    BLOCK = 2,
+    STATUS = 3,
+    MSG = 4,
+    RESPONSE = 5,
+    VERIFY_TX_REQ = 6,
+    VERIFY_TX_RESP = 7,
+    VERIFY_BLK_REQ = 8,
+    VERIFY_BLK_RESP = 9,
+    BLOCK_TXHASHES = 10,
+    BLOCK_TXHASHES_REQ = 11,
+    BLOCK_WITH_PROOF = 12,
 }
 
 impl ::protobuf::ProtobufEnum for MsgType {
@@ -415,20 +412,17 @@ impl ::protobuf::ProtobufEnum for MsgType {
         match value {
             0 => ::std::option::Option::Some(MsgType::REQUEST),
             1 => ::std::option::Option::Some(MsgType::HEADER),
-            2 => ::std::option::Option::Some(MsgType::BODY),
-            3 => ::std::option::Option::Some(MsgType::BLOCK),
-            4 => ::std::option::Option::Some(MsgType::TX),
-            5 => ::std::option::Option::Some(MsgType::STATUS),
-            6 => ::std::option::Option::Some(MsgType::MSG),
-            7 => ::std::option::Option::Some(MsgType::RESPONSE),
-            8 => ::std::option::Option::Some(MsgType::TX_RESPONSE),
-            9 => ::std::option::Option::Some(MsgType::VERIFY_TX_REQ),
-            10 => ::std::option::Option::Some(MsgType::VERIFY_TX_RESP),
-            11 => ::std::option::Option::Some(MsgType::VERIFY_BLK_REQ),
-            12 => ::std::option::Option::Some(MsgType::VERIFY_BLK_RESP),
-            13 => ::std::option::Option::Some(MsgType::BLOCK_TXHASHES),
-            14 => ::std::option::Option::Some(MsgType::BLOCK_TXHASHES_REQ),
-            15 => ::std::option::Option::Some(MsgType::BLOCK_WITH_PROOF),
+            2 => ::std::option::Option::Some(MsgType::BLOCK),
+            3 => ::std::option::Option::Some(MsgType::STATUS),
+            4 => ::std::option::Option::Some(MsgType::MSG),
+            5 => ::std::option::Option::Some(MsgType::RESPONSE),
+            6 => ::std::option::Option::Some(MsgType::VERIFY_TX_REQ),
+            7 => ::std::option::Option::Some(MsgType::VERIFY_TX_RESP),
+            8 => ::std::option::Option::Some(MsgType::VERIFY_BLK_REQ),
+            9 => ::std::option::Option::Some(MsgType::VERIFY_BLK_RESP),
+            10 => ::std::option::Option::Some(MsgType::BLOCK_TXHASHES),
+            11 => ::std::option::Option::Some(MsgType::BLOCK_TXHASHES_REQ),
+            12 => ::std::option::Option::Some(MsgType::BLOCK_WITH_PROOF),
             _ => ::std::option::Option::None
         }
     }
@@ -437,13 +431,10 @@ impl ::protobuf::ProtobufEnum for MsgType {
         static values: &'static [MsgType] = &[
             MsgType::REQUEST,
             MsgType::HEADER,
-            MsgType::BODY,
             MsgType::BLOCK,
-            MsgType::TX,
             MsgType::STATUS,
             MsgType::MSG,
             MsgType::RESPONSE,
-            MsgType::TX_RESPONSE,
             MsgType::VERIFY_TX_REQ,
             MsgType::VERIFY_TX_RESP,
             MsgType::VERIFY_BLK_REQ,
@@ -455,7 +446,7 @@ impl ::protobuf::ProtobufEnum for MsgType {
         values
     }
 
-    fn enum_descriptor_static(_: Option<MsgType>) -> &'static ::protobuf::reflect::EnumDescriptor {
+    fn enum_descriptor_static(_: ::std::option::Option<MsgType>) -> &'static ::protobuf::reflect::EnumDescriptor {
         static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::EnumDescriptor> = ::protobuf::lazy::Lazy {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,
@@ -513,7 +504,7 @@ impl ::protobuf::ProtobufEnum for OperateType {
         values
     }
 
-    fn enum_descriptor_static(_: Option<OperateType>) -> &'static ::protobuf::reflect::EnumDescriptor {
+    fn enum_descriptor_static(_: ::std::option::Option<OperateType>) -> &'static ::protobuf::reflect::EnumDescriptor {
         static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::EnumDescriptor> = ::protobuf::lazy::Lazy {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,

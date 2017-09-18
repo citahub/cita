@@ -33,7 +33,7 @@ pub fn handle_rpc(con: &Connection, tx_pub: &Sender<(String, Vec<u8>)>, payload:
         trace!("recive MQ messsage from {:?} module", display_cmd(cid));
         if cid == cmd_id(submodules::JSON_RPC, topics::REQUEST) && t == MsgType::REQUEST {
             let mut ts = parse_from_bytes::<Request>(msg.get_content()).unwrap();
-            let mut response = request::Response::new();
+            let mut response = Response::new();
             response.set_request_id(ts.take_request_id());
             if ts.has_peercount() {
                 let peercount = con.peers_pair.iter().filter(|x| x.2.as_ref().read().is_some()).count();
@@ -51,7 +51,7 @@ pub fn is_need_proc(payload: &[u8]) -> (String, bool, communication::Message) {
         let mut is_proc = true;
         let t = msg.get_field_type();
         let cid = msg.get_cmd_id();
-        if cid == cmd_id(submodules::CONSENSUS, topics::NEW_TX) && t == MsgType::TX {
+        if cid == cmd_id(submodules::CONSENSUS, topics::REQUEST) && t == MsgType::REQUEST {
             trace!("CONSENSUS broadcast tx");
             topic = "net.tx".to_string();
         } else if cid == cmd_id(submodules::CONSENSUS, topics::NEW_BLK) && t == MsgType::BLOCK {

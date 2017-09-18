@@ -38,7 +38,8 @@ fn bench_base(b: &mut Bencher) {
     }
     let sys_time = SystemTime::now();
     let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
-    println!{"time: {:?}", diff};
+    println!("pass");
+    println!("test {:20} ... bench: {}.{} s/iter", "bench_base", diff.as_secs(), diff.subsec_nanos());
     b.iter(|| {});
 }
 
@@ -59,7 +60,8 @@ fn bench_enqueue(b: &mut Bencher) {
     }
     let sys_time = SystemTime::now();
     let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
-    println!{"time: {:?}", diff};
+    println!("pass");
+    println!("test {:20} ... bench: {}.{} s/iter", "bench_enqueue", diff.as_secs(), diff.subsec_nanos());
     b.iter(|| {});
 }
 
@@ -81,7 +83,8 @@ fn bench_package(b: &mut Bencher) {
     p.package(666);
     let sys_time = SystemTime::now();
     let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
-    println!{"time: {:?}", diff};
+    println!("pass");
+    println!("test {:20} ... bench: {}.{} s/iter", "bench_package", diff.as_secs(), diff.subsec_nanos());
     b.iter(|| {});
 }
 
@@ -105,6 +108,7 @@ fn bench_update(b: &mut Bencher) {
     p.update(&txs);
     let sys_time = SystemTime::now();
     let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
-    println!{"time: {:?}", diff};
+    println!("pass");
+    println!("test {:20} ... bench: {}.{} s/iter", "bench_update", diff.as_secs(), diff.subsec_nanos());
     b.iter(|| {});
 }

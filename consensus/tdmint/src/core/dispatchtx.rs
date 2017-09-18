@@ -17,19 +17,18 @@
 
 extern crate threadpool;
 
-use core::txhandler::TxHandler;
+use core::txhandler::{TxHandler, TransType};
 use core::txwal::Txwal;
-use libproto::{submodules, topics, factory, communication};
-use libproto::auth::Ret;
-use libproto::blockchain::{TxResponse, SignedTransaction};
+use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request};
+use libproto::blockchain::SignedTransaction;
 use protobuf::Message;
 use pubsub::start_pubsub;
+use serde_json;
 use std::sync::{RwLock, Arc};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 use tx_pool::Pool;
-use util::H256;
 
 pub struct Dispatchtx {
     tx_pool: Arc<RwLock<Pool>>,
@@ -107,45 +106,57 @@ impl Dispatchtx {
                       });
     }
 
-    //TODO error return JsonRpc
-    fn receive_new_transaction(&self, signed_tx: Option<SignedTransaction>, result: Option<(H256, Ret)>, tx_pub: Sender<(String, Vec<u8>)>) {
-        let mut error_msg: Option<String> = None;
-        signed_tx.map(|signed_tx| if self.tx_flow_control() {
-                          error_msg = Some(String::from("BUSY"));
-                      } else {
-                          let is_success = self.add_tx_to_pool(&signed_tx);
-                          if is_success {
-                              let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_TX, communication::MsgType::TX, signed_tx.get_transaction_with_sig().write_to_bytes().unwrap());
-                              tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-                          } else {
-                              error_msg = Some(String::from("4:DUP"));
-                          }
-                      });
+    fn receive_new_transaction(&self, request_id: Vec<u8>, signed_tx: Option<SignedTransaction>, result: Option<TxResponse>, tx_pub: Sender<(String, Vec<u8>)>) {
+        match signed_tx {
+            //Verify ok
+            Some(tx) => {
+                let mut error_msg: Option<String> = None;
+                if self.tx_flow_control() {
+                    error_msg = Some(String::from("Busy"));
+                } else {
+                    if self.add_tx_to_pool(&tx) {
+                        let mut request = Request::new();
+                        request.set_request_id(request_id.clone());
+                        request.set_un_tx(tx.get_transaction_with_sig().clone());
+                        let msg = factory::create_msg(submodules::CONSENSUS, topics::REQUEST, communication::MsgType::REQUEST, request.write_to_bytes().unwrap());
+                        tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                    } else {
+                        error_msg = Some(String::from("Dup"));
+                    }
+                }
 
-        // tx from net, we don't need to reply
-        if result.is_none() {
-            return;
+                result.map(|mut tx_response| {
+                    let mut response = Response::new();
+                    response.set_request_id(request_id);
+                    if error_msg.is_some() {
+                        response.set_code(submodules::CONSENSUS as i64);
+                        tx_response.status = error_msg.unwrap();
+                        let error_msg = serde_json::to_string(&tx_response).unwrap();
+                        response.set_error_msg(error_msg);
+                    } else {
+                        let tx_state = serde_json::to_string(&tx_response).unwrap();
+                        response.set_tx_state(tx_state);
+                    }
+                    let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
+                    trace!("response new tx {:?}", response);
+                    tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                });
+            }
+            //Verify failed
+            None => {
+                result.map(|tx_response| {
+                    let mut response = Response::new();
+                    response.set_request_id(request_id);
+                    response.set_code(submodules::AUTH as i64);
+                    let error_msg = serde_json::to_string(&tx_response).unwrap();
+                    response.set_error_msg(error_msg);
+
+                    let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
+                    trace!("response new tx {:?}", response);
+                    tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                });
+            }
         }
-
-        let (hash, ret) = result.unwrap();
-        let mut tx_response = TxResponse::new();
-        tx_response.set_hash(hash.to_vec());
-        let ret = match ret {
-            Ret::Ok => "4:OK".to_string(),
-            Ret::Dup => "4:DUP".to_string(),
-            Ret::NotReady => "Not Ready".to_string(),
-            Ret::OutOfTime => "Out ot Time".to_string(),
-            Ret::BadSig => "BAD SIG".to_string(),
-            Ret::Err => "Err".to_string(),
-        };
-        tx_response.set_result(ret.into_bytes());
-
-        if error_msg.is_some() {
-            tx_response.set_result(error_msg.unwrap().into_bytes());
-        }
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::TX_RESPONSE, communication::MsgType::TX_RESPONSE, tx_response.write_to_bytes().unwrap());
-        trace!("response new tx {:?}", tx_response.get_hash());
-        tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
     pub fn read_tx_from_wal(&mut self) -> u64 {
@@ -153,10 +164,10 @@ impl Dispatchtx {
         self.wal.read(&mut tx_pool)
     }
 
-    pub fn process(&self, rx: &Receiver<(Option<SignedTransaction>, Option<(H256, Ret)>)>, tx_pub: Sender<(String, Vec<u8>)>) {
+    pub fn process(&self, rx: &Receiver<TransType>, tx_pub: Sender<(String, Vec<u8>)>) {
         let res = rx.recv().unwrap();
-        let (signed_tx, result) = res;
-        self.receive_new_transaction(signed_tx, result, tx_pub);
+        let (request_id, signed_tx, result) = res;
+        self.receive_new_transaction(request_id, signed_tx, result, tx_pub);
     }
 }
 

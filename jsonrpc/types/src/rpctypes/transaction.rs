@@ -16,8 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bytes::Bytes;
+use libproto::FullTransaction as PTransaction;
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
-use libproto::request::FullTransaction as PTransaction;
 use protobuf::Message;
 use util::H256;
 use util::U256;

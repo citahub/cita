@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+import "blockchain.proto";
+
+message FullTransaction {
+    SignedTransaction transaction = 1;
+    uint64 block_number = 2;
+    bytes block_hash = 3;
+    uint32 index = 4;
+}
+
+//pub mod submodules {
+//pub const JSON_RPC: u32 = 1;
+//pub const NET: u32 = 2;
+//pub const CHAIN: u32 = 3;
+//pub const CONSENSUS: u32 = 4;
+//pub const CONSENSUS_CMD: u32 = 5;
+//pub const AUTH: u32 = 6;
+//}
+
+message Response {
+    bytes request_id = 1;
+    int64 code = 2;//这个定义可以根据模块的submodules的值来划分，粗划分：0：正确，其他表示错误，2：network的错误，3：chain的错误，4：consensus错误，6:auth错误。正好对应模块的submodules
+    oneof data {
+        string error_msg = 3;
+        string tx_state = 4;
+        uint64 block_number = 5;
+        string block = 6;
+        FullTransaction ts = 7;
+        uint32 peercount = 8;
+        bytes call_result = 9;
+        string logs = 10;
+        string receipt = 11;
+        uint64 transaction_count = 12;
+        bytes contract_code = 13;
+        uint64 filter_id = 14;
+        bool uninstall_filter = 15;
+        bytes filter_changes = 16;
+        bytes filter_logs = 17;
+        bool none = 18;
+    }
+}
+

@@ -42,7 +42,17 @@ use util::*;
 const STACK_SIZE_PER_DEPTH: usize = 24 * 1024;
 
 /// Returns new address created from address and given nonce.
-pub fn contract_address(address: &Address, nonce: &U256) -> Address {
+pub fn contract_address(address: &Address, nonce: &String, block_limit: u64) -> Address {
+    use rlp::RlpStream;
+
+    let mut stream = RlpStream::new_list(3);
+    stream.append(address);
+    stream.append(nonce);
+    stream.append(&block_limit);
+    From::from(stream.out().crypt_hash())
+}
+
+pub fn contract_address_inner(address: &Address, nonce: &U256) -> Address {
     use rlp::RlpStream;
 
     let mut stream = RlpStream::new_list(2);
@@ -132,13 +142,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Execute transaction/call with tracing enabled
-    pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, check_nonce: bool, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
+    pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, _check_nonce: bool, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
     where
         T: Tracer,
         V: VMTracer,
     {
         let sender = t.sender();
-        let nonce = self.state.nonce(&sender)?;
 
         // let schedule = self.engine.schedule(self.info);
         // let base_gas_required = U256::from(t.gas_required(&schedule));
@@ -158,10 +167,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                                       required: base_gas_required,
                                       got: t.gas,
                                   }));
-        }
-        // validate transaction nonce
-        if check_nonce && t.nonce != nonce {
-            return Err(From::from(ExecutionError::InvalidNonce { expected: nonce, got: t.nonce }));
         }
 
         // TODO: we might need bigints here, or at least check overflows.
@@ -192,7 +197,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 (Ok(t.gas), vec![])
             }
             Action::Create => {
-                let new_address = contract_address(&sender, &nonce);
+                let new_address = contract_address(&sender, &t.nonce, t.block_limit);
                 let params = ActionParams {
                     code_address: new_address.clone(),
                     code_hash: t.data.crypt_hash(),
@@ -275,11 +280,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             let cost = U256::from(100);
             if cost <= params.gas {
                 let mut unconfirmed_substate = Substate::new();
-                let mut subvmtracer = vm_tracer.prepare_subtrace(params.code.as_ref().expect("scope is conditional on params.code.is_some(); qed"));
                 let mut trace_output = tracer.prepare_trace_output();
                 let output_policy = OutputPolicy::Return(output, trace_output.as_mut());
                 let res = {
-                    let mut ext = self.as_externalities(OriginInfo::from(&params), &mut unconfirmed_substate, output_policy, tracer, &mut subvmtracer);
+                    let mut tracer = NoopTracer;
+                    let mut vmtracer = NoopVMTracer;
+                    let mut ext = self.as_externalities(OriginInfo::from(&params), &mut unconfirmed_substate, output_policy, &mut tracer, &mut vmtracer);
                     contract.exec(params, &mut ext).finalize(ext)
                 };
                 self.enact_result(&res, substate, unconfirmed_substate);
@@ -523,7 +529,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
 #[cfg(test)]
 mod tests {
-    extern crate mktemp;
     extern crate libproto;
     extern crate env_logger;
     extern crate cita_ed25519 as ed25519;
@@ -531,7 +536,6 @@ mod tests {
     extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 
-    use self::mktemp::Temp;
     use self::rustc_hex::FromHex;
     use super::*;
     use action_params::{ActionParams, ActionValue};
@@ -539,11 +543,7 @@ mod tests {
     use env_info::EnvInfo;
     use evm::{Factory, VMType};
     use state::Substate;
-    use std::fs::File;
-    use std::io::Read;
-    use std::io::Write;
     use std::ops::Deref;
-    use std::process::Command;
     use std::str::FromStr;
     use std::sync::Arc;
     use tests::helpers::*;
@@ -552,8 +552,7 @@ mod tests {
     #[test]
     fn test_create_contract() {
         let _ = env_logger::init();
-        let contract_name = "AbiTest";
-        let contract = br#"
+        let source = r#"
 pragma solidity ^0.4.8;
 contract AbiTest {
   uint balance;
@@ -564,50 +563,14 @@ contract AbiTest {
 }
 "#;
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let nonce = U256::zero();
+        let nonce = "random";
+        let block_limit: u64 = 99;
         let gas_required = U256::from(100_000);
 
-        // input and output of solc command
-        let contract_file = Temp::new_file().unwrap().to_path_buf();
-        let output_dir = Temp::new_dir().unwrap().to_path_buf();
-        let deploy_code_file = output_dir.clone().join([contract_name, ".bin"].join(""));
-        let runtime_code_file = output_dir.clone().join([contract_name, ".bin-runtime"].join(""));
-
-        // prepare contract file
-        let mut file = File::create(contract_file.clone()).unwrap();
-        let mut content = String::new();
-        file.write_all(contract).expect("failed to write");
-
-        // execute solc command
-        Command::new("solc")
-            .arg(contract_file.clone())
-            .arg("--bin")
-            .arg("--bin-runtime")
-            .arg("-o")
-            .arg(output_dir)
-            .output()
-            .expect("failed to execute solc");
-
-        // read deploy code
-        File::open(deploy_code_file)
-            .expect("failed to open deploy code file!")
-            .read_to_string(&mut content)
-            .expect("failed to read binary");
-        println!("deploy code: {}", content);
-        let deploy_code = content.as_str().from_hex().unwrap();
-
-        // read runtime code
-        let mut content = String::new();
-        File::open(runtime_code_file)
-            .expect("failed to open deploy code file!")
-            .read_to_string(&mut content)
-            .expect("failed to read binary");
-        println!("runtime code: {}", content);
-        let runtime_code = content.as_str().from_hex().unwrap();
-
+        let (deploy_code, runtime_code) = solc("AbiTest", source);
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
         let native_factory = NativeFactory::default();
-        let contract_address = contract_address(&sender, &nonce);
+        let contract_address = contract_address(&sender, &nonce.to_owned(), block_limit);
         let mut params = ActionParams::default();
         params.address = contract_address.clone();
         params.sender = sender.clone();
@@ -634,9 +597,7 @@ contract AbiTest {
     #[test]
     fn test_call_contract() {
         let _ = env_logger::init();
-        let _ = env_logger::init();
-        let contract_name = "AbiTest";
-        let contract = br#"
+        let source = r#"
 pragma solidity ^0.4.8;
 contract AbiTest {
   uint balance;
@@ -649,42 +610,9 @@ contract AbiTest {
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
         let gas_required = U256::from(100_000);
         let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+        let (_, runtime_code) = solc("AbiTest", source);
         // big endian: value=0x12345678
-        let data = format!("{}{}", "55241077", "0000000000000000000000000000000000000000000000000000000012345678")
-            .from_hex()
-            .unwrap();
-
-
-
-        // input and output of solc command
-        let contract_file = Temp::new_file().unwrap().to_path_buf();
-        let output_dir = Temp::new_dir().unwrap().to_path_buf();
-        let runtime_code_file = output_dir.clone().join([contract_name, ".bin-runtime"].join(""));
-
-        // prepare contract file
-        let mut file = File::create(contract_file.clone()).unwrap();
-        file.write_all(contract).expect("failed to write");
-
-        // execute solc command
-        Command::new("solc")
-            .arg(contract_file.clone())
-            .arg("--bin")
-            .arg("--bin-runtime")
-            .arg("-o")
-            .arg(output_dir)
-            .output()
-            .expect("failed to execute solc");
-
-        // read runtime code
-        let mut content = String::new();
-        File::open(runtime_code_file)
-            .expect("failed to open deploy code file!")
-            .read_to_string(&mut content)
-            .expect("failed to read binary");
-        println!("runtime code: {}", content);
-        let runtime_code = content.as_str().from_hex().unwrap();
-
-
+        let data = "552410770000000000000000000000000000000000000000000000000000000012345678".from_hex().unwrap();
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
         let native_factory = NativeFactory::default();
         let mut tracer = ExecutiveTracer::default();

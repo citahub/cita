@@ -165,7 +165,7 @@ where
     fn create(&mut self, gas: &U256, value: &U256, code: &[u8]) -> evm::ContractCreateResult {
         // create new contract address
         let address = match self.state.nonce(&self.origin_info.address) {
-            Ok(nonce) => contract_address(&self.origin_info.address, &nonce),
+            Ok(nonce) => contract_address_inner(&self.origin_info.address, &nonce),
             Err(e) => {
                 debug!(target: "ext", "Database corruption encountered: {:?}", e);
                 return evm::ContractCreateResult::Failed;
@@ -254,6 +254,7 @@ where
     where
         Self: Sized,
     {
+        trace!("ret gas={}, data={:?}", gas, data);
         let handle_copy = |to: &mut Option<&mut Bytes>| { to.as_mut().map(|b| **b = data.to_owned()); };
         match self.output {
             OutputPolicy::Return(BytesRef::Fixed(ref mut slice), ref mut copy) => {

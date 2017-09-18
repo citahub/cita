@@ -33,34 +33,10 @@ message Request {
         uint64 uninstall_filter = 15;
         uint64 filter_changes = 16;
         uint64 filter_logs = 17;
+        UnverifiedTransaction un_tx = 18;//交易统一到这里了。划分在请求里面
     }
 }
 
-message FullTransaction {
-    SignedTransaction transaction = 1;
-    uint64 block_number = 2;
-    bytes block_hash = 3;
-    uint32 index = 4;
-}
 
-message Response {
-    bytes request_id = 1;
-    oneof result {
-        uint64 block_number = 2;
-        string block = 3;
-        FullTransaction ts = 4;
-        bool none = 5;
-        uint32 peercount = 6;
-        bytes call_result = 7;
-        string logs = 8;
-        string receipt = 9;
-        uint64 transaction_count = 10;
-        bytes code = 11;
-        uint64 filter_id = 12;
-        bool uninstall_filter = 13;
-        bytes filter_changes = 14;
-        bytes filter_logs = 15;
-    }
-}
 
 
