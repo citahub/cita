@@ -732,11 +732,28 @@ impl TenderMint {
                 let decoded = deserialize(&message).unwrap();
                 let (_, _, proposal): (usize, usize, Proposal) = decoded;
                 if let Ok(block) = parse_from_bytes::<Block>(&proposal.block) {
-                    let verify_req = block_verify_req(&block, self.verify_id);
-                    self.unverified_msg.insert(self.verify_id, msg.to_vec());
-                    self.verify_id += 1;
-                    let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
-                    self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                    let len = block.get_body().get_transactions().len();
+                    trace!("verify_req with {} txs with block verify request id: {} and height:{}", len, self.verify_id, block.get_header().get_height());
+                    if len > 0 {
+                        trace!("Going to send block verify request to auth");
+                        let verify_req = block_verify_req(&block, self.verify_id);
+                        self.unverified_msg.insert(self.verify_id, msg.to_vec());
+                        self.verify_id += 1;
+                        let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
+                        self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                    } else {
+                        let res = self.handle_proposal(msg.to_vec(), false);
+                        if let Ok((h, r)) = res {
+                            trace!("handle_proposal {:?}", (h, r));
+                            if h == self.height && r == self.round && self.step < Step::PrevoteWait {
+                                let pres = self.proc_proposal(h, r);
+                                if !pres {
+                                    trace!("proc_proposal res false height {}, round {}", h, r);
+                                }
+                            }
+                        }
+                    }
+
                 }
             }
         }

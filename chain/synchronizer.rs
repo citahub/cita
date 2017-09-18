@@ -49,7 +49,7 @@ impl Synchronizer {
     }
 
     pub fn sync(&self, ctx_pub: Sender<(String, Vec<u8>)>) {
-        let block_map = self.chain.block_map.read();
+        let block_map = self.chain.block_map.write();
         if !block_map.is_empty() {
             let start_height = self.chain.get_current_height() + 1;
             if !self.chain.is_sync.load(Ordering::SeqCst) {
@@ -57,7 +57,6 @@ impl Synchronizer {
             }
             for height in start_height..start_height + BATCH_SYNC {
                 if block_map.contains_key(&height) {
-                    trace!("chain sync loop {:?}", height);
                     let value = block_map[&(height)].clone();
                     let block = value.1;
                     let is_verified = value.2;

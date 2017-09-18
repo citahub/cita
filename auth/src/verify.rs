@@ -27,7 +27,7 @@ use util::H256;
 
 pub const BLOCKLIMIT: u64 = 100;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Verifier {
     inited: bool,
     height_latest: Option<u64>,
