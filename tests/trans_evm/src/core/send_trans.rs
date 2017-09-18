@@ -96,11 +96,11 @@ impl Sendtx {
         Ok(KeyPair::gen_keypair())
     }
 
-    pub fn send_data(&self, url: String, method: Methods) -> Response {
+    pub fn send_data(&self, url: String, method: Methods) -> Result<Response, i32> {
 
         let client = Client::new();
         let data = Trans::generate_tx_data(method);
-        client.post(&url).body(&data).send().unwrap()
+        if let Ok(res) = client.post(&url).body(&data).send() { Ok(res) } else { Err(-1) }
 
     }
 
@@ -191,31 +191,35 @@ impl Sendtx {
                     *firsttx = 1;
                 }
             }
-            let mut res = self.send_data(url.clone(), Methods::Sendtx(tx));
-            match res.status {
-                StatusCode::Ok => {
-                    let parse_response = Self::parse_response(&mut res);
-                    if parse_response.1 {
-                        if action == Action::Create {
-                            //存储返回hash
-                            let path = Path::new("hash.txt");
-                            let mut file = match File::create(&path) {
-                                Err(_) => panic!("create fail"),
-                                Ok(file) => file,
-                            };
+            if let Ok(mut res) = self.send_data(url.clone(), Methods::Sendtx(tx)) {
+                match res.status {
+                    StatusCode::Ok => {
+                        let parse_response = Self::parse_response(&mut res);
+                        if parse_response.1 {
+                            if action == Action::Create {
+                                //存储返回hash
+                                let path = Path::new("hash.txt");
+                                let mut file = match File::create(&path) {
+                                    Err(_) => panic!("create fail"),
+                                    Ok(file) => file,
+                                };
 
-                            match file.write_all(parse_response.0.as_bytes()) {
-                                Err(_) => println!("write fail"),
-                                Ok(_) => (),
+                                match file.write_all(parse_response.0.as_bytes()) {
+                                    Err(_) => println!("write fail"),
+                                    Ok(_) => (),
+                                }
                             }
+                            sucess = sucess + 1;
+                        } else {
+                            fail = fail + 1;
                         }
-                        sucess = sucess + 1;
-                    } else {
-                        fail = fail + 1;
                     }
+                    _ => println!("jsonrpc connect [{}] fail!", url),
                 }
-                _ => println!("jsonrpc connect [{}] fail!", url),
+            } else {
+                println!("jsonrpc connect [{}] fail!", url);
             }
+
 
         }
 
@@ -226,15 +230,16 @@ impl Sendtx {
 
     pub fn get_height(&self, url: String) -> u64 {
         let mut h = 0;
-        let mut res = self.send_data(url.clone(), Methods::Height);
-        match res.status {
-            StatusCode::Ok => {
-                let parse_response = Self::parse_response(&mut res);
-                if parse_response.1 {
-                    h = u64::from_str(&(parse_response.0)).unwrap();
+        if let Ok(mut res) = self.send_data(url.clone(), Methods::Height) {
+            match res.status {
+                StatusCode::Ok => {
+                    let parse_response = Self::parse_response(&mut res);
+                    if parse_response.1 {
+                        h = u64::from_str(&(parse_response.0)).unwrap();
+                    }
                 }
+                _ => panic!("jsonrpc connect fail!"),
             }
-            _ => panic!("jsonrpc connect fail!"),
         }
         h
     }
@@ -243,15 +248,16 @@ impl Sendtx {
 
         let mut num = -1;
 
-        let mut res = self.send_data(url.clone(), Methods::Blockbyheiht(h));
-        match res.status {
-            StatusCode::Ok => {
-                let parse_response = Self::parse_response(&mut res);
-                if parse_response.1 {
-                    num = i32::from_str(&(parse_response.0)).unwrap();
+        if let Ok(mut res) = self.send_data(url.clone(), Methods::Blockbyheiht(h)) {
+            match res.status {
+                StatusCode::Ok => {
+                    let parse_response = Self::parse_response(&mut res);
+                    if parse_response.1 {
+                        num = i32::from_str(&(parse_response.0)).unwrap();
+                    }
                 }
+                _ => num = -2,
             }
-            _ => num = -2,
         }
         num
     }
@@ -273,16 +279,17 @@ impl Sendtx {
         }
 
         for url in &v_url {
-            let mut res = self.send_data(url.clone(), Methods::Receipt(contents.clone()));
-            match res.status {
-                StatusCode::Ok => {
-                    let parse_response = Self::parse_response(&mut res);
-                    if parse_response.1 {
-                        address = parse_response.0;
-                        break;
+            if let Ok(mut res) = self.send_data(url.clone(), Methods::Receipt(contents.clone())) {
+                match res.status {
+                    StatusCode::Ok => {
+                        let parse_response = Self::parse_response(&mut res);
+                        if parse_response.1 {
+                            address = parse_response.0;
+                            break;
+                        }
                     }
+                    _ => (),
                 }
-                _ => (),
             }
         }
         address
