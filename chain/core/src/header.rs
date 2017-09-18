@@ -291,6 +291,7 @@ impl Header {
         bh.set_receipts_root(self.receipts_root.to_vec());
         bh.set_transactions_root(self.transactions_root.to_vec());
         bh.set_gas_used(u64::from(self.gas_used));
+        bh.set_gas_limit(self.gas_limit.low_u64());
         bh.set_proof(self.proof.clone());
         bh
     }
