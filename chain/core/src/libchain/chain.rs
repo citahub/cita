@@ -958,6 +958,8 @@ impl Chain {
                 info!("chain update {:?}", height);
                 Some(rich_status.protobuf())
             } else {
+                let mut guard = self.block_map.write();
+                let _  = guard.remove(&height);
                 warn!("add block failed");
                 None
             }

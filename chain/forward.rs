@@ -270,7 +270,6 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     guard.insert(blk_height, (source, Block::from(block)));
                     let _ = chain.sync_sender.lock().send(blk_height);
                 }
-
             }
         }
         MsgClass::TX(content) => {}
