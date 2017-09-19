@@ -13,7 +13,6 @@ log = "^0.3.0"
 serde = "^0.9.8"
 serde_derive = "^0.9.8"
 serde_json = "^0.9.8"
-clap = "^2.18.0"
 
 [dev-dependencies]
 chrono = "^0.4.0"

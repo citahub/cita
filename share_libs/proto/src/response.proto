@@ -35,8 +35,8 @@ message Response {
         bytes contract_code = 13;
         uint64 filter_id = 14;
         bool uninstall_filter = 15;
-        bytes filter_changes = 16;
-        bytes filter_logs = 17;
+        string filter_changes = 16;
+        string filter_logs = 17;
         bool none = 18;
     }
 }

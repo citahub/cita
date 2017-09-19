@@ -292,7 +292,7 @@ impl MethodHandler {
         let mut request = self.create_request();
         let params: (Filter,) = req_rpc.params.parse()?;
         let filter = serde_json::to_string(&params.0).expect("new_filter param error");
-        request.set_new_filter(serde_json::to_string(&filter).unwrap());
+        request.set_new_filter(filter);
         Ok(request)
     }
 

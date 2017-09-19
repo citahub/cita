@@ -131,8 +131,7 @@ impl Dispatchtx {
                     if error_msg.is_some() {
                         response.set_code(submodules::CONSENSUS as i64);
                         tx_response.status = error_msg.unwrap();
-                        let error_msg = serde_json::to_string(&tx_response).unwrap();
-                        response.set_error_msg(error_msg);
+                        response.set_error_msg(format!("{:?}",tx_response));
                     } else {
                         let tx_state = serde_json::to_string(&tx_response).unwrap();
                         response.set_tx_state(tx_state);

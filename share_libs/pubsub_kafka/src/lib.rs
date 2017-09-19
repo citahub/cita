@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate log;
-extern crate clap;
 extern crate futures;
 extern crate rdkafka;
 extern crate rdkafka_sys;

@@ -44,7 +44,7 @@ pub fn process(engine: Arc<Engine>, rx: &Receiver<(u32, u32, u32, MsgClass)>, tx
                     trace!("get new broadcast block {:?}", block);
                     engine.receive_new_block(&block, tx_pub);
                 }
-                _ => {}
+                _ => error!("match not exsit msg content!!!"),
             }
         }
     } else {
