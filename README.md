@@ -54,7 +54,7 @@ CITA is created by Cryptape LLC with :heart:.
 
 ## Contact us
 
-Weichat Group:
+Wechat Group:
 
 <img src="https://github.com/cryptape/assets/blob/master/cryptape-wechat.jpeg?raw=true" width="250">
 
