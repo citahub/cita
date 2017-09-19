@@ -35,7 +35,7 @@ function cita_start() {
         echo $! >> .pid
         nohup bin/jsonrpc               -c jsonrpc.json         >${log_dir}/${node}.jsonrpc    2>&1 &
         echo $! >> .pid
-        nohup bin/chain                    -c genesis.json         >${log_dir}/${node}.chain        2>&1 &
+        nohup bin/chain               -g genesis.json  -c chain.json       >${log_dir}/${node}.chain        2>&1 &
         echo $! >> .pid
     else
         echo "starting ${node} debug"
@@ -43,11 +43,11 @@ function cita_start() {
         echo $! >> .pid
         RUST_LOG=network=trace nohup bin/network -c network.toml         >${log_dir}/${node}.network    2>&1 &
         echo $! >> .pid
-        RUST_LOG=consensus_tendermint,proof,txpool,engine,libproto=trace nohup bin/consensus_tendermint	-c consensus.json	 >${log_dir}/${node}.consensus  2>&1 &
+        RUST_LOG=consensus_tendermint,proof,txpool,engine,libproto=trace nohup bin/consensus_tendermint -c consensus.json  >${log_dir}/${node}.consensus  2>&1 &
         echo $! >> .pid
-        RUST_LOG=jsonrpc,jsonrpc_types=trace nohup bin/jsonrpc -c jsonrpc.json	 >${log_dir}/${node}.jsonrpc    2>&1 &
+        RUST_LOG=jsonrpc,jsonrpc_types=trace nohup bin/jsonrpc -c jsonrpc.json  >${log_dir}/${node}.jsonrpc    2>&1 &
         echo $! >> .pid
-        RUST_LOG=chain,core=trace nohup bin/chain	-c genesis.json		 >${log_dir}/${node}.chain	    2>&1 &
+        RUST_LOG=chain,core=trace nohup bin/chain   -g genesis.json  -c chain.json  >${log_dir}/${node}.chain   2>&1 &
         echo $! >> .pid
     fi
     cita_status $1
@@ -72,7 +72,7 @@ function cita_restart() {
 function cita_status(){
     for pid in $(cat .pid)
     do
-        ps -A -o command:50,pid,time|grep ${pid} |grep -v "grep"
+        ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep"
     done
 }
 

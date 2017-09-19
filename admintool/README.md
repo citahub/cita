@@ -108,6 +108,21 @@ $ ./admintool.sh
 | 866c936ff332228948bdefc15b1877c88e0effce703ee6de898cffcafe9bbe25 | 0x1a702a25c6bca72b67987968f0bfb3a3213c5688 |
 | 352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214 | 0x0dbd369a741319fa5107733e2c9db9929093e3c7 |
 
+#### 用户自定义检查配置文件
+
+用户可在本目录下创建`chain.json`文件来自定义发送交易时是否检查账户的nonce、permission等，默认两者都需要检查的。格式参考`chain_check_example.json`文件，如下:
+
+```
+{
+  "nonce": true,
+  "permission": true
+}
+```
+
+其中:
+
+* `nonce`: 表示发送交易时，是否检查账户的nonce值符合要求，其中true表示打开检查，false表示关闭检查，默认为true。
+* `permission`: 表示发送交易时，是否检查账户拥有相应的权限，其中true表示打开检查，false表示关闭检查，默认为true。
 
 ### 节点管理系统合约
 

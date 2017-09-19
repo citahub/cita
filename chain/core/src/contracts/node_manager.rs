@@ -28,7 +28,7 @@ use util::*;
 const METHOD_NAME: &'static [u8] = &*b"listNode()";
 
 lazy_static! {
-	static ref METHOD_NAME_HASH: Vec<u8> = {
+    static ref METHOD_NAME_HASH: Vec<u8> = {
         let out :&mut[u8;32] = &mut [0;32];
         let outptr = out.as_mut_ptr();
         unsafe {
@@ -36,7 +36,7 @@ lazy_static! {
         }
         let func = out[0..4].to_vec();
         func
-	};
+    };
     static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a2").unwrap();
 }
 
@@ -98,7 +98,8 @@ mod tests {
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
         let (sync_tx, _) = channel();
-        let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
+        let path = "chain.json";
+        let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx, path);
         chain
     }
 

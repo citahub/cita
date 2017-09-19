@@ -67,8 +67,15 @@ fn main() {
         .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
+        .arg_from_usage("-g, --genesis=[FILE] 'Sets a custom config file'")
+        .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
         .get_matches();
+
+    let mut genesis_path = "genesis";
+    if let Some(ge) = matches.value_of("genesis") {
+        trace!("Value for genesis: {}", ge);
+        genesis_path = ge;
+    }
 
     let mut config_path = "config";
     if let Some(c) = matches.value_of("config") {
@@ -88,9 +95,9 @@ fn main() {
     let nosql_path = env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/nosql";
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &nosql_path).unwrap();
-    let genesis = Genesis::init(config_path);
+    let genesis = Genesis::init(genesis_path);
     let (sync_tx, sync_rx) = channel();
-    let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx);
+    let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx, config_path);
 
     let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, st.write_to_bytes().unwrap());
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
