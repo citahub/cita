@@ -812,6 +812,7 @@ impl Chain {
 
     fn sign_call(&self, request: CallRequest) -> SignedTransaction {
         let from = request.from.unwrap_or(Address::zero());
+        trace!("sign_call with from {:?}", from);
         Transaction {
             nonce: U256::zero(),
             action: Action::Call(request.to),
@@ -832,7 +833,7 @@ impl Chain {
             number: header.number(),
             author: Address::default(),
             timestamp: header.timestamp(),
-            difficulty: U256::default(),
+            difficulty: U256::default(),    
             last_hashes: last_hashes,
             gas_used: *header.gas_used(),
             gas_limit: *header.gas_limit(),
@@ -840,6 +841,9 @@ impl Chain {
         };
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
+        // TODO: Should be not check permission when eth_call or use history permission
+        state.senders = self.senders.read().clone();
+        state.creators = self.creators.read().clone();
         let engine = NullEngine::default();
 
         let options = TransactOptions {
@@ -906,26 +910,29 @@ impl Chain {
 
     /// Reload system config from system contract
     pub fn reload_config(&self) {
-        // Reload senders and creators cache
-        let mut senders = self.senders.write();
-        let mut creators = self.creators.write();
-        *senders = AccountManager::load_senders(self);
-        *creators = AccountManager::load_creators(self);
+        {
+            // Reload senders and creators cache
+            *self.senders.write() = AccountManager::load_senders(self);
+            *self.creators.write() = AccountManager::load_creators(self);
+        }
+        {
+            // Reload consensus nodes cache
+            *self.nodes.write() = NodeManager::read(self);
+        }
+        {
+            // Reload BlockGasLimit cache
+            let block_gas_limit = QuotaManager::block_gas_limit(self);
+            self.block_gas_limit.swap(block_gas_limit as usize, Ordering::SeqCst);
+        }
 
-        // Reload consensus nodes cache
-        let mut nodes = self.nodes.write();
-        *nodes = NodeManager::read(self);
-
-        // Reload BlockGasLimit cache
-        let block_gas_limit = QuotaManager::block_gas_limit(self);
-        self.block_gas_limit.swap(block_gas_limit as usize, Ordering::SeqCst);
-
-        // Reload AccountGasLimit cache
-        let common_gas_limit = QuotaManager::account_gas_limit(self);
-        let mut account_gas_limit = self.account_gas_limit.write();
-        account_gas_limit.set_common_gas_limit(common_gas_limit);
-        let specific = QuotaManager::specific(self);
-        account_gas_limit.set_specific_gas_limit(specific);
+        {
+            // Reload AccountGasLimit cache
+            let common_gas_limit = QuotaManager::account_gas_limit(self);
+            let specific = QuotaManager::specific(self);
+            let mut account_gas_limit = self.account_gas_limit.write();
+            account_gas_limit.set_common_gas_limit(common_gas_limit);
+            account_gas_limit.set_specific_gas_limit(specific);
+        }
     }
 
     pub fn set_block(&self, block: Block) -> Option<ProtoRichStatus> {
