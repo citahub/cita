@@ -180,6 +180,7 @@ mod tests {
         let hash = bytes.crypt_hash().to_vec();
         req.set_hash(hash);
         req.set_tx_hash(tx.get_tx_hash().to_vec());
+        req.set_signer(tx.get_signer().to_vec());
 
         let mut blkreq = VerifyBlockReq::new();
         blkreq.set_id(88);
@@ -200,6 +201,7 @@ mod tests {
         let hash = bytes.crypt_hash().to_vec();
         req.set_hash(hash);
         req.set_tx_hash(tx.get_tx_hash().to_vec());
+        req.set_signer(tx.get_signer().to_vec());
 
         let mut blkreq = VerifyBlockReq::new();
         blkreq.set_id(88);

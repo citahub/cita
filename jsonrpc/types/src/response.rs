@@ -139,7 +139,7 @@ impl Output {
                     Response_oneof_data::filter_logs(log) => success.set_result(RusultBody::FilterLog(serde_json::from_str::<Vec<Log>>(&log).unwrap())).to_out(),
                     Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(id.clone(), jsonrpc.clone(), Error::server_error(code, err_msg.as_ref()))),
                 }
-            } 
+            }
             _ => {
                 match data.data.unwrap() {
                     Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(id.clone(), jsonrpc.clone(), Error::server_error(code, err_msg.as_ref()))),
