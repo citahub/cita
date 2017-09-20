@@ -136,8 +136,14 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     trace!("Chainvm Call {:?}", call);
                     let block_id: BlockNumber = serde_json::from_str(&(call.height)).expect("Invalid param");
                     let call_request = CallRequest::from(call);
-                    let result = chain.eth_call(call_request, block_id.into());
-                    response.set_call_result(result.unwrap_or_default());
+                    match chain.eth_call(call_request, block_id.into()) {
+                        Ok(result) => {
+                            response.set_call_result(result);
+                        }
+                        Err(err) => {
+                            info!("eth call error {:?}", err);
+                        }
+                    }
                     let msg: communication::Message = response.into();
                     ctx_pub.send(("chain.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
