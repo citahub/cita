@@ -26,9 +26,6 @@ pub type PubType = (String, Vec<u8>);
 pub fn dispatch(candidate_pool: &mut CandidatePool, rx: &Receiver<(u32, u32, u32, MsgClass)>) {
     let (id, cmd_id, _origin, content_ext) = rx.recv().unwrap();
     match content_ext {
-        _ => {
-            error!("match exsit msg content!!!");
-        }
         MsgClass::BLOCK(block) => {
             if cmd_id == libproto::cmd_id(submodules::CONSENSUS, topics::NEW_BLK) {
                 //TODO?
@@ -56,11 +53,11 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, rx: &Receiver<(u32, u32, u32
                             warn!("tx_pool's height:{:?}, received from consensus's height:{:?}", candidate_pool.get_height(), height);
                         }
                     }
-                    Command::PoolSituation(_, _, _) => {
-                        info!("not expected.");
-                    }
+                    Command::PoolSituation(_, _, _) => info!("not expected."),
+
                 }
             }
         }
+        _ => error!("match not exsit msg content!!!"),
     }
 }

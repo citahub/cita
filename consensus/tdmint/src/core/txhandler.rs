@@ -96,7 +96,7 @@ impl TxHandler {
                         }
                     });
                 }
-                _ => info!("receive error message: {:?}", msg),
+                _ => error!("receive error message: {:?}", msg),
             };
         });
     }

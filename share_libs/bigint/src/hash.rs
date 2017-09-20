@@ -154,7 +154,7 @@ macro_rules! impl_hash {
             type Err = FromHexError;
 
             fn from_str(s: &str) -> Result<$from, FromHexError> {
-                let a = s.from_hex()?;
+                let a = clean_0x(s).from_hex()?;
                 if a.len() != $size {
                     return Err(FromHexError::InvalidHexLength);
                 }
@@ -626,6 +626,7 @@ mod tests {
     fn test_from_str() {
         let u = 100u64;
         let h = H64::from_str("0000000000000064");
+        assert!(H160::from_str("0xb84a3067e31cbe3bebfcc16e2b3495838864b82a").is_ok());
         assert_eq!(H64::from(u), h.unwrap());
     }
 

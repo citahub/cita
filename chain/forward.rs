@@ -235,7 +235,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let index = rpctypes::Index(filter_id as usize);
                     let log = chain.filter_changes(index).unwrap();
                     trace!("Log is: {:?}", log);
-                    response.set_filter_changes(serde_json::to_vec(&log).unwrap());
+                    response.set_filter_changes(serde_json::to_string(&log).unwrap());
                 }
 
                 Request::filter_logs(filter_id) => {
@@ -243,7 +243,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>,
                     let index = rpctypes::Index(filter_id as usize);
                     let log = chain.filter_logs(index).unwrap_or(vec![]);
                     trace!("Log is: {:?}", log);
-                    response.set_filter_logs(serde_json::to_vec(&log).unwrap());
+                    response.set_filter_logs(serde_json::to_string(&log).unwrap());
                 }
                 _ => {
                     error!("mtach error Request_oneof_req msg!!!!");

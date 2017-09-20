@@ -395,8 +395,8 @@ pub enum Response_oneof_data {
     contract_code(::std::vec::Vec<u8>),
     filter_id(u64),
     uninstall_filter(bool),
-    filter_changes(::std::vec::Vec<u8>),
-    filter_logs(::std::vec::Vec<u8>),
+    filter_changes(::std::string::String),
+    filter_logs(::std::string::String),
     none(bool),
 }
 
@@ -989,7 +989,7 @@ impl Response {
         }
     }
 
-    // bytes filter_changes = 16;
+    // string filter_changes = 16;
 
     pub fn clear_filter_changes(&mut self) {
         self.data = ::std::option::Option::None;
@@ -1003,15 +1003,15 @@ impl Response {
     }
 
     // Param is passed by value, moved
-    pub fn set_filter_changes(&mut self, v: ::std::vec::Vec<u8>) {
+    pub fn set_filter_changes(&mut self, v: ::std::string::String) {
         self.data = ::std::option::Option::Some(Response_oneof_data::filter_changes(v))
     }
 
     // Mutable pointer to the field.
-    pub fn mut_filter_changes(&mut self) -> &mut ::std::vec::Vec<u8> {
+    pub fn mut_filter_changes(&mut self) -> &mut ::std::string::String {
         if let ::std::option::Option::Some(Response_oneof_data::filter_changes(_)) = self.data {
         } else {
-            self.data = ::std::option::Option::Some(Response_oneof_data::filter_changes(::std::vec::Vec::new()));
+            self.data = ::std::option::Option::Some(Response_oneof_data::filter_changes(::std::string::String::new()));
         }
         match self.data {
             ::std::option::Option::Some(Response_oneof_data::filter_changes(ref mut v)) => v,
@@ -1020,25 +1020,25 @@ impl Response {
     }
 
     // Take field
-    pub fn take_filter_changes(&mut self) -> ::std::vec::Vec<u8> {
+    pub fn take_filter_changes(&mut self) -> ::std::string::String {
         if self.has_filter_changes() {
             match self.data.take() {
                 ::std::option::Option::Some(Response_oneof_data::filter_changes(v)) => v,
                 _ => panic!(),
             }
         } else {
-            ::std::vec::Vec::new()
+            ::std::string::String::new()
         }
     }
 
-    pub fn get_filter_changes(&self) -> &[u8] {
+    pub fn get_filter_changes(&self) -> &str {
         match self.data {
             ::std::option::Option::Some(Response_oneof_data::filter_changes(ref v)) => v,
-            _ => &[],
+            _ => "",
         }
     }
 
-    // bytes filter_logs = 17;
+    // string filter_logs = 17;
 
     pub fn clear_filter_logs(&mut self) {
         self.data = ::std::option::Option::None;
@@ -1052,15 +1052,15 @@ impl Response {
     }
 
     // Param is passed by value, moved
-    pub fn set_filter_logs(&mut self, v: ::std::vec::Vec<u8>) {
+    pub fn set_filter_logs(&mut self, v: ::std::string::String) {
         self.data = ::std::option::Option::Some(Response_oneof_data::filter_logs(v))
     }
 
     // Mutable pointer to the field.
-    pub fn mut_filter_logs(&mut self) -> &mut ::std::vec::Vec<u8> {
+    pub fn mut_filter_logs(&mut self) -> &mut ::std::string::String {
         if let ::std::option::Option::Some(Response_oneof_data::filter_logs(_)) = self.data {
         } else {
-            self.data = ::std::option::Option::Some(Response_oneof_data::filter_logs(::std::vec::Vec::new()));
+            self.data = ::std::option::Option::Some(Response_oneof_data::filter_logs(::std::string::String::new()));
         }
         match self.data {
             ::std::option::Option::Some(Response_oneof_data::filter_logs(ref mut v)) => v,
@@ -1069,21 +1069,21 @@ impl Response {
     }
 
     // Take field
-    pub fn take_filter_logs(&mut self) -> ::std::vec::Vec<u8> {
+    pub fn take_filter_logs(&mut self) -> ::std::string::String {
         if self.has_filter_logs() {
             match self.data.take() {
                 ::std::option::Option::Some(Response_oneof_data::filter_logs(v)) => v,
                 _ => panic!(),
             }
         } else {
-            ::std::vec::Vec::new()
+            ::std::string::String::new()
         }
     }
 
-    pub fn get_filter_logs(&self) -> &[u8] {
+    pub fn get_filter_logs(&self) -> &str {
         match self.data {
             ::std::option::Option::Some(Response_oneof_data::filter_logs(ref v)) => v,
-            _ => &[],
+            _ => "",
         }
     }
 
@@ -1219,13 +1219,13 @@ impl ::protobuf::Message for Response {
                     if wire_type != ::protobuf::wire_format::WireTypeLengthDelimited {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    self.data = ::std::option::Option::Some(Response_oneof_data::filter_changes(is.read_bytes()?));
+                    self.data = ::std::option::Option::Some(Response_oneof_data::filter_changes(is.read_string()?));
                 },
                 17 => {
                     if wire_type != ::protobuf::wire_format::WireTypeLengthDelimited {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    self.data = ::std::option::Option::Some(Response_oneof_data::filter_logs(is.read_bytes()?));
+                    self.data = ::std::option::Option::Some(Response_oneof_data::filter_logs(is.read_string()?));
                 },
                 18 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
@@ -1294,10 +1294,10 @@ impl ::protobuf::Message for Response {
                     my_size += 2;
                 },
                 &Response_oneof_data::filter_changes(ref v) => {
-                    my_size += ::protobuf::rt::bytes_size(16, &v);
+                    my_size += ::protobuf::rt::string_size(16, &v);
                 },
                 &Response_oneof_data::filter_logs(ref v) => {
-                    my_size += ::protobuf::rt::bytes_size(17, &v);
+                    my_size += ::protobuf::rt::string_size(17, &v);
                 },
                 &Response_oneof_data::none(v) => {
                     my_size += 3;
@@ -1360,10 +1360,10 @@ impl ::protobuf::Message for Response {
                     os.write_bool(15, v)?;
                 },
                 &Response_oneof_data::filter_changes(ref v) => {
-                    os.write_bytes(16, v)?;
+                    os.write_string(16, v)?;
                 },
                 &Response_oneof_data::filter_logs(ref v) => {
-                    os.write_bytes(17, v)?;
+                    os.write_string(17, v)?;
                 },
                 &Response_oneof_data::none(v) => {
                     os.write_bool(18, v)?;
@@ -1489,12 +1489,12 @@ impl ::protobuf::MessageStatic for Response {
                     Response::has_uninstall_filter,
                     Response::get_uninstall_filter,
                 ));
-                fields.push(::protobuf::reflect::accessor::make_singular_bytes_accessor::<_>(
+                fields.push(::protobuf::reflect::accessor::make_singular_string_accessor::<_>(
                     "filter_changes",
                     Response::has_filter_changes,
                     Response::get_filter_changes,
                 ));
-                fields.push(::protobuf::reflect::accessor::make_singular_bytes_accessor::<_>(
+                fields.push(::protobuf::reflect::accessor::make_singular_string_accessor::<_>(
                     "filter_logs",
                     Response::has_filter_logs,
                     Response::get_filter_logs,
@@ -1568,42 +1568,42 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \0R\x10transactionCount\x12%\n\rcontract_code\x18\r\x20\x01(\x0cH\0R\x0c\
     contractCode\x12\x1d\n\tfilter_id\x18\x0e\x20\x01(\x04H\0R\x08filterId\
     \x12+\n\x10uninstall_filter\x18\x0f\x20\x01(\x08H\0R\x0funinstallFilter\
-    \x12'\n\x0efilter_changes\x18\x10\x20\x01(\x0cH\0R\rfilterChanges\x12!\n\
-    \x0bfilter_logs\x18\x11\x20\x01(\x0cH\0R\nfilterLogs\x12\x14\n\x04none\
-    \x18\x12\x20\x01(\x08H\0R\x04noneB\x06\n\x04dataJ\xa0\x0e\n\x06\x12\x04\
-    \0\0)\x01\n\x08\n\x01\x0c\x12\x03\0\0\x12\n\t\n\x02\x03\0\x12\x03\x02\
-    \x07\x19\n\n\n\x02\x04\0\x12\x04\x04\0\t\x01\n\n\n\x03\x04\0\x01\x12\x03\
-    \x04\x08\x17\n\x0b\n\x04\x04\0\x02\0\x12\x03\x05\x04&\n\r\n\x05\x04\0\
-    \x02\0\x04\x12\x04\x05\x04\x04\x19\n\x0c\n\x05\x04\0\x02\0\x06\x12\x03\
-    \x05\x04\x15\n\x0c\n\x05\x04\0\x02\0\x01\x12\x03\x05\x16!\n\x0c\n\x05\
-    \x04\0\x02\0\x03\x12\x03\x05$%\n\x0b\n\x04\x04\0\x02\x01\x12\x03\x06\x04\
-    \x1c\n\r\n\x05\x04\0\x02\x01\x04\x12\x04\x06\x04\x05&\n\x0c\n\x05\x04\0\
-    \x02\x01\x05\x12\x03\x06\x04\n\n\x0c\n\x05\x04\0\x02\x01\x01\x12\x03\x06\
-    \x0b\x17\n\x0c\n\x05\x04\0\x02\x01\x03\x12\x03\x06\x1a\x1b\n\x0b\n\x04\
-    \x04\0\x02\x02\x12\x03\x07\x04\x19\n\r\n\x05\x04\0\x02\x02\x04\x12\x04\
-    \x07\x04\x06\x1c\n\x0c\n\x05\x04\0\x02\x02\x05\x12\x03\x07\x04\t\n\x0c\n\
-    \x05\x04\0\x02\x02\x01\x12\x03\x07\n\x14\n\x0c\n\x05\x04\0\x02\x02\x03\
-    \x12\x03\x07\x17\x18\n\x0b\n\x04\x04\0\x02\x03\x12\x03\x08\x04\x15\n\r\n\
-    \x05\x04\0\x02\x03\x04\x12\x04\x08\x04\x07\x19\n\x0c\n\x05\x04\0\x02\x03\
-    \x05\x12\x03\x08\x04\n\n\x0c\n\x05\x04\0\x02\x03\x01\x12\x03\x08\x0b\x10\
-    \n\x0c\n\x05\x04\0\x02\x03\x03\x12\x03\x08\x13\x14\n\xcc\x01\n\x02\x04\
-    \x01\x12\x04\x14\0)\x012\xbf\x01pub\x20mod\x20submodules\x20{\npub\x20co\
-    nst\x20JSON_RPC:\x20u32\x20=\x201;\npub\x20const\x20NET:\x20u32\x20=\x20\
-    2;\npub\x20const\x20CHAIN:\x20u32\x20=\x203;\npub\x20const\x20CONSENSUS:\
-    \x20u32\x20=\x204;\npub\x20const\x20CONSENSUS_CMD:\x20u32\x20=\x205;\npu\
-    b\x20const\x20AUTH:\x20u32\x20=\x206;\n}\n\n\n\n\x03\x04\x01\x01\x12\x03\
-    \x14\x08\x10\n\x0b\n\x04\x04\x01\x02\0\x12\x03\x15\x04\x19\n\r\n\x05\x04\
-    \x01\x02\0\x04\x12\x04\x15\x04\x14\x12\n\x0c\n\x05\x04\x01\x02\0\x05\x12\
-    \x03\x15\x04\t\n\x0c\n\x05\x04\x01\x02\0\x01\x12\x03\x15\n\x14\n\x0c\n\
-    \x05\x04\x01\x02\0\x03\x12\x03\x15\x17\x18\n\xea\x01\n\x04\x04\x01\x02\
-    \x01\x12\x03\x16\x04\x13\"\xdc\x01\xe8\xbf\x99\xe4\xb8\xaa\xe5\xae\x9a\
-    \xe4\xb9\x89\xe5\x8f\xaf\xe4\xbb\xa5\xe6\xa0\xb9\xe6\x8d\xae\xe6\xa8\xa1\
-    \xe5\x9d\x97\xe7\x9a\x84submodules\xe7\x9a\x84\xe5\x80\xbc\xe6\x9d\xa5\
-    \xe5\x88\x92\xe5\x88\x86\xef\xbc\x8c\xe7\xb2\x97\xe5\x88\x92\xe5\x88\x86\
-    \xef\xbc\x9a0\xef\xbc\x9a\xe6\xad\xa3\xe7\xa1\xae\xef\xbc\x8c\xe5\x85\
-    \xb6\xe4\xbb\x96\xe8\xa1\xa8\xe7\xa4\xba\xe9\x94\x99\xe8\xaf\xaf\xef\xbc\
-    \x8c2\xef\xbc\x9anetwork\xe7\x9a\x84\xe9\x94\x99\xe8\xaf\xaf\xef\xbc\x8c\
-    3\xef\xbc\x9achain\xe7\x9a\x84\xe9\x94\x99\xe8\xaf\xaf\xef\xbc\x8c4\xef\
+    \x12'\n\x0efilter_changes\x18\x10\x20\x01(\tH\0R\rfilterChanges\x12!\n\
+    \x0bfilter_logs\x18\x11\x20\x01(\tH\0R\nfilterLogs\x12\x14\n\x04none\x18\
+    \x12\x20\x01(\x08H\0R\x04noneB\x06\n\x04dataJ\xa0\x0e\n\x06\x12\x04\0\0)\
+    \x01\n\x08\n\x01\x0c\x12\x03\0\0\x12\n\t\n\x02\x03\0\x12\x03\x02\x07\x19\
+    \n\n\n\x02\x04\0\x12\x04\x04\0\t\x01\n\n\n\x03\x04\0\x01\x12\x03\x04\x08\
+    \x17\n\x0b\n\x04\x04\0\x02\0\x12\x03\x05\x04&\n\r\n\x05\x04\0\x02\0\x04\
+    \x12\x04\x05\x04\x04\x19\n\x0c\n\x05\x04\0\x02\0\x06\x12\x03\x05\x04\x15\
+    \n\x0c\n\x05\x04\0\x02\0\x01\x12\x03\x05\x16!\n\x0c\n\x05\x04\0\x02\0\
+    \x03\x12\x03\x05$%\n\x0b\n\x04\x04\0\x02\x01\x12\x03\x06\x04\x1c\n\r\n\
+    \x05\x04\0\x02\x01\x04\x12\x04\x06\x04\x05&\n\x0c\n\x05\x04\0\x02\x01\
+    \x05\x12\x03\x06\x04\n\n\x0c\n\x05\x04\0\x02\x01\x01\x12\x03\x06\x0b\x17\
+    \n\x0c\n\x05\x04\0\x02\x01\x03\x12\x03\x06\x1a\x1b\n\x0b\n\x04\x04\0\x02\
+    \x02\x12\x03\x07\x04\x19\n\r\n\x05\x04\0\x02\x02\x04\x12\x04\x07\x04\x06\
+    \x1c\n\x0c\n\x05\x04\0\x02\x02\x05\x12\x03\x07\x04\t\n\x0c\n\x05\x04\0\
+    \x02\x02\x01\x12\x03\x07\n\x14\n\x0c\n\x05\x04\0\x02\x02\x03\x12\x03\x07\
+    \x17\x18\n\x0b\n\x04\x04\0\x02\x03\x12\x03\x08\x04\x15\n\r\n\x05\x04\0\
+    \x02\x03\x04\x12\x04\x08\x04\x07\x19\n\x0c\n\x05\x04\0\x02\x03\x05\x12\
+    \x03\x08\x04\n\n\x0c\n\x05\x04\0\x02\x03\x01\x12\x03\x08\x0b\x10\n\x0c\n\
+    \x05\x04\0\x02\x03\x03\x12\x03\x08\x13\x14\n\xcc\x01\n\x02\x04\x01\x12\
+    \x04\x14\0)\x012\xbf\x01pub\x20mod\x20submodules\x20{\npub\x20const\x20J\
+    SON_RPC:\x20u32\x20=\x201;\npub\x20const\x20NET:\x20u32\x20=\x202;\npub\
+    \x20const\x20CHAIN:\x20u32\x20=\x203;\npub\x20const\x20CONSENSUS:\x20u32\
+    \x20=\x204;\npub\x20const\x20CONSENSUS_CMD:\x20u32\x20=\x205;\npub\x20co\
+    nst\x20AUTH:\x20u32\x20=\x206;\n}\n\n\n\n\x03\x04\x01\x01\x12\x03\x14\
+    \x08\x10\n\x0b\n\x04\x04\x01\x02\0\x12\x03\x15\x04\x19\n\r\n\x05\x04\x01\
+    \x02\0\x04\x12\x04\x15\x04\x14\x12\n\x0c\n\x05\x04\x01\x02\0\x05\x12\x03\
+    \x15\x04\t\n\x0c\n\x05\x04\x01\x02\0\x01\x12\x03\x15\n\x14\n\x0c\n\x05\
+    \x04\x01\x02\0\x03\x12\x03\x15\x17\x18\n\xea\x01\n\x04\x04\x01\x02\x01\
+    \x12\x03\x16\x04\x13\"\xdc\x01\xe8\xbf\x99\xe4\xb8\xaa\xe5\xae\x9a\xe4\
+    \xb9\x89\xe5\x8f\xaf\xe4\xbb\xa5\xe6\xa0\xb9\xe6\x8d\xae\xe6\xa8\xa1\xe5\
+    \x9d\x97\xe7\x9a\x84submodules\xe7\x9a\x84\xe5\x80\xbc\xe6\x9d\xa5\xe5\
+    \x88\x92\xe5\x88\x86\xef\xbc\x8c\xe7\xb2\x97\xe5\x88\x92\xe5\x88\x86\xef\
+    \xbc\x9a0\xef\xbc\x9a\xe6\xad\xa3\xe7\xa1\xae\xef\xbc\x8c\xe5\x85\xb6\
+    \xe4\xbb\x96\xe8\xa1\xa8\xe7\xa4\xba\xe9\x94\x99\xe8\xaf\xaf\xef\xbc\x8c\
+    2\xef\xbc\x9anetwork\xe7\x9a\x84\xe9\x94\x99\xe8\xaf\xaf\xef\xbc\x8c3\
+    \xef\xbc\x9achain\xe7\x9a\x84\xe9\x94\x99\xe8\xaf\xaf\xef\xbc\x8c4\xef\
     \xbc\x9aconsensus\xe9\x94\x99\xe8\xaf\xaf\xef\xbc\x8c6:auth\xe9\x94\x99\
     \xe8\xaf\xaf\xe3\x80\x82\xe6\xad\xa3\xe5\xa5\xbd\xe5\xaf\xb9\xe5\xba\x94\
     \xe6\xa8\xa1\xe5\x9d\x97\xe7\x9a\x84submodules\n\n\r\n\x05\x04\x01\x02\
@@ -1647,14 +1647,15 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x03#\x1b\x1d\n\x0b\n\x04\x04\x01\x02\x0e\x12\x03$\x08#\n\x0c\n\x05\x04\
     \x01\x02\x0e\x05\x12\x03$\x08\x0c\n\x0c\n\x05\x04\x01\x02\x0e\x01\x12\
     \x03$\r\x1d\n\x0c\n\x05\x04\x01\x02\x0e\x03\x12\x03$\x20\"\n\x0b\n\x04\
-    \x04\x01\x02\x0f\x12\x03%\x08\"\n\x0c\n\x05\x04\x01\x02\x0f\x05\x12\x03%\
-    \x08\r\n\x0c\n\x05\x04\x01\x02\x0f\x01\x12\x03%\x0e\x1c\n\x0c\n\x05\x04\
-    \x01\x02\x0f\x03\x12\x03%\x1f!\n\x0b\n\x04\x04\x01\x02\x10\x12\x03&\x08\
-    \x1f\n\x0c\n\x05\x04\x01\x02\x10\x05\x12\x03&\x08\r\n\x0c\n\x05\x04\x01\
-    \x02\x10\x01\x12\x03&\x0e\x19\n\x0c\n\x05\x04\x01\x02\x10\x03\x12\x03&\
-    \x1c\x1e\n\x0b\n\x04\x04\x01\x02\x11\x12\x03'\x08\x17\n\x0c\n\x05\x04\
-    \x01\x02\x11\x05\x12\x03'\x08\x0c\n\x0c\n\x05\x04\x01\x02\x11\x01\x12\
-    \x03'\r\x11\n\x0c\n\x05\x04\x01\x02\x11\x03\x12\x03'\x14\x16b\x06proto3\
+    \x04\x01\x02\x0f\x12\x03%\x08#\n\x0c\n\x05\x04\x01\x02\x0f\x05\x12\x03%\
+    \x08\x0e\n\x0c\n\x05\x04\x01\x02\x0f\x01\x12\x03%\x0f\x1d\n\x0c\n\x05\
+    \x04\x01\x02\x0f\x03\x12\x03%\x20\"\n\x0b\n\x04\x04\x01\x02\x10\x12\x03&\
+    \x08\x20\n\x0c\n\x05\x04\x01\x02\x10\x05\x12\x03&\x08\x0e\n\x0c\n\x05\
+    \x04\x01\x02\x10\x01\x12\x03&\x0f\x1a\n\x0c\n\x05\x04\x01\x02\x10\x03\
+    \x12\x03&\x1d\x1f\n\x0b\n\x04\x04\x01\x02\x11\x12\x03'\x08\x17\n\x0c\n\
+    \x05\x04\x01\x02\x11\x05\x12\x03'\x08\x0c\n\x0c\n\x05\x04\x01\x02\x11\
+    \x01\x12\x03'\r\x11\n\x0c\n\x05\x04\x01\x02\x11\x03\x12\x03'\x14\x16b\
+    \x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

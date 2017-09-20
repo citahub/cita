@@ -46,8 +46,8 @@ pub enum RusultBody {
     ContractCode(Bytes),
     FilterId(U256),
     UninstallFliter(bool),
-    FilterChanges(Bytes),
-    FilterLog(Bytes),
+    FilterChanges(Vec<Log>),
+    FilterLog(Vec<Log>),
 }
 
 
@@ -119,17 +119,11 @@ impl Output {
                         let rpc_block: RpcBlock = serde_json::from_str(&rpc_block).unwrap();
                         success.set_result(RusultBody::FullBlock(rpc_block.into())).to_out()
                     }
-
                     Response_oneof_data::ts(x) => success.set_result(RusultBody::Transaction(RpcTransaction::from(x))).to_out(),
                     Response_oneof_data::peercount(x) => success.set_result(RusultBody::PeerCount(U256::from(x))).to_out(),
                     Response_oneof_data::call_result(x) => success.set_result(RusultBody::CallResult(Bytes::from(x))).to_out(),
-                    Response_oneof_data::logs(serialized) => {
-                        success.set_result(serde_json::from_str::<Vec<Log>>(&serialized)
-                                               .ok()
-                                               .map_or(RusultBody::Null, |logs| RusultBody::Logs(logs)))
-                               .to_out()
-                    }
-
+                    Response_oneof_data::logs(serialized) => success.set_result(RusultBody::Logs(serde_json::from_str::<Vec<Log>>(&serialized).unwrap()))
+                                                                    .to_out(),
                     Response_oneof_data::receipt(serialized) => {
                         success.set_result(serde_json::from_str::<Receipt>(&serialized)
                                                .ok()
@@ -139,13 +133,13 @@ impl Output {
                     Response_oneof_data::transaction_count(x) => success.set_result(RusultBody::TranactionCount(U256::from(x))).to_out(),
                     Response_oneof_data::contract_code(x) => success.set_result(RusultBody::ContractCode(Bytes::from(x))).to_out(),
                     Response_oneof_data::filter_id(id) => success.set_result(RusultBody::FilterId(U256::from(id))).to_out(),
-                    Response_oneof_data::uninstall_filter(x) => success.set_result(RusultBody::UninstallFliter(x)).to_out(),
-                    Response_oneof_data::filter_changes(x) => success.set_result(RusultBody::FilterChanges(Bytes::from(x))).to_out(),
-                    Response_oneof_data::filter_logs(x) => success.set_result(RusultBody::FilterLog(Bytes::from(x))).to_out(),
+                    Response_oneof_data::uninstall_filter(is_uninstall) => success.set_result(RusultBody::UninstallFliter(is_uninstall)).to_out(),
+                    Response_oneof_data::filter_changes(log) => success.set_result(RusultBody::FilterChanges(serde_json::from_str::<Vec<Log>>(&log).unwrap()))
+                                                                       .to_out(),
+                    Response_oneof_data::filter_logs(log) => success.set_result(RusultBody::FilterLog(serde_json::from_str::<Vec<Log>>(&log).unwrap())).to_out(),
                     Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(id.clone(), jsonrpc.clone(), Error::server_error(code, err_msg.as_ref()))),
                 }
-
-            }
+            } 
             _ => {
                 match data.data.unwrap() {
                     Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(id.clone(), jsonrpc.clone(), Error::server_error(code, err_msg.as_ref()))),
