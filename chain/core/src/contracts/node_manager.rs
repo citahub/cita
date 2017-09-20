@@ -71,28 +71,32 @@ mod tests {
     use libchain::genesis::{Spec, Genesis};
     use libproto::blockchain;
     use rustc_serialize::hex::FromHex;
-    use std::collections::HashMap;
+    use serde_json;
+
+    use std::fs::File;
+    use std::io::BufReader;
     use std::sync::Arc;
     use std::sync::mpsc::channel;
     use std::time::UNIX_EPOCH;
     use types::transaction::SignedTransaction;
-    use util::{U256, H256, Address};
+    use util::{U256, Address};
     use util::kvdb::{Database, DatabaseConfig};
 
-    // TODO: Load from genesis json file
     fn init_chain() -> Arc<Chain> {
+
+        // Load from genesis json file
+        let genesis_file = File::open("genesis.json").unwrap();
+        let fconfig = BufReader::new(genesis_file);
+        let spec: Spec = serde_json::from_reader(fconfig).expect("Failed to load genesis.");
+        let genesis = Genesis {
+            spec: spec,
+            block: Block::default(),
+        };
+
         let _ = env_logger::init();
         let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-        let genesis = Genesis {
-            spec: Spec {
-                alloc: HashMap::new(),
-                prevhash: H256::from(0),
-                timestamp: 0,
-            },
-            block: Block::default(),
-        };
         let (sync_tx, _) = channel();
         let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
         chain
@@ -130,12 +134,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_node_manager_contract() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
+            // TODO: fix this privkey
             PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
         } else if SIGNATURE_NAME == "secp256k1" {
-            PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
+            PrivKey::from("352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214")
         } else {
             panic!("unexcepted signature algorithm");
         };
