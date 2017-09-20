@@ -170,7 +170,7 @@ mod tests {
         msg.write_to_bytes().unwrap()
     }
 
-    fn generate_blk_msg(tx: SignedTransaction) -> Vec<u8> {
+    fn generate_blk_msg(tx: SignedTransaction, pubkey: PubKey) -> Vec<u8> {
         //create verify message
         let mut req = VerifyTxReq::new();
         req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
@@ -180,6 +180,7 @@ mod tests {
         let hash = bytes.crypt_hash().to_vec();
         req.set_hash(hash);
         req.set_tx_hash(tx.get_tx_hash().to_vec());
+        req.set_signer(pubkey.to_vec());
 
         let mut blkreq = VerifyBlockReq::new();
         blkreq.set_id(88);
@@ -189,7 +190,7 @@ mod tests {
         msg.write_to_bytes().unwrap()
     }
 
-    fn generate_blk_msg_with_fake_signature(tx: SignedTransaction) -> Vec<u8> {
+    fn generate_blk_msg_with_fake_signature(tx: SignedTransaction, pubkey: PubKey) -> Vec<u8> {
         //create verify message
         let mut req = VerifyTxReq::new();
         req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
@@ -200,6 +201,7 @@ mod tests {
         let hash = bytes.crypt_hash().to_vec();
         req.set_hash(hash);
         req.set_tx_hash(tx.get_tx_hash().to_vec());
+        req.set_signer(pubkey.to_vec());
 
         let mut blkreq = VerifyBlockReq::new();
         blkreq.set_id(88);
@@ -344,9 +346,10 @@ mod tests {
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
+        let pubkey = keypair.pubkey().clone();
         let tx = generate_tx(vec![1], 99, privkey);
         let tx_hash = tx.get_tx_hash().to_vec().clone();
-        handle_remote_msg(generate_blk_msg(tx), v.clone(), req_sender, tx_pub, c.clone());
+        handle_remote_msg(generate_blk_msg(tx, pubkey), v.clone(), req_sender, tx_pub, c.clone());
         let (verify_type, request_id, req, submodule) = req_receiver.recv().unwrap();
         assert_eq!(verify_type, VerifyType::BlockVerify);
         assert_eq!(request_id, 88);
@@ -414,8 +417,9 @@ mod tests {
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
+        let pubkey = keypair.pubkey().clone();
         let tx = generate_tx(vec![1], 99, privkey);
-        handle_remote_msg(generate_blk_msg(tx), verifier.clone(), req_sender, tx_pub.clone(), block_cache.clone());
+        handle_remote_msg(generate_blk_msg(tx, pubkey), verifier.clone(), req_sender, tx_pub.clone(), block_cache.clone());
         let (_, request_id, verify_req, submodule) = req_receiver.recv().unwrap();
 
         let resp = verify_tx_service(verify_req, verifier, verify_cache);
@@ -450,8 +454,9 @@ mod tests {
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
+        let pubkey = keypair.pubkey().clone();
         let tx = generate_tx(vec![1], 99, privkey);
-        handle_remote_msg(generate_blk_msg_with_fake_signature(tx), verifier.clone(), req_sender, tx_pub.clone(), block_cache.clone());
+        handle_remote_msg(generate_blk_msg_with_fake_signature(tx, pubkey), verifier.clone(), req_sender, tx_pub.clone(), block_cache.clone());
         let (_, request_id, verify_req, submodule) = req_receiver.recv().unwrap();
 
         let resp = verify_tx_service(verify_req, verifier, verify_cache);
