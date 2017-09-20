@@ -38,10 +38,10 @@ contract PermissionManager is PermissionInterface {
     // sender grant the permission to a user
     function grantPermission(address _user, uint8 _permission) returns (bool) {
         // require sender has the permission 
-        if (_permission != uint8(user_permission[msg.sender]) || _permission == uint8(user_permission[_user])) 
-            return false; 
+        if (_permission > uint8(user_permission[msg.sender]) || _permission < uint8(user_permission[_user]))
+            return false;
 
-        if (_permission == uint8(UserPermission.Send) && user_permission[_user] == UserPermission.None) {
+        if (_permission == uint8(UserPermission.Send)) {
             senders.push(_user);
             user_permission[_user] = UserPermission.Send;
         }
@@ -58,7 +58,7 @@ contract PermissionManager is PermissionInterface {
     // revoke the role 
     function revokePermission(address _user, uint8 _permission) returns (bool) {
         // require sender and user both have the permission 
-        if (_permission != uint8(user_permission[msg.sender]) || _permission != uint8(user_permission[_user]) || msg.sender == _user) 
+        if (_permission > uint8(user_permission[msg.sender]) || _permission != uint8(user_permission[_user]) || msg.sender == _user) 
             return false; 
 
         user_permission[_user] = UserPermission.None;
