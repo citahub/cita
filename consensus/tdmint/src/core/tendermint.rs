@@ -46,6 +46,7 @@ const LOG_TYPE_VOTE: u8 = 2;
 const LOG_TYPE_STATE: u8 = 3;
 const LOG_TYPE_PREV_HASH: u8 = 4;
 const LOG_TYPE_COMMITS: u8 = 5;
+const LOG_TYPE_VERIFIED_PROPOSE: u8 = 6;
 
 const ID_CONSENSUS_MSG: u32 = (submodules::CONSENSUS << 16) + topics::CONSENSUS_MSG as u32;
 const ID_NEW_PROPOSAL: u32 = (submodules::CONSENSUS << 16) + topics::NEW_PROPOSAL as u32;
@@ -119,12 +120,9 @@ pub struct TenderMint {
     // to be used for chain syncing
     //sync_ok :bool,
     dispatch: Arc<Dispatchtx>,
-
     htime: Instant,
 
-    /// An auto-increment id used for distinguish verify_resp
-    verify_id: u64,
-    unverified_msg: HashMap<u64, Vec<u8>>,
+    unverified_msg: Vec<(usize, usize)>,
 }
 
 impl TenderMint {
@@ -162,8 +160,7 @@ impl TenderMint {
             //sync_ok : true,
             dispatch: dispatch,
             htime: Instant::now(),
-            verify_id: 0,
-            unverified_msg: HashMap::new(),
+            unverified_msg: Vec::new(),
         }
     }
 
@@ -485,6 +482,13 @@ impl TenderMint {
         // Commit the block using a complete signature set.
         let height = self.height;
         let round = self.round;
+
+        if self.unverified_msg.contains(&(height, round)) {
+            warn!("proposal is not verified height {} round {}", height, round);
+            return false;
+        }
+        //to be optimize
+        self.clean_verified_info();
         trace!("commit_block begining {} {} proposal {:?}", height, round, self.proposal);
         if let Some(hash) = self.proposal {
             if self.locked_block.is_some() {
@@ -493,9 +497,6 @@ impl TenderMint {
                 if let Some(proof) = res {
                     self.proof = proof.clone();
                     self.save_wal_proof();
-                    /*{
-                        self.locked_block.as_mut().unwrap().mut_header().set_proof1(proof.into());
-                    }*/
 
                     let mut proof_blk = BlockWithProof::new();
                     let blk = self.locked_block.clone();
@@ -564,7 +565,7 @@ impl TenderMint {
         }
 
         let message = serialize(&(height, round, s), Infinite).unwrap();
-        self.wal_log.save(LOG_TYPE_STATE, &message).unwrap();
+        let _ = self.wal_log.save(LOG_TYPE_STATE, &message);
     }
 
     fn handle_state(&mut self, msg: Vec<u8>) {
@@ -730,15 +731,15 @@ impl TenderMint {
             let signature = Signature::from(signature);
             if let Ok(_) = signature.recover(&message.crypt_hash().into()) {
                 let decoded = deserialize(&message).unwrap();
-                let (_, _, proposal): (usize, usize, Proposal) = decoded;
+                let (vheight, vround, proposal): (usize, usize, Proposal) = decoded;
                 if let Ok(block) = parse_from_bytes::<Block>(&proposal.block) {
                     let len = block.get_body().get_transactions().len();
-                    trace!("verify_req with {} txs with block verify request id: {} and height:{}", len, self.verify_id, block.get_header().get_height());
                     if len > 0 {
                         trace!("Going to send block verify request to auth");
-                        let verify_req = block_verify_req(&block, self.verify_id);
-                        self.unverified_msg.insert(self.verify_id, msg.to_vec());
-                        self.verify_id += 1;
+                        self.unverified_msg.push((vheight, vround));
+                        let idx = self.unverified_msg.len() as u64 - 1;
+                        let verify_req = block_verify_req(&block, idx);
+                        trace!("verify_req with {} txs with block verify request id: {} and height:{}", len, idx, block.get_header().get_height());
                         let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
                         self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                     } else {
@@ -800,6 +801,11 @@ impl TenderMint {
         self.locked_block = None;
         self.last_commit_round = None;
         //self.sync_ok = true;
+    }
+
+    fn clean_verified_info(&mut self) {
+        self.unverified_msg.clear();
+
     }
 
     fn clean_filtr_info(&mut self) {
@@ -971,6 +977,18 @@ impl TenderMint {
                 ID_NEW_PROPOSAL => {
                     if let MsgClass::MSG(msg) = content_ext {
                         self.verify_req(&msg);
+
+                        let res = self.handle_proposal(msg, true);
+                        if let Ok((h, r)) = res {
+                            trace!("handle_proposal {:?}", (h, r));
+                            if h == self.height && r == self.round && self.step < Step::PrevoteWait {
+                                let pres = self.proc_proposal(h, r);
+                                if !pres {
+                                    trace!("proc_proposal res false height {}, round {}", h, r);
+                                }
+                            }
+                        }
+
                     }
                 }
                 _ => {}
@@ -981,22 +999,20 @@ impl TenderMint {
                     trace!("get new local status {:?}", status.height);
                     self.receive_new_status(status);
                 }
+
                 MsgClass::VERIFYBLKRESP(resp) => {
-                    let verify_id = resp.get_id();
-                    let msg = self.unverified_msg.remove(&verify_id);
-                    let ret = resp.get_ret();
-                    msg.map(|msg| if ret == auth::Ret::Ok {
-                                let res = self.handle_proposal(msg, false);
-                                if let Ok((h, r)) = res {
-                                    trace!("handle_proposal {:?}", (h, r));
-                                    if h == self.height && r == self.round && self.step < Step::PrevoteWait {
-                                        let pres = self.proc_proposal(h, r);
-                                        if !pres {
-                                            trace!("proc_proposal res false height {}, round {}", h, r);
-                                        }
-                                    }
-                                }
-                            });
+                    let verify_id = resp.get_id() as usize;
+                    if let Some(elem) = self.unverified_msg.get_mut(verify_id) {
+                        let (vheight, vround) = *elem;
+                        if resp.get_ret() == auth::Ret::Ok {
+                            let msg = serialize(&(vheight, vround, true), Infinite).unwrap();
+                            let _ = self.wal_log.save(LOG_TYPE_VERIFIED_PROPOSE, &msg);
+                            *elem = (0, 0);
+                        } else {
+                            let msg = serialize(&(vheight, vround, false), Infinite).unwrap();
+                            let _ = self.wal_log.save(LOG_TYPE_VERIFIED_PROPOSE, &msg);
+                        }
+                    }
                 }
                 _ => {}
             }
@@ -1110,8 +1126,10 @@ impl TenderMint {
                 it can always issue block, no need for this.
             */
             if !self.commit_block() {
+                if self.lock_round.is_none() {
+                    self.clean_saved_info();
+                }
                 self.change_state_step(height, round + 1, Step::Propose, true);
-                self.clean_saved_info();
                 self.new_round_start(height, round + 1);
             }
         } else if self.step == Step::CommitWait {
@@ -1155,6 +1173,14 @@ impl TenderMint {
                 if let Ok(proof) = deserialize(&vec_out) {
                     trace!(" wal proof here {:?}", proof);
                     self.proof = proof;
+                }
+            } else if mtype == LOG_TYPE_VERIFIED_PROPOSE {
+                trace!(" LOG_TYPE_VERIFIED_PROPOSE begining!");
+                if let Ok(decode) = deserialize(&vec_out) {
+                    let (vheight, vround, verified): (usize, usize, bool) = decode;
+                    if !verified {
+                        self.unverified_msg.push((vheight, vround));
+                    }
                 }
             }
         }
