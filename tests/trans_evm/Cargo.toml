@@ -17,4 +17,5 @@ hyper =  "0.10.7"
 cita_log = { path = "../../share_libs/cita_log" }
 jsonrpc_types = { path = "../../jsonrpc/types" }
 rustc-hex = "1.0"
-
+ws = "0.7.3"
+url = "1.5.1"

@@ -44,7 +44,7 @@ impl Trans {
         Trans { tx: Transaction::new() }
     }
 
-    pub fn generate_tx(code: &str, address: String, pv: &PrivKey, curh: u64) -> UnverifiedTransaction {
+    pub fn generate_tx(code: &str, address: String, pv: &PrivKey, curh: u64, quota: u64) -> UnverifiedTransaction {
 
         let data = code.from_hex().unwrap();
 
@@ -54,7 +54,7 @@ impl Trans {
         tx.set_to(address);
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(curh + 88);
-        tx.set_quota(99999999999);
+        tx.set_quota(quota);
 
         tx.sign(*pv).take_transaction_with_sig()
     }
