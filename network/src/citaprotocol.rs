@@ -19,6 +19,7 @@
 
 use byteorder::{BigEndian, ByteOrder};
 use bytes::BytesMut;
+use bytes::BufMut;
 use std::io;
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Framed, Encoder, Decoder};
@@ -47,6 +48,15 @@ pub struct CitaProto;
 /// |                |                              |
 /// +----------------+------------------------------+
 ///
+
+fn opt_bytes_extend(buf: &mut BytesMut, data: &[u8]) {
+    buf.reserve(data.len());
+    unsafe {
+        buf.bytes_mut()[..data.len()].copy_from_slice(data);
+        buf.advance_mut(data.len());
+    }
+}
+
 impl Decoder for CitaCodec {
     type Item = CitaRequest;
     type Error = io::Error;
@@ -69,9 +79,7 @@ impl Decoder for CitaCodec {
         // ok skip the flag
         buf.split_to(8);
         // get msg
-        let msg = buf.split_to(msg_len as usize);
-        let mut payload = Vec::new();
-        payload.extend(msg.as_ref());
+        let payload = buf.split_to(msg_len as usize).to_vec();
 
         trace!("decode msg {:?} {:?}", request_id, payload);
 
@@ -90,8 +98,8 @@ impl Encoder for CitaCodec {
         let mut encoded_request_id = [0; 8];
         BigEndian::write_u64(&mut encoded_request_id, request_id as u64);
 
-        buf.extend(&encoded_request_id);
-        buf.extend(&msg);
+        opt_bytes_extend(buf, &encoded_request_id);
+        opt_bytes_extend(buf, &msg);
 
         Ok(())
     }
