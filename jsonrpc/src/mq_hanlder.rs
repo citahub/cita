@@ -69,11 +69,11 @@ impl MqHandler {
 
     pub fn handle(&mut self, key: String, body: Vec<u8>) {
         let (id, _, content_ext) = parse_msg(body.as_slice());
-        trace!("routint_key {:?},get msg cmid {:?}", key, display_cmd(id));
+        trace!("routint_key {:?},get msg cmd {:?}", key, display_cmd(id));
         //TODO match
         match content_ext {
             MsgClass::RESPONSE(content) => {
-                trace!("from chain response rid {:?}", String::from_utf8(content.request_id.clone()));
+                trace!("from response request_id {:?}", content.request_id);
                 match self.transfer_type {
                     TransferType::HTTP => {
                         self.responses.write().insert(content.request_id.clone(), content);
@@ -81,13 +81,16 @@ impl MqHandler {
                     TransferType::WEBSOCKET => {
                         let ws_responses = self.ws_responses.clone();
                         self.thread_pool.as_ref().map(|pool| {
-                                                          pool.execute(move || {
-                                                                           if let Some((req_info, sender)) = ws_responses.lock().remove(&content.request_id) {
-                                                                               sender.send(serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap());
-                                                                           }
-                                                                           drop(ws_responses);
-                                                                       });
-                                                      });
+                            pool.execute(move || {
+                                let value = {
+                                    ws_responses.lock().remove(&content.request_id)
+                                };
+                                drop(ws_responses);
+                                if let Some((req_info, sender)) = value {
+                                    sender.send(serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap());
+                                }
+                            });
+                        });
                     }
                     TransferType::ALL => {
                         error!("only start one of websocket and http！");

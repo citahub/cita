@@ -90,12 +90,14 @@ impl Handler for WsHandler {
                         id: req_id.clone(),
                     };
                     this.method_handler.from_req(rpc).map(|_req| {
-                                                              let request_id = _req.request_id.clone();
-                                                              let data: communication::Message = _req.into();
-                                                              let _ = this.tx.send((topic, data.write_to_bytes().unwrap()));
-                                                              this.responses.lock().insert(request_id, (req_info, this.sender.clone()));
-                                                              ()
-                                                          })
+                        let request_id = _req.request_id.clone();
+                        let data: communication::Message = _req.into();
+                        this.tx.send((topic, data.write_to_bytes().unwrap()));
+                        let value = (req_info, this.sender.clone());
+                        {
+                            this.responses.lock().insert(request_id, value);
+                        }
+                    })
                 }
             };
             //TODO 错误返回
@@ -109,7 +111,7 @@ impl Handler for WsHandler {
     }
 
     fn on_close(&mut self, code: CloseCode, reason: &str) {
-        trace!("WebSocket closing for ({:?}) {} token {}", code, reason, self.sender.token().0);
+        info!("WebSocket closing for ({:?}) {} token {}", code, reason, self.sender.token().0);
     }
 }
 

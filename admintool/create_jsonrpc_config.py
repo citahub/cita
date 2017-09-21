@@ -17,7 +17,7 @@ def main():
     ws_config = dict(
         enable=ws_enable, thread_number=0,
         listen_ip="0.0.0.0", listen_port=sys.argv[4],
-        max_connections=500, queue_size=500,
+        max_connections=800, queue_size=200,
         panic_on_new_connection=False, panic_on_shutdown=False,
         fragments_capacity=100, fragments_grow=True,
         fragment_size=65535, in_buffer_capacity=2048,

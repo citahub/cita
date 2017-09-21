@@ -80,8 +80,8 @@ impl HttpHandler {
         match self.method_handler.from_req(rpc) {
             Ok(req) => {
                 let request_id = req.request_id.clone();
+                let msg: communication::Message = req.into();
                 {
-                    let msg: communication::Message = req.into();
                     self.tx.lock().send((topic, msg.write_to_bytes().unwrap())).unwrap();
                 }
                 trace!("wait response {:?}", String::from_utf8(request_id.clone()));
@@ -93,8 +93,10 @@ impl HttpHandler {
                     }
                     thread::sleep(Duration::new(0, (self.sleep_duration * 1000000) as u32));
                     if self.responses.read().contains_key(&request_id) {
-                        let mut responses = self.responses.write();
-                        if let Some(res) = responses.remove(&request_id) {
+                        let value = {
+                            self.responses.write().remove(&request_id)
+                        };
+                        if let Some(res) = value {
                             match Output::from(res, id, jsonrpc_version) {
                                 Output::Success(success) => return Ok(success),
                                 Output::Failure(failure) => return Err(failure),
