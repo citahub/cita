@@ -14,9 +14,9 @@ elif [ $# == 4 ]; then
     flag_prof_duration=$4
 fi
 if [ $category == 1 ]; then
-    ../../admintool/release/bin/chain_performance --config genesis.json --method create --tx_num=$tx_num --flag_prof_start=$flag_prof_start --flag_prof_duration=$flag_prof_duration
+    ../../admintool/release/bin/chain_performance --genesis genesis.json --config chain.json --method create --tx_num=$tx_num --flag_prof_start=$flag_prof_start --flag_prof_duration=$flag_prof_duration
 elif [ $category == 2 ]; then
-    ../../admintool/release/bin/chain_performance --config genesis.json --method call --tx_num=$tx_num --flag_prof_start=$flag_prof_start --flag_prof_duration=$flag_prof_duration
+    ../../admintool/release/bin/chain_performance --genesis genesis.json --config chain.json --method call --tx_num=$tx_num --flag_prof_start=$flag_prof_start --flag_prof_duration=$flag_prof_duration
 elif [ $category == 3 ]; then
-    ../../admintool/release/bin/chain_performance --config genesis.json --method store --tx_num=$tx_num --flag_prof_start=$flag_prof_start --flag_prof_duration=$flag_prof_duration
+    ../../admintool/release/bin/chain_performance --genesis genesis.json --config chain.json --method store --tx_num=$tx_num --flag_prof_start=$flag_prof_start --flag_prof_duration=$flag_prof_duration
 fi

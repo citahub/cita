@@ -22,6 +22,7 @@ use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
+use libchain::chain::Switch;
 use libchain::chain::TransactionHash;
 use libchain::extras::TransactionAddress;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
@@ -37,6 +38,7 @@ use std::sync::Arc;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
 use util::{U256, H256, Address, merklehash, HeapSizeOf};
+
 /// Trait for a object that has a state database.
 pub trait Drain {
     /// Drop this object and return the underlieing database.
@@ -314,16 +316,16 @@ impl OpenBlock {
     }
 
     ///execute transactions
-    pub fn apply_transactions(&mut self) {
+    pub fn apply_transactions(&mut self, switch: &Switch) {
         for t in self.body.transactions.clone() {
-            self.apply_transaction(&t);
+            self.apply_transaction(&t, switch);
         }
         self.state.commit().expect("commit trie error");
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
     }
 
-    pub fn apply_transaction(&mut self, t: &SignedTransaction) {
+    pub fn apply_transaction(&mut self, t: &SignedTransaction, switch: &Switch) {
         let mut env_info = self.env_info();
         if !self.account_gas.contains_key(&t.sender()) {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);
@@ -333,7 +335,7 @@ impl OpenBlock {
 
         let has_traces = self.traces.is_some();
         info!("env_info says gas_used={}", env_info.gas_used);
-        match self.state.apply(&env_info, &t, has_traces) {
+        match self.state.apply(&env_info, &t, has_traces, switch) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());

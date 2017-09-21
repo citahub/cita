@@ -59,6 +59,8 @@ pub struct TransactOptions {
     pub vm_tracing: bool,
     /// Check transaction nonce before execution.
     pub check_nonce: bool,
+    /// Check accout permission before execution.
+    pub check_permission: bool,
 }
 
 /// Transaction executor.
@@ -104,17 +106,16 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
     /// This function should be used to execute transaction.
     pub fn transact(&'a mut self, t: &SignedTransaction, options: TransactOptions) -> Result<Executed, ExecutionError> {
-        let check = options.check_nonce;
         match (options.tracing, options.vm_tracing) {
-            (true, true) => self.transact_with_tracer(t, check, ExecutiveTracer::default(), ExecutiveVMTracer::toplevel()),
-            (true, false) => self.transact_with_tracer(t, check, ExecutiveTracer::default(), NoopVMTracer),
-            (false, true) => self.transact_with_tracer(t, check, NoopTracer, ExecutiveVMTracer::toplevel()),
-            (false, false) => self.transact_with_tracer(t, check, NoopTracer, NoopVMTracer),
+            (true, true) => self.transact_with_tracer(t, options, ExecutiveTracer::default(), ExecutiveVMTracer::toplevel()),
+            (true, false) => self.transact_with_tracer(t, options, ExecutiveTracer::default(), NoopVMTracer),
+            (false, true) => self.transact_with_tracer(t, options, NoopTracer, ExecutiveVMTracer::toplevel()),
+            (false, false) => self.transact_with_tracer(t, options, NoopTracer, NoopVMTracer),
         }
     }
 
     /// Execute transaction/call with tracing enabled
-    pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, check_nonce: bool, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
+    pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, options: TransactOptions, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
     where
         T: Tracer,
         V: VMTracer,
@@ -123,7 +124,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let nonce = self.state.nonce(&sender)?;
 
         // validate transaction nonce
-        if check_nonce && t.nonce != nonce {
+        trace!("nonce should be check: {}", options.check_nonce);
+        if options.check_nonce && t.nonce != nonce {
             return Err(From::from(ExecutionError::InvalidNonce { expected: nonce, got: t.nonce }));
         }
 
@@ -133,13 +135,17 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // check contract create/call permission
         trace!("executive creators: {:?}, senders: {:?}", self.state.creators, self.state.senders);
 
-        match t.action {
-            Action::Create => if *sender != Address::zero() && !self.state.creators.contains_key(&sender) {
-                return Err(From::from(ExecutionError::NoContractPermission));
-            },
-            _ => if *sender != Address::zero() && !self.state.senders.contains_key(sender) && !self.state.creators.contains_key(&sender) {
-                return Err(From::from(ExecutionError::NoTransactionPermission));
-            },
+        // check account permission or not
+        trace!("permission should be check: {}", options.check_permission);
+        if options.check_permission {
+            match t.action {
+                Action::Create => if *sender != Address::zero() && !self.state.creators.contains_key(&sender) {
+                    return Err(From::from(ExecutionError::NoContractPermission));
+                },
+                _ => if *sender != Address::zero() && !self.state.senders.contains_key(sender) && !self.state.creators.contains_key(&sender) {
+                    return Err(From::from(ExecutionError::NoTransactionPermission));
+                },
+            }
         }
 
         let base_gas_required = U256::from(100); // `CREATE` transaction cost

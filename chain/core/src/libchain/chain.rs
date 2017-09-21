@@ -44,11 +44,14 @@ use libproto::request::FullTransaction;
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{Receipt, LocalizedReceipt};
+use serde_json;
 use state::State;
 use state_db::StateDB;
 
 use std::collections::{BTreeMap, VecDeque};
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
@@ -88,6 +91,12 @@ pub struct Status {
     hash: H256,
 }
 
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct Switch {
+    pub nonce: bool,
+    pub permission: bool,
+}
+
 impl Status {
     fn new() -> Self {
         Status { number: 0, hash: H256::default() }
@@ -115,6 +124,12 @@ impl Status {
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
         ps
+    }
+}
+
+impl Switch {
+    pub fn new() -> Self {
+        Switch { nonce: false, permission: false }
     }
 }
 
@@ -226,6 +241,9 @@ pub struct Chain {
     pub account_gas_limit: RwLock<AccountGasLimit>,
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
+
+    // switch, check them or not
+    pub switch: Switch,
 }
 
 /// Get latest status
@@ -252,7 +270,7 @@ impl Chain {
         status
     }
 
-    pub fn init_chain(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>) -> (Arc<Chain>, ProtoRichStatus) {
+    pub fn init_chain(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>, path: &str) -> (Arc<Chain>, ProtoRichStatus) {
         // 400 is the avarage size of the key
         let cache_man = CacheManager::new(1 << 14, 1 << 20, 400);
 
@@ -281,6 +299,11 @@ impl Chain {
             }
         };
 
+        let switch_file = File::open(path).unwrap();
+        let sconfig = BufReader::new(switch_file);
+        let sw: Switch = serde_json::from_reader(sconfig).expect("Failed to load json file.");
+        info!("config check: {:?}", sw);
+
         let max_height = AtomicUsize::new(0);
         max_height.store(header.number() as usize, Ordering::SeqCst);
         let raw_chain = Chain {
@@ -307,6 +330,7 @@ impl Chain {
             nodes: RwLock::new(Vec::new()),
             block_gas_limit: AtomicUsize::new(18446744073709551615),
             account_gas_limit: RwLock::new(AccountGasLimit::new()),
+            switch: sw,
         };
 
         // Build chain config
@@ -850,6 +874,7 @@ impl Chain {
             tracing: analytics.transaction_tracing,
             vm_tracing: analytics.vm_tracing,
             check_nonce: false,
+            check_permission: false,
         };
         let ret = Executive::new(&mut state, &env_info, &engine, &self.factories.vm).transact(t, options)?;
 
@@ -874,8 +899,10 @@ impl Chain {
         let last_hashes = self.last_hashes();
         let senders = self.senders.read().clone();
         let creators = self.creators.read().clone();
+        let switch = &self.switch;
+
         let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into(), &self.account_gas_limit.read().clone()).unwrap();
-        open_block.apply_transactions();
+        open_block.apply_transactions(&switch);
 
         open_block
     }
@@ -1071,6 +1098,7 @@ mod tests {
     use types::transaction::SignedTransaction;
     use util::{U256, H256, Address};
     use util::kvdb::{Database, DatabaseConfig};
+    use std::env;
 
     #[test]
     fn test_heapsizeof() {
@@ -1094,7 +1122,10 @@ mod tests {
 
     fn init_chain() -> Arc<Chain> {
         // Load from genesis json file
+        let path = env::current_dir().unwrap();
+        println!("the current directory is: {}", path.display());
         let genesis_file = File::open("genesis.json").unwrap();
+
         let fconfig = BufReader::new(genesis_file);
         let spec: Spec = serde_json::from_reader(fconfig).expect("Failed to load genesis.");
         let genesis = Genesis {
@@ -1107,7 +1138,8 @@ mod tests {
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
         let (sync_tx, _) = channel();
-        let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
+        let path = "chain.json";
+        let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx, path);
         chain
     }
 

@@ -152,15 +152,17 @@ fn main() {
         .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .args_from_usage("--tx_num=[4000] 'transation num in block'")
-        .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
-        .args_from_usage("-m, --method=[method] 'create | call | store'")
-        .args_from_usage("--flag_prof_start=[1] 'prof start time'")
-        .args_from_usage("--flag_prof_duration=[1] 'prof run time'")
+        .arg_from_usage("--tx_num=[4000] 'transation num in block'")
+        .arg_from_usage("-g, --genesis=[FILE] 'Sets a custom config file'")
+        .arg_from_usage("-m, --method=[method] 'create | call | store'")
+        .arg_from_usage("--flag_prof_start=[1] 'prof start time'")
+        .arg_from_usage("--flag_prof_duration=[1] 'prof run time'")
+        .arg_from_usage("-c, --config=[FILE] 'Sets a check config file'")
         .get_matches();
 
     let block_tx_num = matches.value_of("tx_num").unwrap_or("4000").parse::<i32>().unwrap();
-    let config_path = matches.value_of("config").unwrap_or("genesis.json");
+    let genesis_path = matches.value_of("genesis").unwrap_or("genesis.json");
+    let config_path = matches.value_of("config").unwrap_or("chain.json");
     let method = matches.value_of("method").unwrap_or("create");
     let flag_prof_start = matches.value_of("flag_prof_start").unwrap_or("0").parse::<u64>().unwrap();
     let flag_prof_duration = matches.value_of("flag_prof_duration").unwrap_or("0").parse::<u64>().unwrap();
@@ -169,11 +171,11 @@ fn main() {
     let nosql_path = env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/nosql";
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &nosql_path).unwrap();
-    let genesis = Genesis::init(config_path);
+    let genesis = Genesis::init(genesis_path);
 
     //chain初始化
     let (sync_tx, _) = channel();
-    let call = Callchain::new(Arc::new(db), genesis, sync_tx);
+    let call = Callchain::new(Arc::new(db), genesis, sync_tx, config_path);
     let pre_hash = call.get_pre_hash();
     match method {
         "create" => create_contract(block_tx_num, call.clone(), pre_hash, flag_prof_start, flag_prof_duration, 0),
