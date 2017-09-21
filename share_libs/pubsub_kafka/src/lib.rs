@@ -3,7 +3,6 @@ extern crate log;
 extern crate clap;
 extern crate futures;
 extern crate rdkafka;
-extern crate rdkafka_sys;
 
 use futures::*;
 
@@ -14,6 +13,7 @@ use rdkafka::consumer::{Consumer, ConsumerContext, CommitMode, Rebalance};
 use rdkafka::consumer::stream_consumer::StreamConsumer;
 use rdkafka::error::KafkaResult;
 use rdkafka::producer::FutureProducer;
+use rdkafka::types;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -34,7 +34,7 @@ impl ConsumerContext for ConsumerContextExample {
         trace!("Post rebalance {:?}", rebalance);
     }
 
-    fn commit_callback(&self, _result: KafkaResult<()>, _offsets: *mut rdkafka_sys::RDKafkaTopicPartitionList) {
+    fn commit_callback(&self, _result: KafkaResult<()>, _offsets: *mut types::RDKafkaTopicPartitionList) {
         trace!("Committing offsets");
     }
 }

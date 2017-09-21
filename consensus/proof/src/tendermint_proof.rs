@@ -19,14 +19,13 @@ use bincode::{serialize, deserialize, Infinite};
 use crypto::{Signature, Sign, pubkey_to_address};
 use libproto::blockchain::{Proof, ProofType};
 use std::collections::HashMap;
-use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::usize::MAX;
 use util::{H256, Address};
 use util::Hashable;
+use util::datapath::DataPath;
 
-pub const DATA_PATH: &'static str = "DATA_PATH";
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Step {
     Propose,
@@ -63,7 +62,7 @@ impl TendermintProof {
     }
 
     pub fn store(&self) {
-        let proof_path = env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/proof.bin";
+        let proof_path = DataPath::proof_bin_path();
         let mut file = File::create(&proof_path).unwrap();
         let encoded_proof: Vec<u8> = serialize(&self, Infinite).unwrap();
         file.write_all(&encoded_proof).unwrap();
@@ -71,8 +70,8 @@ impl TendermintProof {
     }
 
     pub fn load(&mut self) {
-        let data_path = env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str());
-        if let Ok(mut file) = File::open(&(data_path + "/proof.bin")) {
+        let proof_path = DataPath::proof_bin_path();
+        if let Ok(mut file) = File::open(&proof_path) {
             let mut content = Vec::new();
             if file.read_to_end(&mut content).is_ok() {
                 if let Ok(decoded) = deserialize(&content[..]) {

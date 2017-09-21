@@ -37,6 +37,7 @@ use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver, RecvError};
 use std::time::Instant;
 use util::{H256, Address, Hashable};
+use util::datapath::DataPath;
 
 const INIT_HEIGHT: usize = 1;
 const INIT_ROUND: usize = 0;
@@ -53,7 +54,6 @@ const ID_NEW_PROPOSAL: u32 = (submodules::CONSENSUS << 16) + topics::NEW_PROPOSA
 
 const TIMEOUT_RETRANSE_MULTIPLE: u32 = 5;
 const TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE: u32 = 10;
-const DATA_PATH: &'static str = "DATA_PATH";
 
 pub type TransType = (u32, u32, MsgClass);
 pub type PubType = (String, Vec<u8>);
@@ -133,7 +133,8 @@ impl TenderMint {
         if params.is_test {
             trace!("Run for test!");
         }
-        let logpath = ::std::env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/wal";
+
+        let logpath = DataPath::wal_path();
 
         trace!("tx pool size {}", params.tx_pool_size);
         TenderMint {

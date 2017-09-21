@@ -20,7 +20,11 @@ function cita_setup() {
     sudo rabbitmqctl list_permissions -p ${node}
 
     # clean up database and local data
-    rm -rf ./data
+    data_path=${VAGRANT_DATA_PATH:-"./data"}
+    echo "Will remove data_path is ${data_path}"
+    cwd=$(pwd)
+    echo "current dir is ${cwd}"
+    rm -rf ${data_path}
 }
 
 function cita_start() {

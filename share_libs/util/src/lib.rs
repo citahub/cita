@@ -37,6 +37,7 @@ extern crate blake2b;
 
 #[macro_use]
 extern crate log as rlog;
+extern crate uuid;
 
 pub mod avl;
 pub mod merklehash;
@@ -59,11 +60,13 @@ pub mod semantic_version;
 pub mod snappy;
 pub mod cache;
 pub mod crypto;
+pub mod datapath;
 
 
 pub use ansi_term::{Colour, Style};
 pub use bigint::*;
 pub use bytes::*;
+pub use datapath::*;
 // pub use timer::*;
 pub use error::*;
 pub use hashable::*;
