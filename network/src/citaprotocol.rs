@@ -18,8 +18,8 @@
 //! A multiplexed cita protocol
 
 use byteorder::{BigEndian, ByteOrder};
-use bytes::BytesMut;
 use bytes::BufMut;
+use bytes::BytesMut;
 use std::io;
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Framed, Encoder, Decoder};
