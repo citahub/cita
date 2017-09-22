@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate mktemp;
-extern crate rustc_hex;
 extern crate env_logger;
 extern crate rustc_serialize;
 
@@ -175,12 +174,14 @@ pub fn bench_chain(code: &Vec<u8>, data: &Vec<u8>, tpb: u32, native_address: Add
         let start = Instant::now();
         black_box(chain.set_block(block));
         let elapsed = start.elapsed();
+        chain.collect_garbage();
         u64::from(tpb) * 1_000_000_000 / (elapsed.as_secs() * 1_000_000_000 + u64::from(elapsed.subsec_nanos()))
     };
 
-    (0..3).fold(0, |total, _| {
+    let blocks = 10;
+    (0..blocks).fold(0, |total, _| {
         let tps = bench(addr, tpb, nonce, data);
         nonce += tpb;
         total + tps
-    }) / 3
+    }) / blocks
 }

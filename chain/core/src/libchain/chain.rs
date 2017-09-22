@@ -59,6 +59,7 @@ use types::transaction::{SignedTransaction, Transaction, Action};
 use util::{journaldb, H256, U256, H2048, Address, Bytes};
 use util::{RwLock, Mutex};
 use util::HeapSizeOf;
+use util::UtilError;
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
 
@@ -675,7 +676,35 @@ impl Chain {
         let mut state = block.drain();
         // Store triedb changes in journal db
         state.journal_under(batch, height, &hash).expect("DB commit failed");
+        self.prune_ancient(state).expect("mark_canonical failed");
+    }
 
+    fn prune_ancient(&self, mut state_db: StateDB) -> Result<(), UtilError> {
+        let number = match state_db.journal_db().latest_era() {
+            Some(n) => n,
+            None => return Ok(()),
+        };
+        let history = 2;
+        // prune all ancient eras until we're below the memory target,
+        // but have at least the minimum number of states.
+        loop {
+            match state_db.journal_db().earliest_era() {
+                Some(era) if era + history <= number => {
+                    trace!(target: "client", "Pruning state for ancient era {}", era);
+                    match self.block_hash(era) {
+                        Some(ancient_hash) => {
+                            let mut batch = DBTransaction::new();
+                            state_db.mark_canonical(&mut batch, era, &ancient_hash)?;
+                            self.db.write_buffered(batch);
+                            state_db.journal_db().flush();
+                        }
+                        None => debug!(target: "client", "Missing expected hash for block {}", era),
+                    }
+                }
+                _ => break, // means that every era is kept, no pruning necessary.
+            }
+        }
+        Ok(())
     }
 
     /// Get receipts of block with given hash.
@@ -935,9 +964,6 @@ impl Chain {
 
 #[cfg(test)]
 mod tests {
-    extern crate bincode;
-    extern crate serde;
-    extern crate cita_crypto;
     extern crate rustc_serialize;
 
     use self::rustc_serialize::hex::FromHex;

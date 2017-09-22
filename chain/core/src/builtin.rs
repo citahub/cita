@@ -197,7 +197,6 @@ impl Impl for EdRecover {
 
 #[cfg(test)]
 mod tests {
-    extern crate cita_ed25519;
     extern crate rustc_serialize;
 
     use super::{Builtin, Linear, ethereum_builtin, Pricer};

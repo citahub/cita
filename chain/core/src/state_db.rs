@@ -37,6 +37,9 @@ impl StateDB {
     pub fn journal_under(&mut self, batch: &mut DBTransaction, now: u64, id: &H256) -> Result<u32, UtilError> {
         self.db.journal_under(batch, now, id)
     }
+    pub fn mark_canonical(&mut self, batch: &mut DBTransaction, now: u64, id: &H256) -> Result<u32, UtilError> {
+        self.db.mark_canonical(batch, now, id)
+    }
 
     /// Returns underlying `JournalDB`.
     pub fn journal_db(&self) -> &JournalDB {
