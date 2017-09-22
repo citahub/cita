@@ -290,7 +290,6 @@ impl Map {
 
 #[cfg(test)]
 mod tests {
-    extern crate env_logger;
     use super::*;
     use evm::tests::FakeExt;
 

@@ -130,7 +130,6 @@ impl SimpleStorage {
 }
 //use byteorder::{};
 extern crate bincode;
-extern crate serde;
 use self::bincode::Infinite;
 use self::bincode::internal::deserialize_from;
 use self::bincode::internal::serialize_into;

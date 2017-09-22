@@ -77,13 +77,7 @@ impl Default for EnvInfo {
 
 #[cfg(test)]
 mod tests {
-    extern crate rustc_serialize;
-
-    // use std::str::FromStr;
-
     use super::*;
-    // use util::{U256, Address};
-    // use ethjson;
 
     // #[test]
     // fn it_serializes_form_json() {

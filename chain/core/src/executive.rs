@@ -380,6 +380,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
          */
 
+
         let nonce_offset = U256::from(0);
         self.state.new_contract(&params.address, nonce_offset);
         let trace_info = tracer.prepare_trace_create(&params);
@@ -441,6 +442,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         /*
         self.state.add_balance(&sender, &refund_value, CleanupMode::NoEmpty)?;
          */
+
 
         trace!("exec::finalize: Compensating author: fees_value={}, author={}\n", fees_value, &self.info.author);
         /*
@@ -513,10 +515,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
 #[cfg(test)]
 mod tests {
-    extern crate libproto;
     extern crate env_logger;
-    extern crate cita_ed25519 as ed25519;
-    extern crate protobuf;
+    extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::rustc_hex::FromHex;

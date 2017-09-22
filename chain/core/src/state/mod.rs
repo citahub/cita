@@ -718,8 +718,6 @@ impl Clone for State<StateDB> {
 #[cfg(test)]
 mod tests {
     extern crate libproto;
-    extern crate cita_crypto;
-    extern crate protobuf;
     extern crate env_logger;
     ////////////////////////////////////////////////////////////////////////////////
 
