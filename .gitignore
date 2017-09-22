@@ -56,8 +56,8 @@ logfile
 # More information here http://doc.crates.io/guide.html#cargotoml-vs-cargolock
 
 # vagrant file
-Vagrantfile
 .vagrant
+ubuntu-*-console.log
 
 # transaction tool output
 admintool/txtool/output/

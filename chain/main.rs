@@ -44,16 +44,15 @@ use forward::*;
 use log::LogLevelFilter;
 use protobuf::Message;
 use pubsub::start_pubsub;
-use std::env;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time;
 use std::time::Duration;
 use synchronizer::Synchronizer;
+use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 
-pub const DATA_PATH: &'static str = "DATA_PATH";
 
 fn main() {
     dotenv::dotenv().ok();
@@ -84,7 +83,9 @@ fn main() {
                       let (key, msg) = crx_sub.recv().unwrap();
                       forward::chain_pool(&pool, &tx, key_to_id(&key), msg);
                   });
-    let nosql_path = env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/nosql";
+
+    let nosql_path = DataPath::nosql_path();
+    trace!("nosql_path is {:?}", nosql_path);
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &nosql_path).unwrap();
     let genesis = Genesis::init(config_path);

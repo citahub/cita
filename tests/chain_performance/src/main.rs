@@ -44,13 +44,13 @@ use core::libchain::Genesis;
 use cpuprofiler::PROFILER;
 use generate_block::Generateblock;
 use log::LogLevelFilter;
-use std::{env, time, thread};
+use std::{time, thread};
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use util::H256;
+use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 
-pub const DATA_PATH: &'static str = "DATA_PATH";
 
 //创建合约交易性能
 fn create_contract(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_prof_start: u64, flag_prof_duration: u64, flag: i32) {
@@ -166,7 +166,7 @@ fn main() {
     let flag_prof_duration = matches.value_of("flag_prof_duration").unwrap_or("0").parse::<u64>().unwrap();
 
     //数据库配置
-    let nosql_path = env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/nosql";
+    let nosql_path = DataPath::nosql_path();
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &nosql_path).unwrap();
     let genesis = Genesis::init(config_path);

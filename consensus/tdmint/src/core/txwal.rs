@@ -18,9 +18,9 @@
 use chain_core::db;
 use libproto::blockchain::SignedTransaction;
 use protobuf::core::{Message, parse_from_bytes};
-use std::env;
 use std::sync::Arc;
 use tx_pool::Pool;
+use util::datapath::DataPath;
 use util::kvdb::{DatabaseConfig, Database, KeyValueDB};
 
 #[derive(Clone)]
@@ -31,7 +31,7 @@ pub struct Txwal {
 impl Txwal {
     pub fn new(path: &str) -> Self {
 
-        let nosql_path = env::var("DATA_PATH").expect(format!("{} must be set", "DATA_PATH").as_str()) + path;
+        let nosql_path = DataPath::root_node_path() + path;
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &nosql_path).unwrap();
         Txwal { db: Arc::new(db) }

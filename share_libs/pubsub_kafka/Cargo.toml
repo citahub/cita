@@ -3,9 +3,11 @@ name = "pubsub_kafka"
 version = "0.1.0"
 authors = ["lycbitbucket <liuyucheng@cryptape.com>"]
 
+[dependencies.rdkafka]
+git = "https://github.com/fede1024/rust-rdkafka.git"
+rev = "84d4062"
+
 [dependencies]
-rdkafka = "^0.12.0"
-rdkafka-sys="0.11.0-0"
 errno = "^0.1.8"
 futures = "^0.1.13"
 libc = "^0.2.0"
