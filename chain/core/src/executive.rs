@@ -529,10 +529,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
 #[cfg(test)]
 mod tests {
-    extern crate libproto;
     extern crate env_logger;
-    extern crate cita_ed25519 as ed25519;
-    extern crate protobuf;
     extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 

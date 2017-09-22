@@ -220,6 +220,7 @@ impl JournalDB for OverlayRecentDB {
         mem += overlay.backing_overlay.mem_used();
         mem += overlay.pending_overlay.heap_size_of_children();
         mem += overlay.journal.heap_size_of_children();
+        trace!(target:"journaldb", "mem_used: back: {}, pend: {}, journal: {}", overlay.backing_overlay.mem_used(), overlay.pending_overlay.heap_size_of_children(), overlay.journal.heap_size_of_children());
 
         mem
     }
