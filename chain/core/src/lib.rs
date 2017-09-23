@@ -25,7 +25,6 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-extern crate vm;
 extern crate util;
 extern crate rustc_serialize;
 extern crate proof;

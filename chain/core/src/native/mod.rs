@@ -16,63 +16,80 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ////////////////////////////////////////////////////////////////////////////////
-
+pub mod storage;
+#[cfg(test)]
+mod tests;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 use action_params::ActionParams;
 use evm::{self, Ext, GasLeft};
 use std::collections::HashMap;
-use util::{H256, U256};
+use util::Address;
 
 ////////////////////////////////////////////////////////////////////////////////
 pub type Signature = u32;
-pub type Function = Fn(&ActionParams, &mut Ext) -> evm::Result<GasLeft<'static>> + Sync + Send;
-pub mod storage;
-////////////////////////////////////////////////////////////////////////////////
+pub trait ContractClone {
+    fn clone_box(&self) -> Box<Contract>;
+}
+
+impl<T> ContractClone for T
+where
+    T: 'static + Contract + Clone,
+{
+    fn clone_box(&self) -> Box<Contract> {
+        Box::new(self.clone())
+    }
+}
+
+// We can now implement Clone manually by forwarding to clone_box.
+impl Clone for Box<Contract> {
+    fn clone(&self) -> Box<Contract> {
+        self.clone_box()
+    }
+}
+
 // Contract
-pub trait Contract: Sync + Send {
-    fn get_function(&self, hash: &Signature) -> Option<&Box<Function>>;
-    fn exec(&self, params: &ActionParams, ext: &mut Ext) {
-        if let Some(data) = params.clone().data.unwrap().get(0..4) {
-            let signature = data.iter().fold(0u32, |acc, &x| (acc << 8) + (x as u32));
-            if let Some(exec_call) = self.get_function(&signature) {
-                //let cost = self.engine.cost_of_builtin(&params.code_address, data);
-                let cost = U256::from(100);
-                if cost <= params.gas {
-                    let _ = exec_call(params, ext);
-                    //self.state.discard_checkpoint();
-                    return;
-                }
-            }
-        }
-    }
+pub trait Contract: Sync + Send + ContractClone {
+    fn exec(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error>;
+    fn create(&self) -> Box<Contract>;
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
-// NowPay
-pub struct NowPay {
-    functions: HashMap<Signature, Box<Function>>,
+#[derive(Clone)]
+pub struct Factory {
+    contracts: HashMap<Address, Box<Contract>>,
 }
 
-impl Contract for NowPay {
-    fn get_function(&self, hash: &Signature) -> Option<&Box<Function>> {
-        self.functions.get(hash)
+
+impl Factory {
+    pub fn new_contract(&self, address: Address) -> Option<Box<Contract>> {
+        if let Some(contract) = self.contracts.get(&address) { Some(contract.create()) } else { None }
+    }
+    pub fn register(&mut self, address: Address, contract: Box<Contract>) {
+        self.contracts.insert(address, contract);
+    }
+    pub fn unregister(&mut self, address: Address) {
+        self.contracts.remove(&address);
+    }
+}
+#[cfg(not(test))]
+impl Default for Factory {
+    fn default() -> Self {
+        let factory = Factory { contracts: HashMap::new() };
+        // here we register contracts with addresses defined in genesis.json.
+        factory
     }
 }
 
-impl NowPay {
-    pub fn new() -> Self {
-        let mut contract = NowPay { functions: HashMap::<Signature, Box<Function>>::new() };
-        contract.functions.insert(0, Box::new(NowPay::set_value));
-        contract
-    }
-    pub fn set_value(params: &ActionParams, ext: &mut Ext) -> evm::Result<GasLeft<'static>> {
-        if let Some(ref data) = params.data {
-            if let Some(data) = data.get(4..32) {
-                let _ = ext.set_storage(H256::from(0), H256::from(data));
-            }
-        }
-        Ok(GasLeft::Known(U256::from(0)))
+#[cfg(test)]
+impl Default for Factory {
+    fn default() -> Self {
+        use self::tests::SimpleStorage;
+        let mut factory = Factory { contracts: HashMap::new() };
+        // here we register contracts with addresses defined in genesis.json.
+        factory.register(Address::from(0x400), Box::new(SimpleStorage::default()));
+        factory
     }
 }

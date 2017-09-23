@@ -26,6 +26,7 @@ use evm::{self, Ext, Factory, Finalize, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use executed::CallType;
 use externalities::*;
+use native::Factory as NativeFactory;
 use state::{State, Substate};
 use state::backend::Backend as StateBackend;
 use std::cmp;
@@ -70,38 +71,40 @@ pub struct Executive<'a, B: 'a + StateBackend> {
     engine: &'a Engine,
     vm_factory: &'a Factory,
     depth: usize,
+    native_factory: &'a NativeFactory,
 }
 
 impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Basic constructor.
-    pub fn new(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory) -> Self {
+    pub fn new(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory) -> Self {
         Executive {
             state: state,
             info: info,
             engine: engine,
             vm_factory: vm_factory,
+            native_factory: native_factory,
             depth: 0,
         }
     }
 
     /// Populates executive from parent properties. Increments executive depth.
-    pub fn from_parent(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, parent_depth: usize) -> Self {
+    pub fn from_parent(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, parent_depth: usize) -> Self {
         Executive {
             state: state,
             info: info,
             engine: engine,
             vm_factory: vm_factory,
+            native_factory: native_factory,
             depth: parent_depth + 1,
         }
     }
 
     /// Creates `Externalities` from `Executive`.
     pub fn as_externalities<'any, T, V>(&'any mut self, origin_info: OriginInfo, substate: &'any mut Substate, output: OutputPolicy<'any, 'any>, tracer: &'any mut T, vm_tracer: &'any mut V) -> Externalities<'any, T, V, B>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where T: Tracer,
+              V: VMTracer
     {
-        Externalities::new(self.state, self.info, self.engine, self.vm_factory, self.depth, origin_info, substate, output, tracer, vm_tracer)
+        Externalities::new(self.state, self.info, self.engine, self.vm_factory, self.native_factory, self.depth, origin_info, substate, output, tracer, vm_tracer)
     }
 
     /// This function should be used to execute transaction.
@@ -116,9 +119,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
     /// Execute transaction/call with tracing enabled
     pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, options: TransactOptions, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where T: Tracer,
+              V: VMTracer
     {
         let sender = t.sender();
         let nonce = self.state.nonce(&sender)?;
@@ -220,9 +222,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     fn exec_vm<T, V>(&mut self, params: ActionParams, unconfirmed_substate: &mut Substate, output_policy: OutputPolicy, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<U256>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where T: Tracer,
+              V: VMTracer
     {
 
         let depth_threshold = io::LOCAL_STACK_SIZE.with(|sz| sz.get() / STACK_SIZE_PER_DEPTH);
@@ -244,7 +245,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
                              scope.spawn(move || vm_factory.create(params.gas).exec(params, &mut ext).finalize(ext))
                          })
-        .join()
+            .join()
     }
 
     /// Calls contract function with given contract params.
@@ -252,28 +253,24 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Modifies the substate and the output.
     /// Returns either gas_left or `evm::Error`.
     pub fn call<T, V>(&mut self, params: ActionParams, substate: &mut Substate, mut output: BytesRef, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<U256>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where T: Tracer,
+              V: VMTracer
     {
         // backup used in case of running out of gas
         self.state.checkpoint();
 
-        if let Some(contract) = self.engine.get_native_contract(&params.code_address) {
-
-            //let cost = self.engine.cost_of_builtin(&params.code_address, data);
+        if let Some(mut contract) = self.native_factory.new_contract(params.code_address) {
             let cost = U256::from(100);
             if cost <= params.gas {
-                // part of substate that may be reverted
                 let mut unconfirmed_substate = Substate::new();
-                let mut subvmtracer = vm_tracer.prepare_subtrace(params.code.as_ref().expect("scope is conditional on params.code.is_some(); qed"));
                 let mut trace_output = tracer.prepare_trace_output();
                 let output_policy = OutputPolicy::Return(output, trace_output.as_mut());
-                {
-                    let mut ext = self.as_externalities(OriginInfo::from(&params), &mut unconfirmed_substate, output_policy, tracer, &mut subvmtracer);
-                    contract.exec(&params, &mut ext);
-                }
-                let res = Ok(params.gas - cost);
+                let res = {
+                    let mut tracer = NoopTracer;
+                    let mut vmtracer = NoopVMTracer;
+                    let mut ext = self.as_externalities(OriginInfo::from(&params), &mut unconfirmed_substate, output_policy, &mut tracer, &mut vmtracer);
+                    contract.exec(params, &mut ext).finalize(ext)
+                };
                 self.enact_result(&res, substate, unconfirmed_substate);
                 return res;
             }
@@ -359,9 +356,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// NOTE. It does not finalize the transaction (doesn't do refunds, nor suicides).
     /// Modifies the substate.
     pub fn create<T, V>(&mut self, params: ActionParams, substate: &mut Substate, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<U256>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where T: Tracer,
+              V: VMTracer
     {
         // backup used in case of running out of gas
         self.state.checkpoint();
@@ -383,6 +379,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         self.state.new_contract(&params.address, prev_bal, nonce_offset);
     }
          */
+
+
         let nonce_offset = U256::from(0);
         self.state.new_contract(&params.address, nonce_offset);
         let trace_info = tracer.prepare_trace_create(&params);
@@ -444,6 +442,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         /*
         self.state.add_balance(&sender, &refund_value, CleanupMode::NoEmpty)?;
          */
+
+
         trace!("exec::finalize: Compensating author: fees_value={}, author={}\n", fees_value, &self.info.author);
         /*
         self.state.add_balance(&self.info.author, &fees_value, substate.to_cleanup_mode(&schedule))?;
@@ -515,26 +515,18 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
 #[cfg(test)]
 mod tests {
-    extern crate mktemp;
-    extern crate libproto;
     extern crate env_logger;
-    extern crate cita_ed25519 as ed25519;
-    extern crate protobuf;
+    extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 
-    use self::mktemp::Temp;
+    use self::rustc_hex::FromHex;
     use super::*;
     use action_params::{ActionParams, ActionValue};
     use engines::NullEngine;
     use env_info::EnvInfo;
     use evm::{Factory, VMType};
-    use rustc_hex::FromHex;
     use state::Substate;
-    use std::fs::File;
-    use std::io::Read;
-    use std::io::Write;
     use std::ops::Deref;
-    use std::process::Command;
     use std::str::FromStr;
     use std::sync::Arc;
     use tests::helpers::*;
@@ -543,8 +535,7 @@ mod tests {
     #[test]
     fn test_create_contract() {
         let _ = env_logger::init();
-        let contract_name = "AbiTest";
-        let contract = br#"
+        let source = r#"
 pragma solidity ^0.4.8;
 contract AbiTest {
   uint balance;
@@ -558,45 +549,9 @@ contract AbiTest {
         let nonce = U256::zero();
         let gas_required = U256::from(100_000);
 
-        // input and output of solc command
-        let contract_file = Temp::new_file().unwrap().to_path_buf();
-        let output_dir = Temp::new_dir().unwrap().to_path_buf();
-        let deploy_code_file = output_dir.clone().join([contract_name, ".bin"].join(""));
-        let runtime_code_file = output_dir.clone().join([contract_name, ".bin-runtime"].join(""));
-
-        // prepare contract file
-        let mut file = File::create(contract_file.clone()).unwrap();
-        let mut content = String::new();
-        file.write_all(contract).expect("failed to write");
-
-        // execute solc command
-        Command::new("solc")
-            .arg(contract_file.clone())
-            .arg("--bin")
-            .arg("--bin-runtime")
-            .arg("-o")
-            .arg(output_dir)
-            .output()
-            .expect("failed to execute solc");
-
-        // read deploy code
-        File::open(deploy_code_file)
-            .expect("failed to open deploy code file!")
-            .read_to_string(&mut content)
-            .expect("failed to read binary");
-        println!("deploy code: {}", content);
-        let deploy_code = content.as_str().from_hex().unwrap();
-
-        // read runtime code
-        let mut content = String::new();
-        File::open(runtime_code_file)
-            .expect("failed to open deploy code file!")
-            .read_to_string(&mut content)
-            .expect("failed to read binary");
-        println!("runtime code: {}", content);
-        let runtime_code = content.as_str().from_hex().unwrap();
-
+        let (deploy_code, runtime_code) = solc("AbiTest", source);
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
         let contract_address = contract_address(&sender, &nonce);
         let mut params = ActionParams::default();
         params.address = contract_address.clone();
@@ -614,7 +569,7 @@ contract AbiTest {
         let mut vm_tracer = ExecutiveVMTracer::toplevel();
 
         {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory);
+            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
             let _ = ex.create(params.clone(), &mut substate, &mut tracer, &mut vm_tracer);
         }
 
@@ -624,9 +579,7 @@ contract AbiTest {
     #[test]
     fn test_call_contract() {
         let _ = env_logger::init();
-        let _ = env_logger::init();
-        let contract_name = "AbiTest";
-        let contract = br#"
+        let source = r#"
 pragma solidity ^0.4.8;
 contract AbiTest {
   uint balance;
@@ -639,43 +592,11 @@ contract AbiTest {
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
         let gas_required = U256::from(100_000);
         let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+        let (_, runtime_code) = solc("AbiTest", source);
         // big endian: value=0x12345678
-        let data = format!("{}{}", "55241077", "0000000000000000000000000000000000000000000000000000000012345678")
-            .from_hex()
-            .unwrap();
-
-
-
-        // input and output of solc command
-        let contract_file = Temp::new_file().unwrap().to_path_buf();
-        let output_dir = Temp::new_dir().unwrap().to_path_buf();
-        let runtime_code_file = output_dir.clone().join([contract_name, ".bin-runtime"].join(""));
-
-        // prepare contract file
-        let mut file = File::create(contract_file.clone()).unwrap();
-        file.write_all(contract).expect("failed to write");
-
-        // execute solc command
-        Command::new("solc")
-            .arg(contract_file.clone())
-            .arg("--bin")
-            .arg("--bin-runtime")
-            .arg("-o")
-            .arg(output_dir)
-            .output()
-            .expect("failed to execute solc");
-
-        // read runtime code
-        let mut content = String::new();
-        File::open(runtime_code_file)
-            .expect("failed to open deploy code file!")
-            .read_to_string(&mut content)
-            .expect("failed to read binary");
-        println!("runtime code: {}", content);
-        let runtime_code = content.as_str().from_hex().unwrap();
-
-
+        let data = "552410770000000000000000000000000000000000000000000000000000000012345678".from_hex().unwrap();
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
         let mut tracer = ExecutiveTracer::default();
         let mut vm_tracer = ExecutiveVMTracer::toplevel();
 
@@ -694,16 +615,14 @@ contract AbiTest {
         let engine = NullEngine::default();
         let mut substate = Substate::new();
         {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory);
+            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
             let mut out = vec![];
             let _ = ex.call(params, &mut substate, BytesRef::Fixed(&mut out), &mut tracer, &mut vm_tracer);
         };
 
-        assert_eq!(
-            state
+        assert_eq!(state
                 .storage_at(&contract_addr, &H256::from(&U256::from(0)))  // it was supposed that value's address is balance.
                 .unwrap(),
-            H256::from(&U256::from(0x12345678))
-        );
+                   H256::from(&U256::from(0x12345678)));
     }
 }

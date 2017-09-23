@@ -16,10 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use builtin::Builtin;
-use native;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use util::{Address, U256, BytesRef};
-
 pub trait Engine: Sync + Send {
     /// The name of this engine.
     fn name(&self) -> &str;
@@ -44,26 +42,20 @@ pub trait Engine: Sync + Send {
     fn execute_builtin(&self, a: &Address, input: &[u8], output: &mut BytesRef) {
         self.builtins().get(a).expect("attempted to execute nonexistent builtin").execute(input, output);
     }
-    fn register(&mut self, addr: Address, contract: Box<native::Contract>);
-    fn unregister(&mut self, addr: Address) -> Option<Box<native::Contract>>;
-    fn get_native_contract(&self, addr: &Address) -> Option<&Box<native::Contract>>;
+    // fn register(&mut self, addr: Address, contract: Box<native::Contract>);
+    // fn unregister(&mut self, addr: Address) -> Option<Box<native::Contract>>;
+    // fn get_native_contract(&self, addr: &Address) -> Option<&Box<native::Contract>>;
 }
 
 /// An engine which does not provide any consensus mechanism and does not seal blocks.
 pub struct NullEngine {
     builtins: BTreeMap<Address, Builtin>,
-    contracts: HashMap<Address, Box<native::Contract>>,
 }
 
 impl NullEngine {
     /// Returns new instance of NullEngine with default VM Factory
     pub fn new(builtins: BTreeMap<Address, Builtin>) -> Self {
-        let mut engine = NullEngine {
-            builtins: builtins,
-            contracts: HashMap::new(),
-        };
-        engine.register(Address::from(0x400), Box::new(native::NowPay::new()));
-        engine
+        NullEngine { builtins: builtins }
     }
 }
 
@@ -80,17 +72,5 @@ impl Engine for NullEngine {
 
     fn builtins(&self) -> &BTreeMap<Address, Builtin> {
         &self.builtins
-    }
-
-    fn register(&mut self, addr: Address, contract: Box<native::Contract>) {
-        self.contracts.insert(addr, contract);
-    }
-
-    fn unregister(&mut self, addr: Address) -> Option<Box<native::Contract>> {
-        self.contracts.remove(&addr)
-    }
-
-    fn get_native_contract(&self, addr: &Address) -> Option<&Box<native::Contract>> {
-        self.contracts.get(addr)
     }
 }

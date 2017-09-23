@@ -197,7 +197,7 @@ impl Impl for EdRecover {
 
 #[cfg(test)]
 mod tests {
-    extern crate cita_ed25519;
+    extern crate rustc_serialize;
 
     use super::{Builtin, Linear, ethereum_builtin, Pricer};
     use cita_ed25519::{Signature, KeyPair, pubkey_to_address as ED_pubkey_to_address};
@@ -341,40 +341,7 @@ mod tests {
     #[test]
     fn edrecover() {
         let key_pair = KeyPair::gen_keypair();
-        let message: [u8; 32] = [
-            0x01,
-            0x02,
-            0x03,
-            0x04,
-            0x19,
-            0xab,
-            0xfe,
-            0x39,
-            0x6f,
-            0x28,
-            0x79,
-            0x00,
-            0x08,
-            0xdf,
-            0x9a,
-            0xef,
-            0xfb,
-            0x77,
-            0x42,
-            0xae,
-            0xad,
-            0xfc,
-            0xcf,
-            0x12,
-            0x24,
-            0x45,
-            0x29,
-            0x89,
-            0x29,
-            0x45,
-            0x3f,
-            0xf8,
-        ];
+        let message: [u8; 32] = [0x01, 0x02, 0x03, 0x04, 0x19, 0xab, 0xfe, 0x39, 0x6f, 0x28, 0x79, 0x00, 0x08, 0xdf, 0x9a, 0xef, 0xfb, 0x77, 0x42, 0xae, 0xad, 0xfc, 0xcf, 0x12, 0x24, 0x45, 0x29, 0x89, 0x29, 0x45, 0x3f, 0xf8];
         let hash = H256::from(message);
         let privkey = key_pair.privkey();
         let pubkey = key_pair.pubkey();
