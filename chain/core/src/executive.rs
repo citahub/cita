@@ -119,77 +119,54 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// This function should be used to execute transaction.
     pub fn transact(&'a mut self, t: &SignedTransaction, options: TransactOptions) -> Result<Executed, ExecutionError> {
         let check = options.check_nonce;
-        match options.tracing {
-            true => {
-                match options.vm_tracing {
-                    true => {
-                        self.transact_with_tracer(t, check, ExecutiveTracer::default(), ExecutiveVMTracer::toplevel())
-                    }
-                    false => {
-                        self.transact_with_tracer(t, check, ExecutiveTracer::default(), NoopVMTracer)
-                    }
-                }
-            }
-            false => {
-                match options.vm_tracing {
-                    true => {
-                        self.transact_with_tracer(t, check, NoopTracer, ExecutiveVMTracer::toplevel())
-                    }
-                    false => self.transact_with_tracer(t, check, NoopTracer, NoopVMTracer),
-                }
-            }
+        match (options.tracing, options.vm_tracing) {
+            (true, true) => self.transact_with_tracer(t, check, ExecutiveTracer::default(), ExecutiveVMTracer::toplevel()),
+            (true, false) => self.transact_with_tracer(t, check, ExecutiveTracer::default(), NoopVMTracer),
+            (false, true) => self.transact_with_tracer(t, check, NoopTracer, ExecutiveVMTracer::toplevel()),
+            (false, false) => self.transact_with_tracer(t, check, NoopTracer, NoopVMTracer),
         }
     }
 
     /// Execute transaction/call with tracing enabled
     pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, _check_nonce: bool, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where T: Tracer,
+              V: VMTracer
     {
         let sender = t.sender();
 
-        // let schedule = self.engine.schedule(self.info);
-        // let base_gas_required = U256::from(t.gas_required(&schedule));
+        // check contract create/call permission
+        trace!("executive creators: {:?}, senders: {:?}", self.state.creators, self.state.senders);
+
+        match t.action {
+            Action::Create => if *sender != Address::zero() && !self.state.creators.contains_key(&sender) {
+                return Err(From::from(ExecutionError::NoContractPermission));
+            },
+            _ => if *sender != Address::zero() && !self.state.senders.contains_key(sender) && !self.state.creators.contains_key(&sender) {
+                return Err(From::from(ExecutionError::NoTransactionPermission));
+            },
+        }
+
         let base_gas_required = U256::from(100); // `CREATE` transaction cost
 
         // validate if transaction fits into given block
         if self.info.gas_used + t.gas > self.info.gas_limit {
             return Err(From::from(ExecutionError::BlockGasLimitReached {
-                                      gas_limit: self.info.gas_limit,
-                                      gas_used: self.info.gas_used,
-                                      gas: t.gas,
-                                  }));
+                gas_limit: self.info.gas_limit,
+                gas_used: self.info.gas_used,
+                gas: t.gas,
+            }));
         }
 
         if t.action != Action::Store && t.gas < base_gas_required {
             return Err(From::from(ExecutionError::NotEnoughBaseGas {
-                                      required: base_gas_required,
-                                      got: t.gas,
-                                  }));
+                required: base_gas_required,
+                got: t.gas,
+            }));
         }
 
-        // TODO: we might need bigints here, or at least check overflows.
-        /*
-        let balance = self.state.balance(&sender)?;
-         */
-        /*
-        let gas_cost = t.gas.full_mul(t.gas_price);
-        let total_cost = U512::from(t.value) + gas_cost;
-
-        // avoid unaffordable transactions
-
-        let balance512 = U512::from(balance);
-        if balance512 < total_cost {
-        return Err(From::from(ExecutionError::NotEnoughCash { required: total_cost, got: balance512 }));
-    }
-         */
-
-        // NOTE: there can be no invalid transactions from this point.
+        // NOTE: there can be no invalid transactions from this point
         self.state.inc_nonce(&sender)?;
-        /*
-        self.state.sub_balance(&sender, &U256::from(gas_cost))?;
-         */
+
         let mut substate = Substate::new();
 
         let (gas_left, output) = match t.action {
@@ -227,6 +204,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     data: Some(t.data.clone()),
                     call_type: CallType::Call,
                 };
+
                 let mut out = vec![];
                 (self.call(params, &mut substate, BytesRef::Flexible(&mut out), &mut tracer, &mut vm_tracer), out)
             }

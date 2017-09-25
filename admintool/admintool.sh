@@ -118,67 +118,75 @@ if [ ! -n "$TX_POOL_SIZE" ]; then
     TX_POOL_SIZE=0
 fi
 
-RELEASE_PATH=`pwd`/release
-CREATE_KEY_ADDR_PATH=$RELEASE_PATH/bin/create_key_addr
+DATA_PATH=`pwd`/release
+INIT_DATA_PATH=`pwd`
+CREATE_KEY_ADDR_PATH=$DATA_PATH/bin/create_key_addr
 
-if [ ! -f "$RELEASE_PATH" ]; then
-    mkdir -p $RELEASE_PATH
+if [ ! -f "$DATA_PATH" ]; then
+    mkdir -p $DATA_PATH
 fi
 
-if [ -f "$RELEASE_PATH/authorities" ]; then
-    rm $RELEASE_PATH/authorities
+if [ -f "$DATA_PATH/authorities" ]; then
+    rm $DATA_PATH/authorities
 fi
 
 if [ -f "genesis.json" ]; then
     rm genesis.json
 fi
 
+if [ ! -e "$INIT_DATA_PATH/init_data.json" ]; then
+    cp $INIT_DATA_PATH/init_data_example.json $DATA_PATH/init_data.json
+else
+    cp $INIT_DATA_PATH/init_data.json $DATA_PATH/init_data.json
+fi
+
+
 echo "Step 1: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
 do
-    mkdir -p $RELEASE_PATH/node$ID
+    mkdir -p $DATA_PATH/node$ID
     echo "Start generating private Key for Node" $ID "!"
-    python create_keys_addr.py $RELEASE_PATH $ID $CREATE_KEY_ADDR_PATH
-    echo "[PrivateKey Path] : " $RELEASE_PATH/node$ID
+    python create_keys_addr.py $DATA_PATH $ID $CREATE_KEY_ADDR_PATH
+    echo "[PrivateKey Path] : " $DATA_PATH/node$ID
     echo "End generating private Key for Node" $ID "!"
     echo "Start creating Network Node" $ID "Configuration!"
-    python create_network_config.py $RELEASE_PATH $ID $SIZE $IP_LIST
+    python create_network_config.py $DATA_PATH $ID $SIZE $IP_LIST
     echo "End creating Network Node" $ID "Configuration!"
     echo "########################################################"
 done
 echo "Step 2: ********************************************************"
 
-python create_genesis.py --authorities "$RELEASE_PATH/authorities"
+python create_genesis.py --authorities "$DATA_PATH/authorities" --init_data "$DATA_PATH/init_data.json"
 for ((ID=0;ID<$SIZE;ID++))
 do
     echo "Start creating Node " $ID " Configuration!"
-    python create_node_config.py $RELEASE_PATH $CONSENSUS_NAME $ID $DURATION $IS_TEST $BLOCK_TX_LIMIT $TX_FILTER_SIZE $TX_POOL_SIZE
+    python create_node_config.py $DATA_PATH $CONSENSUS_NAME $ID $DURATION $IS_TEST $BLOCK_TX_LIMIT $TX_FILTER_SIZE $TX_POOL_SIZE
     echo "End creating Node " $ID "Configuration!"
-    cp genesis.json $RELEASE_PATH/node$ID/genesis.json
+    cp genesis.json $DATA_PATH/node$ID/genesis.json
 done
 
 echo "Step 3: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
 do
     echo "Start creating Node " $ID " env!"
-    cp cita $RELEASE_PATH/node$ID/
-    cp $RELEASE_PATH/.env $RELEASE_PATH/node$ID/
+    cp cita $DATA_PATH/node$ID/
+    cp $DATA_PATH/.env $DATA_PATH/node$ID/
     case "$OSTYPE" in
-        darwin*)  
-            sed -ig "s/dev/node$ID/g" $RELEASE_PATH/node$ID/.env
-            sed -ig "s/tendermint/$CONSENSUS_NAME/g" $RELEASE_PATH/node$ID/cita
-            ;; 
-        *)       
-            sed -i "s/dev/node$ID/g" $RELEASE_PATH/node$ID/.env
-            sed -i "s/tendermint/$CONSENSUS_NAME/g" $RELEASE_PATH/node$ID/cita
+        darwin*)
+            sed -ig "s/dev/node$ID/g" $DATA_PATH/node$ID/.env
+            sed -ig "s/tendermint/$CONSENSUS_NAME/g" $DATA_PATH/node$ID/cita
+            ;;
+        *)
+            sed -i "s/dev/node$ID/g" $DATA_PATH/node$ID/.env
+            sed -i "s/tendermint/$CONSENSUS_NAME/g" $DATA_PATH/node$ID/cita
             ;;
     esac
     echo "Start copy binary for Node " $ID "!"
     if [ -n "$DEV_MOD" ]; then
-        rm -f $RELEASE_PATH/node$ID/bin
-        ln -s $RELEASE_PATH/bin $RELEASE_PATH/node$ID/bin
+        rm -f $DATA_PATH/node$ID/bin
+        ln -s $DATA_PATH/bin $DATA_PATH/node$ID/bin
     else
-        cp -rf $RELEASE_PATH/bin $RELEASE_PATH/node$ID/
+        cp -rf $DATA_PATH/bin $DATA_PATH/node$ID/
     fi
 done
 
@@ -217,7 +225,7 @@ fi
 
 for ((ID=0;ID<$SIZE;ID++))
 do
-    mkdir -p $RELEASE_PATH/node$ID
+    mkdir -p $DATA_PATH/node$ID
     if [ -n "$DEV_MOD" ]; then
         ((H_PORT=$HTTP_PORT+$ID))
         ((W_PORT=$WS_PORT+$ID))
@@ -226,10 +234,10 @@ do
         W_PORT=$WS_PORT
     fi
     echo "Start generating JsonRpc Configuration Node" $ID "!"
-    python create_jsonrpc_config.py $HTTP_ENABLE $H_PORT $WS_ENABLE $W_PORT $RELEASE_PATH
-    echo "[JsonRpc Configuration Path] : " $RELEASE_PATH/node$ID
+    python create_jsonrpc_config.py $HTTP_ENABLE $H_PORT $WS_ENABLE $W_PORT $DATA_PATH
+    echo "[JsonRpc Configuration Path] : " $DATA_PATH/node$ID
     echo "JsonRpc Configuration for Node" $ID "!"
-    cp $RELEASE_PATH/jsonrpc.json $RELEASE_PATH/node$ID/
+    cp $DATA_PATH/jsonrpc.json $DATA_PATH/node$ID/
 
     echo "########################################################"
 done

@@ -157,6 +157,10 @@ pub struct Chain {
     blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
     block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
 
+    // System contract config cache
+    senders: RwLock<HashMap<Address, bool>>,
+    creators: RwLock<HashMap<Address, bool>>,
+
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 }
@@ -240,6 +244,8 @@ impl Chain {
                                  sync_sender: Mutex::new(sync_sender),
                                  last_hashes: RwLock::new(VecDeque::new()),
                                  polls_filter: Arc::new(Mutex::new(PollManager::new())),
+                                 senders: RwLock::new(HashMap::new()),
+                                 creators: RwLock::new(HashMap::new()),
                              });
 
 
@@ -732,7 +738,10 @@ impl Chain {
 
     /// Get a copy of the best block's state.
     pub fn state(&self) -> State<StateDB> {
-        self.gen_state(self.current_state_root()).expect("State root of current block is invalid.")
+        let mut state = self.gen_state(self.current_state_root()).unwrap();
+        state.senders = self.senders.read().clone();
+        state.creators = self.creators.read().clone();
+        state
     }
 
     /// Get code by address
