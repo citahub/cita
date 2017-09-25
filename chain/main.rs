@@ -17,7 +17,6 @@
 
 #![allow(unused_must_use)]
 extern crate core;
-extern crate threadpool;
 #[macro_use]
 extern crate log;
 extern crate libproto;
@@ -38,8 +37,8 @@ mod synchronizer;
 use clap::App;
 use core::db;
 use core::libchain;
-use core::libchain::{submodules, key_to_id};
 use core::libchain::Genesis;
+use core::libchain::submodules;
 use forward::*;
 use log::LogLevelFilter;
 use protobuf::Message;
@@ -75,14 +74,8 @@ fn main() {
     }
 
     let (tx, rx) = channel();
-    let pool = threadpool::ThreadPool::new(10);
-    let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request", "*.blk_tx_hashs_req"], ctx_sub, crx_pub);
-    thread::spawn(move || loop {
-                      let (key, msg) = crx_sub.recv().unwrap();
-                      forward::chain_pool(&pool, &tx, key_to_id(&key), msg);
-                  });
+    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request", "*.blk_tx_hashs_req"], tx, crx_pub);
 
     let nosql_path = DataPath::nosql_path();
     trace!("nosql_path is {:?}", nosql_path);

@@ -76,7 +76,7 @@ function cita_restart() {
 function cita_status(){
     for pid in $(cat .pid)
     do
-        ps -A -o command:50,pid,time|grep ${pid} |grep -v "grep"
+        ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep"
     done
 }
 
