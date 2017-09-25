@@ -4,7 +4,6 @@ import "./strings.sol";
 import "./node_interface.sol";
 
 
-// ignore the permission
 contract NodeManager is NodeInterface {
     using strings for *;
 
@@ -13,6 +12,8 @@ contract NodeManager is NodeInterface {
 
     // the status of the node: ready, start, not in list/close, maybe there is more
     mapping(address => NodeStatus) public status;
+    // admin
+    mapping (address => bool) admins;
 
     // consensus node list
     address[] nodes;
@@ -20,14 +21,31 @@ contract NodeManager is NodeInterface {
     event NewNode(address _node);
     event ApproveNode(address _node);
     event DeleteNode(address _node);
+    event AddAdmin(address indexed _node, address indexed _sender);
 
+    modifier onlyAdmin {
+        if (admins[msg.sender]) {
+            _;
+        } else {
+            revert();
+        }
+    }
     // setup
-    function NodeManager(address[] _nodes) {
+    function NodeManager(address[] _nodes, address[] _admins) {
         // initialize the address to Start
         for (uint i = 0; i < _nodes.length; i++) {
             status[_nodes[i]] = NodeStatus.Start;
             nodes.push(_nodes[i]);
         }
+        // initialize the address of admins
+        for (uint j = 0; j < _admins.length; i++)
+            admins[_nodes[j]] = true;
+    }
+
+    function addAdmin(address _node) onlyAdmin returns (bool) {
+        admins[_node] = true;
+        AddAdmin(_node, msg.sender);
+        return true;
     }
 
     // apply to be consensus node. status will be ready
@@ -46,7 +64,7 @@ contract NodeManager is NodeInterface {
     }
 
     // approve to be consensus node. status will be start
-    function approveNode(address _node) returns (bool) {
+    function approveNode(address _node) onlyAdmin returns (bool) {
         // the status should be ready
         // require(status[_node] == NodeStatus.Ready);
         if (status[_node] != NodeStatus.Ready) {
@@ -62,7 +80,7 @@ contract NodeManager is NodeInterface {
 
     // delete the consensus node from the list 
     // which means delete the node whoes status is Start
-    function deleteNode(address _node) returns (bool) {
+    function deleteNode(address _node) onlyAdmin returns (bool) {
         // require(status[_node] == NodeStatus.Start);
         if (status[_node] != NodeStatus.Start) {
             return false;
@@ -95,6 +113,10 @@ contract NodeManager is NodeInterface {
     // get the status of the node
     function getStatus(address _node) constant returns (uint8) {
         return uint8(status[_node]);
+    }
+
+    function isAdmin(address _node) constant returns (bool) {
+        return admins[_node];
     }
 
     // interface: link address to a long string
