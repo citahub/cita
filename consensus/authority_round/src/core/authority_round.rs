@@ -20,7 +20,6 @@ use crypto::{Signature, Signer, CreateKey};
 use engine_json;
 use libproto::*;
 use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
-use parking_lot::RwLock;
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
 use rustc_serialize::hex::ToHex;
@@ -30,7 +29,7 @@ use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use tx_pool::Pool;
-use util::{Address, H256};
+use util::{Address, H256, RwLock};
 
 const INIT_HEIGHT: usize = 1;
 const INIT_STEP: usize = 0;

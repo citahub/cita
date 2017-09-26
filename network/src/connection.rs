@@ -18,7 +18,7 @@
 use byteorder::{BigEndian, ByteOrder};
 use config;
 use libproto::communication;
-use parking_lot::RwLock;
+use util::RwLock;
 use protobuf::Message;
 use std::convert::AsRef;
 use std::io::prelude::*;

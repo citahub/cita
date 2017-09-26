@@ -24,13 +24,13 @@ extern crate tokio_proto;
 extern crate tokio_service;
 extern crate byteorder;
 extern crate rustc_serialize;
-extern crate parking_lot;
 extern crate libproto;
 extern crate protobuf;
 extern crate pubsub;
 extern crate dotenv;
 extern crate cita_log;
 extern crate bytes;
+extern crate util;
 
 pub mod config;
 pub mod server;
