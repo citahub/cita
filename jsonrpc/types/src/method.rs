@@ -23,7 +23,6 @@ use protobuf::core::parse_from_bytes;
 use rpctypes::{BlockNumber, CallRequest, Filter, CountOrCode, BlockParamsByHash, BlockParamsByNumber};
 use rustc_serialize::hex::FromHex;
 use serde_json;
-use std::str::FromStr;
 use util::{H256, H160, U256};
 use util::clean_0x;
 use uuid::Uuid;
@@ -139,6 +138,9 @@ impl MethodHandler {
 impl MethodHandler {
     pub fn send_transaction(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
+        if 1 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let params: (String,) = req_rpc.params.parse()?;
         let data = clean_0x(&params.0);
         let un_tx = data.from_hex()
@@ -155,6 +157,16 @@ impl MethodHandler {
 
         {
             let tx = un_tx.get_transaction();
+            let to = clean_0x(tx.get_to());
+            if to.len() != 40 {
+                return Err(Error::invalid_params("param 'to' length too short"));
+            } else {
+                let _ = to.from_hex()
+                          .map_err(|err| {
+                                       let err_msg = format!("param not hex string : {:?}", err);
+                                       Error::parse_error_msg(err_msg.as_ref())
+                                   })?;
+            }
             trace!("SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}", tx.get_nonce(), tx.get_valid_until_block(), tx.get_data(), tx.get_quota(), tx.get_to());
         }
         request.set_un_tx(un_tx);
@@ -163,13 +175,20 @@ impl MethodHandler {
 
 
     pub fn peer_count(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 0 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         drop(req_rpc);
         let mut request = self.create_request();
         request.set_peercount(true);
         Ok(request)
     }
 
+
     pub fn block_number(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 0 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         drop(req_rpc);
         let mut request = self.create_request();
         request.set_block_number(true);
@@ -178,9 +197,11 @@ impl MethodHandler {
 
 
     pub fn get_block_by_hash(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 2 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let mut request = self.create_request();
-        let (hash_0x, is_block): (String, bool) = req_rpc.params.parse()?;
-        let hash = H256::from_str(clean_0x(&hash_0x)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
+        let (hash, is_block): (H256, bool) = req_rpc.params.parse()?;
         serde_json::to_string(&BlockParamsByHash::new(hash.to_vec(), is_block))
             .map_err(|err| Error::invalid_params(err.to_string()))
             .map(|block_hash| {
@@ -192,6 +213,9 @@ impl MethodHandler {
 
 
     pub fn get_block_by_number(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 2 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let mut request = self.create_request();
         let params: (BlockNumber, bool) = req_rpc.params.parse()?;
         serde_json::to_string(&BlockParamsByNumber::new(params.0, params.1))
@@ -204,10 +228,12 @@ impl MethodHandler {
 
 
     pub fn get_transaction(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 1 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let mut request = self.create_request();
-        let params: (String,) = req_rpc.params.parse()?;
-        let hash = H256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
-        request.set_transaction(hash.0.to_vec());
+        let (hash,): (H256,) = req_rpc.params.parse()?;
+        request.set_transaction(hash.to_vec());
         Ok(request)
     }
 
@@ -220,13 +246,16 @@ impl MethodHandler {
                 req_rpc.params
                        .parse::<(CallRequest,)>()
                        .map(|(base,)| (base, BlockNumber::default()))
-                       .map_err(|_| Error::parse_error())
+                       .map_err(|err| {
+                                    let err_msg = format!("param parse error : {:?}", err);
+                                    Error::parse_error_msg(err_msg.as_ref())
+                                })
             }
             2 => {
-                req_rpc.params
-                       .parse::<(CallRequest, BlockNumber)>()
-                       .map(|(base, id)| (base, id))
-                       .map_err(|_| Error::parse_error())
+                req_rpc.params.parse::<(CallRequest, BlockNumber)>().map(|(base, id)| (base, id)).map_err(|err| {
+                                                                                                              let err_msg = format!("param parse error : {:?}", err);
+                                                                                                              Error::parse_error_msg(err_msg.as_ref())
+                                                                                                          })
             }
             _ => Err(Error::invalid_params("have much param!")),
         };
@@ -243,21 +272,24 @@ impl MethodHandler {
                                                                                              })
     }
 
-
     pub fn get_logs(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 1 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let mut request = self.create_request();
-        let params: (Filter,) = req_rpc.params.parse()?;
-        let filter = params.0;
+        let (filter,): (Filter,) = req_rpc.params.parse()?;
         request.set_filter(serde_json::to_string(&filter).unwrap());
         Ok(request)
     }
 
 
     pub fn get_transaction_receipt(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 1 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let mut request = self.create_request();
-        let params: (String,) = req_rpc.params.parse()?;
-        let hash = H256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
-        request.set_transaction_receipt(hash.0.to_vec());
+        let (hash,): (H256,) = req_rpc.params.parse()?;
+        request.set_transaction_receipt(hash.to_vec());
         Ok(request)
     }
 
@@ -272,6 +304,9 @@ impl MethodHandler {
 
 
     fn code_or_count(&self, req_rpc: RpcRequest) -> Result<String, Error> {
+        if 2 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let (address, number): (H160, BlockNumber) = req_rpc.params.parse()?;
         let count_code = CountOrCode::new(address.to_vec(), number);
         match serde_json::to_string(&count_code) {
@@ -288,41 +323,59 @@ impl MethodHandler {
         Ok(request)
     }
 
+
     pub fn new_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 1 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let mut request = self.create_request();
-        let params: (Filter,) = req_rpc.params.parse()?;
-        let filter = serde_json::to_string(&params.0).expect("new_filter param error");
+        let (filter,): (Filter,) = req_rpc.params.parse()?;
+        let filter = serde_json::to_string(&filter).map_err(|err| Error::invalid_params(format!("{:?}", err)))?;
         request.set_new_filter(filter);
         Ok(request)
     }
 
+
     pub fn new_block_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 0 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         drop(req_rpc);
         let mut request = self.create_request();
         request.set_new_block_filter(true);
         Ok(request)
     }
 
+
     pub fn uninstall_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 1 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let mut request = self.create_request();
-        let params: (String,) = req_rpc.params.parse()?;
-        let filter_id = U256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
+        let (filter_id,): (U256,) = req_rpc.params.parse()?;
+        trace!("uninstall_filter {:?}", filter_id);
         request.set_uninstall_filter(filter_id.into());
         Ok(request)
     }
 
+
     pub fn get_filter_changes(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 1 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let mut request = self.create_request();
-        let params: (String,) = req_rpc.params.parse()?;
-        let filter_id = U256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
+        let (filter_id,): (U256,) = req_rpc.params.parse()?;
         request.set_filter_changes(filter_id.into());
         Ok(request)
     }
 
+
     pub fn get_filter_logs(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+        if 1 != self.params_len(&req_rpc.params)? {
+            return Err(Error::invalid_params_len());
+        }
         let mut request = self.create_request();
-        let params: (String,) = req_rpc.params.parse()?;
-        let filter_id = U256::from_str(clean_0x(&params.0)).map_err(|_err| Error::invalid_params(format!("{:?}", _err)))?;
+        let (filter_id,): (U256,) = req_rpc.params.parse()?;
         request.set_filter_logs(filter_id.into());
         Ok(request)
     }
@@ -334,7 +387,7 @@ mod tests {
     use super::*;
     use Id;
     use bytes::Bytes;
-    use libproto::blockchain::UnverifiedTransaction;
+    use libproto::blockchain::{UnverifiedTransaction, Transaction};
     use libproto::request;
     use method::MethodHandler;
     use params::Params;
@@ -428,7 +481,13 @@ mod tests {
 
     #[test]
     fn test_cita_send_transaction() {
-        let utx = UnverifiedTransaction::new();
+        let mut tx = Transaction::new();
+        tx.set_to("0xb84a3067e31cbe3bebfcc16e2b3495838864b82a".to_string());
+        tx.set_quota(23);
+        tx.set_nonce("23".to_string());
+        tx.set_valid_until_block(99999);
+        let mut utx = UnverifiedTransaction::new();
+        utx.set_transaction(tx);
         let utx_string = utx.write_to_bytes().unwrap();
 
         let rpc1 = RpcRequest {
@@ -489,7 +548,7 @@ mod tests {
 
     #[test]
     fn eth_call_with_blockid_deserialization() {
-        let rpc = r#"{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"d46e8dd67c5d32be8058bb8eb970870f07244567","to":"b60e8dd61c5d32be8058bb8eb970870f07233155","data":"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"}, 22],"id":2}"#;
+        let rpc = r#"{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"d46e8dd67c5d32be8058bb8eb970870f07244567","to":"b60e8dd61c5d32be8058bb8eb970870f07233155","data":"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"}, "22"],"id":2}"#;
         let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
 
         let handler = MethodHandler;
@@ -506,7 +565,7 @@ mod tests {
                              .unwrap())
                    .to_vec()
                    .as_slice());
-        assert_eq!(call.get_height(), "\"0x16\"");
+        assert_eq!(call.get_height(), "\"0x22\"");
     }
 
     #[test]
@@ -532,7 +591,7 @@ mod tests {
 
     #[test]
     fn cita_get_log_deserialization() {
-        let rpc = r#"{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"fromBlock":1,"toBlock":2,"address":"8888f1f195afa192cfee860698584c030f4c9db1","topics": ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", null, ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"]]}],"id":2}"#;
+        let rpc = r#"{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"fromBlock":"0x1","toBlock":"0x2","address":"8888f1f195afa192cfee860698584c030f4c9db1","topics": ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", null, ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"]]}],"id":2}"#;
         let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let handler = MethodHandler;
         let request: Result<request::Request, Error> = handler.get_logs(rpc_request.clone());
