@@ -43,7 +43,7 @@ function cita_start() {
         echo $! >> .pid
     else
         echo "starting ${node} debug"
-        RUST_LOG=auth=trace    nohup bin/auth                             >${log_dir}/${node}.auth       2>&1 &
+        RUST_LOG=auth=trace    nohup bin/auth -n 10 -v 30 >${log_dir}/${node}.auth       2>&1 &
         echo $! >> .pid
         RUST_LOG=network=trace nohup bin/network -c network.toml         >${log_dir}/${node}.network    2>&1 &
         echo $! >> .pid
