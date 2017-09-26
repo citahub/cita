@@ -140,6 +140,9 @@ else
     cp $INIT_DATA_PATH/init_data.json $DATA_PATH/init_data.json
 fi
 
+if [ ! -e "$INIT_DATA_PATH/chain.json" ]; then
+    cp $INIT_DATA_PATH/chain_check_example.json $INIT_DATA_PATH/chain.json
+fi
 
 echo "Step 1: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
@@ -163,6 +166,7 @@ do
     python create_node_config.py $DATA_PATH $CONSENSUS_NAME $ID $DURATION $IS_TEST $BLOCK_TX_LIMIT $TX_FILTER_SIZE $TX_POOL_SIZE
     echo "End creating Node " $ID "Configuration!"
     cp genesis.json $DATA_PATH/node$ID/genesis.json
+    cp chain.json $DATA_PATH/node$ID/chain.json
 done
 
 echo "Step 3: ********************************************************"

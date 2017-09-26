@@ -119,7 +119,8 @@ pub fn init_chain() -> Arc<Chain> {
         block: Block::default(),
     };
     let (sync_tx, _) = channel();
-    let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
+    let path = "chain.json";
+    let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx, path);
     chain
 }
 

@@ -21,6 +21,7 @@ use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
+use libchain::chain::Switch;
 use libchain::chain::TransactionHash;
 use libchain::extras::TransactionAddress;
 
@@ -305,19 +306,19 @@ impl OpenBlock {
     }
 
     ///execute transactions
-    pub fn apply_transactions(&mut self) {
+    pub fn apply_transactions(&mut self, switch: &Switch) {
         for t in self.body.transactions.clone() {
-            self.apply_transaction(&t);
+            self.apply_transaction(&t, switch);
         }
         self.state.commit().expect("commit trie error");
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
     }
 
-    pub fn apply_transaction(&mut self, t: &SignedTransaction) {
+    pub fn apply_transaction(&mut self, t: &SignedTransaction, switch: &Switch) {
         let env_info = self.env_info();
         let has_traces = self.traces.is_some();
-        match self.state.apply(&env_info, &t, has_traces) {
+        match self.state.apply(&env_info, &t, has_traces, switch) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());

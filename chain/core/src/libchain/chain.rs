@@ -44,11 +44,14 @@ use libproto::blockchain::{ProofType, Status as ProtoStatus, Proof as ProtoProof
 use native::Factory as NativeFactory;
 use proof::TendermintProof;
 use receipt::{Receipt, LocalizedReceipt};
+use serde_json;
 use state::State;
 use state_db::StateDB;
 
 use std::collections::{BTreeMap, VecDeque};
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
@@ -89,6 +92,12 @@ pub struct Status {
     hash: H256,
 }
 
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct Switch {
+    pub nonce: bool,
+    pub permission: bool,
+}
+
 impl Status {
     fn new() -> Status {
         Status { number: 0, hash: H256::default() }
@@ -115,6 +124,12 @@ impl Status {
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
         ps
+    }
+}
+
+impl Switch {
+    pub fn new() -> Self {
+        Switch { nonce: false, permission: false }
     }
 }
 
@@ -163,6 +178,9 @@ pub struct Chain {
 
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
+
+    // switch, check them or not
+    pub switch: Switch,
 }
 
 /// Get latest status
@@ -189,7 +207,7 @@ impl Chain {
         status
     }
 
-    pub fn init_chain(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>) -> (Arc<Chain>, ProtoStatus) {
+    pub fn init_chain(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>, path: &str) -> (Arc<Chain>, ProtoStatus) {
         // 400 is the avarage size of the key
         let cache_man = CacheManager::new(1 << 14, 1 << 20, 400);
 
@@ -219,6 +237,11 @@ impl Chain {
             }
         };
 
+        let switch_file = File::open(path).unwrap();
+        let sconfig = BufReader::new(switch_file);
+        let sw: Switch = serde_json::from_reader(sconfig).expect("Failed to load json file.");
+        info!("config check: {:?}", sw);
+
         let mut status = Status::new();
         status.set_hash(header.hash().clone());
         status.set_number(header.number());
@@ -246,6 +269,7 @@ impl Chain {
                                  polls_filter: Arc::new(Mutex::new(PollManager::new())),
                                  senders: RwLock::new(HashMap::new()),
                                  creators: RwLock::new(HashMap::new()),
+                                 switch: sw,
                              });
 
 
@@ -738,7 +762,7 @@ impl Chain {
 
     /// Get a copy of the best block's state.
     pub fn state(&self) -> State<StateDB> {
-        let mut state = self.gen_state(self.current_state_root()).unwrap();
+        let mut state = self.gen_state(self.current_state_root()).expect("State root of current block is invalid.");
         state.senders = self.senders.read().clone();
         state.creators = self.creators.read().clone();
         state
@@ -794,6 +818,7 @@ impl Chain {
             tracing: analytics.transaction_tracing,
             vm_tracing: analytics.vm_tracing,
             check_nonce: false,
+            check_permission: false,
         };
 
         let ret = Executive::new(&mut state, &env_info, &engine, &self.factories.vm, &self.factories.native)
@@ -818,8 +843,9 @@ impl Chain {
     fn execute_block(&self, block: Block) -> OpenBlock {
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
+        let switch = &self.switch;
         let mut open_block = OpenBlock::new(self.factories.clone(), false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
-        open_block.apply_transactions();
+        open_block.apply_transactions(&switch);
 
         open_block
     }

@@ -175,8 +175,8 @@ impl fmt::Display for ExecutionError {
             NotEnoughCash { ref required, ref got } => format!("Cost of transaction exceeds sender balance. {} is required but the sender only has {}", required, got),
             Internal(ref msg) => msg.clone(),
             TransactionMalformed(ref err) => format!("Malformed transaction: {}", err),
-            NoTransactionPermission => format!("No transaction permission"),
-            NoContractPermission => format!("No contract permission"),
+            NoTransactionPermission => "No transaction permission".to_owned(),
+            NoContractPermission => "No contract permission".to_owned(),
         };
 
         f.write_fmt(format_args!("Transaction execution error ({}).", msg))
