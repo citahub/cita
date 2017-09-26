@@ -120,7 +120,7 @@ fn main() {
 
     //http
     if config.http_config.enable {
-        mq_handle.set_http_or_ws(TransferType::HTTP, 0);
+        mq_handle.set_http_or_ws(TransferType::HTTP);
         let http_responses = Arc::new(RwLock::new(HashMap::with_capacity(1000)));
         mq_handle.set_http(http_responses.clone());
 
@@ -143,7 +143,7 @@ fn main() {
 
     //ws
     if config.ws_config.enable {
-        mq_handle.set_http_or_ws(TransferType::WEBSOCKET, 0);
+        mq_handle.set_http_or_ws(TransferType::WEBSOCKET);
         let ws_responses = Arc::new(Mutex::new(HashMap::with_capacity(1000)));
         mq_handle.set_ws(ws_responses.clone());
         let ws_config = config.ws_config.clone();

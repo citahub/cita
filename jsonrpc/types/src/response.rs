@@ -31,7 +31,7 @@ use util::U256;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
-pub enum RusultBody {
+pub enum ResultBody {
     BlockNumber(U256),
     FullBlock(Block),
     #[serde(rename = "null")]
@@ -51,9 +51,9 @@ pub enum RusultBody {
 }
 
 
-impl Default for RusultBody {
+impl Default for ResultBody {
     fn default() -> Self {
-        RusultBody::Null
+        ResultBody::Null
     }
 }
 
@@ -68,7 +68,7 @@ pub struct RpcFailure {
 pub struct RpcSuccess {
     pub jsonrpc: Option<Version>,
     pub id: Id,
-    pub result: RusultBody,
+    pub result: ResultBody,
 }
 
 
@@ -77,11 +77,11 @@ impl RpcSuccess {
         RpcSuccess {
             id: id,
             jsonrpc: jsonrpc,
-            result: RusultBody::default(),
+            result: ResultBody::default(),
         }
     }
 
-    pub fn set_result(mut self, reuslt: RusultBody) -> RpcSuccess {
+    pub fn set_result(mut self, reuslt: ResultBody) -> RpcSuccess {
         self.result = reuslt;
         self
     }
@@ -111,32 +111,32 @@ impl Output {
                 match data.data.unwrap() {
                     Response_oneof_data::tx_state(tx_state) => {
                         let tx_response = serde_json::from_str(&tx_state).unwrap();
-                        success.set_result(RusultBody::TxResponse(tx_response)).to_out()
+                        success.set_result(ResultBody::TxResponse(tx_response)).to_out()
                     }
-                    Response_oneof_data::block_number(bn) => success.set_result(RusultBody::BlockNumber(U256::from(bn))).to_out(),
+                    Response_oneof_data::block_number(bn) => success.set_result(ResultBody::BlockNumber(U256::from(bn))).to_out(),
                     Response_oneof_data::none(_) => success.to_out(),
                     Response_oneof_data::block(rpc_block) => {
                         let rpc_block: RpcBlock = serde_json::from_str(&rpc_block).unwrap();
-                        success.set_result(RusultBody::FullBlock(rpc_block.into())).to_out()
+                        success.set_result(ResultBody::FullBlock(rpc_block.into())).to_out()
                     }
-                    Response_oneof_data::ts(x) => success.set_result(RusultBody::Transaction(RpcTransaction::from(x))).to_out(),
-                    Response_oneof_data::peercount(x) => success.set_result(RusultBody::PeerCount(U256::from(x))).to_out(),
-                    Response_oneof_data::call_result(x) => success.set_result(RusultBody::CallResult(Bytes::from(x))).to_out(),
-                    Response_oneof_data::logs(serialized) => success.set_result(RusultBody::Logs(serde_json::from_str::<Vec<Log>>(&serialized).unwrap()))
+                    Response_oneof_data::ts(x) => success.set_result(ResultBody::Transaction(RpcTransaction::from(x))).to_out(),
+                    Response_oneof_data::peercount(x) => success.set_result(ResultBody::PeerCount(U256::from(x))).to_out(),
+                    Response_oneof_data::call_result(x) => success.set_result(ResultBody::CallResult(Bytes::from(x))).to_out(),
+                    Response_oneof_data::logs(serialized) => success.set_result(ResultBody::Logs(serde_json::from_str::<Vec<Log>>(&serialized).unwrap()))
                                                                     .to_out(),
                     Response_oneof_data::receipt(serialized) => {
                         success.set_result(serde_json::from_str::<Receipt>(&serialized)
                                                .ok()
-                                               .map_or(RusultBody::Null, |receipt| RusultBody::Receipt(receipt)))
+                                               .map_or(ResultBody::Null, |receipt| ResultBody::Receipt(receipt)))
                                .to_out()
                     }
-                    Response_oneof_data::transaction_count(x) => success.set_result(RusultBody::TranactionCount(U256::from(x))).to_out(),
-                    Response_oneof_data::contract_code(x) => success.set_result(RusultBody::ContractCode(Bytes::from(x))).to_out(),
-                    Response_oneof_data::filter_id(id) => success.set_result(RusultBody::FilterId(U256::from(id))).to_out(),
-                    Response_oneof_data::uninstall_filter(is_uninstall) => success.set_result(RusultBody::UninstallFliter(is_uninstall)).to_out(),
-                    Response_oneof_data::filter_changes(log) => success.set_result(RusultBody::FilterChanges(serde_json::from_str::<Vec<Log>>(&log).unwrap()))
+                    Response_oneof_data::transaction_count(x) => success.set_result(ResultBody::TranactionCount(U256::from(x))).to_out(),
+                    Response_oneof_data::contract_code(x) => success.set_result(ResultBody::ContractCode(Bytes::from(x))).to_out(),
+                    Response_oneof_data::filter_id(id) => success.set_result(ResultBody::FilterId(U256::from(id))).to_out(),
+                    Response_oneof_data::uninstall_filter(is_uninstall) => success.set_result(ResultBody::UninstallFliter(is_uninstall)).to_out(),
+                    Response_oneof_data::filter_changes(log) => success.set_result(ResultBody::FilterChanges(serde_json::from_str::<Vec<Log>>(&log).unwrap()))
                                                                        .to_out(),
-                    Response_oneof_data::filter_logs(log) => success.set_result(RusultBody::FilterLog(serde_json::from_str::<Vec<Log>>(&log).unwrap())).to_out(),
+                    Response_oneof_data::filter_logs(log) => success.set_result(ResultBody::FilterLog(serde_json::from_str::<Vec<Log>>(&log).unwrap())).to_out(),
                     Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(id.clone(), jsonrpc.clone(), Error::server_error(code, err_msg.as_ref()))),
                 }
             }
@@ -223,7 +223,7 @@ mod tests {
         let rpc = RpcSuccess {
             jsonrpc: Some(Version::V2),
             id: Id::Num(2),
-            result: RusultBody::Null,
+            result: ResultBody::Null,
         };
 
         let rpc_body = serde_json::to_string(&rpc).unwrap();
@@ -235,7 +235,7 @@ mod tests {
         let rpc = RpcSuccess {
             jsonrpc: Some(Version::V2),
             id: Id::Str("2".to_string()),
-            result: RusultBody::BlockNumber(U256::from(3)),
+            result: ResultBody::BlockNumber(U256::from(3)),
         };
 
         let rpc_body = serde_json::to_string(&rpc).unwrap();

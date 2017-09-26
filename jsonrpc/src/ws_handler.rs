@@ -42,7 +42,7 @@ impl WsFactory {
     pub fn new(responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>, tx: Sender<(String, Vec<u8>)>, thread_num: usize) -> WsFactory {
         let mut thread_number: usize = 0 as usize;
         if thread_num == 0 {
-            thread_number = num_cpus::get() * 2;
+            thread_number = num_cpus::get() / 2;
         } else {
             thread_number = thread_num;
         }

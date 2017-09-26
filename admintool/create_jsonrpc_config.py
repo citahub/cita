@@ -15,7 +15,7 @@ def main():
                        sleep_duration=1, timeout_count=3000)
 
     ws_config = dict(
-        enable=ws_enable, thread_number=0,
+        enable=ws_enable, thread_number=2,
         listen_ip="0.0.0.0", listen_port=sys.argv[4],
         max_connections=800, queue_size=200,
         panic_on_new_connection=False, panic_on_shutdown=False,
