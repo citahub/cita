@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(unused_variables)]
-
 pub use byteorder::{BigEndian, ByteOrder};
 use core::filters::eth_filter::EthFilter;
 use core::libchain::call_request::CallRequest;
@@ -33,25 +31,17 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::{Sender, Receiver};
 use std::vec::Vec;
-use threadpool::*;
 use types::filter::Filter;
 use types::ids::BlockId;
 use util::Address;
 use util::H256;
-// pub const CHAIN_PUB: u32 = 3;
-
-pub fn chain_pool(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id: u32, msg: Vec<u8>) {
-    let tx = tx.clone();
-    pool.execute(move || {
-                     let (cmd_id, origin, content) = parse_msg(msg.as_slice());
-                     tx.send((id, cmd_id, origin, content)).unwrap();
-                 });
-}
 
 // TODO: RPC Errors
-pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(u32, u32, u32, MsgClass)>, ctx_pub: Sender<(String, Vec<u8>)>) {
-    let (id, cmd_id, origin, content_ext) = rx.recv().unwrap();
-    trace!("chain_result call {:?} {:?}", id_to_key(id), cmd_id);
+pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub: Sender<(String, Vec<u8>)>) {
+    let (key, msg) = rx.recv().unwrap();
+    let (cmd_id, origin, content_ext) = parse_msg(msg.as_slice());
+
+    trace!("chain_result call {:?}", key);
     match content_ext {
         MsgClass::REQUEST(mut req) => {
             let mut response = response::Response::new();
