@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-use crypto::{PubKey, Signature, Sign};
+use crypto::{PubKey, Signature, Sign, SIGNATURE_BYTES_LEN};
 use libproto::*;
 use libproto::blockchain::*;
 use protobuf::Message;
@@ -102,7 +102,12 @@ impl Verifier {
 
     pub fn verify_sig(&self, req: &VerifyTxReq) -> Result<PubKey, ()> {
         let hash = H256::from(req.get_hash());
-        let sig = Signature::from(req.get_signature());
+        let sig_bytes = req.get_signature();
+        if sig_bytes.len() != SIGNATURE_BYTES_LEN {
+            warn!("Unvalid signature bytes");
+            return Err(())
+        }
+        let sig = Signature::from(sig_bytes);
         match req.get_crypto() {
             Crypto::SECP => {
                 sig.recover(&hash).map_err(|_| ())

@@ -88,7 +88,7 @@ impl Sendtx {
             Err(_) => panic!("read fail "),
             Ok(_) => println!("read successfully.[{}]", contents),
         }
-        let privkey = PrivKey::from_str(contents.as_str()).unwrap();
+        let privkey = PrivKey::from_str(contents.as_str()).expect("privkey");
         KeyPair::from_privkey(privkey)
     }
 

@@ -32,6 +32,7 @@ pub enum EngineError {
     UnexpectedMessage,
     VoteMsgDelay(usize),
     VoteMsgForth(usize),
+    InvalidSignature,
 }
 
 impl fmt::Display for EngineError {
@@ -48,6 +49,7 @@ impl fmt::Display for EngineError {
             UnexpectedMessage => "This Engine should not be fed messages.".into(),
             VoteMsgDelay(height) => format!("The vote message is delayed and missed the current height:{}", height),
             VoteMsgForth(height) => format!("The vote message is fulture height :{}", height),
+            InvalidSignature => "Invalid Signature.".into(),
         };
         f.write_fmt(format_args!("Engine error ({})", msg))
     }
