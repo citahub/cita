@@ -49,7 +49,7 @@ impl Synchronizer {
     }
 
     pub fn sync(&self, ctx_pub: Sender<(String, Vec<u8>)>) {
-        let block_map = self.chain.block_map.write();
+        let block_map = self.chain.block_map.read();
         if !block_map.is_empty() {
             let start_height = self.chain.get_current_height() + 1;
             if !self.chain.is_sync.load(Ordering::SeqCst) {
