@@ -29,7 +29,6 @@ extern crate proof;
 extern crate pubsub;
 extern crate engine_json;
 extern crate engine;
-extern crate parking_lot;
 extern crate cpuprofiler;
 extern crate cita_log;
 extern crate dotenv;

@@ -33,7 +33,6 @@ extern crate dotenv;
 extern crate cita_log;
 extern crate threadpool;
 extern crate num_cpus;
-extern crate parking_lot;
 extern crate ws;
 extern crate clap;
 
@@ -52,7 +51,7 @@ use http_handler::HttpHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
 use log::LogLevelFilter;
-use parking_lot::{RwLock, Mutex};
+use util::{RwLock, Mutex};
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;

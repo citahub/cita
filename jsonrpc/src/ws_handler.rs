@@ -20,7 +20,7 @@ use jsonrpc_types::{method, Id};
 use jsonrpc_types::response::RpcFailure;
 use libproto::communication;
 use num_cpus;
-use parking_lot::Mutex;
+use util::Mutex;
 use protobuf::Message;
 use serde_json;
 use std::collections::HashMap;

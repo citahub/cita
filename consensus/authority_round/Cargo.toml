@@ -17,7 +17,6 @@ cita-crypto = { path = "../../share_libs/crypto" }
 engine_json = { path = "../json" }
 engine = { path = "../engine" }
 proof = { path = "../proof" }
-parking_lot = "0.4"
 log = "0.3.0"
 clap = "2"
 pubsub = { path = "../../share_libs/pubsub" }
