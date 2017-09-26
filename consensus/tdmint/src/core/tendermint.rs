@@ -23,7 +23,7 @@ use core::voteset::{VoteCollector, ProposalCollector, VoteSet, Proposal, VoteMes
 use core::votetime::{WaitTimer, TimeoutInfo};
 use core::wal::Wal;
 
-use crypto::{CreateKey, Signature, Sign, pubkey_to_address};
+use crypto::{CreateKey, Signature, Sign, pubkey_to_address, SIGNATURE_BYTES_LEN};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
 use libproto::blockchain::{Block, SignedTransaction, Status, BlockWithProof};
@@ -584,6 +584,9 @@ impl TenderMint {
         let res = deserialize(&message[..]);
         if let Ok(decoded) = res {
             let (message, signature): (Vec<u8>, &[u8]) = decoded;
+            if signature.len() != SIGNATURE_BYTES_LEN {
+                return Err(EngineError::InvalidSignature);
+            }
             let signature = Signature::from(signature);
             if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
                 let decoded = deserialize(&message[..]).unwrap();
@@ -729,6 +732,10 @@ impl TenderMint {
         let res = deserialize(msg);
         if let Ok(decoded) = res {
             let (message, signature): (Vec<u8>, &[u8]) = decoded;
+            if signature.len() != SIGNATURE_BYTES_LEN {
+                warn!("bad signature");
+                return;
+            }
             let signature = Signature::from(signature);
             if let Ok(_) = signature.recover(&message.crypt_hash().into()) {
                 let decoded = deserialize(&message).unwrap();
@@ -765,6 +772,9 @@ impl TenderMint {
         let res = deserialize(&msg[..]);
         if let Ok(decoded) = res {
             let (message, signature): (Vec<u8>, &[u8]) = decoded;
+            if signature.len() != SIGNATURE_BYTES_LEN {
+                return Err(EngineError::InvalidSignature);
+            }
             let signature = Signature::from(signature);
             trace!("handle proposal message {:?}", message.crypt_hash());
 

@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{Engine, EngineError, Signable, unix_now, AsMillis};
-use crypto::{Signature, Signer, CreateKey};
+use crypto::{Signature, Signer, CreateKey, SIGNATURE_BYTES_LEN};
 use engine_json;
 use libproto::*;
 use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
@@ -158,15 +158,18 @@ impl Engine for AuthorityRound {
     fn verify_block(&self, block: &Block) -> Result<(), EngineError> {
         let block_time = block.get_header().get_timestamp();
         let proof = AuthorityRoundProof::from(block.get_header().get_proof().clone());
+        if proof.signature.len() != SIGNATURE_BYTES_LEN {
+            return Err(EngineError::BadSignature(proof.signature));
+        }
         let signature = Signature::from(proof.signature);
         let author = block.get_body().recover_address_with_signature(&signature).unwrap();
         if !self.params.authorities.contains(&author) {
             trace!("verify_block author {:?}", author.to_hex());
-            return Err(EngineError::NotAuthorized(author))?;
+            return Err(EngineError::NotAuthorized(author));
         }
         if block_time > unix_now().as_millis() {
             trace!("verify_block time {:?}", block_time);
-            return Err(EngineError::FutureBlock(block_time))?;
+            return Err(EngineError::FutureBlock(block_time));
         }
         Ok(())
     }

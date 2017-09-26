@@ -196,7 +196,7 @@ mod tests {
         req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
         let mut signature = tx.get_transaction_with_sig().get_signature().to_vec();
         signature[0] = signature[0] + 1;
-        req.set_signature(signature);
+        req.set_signature(signature[0..16].to_vec());
         let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
         let hash = bytes.crypt_hash().to_vec();
         req.set_hash(hash);

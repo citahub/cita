@@ -140,7 +140,7 @@ use util::{H256, U256, Address};
 fn test_native_contract() {
     let factory = Factory::default();
     let mut ext = FakeExt::new();
-    let native_addr = Address::from(0x400);
+    let native_addr = Address::from_str("0x0000000000000000000000000000000000000400").unwrap();
     let value = U256::from(0x1234);
     {
         let mut params = ActionParams::default();
@@ -151,7 +151,7 @@ fn test_native_contract() {
             serialize_into::<_, _, _, BigEndian>(&mut input, &i, Infinite).expect("failed to serialize u64");
         }
         params.data = Some(input);
-        let mut contract = factory.new_contract(Address::from(native_addr)).unwrap();
+        let mut contract = factory.new_contract(native_addr).unwrap();
         let output = contract.exec(params, &mut ext).unwrap();
         println!("===={:?}", output);
     }
@@ -162,7 +162,7 @@ fn test_native_contract() {
         serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite).expect("failed to serialize u32");
         params.data = Some(input);
 
-        let mut contract = factory.new_contract(Address::from(native_addr)).unwrap();
+        let mut contract = factory.new_contract(native_addr).unwrap();
         match contract.exec(params, &mut ext) {
             Ok(GasLeft::NeedsReturn(_, mut data)) => {
                 let mut real = U256::zero();
