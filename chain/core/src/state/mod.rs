@@ -25,6 +25,7 @@ use env_info::EnvInfo;
 use error::Error;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
+use libchain::chain::Switch;
 use receipt::Receipt;
 use std::cell::{RefCell, RefMut};
 use std::collections::{HashMap, HashSet};
@@ -198,6 +199,10 @@ pub struct State<B: Backend> {
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
     account_start_nonce: U256,
     factories: Factories,
+    // transaction permissions
+    pub senders: HashMap<Address, bool>,
+    // contract permissions
+    pub creators: HashMap<Address, bool>,
 }
 
 #[derive(Copy, Clone)]
@@ -237,6 +242,8 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: account_start_nonce,
             factories: factories,
+            senders: HashMap::new(),
+            creators: HashMap::new(),
         }
     }
 
@@ -253,6 +260,8 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: account_start_nonce,
             factories: factories,
+            senders: HashMap::new(),
+            creators: HashMap::new(),
         };
 
         Ok(state)
@@ -477,13 +486,16 @@ impl<B: Backend> State<B> {
 
     /// Execute a given transaction.
     /// This will change the state accordingly.
-    pub fn apply(&mut self, env_info: &EnvInfo, t: &SignedTransaction, tracing: bool) -> ApplyResult {
+    pub fn apply(&mut self, env_info: &EnvInfo, t: &SignedTransaction, tracing: bool, switch: &Switch) -> ApplyResult {
         //        let old = self.to_pod();
         let engine = &NullEngine::default();
+        let nonce = switch.nonce;
+        let permission = switch.permission;
         let options = TransactOptions {
             tracing: tracing,
             vm_tracing: false,
-            check_nonce: false,
+            check_nonce: nonce,
+            check_permission: permission,
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
@@ -696,6 +708,8 @@ impl Clone for State<StateDB> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: self.account_start_nonce.clone(),
             factories: self.factories.clone(),
+            senders: HashMap::new(),
+            creators: HashMap::new(),
         }
     }
 }
@@ -768,7 +782,8 @@ mod tests {
         let info = EnvInfo::default();
         //info.gas_limit = U256::from(100_000);
         let contract_address = ::executive::contract_address(&signed.sender(), &nonce, block_limit);
-        let result = state.apply(&info, &signed, true).unwrap();
+        let switch = Switch::new();
+        let result = state.apply(&info, &signed, true, &switch).unwrap();
         println!("{:?}", state.code(&contract_address).unwrap().unwrap());
         println!("{:?}", result.trace);
         assert_eq!(state.code(&contract_address).unwrap().unwrap(),

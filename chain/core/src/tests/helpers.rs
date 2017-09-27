@@ -25,6 +25,7 @@ use cita_crypto::KeyPair;
 use db;
 
 use journaldb;
+use serde_json;
 use libchain::block::{Block, BlockBody};
 use libchain::chain::Chain;
 use libchain::genesis::Genesis;
@@ -32,7 +33,6 @@ use libchain::genesis::Spec;
 use libproto::blockchain;
 use state::State;
 use state_db::*;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
@@ -42,10 +42,11 @@ use std::sync::mpsc::channel;
 use std::time::{UNIX_EPOCH, Instant};
 use test::black_box;
 use types::transaction::SignedTransaction;
-use util::{H256, U256, Address};
+use util::{U256, Address};
 use util::KeyValueDB;
 use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
+use std::io::BufReader;
 
 pub fn get_temp_state() -> State<StateDB> {
     let journal_db = get_temp_state_db();
@@ -109,16 +110,17 @@ pub fn init_chain() -> Arc<Chain> {
     let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
+    // Load from genesis json file
+    let genesis_file = File::open("genesis.json").unwrap();
+    let fconfig = BufReader::new(genesis_file);
+    let spec: Spec = serde_json::from_reader(fconfig).expect("Failed to load genesis.");
     let genesis = Genesis {
-        spec: Spec {
-            alloc: HashMap::new(),
-            prevhash: H256::from(0),
-            timestamp: 0,
-        },
+        spec: spec,
         block: Block::default(),
     };
     let (sync_tx, _) = channel();
-    let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx);
+    let path = "chain.json";
+    let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx, path);
     chain
 }
 
@@ -146,7 +148,7 @@ pub fn create_block(chain: &Chain, to: Address, data: &Vec<u8>, nonce: (u32, u32
         tx.set_nonce(U256::from(i).to_hex());
         tx.set_data(data.clone());
         tx.set_valid_until_block(100);
-        tx.set_quota(184467440737095);
+        tx.set_quota(1844674);
 
         let stx = tx.sign(*privkey);
         let new_tx = SignedTransaction::new(&stx).unwrap();
