@@ -136,6 +136,7 @@ use self::bincode::internal::serialize_into;
 use evm::tests::FakeExt;
 use std::io::Write;
 use util::{H256, U256, Address};
+use std::str::FromStr;
 #[test]
 fn test_native_contract() {
     let factory = Factory::default();
