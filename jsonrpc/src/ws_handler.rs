@@ -20,13 +20,13 @@ use jsonrpc_types::{method, Id};
 use jsonrpc_types::response::RpcFailure;
 use libproto::communication;
 use num_cpus;
-use util::Mutex;
 use protobuf::Message;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use threadpool::ThreadPool;
+use util::Mutex;
 use ws;
 use ws::{Factory, CloseCode, Handler};
 

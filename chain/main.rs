@@ -51,6 +51,7 @@ use std::time::Duration;
 use synchronizer::Synchronizer;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
+use util::panichandler::set_panic_handler;
 
 
 fn main() {
@@ -58,6 +59,10 @@ fn main() {
 
     // Always print backtrace on panic.
     ::std::env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
+
     cita_log::format(LogLevelFilter::Info);
     info!("CITA:chain");
     let matches = App::new("chain")

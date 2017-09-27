@@ -51,13 +51,14 @@ use http_handler::HttpHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
 use log::LogLevelFilter;
-use util::{RwLock, Mutex};
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
+use util::{RwLock, Mutex};
+use util::panichandler::set_panic_handler;
 use ws_handler::WsFactory;
 
 
@@ -82,6 +83,8 @@ fn start_profile(config: &ProfileConfig) {
 fn main() {
     dotenv().ok();
     ::std::env::set_var("RUST_BACKTRACE", "full");
+    //exit process when panic
+    set_panic_handler();
     cita_log::format(LogLevelFilter::Info);
     info!("CITA:jsonrpc ");
 

@@ -21,6 +21,7 @@ rustc-serialize = "*"
 mio = "0.5"
 pubsub = { path = "../../share_libs/pubsub" }
 cita_log = { path = "../../share_libs/cita_log" }
+util = {path = "../../share_libs/util"}
 
 
 [[bin]]

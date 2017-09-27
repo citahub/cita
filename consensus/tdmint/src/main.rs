@@ -53,6 +53,7 @@ use cpuprofiler::PROFILER;
 use libproto::{parse_msg, key_to_id};
 use pubsub::start_pubsub;
 use std::sync::Arc;
+use util::panichandler::set_panic_handler;
 
 const THREAD_POOL_NUM: usize = 10;
 
@@ -73,6 +74,9 @@ fn main() {
     dotenv::dotenv().ok();
     // Always print backtrace on panic.
     ::std::env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
 
     cita_log::format(LogLevelFilter::Info);
     info!("CITA:consensus:tendermint");

@@ -44,6 +44,7 @@ use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
 use util::RwLock;
+use util::panichandler::set_panic_handler;
 use verify::Verifier;
 
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
@@ -63,6 +64,9 @@ fn main() {
     dotenv().ok();
     // Always print backtrace on panic.
     env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
 
     // Init logger
     cita_log::format(LogLevelFilter::Info);

@@ -56,6 +56,8 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 use util::RwLock;
+use util::panichandler::set_panic_handler;
+
 
 pub fn do_connect(config_path: &str, con: Arc<RwLock<Connection>>) {
 
@@ -86,10 +88,14 @@ pub fn do_connect(config_path: &str, con: Arc<RwLock<Connection>>) {
                   });
 }
 
+
 fn main() {
     dotenv().ok();
     // Always print backtrace on panic.
     env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
 
     // Init logger
     cita_log::format(LogLevelFilter::Info);

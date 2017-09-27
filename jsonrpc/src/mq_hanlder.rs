@@ -18,10 +18,10 @@
 use base_hanlder::{TransferType, ReqInfo};
 use jsonrpc_types::response::Output;
 use libproto::{parse_msg, display_cmd, MsgClass, Response};
-use util::{RwLock, Mutex};
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
+use util::{RwLock, Mutex};
 use ws;
 
 #[derive(Default)]

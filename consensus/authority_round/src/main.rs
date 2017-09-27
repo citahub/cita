@@ -46,11 +46,15 @@ use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::{Duration, Instant};
+use util::panichandler::set_panic_handler;
 
 fn main() {
     dotenv::dotenv().ok();
     // Always print backtrace on panic.
-    ::std::env::set_var("RUST_BACKTRACE", "1");
+    ::std::env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
 
     cita_log::format(LogLevelFilter::Info);
     println!("CITA:consensus:poa");

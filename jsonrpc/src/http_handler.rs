@@ -23,7 +23,6 @@ use jsonrpc_types::{RpcRequest, method};
 use jsonrpc_types::error::Error;
 use jsonrpc_types::response::{RpcSuccess, RpcFailure, Output};
 use libproto::{response, communication};
-use util::{RwLock, Mutex};
 use protobuf::Message;
 use serde_json;
 use std::collections::HashMap;
@@ -33,6 +32,7 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
+use util::{RwLock, Mutex};
 
 impl BaseHandler for HttpHandler {}
 

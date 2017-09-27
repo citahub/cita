@@ -61,6 +61,7 @@ pub mod snappy;
 pub mod cache;
 pub mod crypto;
 pub mod datapath;
+pub mod panichandler;
 
 
 pub use ansi_term::{Colour, Style};

@@ -105,7 +105,7 @@ impl Verifier {
         let sig_bytes = req.get_signature();
         if sig_bytes.len() != SIGNATURE_BYTES_LEN {
             warn!("Unvalid signature bytes");
-            return Err(())
+            return Err(());
         }
         let sig = Signature::from(sig_bytes);
         match req.get_crypto() {

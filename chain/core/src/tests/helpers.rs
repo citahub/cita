@@ -25,15 +25,16 @@ use cita_crypto::KeyPair;
 use db;
 
 use journaldb;
-use serde_json;
 use libchain::block::{Block, BlockBody};
 use libchain::chain::Chain;
 use libchain::genesis::Genesis;
 use libchain::genesis::Spec;
 use libproto::blockchain;
+use serde_json;
 use state::State;
 use state_db::*;
 use std::fs::File;
+use std::io::BufReader;
 use std::io::Read;
 use std::io::Write;
 use std::process::Command;
@@ -46,7 +47,6 @@ use util::{U256, Address};
 use util::KeyValueDB;
 use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
-use std::io::BufReader;
 
 pub fn get_temp_state() -> State<StateDB> {
     let journal_db = get_temp_state_db();
