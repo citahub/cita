@@ -21,8 +21,6 @@ CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
 CONTRACTS = {
     '0x00000000000000000000000000000000013241a2': {'file': 'node_manager.sol',
                                                    'name': 'NodeManager'},
-    '0x00000000000000000000000000000000013241a3': {'file': 'quota.sol',
-                                                   'name': 'Quota'},
     '0x00000000000000000000000000000000013241a4': {'file': 'permission_manager.sol',
                                                    'name': 'PermissionManager'}
 }
