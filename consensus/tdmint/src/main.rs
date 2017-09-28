@@ -45,14 +45,12 @@ use std::sync::mpsc::channel;
 use std::thread;
 
 mod core;
-use core::dispatchtx::{Dispatchtx, sub_new_tx};
 use core::spec::Spec;
 use core::tendermint::TenderMint;
 use core::votetime::WaitTimer;
 use cpuprofiler::PROFILER;
 use libproto::{parse_msg, key_to_id};
 use pubsub::start_pubsub;
-use std::sync::Arc;
 
 const THREAD_POOL_NUM: usize = 10;
 
@@ -82,7 +80,6 @@ fn main() {
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
-        .args_from_usage("-n, --tx_pool_thread_num=[10] 'Transaction pool thread count'")
         .args_from_usage("--prof-start=[0] 'Specify the start time of profiling, zero means no profiling'")
         .args_from_usage("--prof-duration=[0] 'Specify the duration for profiling, zero means no profiling'")
         .get_matches();
@@ -92,7 +89,7 @@ fn main() {
         trace!("Value for config: {}", c);
         config_path = c;
     }
-    let tx_pool_thread_num = matches.value_of("tx_pool_thread_num").unwrap_or("10").parse::<usize>().unwrap();
+
     let flag_prof_start = matches.value_of("prof-start").unwrap_or("0").parse::<u64>().unwrap();
     let flag_prof_duration = matches.value_of("prof-duration").unwrap_or("0").parse::<u64>().unwrap();
 
@@ -123,11 +120,9 @@ fn main() {
 
     //main tendermint loop module
     let spec = Spec::new_test_tendermint(config_path);
-    let dispatch = Arc::new(Dispatchtx::new(spec.params.tx_filter_size, spec.params.block_tx_limit, spec.params.tx_pool_size));
-    sub_new_tx(dispatch.clone(), tx_pool_thread_num);
     info!("main loop start **** ");
     let mainthd = thread::spawn(move || {
-                                    let mut engine = TenderMint::new(tx_pub, main4mq, main2timer, main4timer, spec.params, dispatch);
+                                    let mut engine = TenderMint::new(tx_pub, main4mq, main2timer, main4timer, spec.params);
                                     engine.start();
                                 });
 
