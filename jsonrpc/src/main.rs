@@ -186,6 +186,8 @@ fn main() {
                 new_tx_request_buffer.push(req);
                 if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch  ||
                     time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_durtation {
+                    trace!("Going to send new tx batch to auth with {} new tx and buffer {} ns", new_tx_request_buffer.len(),
+                           time_stamp.elapsed().unwrap().subsec_nanos());
 
                     let mut batch_request = BatchRequest::new();
                     batch_request.set_new_tx_requests(RepeatedField::from_slice(&new_tx_request_buffer[..]));

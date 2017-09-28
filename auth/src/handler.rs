@@ -185,7 +185,7 @@ pub fn handle_remote_msg(payload: Vec<u8>,
             if true == newtx_req.has_batch_req() {
                 let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
                 let now = SystemTime::now();
-                trace!("get batch new tx request from jsonrpc with system time :{:?}", now);
+                trace!("get batch new tx request from jsonrpc in system time :{:?}, and has got {} new tx ", now, batch_new_tx.len());
 
                 for tx_req in batch_new_tx.iter() {
                     let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
@@ -242,22 +242,20 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                         //.....................
                     }
                     _ => {
+                        if sub_module_id == submodules::JSON_RPC {
+                            let result = format!("{:?}", resp.get_ret());
+                            let tx_response = TxResponse::new(tx_hash, result);
 
+                            let mut response = Response::new();
+                            response.set_request_id(request_id);
+                            response.set_code(submodules::AUTH as i64);
+                            response.set_error_msg(format!("{:?}", tx_response));
+
+                            let msg = factory::create_msg(submodules::AUTH, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
+                            trace!("response new tx {:?}", response);
+                            tx_pub.send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                        }
                     }
-                }
-
-                if sub_module_id == submodules::JSON_RPC {
-                    let result = format!("{:?}", resp.get_ret());
-                    let tx_response = TxResponse::new(tx_hash, result);
-
-                    let mut response = Response::new();
-                    response.set_request_id(request_id);
-                    response.set_code(submodules::AUTH as i64);
-                    response.set_error_msg(format!("{:?}", tx_response));
-
-                    let msg = factory::create_msg(submodules::AUTH, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
-                    trace!("response new tx {:?}", response);
-                    tx_pub.send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                 }
             });
         }
@@ -296,7 +294,6 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                 } else {
                     error!("Failed to get block verify status for request id: {:?} from submodule: {}", id, sub_module);
                 }
-
             }
 
         }

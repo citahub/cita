@@ -107,16 +107,12 @@ fn main() {
     let block_cache_clone = block_cache.clone();
     let cache_clone = cache.clone();
     let mut timestamp_receive = SystemTime::now();
-    let mut timestamp_test_dispatch = SystemTime::now();
     thread::spawn(move || loop {
-                      trace!("dispatch get another schedule cost {} ns", timestamp_test_dispatch.elapsed().unwrap().subsec_nanos());
-                      timestamp_test_dispatch = SystemTime::now();
 
                       timestamp_receive = SystemTime::now();
                       let mut req_grp:Vec<VerifyReqInfo> = Vec::new();
                       loop {
                           loop {
-
                               let res_local = block_req_receiver.try_recv();
                               if true == res_local.is_ok() {
                                   let (verify_type, request_id, verify_req, sub_module, now) = res_local.unwrap();
@@ -180,7 +176,6 @@ fn main() {
                           }
                       }
                       trace!("receive verify request for dispatching Time cost {} ns", timestamp_receive.elapsed().unwrap().subsec_nanos());
-                      timestamp_receive = SystemTime::now();
 
                       let pool = threadpool.clone();
                       let verifier_clone_222 = verifier_clone.clone();
@@ -189,18 +184,14 @@ fn main() {
                       pool.execute(move || {
                                        verify_tx_group_service(req_grp, verifier_clone_222, cache_clone_222, resp_sender_clone);
                                    });
-                      trace!("send verify job to thread pool Time cost {} ns", timestamp_receive.elapsed().unwrap().subsec_nanos());
                   });
 
 
     let tx_pub_clone = tx_pub.clone();
     let block_cache_clone_111 = block_cache.clone();
     let batch_new_tx_pool_clone = batch_new_tx_pool.clone();
-    let mut timestamp_remote = SystemTime::now();
     thread::spawn(move || loop {
                           let (_key, msg) = rx_sub.recv().unwrap();
-                          trace!("handle_remote_msg:receive another remote request cost {} ns", timestamp_remote.elapsed().unwrap().subsec_nanos());
-                          timestamp_remote = SystemTime::now();
                           //info!("get key: {} and msg: {:?}", key, msg);
                           let verifier = verifier.clone();
                           let block_cache_clone_222 = block_cache_clone_111.clone();
