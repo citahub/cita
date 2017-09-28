@@ -14,6 +14,7 @@ enum MsgType {
     BLOCK_TXHASHES = 10;
     BLOCK_TXHASHES_REQ = 11;
     BLOCK_WITH_PROOF = 12;
+    RICH_STATUS = 13;
 }
 
 enum OperateType{

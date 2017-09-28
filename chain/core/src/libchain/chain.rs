@@ -20,6 +20,7 @@ use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use call_analytics::CallAnalytics;
+use contracts::NodeManager;
 use db;
 use db::*;
 
@@ -39,10 +40,11 @@ use libchain::extras::*;
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
 use libproto::FullTransaction;
-use libproto::blockchain::{ProofType, Status as ProtoStatus, Proof as ProtoProof};
+use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus, Proof as ProtoProof};
 
 use native::Factory as NativeFactory;
 use proof::TendermintProof;
+use protobuf::RepeatedField;
 use receipt::{Receipt, LocalizedReceipt};
 use serde_json;
 use state::State;
@@ -98,6 +100,12 @@ pub struct Switch {
     pub permission: bool,
 }
 
+impl Switch {
+    pub fn new() -> Self {
+        Switch { nonce: false, permission: false }
+    }
+}
+
 impl Status {
     fn new() -> Status {
         Status { number: 0, hash: H256::default() }
@@ -127,9 +135,49 @@ impl Status {
     }
 }
 
-impl Switch {
-    pub fn new() -> Self {
-        Switch { nonce: false, permission: false }
+#[derive(PartialEq, Clone, Debug)]
+pub struct RichStatus {
+    number: u64,
+    hash: H256,
+    nodes: Vec<Address>,
+}
+
+impl RichStatus {
+    fn new() -> Self {
+        RichStatus {
+            number: 0,
+            hash: H256::default(),
+            nodes: vec![],
+        }
+    }
+
+    fn hash(&self) -> &H256 {
+        &self.hash
+    }
+
+    fn number(&self) -> u64 {
+        self.number
+    }
+
+    fn set_hash(&mut self, h: H256) {
+        self.hash = h;
+    }
+
+    fn set_number(&mut self, n: u64) {
+        self.number = n;
+    }
+
+    fn set_nodes(&mut self, nodes: Vec<Address>) {
+        self.nodes = nodes
+    }
+
+    fn protobuf(&self) -> ProtoRichStatus {
+        let mut ps = ProtoRichStatus::new();
+        ps.set_height(self.number());
+        ps.set_hash(self.hash().to_vec());
+        let node_list = self.nodes.clone().into_iter().map(|address| address.to_vec()).collect();
+        ps.set_nodes(RepeatedField::from_vec(node_list));
+        ps
     }
 }
 
@@ -171,6 +219,7 @@ pub struct Chain {
     transaction_addresses: RwLock<HashMap<TransactionId, DBList<TransactionAddress>>>,
     blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
     block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
+    pub nodes: RwLock<Vec<Address>>,
 
     // System contract config cache
     senders: RwLock<HashMap<Address, bool>>,
@@ -207,7 +256,7 @@ impl Chain {
         status
     }
 
-    pub fn init_chain(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>, path: &str) -> (Arc<Chain>, ProtoStatus) {
+    pub fn init_chain(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>, path: &str) -> (Arc<Chain>, ProtoRichStatus) {
         // 400 is the avarage size of the key
         let cache_man = CacheManager::new(1 << 14, 1 << 20, 400);
 
@@ -241,39 +290,46 @@ impl Chain {
         let sconfig = BufReader::new(switch_file);
         let sw: Switch = serde_json::from_reader(sconfig).expect("Failed to load json file.");
         info!("config check: {:?}", sw);
-
-        let mut status = Status::new();
-        status.set_hash(header.hash().clone());
-        status.set_number(header.number());
         let max_height = AtomicUsize::new(0);
         max_height.store(header.number() as usize, Ordering::SeqCst);
 
-        let chain = Arc::new(Chain {
-                                 blooms_config: blooms_config,
-                                 current_header: RwLock::new(header),
-                                 is_sync: AtomicBool::new(false),
-                                 max_height: max_height,
-                                 block_map: RwLock::new(BTreeMap::new()),
-                                 block_headers: RwLock::new(HashMap::new()),
-                                 block_bodies: RwLock::new(HashMap::new()),
-                                 block_hashes: RwLock::new(HashMap::new()),
-                                 transaction_addresses: RwLock::new(HashMap::new()),
-                                 blocks_blooms: RwLock::new(HashMap::new()),
-                                 block_receipts: RwLock::new(HashMap::new()),
-                                 cache_man: Mutex::new(cache_man),
-                                 db: db,
-                                 state_db: state_db,
-                                 factories: factories,
-                                 sync_sender: Mutex::new(sync_sender),
-                                 last_hashes: RwLock::new(VecDeque::new()),
-                                 polls_filter: Arc::new(Mutex::new(PollManager::new())),
-                                 senders: RwLock::new(HashMap::new()),
-                                 creators: RwLock::new(HashMap::new()),
-                                 switch: sw,
-                             });
+        let raw_chain = Chain {
+            blooms_config: blooms_config,
+            current_header: RwLock::new(header.clone()),
+            is_sync: AtomicBool::new(false),
+            max_height: max_height,
+            block_map: RwLock::new(BTreeMap::new()),
+            block_headers: RwLock::new(HashMap::new()),
+            block_bodies: RwLock::new(HashMap::new()),
+            block_hashes: RwLock::new(HashMap::new()),
+            transaction_addresses: RwLock::new(HashMap::new()),
+            blocks_blooms: RwLock::new(HashMap::new()),
+            block_receipts: RwLock::new(HashMap::new()),
+            cache_man: Mutex::new(cache_man),
+            db: db,
+            state_db: state_db,
+            factories: factories,
+            sync_sender: Mutex::new(sync_sender),
+            last_hashes: RwLock::new(VecDeque::new()),
+            polls_filter: Arc::new(Mutex::new(PollManager::new())),
+            nodes: RwLock::new(Vec::new()),
+            senders: RwLock::new(HashMap::new()),
+            creators: RwLock::new(HashMap::new()),
+            switch: sw,
+        };
 
+        // Build chain config
+        let chain = Arc::new(raw_chain);
+        chain.build_last_hashes(Some(header.hash()), header.number());
+        chain.reload_config();
 
-        chain.build_last_hashes(Some(status.hash().clone()), status.number());
+        // Generate status
+        let mut status = RichStatus::new();
+        status.set_hash(header.hash());
+        status.set_number(header.number());
+        let nodes: Vec<Address> = chain.nodes.read().to_vec();
+        status.set_nodes(nodes);
+
         (chain, status.protobuf())
     }
 
@@ -899,6 +955,14 @@ impl Chain {
         }
     }
 
+    /// Reload system config from system contract
+    pub fn reload_config(&self) {
+        {
+            // Reload consensus nodes cache
+            *self.nodes.write() = NodeManager::read(self);
+        }
+    }
+
     pub fn set_block(&self, block: Block) -> Option<ProtoStatus> {
         let height = block.number();
         trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
@@ -915,6 +979,10 @@ impl Chain {
                 let status = self.save_status(&mut batch);
 
                 self.db.write(batch).expect("DB write failed.");
+
+                // reload_config
+                self.reload_config();
+
                 info!("chain update {:?}", status.number);
                 Some(status.protobuf())
             } else {

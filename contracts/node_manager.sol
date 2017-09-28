@@ -4,7 +4,6 @@ import "./strings.sol";
 import "./node_interface.sol";
 
 
-// ignore the permission
 contract NodeManager is NodeInterface {
     using strings for *;
 
@@ -13,34 +12,50 @@ contract NodeManager is NodeInterface {
 
     // the status of the node: ready, start, not in list/close, maybe there is more
     mapping(address => NodeStatus) public status;
+    // admin
+    mapping (address => bool) admins;
 
-    // array for querying the consensus node list
-    address[] nodes_of_start; 
+    // consensus node list
+    address[] nodes;
 
     event NewNode(address _node);
     event ApproveNode(address _node);
     event DeleteNode(address _node);
-    event GetStatus(address _node);
+    event AddAdmin(address indexed _node, address indexed _sender);
 
+    modifier onlyAdmin {
+        if (admins[msg.sender]) {
+            _;
+        } else {
+            revert();
+        }
+    }
     // setup
-    function NodeManager(address[] _nodes) {
+    function NodeManager(address[] _nodes, address[] _admins) {
         // initialize the address to Start
         for (uint i = 0; i < _nodes.length; i++) {
             status[_nodes[i]] = NodeStatus.Start;
-            nodes_of_start.push(_nodes[i]);
+            nodes.push(_nodes[i]);
         }
+        // initialize the address of admins
+        for (uint j = 0; j < _admins.length; j++)
+            admins[_nodes[j]] = true;
+    }
+
+    function addAdmin(address _node) onlyAdmin returns (bool) {
+        admins[_node] = true;
+        AddAdmin(_node, msg.sender);
+        return true;
     }
 
     // apply to be consensus node. status will be ready
     function newNode(address _node) returns (bool) {
         // should not add the started node, what about the already added node
         // require(status[_node] == NodeStatus.Close);
-        if (status[_node] == NodeStatus.Ready) {
-            NewNode(_node);
+        if (status[_node] == NodeStatus.Ready || status[_node] == NodeStatus.Start) {
             return false; 
         }
 
-        require(status[_node] != NodeStatus.Start);
         status[_node] = NodeStatus.Ready;
         NewNode(_node);
         // test
@@ -49,16 +64,15 @@ contract NodeManager is NodeInterface {
     }
 
     // approve to be consensus node. status will be start
-    function approveNode(address _node) returns (bool) {
+    function approveNode(address _node) onlyAdmin returns (bool) {
         // the status should be ready
         // require(status[_node] == NodeStatus.Ready);
         if (status[_node] != NodeStatus.Ready) {
-            ApproveNode(_node);
             return false;
         }
 
         status[_node] = NodeStatus.Start;
-        nodes_of_start.push(_node);
+        nodes.push(_node);
         ApproveNode(_node);
         // assert(status[_node] == NodeStatus.Start);
         return true;
@@ -66,23 +80,26 @@ contract NodeManager is NodeInterface {
 
     // delete the consensus node from the list 
     // which means delete the node whoes status is Start
-    function deleteNode(address _node) returns (bool) {
+    function deleteNode(address _node) onlyAdmin returns (bool) {
         // require(status[_node] == NodeStatus.Start);
         if (status[_node] != NodeStatus.Start) {
-            DeleteNode(_node);
+            return false;
+        }
+
+        var index = nodeIndex(_node);
+        // not found
+        if (index >= nodes.length) {
             return false;
         }
 
         status[_node] = NodeStatus.Close;
-        // also delete it in the array 
-
-        // not found
-        if (nodeIndex(_node) == nodes_of_start.length) {
-            DeleteNode(_node);
-            return false;
+        // remove the gap
+        for (uint i = index; i < nodes.length - 1; i++) {
+            nodes[i] = nodes[i + 1];
         }
-
-        delete nodes_of_start[nodeIndex(_node)];
+        // also delete the last element
+        delete nodes[nodes.length - 1];
+        nodes.length--;
         DeleteNode(_node);
         // assert(status[_node] == NodeStatus.Close);
         return true;
@@ -90,13 +107,16 @@ contract NodeManager is NodeInterface {
 
     // list the node of the Start
     function listNode() constant returns (string) {
-        return concatNodes(nodes_of_start);
+        return concatNodes(nodes);
     }
 
     // get the status of the node
     function getStatus(address _node) constant returns (uint8) {
-        GetStatus(_node);
         return uint8(status[_node]);
+    }
+
+    function isAdmin(address _node) constant returns (bool) {
+        return admins[_node];
     }
 
     // interface: link address to a long string
@@ -113,8 +133,8 @@ contract NodeManager is NodeInterface {
     // interface: get the index in the nodes_of_start array
     function nodeIndex(address _node) internal returns (uint) {
         // find the index of the member 
-        for (uint i = 0; i < nodes_of_start.length; i++) {
-            if (_node == nodes_of_start[i]) {
+        for (uint i = 0; i < nodes.length; i++) {
+            if (_node == nodes[i]) {
                 return i;
             }
         }

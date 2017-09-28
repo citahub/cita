@@ -389,7 +389,9 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                 warn!("get block's tx hashes for height:{} error", block_height);
             }
         }
-
+        MsgClass::RICHSTATUS(rich_status) => {
+            info!("forward dispatch rich_status is {:?}", rich_status);
+        }
         _ => {
             error!("error MsgClass!!!!");
         }

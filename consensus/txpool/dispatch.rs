@@ -58,6 +58,9 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, rx: &Receiver<(u32, u32, u32
                 }
             }
         }
+        MsgClass::RICHSTATUS(rich_status) => {
+            info!("txtool MsgClass rich_status is {:?}", rich_status)
+        }
         _ => error!("match not exsit msg content!!!"),
     }
 }

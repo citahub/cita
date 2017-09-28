@@ -41,6 +41,10 @@ pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, M
                 }
             }
         }
+        MsgClass::RICHSTATUS(rich_status) => {
+            info!("raft dispatch rich_status is {:?}", rich_status);
+            //todo
+        }
         _ => {
             error!("error content!!!");
         }

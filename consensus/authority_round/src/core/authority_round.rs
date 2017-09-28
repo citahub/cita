@@ -19,7 +19,7 @@ use super::{Engine, EngineError, Signable, unix_now, AsMillis};
 use crypto::{Signature, Signer, CreateKey, SIGNATURE_BYTES_LEN};
 use engine_json;
 use libproto::*;
-use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
+use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, RichStatus};
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
 use rustc_serialize::hex::ToHex;
@@ -173,7 +173,7 @@ impl Engine for AuthorityRound {
         Ok(())
     }
 
-    fn receive_new_status(&self, status: Status) {
+    fn receive_new_status(&self, status: RichStatus) {
         self.step.store(status.height as usize, Ordering::SeqCst);
         let new_height = (status.height + 1) as usize;
         let height = self.height.load(Ordering::SeqCst);

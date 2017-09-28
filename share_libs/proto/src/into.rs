@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
+use blockchain::{Status, RichStatus};
 use communication;
 use protobuf::Message;
 use submodules;
@@ -39,5 +40,15 @@ impl Into<communication::Message> for Response {
     fn into(self) -> communication::Message {
         let msg = factory::create_msg(submodules::CHAIN, topics::RESPONSE, communication::MsgType::RESPONSE, self.write_to_bytes().unwrap());
         msg
+    }
+}
+
+impl From<RichStatus> for Status {
+    fn from(rich_status: RichStatus) -> Self {
+        let mut status = Status::new();
+        status.hash = rich_status.get_hash().to_vec();
+        status.height = rich_status.get_height();
+
+        status
     }
 }

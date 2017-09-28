@@ -26,7 +26,7 @@ use core::wal::Wal;
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address, SIGNATURE_BYTES_LEN};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
-use libproto::blockchain::{Block, SignedTransaction, Status, BlockWithProof};
+use libproto::blockchain::{Block, SignedTransaction, RichStatus, BlockWithProof};
 
 //use tx_pool::Pool;
 use proof::TendermintProof;
@@ -1006,9 +1006,10 @@ impl TenderMint {
             }
         } else {
             match content_ext {
-                MsgClass::STATUS(status) => {
-                    trace!("get new local status {:?}", status.height);
-                    self.receive_new_status(status);
+                //接受chain发送的 authorities_list
+                MsgClass::RICHSTATUS(rich_status) => {
+                    trace!("get new local status {:?}", rich_status.height);
+                    self.receive_new_status(rich_status.clone());
                 }
 
                 MsgClass::VERIFYBLKRESP(resp) => {
@@ -1030,7 +1031,7 @@ impl TenderMint {
         }
     }
 
-    fn receive_new_status(&mut self, status: Status) {
+    fn receive_new_status(&mut self, status: RichStatus) {
         let status_height = status.height as usize;
         let height = self.height;
         let round = self.round;
