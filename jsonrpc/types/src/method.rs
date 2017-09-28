@@ -158,8 +158,8 @@ impl MethodHandler {
         {
             let tx = un_tx.get_transaction();
             let to = clean_0x(tx.get_to());
-            if to.len() != 40 {
-                return Err(Error::invalid_params("param 'to' length too short"));
+            if to.len() != 40 && to.len() != 0 {
+                return Err(Error::invalid_params("param 'to' length too short, or are you create contract?"));
             } else {
                 let _ = to.from_hex()
                           .map_err(|err| {
