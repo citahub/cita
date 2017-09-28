@@ -38,10 +38,10 @@ def init_contracts(nodes):
         )
 
         ct = ContractTranslator(simple_data['abi'])
-        if (address == '0x00000000000000000000000000000000013241a4'):
-            extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
-        else:
-            extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
+        # if (address == '0x00000000000000000000000000000000013241a4'):
+        extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
+        # else:
+        #    extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
         print(binascii.hexlify(simple_data['bin'] + extra))
         abi_address = tester_state.contract(simple_data['bin'] + extra)
         tester_state.mine()
@@ -73,7 +73,7 @@ def main():
         init_data = json.load(f)
 
     for auth in authorities:
-        init_data["0x00000000000000000000000000000000013241a2"].append(auth)
+        init_data["0x00000000000000000000000000000000013241a2"][0].append(auth)
 
     data = dict()
     timestamp = int(time.time())
