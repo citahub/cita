@@ -26,7 +26,7 @@ use core::wal::Wal;
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
-use libproto::blockchain::{Block, Status, BlockWithProof, BlockTxsReq, BlockTxs};
+use libproto::blockchain::{Block, Status, BlockWithProof, BlockTxs};
 
 //use tx_pool::Pool;
 use proof::TendermintProof;
@@ -174,17 +174,6 @@ impl TenderMint {
                                              found: address.clone().into(),
                                          }))
         }
-    }
-
-    #[allow(dead_code)]
-    pub fn pub_txs_req(&self, height: usize, round: usize) {
-        let mut tmp = BlockTxsReq::new();
-        tmp.set_height(height as u64);
-        tmp.set_round(round as u64);
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::BLOCK_TXS_REQ, communication::MsgType::BLOCK_TXHASHES_REQ, tmp.write_to_bytes().unwrap());
-        self.pub_sender
-            .send(("consensus.block_txs_req".to_string(), msg.write_to_bytes().unwrap()))
-            .unwrap();
     }
 
     pub fn pub_block(&self, block: &BlockWithProof) {
@@ -1025,8 +1014,8 @@ impl TenderMint {
                 }
 
                 MsgClass::BLOCKTXS(block_txs) => {
-                    trace!("recive blocktxs response {},{}", block_txs.get_height());
-                    if block_txs.get_height() == self.height {
+                    trace!("recive blocktxs response {}", block_txs.get_height());
+                    if block_txs.get_height() == self.height as u64 {
                         self.block_txs = Some(block_txs);
                     }
                 }
