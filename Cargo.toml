@@ -15,6 +15,7 @@ members = ["devtools"
 ,"tests/chain_performance"
 ,"tests/amqp"
 ,"tests/latency"
+,"tests/jsonrpc_performance"
 ]
 
 
