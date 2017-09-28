@@ -22,7 +22,7 @@ use libchain::call_request::CallRequest;
 use libchain::chain::Chain;
 use rustc_hex::FromHex;
 use sha3::sha3_256;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::str::FromStr;
 use types::ids::BlockId;
 use util::*;
@@ -48,8 +48,8 @@ lazy_static! {
 pub struct AccountManager;
 
 impl AccountManager {
-    pub fn load_senders(chain: &Chain) -> HashMap<Address, bool> {
-        let mut senders = HashMap::new();
+    pub fn load_senders(chain: &Chain) -> HashSet<Address> {
+        let mut senders = HashSet::new();
         let mut tx_data = METHOD_NAME_HASH.to_vec().clone();
         tx_data.extend(QUERY_TX.to_vec());
         let call_request = CallRequest {
@@ -64,13 +64,13 @@ impl AccountManager {
         let accounts: Vec<Address> = parse_string_to_addresses(&output);
         trace!("accounts: {:?}", accounts);
         for account in accounts {
-            senders.insert(account, true);
+            senders.insert(account);
         }
         senders
     }
 
-    pub fn load_creators(chain: &Chain) -> HashMap<Address, bool> {
-        let mut creators = HashMap::new();
+    pub fn load_creators(chain: &Chain) -> HashSet<Address> {
+        let mut creators = HashSet::new();
         let mut contract_data = METHOD_NAME_HASH.to_vec().clone();
         contract_data.extend(QUERY_CONTRACT.to_vec());
         let call_request = CallRequest {
@@ -85,7 +85,7 @@ impl AccountManager {
         let accounts: Vec<Address> = parse_string_to_addresses(&output);
         trace!("accounts: {:?}", accounts);
         for account in accounts {
-            creators.insert(account, true);
+            creators.insert(account);
         }
         creators
     }

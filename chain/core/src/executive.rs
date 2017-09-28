@@ -143,10 +143,10 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         trace!("permission should be check: {}", options.check_permission);
         if options.check_permission {
             match t.action {
-                Action::Create => if *sender != Address::zero() && !self.state.creators.contains_key(&sender) {
+                Action::Create => if *sender != Address::zero() && !self.state.creators.contains(&sender) {
                     return Err(From::from(ExecutionError::NoContractPermission));
                 },
-                _ => if *sender != Address::zero() && !self.state.senders.contains_key(sender) && !self.state.creators.contains_key(&sender) {
+                _ => if *sender != Address::zero() && !self.state.senders.contains(sender) && !self.state.creators.contains(&sender) {
                     return Err(From::from(ExecutionError::NoTransactionPermission));
                 },
             }
