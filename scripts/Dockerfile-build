@@ -1,0 +1,20 @@
+# usage:
+# git clone http://github.com/cryptape/cita
+# cd cita
+# docker run -v $PWD..:/source cryptape/cita_build
+FROM ubuntu:16.04
+
+ENV PATH $PATH:/root/.cargo/bin
+
+COPY *.sh /tmp/
+RUN /tmp/install_sys.sh	                 \
+	&& rm -rf /var/lib/apt/lists
+
+RUN /tmp/install_rust.sh
+
+RUN pip install --user ethereum pysodium \
+    && rm -rf ~/.cache/pip
+
+WORKDIR /source
+CMD /etc/init.d/rabbitmq-server restart \
+	&& make release

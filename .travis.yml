@@ -11,38 +11,34 @@ jobs:
         - |
           set -e
           echo '################################################################################'
-          echo '1) clean'
-          make clean
+          echo '1) setup'
+          sudo scripts/install_sys.sh
+          scripts/install_rust.sh
+          sudo scripts/config_rabbitmq.sh
           echo '################################################################################'
-          echo '2) setup'
-          sudo make setup1
-          make setup2
-          echo '################################################################################'
-          echo '3) format'
+          echo '2) format'
           make fmt
           echo '################################################################################'
-          echo '4) build'
-          make release
+          echo '3) build'
+          make debug
           echo '################################################################################'
-          echo '5) unit test'
+          echo '4) unit test'
           make test
     - stage: build & test2
       script:
         - |
           set -e
           echo '################################################################################'
-          echo '1) clean'
-          make clean
+          echo '1) setup'
+          sudo scripts/install_sys.sh
+          scripts/install_rust.sh
+          sudo scripts/config_rabbitmq.sh
           echo '################################################################################'
-          echo '2) setup'
-          sudo make setup1
-          make setup2
-          echo '################################################################################'
-          echo '3) format'
+          echo '2) format'
           make fmt
           echo '################################################################################'
-          echo '4) build'
-          make release
+          echo '3) build'
+          make debug
           echo '################################################################################'
-          echo '6) unit test(ed25519/balke2b)'
+          echo '4) unit test(ed25519/balke2b)'
           make test_ed25519_blake2b
