@@ -16,14 +16,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus, BlockVerifyId};
+use libproto::blockchain::SignedTransaction;
 use libproto::*;
 use protobuf::Message;
-use std::sync::Arc;
+use std::sync::{Mutex, Arc};
 use std::sync::mpsc::{Sender, Receiver};
 use std::vec::*;
 use util::{H256, RwLock};
 use verify::Verifier;
 use std::time::SystemTime;
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum VerifyType {
@@ -135,7 +137,8 @@ pub fn handle_remote_msg(payload: Vec<u8>,
                          tx_req_block: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime)>,
                          tx_req_single: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime)>,
                          tx_pub: Sender<(String, Vec<u8>)>,
-                         block_cache: Arc<RwLock<VerifyBlockCache>>) {
+                         block_cache: Arc<RwLock<VerifyBlockCache>>,
+                         batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>) {
     let (cmdid, _origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
     match content {
@@ -178,18 +181,85 @@ pub fn handle_remote_msg(payload: Vec<u8>,
                 error!("Wrong block verification request with 0 tx for block verify request id: {} from sub_module: {}", blkreq.get_id(), submodule);
             }
         }
+        MsgClass::REQUEST(newtx_req) => {
+            if true == newtx_req.has_batch_req() {
+                let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
+                let now = SystemTime::now();
+                trace!("get batch new tx request from jsonrpc with system time :{:?}", now);
+
+                for tx_req in batch_new_tx.iter() {
+                    let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
+                    let hash: H256 = verify_tx_req.get_tx_hash().into();
+                    {
+                        let mut txs = batch_new_tx_pool.lock().unwrap();
+                        txs.insert(hash, (submodule, tx_req.clone()));
+                    }
+                    let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
+                    tx_req_single.send((VerifyType::SingleVerify, 0, verify_tx_req, submodule, now)).unwrap();
+                }
+            } else if true == newtx_req.has_un_tx() {
+                let now = SystemTime::now();
+                trace!("get batch new tx request from jsonrpc with system time :{:?}", now);
+                let verify_tx_req = tx_verify_req_msg(newtx_req.get_un_tx());
+                tx_req_single.send((VerifyType::SingleVerify, 0, verify_tx_req, submodule, now)).unwrap();
+            }
+
+        }
         _ => {}
+
     }
     //trace!("single queue_req queues {} reqs, block queue_req queues {} reqs", single_req_queue.lock().unwrap().len(), block_req_queue.lock().unwrap().len());
 }
 
-pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32, SystemTime)>, tx_pub: &Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>) {
+pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32, SystemTime)>,
+                                 tx_pub: &Sender<(String, Vec<u8>)>,
+                                 block_cache: Arc<RwLock<VerifyBlockCache>>,
+                                 batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>) {
     let (verify_type, id, resp, sub_module, now) = result_receiver.recv().unwrap();
     match verify_type {
         VerifyType::SingleVerify => {
             trace!("SingleVerify Time cost {} ns for tx hash: {:?}", now.elapsed().unwrap().subsec_nanos(), resp.get_tx_hash());
-            let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_TX_RESP, communication::MsgType::VERIFY_TX_RESP, resp.write_to_bytes().unwrap());
-            tx_pub.send((get_key(sub_module, false), msg.write_to_bytes().unwrap())).unwrap();
+
+            let tx_hash: H256 = resp.get_tx_hash().into();
+            let unverified_tx = {
+                let mut txs = batch_new_tx_pool.lock().unwrap();
+                txs.remove(&tx_hash)
+            };
+            trace!("receive verify resp, hash: {:?}, ret: {:?}", tx_hash, resp.get_ret());
+
+            unverified_tx.map(|(sub_module_id, mut req)| {
+                let mut signed_tx_op: Option<SignedTransaction> = None;
+                let request_id = req.get_request_id().to_vec();
+                match resp.get_ret() {
+                    Ret::Ok => {
+                        let mut signed_tx = SignedTransaction::new();
+                        signed_tx.set_transaction_with_sig(req.take_un_tx());
+                        signed_tx.set_signer(resp.get_signer().to_vec());
+                        signed_tx.set_tx_hash(tx_hash.to_vec());
+                        signed_tx_op = Some(signed_tx);
+                        //add to the newtx pool and broadcast to other nodes if not received from network
+                        //.....................
+                        //.....................
+                    }
+                    _ => {
+
+                    }
+                }
+
+                if sub_module_id == submodules::JSON_RPC {
+                    let result = format!("{:?}", resp.get_ret());
+                    let tx_response = TxResponse::new(tx_hash, result);
+
+                    let mut response = Response::new();
+                    response.set_request_id(request_id);
+                    response.set_code(submodules::AUTH as i64);
+                    response.set_error_msg(format!("{:?}", tx_response));
+
+                    let msg = factory::create_msg(submodules::AUTH, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
+                    trace!("response new tx {:?}", response);
+                    tx_pub.send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                }
+            });
         }
         VerifyType::BlockVerify => {
             let request_id = BlockVerifyId {

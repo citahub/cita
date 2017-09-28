@@ -41,15 +41,15 @@ use handler::*;
 use log::LogLevelFilter;
 use pubsub::start_pubsub;
 use std::env;
-use std::sync::Arc;
+use std::sync::{Mutex, Arc};
 use std::sync::mpsc::channel;
 use std::thread;
 use util::RwLock;
 use verify::Verifier;
 use std::time::SystemTime;
 use std::time::Duration;
+use std::collections::HashMap;
 
-//const DISPATCH_THREAD_POOL_NUM: usize = 10;
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
     let start = flag_prof_start;
@@ -94,10 +94,11 @@ fn main() {
     let verifier = Arc::new(RwLock::new(Verifier::new()));
     let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
     let block_cache = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
+    let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
 
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("auth", vec!["*.verify_req", "chain.txhashes"], tx_sub, rx_pub);
+    start_pubsub("auth", vec!["*.verify_req", "chain.txhashes", "jsonrpc.new_tx_batch", "net.tx"], tx_sub, rx_pub);
 
     let (block_req_sender, block_req_receiver) = channel();
     let (single_req_sender, single_req_receiver) = channel();
@@ -194,6 +195,7 @@ fn main() {
 
     let tx_pub_clone = tx_pub.clone();
     let block_cache_clone_111 = block_cache.clone();
+    let batch_new_tx_pool_clone = batch_new_tx_pool.clone();
     let mut timestamp_remote = SystemTime::now();
     thread::spawn(move || loop {
                           let (_key, msg) = rx_sub.recv().unwrap();
@@ -207,11 +209,11 @@ fn main() {
                           //let single_req_queue = single_req_queue.clone();
                           //let block_req_queue = block_req_queue.clone();
                           let tx_pub_clone = tx_pub_clone.clone();
-                          handle_remote_msg(msg, verifier.clone(), block_req_sender, single_req_sender, tx_pub_clone, block_cache_clone_222);
+                          handle_remote_msg(msg, verifier.clone(), block_req_sender, single_req_sender, tx_pub_clone, block_cache_clone_222, batch_new_tx_pool_clone.clone());
                   });
 
     loop {
-        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache.clone());
+        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache.clone(), batch_new_tx_pool.clone());
     }
 }
 

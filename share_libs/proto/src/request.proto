@@ -34,7 +34,12 @@ message Request {
         uint64 filter_changes = 16;
         uint64 filter_logs = 17;
         UnverifiedTransaction un_tx = 18;//交易统一到这里了。划分在请求里面
+        BatchRequest batch_req = 19;
     }
+}
+
+message BatchRequest {
+    repeated Request new_tx_requests = 1;
 }
 
 

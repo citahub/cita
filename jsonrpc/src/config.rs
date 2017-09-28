@@ -38,9 +38,14 @@ pub struct Config {
     pub profile_config: ProfileConfig,
     pub http_config: HttpConfig,
     pub ws_config: WsConfig,
+    pub new_tx_flow_config: NewTxFlowConfig
 }
 
-
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct  NewTxFlowConfig {
+    pub count_per_batch: usize,
+    pub buffer_durtation: u32, //in unit of ns
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProfileConfig {
