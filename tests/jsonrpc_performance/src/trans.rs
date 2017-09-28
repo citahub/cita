@@ -59,7 +59,7 @@ impl Trans {
         if sign_err {
             let mut signature = signed_tx.get_transaction_with_sig().get_signature().to_vec();
             if signature[0] == 255 {
-                 signature[0] = 0;
+                signature[0] = 0;
             } else {
                 signature[0] = signature[0] + 1;
             }
@@ -75,7 +75,7 @@ impl Trans {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())
             }
             Methods::Formaterr(tx) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())                
+                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())
             }
             Methods::Height => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_blockNumber\",\"params\":[],\"id\":2}}")

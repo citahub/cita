@@ -15,22 +15,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use param::Param;
-use trans::*;
 use crypto::*;
+use hyper::Client;
+use hyper::client::Response;
+use hyper::status::StatusCode;
+use jsonrpc_types::response::*;
+use libproto::blockchain::UnverifiedTransaction;
+use param::Param;
+use serde_json;
 use std::fmt;
 use std::io::Read;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 use std::thread;
-use serde_json;
 use std::time;
-use hyper::Client;
-use hyper::client::Response;
-use hyper::status::StatusCode;
-use jsonrpc_types::response::*;
-use libproto::blockchain::UnverifiedTransaction;
+use trans::*;
 
 static mut START_H: u64 = 1;
 
@@ -64,7 +64,7 @@ pub struct Sendtx {
 impl Sendtx {
     pub fn new(param: &Param, start_h: u64, end_h: u64, analysis: bool) -> Self {
         let totaltx = param.txnum * param.threads;
-        
+
         let tx_type = match param.tx_type.as_ref() {
             "Dup" => TxCtx::Dup,
             "SignErr" => TxCtx::SignErr,
@@ -112,20 +112,20 @@ impl Sendtx {
             let deserialized: RpcSuccess = deserialized;
             _ret = match deserialized.result {
 
-                RusultBody::BlockNumber(hei) => (format!("{}", hei), true),
-                RusultBody::Transaction(RpcTransaction) => {
+                ResultBody::BlockNumber(hei) => (format!("{}", hei), true),
+                ResultBody::Transaction(RpcTransaction) => {
                     let content = RpcTransaction.content;
                     if !content.to_vec().is_empty() { (String::new(), true) } else { (String::new(), false) }
                 }
 
-                RusultBody::FullBlock(full_block) => {
+                ResultBody::FullBlock(full_block) => {
                     let body = full_block.body;
                     let transactions = body.transactions;
                     let time_stamp = full_block.header.timestamp;
                     (format!("{}|{}", transactions.len(), time_stamp), true)
                 }
 
-                RusultBody::TxResponse(TxResponse) => {
+                ResultBody::TxResponse(TxResponse) => {
                     if TxResponse.status.to_uppercase().contains("OK") {
                         let hash = TxResponse.hash;
                         (format!("{:?}", hash), true)
@@ -247,13 +247,11 @@ impl Sendtx {
             let sync_send = sync_send.clone();
             let first_tx_clone = first_tx.clone();
             let sys_time_clone = self.sys_time.clone();
-            let ret = thread::Builder::new().name(threadname).spawn(move ||{
-                if t.tx_type == TxCtx::GetHeight {
-                    t.send_height_tx(index, sync_send, first_tx_clone, sys_time_clone);
-                } else {
-                    t.send_tx(index, sync_send, first_tx_clone, sys_time_clone);
-                }
-            });
+            let ret = thread::Builder::new().name(threadname).spawn(move || if t.tx_type == TxCtx::GetHeight {
+                                                                        t.send_height_tx(index, sync_send, first_tx_clone, sys_time_clone);
+                                                                    } else {
+                                                                        t.send_tx(index, sync_send, first_tx_clone, sys_time_clone);
+                                                                    });
             if ret.is_err() {
                 info!("thread create fail: {:?}", ret.unwrap_err());
             }
@@ -284,8 +282,8 @@ impl Sendtx {
             }
             let frompv = keypair.privkey();
             let tx = match self.tx_type {
-               TxCtx::Dup => {
-                   //重复交易
+                TxCtx::Dup => {
+                    //重复交易
                     pv_change = false;
                     Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 100, self.quota, false)
                 }
@@ -339,7 +337,7 @@ impl Sendtx {
                 _ => panic!("jsonrpc connect fail!"),
             }
         }
-        
+
         h
     }
 
@@ -362,11 +360,7 @@ impl Sendtx {
             info!("height:{}, blocknum: {},  time stamp :{}", index, blocknum, time_stamp);
         }
         let secs = end_time_stamp - start_time_stamp;
-        let tps = if secs > 0 {
-            (tx_num * 1000) as u64 / secs
-            } else { 
-                tx_num as u64
-            };
+        let tps = if secs > 0 { (tx_num * 1000) as u64 / secs } else { tx_num as u64 };
         info!("tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}", tx_num, self.start_h, self.end_h, secs, tps);
     }
 
@@ -410,11 +404,7 @@ impl Sendtx {
                     let mut secs = diff.as_secs();
                     let nanos = diff.subsec_nanos();
                     secs = secs * 1000 + (nanos / 1000000) as u64;
-                    let tps = if secs > 0 {
-                        totaltx * 1000 / secs
-                    } else {
-                        totaltx
-                    };
+                    let tps = if secs > 0 { totaltx * 1000 / secs } else { totaltx };
                     _end_h = Self::get_height(url.clone());
                     let buf = if self.tx_format_err {
                         "jsonrpc(err format)"
@@ -423,7 +413,7 @@ impl Sendtx {
                             TxCtx::Dup => "jsonprc + consensus(dup tx)",
                             TxCtx::SignErr => "jsonrpc + auth + consensus(signerr)",
                             TxCtx::Correct => "jsonrpc + auth + consensus(corrent)",
-                            TxCtx::GetHeight => "jsonrpc + chain(get height)"
+                            TxCtx::GetHeight => "jsonrpc + chain(get height)",
                         }
                     };
                     unsafe {

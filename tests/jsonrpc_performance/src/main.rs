@@ -21,9 +21,9 @@ pub mod trans;
 pub mod send_trans;
 
 use clap::App;
+use log::LogLevelFilter;
 use param::Param;
 use send_trans::Sendtx;
-use log::LogLevelFilter;
 
 fn main() {
     cita_log::format(LogLevelFilter::Info);
