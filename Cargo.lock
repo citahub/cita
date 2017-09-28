@@ -1020,6 +1020,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc_performance"
+version = "0.1.0"
+dependencies = [
+ "cita-crypto 0.1.0",
+ "cita_log 0.1.0",
+ "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc_types 0.1.0",
+ "libproto 0.6.0",
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "util 0.6.0",
+]
+
+[[package]]
 name = "jsonrpc_types"
 version = "0.1.0"
 dependencies = [

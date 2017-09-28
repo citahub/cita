@@ -115,6 +115,8 @@ impl Synchronizer {
             let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
             trace!("add_block chain.status {:?}, {:?}", status.get_height(), status.get_hash());
             ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
+            let block_height = status.get_height();
+            self.sync_block_tx_hashes(block_height, ctx_pub);
         }
     }
 

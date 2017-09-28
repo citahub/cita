@@ -285,15 +285,15 @@ impl Sendtx {
                 TxCtx::Dup => {
                     //重复交易
                     pv_change = false;
-                    Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 100, self.quota, false)
+                    Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 88, self.quota, false)
                 }
                 TxCtx::SignErr => {
                     //交易签名错误
-                    Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 100, self.quota, true)
+                    Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 88, self.quota, true)
                 }
                 TxCtx::Correct => {
                     //正确交易
-                    Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 100, self.quota, false)
+                    Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 88, self.quota, false)
                 }
                 TxCtx::GetHeight => {
                     continue;

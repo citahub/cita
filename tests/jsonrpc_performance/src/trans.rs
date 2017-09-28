@@ -57,13 +57,8 @@ impl Trans {
         tx.set_quota(quota);
         let mut signed_tx = tx.sign(*pv);
         if sign_err {
-            let mut signature = signed_tx.get_transaction_with_sig().get_signature().to_vec();
-            if signature[0] == 255 {
-                signature[0] = 0;
-            } else {
-                signature[0] = signature[0] + 1;
-            }
-            signed_tx.mut_transaction_with_sig().set_signature(signature);
+            let signature = signed_tx.get_transaction_with_sig().get_signature().to_vec();
+            signed_tx.mut_transaction_with_sig().set_signature(signature[0..16].to_vec());
         }
         signed_tx.take_transaction_with_sig()
     }
