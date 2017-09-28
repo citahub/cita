@@ -20,7 +20,7 @@ use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use call_analytics::CallAnalytics;
-use contracts::NodeManager;
+use contracts::{NodeManager, AccountManager};
 use db;
 use db::*;
 
@@ -957,6 +957,12 @@ impl Chain {
 
     /// Reload system config from system contract
     pub fn reload_config(&self) {
+        {
+            // Reload senders and creators cache
+            *self.senders.write() = AccountManager::load_senders(self);
+            *self.creators.write() = AccountManager::load_creators(self);
+        }
+
         {
             // Reload consensus nodes cache
             *self.nodes.write() = NodeManager::read(self);
