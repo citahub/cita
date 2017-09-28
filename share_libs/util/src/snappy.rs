@@ -60,10 +60,10 @@ pub fn decompressed_len(compressed: &[u8]) -> Result<usize, InvalidInput> {
 /// Compress a buffer using snappy.
 pub fn compress(input: &[u8]) -> Vec<u8> {
     //let buf = Vec::from(input);
-    info!("---compress-before size = {}--", input.len());
+    trace!("---compress-before size = {}--", input.len());
     let mut buf = Vec::new();
     compress_into(input, &mut buf);
-    info!("---compress-after size = {}--", buf.len());
+    trace!("---compress-after size = {}--", buf.len());
     buf
 
 }
@@ -126,7 +126,7 @@ pub fn validate_compressed_buffer(input: &[u8]) -> bool {
     status == SNAPPY_OK
 }
 
-const CITA_COMPRESS_SIZE: usize = 4 * 1024;
+const CITA_COMPRESS_SIZE: usize = 40 * 1024;
 pub fn cita_compresse(input: Vec<u8>) -> Vec<u8> {
     if input.len() > CITA_COMPRESS_SIZE { compress(&input) } else { input }
 }
