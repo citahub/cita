@@ -137,6 +137,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "authority_manage"
+version = "0.1.0"
+dependencies = [
+ "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "util 0.6.0",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -502,6 +514,7 @@ dependencies = [
 name = "consensus_poa"
 version = "0.6.0"
 dependencies = [
+ "authority_manage 0.1.0",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0",
  "cita_log 0.1.0",
@@ -528,6 +541,7 @@ name = "consensus_tendermint"
 version = "0.1.0"
 dependencies = [
  "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "authority_manage 0.1.0",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0",
  "cita_log 0.1.0",

@@ -33,6 +33,7 @@ extern crate cpuprofiler;
 extern crate cita_log;
 extern crate dotenv;
 extern crate serde_json;
+extern crate authority_manage;
 
 pub mod core;
 

@@ -39,7 +39,7 @@ contract NodeManager is NodeInterface {
         }
         // initialize the address of admins
         for (uint j = 0; j < _admins.length; j++)
-            admins[_nodes[j]] = true;
+            admins[_admins[j]] = true;
     }
 
     function addAdmin(address _node) onlyAdmin returns (bool) {

@@ -708,8 +708,8 @@ impl Clone for State<StateDB> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: self.account_start_nonce.clone(),
             factories: self.factories.clone(),
-            senders: HashSet::new(),
-            creators: HashSet::new(),
+            creators: self.creators.clone(),
+            senders: self.senders.clone(),
         }
     }
 }
