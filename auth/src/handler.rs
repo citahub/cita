@@ -18,6 +18,7 @@
 use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus, BlockVerifyId};
 use libproto::*;
 use protobuf::Message;
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver};
 use std::vec::*;
@@ -107,9 +108,9 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             let height = block_tx_hashes.get_height();
             trace!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
-            let mut tx_hashes_in_h256: Vec<H256> = Vec::new();
+            let mut tx_hashes_in_h256 = HashSet::new();
             for data in tx_hashes.iter() {
-                tx_hashes_in_h256.push(H256::from_slice(data));
+                tx_hashes_in_h256.insert(H256::from_slice(data));
             }
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
         }
