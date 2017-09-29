@@ -86,12 +86,16 @@ fn main() {
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-n, --tx_verify_thread_num=[10] 'transaction verification thread count'")
         .args_from_usage("-v, --tx_verify_num_per_thread=[30] 'transaction verification thread count'")
+        .args_from_usage("-c, --tx_pool_limit=[50000] 'tx pool's capacity'")
+        .args_from_usage("-p, --block_packet_tx_limit=[30000] 'block's tx limit'")
         .args_from_usage("--prof-start=[0] 'Specify the start time of profiling, zero means no profiling'")
         .args_from_usage("--prof-duration=[0] 'Specify the duration for profiling, zero means no profiling'")
         .get_matches();
 
     let tx_verify_thread_num = matches.value_of("tx_verify_thread_num").unwrap_or("10").parse::<usize>().unwrap();
     let tx_verify_num_per_thread = matches.value_of("tx_verify_num_per_thread").unwrap_or("30").parse::<usize>().unwrap();
+    let tx_pool_limit = matches.value_of("tx_pool_limit").unwrap_or("50000").parse::<usize>().unwrap();
+    let tx_packet_limit = matches.value_of("block_packet_tx_limit").unwrap_or("30000").parse::<usize>().unwrap();
     let flag_prof_start = matches.value_of("prof-start").unwrap_or("0").parse::<u64>().unwrap();
     let flag_prof_duration = matches.value_of("prof-duration").unwrap_or("0").parse::<u64>().unwrap();
     info!("{} threads are configured for parallel verification", tx_verify_thread_num);
@@ -198,7 +202,7 @@ fn main() {
     let txs_pub = tx_pub.clone();
 
     thread::spawn(move || loop {
-        let mut dispatch = Dispatchtx::new(30000, 30000, 30000);
+        let mut dispatch = Dispatchtx::new(tx_pool_limit, tx_packet_limit, tx_pool_limit);
 
         select! {
                 txinfo = pool_tx_recver.recv()=>{
