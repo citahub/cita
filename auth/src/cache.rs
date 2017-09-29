@@ -41,7 +41,6 @@ impl VerifyCache {
     pub fn remove(&mut self, tx_hash: &H256) -> Option<VerifyTxResp> {
         self.inner.remove(tx_hash)
     }
-
 }
 
 #[derive(Debug, PartialEq)]

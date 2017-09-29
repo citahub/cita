@@ -142,6 +142,15 @@ impl Pool {
         self.update_order_set(&hash_list);
     }
 
+    pub fn update_with_hash(&mut self, txs: &Vec<H256>) {
+        let mut hash_list = Vec::new();
+        for tx in txs {
+            self.txs.remove(&tx);
+            hash_list.push(tx.clone());
+        }
+        self.update_order_set(&hash_list);
+    }
+
     pub fn package(&mut self, height: u64) -> Vec<SignedTransaction> {
         let mut tx_list = Vec::new();
         let mut invalid_tx_list = Vec::new();
