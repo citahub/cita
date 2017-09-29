@@ -8,7 +8,7 @@ if [ $? -ne 0 ]; then
 fi;
 
 # 2) install rustfmt
-source ${HOME}/.cargo/env
+. ${HOME}/.cargo/env
 which rustfmt
 if [ $? -ne 0 ]; then
    cargo install --force --vers 0.9.0 rustfmt
