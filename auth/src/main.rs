@@ -200,7 +200,7 @@ fn main() {
                           //let single_req_queue = single_req_queue.clone();
                           //let block_req_queue = block_req_queue.clone();
                           let tx_pub_clone = tx_pub_clone.clone();
-                          handle_remote_msg(msg, verifier.clone(), block_req_sender, single_req_sender, tx_pub_clone, block_cache_clone_222, batch_new_tx_pool_clone.clone());
+                          handle_remote_msg(msg, verifier.clone(), block_req_sender, single_req_sender, tx_pub_clone, block_cache_clone_222, cache.clone(), batch_new_tx_pool_clone.clone());
                   });
 
     loop {

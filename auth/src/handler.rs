@@ -138,6 +138,7 @@ pub fn handle_remote_msg(payload: Vec<u8>,
                          tx_req_single: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime)>,
                          tx_pub: Sender<(String, Vec<u8>)>,
                          block_cache: Arc<RwLock<VerifyBlockCache>>,
+                         cache: Arc<RwLock<VerifyCache>>,
                          batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>) {
     let (cmdid, _origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
@@ -147,10 +148,14 @@ pub fn handle_remote_msg(payload: Vec<u8>,
             trace!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
             let mut tx_hashes_in_h256: Vec<H256> = Vec::new();
+            let mut cache_guard = cache.write();
             for data in tx_hashes.iter() {
-                tx_hashes_in_h256.push(H256::from_slice(data));
+                let hash = H256::from_slice(data);
+                cache_guard.remove(&hash);
+                tx_hashes_in_h256.push(hash);
             }
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
+
         }
         MsgClass::VERIFYTXREQ(req) => {
             trace!("get single verify request with tx_hash: {:?} with system time :{:?}", req.get_tx_hash(), SystemTime::now());
