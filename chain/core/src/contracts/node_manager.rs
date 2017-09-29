@@ -22,6 +22,7 @@ use super::ContractCallExt;
 use libchain::chain::Chain;
 use std::str::FromStr;
 use util::*;
+use rustc_hex::ToHex;
 
 const LIST_NODE: &'static [u8] = &*b"listNode()";
 
@@ -35,7 +36,7 @@ pub struct NodeManager;
 impl NodeManager {
     pub fn read(chain: &Chain) -> Vec<Address> {
         let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
-        trace!("nodemanager output: {:?}", output);
+        trace!("nodemanager output: {:?}", ToHex::to_hex(output.as_slice()));
 
         let nodes: Vec<Address> = parse_string_to_addresses(&output);
         trace!("nodemanager nodes: {:?}", nodes);

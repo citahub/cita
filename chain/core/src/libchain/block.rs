@@ -32,7 +32,7 @@ use receipt::{Receipt, ReceiptError};
 use rlp::*;
 use state::State;
 use state_db::StateDB;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use trace::FlatTrace;
@@ -281,8 +281,10 @@ impl DerefMut for OpenBlock {
 }
 
 impl OpenBlock {
-    pub fn new(factories: Factories, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>) -> Result<Self, Error> {
-        let state = State::from_existing(db, state_root, U256::default(), factories)?;
+    pub fn new(factories: Factories, senders: HashSet<Address>, creators: HashSet<Address>, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>) -> Result<Self, Error> {
+        let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
+        state.senders = senders;
+        state.creators = creators;
         let r = OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes: last_hashes,

@@ -8,7 +8,7 @@ from url_util import host, endpoint
 def block_number():
     try:
         url = endpoint()
-        response = HTTPClient(url).request("cita_blockNumber", "")
+        response = HTTPClient(url).request("cita_blockNumber", [])
     except:
         return None
 
