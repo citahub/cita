@@ -41,15 +41,10 @@ pub struct RpcTransaction {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct TransactionHash {
-    pub hash: H256,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
 pub enum BlockTransaction {
     Full(FullTransaction),
-    Hash(TransactionHash),
+    Hash(H256),
 }
 
 impl From<PTransaction> for RpcTransaction {
@@ -81,8 +76,3 @@ impl From<ProtoSignedTransaction> for FullTransaction {
     }
 }
 
-impl From<ProtoSignedTransaction> for TransactionHash {
-    fn from(stx: ProtoSignedTransaction) -> Self {
-        TransactionHash { hash: H256::from_slice(stx.get_tx_hash()) }
-    }
-}

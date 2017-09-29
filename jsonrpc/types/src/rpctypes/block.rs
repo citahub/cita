@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{BlockTransaction, FullTransaction, TransactionHash};
+use super::{BlockTransaction, FullTransaction};
 use super::RpcBlock;
 use libproto::blockchain::Block as ProtoBlock;
 use libproto::blockchain::BlockHeader as ProtoBlockHeader;
@@ -82,7 +82,9 @@ impl From<RpcBlock> for Block {
         let block_transactions = proto_body.take_transactions();
         let transactions = match block.include_txs {
             true => block_transactions.into_iter().map(|x| BlockTransaction::Full(FullTransaction::from(x))).collect(),
-            false => block_transactions.into_iter().map(|x| BlockTransaction::Hash(TransactionHash::from(x))).collect(),
+            false => block_transactions.into_iter()
+                                       .map(|x| BlockTransaction::Hash(H256::from_slice(x.get_tx_hash())))
+                                       .collect(),
         };
 
         Block {
