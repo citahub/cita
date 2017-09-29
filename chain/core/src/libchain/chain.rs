@@ -222,8 +222,8 @@ pub struct Chain {
     pub nodes: RwLock<Vec<Address>>,
 
     // System contract config cache
-    senders: RwLock<HashMap<Address, bool>>,
-    creators: RwLock<HashMap<Address, bool>>,
+    senders: RwLock<HashSet<Address>>,
+    creators: RwLock<HashSet<Address>>,
 
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
@@ -313,8 +313,8 @@ impl Chain {
             last_hashes: RwLock::new(VecDeque::new()),
             polls_filter: Arc::new(Mutex::new(PollManager::new())),
             nodes: RwLock::new(Vec::new()),
-            senders: RwLock::new(HashMap::new()),
-            creators: RwLock::new(HashMap::new()),
+            senders: RwLock::new(HashSet::new()),
+            creators: RwLock::new(HashSet::new()),
             switch: sw,
         };
 
