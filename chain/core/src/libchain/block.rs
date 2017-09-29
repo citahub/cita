@@ -28,7 +28,7 @@ use libchain::extras::TransactionAddress;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use protobuf::RepeatedField;
-use receipt::Receipt;
+use receipt::{Receipt, ReceiptError};
 use rlp::*;
 use state::State;
 use state_db::StateDB;
@@ -330,6 +330,30 @@ impl OpenBlock {
             Err(Error::Execution(ExecutionError::InvalidNonce { expected: _, got: _ })) => {
                 self.receipts.push(None);
                 self.tx_hashes.push(true);
+            }
+            Err(Error::Execution(ExecutionError::NoTransactionPermission)) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoTransactionPermission));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
+            }
+            Err(Error::Execution(ExecutionError::NoContractPermission)) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoContractPermission));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
+            }
+            Err(Error::Execution(ExecutionError::NotEnoughBaseGas { required: _, got: _ })) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NotEnoughBaseGas));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
+            }
+            Err(Error::Execution(ExecutionError::BlockGasLimitReached {
+                                     gas_limit: _,
+                                     gas_used: _,
+                                     gas: _,
+                                 })) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::BlockGasLimitReached));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
             }
             Err(_) => {
                 self.receipts.push(None);

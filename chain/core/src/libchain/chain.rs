@@ -514,10 +514,6 @@ impl Chain {
 
             let contract_address = match stx.action() {
                 &Action::Create => Some(contract_address(&stx.sender(), stx.nonce(), stx.block_limit)),
-                &Action::Store => {
-                    let store_addr: Address = STORE_ADDRESS.into();
-                    Some(store_addr)
-                }
                 _ => None,
             };
 
@@ -546,6 +542,7 @@ impl Chain {
                                   .collect(),
                 log_bloom: last_receipt.log_bloom,
                 state_root: last_receipt.state_root,
+                error: last_receipt.error,
             };
             Some(receipt)
         })
@@ -837,7 +834,7 @@ impl Chain {
     pub fn eth_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
         let signed = self.sign_call(request);
         let result = self.call(&signed, id, Default::default());
-        result.map(|b| b.output.into()).or_else(|_| Err(String::from("Call Error")))
+        result.map(|b| b.output.into()).or_else(|e| Err(format!("Call Error {}", e)))
     }
 
     fn sign_call(&self, request: CallRequest) -> SignedTransaction {
@@ -992,6 +989,8 @@ impl Chain {
                 info!("chain update {:?}", status.number);
                 Some(status.protobuf())
             } else {
+                let mut guard = self.block_map.write();
+                let _ = guard.remove(&height);
                 warn!("add block failed");
                 None
             }

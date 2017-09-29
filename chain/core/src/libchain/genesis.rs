@@ -19,6 +19,7 @@
 use db::{self as db, Writable, ConstKey};
 use factory::Factories;
 use libchain::block::Block;
+use rustc_hex::FromHex;
 use serde_json;
 use state::State;
 use state_db::StateDB;
@@ -26,7 +27,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::Arc;
-use util::{Address, H256, U256};
+use util::{Address, H256, U256, clean_0x};
 use util::kvdb::KeyValueDB;
 
 #[derive(Debug, PartialEq, Deserialize, Clone)]
@@ -73,7 +74,7 @@ impl Genesis {
             let address = Address::from_any_str(address.as_str()).unwrap();
 
             state.new_contract(&address, U256::from(0));
-            let _ = state.init_code(&address, contract.code.as_bytes().into()).expect("init code fail");
+            let _ = state.init_code(&address, clean_0x(&contract.code).from_hex().unwrap()).expect("init code fail");
 
             for (key, values) in contract.storage.clone() {
                 state.set_storage(&address, H256::from_any_str(key.as_ref()).unwrap(), H256::from_any_str(values.as_ref()).unwrap())
