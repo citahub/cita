@@ -201,10 +201,11 @@ fn main() {
     let (pool_txs_sender, pool_txs_recver) = channel();
     let txs_pub = tx_pub.clone();
 
-    thread::spawn(move || loop {
+    thread::spawn(move || {
         let mut dispatch = Dispatchtx::new(tx_pool_limit, tx_packet_limit, tx_pool_limit);
 
-        select! {
+        loop {
+            select! {
                 txinfo = pool_tx_recver.recv()=>{
                     if let Ok((modid,reqid,tx_res,tx)) = txinfo {
                         dispatch.deal_tx(modid,reqid,tx_res,&tx,txs_pub.clone());
@@ -216,9 +217,8 @@ fn main() {
                     }
                 }
             }
-
+        }
     });
-
 
     let tx_pub_clone = tx_pub.clone();
     let block_cache_clone_111 = block_cache.clone();

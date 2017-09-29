@@ -141,10 +141,10 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                 cache_guard.remove(&hash);
                 tx_hashes_in_h256.push(hash);
             }
-            let _ = txs_sender.send((height as usize, tx_hashes_in_h256.clone())).unwrap();
-
+            trace!("BLOCKTXHASHES come height {}, tx_hashs {:?}", height, tx_hashes_in_h256.len());
+            let res = txs_sender.send((height as usize, tx_hashes_in_h256.clone()));
+            trace!("BLOCKTXHASHES  txs_sender res is {:?}", res);
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
-
         }
         MsgClass::VERIFYTXREQ(req) => {
             trace!("get single verify request with tx_hash: {:?} with system time :{:?}", req.get_tx_hash(), SystemTime::now());

@@ -80,17 +80,21 @@ impl Dispatchtx {
     }
 
     pub fn deal_txs(&mut self, height: usize, txs: &Vec<H256>, mq_pub: Sender<(String, Vec<u8>)>) {
-        {
+        let mut block_txs = BlockTxs::new();
+        let mut body = BlockBody::new();
+
+        trace!("deal_txs inner txs height {} ", txs.len());
+        if !txs.is_empty() {
             self.del_txs_from_pool_with_hash(txs.clone());
         }
         let out_txs = self.get_txs_from_pool(height as u64);
-        trace!("public blcok txs {:?}", out_txs);
-        let mut body = BlockBody::new();
-        body.set_transactions(RepeatedField::from_vec(out_txs));
-
-        let mut block_txs = BlockTxs::new();
+        trace!("public blcok txs height {} {:?}", height, out_txs.len());
+        if !out_txs.is_empty() {
+            body.set_transactions(RepeatedField::from_vec(out_txs));
+        }
         block_txs.set_height(height as u64);
         block_txs.set_body(body);
+        trace!("deal_txs send height {} txs {:?}", height, block_txs);
         let msg = factory::create_msg(submodules::AUTH, topics::BLOCK_TXS, communication::MsgType::BLOCK_TXS, block_txs.write_to_bytes().unwrap());
         mq_pub.send(("auth.block_txs".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }

@@ -18,6 +18,7 @@
 use base_hanlder::{BaseHandler, ReqInfo};
 use jsonrpc_types::{method, Id};
 use jsonrpc_types::response::RpcFailure;
+use libproto::request as reqlib;
 //use libproto::communication;
 use num_cpus;
 use parking_lot::Mutex;
@@ -29,7 +30,6 @@ use std::sync::mpsc::Sender;
 use threadpool::ThreadPool;
 use ws;
 use ws::{Factory, CloseCode, Handler};
-use libproto::request as reqlib;
 
 pub struct WsFactory {
     //TODO 定时清理工作

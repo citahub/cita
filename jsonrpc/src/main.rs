@@ -52,23 +52,23 @@ use dotenv::dotenv;
 use http_handler::HttpHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
+
+use libproto::communication::Message as commMsg;
+use libproto::request as reqlib;
+use libproto::request::BatchRequest;
 use log::LogLevelFilter;
 use parking_lot::{RwLock, Mutex};
+use protobuf::Message;
+use protobuf::RepeatedField;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
-use ws_handler::WsFactory;
-
-use libproto::communication::Message as commMsg;
-use libproto::request::BatchRequest;
-use protobuf::RepeatedField;
 use std::time::SystemTime;
-use libproto::request as reqlib;
-use protobuf::Message;
 use uuid::Uuid;
+use ws_handler::WsFactory;
 
 pub const TOPIC_NEW_TX: &str = "jsonrpc.new_tx";
 pub const TOPIC_NEW_TX_BATCH: &str = "jsonrpc.new_tx_batch";
@@ -178,16 +178,14 @@ fn main() {
         let mut new_tx_request_buffer = Vec::new();
         let mut time_stamp = SystemTime::now();
         loop {
-            let (topic, req):(String, reqlib::Request) = rx_relay.recv().unwrap();
+            let (topic, req): (String, reqlib::Request) = rx_relay.recv().unwrap();
             if topic.as_str() != TOPIC_NEW_TX {
                 let data: commMsg = req.into();
                 tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
             } else {
                 new_tx_request_buffer.push(req);
-                if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch  ||
-                    time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_durtation {
-                    trace!("Going to send new tx batch to auth with {} new tx and buffer {} ns", new_tx_request_buffer.len(),
-                           time_stamp.elapsed().unwrap().subsec_nanos());
+                if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_durtation {
+                    trace!("Going to send new tx batch to auth with {} new tx and buffer {} ns", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap().subsec_nanos());
 
                     let mut batch_request = BatchRequest::new();
                     batch_request.set_new_tx_requests(RepeatedField::from_slice(&new_tx_request_buffer[..]));

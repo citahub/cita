@@ -22,7 +22,8 @@ use hyper::uri::RequestUri::AbsolutePath;
 use jsonrpc_types::{RpcRequest, method};
 use jsonrpc_types::error::Error;
 use jsonrpc_types::response::{RpcSuccess, RpcFailure, Output};
-use libproto::{response};//use libproto::{response, communication};
+use libproto::response;
+use libproto::request as reqlib; //use libproto::{response, communication};
 use parking_lot::{RwLock, Mutex};
 //use protobuf::Message;
 use serde_json;
@@ -33,7 +34,6 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
-use libproto::request as reqlib;
 
 impl BaseHandler for HttpHandler {}
 

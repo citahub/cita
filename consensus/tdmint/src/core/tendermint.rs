@@ -130,8 +130,6 @@ impl TenderMint {
         }
 
         let logpath = DataPath::wal_path();
-
-        trace!("tx pool size {}", params.tx_pool_size);
         TenderMint {
             pub_sender: s,
             pub_recver: r,
@@ -834,12 +832,16 @@ impl TenderMint {
             // proposal new blk
             let mut block = Block::new();
             if let Some(ref blocktxs) = self.block_txs {
-                if blocktxs.get_height() != self.height as u64 {
+                trace!("BLOCKTXS get height {}, self height {} txs {:?}", blocktxs.get_height(), self.height, blocktxs);
+                if blocktxs.get_height() != self.height as u64 - 1 {
                     return;
                 }
                 block.set_body(blocktxs.get_body().clone());
             } else {
-                return;
+                //maybe when starting, there is no txs got from auth
+                if self.height > 1 {
+                    return;
+                }
             }
 
             if self.pre_hash.is_some() {
@@ -1014,8 +1016,8 @@ impl TenderMint {
                 }
 
                 MsgClass::BLOCKTXS(block_txs) => {
-                    trace!("recive blocktxs response {}", block_txs.get_height());
-                    if block_txs.get_height() == self.height as u64 {
+                    trace!("recive blocktxs height {} self height {} txs {:?}", block_txs.get_height(), self.height, block_txs);
+                    if self.height < 1 || block_txs.get_height() == self.height as u64 {
                         self.block_txs = Some(block_txs);
                     }
                 }
