@@ -69,7 +69,7 @@ impl Trans {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_blockNumber\",\"params\":[],\"id\":2}}")
             }
             Methods::Blockbyheiht(h) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getBlockByNumber\",\"params\":[{},false],\"id\":2}}", h)
+                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getBlockByNumber\",\"params\":[\"{}\",false],\"id\":2}}", format!("{:#X}", h))
             }
             Methods::Trans(hash) => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getTransaction\",\"params\":[\"{}\"],\"id\":2}}", hash)

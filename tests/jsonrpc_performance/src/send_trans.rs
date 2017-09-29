@@ -147,6 +147,7 @@ impl Sendtx {
         let mut ret = (String::new(), false);
         if let Ok(len) = (*res).read_to_string(&mut buf) {
             buf.truncate(len);
+            trace!("response = {}", buf);
             ret = Self::parse_data(buf);
         }
         ret
