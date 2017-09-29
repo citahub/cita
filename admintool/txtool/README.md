@@ -91,14 +91,14 @@ $ python compile.py -p "get()"
 ```
 $ python make_tx.py
 
-$ python make_tx.py --bytecode `contract bytecode` --privkey `privatekey` --receiver `transaction to`
+$ python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to`
 ```
 使用ed25519签名算法和blake2b hash
 
 ```
 $ python make_tx.py --newcrypto
 
-$ python make_tx.py --bytecode `contract bytecode` --privkey `privatekey` --receiver `transaction to` --newcrypto
+$ python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to` --newcrypto
 ```
 
 
@@ -161,7 +161,11 @@ $ python get_logs.py
 
 ### 调用合约
 ```
-$ python call.py `from` `to` `data` `block_number`
-from或to没有的使用空字符串
+$ python call.py `to` `data`
+
+$ python call.py `to` `data` `block_number` --sender `option sender`
+
+to --- contract address
+data --- contract method, params encoded data.
 data构造参考contract ABI
 ```
