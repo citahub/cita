@@ -27,7 +27,8 @@ stop_all () {
     stop_node 1
     stop_node 2
     stop_node 3
-    kill -9 $pid
+    killall trans_evm
+    killall cita_basic.sh
 }
 
 start_all () {
@@ -109,7 +110,6 @@ echo `date`
 check_height_change
 create_contract
 (send_tx)&
-pid=$!
 
 echo "###stop node3..."
 stop_node 3
