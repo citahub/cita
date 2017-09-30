@@ -486,7 +486,7 @@ impl<B: Backend> State<B> {
 
     /// Execute a given transaction.
     /// This will change the state accordingly.
-    pub fn apply(&mut self, env_info: &EnvInfo, t: &SignedTransaction, tracing: bool, switch: &Switch) -> ApplyResult {
+    pub fn apply(&mut self, env_info: &EnvInfo, t: &mut SignedTransaction, tracing: bool, switch: &Switch) -> ApplyResult {
         //        let old = self.to_pod();
         let engine = &NullEngine::default();
         let nonce = switch.nonce;
@@ -775,15 +775,15 @@ mod tests {
         let stx = tx.sign(*privkey);
 
         // 4) signed
-        let signed = SignedTransaction::new(&stx).unwrap();
+        let mut signed = SignedTransaction::new(&stx).unwrap();
 
         // 5)
         let mut state = get_temp_state();
         let info = EnvInfo::default();
         //info.gas_limit = U256::from(100_000);
-        let contract_address = ::executive::contract_address(&signed.sender(), &nonce, block_limit);
+        let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(0));
         let switch = Switch::new();
-        let result = state.apply(&info, &signed, true, &switch).unwrap();
+        let result = state.apply(&info, &mut signed, true, &switch).unwrap();
         println!("{:?}", state.code(&contract_address).unwrap().unwrap());
         println!("{:?}", result.trace);
         assert_eq!(state.code(&contract_address).unwrap().unwrap(),
