@@ -37,6 +37,7 @@ extern crate dotenv;
 extern crate core as chain_core;
 extern crate cita_log;
 extern crate cpuprofiler;
+extern crate authority_manage;
 extern crate engine_json;
 
 use clap::App;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 import argparse
 import binascii
 from pathlib import Path
@@ -11,7 +11,8 @@ from secp256k1 import PrivateKey
 from ethereum.utils import sha3
 from tx_count import get_transaction_count
 import pysodium
-from block_number import block_number
+from generate_account import generate
+from block_number import block_number 
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
@@ -37,7 +38,12 @@ def private_key():
         return privkey
 
 
-def get_sender():
+def get_sender(privkey=None, newcrypto=False):
+    generate(privkey, newcrypto)
+    return _sender_from_file()
+
+
+def _sender_from_file():
     with open("../output/accounts/address", 'r') as addressfile:
         address = addressfile.read()
         return address
@@ -55,23 +61,23 @@ def get_nonce(sender):
     return str(nonce)
 
 
-def generate_deploy_data(current_height, bytecode, privatekey, receiver=None, newcrypto=False):
+def generate_deploy_data(current_height, bytecode, privatekey, receiver=None, newcrypto=False): 
     if newcrypto:
-        data = _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver)
+        data = _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver) 
     else:
-        data = _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver)
+        data = _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver) 
 
     return data
 
 
-def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver=None):
-    sender = get_sender()
+def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver=None): 
+    sender = get_sender(private_key, True)
     print(sender)
     nonce = get_nonce(sender)
     print("nonce is {}".format(nonce))
 
     tx = Transaction()
-    tx.valid_until_block = current_height + 88
+    tx.valid_until_block = current_height + 88 
     tx.nonce = nonce
     if receiver is not None:
         tx.to = receiver
@@ -97,17 +103,22 @@ def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver=
     return binascii.hexlify(unverify_tx.SerializeToString())
 
 
-def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver=None):
-    privkey = PrivateKey(hex2bytes(privatekey))
-    sender = get_sender()
+def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver=None): 
+    sender = get_sender(privatekey, False)
+    if privatekey is None:
+        temp = private_key()
+        privkey = PrivateKey(hex2bytes(temp))
+    else:
+        privkey = PrivateKey(hex2bytes(privatekey))
+
     print(sender)
     nonce = get_nonce(sender)
     print("nonce is {}".format(nonce))
 
     tx = Transaction()
-    tx.valid_until_block = current_height + 88
+    tx.valid_until_block = current_height + 88 
     tx.nonce = nonce
-    tx.quota = 99999999999
+    tx.quota = 9999999
     if receiver is not None:
         tx.to = receiver
     tx.data = hex2bytes(bytecode)
@@ -132,10 +143,10 @@ def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver=N
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bytecode", help="Compiled contract bytecode.")
+    parser.add_argument("--code", help="Compiled contract bytecode.")
     parser.add_argument(
         "--privkey", help="private key genearted by secp256k1 alogrithm.")
-    parser.add_argument("--receiver", help="transaction to")
+    parser.add_argument("--to", help="transaction to")
     parser.add_argument('--newcrypto', dest='newcrypto',
                         action='store_true', help="Use ed25519 and blake2b.")
     parser.add_argument('--no-newcrypto', dest='newcrypto',
@@ -148,15 +159,12 @@ def parse_arguments():
 
 def _params_or_default():
     opts = parse_arguments()
-    bytecode = opts.bytecode
+    bytecode = opts.code
     privkey = opts.privkey
-    receiver = opts.receiver
+    receiver = opts.to
 
     if bytecode is None:
         bytecode = bin_code()
-
-    if privkey is None:
-        privkey = private_key()
 
     return (bytecode, privkey, receiver)
 
@@ -169,11 +177,10 @@ def main():
     blake2b_ed25519 = parse_arguments().newcrypto
     print(blake2b_ed25519)
     bytecode, privkey, receiver = _params_or_default()
-    current_height = int(block_number(), 16)
+    current_height = int(block_number(), 16) 
     data = generate_deploy_data(
-        current_height, bytecode, privkey, remove_hex_0x(receiver), blake2b_ed25519)
+        current_height, remove_hex_0x(bytecode), privkey, remove_hex_0x(receiver), blake2b_ed25519) 
     print("deploy code保存到../output/transaction/deploycode")
-    print(data)
     save_deploy(data)
 
 

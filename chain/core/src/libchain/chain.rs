@@ -107,7 +107,7 @@ impl Switch {
 }
 
 impl Status {
-    fn new() -> Status {
+    fn new() -> Self {
         Status { number: 0, hash: H256::default() }
     }
 
@@ -127,6 +127,7 @@ impl Status {
         self.number = n;
     }
 
+    #[allow(dead_code)]
     fn protobuf(&self) -> ProtoStatus {
         let mut ps = ProtoStatus::new();
         ps.set_height(self.number());
@@ -514,10 +515,6 @@ impl Chain {
 
             let contract_address = match stx.action() {
                 &Action::Create => Some(contract_address(&stx.sender(), stx.nonce(), stx.block_limit)),
-                &Action::Store => {
-                    let store_addr: Address = STORE_ADDRESS.into();
-                    Some(store_addr)
-                }
                 _ => None,
             };
 
@@ -546,6 +543,7 @@ impl Chain {
                                   .collect(),
                 log_bloom: last_receipt.log_bloom,
                 state_root: last_receipt.state_root,
+                error: last_receipt.error,
             };
             Some(receipt)
         })
@@ -837,7 +835,7 @@ impl Chain {
     pub fn eth_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
         let signed = self.sign_call(request);
         let result = self.call(&signed, id, Default::default());
-        result.map(|b| b.output.into()).or_else(|_| Err(String::from("Call Error")))
+        result.map(|b| b.output.into()).or_else(|e| Err(format!("Call Error {}", e)))
     }
 
     fn sign_call(&self, request: CallRequest) -> SignedTransaction {
@@ -868,6 +866,10 @@ impl Chain {
         };
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
+
+        state.senders = self.senders.read().clone();
+        state.creators = self.creators.read().clone();
+
         let engine = NullEngine::default();
 
         let options = TransactOptions {
@@ -899,8 +901,10 @@ impl Chain {
     fn execute_block(&self, block: Block) -> OpenBlock {
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
+        let senders = self.senders.read().clone();
+        let creators = self.creators.read().clone();
         let switch = &self.switch;
-        let mut open_block = OpenBlock::new(self.factories.clone(), false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
+        let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
         open_block.apply_transactions(&switch);
 
         open_block
@@ -969,7 +973,7 @@ impl Chain {
         }
     }
 
-    pub fn set_block(&self, block: Block) -> Option<ProtoStatus> {
+    pub fn set_block(&self, block: Block) -> Option<ProtoRichStatus> {
         let height = block.number();
         trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
         if self.validate_height(height) {
@@ -989,9 +993,16 @@ impl Chain {
                 // reload_config
                 self.reload_config();
 
-                info!("chain update {:?}", status.number);
-                Some(status.protobuf())
+                let mut rich_status = RichStatus::new();
+                rich_status.set_hash(*status.hash());
+                rich_status.set_number(status.number());
+                rich_status.set_nodes(self.nodes.read().clone());
+
+                info!("chain update {:?}", height);
+                Some(rich_status.protobuf())
             } else {
+                let mut guard = self.block_map.write();
+                let _ = guard.remove(&height);
                 warn!("add block failed");
                 None
             }

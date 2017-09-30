@@ -504,7 +504,7 @@ impl<B: Backend> State<B> {
         // TODO uncomment once to_pod() works correctly.
         //        trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
 
-        let receipt = Receipt::new(None, e.cumulative_gas_used, e.logs);
+        let receipt = Receipt::new(None, e.cumulative_gas_used, e.logs, None);
         trace!(target: "state", "Transaction receipt: {:?}", receipt);
         Ok(ApplyOutcome { receipt: receipt, trace: e.trace })
     }
@@ -708,8 +708,8 @@ impl Clone for State<StateDB> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: self.account_start_nonce.clone(),
             factories: self.factories.clone(),
-            senders: HashSet::new(),
-            creators: HashSet::new(),
+            creators: self.creators.clone(),
+            senders: self.senders.clone(),
         }
     }
 }
