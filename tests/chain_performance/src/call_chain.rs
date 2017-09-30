@@ -18,6 +18,8 @@
 use common_types::receipt::LocalizedReceipt;
 use core::libchain::Genesis;
 use core::libchain::chain::*;
+use std::fs::File;
+use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use util::{H256, H160};
@@ -32,8 +34,8 @@ pub struct Callchain {
 #[allow(unused_variables, dead_code)]
 impl Callchain {
     pub fn new(db: Arc<KeyValueDB>, genesis: Genesis, sync_sender: Sender<u64>, path: &str) -> Self {
-
-        let (chain, st) = Chain::init_chain(db, genesis, sync_sender, path);
+        let config_file = File::open(path).unwrap();
+        let (chain, st) = Chain::init_chain(db, genesis, sync_sender, BufReader::new(config_file));
         Callchain { chain: chain }
     }
 
