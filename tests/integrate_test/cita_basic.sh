@@ -22,6 +22,13 @@ stop_node() {
     ./cita stop ${id}
 }
 
+stop_all_nodes () {
+    stop_node 0
+    stop_node 1
+    stop_node 2
+    stop_node 3
+}
+
 stop_all () {
     stop_node 0
     stop_node 1
@@ -152,7 +159,7 @@ check_height_change
 echo "###stop all node...check for restart"
 before_height=$(get_height)
 echo "before restart block height $before_height"
-stop_all
+stop_all_nodes
 sleep 3
 start_all
 sleep 60
