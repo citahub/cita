@@ -54,7 +54,6 @@ pub struct Sendtx {
     tx_type: TxCtx,
     analysis: bool,
     start_h: u64,
-    end_h: u64,
     tx_format_err: bool,
     sys_time: Arc<Mutex<time::SystemTime>>,
     curr_height: u64,
@@ -62,7 +61,7 @@ pub struct Sendtx {
 
 #[allow(non_snake_case)]
 impl Sendtx {
-    pub fn new(param: &Param, start_h: u64, end_h: u64, analysis: bool) -> Self {
+    pub fn new(param: &Param, start_h: u64, analysis: bool) -> Self {
         let totaltx = param.txnum * param.threads;
 
         let tx_type = match param.tx_type.as_ref() {
@@ -83,7 +82,6 @@ impl Sendtx {
             tx_type: tx_type,
             analysis: analysis,
             start_h: start_h,
-            end_h: end_h,
             tx_format_err: param.tx_format_err,
             sys_time: Arc::new(Mutex::new(time::SystemTime::now())),
             curr_height: 0,
@@ -349,20 +347,28 @@ impl Sendtx {
 
         let mut tx_num = 0;
         let mut start_time_stamp = 0;
-        let mut end_time_stamp = 0;
-
-        for index in self.start_h..(self.end_h + 1) {
-            let (blocknum, time_stamp) = self.get_txinfo_by_height(_url.clone(), index);
-            if index == self.start_h {
+        let mut _end_time_stamp = 0;
+        let mut h = self.start_h;
+        let mut start_h = h;
+        loop {
+            let (blocknum, time_stamp) = self.get_txinfo_by_height(_url.clone(), h);
+            tx_num += blocknum as u64;
+            if tx_num == 0 {
                 start_time_stamp = time_stamp;
+                start_h = h;
+                h += 1;
+                continue;
             }
-            tx_num += blocknum;
-            end_time_stamp = time_stamp;
-            info!("height:{}, blocknum: {},  time stamp :{}", index, blocknum, time_stamp);
+            _end_time_stamp = time_stamp;
+            info!("height:{}, blocknum: {},  time stamp :{}", h, blocknum, time_stamp);
+            if tx_num >= self.totaltx || (tx_num > 0 && blocknum == 0){
+                break;
+            }
+            h += 1;
         }
-        let secs = end_time_stamp - start_time_stamp;
+        let secs = _end_time_stamp - start_time_stamp;
         let tps = if secs > 0 { (tx_num * 1000) as u64 / secs } else { tx_num as u64 };
-        info!("tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}", tx_num, self.start_h, self.end_h, secs, tps);
+        info!("tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}", tx_num, start_h, h, secs, tps);
     }
 
 
