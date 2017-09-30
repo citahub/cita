@@ -27,6 +27,7 @@ stop_all () {
     stop_node 1
     stop_node 2
     stop_node 3
+    kill -9 $pid
 }
 
 start_all () {
@@ -178,7 +179,6 @@ if [ $node0_height -ne $node3_height ]; then
     exit 1
 fi
 
-kill -9 $pid
 stop_all
 echo "###Test OK"
 exit 0
