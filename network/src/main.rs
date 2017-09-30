@@ -86,7 +86,7 @@ fn main() {
     let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
 
-    start_pubsub("network", vec!["consensus.tx", "consensus.msg", "chain.status", "chain.blk", "chain.sync", "jsonrpc.net"], ctx_sub, crx_pub);
+    start_pubsub("network", vec!["auth.tx", "consensus.msg", "chain.status", "chain.blk", "chain.sync", "jsonrpc.net"], ctx_sub, crx_pub);
 
     // start server
     // This brings up our server.

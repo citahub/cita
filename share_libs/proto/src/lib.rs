@@ -205,7 +205,7 @@ pub mod factory {
 }
 
 type CmdId = u32;
-type Origin = u32;
+pub type Origin = u32;
 
 pub fn tx_verify_req_msg(unverified_tx: &UnverifiedTransaction) -> VerifyTxReq {
     let bytes = unverified_tx.get_transaction().write_to_bytes().unwrap();

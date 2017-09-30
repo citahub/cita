@@ -31,6 +31,7 @@ extern crate cita_crypto as crypto;
 extern crate threadpool;
 extern crate core as chain_core;
 extern crate tx_pool;
+extern crate uuid;
 
 pub mod handler;
 pub mod verify;
@@ -127,7 +128,7 @@ fn main() {
                           loop {
                               let res_local = block_req_receiver.try_recv();
                               if true == res_local.is_ok() {
-                                  let (verify_type, request_id, verify_req, sub_module, now) = res_local.unwrap();
+                                  let (verify_type, request_id, verify_req, sub_module, now, origin) = res_local.unwrap();
                                   let block_verify_id = BlockVerifyId {
                                       request_id: request_id,
                                       sub_module: sub_module,
@@ -138,7 +139,7 @@ fn main() {
                                   }
                                   let verify_req_info = VerifyReqInfo {
                                       req: verify_req,
-                                      info: (verify_type, request_id, sub_module, now),
+                                      info: (verify_type, request_id, sub_module, now, origin),
                                   };
                                   if true == check_verify_request_preprocess(verify_req_info.clone(), verifier_clone.clone(), cache_clone.clone(), resp_sender.clone()) {
                                       trace!("check_verify_request_preprocess is true, and {} reqs have been pushed into req_grp", req_grp.len());
@@ -163,10 +164,10 @@ fn main() {
                           loop {
                               let res_local = single_req_receiver.try_recv();
                               if true == res_local.is_ok() {
-                                  let (verify_type, id, verify_req, sub_module, now) = res_local.unwrap();
+                                  let (verify_type, id, verify_req, sub_module, now, origin) = res_local.unwrap();
                                   let verify_req_info = VerifyReqInfo {
                                       req: verify_req,
-                                      info: (verify_type, id, sub_module, now),
+                                      info: (verify_type, id, sub_module, now, origin),
                                   };
                                   if true == check_verify_request_preprocess(verify_req_info.clone(), verifier_clone.clone(), cache_clone.clone(), resp_sender.clone()) {
                                       continue;
@@ -207,8 +208,8 @@ fn main() {
         loop {
             select! {
                 txinfo = pool_tx_recver.recv()=>{
-                    if let Ok((modid,reqid,tx_res,tx)) = txinfo {
-                        dispatch.deal_tx(modid,reqid,tx_res,&tx,txs_pub.clone());
+                    if let Ok((modid,reqid,tx_res,tx,origin)) = txinfo {
+                        dispatch.deal_tx(modid,reqid,tx_res,&tx,txs_pub.clone(), origin);
                     }
                 },
                 txsinfo = pool_txs_recver.recv()=>{

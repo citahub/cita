@@ -51,7 +51,7 @@ pub fn is_need_proc(payload: &[u8]) -> (String, bool, communication::Message) {
         let mut is_proc = true;
         let t = msg.get_field_type();
         let cid = msg.get_cmd_id();
-        if cid == cmd_id(submodules::CONSENSUS, topics::REQUEST) && t == MsgType::REQUEST {
+        if cid == cmd_id(submodules::AUTH, topics::REQUEST) && t == MsgType::REQUEST {
             trace!("CONSENSUS broadcast tx");
             topic = "net.tx".to_string();
         } else if cid == cmd_id(submodules::CONSENSUS, topics::NEW_BLK) && t == MsgType::BLOCK {

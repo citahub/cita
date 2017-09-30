@@ -19,7 +19,7 @@ extern crate threadpool;
 extern crate serde_json;
 extern crate tx_pool;
 
-use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request};
+use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request, Origin};
 use libproto::blockchain::{BlockBody, SignedTransaction, BlockTxs};
 use protobuf::{Message, RepeatedField};
 use std::cell::RefCell;
@@ -28,6 +28,7 @@ use std::thread;
 use txhandler::TransType;
 use txwal::Txwal;
 use util::H256;
+use uuid::Uuid;
 
 pub struct Dispatchtx {
     txs_pool: RefCell<tx_pool::Pool>,
@@ -52,7 +53,7 @@ impl Dispatchtx {
         dispatch
     }
 
-    pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, mut tx_response: TxResponse, tx: &SignedTransaction, mq_pub: Sender<(String, Vec<u8>)>) {
+    pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, mut tx_response: TxResponse, tx: &SignedTransaction, mq_pub: Sender<(String, Vec<u8>)>, origin: Origin) {
         let mut error_msg: Option<String> = None;
         if self.tx_flow_control() {
             error_msg = Some(String::from("Busy"));
@@ -71,6 +72,20 @@ impl Dispatchtx {
             } else {
                 let tx_state = serde_json::to_string(&tx_response).unwrap();
                 response.set_tx_state(tx_state);
+
+                let request_id = Uuid::new_v4().as_bytes().to_vec();
+                let mut request = Request::new();
+                request.set_un_tx(tx.get_transaction_with_sig().clone());
+                request.set_request_id(request_id);
+
+                let msg = factory::create_msg_ex(submodules::AUTH,
+                                                 topics::REQUEST,
+                                                 communication::MsgType::REQUEST,
+                                                 communication::OperateType::BROADCAST,
+                                                 origin,
+                                                 request.write_to_bytes().unwrap());
+
+                mq_pub.send(("auth.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
             }
 
             let msg = factory::create_msg(submodules::AUTH, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());

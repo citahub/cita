@@ -36,7 +36,7 @@ pub enum VerifyType {
 #[derive(Debug, Clone)]
 pub struct VerifyReqInfo {
     pub req: VerifyTxReq,
-    pub info: (VerifyType, u64, u32, SystemTime),
+    pub info: (VerifyType, u64, u32, SystemTime, Origin),
 }
 
 
@@ -73,7 +73,7 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     resp
 }
 
-pub fn verify_tx_group_service(mut req_grp: Vec<VerifyReqInfo>, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<VerifyCache>>, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime)>) {
+pub fn verify_tx_group_service(mut req_grp: Vec<VerifyReqInfo>, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<VerifyCache>>, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>) {
     let now = SystemTime::now();
     let len = req_grp.len();
     loop {
@@ -82,8 +82,8 @@ pub fn verify_tx_group_service(mut req_grp: Vec<VerifyReqInfo>, verifier: Arc<Rw
             let tx_hash = H256::from_slice(req.get_tx_hash());
             let response = verfiy_tx(&req, &verifier.read());
             cache.write().insert(tx_hash, response.clone());
-            let (verify_type, id, sub_module, now) = req_info.info;
-            resp_sender.send((verify_type, id, response, sub_module, now)).unwrap();
+            let (verify_type, id, sub_module, now, origin) = req_info.info;
+            resp_sender.send((verify_type, id, response, sub_module, now, origin)).unwrap();
         } else {
             break;
         }
@@ -92,7 +92,7 @@ pub fn verify_tx_group_service(mut req_grp: Vec<VerifyReqInfo>, verifier: Arc<Rw
     trace!("verify_tx_group_service Time cost {} ns for {} req ...", now.elapsed().unwrap().subsec_nanos(), len);
 }
 
-pub fn check_verify_request_preprocess(req_info: VerifyReqInfo, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<VerifyCache>>, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime)>) -> bool {
+pub fn check_verify_request_preprocess(req_info: VerifyReqInfo, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<VerifyCache>>, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>) -> bool {
     let req = req_info.req;
     let tx_hash = H256::from_slice(req.get_tx_hash());
     let mut final_response = VerifyTxResp::new();
@@ -112,8 +112,8 @@ pub fn check_verify_request_preprocess(req_info: VerifyReqInfo, verifier: Arc<Rw
     }
 
     if true == processed {
-        let (verify_type, id, sub_module, now) = req_info.info;
-        resp_sender.send((verify_type, id, final_response, sub_module, now)).unwrap();
+        let (verify_type, id, sub_module, now, origin) = req_info.info;
+        resp_sender.send((verify_type, id, final_response, sub_module, now, origin)).unwrap();
     }
     processed
 }
@@ -126,8 +126,8 @@ fn get_key(submodule: u32, is_blk: bool) -> String {
     "verify".to_owned() + if is_blk { "_blk_" } else { "_tx_" } + id_to_key(submodule)
 }
 
-pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req_block: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime)>, tx_req_single: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime)>, tx_pub: Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>, cache: Arc<RwLock<VerifyCache>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, txs_sender: Sender<(usize, Vec<H256>)>) {
-    let (cmdid, _origin, content) = parse_msg(payload.as_slice());
+pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req_block: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_req_single: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_pub: Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>, cache: Arc<RwLock<VerifyCache>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, txs_sender: Sender<(usize, Vec<H256>)>) {
+    let (cmdid, origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
     match content {
         MsgClass::BLOCKTXHASHES(block_tx_hashes) => {
@@ -146,11 +146,11 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             trace!("BLOCKTXHASHES  txs_sender res is {:?}", res);
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
         }
-        MsgClass::VERIFYTXREQ(req) => {
-            trace!("get single verify request with tx_hash: {:?} with system time :{:?}", req.get_tx_hash(), SystemTime::now());
-            let now = SystemTime::now();
-            tx_req_single.send((VerifyType::SingleVerify, 0, req, submodule, now)).unwrap();
-        }
+//        MsgClass::VERIFYTXREQ(req) => {
+//            trace!("get single verify request with tx_hash: {:?} with system time :{:?}", req.get_tx_hash(), SystemTime::now());
+//            let now = SystemTime::now();
+//            tx_req_single.send((VerifyType::SingleVerify, 0, req, submodule, now, origin)).unwrap();
+//        }
         MsgClass::VERIFYBLKREQ(blkreq) => {
             trace!("get block verify request with {:?} request", blkreq.get_reqs().len());
             let tx_cnt = blkreq.get_reqs().len();
@@ -169,7 +169,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                 block_cache.write().insert(request_id, block_verify_status);
                 for req in blkreq.get_reqs() {
                     let now = SystemTime::now();
-                    tx_req_block.send((VerifyType::BlockVerify, id, req.clone(), submodule, now)).unwrap();
+                    tx_req_block.send((VerifyType::BlockVerify, id, req.clone(), submodule, now, origin)).unwrap();
                 }
             } else {
                 error!("Wrong block verification request with 0 tx for block verify request id: {} from sub_module: {}", blkreq.get_id(), submodule);
@@ -189,13 +189,13 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                         txs.insert(hash, (submodule, tx_req.clone()));
                     }
                     let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
-                    tx_req_single.send((VerifyType::SingleVerify, 0, verify_tx_req, submodule, now)).unwrap();
+                    tx_req_single.send((VerifyType::SingleVerify, 0, verify_tx_req, submodule, now, origin)).unwrap();
                 }
             } else if true == newtx_req.has_un_tx() {
                 let now = SystemTime::now();
                 trace!("get batch new tx request from jsonrpc with system time :{:?}", now);
                 let verify_tx_req = tx_verify_req_msg(newtx_req.get_un_tx());
-                tx_req_single.send((VerifyType::SingleVerify, 0, verify_tx_req, submodule, now)).unwrap();
+                tx_req_single.send((VerifyType::SingleVerify, 0, verify_tx_req, submodule, now, origin)).unwrap();
             }
 
         }
@@ -205,8 +205,8 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
     //trace!("single queue_req queues {} reqs, block queue_req queues {} reqs", single_req_queue.lock().unwrap().len(), block_req_queue.lock().unwrap().len());
 }
 
-pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32, SystemTime)>, tx_pub: &Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, tx_sender: Sender<(u32, Vec<u8>, TxResponse, SignedTransaction)>) {
-    let (verify_type, id, resp, sub_module, now) = result_receiver.recv().unwrap();
+pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>, tx_pub: &Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, tx_sender: Sender<(u32, Vec<u8>, TxResponse, SignedTransaction, Origin)>) {
+    let (verify_type, id, resp, sub_module, now, origin) = result_receiver.recv().unwrap();
     match verify_type {
         VerifyType::SingleVerify => {
             trace!("SingleVerify Time cost {} ns for tx hash: {:?}", now.elapsed().unwrap().subsec_nanos(), resp.get_tx_hash());
@@ -232,7 +232,7 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                         //.....................
                         //.....................
                         let tx_response = TxResponse::new(tx_hash, result.clone());
-                        let _ = tx_sender.send((sub_module_id, request_id.clone(), tx_response, signed_tx.clone())).unwrap();
+                        let _ = tx_sender.send((sub_module_id, request_id.clone(), tx_response, signed_tx.clone(), origin)).unwrap();
                     }
                     _ => {
                         if sub_module_id == submodules::JSON_RPC {
