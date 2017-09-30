@@ -514,7 +514,7 @@ impl Chain {
             let number = self.block_number_by_hash(hash).unwrap_or(0);
 
             let contract_address = match stx.action() {
-                &Action::Create => Some(contract_address(&stx.sender(), stx.nonce(), stx.block_limit)),
+                &Action::Create => Some(contract_address(&stx.sender(), stx.account_nonce())),
                 _ => None,
             };
 
@@ -833,15 +833,15 @@ impl Chain {
     }
 
     pub fn eth_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
-        let signed = self.sign_call(request);
-        let result = self.call(&signed, id, Default::default());
+        let mut signed = self.sign_call(request);
+        let result = self.call(&mut signed, id, Default::default());
         result.map(|b| b.output.into()).or_else(|e| Err(format!("Call Error {}", e)))
     }
 
     fn sign_call(&self, request: CallRequest) -> SignedTransaction {
         let from = request.from.unwrap_or(Address::zero());
         Transaction {
-            nonce: "heihei".to_owned(),
+            nonce: "".to_string(),
             action: Action::Call(request.to),
             gas: U256::from(50_000_000),
             gas_price: U256::zero(),
@@ -852,7 +852,7 @@ impl Chain {
         .fake_sign(from)
     }
 
-    fn call(&self, t: &SignedTransaction, block_id: BlockId, analytics: CallAnalytics) -> Result<Executed, CallError> {
+    fn call(&self, t: &mut SignedTransaction, block_id: BlockId, analytics: CallAnalytics) -> Result<Executed, CallError> {
         let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
         let last_hashes = self.build_last_hashes(None, header.number());
         let env_info = EnvInfo {

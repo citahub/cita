@@ -309,18 +309,18 @@ impl OpenBlock {
 
     ///execute transactions
     pub fn apply_transactions(&mut self, switch: &Switch) {
-        for t in self.body.transactions.clone() {
-            self.apply_transaction(&t, switch);
+        for mut t in self.body.transactions.clone() {
+            self.apply_transaction(&mut t, switch);
         }
         self.state.commit().expect("commit trie error");
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
     }
 
-    pub fn apply_transaction(&mut self, t: &SignedTransaction, switch: &Switch) {
+    pub fn apply_transaction(&mut self, t: &mut SignedTransaction, switch: &Switch) {
         let env_info = self.env_info();
         let has_traces = self.traces.is_some();
-        match self.state.apply(&env_info, &t, has_traces, switch) {
+        match self.state.apply(&env_info, t, has_traces, switch) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());

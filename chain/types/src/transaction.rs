@@ -211,6 +211,7 @@ impl Transaction {
             },
             sender: from,
             public: Public::default(),
+            account_nonce: U256::zero(),
         }
     }
 
@@ -344,12 +345,13 @@ pub struct SignedTransaction {
     transaction: UnverifiedTransaction,
     sender: Address,
     public: Public,
+    account_nonce: U256,
 }
 
 /// RLP dose not support struct nesting well
 impl Decodable for SignedTransaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 11 {
+        if d.item_count()? != 12 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
 
@@ -372,6 +374,7 @@ impl Decodable for SignedTransaction {
                },
                sender: pubkey_to_address(&public),
                public: public,
+               account_nonce: d.val_at(11)?,
            })
     }
 }
@@ -379,7 +382,7 @@ impl Decodable for SignedTransaction {
 /// RLP dose not support struct nesting well
 impl Encodable for SignedTransaction {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(11);
+        s.begin_list(12);
 
         s.append(&self.nonce);
         s.append(&self.gas_price);
@@ -394,6 +397,7 @@ impl Encodable for SignedTransaction {
         s.append(&self.hash);
         //TODO: remove it
         s.append(&self.public);
+        s.append(&self.account_nonce);
     }
 }
 
@@ -434,6 +438,7 @@ impl SignedTransaction {
                transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,
                sender: sender,
                public: public,
+               account_nonce: U256::zero(),
            })
     }
 
@@ -445,6 +450,16 @@ impl SignedTransaction {
     /// Returns a public key of the sender.
     pub fn public_key(&self) -> &Public {
         &self.public
+    }
+
+    /// Returns account nonce.
+    pub fn account_nonce(&self) -> &U256 {
+        &self.account_nonce
+    }
+
+    /// set account nonce.
+    pub fn set_account_nonce(&mut self, account_nonce: U256) {
+        self.account_nonce = account_nonce;
     }
 
     ///get protobuf of signed transaction

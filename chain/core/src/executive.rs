@@ -42,17 +42,7 @@ use util::*;
 const STACK_SIZE_PER_DEPTH: usize = 24 * 1024;
 
 /// Returns new address created from address and given nonce.
-pub fn contract_address(address: &Address, nonce: &String, block_limit: u64) -> Address {
-    use rlp::RlpStream;
-
-    let mut stream = RlpStream::new_list(3);
-    stream.append(address);
-    stream.append(nonce);
-    stream.append(&block_limit);
-    From::from(stream.out().crypt_hash())
-}
-
-pub fn contract_address_inner(address: &Address, nonce: &U256) -> Address {
+pub fn contract_address(address: &Address, nonce: &U256) -> Address {
     use rlp::RlpStream;
 
     let mut stream = RlpStream::new_list(2);
@@ -119,7 +109,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// This function should be used to execute transaction.
-    pub fn transact(&'a mut self, t: &SignedTransaction, options: TransactOptions) -> Result<Executed, ExecutionError> {
+    pub fn transact(&'a mut self, t: &mut SignedTransaction, options: TransactOptions) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(t, options, ExecutiveTracer::default(), ExecutiveVMTracer::toplevel()),
             (true, false) => self.transact_with_tracer(t, options, ExecutiveTracer::default(), NoopVMTracer),
@@ -129,12 +119,13 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Execute transaction/call with tracing enabled
-    pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, options: TransactOptions, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
+    pub fn transact_with_tracer<T, V>(&'a mut self, t: &mut SignedTransaction, options: TransactOptions, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
     where
         T: Tracer,
         V: VMTracer,
     {
-        let sender = t.sender();
+        let sender = t.sender().clone();
+        let nonce = self.state.nonce(&sender)?;
 
         // check contract create/call permission
         trace!("executive creators: {:?}, senders: {:?}", self.state.creators, self.state.senders);
@@ -146,10 +137,10 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         trace!("permission should be check: {}", options.check_permission);
         if options.check_permission {
             match t.action {
-                Action::Create => if *sender != Address::zero() && !self.state.creators.contains(&sender) {
+                Action::Create => if sender != Address::zero() && !self.state.creators.contains(&sender) {
                     return Err(From::from(ExecutionError::NoContractPermission));
                 },
-                _ => if *sender != Address::zero() && !self.state.senders.contains(sender) && !self.state.creators.contains(&sender) {
+                _ => if sender != Address::zero() && !self.state.senders.contains(&sender) && !self.state.creators.contains(&sender) {
                     return Err(From::from(ExecutionError::NoTransactionPermission));
                 },
             }
@@ -173,6 +164,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                                   }));
         }
 
+        t.set_account_nonce(nonce);
+
         let mut substate = Substate::new();
 
         let (gas_left, output) = match t.action {
@@ -180,7 +173,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 (Ok(t.gas), vec![])
             }
             Action::Create => {
-                let new_address = contract_address(&sender, &t.nonce, t.block_limit);
+                let new_address = contract_address(&sender, &nonce);
                 let params = ActionParams {
                     code_address: new_address.clone(),
                     code_hash: t.data.crypt_hash(),
@@ -544,14 +537,13 @@ contract AbiTest {
 }
 "#;
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let nonce = "random";
-        let block_limit: u64 = 99;
+        let nonce = U256::zero();
         let gas_required = U256::from(100_000);
 
         let (deploy_code, runtime_code) = solc("AbiTest", source);
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
         let native_factory = NativeFactory::default();
-        let contract_address = contract_address(&sender, &nonce.to_owned(), block_limit);
+        let contract_address = contract_address(&sender, &nonce);
         let mut params = ActionParams::default();
         params.address = contract_address.clone();
         params.sender = sender.clone();
