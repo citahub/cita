@@ -4,6 +4,8 @@ set -e
 cd  ${WORKSPACE}
 source ~/.cargo/env
 
+sudo ./scripts/install_sys.sh
+
 echo "################################################################################"
 echo "0) test ed25519/blake2b"
 sed -i 's/\["secp256k1"\]/\["ed25519"\]/g' share_libs/crypto/Cargo.toml
