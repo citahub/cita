@@ -1,0 +1,12 @@
+[package]
+name = "cita-sm2"
+version = "0.1.0"
+authors = ["lbqds <lbqds@cryptape.com>"]
+
+[dependencies]
+lazy_static = "0.2"
+rustc-serialize = "0.3"
+serde = "1.0"
+bincode = "0.8"
+util = { path = "../util" }
+rlp = { path = "../rlp" }

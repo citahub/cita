@@ -34,6 +34,8 @@ extern crate ethcore_logger;
 extern crate sha3;
 #[cfg(feature = "blake2bhash")]
 extern crate blake2b;
+#[cfg(feature = "sm3hash")]
+extern crate sm3;
 
 #[macro_use]
 extern crate log as rlog;

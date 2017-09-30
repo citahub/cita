@@ -15,25 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#[cfg(feature = "ed25519")]
-extern crate cita_ed25519;
-#[cfg(feature = "secp256k1")]
-extern crate cita_secp256k1;
-#[cfg(feature = "sm2")]
-extern crate cita_sm2;
-extern crate util;
+#![feature(libc)]
+extern crate libc;
 
-#[cfg(feature = "ed25519")]
-pub use cita_ed25519::*;
-#[cfg(feature = "secp256k1")]
-pub use cita_secp256k1::*;
-#[cfg(feature = "sm2")]
-pub use cita_sm2::*;
-pub use util::crypto::{Sign, CreateKey};
+use libc::size_t;
 
-#[cfg(feature = "ed25519")]
-pub const SIGNATURE_NAME: &str = "ed25519";
-#[cfg(feature = "secp256k1")]
-pub const SIGNATURE_NAME: &str = "secp256k1";
-#[cfg(feature = "sm2")]
-pub const SIGNATURE_NAME: &str = "sm2";
+#[link(name = "gmssl")]
+extern "C" {
+    pub fn sm3(data: *const u8, datalen: size_t, digest: *mut u8);
+}
