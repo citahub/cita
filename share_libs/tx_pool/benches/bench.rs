@@ -24,7 +24,7 @@ extern crate util;
 extern crate cita_crypto as crypto;
 
 use crypto::{KeyPair, CreateKey};
-use libproto::blockchain::{Transaction, UnverifiedTransaction, SignedTransaction};
+use libproto::blockchain::Transaction;
 use std::time::SystemTime;
 use test::Bencher;
 use tx_pool::pool::*;
