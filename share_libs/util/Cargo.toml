@@ -6,6 +6,7 @@ build = "build.rs"
 
 [dependencies]
 blake2b = { path = "../blake2b", optional = true }
+sm3 = { path = "../sm3", optional = true }
 log = "0.3"
 rustc-hex = "1.0"
 rand = "0.3.12"
@@ -34,6 +35,7 @@ uuid = { version = "0.4", features = ["v4"] }
 default = ["sha3hash"]
 sha3hash = []
 blake2bhash = ["blake2b"]
+sm3hash = ["sm3"]
 
 [build-dependencies]
 vergen = "*"

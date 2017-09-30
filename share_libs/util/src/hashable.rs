@@ -19,6 +19,8 @@ use H256;
 #[cfg(feature = "blake2bhash")]
 use blake2b::blake2b;
 use sha3::sha3_256;
+#[cfg(feature = "sm3hash")]
+use sm3::sm3;
 
 /// The hash of the empty bytes string.
 #[cfg(feature = "sha3hash")]
@@ -93,6 +95,43 @@ pub const HASH_EMPTY: H256 = H256(
         0xc3,
         0x6b,
         0x9f,
+    ],
+);
+#[cfg(feature = "sm3hash")]
+pub const HASH_EMPTY: H256 = H256(
+    [
+        0x1a,
+        0xb2,
+        0x1d,
+        0x83,
+        0x55,
+        0xcf,
+        0xa1,
+        0x7f,
+        0x8e,
+        0x61,
+        0x19,
+        0x48,
+        0x31,
+        0xe8,
+        0x1a,
+        0x8f,
+        0x22,
+        0xbe,
+        0xc8,
+        0xc7,
+        0x28,
+        0xfe,
+        0xfb,
+        0x74,
+        0x7e,
+        0xd0,
+        0x35,
+        0xeb,
+        0x50,
+        0x82,
+        0xaa,
+        0x2b,
     ],
 );
 
@@ -171,6 +210,43 @@ pub const HASH_NULL_RLP: H256 = H256(
         0xaf,
     ],
 );
+#[cfg(feature = "sm3hash")]
+pub const HASH_NULL_RLP: H256 = H256(
+    [
+        0x99,
+        0x5b,
+        0x94,
+        0x98,
+        0x69,
+        0xf8,
+        0x0f,
+        0xa1,
+        0x46,
+        0x5a,
+        0x9d,
+        0x8b,
+        0x6f,
+        0xa7,
+        0x59,
+        0xec,
+        0x65,
+        0xc3,
+        0x02,
+        0x0d,
+        0x59,
+        0xc2,
+        0x62,
+        0x46,
+        0x62,
+        0xbd,
+        0xff,
+        0x05,
+        0x9b,
+        0xdf,
+        0x19,
+        0xb3,
+    ],
+);
 
 /// The hash of the RLP encoding of empty list.
 #[cfg(feature = "sha3hash")]
@@ -247,6 +323,43 @@ pub const HASH_EMPTY_LIST_RLP: H256 = H256(
         0x83,
     ],
 );
+#[cfg(feature = "sm3hash")]
+pub const HASH_EMPTY_LIST_RLP: H256 = H256(
+    [
+        0x47,
+        0x44,
+        0x68,
+        0x32,
+        0xc4,
+        0x4e,
+        0x75,
+        0x55,
+        0x27,
+        0x02,
+        0x2e,
+        0x3e,
+        0x57,
+        0x21,
+        0x33,
+        0x92,
+        0x2b,
+        0x49,
+        0x76,
+        0x8d,
+        0x46,
+        0x0f,
+        0xb1,
+        0x74,
+        0x12,
+        0xc1,
+        0xb6,
+        0xc8,
+        0xfa,
+        0x64,
+        0xed,
+        0x48,
+    ],
+);
 
 #[cfg(feature = "blake2bhash")]
 pub const BLAKE2BKEY: &str = "CryptapeCryptape";
@@ -255,10 +368,16 @@ pub const BLAKE2BKEY: &str = "CryptapeCryptape";
 pub const HASH_NAME: &str = "sha3";
 #[cfg(feature = "blake2bhash")]
 pub const HASH_NAME: &str = "blake2b";
+#[cfg(feature = "sm3hash")]
+pub const HASH_NAME: &str = "sm3";
 
 pub trait Hashable {
     /// Calculate crypt HASH of this object.
-    fn crypt_hash(&self) -> H256;
+    fn crypt_hash(&self) -> H256 {
+        let mut ret: H256 = H256::zero();
+        self.crypt_hash_into(&mut *ret);
+        ret
+    }
 
     /// Calculate crypt HASH of this object and place result into dest.
     fn crypt_hash_into(&self, dest: &mut [u8]) {
@@ -271,11 +390,6 @@ impl<T> Hashable for T
 where
     T: AsRef<[u8]>,
 {
-    fn crypt_hash(&self) -> H256 {
-        let mut ret: H256 = H256::zero();
-        self.crypt_hash_into(&mut *ret);
-        ret
-    }
     fn crypt_hash_into(&self, dest: &mut [u8]) {
         let input: &[u8] = self.as_ref();
 
@@ -290,16 +404,24 @@ impl<T> Hashable for T
 where
     T: AsRef<[u8]>,
 {
-    fn crypt_hash(&self) -> H256 {
-        let mut ret: H256 = H256::zero();
-        self.crypt_hash_into(&mut *ret);
-        ret
-    }
     fn crypt_hash_into(&self, dest: &mut [u8]) {
         let input: &[u8] = self.as_ref();
 
         unsafe {
             blake2b(dest.as_mut_ptr(), dest.len(), input.as_ptr(), input.len(), BLAKE2BKEY.as_bytes().as_ptr(), BLAKE2BKEY.len());
+        }
+    }
+}
+
+#[cfg(feature = "sm3hash")]
+impl<T> Hashable for T
+where
+    T: AsRef<[u8]>,
+{
+    fn crypt_hash_into(&self, dest: &mut [u8]) {
+        let input: &[u8] = self.as_ref();
+        unsafe {
+            sm3(input.as_ptr(), input.len(), dest.as_mut_ptr());
         }
     }
 }
@@ -337,5 +459,18 @@ mod tests {
     #[cfg(feature = "blake2bhash")]
     fn blake2b_as() {
         assert_eq!([0x41u8; 32].crypt_hash(), From::from("8a786e4840b7b5ad9b0cfa44539b886086c2e1050bb802c8e40ecf09b3a64a11"));
+    }
+
+    #[test]
+    #[cfg(feature = "sm3hash")]
+    fn test_sm3() {
+        let hash = [0u8; 0].crypt_hash();
+        assert_eq!(hash, HASH_EMPTY);
+
+        let hash = [0x80; 1].crypt_hash();
+        assert_eq!(hash, HASH_NULL_RLP);
+
+        let hash = [0xC0; 1].crypt_hash();
+        assert_eq!(hash, HASH_EMPTY_LIST_RLP);
     }
 }

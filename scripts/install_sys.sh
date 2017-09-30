@@ -21,3 +21,7 @@ apt-get install -y libstdc++6 libsodium18 rabbitmq-server libssl-dev libgoogle-p
 apt-get install -y build-essential pkg-config                              \
         libsnappy-dev  libgoogle-perftools-dev   libsodium-dev libzmq3-dev \
 		solc curl jq  google-perftools capnproto
+wget https://github.com/cryptape/GmSSL/releases/download/v1.0/libgmssl.so.1.0.0.gz
+gzip -d libgmssl.so.1.0.0.gz
+mv libgmssl.so.1.0.0 /usr/lib/
+sudo ln -s /usr/lib/libgmssl.so.1.0.0 /usr/lib/libgmssl.so
