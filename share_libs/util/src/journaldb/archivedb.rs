@@ -205,6 +205,7 @@ impl JournalDB for ArchiveDB {
 mod tests {
     #![cfg_attr(feature="dev", allow(blacklisted_name))]
     #![cfg_attr(feature="dev", allow(similar_names))]
+    extern crate mktemp;
 
     use super::*;
     use {Hashable, H32};
@@ -453,17 +454,17 @@ mod tests {
 
     #[test]
     fn returns_state() {
-        let temp = ::devtools::RandomTempPath::new();
+        let temp = mktemp::Temp::new_dir().unwrap();
 
         let key = {
-            let mut jdb = new_db(temp.as_path().as_path());
+            let mut jdb = new_db(temp.as_ref());
             let key = jdb.insert(b"foo");
             jdb.commit_batch(0, &b"0".crypt_hash(), None).unwrap();
             key
         };
 
         {
-            let jdb = new_db(temp.as_path().as_path());
+            let jdb = new_db(temp.as_ref());
             let state = jdb.state(&key);
             assert!(state.is_some());
         }
@@ -471,9 +472,9 @@ mod tests {
 
     #[test]
     fn inject() {
-        let temp = ::devtools::RandomTempPath::new();
+        let temp = mktemp::Temp::new_dir().unwrap();
 
-        let mut jdb = new_db(temp.as_path().as_path());
+        let mut jdb = new_db(temp.as_ref());
         let key = jdb.insert(b"dog");
         jdb.inject_batch().unwrap();
 

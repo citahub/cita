@@ -1,6 +1,5 @@
 [workspace]
-members = ["devtools"
-,"auth"
+members = ["auth"
 ,"jsonrpc"
 ,"chain"
 ,"chain/core"

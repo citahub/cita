@@ -468,6 +468,8 @@ mod tests {
     #![cfg_attr(feature="dev", allow(blacklisted_name))]
     #![cfg_attr(feature="dev", allow(similar_names))]
     extern crate logger;
+    extern crate mktemp;
+
 
     use super::*;
     use {H32, Hashable};
@@ -997,9 +999,8 @@ mod tests {
 
     #[test]
     fn inject() {
-        let temp = ::devtools::RandomTempPath::new();
-
-        let mut jdb = new_db(temp.as_path().as_path());
+        let temp = mktemp::Temp::new_dir().unwrap();
+        let mut jdb = new_db(temp.as_ref());
         let key = jdb.insert(b"dog");
         jdb.inject_batch().unwrap();
 
@@ -1012,10 +1013,10 @@ mod tests {
 
     #[test]
     fn earliest_era() {
-        let temp = ::devtools::RandomTempPath::new();
+        let temp = mktemp::Temp::new_dir().unwrap();
 
         // empty DB
-        let mut jdb = new_db(temp.as_path().as_path());
+        let mut jdb = new_db(temp.as_ref());
         assert!(jdb.earliest_era().is_none());
 
         // single journalled era.
@@ -1049,7 +1050,7 @@ mod tests {
 
         // reconstructed: no journal entries.
         drop(jdb);
-        let jdb = new_db(temp.as_path().as_path());
+        let jdb = new_db(temp.as_ref());
         assert_eq!(jdb.earliest_era(), None);
     }
 }

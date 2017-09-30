@@ -6,16 +6,15 @@ dependencies = [
  "bigint 3.0.0",
  "blake2b 0.1.0",
  "clippy 0.0.103 (registry+https://github.com/rust-lang/crates.io-index)",
- "devtools 0.1.0",
  "elastic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethcore-bloom-journal 0.1.0",
- "ethcore-logger 1.8.0",
  "heapsize 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mktemp 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -124,12 +123,12 @@ version = "0.1.0"
 dependencies = [
  "cache_2q 0.8.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0",
- "cita_log 0.1.0",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0",
  "threadpool 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -359,7 +358,6 @@ version = "0.6.0"
 dependencies = [
  "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita_log 0.1.0",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core 0.1.0",
@@ -367,6 +365,7 @@ dependencies = [
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0",
  "serde_json 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -380,7 +379,6 @@ version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0",
- "cita_log 0.1.0",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core 0.1.0",
@@ -388,6 +386,7 @@ dependencies = [
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "proof 0.6.0",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -517,7 +516,6 @@ dependencies = [
  "authority_manage 0.1.0",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0",
- "cita_log 0.1.0",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -525,6 +523,7 @@ dependencies = [
  "engine_json 0.6.0",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "proof 0.6.0",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0",
@@ -544,7 +543,6 @@ dependencies = [
  "authority_manage 0.1.0",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0",
- "cita_log 0.1.0",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "core 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -553,6 +551,7 @@ dependencies = [
  "engine_json 0.6.0",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "proof 0.6.0",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -591,9 +590,7 @@ dependencies = [
  "common-types 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "devtools 0.1.0",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethcore-bloom-journal 0.1.0",
  "ethcore-io 1.8.0",
  "ethkey 0.2.0",
@@ -602,6 +599,7 @@ dependencies = [
  "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mktemp 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -668,13 +666,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "devtools"
-version = "0.1.0"
-dependencies = [
- "rand 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -836,21 +827,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethcore-logger"
-version = "1.8.0"
-dependencies = [
- "ansi_term 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "arrayvec 0.3.23 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "isatty 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "parking_lot 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "ethkey"
 version = "0.2.0"
 dependencies = [
@@ -986,16 +962,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "isatty"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.30 (registry+https://github.com/rust-lang/crates.io-index)",
- "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "itertools"
 version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1012,7 +978,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "jsonrpc"
 version = "0.6.0"
 dependencies = [
- "cita_log 0.1.0",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1021,8 +986,8 @@ dependencies = [
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "num_cpus 1.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "pretty_env_logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0",
  "serde 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1038,13 +1003,13 @@ name = "jsonrpc_performance"
 version = "0.1.0"
 dependencies = [
  "cita-crypto 0.1.0",
- "cita_log 0.1.0",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1137,9 +1102,9 @@ dependencies = [
  "capnp-nonblock 0.3.0",
  "capnpc 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "docopt 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "mio 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1200,6 +1165,15 @@ dependencies = [
 name = "log"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "logger"
+version = "0.1.0"
+dependencies = [
+ "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "lru-cache"
@@ -1356,13 +1330,13 @@ version = "0.6.0"
 dependencies = [
  "byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita_log 0.1.0",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-cpupool 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "notify 4.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0",
@@ -1584,16 +1558,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pretty_env_logger"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "ansi_term 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "proof"
 version = "0.6.0"
 dependencies = [
@@ -1628,7 +1592,6 @@ version = "0.1.0"
 dependencies = [
  "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "errno 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-cpupool 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1690,13 +1653,12 @@ name = "raft"
 version = "0.6.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita_log 0.1.0",
  "docopt 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0",
  "libraft 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "mio 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0",
@@ -2282,12 +2244,12 @@ name = "trans_evm"
 version = "0.1.0"
 dependencies = [
  "cita-crypto 0.1.0",
- "cita_log 0.1.0",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0",
+ "logger 0.1.0",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2320,12 +2282,11 @@ version = "0.6.0"
 dependencies = [
  "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita_log 0.1.0",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "engine 0.6.0",
- "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
  "protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0",
  "serde 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2603,7 +2564,6 @@ dependencies = [
 "checksum idna 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "014b298351066f1512874135335d62a789ffe78a9974f94b43ed5621951eaf7d"
 "checksum inotify 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "887fcc180136e77a85e6a6128579a719027b1bab9b1c38ea4444244fe262c20c"
 "checksum iovec 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "29d062ee61fccdf25be172e70f34c9f6efc597e1fb8f6526e8437b2046ab26be"
-"checksum isatty 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "fa500db770a99afe2a0f2229be2a3d09c7ed9d7e4e8440bf71253141994e240f"
 "checksum itertools 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)" = "4833d6978da405305126af4ac88569b5d71ff758581ce5a987dbfa3755f694fc"
 "checksum itoa 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "8324a32baf01e2ae060e9de58ed0bc2320c9a2833491ee36cd3b4c414de4db8c"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
@@ -2655,7 +2615,6 @@ dependencies = [
 "checksum percent-encoding 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "de154f638187706bde41d9b4738748933d64e6b37bdbffc0b47a97d16a6ae356"
 "checksum pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "3a8b4c6b8165cd1a1cd4b9b120978131389f64bdaf456435caa41e630edba903"
 "checksum pnacl-build-helper 1.4.11 (registry+https://github.com/rust-lang/crates.io-index)" = "dfbe13ee77c06fb633d71c72438bd983286bb3521863a753ade8e951c7efb090"
-"checksum pretty_env_logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8a97d1fde8be5bdb2c315277042a39a89b8ca5640c9d8e1a900cc9d906ee5af2"
 "checksum protobuf 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "568a15e4d572d9a5e63ae3a55f84328c984842887db179b40b4cc6a608bac6a4"
 "checksum pulldown-cmark 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "8361e81576d2e02643b04950e487ec172b687180da65c731c03cf336784e6c07"
 "checksum quickcheck 0.2.27 (registry+https://github.com/rust-lang/crates.io-index)" = "d086a75fc7bdfbadd649f7c1fa524f39be4979b15506f621b3742b752f5364ed"

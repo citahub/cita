@@ -593,6 +593,7 @@ mod tests {
     #![cfg_attr(feature="dev", allow(blacklisted_name))]
     #![cfg_attr(feature="dev", allow(similar_names))]
     extern crate logger;
+    extern crate mktemp;
 
     use super::*;
     use super::super::traits::JournalDB;
@@ -1125,9 +1126,8 @@ mod tests {
 
     #[test]
     fn inject() {
-        let temp = ::devtools::RandomTempPath::new();
-
-        let mut jdb = new_db(temp.as_path().as_path());
+        let temp = mktemp::Temp::new_dir().unwrap();
+        let mut jdb = new_db(temp.as_ref());
         let key = jdb.insert(b"dog");
         jdb.inject_batch().unwrap();
 

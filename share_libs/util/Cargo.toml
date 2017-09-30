@@ -17,7 +17,6 @@ heapsize = "0.4"
 itertools = "0.5"
 sha3 = { path = "../sha3", optional = true }
 clippy = { version = "0.0.103", optional = true }
-devtools = { path = "../../devtools" }
 libc = "0.2.7"
 vergen = "0.1"
 target_info = "0.1"
@@ -39,3 +38,6 @@ blake2bhash = ["blake2b"]
 [build-dependencies]
 vergen = "*"
 rustc_version = "0.1.0"
+
+[dev-dependencies]
+mktemp = "0.3.1"

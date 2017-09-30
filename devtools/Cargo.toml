@@ -1,7 +1,0 @@
-[package]
-name = "devtools"
-version = "0.1.0"
-authors = ["u2 <zhangyaning1985@gmail.com>"]
-
-[dependencies]
-rand = "0.3"

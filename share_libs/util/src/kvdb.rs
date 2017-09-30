@@ -886,14 +886,14 @@ impl Drop for Database {
 
 #[cfg(test)]
 mod tests {
+    extern crate mktemp;
     use super::*;
-    use devtools::*;
     use hash::H256;
     use std::str::FromStr;
 
     fn test_db(config: &DatabaseConfig) {
-        let path = RandomTempPath::create_dir();
-        let db = Database::open(config, path.as_path().to_str().unwrap()).unwrap();
+        let path = mktemp::Temp::new_dir().unwrap();
+        let db = Database::open(config, path.as_ref().to_str().unwrap()).unwrap();
         let key1 = H256::from_str("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
         let key2 = H256::from_str("03c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
         let key3 = H256::from_str("01c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
@@ -946,8 +946,8 @@ mod tests {
 
     #[test]
     fn kvdb() {
-        let path = RandomTempPath::create_dir();
-        let _ = Database::open_default(path.as_path().to_str().unwrap()).unwrap();
+        let path = mktemp::Temp::new_dir().unwrap();
+        let _ = Database::open_default(path.as_ref().to_str().unwrap()).unwrap();
         test_db(&DatabaseConfig::default());
     }
 
@@ -1078,11 +1078,11 @@ mod tests {
         let config = DatabaseConfig::default();
         let config_5 = DatabaseConfig::with_columns(Some(5));
 
-        let path = RandomTempPath::create_dir();
+        let path = mktemp::Temp::new_dir().unwrap();
 
         // open empty, add 5.
         {
-            let db = Database::open(&config, path.as_path().to_str().unwrap()).unwrap();
+            let db = Database::open(&config, path.as_ref().to_str().unwrap()).unwrap();
             assert_eq!(db.num_columns(), 0);
 
             for i in 0..5 {
@@ -1093,7 +1093,7 @@ mod tests {
 
         // reopen as 5.
         {
-            let db = Database::open(&config_5, path.as_path().to_str().unwrap()).unwrap();
+            let db = Database::open(&config_5, path.as_ref().to_str().unwrap()).unwrap();
             assert_eq!(db.num_columns(), 5);
         }
     }
@@ -1103,11 +1103,11 @@ mod tests {
         let config = DatabaseConfig::default();
         let config_5 = DatabaseConfig::with_columns(Some(5));
 
-        let path = RandomTempPath::create_dir();
+        let path = mktemp::Temp::new_dir().unwrap();
 
         // open 5, remove all.
         {
-            let db = Database::open(&config_5, path.as_path().to_str().unwrap()).unwrap();
+            let db = Database::open(&config_5, path.as_ref().to_str().unwrap()).unwrap();
             assert_eq!(db.num_columns(), 5);
 
             for i in (0..5).rev() {
@@ -1118,7 +1118,7 @@ mod tests {
 
         // reopen as 0.
         {
-            let db = Database::open(&config, path.as_path().to_str().unwrap()).unwrap();
+            let db = Database::open(&config, path.as_ref().to_str().unwrap()).unwrap();
             assert_eq!(db.num_columns(), 0);
         }
     }
