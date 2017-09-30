@@ -16,11 +16,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-use crypto::{PubKey, Signature, Sign};
+use crypto::{PubKey, Signature, Sign, SIGNATURE_BYTES_LEN};
 use libproto::*;
 use libproto::blockchain::*;
 use protobuf::Message;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::result::Result;
 use std::sync::mpsc::Sender;
 use util::H256;
@@ -32,7 +32,7 @@ pub struct Verifier {
     inited: bool,
     height_latest: Option<u64>,
     height_low: Option<u64>,
-    hashes: HashMap<u64, Vec<H256>>,
+    hashes: HashMap<u64, HashSet<H256>>,
 }
 
 impl Verifier {
@@ -57,7 +57,7 @@ impl Verifier {
         self.height_low
     }
 
-    pub fn update_hashes(&mut self, h: u64, hashes: Vec<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn update_hashes(&mut self, h: u64, hashes: HashSet<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
             self.height_low = if h < BLOCKLIMIT { Some(0) } else { Some(h - BLOCKLIMIT + 1) };
@@ -103,7 +103,12 @@ impl Verifier {
 
     pub fn verify_sig(&self, req: &VerifyTxReq) -> Result<PubKey, ()> {
         let hash = H256::from(req.get_hash());
-        let sig = Signature::from(req.get_signature());
+        let sig_bytes = req.get_signature();
+        if sig_bytes.len() != SIGNATURE_BYTES_LEN {
+            warn!("Unvalid signature bytes");
+            return Err(());
+        }
+        let sig = Signature::from(sig_bytes);
         match req.get_crypto() {
             Crypto::SECP => {
                 sig.recover(&hash).map_err(|_| ())
@@ -131,7 +136,7 @@ mod tests {
         let mut v = Verifier::new();
         assert_eq!(v.is_inited(), false);
         let (tx_pub, _) = channel();
-        v.update_hashes(0, vec![], &tx_pub);
+        v.update_hashes(0, HashSet::new(), &tx_pub);
         assert_eq!(v.is_inited(), true);
         assert_eq!(v.get_height_latest(), Some(0));
         assert_eq!(v.get_height_low(), Some(0));
@@ -141,18 +146,18 @@ mod tests {
     fn verify_update() {
         let mut v = Verifier::new();
         let (tx_pub, _rx_pub) = channel();
-        v.update_hashes(100, vec![], &tx_pub);
+        v.update_hashes(100, HashSet::new(), &tx_pub);
         assert_eq!(v.is_inited(), false);
         assert_eq!(v.get_height_latest(), Some(100));
         assert_eq!(v.get_height_low(), Some(1));
         for i in 0..99 {
-            v.update_hashes(i, vec![], &tx_pub);
+            v.update_hashes(i, HashSet::new(), &tx_pub);
         }
         assert_eq!(v.is_inited(), false);
-        v.update_hashes(99, vec![], &tx_pub);
+        v.update_hashes(99, HashSet::new(), &tx_pub);
         assert_eq!(v.is_inited(), true);
 
-        v.update_hashes(101, vec![], &tx_pub);
+        v.update_hashes(101, HashSet::new(), &tx_pub);
         assert_eq!(v.get_height_latest(), Some(101));
         assert_eq!(v.get_height_low(), Some(2));
     }

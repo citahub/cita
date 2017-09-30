@@ -91,6 +91,7 @@ pub mod topics {
     pub const BLOCK_TXHASHES_REQ: u16 = 13;
     pub const NEW_PROOF_BLOCK: u16 = 14;
     pub const BLOCK_TXS: u16 = 15;
+    pub const RICH_STATUS: u16 = 16;
 }
 
 #[derive(Debug)]
@@ -109,6 +110,7 @@ pub enum MsgClass {
     BLOCKWITHPROOF(BlockWithProof),
     BLOCKTXS(BlockTxs),
     MSG(Vec<u8>),
+    RICHSTATUS(RichStatus),
 }
 
 pub fn topic_to_string(top: u16) -> &'static str {
@@ -129,6 +131,7 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::BLOCK_TXHASHES_REQ => "block_txhashes_req",
         topics::NEW_PROOF_BLOCK => "new_proof_blk",
         topics::BLOCK_TXS => "block_txs",
+        topics::RICH_STATUS => "rich_status",
         _ => "",
     }
 }
@@ -263,6 +266,8 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
             content.extend_from_slice(&content_msg);
             MsgClass::MSG(content)
         }
+        MsgType::RICH_STATUS => MsgClass::RICHSTATUS(parse_from_bytes::<RichStatus>(&content_msg).unwrap()),
+
     };
 
     (msg.get_cmd_id(), msg.get_origin(), msg_class)

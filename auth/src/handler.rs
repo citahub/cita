@@ -19,7 +19,7 @@ use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus, Bloc
 use libproto::*;
 use libproto::blockchain::SignedTransaction;
 use protobuf::Message;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, Arc};
 use std::sync::mpsc::{Sender, Receiver};
 use std::time::SystemTime;
@@ -134,15 +134,17 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             let height = block_tx_hashes.get_height();
             trace!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
-            let mut tx_hashes_in_h256: Vec<H256> = Vec::new();
+            let mut tx_hashes_in_h256: HashSet<H256> = HashSet::new();
+            let mut tx_hashes_in_h256_vec: Vec<H256> = Vec::new();
             let mut cache_guard = cache.write();
             for data in tx_hashes.iter() {
                 let hash = H256::from_slice(data);
                 cache_guard.remove(&hash);
-                tx_hashes_in_h256.push(hash);
+                tx_hashes_in_h256.insert(hash);
+                tx_hashes_in_h256_vec.push(hash);
             }
-            trace!("BLOCKTXHASHES come height {}, tx_hashs {:?}", height, tx_hashes_in_h256.len());
-            let res = txs_sender.send((height as usize, tx_hashes_in_h256.clone()));
+            trace!("BLOCKTXHASHES come height {}, tx_hashs {:?}", height, tx_hashes_in_h256_vec.len());
+            let res = txs_sender.send((height as usize, tx_hashes_in_h256_vec));
             trace!("BLOCKTXHASHES  txs_sender res is {:?}", res);
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
         }

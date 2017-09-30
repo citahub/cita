@@ -24,13 +24,14 @@ extern crate tokio_proto;
 extern crate tokio_service;
 extern crate byteorder;
 extern crate rustc_serialize;
-extern crate parking_lot;
 extern crate libproto;
 extern crate protobuf;
 extern crate pubsub;
 extern crate dotenv;
 extern crate cita_log;
 extern crate bytes;
+extern crate notify;
+extern crate util;
 
 pub mod config;
 pub mod server;
@@ -41,21 +42,60 @@ pub mod msghandle;
 
 use clap::{App, SubCommand};
 use config::NetConfig;
-use connection::{Connection, do_connect, start_client};
+use connection::{Connection, do_connect as connect, start_client};
 use dotenv::dotenv;
 use log::LogLevelFilter;
 use msghandle::{is_need_proc, handle_rpc};
+use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use pubsub::start_pubsub;
 use server::MySender;
 use server::start_server;
 use std::env;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
+use std::thread;
+use std::time::Duration;
+use util::RwLock;
+use util::panichandler::set_panic_handler;
+
+
+pub fn do_connect(config_path: &str, con: Arc<RwLock<Connection>>) {
+
+    let do_con_lock = con.clone();
+    {
+        let do_con = &mut *do_con_lock.as_ref().write();
+        connect(do_con);
+    }
+
+    let config_file: String = "./".to_string() + config_path;
+    let (tx, rx) = channel();
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(5)).unwrap();
+    let _ = watcher.watch(config_file.clone(), RecursiveMode::Recursive).unwrap();
+
+    thread::spawn(move || loop {
+                      match rx.recv() {
+                          Ok(_) => {
+                              let config = NetConfig::new(&config_file);
+
+                              let con = &mut *con.as_ref().write();
+                              con.update(&config);
+                              connect(&con);
+                              //let con = &mut *con.as_ref().write();
+                              con.del_peer();
+                          }
+                          Err(e) => info!("watch error: {:?}", e),
+                      }
+                  });
+}
+
 
 fn main() {
     dotenv().ok();
     // Always print backtrace on panic.
     env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
 
     // Init logger
     cita_log::format(LogLevelFilter::Info);
@@ -96,10 +136,10 @@ fn main() {
 
     // connect peers
     let con = Connection::new(&config);
-    do_connect(&con);
+    let con_lock = Arc::new(RwLock::new(con));
+    do_connect(config_path, con_lock.clone());
     let (ctx, crx) = channel();
-    let con = Arc::new(con);
-    start_client(con.clone(), crx);
+    start_client(con_lock.clone(), crx);
 
     loop {
         // msg from mq need proc before broadcast
@@ -108,6 +148,8 @@ fn main() {
         if let (_, true, msg) = is_need_proc(body.as_ref()) {
             ctx.send(msg).unwrap();
         }
+
+        let con = &*con_lock.as_ref().read();
         handle_rpc(&con, &ctx_pub, body.as_ref());
     }
 }

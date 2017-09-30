@@ -19,6 +19,7 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::de::{Visitor, Error};
 use std::fmt;
 use types::ids::BlockId;
+use util::clean_0x;
 
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Hash, Eq)]
@@ -61,7 +62,7 @@ impl<'de> Deserialize<'de> for BlockNumber {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_unit(BlockNumberVisitor)
+        deserializer.deserialize_string(BlockNumberVisitor)
     }
 }
 
@@ -71,7 +72,7 @@ impl<'a> Visitor<'a> for BlockNumberVisitor {
     type Value = BlockNumber;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "a block number or 'latest', 'earliest'")
+        write!(formatter, "a hex block number or 'latest', 'earliest'")
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
@@ -81,13 +82,12 @@ impl<'a> Visitor<'a> for BlockNumberVisitor {
         match value {
             "latest" => Ok(BlockNumber::Tag(BlockTag::Latest)),
             "earliest" => Ok(BlockNumber::Tag(BlockTag::Earliest)),
-            _ if value.starts_with("0x") => {
-                u64::from_str_radix(&value[2..], 16)
-                    .map(BlockNumber::Height)
-                    .map_err(|_| Error::custom("invalid block number"))
-            }
             _ => {
-                value.parse::<u64>().map(BlockNumber::Height).map_err(|_| Error::custom("invalid block number"))
+                let val = clean_0x(value);
+                u64::from_str_radix(&val[0..], 16)
+                    .map(BlockNumber::Height)
+                    .map_err(|_| Error::custom("invalid hex block number"))
+
             }
         }
     }
@@ -97,15 +97,6 @@ impl<'a> Visitor<'a> for BlockNumberVisitor {
         E: Error,
     {
         self.visit_str(value.as_ref())
-    }
-
-    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        match value {
-            _ => Ok(BlockNumber::Height(value)),
-        }
     }
 }
 
@@ -128,8 +119,8 @@ mod tests {
     #[test]
     fn block_height_deserialization() {
         let s3 = r#"[10, "latest"]"#;
-        let deserialized3: Vec<BlockNumber> = serde_json::from_str(s3).unwrap();
-        assert_eq!(deserialized3, vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)])
+        let deserialized: serde_json::Result<Vec<BlockNumber>> = serde_json::from_str(s3);
+        assert!(deserialized.is_err())
     }
 
     #[test]
@@ -147,9 +138,48 @@ mod tests {
     }
 
     #[test]
-    fn decimal_number_deserialization() {
+    fn hex_number_deserialization() {
         let s3 = r#"["10", "latest"]"#;
         let deserialized3: Vec<BlockNumber> = serde_json::from_str(s3).unwrap();
-        assert_eq!(deserialized3, vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)])
+        assert_eq!(deserialized3, vec![BlockNumber::Height(16), BlockNumber::Tag(BlockTag::Latest)])
+    }
+
+    #[test]
+    fn hex_number_serialization() {
+        let right = "[\"0x10\",\"latest\"]";
+        let left = serde_json::to_string(&vec![BlockNumber::Height(16), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        assert_eq!(left, right)
+    }
+
+    #[test]
+    fn decimal_number_serialization() {
+        let right = "[10,\"latest\"]";
+        let left = serde_json::to_string(&vec![BlockNumber::Height(16), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        assert_ne!(left, right)
+    }
+
+    #[test]
+    fn decimal_hex_number_serialization() {
+        let right = "[10,\"latest\"]";
+        let left = serde_json::to_string(&vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        assert_ne!(left, right)
+    }
+
+    #[test]
+    fn decimal_into_number_serialization() {
+        let right = "[0xa,\"latest\"]";
+        let left = serde_json::to_string(&vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        assert_ne!(left, right)
+    }
+
+    #[test]
+    fn decimal_into_hex_serialization() {
+        let right = "[\"0xa\",\"latest\"]";
+        let left = serde_json::to_string(&vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        assert_eq!(left, right);
+
+        let right = "[\"0x10\",\"latest\"]";
+        let left = serde_json::to_string(&vec![BlockNumber::Height(16), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        assert_eq!(left, right)
     }
 }

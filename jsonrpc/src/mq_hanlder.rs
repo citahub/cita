@@ -18,18 +18,15 @@
 use base_hanlder::{TransferType, ReqInfo};
 use jsonrpc_types::response::Output;
 use libproto::{parse_msg, display_cmd, MsgClass, Response};
-use num_cpus;
-use parking_lot::{RwLock, Mutex};
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
-use threadpool::ThreadPool;
+use util::{RwLock, Mutex};
 use ws;
 
 #[derive(Default)]
 pub struct MqHandler {
     transfer_type: TransferType,
-    thread_pool: Option<ThreadPool>,
     //TODO 定时清理工作
     ws_responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>,
     responses: Arc<RwLock<HashMap<Vec<u8>, Response>>>,
@@ -40,23 +37,13 @@ impl MqHandler {
     pub fn new() -> Self {
         MqHandler {
             transfer_type: TransferType::ALL,
-            thread_pool: None,
             ws_responses: Arc::new(Mutex::new(HashMap::new())),
             responses: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
-    pub fn set_http_or_ws(&mut self, transfer_type: TransferType, thread_num: usize) {
+    pub fn set_http_or_ws(&mut self, transfer_type: TransferType) {
         self.transfer_type = transfer_type;
-        if self.transfer_type == TransferType::WEBSOCKET {
-            let mut num_cpus = 0;
-            if thread_num == 0 {
-                num_cpus = 2 * num_cpus::get();
-            } else {
-                num_cpus = thread_num;
-            }
-            self.thread_pool = Some(ThreadPool::new_with_name("MqHandler".to_string(), num_cpus));
-        }
     }
 
     pub fn set_http(&mut self, responses: Arc<RwLock<HashMap<Vec<u8>, Response>>>) {
@@ -79,18 +66,12 @@ impl MqHandler {
                         self.responses.write().insert(content.request_id.clone(), content);
                     }
                     TransferType::WEBSOCKET => {
-                        let ws_responses = self.ws_responses.clone();
-                        self.thread_pool.as_ref().map(|pool| {
-                            pool.execute(move || {
-                                let value = {
-                                    ws_responses.lock().remove(&content.request_id)
-                                };
-                                drop(ws_responses);
-                                if let Some((req_info, sender)) = value {
-                                    sender.send(serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap());
-                                }
-                            });
-                        });
+                        let value = {
+                            self.ws_responses.lock().remove(&content.request_id)
+                        };
+                        if let Some((req_info, sender)) = value {
+                            sender.send(serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap());
+                        }
                     }
                     TransferType::ALL => {
                         error!("only start one of websocket and http！");

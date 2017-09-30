@@ -165,11 +165,20 @@ impl Error {
         }
     }
 
-    pub fn parse_error_msg(err_msg: &str) -> Error {
+    pub fn parse_error_msg(err_msg: &str) -> Self {
         Error {
             code: ErrorCode::ParseError,
             message: err_msg.to_string(),
             data: Some(Value::Null),
+        }
+    }
+
+    /// Creates new `InvalidParams`
+    pub fn invalid_params_len() -> Self {
+        Error {
+            code: ErrorCode::InvalidParams,
+            message: "invalid JsonRpc params length".to_string(),
+            data: None,
         }
     }
 }

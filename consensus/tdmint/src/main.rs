@@ -37,6 +37,7 @@ extern crate dotenv;
 extern crate core as chain_core;
 extern crate cita_log;
 extern crate cpuprofiler;
+extern crate authority_manage;
 extern crate engine_json;
 
 use clap::App;
@@ -51,6 +52,7 @@ use core::votetime::WaitTimer;
 use cpuprofiler::PROFILER;
 use libproto::{parse_msg, key_to_id};
 use pubsub::start_pubsub;
+use util::panichandler::set_panic_handler;
 
 const THREAD_POOL_NUM: usize = 10;
 
@@ -71,6 +73,9 @@ fn main() {
     dotenv::dotenv().ok();
     // Always print backtrace on panic.
     ::std::env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
 
     cita_log::format(LogLevelFilter::Info);
     info!("CITA:consensus:tendermint");
@@ -107,7 +112,7 @@ fn main() {
     let (mq2main, main4mq) = channel();
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("consensus", vec!["net.msg", "chain.status", "verify_blk_consensus", "auth.block_txs"], tx_sub, rx_pub);
+    start_pubsub("consensus", vec!["net.msg", "chain.richstatus", "auth.block_txs"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let tx = mq2main.clone();

@@ -15,4 +15,6 @@ interface NodeInterface {
     // 1: ready;
     // 2: start
     function getStatus(address _node) constant returns (uint8);
+    function addAdmin(address) returns (bool);
+    function isAdmin(address) constant returns (bool);
 }

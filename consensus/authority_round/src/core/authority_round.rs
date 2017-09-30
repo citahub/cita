@@ -16,11 +16,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{Engine, EngineError, Signable, unix_now, AsMillis};
-use crypto::{Signature, Signer, CreateKey};
+use authority_manage::AuthorityManage;
+use crypto::{Signature, Signer, CreateKey, SIGNATURE_BYTES_LEN};
 use engine_json;
 use libproto::*;
-use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, Status};
-use parking_lot::RwLock;
+use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, RichStatus};
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
 use rustc_serialize::hex::ToHex;
@@ -30,7 +30,7 @@ use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use tx_pool::Pool;
-use util::{Address, H256};
+use util::{Address, H256, RwLock};
 
 const INIT_HEIGHT: usize = 1;
 const INIT_STEP: usize = 0;
@@ -58,6 +58,7 @@ pub struct AuthorityRound {
     sealing: AtomicBool,
     step: AtomicUsize,
     ready: Mutex<Sender<usize>>,
+    auth_manage: RwLock<AuthorityManage>,
 }
 
 impl AuthorityRound {
@@ -74,6 +75,7 @@ impl AuthorityRound {
                                   sealing: AtomicBool::new(false),
                                   step: AtomicUsize::new(INIT_STEP),
                                   ready: Mutex::new(ready),
+                                  auth_manage: RwLock::new(AuthorityManage::new()),
                               });
         Ok(engine)
     }
@@ -84,7 +86,8 @@ impl AuthorityRound {
     }
 
     pub fn is_sealer(&self, nonce: u64) -> bool {
-        let authority = nonce % self.params.authority_n;
+        //let authority = nonce % self.params.authority_n;
+        let authority = nonce % self.auth_manage.read().authority_n as u64;
         authority == self.position
     }
 
@@ -158,24 +161,34 @@ impl Engine for AuthorityRound {
     fn verify_block(&self, block: &Block) -> Result<(), EngineError> {
         let block_time = block.get_header().get_timestamp();
         let proof = AuthorityRoundProof::from(block.get_header().get_proof().clone());
+        if proof.signature.len() != SIGNATURE_BYTES_LEN {
+            return Err(EngineError::BadSignature(proof.signature));
+        }
         let signature = Signature::from(proof.signature);
         let author = block.get_body().recover_address_with_signature(&signature).unwrap();
-        if !self.params.authorities.contains(&author) {
+        //if !self.params.authorities.contains(&author) {
+        if !self.auth_manage.read().authorities.contains(&author) {
             trace!("verify_block author {:?}", author.to_hex());
-            return Err(EngineError::NotAuthorized(author))?;
+            return Err(EngineError::NotAuthorized(author));
         }
         if block_time > unix_now().as_millis() {
             trace!("verify_block time {:?}", block_time);
-            return Err(EngineError::FutureBlock(block_time))?;
+            return Err(EngineError::FutureBlock(block_time));
         }
         Ok(())
     }
 
-    fn receive_new_status(&self, status: Status) {
+    fn receive_new_status(&self, status: RichStatus) {
         self.step.store(status.height as usize, Ordering::SeqCst);
         let new_height = (status.height + 1) as usize;
         let height = self.height.load(Ordering::SeqCst);
         trace!("new_status status {:?} height {:?}", status, height);
+
+        let authorities: Vec<Address> = status.get_nodes().into_iter().map(|node| Address::from_slice(node)).collect();
+        {
+            self.auth_manage.write().receive_authorities_list(height, authorities);
+        }
+
         if new_height == INIT_HEIGHT {
             self.height.store(new_height, Ordering::SeqCst);
             self.sealing.store(false, Ordering::SeqCst);
@@ -298,6 +311,7 @@ mod tests {
 
     #[test]
     fn has_valid_metadata() {
+        ::std::env::set_var("DATA_PATH", "./data");
         let config_path = if SIGNATURE_NAME == "ed25519" {
             "../res/authority_round.json".to_string()
         } else if SIGNATURE_NAME == "secp256k1" {

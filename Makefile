@@ -1,13 +1,14 @@
-# 1) native development
-# 1.1) prerequirement
-#sudo apt-get install --force-yes libsnappy1v5 libsnappy-dev  capnproto  libgoogle-perftools-dev  \
-#    libssl-dev  libudev-dev  rabbitmq-server  google-perftools jq libsodium*  libzmq3-dev
-# 1.2) make setup
-# 1.3) make clean
-# 1.4) make debug or make release
-# 1.5) make test|bench|cov
-# 1.6) refer to env.sh
-
+# 1) prerequirement
+# ./scripts/install_sys.sh
+# ./scripts/install_rust.sh
+# 2) development
+# ./scripts/config_rabbitms.sh
+# ./scripts/speedup.sh
+# make fmt
+# make debug
+# make test
+# make bench
+# make release
 ################################################################################
 CARGO=RUSTFLAGS='-F warnings' cargo
 
@@ -22,25 +23,6 @@ release:
 	mkdir -p admintool/release/bin
 	cp -f .env admintool/release
 	find target/release -maxdepth 1 -perm -111 -type f -not \( -name "*-*" -prune \) -exec cp -f {} admintool/release/bin \;
-
-setup1:
-	apt-get update -q
-	apt-get install --allow-change-held-packages software-properties-common
-	if [ $$(lsb_release -s -c) = "trusty" ]; then add-apt-repository -y ppa:chris-lea/libsodium; fi;
-	add-apt-repository -y ppa:ethereum/ethereum
-	apt-get update -q
-	apt-get build-dep build-essential
-	apt-get install -y \
-	 	pkg-config libsnappy-dev  capnproto  libgoogle-perftools-dev  libssl-dev libudev-dev  \
-		rabbitmq-server  google-perftools jq libsodium* libzmq3-dev solc
-	/etc/init.d/rabbitmq-server restart
-	-rabbitmqctl add_vhost dev
-	-rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"
-
-setup2:
-	which cargo; if [ $$? -ne 0 ]; then curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04; fi;
-	which rustfmt; if [ $$? -ne 0 ]; then cargo install --force --vers 0.9.0 rustfmt; fi;
-	pip install -r admintool/requirements.txt --user
 
 test:
 	$(CARGO) test --release --all --no-fail-fast 2>&1 |tee target/test.log
@@ -100,23 +82,3 @@ cov:
 
 clean:
 	rm -rf target
-
-docker:
-	mkdir -p /tmp/cita/build
-	cp Dockerfile-build /tmp/cita/build/Dockerfile
-	docker build -t cita/build /tmp/cita/build
-	docker run -ti -v ${PWD}:/sources -u cita cita/build bash -c  "make setup; make release"
-	mkdir -p admintool/release/lib
-	ldd admintool/release/bin/* |awk '{ if (match($$3, "/")) { print $$3; } }'|xargs -I {} cp  {} admintool/release/lib
-	rm -f admintool/release/lib/libc.so*
-	rm -f admintool/release/lib/libcom_err.so*
-	rm -f admintool/release/lib/libcrypt.so*
-	rm -f admintool/release/lib/libdl.so*
-	rm -f admintool/release/lib/liblzma.so*
-	rm -f admintool/release/lib/libm.so*
-	rm -f admintool/release/lib/libpthread.so*
-	rm -f admintool/release/lib/libresolv.so*
-	rm -f admintool/release/lib/librt.so*
-	rm -f admintool/release/lib/libz.so*
-	cd admintool;./admintool.sh -c;cd -
-	cp Dockerfile-run admintool/release/Dockerfile; docker build -t cita/run admintool/release

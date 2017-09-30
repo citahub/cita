@@ -33,7 +33,6 @@ extern crate dotenv;
 extern crate cita_log;
 extern crate threadpool;
 extern crate num_cpus;
-extern crate parking_lot;
 extern crate ws;
 extern crate clap;
 extern crate uuid;
@@ -57,7 +56,6 @@ use libproto::communication::Message as commMsg;
 use libproto::request as reqlib;
 use libproto::request::BatchRequest;
 use log::LogLevelFilter;
-use parking_lot::{RwLock, Mutex};
 use protobuf::Message;
 use protobuf::RepeatedField;
 use pubsub::start_pubsub;
@@ -68,6 +66,8 @@ use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
 use uuid::Uuid;
+use util::{RwLock, Mutex};
+use util::panichandler::set_panic_handler;
 use ws_handler::WsFactory;
 
 pub const TOPIC_NEW_TX: &str = "jsonrpc.new_tx";
@@ -94,6 +94,8 @@ fn start_profile(config: &ProfileConfig) {
 fn main() {
     dotenv().ok();
     ::std::env::set_var("RUST_BACKTRACE", "full");
+    //exit process when panic
+    set_panic_handler();
     cita_log::format(LogLevelFilter::Info);
     info!("CITA:jsonrpc ");
 
@@ -134,7 +136,7 @@ fn main() {
 
     //http
     if config.http_config.enable {
-        mq_handle.set_http_or_ws(TransferType::HTTP, 0);
+        mq_handle.set_http_or_ws(TransferType::HTTP);
         let http_responses = Arc::new(RwLock::new(HashMap::with_capacity(1000)));
         mq_handle.set_http(http_responses.clone());
 
@@ -158,7 +160,7 @@ fn main() {
 
     //ws
     if config.ws_config.enable {
-        mq_handle.set_http_or_ws(TransferType::WEBSOCKET, 0);
+        mq_handle.set_http_or_ws(TransferType::WEBSOCKET);
         let ws_responses = Arc::new(Mutex::new(HashMap::with_capacity(1000)));
         mq_handle.set_ws(ws_responses.clone());
         let ws_config = config.ws_config.clone();

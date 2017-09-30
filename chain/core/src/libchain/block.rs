@@ -21,17 +21,18 @@ use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
+use libchain::chain::Switch;
 use libchain::chain::TransactionHash;
 use libchain::extras::TransactionAddress;
 
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use protobuf::RepeatedField;
-use receipt::Receipt;
+use receipt::{Receipt, ReceiptError};
 use rlp::*;
 use state::State;
 use state_db::StateDB;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use trace::FlatTrace;
@@ -280,8 +281,10 @@ impl DerefMut for OpenBlock {
 }
 
 impl OpenBlock {
-    pub fn new(factories: Factories, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>) -> Result<Self, Error> {
-        let state = State::from_existing(db, state_root, U256::default(), factories)?;
+    pub fn new(factories: Factories, senders: HashSet<Address>, creators: HashSet<Address>, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>) -> Result<Self, Error> {
+        let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
+        state.senders = senders;
+        state.creators = creators;
         let r = OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes: last_hashes,
@@ -305,19 +308,19 @@ impl OpenBlock {
     }
 
     ///execute transactions
-    pub fn apply_transactions(&mut self) {
-        for t in self.body.transactions.clone() {
-            self.apply_transaction(&t);
+    pub fn apply_transactions(&mut self, switch: &Switch) {
+        for mut t in self.body.transactions.clone() {
+            self.apply_transaction(&mut t, switch);
         }
         self.state.commit().expect("commit trie error");
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
     }
 
-    pub fn apply_transaction(&mut self, t: &SignedTransaction) {
+    pub fn apply_transaction(&mut self, t: &mut SignedTransaction, switch: &Switch) {
         let env_info = self.env_info();
         let has_traces = self.traces.is_some();
-        match self.state.apply(&env_info, &t, has_traces) {
+        match self.state.apply(&env_info, t, has_traces, switch) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());
@@ -329,6 +332,30 @@ impl OpenBlock {
             Err(Error::Execution(ExecutionError::InvalidNonce { expected: _, got: _ })) => {
                 self.receipts.push(None);
                 self.tx_hashes.push(true);
+            }
+            Err(Error::Execution(ExecutionError::NoTransactionPermission)) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoTransactionPermission));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
+            }
+            Err(Error::Execution(ExecutionError::NoContractPermission)) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoContractPermission));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
+            }
+            Err(Error::Execution(ExecutionError::NotEnoughBaseGas { required: _, got: _ })) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NotEnoughBaseGas));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
+            }
+            Err(Error::Execution(ExecutionError::BlockGasLimitReached {
+                                     gas_limit: _,
+                                     gas_used: _,
+                                     gas: _,
+                                 })) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::BlockGasLimitReached));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
             }
             Err(_) => {
                 self.receipts.push(None);

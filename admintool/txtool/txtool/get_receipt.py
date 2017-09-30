@@ -58,7 +58,7 @@ def main():
         tx_hash = get_transaction_hash()
 
     receipt = get_receipt_by(remove_hex_0x(tx_hash))
-    print(str(receipt))
+    print(simplejson.dumps(receipt, indent=2))
     print("保存topics到../output/transaction/topics")
     topics = _log_topics(receipt)
     save_topcis(topics)

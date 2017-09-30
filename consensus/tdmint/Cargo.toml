@@ -21,7 +21,6 @@ amqp = "=0.0.20"
 pubsub = { path = "../../share_libs/pubsub" }
 cita-crypto = { path = "../../share_libs/crypto" }
 proof = { path = "../proof" }
-parking_lot = "0.4"
 time = "0.1.36"
 engine_json = { path = "../json" }
 engine = { path = "../engine" }
@@ -29,3 +28,4 @@ lru-cache = "0.1"
 cita_log = { path = "../../share_libs/cita_log" }
 core = { path = "../../chain/core" }
 cpuprofiler = "0.0.3"
+authority_manage = { path = "../authority_manage" }

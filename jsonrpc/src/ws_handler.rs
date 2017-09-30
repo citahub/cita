@@ -19,15 +19,13 @@ use base_hanlder::{BaseHandler, ReqInfo};
 use jsonrpc_types::{method, Id};
 use jsonrpc_types::response::RpcFailure;
 use libproto::request as reqlib;
-//use libproto::communication;
 use num_cpus;
-use parking_lot::Mutex;
-//use protobuf::Message;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use threadpool::ThreadPool;
+use util::Mutex;
 use ws;
 use ws::{Factory, CloseCode, Handler};
 
@@ -43,7 +41,7 @@ impl WsFactory {
     pub fn new(responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>, tx: Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
         let mut thread_number: usize = 0 as usize;
         if thread_num == 0 {
-            thread_number = num_cpus::get() * 2;
+            thread_number = num_cpus::get() / 2;
         } else {
             thread_number = thread_num;
         }

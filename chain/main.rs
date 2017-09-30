@@ -17,7 +17,6 @@
 
 #![allow(unused_must_use)]
 extern crate core;
-extern crate threadpool;
 #[macro_use]
 extern crate log;
 extern crate libproto;
@@ -38,9 +37,10 @@ mod synchronizer;
 use clap::App;
 use core::db;
 use core::libchain;
-use core::libchain::{submodules, key_to_id};
 use core::libchain::Genesis;
+use core::libchain::submodules;
 use forward::*;
+use libproto::blockchain::Status;
 use log::LogLevelFilter;
 use protobuf::Message;
 use pubsub::start_pubsub;
@@ -52,6 +52,7 @@ use std::time::Duration;
 use synchronizer::Synchronizer;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
+use util::panichandler::set_panic_handler;
 
 
 fn main() {
@@ -59,14 +60,25 @@ fn main() {
 
     // Always print backtrace on panic.
     ::std::env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
+
     cita_log::format(LogLevelFilter::Info);
     info!("CITA:chain");
     let matches = App::new("chain")
         .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
+        .arg_from_usage("-g, --genesis=[FILE] 'Sets a genesis config file")
+        .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
         .get_matches();
+
+    let mut genesis_path = "genesis";
+    if let Some(ge) = matches.value_of("genesis") {
+        trace!("Value for genesis: {}", ge);
+        genesis_path = ge;
+    }
 
     let mut config_path = "config";
     if let Some(c) = matches.value_of("config") {
@@ -75,28 +87,28 @@ fn main() {
     }
 
     let (tx, rx) = channel();
-    let pool = threadpool::ThreadPool::new(10);
-    let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request", "*.blk_tx_hashs_req"], ctx_sub, crx_pub);
-    thread::spawn(move || loop {
-                      let (key, msg) = crx_sub.recv().unwrap();
-                      forward::chain_pool(&pool, &tx, key_to_id(&key), msg);
-                  });
+    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request", "*.blk_tx_hashs_req"], tx, crx_pub);
 
     let nosql_path = DataPath::nosql_path();
     trace!("nosql_path is {:?}", nosql_path);
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &nosql_path).unwrap();
-    let genesis = Genesis::init(config_path);
+    let genesis = Genesis::init(genesis_path);
     let (sync_tx, sync_rx) = channel();
-    let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx);
-    let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, st.write_to_bytes().unwrap());
+    let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx, config_path);
 
+    let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, st.write_to_bytes().unwrap());
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
-    ctx_pub.send(("chain.status".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+    ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+
+    let status: Status = st.into();
+    let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
+    trace!("chain.status {:?}, {:?}", status.get_height(), status.get_hash());
+    ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
+
     let synchronizer = Synchronizer::new(chain.clone());
-    synchronizer.sync_block_tx_hashes(st.get_height(), ctx_pub.clone());
+    synchronizer.sync_block_tx_hashes(status.get_height(), ctx_pub.clone());
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
     thread::spawn(move || loop {

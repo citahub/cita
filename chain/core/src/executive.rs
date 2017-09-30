@@ -42,17 +42,7 @@ use util::*;
 const STACK_SIZE_PER_DEPTH: usize = 24 * 1024;
 
 /// Returns new address created from address and given nonce.
-pub fn contract_address(address: &Address, nonce: &String, block_limit: u64) -> Address {
-    use rlp::RlpStream;
-
-    let mut stream = RlpStream::new_list(3);
-    stream.append(address);
-    stream.append(nonce);
-    stream.append(&block_limit);
-    From::from(stream.out().crypt_hash())
-}
-
-pub fn contract_address_inner(address: &Address, nonce: &U256) -> Address {
+pub fn contract_address(address: &Address, nonce: &U256) -> Address {
     use rlp::RlpStream;
 
     let mut stream = RlpStream::new_list(2);
@@ -70,6 +60,8 @@ pub struct TransactOptions {
     pub vm_tracing: bool,
     /// Check transaction nonce before execution.
     pub check_nonce: bool,
+    /// Check permission before execution.
+    pub check_permission: bool,
 }
 
 /// Transaction executor.
@@ -117,50 +109,53 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// This function should be used to execute transaction.
-    pub fn transact(&'a mut self, t: &SignedTransaction, options: TransactOptions) -> Result<Executed, ExecutionError> {
-        let check = options.check_nonce;
-        match options.tracing {
-            true => {
-                match options.vm_tracing {
-                    true => {
-                        self.transact_with_tracer(t, check, ExecutiveTracer::default(), ExecutiveVMTracer::toplevel())
-                    }
-                    false => {
-                        self.transact_with_tracer(t, check, ExecutiveTracer::default(), NoopVMTracer)
-                    }
-                }
-            }
-            false => {
-                match options.vm_tracing {
-                    true => {
-                        self.transact_with_tracer(t, check, NoopTracer, ExecutiveVMTracer::toplevel())
-                    }
-                    false => self.transact_with_tracer(t, check, NoopTracer, NoopVMTracer),
-                }
-            }
+    pub fn transact(&'a mut self, t: &mut SignedTransaction, options: TransactOptions) -> Result<Executed, ExecutionError> {
+        match (options.tracing, options.vm_tracing) {
+            (true, true) => self.transact_with_tracer(t, options, ExecutiveTracer::default(), ExecutiveVMTracer::toplevel()),
+            (true, false) => self.transact_with_tracer(t, options, ExecutiveTracer::default(), NoopVMTracer),
+            (false, true) => self.transact_with_tracer(t, options, NoopTracer, ExecutiveVMTracer::toplevel()),
+            (false, false) => self.transact_with_tracer(t, options, NoopTracer, NoopVMTracer),
         }
     }
 
     /// Execute transaction/call with tracing enabled
-    pub fn transact_with_tracer<T, V>(&'a mut self, t: &SignedTransaction, _check_nonce: bool, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
+    pub fn transact_with_tracer<T, V>(&'a mut self, t: &mut SignedTransaction, options: TransactOptions, mut tracer: T, mut vm_tracer: V) -> Result<Executed, ExecutionError>
     where
         T: Tracer,
         V: VMTracer,
     {
-        let sender = t.sender();
+        let sender = t.sender().clone();
+        let nonce = self.state.nonce(&sender)?;
 
-        // let schedule = self.engine.schedule(self.info);
-        // let base_gas_required = U256::from(t.gas_required(&schedule));
+        // check contract create/call permission
+        trace!("executive creators: {:?}, senders: {:?}", self.state.creators, self.state.senders);
+
+        // NOTE: there can be no invalid transactions from this point
+        self.state.inc_nonce(&sender)?;
+
+        // check account permission or not
+        trace!("permission should be check: {}", options.check_permission);
+        if options.check_permission {
+            match t.action {
+                Action::Create => if sender != Address::zero() && !self.state.creators.contains(&sender) {
+                    return Err(From::from(ExecutionError::NoContractPermission));
+                },
+                _ => if sender != Address::zero() && !self.state.senders.contains(&sender) && !self.state.creators.contains(&sender) {
+                    return Err(From::from(ExecutionError::NoTransactionPermission));
+                },
+            }
+        }
+
         let base_gas_required = U256::from(100); // `CREATE` transaction cost
 
         // validate if transaction fits into given block
-        if self.info.gas_used + t.gas > self.info.gas_limit {
-            return Err(From::from(ExecutionError::BlockGasLimitReached {
-                                      gas_limit: self.info.gas_limit,
-                                      gas_used: self.info.gas_used,
-                                      gas: t.gas,
-                                  }));
-        }
+        // if self.info.gas_used + t.gas > self.info.gas_limit {
+        //     return Err(From::from(ExecutionError::BlockGasLimitReached {
+        //                               gas_limit: self.info.gas_limit,
+        //                               gas_used: self.info.gas_used,
+        //                               gas: t.gas,
+        //                           }));
+        // }
 
         if t.action != Action::Store && t.gas < base_gas_required {
             return Err(From::from(ExecutionError::NotEnoughBaseGas {
@@ -169,27 +164,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                                   }));
         }
 
-        // TODO: we might need bigints here, or at least check overflows.
-        /*
-        let balance = self.state.balance(&sender)?;
-         */
-        /*
-        let gas_cost = t.gas.full_mul(t.gas_price);
-        let total_cost = U512::from(t.value) + gas_cost;
+        t.set_account_nonce(nonce);
 
-        // avoid unaffordable transactions
-
-        let balance512 = U512::from(balance);
-        if balance512 < total_cost {
-        return Err(From::from(ExecutionError::NotEnoughCash { required: total_cost, got: balance512 }));
-    }
-         */
-
-        // NOTE: there can be no invalid transactions from this point.
-        self.state.inc_nonce(&sender)?;
-        /*
-        self.state.sub_balance(&sender, &U256::from(gas_cost))?;
-         */
         let mut substate = Substate::new();
 
         let (gas_left, output) = match t.action {
@@ -197,7 +173,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 (Ok(t.gas), vec![])
             }
             Action::Create => {
-                let new_address = contract_address(&sender, &t.nonce, t.block_limit);
+                let new_address = contract_address(&sender, &nonce);
                 let params = ActionParams {
                     code_address: new_address.clone(),
                     code_hash: t.data.crypt_hash(),
@@ -227,6 +203,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     data: Some(t.data.clone()),
                     call_type: CallType::Call,
                 };
+
                 let mut out = vec![];
                 (self.call(params, &mut substate, BytesRef::Flexible(&mut out), &mut tracer, &mut vm_tracer), out)
             }
@@ -560,14 +537,13 @@ contract AbiTest {
 }
 "#;
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let nonce = "random";
-        let block_limit: u64 = 99;
+        let nonce = U256::zero();
         let gas_required = U256::from(100_000);
 
         let (deploy_code, runtime_code) = solc("AbiTest", source);
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
         let native_factory = NativeFactory::default();
-        let contract_address = contract_address(&sender, &nonce.to_owned(), block_limit);
+        let contract_address = contract_address(&sender, &nonce);
         let mut params = ActionParams::default();
         params.address = contract_address.clone();
         params.sender = sender.clone();

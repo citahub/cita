@@ -29,11 +29,11 @@ extern crate proof;
 extern crate pubsub;
 extern crate engine_json;
 extern crate engine;
-extern crate parking_lot;
 extern crate cpuprofiler;
 extern crate cita_log;
 extern crate dotenv;
 extern crate serde_json;
+extern crate authority_manage;
 
 pub mod core;
 
@@ -47,11 +47,15 @@ use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::{Duration, Instant};
+use util::panichandler::set_panic_handler;
 
 fn main() {
     dotenv::dotenv().ok();
     // Always print backtrace on panic.
-    ::std::env::set_var("RUST_BACKTRACE", "1");
+    ::std::env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
 
     cita_log::format(LogLevelFilter::Info);
     println!("CITA:consensus:poa");
@@ -97,7 +101,7 @@ fn main() {
     let (tx, rx) = channel();
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("consensus", vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.status"], tx_sub, rx_pub);
+    start_pubsub("consensus", vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.richstatus"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let tx = tx.clone();

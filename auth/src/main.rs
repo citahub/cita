@@ -57,6 +57,7 @@ use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
 use util::RwLock;
+use util::panichandler::set_panic_handler;
 use verify::Verifier;
 
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
@@ -76,6 +77,9 @@ fn main() {
     dotenv().ok();
     // Always print backtrace on panic.
     env::set_var("RUST_BACKTRACE", "full");
+
+    //exit process when panic
+    set_panic_handler();
 
     // Init logger
     cita_log::format(LogLevelFilter::Info);
@@ -299,13 +303,8 @@ mod tests {
         let mut req = VerifyTxReq::new();
         req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
         let mut signature = tx.get_transaction_with_sig().get_signature().to_vec();
-        if 255 != signature[0] {
-            signature[0] = signature[0] + 1;
-        } else {
-            signature[0] = 1;
-        }
-
-        req.set_signature(signature);
+        signature[0] = signature[0] + 1;
+        req.set_signature(signature[0..16].to_vec());
         let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
         let hash = bytes.crypt_hash().to_vec();
         req.set_hash(hash);

@@ -88,7 +88,7 @@ impl Sendtx {
             Err(_) => panic!("read fail "),
             Ok(_) => println!("read successfully.[{}]", contents),
         }
-        let privkey = PrivKey::from_str(contents.as_str()).unwrap();
+        let privkey = PrivKey::from_str(contents.as_str()).expect("privkey");
         KeyPair::from_privkey(privkey)
     }
 
@@ -114,21 +114,21 @@ impl Sendtx {
                 let deserialized: RpcSuccess = deserialized;
                 ret = match deserialized.result {
 
-                    RusultBody::BlockNumber(hei) => (format!("{}", hei), true),
-                    RusultBody::Transaction(RpcTransaction) => {
+                    ResultBody::BlockNumber(hei) => (format!("{}", hei), true),
+                    ResultBody::Transaction(RpcTransaction) => {
                         //let transaction = RpcTransaction.transaction;
                         let content = RpcTransaction.content;
                         if !content.to_vec().is_empty() { (String::new(), true) } else { (String::new(), false) }
                     }
 
-                    RusultBody::FullBlock(full_block) => {
+                    ResultBody::FullBlock(full_block) => {
                         //let block = full_block.block;
                         let body = full_block.body;
                         let transactions = body.transactions;
                         (format!("{}", transactions.len()), true)
                     }
 
-                    RusultBody::TxResponse(response) => {
+                    ResultBody::TxResponse(response) => {
                         if response.status == "Ok" {
                             let hash = response.hash;
                             (format!("{:?}", hash), true)
@@ -138,7 +138,7 @@ impl Sendtx {
                         }
                     }
 
-                    RusultBody::Receipt(Receipt) => {
+                    ResultBody::Receipt(Receipt) => {
 
                         match Receipt.contract_address {
                             Some(contract_address) => (format!("{:?}", contract_address), true),

@@ -33,6 +33,7 @@ extern crate scoped_log;
 extern crate pubsub;
 extern crate dotenv;
 extern crate cita_log;
+extern crate util;
 
 mod raft_server;
 mod machine;
@@ -46,6 +47,7 @@ use pubsub::start_pubsub;
 use raft_server::*;
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
+use util::panichandler::set_panic_handler;
 
 
 // Using docopt we define the overall usage of the application.
@@ -77,14 +79,16 @@ Options:
 fn main() {
     dotenv::dotenv().ok();
     // Always print backtrace on panic.
-    ::std::env::set_var("RUST_BACKTRACE", "1");
+    ::std::env::set_var("RUST_BACKTRACE", "full");
+    //exit process when panic
+    set_panic_handler();
     cita_log::format(LogLevelFilter::Info);
     let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
     info!("CITA:raft");
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
     let (tx, rx) = channel();
-    start_pubsub("consensus_cmd", vec!["chain.status", "consensus.default"], tx_sub, rx_pub);
+    start_pubsub("consensus_cmd", vec!["chain.richstatus", "consensus.default"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let (cmd_id, _, content) = parse_msg(body.as_slice());
