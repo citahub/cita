@@ -14,8 +14,9 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-extern crate cita_log;
 extern crate protobuf;
+extern crate logger;
+
 #[macro_use]
 extern crate log;
 extern crate clap;
@@ -37,7 +38,6 @@ use clap::App;
 use cpuprofiler::PROFILER;
 use dotenv::dotenv;
 use handler::{verify_tx_service, VerifyType, handle_remote_msg, handle_verificaton_result};
-use log::LogLevelFilter;
 use pubsub::start_pubsub;
 use std::env;
 use std::sync::Arc;
@@ -69,7 +69,7 @@ fn main() {
     set_panic_handler();
 
     // Init logger
-    cita_log::format(LogLevelFilter::Info);
+    logger::init();
     info!("CITA:auth");
     // init app
     let matches = App::new("auth")

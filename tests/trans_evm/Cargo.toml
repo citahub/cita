@@ -14,7 +14,7 @@ cita-crypto = { path = "../../share_libs/crypto" }
 util = { path = "../../share_libs/util" }
 dotenv = "0.10.0"
 hyper =  "0.10.7"
-cita_log = { path = "../../share_libs/cita_log" }
+logger = { path = "../../share_libs/logger" }
 jsonrpc_types = { path = "../../jsonrpc/types" }
 rustc-hex = "1.0"
 

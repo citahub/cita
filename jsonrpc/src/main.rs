@@ -30,7 +30,7 @@ extern crate pubsub;
 extern crate cpuprofiler;
 extern crate jsonrpc_types;
 extern crate dotenv;
-extern crate cita_log;
+extern crate logger;
 extern crate threadpool;
 extern crate num_cpus;
 extern crate ws;
@@ -50,7 +50,6 @@ use dotenv::dotenv;
 use http_handler::HttpHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
-use log::LogLevelFilter;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -85,7 +84,7 @@ fn main() {
     ::std::env::set_var("RUST_BACKTRACE", "full");
     //exit process when panic
     set_panic_handler();
-    cita_log::format(LogLevelFilter::Info);
+    logger::init();
     info!("CITA:jsonrpc ");
 
     // todo load config

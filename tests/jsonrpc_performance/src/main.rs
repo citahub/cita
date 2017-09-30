@@ -14,19 +14,19 @@ extern crate serde_derive;
 extern crate clap;
 #[macro_use]
 extern crate log;
-extern crate cita_log;
+extern crate logger;
+
 
 pub mod param;
 pub mod trans;
 pub mod send_trans;
 
 use clap::App;
-use log::LogLevelFilter;
 use param::Param;
 use send_trans::Sendtx;
 
 fn main() {
-    cita_log::format(LogLevelFilter::Info);
+    logger::init();
     info!("CITA:jsonrpc_performance");
     let matches = App::new("jsonrpc_performance")
         .version("0.1")

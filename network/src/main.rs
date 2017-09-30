@@ -28,7 +28,7 @@ extern crate libproto;
 extern crate protobuf;
 extern crate pubsub;
 extern crate dotenv;
-extern crate cita_log;
+extern crate logger;
 extern crate bytes;
 extern crate notify;
 extern crate util;
@@ -44,7 +44,6 @@ use clap::{App, SubCommand};
 use config::NetConfig;
 use connection::{Connection, do_connect as connect, start_client};
 use dotenv::dotenv;
-use log::LogLevelFilter;
 use msghandle::{is_need_proc, handle_rpc};
 use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use pubsub::start_pubsub;
@@ -98,7 +97,7 @@ fn main() {
     set_panic_handler();
 
     // Init logger
-    cita_log::format(LogLevelFilter::Info);
+    logger::init();
     info!("CITA:network");
     // init app
     // todo load config

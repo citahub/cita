@@ -32,7 +32,7 @@ extern crate common_types;
 extern crate serde_derive;
 #[macro_use]
 extern crate log;
-extern crate cita_log;
+extern crate logger;
 
 mod generate_block;
 mod call_chain;
@@ -43,7 +43,6 @@ use core::db;
 use core::libchain::Genesis;
 use cpuprofiler::PROFILER;
 use generate_block::Generateblock;
-use log::LogLevelFilter;
 use std::{time, thread};
 use std::sync::Arc;
 use std::sync::mpsc::channel;
@@ -146,7 +145,7 @@ fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
 
 fn main() {
     dotenv::dotenv().ok();
-    cita_log::format(LogLevelFilter::Info);
+    logger::init();
     info!("CITA:chain_performance");
     let matches = App::new("generate_block")
         .version("0.1")

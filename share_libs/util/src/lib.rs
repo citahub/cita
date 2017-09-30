@@ -29,7 +29,7 @@ extern crate lru_cache;
 extern crate heapsize;
 extern crate itertools;
 extern crate devtools;
-extern crate ethcore_logger;
+extern crate logger;
 #[cfg(feature = "sha3hash")]
 extern crate sha3;
 #[cfg(feature = "blake2bhash")]

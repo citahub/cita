@@ -173,8 +173,7 @@ impl fmt::Debug for Client {
 
 #[cfg(test)]
 mod tests {
-    extern crate env_logger;
-
+    extern crate logger;
 
     use {Client, messages, Result};
     use bufstream::BufStream;

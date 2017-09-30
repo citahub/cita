@@ -511,14 +511,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    extern crate env_logger;
-
     use super::*;
-
     use ClientId;
     use Result;
     use ServerId;
-
     use capnp::message::ReaderOptions;
     use capnp::serialize;
     use consensus::Actions;

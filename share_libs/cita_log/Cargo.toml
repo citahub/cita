@@ -1,9 +1,0 @@
-[package]
-name = "cita_log"
-version = "0.1.0"
-authors = ["u2 <zhangyaning1985@gmail.com>"]
-
-[dependencies]
-log = "0.3"
-env_logger = "0.4"
-time = "0.1"

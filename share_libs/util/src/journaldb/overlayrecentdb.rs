@@ -467,10 +467,10 @@ impl HashDB for OverlayRecentDB {
 mod tests {
     #![cfg_attr(feature="dev", allow(blacklisted_name))]
     #![cfg_attr(feature="dev", allow(similar_names))]
+    extern crate logger;
 
     use super::*;
     use {H32, Hashable};
-    use ethcore_logger::init_log;
     use hashdb::{HashDB, DBValue};
     use journaldb::JournalDB;
     use kvdb::Database;
@@ -752,7 +752,7 @@ mod tests {
 
     #[test]
     fn insert_delete_insert_delete_insert_expunge() {
-        init_log();
+        logger::silent();
         let mut jdb = OverlayRecentDB::new_temp();
 
         // history is 4
@@ -778,7 +778,7 @@ mod tests {
 
     #[test]
     fn forked_insert_delete_insert_delete_insert_expunge() {
-        init_log();
+        logger::silent();
         let mut jdb = OverlayRecentDB::new_temp();
 
         // history is 4
@@ -885,7 +885,7 @@ mod tests {
 
     #[test]
     fn reopen_remove_three() {
-        init_log();
+        logger::silent();
 
         let mut dir = ::std::env::temp_dir();
         dir.push(H32::random().hex());

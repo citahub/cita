@@ -361,7 +361,7 @@ impl Sendtx {
             }
             _end_time_stamp = time_stamp;
             info!("height:{}, blocknum: {},  time stamp :{}", h, blocknum, time_stamp);
-            if tx_num >= self.totaltx || (tx_num > 0 && blocknum == 0){
+            if tx_num >= self.totaltx || (tx_num > 0 && blocknum == 0) {
                 break;
             }
             h += 1;

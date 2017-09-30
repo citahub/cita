@@ -10,7 +10,6 @@ libproto = {path = "../../share_libs/proto"}
 libraft = {path = "libraft"}
 protobuf = { version = "^1.0.0"}
 log = "0.3.0"
-env_logger = "0.3"
 scoped_log = "0.1"
 docopt = "0.7"
 serde = "1.0"
@@ -20,7 +19,7 @@ bincode = "0.8.0"
 rustc-serialize = "*"
 mio = "0.5"
 pubsub = { path = "../../share_libs/pubsub" }
-cita_log = { path = "../../share_libs/cita_log" }
+logger = { path = "../../share_libs/logger" }
 util = {path = "../../share_libs/util"}
 
 

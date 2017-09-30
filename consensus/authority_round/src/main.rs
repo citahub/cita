@@ -30,7 +30,7 @@ extern crate pubsub;
 extern crate engine_json;
 extern crate engine;
 extern crate cpuprofiler;
-extern crate cita_log;
+extern crate logger;
 extern crate dotenv;
 extern crate serde_json;
 extern crate authority_manage;
@@ -42,7 +42,6 @@ use core::Spec;
 use core::handler;
 use cpuprofiler::PROFILER;
 use libproto::*;
-use log::LogLevelFilter;
 use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
@@ -57,7 +56,7 @@ fn main() {
     //exit process when panic
     set_panic_handler();
 
-    cita_log::format(LogLevelFilter::Info);
+    logger::init();
     println!("CITA:consensus:poa");
 
     let matches = App::new("authority_round")

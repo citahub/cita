@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate mktemp;
-extern crate env_logger;
 extern crate rustc_serialize;
 
 use self::mktemp::Temp;
@@ -106,7 +105,6 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
 }
 
 pub fn init_chain() -> Arc<Chain> {
-    let _ = env_logger::init();
     let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();

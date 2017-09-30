@@ -35,13 +35,12 @@ extern crate engine;
 extern crate lru_cache;
 extern crate dotenv;
 extern crate core as chain_core;
-extern crate cita_log;
+extern crate logger;
 extern crate cpuprofiler;
 extern crate authority_manage;
 extern crate engine_json;
 
 use clap::App;
-use log::LogLevelFilter;
 use std::sync::mpsc::channel;
 use std::thread;
 
@@ -79,7 +78,7 @@ fn main() {
     //exit process when panic
     set_panic_handler();
 
-    cita_log::format(LogLevelFilter::Info);
+    logger::init();
     info!("CITA:consensus:tendermint");
 
     let matches = App::new("tendermint")

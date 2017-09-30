@@ -24,7 +24,7 @@ extern crate pubsub;
 extern crate util;
 extern crate clap;
 extern crate dotenv;
-extern crate cita_log;
+extern crate logger;
 extern crate jsonrpc_types;
 extern crate common_types as types;
 extern crate byteorder;
@@ -41,7 +41,6 @@ use core::libchain::Genesis;
 use core::libchain::submodules;
 use forward::*;
 use libproto::blockchain::Status;
-use log::LogLevelFilter;
 use protobuf::Message;
 use pubsub::start_pubsub;
 use std::sync::Arc;
@@ -64,7 +63,7 @@ fn main() {
     //exit process when panic
     set_panic_handler();
 
-    cita_log::format(LogLevelFilter::Info);
+    logger::init();
     info!("CITA:chain");
     let matches = App::new("chain")
         .version("0.1")
