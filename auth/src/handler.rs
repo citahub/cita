@@ -181,20 +181,23 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                 let now = SystemTime::now();
                 trace!("get batch new tx request from jsonrpc in system time :{:?}, and has got {} new tx ", now, batch_new_tx.len());
 
+                let mut txs = batch_new_tx_pool.lock().unwrap();
                 for tx_req in batch_new_tx.iter() {
                     let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
                     let hash: H256 = verify_tx_req.get_tx_hash().into();
-                    {
-                        let mut txs = batch_new_tx_pool.lock().unwrap();
-                        txs.insert(hash, (submodule, tx_req.clone()));
-                    }
+                    txs.insert(hash, (submodule, tx_req.clone()));
+
                     let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
                     tx_req_single.send((VerifyType::SingleVerify, 0, verify_tx_req, submodule, now, origin)).unwrap();
                 }
             } else if true == newtx_req.has_un_tx() {
                 let now = SystemTime::now();
-                trace!("get batch new tx request from jsonrpc with system time :{:?}", now);
+                trace!("get single new tx request from peer node with system time :{:?}", now);
                 let verify_tx_req = tx_verify_req_msg(newtx_req.get_un_tx());
+                let mut txs = batch_new_tx_pool.lock().unwrap();
+                let hash = verify_tx_req.get_tx_hash().into();
+                txs.insert(hash, (submodule, newtx_req.clone()));
+
                 tx_req_single.send((VerifyType::SingleVerify, 0, verify_tx_req, submodule, now, origin)).unwrap();
             }
 
@@ -233,6 +236,7 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                         //.....................
                         let tx_response = TxResponse::new(tx_hash, result.clone());
                         let _ = tx_sender.send((sub_module_id, request_id.clone(), tx_response, signed_tx.clone(), origin)).unwrap();
+                        trace!("Send singed tx to txpool");
                     }
                     _ => {
                         if sub_module_id == submodules::JSON_RPC {

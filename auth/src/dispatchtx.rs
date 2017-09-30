@@ -74,6 +74,7 @@ impl Dispatchtx {
                 response.set_tx_state(tx_state);
 
                 let request_id = Uuid::new_v4().as_bytes().to_vec();
+                trace!("send auth.tx with request_id {:?}", request_id);
                 let mut request = Request::new();
                 request.set_un_tx(tx.get_transaction_with_sig().clone());
                 request.set_request_id(request_id);
@@ -103,7 +104,7 @@ impl Dispatchtx {
             self.del_txs_from_pool_with_hash(txs.clone());
         }
         let out_txs = self.get_txs_from_pool(height as u64);
-        trace!("public blcok txs height {} {:?}", height, out_txs.len());
+        trace!("public block txs height {} {:?}", height, out_txs.len());
         if !out_txs.is_empty() {
             body.set_transactions(RepeatedField::from_vec(out_txs));
         }
