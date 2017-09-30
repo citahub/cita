@@ -252,6 +252,7 @@ mod tests {
     use protobuf::{Message, RepeatedField};
     use util::{U256, H256};
     use util::Hashable;
+    use uuid::Uuid;
 
     fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
         let mut tx = Transaction::new();
@@ -264,17 +265,13 @@ mod tests {
     }
 
     fn generate_msg(tx: SignedTransaction) -> Vec<u8> {
-        //create verify message
-        let mut req = VerifyTxReq::new();
-        req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
-        let signature = tx.get_transaction_with_sig().get_signature().to_vec();
-        req.set_signature(signature);
-        let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
-        let hash = bytes.crypt_hash().to_vec();
-        req.set_hash(hash);
-        req.set_tx_hash(tx.get_tx_hash().to_vec());
 
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_TX_REQ, communication::MsgType::VERIFY_TX_REQ, req.write_to_bytes().unwrap());
+        let request_id = Uuid::new_v4().as_bytes().to_vec();
+        let mut request = Request::new();
+        request.set_un_tx(tx.get_transaction_with_sig().clone());
+        request.set_request_id(request_id);
+
+        let msg = factory::create_msg(submodules::JSON_RPC, topics::REQUEST, communication::MsgType::REQUEST, request.write_to_bytes().unwrap());
         msg.write_to_bytes().unwrap()
     }
 
@@ -302,7 +299,12 @@ mod tests {
         let mut req = VerifyTxReq::new();
         req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
         let mut signature = tx.get_transaction_with_sig().get_signature().to_vec();
-        signature[0] = signature[0] + 1;
+        if 255 != signature[0] {
+            signature[0] = signature[0] + 1;
+        } else {
+            signature[0] = 1;
+        }
+
         req.set_signature(signature);
         let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
         let hash = bytes.crypt_hash().to_vec();
@@ -338,24 +340,6 @@ mod tests {
         msg.write_to_bytes().unwrap()
     }
 
-    fn generate_tx_verify_request() -> (VerifyTxReq, PubKey) {
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        let pubkey = keypair.pubkey();
-        let tx = generate_tx(vec![1], 99, privkey);
-
-        let mut req = VerifyTxReq::new();
-        req.set_valid_until_block(tx.get_transaction_with_sig().get_transaction().get_valid_until_block());
-        let signature = tx.get_transaction_with_sig().get_signature().to_vec();
-        req.set_signature(signature);
-        let bytes = tx.get_transaction_with_sig().get_transaction().write_to_bytes().unwrap();
-        let hash = bytes.crypt_hash().to_vec();
-        req.set_hash(hash);
-        req.set_tx_hash(tx.get_tx_hash().to_vec());
-
-        (req, pubkey.clone())
-    }
-
     #[test]
     fn verify_sync_block_hash() {
 
@@ -365,9 +349,12 @@ mod tests {
         //verify tx
         let v = Arc::new(RwLock::new(Verifier::new()));
         let c = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
+        let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
+        let (pool_txs_sender, _) = channel();
+        let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
 
         let height = 0;
-        handle_remote_msg(generate_sync_blk_hash_msg(height), v.clone(), block_req_sender.clone(), req_sender, tx_pub, c);
+        handle_remote_msg(generate_sync_blk_hash_msg(height), v.clone(), block_req_sender.clone(), req_sender, tx_pub, c, cache, batch_new_tx_pool, pool_txs_sender);
         assert_eq!(rx_pub.try_recv().is_err(), true);
 
         let u: U256 = 0x123456789abcdef0u64.into();
@@ -393,9 +380,12 @@ mod tests {
         //verify tx
         let v = Arc::new(RwLock::new(Verifier::new()));
         let c = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
+        let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
+        let (pool_txs_sender, _) = channel();
+        let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
 
         let height = 1;
-        handle_remote_msg(generate_sync_blk_hash_msg(height), v.clone(), block_req_sender.clone(), req_sender, tx_pub, c);
+        handle_remote_msg(generate_sync_blk_hash_msg(height), v.clone(), block_req_sender.clone(), req_sender, tx_pub, c, cache, batch_new_tx_pool, pool_txs_sender);
 
         let u: U256 = 0x123456789abcdef0u64.into();
         let tx_hash_in_h256 = H256::from(u);
@@ -432,16 +422,20 @@ mod tests {
         //verify tx
         let v = Arc::new(RwLock::new(Verifier::new()));
         let c = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
+        let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
+        let (pool_txs_sender, _) = channel();
+        let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         let tx = generate_tx(vec![1], 99, privkey);
         let tx_hash = tx.get_tx_hash().to_vec().clone();
-        handle_remote_msg(generate_msg(tx), v.clone(), block_req_sender.clone(), req_sender, tx_pub, c);
-        let (verify_type, request_id, req, submodule, _) = req_receiver.recv().unwrap();
+
+        handle_remote_msg(generate_msg(tx), v.clone(), block_req_sender.clone(), req_sender, tx_pub, c, cache, batch_new_tx_pool, pool_txs_sender);
+        let (verify_type, request_id, req, submodule, _, _) = req_receiver.recv().unwrap();
         assert_eq!(verify_type, VerifyType::SingleVerify);
         assert_eq!(request_id, 0);
-        assert_eq!(submodules::CONSENSUS, submodule);
+        assert_eq!(submodules::JSON_RPC, submodule);
         assert_eq!(req.get_tx_hash().to_vec().clone(), tx_hash);
     }
 
@@ -454,13 +448,16 @@ mod tests {
         //verify tx
         let v = Arc::new(RwLock::new(Verifier::new()));
         let c = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
+        let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
+        let (pool_txs_sender, _) = channel();
+        let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         let tx = generate_tx(vec![1], 99, privkey);
         let tx_hash = tx.get_tx_hash().to_vec().clone();
-        handle_remote_msg(generate_blk_msg(tx), v.clone(), block_req_sender.clone(), req_sender, tx_pub, c.clone());
-        let (verify_type, request_id, req, submodule, _) = block_req_receiver.recv().unwrap();
+        handle_remote_msg(generate_blk_msg(tx), v.clone(), block_req_sender.clone(), req_sender, tx_pub, c.clone(), cache, batch_new_tx_pool, pool_txs_sender);
+        let (verify_type, request_id, req, submodule, _, _) = block_req_receiver.recv().unwrap();
         assert_eq!(verify_type, VerifyType::BlockVerify);
         assert_eq!(request_id, 88);
         assert_eq!(submodules::CONSENSUS, submodule);
@@ -482,42 +479,42 @@ mod tests {
 
     #[test]
     fn handle_verificaton_result_single_tx() {
-
-        let (tx_pub, rx_pub) = channel();
+        let (tx_pub, _) = channel();
         let (block_req_sender, _) = channel();
-        let (req_sender, _) = channel();
+        let (req_sender, req_receiver) = channel();
         let (resp_sender, resp_receiver) = channel();
         let block_cache = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
         let verify_cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
         let verifier = Arc::new(RwLock::new(Verifier::new()));
+        let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
+        let (pool_txs_sender, _) = channel();
+        let (pool_tx_sender, pool_tx_receiver) = channel();
+        let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
 
         let height = 0;
-        handle_remote_msg(generate_sync_blk_hash_msg(height), verifier.clone(), block_req_sender.clone(), req_sender, tx_pub.clone(), block_cache.clone());
+        handle_remote_msg(generate_sync_blk_hash_msg(height), verifier.clone(), block_req_sender.clone(), req_sender.clone(), tx_pub.clone(), block_cache.clone(), cache.clone(), batch_new_tx_pool.clone(), pool_txs_sender.clone());
 
-        let (verify_req, pubkey) = generate_tx_verify_request();
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let tx = generate_tx(vec![1], 99, privkey);
+        let tx_hash = tx.get_tx_hash().to_vec().clone();
+        handle_remote_msg(generate_msg(tx), verifier.clone(), block_req_sender.clone(), req_sender, tx_pub.clone(), block_cache.clone(), cache.clone(), batch_new_tx_pool.clone(), pool_txs_sender);
+
+        let (_, _, verify_req, _, _, _) = req_receiver.try_recv().unwrap();
         //let resp = verify_tx_service(verify_req, verifier, verify_cache);
         let mut req_grp: Vec<VerifyReqInfo> = Vec::new();
         let verify_req_info = VerifyReqInfo {
             req: verify_req,
-            info: (VerifyType::SingleVerify, 0, submodules::CONSENSUS, SystemTime::now()),
+            info: (VerifyType::SingleVerify, 0, submodules::JSON_RPC, SystemTime::now(), 0),
         };
         req_grp.push(verify_req_info);
         verify_tx_group_service(req_grp, verifier, verify_cache, resp_sender);
-        //resp_sender.send((VerifyType::SingleVerify, 0, resp, submodules::CONSENSUS)).unwrap();
 
-        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache);
-
-        let (_, resp_msg) = rx_pub.recv().unwrap();
-        let (_, _, content) = parse_msg(resp_msg.as_slice());
-        match content {
-            MsgClass::VERIFYTXRESP(resp) => {
-                assert_eq!(resp.get_ret(), Ret::Ok);
-                assert_eq!(pubkey.to_vec(), resp.get_signer().to_vec());
-            }
-            _ => {
-                panic!("test failed")
-            }
-        }
+        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache, batch_new_tx_pool, pool_tx_sender);
+        let (_, _, resp_msg, _, _) = pool_tx_receiver.try_recv().unwrap();
+        let ok_result = format!("{:?}", Ret::Ok);
+        assert_eq!(resp_msg.status, ok_result);
+        assert_eq!(tx_hash, resp_msg.hash.to_vec());
     }
 
     #[test]
@@ -530,25 +527,29 @@ mod tests {
         let block_cache = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
         let verify_cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
         let verifier = Arc::new(RwLock::new(Verifier::new()));
+        let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
+        let (pool_txs_sender, _) = channel();
+        let (pool_tx_sender, _) = channel();
+        let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
 
         let height = 0;
-        handle_remote_msg(generate_sync_blk_hash_msg(height), verifier.clone(), block_req_sender.clone(), req_sender.clone(), tx_pub.clone(), block_cache.clone());
+        handle_remote_msg(generate_sync_blk_hash_msg(height), verifier.clone(), block_req_sender.clone(), req_sender.clone(), tx_pub.clone(), block_cache.clone(), cache.clone(), batch_new_tx_pool.clone(), pool_txs_sender.clone());
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         let tx = generate_tx(vec![1], 99, privkey);
-        handle_remote_msg(generate_blk_msg(tx), verifier.clone(), block_req_sender.clone(), req_sender, tx_pub.clone(), block_cache.clone());
-        let (_, request_id, verify_req, submodule, _) = block_req_receiver.recv().unwrap();
+        handle_remote_msg(generate_blk_msg(tx), verifier.clone(), block_req_sender.clone(), req_sender, tx_pub.clone(), block_cache.clone(), cache, batch_new_tx_pool.clone(), pool_txs_sender);
+        let (_, request_id, verify_req, submodule, _, _) = block_req_receiver.recv().unwrap();
 
         let mut req_grp: Vec<VerifyReqInfo> = Vec::new();
         let verify_req_info = VerifyReqInfo {
             req: verify_req,
-            info: (VerifyType::BlockVerify, request_id, submodule, SystemTime::now()),
+            info: (VerifyType::BlockVerify, request_id, submodule, SystemTime::now(), 0),
         };
         req_grp.push(verify_req_info);
         verify_tx_group_service(req_grp, verifier, verify_cache, resp_sender);
 
-        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache);
+        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache, batch_new_tx_pool, pool_tx_sender);
 
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let (_, _, content) = parse_msg(resp_msg.as_slice());
@@ -572,27 +573,30 @@ mod tests {
         let block_cache = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
         let verify_cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
         let verifier = Arc::new(RwLock::new(Verifier::new()));
+        let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
+        let (pool_txs_sender, _) = channel();
+        let (pool_tx_sender, _) = channel();
+        let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
 
         let height = 0;
-        handle_remote_msg(generate_sync_blk_hash_msg(height), verifier.clone(), block_req_sender.clone(), req_sender.clone(), tx_pub.clone(), block_cache.clone());
+        handle_remote_msg(generate_sync_blk_hash_msg(height), verifier.clone(), block_req_sender.clone(), req_sender.clone(), tx_pub.clone(), block_cache.clone(), cache.clone(), batch_new_tx_pool.clone(), pool_txs_sender.clone());
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         let pubkey = keypair.pubkey().clone();
         let tx = generate_tx(vec![1], 99, privkey);
-        handle_remote_msg(generate_blk_msg_with_fake_signature(tx, pubkey), verifier.clone(), block_req_sender.clone(), req_sender, tx_pub.clone(), block_cache.clone());
-        let (_, request_id, verify_req, submodule, _) = block_req_receiver.recv().unwrap();
+        handle_remote_msg(generate_blk_msg_with_fake_signature(tx, pubkey), verifier.clone(), block_req_sender.clone(), req_sender, tx_pub.clone(), block_cache.clone(), cache, batch_new_tx_pool.clone(), pool_txs_sender);
+        let (_, request_id, verify_req, submodule, _, _) = block_req_receiver.recv().unwrap();
 
         let mut req_grp: Vec<VerifyReqInfo> = Vec::new();
         let verify_req_info = VerifyReqInfo {
             req: verify_req,
-            info: (VerifyType::BlockVerify, request_id, submodule, SystemTime::now()),
+            info: (VerifyType::BlockVerify, request_id, submodule, SystemTime::now(), 0),
         };
         req_grp.push(verify_req_info);
         verify_tx_group_service(req_grp, verifier, verify_cache, resp_sender);
 
-        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache);
-
+        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache, batch_new_tx_pool, pool_tx_sender);
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let (_, _, content) = parse_msg(resp_msg.as_slice());
         match content {
@@ -616,25 +620,28 @@ mod tests {
         let block_cache = Arc::new(RwLock::new(VerifyBlockCache::new(1000)));
         let verify_cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
         let verifier = Arc::new(RwLock::new(Verifier::new()));
+        let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
+        let (pool_txs_sender, _) = channel();
+        let (pool_tx_sender, _) = channel();
+        let cache = Arc::new(RwLock::new(VerifyCache::new(1000)));
 
         let height = 0;
-        handle_remote_msg(generate_sync_blk_hash_msg(height), verifier.clone(), block_req_sender.clone(), req_sender.clone(), tx_pub.clone(), block_cache.clone());
+        handle_remote_msg(generate_sync_blk_hash_msg(height), verifier.clone(), block_req_sender.clone(), req_sender.clone(), tx_pub.clone(), block_cache.clone(), cache.clone(), batch_new_tx_pool.clone(), pool_txs_sender.clone());
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         let tx = generate_tx(vec![1], 99, privkey);
-        handle_remote_msg(generate_blk_msg(tx.clone()), verifier.clone(), block_req_sender.clone(), req_sender.clone(), tx_pub.clone(), block_cache.clone());
-        let (_, request_id, verify_req, submodule, _) = block_req_receiver.recv().unwrap();
+        handle_remote_msg(generate_blk_msg(tx.clone()), verifier.clone(), block_req_sender.clone(), req_sender.clone(), tx_pub.clone(), block_cache.clone(), cache.clone(), batch_new_tx_pool.clone(), pool_txs_sender.clone());
+        let (_, request_id, verify_req, submodule, _, _) = block_req_receiver.recv().unwrap();
 
         let mut req_grp: Vec<VerifyReqInfo> = Vec::new();
         let verify_req_info = VerifyReqInfo {
             req: verify_req,
-            info: (VerifyType::BlockVerify, request_id, submodule, SystemTime::now()),
+            info: (VerifyType::BlockVerify, request_id, submodule, SystemTime::now(), 0),
         };
         req_grp.push(verify_req_info.clone());
         verify_tx_group_service(req_grp, verifier.clone(), verify_cache.clone(), resp_sender.clone());
-
-        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache.clone());
+        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache.clone(), batch_new_tx_pool.clone(), pool_tx_sender.clone());
 
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let (_, _, content) = parse_msg(resp_msg.as_slice());
@@ -648,14 +655,14 @@ mod tests {
             }
         }
         //Begin to construct the same tx's verification request
-        handle_remote_msg(generate_blk_msg(tx), verifier.clone(), block_req_sender.clone(), req_sender, tx_pub.clone(), block_cache.clone());
-        let (_, request_id, verify_req, submodule, _) = block_req_receiver.recv().unwrap();
+        handle_remote_msg(generate_blk_msg(tx), verifier.clone(), block_req_sender.clone(), req_sender, tx_pub.clone(), block_cache.clone(), cache, batch_new_tx_pool.clone(), pool_txs_sender);
+        let (_, request_id, verify_req, submodule, _, _) = block_req_receiver.recv().unwrap();
         let verify_req_info = VerifyReqInfo {
             req: verify_req,
-            info: (VerifyType::BlockVerify, request_id, submodule, SystemTime::now()),
+            info: (VerifyType::BlockVerify, request_id, submodule, SystemTime::now(), 0),
         };
         assert_eq!(true, check_verify_request_preprocess(verify_req_info, verifier.clone(), verify_cache.clone(), resp_sender.clone()));
-        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache);
+        handle_verificaton_result(&resp_receiver, &tx_pub, block_cache, batch_new_tx_pool, pool_tx_sender);
 
         if let Ok((_, resp_msg)) = rx_pub.try_recv() {
             let (_, _, content) = parse_msg(resp_msg.as_slice());

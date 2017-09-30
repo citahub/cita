@@ -146,11 +146,6 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             trace!("BLOCKTXHASHES  txs_sender res is {:?}", res);
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
         }
-//        MsgClass::VERIFYTXREQ(req) => {
-//            trace!("get single verify request with tx_hash: {:?} with system time :{:?}", req.get_tx_hash(), SystemTime::now());
-//            let now = SystemTime::now();
-//            tx_req_single.send((VerifyType::SingleVerify, 0, req, submodule, now, origin)).unwrap();
-//        }
         MsgClass::VERIFYBLKREQ(blkreq) => {
             trace!("get block verify request with {:?} request", blkreq.get_reqs().len());
             let tx_cnt = blkreq.get_reqs().len();

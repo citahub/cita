@@ -79,12 +79,7 @@ impl Dispatchtx {
                 request.set_un_tx(tx.get_transaction_with_sig().clone());
                 request.set_request_id(request_id);
 
-                let msg = factory::create_msg_ex(submodules::AUTH,
-                                                 topics::REQUEST,
-                                                 communication::MsgType::REQUEST,
-                                                 communication::OperateType::BROADCAST,
-                                                 origin,
-                                                 request.write_to_bytes().unwrap());
+                let msg = factory::create_msg_ex(submodules::AUTH, topics::REQUEST, communication::MsgType::REQUEST, communication::OperateType::BROADCAST, origin, request.write_to_bytes().unwrap());
 
                 mq_pub.send(("auth.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
             }
