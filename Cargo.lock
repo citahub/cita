@@ -443,15 +443,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cita_log"
-version = "0.1.0"
-dependencies = [
- "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "clap"
 version = "2.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

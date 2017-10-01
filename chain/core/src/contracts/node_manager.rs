@@ -54,6 +54,7 @@ mod tests {
     use util::Address;
 
     #[test]
+    #[ignore]
     fn test_node_manager_contract() {
         let chain = init_chain();
         let contract_address = Address::from(0x13241a2);
