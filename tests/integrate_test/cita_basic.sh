@@ -34,8 +34,7 @@ stop_all () {
     stop_node 1
     stop_node 2
     stop_node 3
-    killall trans_evm || true
-    killall cita_basic.sh || true
+    rm -f $SEND_TX_FLAG_FILE
 }
 
 start_all () {
@@ -62,7 +61,7 @@ check_height_change () {
     sleep 30
     new_height=$(get_height)
     echo "block height $new_height"
-    if [ $new_height -eq $old_height ]; then
+    if [ $new_height -le $old_height ]; then
         stop_all
         exit 1
     fi
@@ -93,12 +92,12 @@ create_contract() {
 
 send_tx() {
     cd ${CUR_PATH}/../wrk_benchmark_test/
-    while [ 0 -le 1 ]
+    while [ -f "$SEND_TX_FLAG_FILE" ]
     do
         echo "call contract"
-        ./benchmark.sh config_call.json >/dev/null
+        ./benchmark.sh config_call.json | grep "sucess "
         if [ $? -ne 0 ]
-        then  
+        then
             echo "call contract error"
         fi
         sleep 5
@@ -116,6 +115,8 @@ sleep 120
 echo `date`
 check_height_change
 create_contract
+SEND_TX_FLAG_FILE=/tmp/cita_basic_send_tx_flag
+touch $SEND_TX_FLAG_FILE
 (send_tx)&
 
 echo "###stop node3..."
