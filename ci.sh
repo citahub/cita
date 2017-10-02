@@ -14,10 +14,12 @@ make clean
 make debug
 make test
 make bench
-./tests/integrate_test/cita_basic.sh
-./tests/integrate_test/cita_byzantinetest.sh
+
 sed -i 's/\["ed25519"\]/\["secp256k1"\]/g' share_libs/crypto/Cargo.toml
 sed -i 's/\["blake2bhash"\]/\["sha3hash"\]/g' share_libs/util/Cargo.toml
+
+./tests/integrate_test/cita_basic.sh
+./tests/integrate_test/cita_byzantinetest.sh
 
 echo "################################################################################"
 echo "1) clean"
