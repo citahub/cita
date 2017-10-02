@@ -21,7 +21,6 @@ use libproto::communication;
 use protobuf::Message;
 use std::convert::AsRef;
 use std::io::prelude::*;
-use std::net::SocketAddr;
 use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::mpsc::Receiver;
@@ -37,8 +36,8 @@ type ThreadExit = Arc<RwLock<bool>>;
 
 pub struct Connection {
     pub id_card: u32,
-    pub peers_pair: Vec<(u32, SocketAddr, Arc<RwLock<Option<TcpStream>>>, ThreadRuned, ThreadExit)>,
-    pub remove_addr: Arc<RwLock<Vec<SocketAddr>>>,
+    pub peers_pair: Vec<(u32, String, Arc<RwLock<Option<TcpStream>>>, ThreadRuned, ThreadExit)>,
+    pub remove_addr: Arc<RwLock<Vec<String>>>,
 }
 
 impl Connection {
@@ -50,7 +49,7 @@ impl Connection {
                 for peer in peers.iter() {
                     let id_card: u32 = peer.id_card.unwrap();
                     let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
-                    let addr = addr.parse::<SocketAddr>().unwrap();
+                    let addr = addr.parse::<String>().unwrap();
                     peers_pair.push((id_card, addr, Arc::new(RwLock::new(None)), Arc::new(RwLock::new(false)), Arc::new(RwLock::new(false))));
                 }
             }
@@ -69,20 +68,19 @@ impl Connection {
         //添加更新的配置到self
         match config.peers.as_ref() {
             Some(peers) => {
-                let peers_addr: Vec<SocketAddr> = self.peers_pair.clone().into_iter().map(|peers_pair| peers_pair.1).rev().collect();
+                let peers_addr: Vec<String> = self.peers_pair.clone().into_iter().map(|peers_pair| peers_pair.1).rev().collect();
                 let mut config_addr = Vec::new();
                 for peer in peers.iter() {
                     let id_card: u32 = peer.id_card.unwrap();
                     let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
-                    let addr = addr.parse::<SocketAddr>().unwrap();
-                    config_addr.push(addr);
+                    config_addr.push(addr.clone());
                     if peers_addr.contains(&addr) {
                         continue;
                     }
                     self.peers_pair
                         .push((id_card, addr, Arc::new(RwLock::new(None)), Arc::new(RwLock::new(false)), Arc::new(RwLock::new(false))));
                 }
-                for &(_, addr, _, _, ref thread_exit) in &self.peers_pair {
+                for &(_, ref addr, _, _, ref thread_exit) in &self.peers_pair {
                     if config_addr.contains(&addr) {
                         continue;
                     }
@@ -117,7 +115,7 @@ impl Connection {
 
 
 pub fn do_connect(con: &Connection) {
-    for &(_, addr, ref stream, ref thread_run, ref thread_exit) in &con.peers_pair {
+    for &(_, ref addr, ref stream, ref thread_run, ref thread_exit) in &con.peers_pair {
         let stream_lock = stream.clone();
         let thread_run_lock = thread_run.clone();
         let thread_exit_lock = thread_exit.clone();
@@ -126,13 +124,13 @@ pub fn do_connect(con: &Connection) {
         }
 
         let remove_addr_lock = con.remove_addr.clone();
-
+        let addr = addr.to_string();
         thread::spawn(move || loop {
                           {
                               if *thread_exit_lock.read() {
                                   let remove_addr = &mut *remove_addr_lock.as_ref().write();
-                                  trace!("{:?} thread exit", addr);
-                                  remove_addr.push(addr);
+                                  trace!("{:?} thread exit", addr.clone());
+                                  remove_addr.push(String::from(addr.clone()));
                                   let stream_opt = &mut *stream_lock.as_ref().write();
                                   *stream_opt = None;
                                   break;
@@ -144,8 +142,8 @@ pub fn do_connect(con: &Connection) {
 
                               let stream_opt = &mut *stream_lock.as_ref().write();
                               if stream_opt.is_none() {
-                                  trace!("connet {:?}", addr);
-                                  let stream = TcpStream::connect(addr).ok();
+                                  trace!("connet {:?}", addr.clone());
+                                  let stream = TcpStream::connect(addr.clone()).ok();
                                   *stream_opt = stream;
                               }
 

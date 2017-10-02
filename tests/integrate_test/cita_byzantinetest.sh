@@ -1,86 +1,112 @@
 #!/bin/bash
-set +e
-CUR_PATH=$(cd `dirname $0`; pwd)
-cd ${CUR_PATH}/../../admintool/
-./admintool.sh
+set -e
 
-setup_node() {
-    id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
-    ./cita setup ${id}
-}
+SOURCE_DIR=$(readlink -f $(dirname $0)/../..)
+BINARY_DIR=${SOURCE_DIR}/target/install
 
-start_node() {
-    id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
-    ./cita start ${id}
-}
+################################################################################
+echo -n "0) prepare  ...  "
+. ${SOURCE_DIR}/tests/integrate_test/util.sh
+cd ${BINARY_DIR}
+echo "DONE"
 
-stop_node() {
-    id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
-    ./cita stop ${id}
-}
+################################################################################
+echo -n "1) cleanup   ...  "
+cleanup
+echo "DONE"
 
-stop_all () {
-    stop_node 0
-    stop_node 1
-    stop_node 2
-    stop_node 3
-}
+################################################################################
+echo -n "2) generate config  ...  "
+./bin/admintool.sh > /dev/null 2>&1
+echo "DONE"
 
-start_all () {
-    start_node 0
-    start_node 1
-    start_node 2
-    start_node 3
-}
+################################################################################
+echo -n "3) start nodes  ...  "
+for i in {0..3} ; do
+    bin/cita setup node$i  > /dev/null
+done
+for i in {0..3} ; do
+    bin/cita start node$i > /dev/null
+done
+echo "DONE"
 
-get_height(){
-    nodeid=$1
-    if [ ! -n "$nodeid" ]; then
-        nodeid=0
-    fi
-    h=`${CUR_PATH}/cita_blockNumber.sh 127.0.0.1 $((1337+${nodeid}))`
-    h=$(echo $h | sed 's/\"//g')
-    echo $((h))    
-}
+################################################################################
+echo -n "4) check alive  ...  "
+msg=$(check_height_growth 0) || (echo "FAILED"
+                                 echo "failed to check_height_growth 0: ${msg}"
+                                 exit 1)
+echo "DONE ${msg}"
 
-check_height_change () {
-    echo "check block height"
-    old_height=$(get_height)
-    echo "block height $old_height"
-    sleep 30
-    new_height=$(get_height)
-    echo "block height $new_height"
-    if [ $new_height -eq $old_height ]; then
-        stop_all
-        exit 1
-    fi
-}
+################################################################################
+echo "5) set delay at one nodes, check height growth"
+delay=10000
+for i in {0..3}; do
+    id=$(($i%4))
+    echo -n "set delay at node ${id} ... "
+    refer=$((($i+1)%4))
+    port=$((4000+${id}))
+    set_delay_at_port ${port} ${delay}
+    msg=$(check_height_growth ${refer}) ||(echo "FAILED"
+                                           echo "failed to check_height_growth: ${msg}"
+                                           exit 1)
+    unset_delay_at_port ${port}
+    #synch for node ${id}
+    msg=$(check_height_sync ${id} ${refer}) ||(echo "FAILED"
+                                               echo "failed to check_height_growth: ${msg}"
+                                               exit 1)
+    echo "${msg} DONE"
+done
 
-echo "###start nodes..."
-(setup_node 0;start_node 0) &
-(setup_node 1;start_node 1) &
-(setup_node 2;start_node 2) &
-(setup_node 3;start_node 3) &
-echo `date`
-echo "###wait for start..."
-sleep 120
-echo `date`
-check_height_change
+################################################################################
+echo "7) set delay at two nodes, check height growth"
+delay=3000
+for i in {0..3}; do
+    id1=$i
+    id2=$((($i+1)%4))
+    refer=$((($i+2)%4))
+    echo -n "set delay=${delay} at nodes ${id1},${id2} ... "
+    set_delay_at_port $((4000+${id1})) ${delay}
+    set_delay_at_port $((4000+${id2})) ${delay}
 
-cd ${CUR_PATH}/../wrk_benchmark_test/
-./benchmark.sh
-sleep 10
-./setPortDelay.sh 4000 1000 10 &
-pid=$!
-./benchmark.sh config_call.json 2
-kill -9 $pid
-sudo tc qdisc del dev lo root
-sleep 120
-check_height_change
-stop_all
-echo "###Test OK"
+    msg=$(check_height_growth ${refer}) ||(echo "FAILED"
+                                           echo "failed to check_height_growth ${refer}: ${msg}"
+                                           exit 1)
+    unset_delay_at_port $((4000+${id1}))
+    unset_delay_at_port $((4000+${id2}))
+    #synch for node id1, id2
+    msg=$(check_height_sync ${id1} ${refer}) ||(echo "FAILED"
+                                                echo "failed to check_height_sync ${id1}: ${msg}"
+                                                exit 1)
+    msg=$(check_height_sync ${id2} ${refer}) ||(echo "FAILED"
+                                                echo "failed to check_height_sync ${id2}: ${msg}"
+                                                exit 1)
+    echo "${msg} DONE"
+done
+
+
+################################################################################
+echo "8) set delay at all nodes, output time used for produce block"
+for i in {0..6}; do
+    delay=$((i*400))
+    msg=$(check_height_growth 0) ||(echo "FAILED"
+                                    echo "failed to check_height_growth: ${msg}"
+                                    exit 1)
+    echo -n "set delay=${delay} ... "
+    for node in {0..3} ; do
+        set_delay_at_port $((4000+${node})) ${delay}
+    done
+    msg=$(check_height_growth 0) ||(echo "FAILED"
+                                    echo "failed to check_height_growth: ${msg}"
+                                    exit 1)
+    for node in {0..3} ; do
+        unset_delay_at_port $((4000+${node}))
+    done
+    sleep 4
+    echo "${msg} DONE"
+done
+
+
+echo "7) cleanup"
+cleanup
+echo "DONE"
 exit 0
-

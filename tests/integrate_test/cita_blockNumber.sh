@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 #echo "args: ip port"
 IP=$1
 PORT=$2
@@ -8,5 +9,10 @@ fi
 if [ ! -n "$PORT" ]; then
     PORT=1337
 fi
-h=$(curl -s -X POST -d '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":2}' $IP:$PORT | jq ".result" | sed 's/\"//g')
-echo $((h))
+response=$(curl -s -X POST -d '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":2}' $IP:$PORT)
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+height=$(echo ${response}|jq ".result"|sed 's/\"//g')
+echo $((height))

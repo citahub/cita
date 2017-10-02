@@ -1,0 +1,225 @@
+#!/bin/bash
+# 1) source env.sh
+# 2) cita setup node0
+# 3) cita start node0
+# 4) cita logs  node0
+# 5) cita stop  node0
+set -e
+
+PROJECT_DIR=$(readlink -f $(dirname $(readlink -f $0)))
+if [ -z ${PROJECT_DIR} ] ; then
+    echo "failed to locate project directory"
+fi
+
+function setup() {
+    # config rabbitmq
+    if [ $(whoami) == "root" ] ; then
+        /etc/init.d/rabbitmq-server restart                              > /dev/null 2>&1 |true
+        rabbitmqctl add_vhost ${node}                                    > /dev/null 2>&1 |true
+        rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*"      > /dev/null 2>&1 |true
+        rabbitmqctl list_permissions -p ${node}                          > /dev/null 2>&1 |true
+    else
+        sudo /etc/init.d/rabbitmq-server restart                         > /dev/null 2>&1 |true
+        sudo rabbitmqctl add_vhost ${node}                               > /dev/null 2>&1 |true
+        sudo rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*" > /dev/null 2>&1 |true
+        sudo rabbitmqctl list_permissions -p ${node}                     > /dev/null 2>&1 |true
+    fi
+}
+
+function start() {
+    node=$1
+    debug=$2
+
+    pid_file=.pid
+    mkdir -p logs
+
+    if [ -z ${debug} ]; then
+        nohup auth                                                       \
+              >logs/auth.log       2>&1 &
+        echo $! >> ${pid_file}
+        nohup network                                                    \
+              -c network.toml                                    \
+              >logs/network.log    2>&1 &
+        echo $! >> ${pid_file}
+        nohup consensus_tendermint                                       \
+              -c consensus.json                                  \
+              >logs/consensus.log  2>&1 &
+        echo $! >> ${pid_file}
+        nohup jsonrpc                                                    \
+              -c jsonrpc.json                            \
+              >logs/jsonrpc.log    2>&1 &
+        echo $! >> ${pid_file}
+        nohup chain                                                      \
+              -g genesis.json                            \
+              -c chain.json                                              \
+              >logs/chain.log        2>&1 &
+        echo $! >> ${pid_file}
+    else
+        RUST_LOG=auth=trace                                              \
+                auth                                                     \
+                >logs/auth.log       2>&1 &
+        echo $! >> ${pid_file}
+        RUST_LOG=network=trace                                           \
+                network                                                  \
+                -c network.toml                                  \
+                >logs/network.log    2>&1 &
+        echo $! >> ${pid_file}
+        RUST_LOG=consensus_tendermint,proof,txpool,engine,libproto=trace \
+                consensus_tendermint                                     \
+                -c consensus.json                        \
+                >logs/consensus.log  2>&1 &
+        echo $! >> ${pid_file}
+        RUST_LOG=jsonrpc,jsonrpc_types=trace                             \
+                jsonrpc                                                  \
+                -c jsonrpc.json                          \
+                >logs/jsonrpc.log    2>&1 &
+        echo $! >> ${pid_file}
+        RUST_LOG=chain,core=trace                                        \
+                chain                                                    \
+                -g genesis.json                          \
+                -c chain.json                                            \
+                >logs/chain.log        2>&1 &
+        echo $! >> ${pid_file}
+    fi
+}
+
+function clean() {
+    # backup and clean data&log
+    backup_dir=$(date -Iseconds)/
+    if [[ -e data && -e logs ]] ; then
+        mkdir ${backup_dir}
+    fi
+    if [ -e data ] ; then
+        mv data ${backup_dir}
+    fi
+    if [ -e logs ] ; then
+        mv logs ${backup_dir}
+    fi
+
+}
+
+function stop() {
+    node=$1
+    pid_file=.pid
+    if [ -e ${pid_file} ] ; then
+        for pid in $(cat ${pid_file}) ; do
+            kill -9 ${pid}
+        done
+    fi
+    rm -f ${pid_file}
+}
+
+function status() {
+    node=$1
+    pid_file=.pid
+    if [ -e ${pid_file} ] ; then
+        for pid in $(cat ${pid_file}) ; do
+            ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep"
+        done
+    fi
+}
+
+function logs() {
+    service=$1
+    tail -f logs/${service}.log
+}
+
+function stat() {
+    stat_cmd="pidstat -r -u -d"
+    for pid in $(cat .pid); do
+        stat_cmd=$stat_cmd" -p ${pid}"
+    done
+    while [ 1 ]; do
+        $stat_cmd
+        echo
+        echo "disk usage bytes $(du -s ./data)"
+        sleep 3
+    done
+}
+
+function usage(){
+    echo
+    echo "      usage:      cita command nodeid"
+    echo
+    echo "      command description:"
+    echo
+    echo "      setup            setup cita run environment"
+    echo
+    echo "      start            start cita"
+    echo
+    echo "      stop             stop cita"
+    echo
+    echo "      restart          restart cita"
+    echo
+    echo "      status           display cita run status"
+    echo
+    echo "      jsonrpc          display cita's jsonrpc log information"
+    echo
+    echo "      chain            display cita's chain log information"
+    echo
+    echo "      consensus        display cita's consensus log information"
+    echo
+    echo "      network          display cita's network log information"
+    echo
+    echo "      clean            clean cita log file"
+    echo
+    echo "      stat             display cita's cpu/ram/io/disk information"
+    echo
+    echo "      usage             display help information"
+    echo
+    echo
+}
+
+SCRIPT_DIR=$(dirname $(readlink -f $0))
+export PATH=$PATH:${SCRIPT_DIR}/../bin
+
+if [ $# -gt 3 ];
+then
+    help
+else
+    node=$2
+    pushd . > /dev/null
+    if [ ! -e ${node} ] ; then
+        echo "no such directory ${node}"
+        exit 1
+    fi
+    cd ${node}
+    case $1 in
+        setup)
+            setup
+            ;;
+        start)
+            stop > /dev/null 2>&1
+            debug=$3
+            start ${debug}
+            ;;
+        stop)
+            stop
+            ;;
+        restart)
+            stop
+            debug=$3
+            start ${debug}
+            ;;
+        status)
+            status
+            ;;
+        logs)
+            service=$3
+            logs ${service}
+            ;;
+        stat)
+            stat
+            ;;
+        clean)
+            clean
+            ;;
+        help)
+            usage
+            ;;
+        *)
+            usage
+            ;;
+    esac
+    popd > /dev/null
+fi

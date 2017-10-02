@@ -1,0 +1,100 @@
+version: '2'
+
+services:
+  admin:
+    container_name: admin
+    image: cryptape/cita
+    hostname: admin
+    # environment:
+    volumes:
+      - ./:/data
+    networks:
+      main:
+        aliases:
+          - admin
+    command: sh -c 'admintool.sh -l node0:4000,node1:4000,node2:4000,node3:4000'
+
+  node0:
+    container_name: node0    
+    image: cryptape/cita
+    hostname: node0
+    # environment:
+    volumes:
+      - ./node0:/data/node0
+    ports:
+      - "4000:4000"
+      - "1337:1337"
+    networks:
+      main:
+        aliases:
+          - node0
+    command: sh -c 'cita setup node0; cita start node0; cita logs node0 chain'
+
+  node1:
+    container_name: node1
+    image: cryptape/cita
+    hostname: node1
+    # environment:
+    volumes:
+      - ./node1:/data/node1
+    networks:
+      main:
+        aliases:
+          - node1
+    # ports:
+    #   - "4000:4000"
+    #   - "1337:1337"
+    command: sh -c 'cita setup node1; cita start node1; cita logs node1 chain'
+
+  node2:
+    container_name: node2
+    image: cryptape/cita
+    hostname: node2
+    # environment:
+    volumes:
+      - ./node2:/data/node2
+    networks:
+      main:
+        aliases:
+          - node2
+    # ports:
+    #   - "4000:4000"
+    #   - "1337:1337"
+    command: sh -c 'cita setup node2; cita start node2; cita logs node2 chain'
+
+  node3:
+    container_name: node3
+    image: cryptape/cita
+    hostname: node3
+    # environment:
+    volumes:
+      - ./node3:/data/node3
+    networks:
+      main:
+        aliases:
+          - node3
+    # ports:
+    #   - "4000:4000"
+    #   - "1337:1337"
+    command: sh -c 'cita setup node3; cita start node3; cita logs node3 chain'
+
+  test:
+    container_name: test
+    image: cryptape/cita
+    hostname: test
+    # environment:
+    volumes:
+      - ./test:/data
+    networks:
+      main:
+        aliases:
+          - test
+    links:
+      - node0
+      - node1
+      - node2
+      - node3
+    command: bash 
+
+networks:
+  main:

@@ -66,15 +66,14 @@ pub fn do_connect(config_path: &str, con: Arc<RwLock<Connection>>) {
         connect(do_con);
     }
 
-    let config_file: String = "./".to_string() + config_path;
     let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(5)).unwrap();
-    let _ = watcher.watch(config_file.clone(), RecursiveMode::Recursive).unwrap();
-
+    let _ = watcher.watch(config_path.clone(), RecursiveMode::Recursive).unwrap();
+    let config = String::from(config_path);
     thread::spawn(move || loop {
                       match rx.recv() {
                           Ok(_) => {
-                              let config = NetConfig::new(&config_file);
+                              let config = NetConfig::new(&config.as_str());
 
                               let con = &mut *con.as_ref().write();
                               con.update(&config);

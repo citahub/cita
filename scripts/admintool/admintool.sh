@@ -44,6 +44,13 @@ display_help()
     exit 0
 }
 
+PROJECT_DIR=$(readlink -f $(dirname $(readlink -f $0)))
+if [ -z ${PROJECT_DIR} ] ; then
+    echo "failed to locate project directory"
+fi
+cd ${PROJECT_DIR}
+export PATH=${PATH}:${PROJECT_DIR}/../../bin
+
 # parse options
 while getopts 'a:l:n:m:d:tb:f:c:h:w:P:' OPT; do
     case $OPT in
@@ -120,7 +127,6 @@ fi
 
 DATA_PATH=`pwd`/release
 INIT_DATA_PATH=`pwd`
-CREATE_KEY_ADDR_PATH=$DATA_PATH/bin/create_key_addr
 
 if [ ! -f "$DATA_PATH" ]; then
     mkdir -p $DATA_PATH
@@ -149,7 +155,7 @@ for ((ID=0;ID<$SIZE;ID++))
 do
     mkdir -p $DATA_PATH/node$ID
     echo "Start generating private Key for Node" $ID "!"
-    python create_keys_addr.py $DATA_PATH $ID $CREATE_KEY_ADDR_PATH
+    python create_keys_addr.py $DATA_PATH $ID create_key_addr
     echo "[PrivateKey Path] : " $DATA_PATH/node$ID
     echo "End generating private Key for Node" $ID "!"
     echo "Start creating Network Node" $ID "Configuration!"
@@ -170,28 +176,12 @@ do
 done
 
 echo "Step 3: ********************************************************"
+# TODO: bin/cita should provider parameter about consensus algorithm
+# sed -i "s/tendermint/$CONSENSUS_NAME/g" $DATA_PATH/bin/cita
 for ((ID=0;ID<$SIZE;ID++))
 do
-    echo "Start creating Node " $ID " env!"
-    cp cita $DATA_PATH/node$ID/
-    cp $DATA_PATH/.env $DATA_PATH/node$ID/
-    case "$OSTYPE" in
-        darwin*)
-            sed -ig "s/dev/node$ID/g" $DATA_PATH/node$ID/.env
-            sed -ig "s/tendermint/$CONSENSUS_NAME/g" $DATA_PATH/node$ID/cita
-            ;;
-        *)
-            sed -i "s/dev/node$ID/g" $DATA_PATH/node$ID/.env
-            sed -i "s/tendermint/$CONSENSUS_NAME/g" $DATA_PATH/node$ID/cita
-            ;;
-    esac
-    echo "Start copy binary for Node " $ID "!"
-    if [ -n "$DEV_MOD" ]; then
-        rm -f $DATA_PATH/node$ID/bin
-        ln -s $DATA_PATH/bin $DATA_PATH/node$ID/bin
-    else
-        cp -rf $DATA_PATH/bin $DATA_PATH/node$ID/
-    fi
+    echo "AMQP_URL=amqp://guest:guest@localhost/node$ID" >> $DATA_PATH/node$ID/.env
+    echo "DATA_PATH=./data"                              >> $DATA_PATH/node$ID/.env
 done
 
 

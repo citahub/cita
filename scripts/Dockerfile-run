@@ -1,10 +1,10 @@
 FROM ubuntu:16.04
 
-RUN apt-get update -q                                                                                       \
-    && apt-get install -y libstdc++6 libsodium18 rabbitmq-server libssl-dev libgoogle-perftools4 python-pip	\
-    && rm -rf /var/lib/apt/lists
-
-RUN pip install --user ethereum pysodium                                                                    \
+COPY *.sh /tmp/
+RUN /tmp/install_runtime.sh                     \
+	&& rm -rf /var/lib/apt/lists                \
     && rm -rf ~/.cache/pip
 
+WORKDIR /cita
+ENV PATH $PATH:/cita/bin
 CMD /bin/bash
