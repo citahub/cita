@@ -100,10 +100,10 @@ impl Receipt {
 impl Encodable for Receipt {
     fn rlp_append(&self, s: &mut RlpStream) {
         if let Some(ref root) = self.state_root {
-            s.begin_list(4);
+            s.begin_list(5);
             s.append(root);
         } else {
-            s.begin_list(3);
+            s.begin_list(4);
         }
         s.append(&self.gas_used);
         s.append(&self.log_bloom);
