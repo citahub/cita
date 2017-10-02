@@ -34,8 +34,8 @@ stop_all () {
     stop_node 1
     stop_node 2
     stop_node 3
-    killall trans_evm
-    killall cita_basic.sh
+    killall trans_evm || true
+    killall cita_basic.sh || true
 }
 
 start_all () {
