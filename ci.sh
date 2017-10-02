@@ -7,9 +7,9 @@ source ~/.cargo/env
 sudo ./scripts/install_sys.sh
 
 echo "################################################################################"
-echo "0) test ed25519/blake2b"
-sed -i 's/\["secp256k1"\]/\["ed25519"\]/g' share_libs/crypto/Cargo.toml
-sed -i 's/\["sha3hash"\]/\["blake2bhash"\]/g' share_libs/util/Cargo.toml
+# echo "0) test ed25519/blake2b"
+# sed -i 's/\["secp256k1"\]/\["ed25519"\]/g' share_libs/crypto/Cargo.toml
+# sed -i 's/\["sha3hash"\]/\["blake2bhash"\]/g' share_libs/util/Cargo.toml
 make clean
 make debug
 make test
