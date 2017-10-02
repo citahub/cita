@@ -15,7 +15,7 @@ elastic-array = "0.9"
 rlp = { path = "../rlp" }
 heapsize = "0.4"
 itertools = "0.5"
-sha3 = { path = "../sha3", optional = true }
+sha3 = { path = "../sha3"}
 clippy = { version = "0.0.103", optional = true }
 libc = "0.2.7"
 vergen = "0.1"
@@ -32,7 +32,7 @@ uuid = { version = "0.4", features = ["v4"] }
 
 [features]
 default = ["sha3hash"]
-sha3hash = ["sha3"]
+sha3hash = []
 blake2bhash = ["blake2b"]
 
 [build-dependencies]

@@ -28,7 +28,6 @@ extern crate regex;
 extern crate lru_cache;
 extern crate heapsize;
 extern crate itertools;
-#[cfg(feature = "sha3hash")]
 extern crate sha3;
 #[cfg(feature = "blake2bhash")]
 extern crate blake2b;

@@ -18,7 +18,6 @@
 use H256;
 #[cfg(feature = "blake2bhash")]
 use blake2b::blake2b;
-#[cfg(feature = "sha3hash")]
 use sha3::sha3_256;
 
 /// The hash of the empty bytes string.
@@ -303,6 +302,15 @@ where
             blake2b(dest.as_mut_ptr(), dest.len(), input.as_ptr(), input.len(), BLAKE2BKEY.as_bytes().as_ptr(), BLAKE2BKEY.len());
         }
     }
+}
+
+pub fn sha3(val: &[u8]) -> H256 {
+    let out: &mut [u8; 32] = &mut [0; 32];
+    let outptr = out.as_mut_ptr();
+    unsafe {
+        sha3_256(outptr, 32, val.as_ptr(), val.len());
+    }
+    H256::from_slice(out)
 }
 
 #[cfg(test)]

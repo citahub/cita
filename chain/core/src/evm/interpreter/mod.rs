@@ -379,7 +379,7 @@ impl<Cost: CostType> Interpreter<Cost> {
             instructions::SHA3 => {
                 let offset = stack.pop_back();
                 let size = stack.pop_back();
-                let sha3 = self.mem.read_slice(offset, size).crypt_hash();
+                let sha3 = sha3(&self.mem.read_slice(offset, size));
                 stack.push(U256::from(&*sha3));
             }
             instructions::SLOAD => {
