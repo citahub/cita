@@ -20,7 +20,8 @@ use libproto::*;
 use libproto::blockchain::SignedTransaction;
 use protobuf::Message;
 use std::collections::{HashMap, HashSet};
-use std::sync::{Mutex, Arc};
+use std::sync::Arc;
+use util::Mutex;
 use std::sync::mpsc::{Sender, Receiver};
 use std::time::SystemTime;
 use std::vec::*;
@@ -178,7 +179,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                 let now = SystemTime::now();
                 trace!("get batch new tx request from jsonrpc in system time :{:?}, and has got {} new tx ", now, batch_new_tx.len());
 
-                let mut txs = batch_new_tx_pool.lock().unwrap();
+                let mut txs = batch_new_tx_pool.lock();
                 for tx_req in batch_new_tx.iter() {
                     let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
                     let hash: H256 = verify_tx_req.get_tx_hash().into();
@@ -191,7 +192,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                 let now = SystemTime::now();
                 trace!("get single new tx request from peer node with system time :{:?}", now);
                 let verify_tx_req = tx_verify_req_msg(newtx_req.get_un_tx());
-                let mut txs = batch_new_tx_pool.lock().unwrap();
+                let mut txs = batch_new_tx_pool.lock();
                 let hash = verify_tx_req.get_tx_hash().into();
                 txs.insert(hash, (submodule, newtx_req.clone()));
 
@@ -213,7 +214,7 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
 
             let tx_hash: H256 = resp.get_tx_hash().into();
             let unverified_tx = {
-                let mut txs = batch_new_tx_pool.lock().unwrap();
+                let mut txs = batch_new_tx_pool.lock();
                 txs.remove(&tx_hash)
             };
             trace!("receive verify resp, hash: {:?}, ret: {:?}", tx_hash, resp.get_ret());

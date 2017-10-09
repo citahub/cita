@@ -52,7 +52,7 @@ use http_handler::HttpHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
 
-use libproto::communication::Message as commMsg;
+use libproto::communication::Message as CommMsg;
 use libproto::request as reqlib;
 use libproto::request::BatchRequest;
 use log::LogLevelFilter;
@@ -182,7 +182,7 @@ fn main() {
         loop {
             let (topic, req): (String, reqlib::Request) = rx_relay.recv().unwrap();
             if topic.as_str() != TOPIC_NEW_TX {
-                let data: commMsg = req.into();
+                let data: CommMsg = req.into();
                 tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
             } else {
                 new_tx_request_buffer.push(req);
@@ -197,7 +197,7 @@ fn main() {
                     request.set_batch_req(batch_request);
                     request.set_request_id(request_id);
 
-                    let data: commMsg = request.into();
+                    let data: CommMsg = request.into();
                     tx_pub.send((String::from(TOPIC_NEW_TX_BATCH), data.write_to_bytes().unwrap())).unwrap();
                     time_stamp = SystemTime::now();
                     new_tx_request_buffer = Vec::new();
