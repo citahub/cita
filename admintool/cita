@@ -19,6 +19,21 @@ function cita_setup() {
     sudo rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*"
     sudo rabbitmqctl list_permissions -p ${node}
 
+    # setup env
+    sudo sed -i '/fs.inotify.max_user_watches/'d /etc/sysctl.conf
+    sudo sed -i '/fs.inotify.max_user_instances/'d /etc/sysctl.conf
+    sudo sed -i '$a\fs.inotify.max_user_watches=100000\' /etc/sysctl.conf
+    sudo sed -i '$a\fs.inotify.max_user_instances=8192\' /etc/sysctl.conf
+
+    sudo sed -i '/[]*\*[]*soft[]*nofile[]*/d' /etc/security/limits.conf
+    sudo sed -i '/[]*\*[]*hard[]*nofile[]*/d' /etc/security/limits.conf
+    sudo sed -i '$a\*  soft    nofile     100000\' /etc/security/limits.conf
+    sudo sed -i '$a\*  hard    nofile     100000\' /etc/security/limits.conf
+
+    sudo sysctl -w fs.inotify.max_user_watches=100000
+    sudo sysctl -w fs.inotify.max_user_instances=8192
+    ulimit -n 100000
+
     # clean up database and local data
     data_path=${VAGRANT_DATA_PATH:-"./data"}
     echo "Will remove data_path is ${data_path}"
