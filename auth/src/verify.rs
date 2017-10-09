@@ -41,7 +41,7 @@ impl Verifier {
             inited: false,
             height_latest: None,
             height_low: None,
-            hashes: HashMap::new(),
+            hashes: HashMap::with_capacity(BLOCKLIMIT as usize),
         }
     }
 

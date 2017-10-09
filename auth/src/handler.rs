@@ -135,9 +135,10 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             let height = block_tx_hashes.get_height();
             trace!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
-            let mut tx_hashes_in_h256: HashSet<H256> = HashSet::new();
+            let mut tx_hashes_in_h256 = HashSet::with_capacity(tx_hashes.len());
             let mut tx_hashes_in_h256_vec: Vec<H256> = Vec::new();
             let mut cache_guard = cache.write();
+            
             for data in tx_hashes.iter() {
                 let hash = H256::from_slice(data);
                 cache_guard.remove(&hash);
