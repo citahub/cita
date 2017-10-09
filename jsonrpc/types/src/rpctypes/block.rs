@@ -56,7 +56,7 @@ pub struct Block {
 impl From<ProtoBlockHeader> for BlockHeader {
     fn from(proto_header: ProtoBlockHeader) -> Self {
         let proof = match proto_header.get_height() {
-            0 => None,
+            0 | 1 => None,
             _ => Some(proto_header.clone().take_proof().into()),
         };
         trace!("number = {}, proof = {:?}", U256::from(proto_header.get_height()), proof);
