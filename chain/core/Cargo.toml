@@ -7,7 +7,6 @@ authors = ["u2 <zhangyaning1985@gmail.com>"]
 libproto = {path = "../../share_libs/proto"}
 byteorder = { version = "1", default-features = false }
 log = "0.3.0"
-env_logger = "0.3"
 bincode = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"
@@ -51,10 +50,8 @@ jsonrpc_types = { path = "../../jsonrpc/types"}
 [dev-dependencies]
 rand = "0.3"
 cpuprofiler = "0.0.3"
-devtools = { path = "../../devtools" }
 mktemp = "0.3.1"
-env_logger="*"
-
+logger =  { path = "../../share_libs/logger" }
 [features]
-# default = ["evm-debug"]
-# evm-debug= []
+default = []
+evm-debug= []

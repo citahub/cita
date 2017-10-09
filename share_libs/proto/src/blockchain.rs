@@ -1,20 +1,3 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 // This file is generated. Do not edit
 // @generated
 
@@ -38,7 +21,7 @@
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct Proof {
     // message fields
     pub content: ::std::vec::Vec<u8>,
@@ -61,9 +44,7 @@ impl Proof {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const Proof,
         };
-        unsafe {
-            instance.get(Proof::new)
-        }
+        unsafe { instance.get(Proof::new) }
     }
 
     // bytes content = 1;
@@ -135,17 +116,17 @@ impl ::protobuf::Message for Proof {
             match field_number {
                 1 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.content)?;
-                },
+                }
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_enum()?;
                     self.field_type = tmp;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -216,23 +197,11 @@ impl ::protobuf::MessageStatic for Proof {
         };
         unsafe {
             descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "content",
-                    Proof::get_content_for_reflect,
-                    Proof::mut_content_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<ProofType>>(
-                    "type",
-                    Proof::get_field_type_for_reflect,
-                    Proof::mut_field_type_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<Proof>(
-                    "Proof",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
+                               let mut fields = ::std::vec::Vec::new();
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("content", Proof::get_content_for_reflect, Proof::mut_content_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<ProofType>>("type", Proof::get_field_type_for_reflect, Proof::mut_field_type_for_reflect));
+                               ::protobuf::reflect::MessageDescriptor::new::<Proof>("Proof", fields, file_descriptor_proto())
+                           })
         }
     }
 }
@@ -257,7 +226,7 @@ impl ::protobuf::reflect::ProtobufValue for Proof {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct BlockHeader {
     // message fields
     pub prevhash: ::std::vec::Vec<u8>,
@@ -287,9 +256,7 @@ impl BlockHeader {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const BlockHeader,
         };
-        unsafe {
-            instance.get(BlockHeader::new)
-        }
+        unsafe { instance.get(BlockHeader::new) }
     }
 
     // bytes prevhash = 1;
@@ -568,7 +535,7 @@ impl ::protobuf::Message for BlockHeader {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         true
     }
 
@@ -578,50 +545,52 @@ impl ::protobuf::Message for BlockHeader {
             match field_number {
                 1 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.prevhash)?;
-                },
+                }
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint64()?;
                     self.timestamp = tmp;
-                },
+                }
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint64()?;
                     self.height = tmp;
-                },
+                }
                 4 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.state_root)?;
-                },
+                }
                 5 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.transactions_root)?;
-                },
+                }
                 6 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.receipts_root)?;
-                },
+                }
                 7 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint64()?;
                     self.gas_used = tmp;
-                },
+                }
                 8 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint64()?;
                     self.gas_limit = tmp;
-                },
+
+                }
+
                 9 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.proof)?;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -738,56 +707,16 @@ impl ::protobuf::MessageStatic for BlockHeader {
         unsafe {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "prevhash",
-                    BlockHeader::get_prevhash_for_reflect,
-                    BlockHeader::mut_prevhash_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                    "timestamp",
-                    BlockHeader::get_timestamp_for_reflect,
-                    BlockHeader::mut_timestamp_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                    "height",
-                    BlockHeader::get_height_for_reflect,
-                    BlockHeader::mut_height_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "state_root",
-                    BlockHeader::get_state_root_for_reflect,
-                    BlockHeader::mut_state_root_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "transactions_root",
-                    BlockHeader::get_transactions_root_for_reflect,
-                    BlockHeader::mut_transactions_root_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "receipts_root",
-                    BlockHeader::get_receipts_root_for_reflect,
-                    BlockHeader::mut_receipts_root_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                    "gas_used",
-                    BlockHeader::get_gas_used_for_reflect,
-                    BlockHeader::mut_gas_used_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                    "gas_limit",
-                    BlockHeader::get_gas_limit_for_reflect,
-                    BlockHeader::mut_gas_limit_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Proof>>(
-                    "proof",
-                    BlockHeader::get_proof_for_reflect,
-                    BlockHeader::mut_proof_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<BlockHeader>(
-                    "BlockHeader",
-                    fields,
-                    file_descriptor_proto()
-                )
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("prevhash", BlockHeader::get_prevhash_for_reflect, BlockHeader::mut_prevhash_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>("timestamp", BlockHeader::get_timestamp_for_reflect, BlockHeader::mut_timestamp_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>("height", BlockHeader::get_height_for_reflect, BlockHeader::mut_height_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("state_root", BlockHeader::get_state_root_for_reflect, BlockHeader::mut_state_root_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("transactions_root", BlockHeader::get_transactions_root_for_reflect, BlockHeader::mut_transactions_root_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("receipts_root", BlockHeader::get_receipts_root_for_reflect, BlockHeader::mut_receipts_root_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>("gas_used", BlockHeader::get_gas_used_for_reflect, BlockHeader::mut_gas_used_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>("gas_limit", BlockHeader::get_gas_limit_for_reflect, BlockHeader::mut_gas_limit_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Proof>>("proof", BlockHeader::get_proof_for_reflect, BlockHeader::mut_proof_for_reflect));
+                ::protobuf::reflect::MessageDescriptor::new::<BlockHeader>("BlockHeader", fields, file_descriptor_proto())
             })
         }
     }
@@ -820,7 +749,7 @@ impl ::protobuf::reflect::ProtobufValue for BlockHeader {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct Status {
     // message fields
     pub hash: ::std::vec::Vec<u8>,
@@ -843,9 +772,7 @@ impl Status {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const Status,
         };
-        unsafe {
-            instance.get(Status::new)
-        }
+        unsafe { instance.get(Status::new) }
     }
 
     // bytes hash = 1;
@@ -917,17 +844,17 @@ impl ::protobuf::Message for Status {
             match field_number {
                 1 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.hash)?;
-                },
+                }
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint64()?;
                     self.height = tmp;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -998,23 +925,11 @@ impl ::protobuf::MessageStatic for Status {
         };
         unsafe {
             descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "hash",
-                    Status::get_hash_for_reflect,
-                    Status::mut_hash_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                    "height",
-                    Status::get_height_for_reflect,
-                    Status::mut_height_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<Status>(
-                    "Status",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
+                               let mut fields = ::std::vec::Vec::new();
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("hash", Status::get_hash_for_reflect, Status::mut_hash_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>("height", Status::get_height_for_reflect, Status::mut_height_for_reflect));
+                               ::protobuf::reflect::MessageDescriptor::new::<Status>("Status", fields, file_descriptor_proto())
+                           })
         }
     }
 }
@@ -1039,12 +954,12 @@ impl ::protobuf::reflect::ProtobufValue for Status {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct RichStatus {
     // message fields
     pub hash: ::std::vec::Vec<u8>,
     pub height: u64,
-    pub nodes: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
+    nodes: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -1063,9 +978,7 @@ impl RichStatus {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const RichStatus,
         };
-        unsafe {
-            instance.get(RichStatus::new)
-        }
+        unsafe { instance.get(RichStatus::new) }
     }
 
     // bytes hash = 1;
@@ -1170,20 +1083,20 @@ impl ::protobuf::Message for RichStatus {
             match field_number {
                 1 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.hash)?;
-                },
+                }
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint64()?;
                     self.height = tmp;
-                },
+                }
                 3 => {
                     ::protobuf::rt::read_repeated_bytes_into(wire_type, is, &mut self.nodes)?;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -1201,7 +1114,7 @@ impl ::protobuf::Message for RichStatus {
         }
         for value in &self.nodes {
             my_size += ::protobuf::rt::bytes_size(3, &value);
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -1216,7 +1129,7 @@ impl ::protobuf::Message for RichStatus {
         }
         for v in &self.nodes {
             os.write_bytes(3, &v)?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -1260,28 +1173,12 @@ impl ::protobuf::MessageStatic for RichStatus {
         };
         unsafe {
             descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "hash",
-                    RichStatus::get_hash_for_reflect,
-                    RichStatus::mut_hash_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                    "height",
-                    RichStatus::get_height_for_reflect,
-                    RichStatus::mut_height_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "nodes",
-                    RichStatus::get_nodes_for_reflect,
-                    RichStatus::mut_nodes_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<RichStatus>(
-                    "RichStatus",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
+                               let mut fields = ::std::vec::Vec::new();
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("hash", RichStatus::get_hash_for_reflect, RichStatus::mut_hash_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>("height", RichStatus::get_height_for_reflect, RichStatus::mut_height_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("nodes", RichStatus::get_nodes_for_reflect, RichStatus::mut_nodes_for_reflect));
+                               ::protobuf::reflect::MessageDescriptor::new::<RichStatus>("RichStatus", fields, file_descriptor_proto())
+                           })
         }
     }
 }
@@ -1307,7 +1204,7 @@ impl ::protobuf::reflect::ProtobufValue for RichStatus {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct Transaction {
     // message fields
     pub to: ::std::string::String,
@@ -1333,9 +1230,7 @@ impl Transaction {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const Transaction,
         };
-        unsafe {
-            instance.get(Transaction::new)
-        }
+        unsafe { instance.get(Transaction::new) }
     }
 
     // string to = 1;
@@ -1498,30 +1393,30 @@ impl ::protobuf::Message for Transaction {
             match field_number {
                 1 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.to)?;
-                },
+                }
                 2 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.nonce)?;
-                },
+                }
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint64()?;
                     self.quota = tmp;
-                },
+                }
                 4 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint64()?;
                     self.valid_until_block = tmp;
-                },
+                }
                 5 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.data)?;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -1611,36 +1506,12 @@ impl ::protobuf::MessageStatic for Transaction {
         unsafe {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
-                    "to",
-                    Transaction::get_to_for_reflect,
-                    Transaction::mut_to_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
-                    "nonce",
-                    Transaction::get_nonce_for_reflect,
-                    Transaction::mut_nonce_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                    "quota",
-                    Transaction::get_quota_for_reflect,
-                    Transaction::mut_quota_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                    "valid_until_block",
-                    Transaction::get_valid_until_block_for_reflect,
-                    Transaction::mut_valid_until_block_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "data",
-                    Transaction::get_data_for_reflect,
-                    Transaction::mut_data_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<Transaction>(
-                    "Transaction",
-                    fields,
-                    file_descriptor_proto()
-                )
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>("to", Transaction::get_to_for_reflect, Transaction::mut_to_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>("nonce", Transaction::get_nonce_for_reflect, Transaction::mut_nonce_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>("quota", Transaction::get_quota_for_reflect, Transaction::mut_quota_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>("valid_until_block", Transaction::get_valid_until_block_for_reflect, Transaction::mut_valid_until_block_for_reflect));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("data", Transaction::get_data_for_reflect, Transaction::mut_data_for_reflect));
+                ::protobuf::reflect::MessageDescriptor::new::<Transaction>("Transaction", fields, file_descriptor_proto())
             })
         }
     }
@@ -1669,10 +1540,10 @@ impl ::protobuf::reflect::ProtobufValue for Transaction {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct UnverifiedTransaction {
     // message fields
-    pub transaction: ::protobuf::SingularPtrField<Transaction>,
+    transaction: ::protobuf::SingularPtrField<Transaction>,
     pub signature: ::std::vec::Vec<u8>,
     pub crypto: Crypto,
     // special fields
@@ -1693,9 +1564,7 @@ impl UnverifiedTransaction {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const UnverifiedTransaction,
         };
-        unsafe {
-            instance.get(UnverifiedTransaction::new)
-        }
+        unsafe { instance.get(UnverifiedTransaction::new) }
     }
 
     // .Transaction transaction = 1;
@@ -1803,7 +1672,7 @@ impl ::protobuf::Message for UnverifiedTransaction {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         true
     }
 
@@ -1813,20 +1682,20 @@ impl ::protobuf::Message for UnverifiedTransaction {
             match field_number {
                 1 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.transaction)?;
-                },
+                }
                 2 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.signature)?;
-                },
+                }
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_enum()?;
                     self.crypto = tmp;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -1906,28 +1775,12 @@ impl ::protobuf::MessageStatic for UnverifiedTransaction {
         };
         unsafe {
             descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Transaction>>(
-                    "transaction",
-                    UnverifiedTransaction::get_transaction_for_reflect,
-                    UnverifiedTransaction::mut_transaction_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "signature",
-                    UnverifiedTransaction::get_signature_for_reflect,
-                    UnverifiedTransaction::mut_signature_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<Crypto>>(
-                    "crypto",
-                    UnverifiedTransaction::get_crypto_for_reflect,
-                    UnverifiedTransaction::mut_crypto_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<UnverifiedTransaction>(
-                    "UnverifiedTransaction",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
+                               let mut fields = ::std::vec::Vec::new();
+                               fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Transaction>>("transaction", UnverifiedTransaction::get_transaction_for_reflect, UnverifiedTransaction::mut_transaction_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("signature", UnverifiedTransaction::get_signature_for_reflect, UnverifiedTransaction::mut_signature_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<Crypto>>("crypto", UnverifiedTransaction::get_crypto_for_reflect, UnverifiedTransaction::mut_crypto_for_reflect));
+                               ::protobuf::reflect::MessageDescriptor::new::<UnverifiedTransaction>("UnverifiedTransaction", fields, file_descriptor_proto())
+                           })
         }
     }
 }
@@ -1953,10 +1806,10 @@ impl ::protobuf::reflect::ProtobufValue for UnverifiedTransaction {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct SignedTransaction {
     // message fields
-    pub transaction_with_sig: ::protobuf::SingularPtrField<UnverifiedTransaction>,
+    transaction_with_sig: ::protobuf::SingularPtrField<UnverifiedTransaction>,
     pub tx_hash: ::std::vec::Vec<u8>,
     pub signer: ::std::vec::Vec<u8>,
     // special fields
@@ -1977,9 +1830,7 @@ impl SignedTransaction {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const SignedTransaction,
         };
-        unsafe {
-            instance.get(SignedTransaction::new)
-        }
+        unsafe { instance.get(SignedTransaction::new) }
     }
 
     // .UnverifiedTransaction transaction_with_sig = 1;
@@ -2098,7 +1949,7 @@ impl ::protobuf::Message for SignedTransaction {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         true
     }
 
@@ -2108,16 +1959,16 @@ impl ::protobuf::Message for SignedTransaction {
             match field_number {
                 1 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.transaction_with_sig)?;
-                },
+                }
                 2 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.tx_hash)?;
-                },
+                }
                 3 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.signer)?;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -2197,28 +2048,12 @@ impl ::protobuf::MessageStatic for SignedTransaction {
         };
         unsafe {
             descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<UnverifiedTransaction>>(
-                    "transaction_with_sig",
-                    SignedTransaction::get_transaction_with_sig_for_reflect,
-                    SignedTransaction::mut_transaction_with_sig_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "tx_hash",
-                    SignedTransaction::get_tx_hash_for_reflect,
-                    SignedTransaction::mut_tx_hash_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "signer",
-                    SignedTransaction::get_signer_for_reflect,
-                    SignedTransaction::mut_signer_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<SignedTransaction>(
-                    "SignedTransaction",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
+                               let mut fields = ::std::vec::Vec::new();
+                               fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<UnverifiedTransaction>>("transaction_with_sig", SignedTransaction::get_transaction_with_sig_for_reflect, SignedTransaction::mut_transaction_with_sig_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("tx_hash", SignedTransaction::get_tx_hash_for_reflect, SignedTransaction::mut_tx_hash_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>("signer", SignedTransaction::get_signer_for_reflect, SignedTransaction::mut_signer_for_reflect));
+                               ::protobuf::reflect::MessageDescriptor::new::<SignedTransaction>("SignedTransaction", fields, file_descriptor_proto())
+                           })
         }
     }
 }
@@ -2244,10 +2079,10 @@ impl ::protobuf::reflect::ProtobufValue for SignedTransaction {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct BlockBody {
     // message fields
-    pub transactions: ::protobuf::RepeatedField<SignedTransaction>,
+    transactions: ::protobuf::RepeatedField<SignedTransaction>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -2266,9 +2101,7 @@ impl BlockBody {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const BlockBody,
         };
-        unsafe {
-            instance.get(BlockBody::new)
-        }
+        unsafe { instance.get(BlockBody::new) }
     }
 
     // repeated .SignedTransaction transactions = 1;
@@ -2311,7 +2144,7 @@ impl ::protobuf::Message for BlockBody {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         true
     }
 
@@ -2321,10 +2154,10 @@ impl ::protobuf::Message for BlockBody {
             match field_number {
                 1 => {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.transactions)?;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -2337,7 +2170,7 @@ impl ::protobuf::Message for BlockBody {
         for value in &self.transactions {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -2348,7 +2181,7 @@ impl ::protobuf::Message for BlockBody {
             os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -2392,18 +2225,10 @@ impl ::protobuf::MessageStatic for BlockBody {
         };
         unsafe {
             descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<SignedTransaction>>(
-                    "transactions",
-                    BlockBody::get_transactions_for_reflect,
-                    BlockBody::mut_transactions_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<BlockBody>(
-                    "BlockBody",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
+                               let mut fields = ::std::vec::Vec::new();
+                               fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<SignedTransaction>>("transactions", BlockBody::get_transactions_for_reflect, BlockBody::mut_transactions_for_reflect));
+                               ::protobuf::reflect::MessageDescriptor::new::<BlockBody>("BlockBody", fields, file_descriptor_proto())
+                           })
         }
     }
 }
@@ -2427,12 +2252,12 @@ impl ::protobuf::reflect::ProtobufValue for BlockBody {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct Block {
     // message fields
     pub version: u32,
-    pub header: ::protobuf::SingularPtrField<BlockHeader>,
-    pub body: ::protobuf::SingularPtrField<BlockBody>,
+    header: ::protobuf::SingularPtrField<BlockHeader>,
+    body: ::protobuf::SingularPtrField<BlockBody>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -2451,9 +2276,7 @@ impl Block {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const Block,
         };
-        unsafe {
-            instance.get(Block::new)
-        }
+        unsafe { instance.get(Block::new) }
     }
 
     // uint32 version = 1;
@@ -2568,12 +2391,12 @@ impl ::protobuf::Message for Block {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         for v in &self.body {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         true
     }
 
@@ -2587,16 +2410,16 @@ impl ::protobuf::Message for Block {
                     }
                     let tmp = is.read_uint32()?;
                     self.version = tmp;
-                },
+                }
                 2 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.header)?;
-                },
+                }
                 3 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.body)?;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -2679,28 +2502,12 @@ impl ::protobuf::MessageStatic for Block {
         };
         unsafe {
             descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
-                    "version",
-                    Block::get_version_for_reflect,
-                    Block::mut_version_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<BlockHeader>>(
-                    "header",
-                    Block::get_header_for_reflect,
-                    Block::mut_header_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<BlockBody>>(
-                    "body",
-                    Block::get_body_for_reflect,
-                    Block::mut_body_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<Block>(
-                    "Block",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
+                               let mut fields = ::std::vec::Vec::new();
+                               fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>("version", Block::get_version_for_reflect, Block::mut_version_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<BlockHeader>>("header", Block::get_header_for_reflect, Block::mut_header_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<BlockBody>>("body", Block::get_body_for_reflect, Block::mut_body_for_reflect));
+                               ::protobuf::reflect::MessageDescriptor::new::<Block>("Block", fields, file_descriptor_proto())
+                           })
         }
     }
 }
@@ -2726,11 +2533,11 @@ impl ::protobuf::reflect::ProtobufValue for Block {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct BlockWithProof {
     // message fields
-    pub blk: ::protobuf::SingularPtrField<Block>,
-    pub proof: ::protobuf::SingularPtrField<Proof>,
+    blk: ::protobuf::SingularPtrField<Block>,
+    proof: ::protobuf::SingularPtrField<Proof>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -2749,9 +2556,7 @@ impl BlockWithProof {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const BlockWithProof,
         };
-        unsafe {
-            instance.get(BlockWithProof::new)
-        }
+        unsafe { instance.get(BlockWithProof::new) }
     }
 
     // .Block blk = 1;
@@ -2843,12 +2648,12 @@ impl ::protobuf::Message for BlockWithProof {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         for v in &self.proof {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         true
     }
 
@@ -2858,13 +2663,13 @@ impl ::protobuf::Message for BlockWithProof {
             match field_number {
                 1 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.blk)?;
-                },
+                }
                 2 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.proof)?;
-                },
+                }
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -2941,23 +2746,11 @@ impl ::protobuf::MessageStatic for BlockWithProof {
         };
         unsafe {
             descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Block>>(
-                    "blk",
-                    BlockWithProof::get_blk_for_reflect,
-                    BlockWithProof::mut_blk_for_reflect,
-                ));
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Proof>>(
-                    "proof",
-                    BlockWithProof::get_proof_for_reflect,
-                    BlockWithProof::mut_proof_for_reflect,
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<BlockWithProof>(
-                    "BlockWithProof",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
+                               let mut fields = ::std::vec::Vec::new();
+                               fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Block>>("blk", BlockWithProof::get_blk_for_reflect, BlockWithProof::mut_blk_for_reflect));
+                               fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Proof>>("proof", BlockWithProof::get_proof_for_reflect, BlockWithProof::mut_proof_for_reflect));
+                               ::protobuf::reflect::MessageDescriptor::new::<BlockWithProof>("BlockWithProof", fields, file_descriptor_proto())
+                           })
         }
     }
 }
@@ -2981,6 +2774,7 @@ impl ::protobuf::reflect::ProtobufValue for BlockWithProof {
         ::protobuf::reflect::ProtobufValueRef::Message(self)
     }
 }
+
 
 #[derive(PartialEq,Clone,Default)]
 pub struct BlockTxs {
@@ -3216,7 +3010,8 @@ impl ::protobuf::reflect::ProtobufValue for BlockTxs {
     }
 }
 
-#[derive(Clone,PartialEq,Eq,Debug,Hash)]
+
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum ProofType {
     AuthorityRound = 0,
     Raft = 1,
@@ -3233,16 +3028,12 @@ impl ::protobuf::ProtobufEnum for ProofType {
             0 => ::std::option::Option::Some(ProofType::AuthorityRound),
             1 => ::std::option::Option::Some(ProofType::Raft),
             2 => ::std::option::Option::Some(ProofType::Tendermint),
-            _ => ::std::option::Option::None
+            _ => ::std::option::Option::None,
         }
     }
 
     fn values() -> &'static [Self] {
-        static values: &'static [ProofType] = &[
-            ProofType::AuthorityRound,
-            ProofType::Raft,
-            ProofType::Tendermint,
-        ];
+        static values: &'static [ProofType] = &[ProofType::AuthorityRound, ProofType::Raft, ProofType::Tendermint];
         values
     }
 
@@ -3251,16 +3042,11 @@ impl ::protobuf::ProtobufEnum for ProofType {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,
         };
-        unsafe {
-            descriptor.get(|| {
-                ::protobuf::reflect::EnumDescriptor::new("ProofType", file_descriptor_proto())
-            })
-        }
+        unsafe { descriptor.get(|| ::protobuf::reflect::EnumDescriptor::new("ProofType", file_descriptor_proto())) }
     }
 }
 
-impl ::std::marker::Copy for ProofType {
-}
+impl ::std::marker::Copy for ProofType {}
 
 impl ::std::default::Default for ProofType {
     fn default() -> Self {
@@ -3274,7 +3060,7 @@ impl ::protobuf::reflect::ProtobufValue for ProofType {
     }
 }
 
-#[derive(Clone,PartialEq,Eq,Debug,Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Crypto {
     SECP = 0,
     SM2 = 1,
@@ -3289,15 +3075,12 @@ impl ::protobuf::ProtobufEnum for Crypto {
         match value {
             0 => ::std::option::Option::Some(Crypto::SECP),
             1 => ::std::option::Option::Some(Crypto::SM2),
-            _ => ::std::option::Option::None
+            _ => ::std::option::Option::None,
         }
     }
 
     fn values() -> &'static [Self] {
-        static values: &'static [Crypto] = &[
-            Crypto::SECP,
-            Crypto::SM2,
-        ];
+        static values: &'static [Crypto] = &[Crypto::SECP, Crypto::SM2];
         values
     }
 
@@ -3306,16 +3089,11 @@ impl ::protobuf::ProtobufEnum for Crypto {
             lock: ::protobuf::lazy::ONCE_INIT,
             ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,
         };
-        unsafe {
-            descriptor.get(|| {
-                ::protobuf::reflect::EnumDescriptor::new("Crypto", file_descriptor_proto())
-            })
-        }
+        unsafe { descriptor.get(|| ::protobuf::reflect::EnumDescriptor::new("Crypto", file_descriptor_proto())) }
     }
 }
 
-impl ::std::marker::Copy for Crypto {
-}
+impl ::std::marker::Copy for Crypto {}
 
 impl ::std::default::Default for Crypto {
     fn default() -> Self {
@@ -3360,6 +3138,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x02\x20\x01(\x0b2\x0c.BlockHeaderR\x06header\x12\x1e\n\x04body\x18\x03\
     \x20\x01(\x0b2\n.BlockBodyR\x04body\"H\n\x0eBlockWithProof\x12\x18\n\x03\
     blk\x18\x01\x20\x01(\x0b2\x06.BlockR\x03blk\x12\x1c\n\x05proof\x18\x02\
+
     \x20\x01(\x0b2\x06.ProofR\x05proof\"B\n\x08BlockTxs\x12\x16\n\x06height\
     \x18\x01\x20\x01(\x04R\x06height\x12\x1e\n\x04body\x18\x03\x20\x01(\x0b2\
     \n.BlockBodyR\x04body*9\n\tProofType\x12\x12\n\x0eAuthorityRound\x10\0\
@@ -3509,6 +3288,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \r\n\x05\x04\n\x02\x01\x04\x12\x04P\x04O\x16\n\x0c\n\x05\x04\n\x02\x01\
     \x06\x12\x03P\x04\r\n\x0c\n\x05\x04\n\x02\x01\x01\x12\x03P\x0e\x12\n\x0c\
     \n\x05\x04\n\x02\x01\x03\x12\x03P\x15\x16b\x06proto3\
+
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
@@ -3521,9 +3301,5 @@ fn parse_descriptor_proto() -> ::protobuf::descriptor::FileDescriptorProto {
 }
 
 pub fn file_descriptor_proto() -> &'static ::protobuf::descriptor::FileDescriptorProto {
-    unsafe {
-        file_descriptor_proto_lazy.get(|| {
-            parse_descriptor_proto()
-        })
-    }
+    unsafe { file_descriptor_proto_lazy.get(|| parse_descriptor_proto()) }
 }

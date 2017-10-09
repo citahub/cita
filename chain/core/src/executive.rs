@@ -203,7 +203,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     data: Some(t.data.clone()),
                     call_type: CallType::Call,
                 };
-
+                trace!(target: "executive", "call: {:?}", params);
                 let mut out = vec![];
                 (self.call(params, &mut substate, BytesRef::Flexible(&mut out), &mut tracer, &mut vm_tracer), out)
             }
@@ -506,8 +506,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
 #[cfg(test)]
 mod tests {
-    extern crate env_logger;
     extern crate rustc_hex;
+    extern crate logger;
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::rustc_hex::FromHex;
@@ -525,7 +525,7 @@ mod tests {
     use util::{H256, U256, Address};
     #[test]
     fn test_create_contract() {
-        let _ = env_logger::init();
+        logger::silent();
         let source = r#"
 pragma solidity ^0.4.8;
 contract AbiTest {
@@ -569,7 +569,7 @@ contract AbiTest {
 
     #[test]
     fn test_call_contract() {
-        let _ = env_logger::init();
+        logger::silent();
         let source = r#"
 pragma solidity ^0.4.8;
 contract AbiTest {

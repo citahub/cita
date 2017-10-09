@@ -100,10 +100,10 @@ impl Receipt {
 impl Encodable for Receipt {
     fn rlp_append(&self, s: &mut RlpStream) {
         if let Some(ref root) = self.state_root {
-            s.begin_list(4);
+            s.begin_list(5);
             s.append(root);
         } else {
-            s.begin_list(3);
+            s.begin_list(4);
         }
         s.append(&self.gas_used);
         s.append(&self.log_bloom);
@@ -114,7 +114,7 @@ impl Encodable for Receipt {
 
 impl Decodable for Receipt {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if rlp.item_count()? == 3 {
+        if rlp.item_count()? == 4 {
             Ok(Receipt {
                    state_root: None,
                    gas_used: rlp.val_at(0)?,
@@ -192,48 +192,13 @@ pub struct LocalizedReceipt {
 
 #[cfg(test)]
 mod tests {
-    extern crate rustc_hex;
-
-    use self::rustc_hex::{ToHex, FromHex};
-    use super::Receipt;
+    use super::*;
     use log_entry::LogEntry;
-    use util::hashable::HASH_NAME;
 
     #[test]
     fn test_no_state_root() {
-        let mut expected = Vec::new();
-        if HASH_NAME == "sha3" {
-            expected = FromHex::from_hex("f9014183040caeb9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000f838f794dcf421d093428b096ca501a7cd1a740855a7976fc0a00000000000000000000000000000000000000000000000000000000000000000c0").unwrap();
-        } else if HASH_NAME == "blake2b" {
-            expected = FromHex::from_hex("f9014183040caeb9010000000000000000000000000040000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f838f794dcf421d093428b096ca501a7cd1a740855a7976fc0a00000000000000000000000000000000000000000000000000000000000000000c0").unwrap();
-        }
         let r = Receipt::new(
             None,
-            0x40cae.into(),
-            vec![
-                LogEntry {
-                    address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
-                    topics: vec![],
-                    data: vec![0u8; 32],
-                },
-            ],
-            None,
-        );
-        let s = ToHex::to_hex(&::rlp::encode(&r)[..]);
-        println!("test_no_state_root {:?}", s);
-        assert_eq!(&::rlp::encode(&r)[..], &expected[..]);
-    }
-
-    #[test]
-    fn test_basic() {
-        let mut expected = Vec::new();
-        if HASH_NAME == "sha3" {
-            expected = FromHex::from_hex("f90162a02f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee83040caeb9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000f838f794dcf421d093428b096ca501a7cd1a740855a7976fc0a00000000000000000000000000000000000000000000000000000000000000000c0").unwrap();
-        } else if HASH_NAME == "blake2b" {
-            expected = FromHex::from_hex("f90162a02f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee83040caeb9010000000000000000000000000040000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f838f794dcf421d093428b096ca501a7cd1a740855a7976fc0a00000000000000000000000000000000000000000000000000000000000000000c0").unwrap();
-        }
-        let r = Receipt::new(
-            Some("2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into()),
             0x40cae.into(),
             vec![
                 LogEntry {
@@ -245,10 +210,51 @@ mod tests {
             None,
         );
         let encoded = ::rlp::encode(&r);
-        let slice: &[u8] = &encoded;
-        println!("test_basic {:?}", ToHex::to_hex(&slice));
-        assert_eq!(&encoded[..], &expected[..]);
+        println!("encode ok");
         let decoded: Receipt = ::rlp::decode(&encoded);
+        println!("decoded: {:?}", decoded);
+        assert_eq!(decoded, r);
+
+    }
+
+    #[test]
+    fn test_basic() {
+        let r = Receipt::new(
+            Some("2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into()),
+            0x40cae.into(),
+            vec![
+                LogEntry {
+                    address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
+                    topics: vec![],
+                    data: vec![0u8; 32],
+                },
+            ],
+            None,
+
+        );
+        let encoded = ::rlp::encode(&r);
+        let decoded: Receipt = ::rlp::decode(&encoded);
+        println!("decoded: {:?}", decoded);
+        assert_eq!(decoded, r);
+    }
+
+    #[test]
+    fn test_with_error() {
+        let r = Receipt::new(
+            Some("2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into()),
+            0x40cae.into(),
+            vec![
+                LogEntry {
+                    address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
+                    topics: vec![],
+                    data: vec![0u8; 32],
+                },
+            ],
+            Some(ReceiptError::NoTransactionPermission),
+        );
+        let encoded = ::rlp::encode(&r);
+        let decoded: Receipt = ::rlp::decode(&encoded);
+        println!("decoded: {:?}", decoded);
         assert_eq!(decoded, r);
     }
 }

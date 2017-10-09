@@ -60,7 +60,7 @@ serde_json = "1.0"
 serde = "1.0"
 
 [dev-dependencies]
-env_logger = "*"
+logger = { path = "../../../share_libs/logger" }
 # Used in Examples
 docopt = "0.7"
 rustc-serialize = "*"

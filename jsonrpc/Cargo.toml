@@ -21,12 +21,10 @@ pubsub = { path = "../share_libs/pubsub" }
 cpuprofiler = "0.0.3"
 jsonrpc_types = { path = "types" }
 dotenv = "0.10.0"
-cita_log =  { path = "../share_libs/cita_log" }
+logger =  { path = "../share_libs/logger" }
 clap = "2"
 
 [[bin]]
 name = "jsonrpc"
 path = "src/main.rs"
 
-[dev-dependencies]
-pretty_env_logger = "0.1"

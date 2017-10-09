@@ -592,11 +592,12 @@ impl JournalDB for EarlyMergeDB {
 mod tests {
     #![cfg_attr(feature="dev", allow(blacklisted_name))]
     #![cfg_attr(feature="dev", allow(similar_names))]
+    extern crate logger;
+    extern crate mktemp;
 
     use super::*;
     use super::super::traits::JournalDB;
     use {Hashable, H32};
-    use ethcore_logger::init_log;
     use hashdb::{HashDB, DBValue};
     use kvdb::DatabaseConfig;
     use std::path::Path;
@@ -897,7 +898,7 @@ mod tests {
 
     #[test]
     fn insert_delete_insert_delete_insert_expunge() {
-        init_log();
+        logger::silent();
 
         let mut jdb = EarlyMergeDB::new_temp();
 
@@ -924,7 +925,7 @@ mod tests {
 
     #[test]
     fn forked_insert_delete_insert_delete_insert_expunge() {
-        init_log();
+        logger::silent();
         let mut jdb = EarlyMergeDB::new_temp();
 
         // history is 4
@@ -1033,7 +1034,7 @@ mod tests {
 
     #[test]
     fn reopen_remove_three() {
-        init_log();
+        logger::silent();
 
         let mut dir = ::std::env::temp_dir();
         dir.push(H32::random().hex());
@@ -1125,9 +1126,8 @@ mod tests {
 
     #[test]
     fn inject() {
-        let temp = ::devtools::RandomTempPath::new();
-
-        let mut jdb = new_db(temp.as_path().as_path());
+        let temp = mktemp::Temp::new_dir().unwrap();
+        let mut jdb = new_db(temp.as_ref());
         let key = jdb.insert(b"dog");
         jdb.inject_batch().unwrap();
 

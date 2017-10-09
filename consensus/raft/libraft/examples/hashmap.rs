@@ -29,7 +29,6 @@
 // In order to use Serde we need to enable these nightly features.
 
 extern crate libraft; // <--- Kind of a big deal for this!
-extern crate env_logger;
 #[macro_use]
 extern crate log;
 #[macro_use]
@@ -40,6 +39,7 @@ extern crate rustc_serialize;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate logger;
 
 // A payload datatype. We're just using a simple enum. You can use whatever.
 
@@ -82,8 +82,7 @@ Commands:
 
 Usage:
   hashmap get <key> (<node-address>)...
-  hashmap put \
-                              <key> <new-value> (<node-address>)...
+  hashmap put <key> <new-value> (<node-address>)...
   hashmap cas <key> <expected-value> <new-value> (<node-address>)...
   hashmap server <id> (<node-address>)...
   hashmap (-h | --help)
@@ -125,7 +124,7 @@ pub enum Message {
 
 /// Just a plain old boring "parse args and dispatch" call.
 fn main() {
-    let _ = env_logger::init();
+    logger::init();
     let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
     if args.cmd_server {
         server(&args);

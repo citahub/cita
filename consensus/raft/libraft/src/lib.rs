@@ -111,9 +111,8 @@ extern crate scoped_log;
 #[macro_use]
 extern crate wrapped_enum;
 #[cfg(test)]
-extern crate env_logger;
-#[cfg(test)]
 extern crate test;
+
 
 /// Prepares the environment testing. Should be called as the first line of every test with the
 /// name of the test as the only argument.
@@ -122,7 +121,8 @@ extern crate test;
 #[cfg(test)]
 macro_rules! setup_test {
     ($test_name:expr) => (
-        let _ = env_logger::init();
+        extern crate logger;
+        logger::silent();
         push_log_scope!($test_name);
     );
 }

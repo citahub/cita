@@ -5,17 +5,35 @@ cd  ${WORKSPACE}
 source ~/.cargo/env
 
 echo "################################################################################"
-echo "0) test ed25519/blake2b"
-sed -i 's/\["secp256k1"\]/\["ed25519"\]/g' share_libs/crypto/Cargo.toml
-sed -i 's/\["sha3hash"\]/\["blake2bhash"\]/g' share_libs/util/Cargo.toml
+# echo "0) test sm2/sm3"
+# sed -i 's/\["secp256k1"\]/\["sm2"\]/g' share_libs/crypto/Cargo.toml
+# sed -i 's/\["sha3hash"\]/\["sm3hash"\]/g' share_libs/util/Cargo.toml
 make clean
 make debug
 make test
 make bench
+
+sed -i 's/\["sm2"\]/\["secp256k1"\]/g' share_libs/crypto/Cargo.toml
+sed -i 's/\["sm3hash"\]/\["sha3hash"\]/g' share_libs/util/Cargo.toml
+
 ./tests/integrate_test/cita_basic.sh
 ./tests/integrate_test/cita_byzantinetest.sh
+
+
+echo "################################################################################"
+# echo "0) test ed25519/blake2b"
+# sed -i 's/\["secp256k1"\]/\["ed25519"\]/g' share_libs/crypto/Cargo.toml
+# sed -i 's/\["sha3hash"\]/\["blake2bhash"\]/g' share_libs/util/Cargo.toml
+make clean
+make debug
+make test
+make bench
+
 sed -i 's/\["ed25519"\]/\["secp256k1"\]/g' share_libs/crypto/Cargo.toml
 sed -i 's/\["blake2bhash"\]/\["sha3hash"\]/g' share_libs/util/Cargo.toml
+
+./tests/integrate_test/cita_basic.sh
+./tests/integrate_test/cita_byzantinetest.sh
 
 echo "################################################################################"
 echo "1) clean"

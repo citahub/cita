@@ -214,13 +214,15 @@ impl Sendtx {
                             fail = fail + 1;
                         }
                     }
-                    _ => println!("jsonrpc connect [{}] fail!", url),
+                    _ => {
+                        println!("jsonrpc connect [{}] fail!", url);
+                        fail = fail + 1;
+                    }
                 }
             } else {
                 println!("jsonrpc connect [{}] fail!", url);
+                fail = fail + 1;
             }
-
-
         }
 
         println!("sucess {}, fail {}", sucess, fail);
@@ -399,7 +401,7 @@ impl Sendtx {
                     }
                     break;
                 }
-
+                thread::sleep(time::Duration::new(0, 100));
             }
             println!("send tx num:{}, start h:{}, end h:{}, Total time:{}s", txnum, starth, endh, sys_time.elapsed().unwrap().as_secs());
         });
@@ -460,6 +462,7 @@ impl Sendtx {
                     break;
                 }
             }
+            thread::sleep(time::Duration::new(0, 100));
         }
     }
 }

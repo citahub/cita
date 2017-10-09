@@ -21,4 +21,4 @@ libproto = { path = "../share_libs/proto" }
 protobuf = { version = "^1.0.0"}
 util = { path = "../share_libs/util"}
 pubsub = { path = "../share_libs/pubsub" }
-cita_log = { path = "../share_libs/cita_log" }
+logger = { path = "../share_libs/logger" }

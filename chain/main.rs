@@ -24,7 +24,7 @@ extern crate pubsub;
 extern crate util;
 extern crate clap;
 extern crate dotenv;
-extern crate cita_log;
+extern crate logger;
 extern crate jsonrpc_types;
 extern crate common_types as types;
 extern crate byteorder;
@@ -41,9 +41,10 @@ use core::libchain::Genesis;
 use core::libchain::submodules;
 use forward::*;
 use libproto::blockchain::Status;
-use log::LogLevelFilter;
 use protobuf::Message;
 use pubsub::start_pubsub;
+use std::fs::File;
+use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
@@ -64,7 +65,7 @@ fn main() {
     //exit process when panic
     set_panic_handler();
 
-    cita_log::format(LogLevelFilter::Info);
+    logger::init();
     info!("CITA:chain");
     let matches = App::new("chain")
         .version("0.1")
@@ -96,7 +97,8 @@ fn main() {
     let db = Database::open(&config, &nosql_path).unwrap();
     let genesis = Genesis::init(genesis_path);
     let (sync_tx, sync_rx) = channel();
-    let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx, config_path);
+    let switch_file = File::open(config_path).unwrap();
+    let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx, BufReader::new(switch_file));
 
     let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, st.write_to_bytes().unwrap());
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());

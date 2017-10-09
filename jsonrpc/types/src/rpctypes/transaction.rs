@@ -75,4 +75,3 @@ impl From<ProtoSignedTransaction> for FullTransaction {
         }
     }
 }
-

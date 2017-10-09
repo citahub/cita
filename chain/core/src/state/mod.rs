@@ -717,8 +717,8 @@ impl Clone for State<StateDB> {
 #[cfg(test)]
 mod tests {
     extern crate libproto;
-    extern crate env_logger;
     extern crate rustc_hex;
+    extern crate logger;
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::libproto::blockchain;
@@ -755,7 +755,7 @@ mod tests {
         Function signatures:
         55241077: setValue(uint256)
          */
-        let _ = env_logger::init();
+        logger::silent();
 
         // 1) tx = (to, data(code), nonce, valid_until_block)
         let mut tx = blockchain::Transaction::new();

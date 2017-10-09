@@ -16,14 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate mktemp;
-extern crate env_logger;
 extern crate rustc_serialize;
 
 use self::mktemp::Temp;
 use self::rustc_serialize::hex::FromHex;
 use cita_crypto::KeyPair;
 use db;
-
 use journaldb;
 use libchain::block::{Block, BlockBody};
 use libchain::chain::Chain;
@@ -34,7 +32,6 @@ use serde_json;
 use state::State;
 use state_db::*;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::Read;
 use std::io::Write;
 use std::process::Command;
@@ -48,6 +45,8 @@ use util::KeyValueDB;
 use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
 
+const CHAIN_CONFIG: &str = include_str!("../../chain.json");
+const GENESIS_CONFIG: &str = include_str!("../../genesis.json");
 pub fn get_temp_state() -> State<StateDB> {
     let journal_db = get_temp_state_db();
     State::new(journal_db, 0.into(), Default::default())
@@ -106,21 +105,17 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
 }
 
 pub fn init_chain() -> Arc<Chain> {
-    let _ = env_logger::init();
     let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
     // Load from genesis json file
-    let genesis_file = File::open("genesis.json").unwrap();
-    let fconfig = BufReader::new(genesis_file);
-    let spec: Spec = serde_json::from_reader(fconfig).expect("Failed to load genesis.");
+    let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref()).expect("Failed to load genesis.");
     let genesis = Genesis {
         spec: spec,
         block: Block::default(),
     };
     let (sync_tx, _) = channel();
-    let path = "chain.json";
-    let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx, path);
+    let (chain, _) = Chain::init_chain::<&[u8]>(Arc::new(db), genesis, sync_tx, CHAIN_CONFIG.as_ref());
     chain
 }
 

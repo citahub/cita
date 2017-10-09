@@ -912,6 +912,8 @@ impl<'a> Drop for TrieDBMut<'a> {
 
 #[cfg(test)]
 mod tests {
+    extern crate logger;
+
     use super::*;
     use super::super::TrieMut;
     use super::super::standardmap::*;
@@ -940,7 +942,7 @@ mod tests {
 
     #[test]
     fn playpen() {
-        ::ethcore_logger::init_log();
+        logger::silent();
 
         let mut seed = H256::new();
         for test_i in 0..10 {

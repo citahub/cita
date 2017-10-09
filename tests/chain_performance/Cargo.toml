@@ -17,7 +17,7 @@ util = { path = "../../share_libs/util" }
 dotenv = "0.10.0"
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.3.0"
-cita_log = { path = "../../share_libs/cita_log" }
+logger = { path = "../../share_libs/logger" }
 proof = { path = "../../consensus/proof" }
 core = { path = "../../chain/core" }
 common-types = { path = "../../chain/types" }

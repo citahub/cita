@@ -23,7 +23,6 @@ use call_analytics::CallAnalytics;
 use contracts::{NodeManager, AccountManager};
 use db;
 use db::*;
-
 use engines::NullEngine;
 use env_info::{LastHashes, EnvInfo};
 use error::CallError;
@@ -52,8 +51,7 @@ use state_db::StateDB;
 
 use std::collections::{BTreeMap, VecDeque};
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::BufReader;
+use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
@@ -257,7 +255,11 @@ impl Chain {
         status
     }
 
-    pub fn init_chain(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>, path: &str) -> (Arc<Chain>, ProtoRichStatus) {
+
+    pub fn init_chain<R>(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>, sconfig: R) -> (Arc<Chain>, ProtoRichStatus)
+    where
+        R: Read,
+    {
         // 400 is the avarage size of the key
         let cache_man = CacheManager::new(1 << 14, 1 << 20, 400);
 
@@ -287,8 +289,6 @@ impl Chain {
             }
         };
 
-        let switch_file = File::open(path).unwrap();
-        let sconfig = BufReader::new(switch_file);
         let sw: Switch = serde_json::from_reader(sconfig).expect("Failed to load json file.");
         info!("config check: {:?}", sw);
         let max_height = AtomicUsize::new(0);

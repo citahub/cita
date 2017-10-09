@@ -17,9 +17,9 @@
 
 // In order to use Serde we need to enable these nightly features.
 
+extern crate logger;
 extern crate bincode;
 extern crate docopt;
-extern crate env_logger;
 extern crate libraft;
 extern crate rustc_serialize;
 extern crate serde;
@@ -28,9 +28,7 @@ extern crate serde_derive;
 
 use bincode::{serialize, deserialize};
 use bincode::Infinite;
-
 use docopt::Docopt;
-
 use libraft::{state_machine, persistent_log, ServerId, Server, Client};
 use std::collections::HashMap;
 use std::net::{SocketAddr, ToSocketAddrs};
@@ -89,8 +87,7 @@ Commands:
           peer servers.
 
 Usage:
-  register get \
-                              (<node-address>)...
+  register get (<node-address>)...
   register put <new-value> (<node-address>)...
   register cas <expected-value> <new-value> (<node-address>)...
   register server <id> [<node-id> <node-address>]...
@@ -117,7 +114,7 @@ struct Args {
 }
 
 fn main() {
-    let _ = env_logger::init();
+    logger::init();
     let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
     if args.cmd_server {
         server(&args);
