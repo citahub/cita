@@ -230,7 +230,6 @@ mod tests {
                 },
             ],
             None,
-
         );
         let encoded = ::rlp::encode(&r);
         let decoded: Receipt = ::rlp::decode(&encoded);

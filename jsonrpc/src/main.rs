@@ -63,9 +63,9 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
-use uuid::Uuid;
 use util::{RwLock, Mutex};
 use util::panichandler::set_panic_handler;
+use uuid::Uuid;
 use ws_handler::WsFactory;
 
 pub const TOPIC_NEW_TX: &str = "jsonrpc.new_tx";

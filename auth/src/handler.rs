@@ -21,11 +21,11 @@ use libproto::blockchain::SignedTransaction;
 use protobuf::Message;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use util::Mutex;
 use std::sync::mpsc::{Sender, Receiver};
 use std::time::SystemTime;
 use std::vec::*;
 use util::{H256, RwLock};
+use util::Mutex;
 use verify::Verifier;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -138,7 +138,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             let mut tx_hashes_in_h256 = HashSet::with_capacity(tx_hashes.len());
             let mut tx_hashes_in_h256_vec: Vec<H256> = Vec::new();
             let mut cache_guard = cache.write();
-            
+
             for data in tx_hashes.iter() {
                 let hash = H256::from_slice(data);
                 cache_guard.remove(&hash);
