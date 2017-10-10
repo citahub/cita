@@ -36,6 +36,7 @@ extern crate num_cpus;
 extern crate ws;
 extern crate clap;
 extern crate uuid;
+extern crate chashmap;
 
 pub mod http_handler;
 pub mod mq_hanlder;
@@ -44,6 +45,7 @@ pub mod ws_handler;
 pub mod config;
 
 use base_hanlder::TransferType;
+use chashmap::CHashMap;
 use clap::App;
 use config::ProfileConfig;
 use cpuprofiler::PROFILER;
@@ -51,6 +53,7 @@ use dotenv::dotenv;
 use http_handler::HttpHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
+use libproto::Response;
 use libproto::communication::Message as CommMsg;
 use libproto::request as reqlib;
 use libproto::request::BatchRequest;
@@ -63,7 +66,7 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
-use util::{RwLock, Mutex};
+use util::Mutex;
 use util::panichandler::set_panic_handler;
 use uuid::Uuid;
 use ws_handler::WsFactory;
@@ -135,7 +138,7 @@ fn main() {
     //http
     if config.http_config.enable {
         mq_handle.set_http_or_ws(TransferType::HTTP);
-        let http_responses = Arc::new(RwLock::new(HashMap::with_capacity(1000)));
+        let http_responses: Arc<CHashMap<Vec<u8>, Response>> = Arc::new(CHashMap::with_capacity(1000));
         mq_handle.set_http(http_responses.clone());
 
         let http_config = config.http_config.clone();
