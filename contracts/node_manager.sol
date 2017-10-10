@@ -14,6 +14,8 @@ contract NodeManager is NodeInterface {
     mapping(address => NodeStatus) public status;
     // admin
     mapping (address => bool) admins;
+    // recode the operation of the block
+    mapping(uint => bool) block_op;
 
     // consensus node list
     address[] nodes;
@@ -30,6 +32,16 @@ contract NodeManager is NodeInterface {
             revert();
         }
     }
+
+    // should operate one time in a block
+    modifier oneOperate {
+        if (!block_op[block.number]) {
+            _;
+        } else {
+            revert();
+        }
+    }
+
     // setup
     function NodeManager(address[] _nodes, address[] _admins) {
         // initialize the address to Start
@@ -64,7 +76,7 @@ contract NodeManager is NodeInterface {
     }
 
     // approve to be consensus node. status will be start
-    function approveNode(address _node) onlyAdmin returns (bool) {
+    function approveNode(address _node) onlyAdmin oneOperate returns (bool) {
         // the status should be ready
         // require(status[_node] == NodeStatus.Ready);
         if (status[_node] != NodeStatus.Ready) {
@@ -72,6 +84,7 @@ contract NodeManager is NodeInterface {
         }
 
         status[_node] = NodeStatus.Start;
+        block_op[block.number] = true;
         nodes.push(_node);
         ApproveNode(_node);
         // assert(status[_node] == NodeStatus.Start);
@@ -80,7 +93,7 @@ contract NodeManager is NodeInterface {
 
     // delete the consensus node from the list 
     // which means delete the node whoes status is Start
-    function deleteNode(address _node) onlyAdmin returns (bool) {
+    function deleteNode(address _node) onlyAdmin oneOperate returns (bool) {
         // require(status[_node] == NodeStatus.Start);
         if (status[_node] != NodeStatus.Start) {
             return false;
@@ -100,6 +113,7 @@ contract NodeManager is NodeInterface {
         // also delete the last element
         delete nodes[nodes.length - 1];
         nodes.length--;
+        block_op[block.number] = false;
         DeleteNode(_node);
         // assert(status[_node] == NodeStatus.Close);
         return true;
