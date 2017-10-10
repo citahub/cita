@@ -18,12 +18,13 @@
 use core::libchain::block::Block;
 use core::libchain::chain::Chain;
 use libproto::*;
-use libproto::blockchain::Status;
+use libproto::blockchain::{Status, RichStatus};
 use protobuf::{Message, RepeatedField};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use types::ids::BlockId;
+use util::Address;
 
 const BATCH_SYNC: u64 = 120;
 
@@ -71,14 +72,23 @@ impl Synchronizer {
         self.chain.is_sync.store(false, Ordering::SeqCst);
         let current_hash = self.chain.get_current_hash();
         let current_height = self.chain.get_current_height();
+        let max_height = self.chain.get_max_height();
+        let nodes: Vec<Address> = self.chain.nodes.read().clone();
 
         drop(self);
         info!("sync_status {:?}, {:?}", current_hash, current_height);
 
-        let mut status = Status::new();
-        status.set_hash(current_hash.0.to_vec());
-        status.set_height(current_height);
+        let mut rich_status = RichStatus::new();
+        rich_status.set_hash(current_hash.0.to_vec());
+        rich_status.set_height(current_height);
+        let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
+        rich_status.set_nodes(RepeatedField::from_vec(node_list));
 
+        let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
+        trace!("chain after sync current height {:?}  known height{:?}", current_height, max_height);
+        ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+
+        let status: Status = rich_status.into();
         let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
         trace!("add_block chain.status {:?}, {:?}", status.get_height(), status.get_hash());
         ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
