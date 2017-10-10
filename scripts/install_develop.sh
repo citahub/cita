@@ -24,7 +24,7 @@ sudo add-apt-repository -y ppa:ethereum/ethereum
 
 # 3) install develop dependencies
 sudo apt-get update -q
-sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip solc curl jq  google-perftools capnproto \
+sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip solc curl jq  google-perftools capnproto wget\
         libsnappy-dev  libgoogle-perftools-dev   libsodium* libzmq3-dev \
         libssl-dev libgoogle-perftools-dev
 

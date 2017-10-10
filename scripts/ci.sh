@@ -24,18 +24,13 @@ echo "4) unit test"
 time make test
 
 echo "################################################################################"
-echo "5) bench"
-time make bench
-
-echo "################################################################################"
-echo "6) integrate test"
-time ./scripts/release.sh debug
-echo "6.1) basic test(contract create/call, node start/stop)"
+echo "5) integrate test"
+echo "5.1) basic test(contract create/call, node start/stop)"
 time ./tests/integrate_test/cita_basic.sh
-echo "6.2) byzantine test"
+echo "5.2) byzantine test"
 time ./tests/integrate_test/cita_byzantinetest.sh
 
 echo "################################################################################"
-echo "7) archive result"
+echo "6) archive result"
 mkdir -p ${WORKSPACE}/../archive/${BUILD_ID}
 mv ${WORKSPACE}/target  ${WORKSPACE}/../archive/${BUILD_ID}

@@ -6,6 +6,14 @@
 # 5) cita stop  node0
 set -e
 
+sudo (){
+    cmd=$*
+    if [ "$(whoami)" = "root" ]; then
+        ${cmd}
+    else
+        /usr/bin/sudo ${cmd}
+    fi
+}
 PROJECT_DIR=$(readlink -f $(dirname $(readlink -f $0)))
 if [ -z ${PROJECT_DIR} ] ; then
     echo "failed to locate project directory"
@@ -13,17 +21,10 @@ fi
 
 setup() {
     # config rabbitmq
-    if [ "$(whoami)" == "root" ] ; then
-        /etc/init.d/rabbitmq-server restart                              > /dev/null 2>&1 |true
-        rabbitmqctl add_vhost ${node}                                    > /dev/null 2>&1 |true
-        rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*"      > /dev/null 2>&1 |true
-        rabbitmqctl list_permissions -p ${node}                          > /dev/null 2>&1 |true
-    else
-        sudo /etc/init.d/rabbitmq-server restart                         > /dev/null 2>&1 |true
-        sudo rabbitmqctl add_vhost ${node}                               > /dev/null 2>&1 |true
-        sudo rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*" > /dev/null 2>&1 |true
-        sudo rabbitmqctl list_permissions -p ${node}                     > /dev/null 2>&1 |true
-    fi
+    sudo /etc/init.d/rabbitmq-server restart                         > /dev/null 2>&1 |true
+    sudo rabbitmqctl add_vhost ${node}                               > /dev/null 2>&1 |true
+    sudo rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*" > /dev/null 2>&1 |true
+    sudo rabbitmqctl list_permissions -p ${node}                     > /dev/null 2>&1 |true
 }
 
 start() {
