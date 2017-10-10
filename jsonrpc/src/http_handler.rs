@@ -22,8 +22,8 @@ use hyper::uri::RequestUri::AbsolutePath;
 use jsonrpc_types::{RpcRequest, method};
 use jsonrpc_types::error::Error;
 use jsonrpc_types::response::{RpcSuccess, RpcFailure, Output};
-use libproto::{response, communication};
-use protobuf::Message;
+use libproto::request as reqlib;
+use libproto::response;
 use serde_json;
 use std::collections::HashMap;
 use std::io::Read;
@@ -37,7 +37,7 @@ use util::{RwLock, Mutex};
 impl BaseHandler for HttpHandler {}
 
 pub struct HttpHandler {
-    pub tx: Arc<Mutex<Sender<(String, Vec<u8>)>>>,
+    pub tx: Arc<Mutex<Sender<(String, reqlib::Request)>>>,
     //TODO 定时清理工作
     pub responses: Arc<RwLock<HashMap<Vec<u8>, response::Response>>>,
     pub sleep_duration: usize,
@@ -80,9 +80,10 @@ impl HttpHandler {
         match self.method_handler.from_req(rpc) {
             Ok(req) => {
                 let request_id = req.request_id.clone();
-                let msg: communication::Message = req.into();
+                //let msg: communication::Message = req.into();
                 {
-                    self.tx.lock().send((topic, msg.write_to_bytes().unwrap())).unwrap();
+                    //self.tx.lock().send((topic, msg.write_to_bytes().unwrap())).unwrap();
+                    self.tx.lock().send((topic, req)).unwrap();
                 }
                 trace!("wait response {:?}", String::from_utf8(request_id.clone()));
                 let mut timeout_count = 0;

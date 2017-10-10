@@ -9,7 +9,7 @@ hyper = "0.10"
 ws = "0.7"
 threadpool = "1.4"
 num_cpus = "1.6.2"
-
+uuid = { version = "0.4", features = ["v4"] }
 libproto = { path = "../share_libs/proto" }
 protobuf = { version = "^1.0.0" }
 log = "0.3"

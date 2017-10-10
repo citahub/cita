@@ -21,9 +21,6 @@ pub mod tendermint;
 pub mod params;
 pub mod voteset;
 pub mod spec;
-pub mod dispatchtx;
-pub mod txwal;
-pub mod txhandler;
 
 pub use self::params::*;
 pub use self::spec::*;

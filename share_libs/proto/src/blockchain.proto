@@ -75,3 +75,8 @@ message BlockWithProof {
     Block blk = 1;
     Proof proof = 2;
 }
+
+message BlockTxs {
+    uint64 height = 1;
+    BlockBody body = 3;
+}

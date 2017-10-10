@@ -17,7 +17,7 @@
 
 use authority_manage::AuthorityManage;
 use bincode::{serialize, deserialize, Infinite};
-use core::dispatchtx::Dispatchtx;
+
 use core::params::TendermintParams;
 use core::voteset::{VoteCollector, ProposalCollector, VoteSet, Proposal, VoteMessage};
 
@@ -27,14 +27,14 @@ use core::wal::Wal;
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address, SIGNATURE_BYTES_LEN};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
-use libproto::blockchain::{Block, SignedTransaction, RichStatus, BlockWithProof};
+use libproto::blockchain::{Block, BlockWithProof, BlockTxs, RichStatus};
+
 
 //use tx_pool::Pool;
 use proof::TendermintProof;
-use protobuf::{Message, RepeatedField};
+use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver, RecvError};
 use std::time::Instant;
 use util::{H256, Address, Hashable};
@@ -118,25 +118,21 @@ pub struct TenderMint {
     wal_log: Wal,
     send_filter: HashMap<Address, (usize, Step, Instant)>,
     last_commit_round: Option<usize>,
-    // to be used for chain syncing
-    //sync_ok :bool,
-    dispatch: Arc<Dispatchtx>,
     htime: Instant,
     auth_manage: AuthorityManage,
     consensus_power: bool,
     unverified_msg: Vec<(usize, usize)>,
+    block_txs: Option<BlockTxs>,
 }
 
 impl TenderMint {
-    pub fn new(s: Sender<PubType>, r: Receiver<TransType>, ts: Sender<TimeoutInfo>, rs: Receiver<TimeoutInfo>, params: TendermintParams, dispatch: Arc<Dispatchtx>) -> TenderMint {
+    pub fn new(s: Sender<PubType>, r: Receiver<TransType>, ts: Sender<TimeoutInfo>, rs: Receiver<TimeoutInfo>, params: TendermintParams) -> TenderMint {
         let proof = TendermintProof::default();
         if params.is_test {
             trace!("Run for test!");
         }
 
         let logpath = DataPath::wal_path();
-
-        trace!("tx pool size {}", params.tx_pool_size);
         TenderMint {
             pub_sender: s,
             pub_recver: r,
@@ -159,13 +155,11 @@ impl TenderMint {
             wal_log: Wal::new(&*logpath).unwrap(),
             send_filter: HashMap::new(),
             last_commit_round: None,
-            //To be used later
-            //sync_ok : true,
-            dispatch: dispatch,
             htime: Instant::now(),
             auth_manage: AuthorityManage::new(),
             consensus_power: false,
             unverified_msg: Vec::new(),
+            block_txs: None,
         }
     }
 
@@ -515,12 +509,13 @@ impl TenderMint {
 
                     info!(" ######### height {} consensus time {:?} ", height, Instant::now() - self.htime);
                     self.pub_block(&proof_blk);
-                    {
+
+                    /*{
                         //update tx pool
                         let txs = self.locked_block.as_ref().unwrap().get_body().get_transactions();
                         //self.tx_pool.update(txs);
                         self.dispatch.del_txs_from_pool(txs.to_vec());
-                    }
+                    }*/
                     return true;
                 } else {
                     info!("commit_block proof not ok");
@@ -556,7 +551,7 @@ impl TenderMint {
                            author.address.clone(),
                            VoteMessage {
                                proposal: hash.clone(),
-                               signature: signature.into(),
+                               signature,
                            });
         }
     }
@@ -653,7 +648,7 @@ impl TenderMint {
                                                  sender,
                                                  VoteMessage {
                                                      proposal: hash,
-                                                     signature: signature.into(),
+                                                     signature: signature,
                                                  });
                         if ret {
                             info!("vote ok!");
@@ -862,11 +857,22 @@ impl TenderMint {
             self.wal_log.save(LOG_TYPE_PROPOSE, &bmsg).unwrap();
             trace!("proposor vote locked block: height {}, round {}", self.height, self.round);
             self.proposals.add(self.height, self.round, proposal);
-            return;
-        }
-        // proposal new blk
-        let mut block = Block::new();
-        {
+        } else {
+            // proposal new blk
+            let mut block = Block::new();
+            if let Some(ref blocktxs) = self.block_txs {
+                trace!("BLOCKTXS get height {}, self height {} txs {:?}", blocktxs.get_height(), self.height, blocktxs);
+                if blocktxs.get_height() != self.height as u64 - 1 {
+                    return;
+                }
+                block.set_body(blocktxs.get_body().clone());
+            } else {
+                //maybe when starting, there is no txs got from auth
+                if self.height > 1 {
+                    return;
+                }
+            }
+
             if self.pre_hash.is_some() {
                 block.mut_header().set_prevhash(self.pre_hash.unwrap().0.to_vec());
             } else {
@@ -886,37 +892,31 @@ impl TenderMint {
                 }
             }
             block.mut_header().set_proof(proof.into());
-        }
-        {
-            //let txs: Vec<SignedTransaction> = self.tx_pool.package(self.height as u64);
-            let txs: Vec<SignedTransaction> = self.dispatch.get_txs_from_pool(self.height as u64);
-            trace!("new proposal height {:?} tx len {:?}", self.height, txs.len());
-            block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
-        }
-        let block_time = unix_now();
-        let transactions_root = block.get_body().transactions_root();
-        block.mut_header().set_timestamp(block_time.as_millis());
-        block.mut_header().set_height(self.height as u64);
-        block.mut_header().set_transactions_root(transactions_root.to_vec());
 
-        let bh = block.crypt_hash();
-        info!("proposal new block: height {:?}, block hash {:?}", self.height, bh);
-        let pro_hash = Some(bh);
-        {
-            self.proposal = pro_hash.map(|x| x.into());
-            self.locked_block = Some(block.clone());
+            let block_time = unix_now();
+            let transactions_root = block.get_body().transactions_root();
+            block.mut_header().set_timestamp(block_time.as_millis());
+            block.mut_header().set_height(self.height as u64);
+            block.mut_header().set_transactions_root(transactions_root.to_vec());
+
+            let bh = block.crypt_hash();
+            info!("proposal new block: height {:?}, block hash {:?}", self.height, bh);
+            {
+                self.proposal = Some(bh);
+                self.locked_block = Some(block.clone());
+            }
+            let blk = block.write_to_bytes().unwrap();
+            let proposal = Proposal {
+                block: blk,
+                lock_round: None,
+                lock_votes: None,
+            };
+            trace!("pub proposal in not locked");
+            let bmsg = self.pub_proposal(&proposal);
+            self.wal_log.save(LOG_TYPE_PROPOSE, &bmsg).unwrap();
+            trace!("proposor vote myslef in not locked");
+            self.proposals.add(self.height, self.round, proposal);
         }
-        let blk = block.write_to_bytes().unwrap();
-        let proposal = Proposal {
-            block: blk,
-            lock_round: None,
-            lock_votes: None,
-        };
-        trace!("pub proposal in not locked");
-        let bmsg = self.pub_proposal(&proposal);
-        self.wal_log.save(LOG_TYPE_PROPOSE, &bmsg).unwrap();
-        trace!("proposor vote myslef in not locked");
-        self.proposals.add(self.height, self.round, proposal);
     }
 
     pub fn timeout_process(&mut self, tminfo: TimeoutInfo) {
@@ -1051,6 +1051,13 @@ impl TenderMint {
                             let msg = serialize(&(vheight, vround, false), Infinite).unwrap();
                             let _ = self.wal_log.save(LOG_TYPE_VERIFIED_PROPOSE, &msg);
                         }
+                    }
+                }
+
+                MsgClass::BLOCKTXS(block_txs) => {
+                    trace!("recive blocktxs height {} self height {} txs {:?}", block_txs.get_height(), self.height, block_txs);
+                    if self.height < 1 || block_txs.get_height() == self.height as u64 {
+                        self.block_txs = Some(block_txs);
                     }
                 }
                 _ => {}

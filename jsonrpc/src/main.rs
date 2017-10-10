@@ -35,6 +35,7 @@ extern crate threadpool;
 extern crate num_cpus;
 extern crate ws;
 extern crate clap;
+extern crate uuid;
 
 pub mod http_handler;
 pub mod mq_hanlder;
@@ -50,16 +51,25 @@ use dotenv::dotenv;
 use http_handler::HttpHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
+use libproto::communication::Message as CommMsg;
+use libproto::request as reqlib;
+use libproto::request::BatchRequest;
+use protobuf::Message;
+use protobuf::RepeatedField;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
+use std::time::SystemTime;
 use util::{RwLock, Mutex};
 use util::panichandler::set_panic_handler;
+use uuid::Uuid;
 use ws_handler::WsFactory;
 
+pub const TOPIC_NEW_TX: &str = "jsonrpc.new_tx";
+pub const TOPIC_NEW_TX_BATCH: &str = "jsonrpc.new_tx_batch";
 
 fn start_profile(config: &ProfileConfig) {
     if config.enable {
@@ -115,6 +125,8 @@ fn main() {
     // init pubsub
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
+    //used for buffer message
+    let (tx_relay, rx_relay) = channel();
     start_pubsub("jsonrpc", vec!["*.rpc"], tx_sub, rx_pub);
 
     //mq
@@ -127,7 +139,8 @@ fn main() {
         mq_handle.set_http(http_responses.clone());
 
         let http_config = config.http_config.clone();
-        let sender_mq_http = tx_pub.clone();
+        //let sender_mq_http = tx_pub.clone();
+        let sender_mq_http = tx_relay.clone();
         thread::spawn(move || {
             let url = http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
             let arc_tx = Arc::new(Mutex::new(sender_mq_http));
@@ -151,7 +164,8 @@ fn main() {
         let ws_config = config.ws_config.clone();
         thread::spawn(move || {
             let url = ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
-            let factory = WsFactory::new(ws_responses, tx_pub, 0);
+            //let factory = WsFactory::new(ws_responses, tx_pub, 0);
+            let factory = WsFactory::new(ws_responses, tx_relay, 0);
             info!("WebSocket Listening on {}", url);
             let mut ws_build = ws::Builder::new();
             ws_build.with_settings(ws_config.into());
@@ -159,6 +173,36 @@ fn main() {
             let _ = ws_server.listen(url);
         });
     }
+
+    thread::spawn(move || {
+        let mut new_tx_request_buffer = Vec::new();
+        let mut time_stamp = SystemTime::now();
+        loop {
+            let (topic, req): (String, reqlib::Request) = rx_relay.recv().unwrap();
+            if topic.as_str() != TOPIC_NEW_TX {
+                let data: CommMsg = req.into();
+                tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
+            } else {
+                new_tx_request_buffer.push(req);
+                if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_durtation {
+                    trace!("Going to send new tx batch to auth with {} new tx and buffer {} ns", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap().subsec_nanos());
+
+                    let mut batch_request = BatchRequest::new();
+                    batch_request.set_new_tx_requests(RepeatedField::from_slice(&new_tx_request_buffer[..]));
+
+                    let request_id = Uuid::new_v4().as_bytes().to_vec();
+                    let mut request = reqlib::Request::new();
+                    request.set_batch_req(batch_request);
+                    request.set_request_id(request_id);
+
+                    let data: CommMsg = request.into();
+                    tx_pub.send((String::from(TOPIC_NEW_TX_BATCH), data.write_to_bytes().unwrap())).unwrap();
+                    time_stamp = SystemTime::now();
+                    new_tx_request_buffer = Vec::new();
+                }
+            }
+        }
+    });
 
     loop {
         let (key, msg) = rx_sub.recv().unwrap();

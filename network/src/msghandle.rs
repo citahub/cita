@@ -51,8 +51,8 @@ pub fn is_need_proc(payload: &[u8]) -> (String, bool, communication::Message) {
         let mut is_proc = true;
         let t = msg.get_field_type();
         let cid = msg.get_cmd_id();
-        if cid == cmd_id(submodules::CONSENSUS, topics::REQUEST) && t == MsgType::REQUEST {
-            trace!("CONSENSUS broadcast tx");
+        if cid == cmd_id(submodules::AUTH, topics::REQUEST) && t == MsgType::REQUEST {
+            trace!("AUTH broadcast tx");
             topic = "net.tx".to_string();
         } else if cid == cmd_id(submodules::CONSENSUS, topics::NEW_BLK) && t == MsgType::BLOCK {
             info!("CONSENSUS pub blk");
@@ -80,7 +80,7 @@ pub fn is_need_proc(payload: &[u8]) -> (String, bool, communication::Message) {
 pub fn net_msg_handler(payload: CitaRequest, mysender: &MySender) -> Result<Vec<u8>, io::Error> {
     trace!("SERVER get msg: {:?}", payload);
     if let (topic, true, msg) = is_need_proc(payload.as_ref()) {
-        info!("recive msg from origin = {:?}", msg.get_origin());
+        info!("recive msg from origin = {:?} with topic: {:?}", msg.get_origin(), topic);
         mysender.send((topic, payload))
     }
     Ok(vec![])

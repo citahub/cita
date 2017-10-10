@@ -25,3 +25,4 @@ wget https://github.com/cryptape/GmSSL/releases/download/v1.0/libgmssl.so.1.0.0.
 gzip -d libgmssl.so.1.0.0.gz
 mv libgmssl.so.1.0.0 /usr/lib/
 sudo ln -s /usr/lib/libgmssl.so.1.0.0 /usr/lib/libgmssl.so
+

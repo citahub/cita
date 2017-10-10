@@ -92,8 +92,9 @@ impl Verifier {
         if !self.inited {
             return true;
         }
-        for (_, hashes) in self.hashes.iter() {
+        for (height, hashes) in self.hashes.iter() {
             if hashes.contains(hash) {
+                trace!("Tx with hash {:?} has already existed in height:{}", hash.0, height);
                 return true;
             }
         }

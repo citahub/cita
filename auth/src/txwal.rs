@@ -20,8 +20,10 @@ use libproto::blockchain::SignedTransaction;
 use protobuf::core::{Message, parse_from_bytes};
 use std::sync::Arc;
 use tx_pool::Pool;
+use util::H256;
 use util::datapath::DataPath;
 use util::kvdb::{DatabaseConfig, Database, KeyValueDB};
+
 
 #[derive(Clone)]
 pub struct Txwal {
@@ -30,7 +32,6 @@ pub struct Txwal {
 
 impl Txwal {
     pub fn new(path: &str) -> Self {
-
         let nosql_path = DataPath::root_node_path() + path;
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &nosql_path).unwrap();
@@ -49,6 +50,12 @@ impl Txwal {
         let tx = tx.clone();
         let mut batch = self.db.transaction();
         batch.delete(None, tx.get_tx_hash());
+        let _ = self.db.write(batch);
+    }
+
+    pub fn delete_with_hash(&mut self, txhash: &H256) {
+        let mut batch = self.db.transaction();
+        batch.delete(None, txhash);
         let _ = self.db.write(batch);
     }
 

@@ -18,9 +18,8 @@
 use base_hanlder::{BaseHandler, ReqInfo};
 use jsonrpc_types::{method, Id};
 use jsonrpc_types::response::RpcFailure;
-use libproto::communication;
+use libproto::request as reqlib;
 use num_cpus;
-use protobuf::Message;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -34,12 +33,12 @@ pub struct WsFactory {
     //TODO 定时清理工作
     responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>,
     thread_pool: Arc<Mutex<ThreadPool>>,
-    tx: Sender<(String, Vec<u8>)>,
+    tx: Sender<(String, reqlib::Request)>,
 }
 
 
 impl WsFactory {
-    pub fn new(responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>, tx: Sender<(String, Vec<u8>)>, thread_num: usize) -> WsFactory {
+    pub fn new(responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>, tx: Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
         let mut thread_number: usize = 0 as usize;
         if thread_num == 0 {
             thread_number = num_cpus::get() / 2;
@@ -91,8 +90,9 @@ impl Handler for WsHandler {
                     };
                     this.method_handler.from_req(rpc).map(|_req| {
                         let request_id = _req.request_id.clone();
-                        let data: communication::Message = _req.into();
-                        this.tx.send((topic, data.write_to_bytes().unwrap()));
+                        //let data: communication::Message = _req.into();
+                        //this.tx.send((topic, data.write_to_bytes().unwrap()));
+                        this.tx.send((topic, _req));
                         let value = (req_info, this.sender.clone());
                         {
                             this.responses.lock().insert(request_id, value);
@@ -122,5 +122,5 @@ pub struct WsHandler {
     thread_pool: Arc<Mutex<ThreadPool>>,
     method_handler: method::MethodHandler,
     sender: ws::Sender,
-    tx: Sender<(String, Vec<u8>)>,
+    tx: Sender<(String, reqlib::Request)>,
 }

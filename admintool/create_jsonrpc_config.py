@@ -30,11 +30,14 @@ def main():
         key_strict=False, method_strict=False,
         encrypt_server=False, tcp_nodelay=False
     )
+    
+    new_tx_flow_config = dict(count_per_batch=30, buffer_durtation=30000000)
 
     data = dict()
     data["profile_config"] = profile_config
     data["http_config"] = http_config
     data["ws_config"] = ws_config
+    data["new_tx_flow_config"] = new_tx_flow_config
     path = sys.argv[5]
     dump_path = os.path.join(path, "jsonrpc.json")
     f = open(dump_path, "w")

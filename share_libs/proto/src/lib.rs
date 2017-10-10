@@ -90,7 +90,8 @@ pub mod topics {
     pub const BLOCK_TXHASHES: u16 = 12;
     pub const BLOCK_TXHASHES_REQ: u16 = 13;
     pub const NEW_PROOF_BLOCK: u16 = 14;
-    pub const RICH_STATUS: u16 = 15;
+    pub const BLOCK_TXS: u16 = 15;
+    pub const RICH_STATUS: u16 = 16;
 }
 
 #[derive(Debug)]
@@ -107,6 +108,7 @@ pub enum MsgClass {
     BLOCKTXHASHES(BlockTxHashes),
     BLOCKTXHASHESREQ(BlockTxHashesReq),
     BLOCKWITHPROOF(BlockWithProof),
+    BLOCKTXS(BlockTxs),
     MSG(Vec<u8>),
     RICHSTATUS(RichStatus),
 }
@@ -128,6 +130,7 @@ pub fn topic_to_string(top: u16) -> &'static str {
         topics::BLOCK_TXHASHES => "block_txhashes",
         topics::BLOCK_TXHASHES_REQ => "block_txhashes_req",
         topics::NEW_PROOF_BLOCK => "new_proof_blk",
+        topics::BLOCK_TXS => "block_txs",
         topics::RICH_STATUS => "rich_status",
         _ => "",
     }
@@ -205,7 +208,7 @@ pub mod factory {
 }
 
 type CmdId = u32;
-type Origin = u32;
+pub type Origin = u32;
 
 pub fn tx_verify_req_msg(unverified_tx: &UnverifiedTransaction) -> VerifyTxReq {
     let bytes = unverified_tx.get_transaction().write_to_bytes().unwrap();
@@ -257,6 +260,7 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::BLOCK_TXHASHES => MsgClass::BLOCKTXHASHES(parse_from_bytes::<BlockTxHashes>(&content_msg).unwrap()),
         MsgType::BLOCK_TXHASHES_REQ => MsgClass::BLOCKTXHASHESREQ(parse_from_bytes::<BlockTxHashesReq>(&content_msg).unwrap()),
         MsgType::BLOCK_WITH_PROOF => MsgClass::BLOCKWITHPROOF(parse_from_bytes::<BlockWithProof>(&content_msg).unwrap()),
+        MsgType::BLOCK_TXS => MsgClass::BLOCKTXS(parse_from_bytes::<BlockTxs>(&content_msg).unwrap()),
         MsgType::MSG => {
             let mut content = Vec::new();
             content.extend_from_slice(&content_msg);

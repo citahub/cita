@@ -214,6 +214,7 @@ mod tests {
         let decoded: Receipt = ::rlp::decode(&encoded);
         println!("decoded: {:?}", decoded);
         assert_eq!(decoded, r);
+
     }
 
     #[test]
