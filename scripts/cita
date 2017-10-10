@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # 1) source env.sh
 # 2) cita setup node0
 # 3) cita start node0

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 sudo (){
     cmd=$*
     if [ "$(whoami)" = "root" ]; then

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # 1) aliyun mirror
 sed 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list -i
 
