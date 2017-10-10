@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # 1) source env.sh
 # 2) cita setup node0
 # 3) cita start node0
@@ -11,9 +11,9 @@ if [ -z ${PROJECT_DIR} ] ; then
     echo "failed to locate project directory"
 fi
 
-function setup() {
+setup() {
     # config rabbitmq
-    if [ $(whoami) == "root" ] ; then
+    if [ "$(whoami)" == "root" ] ; then
         /etc/init.d/rabbitmq-server restart                              > /dev/null 2>&1 |true
         rabbitmqctl add_vhost ${node}                                    > /dev/null 2>&1 |true
         rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*"      > /dev/null 2>&1 |true
@@ -26,7 +26,7 @@ function setup() {
     fi
 }
 
-function start() {
+start() {
     node=$1
     debug=$2
 
@@ -83,7 +83,7 @@ function start() {
     fi
 }
 
-function clean() {
+clean() {
     # backup and clean data&log
     backup_dir=$(date -Iseconds)/
     if [[ -e data && -e logs ]] ; then
@@ -98,7 +98,7 @@ function clean() {
 
 }
 
-function stop() {
+stop() {
     node=$1
     pid_file=.pid
     if [ -e ${pid_file} ] ; then
@@ -109,7 +109,7 @@ function stop() {
     rm -f ${pid_file}
 }
 
-function status() {
+status() {
     node=$1
     pid_file=.pid
     if [ -e ${pid_file} ] ; then
@@ -119,12 +119,12 @@ function status() {
     fi
 }
 
-function logs() {
+logs() {
     service=$1
     tail -f logs/${service}.log
 }
 
-function stat() {
+stat() {
     stat_cmd="pidstat -r -u -d"
     for pid in $(cat .pid); do
         stat_cmd=$stat_cmd" -p ${pid}"
@@ -137,7 +137,7 @@ function stat() {
     done
 }
 
-function usage(){
+usage(){
     echo
     echo "      usage:      cita command nodeid"
     echo

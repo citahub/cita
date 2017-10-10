@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-function sudo (){
+sudo (){
     cmd=$*
-    if [ $(whoami) == "root" ]; then
+    if [ "$(whoami)" = "root" ]; then
         ${cmd}
     else
         /usr/bin/sudo ${cmd}
@@ -34,4 +34,4 @@ sudo pip install --user ethereum==2.0.4 pysodium
 wget https://github.com/cryptape/GmSSL/releases/download/v1.0/libgmssl.so.1.0.0.gz
 gzip -d libgmssl.so.1.0.0.gz
 sudo mv libgmssl.so.1.0.0 /usr/lib/
-sudo ln -s /usr/lib/libgmssl.so.1.0.0 /usr/lib/libgmssl.so
+sudo ln -srf /usr/lib/libgmssl.so.1.0.0 /usr/lib/libgmssl.so

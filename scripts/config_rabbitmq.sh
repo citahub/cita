@@ -1,7 +1,7 @@
 #!/bin/sh
-function sudo (){
+sudo (){
     cmd=$*
-    if [ $(whoami) == "root" ]; then
+    if [ "$(whoami)" = "root" ]; then
         ${cmd}
     else
         /usr/bin/sudo ${cmd}
@@ -9,4 +9,4 @@ function sudo (){
 }
 sudo /etc/init.d/rabbitmq-server restart
 sudo rabbitmqctl add_vhost dev
-sudo rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"
+sudo 'rabbitmqctl set_permissions -p dev guest ".*" ".*" ".*"'

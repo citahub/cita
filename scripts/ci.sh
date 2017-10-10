@@ -13,23 +13,23 @@ source ~/.cargo/env
 
 echo "################################################################################"
 echo "2) format"
-make fmt
+time make fmt
 
 echo "################################################################################"
 echo "3) build"
-make debug
+time make debug
 
 echo "################################################################################"
 echo "4) unit test"
-make test
+time make test
 
 echo "################################################################################"
 echo "5) bench"
-make bench
+time make bench
 
 echo "################################################################################"
 echo "6) integrate test"
-scripts/release.sh debug
+time ./scripts/release.sh debug
 echo "6.1) basic test(contract create/call, node start/stop)"
 time ./tests/integrate_test/cita_basic.sh
 echo "6.2) byzantine test"

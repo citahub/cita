@@ -1,13 +1,13 @@
-function sudo() {
+sudo() {
     cmd=$*
-    if [ $(whoami) == "root" ] ; then
+    if [ "$(whoami)" = "root" ] ; then
         ${cmd}
     else
         /usr/bin/sudo ${cmd}
     fi
 }
 # 失败后不需要清理,保留现场;成功后清理现场.
-function cleanup() {
+cleanup() {
     for i in jsonrpc auth chain network consensus_tendermint trans_evm; do
         pkill $i||true
     done
@@ -16,7 +16,7 @@ function cleanup() {
     sudo tc qdisc del dev lo root> /dev/null 2>&1||true
 }
 
-function get_height(){
+get_height(){
     if [ $# -ne 1 ] ; then
         echo "usage: $0 node_id"
         return 1
@@ -42,7 +42,7 @@ function get_height(){
 }
 
 # output information about time used if exit 0
-function check_height_growth () {
+check_height_growth () {
     if [ $# -ne 1 ] ; then
         echo "usage: $0 node_id"
         return 1
@@ -76,7 +76,7 @@ function check_height_growth () {
 }
 
 # output information about time used if exit 0
-function check_height_sync () {
+check_height_sync () {
     if [ $# -ne 2 ] ; then
         echo "usage: $0 node_id refer_node_id"
         return 1
@@ -112,7 +112,7 @@ function check_height_sync () {
     return 1
 }
 
-function check_height_stopped () {
+check_height_stopped () {
     if [ $# -ne 1 ] ; then
         echo "usage: $0 node_id"
         return 1
@@ -136,7 +136,7 @@ function check_height_stopped () {
     return 0
 }
 
-function set_delay_at_port() {
+set_delay_at_port() {
     if [ $# -ne 2 ] ; then
         echo "usage: set_delay_at_port port delay"
         return 1
@@ -148,7 +148,7 @@ function set_delay_at_port() {
     sudo tc qdisc  add dev lo parent 1:4  handle 40:  netem delay ${delay}ms                               >/dev/null 2>&1 || true
     sudo tc filter add dev lo protocol ip parent  1:0 prio 4 u32 match ip dport ${port} 0xffff flowid 1:4  >/dev/null 2>&1 || true
 }
-function unset_delay_at_port() {
+unset_delay_at_port() {
     if [ $# -ne 1 ] ; then
         echo "usage: $0 port"
         return 1

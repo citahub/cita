@@ -12,14 +12,14 @@ jobs:
           set -e
           echo '################################################################################'
           echo '1) setup'
-          scripts/install_develop.sh
-          scripts/config_rabbitmq.sh
+          time scripts/install_develop.sh
+          time scripts/config_rabbitmq.sh
           echo '################################################################################'
           echo '2) format'
-          make fmt
+          time make fmt
           echo '################################################################################'
           echo '3) build'
-          make debug
+          time make debug
           echo '################################################################################'
           echo '4) unit test'
-          make test
+          time make test

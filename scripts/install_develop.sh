@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-function sudo (){
+sudo (){
     cmd=$*
-    if [ $(whoami) == "root" ]; then
+    if [ "$(whoami)" = "root" ]; then
         ${cmd}
     else
         /usr/bin/sudo ${cmd}
@@ -35,18 +35,13 @@ sudo pip install --user ethereum==2.0.4 pysodium
 # 5.1) libgmssl
 wget https://github.com/cryptape/GmSSL/releases/download/v1.0/libgmssl.so.1.0.0.gz
 gzip -d libgmssl.so.1.0.0.gz
-mv libgmssl.so.1.0.0 /usr/lib/
-sudo ln -s /usr/lib/libgmssl.so.1.0.0 /usr/lib/libgmssl.so
+sudo mv libgmssl.so.1.0.0 /usr/local/lib/
+sudo ln -srf /usr/local/lib/libgmssl.so.1.0.0 /usr/local/lib/libgmssl.so
 
 # 6) install rust&rustfmt
 # 6.1) rust
-which cargo
-if [ $? -ne 0 ]; then
-    curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04
-fi;
+which cargo || (curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04)
 . ${HOME}/.cargo/env
+
 # 6.2) rustfmt
-which rustfmt
-if [ $? -ne 0 ]; then
-   cargo install --force --vers 0.9.0 rustfmt
-fi;
+which rustfmt|| cargo install --force --vers 0.9.0 rustfmt
