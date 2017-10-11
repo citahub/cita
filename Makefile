@@ -77,4 +77,5 @@ cov:
 	cargo cov report --open
 
 clean:
-	rm -rf target
+	rm -rf target/debug/
+	rm -rf target/release/

@@ -19,11 +19,18 @@ mkdir -p  target/install/bin/
 # 1) binary
 cp -rf target/${type}/chain                                        target/install/bin/
 cp -rf target/${type}/consensus_tendermint                         target/install/bin/
+cp -rf target/${type}/consensus_poa                                target/install/bin/
+cp -rf target/${type}/raft                                         target/install/bin/
+cp -rf target/${type}/txpool                                       target/install/bin/
 cp -rf target/${type}/jsonrpc                                      target/install/bin/
 cp -rf target/${type}/auth                                         target/install/bin/
 cp -rf target/${type}/network                                      target/install/bin/
 cp -rf target/${type}/trans_evm                                    target/install/bin/
 cp -rf target/${type}/create_key_addr                              target/install/bin/
+cp -rf target/${type}/chain_performance                            target/install/bin/
+cp -rf target/${type}/amqp_test                                         target/install/bin/
+cp -rf target/${type}/jsonrpc_performance                          target/install/bin/
+cp -rf target/${type}/latency                                      target/install/bin/
 #strip                                                              target/install/bin/*
 
 # 2) cita

@@ -2,8 +2,6 @@
 members = ["auth"
 ,"jsonrpc"
 ,"chain"
-,"chain/core"
-,"chain/types"
 ,"consensus/tdmint"
 ,"consensus/txpool"
 ,"consensus/raft"
