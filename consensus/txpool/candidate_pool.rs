@@ -35,7 +35,7 @@ pub struct CandidatePool {
 impl CandidatePool {
     pub fn new(sender: Sender<PubType>) -> Self {
         CandidatePool {
-            pool: tx_pool::Pool::new(10000, 3000),
+            pool: tx_pool::Pool::new(3000),
             height: 0,
             sender: sender,
         }

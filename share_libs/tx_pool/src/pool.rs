@@ -15,11 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use filter::Filter;
 use libproto::blockchain::SignedTransaction;
 use std::cmp::Ordering;
-use std::collections::BTreeSet;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, BTreeSet};
 use util::H256;
 
 pub const BLOCKLIMIT: u64 = 100;
@@ -64,7 +62,6 @@ impl Ord for TxOrder {
 #[derive(Debug)]
 pub struct Pool {
     package_limit: usize,
-    filter: Filter,
     order_set: BTreeSet<TxOrder>,
     txs: HashMap<H256, SignedTransaction>,
     strategy: Strategy,
@@ -72,10 +69,9 @@ pub struct Pool {
 }
 
 impl Pool {
-    pub fn new(capacity: usize, package_limit: usize) -> Self {
+    pub fn new(package_limit: usize) -> Self {
         Pool {
             package_limit: package_limit,
-            filter: Filter::new(capacity),
             order_set: BTreeSet::new(),
             txs: HashMap::new(),
             strategy: Strategy::FIFO,
@@ -83,10 +79,9 @@ impl Pool {
         }
     }
 
-    pub fn new_with_strategy(capacity: usize, package_limit: usize, strategy: Strategy) -> Self {
+    pub fn new_with_strategy(package_limit: usize, strategy: Strategy) -> Self {
         Pool {
             package_limit: package_limit,
-            filter: Filter::new(capacity),
             order_set: BTreeSet::new(),
             txs: HashMap::new(),
             strategy: strategy,
@@ -114,7 +109,7 @@ impl Pool {
     pub fn enqueue(&mut self, tx: SignedTransaction) -> bool {
         let hash = H256::from_slice(tx.get_tx_hash());
 
-        let is_ok = self.filter.check(hash);
+        let is_ok = !self.txs.contains_key(&hash);
         if is_ok {
             let order = match self.strategy {
                 Strategy::FIFO => self.get_order(),
@@ -128,25 +123,25 @@ impl Pool {
         is_ok
     }
 
-    fn update_order_set(&mut self, hash_list: &[H256]) {
+    fn update_order_set(&mut self, hash_list: &HashSet<H256>) {
         self.order_set = self.order_set.iter().cloned().filter(|order| !hash_list.contains(&order.hash)).collect();
     }
 
     pub fn update(&mut self, txs: &[SignedTransaction]) {
-        let mut hash_list = Vec::new();
+        let mut hash_list = HashSet::with_capacity(txs.len());
         for tx in txs {
             let hash = tx.crypt_hash();
             self.txs.remove(&hash);
-            hash_list.push(hash);
+            hash_list.insert(hash);
         }
         self.update_order_set(&hash_list);
     }
 
     pub fn update_with_hash(&mut self, txs: &Vec<H256>) {
-        let mut hash_list = Vec::new();
+        let mut hash_list = HashSet::with_capacity(txs.len());
         for tx in txs {
             self.txs.remove(&tx);
-            hash_list.push(tx.clone());
+            hash_list.insert(tx.clone());
         }
         self.update_order_set(&hash_list);
     }
@@ -210,7 +205,7 @@ mod tests {
 
     #[test]
     fn basic() {
-        let mut p = Pool::new(2, 1);
+        let mut p = Pool::new(1);
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
 

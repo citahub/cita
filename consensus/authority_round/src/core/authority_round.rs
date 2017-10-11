@@ -69,7 +69,7 @@ impl AuthorityRound {
         let engine = Arc::new(AuthorityRound {
                                   params: params,
                                   position: position,
-                                  tx_pool: Arc::new(RwLock::new(Pool::new(10000, 3000))),
+                                  tx_pool: Arc::new(RwLock::new(Pool::new(3000))),
                                   height: AtomicUsize::new(INIT_HEIGHT),
                                   pre_hash: RwLock::new(None),
                                   sealing: AtomicBool::new(false),

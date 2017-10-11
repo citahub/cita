@@ -15,13 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate lru_cache;
 extern crate libproto;
 extern crate util;
 #[cfg(test)]
 extern crate cita_crypto as crypto;
 
-pub mod filter;
 pub mod pool;
 
 pub use pool::*;

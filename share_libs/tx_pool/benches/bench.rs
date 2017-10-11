@@ -46,7 +46,7 @@ fn bench_base(b: &mut Bencher) {
 #[bench]
 fn bench_enqueue(b: &mut Bencher) {
     let start = SystemTime::now();
-    let mut p = Pool::new(5000, 1000);
+    let mut p = Pool::new(1000);
     let mut tx = Transaction::new();
     let keypair = KeyPair::gen_keypair();
     let pv = keypair.privkey();
@@ -68,7 +68,7 @@ fn bench_enqueue(b: &mut Bencher) {
 #[bench]
 fn bench_package(b: &mut Bencher) {
     let start = SystemTime::now();
-    let mut p = Pool::new(5000, 1000);
+    let mut p = Pool::new(1000);
     let mut tx = Transaction::new();
     let keypair = KeyPair::gen_keypair();
     let pv = keypair.privkey();
@@ -91,7 +91,7 @@ fn bench_package(b: &mut Bencher) {
 #[bench]
 fn bench_update(b: &mut Bencher) {
     let start = SystemTime::now();
-    let mut p = Pool::new(5000, 1000);
+    let mut p = Pool::new(1000);
     let mut tx = Transaction::new();
     let keypair = KeyPair::gen_keypair();
     let pv = keypair.privkey();

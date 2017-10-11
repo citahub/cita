@@ -208,7 +208,7 @@ fn main() {
     let txs_pub = tx_pub.clone();
 
     thread::spawn(move || {
-        let mut dispatch = Dispatchtx::new(tx_pool_limit, tx_packet_limit, tx_pool_limit);
+        let mut dispatch = Dispatchtx::new(tx_packet_limit, tx_pool_limit);
 
         loop {
             select! {

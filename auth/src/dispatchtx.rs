@@ -39,10 +39,10 @@ pub struct Dispatchtx {
 #[allow(unused_assignments)]
 #[allow(unused)]
 impl Dispatchtx {
-    pub fn new(capacity: usize, package_limit: usize, limit: usize) -> Self {
+    pub fn new(package_limit: usize, limit: usize) -> Self {
 
         let mut dispatch = Dispatchtx {
-            txs_pool: RefCell::new(tx_pool::Pool::new(capacity, package_limit)),
+            txs_pool: RefCell::new(tx_pool::Pool::new(package_limit)),
             wal: Txwal::new("/txwal"),
             filter_wal: Txwal::new("/filterwal"),
             pool_limit: limit,

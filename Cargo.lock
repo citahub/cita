@@ -2349,7 +2349,6 @@ version = "0.6.0"
 dependencies = [
  "cita-crypto 0.1.0",
  "libproto 0.6.0",
- "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0",
 ]
 
