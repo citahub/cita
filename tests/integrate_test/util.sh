@@ -1,4 +1,3 @@
-# sudo
 if [ "$(whoami)" = "root" ] ; then
     alias sudo='bash'
 fi
@@ -61,7 +60,7 @@ check_height_growth () {
         fi
         now=$(date +%s)
         if [ ${new} -gt ${old} ]; then
-            echo "$((now-start))s"
+            echo "$((now-start))"
             return 0
         fi
         if [ $((now-start)) -gt ${timeout} ] ; then
@@ -72,6 +71,23 @@ check_height_growth () {
     done
 }
 
+check_height_growth_normal () {
+    id=$1
+    timeout=$2
+    start=$(date +%s)
+    for i in {0..1}; do
+        msg=$(check_height_growth ${id}) || (echo "failed to check_height_growth 0: ${msg}"
+                                             return 1)
+        if [ ${msg} -lt ${timeout} ] ; then
+            now=$(date +%s)
+            echo "$((now-start))"
+            return 0
+        fi
+    done
+    echo "block height growth time(${msg}s) > timeout(${timeout}s)"
+    return 1
+}
+
 # output information about time used if exit 0
 check_height_sync () {
     if [ $# -ne 2 ] ; then
@@ -79,11 +95,11 @@ check_height_sync () {
         return 1
     fi
     id=$1
-    target=$2
+    refer=$2
     timeout=60                  # seconds
-    target_height=$(get_height ${target})
+    refer_height=$(get_height ${refer})
     if [ $? -ne 0 ] ; then
-        echo "failed to get_height: ${target_height}"
+        echo "failed to get_height: ${refer_height}"
         return 1
     fi
     start=$(date +%s)
@@ -95,13 +111,13 @@ check_height_sync () {
             return 1
         fi
         now=$(date +%s)
-        if [ ${height} -gt ${target_height} ]; then
-            echo "$((now-start)) s"
+        if [ ${height} -gt ${refer_height} ]; then
+            echo "$((now-start))"
             return  0
         fi
 
         if [ $((now-start)) -gt ${timeout} ] ; then
-            echo "timeout: $((now-start)) s"
+            echo "timeout: $((now-start))s"
             return 1
         fi
         sleep 1
@@ -110,27 +126,36 @@ check_height_sync () {
 }
 
 check_height_stopped () {
-    if [ $# -ne 1 ] ; then
+    if [ $# -ne 2 ] ; then
         echo "usage: $0 node_id"
         return 1
     fi
     id=$1
+    timeout=$2
     old=$(get_height ${id})
     if [ $? -ne 0 ] ; then
         echo "failed to get_height: ${old}"
         return 1
     fi
-    sleep 3                     # 出块间隔
-    new=$(get_height ${id})
-    if [ $? -ne 0 ] ; then
-        echo "failed to get_height: ${new}"
-        return 1
-    fi
-    if [ $new -ne $old ]; then
-        echo "height change from ${old} to ${new}"
-        return 1
-    fi
-    return 0
+
+    start=$(date +%s)
+    while [ 1 ] ; do
+        now=$(date +%s)
+        if [ $((now-start)) -gt ${timeout} ] ; then
+            echo "$((now-start))"
+            return 0
+        fi
+        new=$(get_height ${id})
+        if [ $? -ne 0 ] ; then
+            echo "failed to get_height: ${new}"
+            return 1
+        fi
+        if [ $new -ne $old ]; then
+            echo "height change from ${old} to ${new}"
+            return 1
+        fi
+        sleep 1
+    done
 }
 
 set_delay_at_port() {
@@ -153,4 +178,33 @@ unset_delay_at_port() {
     port=$1
     #sudo tc filter del dev lo protocol ip parent  1:0 prio 4 u32 match ip dport ${port} 0xffff flowid 1:4  >/dev/null 2>&1 || true
     sudo tc qdisc del dev lo root> /dev/null 2>&1||true
+}
+
+setup_node() {
+    id=$1
+    ./bin/cita setup node${id}
+}
+
+start_node() {
+    id=$1
+    ./bin/cita start node${id} ${debug}
+}
+
+stop_node() {
+    id=$1
+    ./bin/cita stop node${id}
+}
+
+stop_all () {
+    stop_node 0
+    stop_node 1
+    stop_node 2
+    stop_node 3
+}
+
+start_all () {
+    start_node 0
+    start_node 1
+    start_node 2
+    start_node 3
 }

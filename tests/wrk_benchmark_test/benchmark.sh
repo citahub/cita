@@ -9,4 +9,7 @@ else
     exit
 fi
 
-../../admintool/release/bin/trans_evm --config $config
+SOURCE_DIR=$(readlink -f $(dirname $0)/../..)
+BINARY_DIR=${SOURCE_DIR}/target/install
+
+${BINARY_DIR}/bin/trans_evm --config $config

@@ -44,12 +44,12 @@ display_help()
     exit 0
 }
 
-PROJECT_DIR=$(readlink -f $(dirname $(readlink -f $0)))
+PROJECT_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
 if [ -z ${PROJECT_DIR} ] ; then
     echo "failed to locate project directory"
 fi
 cd ${PROJECT_DIR}
-export PATH=${PATH}:${PROJECT_DIR}/../../bin
+export PATH=${PATH}:${PROJECT_DIR}/bin
 
 # parse options
 while getopts 'a:l:n:m:d:tb:f:c:h:w:P:' OPT; do
@@ -125,9 +125,10 @@ if [ ! -n "$TX_POOL_SIZE" ]; then
     TX_POOL_SIZE=0
 fi
 
-DATA_PATH=`pwd`/release
-INIT_DATA_PATH=`pwd`
 
+DATA_PATH=${PROJECT_DIR}
+INIT_DATA_PATH=${PROJECT_DIR}/scripts/admintool
+cd ${INIT_DATA_PATH}
 if [ ! -f "$DATA_PATH" ]; then
     mkdir -p $DATA_PATH
 fi
@@ -176,8 +177,7 @@ do
 done
 
 echo "Step 3: ********************************************************"
-# TODO: bin/cita should provider parameter about consensus algorithm
-# sed -i "s/tendermint/$CONSENSUS_NAME/g" $DATA_PATH/bin/cita
+sed -i "s/tendermint/$CONSENSUS_NAME/g" $DATA_PATH/bin/cita
 for ((ID=0;ID<$SIZE;ID++))
 do
     echo "AMQP_URL=amqp://guest:guest@localhost/node$ID" >> $DATA_PATH/node$ID/.env

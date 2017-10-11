@@ -1,22 +1,15 @@
 #!/bin/bash
-set +e
-CUR_PATH=$(cd `dirname $0`; pwd)
+set -e
+SOURCE_DIR=$(readlink -f $(dirname $0)/../..)
+BINARY_DIR=${SOURCE_DIR}/target/install
 
-stop_node() {
-    id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
-    ./cita stop ${id}
-}
+. ${SOURCE_DIR}/tests/integrate_test/util.sh
+cd ${BINARY_DIR}
 
-stop_all () {
-    stop_node 0
-    stop_node 1
-    stop_node 2
-    stop_node 3
-}
-
+date
+echo "###Stop CITA "
 stop_all
-echo "###Stop CITA"
-echo `date`
+date
+
 exit 0
 

@@ -32,13 +32,30 @@ echo "DONE"
 
 ################################################################################
 echo -n "4) check alive  ...  "
-msg=$(check_height_growth 0) || (echo "FAILED"
-                                 echo "failed to check_height_growth 0: ${msg}"
+timeout=$(check_height_growth_normal 0 8) || (echo "FAILED"
+                                 echo "failed to check_height_growth 0: ${timeout}"
                                  exit 1)
-echo "DONE ${msg}"
+echo "${timeout}s DONE"
 
 ################################################################################
-echo "5) set delay at one nodes, check height growth"
+echo -n "5) create contract  ...  "
+${BINARY_DIR}/bin/trans_evm --config ${SOURCE_DIR}/tests/wrk_benchmark_test/config_create.json 2>&1 |grep "sucess" > /dev/null
+if [ $? -ne 0 ] ; then
+    exit 1
+fi
+echo "DONE"
+
+echo "6) send transactions continually in the background"
+while [ 1 ] ; do
+    ${BINARY_DIR}/bin/trans_evm --config ${SOURCE_DIR}/tests/wrk_benchmark_test/config_call.json 2>&1 |grep "sucess" > /dev/null
+    if [ $? -ne 0 ] ; then
+        exit 1
+    fi
+done &
+send_tx_pid=$!
+
+################################################################################
+echo "7) set delay at one nodes, , output time used for produce block growth"
 delay=10000
 for i in {0..3}; do
     id=$(($i%4))
@@ -46,19 +63,19 @@ for i in {0..3}; do
     refer=$((($i+1)%4))
     port=$((4000+${id}))
     set_delay_at_port ${port} ${delay}
-    msg=$(check_height_growth ${refer}) ||(echo "FAILED"
-                                           echo "failed to check_height_growth: ${msg}"
+    timeout1=$(check_height_growth_normal ${refer} 8) ||(echo "FAILED"
+                                           echo "failed to check_height_growth: ${timeout}"
                                            exit 1)
     unset_delay_at_port ${port}
     #synch for node ${id}
-    msg=$(check_height_sync ${id} ${refer}) ||(echo "FAILED"
-                                               echo "failed to check_height_growth: ${msg}"
+    timeout=$(check_height_sync ${id} ${refer}) ||(echo "FAILED"
+                                               echo "failed to check_height_growth: ${timeout}"
                                                exit 1)
-    echo "${msg} DONE"
+    echo "${timeout1}s DONE"
 done
 
 ################################################################################
-echo "7) set delay at two nodes, check height growth"
+echo "8) set delay at two nodes, output time used for produce block"
 delay=3000
 for i in {0..3}; do
     id1=$i
@@ -68,45 +85,53 @@ for i in {0..3}; do
     set_delay_at_port $((4000+${id1})) ${delay}
     set_delay_at_port $((4000+${id2})) ${delay}
 
-    msg=$(check_height_growth ${refer}) ||(echo "FAILED"
-                                           echo "failed to check_height_growth ${refer}: ${msg}"
+    timeout1=$(check_height_growth_normal ${refer} 30) ||(echo "FAILED"
+                                           echo "failed to check_height_growth ${refer}: ${timeout}"
                                            exit 1)
     unset_delay_at_port $((4000+${id1}))
     unset_delay_at_port $((4000+${id2}))
+    sleep 3
+    timeout=$(check_height_growth_normal ${refer} 8) ||(echo "FAILED"
+                                           echo "failed to check_height_growth ${refer}: ${timeout}"
+                                           exit 1)
     #synch for node id1, id2
-    msg=$(check_height_sync ${id1} ${refer}) ||(echo "FAILED"
-                                                echo "failed to check_height_sync ${id1}: ${msg}"
+    timeout=$(check_height_sync ${id1} ${refer}) ||(echo "FAILED"
+                                                echo "failed to check_height_sync ${id1}: ${timeout}"
                                                 exit 1)
-    msg=$(check_height_sync ${id2} ${refer}) ||(echo "FAILED"
-                                                echo "failed to check_height_sync ${id2}: ${msg}"
+    timeout=$(check_height_sync ${id2} ${refer}) ||(echo "FAILED"
+                                                echo "failed to check_height_sync ${id2}: ${timeout}"
                                                 exit 1)
-    echo "${msg} DONE"
+    echo "${timeout1}s DONE"
 done
 
 
 ################################################################################
-echo "8) set delay at all nodes, output time used for produce block"
+echo "9) set delay at all nodes, output time used for produce block"
 for i in {0..6}; do
     delay=$((i*400))
-    msg=$(check_height_growth 0) ||(echo "FAILED"
-                                    echo "failed to check_height_growth: ${msg}"
+    timeout=$(check_height_growth_normal 0 60) ||(echo "FAILED"
+                                    echo "failed to check_height_growth: ${timeout}"
                                     exit 1)
     echo -n "set delay=${delay} ... "
     for node in {0..3} ; do
         set_delay_at_port $((4000+${node})) ${delay}
     done
-    msg=$(check_height_growth 0) ||(echo "FAILED"
-                                    echo "failed to check_height_growth: ${msg}"
+    timeout=$(check_height_growth_normal 0 60) ||(echo "FAILED"
+                                    echo "failed to check_height_growth: ${timeout}"
                                     exit 1)
     for node in {0..3} ; do
         unset_delay_at_port $((4000+${node}))
     done
     sleep 4
-    echo "${msg} DONE"
+    echo "${timeout}s DONE"
 done
 
+echo -n "10) check transaction procedure still alive ... "
+ps|grep ${send_tx_pid} > /dev/null ||(echo "FAILED"
+                                      exit 1)
+echo "DONE"
 
-echo "7) cleanup"
+echo "11) cleanup"
 cleanup
 echo "DONE"
 exit 0

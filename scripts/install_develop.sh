@@ -1,14 +1,9 @@
 #!/bin/bash
 set -e
 
-sudo (){
-    cmd=$*
-    if [ "$(whoami)" = "root" ]; then
-        ${cmd}
-    else
-        /usr/bin/sudo ${cmd}
-    fi
-}
+if [ "$(whoami)" = "root" ]; then
+    alias sudo='bash'
+fi
 
 # 1) install add-apt-repository
 sudo apt-get update -q
@@ -25,8 +20,8 @@ sudo add-apt-repository -y ppa:ethereum/ethereum
 # 3) install develop dependencies
 sudo apt-get update -q
 sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip solc curl jq  google-perftools capnproto wget\
-        libsnappy-dev  libgoogle-perftools-dev   libsodium* libzmq3-dev \
-        libssl-dev libgoogle-perftools-dev
+     libsnappy-dev  libgoogle-perftools-dev   libsodium* libzmq3-dev \
+     libssl-dev libgoogle-perftools-dev
 
 # 4) install python package
 sudo pip install --user ethereum==2.0.4 pysodium

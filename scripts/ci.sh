@@ -6,9 +6,11 @@ PROJECT_DIR=$(readlink -f $(dirname $(readlink -f $0))/..)
 cd  ${PROJECT_DIR}
 source ~/.cargo/env
 
+
+echo "################################################################################"
+echo "1) setup"
+scripts/config_rabbitmq.sh
 # For native machine, skip this step.
-# echo "################################################################################"
-# echo "1) setup"
 # scripts/install_develop.sh
 
 echo "################################################################################"
