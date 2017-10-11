@@ -1,11 +1,8 @@
-sudo() {
-    cmd=$*
-    if [ "$(whoami)" = "root" ] ; then
-        ${cmd}
-    else
-        /usr/bin/sudo ${cmd}
-    fi
-}
+# sudo
+if [ "$(whoami)" = "root" ] ; then
+    alias sudo='bash'
+fi
+
 # 失败后不需要清理,保留现场;成功后清理现场.
 cleanup() {
     for i in jsonrpc auth chain network consensus_tendermint trans_evm; do
