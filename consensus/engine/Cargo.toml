@@ -11,4 +11,3 @@ cita-crypto = { path = "../../share_libs/crypto" }
 engine_json = { path = "../json" }
 proof = { path = "../proof" }
 pubsub = { path = "../../share_libs/pubsub" }
-amqp = "=0.0.20"

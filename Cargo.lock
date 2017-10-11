@@ -62,20 +62,6 @@ dependencies = [
 
 [[package]]
 name = "amqp"
-version = "0.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "bit-vec 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "byteorder 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "enum_primitive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "openssl 0.7.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "amqp"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
@@ -367,7 +353,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "chain"
 version = "0.6.0"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
@@ -563,7 +548,6 @@ dependencies = [
 name = "consensus_tendermint"
 version = "0.1.0"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "authority_manage 0.1.0",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0",
@@ -735,7 +719,6 @@ dependencies = [
 name = "engine"
 version = "0.6.0"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0",
  "engine_json 0.6.0",
  "libproto 0.6.0",
@@ -1065,7 +1048,6 @@ dependencies = [
 name = "jsonrpc_types"
 version = "0.1.0"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "futures 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2375,7 +2357,6 @@ dependencies = [
 name = "txpool"
 version = "0.6.0"
 dependencies = [
- "amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "engine 0.6.0",
@@ -2593,7 +2574,6 @@ dependencies = [
 "checksum aho-corasick 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ca972c2ea5f742bfce5687b9aef75506a764f61d37f8f649047846a9686ddb66"
 "checksum aho-corasick 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "500909c4f87a9e52355b26626d890833e9e1d53ac566db76c36faa984b889699"
 "checksum amq-proto 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "66d79639b71f74c7006c12683cc2ff221615a51a741688fa7798ccd080dc54d3"
-"checksum amqp 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)" = "713e6aed2e9e8b34b076af7bc38f5d3e5964e27a12b91fde31b9ef2d1fcd070e"
 "checksum amqp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8e74c34e77c2790b394ab9ea305c49f0f919de036d89675139c5a7763ea8229a"
 "checksum ansi_term 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "23ac7c30002a5accbf7e8987d0632fa6de155b7c3d39d0067317a391e00a2ef6"
 "checksum arrayvec 0.3.23 (registry+https://github.com/rust-lang/crates.io-index)" = "699e63a93b79d717e8c3b5eb1b28b7780d0d6d9e59a72eb769291c83b0c8dc67"

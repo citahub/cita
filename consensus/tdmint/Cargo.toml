@@ -17,7 +17,6 @@ tx_pool = {path = "../../share_libs/tx_pool"}
 protobuf = { version = "^1.0.0" }
 log = "0.3"
 clap = "2"
-amqp = "=0.0.20"
 pubsub = { path = "../../share_libs/pubsub" }
 cita-crypto = { path = "../../share_libs/crypto" }
 proof = { path = "../proof" }

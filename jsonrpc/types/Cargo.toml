@@ -16,7 +16,6 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 rustc-serialize = "0.3"
-amqp = "=0.0.20"
 pubsub = { path = "../../share_libs/pubsub" }
 time = "0.1"
 proof = { path = "../../consensus/proof" }
