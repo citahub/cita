@@ -131,6 +131,12 @@ pub enum ExecutionError {
         /// Amount of gas in block.
         gas: U256,
     },
+    AccountGasLimitReached {
+        /// Account Gas limit left
+        gas_limit: U256,
+        /// Amount of gas in transaction
+        gas: U256,
+    },
     /// Returned when transaction nonce does not match state nonce.
     InvalidNonce {
         /// Nonce expected.
@@ -171,6 +177,7 @@ impl fmt::Display for ExecutionError {
                 ref gas_used,
                 ref gas,
             } => format!("Block gas limit reached. The limit is {}, {} has already been used, and {} more is required", gas_limit, gas_used, gas),
+            AccountGasLimitReached { ref gas_limit, ref gas } => format!("Account gas limit reached. The limit is {}, {} more is required", gas_limit, gas),
             InvalidNonce { ref expected, ref got } => format!("Invalid transaction nonce: expected {}, found {}", expected, got),
             NotEnoughCash { ref required, ref got } => format!("Cost of transaction exceeds sender balance. {} is required but the sender only has {}", required, got),
             Internal(ref msg) => msg.clone(),

@@ -122,6 +122,8 @@ impl Synchronizer {
                 tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
             }
             block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
+            block_tx_hashes.set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
 
             let msg = factory::create_msg(submodules::CHAIN, topics::BLOCK_TXHASHES, communication::MsgType::BLOCK_TXHASHES, block_tx_hashes.write_to_bytes().unwrap());
 

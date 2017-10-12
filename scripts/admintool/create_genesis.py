@@ -21,6 +21,8 @@ CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
 CONTRACTS = {
     '0x00000000000000000000000000000000013241a2': {'file': 'node_manager.sol',
                                                    'name': 'NodeManager'},
+    '0x00000000000000000000000000000000013241a3': {'file': 'quota.sol',
+                                                   'name': 'Quota'},
     '0x00000000000000000000000000000000013241a4': {'file': 'permission_manager.sol',
                                                    'name': 'PermissionManager'}
 }
@@ -38,10 +40,10 @@ def init_contracts(nodes):
         )
 
         ct = ContractTranslator(simple_data['abi'])
-        # if (address == '0x00000000000000000000000000000000013241a4'):
-        extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
-        # else:
-        #    extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
+        if (address == '0x00000000000000000000000000000000013241a3'):
+            extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
+        else:
+            extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
         print(binascii.hexlify(simple_data['bin'] + extra))
         abi_address = tester_state.contract(simple_data['bin'] + extra)
         tester_state.mine()

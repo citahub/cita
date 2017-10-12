@@ -34,6 +34,8 @@ extern crate threadpool;
 extern crate core as chain_core;
 extern crate tx_pool;
 extern crate uuid;
+extern crate serde_json;
+
 
 pub mod handler;
 pub mod verify;
@@ -60,6 +62,8 @@ use util::Mutex;
 use util::RwLock;
 use util::panichandler::set_panic_handler;
 use verify::Verifier;
+//use libproto::blockchain::{AccountGasLimit, RichStatus};
+
 
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
@@ -218,8 +222,8 @@ fn main() {
                     }
                 },
                 txsinfo = pool_txs_recver.recv()=>{
-                    if let Ok((height,txs)) = txsinfo {
-                        dispatch.deal_txs( height,&txs,txs_pub.clone());
+                    if let Ok((height,txs, block_gas_limit, account_gas_limit)) = txsinfo {
+                        dispatch.deal_txs( height,&txs,txs_pub.clone(), block_gas_limit, account_gas_limit);
                     }
                 }
             }

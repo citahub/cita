@@ -17,15 +17,15 @@ def block_by_number(params):
 
 
 def block_number(number):
-    result = 0
-    if number.startswith('0x') or number.startswith('0X'):
-        result = int(number[2:], 16)
-    elif number == 'pending' or number == 'earliest' or number == 'latest':
-        result = number
-    else:
-        result = int(number, 10)
+    # result = 0
+    # if number.startswith('0x') or number.startswith('0X'):
+    #     result = int(number[2:], 16)
+    # elif number == 'pending' or number == 'earliest' or number == 'latest':
+    #     result = number
+    # else:
+    #     result = int(number, 10)
 
-    return result
+    return number
 
 
 # TODO: block_number要能处理‘pending’ 'earliest' 'latest'

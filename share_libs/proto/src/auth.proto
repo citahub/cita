@@ -39,6 +39,8 @@ message VerifyBlockResp {
 message BlockTxHashes {
     uint64 height = 1;
     repeated bytes tx_hashes = 2;
+    uint64 block_gas_limit = 3;
+    AccountGasLimit account_gas_limit = 4;
 }
 
 message BlockTxHashesReq {

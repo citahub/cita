@@ -19,6 +19,7 @@ use candidate_pool::CandidatePool;
 use cmd::{Command, decode};
 use libproto;
 use libproto::{MsgClass, submodules, topics};
+use libproto::blockchain::AccountGasLimit;
 use std::sync::mpsc::{Sender, Receiver};
 
 pub type PubType = (String, Vec<u8>);

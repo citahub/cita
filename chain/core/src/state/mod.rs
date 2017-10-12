@@ -779,9 +779,17 @@ mod tests {
 
         // 5)
         let mut state = get_temp_state();
-        let info = EnvInfo::default();
-        //info.gas_limit = U256::from(100_000);
-        let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(0));
+        let info = EnvInfo {
+            number: 0,
+            author: Address::default(),
+            timestamp: 0,
+            difficulty: 0.into(),
+            gas_limit: U256::from(u64::max_value()),
+            last_hashes: Arc::new(vec![]),
+            gas_used: 0.into(),
+            account_gas_limit: 1844674.into(),
+        };
+        let contract_address = ::executive::contract_address(&signed.sender(), &nonce, block_limit);
         let switch = Switch::new();
         let result = state.apply(&info, &mut signed, true, &switch).unwrap();
         println!("{:?}", state.code(&contract_address).unwrap().unwrap());

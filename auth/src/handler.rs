@@ -17,7 +17,7 @@
 
 use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus, BlockVerifyId};
 use libproto::*;
-use libproto::blockchain::SignedTransaction;
+use libproto::blockchain::{SignedTransaction, AccountGasLimit};
 use protobuf::Message;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -127,7 +127,7 @@ fn get_key(submodule: u32, is_blk: bool) -> String {
     "verify".to_owned() + if is_blk { "_blk_" } else { "_tx_" } + id_to_key(submodule)
 }
 
-pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req_block: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_req_single: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_pub: Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>, cache: Arc<RwLock<VerifyCache>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, txs_sender: Sender<(usize, Vec<H256>)>) {
+pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req_block: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_req_single: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_pub: Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>, cache: Arc<RwLock<VerifyCache>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, txs_sender: Sender<(usize, Vec<H256>, u64, AccountGasLimit)>) {
     let (cmdid, origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
     match content {
@@ -146,7 +146,12 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                 tx_hashes_in_h256_vec.push(hash);
             }
             trace!("BLOCKTXHASHES come height {}, tx_hashs {:?}", height, tx_hashes_in_h256_vec.len());
-            let res = txs_sender.send((height as usize, tx_hashes_in_h256_vec));
+
+            let block_gas_limit = block_tx_hashes.get_block_gas_limit();
+            let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
+            trace!("Auth rich status block gas limit: {:?}, account gas limit {:?}", block_gas_limit, account_gas_limit);
+
+            let res = txs_sender.send((height as usize, tx_hashes_in_h256_vec, block_gas_limit, account_gas_limit));
             trace!("BLOCKTXHASHES  txs_sender res is {:?}", res);
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
         }

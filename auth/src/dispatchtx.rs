@@ -16,13 +16,17 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate threadpool;
-extern crate serde_json;
 extern crate tx_pool;
 
+//use core::txhandler::{TxHandler, TransType};
+//use core::txwal::Txwal;
+
 use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request, Origin};
-use libproto::blockchain::{BlockBody, SignedTransaction, BlockTxs};
+use libproto::blockchain::{BlockBody, SignedTransaction, BlockTxs, AccountGasLimit};
 use protobuf::{Message, RepeatedField};
+use serde_json;
 use std::cell::RefCell;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use txwal::Txwal;
@@ -34,6 +38,7 @@ pub struct Dispatchtx {
     wal: Txwal,
     filter_wal: Txwal,
     pool_limit: usize,
+    data_from_pool: AtomicBool,
 }
 
 #[allow(unused_assignments)]
@@ -46,9 +51,13 @@ impl Dispatchtx {
             wal: Txwal::new("/txwal"),
             filter_wal: Txwal::new("/filterwal"),
             pool_limit: limit,
+            data_from_pool: AtomicBool::new(false),
         };
 
-        dispatch.read_tx_from_wal();
+        let num = dispatch.read_tx_from_wal();
+        if num > 0 {
+            dispatch.data_from_pool.store(true, Ordering::SeqCst);
+        }
         dispatch
     }
 
@@ -89,7 +98,7 @@ impl Dispatchtx {
         }
     }
 
-    pub fn deal_txs(&mut self, height: usize, txs: &Vec<H256>, mq_pub: Sender<(String, Vec<u8>)>) {
+    pub fn deal_txs(&mut self, height: usize, txs: &Vec<H256>, mq_pub: Sender<(String, Vec<u8>)>, block_gas_limit: u64, account_gas_limit: AccountGasLimit) {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
 
@@ -97,7 +106,7 @@ impl Dispatchtx {
         if !txs.is_empty() {
             self.del_txs_from_pool_with_hash(txs.clone());
         }
-        let out_txs = self.get_txs_from_pool(height as u64);
+        let out_txs = self.get_txs_from_pool(height as u64, block_gas_limit, account_gas_limit);
         trace!("public block txs height {} {:?}", height, out_txs.len());
         if !out_txs.is_empty() {
             body.set_transactions(RepeatedField::from_vec(out_txs));
@@ -122,9 +131,15 @@ impl Dispatchtx {
         success
     }
 
-    pub fn get_txs_from_pool(&self, height: u64) -> Vec<SignedTransaction> {
-        let txs = self.txs_pool.borrow_mut().package(height);
-        txs
+    pub fn get_txs_from_pool(&self, height: u64, block_gas_limit: u64, account_gas_limit: AccountGasLimit) -> Vec<SignedTransaction> {
+        if self.data_from_pool.load(Ordering::SeqCst) {
+            self.data_from_pool.store(false, Ordering::SeqCst);
+            Vec::new()
+        } else {
+            let ref mut txs_pool = self.txs_pool.borrow_mut();
+            let txs = txs_pool.package(height, block_gas_limit, account_gas_limit);
+            txs
+        }
     }
 
     pub fn tx_flow_control(&self) -> bool {

@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::LogBloom;
+use contracts::quota_manager::AccountGasLimit;
 use env_info::EnvInfo;
 use env_info::LastHashes;
 use error::{Error, ExecutionError};
@@ -264,6 +265,8 @@ pub struct OpenBlock {
     exec_block: ExecutedBlock,
     last_hashes: Arc<LastHashes>,
     tx_hashes: Vec<bool>,
+    account_gas_limit: U256,
+    account_gas: HashMap<Address, U256>,
 }
 
 impl Deref for OpenBlock {
@@ -281,14 +284,20 @@ impl DerefMut for OpenBlock {
 }
 
 impl OpenBlock {
-    pub fn new(factories: Factories, senders: HashSet<Address>, creators: HashSet<Address>, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>) -> Result<Self, Error> {
+    pub fn new(factories: Factories, senders: HashSet<Address>, creators: HashSet<Address>, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>, account_gas_limit: &AccountGasLimit) -> Result<Self, Error> {
         let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
         state.senders = senders;
         state.creators = creators;
+
         let r = OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes: last_hashes,
             tx_hashes: Vec::new(),
+            account_gas_limit: account_gas_limit.common_gas_limit.into(),
+            account_gas: account_gas_limit.specific_gas_limit.iter().fold(HashMap::new(), |mut acc, (key, value)| {
+                acc.insert(*key, (*value).into());
+                acc
+            }),
         };
 
         Ok(r)
@@ -304,6 +313,7 @@ impl OpenBlock {
             last_hashes: self.last_hashes.clone(),
             gas_used: self.current_gas_used,
             gas_limit: *self.gas_limit(),
+            account_gas_limit: 0.into(),
         }
     }
 
@@ -318,14 +328,24 @@ impl OpenBlock {
     }
 
     pub fn apply_transaction(&mut self, t: &mut SignedTransaction, switch: &Switch) {
-        let env_info = self.env_info();
+        let mut env_info = self.env_info();
+        if !self.account_gas.contains_key(&t.sender()) {
+            self.account_gas.insert(*t.sender(), self.account_gas_limit);
+            env_info.account_gas_limit = self.account_gas_limit;
+        }
+        env_info.account_gas_limit = *self.account_gas.get(t.sender()).expect("account should exist in account_gas_limit");
+
         let has_traces = self.traces.is_some();
         match self.state.apply(&env_info, t, has_traces, switch) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());
                 self.traces.as_mut().map(|tr| tr.push(trace));
+                let transaction_gas_used = outcome.receipt.gas_used - self.current_gas_used;
                 self.current_gas_used = outcome.receipt.gas_used;
+                if let Some(mut value) = self.account_gas.get_mut(t.sender()) {
+                    *value = *value - transaction_gas_used;
+                }
                 self.receipts.push(Some(outcome.receipt));
                 self.tx_hashes.push(false);
             }
@@ -354,6 +374,11 @@ impl OpenBlock {
                                      gas: _,
                                  })) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::BlockGasLimitReached));
+                self.receipts.push(Some(receipt));
+                self.tx_hashes.push(false);
+            }
+            Err(Error::Execution(ExecutionError::AccountGasLimitReached { gas_limit: _, gas: _ })) => {
+                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::AccountGasLimitReached));
                 self.receipts.push(Some(receipt));
                 self.tx_hashes.push(false);
             }

@@ -20,7 +20,7 @@ use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use call_analytics::CallAnalytics;
-use contracts::{NodeManager, AccountManager};
+use contracts::{NodeManager, AccountManager, QuotaManager, AccountGasLimit};
 use db;
 use db::*;
 use engines::NullEngine;
@@ -219,7 +219,8 @@ pub struct Chain {
     blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
     block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
     pub nodes: RwLock<Vec<Address>>,
-
+    pub block_gas_limit: AtomicUsize,
+    pub account_gas_limit: RwLock<AccountGasLimit>,
     // System contract config cache
     senders: RwLock<HashSet<Address>>,
     creators: RwLock<HashSet<Address>>,
@@ -316,6 +317,8 @@ impl Chain {
             nodes: RwLock::new(Vec::new()),
             senders: RwLock::new(HashSet::new()),
             creators: RwLock::new(HashSet::new()),
+            block_gas_limit: AtomicUsize::new(18446744073709551615),
+            account_gas_limit: RwLock::new(AccountGasLimit::new()),
             switch: sw,
         };
 
@@ -863,6 +866,7 @@ impl Chain {
             last_hashes: last_hashes,
             gas_used: *header.gas_used(),
             gas_limit: *header.gas_limit(),
+            account_gas_limit: u64::max_value().into(),
         };
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
@@ -904,7 +908,7 @@ impl Chain {
         let senders = self.senders.read().clone();
         let creators = self.creators.read().clone();
         let switch = &self.switch;
-        let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into()).unwrap();
+        let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into(), &self.account_gas_limit.read().clone()).unwrap();
         open_block.apply_transactions(&switch);
 
         open_block
@@ -970,6 +974,20 @@ impl Chain {
         {
             // Reload consensus nodes cache
             *self.nodes.write() = NodeManager::read(self);
+        }
+        {
+            // Reload BlockGasLimit cache
+            let block_gas_limit = QuotaManager::block_gas_limit(self);
+            self.block_gas_limit.swap(block_gas_limit as usize, Ordering::SeqCst);
+        }
+
+        {
+            // Reload AccountGasLimit cache
+            let common_gas_limit = QuotaManager::account_gas_limit(self);
+            let specific = QuotaManager::specific(self);
+            let mut account_gas_limit = self.account_gas_limit.write();
+            account_gas_limit.set_common_gas_limit(common_gas_limit);
+            account_gas_limit.set_specific_gas_limit(specific);
         }
     }
 

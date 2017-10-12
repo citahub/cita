@@ -108,7 +108,7 @@ impl CandidatePool {
         self.height = height;
         block.mut_header().set_height(self.height);
         let block_time = unix_now();
-        let txs: Vec<SignedTransaction> = self.pool.package(height);
+        let txs: Vec<SignedTransaction> = self.pool.package_backword_compatible(height);
 
         block.mut_header().set_prevhash(hash);
         block.mut_header().set_timestamp(block_time.as_millis());

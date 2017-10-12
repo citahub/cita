@@ -108,7 +108,7 @@ impl AuthorityRound {
             block.mut_header().set_prevhash(pre_hash.unwrap().to_vec());
             {
                 let mut tx_pool = self.tx_pool.write();
-                let txs: Vec<SignedTransaction> = tx_pool.package(height);
+                let txs: Vec<SignedTransaction> = tx_pool.package_backword_compatible(height);
                 block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
                 let proof = self.generate_proof(block.mut_body(), step);
                 block.mut_header().set_timestamp(block_time.as_millis());

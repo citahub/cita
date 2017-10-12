@@ -27,8 +27,7 @@ use core::wal::Wal;
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address, SIGNATURE_BYTES_LEN};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
-use libproto::blockchain::{Block, BlockWithProof, BlockTxs, RichStatus};
-
+use libproto::blockchain::{Block, BlockTxs, RichStatus, BlockWithProof};
 
 //use tx_pool::Pool;
 use proof::TendermintProof;
@@ -39,7 +38,6 @@ use std::sync::mpsc::{Sender, Receiver, RecvError};
 use std::time::Instant;
 use util::{H256, Address, Hashable};
 use util::datapath::DataPath;
-
 const INIT_HEIGHT: usize = 1;
 const INIT_ROUND: usize = 0;
 
@@ -510,12 +508,6 @@ impl TenderMint {
                     info!(" ######### height {} consensus time {:?} ", height, Instant::now() - self.htime);
                     self.pub_block(&proof_blk);
 
-                    /*{
-                        //update tx pool
-                        let txs = self.locked_block.as_ref().unwrap().get_body().get_transactions();
-                        //self.tx_pool.update(txs);
-                        self.dispatch.del_txs_from_pool(txs.to_vec());
-                    }*/
                     return true;
                 } else {
                     info!("commit_block proof not ok");
