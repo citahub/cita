@@ -242,6 +242,11 @@ pub fn block_verify_req(block: &Block, request_id: u64) -> VerifyBlockReq {
     verify_blk_req
 }
 
+pub fn verify_tx_nonce(tx: &SignedTransaction) -> bool {
+    let nonce = tx.get_transaction().get_nonce();
+    nonce.len() <= 128
+}
+
 pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
     let mut msg = parse_from_bytes::<communication::Message>(msg.as_ref()).unwrap();
     let content_msg = msg.take_content();

@@ -43,7 +43,6 @@ pub mod verify;
 pub mod cache;
 pub mod dispatchtx;
 pub mod txwal;
-pub mod txhandler;
 
 use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyId};
 use clap::App;

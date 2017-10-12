@@ -21,7 +21,7 @@ extern crate tx_pool;
 //use core::txhandler::{TxHandler, TransType};
 //use core::txwal::Txwal;
 
-use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request, Origin};
+use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request, Origin, verify_tx_nonce};
 use libproto::blockchain::{BlockBody, SignedTransaction, BlockTxs, AccountGasLimit};
 use protobuf::{Message, RepeatedField};
 use serde_json;
@@ -63,7 +63,9 @@ impl Dispatchtx {
 
     pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, mut tx_response: TxResponse, tx: &SignedTransaction, mq_pub: Sender<(String, Vec<u8>)>, origin: Origin) {
         let mut error_msg: Option<String> = None;
-        if self.tx_flow_control() {
+        if !verify_tx_nonce(tx) {
+            error_msg = Some(String::from("InvalidNonce"));
+        } else if self.tx_flow_control() {
             error_msg = Some(String::from("Busy"));
         } else if !self.add_tx_to_pool(&tx) {
             error_msg = Some(String::from("Dup"));

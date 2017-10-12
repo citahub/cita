@@ -19,6 +19,7 @@ use super::{Step, Address};
 use bincode::{serialize, Infinite};
 use crypto::{Sign, pubkey_to_address, Signature};
 use libproto::blockchain::Block;
+use libproto::verify_tx_nonce;
 use lru_cache::LruCache;
 use protobuf::core::parse_from_bytes;
 use std::collections::HashMap;
@@ -272,6 +273,10 @@ impl Proposal {
 
             if let Some(p) = ret.unwrap() {
                 let block = parse_from_bytes::<Block>(&self.block).unwrap();
+                if !block.get_body().get_transactions().into_iter().all(|tx| verify_tx_nonce(&tx)) {
+                    return false;
+                }
+
                 let hash = block.crypt_hash().into();
                 if p == hash {
                     return true;
