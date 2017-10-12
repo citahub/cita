@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![feature(mpsc_select)]
+#![feature(integer_atomics)]
 
 extern crate protobuf;
 extern crate logger;

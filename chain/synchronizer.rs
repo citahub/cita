@@ -42,15 +42,23 @@ impl Synchronizer {
     }
 
     pub fn sync(&self, ctx_pub: Sender<(String, Vec<u8>)>) {
-        let block_map = self.chain.block_map.read();
-        if !block_map.is_empty() {
+        let flag = !self.chain.block_map.read().is_empty();
+        if flag {
             let start_height = self.chain.get_current_height() + 1;
             if !self.chain.is_sync.load(Ordering::SeqCst) {
                 self.chain.is_sync.store(true, Ordering::SeqCst);
             }
+
             for height in start_height..start_height + BATCH_SYNC {
-                if block_map.contains_key(&height) {
-                    let value = block_map[&(height)].clone();
+                let mut val = None;
+
+                {
+                    let block_map = self.chain.block_map.read();
+                    if block_map.contains_key(&height) {
+                        val = Some(block_map[&(height)].clone());
+                    }
+                }
+                if let Some(value) = val {
                     let block = value.1;
                     let is_verified = value.2;
                     if is_verified {

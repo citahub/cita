@@ -19,9 +19,10 @@
 
 use bloomchain;
 use blooms::{GroupPosition, BloomGroup};
-use db::{Key, ConstKey};
+use db::Key;
 use header::{BlockNumber, Header};
 use libchain::block::BlockBody;
+use libproto::blockchain::Proof;
 use receipt::Receipt;
 use rlp::*;
 use std::ops::{Deref, Index};
@@ -40,13 +41,23 @@ pub enum ExtrasIndex {
     BlockHash = 3,
 }
 
-impl Key<H256> for ConstKey {
+pub struct CurrentHash;
+
+impl Key<H256> for CurrentHash {
     type Target = H256;
 
     fn key(&self) -> H256 {
-        match *self {
-            ConstKey::CurrentHash => H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f66"),
-        }
+        H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f66")
+    }
+}
+
+pub struct CurrentProof;
+
+impl Key<Proof> for CurrentProof {
+    type Target = H256;
+
+    fn key(&self) -> H256 {
+        H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f67")
     }
 }
 

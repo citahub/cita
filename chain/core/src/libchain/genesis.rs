@@ -16,9 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-use db::{self as db, Writable, ConstKey};
+use db::{self as db, Writable};
 use factory::Factories;
 use libchain::block::Block;
+use libchain::extras::*;
 use rustc_hex::FromHex;
 use serde_json;
 use state::State;
@@ -107,7 +108,7 @@ impl Genesis {
         let height = self.block.number();
         batch.write(db::COL_HEADERS, &hash, self.block.header());
         batch.write(db::COL_BODIES, &hash, self.block.body());
-        batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &hash);
+        batch.write(db::COL_EXTRA, &CurrentHash, &hash);
         batch.write(db::COL_EXTRA, &height, &hash);
         state.db().journal_under(&mut batch, height, &hash).expect("DB commit failed");
         db.write(batch)

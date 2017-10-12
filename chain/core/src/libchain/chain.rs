@@ -200,7 +200,8 @@ pub struct Chain {
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
     pub max_height: AtomicUsize,
-    //BtreeMap key: block height  Value: proof if ,block, is_verified
+    // BtreeMap key: block height  Value: proof if ,block, is_verified
+    // TODO: prune ancient
     pub block_map: RwLock<BTreeMap<u64, (Option<ProtoProof>, Block, bool)>>,
     pub db: Arc<KeyValueDB>,
     pub sync_sender: Mutex<Sender<u64>>,
@@ -234,7 +235,7 @@ pub struct Chain {
 
 /// Get latest status
 pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
-    let h: Option<H256> = db.read(db::COL_EXTRA, &ConstKey::CurrentHash);
+    let h: Option<H256> = db.read(db::COL_EXTRA, &CurrentHash);
     if let Some(hash) = h {
         db.read(db::COL_HEADERS, &hash)
     } else {
@@ -248,7 +249,7 @@ impl Chain {
         let current_height = self.get_current_height();
         let current_hash = self.get_current_hash();
 
-        batch.write(db::COL_EXTRA, &ConstKey::CurrentHash, &current_hash);
+        batch.write(db::COL_EXTRA, &CurrentHash, &current_hash);
         //return status
         let mut status = Status::new();
         status.set_hash(current_hash);
@@ -290,6 +291,8 @@ impl Chain {
             }
         };
 
+        let proof: Option<ProtoProof> = db.read(db::COL_EXTRA, &CurrentProof);
+
         let sw: Switch = serde_json::from_reader(sconfig).expect("Failed to load json file.");
         info!("config check: {:?}", sw);
         let max_height = AtomicUsize::new(0);
@@ -326,6 +329,13 @@ impl Chain {
         let chain = Arc::new(raw_chain);
         chain.build_last_hashes(Some(header.hash()), header.number());
         chain.reload_config();
+
+        {
+            // Insert current proof for sync
+            let block = chain.block_by_hash(header.hash()).expect("Failed to load current block.");
+            let mut guard = chain.block_map.write();
+            let _ = guard.insert(header.number(), (proof, block, true));
+        }
 
         // Generate status
         let mut status = RichStatus::new();
@@ -383,7 +393,7 @@ impl Chain {
     }
 
     /// Get block header by BlockId
-    fn block_header(&self, id: BlockId) -> Option<Header> {
+    pub fn block_header(&self, id: BlockId) -> Option<Header> {
         match id {
             BlockId::Hash(hash) => self.block_header_by_hash(hash),
             BlockId::Number(number) => self.block_header_by_height(number),
@@ -1005,7 +1015,13 @@ impl Chain {
                 }
 
                 let status = self.save_status(&mut batch);
-
+                // Save current block proof
+                match self.block_map.read().get(&height) {
+                    Some(&(Some(ref proof), _, _)) => {
+                        batch.write(db::COL_EXTRA, &CurrentProof, &proof);
+                    }
+                    _ => {}
+                }
                 self.db.write(batch).expect("DB write failed.");
 
                 // reload_config

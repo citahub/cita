@@ -349,11 +349,9 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                         let mut flag = false;
                         {
                             let guard = chain.block_map.read();
-                            if let Some(info) = guard.get(&height) {
-                                if let Some(proof) = info.0.clone() {
-                                    proof_block.mut_header().set_proof(proof);
-                                    flag = true;
-                                }
+                            if let Some(&(Some(ref proof), _, _)) = guard.get(&height) {
+                                proof_block.mut_header().set_proof(proof.clone());
+                                flag = true;
                             }
                         }
                         if flag {

@@ -21,6 +21,7 @@ use libproto::blockchain::{SignedTransaction, AccountGasLimit};
 use protobuf::Message;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering, ATOMIC_U64_INIT};
 use std::sync::mpsc::{Sender, Receiver};
 use std::time::SystemTime;
 use std::vec::*;
@@ -40,6 +41,7 @@ pub struct VerifyReqInfo {
     pub info: (VerifyType, u64, u32, SystemTime, Origin),
 }
 
+static mut MAX_HEIGHT: AtomicU64 = ATOMIC_U64_INIT;
 
 fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     let mut resp = VerifyTxResp::new();
@@ -136,23 +138,32 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             trace!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
             let mut tx_hashes_in_h256 = HashSet::with_capacity(tx_hashes.len());
-            let mut tx_hashes_in_h256_vec: Vec<H256> = Vec::new();
             let mut cache_guard = cache.write();
 
+            let mut tx_hashes_in_h256_vec: Vec<H256> = Vec::new();
             for data in tx_hashes.iter() {
                 let hash = H256::from_slice(data);
                 cache_guard.remove(&hash);
                 tx_hashes_in_h256.insert(hash);
                 tx_hashes_in_h256_vec.push(hash);
             }
-            trace!("BLOCKTXHASHES come height {}, tx_hashs {:?}", height, tx_hashes_in_h256_vec.len());
+            {
+                let mut flag = false;
+                unsafe {
+                    if height > MAX_HEIGHT.load(Ordering::SeqCst) {
+                        MAX_HEIGHT.store(height, Ordering::SeqCst);
+                        flag = true;
+                    }
+                }
+                if flag {
+                    trace!("BLOCKTXHASHES come height {}, tx_hashs {:?}", height, tx_hashes_in_h256_vec.len());
+                    let block_gas_limit = block_tx_hashes.get_block_gas_limit();
+                    let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
+                    trace!("Auth rich status block gas limit: {:?}, account gas limit {:?}", block_gas_limit, account_gas_limit);
 
-            let block_gas_limit = block_tx_hashes.get_block_gas_limit();
-            let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
-            trace!("Auth rich status block gas limit: {:?}, account gas limit {:?}", block_gas_limit, account_gas_limit);
-
-            let res = txs_sender.send((height as usize, tx_hashes_in_h256_vec, block_gas_limit, account_gas_limit));
-            trace!("BLOCKTXHASHES  txs_sender res is {:?}", res);
+                    let _ = txs_sender.send((height as usize, tx_hashes_in_h256_vec, block_gas_limit, account_gas_limit));
+                }
+            }
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
         }
         MsgClass::VERIFYBLKREQ(blkreq) => {

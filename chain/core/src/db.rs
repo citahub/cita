@@ -99,13 +99,6 @@ impl<T> DBList<T> {
     }
 }
 
-//TODO: Use a better way ?
-#[derive(Clone, Copy)]
-pub enum ConstKey {
-    /// Current block hash.
-    CurrentHash,
-}
-
 /// Modes for updating caches.
 #[derive(Clone, Copy)]
 pub enum CacheUpdatePolicy {

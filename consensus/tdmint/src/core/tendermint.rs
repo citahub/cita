@@ -33,7 +33,7 @@ use libproto::blockchain::{Block, BlockTxs, RichStatus, BlockWithProof};
 use proof::TendermintProof;
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
-use std::collections::HashMap;
+use std::collections::{LinkedList, HashMap};
 use std::sync::mpsc::{Sender, Receiver, RecvError};
 use std::time::Instant;
 use util::{H256, Address, Hashable};
@@ -47,6 +47,7 @@ const LOG_TYPE_STATE: u8 = 3;
 const LOG_TYPE_PREV_HASH: u8 = 4;
 const LOG_TYPE_COMMITS: u8 = 5;
 const LOG_TYPE_VERIFIED_PROPOSE: u8 = 6;
+const LOG_TYPE_AUTH_TXS: u8 = 7;
 
 const ID_CONSENSUS_MSG: u32 = (submodules::CONSENSUS << 16) + topics::CONSENSUS_MSG as u32;
 const ID_NEW_PROPOSAL: u32 = (submodules::CONSENSUS << 16) + topics::NEW_PROPOSAL as u32;
@@ -120,7 +121,7 @@ pub struct TenderMint {
     auth_manage: AuthorityManage,
     consensus_power: bool,
     unverified_msg: Vec<(usize, usize)>,
-    block_txs: Option<BlockTxs>,
+    block_txs: LinkedList<(usize, BlockTxs)>,
 }
 
 impl TenderMint {
@@ -157,7 +158,7 @@ impl TenderMint {
             auth_manage: AuthorityManage::new(),
             consensus_power: false,
             unverified_msg: Vec::new(),
-            block_txs: None,
+            block_txs: LinkedList::new(),
         }
     }
 
@@ -430,7 +431,6 @@ impl TenderMint {
                 let _ = self.wal_log.save(LOG_TYPE_PREV_HASH, &buf);
 
                 if self.proof.height != nowheight && nowheight > 0 {
-                    //panic!("******************");
                     let res = self.generate_proof(nowheight, round, hash);
                     if let Some(proof) = res {
                         self.proof = proof;
@@ -442,11 +442,12 @@ impl TenderMint {
                 if self.proof.height == nowheight && self.proof.round == round {
                     self.save_wal_proof();
                 } else {
-                    info!("save proof not ok height {} round {} now height {} ", nowheight, round, self.height);
+                    info!("try my best to save proof not ok,at height {} round {} now height {}", nowheight, round, self.height);
                 }
             }
             self.clean_saved_info();
             self.clean_filtr_info();
+            self.clean_block_txs();
             return true;
         }
         false
@@ -495,9 +496,18 @@ impl TenderMint {
         if let Some(hash) = self.proposal {
             if self.locked_block.is_some() {
                 //generate proof
-                let res = self.generate_proof(height, round, hash);
-                if let Some(proof) = res {
-                    self.proof = proof.clone();
+                trace!("commit_block proof is {:?}", self.proof);
+                let mut get_proof = Some(self.proof.clone());
+                let mut gen_flag = false;
+                if self.proof.height != height {
+                    get_proof = self.generate_proof(height, round, hash);
+                    gen_flag = true;
+                }
+
+                if let Some(proof) = get_proof {
+                    if gen_flag {
+                        self.proof = proof.clone();
+                    }
                     self.save_wal_proof();
 
                     let mut proof_blk = BlockWithProof::new();
@@ -507,10 +517,9 @@ impl TenderMint {
 
                     info!(" ######### height {} consensus time {:?} ", height, Instant::now() - self.htime);
                     self.pub_block(&proof_blk);
-
                     return true;
                 } else {
-                    info!("commit_block proof not ok");
+                    info!("commit_block proof not ok height {},round {}", height, round);
                     return false;
                 }
             }
@@ -793,7 +802,7 @@ impl TenderMint {
                     return Err(ret.err().unwrap());
                 }
 
-                if (height == self.height && round >= self.round) || height == self.height + 1 {
+                if (height == self.height && round >= self.round) || height > self.height {
                     if wal_flag && height == self.height {
                         self.wal_log.save(LOG_TYPE_PROPOSE, &msg).unwrap();
                     }
@@ -821,7 +830,11 @@ impl TenderMint {
 
     fn clean_verified_info(&mut self) {
         self.unverified_msg.clear();
+    }
 
+    fn clean_block_txs(&mut self) {
+        let height = self.height - 1;
+        self.block_txs = self.block_txs.clone().into_iter().filter(|&(hi, _)| hi >= height).collect();
     }
 
     fn clean_filtr_info(&mut self) {
@@ -852,17 +865,17 @@ impl TenderMint {
         } else {
             // proposal new blk
             let mut block = Block::new();
-            if let Some(ref blocktxs) = self.block_txs {
-                trace!("BLOCKTXS get height {}, self height {} txs {:?}", blocktxs.get_height(), self.height, blocktxs);
-                if blocktxs.get_height() != self.height as u64 - 1 {
-                    return;
+            let mut flag = false;
+
+            for (height, ref blocktxs) in self.block_txs.clone() {
+                trace!("BLOCKTXS get height {}, self height {} txs {:?}", height, self.height, blocktxs);
+                if height == self.height - 1 {
+                    flag = true;
+                    block.set_body(blocktxs.get_body().clone());
                 }
-                block.set_body(blocktxs.get_body().clone());
-            } else {
-                //maybe when starting, there is no txs got from auth
-                if self.height > 1 {
-                    return;
-                }
+            }
+            if !flag && self.height > INIT_HEIGHT {
+                return;
             }
 
             if self.pre_hash.is_some() {
@@ -913,7 +926,7 @@ impl TenderMint {
 
     pub fn timeout_process(&mut self, tminfo: TimeoutInfo) {
         trace!("timeout_process {:?}", tminfo);
-        if tminfo.height < self.height || (tminfo.height == self.height && tminfo.round < self.round) {
+        if tminfo.height < self.height || (tminfo.height == self.height && tminfo.round < self.round && tminfo.step != Step::CommitWait) {
             return;
         }
 
@@ -1048,9 +1061,10 @@ impl TenderMint {
 
                 MsgClass::BLOCKTXS(block_txs) => {
                     trace!("recive blocktxs height {} self height {} txs {:?}", block_txs.get_height(), self.height, block_txs);
-                    if self.height < 1 || block_txs.get_height() == self.height as u64 {
-                        self.block_txs = Some(block_txs);
-                    }
+                    let height = block_txs.get_height() as usize;
+                    let msg = block_txs.write_to_bytes().unwrap();
+                    self.block_txs.push_back((height, block_txs));
+                    let _ = self.wal_log.save(LOG_TYPE_AUTH_TXS, &msg);
                 }
                 _ => {}
             }
@@ -1220,11 +1234,17 @@ impl TenderMint {
                         self.unverified_msg.push((vheight, vround));
                     }
                 }
+            } else if mtype == LOG_TYPE_AUTH_TXS {
+                trace!(" LOG_TYPE_AUTH_TXS begining!");
+                let blocktxs = parse_from_bytes::<BlockTxs>(&vec_out);
+                if let Ok(blocktxs) = blocktxs {
+                    let height = blocktxs.get_height() as usize;
+                    trace!(" LOG_TYPE_AUTH_TXS add height {}!", height);
+                    self.block_txs.push_back((height, blocktxs));
+                }
             }
         }
-
         // TODO : broadcast some message, based on current state
-
         if self.height >= INIT_HEIGHT {
             self.redo_work();
         }

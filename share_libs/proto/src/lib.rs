@@ -74,6 +74,7 @@ pub mod submodules {
     pub const AUTH: u32 = 6;
 }
 
+// TODO: 这里要不要修改下，使topics和MsgClass对应起来
 pub mod topics {
     pub const DEFAULT: u16 = 0;
     pub const REQUEST: u16 = 1;
