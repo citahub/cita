@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![cfg_attr(test, feature(test))]
-#![feature(vec_remove_item)]
 extern crate libproto;
 extern crate protobuf;
 extern crate byteorder;

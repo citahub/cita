@@ -216,7 +216,7 @@ pub struct Chain {
 
     // extra caches
     block_hashes: RwLock<HashMap<BlockNumber, H256>>,
-    transaction_addresses: RwLock<HashMap<TransactionId, DBList<TransactionAddress>>>,
+    transaction_addresses: RwLock<HashMap<TransactionId, TransactionAddress>>,
     blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
     block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
     pub nodes: RwLock<Vec<Address>>,
@@ -459,9 +459,7 @@ impl Chain {
 
     /// Get address of transaction by hash.
     fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
-        let result = self.db
-                         .read_list_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash)
-                         .map(|v| v[0].clone());
+        let result = self.db.read_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash);
         self.cache_man.lock().note_used(CacheId::TransactionAddresses(hash));
         result
     }
@@ -746,9 +744,7 @@ impl Chain {
             batch.write_with_cache(db::COL_EXTRA, &mut *write_hashes, height as BlockNumber, hash, CacheUpdatePolicy::Overwrite);
             batch.write_with_cache(db::COL_EXTRA, &mut *write_receipts, hash, block_receipts, CacheUpdatePolicy::Overwrite);
             batch.extend_with_cache(db::COL_EXTRA, &mut *write_blooms, blocks_blooms.clone(), CacheUpdatePolicy::Overwrite);
-            batch.extend_with_cache_append(db::COL_EXTRA, &*self.db, &mut *write_txs, block.transactions_uni.clone(), AppendPolicy::Overwrite);
-            batch.extend_with_cache_append(db::COL_EXTRA, &*self.db, &mut *write_txs, block.transactions_dup.clone(), AppendPolicy::Update);
-
+            batch.extend_with_cache(db::COL_EXTRA, &mut *write_txs, block.transactions.clone(), CacheUpdatePolicy::Overwrite);
         }
 
         //note used
@@ -761,14 +757,9 @@ impl Chain {
             self.cache_man.lock().note_used(CacheId::BlocksBlooms(key));
         }
 
-        for (key, _) in block.transactions_uni.clone() {
+        for (key, _) in block.transactions.clone() {
             self.cache_man.lock().note_used(CacheId::TransactionAddresses(key));
         }
-
-        for (key, _) in block.transactions_dup.clone() {
-            self.cache_man.lock().note_used(CacheId::TransactionAddresses(key));
-        }
-
 
         let mut state = block.drain();
         // Store triedb changes in journal db

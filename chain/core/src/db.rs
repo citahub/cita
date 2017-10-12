@@ -17,12 +17,11 @@
 //! Database utilities and definitions.
 
 
-use rlp::{Decodable, Encodable, RlpStream, UntrustedRlp, DecoderError, encode, decode};
-use std::cmp::PartialEq;
+use rlp::{Decodable, Encodable, encode, decode};
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::ops::{Deref, Index};
-use util::{DBTransaction, KeyValueDB, RwLock, HeapSizeOf};
+use std::ops::Deref;
+use util::{DBTransaction, KeyValueDB, RwLock};
 
 // database columns
 /// Column for State
@@ -42,80 +41,12 @@ pub const COL_NODE_INFO: Option<u32> = Some(6);
 /// Number of columns in DB
 pub const NUM_COLUMNS: Option<u32> = Some(7);
 
-/// Contains all block receipts.
-#[derive(Clone)]
-pub struct DBList<T> {
-    pub data: Vec<T>,
-}
-
-impl<T> Decodable for DBList<T>
-where
-    T: Decodable,
-{
-    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        Ok(DBList { data: rlp.as_list()? })
-    }
-}
-
-impl<T> Encodable for DBList<T>
-where
-    T: Encodable,
-{
-    fn rlp_append(&self, s: &mut RlpStream) {
-        s.append_list(&self.data);
-    }
-}
-
-impl<T> HeapSizeOf for DBList<T>
-where
-    T: HeapSizeOf,
-{
-    fn heap_size_of_children(&self) -> usize {
-        self.data.heap_size_of_children()
-    }
-}
-
-impl<T> Index<usize> for DBList<T> {
-    type Output = T;
-    fn index(&self, i: usize) -> &T {
-        &self.data[i]
-    }
-}
-
-impl<T> DBList<T> {
-    fn new() -> Self {
-        DBList { data: Vec::new() }
-    }
-
-    fn push(&mut self, value: T) {
-        self.data.push(value);
-    }
-
-    fn remove_item(&mut self, value: &T)
-    where
-        T: PartialEq,
-    {
-        self.data.remove_item(value);
-    }
-}
-
 /// Modes for updating caches.
 #[derive(Clone, Copy)]
 pub enum CacheUpdatePolicy {
     /// Overwrite entries.
     Overwrite,
     /// Remove entries.
-    Remove,
-}
-
-/// Modes for updating caches.
-#[derive(Clone, Copy)]
-pub enum AppendPolicy {
-    /// Overwrite entries list.
-    Overwrite,
-    /// update entries list.
-    Update,
-    /// remove entrie in list.
     Remove,
 }
 
@@ -161,12 +92,6 @@ pub trait Key<T> {
 pub trait Writable {
     /// Writes the value into the database.
     fn write<T, R>(&mut self, col: Option<u32>, key: &Key<T, Target = R>, value: &T)
-    where
-        T: Encodable,
-        R: Deref<Target = [u8]>;
-
-    /// append the value into the database.
-    fn append<T, R>(&mut self, col: Option<u32>, key: &Key<T, Target = R>, value: &DBList<T>)
     where
         T: Encodable,
         R: Deref<Target = [u8]>;
@@ -246,96 +171,12 @@ pub trait Writable {
             }
         }
     }
-
-    /// Writes the value into the database and updates the cache.
-    fn write_with_cache_append<K, T, R, D>(&mut self, col: Option<u32>, db: &D, cache: &mut Cache<K, DBList<T>>, key: K, value: T, policy: AppendPolicy)
-    where
-        K: Key<T, Target = R> + Hash + Eq + Clone,
-        T: Encodable + Decodable + Clone + PartialEq,
-        D: Readable + ?Sized,
-        R: Deref<Target = [u8]>,
-    {
-        match policy {
-            AppendPolicy::Overwrite => {
-                let mut list = DBList::new();
-                list.push(value);
-                self.append(col, &key, &list);
-                cache.insert(key, list);
-            }
-            AppendPolicy::Update => {
-                let mut list = match db.get_list_with_cache(col, cache, &key) {
-                    Some(v) => v,
-                    None => DBList::new(),
-                };
-                list.push(value);
-                self.append(col, &key, &list);
-                cache.insert(key, list);
-            }
-            AppendPolicy::Remove => {
-                let mut list = match db.get_list_with_cache(col, cache, &key) {
-                    Some(v) => v,
-                    None => return,
-                };
-                list.remove_item(&value);
-                self.append(col, &key, &list);
-                cache.insert(key, list);
-            }
-        }
-    }
-
-    /// Writes the values into the database and updates the cache.
-    fn extend_with_cache_append<K, T, R, D>(&mut self, col: Option<u32>, db: &D, cache: &mut Cache<K, DBList<T>>, values: HashMap<K, T>, policy: AppendPolicy)
-    where
-        K: Key<T, Target = R> + Hash + Eq + Clone,
-        T: Encodable + Decodable + Clone + PartialEq,
-        D: Readable + ?Sized,
-        R: Deref<Target = [u8]>,
-    {
-        match policy {
-            AppendPolicy::Overwrite => {
-                for (key, value) in values {
-                    let mut list = DBList::new();
-                    list.push(value);
-                    self.append(col, &key, &list);
-                    cache.insert(key, list);
-                }
-            }
-            AppendPolicy::Update => {
-                for (key, value) in values {
-                    let mut list = match db.get_list_with_cache(col, cache, &key) {
-                        Some(v) => v,
-                        None => DBList::new(),
-                    };
-                    list.push(value);
-                    self.append(col, &key, &list);
-                    cache.insert(key, list);
-                }
-            }
-            AppendPolicy::Remove => {
-                for (key, value) in values {
-                    let mut list = match db.get_list_with_cache(col, cache, &key) {
-                        Some(v) => v,
-                        None => return,
-                    };
-                    list.remove_item(&value);
-                    self.append(col, &key, &list);
-                    cache.insert(key, list);
-
-                }
-            }
-        }
-    }
 }
 
 /// Should be used to read values from database.
 pub trait Readable {
     /// Returns value for given key.
     fn read<T, R>(&self, col: Option<u32>, key: &Key<T, Target = R>) -> Option<T>
-    where
-        T: Decodable,
-        R: Deref<Target = [u8]>;
-
-    fn read_list<T, R>(&self, col: Option<u32>, key: &Key<T, Target = R>) -> Option<DBList<T>>
     where
         T: Decodable,
         R: Deref<Target = [u8]>;
@@ -359,40 +200,6 @@ pub trait Readable {
                                     write.insert(key.clone(), value.clone());
                                     value
                                 })
-    }
-
-    fn read_list_with_cache<K, T, C>(&self, col: Option<u32>, cache: &RwLock<C>, key: &K) -> Option<DBList<T>>
-    where
-        K: Key<T> + Eq + Hash + Clone,
-        T: Clone + Decodable,
-        C: Cache<K, DBList<T>>,
-    {
-        {
-            let read = cache.read();
-            if let Some(v) = read.get(key) {
-                return Some(v.clone());
-            }
-        }
-
-        self.read_list(col, key).map(|value: DBList<T>| {
-                                         let mut write = cache.write();
-                                         write.insert(key.clone(), value.clone());
-                                         value
-                                     })
-    }
-
-    fn get_list_with_cache<K, T>(&self, col: Option<u32>, cache: &Cache<K, DBList<T>>, key: &K) -> Option<DBList<T>>
-    where
-        K: Key<T> + Eq + Hash + Clone,
-        T: Clone + Decodable,
-    {
-        {
-            if let Some(v) = cache.get(key) {
-                return Some(v.clone());
-            }
-        }
-
-        self.read_list(col, key)
     }
 
     /// Returns true if given value exists.
@@ -427,14 +234,6 @@ impl Writable for DBTransaction {
         self.put(col, &key.key(), &encode(value));
     }
 
-    fn append<T, R>(&mut self, col: Option<u32>, key: &Key<T, Target = R>, value: &DBList<T>)
-    where
-        T: Encodable,
-        R: Deref<Target = [u8]>,
-    {
-        self.put(col, &key.key(), &encode(value));
-    }
-
     fn delete<T, R>(&mut self, col: Option<u32>, key: &Key<T, Target = R>)
     where
         T: Encodable,
@@ -446,21 +245,6 @@ impl Writable for DBTransaction {
 
 impl<KVDB: KeyValueDB + ?Sized> Readable for KVDB {
     fn read<T, R>(&self, col: Option<u32>, key: &Key<T, Target = R>) -> Option<T>
-    where
-        T: Decodable,
-        R: Deref<Target = [u8]>,
-    {
-        let result = self.get(col, &key.key());
-
-        match result {
-            Ok(option) => option.map(|v| decode(&v)),
-            Err(err) => {
-                panic!("db get failed, key: {:?}, err: {:?}", &key.key() as &[u8], err);
-            }
-        }
-    }
-
-    fn read_list<T, R>(&self, col: Option<u32>, key: &Key<T, Target = R>) -> Option<DBList<T>>
     where
         T: Decodable,
         R: Deref<Target = [u8]>,
