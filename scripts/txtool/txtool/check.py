@@ -14,7 +14,7 @@ def check_cita_status():
     result_status = False
     try:
         url = endpoint()
-        response = HTTPClient(url).request("cita_blockNumber", "")
+        response = HTTPClient(url).request("cita_blockNumber", [])
         result_status = response > 0
     except:
         result_status = False
