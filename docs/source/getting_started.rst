@@ -6,22 +6,14 @@
 
 CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。CITA是基于Ubuntu 16.04稳定版开发的，在该系统版本上运行将是正确无误的。如果在Linux系统的其他版本上运行出现问题，建议将系统版本切换到Ubuntu 16.04版本。
 
-安装依赖包
+安装编译器及开发库
 ---------------------------
 
-CITA中引用了一些Linux外部库，所以需要安装相关的依赖库，其命令如下：
 ::
 
-   sudo scripts/install_sys.sh
-
-安装Rust
----------------------------
-CITA使用rust nightly版本,因为开发过程中用了一些nightly版本的特性。
-::
-
-   scripts/install_rust.sh
+   sudo scripts/install_develop.sh
    
-rust安装完成后，可以重新登录使环境变量生效，也可直接使用以下命令使环境变量立即生效：
+安装完成后，可以重新登录使Rust相关的环境变量生效，也可直接使用以下命令立即生效：
 ::
    source ~/.cargo/env
 
@@ -50,20 +42,24 @@ rust安装完成后，可以重新登录使环境变量生效，也可直接使�
 
   make release
 
-编译成功后，其生成的可执行文件将放在 ``cita/admintool/release/bin`` 目录下。
+编译成功后，其生成的可执行文件将放在 ``target/install`` 目录下，生产环境下只能看到target/install里面的内容。
 
 
 配置
 =============
-
-启动的公共脚本位于 ``cita/admintool`` 目录，主要用来创建创世块配置、节点相关配置、网络连接配置、私钥配置等相关文件。  
+先切换到发布件目录,并将bin目录加入到PATH环境变量中:
+::
+   cd target/install
+   export PATH=$PWD/bin:$PATH
+   
+启动的公共脚本位于 ``scripts/admintool`` 目录，主要用来创建创世块配置、节点相关配置、网络连接配置、私钥配置等相关文件。  
 
 设置节点的配置信息，该默认示例Demo中配置了4个节点，对Demo中的节点进行默认初始化的操作命令为：
 ::
 
-  ./admintool.sh
+   admintool.sh
 
-此外，用户可以根据需要更改其中的默认配置，使用命令 ``./admintool.sh -h`` 来获得详细帮助，允许自定义配置包括：
+此外，用户可以根据需要更改其中的默认配置，使用命令 ``admintool.sh -h`` 来获得详细帮助，允许自定义配置包括：
 
 * 系统管理员账户
 * 网络列表，按照 ``IP1:PORT1,IP2:PORT2,IP3:PORT3 ... IPn:PORTn`` 的格式
@@ -73,15 +69,14 @@ rust安装完成后，可以重新登录使环境变量生效，也可直接使�
 * 单数据块中交易数量限制
 * 累积多少历史交易量后进行重复交易的检查
 
-节点初始化操作成功后，将在 ``cita/admintool/release`` 下生成节点的Demo目录和相关配置文件，其生成的节点目录为 ``node0`` 、 ``node1`` 、 ``node2`` 和 ``node3`` ，其对应的目录如下：
+节点初始化操作成功后，将在发布件目录下生成节点的配置文件，其生成的节点目录为:
 
-* cita/admintool/release/node0
-* cita/admintool/release/node1
-* cita/admintool/release/node2
-* cita/admintool/release/node3
+* node0
+* node1
+* node2
+* node3
 
-进入对应节点的目录，便可以使用 ``cita`` 命令对节点进行启动和停止等操作了。
-
+可以使用 ``cita start node0`` 等命令对节点进行启动和停止等操作了。
 
 运行
 =============
@@ -122,7 +117,7 @@ rust安装完成后，可以重新登录使环境变量生效，也可直接使�
 
   ./cita_stop.sh
 
-备注：以上示例Demo的节点启动都是位于同一台机器上，如果需要部署到不同的服务器上，只需将节点客户化操作已经完成的节点（即 ``cita/admintool/release/node{节点号}`` 目录），拷贝到其他服务器上运行即可。
+备注：以上示例Demo的节点启动都是位于同一台机器上，如果需要部署到不同的服务器上，只需将节点客户化操作已经完成的节点（即 ``target/install`` 目录），拷贝到其他服务器上运行即可。
 
 
 验证

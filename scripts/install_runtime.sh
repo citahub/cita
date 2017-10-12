@@ -1,14 +1,9 @@
 #!/bin/bash
 set -e
 
-sudo (){
-    cmd=$*
-    if [ "$(whoami)" = "root" ]; then
-        ${cmd}
-    else
-        /usr/bin/sudo ${cmd}
-    fi
-}
+if [ "$(whoami)" = "root" ]; then
+    alias sudo='bash'
+fi
 
 # 1) install add-apt-repository
 sudo apt-get update -q

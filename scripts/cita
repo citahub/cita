@@ -6,30 +6,23 @@
 # 5) cita stop  node0
 set -e
 
-sudo (){
-    cmd=$*
-    if [ "$(whoami)" = "root" ]; then
-        ${cmd}
-    else
-        /usr/bin/sudo ${cmd}
-    fi
-}
 PROJECT_DIR=$(readlink -f $(dirname $(readlink -f $0)))
 if [ -z ${PROJECT_DIR} ] ; then
     echo "failed to locate project directory"
 fi
+if [ "$(whoami)" = "root" ] ; then
+    alias sudo='bash'
+fi
 
 setup() {
     # config rabbitmq
-    sudo /etc/init.d/rabbitmq-server restart                         > /dev/null 2>&1 |true
-    sudo rabbitmqctl add_vhost ${node}                               > /dev/null 2>&1 |true
-    sudo rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*" > /dev/null 2>&1 |true
-    sudo rabbitmqctl list_permissions -p ${node}                     > /dev/null 2>&1 |true
+    sudo /etc/init.d/rabbitmq-server restart                               > /dev/null 2>&1 |true
+    sudo rabbitmqctl add_vhost ${node}                                     > /dev/null 2>&1 |true
+    sudo rabbitmqctl set_permissions -p ${node} guest ".*" ".*" ".*"       > /dev/null 2>&1 |true
 }
 
 start() {
-    node=$1
-    debug=$2
+    debug=$1
 
     pid_file=.pid
     mkdir -p logs
@@ -96,26 +89,23 @@ clean() {
     if [ -e logs ] ; then
         mv logs ${backup_dir}
     fi
-
 }
 
 stop() {
-    node=$1
     pid_file=.pid
     if [ -e ${pid_file} ] ; then
         for pid in $(cat ${pid_file}) ; do
-            kill -9 ${pid}
+            kill -9 ${pid} || true
         done
     fi
     rm -f ${pid_file}
 }
 
 status() {
-    node=$1
     pid_file=.pid
     if [ -e ${pid_file} ] ; then
         for pid in $(cat ${pid_file}) ; do
-            ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep"
+            ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep" || true
         done
     fi
 }
@@ -190,7 +180,7 @@ else
             setup
             ;;
         start)
-            stop > /dev/null 2>&1
+            stop > /dev/null 2>&1 || true
             debug=$3
             start ${debug}
             ;;
@@ -198,7 +188,7 @@ else
             stop
             ;;
         restart)
-            stop
+            stop ||true
             debug=$3
             start ${debug}
             ;;

@@ -1,83 +1,42 @@
+#!/bin/bash
 #usage: start demo nodes
 #       ./cita_start.sh 
 #       ./cita_start.sh tendermint debug
-#!/bin/bash
+
 set +e
+
 consensus=$1
 debug=$2
+
+SOURCE_DIR=$(readlink -f $(dirname $0)/../..)
+BINARY_DIR=${SOURCE_DIR}/target/install
+. ${SOURCE_DIR}/tests/integrate_test/util.sh
+
 if [ ! -n "$consensus" ]; then
     consensus="tendermint"
 fi
-CUR_PATH=$(cd `dirname $0`; pwd)
-cd ${CUR_PATH}/../../admintool/
-./admintool.sh -n $consensus
 
-setup_node() {
-    id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
-    ./cita setup ${id}
-}
+echo "###cleanup"
+cleanup
 
-start_node() {
-    id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
-    ./cita start ${id} ${debug}
-}
+echo "###generate config files"
+cd ${BINARY_DIR}
+./bin/admintool.sh -n $consensus >/dev/null 2>&1
 
-stop_node() {
-    id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
-    ./cita stop ${id}
-}
 
-stop_all () {
-    stop_node 0
-    stop_node 1
-    stop_node 2
-    stop_node 3
-}
+echo "###start nodes"
+for i in {0..3} ; do
+    setup_node $i
+done
 
-start_all () {
-    start_node 0
-    start_node 1
-    start_node 2
-    start_node 3
-}
+for i in {0..3} ; do
+    start_node $i &
+done
 
-get_height(){
-    nodeid=$1
-    if [ ! -n "$nodeid" ]; then
-        nodeid=0
-    fi
-    h=`${CUR_PATH}/cita_blockNumber.sh 127.0.0.1 $((1337+${nodeid}))`
-    h=$(echo $h | sed 's/\"//g')
-    echo $((h))    
-}
-
-check_height_change () {
-    echo "check block height"
-    old_height=$(get_height)
-    echo "block height $old_height"
-    sleep 30
-    new_height=$(get_height)
-    echo "block height $new_height"
-    if [ $new_height -eq $old_height ]; then
-        stop_all
-        exit 1
-    fi
-}
-
-echo "###start nodes..."
-(setup_node 0;start_node 0) &
-(setup_node 1;start_node 1) &
-(setup_node 2;start_node 2) &
-(setup_node 3;start_node 3) &
-echo `date`
-echo "###wait for start..."
-sleep 120
-echo `date`
-check_height_change
-
+echo -n "###check height growth"
+msg=$(check_height_growth 0)|| (echo "FAILED"
+                                echo "check height growth: ${msg}"
+                                exit 1)
 echo "###CITA start OK"
 exit 0
 

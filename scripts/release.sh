@@ -46,7 +46,6 @@ cp -rf  scripts/admintool/*.md           						target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.sh           						target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.txt          						target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.json          						target/install/scripts/admintool/
-ln -srf target/install                                          target/install/scripts/admintool/release
 ln -srf target/install/scripts/admintool/admintool.sh           target/install/bin/
 ln -srf target/install/scripts/cita                             target/install/bin/
 
