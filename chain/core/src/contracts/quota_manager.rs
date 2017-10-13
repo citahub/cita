@@ -122,7 +122,7 @@ impl QuotaManager {
         trace!("block_gas_limit output: {:?}", output);
 
         let output_hex = ToHex::to_hex(output.as_slice());
-        let block_gas_limit = u64::from_str_radix(&*output_hex, 16).unwrap();
+        let block_gas_limit = u64::from_str_radix(&*output_hex, 16).unwrap_or(0);
         trace!("block_gas_limit: {:?}", block_gas_limit);
 
         block_gas_limit
@@ -134,7 +134,7 @@ impl QuotaManager {
         trace!("account_gas_limit output: {:?}", output);
 
         let output_hex = ToHex::to_hex(output.as_slice());
-        let account_gas_limit = u64::from_str_radix(&*output_hex, 16).unwrap();
+        let account_gas_limit = u64::from_str_radix(&*output_hex, 16).unwrap_or(0);
         trace!("account_gas_limit: {:?}", account_gas_limit);
 
         account_gas_limit
@@ -143,43 +143,18 @@ impl QuotaManager {
 
 #[cfg(test)]
 mod tests {
-    extern crate env_logger;
+    extern crate logger;
     extern crate mktemp;
     use self::Chain;
     use super::*;
     use cita_crypto::{PrivKey, SIGNATURE_NAME};
-    use db;
     use libchain::block::{Block, BlockBody};
-    use libchain::genesis::{Spec, Genesis};
     use libproto::blockchain;
-    use rustc_serialize::hex::FromHex;
-    use std::collections::HashMap;
-    use std::sync::Arc;
-    use std::sync::mpsc::channel;
+    use rustc_hex::FromHex;
     use std::time::UNIX_EPOCH;
     use types::transaction::SignedTransaction;
-    use util::{U256, H256, Address};
-    use util::kvdb::{Database, DatabaseConfig};
-
-    // TODO: Load from genesis json file
-    fn init_chain() -> Arc<Chain> {
-        let _ = env_logger::init();
-        let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
-        let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-        let genesis = Genesis {
-            spec: Spec {
-                alloc: HashMap::new(),
-                prevhash: H256::from(0),
-                timestamp: 0,
-            },
-            block: Block::default(),
-        };
-        let (sync_tx, _) = channel();
-        let path = "chain.json";
-        let (chain, _) = Chain::init_chain(Arc::new(db), genesis, sync_tx, path);
-        chain
-    }
+    use util::{U256, Address};
+    use tests::helpers::init_chain;
 
     fn create_block(chain: &Chain, privkey: &PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
         let mut block = Block::new();

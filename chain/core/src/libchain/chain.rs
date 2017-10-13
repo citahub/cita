@@ -1149,6 +1149,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_code_at() {
         let chain = init_chain();
         let source = r#"
@@ -1198,6 +1199,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_contract() {
         let chain = init_chain();
         let source = r#"
@@ -1314,6 +1316,7 @@ contract SimpleStorage {
     }
 
     #[bench]
+    #[ignore]
     fn bench_uint_set(b: &mut Bencher) {
         let name = "bench_uint_set";
         let data = "aa91543e000000000000000000000000000000000000000000000000000000000000000a".from_hex().unwrap();
@@ -1322,13 +1325,16 @@ contract SimpleStorage {
     }
 
     #[bench]
+    #[ignore]
     fn bench_uint_get(b: &mut Bencher) {
         let name = "bench_uint_get";
         let data = "aa91543e000000000000000000000000000000000000000000000000000000000000000a".from_hex().unwrap();
         bench_simple_storage(name, &data);
         b.iter(|| {});
     }
+
     #[bench]
+    #[ignore]
     fn bench_string_set(b: &mut Bencher) {
         let name = "bench_string_set";
         let data = "c9615770000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033132330000000000000000000000000000000000000000000000000000000000"
@@ -1339,13 +1345,16 @@ contract SimpleStorage {
     }
 
     #[bench]
+    #[ignore]
     fn bench_string_get(b: &mut Bencher) {
         let name = "bench_string_get";
         let data = "e3135d14".from_hex().unwrap();
         bench_simple_storage(name, &data);
         b.iter(|| {});
     }
+
     #[bench]
+    #[ignore]
     fn bench_array_set(b: &mut Bencher) {
         let name = "bench_array_set";
         let data = "118b229c0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000b"
@@ -1356,13 +1365,16 @@ contract SimpleStorage {
     }
 
     #[bench]
+    #[ignore]
     fn bench_array_get(b: &mut Bencher) {
         let name = "bench_array_get";
         let data = "180a4bbf0000000000000000000000000000000000000000000000000000000000000001".from_hex().unwrap();
         bench_simple_storage(name, &data);
         b.iter(|| {});
     }
+
     #[bench]
+    #[ignore]
     fn bench_map_set(b: &mut Bencher) {
         let name = "bench_map_set";
         let data = "118b229c0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000c"
@@ -1373,6 +1385,7 @@ contract SimpleStorage {
     }
 
     #[bench]
+    #[ignore]
     fn bench_map_get(b: &mut Bencher) {
         let name = "bench_map_get";
         let data = "180a4bbf0000000000000000000000000000000000000000000000000000000000000001".from_hex().unwrap();
