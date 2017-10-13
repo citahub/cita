@@ -151,7 +151,7 @@ impl Dispatchtx {
             self.batch_forward_tx_to_peer(mq_pub);
             return;
         }
-        thread::sleep(Duration::new(0, self.batch_forward_info.buffer_duration - time_elapsed));
+        thread::sleep(Duration::new(0, self.batch_forward_info.buffer_duration));
     }
 
     pub fn add_tx_to_pool(&self, tx: &SignedTransaction) -> bool {
