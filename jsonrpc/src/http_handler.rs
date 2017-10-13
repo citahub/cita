@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use base_hanlder::BaseHandler;
-use chashmap::CHashMap;
 use hyper::Post;
 use hyper::server::{Handler, Request, Response};
 use hyper::uri::RequestUri::AbsolutePath;
@@ -26,20 +25,21 @@ use jsonrpc_types::response::{RpcSuccess, RpcFailure, Output};
 use libproto::request as reqlib;
 use libproto::response;
 use serde_json;
+use std::collections::HashMap;
 use std::io::Read;
 use std::result;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
-use util::Mutex;
+use util::{RwLock, Mutex};
 
 impl BaseHandler for HttpHandler {}
 
 pub struct HttpHandler {
     pub tx: Arc<Mutex<Sender<(String, reqlib::Request)>>>,
     //TODO 定时清理工作
-    pub responses: Arc<CHashMap<Vec<u8>, response::Response>>,
+    pub responses: Arc<RwLock<HashMap<Vec<u8>, response::Response>>>,
     pub sleep_duration: usize,
     pub timeout_count: usize,
     pub method_handler: method::MethodHandler,
@@ -93,9 +93,9 @@ impl HttpHandler {
                         return Err(RpcFailure::from_options(id, jsonrpc_version, Error::server_error(-32099, "system time out,please resend")));
                     }
                     thread::sleep(Duration::new(0, (self.sleep_duration * 1000000) as u32));
-                    if self.responses.contains_key(&request_id) {
+                    if self.responses.read().contains_key(&request_id) {
                         let value = {
-                            self.responses.remove(&request_id)
+                            self.responses.write().remove(&request_id)
                         };
                         if let Some(res) = value {
                             match Output::from(res, id, jsonrpc_version) {
