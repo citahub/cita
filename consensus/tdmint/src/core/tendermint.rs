@@ -27,7 +27,8 @@ use core::wal::Wal;
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address, SIGNATURE_BYTES_LEN};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
-use libproto::blockchain::{Block, BlockTxs, RichStatus, BlockWithProof};
+use libproto::blockchain::{Block, BlockWithProof, BlockTxs, RichStatus};
+
 
 //use tx_pool::Pool;
 use proof::TendermintProof;
@@ -35,9 +36,11 @@ use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 use std::collections::{LinkedList, HashMap};
 use std::sync::mpsc::{Sender, Receiver, RecvError};
-use std::time::Instant;
+use std::time::{SystemTime, UNIX_EPOCH, Duration, Instant};
+
 use util::{H256, Address, Hashable};
 use util::datapath::DataPath;
+
 const INIT_HEIGHT: usize = 1;
 const INIT_ROUND: usize = 0;
 
@@ -91,6 +94,15 @@ impl From<u8> for Step {
             _ => panic!("Invalid step."),
         }
     }
+}
+
+fn gen_reqid_from_idx(idx: u64) -> u64 {
+    let padding = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or(Duration::new(100, 0)).as_secs();
+    padding << 16 + idx
+}
+
+fn get_idx_from_reqid(reqid: u64) -> u64 {
+    reqid & 0xff
 }
 
 pub struct TenderMint {
@@ -760,8 +772,9 @@ impl TenderMint {
                         trace!("Going to send block verify request to auth");
                         self.unverified_msg.push((vheight, vround));
                         let idx = self.unverified_msg.len() as u64 - 1;
-                        let verify_req = block_verify_req(&block, idx);
-                        trace!("verify_req with {} txs with block verify request id: {} and height:{}", len, idx, block.get_header().get_height());
+                        let reqid = gen_reqid_from_idx(idx);
+                        let verify_req = block_verify_req(&block, reqid);
+                        trace!("verify_req with {} txs with block verify request id: {} and height:{}", len, reqid, block.get_header().get_height());
                         let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
                         self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
                     } else {
@@ -1045,8 +1058,9 @@ impl TenderMint {
                 }
 
                 MsgClass::VERIFYBLKRESP(resp) => {
-                    let verify_id = resp.get_id() as usize;
-                    if let Some(elem) = self.unverified_msg.get_mut(verify_id) {
+                    let verify_id = resp.get_id();
+                    let idx = get_idx_from_reqid(verify_id);
+                    if let Some(elem) = self.unverified_msg.get_mut(idx as usize) {
                         let (vheight, vround) = *elem;
                         if resp.get_ret() == auth::Ret::Ok {
                             let msg = serialize(&(vheight, vround, true), Infinite).unwrap();
@@ -1060,7 +1074,7 @@ impl TenderMint {
                 }
 
                 MsgClass::BLOCKTXS(block_txs) => {
-                    trace!("recive blocktxs height {} self height {} txs {:?}", block_txs.get_height(), self.height, block_txs);
+                    trace!("recive blocktxs height {} self height {}", block_txs.get_height(), self.height);
                     let height = block_txs.get_height() as usize;
                     let msg = block_txs.write_to_bytes().unwrap();
                     self.block_txs.push_back((height, block_txs));
