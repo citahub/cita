@@ -265,8 +265,8 @@ impl MethodHandler {
         call.set_from(base.from.unwrap_or_default().to_vec());
         call.set_to(base.to.to_vec());
         call.set_data(base.data.unwrap_or_default().to_vec());
-        serde_json::to_string(&id).map_err(|err| Error::invalid_params(err.to_string())).map(|heigth| {
-                                                                                                 call.set_height(heigth);
+        serde_json::to_string(&id).map_err(|err| Error::invalid_params(err.to_string())).map(|height| {
+                                                                                                 call.set_height(height);
                                                                                                  request.set_call(call);
                                                                                                  request
                                                                                              })
