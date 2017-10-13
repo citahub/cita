@@ -48,7 +48,7 @@ capnp-nonblock = { path = "../../capnp_nonblock" }
 log = "0.3"
 mio = "0.5"
 rand = "0.3"
-scoped_log = { git = "https://github.com/james-darkfox/rs-scoped_log" }
+scoped_log = { git = "https://github.com/james-darkfox/rs-scoped_log", rev = "2f525aa6c19a5d99b70a870eaed0884deb01004d" }
 uuid = "0.1"
 wrapped_enum = "0.1"
 redis = "0.8"
