@@ -43,3 +43,7 @@ docs/build
 
 # vagrant file
 .vagrant
+
+# tmp files
+tests/wrk_benchmark_test/hash.txt
+consensus/authority_round/data/

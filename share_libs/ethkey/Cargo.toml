@@ -7,7 +7,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 rand = "0.3.14"
 lazy_static = "0.2"
 tiny-keccak = "1.3"
-eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
+eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", rev = "b6b67055edc929057e97d64f036c78ad91f58a7f" }
 rustc-hex = "1.0"
 bigint = { path = "../bigint" }
 rust-crypto = "0.2"

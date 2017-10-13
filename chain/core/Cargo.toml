@@ -28,7 +28,7 @@ num = "0.1"
 num_cpus = "1.2"
 rand = "0.3"
 futures = "0.1"
-bn = { git = "https://github.com/paritytech/bn" }
+bn = { git = "https://github.com/paritytech/bn", rev = "c9831a8d10d55045692394cbc10efe0321ddb16f" }
 time = "0.1"
 crossbeam = "0.2"
 transient-hashmap = "0.4.0"
