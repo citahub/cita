@@ -194,7 +194,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             if true == newtx_req.has_batch_req() {
                 let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
                 let now = SystemTime::now();
-                trace!("get batch new tx request from jsonrpc in system time :{:?}, and has got {} new tx ", now, batch_new_tx.len());
+                trace!("get batch new tx request from module:{:?} in system time :{:?}, and has got {} new tx ", id_to_key(submodule), now, batch_new_tx.len());
 
                 let mut txs = batch_new_tx_pool.lock();
                 for tx_req in batch_new_tx.iter() {

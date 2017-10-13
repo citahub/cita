@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(mpsc_select)]
 #![feature(integer_atomics)]
 
 extern crate protobuf;
@@ -102,6 +101,8 @@ fn main() {
         .args_from_usage("--prof-duration=[0] 'Specify the duration for profiling, zero means no profiling'")
         .get_matches();
 
+    let count_per_batch = matches.value_of("count_per_batch").unwrap_or("30").parse::<usize>().unwrap();
+    let buffer_duration = matches.value_of("buffer_duration").unwrap_or("30000000").parse::<u32>().unwrap();
     let tx_verify_thread_num = matches.value_of("tx_verify_thread_num").unwrap_or("10").parse::<usize>().unwrap();
     let tx_verify_num_per_thread = matches.value_of("tx_verify_num_per_thread").unwrap_or("30").parse::<usize>().unwrap();
     let tx_pool_limit = matches.value_of("tx_pool_limit").unwrap_or("50000").parse::<usize>().unwrap();
@@ -212,21 +213,25 @@ fn main() {
     let txs_pub = tx_pub.clone();
 
     thread::spawn(move || {
-        let mut dispatch = Dispatchtx::new(tx_packet_limit, tx_pool_limit);
-
+        let mut dispatch = Dispatchtx::new(tx_packet_limit, tx_pool_limit, count_per_batch, buffer_duration);
+        let mut received_tx = false;
         loop {
-            select! {
-                txinfo = pool_tx_recver.recv()=>{
-                    if let Ok((modid,reqid,tx_res,tx,origin)) = txinfo {
-                        dispatch.deal_tx(modid,reqid,tx_res,&tx,txs_pub.clone(), origin);
-                    }
-                },
-                txsinfo = pool_txs_recver.recv()=>{
-                    if let Ok((height,txs, block_gas_limit, account_gas_limit)) = txsinfo {
-                        dispatch.deal_txs( height,&txs,txs_pub.clone(), block_gas_limit, account_gas_limit);
-                    }
-                }
+            if let Ok(txinfo) = pool_tx_recver.try_recv() {
+                let (modid, reqid, tx_res, tx, _) = txinfo;
+                dispatch.deal_tx(modid, reqid, tx_res, &tx, txs_pub.clone());
+                received_tx = true;
             }
+
+            if let Ok(txsinfo) = pool_txs_recver.try_recv() {
+                let (height, txs, block_gas_limit, account_gas_limit) = txsinfo;
+                dispatch.deal_txs(height, &txs, txs_pub.clone(), block_gas_limit, account_gas_limit);
+            }
+
+            if false == received_tx {
+                dispatch.wait_timeout_process(txs_pub.clone());
+
+            }
+            received_tx = false;
         }
     });
 

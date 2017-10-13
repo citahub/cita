@@ -62,6 +62,7 @@ use protobuf::RepeatedField;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::mpsc::Sender;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
@@ -181,29 +182,22 @@ fn main() {
         let mut new_tx_request_buffer = Vec::new();
         let mut time_stamp = SystemTime::now();
         loop {
-            let (topic, req): (String, reqlib::Request) = rx_relay.recv().unwrap();
-            if topic.as_str() != TOPIC_NEW_TX {
-                let data: CommMsg = req.into();
-                tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
-            } else {
-                new_tx_request_buffer.push(req);
-                if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_durtation {
-                    trace!("Going to send new tx batch to auth with {} new tx and buffer {} ns", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap().subsec_nanos());
-
-                    let mut batch_request = BatchRequest::new();
-                    batch_request.set_new_tx_requests(RepeatedField::from_slice(&new_tx_request_buffer[..]));
-
-                    let request_id = Uuid::new_v4().as_bytes().to_vec();
-                    let mut request = reqlib::Request::new();
-                    request.set_batch_req(batch_request);
-                    request.set_request_id(request_id);
-
-                    let data: CommMsg = request.into();
-                    tx_pub.send((String::from(TOPIC_NEW_TX_BATCH), data.write_to_bytes().unwrap())).unwrap();
-                    time_stamp = SystemTime::now();
-                    new_tx_request_buffer = Vec::new();
+            let res = rx_relay.try_recv();
+            if true == res.is_ok() {
+                let (topic, req): (String, reqlib::Request) = res.unwrap();
+                if topic.as_str() != TOPIC_NEW_TX {
+                    let data: CommMsg = req.into();
+                    tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
+                } else {
+                    new_tx_request_buffer.push(req);
+                    if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_durtation {
+                        batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone());
+                    }
                 }
+            } else if time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_durtation && new_tx_request_buffer.len() > 1 {
+                batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone());
             }
+
         }
     });
 
@@ -211,4 +205,21 @@ fn main() {
         let (key, msg) = rx_sub.recv().unwrap();
         mq_handle.handle(key, msg);
     }
+}
+
+fn batch_forward_new_tx(new_tx_request_buffer: &mut Vec<reqlib::Request>, time_stamp: &mut SystemTime, tx_pub: Sender<(String, Vec<u8>)>) {
+    trace!("Going to send new tx batch to auth with {} new tx and buffer {} ns", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap().subsec_nanos());
+
+    let mut batch_request = BatchRequest::new();
+    batch_request.set_new_tx_requests(RepeatedField::from_slice(&new_tx_request_buffer[..]));
+
+    let request_id = Uuid::new_v4().as_bytes().to_vec();
+    let mut request = reqlib::Request::new();
+    request.set_batch_req(batch_request);
+    request.set_request_id(request_id);
+
+    let data: CommMsg = request.into();
+    tx_pub.send((String::from(TOPIC_NEW_TX_BATCH), data.write_to_bytes().unwrap())).unwrap();
+    *time_stamp = SystemTime::now();
+    new_tx_request_buffer.clear();
 }
