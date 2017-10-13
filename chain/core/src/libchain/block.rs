@@ -343,7 +343,7 @@ impl OpenBlock {
                 self.traces.as_mut().map(|tr| tr.push(trace));
                 let transaction_gas_used = outcome.receipt.gas_used - self.current_gas_used;
                 self.current_gas_used = outcome.receipt.gas_used;
-                if let Some(mut value) = self.account_gas.get_mut(t.sender()) {
+                if let Some(value) = self.account_gas.get_mut(t.sender()) {
                     *value = *value - transaction_gas_used;
                 }
                 self.receipts.push(Some(outcome.receipt));
