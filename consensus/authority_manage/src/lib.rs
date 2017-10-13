@@ -17,7 +17,6 @@
 
 extern crate util;
 extern crate bincode;
-extern crate rustc_serialize;
 
 mod wal;
 
