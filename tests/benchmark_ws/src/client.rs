@@ -111,7 +111,6 @@ fn bench_create_tx_time(b: &mut Bencher) {
 
 
 mod test {
-    
     use super::{Client, create_tx_time};
     use super::super::time;
     use super::super::uuid::Uuid;

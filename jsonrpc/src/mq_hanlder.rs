@@ -16,13 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use base_hanlder::{TransferType, ReqInfo};
-use chashmap::CHashMap;
 use jsonrpc_types::response::Output;
 use libproto::{parse_msg, display_cmd, MsgClass, Response};
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
-use util::Mutex;
+use util::{Mutex, RwLock};
 use ws;
 
 #[derive(Default)]
@@ -30,7 +29,7 @@ pub struct MqHandler {
     transfer_type: TransferType,
     //TODO 定时清理工作
     ws_responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>,
-    responses: Arc<CHashMap<Vec<u8>, Response>>,
+    responses: Arc<RwLock<HashMap<Vec<u8>, Response>>>,
 }
 
 
@@ -39,7 +38,7 @@ impl MqHandler {
         MqHandler {
             transfer_type: TransferType::ALL,
             ws_responses: Arc::new(Mutex::new(HashMap::new())),
-            responses: Arc::new(CHashMap::new()),
+            responses: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -47,7 +46,7 @@ impl MqHandler {
         self.transfer_type = transfer_type;
     }
 
-    pub fn set_http(&mut self, responses: Arc<CHashMap<Vec<u8>, Response>>) {
+    pub fn set_http(&mut self, responses: Arc<RwLock<HashMap<Vec<u8>, Response>>>) {
         self.responses = responses;
     }
 
@@ -64,7 +63,7 @@ impl MqHandler {
                 trace!("from response request_id {:?}", content.request_id);
                 match self.transfer_type {
                     TransferType::HTTP => {
-                        self.responses.insert(content.request_id.clone(), content);
+                        self.responses.write().insert(content.request_id.clone(), content);
                     }
                     TransferType::WEBSOCKET => {
                         let value = {

@@ -23,7 +23,6 @@ jsonrpc_types = { path = "types" }
 dotenv = "0.10.0"
 logger =  { path = "../share_libs/logger" }
 clap = "2"
-chashmap = "2.2.0"
 
 [[bin]]
 name = "jsonrpc"
