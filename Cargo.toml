@@ -13,6 +13,7 @@ members = ["auth"
 ,"tests/amqp"
 ,"tests/latency"
 ,"tests/jsonrpc_performance"
+,"tests/benchmark_ws"
 ]
 
 

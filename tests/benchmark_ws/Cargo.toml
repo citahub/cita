@@ -1,0 +1,29 @@
+[package]
+name = "benchmark_ws"
+version = "0.1.0"
+authors = ["suyanlong <592938410@qq.com>"]
+
+[dependencies]
+ws = "0.*"
+clap = "2.*"
+env_logger = "0.4"
+term = "0.4"
+time = "0.1.*"
+url = "1.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+libproto = { path = "../../share_libs/proto"}
+protobuf = { version = "^1.0.0" }
+cita-crypto = { path = "../../share_libs/crypto" }
+util = { path = "../../share_libs/util" }
+dotenv = "0.10.*"
+log = "0.*"
+jsonrpc_types = { path = "../../jsonrpc/types" }
+pubsub = { path = "../../share_libs/pubsub" }
+rustc-hex = "1.*"
+threadpool = "1.*"
+num_cpus = "1.*"
+parking_lot = "0.4.*"
+uuid = { version = "0.4", features = ["v4"] }
+rand = "0.3.17"
