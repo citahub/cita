@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate threadpool;
 extern crate tx_pool;
 
 use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request, BatchRequest, verify_tx_nonce};

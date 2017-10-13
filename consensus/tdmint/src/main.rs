@@ -18,7 +18,6 @@
 #![feature(mpsc_select)]
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
 extern crate libproto;
 extern crate util;
 extern crate threadpool;
@@ -26,7 +25,6 @@ extern crate protobuf;
 #[macro_use]
 extern crate log;
 extern crate clap;
-extern crate tx_pool;
 extern crate cita_crypto as crypto;
 extern crate proof;
 extern crate pubsub;
@@ -34,7 +32,6 @@ extern crate bincode;
 extern crate engine;
 extern crate lru_cache;
 extern crate dotenv;
-extern crate core as chain_core;
 extern crate logger;
 extern crate cpuprofiler;
 extern crate authority_manage;
