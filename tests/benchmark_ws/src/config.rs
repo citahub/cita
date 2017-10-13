@@ -16,12 +16,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use serde_json::from_reader;
-use std::convert::Into;
 use std::error::Error;
 use std::fs::File;
 use std::path::Path;
-use ws::Settings;
-
 
 pub fn read_user_from_file<P: AsRef<Path>>(path: P) -> Result<Config, Box<Error>> {
     // Open the file in read-only mode.

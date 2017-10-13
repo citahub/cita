@@ -15,17 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use client::{Client, RpcMethod};
-use config::BenchTxParam;
-use jsonrpc_types::response::{Output, ResultBody};
-use jsonrpc_types::rpctypes::Block;
-use libproto::TxResponse;
 use std::sync::Arc;
 use std::sync::mpsc;
-use std::time::Duration;
 use util::RwLock;
 use worker::*;
-use ws::{Builder, Settings, Sender, CloseCode, Handler, Message, Handshake, Result, Factory};
+use ws::{Sender, CloseCode, Handler, Message, Handshake, Result, Factory};
 
 pub struct Connection {
     pub sender: Sender,
@@ -41,7 +35,7 @@ impl Handler for Connection {
     }
 
     fn on_message(&mut self, msg: Message) -> Result<()> {
-        self.tx.send(msg);
+        let _ = self.tx.send(msg);
         Ok(())
     }
 

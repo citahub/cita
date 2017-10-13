@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crypto::{KeyPair, PrivKey, PubKey, pubkey_to_address};
+use crypto::{KeyPair, PrivKey, pubkey_to_address};
 use libproto::blockchain::{UnverifiedTransaction, Transaction};
 use protobuf::Message;
 use rustc_hex::FromHex;
@@ -115,6 +115,7 @@ mod test {
     use super::{Client, create_tx_time};
     use super::super::time;
     use super::super::uuid::Uuid;
+
 
     #[test]
     fn test_create_tx_time() {

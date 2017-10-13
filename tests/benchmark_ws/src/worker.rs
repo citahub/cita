@@ -18,14 +18,9 @@
 use client::{Client, RpcMethod};
 use config::Param;
 use connection::*;
-use jsonrpc_types::{RpcRequest, Params, Id, Version, Error};
 use jsonrpc_types::response::{Output, ResultBody};
-use jsonrpc_types::rpctypes::Block;
-use libproto::TxResponse;
-use method::Method;
 use rand::{thread_rng, ThreadRng, Rng};
 use serde_json;
-use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -68,7 +63,7 @@ impl Worker {
 
     fn rand_send(&mut self, data: String) {
         let index = self.rand.gen_range(0, self.ws_senders.read().len());
-        self.ws_senders.read()[index].send(data);
+        let _ = self.ws_senders.read()[index].send(data);
     }
 
     pub fn bench_peer_count(&mut self) {
@@ -81,7 +76,7 @@ impl Worker {
 
     pub fn close_all(&self) {
         while let Some(sender) = self.ws_senders.write().pop() {
-            sender.close(CloseCode::Normal);
+            let _ = sender.close(CloseCode::Normal);
         }
     }
 
@@ -90,13 +85,13 @@ impl Worker {
         thread::spawn(move || loop {
                           thread::sleep(Duration::new(1, 0));
                           let client = Client::new();
-                          sender.send(client.get_data_by_method(RpcMethod::Height));
+                          let _ = sender.send(client.get_data_by_method(RpcMethod::Height));
                       });
     }
 
     pub fn bench_tx(&mut self) {
         let mut genrate_txs = vec![];
-        for i in 0..self.param.number {
+        for _ in 0..self.param.number {
             genrate_txs.push(self.genrate_tx())
         }
         while let Some(value) = genrate_txs.pop() {
@@ -116,15 +111,15 @@ impl Worker {
         //        const   CHECK_HEIGHT = 10;
         let mut check_height_break = 10;
         let mut check_block_break = 10;
-        let mut is_bench_tx = self.param.tx_param.enable;
-        let mut is_bench_peer = self.param.peer_param.enable;
+        let is_bench_tx = self.param.tx_param.enable;
+        let is_bench_peer = self.param.peer_param.enable;
         let mut is_first = true;
         let mut success_count = 0;
         let mut failure_count = 0;
         let mut actual_tx_count = 0;
         let mut block_info: VecDeque<(Number, Timetamp, TxCount)> = VecDeque::new();
         loop {
-            rx.recv().map(|msg| {
+            let _ = rx.recv().map(|msg| {
                 let text = msg.as_text().unwrap();
                 //println!("from server data = {:?}", text);
                 serde_json::from_str(text)
@@ -202,7 +197,7 @@ impl Worker {
                                          }
                                      }
 
-                                     ResultBody::TxResponse(tx_res) => {
+                                     ResultBody::TxResponse(_tx_res) => {
                                          if success_count == 0 {
                                              self.full_block();
                                          }
@@ -222,6 +217,7 @@ impl Worker {
                              }
 
                              Output::Failure(failure) => {
+                                 println!("failure {:?}", failure);
                                  failure_count += 1;
                              }
                          })

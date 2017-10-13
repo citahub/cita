@@ -112,5 +112,5 @@ fn main() {
         worker.recive(rx);
     });
 
-    ws.run();
+    let _ = ws.run();
 }
