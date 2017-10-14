@@ -443,7 +443,8 @@ impl TenderMint {
                 let _ = self.wal_log.save(LOG_TYPE_PREV_HASH, &buf);
 
                 if self.proof.height != nowheight && nowheight > 0 {
-                    let res = self.generate_proof(nowheight, round, hash);
+                    let lock_round = self.lock_round.unwrap_or(round);
+                    let res = self.generate_proof(nowheight, lock_round, hash);
                     if let Some(proof) = res {
                         self.proof = proof;
                     }
