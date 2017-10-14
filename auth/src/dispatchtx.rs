@@ -130,7 +130,7 @@ impl Dispatchtx {
         }
 
         let out_txs = self.get_txs_from_pool(height as u64, block_gas_limit, account_gas_limit);
-        trace!("public block txs height {} with {:?} txs on timestamp: {:?}", height, out_txs.len(), SystemTime::now());
+        info!("public block txs height {} with {:?} txs on timestamp: {:?}", height, out_txs.len(), SystemTime::now());
 
         if !out_txs.is_empty() {
             body.set_transactions(RepeatedField::from_vec(out_txs));

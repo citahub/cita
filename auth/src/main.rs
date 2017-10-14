@@ -152,7 +152,7 @@ fn main() {
                                       info: (verify_type, request_id, sub_module, now, origin),
                                   };
                                   if true == check_verify_request_preprocess(verify_req_info.clone(), verifier_clone.clone(), cache_clone.clone(), resp_sender.clone()) {
-                                      trace!("check_verify_request_preprocess is true, and {} reqs have been pushed into req_grp", req_grp.len());
+                                      info!("check_verify_request_preprocess is true, and {} reqs have been pushed into req_grp", req_grp.len());
                                       continue;
                                   }
 
@@ -250,13 +250,10 @@ fn main() {
     let batch_new_tx_pool_clone = batch_new_tx_pool.clone();
     thread::spawn(move || loop {
                       let (_key, msg) = rx_sub.recv().unwrap();
-                      //info!("get key: {} and msg: {:?}", key, msg);
                       let verifier = verifier.clone();
                       let block_cache_clone_222 = block_cache_clone_111.clone();
                       let block_req_sender = block_req_sender.clone();
                       let single_req_sender = single_req_sender.clone();
-                      //let single_req_queue = single_req_queue.clone();
-                      //let block_req_queue = block_req_queue.clone();
                       let tx_pub_clone = tx_pub_clone.clone();
                       handle_remote_msg(msg, verifier.clone(), block_req_sender, single_req_sender, tx_pub_clone, block_cache_clone_222, cache.clone(), batch_new_tx_pool_clone.clone(), pool_txs_sender.clone());
                   });

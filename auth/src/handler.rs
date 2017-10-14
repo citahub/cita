@@ -135,7 +135,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
     match content {
         MsgClass::BLOCKTXHASHES(block_tx_hashes) => {
             let height = block_tx_hashes.get_height();
-            trace!("get block tx hashs for height {:?}", height);
+            info!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
             let mut tx_hashes_in_h256 = HashSet::with_capacity(tx_hashes.len());
             let mut cache_guard = cache.write();
@@ -156,10 +156,10 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                     }
                 }
                 if flag {
-                    trace!("BLOCKTXHASHES come height {}, tx_hashs {:?}", height, tx_hashes_in_h256_vec.len());
+                    info!("BLOCKTXHASHES come height {}, tx_hashs {:?}", height, tx_hashes_in_h256_vec.len());
                     let block_gas_limit = block_tx_hashes.get_block_gas_limit();
                     let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
-                    trace!("Auth rich status block gas limit: {:?}, account gas limit {:?}", block_gas_limit, account_gas_limit);
+                    info!("Auth rich status block gas limit: {:?}, account gas limit {:?}", block_gas_limit, account_gas_limit);
 
                     let _ = txs_sender.send((height as usize, tx_hashes_in_h256_vec, block_gas_limit, account_gas_limit));
                 }
@@ -167,7 +167,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
         }
         MsgClass::VERIFYBLKREQ(blkreq) => {
-            trace!("get block verify request with {:?} request", blkreq.get_reqs().len());
+            info!("get block verify request with {:?} request", blkreq.get_reqs().len());
             let tx_cnt = blkreq.get_reqs().len();
             if tx_cnt > 0 {
                 let block_verify_status = BlockVerifyStatus {
@@ -176,7 +176,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                     verify_success_cnt_capture: 0,
                 };
                 let id = blkreq.get_id();
-                trace!("block verify request id: {}, and the init block_verify_status: {:?}", id, block_verify_status);
+                info!("block verify request id: {}, and the init block_verify_status: {:?}", id, block_verify_status);
                 let request_id = BlockVerifyId {
                     request_id: id,
                     sub_module: submodule,
@@ -284,7 +284,7 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                     blkresp.set_ret(resp.get_ret());
 
                     let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
-                    trace!("Failed to do verify blk req for request id: {}, ret: {:?}, from submodule: {}", id, blkresp.get_ret(), sub_module);
+                    info!("Failed to do verify blk req for request id: {}, ret: {:?}, from submodule: {}", id, blkresp.get_ret(), sub_module);
                     tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
                 } else {
                     error!("Failed to get block verify status for request id: {:?} from submodule: {}", id, sub_module);
