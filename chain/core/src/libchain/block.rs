@@ -189,8 +189,7 @@ impl BlockBody {
 pub struct ClosedBlock {
     /// Protobuf Block
     pub block: Block,
-    pub transactions_uni: HashMap<H256, TransactionAddress>,
-    pub transactions_dup: HashMap<H256, TransactionAddress>,
+    pub transactions: HashMap<H256, TransactionAddress>,
     pub receipts: Vec<Option<Receipt>>,
     pub state: State<StateDB>,
 }
@@ -347,26 +346,18 @@ impl OpenBlock {
                     *value = *value - transaction_gas_used;
                 }
                 self.receipts.push(Some(outcome.receipt));
-                self.tx_hashes.push(false);
-            }
-            Err(Error::Execution(ExecutionError::InvalidNonce { expected: _, got: _ })) => {
-                self.receipts.push(None);
-                self.tx_hashes.push(true);
             }
             Err(Error::Execution(ExecutionError::NoTransactionPermission)) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoTransactionPermission));
                 self.receipts.push(Some(receipt));
-                self.tx_hashes.push(false);
             }
             Err(Error::Execution(ExecutionError::NoContractPermission)) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoContractPermission));
                 self.receipts.push(Some(receipt));
-                self.tx_hashes.push(false);
             }
             Err(Error::Execution(ExecutionError::NotEnoughBaseGas { required: _, got: _ })) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NotEnoughBaseGas));
                 self.receipts.push(Some(receipt));
-                self.tx_hashes.push(false);
             }
             Err(Error::Execution(ExecutionError::BlockGasLimitReached {
                                      gas_limit: _,
@@ -375,7 +366,6 @@ impl OpenBlock {
                                  })) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::BlockGasLimitReached));
                 self.receipts.push(Some(receipt));
-                self.tx_hashes.push(false);
             }
             Err(Error::Execution(ExecutionError::AccountGasLimitReached { gas_limit: _, gas: _ })) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::AccountGasLimitReached));
@@ -384,7 +374,6 @@ impl OpenBlock {
             }
             Err(_) => {
                 self.receipts.push(None);
-                self.tx_hashes.push(false);
             }
         }
     }
@@ -409,21 +398,15 @@ impl OpenBlock {
 
         // Create TransactionAddress
         let hash = self.hash();
-        let mut transactions_uni = HashMap::new();
-        let mut transactions_dup = HashMap::new();
+        let mut transactions = HashMap::new();
         for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
             let address = TransactionAddress { block_hash: hash, index: i };
-            if self.tx_hashes[i] {
-                transactions_dup.insert(tx_hash, address);
-            } else {
-                transactions_uni.insert(tx_hash, address);
-            }
+            transactions.insert(tx_hash, address);
         }
 
         ClosedBlock {
             block: self.block.clone(),
-            transactions_uni: transactions_uni,
-            transactions_dup: transactions_dup,
+            transactions: transactions,
             receipts: self.receipts.clone(),
             state: self.state.clone(),
         }
