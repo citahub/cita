@@ -98,11 +98,11 @@ impl From<u8> for Step {
 
 fn gen_reqid_from_idx(idx: u64) -> u64 {
     let padding = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or(Duration::new(100, 0)).as_secs();
-    padding << 16 + idx
+    ((padding & 0xffffffffffff) << 16) | idx
 }
 
 fn get_idx_from_reqid(reqid: u64) -> u64 {
-    reqid & 0xff
+    reqid & 0xffff
 }
 
 pub struct TenderMint {
