@@ -60,7 +60,7 @@ impl Client {
         tx.set_to(address);
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(curh + 88);
-        tx.set_quota(99999999999);
+        tx.set_quota(25000);
         tx.sign(*pv).take_transaction_with_sig()
     }
 

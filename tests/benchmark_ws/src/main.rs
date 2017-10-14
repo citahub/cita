@@ -50,6 +50,7 @@ use clap::App;
 use client::*;
 use config::Config;
 use connection::*;
+use rand::{thread_rng, ThreadRng, Rng};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::mpsc;
@@ -92,9 +93,13 @@ fn main() {
                        })
         .build(fac_con)
         .unwrap();
-    let url = Url::from_str(config.servers[0].as_str()).unwrap();
-    for _ in 0..config.max_connections {
-        ws.connect(url.clone()).unwrap();
+
+    let mut rand = thread_rng();
+    for i in 0..config.max_connections {
+        let index = rand.gen_range(0, config.servers.len());
+        let url = Url::from_str(config.servers[index].as_str()).unwrap();
+        println!("conection{} url = {:?}", i, url);
+        ws.connect(url).unwrap();
     }
 
     thread::spawn(move || {
@@ -106,8 +111,7 @@ fn main() {
 
         if config.param.tx_param.enable {
             worker.heart_beat_height();
-            thread::sleep(Duration::new(3, 0));
-            worker.bench_tx();
+            thread::sleep(Duration::new(10, 0));
         }
         worker.recive(rx);
     });

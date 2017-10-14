@@ -1,10 +1,13 @@
 {
     "servers": [
-        "ws://127.0.0.1:4337"
+        "ws://127.0.0.1:4337",
+        "ws://127.0.0.1:4338",
+        "ws://127.0.0.1:4339",
+        "ws://127.0.0.1:4340"
     ],
-    "max_connections": 1,
+    "max_connections": 8,
     "param": {
-        "number": 1000,
+        "number": 10000,
         "tx_param": {
             "enable": true,
             "codes": [

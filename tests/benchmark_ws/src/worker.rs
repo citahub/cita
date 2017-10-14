@@ -35,6 +35,9 @@ type Timetamp = u64;
 type TxCount = usize;
 
 
+const CHECK_HEIGHT: i64 = 100;
+const BREAK_BLOCK: i64 = 20;
+
 pub struct Worker {
     ws_senders: Arc<RwLock<Vec<Sender>>>,
     param: Param,
@@ -108,9 +111,8 @@ impl Worker {
 
 
     pub fn recive(&mut self, rx: mpsc::Receiver<Message>) {
-        //        const   CHECK_HEIGHT = 10;
-        let mut check_height_break = 10;
-        let mut check_block_break = 10;
+        let mut check_height_break = CHECK_HEIGHT;
+        let mut check_block_break = BREAK_BLOCK;
         let is_bench_tx = self.param.tx_param.enable;
         let is_bench_peer = self.param.peer_param.enable;
         let mut is_first = true;
@@ -120,6 +122,9 @@ impl Worker {
         let mut block_info: VecDeque<(Number, Timetamp, TxCount)> = VecDeque::new();
         loop {
             let _ = rx.recv().map(|msg| {
+                if success_count + failure_count == self.param.number {
+                    println!("number = {}", self.param.number);
+                }
                 let text = msg.as_text().unwrap();
                 //println!("from server data = {:?}", text);
                 serde_json::from_str(text)
@@ -136,18 +141,20 @@ impl Worker {
                                              let mut is_send = true;
                                              if self.current_height < number {
                                                  self.current_height = number;
-                                                 check_height_break = 10;
+                                                 check_height_break = CHECK_HEIGHT;
                                              } else {
                                                  is_send = false;
                                                  check_height_break -= 1;
                                              }
-                                             if check_height_break == 0 {
+                                             if check_height_break <= 0 {
                                                  self.close_all();
                                              }
 
                                              if is_first {
-                                                 is_first = false;
-                                                 self.bench_tx();
+                                                 if self.current_height > 10 {
+                                                     is_first = false;
+                                                     self.bench_tx();
+                                                 }
                                              } else {
                                                  if is_send {
                                                      self.full_block();
@@ -157,7 +164,7 @@ impl Worker {
 
                                          if is_bench_peer {
                                              success_count += 1;
-                                             if success_count + failure_count == self.param.number {
+                                             if success_count + failure_count >= self.param.number {
                                                  let secs = (time::precise_time_ns() - self.start_time) / 1000000;
                                                  let tps = if secs > 0 { (self.param.number * 1000) as u64 / secs } else { self.param.number as u64 };
                                                  println!("send = {}, tps = {} ,recice respone cast time = {:?} ms , success_count = {:?}, failure_count = {:?}", self.param.number, tps, secs, success_count, failure_count);
@@ -172,14 +179,14 @@ impl Worker {
                                          let time_stamp = block.header.timestamp;
                                          let block_height = u64::from_str(format!("{}", block.header.number).as_str()).unwrap();
                                          actual_tx_count += txs_len;
-                                         println!("block_height = {:?},check_block_break = {:?} ", block_height, check_block_break);
+                                         println!("block_height = {:?}, check_block_break = {:?} ", block_height, check_block_break);
                                          if txs_len == 0 {
                                              check_block_break -= 1;
                                          } else {
                                              block_info.push_back((block_height, time_stamp, txs_len));
                                          }
 
-                                         if check_block_break == 0 {
+                                         if check_block_break <= 0 {
                                              println!("blocks infomation: {:?}", block_info);
                                              let mut first = (0, 0, 0);
                                              let mut last = (0, 0, 0);
@@ -192,20 +199,17 @@ impl Worker {
                                              }
                                              let secs = last.1 - first.1;
                                              let tps = if secs > 0 { (actual_tx_count * 1000) as u64 / secs } else { actual_tx_count as u64 };
-                                             println!("total_count: {}, start height: {}, end height: {}, use time: {} ms, tps: {}", actual_tx_count, first.0, last.0, secs, tps);
+                                             println!("total_count: {}, start height: {},  use time: {} ms, tps: {}", actual_tx_count, first.0, secs, tps);
                                              self.close_all();
                                          }
                                      }
 
                                      ResultBody::TxResponse(_tx_res) => {
-                                         if success_count == 0 {
-                                             self.full_block();
-                                         }
                                          success_count += 1;
-                                         if success_count + failure_count == self.param.number {
+                                         if success_count + failure_count >= self.param.number {
                                              let secs = (time::precise_time_ns() - self.start_time) / 1000000;
                                              let tps = if secs > 0 { (self.param.number * 1000) as u64 / secs } else { self.param.number as u64 };
-                                             println!("send = {},tps = {} ,recice respone cast time = {:?} ms , success_count = {:?}, failure_count = {:?}", self.param.number, tps, secs, success_count, failure_count);
+                                             println!("send = {}, tps = {} ,recice respone cast time = {:?} ms , success_count = {:?}, failure_count = {:?}", self.param.number, tps, secs, success_count, failure_count);
                                          }
                                      }
 
