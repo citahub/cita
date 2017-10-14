@@ -5,33 +5,66 @@
 暂时包括共识节点管理合约，权限管理合约及配额管理合约
 
 测试步骤(脚本):
-1. 调用integrate_test/cita_start.sh脚本启动CITA
-2. 调用txtool/check.py验证CITA启动
-3. 调用txtool/make_tx.py构造交易
-4. 调用txtool/send_tx发送交易
-5. 调用txtool/get_receipt获得receipt内结果验证功能
+0. 调用eth_call获得get类函数返回值(限于系统合约，因为其地址固定)
+1. 调用tests/integrate_test/cita_start.sh脚本启动CITA
+2. 调用scripts/txtool/txtool/check.py验证CITA启动
+3. 调用scripts/txtool/txtool/txtool/make_tx.py构造交易
+4. 调用scripts/txtool/txtool/txtool/send_tx发送交易
+5. 调用scripts/txtool/txtool/txtool/get_receipt获得receipt内结果验证功能
 6. 调用eth_call获得get类函数返回值
 以上是通用测试流程，实际测试过程中需要多次调用3-6过程
 
+*以上txtool下脚本使用方法可以查看其README文档*
+
 ### 共识节点管理
 
-#### 测试功能1:增加共识节点
+#### 测试功能1: 增加共识节点
 *(过程中需要调用权限系统合约来获取发交易权限)*
 
 过程及数据构造:
 
-1. 由具有权限地址0x1a702a25c6bca72b67987968f0bfb3a3213c5688授予具有增删节点管理的地址0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523权限
+0. use jsonrpc to check the list of the consensus node
+
+```
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "0x0"],"id":2}' 127.0.0.1:1337
+```
+
+*构造方法详见jsonRPC README文档*
+
+结果:
+
+```
+{"jsonrpc":"2.0","id":2,"result":"0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000507f93743cf1dd841b1e9c028a6ed7893c176015dab7f938478e4f80781c0e0c786b2efbbca68a2248e9b5b04c2c10681800c4ff7e1307fd7d4eab7715f12bd7b684f1c958c15548ebbce378726c9cf4d000000000000000000000000000000000"}
+```
+
+其中:
+* `result`: 获得具体的共识节点数据需要解析。解析方法参考 [contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)
+
+1. 由具有权限地址0x1a702a25c6bca72b67987968f0bfb3a3213c5688授予具有增删节点管理权限的地址0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523权限
+
+*(以上两个地址皆系统内置，详见admintool README)*
 
 ```
 python make_tx.py --to "00000000000000000000000000000000013241a4" --code "301da8700000000000000000000000004b5ae4567ad5d9fb92bc9afd6a657e6fa13a25230000000000000000000000000000000000000000000000000000000000000001" --privkey "866c936ff332228948bdefc15b1877c88e0effce703ee6de898cffcafe9bbe25"
 ```
-2. python send_tx.py. 结果如下:
+
+构造方法:
+* `make_tx.py`的详细使用方法可以运行`pythpn make_tx.py -h`来查看
+* `--to`: 表示要调用的合约的地址
+* `--code`: 构造方法为合约方法hash加其参数，参考 [contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)。 合约hash可由命令`solc x.sol --hash`获得或通过[remix](remix.ethereum.org)
+* `--privkey`: 表示交易的签名私钥。实例为具有发交易权限的账户的私钥
+
+2. `python send_tx.py`. 结果如下:
 
 ```
 {"jsonrpc":"2.0","id":1,"result":{"hash":"0xde05dc52e88ff6d3d1ce8212255dd3a13444edbd507c7d401ad1019ba8f75355","status":"Ok"}}
 ```
 
-3. python get_receipt. 结果如下:
+结果如下:
+* `hash`: 代表生成的交易hash
+* `status`: 发交易状态。`OK`为发送成功
+
+3. `python get_receipt.py` 结果如下:
 
 ```
 {
@@ -63,17 +96,23 @@ python make_tx.py --to "00000000000000000000000000000000013241a4" --code "301da8
 }
 ```
 
-4. 由具有增减节点管理的地址进行增加共识节点的操作，首先调用new,其次调用approve
+其中:
+* `errorMessage`: `null`代表发送成功
 
+4. 由具有增减节点管理的地址进行增加共识节点的操作，测试的增加地址为`0x3f1a71d1d8f073f4e725f57bbe14d67da22f888`。首先调用`new`方法
 ```
 python make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2ffe000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
 ```
+
+*构造方法见步骤1*
 
 5. python send_tx.py
 
 ```
 {"jsonrpc":"2.0","id":1,"result":{"hash":"0x54d242d3284181610f663a41f1b0c3e14851ae928065f02a03690660a77f1de4","status":"Ok"}} 
 ```
+
+*具体见步骤2*
 
 6. python get_receit.py
 
@@ -107,17 +146,24 @@ python make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2f
 }
 ```
 
-7. 调用approve
+其中:
+* `data`: 为调用合约方法过程中记录的event，可与构造交易时的数据进行对比。check `0x000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888`为测试地址。
+
+7. 调用`approve`升级测试地址为共识节点地址
 
 ```
 python make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c97a0000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
 ```
+
+*构造方法见步骤1*
 
 8. python send_tx.py
 
 ```
 {"jsonrpc":"2.0","id":1,"result":{"hash":"0x2fc76cc95e265bbaf0ded7787d76d34ea02df56f709e2e84168de04b700ad800","status":"Ok"}}
 ```
+
+*具体见步骤2*
 
 9. python get_receipt.py
 
@@ -151,7 +197,10 @@ python make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c97
 }
 ```
 
-10. chain里log
+其中:
+* `data`: 为调用合约方法过程中记录的event，可与构造交易时的数据进行对比。check `0x000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888`为测试地址。
+
+10. 查看 chain.log
 
 ```
 20171011 16:28:59 - TRACE - node ad480135eaf2fe211ea23508b0ad014d9e9ffd35
@@ -161,23 +210,54 @@ python make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c97
 20171011 16:28:59 - TRACE - node d3f1a71d1d8f073f4e725f57bbe14d67da22f888
 ```
 
+* chain里可以看到共识节点多了`d3f1a71d1d8f073f4e725f57bbe14d67da22f888`
+
+11. check the consensus node list of the genensis 
+
+```
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "0x0"],"id":2}' 127.0.0.1:1337
+```
+
+*结果见步骤0*
+
+12. check the consensus node list of the new
+
+```
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "0x3d"],"id":2}' 127.0.0.1:1337
+```
+
+其中:
+* `0x3d`为步骤8中获取到的`blockNumber`
+
+返回结果如下:
+
+```
+{"jsonrpc":"2.0","id":2,"result":"0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000006436234c42397f76dee7a50880db28965164cfa245cee22b6524d24a9796f29ee8e21f6c65e5326b89e7b5fc36940c1370aaea804353fdfc02a8915bab08666047109571f510abaaab9efeb932bdc3eedfd3f1a71d1d8f073f4e725f57bbe14d67da22f88800000000000000000000000000000000000000000000000000000000"}
+```
+
+其中:
+* `result`与上步骤中`result`中对比，多了一个共识节点，解析结果多的节点为测试地址*文档暂缺*
+
 ### 配额管理
 
-#### call setGlobalAccountGasLimit function
+#### 测试功能1: call setGlobalAccountGasLimit function
 *(过程中需要调用权限系统合约来获取发交易权限)*
 
 过程及数据构造:
-1. 由具有权限地址0x1a702a25c6bca72b67987968f0bfb3a3213c5688授予具有增删节点管理的地址0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888权限
+1. 由具有权限地址0x1a702a25c6bca72b67987968f0bfb3a3213c5688授予具有增删节点管理的地址0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888发送交易的权限
 
 ```
 python make_tx.py --to "00000000000000000000000000000000013241a4" --code "301da870000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f8880000000000000000000000000000000000000000000000000000000000000001" --privkey "866c936ff332228948bdefc15b1877c88e0effce703ee6de898cffcafe9bbe25"
 ```
+*详见步骤1*
 
 2. python send_tx.py. 结果如下:
 
 ```
 {"jsonrpc":"2.0","id":1,"result":{"hash":"0x19403b61c93731f1c0473b4e22f8fcbd392f6078f360b8b9f44aca870780135d","status":"Ok"}} 
 ```
+
+*详见步骤2*
 
 3. python get_receipt.py. 结果如下:
 
@@ -211,19 +291,25 @@ python make_tx.py --to "00000000000000000000000000000000013241a4" --code "301da8
 }
 ```
 
-4. 由具有设置配额的地址进行设置配额的操作，
+*详见步骤3*
+
+4. 由具有设置配额的地址进行设置配额的操作，测试设置的quota为`0x2b0ce58`
 
 ```
 python make_tx.py --to "00000000000000000000000000000000013241a3" --code "c9bcec770000000000000000000000000000000000000000000000000000000002b0ce58" --privkey "61b760173f6d6b87726a28b93d7fcb4b4f842224921de8fa8e49b983a3388c03"
 ```
 
-5. python send_tx.py. 结果如下:
+*详见步骤1*
+
+5. `python send_tx.py`. 结果如下:
 
 ```
 {"jsonrpc":"2.0","id":1,"result":{"hash":"0xed8ba4616d4486d7dd83cb5fb8a4eb15fe4795b5b57068f56436bf80437aaeb6","status":"Ok"}}
 ```
 
-6. python get_receipt.py. 结果如下:
+*详见步骤2*
+
+6. `python get_receipt.py`. 结果如下:
 
 ```
 {
@@ -258,11 +344,16 @@ python make_tx.py --to "00000000000000000000000000000000013241a3" --code "c9bcec
 }
 ```
 
-7. chain log
+其中:
+* `topics`: 为index的event参数。
+
+7. `chain.log`
 
 ```
 20171012 20:07:24 - TRACE - account_gas_limit: 45141592
 ```
+
+*check the account gas limit: 45141592*
 
 8. eth_call getAccountGasLimit
 
@@ -270,97 +361,35 @@ python make_tx.py --to "00000000000000000000000000000000013241a3" --code "c9bcec
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a3", "data":"0xdae99b3a"}, "0x2b"],"id":2}' 127.0.0.1:1337
 ```
 
-结果:
+*详见步骤0*
+
+结果如下:
 
 ```
 {"jsonrpc":"2.0","id":2,"result":"0x0000000000000000000000000000000000000000000000000000000002b0ce58"}
 ```
 
-9. create a contract to test the quota limit
+`check the result`
 
+9. set tx quota 999999999
 
-```
-python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214" --code "606060405234156100105760006000fd5b610015565b610148806100246000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11461004e5780636d4ce63c1461007257610048565b60006000fd5b341561005a5760006000fd5b610070600480803590602001909190505061009c565b005b341561007e5760006000fd5b61008661010a565b6040518082815260200191505060405180910390f35b60006000620186a09150600090505b818110156100cd578060006000508190909055505b80806001019150506100ab565b7fdf7a95aebff315db1b7716215d602ab537373cdb769232aae6055c06e798425b836040518082815260200191505060405180910390a15b505050565b60006000600050549050610119565b905600a165627a7a72305820dbeea32b7d59673d43cc6915f194839ee2561c032a57d7d46ed8433972fd34a20029"
-```
-
-10. python send_tx.py
-
-```
-{"jsonrpc":"2.0","id":1,"result":{"hash":"0x0007d5271df5764fd413e5e4d855a58872fe1b0c9292662448dbc952a6f2d632","status":"Ok"}}
-```
-
-11. python get_receipt.py
-
-```
-{
-  "contractAddress": "0x73552bc4e960a1d53013b40074569ea05b950b4d",
-  "cumulativeGasUsed": "0x10120",
-  "logs": [],
-  "blockHash": "0xf17b2820366aaab82822d89122d0523263f72793c44e627314b03da898dc548e",
-  "transactionHash": "0x0007d5271df5764fd413e5e4d855a58872fe1b0c9292662448dbc952a6f2d632",
-  "root": null,
-  "errorMessage": null,
-  "blockNumber": "0xc",
-  "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-  "transactionIndex": "0x0",
-  "gasUsed": "0x10120"
-}
-```
-
-13. get contract function hashes
-
-```
-======= test_quota_sol.sol:SimpleStorage =======
-Function signatures: 
-6d4ce63c: get()
-60fe47b1: set(uint256)
-```
-
-14. call the set function, check the quota
-
-```
-python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214" --code "60fe47b10000000000000000000000000000000000000000000000000000000000000001" --to "73552bc4e960a1d53013b40074569ea05b950b4d"
-```
-
-15. python send_tx.py
-
-```
-{"jsonrpc":"2.0","id":1,"result":{"hash":"0x17d7421fab224e3bfcb4dd519aa3249fccf2e97b203e35fc8b3fbd16ba4c9837","status":"Ok"}}
-```
-
-16. python get_receipt.py
-
-```
-{
-  "contractAddress": null,
-  "cumulativeGasUsed": "0x98967f",
-  "logs": [],
-  "blockHash": "0x00d37ebc408a264921fdc6812cc830bde48831ae359ae25f6d4e6ef6cf2258bd",
-  "transactionHash": "0x17d7421fab224e3bfcb4dd519aa3249fccf2e97b203e35fc8b3fbd16ba4c9837",
-  "root": null,
-  "errorMessage": null,
-  "blockNumber": "0x51",
-  "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-  "transactionIndex": "0x0",
-  "gasUsed": "0x98967f"
-}
-```
-
-*** bug: quota耗尽但是没有收到任何错误信息***
-
-17. set tx quota 999999999
+*需要修改make_tx.py中quota值*
 
 ```
 python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214" --code "606060405234156100105760006000fd5b610015565b610148806100246000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11461004e5780636d4ce63c1461007257610048565b60006000fd5b341561005a5760006000fd5b610070600480803590602001909190505061009c565b005b341561007e5760006000fd5b61008661010a565b6040518082815260200191505060405180910390f35b60006000620186a09150600090505b818110156100cd578060006000508190909055505b80806001019150506100ab565b7fdf7a95aebff315db1b7716215d602ab537373cdb769232aae6055c06e798425b836040518082815260200191505060405180910390a15b505050565b60006000600050549050610119565b905600a165627a7a72305820dbeea32b7d59673d43cc6915f194839ee2561c032a57d7d46ed8433972fd34a20029"
 ```
 
-18. python send_tx.py
+*详见步骤1*
+
+10. `python send_tx.py`
 
 ```
 {"jsonrpc":"2.0","id":1,"result":{"hash":"0xfd3899c486542758c618546ff0f24fe60173b25ad64b82632b86da17515312de","status":"Ok"}}
 ```
 
-19. python get_receipt.py
+*详见步骤2*
+
+11. `python get_receipt.py`
 
 ```
 {
@@ -378,10 +407,19 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 }
 ```
 
-### 重复交易
+其中:
+
+* `errorMessage`: check `Account gas limit reached.` 
+
+### 测试发送重复交易
 
 构造相同nonce和valid_until_block，即为相同交易，结果如下:
+
+*修改make_tx.py脚本*
 
 ```
 {"jsonrpc":"2.0","id":1,"error":{"code":6,"message":"TxResponse {hash: 1db3aa32e45986232c182e8d84cd68e1342618f87782236d33745cc102fe5af3, status: \"Dup\" }"}}
 ```
+
+其中:
+* `status`: `Dup`即为重复交易
