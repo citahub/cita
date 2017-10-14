@@ -179,22 +179,19 @@ fn main() {
         let mut new_tx_request_buffer = Vec::new();
         let mut time_stamp = SystemTime::now();
         loop {
-            let res = rx_relay.try_recv();
-            if true == res.is_ok() {
-                let (topic, req): (String, reqlib::Request) = res.unwrap();
-                if topic.as_str() != TOPIC_NEW_TX {
-                    let data: CommMsg = req.into();
-                    tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
-                } else {
-                    new_tx_request_buffer.push(req);
-                    if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_durtation {
-                        batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone());
-                    }
+            if let Ok(res) = rx_relay.recv_timeout(Duration::new(0, config.new_tx_flow_config.buffer_duration)) {
+                let (topic, req): (String, reqlib::Request) = res;
+                forward_service(topic, req, &mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone(), &config);
+            } else {
+                if new_tx_request_buffer.len() > 1 {
+                    batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone());
                 }
-            } else if time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_durtation && new_tx_request_buffer.len() > 1 {
-                batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone());
-            }
 
+                if let Ok(res) = rx_relay.recv() {
+                    let (topic, req): (String, reqlib::Request) = res;
+                    forward_service(topic, req, &mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone(), &config);
+                }
+            }
         }
     });
 
@@ -219,4 +216,17 @@ fn batch_forward_new_tx(new_tx_request_buffer: &mut Vec<reqlib::Request>, time_s
     tx_pub.send((String::from(TOPIC_NEW_TX_BATCH), data.write_to_bytes().unwrap())).unwrap();
     *time_stamp = SystemTime::now();
     new_tx_request_buffer.clear();
+}
+
+fn forward_service(topic: String, req: reqlib::Request, new_tx_request_buffer: &mut Vec<reqlib::Request>, time_stamp: &mut SystemTime, tx_pub: Sender<(String, Vec<u8>)>, config: &config::Config) {
+    if topic.as_str() != TOPIC_NEW_TX {
+        let data: CommMsg = req.into();
+        tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
+    } else {
+        new_tx_request_buffer.push(req);
+        trace!("New tx is pushed and has {} new tx and buffer {} ns", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap().subsec_nanos());
+        if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_duration {
+            batch_forward_new_tx(new_tx_request_buffer, time_stamp, tx_pub.clone());
+        }
+    }
 }

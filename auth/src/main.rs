@@ -212,26 +212,36 @@ fn main() {
     let (pool_txs_sender, pool_txs_recver) = channel();
     let txs_pub = tx_pub.clone();
 
+    let dispatch_origin = Dispatchtx::new(tx_packet_limit, tx_pool_limit, count_per_batch, buffer_duration);
+    let dispatch = Arc::new(Mutex::new(dispatch_origin));
+    let dispatch_clone = dispatch.clone();
+    let txs_pub_clone = txs_pub.clone();
     thread::spawn(move || {
-        let mut dispatch = Dispatchtx::new(tx_packet_limit, tx_pool_limit, count_per_batch, buffer_duration);
-        let mut received_tx = false;
+        let dispatch = dispatch_clone.clone();
         loop {
-            if let Ok(txinfo) = pool_tx_recver.try_recv() {
+            if let Ok(txinfo) = pool_tx_recver.recv_timeout(Duration::new(0, buffer_duration)) {
                 let (modid, reqid, tx_res, tx, _) = txinfo;
-                dispatch.deal_tx(modid, reqid, tx_res, &tx, txs_pub.clone());
-                received_tx = true;
-            }
+                dispatch.lock().deal_tx(modid, reqid, tx_res, &tx, txs_pub.clone());
+            } else {
+                {
+                    dispatch.lock().wait_timeout_process(txs_pub.clone());
+                }
 
-            if let Ok(txsinfo) = pool_txs_recver.try_recv() {
+                if let Ok(txinfo) = pool_tx_recver.recv() {
+                    let (modid, reqid, tx_res, tx, _) = txinfo;
+                    dispatch.lock().deal_tx(modid, reqid, tx_res, &tx, txs_pub.clone());
+                }
+            }
+        }
+    });
+
+    thread::spawn(move || {
+        let dispatch = dispatch.clone();
+        loop {
+            if let Ok(txsinfo) = pool_txs_recver.recv() {
                 let (height, txs, block_gas_limit, account_gas_limit) = txsinfo;
-                dispatch.deal_txs(height, &txs, txs_pub.clone(), block_gas_limit, account_gas_limit);
+                dispatch.lock().deal_txs(height, &txs, txs_pub_clone.clone(), block_gas_limit, account_gas_limit);
             }
-
-            if false == received_tx {
-                dispatch.wait_timeout_process(txs_pub.clone());
-
-            }
-            received_tx = false;
         }
     });
 

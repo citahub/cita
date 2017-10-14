@@ -44,7 +44,7 @@ pub struct Config {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NewTxFlowConfig {
     pub count_per_batch: usize,
-    pub buffer_durtation: u32, //in unit of ns
+    pub buffer_duration: u32, //in unit of ns
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

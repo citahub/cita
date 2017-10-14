@@ -31,7 +31,7 @@ def main():
         encrypt_server=False, tcp_nodelay=False
     )
     
-    new_tx_flow_config = dict(count_per_batch=30, buffer_durtation=30000000)
+    new_tx_flow_config = dict(count_per_batch=30, buffer_duration=30000000)
 
     data = dict()
     data["profile_config"] = profile_config

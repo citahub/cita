@@ -26,7 +26,6 @@ use std::cell::RefCell;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
-use std::time::Duration;
 use std::time::SystemTime;
 use txwal::Txwal;
 use util::H256;
@@ -146,12 +145,10 @@ impl Dispatchtx {
     pub fn wait_timeout_process(&mut self, mq_pub: Sender<(String, Vec<u8>)>) {
         let time_elapsed = self.batch_forward_info.forward_stamp.elapsed().unwrap().subsec_nanos();
         let count_buffered = self.batch_forward_info.new_tx_request_buffer.len();
-        if time_elapsed >= self.batch_forward_info.buffer_duration && self.batch_forward_info.new_tx_request_buffer.len() > 0 {
+        if self.batch_forward_info.new_tx_request_buffer.len() > 0 {
             trace!("wait_timeout_process is going to send new tx batch to peer auth with {} new tx and buffer {} ns", count_buffered, time_elapsed);
             self.batch_forward_tx_to_peer(mq_pub);
-            return;
         }
-        thread::sleep(Duration::new(0, self.batch_forward_info.buffer_duration));
     }
 
     pub fn add_tx_to_pool(&self, tx: &SignedTransaction) -> bool {
@@ -215,6 +212,7 @@ impl Dispatchtx {
     }
 
     fn batch_forward_tx_to_peer(&mut self, mq_pub: Sender<(String, Vec<u8>)>) {
+        trace!("batch_forward_tx_to_peer is going to send {} new tx to peer", self.batch_forward_info.new_tx_request_buffer.len());
         let mut batch_request = BatchRequest::new();
         batch_request.set_new_tx_requests(RepeatedField::from_slice(&self.batch_forward_info.new_tx_request_buffer[..]));
 
