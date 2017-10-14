@@ -318,9 +318,13 @@ impl OpenBlock {
 
     ///execute transactions
     pub fn apply_transactions(&mut self, switch: &Switch) {
+        let mut transactions = Vec::with_capacity(self.body.transactions.len());
         for mut t in self.body.transactions.clone() {
+            // Apply apply_transaction and set account nonce
             self.apply_transaction(&mut t, switch);
+            transactions.push(t);
         }
+        self.body.set_transactions(transactions);
         self.state.commit().expect("commit trie error");
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);

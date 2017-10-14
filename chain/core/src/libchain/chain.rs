@@ -1174,7 +1174,7 @@ mod tests {
         let (data, _) = solc("mortal", source);
         println!("data: {:?}", data);
 
-        let block = create_block(&chain, Address::from(0), &data, (0, 1));
+        let block = create_block(&chain, Address::from(0), &data, (0, 2));
         chain.set_block(block.clone());
 
         let tx = &block.body.transactions[0];
@@ -1186,6 +1186,13 @@ mod tests {
         let code = chain.code_at(&contract_address, BlockId::Latest);
         assert!(code.is_some());
         assert!(code.unwrap().is_some());
+
+        let tx1 = &block.body.transactions[1];
+        let tx1hash = tx1.hash();
+        let receipt1 = chain.localized_receipt(tx1hash).unwrap();
+
+        let contract_address1 = receipt1.contract_address.unwrap();
+        assert!(contract_address != contract_address1);
     }
 
     #[test]

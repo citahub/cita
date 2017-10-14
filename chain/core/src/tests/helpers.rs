@@ -130,10 +130,10 @@ pub fn create_block(chain: &Chain, to: Address, data: &Vec<u8>, nonce: (u32, u32
 
     let mut body = BlockBody::new();
     let mut txs = Vec::new();
-    for i in nonce.0..nonce.1 {
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
+    let keypair = KeyPair::gen_keypair();
+    let privkey = keypair.privkey();
 
+    for i in nonce.0..nonce.1 {
         let mut tx = blockchain::Transaction::new();
         if to == Address::from(0) {
             tx.set_to(String::from(""));
