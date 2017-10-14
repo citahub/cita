@@ -53,20 +53,21 @@ mod tests {
     use tests::helpers::init_chain;
     use util::Address;
 
+
     #[test]
-    #[ignore]
     fn test_node_manager_contract() {
         let chain = init_chain();
         let contract_address = Address::from(0x13241a2);
         let output = chain.call_contract_method(&contract_address, &*LIST_NODE_ENCODED.as_slice());
         let nodes: Vec<Address> = parse_string_to_addresses(&output);
+
         assert_eq!(
             nodes,
             vec![
-                H160::from_str("0a9319205e71569746f78a4813a9e8932a5c9635").unwrap(),
-                H160::from_str("7453fcded9899b348754387f6d5a6b42c29ddef6").unwrap(),
-                H160::from_str("5d9e79ab8bd459824dfc14f448b4b50acf84740c").unwrap(),
-                H160::from_str("adb9c4ff8be622fe4035aff918d995320441ba9a").unwrap(),
+                H160::from_str("b3be80767bf8fae05ec3c52352c78591fb32fb33").unwrap(),
+                H160::from_str("99412aeaa8ec63a836b7db7363dfdc2cedb23759").unwrap(),
+                H160::from_str("4a0f3167c431aebff783652ae87778f5a38d25ee").unwrap(),
+                H160::from_str("ae8186524072bf873da07c71e4194e37d6bfa736").unwrap(),
             ]
         )
     }

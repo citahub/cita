@@ -765,12 +765,14 @@ mod tests {
         tx.set_nonce(nonce.clone());
         let block_limit = 100;
         tx.set_valid_until_block(block_limit);
-        tx.set_quota(184467440737095);
-        tx.set_data("60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
+        tx.set_quota(1844673);
+        tx.set_data("6060604052341561000f57600080fd5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a1610175806100926000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100485780636d4ce63c1461006b57600080fd5b341561005357600080fd5b6100696004808035906020019091905050610094565b005b341561007657600080fd5b61007e610140565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a150565b600080549050905600a165627a7a723058208777d774164b22030e359c5220ad3599f2a294b4a0ae14b78c4f6a3246525c180029"
                         .from_hex()
                         .unwrap());
 
         // 2) stx = (from, content(code, nonce, signature))
+        // TODO: Should get or generate private key that have send transation permission.
+        //       Should work both for ed25519 and secp256k1.
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         let stx = tx.sign(*privkey);
@@ -791,9 +793,10 @@ mod tests {
             account_gas_limit: 1844674.into(),
         };
         let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(1));
+        println!("contract_address {:?}", contract_address);
         let switch = Switch::new();
         let result = state.apply(&info, &mut signed, true, &switch).unwrap();
-        println!("{:?}", state.code(&contract_address).unwrap().unwrap());
+        println!("{:?}", state.code(&contract_address).expect("result should unwrap.").expect("option should unwrap"));
         println!("{:?}", result.trace);
         assert_eq!(state.code(&contract_address).unwrap().unwrap(),
                    Arc::new("60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
