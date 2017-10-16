@@ -273,7 +273,7 @@ impl Chain {
             accountdb: Default::default(),
         };
 
-        let journal_db = journaldb::new(db.clone(), Default::default(), COL_STATE);
+        let journal_db = journaldb::new(db.clone(), journaldb::Algorithm::Archive, COL_STATE);
         let state_db = StateDB::new(journal_db);
         let blooms_config = bc::Config {
             levels: LOG_BLOOMS_LEVELS,
