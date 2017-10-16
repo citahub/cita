@@ -3,7 +3,7 @@ version: '2'
 services:
   admin:
     container_name: admin
-    image: cryptape/cita
+    image: cryptape/play
     hostname: admin
     # environment:
     volumes:
@@ -16,7 +16,7 @@ services:
 
   node0:
     container_name: node0    
-    image: cryptape/cita
+    image: cryptape/play
     hostname: node0
     # environment:
     volumes:
@@ -32,7 +32,7 @@ services:
 
   node1:
     container_name: node1
-    image: cryptape/cita
+    image: cryptape/play
     hostname: node1
     # environment:
     volumes:
@@ -48,7 +48,7 @@ services:
 
   node2:
     container_name: node2
-    image: cryptape/cita
+    image: cryptape/play
     hostname: node2
     # environment:
     volumes:
@@ -64,7 +64,7 @@ services:
 
   node3:
     container_name: node3
-    image: cryptape/cita
+    image: cryptape/play
     hostname: node3
     # environment:
     volumes:
@@ -80,7 +80,7 @@ services:
 
   test:
     container_name: test
-    image: cryptape/cita
+    image: cryptape/play
     hostname: test
     # environment:
     volumes:

@@ -32,7 +32,7 @@ echo "DONE"
 
 ################################################################################
 echo -n "4) check height growth normal  ...  "
-timeout=$(check_height_growth_normal 0 8)||(echo "FAILED"
+timeout=$(check_height_growth_normal 0 20)||(echo "FAILED"
                                             echo "check_height_growth_normal: ${timeout}"
                                             exit 1)
 echo "${timeout}s DONE"
@@ -48,18 +48,16 @@ echo "DONE"
 ################################################################################
 echo "6) send transactions continually in the background"
 while [ 1 ] ; do
-    ${BINARY_DIR}/bin/trans_evm --config ${SOURCE_DIR}/tests/wrk_benchmark_test/config_call.json 2>&1 |grep "sucess" > /dev/null
-    if [ $? -ne 0 ] ; then
-        exit 1
-    fi
+    ${BINARY_DIR}/bin/trans_evm --config ${SOURCE_DIR}/tests/wrk_benchmark_test/config_call.json 2>&1 >/dev/null
+    sleep 1
 done &
-send_tx_pid=$!
+echo $! > /tmp/cita_basic-trans_evm.pid
 
 
 ################################################################################
 echo -n "7) stop node3, check height growth  ...  "
 bin/cita stop node3
-timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
+timeout=$(check_height_growth_normal 0 30) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
                                                exit 1)
 echo "${timeout}s DONE"
@@ -75,7 +73,7 @@ echo "${timeout}s DONE"
 ################################################################################
 echo -n "9) start node2, check height growth  ...  "
 bin/cita start node2
-timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
+timeout=$(check_height_growth_normal 0 30) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
                                                exit 1)
 echo "${timeout}s DONE"
@@ -104,18 +102,16 @@ fi
 for i in {0..3}; do
     bin/cita stop node$i
 done
-sleep 3
+# sleep 1 # TODO: change to this value will produce very different result
 for i in {0..3}; do
     bin/cita start node$i
 done
+
 timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
                                                exit 1)
-after_height=$(get_height 0)
-if [ $? -ne 0 ] ; then
-    echo "failed to get_height: ${after_height}"
-    exit 1
-fi
+after_height=$(get_height 0)|| (echo "failed to get_height: ${after_height}"
+                                exit 1)
 if [ $after_height -le $before_height ]; then
     echo "FAILED"
     echo "before:${before_height} after:${after_height}"
@@ -134,12 +130,6 @@ timeout=$(check_height_sync 3 0) || (echo "FAILED"
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "13 check transaction procedure still alive ... "
-ps|grep ${send_tx_pid} > /dev/null ||(echo "FAILED"
-                                      exit 1)
-echo "DONE"
-
-################################################################################
-echo -n "14) cleanup ... "
+echo -n "13) cleanup ... "
 cleanup
 echo "DONE"

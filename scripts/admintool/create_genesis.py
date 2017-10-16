@@ -85,7 +85,7 @@ def main():
     print "init data", init_data
     alloc = init_contracts(init_data)
     data['alloc'] = alloc
-    dump_path = os.path.join(path.dirname(__file__), "genesis.json")
+    dump_path =  "genesis.json"
     with open(dump_path, "w") as f:
         json.dump(data, f, indent=4)
 

@@ -17,7 +17,7 @@ echo "DONE"
 
 ################################################################################
 echo -n "2) generate config  ...  "
-./bin/admintool.sh > /dev/null 2>&1
+./bin/admintool.sh > /dev/null
 echo "DONE"
 
 ################################################################################
@@ -33,8 +33,8 @@ echo "DONE"
 ################################################################################
 echo -n "4) check alive  ...  "
 timeout=$(check_height_growth_normal 0 8) || (echo "FAILED"
-                                 echo "failed to check_height_growth 0: ${timeout}"
-                                 exit 1)
+                                              echo "failed to check_height_growth 0: ${timeout}"
+                                              exit 1)
 echo "${timeout}s DONE"
 
 ################################################################################
@@ -64,13 +64,13 @@ for i in {0..3}; do
     port=$((4000+${id}))
     set_delay_at_port ${port} ${delay}
     timeout1=$(check_height_growth_normal ${refer} 8) ||(echo "FAILED"
-                                           echo "failed to check_height_growth: ${timeout}"
-                                           exit 1)
+                                                         echo "failed to check_height_growth: ${timeout}"
+                                                         exit 1)
     unset_delay_at_port ${port}
     #synch for node ${id}
     timeout=$(check_height_sync ${id} ${refer}) ||(echo "FAILED"
-                                               echo "failed to check_height_growth: ${timeout}"
-                                               exit 1)
+                                                   echo "failed to check_height_sync: ${timeout}"
+                                                   exit 1)
     echo "${timeout1}s DONE"
 done
 
@@ -86,21 +86,21 @@ for i in {0..3}; do
     set_delay_at_port $((4000+${id2})) ${delay}
 
     timeout1=$(check_height_growth_normal ${refer} 30) ||(echo "FAILED"
-                                           echo "failed to check_height_growth ${refer}: ${timeout}"
-                                           exit 1)
+                                                          echo "failed to check_height_growth ${refer}: ${timeout}"
+                                                          exit 1)
     unset_delay_at_port $((4000+${id1}))
     unset_delay_at_port $((4000+${id2}))
     sleep 3
     timeout=$(check_height_growth_normal ${refer} 8) ||(echo "FAILED"
-                                           echo "failed to check_height_growth ${refer}: ${timeout}"
-                                           exit 1)
+                                                        echo "failed to check_height_growth ${refer}: ${timeout}"
+                                                        exit 1)
     #synch for node id1, id2
     timeout=$(check_height_sync ${id1} ${refer}) ||(echo "FAILED"
-                                                echo "failed to check_height_sync ${id1}: ${timeout}"
-                                                exit 1)
+                                                    echo "failed to check_height_sync ${id1}: ${timeout}"
+                                                    exit 1)
     timeout=$(check_height_sync ${id2} ${refer}) ||(echo "FAILED"
-                                                echo "failed to check_height_sync ${id2}: ${timeout}"
-                                                exit 1)
+                                                    echo "failed to check_height_sync ${id2}: ${timeout}"
+                                                    exit 1)
     echo "${timeout1}s DONE"
 done
 
@@ -110,15 +110,15 @@ echo "9) set delay at all nodes, output time used for produce block"
 for i in {0..6}; do
     delay=$((i*400))
     timeout=$(check_height_growth_normal 0 60) ||(echo "FAILED"
-                                    echo "failed to check_height_growth: ${timeout}"
-                                    exit 1)
+                                                  echo "failed to check_height_growth: ${timeout}"
+                                                  exit 1)
     echo -n "set delay=${delay} ... "
     for node in {0..3} ; do
         set_delay_at_port $((4000+${node})) ${delay}
     done
     timeout=$(check_height_growth_normal 0 60) ||(echo "FAILED"
-                                    echo "failed to check_height_growth: ${timeout}"
-                                    exit 1)
+                                                  echo "failed to check_height_growth: ${timeout}"
+                                                  exit 1)
     for node in {0..3} ; do
         unset_delay_at_port $((4000+${node}))
     done

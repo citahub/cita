@@ -1,10 +1,15 @@
 #!/bin/bash
 set -e
 
-if [ "$(whoami)" = "root" ]; then
-    alias sudo='bash'
-fi
-
+sudo(){
+    set -o noglob
+    if [ "$(whoami)" == "root" ] ; then
+        $*
+    else
+        /usr/bin/sudo $*
+    fi
+    set +o noglob
+}
 # 1) install add-apt-repository
 sudo apt-get update -q
 sudo apt-get install -y software-properties-common
@@ -19,7 +24,7 @@ sudo add-apt-repository -y ppa:ethereum/ethereum
 
 # 3) install runtime dependencies
 sudo apt-get update -q
-sudo apt-get install -y libstdc++6 rabbitmq-server libssl-dev libgoogle-perftools4 python-pip wget
+sudo apt-get install -y libstdc++6 rabbitmq-server libssl-dev libgoogle-perftools4 python-pip wget solc libsodium*
 
 # 4) install python package
 sudo pip install --user ethereum==2.0.4 pysodium

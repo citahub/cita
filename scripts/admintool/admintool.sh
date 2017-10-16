@@ -43,13 +43,9 @@ display_help()
     echo
     exit 0
 }
-
-PROJECT_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
-if [ -z ${PROJECT_DIR} ] ; then
-    echo "failed to locate project directory"
-fi
-cd ${PROJECT_DIR}
-export PATH=${PATH}:${PROJECT_DIR}/bin
+CONFIG_DIR=${PWD}
+BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
+export PATH=${PATH}:${BINARY_DIR}/bin
 
 # parse options
 while getopts 'a:l:n:m:d:tb:f:c:h:w:P:' OPT; do
@@ -125,65 +121,57 @@ if [ ! -n "$TX_POOL_SIZE" ]; then
     TX_POOL_SIZE=0
 fi
 
-
-DATA_PATH=${PROJECT_DIR}
-INIT_DATA_PATH=${PROJECT_DIR}/scripts/admintool
-cd ${INIT_DATA_PATH}
-if [ ! -f "$DATA_PATH" ]; then
-    mkdir -p $DATA_PATH
-fi
-
-if [ -f "$DATA_PATH/authorities" ]; then
-    rm $DATA_PATH/authorities
+if [ -f "${CONFIG_DIR}/authorities" ]; then
+    rm ${CONFIG_DIR}/authorities
 fi
 
 if [ -f "genesis.json" ]; then
     rm genesis.json
 fi
 
-if [ ! -e "$INIT_DATA_PATH/init_data.json" ]; then
-    cp $INIT_DATA_PATH/init_data_example.json $DATA_PATH/init_data.json
+if [ ! -e "${BINARY_DIR}/scripts/admintool/init_data.json" ]; then
+    cp ${BINARY_DIR}/scripts/admintool/init_data_example.json ${CONFIG_DIR}/init_data.json
 else
-    cp $INIT_DATA_PATH/init_data.json $DATA_PATH/init_data.json
+    cp ${BINARY_DIR}/scripts/admintool/init_data.json ${CONFIG_DIR}/init_data.json
 fi
 
-if [ ! -e "$INIT_DATA_PATH/chain.json" ]; then
-    cp $INIT_DATA_PATH/chain_check_example.json $INIT_DATA_PATH/chain.json
+if [ ! -e "${CONFIG_DIR}/chain.json" ]; then
+    cp ${BINARY_DIR}/scripts/admintool/chain_check_example.json ${CONFIG_DIR}/chain.json
 fi
 
 echo "Step 1: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
 do
-    mkdir -p $DATA_PATH/node$ID
-    echo "Start generating private Key for Node" $ID "!"
-    python create_keys_addr.py $DATA_PATH $ID create_key_addr
-    echo "[PrivateKey Path] : " $DATA_PATH/node$ID
-    echo "End generating private Key for Node" $ID "!"
-    echo "Start creating Network Node" $ID "Configuration!"
-    python create_network_config.py $DATA_PATH $ID $SIZE $IP_LIST
-    echo "End creating Network Node" $ID "Configuration!"
+    mkdir -p ${CONFIG_DIR}/node${ID}
+    echo "Start generating private Key for Node" ${ID} "!"
+    python ${BINARY_DIR}/scripts/admintool/create_keys_addr.py ${CONFIG_DIR} ${ID} create_key_addr
+    echo "[PrivateKey Path] : " ${CONFIG_DIR}/node${ID}
+    echo "End generating private Key for Node" ${ID} "!"
+    echo "Start creating Network Node" ${ID} "Configuration!"
+    python ${BINARY_DIR}/scripts/admintool/create_network_config.py ${CONFIG_DIR} ${ID} $SIZE $IP_LIST
+    echo "End creating Network Node" ${ID} "Configuration!"
     echo "########################################################"
 done
 echo "Step 2: ********************************************************"
 
-python create_genesis.py --authorities "$DATA_PATH/authorities" --init_data "$DATA_PATH/init_data.json"
+python ${BINARY_DIR}/scripts/admintool/create_genesis.py --authorities "${CONFIG_DIR}/authorities" --init_data "${CONFIG_DIR}/init_data.json"
 for ((ID=0;ID<$SIZE;ID++))
 do
-    echo "Start creating Node " $ID " Configuration!"
-    python create_node_config.py $DATA_PATH $CONSENSUS_NAME $ID $DURATION $IS_TEST $BLOCK_TX_LIMIT $TX_FILTER_SIZE $TX_POOL_SIZE
-    echo "End creating Node " $ID "Configuration!"
-    cp genesis.json $DATA_PATH/node$ID/genesis.json
-    cp chain.json $DATA_PATH/node$ID/chain.json
+    echo "Start creating Node " ${ID} " Configuration!"
+    python ${BINARY_DIR}/scripts/admintool/create_node_config.py ${CONFIG_DIR} $CONSENSUS_NAME ${ID} $DURATION $IS_TEST $BLOCK_TX_LIMIT $TX_FILTER_SIZE $TX_POOL_SIZE
+    echo "End creating Node " ${ID} "Configuration!"
+    cp genesis.json ${CONFIG_DIR}/node${ID}/genesis.json
+    cp chain.json ${CONFIG_DIR}/node${ID}/chain.json
 done
 
 echo "Step 3: ********************************************************"
-sed -i "s/tendermint/$CONSENSUS_NAME/g" $DATA_PATH/bin/cita
+sed -i "s/tendermint/$CONSENSUS_NAME/g" ${BINARY_DIR}/bin/cita
 for ((ID=0;ID<$SIZE;ID++))
 do
-    rm -f $DATA_PATH/node$ID/.env
-    echo "KAFKA_URL=localhost:9092"                      >> $DATA_PATH/node$ID/.env
-    echo "AMQP_URL=amqp://guest:guest@localhost/node$ID" >> $DATA_PATH/node$ID/.env
-    echo "DATA_PATH=./data"                              >> $DATA_PATH/node$ID/.env
+    rm -f ${CONFIG_DIR}/node${ID}/.env
+    echo "KAFKA_URL=localhost:9092"                         >> ${CONFIG_DIR}/node${ID}/.env
+    echo "AMQP_URL=amqp://guest:guest@localhost/node${ID}"  >> ${CONFIG_DIR}/node${ID}/.env
+    echo "DATA_PATH=./data"                                 >> ${CONFIG_DIR}/node${ID}/.env
 done
 
 
@@ -221,22 +209,25 @@ fi
 
 for ((ID=0;ID<$SIZE;ID++))
 do
-    mkdir -p $DATA_PATH/node$ID
+    mkdir -p ${CONFIG_DIR}/node${ID}
     if [ -n "$DEV_MOD" ]; then
-        ((H_PORT=$HTTP_PORT+$ID))
-        ((W_PORT=$WS_PORT+$ID))
+        ((H_PORT=$HTTP_PORT+${ID}))
+        ((W_PORT=$WS_PORT+${ID}))
     else
         H_PORT=$HTTP_PORT
         W_PORT=$WS_PORT
     fi
-    echo "Start generating JsonRpc Configuration Node" $ID "!"
-    python create_jsonrpc_config.py $HTTP_ENABLE $H_PORT $WS_ENABLE $W_PORT $DATA_PATH
-    echo "[JsonRpc Configuration Path] : " $DATA_PATH/node$ID
-    echo "JsonRpc Configuration for Node" $ID "!"
-    cp $DATA_PATH/jsonrpc.json $DATA_PATH/node$ID/
+    echo "Start generating JsonRpc Configuration Node" ${ID} "!"
+    python ${BINARY_DIR}/scripts/admintool/create_jsonrpc_config.py $HTTP_ENABLE $H_PORT $WS_ENABLE $W_PORT ${CONFIG_DIR}
+    echo "[JsonRpc Configuration Path] : " ${CONFIG_DIR}/node${ID}
+    echo "JsonRpc Configuration for Node" ${ID} "!"
+    cp ${CONFIG_DIR}/jsonrpc.json ${CONFIG_DIR}/node${ID}/
 
     echo "########################################################"
 done
+
+# clean temp files
+rm -f ${CONFIG_DIR}/*.json ${CONFIG_DIR}/authorities
 
 echo "********************************************************"
 echo "WARN: remember then delete all privkey files!!!"

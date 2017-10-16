@@ -6,8 +6,8 @@ SOURCE_DIR=$(readlink -f $(dirname $(readlink -f $0))/..)
 cd  ${SOURCE_DIR}
 source ~/.cargo/env
 
-
-
+sed -i 's/\["secp256k1"\]/\["sm2"\]/g' share_libs/crypto/Cargo.toml
+sed -i 's/\["sha3hash"\]/\["sm3hash"\]/g' share_libs/util/Cargo.toml
 
 echo "################################################################################"
 echo "1) setup"
@@ -42,3 +42,6 @@ now=$(date --iso-8601=minutes)
 mkdir -p ${SOURCE_DIR}/../${now}_${BASHPID}
 cp -rf ${SOURCE_DIR}/target/install  ${SOURCE_DIR}/../${now}_${BASHPID}/
 cp -rf ${SOURCE_DIR}/target/*.log  ${SOURCE_DIR}/../${now}_${BASHPID}/
+
+sed -i 's/\["sm2"\]/\["secp256k1"\]/g' share_libs/crypto/Cargo.toml
+sed -i 's/\["sm3hash"\]/\["sha3hash"\]/g' share_libs/util/Cargo.toml

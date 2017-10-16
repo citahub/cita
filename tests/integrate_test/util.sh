@@ -1,15 +1,31 @@
-if [ "$(whoami)" = "root" ] ; then
-    alias sudo='bash'
-fi
+
+sudo(){
+    set -o noglob
+    if [ "$(whoami)" == "root" ] ; then
+        $*
+    else
+        /usr/bin/sudo $*
+    fi
+    set +o noglob
+}
 
 # 失败后不需要清理,保留现场;成功后清理现场.
 cleanup() {
-    for i in jsonrpc auth chain network consensus_tendermint trans_evm; do
-        pkill $i||true
+    for pid in jsonrpc auth chain network consensus_tendermint trans_evm ; do
+        ps ax |grep ${pid}|awk '{print $1}' |xargs -n 1  kill -9 ||true
     done
+
     rm -rf ${BINARY_DIR}/node*
     rm -rf ${BINARY_DIR}/*.json
     sudo tc qdisc del dev lo root> /dev/null 2>&1||true
+
+    pid_file=/tmp/cita_basic-trans_evm.pid
+    if [ -e ${pid_file} ] ; then
+        for pid in $(cat ${pid_file}) ; do
+            kill -9 ${pid}  2>&1 || true
+        done
+    fi
+    ps ax
 }
 
 get_height(){
@@ -29,12 +45,13 @@ get_height(){
         fi
 
         now=$(date +%s)
-        if [ $((now-start)) -gt ${timeout} ] ; then
-            echo "timeout: ${timeout}s"
+        if [ $((now-start-timeout)) -gt 0 ] ; then
+            echo "timeout: ${timeout}"
             return 1
         fi
         sleep 1
     done
+    return 1
 }
 
 # output information about time used if exit 0
@@ -46,45 +63,54 @@ check_height_growth () {
     id=$1
     timeout=60                  # seconds
     old=$(get_height ${id})
-    if [ $? -ne 0 ] ; then
-        echo "failed to get_height: ${old}"
+    if [[ $? -ne 0 ]]; then
+        echo "failed to get_height(old): ${old}"
         return 1
     fi
-
     start=$(date +%s)
     while [ 1 ] ; do
         new=$(get_height ${id})
-        if [ $? -ne 0 ] ; then
-            echo "failed to get_height: ${new}"
+        if [[ $? -ne 0 ]] ; then
+            echo "failed to get_height(new): ${new}"
             return 1
         fi
+
         now=$(date +%s)
         if [ ${new} -gt ${old} ]; then
             echo "$((now-start))"
             return 0
         fi
         if [ $((now-start)) -gt ${timeout} ] ; then
-            echo "timeout: $((now-start))s"
-            return 1
+            echo "timeout: $((now-start))"
+            return 20
         fi
         sleep 1
     done
+    return 1
 }
 
 check_height_growth_normal () {
+    if [ $# -ne 2 ] ; then
+        echo "usage: $0 id timeout"
+        return 1
+    fi
+
     id=$1
     timeout=$2
     start=$(date +%s)
     for i in {0..1}; do
-        msg=$(check_height_growth ${id}) || (echo "failed to check_height_growth 0: ${msg}"
-                                             return 1)
-        if [ ${msg} -lt ${timeout} ] ; then
+        msg=$(check_height_growth ${id})
+        if [ $? -ne 0 ] ; then
+            echo "failed to check_height_growth ${id}: ${msg}"
+            return 1
+        fi
+        if [[ ${msg} -lt ${timeout} ]]; then
             now=$(date +%s)
             echo "$((now-start))"
             return 0
         fi
     done
-    echo "block height growth time(${msg}s) > timeout(${timeout}s)"
+    echo "block height growth time(${msg}) > timeout(${timeout})"
     return 1
 }
 
@@ -99,7 +125,7 @@ check_height_sync () {
     timeout=60                  # seconds
     refer_height=$(get_height ${refer})
     if [ $? -ne 0 ] ; then
-        echo "failed to get_height: ${refer_height}"
+        echo "failed to get_height(refer): ${refer_height}"
         return 1
     fi
     start=$(date +%s)
@@ -107,7 +133,7 @@ check_height_sync () {
     while [ 1 ] ; do
         height=$(get_height ${id})
         if [ $? -ne 0 ] ; then
-            echo "failed to get_height: ${height}"
+            echo "failed to get_height(sync): ${height}"
             return 1
         fi
         now=$(date +%s)
@@ -127,14 +153,14 @@ check_height_sync () {
 
 check_height_stopped () {
     if [ $# -ne 2 ] ; then
-        echo "usage: $0 node_id"
+        echo "usage: $0 node_id timeout"
         return 1
     fi
     id=$1
     timeout=$2
     old=$(get_height ${id})
     if [ $? -ne 0 ] ; then
-        echo "failed to get_height: ${old}"
+        echo "failed to get_height(old): ${old}"
         return 1
     fi
 
@@ -147,7 +173,7 @@ check_height_stopped () {
         fi
         new=$(get_height ${id})
         if [ $? -ne 0 ] ; then
-            echo "failed to get_height: ${new}"
+            echo "failed to get_height(new): ${new}"
             return 1
         fi
         if [ $new -ne $old ]; then
@@ -156,6 +182,7 @@ check_height_stopped () {
         fi
         sleep 1
     done
+    return 1
 }
 
 set_delay_at_port() {

@@ -1,9 +1,15 @@
 #!/bin/bash
 set -e
 
-if [ "$(whoami)" = "root" ]; then
-    alias sudo='bash'
-fi
+sudo(){
+    set -o noglob
+    if [ "$(whoami)" == "root" ] ; then
+        $*
+    else
+        /usr/bin/sudo $*
+    fi
+    set +o noglob
+}
 
 # 1) install add-apt-repository
 sudo apt-get update -q
@@ -19,7 +25,7 @@ sudo add-apt-repository -y ppa:ethereum/ethereum
 
 # 3) install develop dependencies
 sudo apt-get update -q
-sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip solc curl jq  google-perftools capnproto wget\
+sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip solc curl jq  google-perftools capnproto wget git \
      libsnappy-dev  libgoogle-perftools-dev   libsodium* libzmq3-dev \
      libssl-dev libgoogle-perftools-dev
 

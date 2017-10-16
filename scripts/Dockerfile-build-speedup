@@ -1,0 +1,4 @@
+FROM cryptape/cita-build
+
+COPY speedup.sh /tmp
+RUN /tmp/speedup.sh
