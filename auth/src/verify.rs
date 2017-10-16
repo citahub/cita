@@ -121,11 +121,15 @@ impl Verifier {
     }
 
     pub fn verify_valid_until_block(&self, valid_until_block: u64) -> bool {
+        let mut result = false;
         if let Some(height) = self.height_latest {
-            valid_until_block > height && valid_until_block <= (height + BLOCKLIMIT)
-        } else {
-            false
+            result = valid_until_block > height && valid_until_block <= (height + BLOCKLIMIT);
+            if false == result {
+                warn!("The new tx is out of time valid_until_block: {:?}, height: {:?}, BLOCKLIMIT: {:?}", valid_until_block, height, BLOCKLIMIT);
+            }
+
         }
+        result
     }
 }
 

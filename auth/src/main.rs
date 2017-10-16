@@ -144,7 +144,7 @@ fn main() {
                                       sub_module: sub_module,
                                   };
                                   if VerifyType::BlockVerify == verify_type && VerifyResult::VerifyFailed == block_cache_clone.read().get(&block_verify_id).unwrap().block_verify_result {
-                                      info!("skip the tx verification due to failed already for block id:{:?} ", block_verify_id);
+                                      trace!("skip the tx verification due to failed already for block id:{:?} ", block_verify_id);
                                       continue;
                                   }
                                   let verify_req_info = VerifyReqInfo {
@@ -152,7 +152,7 @@ fn main() {
                                       info: (verify_type, request_id, sub_module, now, origin),
                                   };
                                   if true == check_verify_request_preprocess(verify_req_info.clone(), verifier_clone.clone(), cache_clone.clone(), resp_sender.clone()) {
-                                      info!("check_verify_request_preprocess is true, and {} reqs have been pushed into req_grp", req_grp.len());
+                                      trace!("check_verify_request_preprocess is true, and {} reqs have been pushed into req_grp", req_grp.len());
                                       continue;
                                   }
 
@@ -218,19 +218,18 @@ fn main() {
     let txs_pub_clone = txs_pub.clone();
     thread::spawn(move || {
         let dispatch = dispatch_clone.clone();
+        let mut flag = false;
         loop {
-            if let Ok(txinfo) = pool_tx_recver.recv_timeout(Duration::new(0, buffer_duration)) {
+            if let Ok(txinfo) = pool_tx_recver.try_recv() {
                 let (modid, reqid, tx_res, tx, _) = txinfo;
                 dispatch.lock().deal_tx(modid, reqid, tx_res, &tx, txs_pub.clone());
+                flag = true;
             } else {
-                {
+                if true == flag {
                     dispatch.lock().wait_timeout_process(txs_pub.clone());
+                    flag = false;
                 }
-
-                if let Ok(txinfo) = pool_tx_recver.recv() {
-                    let (modid, reqid, tx_res, tx, _) = txinfo;
-                    dispatch.lock().deal_tx(modid, reqid, tx_res, &tx, txs_pub.clone());
-                }
+                thread::sleep(Duration::new(0, buffer_duration));
             }
         }
     });
@@ -249,13 +248,21 @@ fn main() {
     let block_cache_clone_111 = block_cache.clone();
     let batch_new_tx_pool_clone = batch_new_tx_pool.clone();
     thread::spawn(move || loop {
-                      let (_key, msg) = rx_sub.recv().unwrap();
-                      let verifier = verifier.clone();
-                      let block_cache_clone_222 = block_cache_clone_111.clone();
-                      let block_req_sender = block_req_sender.clone();
-                      let single_req_sender = single_req_sender.clone();
-                      let tx_pub_clone = tx_pub_clone.clone();
-                      handle_remote_msg(msg, verifier.clone(), block_req_sender, single_req_sender, tx_pub_clone, block_cache_clone_222, cache.clone(), batch_new_tx_pool_clone.clone(), pool_txs_sender.clone());
+                      match rx_sub.recv() {
+                          Ok((_key, msg)) => {
+
+                              let verifier = verifier.clone();
+                              let block_cache_clone_222 = block_cache_clone_111.clone();
+                              let block_req_sender = block_req_sender.clone();
+                              let single_req_sender = single_req_sender.clone();
+                              let tx_pub_clone = tx_pub_clone.clone();
+                              handle_remote_msg(msg, verifier.clone(), block_req_sender, single_req_sender, tx_pub_clone, block_cache_clone_222, cache.clone(), batch_new_tx_pool_clone.clone(), pool_txs_sender.clone());
+                          }
+                          Err(err_info) => {
+                              error!("Failed to receive message from rx_sub due to {:?}", err_info);
+                          }
+                      }
+
                   });
 
     loop {

@@ -179,18 +179,14 @@ fn main() {
         let mut new_tx_request_buffer = Vec::new();
         let mut time_stamp = SystemTime::now();
         loop {
-            if let Ok(res) = rx_relay.recv_timeout(Duration::new(0, config.new_tx_flow_config.buffer_duration)) {
+            if let Ok(res) = rx_relay.try_recv() {
                 let (topic, req): (String, reqlib::Request) = res;
                 forward_service(topic, req, &mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone(), &config);
             } else {
                 if new_tx_request_buffer.len() > 1 {
                     batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone());
                 }
-
-                if let Ok(res) = rx_relay.recv() {
-                    let (topic, req): (String, reqlib::Request) = res;
-                    forward_service(topic, req, &mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone(), &config);
-                }
+                thread::sleep(Duration::new(0, config.new_tx_flow_config.buffer_duration));
             }
         }
     });

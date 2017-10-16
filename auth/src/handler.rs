@@ -156,7 +156,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                     }
                 }
                 if flag {
-                    info!("BLOCKTXHASHES come height {}, tx_hashs {:?}", height, tx_hashes_in_h256_vec.len());
+                    info!("BLOCKTXHASHES come height {}, tx_hashes count is: {:?}", height, tx_hashes_in_h256_vec.len());
                     let block_gas_limit = block_tx_hashes.get_block_gas_limit();
                     let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
                     info!("Auth rich status block gas limit: {:?}, account gas limit {:?}", block_gas_limit, account_gas_limit);
@@ -224,89 +224,98 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
 }
 
 pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>, tx_pub: &Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, tx_sender: Sender<(u32, Vec<u8>, TxResponse, SignedTransaction, Origin)>) {
-    let (verify_type, id, resp, sub_module, now, origin) = result_receiver.recv().unwrap();
-    match verify_type {
-        VerifyType::SingleVerify => {
-            trace!("SingleVerify Time cost {} ns for tx hash: {:?}", now.elapsed().unwrap().subsec_nanos(), resp.get_tx_hash());
+    match result_receiver.recv() {
+        Ok((verify_type, id, resp, sub_module, now, origin)) => {
+            match verify_type {
+                VerifyType::SingleVerify => {
+                    trace!("SingleVerify Time cost {} ns for tx hash: {:?}", now.elapsed().unwrap().subsec_nanos(), resp.get_tx_hash());
 
-            let tx_hash: H256 = resp.get_tx_hash().into();
-            let unverified_tx = {
-                let mut txs = batch_new_tx_pool.lock();
-                txs.remove(&tx_hash)
-            };
-            trace!("receive verify resp, hash: {:?}, ret: {:?}", tx_hash, resp.get_ret());
+                    let tx_hash: H256 = resp.get_tx_hash().into();
+                    let unverified_tx = {
+                        let mut txs = batch_new_tx_pool.lock();
+                        txs.remove(&tx_hash)
+                    };
+                    trace!("receive verify resp, hash: {:?}, ret: {:?}", tx_hash, resp.get_ret());
 
-            unverified_tx.map(|(sub_module_id, mut req)| {
+                    unverified_tx.map(|(sub_module_id, mut req)| {
 
-                let request_id = req.get_request_id().to_vec();
-                let result = format!("{:?}", resp.get_ret());
-                match resp.get_ret() {
-                    Ret::Ok => {
-                        let mut signed_tx = SignedTransaction::new();
-                        signed_tx.set_transaction_with_sig(req.take_un_tx());
-                        signed_tx.set_signer(resp.get_signer().to_vec());
-                        signed_tx.set_tx_hash(tx_hash.to_vec());
-                        //add to the newtx pool and broadcast to other nodes if not received from network
-                        //.....................
-                        //.....................
-                        let tx_response = TxResponse::new(tx_hash, result.clone());
-                        let _ = tx_sender.send((sub_module_id, request_id.clone(), tx_response, signed_tx.clone(), origin)).unwrap();
-                        trace!("Send singed tx to txpool");
-                    }
-                    _ => {
-                        if sub_module_id == submodules::JSON_RPC {
-                            let tx_response = TxResponse::new(tx_hash, result);
+                        let request_id = req.get_request_id().to_vec();
+                        let result = format!("{:?}", resp.get_ret());
+                        match resp.get_ret() {
+                            Ret::Ok => {
+                                let mut signed_tx = SignedTransaction::new();
+                                signed_tx.set_transaction_with_sig(req.take_un_tx());
+                                signed_tx.set_signer(resp.get_signer().to_vec());
+                                signed_tx.set_tx_hash(tx_hash.to_vec());
+                                //add to the newtx pool and broadcast to other nodes if not received from network
+                                //.....................
+                                //.....................
+                                let tx_response = TxResponse::new(tx_hash, result.clone());
+                                let _ = tx_sender.send((sub_module_id, request_id.clone(), tx_response, signed_tx.clone(), origin)).unwrap();
+                                trace!("Send singed tx to txpool");
+                            }
+                            _ => {
+                                if sub_module_id == submodules::JSON_RPC {
+                                    let tx_response = TxResponse::new(tx_hash, result);
 
-                            let mut response = Response::new();
-                            response.set_request_id(request_id);
-                            response.set_code(submodules::AUTH as i64);
-                            response.set_error_msg(format!("{:?}", tx_response));
+                                    let mut response = Response::new();
+                                    response.set_request_id(request_id);
+                                    response.set_code(submodules::AUTH as i64);
+                                    response.set_error_msg(format!("{:?}", tx_response));
 
-                            let msg = factory::create_msg(submodules::AUTH, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
-                            trace!("response new tx {:?}", response);
-                            tx_pub.send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                                    let msg = factory::create_msg(submodules::AUTH, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
+                                    trace!("response new tx {:?}", response);
+                                    tx_pub.send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                                }
+                            }
+                        }
+                    });
+                }
+                VerifyType::BlockVerify => {
+                    let request_id = BlockVerifyId {
+                        request_id: id,
+                        sub_module: sub_module,
+                    };
+                    if Ret::Ok != resp.get_ret() {
+                        if let Some(block_verify_status) = block_cache.write().get_mut(&request_id) {
+                            if VerifyResult::VerifyFailed != block_verify_status.block_verify_result {
+                                block_verify_status.block_verify_result = VerifyResult::VerifyFailed;
+
+                                let mut blkresp = VerifyBlockResp::new();
+                                blkresp.set_id(id);
+                                blkresp.set_ret(resp.get_ret());
+
+                                let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
+                                warn!("Failed to do verify blk req for request id: {}, ret: {:?}, from submodule: {}", id, blkresp.get_ret(), sub_module);
+                                tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
+                            }
+                        } else {
+                            error!("Failed to get block verify status for request id: {:?} from submodule: {}", id, sub_module);
+                        }
+                    } else {
+                        if let Some(block_verify_status) = block_cache.write().get_mut(&request_id) {
+                            trace!("BlockVerify Time cost {} ns for tx hash: {:?}", now.elapsed().unwrap().subsec_nanos(), resp.get_tx_hash());
+                            block_verify_status.verify_success_cnt_capture += 1;
+                            if block_verify_status.verify_success_cnt_capture == block_verify_status.verify_success_cnt_required {
+                                let mut blkresp = VerifyBlockResp::new();
+                                blkresp.set_id(id);
+                                blkresp.set_ret(resp.get_ret());
+
+                                let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
+                                info!("Succeed to do verify blk req for request id: {}, ret: {:?}, from submodule: {}", id, blkresp.get_ret(), sub_module);
+                                tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
+                            }
+                        } else {
+                            error!("Failed to get block verify status for request id: {:?} from submodule: {}", id, sub_module);
                         }
                     }
+
                 }
-            });
-        }
-        VerifyType::BlockVerify => {
-            let request_id = BlockVerifyId {
-                request_id: id,
-                sub_module: sub_module,
             };
-            if Ret::Ok != resp.get_ret() {
-                if let Some(block_verify_status) = block_cache.write().get_mut(&request_id) {
-                    block_verify_status.block_verify_result = VerifyResult::VerifyFailed;
 
-                    let mut blkresp = VerifyBlockResp::new();
-                    blkresp.set_id(id);
-                    blkresp.set_ret(resp.get_ret());
-
-                    let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
-                    info!("Failed to do verify blk req for request id: {}, ret: {:?}, from submodule: {}", id, blkresp.get_ret(), sub_module);
-                    tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
-                } else {
-                    error!("Failed to get block verify status for request id: {:?} from submodule: {}", id, sub_module);
-                }
-            } else {
-                if let Some(block_verify_status) = block_cache.write().get_mut(&request_id) {
-                    trace!("BlockVerify Time cost {} ns for tx hash: {:?}", now.elapsed().unwrap().subsec_nanos(), resp.get_tx_hash());
-                    block_verify_status.verify_success_cnt_capture += 1;
-                    if block_verify_status.verify_success_cnt_capture == block_verify_status.verify_success_cnt_required {
-                        let mut blkresp = VerifyBlockResp::new();
-                        blkresp.set_id(id);
-                        blkresp.set_ret(resp.get_ret());
-
-                        let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
-                        trace!("Succeed to do verify blk req for request id: {}, ret: {:?}, from submodule: {}", id, blkresp.get_ret(), sub_module);
-                        tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
-                    }
-                } else {
-                    error!("Failed to get block verify status for request id: {:?} from submodule: {}", id, sub_module);
-                }
-            }
-
+        }
+        Err(err_info) => {
+            error!("Failed to receive message from result_receiver due to {:?}", err_info);
         }
     }
 }
