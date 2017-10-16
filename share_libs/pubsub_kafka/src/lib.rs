@@ -39,14 +39,14 @@ impl ConsumerContext for ConsumerContextExample {
 }
 
 
-
+pub const KAFKA_URL: &'static str = "KAFKA_URL";
 
 //producer thread
 pub fn start_kafka(_: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
-    let brokers = "localhost:9092";
+    let brokers = std::env::var(KAFKA_URL).expect(format!("{} must be set", KAFKA_URL).as_str());
     let _ = thread::Builder::new().name("publisher".to_string()).spawn(move || {
         let producer = ClientConfig::new()
-            .set("bootstrap.servers", brokers)
+            .set("bootstrap.servers", &brokers)
             .set_default_topic_config(TopicConfig::new().set("produce.offset.report", "true").finalize())
             .create::<FutureProducer<_>>()
             .expect("Producer creation error");

@@ -180,6 +180,8 @@ echo "Step 3: ********************************************************"
 sed -i "s/tendermint/$CONSENSUS_NAME/g" $DATA_PATH/bin/cita
 for ((ID=0;ID<$SIZE;ID++))
 do
+    rm -f $DATA_PATH/node$ID/.env
+    echo "KAFKA_URL=localhost:9092"                      >> $DATA_PATH/node$ID/.env
     echo "AMQP_URL=amqp://guest:guest@localhost/node$ID" >> $DATA_PATH/node$ID/.env
     echo "DATA_PATH=./data"                              >> $DATA_PATH/node$ID/.env
 done
