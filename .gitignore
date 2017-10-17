@@ -6,7 +6,7 @@
 *.so
 *.rlib
 *.dll
-*.pyc 
+*.pyc
 
 # Executables
 *.exe
@@ -47,3 +47,6 @@ docs/build
 # tmp files
 tests/wrk_benchmark_test/hash.txt
 consensus/authority_round/data/
+
+scripts/txtool/output
+
