@@ -433,29 +433,31 @@ impl TenderMint {
     }
 
     fn proc_commit_after(&mut self, height: usize, round: usize) -> bool {
-        let nowheight = self.height;
+        let now_height = self.height;
 
-        info!("proc_commit after self height {},round {} in height {} round {} ", nowheight, self.round, height, round);
-        if nowheight < height + 1 {
+        info!("proc_commit after self height {},round {} in height {} round {} ", now_height, self.round, height, round);
+        if now_height < height + 1 {
             self.change_state_step(height + 1, INIT_ROUND, Step::Propose, true);
             if let Some(hash) = self.pre_hash {
                 let buf = hash.to_vec();
                 let _ = self.wal_log.save(LOG_TYPE_PREV_HASH, &buf);
 
-                if self.proof.height != nowheight && nowheight > 0 {
-                    let lock_round = self.lock_round.unwrap_or(round);
-                    let res = self.generate_proof(nowheight, lock_round, hash);
-                    if let Some(proof) = res {
-                        self.proof = proof;
+                if self.proof.height != now_height && now_height > 0 {
+                    let lock_round = self.last_commit_round.unwrap_or(round);
+                    if let Some(phash) = self.proposal {
+                        let res = self.generate_proof(now_height, lock_round, phash);
+                        if let Some(proof) = res {
+                            self.proof = proof;
+                        }
                     }
                 }
             }
 
             if !self.proof.is_default() {
-                if self.proof.height == nowheight && self.proof.round == round {
+                if self.proof.height == now_height && self.proof.round == round {
                     self.save_wal_proof();
                 } else {
-                    info!("try my best to save proof not ok,at height {} round {} now height {}", nowheight, round, self.height);
+                    info!("try my best to save proof not ok,at height {} round {} now height {}", now_height, round, self.height);
                 }
             }
             self.clean_saved_info();
@@ -882,7 +884,7 @@ impl TenderMint {
             let mut flag = false;
 
             for (height, ref blocktxs) in self.block_txs.clone() {
-                trace!("BLOCKTXS get height {}, self height {} txs {:?}", height, self.height, blocktxs);
+                trace!("BLOCKTXS get height {}, self height {}", height, self.height);
                 if height == self.height - 1 {
                     flag = true;
                     block.set_body(blocktxs.get_body().clone());
