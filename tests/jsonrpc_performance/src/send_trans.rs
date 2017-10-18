@@ -340,12 +340,12 @@ impl Sendtx {
         h
     }
 
-    pub fn analysitxinfo(&mut self) {
+    pub fn analyse_tx_info(&mut self) {
         let v_url = self.get_url();
         let mut _url = v_url[0].clone();
 
 
-        let mut tx_num = 0;
+        let mut tx_num: u64 = 0;
         let mut start_time_stamp = 0;
         let mut _end_time_stamp = 0;
         let mut h = self.start_h;
@@ -378,7 +378,7 @@ impl Sendtx {
         //发送正常交易
         //发送获取block交易,统计正常交易的开始到结束的开始高度的每个block中交易数量、时间戳，总的汇总交易数量、time、tps
         if self.analysis {
-            self.analysitxinfo();
+            self.analyse_tx_info();
         } else {
             let (sync_send, sync_recv) = mpsc::channel();
             self.dispatch_thd(sync_send);
