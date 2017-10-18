@@ -217,6 +217,12 @@ impl From<H520> for Signature {
     }
 }
 
+impl From<Signature> for String {
+    fn from(s: Signature) -> Self {
+        H520::from(s.clone()).hex()
+    }
+}
+
 impl Deref for Signature {
     type Target = [u8; 65];
 

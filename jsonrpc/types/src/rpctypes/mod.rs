@@ -25,6 +25,7 @@ pub mod transaction;
 pub mod block;
 pub mod middle_modle;
 pub mod index;
+pub mod proof;
 
 pub use self::block::*;
 pub use self::block_number::*;
@@ -35,3 +36,4 @@ pub use self::log::*;
 pub use self::middle_modle::*;
 pub use self::receipt::*;
 pub use self::transaction::*;
+pub use self::proof::*;

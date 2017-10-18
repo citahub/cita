@@ -20,3 +20,4 @@ pubsub = { path = "../../share_libs/pubsub" }
 time = "0.1"
 proof = { path = "../../consensus/proof" }
 common-types = { path = "../../chain/types" }
+cita-crypto = { path = "../../share_libs/crypto" }

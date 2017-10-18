@@ -19,7 +19,7 @@ use super::{BlockTransaction, FullTransaction};
 use super::RpcBlock;
 use libproto::blockchain::Block as ProtoBlock;
 use libproto::blockchain::BlockHeader as ProtoBlockHeader;
-use proof::CitaProof;
+use super::Proof;
 use protobuf::core::parse_from_bytes;
 use util::{H256, U256};
 
@@ -42,7 +42,7 @@ pub struct BlockHeader {
     pub receipts_root: H256,
     #[serde(rename = "gasUsed")]
     pub gas_used: U256,
-    pub proof: Option<CitaProof>,
+    pub proof: Option<Proof>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -55,7 +55,7 @@ pub struct Block {
 
 impl From<ProtoBlockHeader> for BlockHeader {
     fn from(proto_header: ProtoBlockHeader) -> Self {
-        let proof = match proto_header.get_height() {
+        let proof: Option<Proof> = match proto_header.get_height() {
             0 | 1 => None,
             _ => Some(proto_header.clone().take_proof().into()),
         };
