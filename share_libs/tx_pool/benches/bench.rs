@@ -24,11 +24,12 @@ extern crate util;
 extern crate cita_crypto as crypto;
 
 use crypto::{KeyPair, CreateKey};
+use libproto::blockchain::AccountGasLimit;
 use libproto::blockchain::Transaction;
+use std::collections::HashMap;
 use std::time::SystemTime;
 use test::Bencher;
 use tx_pool::pool::*;
-
 #[bench]
 fn bench_base(b: &mut Bencher) {
     let start = SystemTime::now();
@@ -54,8 +55,9 @@ fn bench_enqueue(b: &mut Bencher) {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
-        tx.set_valid_until_block(99999);
-        tx.set_quota(999999999);
+        tx.set_valid_until_block(99);
+        // 2000*10000 <= account_gas_limit <= block_gas_limit
+        tx.set_quota(2000);
         p.enqueue(tx.sign(*pv));
     }
     let sys_time = SystemTime::now();
@@ -76,11 +78,21 @@ fn bench_package(b: &mut Bencher) {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
-        tx.set_valid_until_block(99999);
-        tx.set_quota(9999999999);
+        tx.set_valid_until_block(99);
+        // 6000*10000 <= account_gas_limit <= block_gas_limit
+        tx.set_quota(6000);
         p.enqueue(tx.sign(*pv));
     }
-    p.package(666);
+    let mut account_gas_limit = AccountGasLimit::new();
+    // set block_gas_limit default
+    let block_gas_limit = 61415926;
+    // height should less than valid_until_block
+    let height = 0;
+    // set account_gas_limit be equal as block_gas_limit 
+    account_gas_limit.set_common_gas_limit(block_gas_limit);
+    account_gas_limit.set_specific_gas_limit(HashMap::new());
+
+    p.package(height, block_gas_limit, account_gas_limit.clone());
     let sys_time = SystemTime::now();
     let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
     println!("pass");
@@ -100,11 +112,21 @@ fn bench_update(b: &mut Bencher) {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
-        tx.set_valid_until_block(99999);
-        tx.set_quota(999999999);
+        tx.set_valid_until_block(99);
+        // 6000*10000 <= account_gas_limit <= block_gas_limit
+        tx.set_quota(6000);
         p.enqueue(tx.sign(*pv));
     }
-    let txs = p.package(666);
+    let mut account_gas_limit = AccountGasLimit::new();
+    // set block_gas_limit default
+    let block_gas_limit = 61415926;
+    // height should less than valid_until_block
+    let height = 0;
+    // set account_gas_limit be equal as block_gas_limit 
+    account_gas_limit.set_common_gas_limit(block_gas_limit);
+    account_gas_limit.set_specific_gas_limit(HashMap::new());
+
+    let txs = p.package(height, block_gas_limit, account_gas_limit.clone());
     p.update(&txs);
     let sys_time = SystemTime::now();
     let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
