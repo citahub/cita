@@ -36,9 +36,3 @@ time ./tests/integrate_test/cita_basic.sh
 echo "5.2) byzantine test"
 time ./tests/integrate_test/cita_byzantinetest.sh
 
-echo "################################################################################"
-echo "6) archive result"
-now=$(date --iso-8601=minutes)
-mkdir -p ${SOURCE_DIR}/../${now}_${BASHPID}
-cp -rf ${SOURCE_DIR}/target/install  ${SOURCE_DIR}/../${now}_${BASHPID}/
-cp -rf ${SOURCE_DIR}/target/*.log  ${SOURCE_DIR}/../${now}_${BASHPID}/
