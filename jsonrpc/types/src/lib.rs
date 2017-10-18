@@ -31,6 +31,7 @@ extern crate serde;
 extern crate rustc_serialize;
 extern crate proof;
 extern crate common_types as types;
+extern crate cita_crypto as crypto;
 
 
 mod id;
