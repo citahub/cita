@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cache::{VerifyCache, VerifyBlockCache, VerifyResult, BlockVerifyStatus, BlockVerifyId};
 use libproto::*;
 use libproto::blockchain::{SignedTransaction, AccountGasLimit};
 use protobuf::Message;
@@ -28,6 +27,22 @@ use std::vec::*;
 use util::{H256, RwLock};
 use util::Mutex;
 use verify::Verifier;
+
+#[derive(Debug, PartialEq)]
+pub enum VerifyResult {
+    VerifyNotBegin,
+    VerifyOngoing,
+    VerifyFailed,
+    VerifySucceeded,
+}
+
+#[derive(Debug)]
+pub struct BlockVerifyStatus {
+    pub request_id: u64,
+    pub block_verify_result: VerifyResult,
+    pub verify_success_cnt_required: usize,
+    pub verify_success_cnt_capture: usize,
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum VerifyType {
@@ -76,7 +91,7 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     resp
 }
 
-pub fn verify_tx_group_service(mut req_grp: Vec<VerifyReqInfo>, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<VerifyCache>>, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>) {
+pub fn verify_tx_group_service(mut req_grp: Vec<VerifyReqInfo>, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>) {
     let now = SystemTime::now();
     let len = req_grp.len();
     loop {
@@ -95,7 +110,7 @@ pub fn verify_tx_group_service(mut req_grp: Vec<VerifyReqInfo>, verifier: Arc<Rw
     trace!("verify_tx_group_service Time cost {} ns for {} req ...", now.elapsed().unwrap().subsec_nanos(), len);
 }
 
-pub fn check_verify_request_preprocess(req_info: VerifyReqInfo, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<VerifyCache>>, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>) -> bool {
+pub fn check_verify_request_preprocess(req_info: VerifyReqInfo, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>) -> bool {
     let req = req_info.req;
     let tx_hash = H256::from_slice(req.get_tx_hash());
     let mut final_response = VerifyTxResp::new();
@@ -121,7 +136,7 @@ pub fn check_verify_request_preprocess(req_info: VerifyReqInfo, verifier: Arc<Rw
     processed
 }
 
-fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<VerifyCache>>) -> Option<VerifyTxResp> {
+fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>) -> Option<VerifyTxResp> {
     if let Some(resp) = cache.read().get(tx_hash) { Some(resp.clone()) } else { None }
 }
 
@@ -129,7 +144,7 @@ fn get_key(submodule: u32, is_blk: bool) -> String {
     "verify".to_owned() + if is_blk { "_blk_" } else { "_tx_" } + id_to_key(submodule)
 }
 
-pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req_block: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_req_single: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_pub: Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>, cache: Arc<RwLock<VerifyCache>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, txs_sender: Sender<(usize, Vec<H256>, u64, AccountGasLimit)>) {
+pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req_block: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_req_single: Sender<(VerifyType, u64, VerifyTxReq, u32, SystemTime, Origin)>, tx_pub: Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, txs_sender: Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>) {
     let (cmdid, origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
     match content {
@@ -138,15 +153,16 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             info!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
             let mut tx_hashes_in_h256 = HashSet::with_capacity(tx_hashes.len());
-            let mut cache_guard = cache.write();
+            {
+                let mut cache_guard = cache.write();
 
-            let mut tx_hashes_in_h256_vec: Vec<H256> = Vec::new();
-            for data in tx_hashes.iter() {
-                let hash = H256::from_slice(data);
-                cache_guard.remove(&hash);
-                tx_hashes_in_h256.insert(hash);
-                tx_hashes_in_h256_vec.push(hash);
+                for data in tx_hashes.iter() {
+                    let hash = H256::from_slice(data);
+                    cache_guard.remove(&hash);
+                    tx_hashes_in_h256.insert(hash);
+                }
             }
+
             {
                 let mut flag = false;
                 unsafe {
@@ -156,12 +172,12 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                     }
                 }
                 if flag {
-                    info!("BLOCKTXHASHES come height {}, tx_hashes count is: {:?}", height, tx_hashes_in_h256_vec.len());
+                    info!("BLOCKTXHASHES come height {}, tx_hashes count is: {:?}", height, tx_hashes_in_h256.len());
                     let block_gas_limit = block_tx_hashes.get_block_gas_limit();
                     let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
                     info!("Auth rich status block gas limit: {:?}, account gas limit {:?}", block_gas_limit, account_gas_limit);
 
-                    let _ = txs_sender.send((height as usize, tx_hashes_in_h256_vec, block_gas_limit, account_gas_limit));
+                    let _ = txs_sender.send((height as usize, tx_hashes_in_h256.clone(), block_gas_limit, account_gas_limit));
                 }
             }
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
@@ -170,24 +186,31 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             info!("get block verify request with {:?} request", blkreq.get_reqs().len());
             let tx_cnt = blkreq.get_reqs().len();
             if tx_cnt > 0 {
-                let block_verify_status = BlockVerifyStatus {
+                let request_id = blkreq.get_id();
+                let new_block_verify_status = BlockVerifyStatus {
+                    request_id: request_id,
                     block_verify_result: VerifyResult::VerifyOngoing,
                     verify_success_cnt_required: blkreq.get_reqs().len(),
                     verify_success_cnt_capture: 0,
                 };
-                let id = blkreq.get_id();
-                info!("block verify request id: {}, and the init block_verify_status: {:?}", id, block_verify_status);
-                let request_id = BlockVerifyId {
-                    request_id: id,
-                    sub_module: submodule,
-                };
-                block_cache.write().insert(request_id, block_verify_status);
+
+                info!("Coming new block verify request with request_id: {}, and the init block_verify_status: {:?}", request_id, block_verify_status);
+                //add big brace here to release write lock as soon as poobible
+                {
+                    let mut block_verify_status_guard = block_verify_status.write();
+                    if block_verify_status_guard.block_verify_result == VerifyResult::VerifyOngoing {
+                        warn!("block verification request with request_id: {:?} has been expired, and the current info is: {:?}", block_verify_status_guard.request_id, *block_verify_status_guard);
+                    }
+                    *block_verify_status_guard = new_block_verify_status;
+                }
+
                 for req in blkreq.get_reqs() {
                     let now = SystemTime::now();
-                    tx_req_block.send((VerifyType::BlockVerify, id, req.clone(), submodule, now, origin)).unwrap();
+                    tx_req_block.send((VerifyType::BlockVerify, request_id, req.clone(), submodule, now, origin))
+                                .unwrap();
                 }
             } else {
-                error!("Wrong block verification request with 0 tx for block verify request id: {} from sub_module: {}", blkreq.get_id(), submodule);
+                error!("Wrong block verification request with 0 tx for block verify request_id: {} from sub_module: {}", blkreq.get_id(), submodule);
             }
         }
         MsgClass::REQUEST(newtx_req) => {
@@ -220,12 +243,11 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
         _ => {}
 
     }
-    //trace!("single queue_req queues {} reqs, block queue_req queues {} reqs", single_req_queue.lock().unwrap().len(), block_req_queue.lock().unwrap().len());
 }
 
-pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>, tx_pub: &Sender<(String, Vec<u8>)>, block_cache: Arc<RwLock<VerifyBlockCache>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, tx_sender: Sender<(u32, Vec<u8>, TxResponse, SignedTransaction, Origin)>) {
+pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>, tx_pub: &Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, batch_new_tx_pool: Arc<Mutex<HashMap<H256, (u32, Request)>>>, tx_sender: Sender<(u32, Vec<u8>, TxResponse, SignedTransaction, Origin)>) {
     match result_receiver.recv() {
-        Ok((verify_type, id, resp, sub_module, now, origin)) => {
+        Ok((verify_type, request_id, resp, sub_module, now, origin)) => {
             match verify_type {
                 VerifyType::SingleVerify => {
                     trace!("SingleVerify Time cost {} ns for tx hash: {:?}", now.elapsed().unwrap().subsec_nanos(), resp.get_tx_hash());
@@ -247,9 +269,6 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                                 signed_tx.set_transaction_with_sig(req.take_un_tx());
                                 signed_tx.set_signer(resp.get_signer().to_vec());
                                 signed_tx.set_tx_hash(tx_hash.to_vec());
-                                //add to the newtx pool and broadcast to other nodes if not received from network
-                                //.....................
-                                //.....................
                                 let tx_response = TxResponse::new(tx_hash, result.clone());
                                 let _ = tx_sender.send((sub_module_id, request_id.clone(), tx_response, signed_tx.clone(), origin)).unwrap();
                                 trace!("Send singed tx to txpool");
@@ -272,47 +291,39 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                     });
                 }
                 VerifyType::BlockVerify => {
-                    let request_id = BlockVerifyId {
-                        request_id: id,
-                        sub_module: sub_module,
-                    };
                     if Ret::Ok != resp.get_ret() {
-                        if let Some(block_verify_status) = block_cache.write().get_mut(&request_id) {
-                            if VerifyResult::VerifyFailed != block_verify_status.block_verify_result {
-                                block_verify_status.block_verify_result = VerifyResult::VerifyFailed;
+                        let mut block_verify_status_guard = block_verify_status.write();
+                        if request_id == block_verify_status_guard.request_id && VerifyResult::VerifyFailed != block_verify_status_guard.block_verify_result {
+                            block_verify_status_guard.block_verify_result = VerifyResult::VerifyFailed;
 
-                                let mut blkresp = VerifyBlockResp::new();
-                                blkresp.set_id(id);
-                                blkresp.set_ret(resp.get_ret());
+                            let mut blkresp = VerifyBlockResp::new();
+                            blkresp.set_id(request_id);
+                            blkresp.set_ret(resp.get_ret());
 
-                                let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
-                                warn!("Failed to do verify blk req for request id: {}, ret: {:?}, from submodule: {}", id, blkresp.get_ret(), sub_module);
-                                tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
-                            }
-                        } else {
-                            error!("Failed to get block verify status for request id: {:?} from submodule: {}", id, sub_module);
+                            let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
+                            warn!("Failed to do verify blk req for request_id: {}, ret: {:?}, from submodule: {}", request_id, blkresp.get_ret(), sub_module);
+                            tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
+
                         }
                     } else {
-                        if let Some(block_verify_status) = block_cache.write().get_mut(&request_id) {
+                        let mut block_verify_status_guard = block_verify_status.write();
+                        if request_id == block_verify_status_guard.request_id {
                             trace!("BlockVerify Time cost {} ns for tx hash: {:?}", now.elapsed().unwrap().subsec_nanos(), resp.get_tx_hash());
-                            block_verify_status.verify_success_cnt_capture += 1;
-                            if block_verify_status.verify_success_cnt_capture == block_verify_status.verify_success_cnt_required {
+                            block_verify_status_guard.verify_success_cnt_capture += 1;
+                            if block_verify_status_guard.verify_success_cnt_capture == block_verify_status_guard.verify_success_cnt_required {
+                                block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
                                 let mut blkresp = VerifyBlockResp::new();
-                                blkresp.set_id(id);
+                                blkresp.set_id(request_id);
                                 blkresp.set_ret(resp.get_ret());
 
                                 let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
-                                info!("Succeed to do verify blk req for request id: {}, ret: {:?}, from submodule: {}", id, blkresp.get_ret(), sub_module);
+                                trace!("Succeed to do verify blk req for request_id: {}, ret: {:?}, from submodule: {}", request_id, blkresp.get_ret(), sub_module);
                                 tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
                             }
-                        } else {
-                            error!("Failed to get block verify status for request id: {:?} from submodule: {}", id, sub_module);
                         }
                     }
-
                 }
-            };
-
+            }
         }
         Err(err_info) => {
             error!("Failed to receive message from result_receiver due to {:?}", err_info);

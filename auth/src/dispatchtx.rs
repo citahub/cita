@@ -23,6 +23,7 @@ use protobuf::{Message, RepeatedField};
 use serde_json;
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -120,13 +121,13 @@ impl Dispatchtx {
         }
     }
 
-    pub fn deal_txs(&mut self, height: usize, txs: &Vec<H256>, mq_pub: Sender<(String, Vec<u8>)>, block_gas_limit: u64, account_gas_limit: AccountGasLimit) {
+    pub fn deal_txs(&mut self, height: usize, txs: &HashSet<H256>, mq_pub: Sender<(String, Vec<u8>)>, block_gas_limit: u64, account_gas_limit: AccountGasLimit) {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
 
         trace!("deal_txs inner txs height {} ", txs.len());
         if !txs.is_empty() {
-            self.del_txs_from_pool_with_hash(txs.clone());
+            self.del_txs_from_pool_with_hash(txs);
         }
 
         let out_txs = self.get_txs_from_pool(height as u64, block_gas_limit, account_gas_limit);
@@ -183,13 +184,14 @@ impl Dispatchtx {
         if txs_pool.len() > self.pool_limit { true } else { false }
     }
 
-    pub fn del_txs_from_pool_with_hash(&self, txs: Vec<H256>) {
+    pub fn del_txs_from_pool_with_hash(&self, txs: &HashSet<H256>) {
         //收到删除通知，从pool中删除vec中的交易
         {
-            self.txs_pool.borrow_mut().update_with_hash(&txs);
+            self.txs_pool.borrow_mut().update_with_hash(txs);
         }
         //改成多线程删除数据
         let mut wal = self.wal.clone();
+        let txs = txs.clone();
         thread::spawn(move || for tx in txs {
                           wal.delete_with_hash(&tx);
                       });

@@ -138,13 +138,11 @@ impl Pool {
         self.update_order_set(&hash_list);
     }
 
-    pub fn update_with_hash(&mut self, txs: &Vec<H256>) {
-        let mut hash_list = HashSet::with_capacity(txs.len());
+    pub fn update_with_hash(&mut self, txs: &HashSet<H256>) {
         for tx in txs {
             self.txs.remove(&tx);
-            hash_list.insert(tx.clone());
         }
-        self.update_order_set(&hash_list);
+        self.update_order_set(txs);
     }
 
     pub fn package(&mut self, height: u64, block_gas_limit: u64, account_gas_limit: AccountGasLimit) -> Vec<SignedTransaction> {
