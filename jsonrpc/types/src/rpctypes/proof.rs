@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::blockchain::{Proof as ProtoProof, ProofType};
 use bincode::deserialize;
+use libproto::blockchain::{Proof as ProtoProof, ProofType};
 use proof::{TendermintProof as TProof, AuthorityRoundProof as AProof};
 use std::collections::HashMap;
 use util::{H256, Address};
