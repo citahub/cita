@@ -88,7 +88,7 @@ fn bench_package(b: &mut Bencher) {
     let block_gas_limit = 61415926;
     // height should less than valid_until_block
     let height = 0;
-    // set account_gas_limit be equal as block_gas_limit 
+    // set account_gas_limit be equal as block_gas_limit
     account_gas_limit.set_common_gas_limit(block_gas_limit);
     account_gas_limit.set_specific_gas_limit(HashMap::new());
 
@@ -122,7 +122,7 @@ fn bench_update(b: &mut Bencher) {
     let block_gas_limit = 61415926;
     // height should less than valid_until_block
     let height = 0;
-    // set account_gas_limit be equal as block_gas_limit 
+    // set account_gas_limit be equal as block_gas_limit
     account_gas_limit.set_common_gas_limit(block_gas_limit);
     account_gas_limit.set_specific_gas_limit(HashMap::new());
 

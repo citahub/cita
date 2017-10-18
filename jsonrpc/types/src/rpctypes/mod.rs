@@ -34,6 +34,6 @@ pub use self::filter::*;
 pub use self::index::Index;
 pub use self::log::*;
 pub use self::middle_modle::*;
+pub use self::proof::*;
 pub use self::receipt::*;
 pub use self::transaction::*;
-pub use self::proof::*;

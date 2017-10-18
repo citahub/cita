@@ -16,10 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{BlockTransaction, FullTransaction};
+use super::Proof;
 use super::RpcBlock;
 use libproto::blockchain::Block as ProtoBlock;
 use libproto::blockchain::BlockHeader as ProtoBlockHeader;
-use super::Proof;
 use protobuf::core::parse_from_bytes;
 use util::{H256, U256};
 
