@@ -443,9 +443,13 @@ impl TenderMint {
                 let _ = self.wal_log.save(LOG_TYPE_PREV_HASH, &buf);
 
                 if self.proof.height != now_height && now_height > 0 {
-                    let lock_round = self.last_commit_round.unwrap_or(round);
                     if let Some(phash) = self.proposal {
-                        let res = self.generate_proof(now_height, lock_round, phash);
+                        let mut res = self.last_commit_round.and_then(|cround| self.generate_proof(now_height, cround, phash.clone()));
+
+                        if res.is_none() {
+                            res = self.lock_round.and_then(|cround| self.generate_proof(now_height, cround, phash.clone()));
+                        }
+
                         if let Some(proof) = res {
                             self.proof = proof;
                         }
@@ -1082,6 +1086,12 @@ impl TenderMint {
                     let msg = block_txs.write_to_bytes().unwrap();
                     self.block_txs.push_back((height, block_txs));
                     let _ = self.wal_log.save(LOG_TYPE_AUTH_TXS, &msg);
+                    let now_height = self.height;
+                    let now_round = self.round;
+                    let now_step = self.step;
+                    if now_height == height + 1 && self.is_round_proposer(now_height, now_round, &self.params.signer.address).is_ok() && now_step < Step::Prevote && self.proposal.is_none() {
+                        self.new_proposal();
+                    }
                 }
                 _ => {}
             }
