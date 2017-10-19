@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use error::ErrorCode;
 use libproto::*;
 use libproto::blockchain::{SignedTransaction, AccountGasLimit};
 use protobuf::Message;
@@ -120,7 +121,7 @@ pub fn check_verify_request_preprocess(req_info: VerifyReqInfo, verifier: Arc<Rw
     if !verifier.read().verify_valid_until_block(req.get_valid_until_block()) {
         let mut response = VerifyTxResp::new();
         response.set_tx_hash(req.get_tx_hash().to_vec());
-        response.set_ret(Ret::OutOfTime);
+        response.set_ret(Ret::InvalidUntilBlock);
         processed = true;
         final_response = response;
     } else {
@@ -281,8 +282,8 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
 
                                     let mut response = Response::new();
                                     response.set_request_id(request_id);
-                                    response.set_code(submodules::AUTH as i64);
-                                    response.set_error_msg(format!("{:?}", tx_response));
+                                    response.set_code(ErrorCode::tx_auth_error());
+                                    response.set_error_msg(tx_response.status);
 
                                     let msg = factory::create_msg(submodules::AUTH, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
                                     trace!("response new tx {:?}", response);

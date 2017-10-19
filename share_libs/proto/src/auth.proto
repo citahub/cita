@@ -4,9 +4,9 @@ import "blockchain.proto";
 
 enum Ret {
     Ok = 0;
-    Err = 1;
+    InvalidNonce = 1;
     Dup = 2;
-    OutOfTime = 3;
+    InvalidUntilBlock = 3;
     BadSig = 4;
     NotReady = 5;
 }

@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use base_hanlder::BaseHandler;
+use error::ErrorCode;
 use hyper::Post;
 use hyper::server::{Handler, Request, Response};
 use hyper::uri::RequestUri::AbsolutePath;
@@ -90,7 +91,7 @@ impl HttpHandler {
                 loop {
                     timeout_count = timeout_count + 1;
                     if timeout_count > self.timeout_count {
-                        return Err(RpcFailure::from_options(id, jsonrpc_version, Error::server_error(-32099, "system time out,please resend")));
+                        return Err(RpcFailure::from_options(id, jsonrpc_version, Error::server_error(ErrorCode::time_out_error(), "system time out,please resend")));
                     }
                     thread::sleep(Duration::new(0, (self.sleep_duration * 1000000) as u32));
                     if self.responses.read().contains_key(&request_id) {

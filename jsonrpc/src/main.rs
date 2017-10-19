@@ -36,6 +36,7 @@ extern crate num_cpus;
 extern crate ws;
 extern crate clap;
 extern crate uuid;
+extern crate error;
 
 pub mod http_handler;
 pub mod mq_hanlder;

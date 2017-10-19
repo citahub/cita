@@ -19,6 +19,7 @@ pub use byteorder::{BigEndian, ByteOrder};
 use core::filters::eth_filter::EthFilter;
 use core::libchain::call_request::CallRequest;
 pub use core::libchain::chain::*;
+use error::ErrorCode;
 use jsonrpc_types::rpctypes;
 use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, CountOrCode, BlockNumber, BlockParamsByNumber, BlockParamsByHash, RpcBlock};
 use libproto;
@@ -65,7 +66,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                                 Some(block) => {
                                     let rpc_block = RpcBlock::new(hash, include_txs, block.protobuf().write_to_bytes().unwrap());
                                     serde_json::to_string(&rpc_block).map(|data| response.set_block(data)).map_err(|err| {
-                                                                                                                       response.set_code(submodules::CHAIN as i64);
+                                                                                                                       response.set_code(ErrorCode::query_error());
                                                                                                                        response.set_error_msg(format!("{:?}", err));
                                                                                                                    });
                                 }
@@ -88,7 +89,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                         Some(block) => {
                             let rpc_block = RpcBlock::new(block.hash().to_vec(), include_txs, block.protobuf().write_to_bytes().unwrap());
                             serde_json::to_string(&rpc_block).map(|data| response.set_block(data)).map_err(|err| {
-                                                                                                               response.set_code(submodules::CHAIN as i64);
+                                                                                                               response.set_code(ErrorCode::query_error());
                                                                                                                response.set_error_msg(format!("{:?}", err));
                                                                                                            });
                         }
@@ -129,12 +130,12 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                             chain.eth_call(call_request, block_id.into())
                                  .map(|ok| { response.set_call_result(ok); })
                                  .map_err(|err| {
-                                              response.set_code(submodules::CHAIN as i64);
+                                              response.set_code(ErrorCode::query_error());
                                               response.set_error_msg(err);
                                           })
                         })
                         .map_err(|err| {
-                                     response.set_code(submodules::CHAIN as i64);
+                                     response.set_code(ErrorCode::query_error());
                                      response.set_error_msg(format!("{:?}", err));
                                  });
                 }
@@ -143,7 +144,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                     trace!("filter: {:?}", encoded);
                     serde_json::from_str::<RpcFilter>(&encoded)
                         .map_err(|err| {
-                                     response.set_code(submodules::CHAIN as i64);
+                                     response.set_code(ErrorCode::query_error());
                                      response.set_error_msg(format!("{:?}", err));
                                  })
                         .map(|rpc_filter| {
@@ -158,7 +159,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                     trace!("transaction count request from jsonrpc {:?}", tx_count);
                     serde_json::from_str::<CountOrCode>(&tx_count)
                         .map_err(|err| {
-                                     response.set_code(submodules::CHAIN as i64);
+                                     response.set_code(ErrorCode::query_error());
                                      response.set_error_msg(format!("{:?}", err));
                                  })
                         .map(|tx_count| {
@@ -178,7 +179,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                     trace!("code request from josnrpc  {:?}", code_content);
                     serde_json::from_str::<CountOrCode>(&code_content)
                         .map_err(|err| {
-                                     response.set_code(submodules::CHAIN as i64);
+                                     response.set_code(ErrorCode::query_error());
                                      response.set_error_msg(format!("{:?}", err));
                                  })
                         .map(|code_content| {

@@ -15,6 +15,7 @@ serde_json = "1.0"
 libproto = {path = "../share_libs/proto"}
 pubsub = { path = "../share_libs/pubsub" }
 util = { path = "../share_libs/util" }
+error = { path = "../share_libs/error" }
 logger = { path = "../share_libs/logger" }
 jsonrpc_types = { path = "../jsonrpc/types" }
 core = { path = "./core" }

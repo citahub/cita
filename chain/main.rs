@@ -30,6 +30,7 @@ extern crate common_types as types;
 extern crate byteorder;
 extern crate serde_json;
 extern crate protobuf;
+extern crate error;
 
 mod forward;
 mod synchronizer;

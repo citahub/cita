@@ -17,6 +17,7 @@
 
 use dispatch::PubType;
 use engine::{unix_now, AsMillis};
+use error::ErrorCode;
 use libproto::*;
 use libproto::blockchain::*;
 use protobuf::Message;
@@ -65,11 +66,9 @@ impl CandidatePool {
 
         match trans {
             Err(hash) => {
-                response.set_code(error_code);
+                response.set_code(ErrorCode::tx_auth_error());
                 warn!("Transaction with bad signature, tx: {:?}", hash);
-                let tx_response = TxResponse::new(hash, String::from("BadSig"));
-                let error_msg = serde_json::to_string(&tx_response).unwrap();
-                response.set_error_msg(error_msg);
+                response.set_error_msg("BadSig".to_string());
             }
 
             Ok(tx) => {
@@ -81,10 +80,8 @@ impl CandidatePool {
                     response.set_tx_state(tx_state);
                     self.broadcast_tx(tx_req);
                 } else {
-                    response.set_code(error_code);
-                    let tx_response = TxResponse::new(hash, String::from("Dup"));
-                    let error_msg = serde_json::to_string(&tx_response).unwrap();
-                    response.set_error_msg(error_msg);
+                    response.set_code(ErrorCode::tx_auth_error());
+                    response.set_error_msg("Dup".to_string());
                 }
             }
         }

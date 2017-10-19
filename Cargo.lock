@@ -115,6 +115,7 @@ dependencies = [
  "core 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "error 0.1.0",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0",
@@ -386,6 +387,7 @@ dependencies = [
  "common-types 0.1.0",
  "core 0.1.0",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "error 0.1.0",
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -549,6 +551,7 @@ dependencies = [
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "engine 0.6.0",
  "engine_json 0.6.0",
+ "error 0.1.0",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0",
@@ -793,6 +796,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "error"
+version = "0.1.0"
+
+[[package]]
 name = "error-chain"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1022,6 +1029,7 @@ dependencies = [
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "error 0.1.0",
  "futures 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
@@ -2360,6 +2368,7 @@ dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "engine 0.6.0",
+ "error 0.1.0",
  "libproto 0.6.0",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0",

@@ -34,6 +34,7 @@ extern crate logger;
 extern crate dotenv;
 extern crate serde_json;
 extern crate authority_manage;
+extern crate error;
 
 pub mod core;
 

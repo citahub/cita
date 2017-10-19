@@ -31,6 +31,7 @@ extern crate logger;
 extern crate engine;
 extern crate dotenv;
 extern crate util;
+extern crate error;
 
 mod candidate_pool;
 mod dispatch;

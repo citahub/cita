@@ -18,7 +18,7 @@ serde_json = "1.0"
 pubsub = { path = "../../share_libs/pubsub" }
 logger = { path = "../../share_libs/logger" }
 engine = { path = "../engine" }
-
+error = {path = "../../share_libs/error"}
 [[bin]]
 path = "main.rs"
 name = "txpool"

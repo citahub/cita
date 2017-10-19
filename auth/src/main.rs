@@ -35,6 +35,7 @@ extern crate core as chain_core;
 extern crate tx_pool;
 extern crate uuid;
 extern crate serde_json;
+extern crate error;
 
 
 pub mod handler;

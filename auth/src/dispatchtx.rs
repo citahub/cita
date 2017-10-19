@@ -17,6 +17,7 @@
 
 extern crate tx_pool;
 
+use error::ErrorCode;
 use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request, BatchRequest, verify_tx_nonce};
 use libproto::blockchain::{BlockBody, SignedTransaction, BlockTxs, AccountGasLimit};
 use protobuf::{Message, RepeatedField};
@@ -75,7 +76,7 @@ impl Dispatchtx {
         dispatch
     }
 
-    pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, mut tx_response: TxResponse, tx: &SignedTransaction, mq_pub: Sender<(String, Vec<u8>)>) {
+    pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, tx_response: TxResponse, tx: &SignedTransaction, mq_pub: Sender<(String, Vec<u8>)>) {
         let mut error_msg: Option<String> = None;
         if !verify_tx_nonce(tx) {
             error_msg = Some(String::from("InvalidNonce"));
@@ -90,9 +91,8 @@ impl Dispatchtx {
             response.set_request_id(req_id);
 
             if error_msg.is_some() {
-                response.set_code(submodules::AUTH as i64);
-                tx_response.status = error_msg.unwrap();
-                response.set_error_msg(format!("{:?}", tx_response));
+                response.set_code(ErrorCode::tx_auth_error());
+                response.set_error_msg(error_msg.unwrap());
             } else {
                 let tx_state = serde_json::to_string(&tx_response).unwrap();
                 response.set_tx_state(tx_state);

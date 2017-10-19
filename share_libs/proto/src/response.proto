@@ -9,18 +9,10 @@ message FullTransaction {
     uint32 index = 4;
 }
 
-//pub mod submodules {
-//pub const JSON_RPC: u32 = 1;
-//pub const NET: u32 = 2;
-//pub const CHAIN: u32 = 3;
-//pub const CONSENSUS: u32 = 4;
-//pub const CONSENSUS_CMD: u32 = 5;
-//pub const AUTH: u32 = 6;
-//}
 
 message Response {
     bytes request_id = 1;
-    int64 code = 2;//这个定义可以根据模块的submodules的值来划分，粗划分：0：正确，其他表示错误，2：network的错误，3：chain的错误，4：consensus错误，6:auth错误。正好对应模块的submodules
+    int64 code = 2;
     oneof data {
         string error_msg = 3;
         string tx_state = 4;

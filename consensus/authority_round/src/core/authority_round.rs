@@ -19,6 +19,7 @@ use super::{Engine, EngineError, Signable, unix_now, AsMillis};
 use authority_manage::AuthorityManage;
 use crypto::{Signature, Signer, CreateKey, SIGNATURE_BYTES_LEN};
 use engine_json;
+use error::ErrorCode;
 use libproto::*;
 use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, RichStatus};
 use proof::AuthorityRoundProof;
@@ -234,15 +235,12 @@ impl Engine for AuthorityRound {
         let unverified_tx = tx_req.get_un_tx();
         let result = SignedTransaction::verify_transaction(unverified_tx.clone());
         let mut response = Response::new();
-        let error_code = submodules::CONSENSUS as i64;
         response.set_request_id(tx_req.get_request_id().to_vec());
         match result {
             Err(hash) => {
-                let tx_response = TxResponse::new(hash, String::from("BadSig"));
-                response.set_code(error_code);
+                response.set_code(ErrorCode::tx_auth_error());
                 warn!("Transaction with bad signature, tx: {:?}", hash);
-                let error_msg = serde_json::to_string(&tx_response).unwrap();
-                response.set_error_msg(error_msg);
+                response.set_error_msg("BadSig".to_string());
             }
             Ok(tx) => {
                 let hash = H256::from_slice(&tx.tx_hash);
@@ -254,10 +252,8 @@ impl Engine for AuthorityRound {
                     response.set_tx_state(tx_state);
                     self.pub_transaction(tx_req, tx_pub.clone());
                 } else {
-                    response.set_code(error_code);
-                    let tx_response = TxResponse::new(hash, String::from("Dup"));
-                    let error_msg = serde_json::to_string(&tx_response).unwrap();
-                    response.set_error_msg(error_msg);
+                    response.set_code(ErrorCode::tx_auth_error());
+                    response.set_error_msg("Dup".to_string());
                 }
             }
         }
