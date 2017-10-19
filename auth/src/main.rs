@@ -146,6 +146,7 @@ fn main() {
                                       let block_verify_status_gurard = block_verify_status_clone.read();
                                       if VerifyResult::VerifyFailed == block_verify_status_gurard.block_verify_result {
                                           trace!("skip the block tx verification due to failed already for block verification request id:{:?}.", request_id);
+                                          continue;
                                       }
 
                                       if request_id != block_verify_status_gurard.request_id {
