@@ -226,6 +226,7 @@ impl Sign for Signature {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     extern crate bincode;
@@ -278,3 +279,4 @@ mod tests {
         assert_eq!(signature, de_result);
     }
 }
+*/
