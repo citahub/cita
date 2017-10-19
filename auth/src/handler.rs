@@ -42,6 +42,7 @@ pub struct BlockVerifyStatus {
     pub block_verify_result: VerifyResult,
     pub verify_success_cnt_required: usize,
     pub verify_success_cnt_capture: usize,
+    pub cache_hit: usize,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -192,9 +193,10 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                     block_verify_result: VerifyResult::VerifyOngoing,
                     verify_success_cnt_required: blkreq.get_reqs().len(),
                     verify_success_cnt_capture: 0,
+                    cache_hit: 0,
                 };
 
-                info!("Coming new block verify request with request_id: {}, and the init block_verify_status: {:?}", request_id, block_verify_status);
+                info!("Coming new block verify request with request_id: {}, and the init block_verify_status: {:?}", request_id, new_block_verify_status);
                 //add big brace here to release write lock as soon as poobible
                 {
                     let mut block_verify_status_guard = block_verify_status.write();
@@ -317,7 +319,7 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<(VerifyType, u64, Ve
                                 blkresp.set_ret(resp.get_ret());
 
                                 let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
-                                trace!("Succeed to do verify blk req for request_id: {}, ret: {:?}, from submodule: {}", request_id, blkresp.get_ret(), sub_module);
+                                info!("Succeed to do verify blk req for request_id: {}, ret: {:?}, time cost: {:?}, and final status is: {:?}", request_id, blkresp.get_ret(), now.elapsed().unwrap(), *block_verify_status_guard);
                                 tx_pub.send((get_key(sub_module, true), msg.write_to_bytes().unwrap())).unwrap();
                             }
                         }

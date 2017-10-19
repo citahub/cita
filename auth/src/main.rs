@@ -118,6 +118,7 @@ fn main() {
         block_verify_result: VerifyResult::VerifyNotBegin,
         verify_success_cnt_required: 0,
         verify_success_cnt_capture: 0,
+        cache_hit: 0,
     };
     let block_verify_status = Arc::new(RwLock::new(block_verify_status));
     let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
@@ -161,6 +162,9 @@ fn main() {
                                   };
                                   if true == check_verify_request_preprocess(verify_req_info.clone(), verifier_clone.clone(), cache_clone.clone(), resp_sender.clone()) {
                                       trace!("check_verify_request_preprocess is true, and {} reqs have been pushed into req_grp", req_grp.len());
+                                      let mut block_verify_status_gurard = block_verify_status_clone.write();
+                                      block_verify_status_gurard.cache_hit += 1;
+
                                       continue;
                                   }
 
@@ -208,7 +212,6 @@ fn main() {
                       let resp_sender_clone = resp_sender.clone();
                       pool.execute(move || { verify_tx_group_service(req_grp, verifier_clone_for_pool, cache_clone_for_pool, resp_sender_clone); });
                   });
-
 
     let (pool_tx_sender, pool_tx_recver) = channel();
     let (pool_txs_sender, pool_txs_recver) = channel();
@@ -375,6 +378,7 @@ mod tests {
             block_verify_result: VerifyResult::VerifyNotBegin,
             verify_success_cnt_required: 0,
             verify_success_cnt_capture: 0,
+            cache_hit: 0,
         };
         let c = Arc::new(RwLock::new(block_verify_status));
         let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
@@ -413,6 +417,7 @@ mod tests {
             block_verify_result: VerifyResult::VerifyNotBegin,
             verify_success_cnt_required: 0,
             verify_success_cnt_capture: 0,
+            cache_hit: 0,
         };
         let c = Arc::new(RwLock::new(block_verify_status));
         let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
@@ -462,6 +467,7 @@ mod tests {
             block_verify_result: VerifyResult::VerifyNotBegin,
             verify_success_cnt_required: 0,
             verify_success_cnt_capture: 0,
+            cache_hit: 0,
         };
         let c = Arc::new(RwLock::new(block_verify_status));
         let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
@@ -495,6 +501,7 @@ mod tests {
             block_verify_result: VerifyResult::VerifyNotBegin,
             verify_success_cnt_required: 0,
             verify_success_cnt_capture: 0,
+            cache_hit: 0,
         };
         let c = Arc::new(RwLock::new(block_verify_status));
         let batch_new_tx_pool = Arc::new(Mutex::new(HashMap::new()));
@@ -530,6 +537,7 @@ mod tests {
             block_verify_result: VerifyResult::VerifyNotBegin,
             verify_success_cnt_required: 0,
             verify_success_cnt_capture: 0,
+            cache_hit: 0,
         };
         let block_verify_status = Arc::new(RwLock::new(block_verify_status));
         let verify_cache_hashmap = HashMap::new();
@@ -579,6 +587,7 @@ mod tests {
             block_verify_result: VerifyResult::VerifyNotBegin,
             verify_success_cnt_required: 0,
             verify_success_cnt_capture: 0,
+            cache_hit: 0,
         };
         let block_verify_status = Arc::new(RwLock::new(block_verify_status));
         let verify_cache_hashmap = HashMap::new();
@@ -633,6 +642,7 @@ mod tests {
             block_verify_result: VerifyResult::VerifyNotBegin,
             verify_success_cnt_required: 0,
             verify_success_cnt_capture: 0,
+            cache_hit: 0,
         };
         let block_verify_status = Arc::new(RwLock::new(block_verify_status));
         let verify_cache_hashmap = HashMap::new();
@@ -688,6 +698,7 @@ mod tests {
             block_verify_result: VerifyResult::VerifyNotBegin,
             verify_success_cnt_required: 0,
             verify_success_cnt_capture: 0,
+            cache_hit: 0,
         };
         let block_verify_status = Arc::new(RwLock::new(block_verify_status));
         let verify_cache_hashmap = HashMap::new();
