@@ -25,7 +25,6 @@ use env_info::EnvInfo;
 use error::Error;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
-use libchain::chain::Switch;
 use receipt::Receipt;
 use std::cell::{RefCell, RefMut};
 use std::collections::{HashMap, HashSet};
@@ -486,16 +485,13 @@ impl<B: Backend> State<B> {
 
     /// Execute a given transaction.
     /// This will change the state accordingly.
-    pub fn apply(&mut self, env_info: &EnvInfo, t: &mut SignedTransaction, tracing: bool, switch: &Switch) -> ApplyResult {
+    pub fn apply(&mut self, env_info: &EnvInfo, t: &mut SignedTransaction, tracing: bool, check_permission: bool) -> ApplyResult {
         //        let old = self.to_pod();
         let engine = &NullEngine::default();
-        let nonce = switch.nonce;
-        let permission = switch.permission;
         let options = TransactOptions {
             tracing: tracing,
             vm_tracing: false,
-            check_nonce: nonce,
-            check_permission: permission,
+            check_permission: check_permission,
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
@@ -794,8 +790,7 @@ mod tests {
         };
         let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(1));
         println!("contract_address {:?}", contract_address);
-        let switch = Switch::new();
-        let result = state.apply(&info, &mut signed, true, &switch).unwrap();
+        let result = state.apply(&info, &mut signed, true, false).unwrap();
         println!("{:?}", state.code(&contract_address).expect("result should unwrap.").expect("option should unwrap"));
         println!("{:?}", result.trace);
         assert_eq!(state.code(&contract_address).unwrap().unwrap(),

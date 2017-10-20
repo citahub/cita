@@ -58,8 +58,6 @@ pub struct TransactOptions {
     pub tracing: bool,
     /// Enable VM tracing.
     pub vm_tracing: bool,
-    /// Check transaction nonce before execution.
-    pub check_nonce: bool,
     /// Check permission before execution.
     pub check_permission: bool,
 }

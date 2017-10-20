@@ -98,8 +98,8 @@ fn main() {
     let db = Database::open(&config, &nosql_path).unwrap();
     let genesis = Genesis::init(genesis_path);
     let (sync_tx, sync_rx) = channel();
-    let switch_file = File::open(config_path).unwrap();
-    let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx, BufReader::new(switch_file));
+    let config_file = File::open(config_path).unwrap();
+    let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx, BufReader::new(config_file));
 
     let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, st.write_to_bytes().unwrap());
     info!("init status {:?}, {:?}", st.get_height(), st.get_hash());

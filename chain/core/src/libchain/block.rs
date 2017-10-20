@@ -22,7 +22,6 @@ use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
-use libchain::chain::Switch;
 use libchain::chain::TransactionHash;
 use libchain::extras::TransactionAddress;
 
@@ -317,11 +316,11 @@ impl OpenBlock {
     }
 
     ///execute transactions
-    pub fn apply_transactions(&mut self, switch: &Switch) {
+    pub fn apply_transactions(&mut self, check_permission: bool) {
         let mut transactions = Vec::with_capacity(self.body.transactions.len());
         for mut t in self.body.transactions.clone() {
             // Apply apply_transaction and set account nonce
-            self.apply_transaction(&mut t, switch);
+            self.apply_transaction(&mut t, check_permission);
             transactions.push(t);
         }
         self.body.set_transactions(transactions);
@@ -330,7 +329,7 @@ impl OpenBlock {
         self.set_gas_used(gas_used);
     }
 
-    pub fn apply_transaction(&mut self, t: &mut SignedTransaction, switch: &Switch) {
+    pub fn apply_transaction(&mut self, t: &mut SignedTransaction, check_permission: bool) {
         let mut env_info = self.env_info();
         if !self.account_gas.contains_key(&t.sender()) {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);
@@ -339,7 +338,7 @@ impl OpenBlock {
         env_info.account_gas_limit = *self.account_gas.get(t.sender()).expect("account should exist in account_gas_limit");
 
         let has_traces = self.traces.is_some();
-        match self.state.apply(&env_info, t, has_traces, switch) {
+        match self.state.apply(&env_info, t, has_traces, check_permission) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());

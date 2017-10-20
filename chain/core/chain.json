@@ -1,4 +1,3 @@
 {
-  "nonce": false,
-  "permission": false
+  "check_permission": false
 }

@@ -93,14 +93,13 @@ pub struct Status {
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
-pub struct Switch {
-    pub nonce: bool,
-    pub permission: bool,
+pub struct Config {
+    pub check_permission: bool,
 }
 
-impl Switch {
+impl Config {
     pub fn new() -> Self {
-        Switch { nonce: false, permission: false }
+        Config { check_permission: false }
     }
 }
 
@@ -229,8 +228,8 @@ pub struct Chain {
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 
-    // switch, check them or not
-    pub switch: Switch,
+    // switch, check permission or not
+    pub check_permission: bool,
 }
 
 /// Get latest status
@@ -293,8 +292,8 @@ impl Chain {
 
         let proof: Option<ProtoProof> = db.read(db::COL_EXTRA, &CurrentProof);
 
-        let sw: Switch = serde_json::from_reader(sconfig).expect("Failed to load json file.");
-        info!("config check: {:?}", sw);
+        let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
+        info!("config check: {:?}", sc);
         let max_height = AtomicUsize::new(0);
         max_height.store(header.number() as usize, Ordering::SeqCst);
 
@@ -322,7 +321,7 @@ impl Chain {
             creators: RwLock::new(HashSet::new()),
             block_gas_limit: AtomicUsize::new(18446744073709551615),
             account_gas_limit: RwLock::new(AccountGasLimit::new()),
-            switch: sw,
+            check_permission: sc.check_permission,
         };
 
         // Build chain config
@@ -880,7 +879,6 @@ impl Chain {
         let options = TransactOptions {
             tracing: analytics.transaction_tracing,
             vm_tracing: analytics.vm_tracing,
-            check_nonce: false,
             check_permission: false,
         };
 
@@ -908,9 +906,9 @@ impl Chain {
         let last_hashes = self.last_hashes();
         let senders = self.senders.read().clone();
         let creators = self.creators.read().clone();
-        let switch = &self.switch;
+        let check_permission = self.check_permission;
         let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into(), &self.account_gas_limit.read().clone()).unwrap();
-        open_block.apply_transactions(&switch);
+        open_block.apply_transactions(check_permission);
 
         open_block
     }
