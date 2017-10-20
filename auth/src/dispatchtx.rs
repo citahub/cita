@@ -141,7 +141,11 @@ impl Dispatchtx {
         let out_txs = self.get_txs_from_pool(height as u64, block_gas_limit, account_gas_limit);
         info!("public block txs height {} with {:?} txs on timestamp: {:?}", height, out_txs.len(), SystemTime::now());
         {
-            info!("{} txs have been added into tx_pool, and time cost is {:?}, tps: {:?}", self.add_to_pool_cnt, self.start_verify_time.elapsed().unwrap(), self.add_to_pool_cnt/self.start_verify_time.elapsed().unwrap().as_secs());
+            let duration = self.start_verify_time.elapsed().unwrap();
+            let time_duration_in_usec = duration.as_secs() * 1_000_000 + (duration.subsec_nanos() / 1_000) as u64;
+            if 0 != time_duration_in_usec {
+                info!("{} txs have been added into tx_pool, and time cost is {:?}, tps: {:?}", self.add_to_pool_cnt, duration, self.add_to_pool_cnt * 1_000_000 / time_duration_in_usec);
+            }
             self.add_to_pool_cnt = 0;
         }
 
