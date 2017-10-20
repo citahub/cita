@@ -88,4 +88,3 @@ pub mod contracts;
 pub use factory::*;
 pub use types::*;
 pub use util::journaldb;
-pub use proof::TendermintProof;
