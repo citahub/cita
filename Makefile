@@ -1,6 +1,5 @@
 # 1) prerequirement
-# ./scripts/install_sys.sh
-# ./scripts/install_rust.sh
+# ./scripts/install_develop.sh
 # 2) development
 # ./scripts/config_rabbitms.sh
 # ./scripts/speedup.sh

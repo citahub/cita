@@ -42,7 +42,7 @@ pub struct Dispatchtx {
     batch_forward_info: BatchForwardInfo,
     response_jsonrpc_cnt: u64,
     start_verify_time: SystemTime,
-    add_to_pool_cnt:  u64,
+    add_to_pool_cnt: u64,
 }
 
 pub struct BatchForwardInfo {
