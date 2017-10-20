@@ -41,6 +41,8 @@ pub struct Dispatchtx {
     data_from_pool: AtomicBool,
     batch_forward_info: BatchForwardInfo,
     response_jsonrpc_cnt: u64,
+    start_verify_time: SystemTime,
+    add_to_pool_cnt:  u64,
 }
 
 pub struct BatchForwardInfo {
@@ -67,6 +69,8 @@ impl Dispatchtx {
             data_from_pool: AtomicBool::new(false),
             batch_forward_info: batch_forward_info,
             response_jsonrpc_cnt: 0,
+            start_verify_time: SystemTime::now(),
+            add_to_pool_cnt: 0,
         };
 
         let num = dispatch.read_tx_from_wal();
@@ -119,6 +123,10 @@ impl Dispatchtx {
             trace!("response new tx {:?}, with response_jsonrpc_cnt = {}", response, self.response_jsonrpc_cnt);
             mq_pub.send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
+        if 0 == self.add_to_pool_cnt {
+            self.start_verify_time = SystemTime::now();
+        }
+        self.add_to_pool_cnt += 1;
     }
 
     pub fn deal_txs(&mut self, height: usize, txs: &HashSet<H256>, mq_pub: Sender<(String, Vec<u8>)>, block_gas_limit: u64, account_gas_limit: AccountGasLimit) {
@@ -132,6 +140,10 @@ impl Dispatchtx {
 
         let out_txs = self.get_txs_from_pool(height as u64, block_gas_limit, account_gas_limit);
         info!("public block txs height {} with {:?} txs on timestamp: {:?}", height, out_txs.len(), SystemTime::now());
+        {
+            info!("{} txs have been added into tx_pool, and time cost is {:?}, tps: {:?}", self.add_to_pool_cnt, self.start_verify_time.elapsed().unwrap(), self.add_to_pool_cnt/self.start_verify_time.elapsed().unwrap().as_secs());
+            self.add_to_pool_cnt = 0;
+        }
 
         if !out_txs.is_empty() {
             body.set_transactions(RepeatedField::from_vec(out_txs));
