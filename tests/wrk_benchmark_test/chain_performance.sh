@@ -5,6 +5,7 @@ BINARY_DIR=${SOURCE_DIR}/target/install
 
 cd ${BINARY_DIR}/
 rm -rf ${BINARY_DIR}/node*
+rm -rf ${BINARY_DIR}/data
 ${BINARY_DIR}/bin/admintool.sh > /dev/null 2>&1
 
 if [ $# == 0 ]; then

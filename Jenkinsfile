@@ -14,7 +14,7 @@ pipeline {
   }
     post {
         always {
-            archive 'target/install,target/*.log'
+            archive 'target/install/*,target/*.log'
         }
     }
 }

@@ -25,21 +25,10 @@ time make bench
 
 echo "################################################################################"
 echo "5) benchmark in deploy"
-cd tests/wrk_benchmark_test/
 echo "5.1) chain_performance"
-rm -rf ./data
 echo "performance test for create"
 time bash tests/wrk_benchmark_test/chain_performance.sh 1 10000 0 0
-rm -rf ./data
 echo "performance test for call"
 time bash tests/wrk_benchmark_test/chain_performance.sh 2 10000 0 0
-rm -rf ./data
 echo "performance test for store"
 time bash tests/wrk_benchmark_test/chain_performance.sh 3 10000 0 0
-
-echo "################################################################################"
-echo "6) archive result"
-now=$(date --iso-8601=minutes)
-mkdir -p ${SOURCE_DIR}/../${now}_${BASHPID}
-cp -rf ${SOURCE_DIR}/target/install  ${SOURCE_DIR}/../${now}_${BASHPID}/
-cp -rf ${SOURCE_DIR}/target/*.log  ${SOURCE_DIR}/../${now}_${BASHPID}/
