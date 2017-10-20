@@ -3,8 +3,8 @@ set -e
 
 display_help()
 {
-    echo 
-    echo "usage: $0 -a admin_id -l ip_list -n consensus_name -m crypto_method -d block_duration -t -b block_tx_limit -f tx_filter_size"
+    echo
+    echo "usage: $0 -a admin_id -l ip_list -n consensus_name -m crypto_method -d block_duration -t"
     echo "option:"
     echo "-a admin_id    admin identifier"
     echo "    default value is 'admin'"
@@ -23,15 +23,6 @@ display_help()
     echo
     echo "-t            consensus test flag, only valid for tendermint"
     echo
-    echo "-b block_tx_limit    the limit of tx count in one block"
-    echo "    default value is '300'"
-    echo
-    echo "-f tx_filter_size    the range of hisory tx to check duplication"
-    echo "    default value is '100000'"
-    echo
-    echo "-c tx_pool_size    flow control for tx pool"
-    echo "    default value is '0'"
-    echo
     echo "-h enable jsonrpc http"
     echo "   default enable 'true'"
     echo
@@ -48,7 +39,7 @@ BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
 export PATH=${PATH}:${BINARY_DIR}/bin
 
 # parse options
-while getopts 'a:l:n:m:d:tb:f:c:h:w:P:' OPT; do
+while getopts 'a:l:n:m:d:t:h:w:P:' OPT; do
     case $OPT in
         a)
             ADMIN_ID="$OPTARG";;
@@ -62,12 +53,6 @@ while getopts 'a:l:n:m:d:tb:f:c:h:w:P:' OPT; do
             DURATION="$OPTARG";;
         t)
             IS_TEST=true;;
-        b)
-            BLOCK_TX_LIMIT="$OPTARG";;
-        f)
-            TX_FILTER_SIZE="$OPTARG";;
-        c)
-            TX_POOL_SIZE="$OPTARG";;
         h)
             HTTP="$OPTARG";;
         w)
@@ -109,18 +94,6 @@ if [ ! -n "$IS_TEST" ]; then
     IS_TEST=false
 fi
 
-if [ ! -n "$BLOCK_TX_LIMIT" ]; then
-    BLOCK_TX_LIMIT=300
-fi
-
-if [ ! -n "$TX_FILTER_SIZE" ]; then
-    TX_FILTER_SIZE=100000
-fi
-
-if [ ! -n "$TX_POOL_SIZE" ]; then
-    TX_POOL_SIZE=0
-fi
-
 if [ -f "${CONFIG_DIR}/authorities" ]; then
     rm ${CONFIG_DIR}/authorities
 fi
@@ -158,7 +131,7 @@ python ${BINARY_DIR}/scripts/admintool/create_genesis.py --authorities "${CONFIG
 for ((ID=0;ID<$SIZE;ID++))
 do
     echo "Start creating Node " ${ID} " Configuration!"
-    python ${BINARY_DIR}/scripts/admintool/create_node_config.py ${CONFIG_DIR} $CONSENSUS_NAME ${ID} $DURATION $IS_TEST $BLOCK_TX_LIMIT $TX_FILTER_SIZE $TX_POOL_SIZE
+    python ${BINARY_DIR}/scripts/admintool/create_node_config.py ${CONFIG_DIR} $CONSENSUS_NAME ${ID} $DURATION $IS_TEST
     echo "End creating Node " ${ID} "Configuration!"
     cp genesis.json ${CONFIG_DIR}/node${ID}/genesis.json
     cp chain.json ${CONFIG_DIR}/node${ID}/chain.json

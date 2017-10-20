@@ -150,7 +150,6 @@ impl TenderMint {
             timer_seter: ts,
             timer_notity: rs,
 
-            //tx_pool:Pool::new(params.tx_filter_size,params.block_tx_limit),
             params: params,
             height: 0,
             round: INIT_ROUND,

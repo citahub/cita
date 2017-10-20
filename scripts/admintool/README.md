@@ -14,7 +14,7 @@ $ pip install -r requirements.txt
 
 结果如下：
 ```
-usage: ./admintool.sh -a admin_id -l ip_list -n consensus_name -m crypto_method -d block_duration -t -b block_tx_limit -f tx_filter_size
+usage: ./admintool.sh -a admin_id -l ip_list -n consensus_name -m crypto_method -d block_duration -t
 option:
 -a admin_id    admin identifier
     default value is 'admin'
@@ -32,15 +32,6 @@ option:
     default value is '3000'
 
 -t            consensus test flag, only valid for tendermint
-
--b block_tx_limit    the limit of tx count in one block
-    default value is '300'
-
--f tx_filter_size    the range of hisory tx to check duplication
-    default value is '100000'
-
--c tx_pool_size    flow control for tx pool
-    default value is '0'
 
 -h enable jsonrpc http
    default enable 'true'

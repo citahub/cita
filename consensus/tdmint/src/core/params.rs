@@ -48,9 +48,6 @@ pub struct TendermintParams {
     pub authorities: Vec<Address>,
     pub authority_n: usize,
     pub signer: Signer,
-    pub block_tx_limit: usize,
-    pub tx_filter_size: usize,
-    pub tx_pool_size: usize,
 }
 
 fn to_duration(s: u64) -> Duration {
@@ -66,9 +63,6 @@ impl From<engine_json::TendermintParams> for TendermintParams {
             authority_n: p.authorities.len(),
             authorities: p.authorities.into_iter().map(Into::into).collect::<Vec<_>>(),
             signer: Signer::from(p.signer),
-            block_tx_limit: p.block_tx_limit as usize,
-            tx_filter_size: p.tx_filter_size as usize,
-            tx_pool_size: p.tx_pool_size as usize,
             timer: TendermintTimer {
                 propose: p.timeout_propose.map_or(dt.propose, to_duration),
                 prevote: p.timeout_prevote.map_or(dt.prevote, to_duration),

@@ -27,9 +27,6 @@ pub struct TendermintParams {
     /// Valid authorities
     pub authorities: Vec<Address>,
     pub signer: PrivKey,
-    pub block_tx_limit: u64,
-    pub tx_filter_size: u64,
-    pub tx_pool_size: u64,
 
     #[serde(rename = "timeoutPropose")]
     pub timeout_propose: Option<u64>,
@@ -76,9 +73,6 @@ mod tests {
                 "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
                 "duration": 3,
                 "signer": "{}",
-                "block_tx_limit": 1000,
-                "tx_filter_size": 5000,
-                "tx_pool_size": 50000,
                 "is_test": true
             }}"#,
             signer
@@ -96,9 +90,6 @@ mod tests {
                     "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
                     "duration": 3,
                     "signer": "{}",
-                    "block_tx_limit": 1000,
-                    "tx_filter_size": 5000,
-                    "tx_pool_size": 50000,
                     "is_test": true
                 }}
             }}"#,

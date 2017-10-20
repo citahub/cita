@@ -1,5 +1,5 @@
-#!/usr/bin/env python  
-# coding=utf-8  
+#!/usr/bin/env python
+# coding=utf-8
 
 import json
 import os
@@ -11,9 +11,6 @@ def main():
     path = os.path.join(sys.argv[1], "node" + sys.argv[3])
     duration = int(sys.argv[4])
     is_test = sys.argv[5] == "true"
-    block_tx_limit = int(sys.argv[6])
-    tx_filter_size = int(sys.argv[7])
-    tx_pool_size = int(sys.argv[8])
     secret_path = os.path.join(path, "privkey")
     with open(secret_path, "r") as secret_key:
         signer = secret_key.read()
@@ -25,8 +22,7 @@ def main():
         for authority in authority_file:
             authorities.append(authority.strip('\n'))
 
-    params = dict(authorities=authorities, duration=duration, is_test=is_test, signer=signer,
-                  block_tx_limit=block_tx_limit, tx_filter_size=tx_filter_size, tx_pool_size=tx_pool_size)
+    params = dict(authorities=authorities, duration=duration, is_test=is_test, signer=signer)
     name = sys.argv[2]
     if name == "tendermint":
         tendermint = dict(params=params)
