@@ -327,6 +327,33 @@ params: [
 ]
 ```
 
+##### Returns
+Object - A receipt object:
+
+* transactionHash: DATA, 32 Bytes - hash of the transaction.
+* transactionIndex: QUANTITY - transaction index.
+* blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its not in block.
+* blockNumber: QUANTITY - block number where this transaction was in. null when its not in block.
+* cumulativeGasUsed: QUANTITY - The total amount of gas used when this transaction was executed in the block.
+* gasUsed: QUANTITY - The amount of gas used by this specific transaction alone.
+* contractAddress: DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
+* logs: Array - Array of log objects, which this transaction generated.
+* root : DATA 32 bytes of post-transaction stateroot 
+* errorMessage: String, execution error message.
+
+##### receipt error messages
+* No transaction permission.
+* No contract permission.
+* Not enough base gas.
+* Block gas limit reached.
+* Account gas limit reached.
+* Out of gas
+* Jump position wasn't marked with JUMPDEST instruction.
+* Instruction is not supported.
+* Not enough stack elements to execute instruction.
+* Execution would exceed defined Stack Limit.
+* EVM internal error.
+
 ##### Example
 ```js
 // Request

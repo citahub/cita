@@ -23,9 +23,10 @@
 use engines::NullEngine;
 use env_info::EnvInfo;
 use error::Error;
+use evm::Error as EvmError;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
-use receipt::Receipt;
+use receipt::{Receipt, ReceiptError};
 use std::cell::{RefCell, RefMut};
 use std::collections::{HashMap, HashSet};
 use std::collections::hash_map::Entry;
@@ -499,8 +500,15 @@ impl<B: Backend> State<B> {
 
         // TODO uncomment once to_pod() works correctly.
         //        trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
-
-        let receipt = Receipt::new(None, e.cumulative_gas_used, e.logs, None);
+        let receipt_error = e.exception.and_then(|evm_error| match evm_error {
+                                                     EvmError::OutOfGas => Some(ReceiptError::OutOfGas),
+                                                     EvmError::BadJumpDestination { .. } => Some(ReceiptError::BadJumpDestination),
+                                                     EvmError::BadInstruction { .. } => Some(ReceiptError::BadInstruction),
+                                                     EvmError::StackUnderflow { .. } => Some(ReceiptError::StackUnderflow),
+                                                     EvmError::OutOfStack { .. } => Some(ReceiptError::OutOfStack),
+                                                     EvmError::Internal(_) => Some(ReceiptError::Internal),
+                                                 });
+        let receipt = Receipt::new(None, e.cumulative_gas_used, e.logs, receipt_error);
         trace!(target: "state", "Transaction receipt: {:?}", receipt);
         Ok(ApplyOutcome { receipt: receipt, trace: e.trace })
     }

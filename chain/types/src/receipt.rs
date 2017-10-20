@@ -23,14 +23,21 @@ use rlp::*;
 use util::{H256, U256, Address};
 use util::HeapSizeOf;
 
-// TODO: Add evm errors?
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
+    //ExecutionError
     NoTransactionPermission,
     NoContractPermission,
     NotEnoughBaseGas,
     BlockGasLimitReached,
     AccountGasLimitReached,
+    //EVM error(chain/core/src/evm/evm.rs)
+    OutOfGas,
+    BadJumpDestination,
+    BadInstruction,
+    StackUnderflow,
+    OutOfStack,
+    Internal,
 }
 
 impl ReceiptError {
@@ -42,6 +49,12 @@ impl ReceiptError {
             ReceiptError::NotEnoughBaseGas => "Not enough base gas.",
             ReceiptError::BlockGasLimitReached => "Block gas limit reached.",
             ReceiptError::AccountGasLimitReached => "Account gas limit reached.",
+            ReceiptError::OutOfGas => "Out of gas.",
+            ReceiptError::BadJumpDestination => "Jump position wasn't marked with JUMPDEST instruction.",
+            ReceiptError::BadInstruction => "Instruction is not supported.",
+            ReceiptError::StackUnderflow => "Not enough stack elements to execute instruction.",
+            ReceiptError::OutOfStack => "Execution would exceed defined Stack Limit.",
+            ReceiptError::Internal => "EVM internal error.",
         };
         desc.to_string()
     }
@@ -55,6 +68,11 @@ impl Decodable for ReceiptError {
             2 => Ok(ReceiptError::NotEnoughBaseGas),
             3 => Ok(ReceiptError::BlockGasLimitReached),
             4 => Ok(ReceiptError::AccountGasLimitReached),
+            5 => Ok(ReceiptError::BadJumpDestination),
+            6 => Ok(ReceiptError::BadInstruction),
+            7 => Ok(ReceiptError::StackUnderflow),
+            8 => Ok(ReceiptError::OutOfStack),
+            9 => Ok(ReceiptError::Internal),
             _ => Err(DecoderError::Custom("Unknown Receipt error.")),
         }
     }
