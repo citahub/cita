@@ -391,6 +391,10 @@ impl Block {
     pub fn crypt_hash_hex(&self) -> String {
         self.get_header().crypt_hash_hex()
     }
+
+    pub fn check_hash(&self, hash: H256) -> bool {
+        self.crypt_hash() == hash && self.get_body().transactions_root().0 == *self.get_header().get_transactions_root()
+    }
 }
 
 impl BlockHeader {

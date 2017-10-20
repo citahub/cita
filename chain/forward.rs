@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 pub use byteorder::{BigEndian, ByteOrder};
+use core::TendermintProof;
 use core::filters::eth_filter::EthFilter;
 use core::libchain::call_request::CallRequest;
 pub use core::libchain::chain::*;
@@ -243,7 +244,8 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
             let msg: communication::Message = response.into();
             ctx_pub.send((topic, msg.write_to_bytes().unwrap())).unwrap();
         }
-
+        // Block from consensus
+        // Need save block proof
         MsgClass::BLOCKWITHPROOF(proofblk) => {
             let mut guard = chain.block_map.write();
 
@@ -267,12 +269,21 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
             }
         }
 
+        // Block from remote.
+        // Need check proof and block hash
         MsgClass::BLOCK(problock) => {
             let current_height = chain.get_current_height();
             let max_height = chain.get_max_height();
             let blk_height = problock.get_header().get_height();
+            // Check block hash
+            let proof = TendermintProof::from(problock.get_header().get_proof().clone());
+            if !problock.check_hash(proof.proposal) {
+                return;
+            }
+            // Check block proof
             let block = Block::from(problock);
-            let check_height = Chain::check_block_proof(&block, 0);
+            let authorities = chain.nodes.read().clone();
+            let check_height = Chain::check_block_proof(&block, 0, &authorities);
 
             if blk_height == ::std::u64::MAX {
                 if check_height != ::std::usize::MAX {

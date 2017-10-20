@@ -918,7 +918,7 @@ impl Chain {
     /*
     check the proof of height. when height==0,check the proof inner height.
     */
-    pub fn check_block_proof(block: &Block, height: usize) -> usize {
+    pub fn check_block_proof(block: &Block, height: usize, authorities: &[Address]) -> usize {
         match block.proof_type() {
             Some(ProofType::Tendermint) => {
                 let proof = TendermintProof::from(block.proof().clone());
@@ -930,7 +930,7 @@ impl Chain {
                 if height > 0 {
                     check_height = height;
                 }
-                if proof.simple_check(check_height) {
+                if proof.check(check_height, authorities) {
                     return check_height;
                 }
             }
@@ -946,12 +946,6 @@ impl Chain {
     /// 2. Commit block
     /// 3. Update cache
     pub fn add_block(&self, batch: &mut DBTransaction, block: Block) -> Option<Header> {
-        let height = block.number();
-        let res = Chain::check_block_proof(&block, height as usize - 1);
-        if res == ::std::usize::MAX {
-            return None;
-        }
-
         if self.validate_hash(block.parent_hash()) {
             let mut open_block = self.execute_block(block);
             let closed_block = open_block.close();
