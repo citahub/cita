@@ -441,24 +441,21 @@ impl TenderMint {
             if let Some(hash) = self.pre_hash {
                 let buf = hash.to_vec();
                 let _ = self.wal_log.save(LOG_TYPE_PREV_HASH, &buf);
+            }
 
-                if self.proof.height != now_height && now_height > 0 {
-                    if let Some(phash) = self.proposal {
-                        let mut res = self.last_commit_round.and_then(|cround| self.generate_proof(now_height, cround, phash.clone()));
-
-                        if res.is_none() {
-                            res = self.lock_round.and_then(|cround| self.generate_proof(now_height, cround, phash.clone()));
-                        }
-
-                        if let Some(proof) = res {
-                            self.proof = proof;
-                        }
+            if self.proof.height != now_height && now_height > 0 {
+                if let Some(phash) = self.proposal {
+                    let mut res = self.last_commit_round.and_then(|cround| self.generate_proof(now_height, cround, phash.clone()));
+                    if res.is_none() {
+                        res = self.lock_round.and_then(|cround| self.generate_proof(now_height, cround, phash.clone()));
+                    }
+                    if let Some(proof) = res {
+                        self.proof = proof;
                     }
                 }
             }
-
             if !self.proof.is_default() {
-                if self.proof.height == now_height && self.proof.round == round {
+                if self.proof.height == now_height {
                     self.save_wal_proof();
                 } else {
                     info!("try my best to save proof not ok,at height {} round {} now height {}", now_height, round, self.height);
