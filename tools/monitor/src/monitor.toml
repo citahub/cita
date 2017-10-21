@@ -1,0 +1,51 @@
+
+name="monitor"
+command = "./monitor"
+pidfile = ".monitor.pid"
+logfile = "log/monitor.debug.log"
+errfile = "log/monitor.err.log"
+
+[[process]]
+name = "auth"
+command = "./bin/auth"
+pidfile = ".auth.pid"
+logfile = "log/auth.debug.log"
+errfile = "log/auth.err.log"
+respawn = 5
+
+[[process]]
+name = "network"
+command = "./bin/network"
+args = ["-c","network.toml"]
+pidfile = ".network.pid"
+logfile = "log/network.debug.log"
+errfile = "log/network.err.log"
+respawn = 1
+
+[[process]]
+name = "consensus_tendermint"
+command = "./bin/consensus_tendermint"
+args = ["-c","consensus.json"]
+pidfile = ".consensus_tendermint.pid"
+logfile = "log/consensus_tendermint.debug.log"
+errfile = "log/consensus_tendermint.err.log"
+respawn = 1
+
+[[process]]
+name = "jsonrpc"
+command = "./bin/jsonrpc"
+args = ["-c","jsonrpc.json"]
+pidfile = ".jsonrpc.pid"
+logfile = "log/jsonrpc.debug.log"
+errfile = "log/jsonrpc.err.log"
+respawn = 1
+
+
+[[process]]
+name = "chain"
+command = "./bin/chain"
+args = ["-g","genesis.json","-c","chain.json"]
+pidfile = ".chain.pid"
+logfile = "log/chain.debug.log"
+errfile = "log/chain.err.log"
+respawn = 1
