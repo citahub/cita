@@ -38,7 +38,7 @@ use util::Address;
 use util::H256;
 
 // TODO: RPC Errors
-pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub: Sender<(String, Vec<u8>)>) {
+pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub: &Sender<(String, Vec<u8>)>) {
     let (key, msg) = rx.recv().unwrap();
     let (cmd_id, origin, content_ext) = parse_msg(msg.as_slice());
 

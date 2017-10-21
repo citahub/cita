@@ -40,8 +40,8 @@ impl Callchain {
     }
 
 
-    pub fn add_block(&self, block: Block) {
-        self.chain.set_block(block);
+    pub fn add_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        self.chain.set_block(block, ctx_pub);
     }
 
     pub fn get_height(&self) -> u64 {

@@ -1058,7 +1058,7 @@ mod tests {
         let mut peers = new_cluster(2);
         let peer_ids: Vec<ServerId> = peers.keys().cloned().collect();
         let mut actions = Actions::new();
-        let mut follower = peers.get_mut(&peer_ids[0]).unwrap();
+        let follower = peers.get_mut(&peer_ids[0]).unwrap();
         let value: &[u8] = b"foo";
         let entries = vec![(Term(1), value), (Term(1), value)];
         let msg1 = into_reader(&*messages::append_entries_request(Term(1), LogIndex(0), Term(0), &entries, LogIndex(0)));

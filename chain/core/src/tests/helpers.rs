@@ -37,6 +37,7 @@ use std::io::Write;
 use std::process::Command;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
+use std::thread;
 use std::time::{UNIX_EPOCH, Instant};
 use test::black_box;
 use types::transaction::SignedTransaction;
@@ -156,10 +157,13 @@ pub fn create_block(chain: &Chain, to: Address, data: &Vec<u8>, nonce: (u32, u32
 
 pub fn bench_chain(code: &Vec<u8>, data: &Vec<u8>, tpb: u32, native_address: Address) -> u64 {
     let chain = init_chain();
-
+    let (sync_tx, recv) = channel();
+    thread::spawn(move || loop {
+                      let _ = recv.recv();
+                  });
     // 1) deploy contract
     let block = create_block(&chain, Address::from(0), code, (0, 1));
-    chain.set_block(block.clone());
+    chain.set_block(block.clone(), &sync_tx);
 
     // 2) execute contract
     let mut nonce = 1;
@@ -169,7 +173,7 @@ pub fn bench_chain(code: &Vec<u8>, data: &Vec<u8>, tpb: u32, native_address: Add
     let bench = |to: Address, tpb: u32, nonce: u32, data: &Vec<u8>| -> u64 {
         let block = create_block(&chain, to, data, (nonce, tpb + nonce));
         let start = Instant::now();
-        black_box(chain.set_block(block));
+        black_box(chain.set_block(block, &sync_tx));
         let elapsed = start.elapsed();
         chain.collect_garbage();
         u64::from(tpb) * 1_000_000_000 / (elapsed.as_secs() * 1_000_000_000 + u64::from(elapsed.subsec_nanos()))

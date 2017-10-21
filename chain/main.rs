@@ -111,20 +111,20 @@ fn main() {
     ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
 
     let synchronizer = Synchronizer::new(chain.clone());
-    synchronizer.sync_block_tx_hashes(status.get_height(), ctx_pub.clone());
+    synchronizer.sync_block_tx_hashes(status.get_height(), &ctx_pub);
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
     thread::spawn(move || loop {
                       let chain = chain1.clone();
-                      forward::chain_result(chain, &rx, ctx_pub1.clone());
+                      forward::chain_result(chain, &rx, &ctx_pub1);
                   });
 
     thread::spawn(move || loop {
                       let notify = sync_rx.recv_timeout(Duration::new(8, 0));
                       if notify.is_ok() {
-                          synchronizer.sync(ctx_pub.clone());
+                          synchronizer.sync(&ctx_pub);
                       } else {
-                          synchronizer.sync_status(ctx_pub.clone());
+                          synchronizer.sync_status(&ctx_pub);
                       }
                   });
     //garbage collect

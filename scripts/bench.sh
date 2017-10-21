@@ -5,7 +5,7 @@ set -e
 SOURCE_DIR=$(readlink -f $(dirname $(readlink -f $0))/..)
 cd  ${SOURCE_DIR}
 source ~/.cargo/env
-
+RUST_BACKTRACE=1
 
 echo "################################################################################"
 echo "1) setup"

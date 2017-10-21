@@ -38,11 +38,12 @@ use libchain::extras::*;
 
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
-use libproto::FullTransaction;
+use libproto::*;
 use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus, Proof as ProtoProof};
 
 use native::Factory as NativeFactory;
 use proof::TendermintProof;
+use protobuf::Message;
 use protobuf::RepeatedField;
 use receipt::{Receipt, LocalizedReceipt};
 use serde_json;
@@ -703,7 +704,7 @@ impl Chain {
         hashes.push_front(hash.clone());
     }
 
-    /// Commit block in db, including:
+    /// Commit block in db batch and update cache, including:
     /// 1. Block including transactions
     /// 2. TransactionAddress
     /// 3. State
@@ -764,6 +765,24 @@ impl Chain {
         // Store triedb changes in journal db
         state.journal_under(batch, height, &hash).expect("DB commit failed");
         self.prune_ancient(state).expect("mark_canonical failed");
+    }
+
+    /// Delivery rich status to consensus
+    /// Consensus should resend block if chain commit block failed.
+    fn delivery_rich_status(&self, header: &Header, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let current_hash = header.hash().clone();
+        let current_height = header.number();
+        let nodes: Vec<Address> = self.nodes.read().clone();
+        drop(self);
+
+        let mut rich_status = ProtoRichStatus::new();
+        rich_status.set_hash(current_hash.0.to_vec());
+        rich_status.set_height(current_height);
+        let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
+        rich_status.set_nodes(RepeatedField::from_vec(node_list));
+
+        let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
+        ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
     fn prune_ancient(&self, mut state_db: StateDB) -> Result<(), UtilError> {
@@ -943,7 +962,7 @@ impl Chain {
     /// 1. Execute block
     /// 2. Commit block
     /// 3. Update cache
-    pub fn add_block(&self, batch: &mut DBTransaction, block: Block) -> Option<Header> {
+    pub fn add_block(&self, batch: &mut DBTransaction, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) -> Option<Header> {
         let height = block.number();
         let res = Chain::check_block_proof(&block, height as usize - 1);
         if res == ::std::usize::MAX {
@@ -954,6 +973,11 @@ impl Chain {
             let mut open_block = self.execute_block(block);
             let closed_block = open_block.close();
             let header = closed_block.header().clone();
+            // reload_config
+            self.reload_config();
+            // Delivery rich status to consensus
+            self.delivery_rich_status(&header, ctx_pub);
+            // Commit block in db batch and update cache
             self.commit_block(batch, closed_block);
             self.update_last_hashes(&header.hash());
             Some(header)
@@ -990,12 +1014,12 @@ impl Chain {
         }
     }
 
-    pub fn set_block(&self, block: Block) -> Option<ProtoRichStatus> {
+    pub fn set_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) -> Option<ProtoStatus> {
         let height = block.number();
         trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
         if self.validate_height(height) {
             let mut batch = self.db.transaction();
-            if let Some(header) = self.add_block(&mut batch, block) {
+            if let Some(header) = self.add_block(&mut batch, block, ctx_pub) {
 
                 trace!("set_block current_hash!!!!!!{:?} {:?}", height, header.hash());
 
@@ -1011,18 +1035,11 @@ impl Chain {
                     }
                     _ => {}
                 }
+                // Saving in db
                 self.db.write(batch).expect("DB write failed.");
 
-                // reload_config
-                self.reload_config();
-
-                let mut rich_status = RichStatus::new();
-                rich_status.set_hash(*status.hash());
-                rich_status.set_number(status.number());
-                rich_status.set_nodes(self.nodes.read().clone());
-
                 info!("chain update {:?}", height);
-                Some(rich_status.protobuf())
+                Some(status.protobuf())
             } else {
                 let mut guard = self.block_map.write();
                 let _ = guard.remove(&height);
@@ -1112,6 +1129,8 @@ mod tests {
     use self::rustc_serialize::hex::FromHex;
     use super::*;
     use std::env;
+    use std::sync::mpsc::channel;
+    use std::thread;
     use test::Bencher;
     use tests::helpers::{init_chain, bench_chain, solc, create_block};
     use util::{H256, Address};
@@ -1173,7 +1192,11 @@ mod tests {
         println!("data: {:?}", data);
 
         let block = create_block(&chain, Address::from(0), &data, (0, 2));
-        chain.set_block(block.clone());
+        let (ctx_pub, recv) = channel();
+        thread::spawn(move || loop {
+                          let _ = recv.recv();
+                      });
+        chain.set_block(block.clone(), &ctx_pub);
 
         let tx = &block.body.transactions[0];
         let txhash = tx.hash();
@@ -1218,7 +1241,11 @@ mod tests {
         "#;
         let (data, _) = solc("ConstructSol", source);
         let block = create_block(&chain, Address::from(0), &data, (0, 1));
-        chain.set_block(block.clone());
+        let (ctx_pub, recv) = channel();
+        thread::spawn(move || loop {
+                          let _ = recv.recv();
+                      });
+        chain.set_block(block.clone(), &ctx_pub);
 
         let txhash = block.body().transactions()[0].hash();
         let receipt = chain.localized_receipt(txhash).unwrap();
@@ -1230,7 +1257,7 @@ mod tests {
         // set a=10
         let data = "60fe47b1000000000000000000000000000000000000000000000000000000000000000a".from_hex().unwrap();
         let block = create_block(&chain, contract_address, &data, (1, 2));
-        chain.set_block(block.clone());
+        chain.set_block(block.clone(), &ctx_pub);
         let txhash = block.body().transactions()[0].hash();
         let receipt = chain.localized_receipt(txhash).unwrap();
         println!("{:?}", receipt);

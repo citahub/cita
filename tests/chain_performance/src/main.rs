@@ -74,7 +74,11 @@ fn create_contract(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_prof
     info!("===============start add block===============");
     profifer(flag_prof_start, flag_prof_duration);
     let sys_time = time::SystemTime::now();
-    call.add_block(block.clone());
+    let (ctx_pub, recv) = channel();
+    thread::spawn(move || loop {
+                      let _ = recv.recv();
+                  });
+    call.add_block(block.clone(), &ctx_pub);
     info!("===============end add block===============");
     let duration = sys_time.elapsed().unwrap();
     let secs = duration.as_secs() * 1000000 + (duration.subsec_nanos() / 1000) as u64;
@@ -95,11 +99,16 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
     hash = tx.hash();
     txs.push(tx);
 
+    let (ctx_pub, recv) = channel();
+    thread::spawn(move || loop {
+                      let _ = recv.recv();
+                  });
+
     //构造block
     {
         let h = call.get_height() + 1;
         let (_, block) = Generateblock::build_block(txs.clone(), pre_hash, h as u64);
-        call.add_block(block.clone());
+        call.add_block(block.clone(), &ctx_pub);
     }
 
     let addr = call.get_contract_address(hash);
@@ -120,7 +129,7 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
     info!("===============start add block===============");
     profifer(flag_prof_start, flag_prof_duration);
     let sys_time = time::SystemTime::now();
-    call.add_block(block.clone());
+    call.add_block(block.clone(), &ctx_pub);
     let duration = sys_time.elapsed().unwrap();
     info!("===============end add block===============");
     let secs = duration.as_secs() * 1000000 + (duration.subsec_nanos() / 1000) as u64;

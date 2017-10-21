@@ -41,7 +41,7 @@ impl Synchronizer {
                  })
     }
 
-    pub fn sync(&self, ctx_pub: Sender<(String, Vec<u8>)>) {
+    pub fn sync(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let flag = !self.chain.block_map.read().is_empty();
         if flag {
             let start_height = self.chain.get_current_height() + 1;
@@ -62,7 +62,7 @@ impl Synchronizer {
                     let block = value.1;
                     let is_verified = value.2;
                     if is_verified {
-                        self.add_block(ctx_pub.clone(), block);
+                        self.add_block(ctx_pub, block);
                     } else {
                         trace!("chain proof not ok height: {}, wait next sync", height);
                         break;
@@ -76,7 +76,7 @@ impl Synchronizer {
         self.chain.is_sync.store(false, Ordering::SeqCst);
     }
 
-    pub fn sync_status(&self, ctx_pub: Sender<(String, Vec<u8>)>) {
+    pub fn sync_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         self.chain.is_sync.store(false, Ordering::SeqCst);
         let current_hash = self.chain.get_current_hash();
         let current_height = self.chain.get_current_height();
@@ -102,16 +102,11 @@ impl Synchronizer {
         ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
     }
 
-    fn add_block(&self, ctx_pub: Sender<(String, Vec<u8>)>, blk: Block) {
+    fn add_block(&self, ctx_pub: &Sender<(String, Vec<u8>)>, blk: Block) {
         trace!("chain sync add blk {:?}", blk.number());
-        let rich_status = self.chain.set_block(blk);
+        let status = self.chain.set_block(blk, &ctx_pub);
 
-        if let Some(rich_status) = rich_status {
-            let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
-            trace!("chain after sync current height {:?}  known height{:?}", self.chain.get_current_height(), self.chain.get_max_height());
-            ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-
-            let status: Status = rich_status.into();
+        if let Some(status) = status {
             let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
             trace!("add_block chain.status {:?}, {:?}", status.get_height(), status.get_hash());
             ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
@@ -120,7 +115,7 @@ impl Synchronizer {
         }
     }
 
-    pub fn sync_block_tx_hashes(&self, block_height: u64, ctx_pub: Sender<(String, Vec<u8>)>) {
+    pub fn sync_block_tx_hashes(&self, block_height: u64, ctx_pub: &Sender<(String, Vec<u8>)>) {
         if let Some(tx_hashes) = self.chain.transaction_hashes(BlockId::Number(block_height)) {
             //prepare and send the block tx hashes to auth
             let mut block_tx_hashes = BlockTxHashes::new();
