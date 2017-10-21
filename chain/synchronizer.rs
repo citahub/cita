@@ -23,7 +23,6 @@ use protobuf::{Message, RepeatedField};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
-use types::ids::BlockId;
 use util::Address;
 
 const BATCH_SYNC: u64 = 120;
@@ -110,28 +109,6 @@ impl Synchronizer {
             let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
             trace!("add_block chain.status {:?}, {:?}", status.get_height(), status.get_hash());
             ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
-            let block_height = status.get_height();
-            self.sync_block_tx_hashes(block_height, ctx_pub);
-        }
-    }
-
-    pub fn sync_block_tx_hashes(&self, block_height: u64, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        if let Some(tx_hashes) = self.chain.transaction_hashes(BlockId::Number(block_height)) {
-            //prepare and send the block tx hashes to auth
-            let mut block_tx_hashes = BlockTxHashes::new();
-            block_tx_hashes.set_height(block_height);
-            let mut tx_hashes_in_u8 = Vec::new();
-            for tx_hash_in_h256 in tx_hashes.iter() {
-                tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
-            }
-            block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
-            block_tx_hashes.set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
-
-            let msg = factory::create_msg(submodules::CHAIN, topics::BLOCK_TXHASHES, communication::MsgType::BLOCK_TXHASHES, block_tx_hashes.write_to_bytes().unwrap());
-
-            ctx_pub.send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-            trace!("sync block's tx hashes for height:{}", block_height);
         }
     }
 }
