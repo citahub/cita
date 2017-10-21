@@ -17,6 +17,7 @@ setup() {
     sudo rabbitmqctl list_vhosts | grep ${node}                            > /dev/null && sudo rabbitmqctl delete_vhost ${node}    > /dev/null
     sudo rabbitmqctl add_vhost ${node}                                     > /dev/null
     sudo rabbitmqctl set_permissions -p ${node} guest '.*' '.*' '.*'       > /dev/null
+    sudo rabbitmq-plugins enable rabbitmq_management                       > /dev/null
 }
 
 start() {
@@ -24,6 +25,13 @@ start() {
 
     pid_file=.pid
     mkdir -p logs
+
+    # clean queues
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/auth      > /dev/null 2>&1
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/chain     > /dev/null 2>&1
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/consensus > /dev/null 2>&1
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/jsonrpc   > /dev/null 2>&1
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/network   > /dev/null 2>&1
 
     if [ -z ${debug} ]; then
         nohup auth                                                       \
