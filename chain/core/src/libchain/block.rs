@@ -262,7 +262,6 @@ impl TransactionHash for ExecutedBlock {
 pub struct OpenBlock {
     exec_block: ExecutedBlock,
     last_hashes: Arc<LastHashes>,
-    tx_hashes: Vec<bool>,
     account_gas_limit: U256,
     account_gas: HashMap<Address, U256>,
 }
@@ -290,7 +289,6 @@ impl OpenBlock {
         let r = OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes: last_hashes,
-            tx_hashes: Vec::new(),
             account_gas_limit: account_gas_limit.common_gas_limit.into(),
             account_gas: account_gas_limit.specific_gas_limit.iter().fold(HashMap::new(), |mut acc, (key, value)| {
                 acc.insert(*key, (*value).into());
@@ -373,7 +371,6 @@ impl OpenBlock {
             Err(Error::Execution(ExecutionError::AccountGasLimitReached { gas_limit: _, gas: _ })) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::AccountGasLimitReached));
                 self.receipts.push(Some(receipt));
-                self.tx_hashes.push(false);
             }
             Err(_) => {
                 self.receipts.push(None);
