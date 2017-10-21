@@ -42,18 +42,18 @@ fn main() {
         start_pubsub("latency_res", vec!["latency_req"], tx_sub, rx_pub);
         loop {
             let (_, msg) = rx_sub.recv().unwrap();
-            tx_pub.clone().send(("latency_res".to_string(), msg)).unwrap();
+            tx_pub.send(("latency_res".to_string(), msg)).unwrap();
         }
     });
 
-    let filesize = vec![0; size];
-    tx_pub.clone().send(("latency_req".to_string(), filesize)).unwrap();
+    let filesize = vec![0u8; size];
+    tx_pub.send(("latency_req".to_string(), filesize)).unwrap();
 
     let mut count = 0;
     let start = SystemTime::now();
     loop {
         let (_, msg) = rx_sub.recv().unwrap();
-        tx_pub.clone().send(("latency_req".to_string(), msg)).unwrap();
+        tx_pub.send(("latency_req".to_string(), msg)).unwrap();
         count = count + 1;
         if count == max {
             let sys_time = SystemTime::now();

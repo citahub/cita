@@ -128,7 +128,7 @@ fn main() {
 
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("auth", vec!["*.verify_req", "chain.txhashes", "jsonrpc.new_tx_batch", "net.tx"], tx_sub, rx_pub);
+    start_pubsub("auth", vec!["consensus.verify_req", "chain.txhashes", "jsonrpc.new_tx_batch", "net.tx"], tx_sub, rx_pub);
 
     let (block_req_sender, block_req_receiver) = channel();
     let (single_req_sender, single_req_receiver) = channel();

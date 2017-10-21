@@ -129,7 +129,7 @@ fn main() {
     let (tx_pub, rx_pub) = channel();
     //used for buffer message
     let (tx_relay, rx_relay) = channel();
-    start_pubsub("jsonrpc", vec!["*.rpc"], tx_sub, rx_pub);
+    start_pubsub("jsonrpc", vec!["auth.rpc", "chain.rpc"], tx_sub, rx_pub);
 
     //mq
     let mut mq_handle = mq_hanlder::MqHandler::new();

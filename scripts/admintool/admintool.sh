@@ -31,6 +31,8 @@ display_help()
     echo
     echo "-P define jsonrpc HTTP port or websocket port"
     echo "   default port is '1337' or '4337'"
+    echo "-k start with kafka"
+    echo
     echo
     exit 0
 }
@@ -39,7 +41,7 @@ BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
 export PATH=${PATH}:${BINARY_DIR}/bin
 
 # parse options
-while getopts 'a:l:n:m:d:t:h:w:P:' OPT; do
+while getopts 'a:l:n:m:d:t:h:w:P:k' OPT; do
     case $OPT in
         a)
             ADMIN_ID="$OPTARG";;
@@ -53,6 +55,8 @@ while getopts 'a:l:n:m:d:t:h:w:P:' OPT; do
             DURATION="$OPTARG";;
         t)
             IS_TEST=true;;
+        k)
+            START_KAFKA=true;;
         h)
             HTTP="$OPTARG";;
         w)
@@ -142,7 +146,8 @@ sed -i "s/tendermint/$CONSENSUS_NAME/g" ${BINARY_DIR}/bin/cita
 for ((ID=0;ID<$SIZE;ID++))
 do
     rm -f ${CONFIG_DIR}/node${ID}/.env
-    echo "KAFKA_URL=localhost:9092"                         >> ${CONFIG_DIR}/node${ID}/.env
+    port=`expr 9092 + $ID`
+    echo "KAFKA_URL=localhost:$port"                         >> ${CONFIG_DIR}/node${ID}/.env
     echo "AMQP_URL=amqp://guest:guest@localhost/node${ID}"  >> ${CONFIG_DIR}/node${ID}/.env
     echo "DATA_PATH=./data"                                 >> ${CONFIG_DIR}/node${ID}/.env
 done
@@ -199,8 +204,19 @@ do
     echo "########################################################"
 done
 
+if [ "$START_KAFKA" == "true" ];then
+    echo "Kafka Configuration creating!"
+    echo "Step 5: ********************************************************"
+    for ((ID=0;ID<$SIZE;ID++))
+    do
+        node_path=$CONFIG_DIR/node$ID
+        mkdir -p $node_path
+        ${BINARY_DIR}/scripts/admintool/create_kafka_config.sh $ID $node_path
+        ${BINARY_DIR}/scripts/admintool/create_zookeeper_config.sh $ID $node_path
+    done
+fi
+
 # clean temp files
 rm -f ${CONFIG_DIR}/*.json ${CONFIG_DIR}/authorities
-
 echo "********************************************************"
 echo "WARN: remember then delete all privkey files!!!"
