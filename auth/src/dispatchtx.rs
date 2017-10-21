@@ -37,6 +37,7 @@ pub struct Dispatchtx {
     txs_pool: RefCell<tx_pool::Pool>,
     wal: Txwal,
     filter_wal: Txwal,
+    wal_enable: bool,
     pool_limit: usize,
     data_from_pool: AtomicBool,
     batch_forward_info: BatchForwardInfo,
@@ -53,7 +54,7 @@ pub struct BatchForwardInfo {
 }
 
 impl Dispatchtx {
-    pub fn new(package_limit: usize, limit: usize, count_per_batch: usize, buffer_duration: u32) -> Self {
+    pub fn new(package_limit: usize, limit: usize, count_per_batch: usize, buffer_duration: u32, wal_enable: bool) -> Self {
         let batch_forward_info = BatchForwardInfo {
             count_per_batch: count_per_batch,
             buffer_duration: buffer_duration,
@@ -65,6 +66,7 @@ impl Dispatchtx {
             txs_pool: RefCell::new(tx_pool::Pool::new(package_limit)),
             wal: Txwal::new("/txwal"),
             filter_wal: Txwal::new("/filterwal"),
+            wal_enable: wal_enable,
             pool_limit: limit,
             data_from_pool: AtomicBool::new(false),
             batch_forward_info: batch_forward_info,
@@ -72,10 +74,11 @@ impl Dispatchtx {
             start_verify_time: SystemTime::now(),
             add_to_pool_cnt: 0,
         };
-
-        let num = dispatch.read_tx_from_wal();
-        if num > 0 {
-            dispatch.data_from_pool.store(true, Ordering::SeqCst);
+        if wal_enable {
+            let num = dispatch.read_tx_from_wal();
+            if num > 0 {
+                dispatch.data_from_pool.store(true, Ordering::SeqCst);
+            }
         }
         dispatch
     }
@@ -173,10 +176,12 @@ impl Dispatchtx {
         //放入pool完成后，持久化
         let ref mut txs_pool = self.txs_pool.borrow_mut();
         let success = txs_pool.enqueue(tx.clone());
-        if success {
-            self.wal.write(&tx);
-        } else {
-            self.filter_wal.write(&tx);
+        if self.wal_enable {
+            if success {
+                self.wal.write(&tx);
+            } else {
+                self.filter_wal.write(&tx);
+            }
         }
         success
     }
@@ -206,11 +211,13 @@ impl Dispatchtx {
             self.txs_pool.borrow_mut().update_with_hash(txs);
         }
         //改成多线程删除数据
-        let mut wal = self.wal.clone();
-        let txs = txs.clone();
-        thread::spawn(move || for tx in txs {
-                          wal.delete_with_hash(&tx);
-                      });
+        if self.wal_enable {
+            let mut wal = self.wal.clone();
+            let txs = txs.clone();
+            thread::spawn(move || for tx in txs {
+                              wal.delete_with_hash(&tx);
+                          });
+        }
     }
 
     pub fn del_txs_from_pool(&self, txs: Vec<SignedTransaction>) {
@@ -219,10 +226,12 @@ impl Dispatchtx {
             self.txs_pool.borrow_mut().update(&txs);
         }
         //改成多线程删除数据
-        let mut wal = self.wal.clone();
-        thread::spawn(move || for tx in txs {
-                          wal.delete(&tx);
-                      });
+        if self.wal_enable {
+            let mut wal = self.wal.clone();
+            thread::spawn(move || for tx in txs {
+                              wal.delete(&tx);
+                          });
+        }
     }
 
     pub fn read_tx_from_wal(&mut self) -> u64 {

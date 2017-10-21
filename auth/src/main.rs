@@ -93,6 +93,7 @@ fn main() {
         .args_from_usage("-n, --tx_verify_thread_num=[10] 'transaction verification thread count'")
         .args_from_usage("-v, --tx_verify_num_per_thread=[30] 'transaction verification thread count'")
         .args_from_usage("-c, --tx_pool_limit=[50000] 'tx pool's capacity'")
+        .args_from_usage("-w, --tx_pool_wal_enable=[false] ' Transaction pool persistent default closure'")
         .args_from_usage("-p, --block_packet_tx_limit=[30000] 'block's tx limit'")
         .args_from_usage("--prof-start=[0] 'Specify the start time of profiling, zero means no profiling'")
         .args_from_usage("--prof-duration=[0] 'Specify the duration for profiling, zero means no profiling'")
@@ -104,6 +105,7 @@ fn main() {
     let tx_verify_num_per_thread = matches.value_of("tx_verify_num_per_thread").unwrap_or("30").parse::<usize>().unwrap();
     let tx_pool_limit = matches.value_of("tx_pool_limit").unwrap_or("50000").parse::<usize>().unwrap();
     let tx_packet_limit = matches.value_of("block_packet_tx_limit").unwrap_or("30000").parse::<usize>().unwrap();
+    let wal_enable = matches.value_of("tx_pool_wal_enable").unwrap_or("false").parse::<bool>().unwrap();
     let flag_prof_start = matches.value_of("prof-start").unwrap_or("0").parse::<u64>().unwrap();
     let flag_prof_duration = matches.value_of("prof-duration").unwrap_or("0").parse::<u64>().unwrap();
     info!("{} threads are configured for parallel verification", tx_verify_thread_num);
@@ -218,7 +220,7 @@ fn main() {
     let (pool_txs_sender, pool_txs_recver) = channel();
     let txs_pub = tx_pub.clone();
 
-    let dispatch_origin = Dispatchtx::new(tx_packet_limit, tx_pool_limit, count_per_batch, buffer_duration);
+    let dispatch_origin = Dispatchtx::new(tx_packet_limit, tx_pool_limit, count_per_batch, buffer_duration, wal_enable);
     let dispatch = Arc::new(Mutex::new(dispatch_origin));
     let dispatch_clone = dispatch.clone();
     let txs_pub_clone = txs_pub.clone();
