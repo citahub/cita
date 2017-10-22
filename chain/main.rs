@@ -56,7 +56,6 @@ use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 use util::panichandler::set_panic_handler;
 
-
 fn main() {
     dotenv::dotenv().ok();
 
@@ -111,7 +110,8 @@ fn main() {
     ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
 
     let synchronizer = Synchronizer::new(chain.clone());
-    synchronizer.sync_block_tx_hashes(status.get_height(), &ctx_pub);
+    let block_tx_hashes = chain.block_tx_hashes(status.get_height()).expect("shoud return current block tx hashes");
+    chain.sync_block_tx_hashes(status.get_height(), block_tx_hashes, &ctx_pub);
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
     thread::spawn(move || loop {

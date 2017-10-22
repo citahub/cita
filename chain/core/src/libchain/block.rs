@@ -22,7 +22,6 @@ use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
-use libchain::chain::TransactionHash;
 use libchain::extras::TransactionAddress;
 
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
@@ -250,12 +249,6 @@ impl ExecutedBlock {
 
     pub fn transactions(&self) -> &[SignedTransaction] {
         self.body().transactions()
-    }
-}
-
-impl TransactionHash for ExecutedBlock {
-    fn transaction_hashes(&self) -> Vec<H256> {
-        self.body().transaction_hashes()
     }
 }
 

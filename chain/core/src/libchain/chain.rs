@@ -189,10 +189,6 @@ impl bc::group::BloomGroupDatabase for Chain {
     }
 }
 
-pub trait TransactionHash {
-    fn transaction_hashes(&self) -> Vec<H256>;
-}
-
 // TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
 // 所有直接unwrap的地方都可能会报错！
 pub struct Chain {
@@ -446,6 +442,11 @@ impl Chain {
     /// Get block body by height
     fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
         self.block_hash(number).map_or(None, |h| self.block_body_by_hash(h))
+    }
+
+    /// Get block tx hashes
+    pub fn block_tx_hashes(&self, number: BlockNumber) -> Option<Vec<H256>> {
+        return self.block_body(BlockId::Number(number)).map(|body| body.transaction_hashes());
     }
 
     /// Get transaction by hash
@@ -767,6 +768,26 @@ impl Chain {
         self.prune_ancient(state).expect("mark_canonical failed");
     }
 
+    /// Delivery block tx hashes to auth
+    pub fn sync_block_tx_hashes(&self, block_height: u64, tx_hashes: Vec<H256>, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let mut block_tx_hashes = BlockTxHashes::new();
+        block_tx_hashes.set_height(block_height);
+        let mut tx_hashes_in_u8 = Vec::new();
+        for tx_hash_in_h256 in tx_hashes.iter() {
+            tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
+        }
+        {
+            block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
+            block_tx_hashes.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_gas_limit(self.account_gas_limit.read().clone().into());
+        }
+
+        let msg = factory::create_msg(submodules::CHAIN, topics::BLOCK_TXHASHES, communication::MsgType::BLOCK_TXHASHES, block_tx_hashes.write_to_bytes().unwrap());
+
+        ctx_pub.send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+        trace!("sync block's tx hashes for height:{}", block_height);
+    }
+
     /// Delivery rich status to consensus
     /// Consensus should resend block if chain commit block failed.
     fn delivery_rich_status(&self, header: &Header, ctx_pub: &Sender<(String, Vec<u8>)>) {
@@ -970,6 +991,9 @@ impl Chain {
         }
 
         if self.validate_hash(block.parent_hash()) {
+            // Delivery block tx hashes to auth
+            let tx_hashes = block.body().transaction_hashes();
+            self.sync_block_tx_hashes(height, tx_hashes, ctx_pub);
             let mut open_block = self.execute_block(block);
             let closed_block = open_block.close();
             let header = closed_block.header().clone();
