@@ -104,14 +104,14 @@ fn main() {
 
     thread::spawn(move || {
         let mut worker = Worker::new(ws_senders, config.param.clone());
-        thread::sleep(Duration::new(3, 0));
+        thread::sleep(Duration::new(10, 0));
         if config.param.peer_param.enable {
             worker.bench_peer_count();
         }
 
         if config.param.tx_param.enable {
             worker.heart_beat_height();
-            thread::sleep(Duration::new(10, 0));
+            thread::sleep(Duration::new(1, 0));
         }
         worker.recive(rx);
     });

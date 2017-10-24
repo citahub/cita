@@ -53,19 +53,19 @@ impl Client {
         }
     }
 
-    fn generate_tx(&self, code: String, address: String, pv: &PrivKey, curh: u64) -> UnverifiedTransaction {
+    fn generate_tx(&self, code: String, address: String, pv: &PrivKey, curh: u64, quota: u64) -> UnverifiedTransaction {
         let data = code.from_hex().unwrap();
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_to(address);
         tx.set_nonce("0".to_string());
-        tx.set_valid_until_block(curh + 88);
-        tx.set_quota(25000);
+        tx.set_valid_until_block(curh + 100);
+        tx.set_quota(quota);
         tx.sign(*pv).take_transaction_with_sig()
     }
 
-    pub fn create_contract_data(&self, code: String, to: String, height: u64) -> String {
-        self.get_data_by_method(RpcMethod::SendTransaction(self.generate_tx(code, to, self.key_pair.privkey(), height)))
+    pub fn create_contract_data(&self, code: String, to: String, height: u64, quota: u64) -> String {
+        self.get_data_by_method(RpcMethod::SendTransaction(self.generate_tx(code, to, self.key_pair.privkey(), height, quota)))
     }
 
     pub fn get_data_by_method(&self, method: RpcMethod) -> String {

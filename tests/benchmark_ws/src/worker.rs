@@ -36,7 +36,6 @@ type TxCount = usize;
 
 
 const CHECK_HEIGHT: i64 = 100;
-const BREAK_BLOCK: i64 = 20;
 
 pub struct Worker {
     ws_senders: Arc<RwLock<Vec<Sender>>>,
@@ -58,10 +57,10 @@ impl Worker {
         }
     }
 
-    pub fn genrate_tx(&self) -> String {
+    pub fn genrate_tx(&self, quota: u64) -> String {
         let client = Client::new();
         let height = self.current_height;
-        client.create_contract_data(self.param.tx_param.codes[0].clone(), "".to_string(), height)
+        client.create_contract_data(self.param.tx_param.codes[0].clone(), "".to_string(), height, quota)
     }
 
     fn rand_send(&mut self, data: String) {
@@ -94,8 +93,11 @@ impl Worker {
 
     pub fn bench_tx(&mut self) {
         let mut genrate_txs = vec![];
-        for _ in 0..self.param.number {
-            genrate_txs.push(self.genrate_tx())
+        for i in 0..self.param.number {
+            if i % 30000 == 0 {
+                self.current_height += 1;
+            }
+            genrate_txs.push(self.genrate_tx(self.param.tx_param.quota))
         }
         while let Some(value) = genrate_txs.pop() {
             self.rand_send(value);
@@ -112,7 +114,8 @@ impl Worker {
 
     pub fn recive(&mut self, rx: mpsc::Receiver<Message>) {
         let mut check_height_break = CHECK_HEIGHT;
-        let mut check_block_break = BREAK_BLOCK;
+        let mut check_block_break = self.param.tx_param.check_block_break;
+        let mut is_end_flag = false;
         let is_bench_tx = self.param.tx_param.enable;
         let is_bench_peer = self.param.peer_param.enable;
         let mut is_first = true;
@@ -182,11 +185,17 @@ impl Worker {
                                          println!("block_height = {:?}, check_block_break = {:?} ", block_height, check_block_break);
                                          if txs_len == 0 {
                                              check_block_break -= 1;
+                                             if block_info.len() > 0 {
+                                                 is_end_flag = true;
+                                                 block_info.push_back((block_height, time_stamp, txs_len));
+                                                 println!("last block!");
+                                             }
+
                                          } else {
                                              block_info.push_back((block_height, time_stamp, txs_len));
                                          }
 
-                                         if check_block_break <= 0 {
+                                         if check_block_break <= 0 || is_end_flag {
                                              println!("blocks infomation: {:?}", block_info);
                                              let mut first = (0, 0, 0);
                                              let mut last = (0, 0, 0);
