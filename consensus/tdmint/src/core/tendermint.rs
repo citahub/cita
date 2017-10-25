@@ -134,6 +134,7 @@ pub struct TenderMint {
     consensus_power: bool,
     unverified_msg: Vec<(usize, usize)>,
     block_txs: LinkedList<(usize, BlockTxs)>,
+    block_proof: Option<(usize, BlockWithProof)>,
 }
 
 impl TenderMint {
@@ -170,6 +171,7 @@ impl TenderMint {
             consensus_power: false,
             unverified_msg: Vec::new(),
             block_txs: LinkedList::new(),
+            block_proof: None,
         }
     }
 
@@ -530,6 +532,7 @@ impl TenderMint {
                     proof_blk.set_blk(blk.unwrap());
                     proof_blk.set_proof(proof.into());
 
+                    self.block_proof == Some((height, proof_blk.clone()));
                     info!(" ######### height {} consensus time {:?} ", height, Instant::now() - self.htime);
                     self.pub_block(&proof_blk);
                     return true;
@@ -792,7 +795,6 @@ impl TenderMint {
                             }
                         }
                     }
-
                 }
             }
         }
@@ -1098,22 +1100,28 @@ impl TenderMint {
         let status_height = status.height as usize;
         let height = self.height;
         let round = self.round;
+        let step = self.step;
         trace!("new_status new height {:?} self height {}", status_height + 1, height);
-        if height > 0 && status_height < height - 1 {
+        if height > 0 && status_height + 1 < height {
             return;
         }
         let mut r = INIT_ROUND;
 
-        if status_height == height || (height > 0 && status_height == height - 1) {
+        if status_height == height || (height > 0 && status_height + 1 == height) {
             let pre_hash = H256::from(H256::from_slice(&status.hash));
             {
                 trace!("new_status hash is {:?}", pre_hash);
                 self.pre_hash = Some(pre_hash);
             }
+
             if status_height != height {
-                /*the statement judging if status height eq self height -1, is for the situation that
-                the node lag behind others, jumping to the status_height need know the prev_hash. since the
-                jumping ,the node may not save the prev_hash, so save it when chain resending new status*/
+                if step >= Step::Commit {
+                    if let Some((hi, ref bproof)) = self.block_proof {
+                        if hi == height {
+                            self.pub_block(bproof);
+                        }
+                    }
+                }
                 return;
             }
             r = self.round;
