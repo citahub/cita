@@ -116,11 +116,8 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 8. use `eth_call` to call the get funciton
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "0x13"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
-
-其中:
-* `0x13`为以上receipt中获取的`blockNumber`
 
 结果:
 

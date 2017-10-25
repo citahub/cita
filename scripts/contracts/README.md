@@ -26,7 +26,7 @@
 0. use jsonrpc to check the list of the consensus node
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "0x0"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 *构造方法详见jsonRPC README文档*
@@ -215,7 +215,7 @@ python make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c97
 11. check the consensus node list of the genensis 
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "0x0"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 *结果见步骤0*
@@ -223,11 +223,8 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00
 12. check the consensus node list of the new
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "0x3d"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
-
-其中:
-* `0x3d`为步骤8中获取到的`blockNumber`
 
 返回结果如下:
 
@@ -358,7 +355,7 @@ python make_tx.py --to "00000000000000000000000000000000013241a3" --code "c9bcec
 8. eth_call getAccountGasLimit
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a3", "data":"0xdae99b3a"}, "0x2b"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a3", "data":"0xdae99b3a"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 *详见步骤0*
