@@ -5,7 +5,7 @@ version = "0.6.0"
 
 [dependencies]
 dotenv = "0.10.0"
-threadpool = "1.3.2"
+threadpool = "1.7.0"
 libproto = {path = "../../share_libs/proto"}
 tx_pool = {path = "../../share_libs/tx_pool"}
 util = {path = "../../share_libs/util"}
@@ -22,4 +22,3 @@ error = {path = "../../share_libs/error"}
 [[bin]]
 path = "main.rs"
 name = "txpool"
-

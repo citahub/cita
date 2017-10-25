@@ -7,7 +7,7 @@ authors = ["https://github.com/u2"]
 futures = "0.1"
 hyper = "0.10"
 ws = "0.7"
-threadpool = "1.4"
+threadpool = "1.7.0"
 num_cpus = "1.6.2"
 uuid = { version = "0.4", features = ["v4"] }
 libproto = { path = "../share_libs/proto" }
@@ -28,4 +28,3 @@ clap = "2"
 [[bin]]
 name = "jsonrpc"
 path = "src/main.rs"
-

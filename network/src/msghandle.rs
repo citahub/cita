@@ -30,7 +30,7 @@ pub fn handle_rpc(con: &Connection, tx_pub: &Sender<(String, Vec<u8>)>, payload:
     if let Ok(msg) = parse_from_bytes::<communication::Message>(payload) {
         let t = msg.get_field_type();
         let cid = msg.get_cmd_id();
-        trace!("recive MQ messsage from {:?} module", display_cmd(cid));
+        trace!("receive MQ message from {:?} module", display_cmd(cid));
         if cid == cmd_id(submodules::JSON_RPC, topics::REQUEST) && t == MsgType::REQUEST {
             let mut ts = parse_from_bytes::<Request>(msg.get_content()).unwrap();
             let mut response = Response::new();

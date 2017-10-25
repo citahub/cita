@@ -40,7 +40,7 @@ cita-crypto = { path = "../../share_libs/crypto" }
 sha3 = { path = "../../share_libs/sha3" }
 
 protobuf = { version = "^1.0.0"}
-threadpool = "1.3.2"
+threadpool = "1.7.0"
 pubsub = { path = "../../share_libs/pubsub" }
 dotenv = "0.10.0"
 proof = { path = "../../consensus/proof" }
