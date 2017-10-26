@@ -184,7 +184,7 @@ fn main() {
                 let (topic, req): (String, reqlib::Request) = res;
                 forward_service(topic, req, &mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone(), &config);
             } else {
-                if new_tx_request_buffer.len() > 1 {
+                if new_tx_request_buffer.len() > 0 {
                     batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone());
                 }
                 thread::sleep(Duration::new(0, config.new_tx_flow_config.buffer_duration));
@@ -200,7 +200,7 @@ fn main() {
 }
 
 fn batch_forward_new_tx(new_tx_request_buffer: &mut Vec<reqlib::Request>, time_stamp: &mut SystemTime, tx_pub: Sender<(String, Vec<u8>)>) {
-    trace!("Going to send new tx batch to auth with {} new tx and buffer {} ns", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap().subsec_nanos());
+    trace!("Going to send new tx batch to auth with {} new tx and buffer time cost is {:?} ", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap());
 
     let mut batch_request = BatchRequest::new();
     batch_request.set_new_tx_requests(RepeatedField::from_slice(&new_tx_request_buffer[..]));
@@ -222,7 +222,7 @@ fn forward_service(topic: String, req: reqlib::Request, new_tx_request_buffer: &
         tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
     } else {
         new_tx_request_buffer.push(req);
-        trace!("New tx is pushed and has {} new tx and buffer {} ns", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap().subsec_nanos());
+        trace!("New tx is pushed and has {} new tx and buffer time cost is {:?}", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap());
         if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_duration {
             batch_forward_new_tx(new_tx_request_buffer, time_stamp, tx_pub.clone());
         }
