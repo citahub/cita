@@ -30,7 +30,8 @@ sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip so
      libssl-dev libgoogle-perftools-dev
 
 # 4) install python package
-sudo pip install --user ethereum==2.0.4 pysodium
+umask 022
+sudo -H pip install ethereum==2.0.4 pysodium
 
 # 5) extra
 # 5.1) libgmssl

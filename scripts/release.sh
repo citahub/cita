@@ -33,8 +33,7 @@ cp -rf target/${type}/benchmark_ws         target/install/bin/
 #strip                                     target/install/bin/*
 
 # 2) cita
-cp -rf  scripts/cita           			   target/install/scripts/
-ln -srf target/install/scripts/cita                   target/install/bin/
+cp -rf  scripts/cita                       target/install/bin/
 
 # 3) contract
 cp -rf scripts/contracts                   target/install/scripts/

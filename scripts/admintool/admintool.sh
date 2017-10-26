@@ -69,34 +69,22 @@ while getopts 'a:l:n:m:d:t:h:w:P:k' OPT; do
 done
 
 #set default value
-if [ ! -n "$ADMIN_ID" ]; then
-    ADMIN_ID="admin"
-fi
+: ${ADMIN_ID:="admin"}
 
-if [ ! -n "$IP_LIST" ]; then
-    DEV_MOD=1
-    IP_LIST="127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
-fi
+[ -z "$IP_LIST" ] && DEV_MOD=1
+: ${IP_LIST:="127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"}
 
 #calc size of nodes
 TMP=${IP_LIST//[^\:]}
 SIZE=${#TMP}
 
-if [ ! -n "$CONSENSUS_NAME" ]; then
-    CONSENSUS_NAME="tendermint"
-fi
+: ${CONSENSUS_NAME:="tendermint"}
 
-if [ ! -n "$CRYPTO_METHOD" ]; then
-    CRYPTO_METHOD="SECP"
-fi
+: ${CRYPTO_METHOD:="SECP"}
 
-if [ ! -n "$DURATION" ]; then
-    DURATION=3000
-fi
+: ${DURATION:=3000}
 
-if [ ! -n "$IS_TEST" ]; then
-    IS_TEST=false
-fi
+: ${IS_TEST:=false}
 
 if [ -f "${CONFIG_DIR}/authorities" ]; then
     rm ${CONFIG_DIR}/authorities
@@ -163,11 +151,7 @@ WS_ENABLE="false"
 
 if [ "$HTTP" == "true" ]; then
     HTTP_ENABLE="true"
-    if [ ! -n "$PORT" ]; then
-        HTTP_PORT=1337
-    else
-        HTTP_PORT=$PORT
-    fi
+    HTTP_PORT=${PORT:-1337}
 
     WS_PORT=4337
     WS_ENABLE="false"
@@ -175,11 +159,7 @@ fi
 
 if [ "$WS" == "true" ]; then
     WS_ENABLE="true"
-    if [ ! -n "$PORT" ]; then
-        WS_PORT=4337
-    else
-        WS_PORT=$PORT
-    fi
+    WS_PORT=${PORT:-4337}
     HTTP_PORT=1337
     HTTP_ENABLE="false"
 

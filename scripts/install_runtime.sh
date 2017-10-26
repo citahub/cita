@@ -27,7 +27,8 @@ sudo apt-get update -q
 sudo apt-get install -y libstdc++6 rabbitmq-server libssl-dev libgoogle-perftools4 python-pip wget solc libsodium*
 
 # 4) install python package
-sudo pip install --user ethereum==2.0.4 pysodium
+umask 022
+sudo -H pip install ethereum==2.0.4 pysodium
 
 # 5) extra
 # 5.1) libgmssl
