@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.14;
 
 import "./strings.sol";
 import "./node_interface.sol";
@@ -7,7 +7,7 @@ import "./node_interface.sol";
 contract NodeManager is NodeInterface {
     using strings for *;
 
-    // the enum prob: default: Close
+    // default: Close
     enum NodeStatus { Close, Ready, Start }
 
     // the status of the node: ready, start, not in list/close, maybe there is more
@@ -65,7 +65,7 @@ contract NodeManager is NodeInterface {
         // should not add the started node, what about the already added node
         // require(status[_node] == NodeStatus.Close);
         if (status[_node] == NodeStatus.Ready || status[_node] == NodeStatus.Start) {
-            return false; 
+            return false;
         }
 
         status[_node] = NodeStatus.Ready;
@@ -91,7 +91,7 @@ contract NodeManager is NodeInterface {
         return true;
     }
 
-    // delete the consensus node from the list 
+    // delete the consensus node from the list
     // which means delete the node whoes status is Start
     function deleteNode(address _node) onlyAdmin oneOperate returns (bool) {
         // require(status[_node] == NodeStatus.Start);
@@ -134,7 +134,7 @@ contract NodeManager is NodeInterface {
     }
 
     // interface: link address to a long string
-    function concatNodes(address[] _add) internal returns (string nodeList) {        
+    function concatNodes(address[] _add) internal returns (string nodeList) {
         if (_add.length > 0) {
             nodeList = toString(_add[0]);
         }
@@ -146,7 +146,7 @@ contract NodeManager is NodeInterface {
 
     // interface: get the index in the nodes_of_start array
     function nodeIndex(address _node) internal returns (uint) {
-        // find the index of the member 
+        // find the index of the member
         for (uint i = 0; i < nodes.length; i++) {
             if (_node == nodes[i]) {
                 return i;
@@ -156,7 +156,7 @@ contract NodeManager is NodeInterface {
         return i;
     }
 
-    // interface: address to string 
+    // interface: address to string
     // the returned string is ABI encoded
     function toString(address x) internal returns (string) {
         bytes memory b = new bytes(20);

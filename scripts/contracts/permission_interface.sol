@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.14;
 
 interface PermissionInterface {
     /// 0: "None" - no pemission
@@ -11,6 +11,6 @@ interface PermissionInterface {
     function revokePermission(address _user, uint8 _permission) returns (bool);
     // query users of the permission
     function queryUsersOfPermission(uint8 _permission) constant returns (string);
-    // query the user's permission ß
+    // query the user's permission
     function queryPermission(address _user) returns (uint8);
 }
