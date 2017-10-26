@@ -1,4 +1,4 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.4.14;
 import "./strings.sol";
 
 import "./permission_interface.sol";
@@ -15,7 +15,7 @@ contract PermissionManager is PermissionInterface {
     // the permission
     enum UserPermission { None, Send, Create }
 
-    // record the permission fo the user
+    // record the permission of the user
     mapping(address => UserPermission) public user_permission;
 
     event GrantPermission(address _user, uint8 _permission);
@@ -55,7 +55,7 @@ contract PermissionManager is PermissionInterface {
         return true;
     }
 
-    // revoke the role
+    // revoke the permission
     function revokePermission(address _user, uint8 _permission) returns (bool) {
         // require sender and user both have the permission
         if (_permission > uint8(user_permission[msg.sender]) || _permission != uint8(user_permission[_user]) || msg.sender == _user)
