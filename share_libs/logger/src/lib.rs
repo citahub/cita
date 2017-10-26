@@ -2,7 +2,7 @@ extern crate log;
 extern crate env_logger;
 extern crate time;
 
-use env_logger::LogBuilder;
+use env_logger::{LogBuilder, LogTarget};
 use log::{LogRecord, LogLevelFilter};
 use std::env;
 use std::sync::{Once, ONCE_INIT};
@@ -25,6 +25,8 @@ fn init_filter(filter: LogLevelFilter) {
         };
 
         let mut builder = LogBuilder::new();
+        // log to stdout
+        builder.target(LogTarget::Stdout);
         builder.format(format).filter(None, filter);
 
         if env::var("RUST_LOG").is_ok() {
