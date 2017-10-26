@@ -1,0 +1,18 @@
+[package]
+name = "jubjub"
+version = "0.0.1"
+
+[dependencies]
+rand = "0.3"
+
+[dependencies.pairing]
+path = "../pairing"
+default-features = false
+
+[dependencies.bellman]
+path = "../bellman"
+default-features = false
+
+[features]
+default = ["u128-support"]
+u128-support = ["pairing/u128-support", "bellman/u128-support"]

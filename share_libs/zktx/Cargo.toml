@@ -1,0 +1,15 @@
+[package]
+name = "zktx"
+version = "0.0.1"
+
+[dependencies]
+rand = "0.3"
+
+[dependencies.pairing]
+path = "pairing"
+
+[dependencies.bellman]
+path = "bellman"
+
+[dependencies.jubjub]
+path = "jubjub"
