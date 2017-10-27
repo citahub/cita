@@ -19,7 +19,7 @@
 
 extern crate protobuf;
 extern crate logger;
-
+extern crate rustc_serialize;
 #[macro_use]
 extern crate log;
 extern crate clap;
@@ -37,13 +37,16 @@ extern crate uuid;
 extern crate serde_json;
 extern crate error;
 
+#[macro_use]
+extern crate serde_derive;
 
 pub mod handler;
 pub mod verify;
 pub mod dispatchtx;
 pub mod txwal;
-
+pub mod config;
 use clap::App;
+use config::AuthConfig;
 use cpuprofiler::PROFILER;
 use dispatchtx::Dispatchtx;
 use dotenv::dotenv;
@@ -59,7 +62,6 @@ use std::time::SystemTime;
 use util::{Mutex, H256, RwLock};
 use util::panichandler::set_panic_handler;
 use verify::Verifier;
-
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
     let start = flag_prof_start;
@@ -89,24 +91,27 @@ fn main() {
         .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .args_from_usage("-n, --tx_verify_thread_num=[10] 'transaction verification thread count'")
-        .args_from_usage("-v, --tx_verify_num_per_thread=[30] 'transaction verification thread count'")
-        .args_from_usage("-c, --tx_pool_limit=[50000] 'tx pool's capacity'")
-        .args_from_usage("-w, --tx_pool_wal_enable=[false] ' Transaction pool persistent default closure'")
-        .args_from_usage("-p, --block_packet_tx_limit=[30000] 'block's tx limit'")
-        .args_from_usage("--prof-start=[0] 'Specify the start time of profiling, zero means no profiling'")
-        .args_from_usage("--prof-duration=[0] 'Specify the duration for profiling, zero means no profiling'")
+        .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
         .get_matches();
+    let mut config_path = "config";
+    if let Some(c) = matches.value_of("config") {
+        info!("Value for config: {}", c);
+        config_path = c;
+    }
 
-    let count_per_batch = matches.value_of("count_per_batch").unwrap_or("30").parse::<usize>().unwrap();
-    let buffer_duration = matches.value_of("buffer_duration").unwrap_or("30000000").parse::<u32>().unwrap();
-    let tx_verify_thread_num = matches.value_of("tx_verify_thread_num").unwrap_or("10").parse::<usize>().unwrap();
-    let tx_verify_num_per_thread = matches.value_of("tx_verify_num_per_thread").unwrap_or("30").parse::<usize>().unwrap();
-    let tx_pool_limit = matches.value_of("tx_pool_limit").unwrap_or("50000").parse::<usize>().unwrap();
-    let tx_packet_limit = matches.value_of("block_packet_tx_limit").unwrap_or("30000").parse::<usize>().unwrap();
+    let config = AuthConfig::new(config_path);
+
+    let count_per_batch = config.count_per_batch;
+    let buffer_duration = config.buffer_duration;
+    let tx_packet_limit = config.block_packet_tx_limit;
+    let tx_verify_thread_num = config.tx_verify_thread_num;
+    let tx_verify_num_per_thread = config.tx_verify_num_per_thread;
+    let tx_pool_limit = config.tx_pool_limit;
+
     let wal_enable = matches.value_of("tx_pool_wal_enable").unwrap_or("false").parse::<bool>().unwrap();
-    let flag_prof_start = matches.value_of("prof-start").unwrap_or("0").parse::<u64>().unwrap();
-    let flag_prof_duration = matches.value_of("prof-duration").unwrap_or("0").parse::<u64>().unwrap();
+    let flag_prof_start = config.prof_start;
+    let flag_prof_duration = config.prof_duration;
+
     info!("{} threads are configured for parallel verification", tx_verify_thread_num);
     let threadpool = threadpool::ThreadPool::new(tx_verify_thread_num);
 
@@ -766,6 +771,35 @@ mod tests {
                 panic!("test failed")
             }
         }
+
+    }
+    #[test]
+    fn read_configure_file() {
+        let json = r#"{
+          "count_per_batch": 30,
+          "buffer_duration": 3000000,
+          "tx_verify_thread_num": 10,
+          "tx_verify_num_per_thread": 30,
+          "tx_pool_limit": 50000,
+          "block_packet_tx_limit": 30000,
+          "prof_start": 0,
+          "prof_duration": 0
+        }"#;
+
+
+
+
+        let value: AuthConfig = serde_json::from_str(json).expect("read Error");
+        println!("{:?}", value);
+        assert_eq!(30, value.count_per_batch);
+        assert_eq!(3000000, value.buffer_duration);
+        assert_eq!(10, value.tx_verify_thread_num);
+        assert_eq!(30, value.tx_verify_num_per_thread);
+        assert_eq!(50000, value.tx_pool_limit);
+        assert_eq!(30000, value.block_packet_tx_limit);
+        assert_eq!(0, value.prof_start);
+        assert_eq!(0, value.prof_duration);
+
 
     }
 }

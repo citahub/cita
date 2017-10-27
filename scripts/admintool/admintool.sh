@@ -104,6 +104,9 @@ if [ ! -e "${CONFIG_DIR}/chain.json" ]; then
     cp ${BINARY_DIR}/scripts/admintool/chain_check_example.json ${CONFIG_DIR}/chain.json
 fi
 
+if [ ! -e "${CONFIG_DIR}/authconfig.json" ]; then
+    cp ${BINARY_DIR}/scripts/admintool/authconfig_example.json ${CONFIG_DIR}/authconfig.json
+fi
 echo "Step 1: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
 do
@@ -127,6 +130,7 @@ do
     echo "End creating Node " ${ID} "Configuration!"
     cp genesis.json ${CONFIG_DIR}/node${ID}/genesis.json
     cp chain.json ${CONFIG_DIR}/node${ID}/chain.json
+    cp authconfig.json ${CONFIG_DIR}/node${ID}/authconfig.json
 done
 
 echo "Step 3: ********************************************************"
