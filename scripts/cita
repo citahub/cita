@@ -18,6 +18,16 @@ setup() {
     sudo rabbitmqctl add_vhost ${node}                                     > /dev/null
     sudo rabbitmqctl set_permissions -p ${node} guest '.*' '.*' '.*'       > /dev/null
     sudo rabbitmq-plugins enable rabbitmq_management                       > /dev/null
+
+    # setup env
+    sudo sed -i '/fs.inotify.max_user_watches/'d /etc/sysctl.conf
+    sudo sed -i '/fs.inotify.max_user_instances/'d /etc/sysctl.conf
+    sudo sed -i '$a\fs.inotify.max_user_watches=100000\' /etc/sysctl.conf
+    sudo sed -i '$a\fs.inotify.max_user_instances=8192\' /etc/sysctl.conf
+
+    sudo sysctl -w fs.inotify.max_user_watches=100000
+    sudo sysctl -w fs.inotify.max_user_instances=8192
+
 }
 
 start() {
