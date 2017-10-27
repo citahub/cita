@@ -18,12 +18,11 @@
 use super::{Step, Address};
 use bincode::{serialize, Infinite};
 use crypto::{Sign, pubkey_to_address, Signature};
-use libproto::blockchain::Block;
-use libproto::verify_tx_nonce;
+use libproto::blockchain::{Block, Transaction};
 use lru_cache::LruCache;
 use protobuf::core::parse_from_bytes;
 use std::collections::HashMap;
-use util::{H256, Hashable};
+use util::{H256, Hashable, BLOCKLIMIT};
 
 //height -> round collector
 #[derive(Debug)]
@@ -259,6 +258,13 @@ pub struct Proposal {
     pub lock_votes: Option<VoteSet>,
 }
 
+// verify tx nonce and valid_until_block
+pub fn verify_tx(tx: &Transaction, height: u64) -> bool {
+    let nonce = tx.get_nonce();
+    let valid_until_block = tx.get_valid_until_block();
+    (nonce.len() <= 128) && (height <= valid_until_block && valid_until_block < (height + BLOCKLIMIT))
+}
+
 impl Proposal {
     pub fn check(&self, h: usize, authorities: &[Address]) -> bool {
         if self.lock_round.is_none() && self.lock_votes.is_none() {
@@ -273,10 +279,6 @@ impl Proposal {
 
             if let Some(p) = ret.unwrap() {
                 let block = parse_from_bytes::<Block>(&self.block).unwrap();
-                if !block.get_body().get_transactions().into_iter().all(|tx| verify_tx_nonce(&tx)) {
-                    return false;
-                }
-
                 let hash = block.crypt_hash().into();
                 if p == hash {
                     return true;

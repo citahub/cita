@@ -55,6 +55,7 @@ use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::env;
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
@@ -143,6 +144,8 @@ fn main() {
     let resp_sender_main = resp_sender.clone();
     let tx_pub_block_res = tx_pub.clone();
     let mut timestamp_receive = SystemTime::now();
+    let dispatch_origin = Dispatchtx::new(tx_packet_limit, tx_pool_limit, count_per_batch, buffer_duration, wal_enable);
+    let tx_pool_capacity = dispatch_origin.tx_pool_capacity();
     thread::spawn(move || loop {
                       timestamp_receive = SystemTime::now();
                       let mut req_grp: Vec<VerifyReqInfo> = Vec::new();
@@ -199,6 +202,12 @@ fn main() {
                                       req: verify_req,
                                       info: (verify_type, id, sub_module, now, origin),
                                   };
+                                  // verify tx pool flow control
+                                  let capacity = tx_pool_capacity.clone();
+                                  if tx_pool_limit != 0 && capacity.load(Ordering::SeqCst) == 0 {
+                                      process_flow_control_failed(verify_req_info.clone(), resp_sender_main.clone());
+                                      continue;
+                                  }
                                   if VerifyResult::VerifyNotBegin != check_verify_request_preprocess(verify_req_info.clone(), verifier_clone.clone(), cache_clone.clone(), resp_sender_main.clone()) {
                                       continue;
                                   }
@@ -230,7 +239,6 @@ fn main() {
     let (pool_txs_sender, pool_txs_recver) = channel();
     let txs_pub = tx_pub.clone();
 
-    let dispatch_origin = Dispatchtx::new(tx_packet_limit, tx_pool_limit, count_per_batch, buffer_duration, wal_enable);
     let dispatch = Arc::new(Mutex::new(dispatch_origin));
     let dispatch_clone = dispatch.clone();
     let txs_pub_clone = txs_pub.clone();

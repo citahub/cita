@@ -18,14 +18,15 @@
 extern crate tx_pool;
 
 use error::ErrorCode;
-use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request, BatchRequest, verify_tx_nonce};
+use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request, BatchRequest};
 use libproto::blockchain::{BlockBody, SignedTransaction, BlockTxs, AccountGasLimit};
 use protobuf::{Message, RepeatedField};
 use serde_json;
 
 use std::cell::RefCell;
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering, AtomicUsize};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::SystemTime;
@@ -35,6 +36,7 @@ use uuid::Uuid;
 
 pub struct Dispatchtx {
     txs_pool: RefCell<tx_pool::Pool>,
+    tx_pool_cap: Arc<AtomicUsize>,
     wal: Txwal,
     filter_wal: Txwal,
     wal_enable: bool,
@@ -64,6 +66,7 @@ impl Dispatchtx {
 
         let mut dispatch = Dispatchtx {
             txs_pool: RefCell::new(tx_pool::Pool::new(package_limit)),
+            tx_pool_cap: Arc::new(AtomicUsize::new(limit)),
             wal: Txwal::new("/txwal"),
             filter_wal: Txwal::new("/filterwal"),
             wal_enable: wal_enable,
@@ -83,13 +86,25 @@ impl Dispatchtx {
         dispatch
     }
 
+    pub fn tx_pool_capacity(&self) -> Arc<AtomicUsize> {
+        self.tx_pool_cap.clone()
+    }
+
+    fn update_capacity(&mut self) {
+        let tx_pool_len = self.txs_pool.borrow().len();
+        if self.pool_limit >= tx_pool_len {
+            let capacity = self.pool_limit - tx_pool_len;
+            self.tx_pool_cap.store(capacity, Ordering::SeqCst);
+        } else {
+            self.tx_pool_cap.store(0, Ordering::SeqCst);
+        }
+    }
+
     pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, tx_response: TxResponse, tx: &SignedTransaction, mq_pub: Sender<(String, Vec<u8>)>) {
         let mut error_msg: Option<String> = None;
-        if !verify_tx_nonce(tx) {
-            error_msg = Some(String::from("InvalidNonce"));
-        } else if self.tx_flow_control() {
-            error_msg = Some(String::from("Busy"));
-        } else if !self.add_tx_to_pool(&tx) {
+        if self.add_tx_to_pool(&tx) {
+            self.update_capacity();
+        } else {
             error_msg = Some(String::from("Dup"));
         }
 
@@ -152,6 +167,7 @@ impl Dispatchtx {
             self.add_to_pool_cnt = 0;
         }
 
+        self.update_capacity();
         if !out_txs.is_empty() {
             body.set_transactions(RepeatedField::from_vec(out_txs));
         }
@@ -197,14 +213,6 @@ impl Dispatchtx {
         }
     }
 
-    pub fn tx_flow_control(&self) -> bool {
-        if self.pool_limit == 0 {
-            return false;
-        }
-        let txs_pool = self.txs_pool.borrow();
-        if txs_pool.len() > self.pool_limit { true } else { false }
-    }
-
     pub fn del_txs_from_pool_with_hash(&self, txs: &HashSet<H256>) {
         //收到删除通知，从pool中删除vec中的交易
         {
@@ -235,7 +243,9 @@ impl Dispatchtx {
     }
 
     pub fn read_tx_from_wal(&mut self) -> u64 {
-        self.wal.read(&mut self.txs_pool.borrow_mut())
+        let size = self.wal.read(&mut self.txs_pool.borrow_mut());
+        self.update_capacity();
+        size
     }
 
     fn batch_forward_tx_to_peer(&mut self, mq_pub: Sender<(String, Vec<u8>)>) {

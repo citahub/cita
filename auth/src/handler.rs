@@ -64,6 +64,11 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     let mut resp = VerifyTxResp::new();
     resp.set_tx_hash(req.get_tx_hash().to_vec());
 
+    if req.get_nonce().len() > 128 {
+        resp.set_ret(Ret::InvalidNonce);
+        return resp;
+    }
+
     let tx_hash = H256::from_slice(req.get_tx_hash());
     let ret = verifier.check_hash_exist(&tx_hash);
     if ret {
@@ -93,9 +98,19 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     resp
 }
 
+pub fn process_flow_control_failed(verify_info: VerifyReqInfo, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>) {
+    let mut response = VerifyTxResp::new();
+    let req = verify_info.req;
+    response.set_tx_hash(req.get_tx_hash().to_vec());
+    response.set_ret(Ret::Busy);
+    let (verify_type, id, sub_module, now, origin) = verify_info.info;
+    resp_sender.send((verify_type, id, response, sub_module, now, origin)).unwrap();
+}
+
 pub fn verify_tx_group_service(mut req_grp: Vec<VerifyReqInfo>, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, resp_sender: Sender<(VerifyType, u64, VerifyTxResp, u32, SystemTime, Origin)>) {
     let now = SystemTime::now();
     let len = req_grp.len();
+
     loop {
         if let Some(req_info) = req_grp.pop() {
             let req = req_info.req;
@@ -118,8 +133,10 @@ pub fn check_verify_request_preprocess(req_info: VerifyReqInfo, verifier: Arc<Rw
     let mut final_response = VerifyTxResp::new();
     let mut processed = false;
     let mut result = VerifyResult::VerifyNotBegin;
+    let (verify_type, id, sub_module, now, origin) = req_info.info;
+    let is_single_verify = verify_type == VerifyType::SingleVerify;
 
-    if !verifier.read().verify_valid_until_block(req.get_valid_until_block()) {
+    if is_single_verify && !verifier.read().verify_valid_until_block(req.get_valid_until_block()) {
         let mut response = VerifyTxResp::new();
         response.set_tx_hash(req.get_tx_hash().to_vec());
         response.set_ret(Ret::InvalidUntilBlock);
@@ -136,9 +153,8 @@ pub fn check_verify_request_preprocess(req_info: VerifyReqInfo, verifier: Arc<Rw
             Ret::Ok => result = VerifyResult::VerifySucceeded,
             _ => result = VerifyResult::VerifyFailed,
         }
-        let (verify_type, id, sub_module, now, origin) = req_info.info;
         //only send result when the verify type is single
-        if VerifyType::SingleVerify == verify_type {
+        if is_single_verify {
             resp_sender.send((verify_type, id, final_response, sub_module, now, origin)).unwrap();
         }
     }
@@ -265,8 +281,6 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                     let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
                     let hash: H256 = verify_tx_req.get_tx_hash().into();
                     txs.insert(hash, (submodule, tx_req.clone()));
-
-                    let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
                     tx_req_single.send((VerifyType::SingleVerify, 0, verify_tx_req, submodule, now, origin)).unwrap();
                 }
             } else if true == newtx_req.has_un_tx() {

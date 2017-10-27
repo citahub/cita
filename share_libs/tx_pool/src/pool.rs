@@ -19,9 +19,7 @@ use crypto::{pubkey_to_address, PubKey};
 use libproto::blockchain::{SignedTransaction, AccountGasLimit};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, BTreeSet};
-use util::{H256, Address};
-
-pub const BLOCKLIMIT: u64 = 100;
+use util::{H256, Address, BLOCKLIMIT};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Strategy {
@@ -161,8 +159,12 @@ impl Pool {
                 }
                 let hash = order.unwrap().hash;
                 let tx = self.txs.get(&hash);
+                let tx_is_valid = |signed_tx: &SignedTransaction, height: u64| {
+                    let valid_until_block = signed_tx.get_transaction().get_valid_until_block();
+                    (valid_until_block == 0) || (height < valid_until_block && valid_until_block <= (height + BLOCKLIMIT))
+                };
                 if let Some(tx) = tx {
-                    if tx.get_transaction_with_sig().get_transaction().valid_until_block == 0 || tx.get_transaction_with_sig().get_transaction().valid_until_block >= height {
+                    if tx_is_valid(tx, height) {
                         let quota = tx.get_transaction_with_sig().get_transaction().quota;
                         let signer = pubkey_to_address(&PubKey::from(tx.get_signer()));
                         if n <= quota {
@@ -286,9 +288,9 @@ mod tests {
         assert_eq!(p.len(), 2);
         assert_eq!(p.package(5, 30, account_gas_limit.clone()), vec![tx3.clone()]);
         p.update(&vec![tx3.clone()]);
-        assert_eq!(p.package(5, 30, account_gas_limit.clone()), vec![tx4]);
+        assert_eq!(p.package(4, 30, account_gas_limit.clone()), vec![tx4]);
         assert_eq!(p.len(), 1);
-        assert_eq!(p.package(6, 30, account_gas_limit.clone()), vec![]);
+        assert_eq!(p.package(5, 30, account_gas_limit.clone()), vec![]);
         assert_eq!(p.len(), 0);
     }
 }
