@@ -330,7 +330,7 @@ mod tests {
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
 
 
-        // 4) length=43
+        // 4) length=33
         let expected = format!("012345678901234567890123456789012");
         assert!(scalar.set_bytes(&mut ext, expected.clone()).is_ok());
         let value = scalar.get_bytes::<String>(&ext);
