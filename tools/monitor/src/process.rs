@@ -167,7 +167,7 @@ pub fn run_process(child_process: Arc<Mutex<Processes>>) {
                 // start child process
                 process.start();
 
-                let process_handle = &mut process.processhandle;
+                let mut process_handle = &mut process.processhandle;
 
                 match process_handle {
                     &mut Some(ref mut child) => {

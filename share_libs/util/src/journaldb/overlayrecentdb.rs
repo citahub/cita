@@ -123,10 +123,9 @@ impl OverlayRecentDB {
 
     #[cfg(test)]
     fn can_reconstruct_refs(&self) -> bool {
-        // let reconstructed = Self::read_overlay(&*self.backing, self.column);
-        // let journal_overlay = self.journal_overlay.read();
-        // journal_overlay.backing_overlay == reconstructed.backing_overlay && journal_overlay.pending_overlay == reconstructed.pending_overlay && journal_overlay.journal == reconstructed.journal && journal_overlay.latest_era == reconstructed.latest_era && journal_overlay.cumulative_size == reconstructed.cumulative_size
-        true
+        let reconstructed = Self::read_overlay(&*self.backing, self.column);
+        let journal_overlay = self.journal_overlay.read();
+        journal_overlay.backing_overlay == reconstructed.backing_overlay && journal_overlay.pending_overlay == reconstructed.pending_overlay && journal_overlay.journal == reconstructed.journal && journal_overlay.latest_era == reconstructed.latest_era && journal_overlay.cumulative_size == reconstructed.cumulative_size
     }
 
     fn payload(&self, key: &H256) -> Option<DBValue> {
@@ -145,10 +144,6 @@ impl OverlayRecentDB {
         if let Some(val) = db.get(col, &LATEST_ERA_KEY).expect("Low-level database error.") {
             let mut era = decode::<u64>(&val);
             latest_era = Some(era);
-            let mut until_era = 0;
-            if era > 10 {
-                until_era = era - 10;
-            };
             loop {
                 let mut index = 0usize;
                 while let Some(rlp_data) = db.get(col, {
@@ -188,7 +183,7 @@ impl OverlayRecentDB {
                     index += 1;
                     earliest_era = Some(era);
                 }
-                if index == 0 || era == until_era {
+                if index == 0 || era == 0 {
                     break;
                 }
                 era -= 1;
@@ -319,11 +314,6 @@ impl JournalDB for OverlayRecentDB {
         Ok(ops as u32)
     }
 
-    // Attention: we have changed the behavior of mark canonical.
-    // Before it pruned the ancient backing overlay and backing db.
-    // Now it only prunes the ancient backing overlay.
-    // It's not a good way. A better way may be adding a new Algorithm or adding a new method.
-    // TODO: A better way to pruned the ancient backing overlay.
     fn mark_canonical(&mut self, batch: &mut DBTransaction, end_era: u64, canon_id: &H256) -> Result<u32, UtilError> {
         trace!(target: "journaldb", "canonical: #{} ({})", end_era, canon_id);
 
@@ -343,7 +333,7 @@ impl JournalDB for OverlayRecentDB {
                 r.append(&end_era);
                 r.append(&index);
                 r.append(&&PADDING[..]);
-                // batch.delete(self.column, &r.drain());
+                batch.delete(self.column, &r.drain());
                 trace!(target: "journaldb", "Delete journal for time #{}.{}: {}, (canon was {}): +{} -{} entries", end_era, index, journal.id, canon_id, journal.insertions.len(), journal.deletions.len());
                 {
                     if *canon_id == journal.id {
@@ -376,11 +366,11 @@ impl JournalDB for OverlayRecentDB {
                 }
             }
             // apply canon deletions
-            // for k in canon_deletions {
-            //     if !journal_overlay.backing_overlay.contains(&to_short_key(&k)) {
-            //         batch.delete(self.column, &k);
-            //     }
-            // }
+            for k in canon_deletions {
+                if !journal_overlay.backing_overlay.contains(&to_short_key(&k)) {
+                    batch.delete(self.column, &k);
+                }
+            }
         }
         journal_overlay.journal.remove(&end_era);
 
@@ -543,7 +533,7 @@ mod tests {
         assert!(jdb.contains(&h));
         jdb.commit_batch(4, &b"4".crypt_hash(), Some((1, b"1".crypt_hash()))).unwrap();
         assert!(jdb.can_reconstruct_refs());
-        // assert!(!jdb.contains(&h));
+        assert!(!jdb.contains(&h));
     }
 
     #[test]
@@ -572,21 +562,21 @@ mod tests {
         jdb.commit_batch(2, &b"2".crypt_hash(), Some((1, b"1".crypt_hash()))).unwrap();
         assert!(jdb.can_reconstruct_refs());
         assert!(jdb.contains(&foo));
-        // assert!(!jdb.contains(&bar));
+        assert!(!jdb.contains(&bar));
         assert!(jdb.contains(&baz));
 
         jdb.remove(&foo);
         jdb.commit_batch(3, &b"3".crypt_hash(), Some((2, b"2".crypt_hash()))).unwrap();
         assert!(jdb.can_reconstruct_refs());
         assert!(jdb.contains(&foo));
-        // assert!(!jdb.contains(&bar));
-        // assert!(!jdb.contains(&baz));
+        assert!(!jdb.contains(&bar));
+        assert!(!jdb.contains(&baz));
 
         jdb.commit_batch(4, &b"4".crypt_hash(), Some((3, b"3".crypt_hash()))).unwrap();
         assert!(jdb.can_reconstruct_refs());
-        // assert!(!jdb.contains(&foo));
-        // assert!(!jdb.contains(&bar));
-        // assert!(!jdb.contains(&baz));
+        assert!(!jdb.contains(&foo));
+        assert!(!jdb.contains(&bar));
+        assert!(!jdb.contains(&baz));
     }
 
     #[test]
@@ -617,8 +607,8 @@ mod tests {
         jdb.commit_batch(2, &b"2b".crypt_hash(), Some((1, b"1b".crypt_hash()))).unwrap();
         assert!(jdb.can_reconstruct_refs());
         assert!(jdb.contains(&foo));
-        // assert!(!jdb.contains(&baz));
-        // assert!(!jdb.contains(&bar));
+        assert!(!jdb.contains(&baz));
+        assert!(!jdb.contains(&bar));
     }
 
     #[test]
@@ -758,7 +748,7 @@ mod tests {
             assert!(jdb.contains(&bar));
             jdb.commit_batch(2, &b"2".crypt_hash(), Some((1, b"1".crypt_hash()))).unwrap();
             assert!(jdb.can_reconstruct_refs());
-            // assert!(!jdb.contains(&foo));
+            assert!(!jdb.contains(&foo));
         }
     }
 
@@ -860,7 +850,7 @@ mod tests {
 
         jdb.commit_batch(5, &b"5".crypt_hash(), Some((4, b"4".crypt_hash()))).unwrap();
         assert!(jdb.can_reconstruct_refs());
-        // assert!(!jdb.contains(&foo));
+        assert!(!jdb.contains(&foo));
     }
 
     #[test]
@@ -951,7 +941,7 @@ mod tests {
 
             jdb.commit_batch(6, &b"6".crypt_hash(), Some((4, b"4".crypt_hash()))).unwrap();
             assert!(jdb.can_reconstruct_refs());
-            // assert!(!jdb.contains(&foo));
+            assert!(!jdb.contains(&foo));
         }
     }
 
@@ -959,7 +949,7 @@ mod tests {
     fn reopen_fork() {
         let mut dir = ::std::env::temp_dir();
         dir.push(H32::random().hex());
-        let (foo, _bar, _baz) = {
+        let (foo, bar, baz) = {
             let mut jdb = new_db(&dir);
             // history is 1
             let foo = jdb.insert(b"foo");
@@ -982,8 +972,8 @@ mod tests {
             jdb.commit_batch(2, &b"2b".crypt_hash(), Some((1, b"1b".crypt_hash()))).unwrap();
             assert!(jdb.can_reconstruct_refs());
             assert!(jdb.contains(&foo));
-            // assert!(!jdb.contains(&baz));
-            // assert!(!jdb.contains(&bar));
+            assert!(!jdb.contains(&baz));
+            assert!(!jdb.contains(&bar));
         }
     }
 
@@ -1060,7 +1050,7 @@ mod tests {
 
         // reconstructed: no journal entries.
         drop(jdb);
-        // let jdb = new_db(temp.as_ref());
-        // assert_eq!(jdb.earliest_era(), None);
+        let jdb = new_db(temp.as_ref());
+        assert_eq!(jdb.earliest_era(), None);
     }
 }

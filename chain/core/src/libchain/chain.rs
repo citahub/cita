@@ -269,7 +269,7 @@ impl Chain {
             accountdb: Default::default(),
         };
 
-        let journal_db = journaldb::new(db.clone(), journaldb::Algorithm::OverlayRecent, COL_STATE);
+        let journal_db = journaldb::new(db.clone(), journaldb::Algorithm::Archive, COL_STATE);
         let state_db = StateDB::new(journal_db);
         let blooms_config = bc::Config {
             levels: LOG_BLOOMS_LEVELS,
@@ -308,7 +308,7 @@ impl Chain {
             block_receipts: RwLock::new(HashMap::new()),
             cache_man: Mutex::new(cache_man),
             db: db,
-            state_db: state_db.boxed_clone(),
+            state_db: state_db,
             factories: factories,
             sync_sender: Mutex::new(sync_sender),
             last_hashes: RwLock::new(VecDeque::new()),
@@ -339,9 +339,6 @@ impl Chain {
         status.set_number(header.number());
         let nodes: Vec<Address> = chain.nodes.read().to_vec();
         status.set_nodes(nodes);
-
-        // prune old states.
-        chain.prune_ancient(state_db).expect("mark_canonical failed");
 
         (chain, status.protobuf())
     }
@@ -814,7 +811,7 @@ impl Chain {
             Some(n) => n,
             None => return Ok(()),
         };
-        let history = 10;
+        let history = 2;
         // prune all ancient eras until we're below the memory target,
         // but have at least the minimum number of states.
         loop {
