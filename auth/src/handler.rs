@@ -79,6 +79,11 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     let mut resp = VerifyTxResp::new();
     resp.set_tx_hash(req.get_tx_hash().to_vec());
 
+    if req.get_nonce().len() > 128 {
+        resp.set_ret(Ret::InvalidNonce);
+        return resp;
+    }
+
     let tx_hash = H256::from_slice(req.get_tx_hash());
     let ret = verifier.check_hash_exist(&tx_hash);
     if ret {
@@ -108,9 +113,21 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     resp
 }
 
+
+pub fn process_flow_control_failed(mut verify_info: VerifyRequestResponseInfo, resp_sender: Sender<VerifyRequestResponseInfo>) {
+    let mut response = VerifyTxResp::new();
+    if let VerifyRequestResponse::AuthRequest(req) = verify_info.req_resp {
+        response.set_tx_hash(req.get_tx_hash().to_vec());
+        response.set_ret(Ret::Busy);
+        verify_info.req_resp = VerifyRequestResponse::AuthResponse(response);
+        resp_sender.send(verify_info).unwrap();
+    }
+}
+
 pub fn verify_tx_group_service(mut req_grp: Vec<VerifyRequestResponseInfo>, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, resp_sender: Sender<VerifyRequestResponseInfo>) {
     let now = SystemTime::now();
     let len = req_grp.len();
+
     loop {
         if let Some(mut req_info) = req_grp.pop() {
             if let VerifyRequestResponse::AuthRequest(req) = req_info.req_resp {
@@ -134,8 +151,9 @@ pub fn check_verify_request_preprocess(mut req_info: VerifyRequestResponseInfo, 
         let mut final_response = VerifyTxResp::new();
         let mut processed = false;
         let mut result = VerifyResult::VerifyNotBegin;
+        let is_single_verify = req_info.verify_type == VerifyType::SingleVerify;
 
-        if !verifier.read().verify_valid_until_block(req.get_valid_until_block()) {
+        if is_single_verify && !verifier.read().verify_valid_until_block(req.get_valid_until_block()) {
             let mut response = VerifyTxResp::new();
             response.set_tx_hash(req.get_tx_hash().to_vec());
             response.set_ret(Ret::InvalidUntilBlock);
@@ -147,13 +165,14 @@ pub fn check_verify_request_preprocess(mut req_info: VerifyRequestResponseInfo, 
                 final_response = resp;
             }
         }
+
         if true == processed {
             match final_response.get_ret() {
                 Ret::Ok => result = VerifyResult::VerifySucceeded,
                 _ => result = VerifyResult::VerifyFailed,
             }
             //only send result when the verify type is single
-            if VerifyType::SingleVerify == req_info.verify_type {
+            if is_single_verify {
                 req_info.req_resp = VerifyRequestResponse::AuthResponse(final_response);
                 resp_sender.send(req_info).unwrap();
             }

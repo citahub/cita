@@ -9,6 +9,7 @@ enum Ret {
     InvalidUntilBlock = 3;
     BadSig = 4;
     NotReady = 5;
+    Busy = 6;
 }
 
 message VerifyTxReq {
@@ -18,6 +19,7 @@ message VerifyTxReq {
     Crypto crypto = 4;
     bytes tx_hash = 5;
     bytes signer = 6; //public key only set in BlockReq
+    string nonce = 7;
 }
 
 message VerifyTxResp {

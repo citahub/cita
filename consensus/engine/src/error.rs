@@ -33,6 +33,7 @@ pub enum EngineError {
     VoteMsgDelay(usize),
     VoteMsgForth(usize),
     InvalidSignature,
+    InvalidTxInProposal,
 }
 
 impl fmt::Display for EngineError {
@@ -50,6 +51,7 @@ impl fmt::Display for EngineError {
             VoteMsgDelay(height) => format!("The vote message is delayed and missed the current height:{}", height),
             VoteMsgForth(height) => format!("The vote message is fulture height :{}", height),
             InvalidSignature => "Invalid Signature.".into(),
+            InvalidTxInProposal => "Invalid Tx In Proposal.".into(),
         };
         f.write_fmt(format_args!("Engine error ({})", msg))
     }

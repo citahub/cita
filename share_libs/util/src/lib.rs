@@ -87,3 +87,5 @@ pub use vector::*;
 /// 160-bit integer representing account address
 pub type Address = H160;
 pub type Bloom = H2048;
+
+pub const BLOCKLIMIT: u64 = 100;

@@ -19,7 +19,7 @@ use authority_manage::AuthorityManage;
 use bincode::{serialize, deserialize, Infinite};
 
 use core::params::TendermintParams;
-use core::voteset::{VoteCollector, ProposalCollector, VoteSet, Proposal, VoteMessage};
+use core::voteset::{VoteCollector, ProposalCollector, VoteSet, Proposal, VoteMessage, verify_tx};
 
 use core::votetime::{WaitTimer, TimeoutInfo};
 use core::wal::Wal;
@@ -760,47 +760,31 @@ impl TenderMint {
         return false;
     }
 
-    fn verify_req(&mut self, msg: &[u8]) {
-        let res = deserialize(msg);
-        if let Ok(decoded) = res {
-            let (message, signature): (Vec<u8>, &[u8]) = decoded;
-            if signature.len() != SIGNATURE_BYTES_LEN {
-                warn!("bad signature");
-                return;
-            }
-            let signature = Signature::from(signature);
-            if let Ok(_) = signature.recover(&message.crypt_hash().into()) {
-                let decoded = deserialize(&message).unwrap();
-                let (vheight, vround, proposal): (usize, usize, Proposal) = decoded;
-                if let Ok(block) = parse_from_bytes::<Block>(&proposal.block) {
-                    let len = block.get_body().get_transactions().len();
-                    if len > 0 {
-                        trace!("Going to send block verify request to auth");
-                        self.unverified_msg.push((vheight, vround));
-                        let idx = self.unverified_msg.len() as u64 - 1;
-                        let reqid = gen_reqid_from_idx(idx);
-                        let verify_req = block_verify_req(&block, reqid);
-                        trace!("verify_req with {} txs with block verify request id: {} and height:{}", len, reqid, block.get_header().get_height());
-                        let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
-                        self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-                    } else {
-                        let res = self.handle_proposal(msg.to_vec(), false);
-                        if let Ok((h, r)) = res {
-                            trace!("handle_proposal {:?}", (h, r));
-                            if h == self.height && r == self.round && self.step < Step::PrevoteWait {
-                                let pres = self.proc_proposal(h, r);
-                                if !pres {
-                                    trace!("proc_proposal res false height {}, round {}", h, r);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    fn verify_req(&mut self, block: Block, vheight: usize, vround: usize) -> bool {
+        let transactions = block.get_body().get_transactions();
+        let len = transactions.len();
+        let verify_ok = transactions.into_iter().all(|tx| {
+                                                         let result = verify_tx(tx.get_transaction(), vheight as u64);
+                                                         if !result {
+                                                             let raw_tx = tx.get_transaction();
+                                                             info!("verify tx in proposal failed, tx nonce: {}, tx valid_until_block: {}, proposal height: {}", raw_tx.get_nonce(), raw_tx.get_valid_until_block(), vheight);
+                                                         }
+                                                         result
+                                                     });
+        if (len > 0) && verify_ok {
+            trace!("Going to send block verify request to auth");
+            self.unverified_msg.push((vheight, vround));
+            let idx = self.unverified_msg.len() as u64 - 1;
+            let reqid = gen_reqid_from_idx(idx);
+            let verify_req = block_verify_req(&block, reqid);
+            trace!("verify_req with {} txs with block verify request id: {} and height:{}", len, reqid, block.get_header().get_height());
+            let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
+            self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         }
+        verify_ok
     }
 
-    fn handle_proposal(&mut self, msg: Vec<u8>, wal_flag: bool) -> Result<(usize, usize), EngineError> {
+    fn handle_proposal(&mut self, msg: Vec<u8>, wal_flag: bool, need_verify: bool) -> Result<(usize, usize), EngineError> {
         let res = deserialize(&msg[..]);
         if let Ok(decoded) = res {
             let (message, signature): (Vec<u8>, &[u8]) = decoded;
@@ -812,8 +796,20 @@ impl TenderMint {
 
             if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
                 let decoded = deserialize(&message[..]).unwrap();
-                let (height, round, proposal) = decoded;
+                let (height, round, proposal): (usize, usize, Proposal) = decoded;
                 trace!("handle_proposal height {:?}, round {:?} sender {:?}", height, round, pubkey_to_address(&pubkey));
+
+                if need_verify {
+                    // verify tx nonce and valid until block
+                    let block = parse_from_bytes::<Block>(&proposal.block);
+                    if block.is_err() {
+                        error!("parse block from proposal failed, height {}, round {}", height, round);
+                        return Err(EngineError::UnexpectedMessage);
+                    }
+                    if !self.verify_req(block.unwrap(), height, round) {
+                        return Err(EngineError::InvalidTxInProposal);
+                    }
+                }
 
                 let ret = self.is_round_proposer(height, round, &pubkey_to_address(&pubkey));
                 if ret.is_err() {
@@ -1028,9 +1024,7 @@ impl TenderMint {
 
                 ID_NEW_PROPOSAL => {
                     if let MsgClass::MSG(msg) = content_ext {
-                        self.verify_req(&msg);
-
-                        let res = self.handle_proposal(msg, true);
+                        let res = self.handle_proposal(msg, true, true);
                         if let Ok((h, r)) = res {
                             trace!("handle_proposal {:?}", (h, r));
                             if h == self.height && r == self.round && self.step < Step::PrevoteWait {
@@ -1040,7 +1034,6 @@ impl TenderMint {
                                 }
                             }
                         }
-
                     }
                 }
                 _ => {}
@@ -1230,7 +1223,7 @@ impl TenderMint {
         for (mtype, vec_out) in vec_buf {
             trace!("******* wal_log type {}", mtype);
             if mtype == LOG_TYPE_PROPOSE {
-                let res = self.handle_proposal(vec_out, false);
+                let res = self.handle_proposal(vec_out, false, false);
                 if let Ok((h, r)) = res {
                     let pres = self.proc_proposal(h, r);
                     if !pres {

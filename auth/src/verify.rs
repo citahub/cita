@@ -23,9 +23,7 @@ use protobuf::Message;
 use std::collections::{HashMap, HashSet};
 use std::result::Result;
 use std::sync::mpsc::Sender;
-use util::H256;
-
-pub const BLOCKLIMIT: u64 = 100;
+use util::{H256, BLOCKLIMIT};
 
 #[derive(Debug, Clone)]
 pub struct Verifier {

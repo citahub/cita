@@ -9,7 +9,10 @@ log = "0.3"
 dotenv = "0.10.0"
 cpuprofiler = "0.0.3"
 threadpool = "1.7.0"
+rustc-serialize = "0.3"
+serde = "1.0"
 serde_json = "1.0"
+serde_derive = "1.0"
 util = { path = "../share_libs/util"}
 error = { path = "../share_libs/error"}
 pubsub = { path = "../share_libs/pubsub" }

@@ -220,6 +220,7 @@ pub fn tx_verify_req_msg(unverified_tx: &UnverifiedTransaction) -> VerifyTxReq {
     verify_tx_req.set_hash(hash.to_vec());
     verify_tx_req.set_crypto(unverified_tx.get_crypto());
     verify_tx_req.set_signature(unverified_tx.get_signature().to_vec());
+    verify_tx_req.set_nonce(unverified_tx.get_transaction().get_nonce().to_string());
     // unverified tx hash
     let tx_hash = unverified_tx.crypt_hash();
     verify_tx_req.set_tx_hash(tx_hash.to_vec());
@@ -240,11 +241,6 @@ pub fn block_verify_req(block: &Block, request_id: u64) -> VerifyBlockReq {
     verify_blk_req.set_id(request_id);
     verify_blk_req.set_reqs(RepeatedField::from_vec(reqs));
     verify_blk_req
-}
-
-pub fn verify_tx_nonce(tx: &SignedTransaction) -> bool {
-    let nonce = tx.get_transaction().get_nonce();
-    nonce.len() <= 128
 }
 
 pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
