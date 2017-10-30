@@ -387,6 +387,10 @@ impl Block {
     pub fn crypt_hash_hex(&self) -> String {
         self.get_header().crypt_hash_hex()
     }
+
+    pub fn check_hash(&self) -> bool {
+        self.get_body().transactions_root().0 == *self.get_header().get_transactions_root()
+    }
 }
 
 impl BlockHeader {

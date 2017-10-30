@@ -18,7 +18,8 @@
 use core::libchain::block::Block;
 use core::libchain::chain::Chain;
 use libproto::*;
-use libproto::blockchain::{Status, RichStatus};
+use libproto::blockchain::{Status, RichStatus, ProofType};
+use proof::TendermintProof;
 use protobuf::{Message, RepeatedField};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -58,12 +59,32 @@ impl Synchronizer {
                     }
                 }
                 if let Some(value) = val {
+                    let proof_option = value.0;
                     let block = value.1;
-                    let is_verified = value.2;
-                    if is_verified {
-                        self.add_block(ctx_pub, block);
+                    let is_local = value.2;
+                    if let Some(proof) = proof_option {
+                        if is_local {
+                            self.add_block(ctx_pub, block);
+                        } else {
+                            // Check block proof
+                            let block = Block::from(block.clone());
+                            if let Some(proof_type) = block.proof_type() {
+                                if proof_type == ProofType::Tendermint {
+                                    let authorities = self.chain.nodes.read().clone();
+                                    let proof = TendermintProof::from(proof.clone());
+                                    if proof.check(height as usize, &authorities) {
+                                        self.add_block(ctx_pub, block);
+                                    }
+                                }
+                            };
+                            trace!("block {} proof is invalid ", height);
+                            {
+                                let mut block_map = self.chain.block_map.write();
+                                block_map.remove(&height);
+                            }
+                        }
                     } else {
-                        trace!("chain proof not ok height: {}, wait next sync", height);
+                        trace!("chain proof not exist height: {}, wait next sync", height);
                         break;
                     }
                 } else {

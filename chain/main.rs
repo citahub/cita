@@ -31,6 +31,7 @@ extern crate byteorder;
 extern crate serde_json;
 extern crate protobuf;
 extern crate error;
+extern crate proof;
 
 mod forward;
 mod synchronizer;

@@ -91,6 +91,7 @@ impl TendermintProof {
         return false;
     }
 
+    // Check proof commits
     pub fn check(&self, h: usize, authorities: &[Address]) -> bool {
         if h == 0 {
             return true;
@@ -111,23 +112,6 @@ impl TendermintProof {
             }
             false
         })
-    }
-
-    pub fn simple_check(&self, h: usize) -> bool {
-        if h == 0 {
-            return true;
-        }
-        if h != self.height {
-            return false;
-        }
-        self.commits.iter().all(|(sender, sig)| {
-                                    let msg = serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())), Infinite).unwrap();
-                                    let signature = Signature(sig.0.into());
-                                    if let Ok(pubkey) = signature.recover(&msg.crypt_hash().into()) {
-                                        return pubkey_to_address(&pubkey) == sender.clone().into();
-                                    }
-                                    false
-                                })
     }
 }
 

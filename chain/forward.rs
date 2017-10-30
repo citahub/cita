@@ -271,15 +271,22 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
             let current_height = chain.get_current_height();
             let max_height = chain.get_max_height();
             let blk_height = problock.get_header().get_height();
-            let block = Block::from(problock);
-            let check_height = Chain::check_block_proof(&block, 0);
+
+            // Check transaction root
+            if !problock.check_hash() {
+                warn!("transactions root isn't correct, height is {}", blk_height);
+                return;
+            }
+
+            let block = Block::from(problock.clone());
+            let check_height = Chain::get_block_proof_height(&block);
 
             if blk_height == ::std::u64::MAX {
                 if check_height != ::std::usize::MAX {
                     let proof_height = check_height as u64;
                     let mut guard = chain.block_map.write();
                     if let Some(info) = guard.get_mut(&proof_height) {
-                        info.2 = true;
+                        info.0 = Some(problock.get_header().get_proof().clone());
                         let _ = chain.sync_sender.lock().send(proof_height);
                         trace!("blk_height == MAX proof height {}", proof_height);
                     }
@@ -301,7 +308,7 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                     guard.insert(blk_height, (None, block, false));
                 }
                 if let Some(info) = guard.get_mut(&proof_height) {
-                    info.2 = true;
+                    info.0 = Some(problock.get_header().get_proof().clone());
                     let _ = chain.sync_sender.lock().send(proof_height);
                 }
             }
