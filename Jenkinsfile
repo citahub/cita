@@ -3,12 +3,7 @@ pipeline {
   stages {
     stage('func test') {
       steps {
-        sh 'scripts/build_image_from_source.sh debug'
-      }
-    }
-    stage('perf test') {
-      steps {
-        sh 'scripts/build_image_from_source.sh release'
+        sh 'scripts/ci.sh'
       }
     }
   }
