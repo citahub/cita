@@ -31,10 +31,10 @@ pub struct TendermintTimer {
 impl Default for TendermintTimer {
     fn default() -> Self {
         TendermintTimer {
-            propose: Duration::from_millis(1400),
-            prevote: Duration::from_millis(400),
-            precommit: Duration::from_millis(400),
-            commit: Duration::from_millis(600),
+            propose: Duration::from_millis(2400),
+            prevote: Duration::from_millis(100),
+            precommit: Duration::from_millis(100),
+            commit: Duration::from_millis(400),
         }
     }
 }

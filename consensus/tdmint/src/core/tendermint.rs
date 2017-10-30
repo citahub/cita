@@ -56,8 +56,8 @@ const ID_CONSENSUS_MSG: u32 = (submodules::CONSENSUS << 16) + topics::CONSENSUS_
 const ID_NEW_PROPOSAL: u32 = (submodules::CONSENSUS << 16) + topics::NEW_PROPOSAL as u32;
 //const ID_NEW_STATUS: u32 = (submodules::CHAIN << 16) + topics::NEW_STATUS as u32;
 
-const TIMEOUT_RETRANSE_MULTIPLE: u32 = 5;
-const TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE: u32 = 10;
+const TIMEOUT_RETRANSE_MULTIPLE: u32 = 10;
+const TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE: u32 = 20;
 
 pub type TransType = (u32, u32, MsgClass);
 pub type PubType = (String, Vec<u8>);
@@ -232,6 +232,7 @@ impl TenderMint {
                 self.pub_and_broadcast_message(height, round, Step::Prevote, Some(H256::default()));
             }
         }
+        //this is for timeout resending votes
         WaitTimer::set_timer(self.timer_seter.clone(),
                              TimeoutInfo {
                                  timeval: self.params.timer.prevote * TIMEOUT_RETRANSE_MULTIPLE,
@@ -267,9 +268,10 @@ impl TenderMint {
                                 self.locked_vote = None;
                             }
                         }
-                        tv = ::std::time::Duration::new(0, 0);
+
                         if hash.is_zero() {
                             self.clean_saved_info();
+                            tv = ::std::time::Duration::new(0, 0);
                         } else {
                             if self.proposal == Some(*hash) {
                                 self.lock_round = Some(round);
@@ -302,7 +304,6 @@ impl TenderMint {
 
                 if self.step == Step::Prevote {
                     self.change_state_step(height, round, Step::PrevoteWait, false);
-
                     WaitTimer::set_timer(self.timer_seter.clone(),
                                          TimeoutInfo {
                                              timeval: tv,
@@ -318,7 +319,7 @@ impl TenderMint {
     }
 
     fn is_above_threshold(&self, n: &usize) -> bool {
-        *n > self.auth_manage.authority_n * 2 / 3
+        *n * 3 > self.auth_manage.authority_n * 2
     }
 
     fn is_all_vote(&self, n: &usize) -> bool {
@@ -342,7 +343,7 @@ impl TenderMint {
             self.pub_and_broadcast_message(height, round, Step::Precommit, Some(H256::default()));
         }
 
-        //resend msg
+        //timeout for resending vote msg
         WaitTimer::set_timer(self.timer_seter.clone(),
                              TimeoutInfo {
                                  timeval: self.params.timer.precommit * TIMEOUT_RETRANSE_MULTIPLE,
@@ -375,8 +376,8 @@ impl TenderMint {
                 for (hash, count) in vote_set.votes_by_proposal {
                     if self.is_above_threshold(&count) {
                         trace!("proc_precommit is_above_threshold hash {:?} {}", hash, count);
-                        tv = ::std::time::Duration::new(0, 0);
                         if hash.is_zero() {
+                            tv = ::std::time::Duration::new(0, 0);
                             trace!("proc_precommit is zero");
                         //self.proposal = None;
                         } else {
@@ -660,7 +661,7 @@ impl TenderMint {
                     process up */
                     if h > self.height || (h == self.height && r >= self.round) {
                         //if h == self.height && r >= self.round {
-                        info!("handle_message get vote: height {:?}, round {:?}, step {:?}, sender {:?}, hash {:?}, signature {}", h, r, step, sender, hash, signature);
+                        info!("handle_message get vote: height {:?}, round {:?}, step {:?}, sender {:?}, hash {:?}, signature {} ", h, r, step, sender, hash, signature.clone());
                         let ret = self.votes.add(h,
                                                  r,
                                                  step,
@@ -670,7 +671,6 @@ impl TenderMint {
                                                      signature: signature,
                                                  });
                         if ret {
-                            info!("vote ok!");
                             if wal_flag {
                                 self.wal_log.save(LOG_TYPE_VOTE, &log_msg).unwrap();
                             }
@@ -691,8 +691,6 @@ impl TenderMint {
         let proposal = self.proposals.get_proposal(height, round);
         if let Some(proposal) = proposal {
             trace!("proc proposal height {},round {} self {} {} ", height, round, self.height, self.round);
-            //proposal check
-            //if !proposal.check(height, &self.params.authorities) {
             if !proposal.check(height, &self.auth_manage.authorities) {
                 trace!("proc proposal check error");
                 return false;
@@ -705,7 +703,7 @@ impl TenderMint {
                 block_prehash.extend_from_slice(block.get_header().get_prevhash());
                 {
                     if hash != H256::from(block_prehash.as_slice()).into() {
-                        trace!("proc proposal pre_hash error");
+                        trace!("proc proposal pre_hash error height {} round {} self height {} round {}", height, round, self.height, self.round);
                         return false;
                     }
                 }
@@ -746,7 +744,7 @@ impl TenderMint {
             if self.lock_round.is_some() {
                 let ref lock_block = self.locked_block.clone().unwrap();
                 self.proposal = Some(lock_block.crypt_hash().into());
-                trace!("still have lock block {} locked round {} {:?}", self.height, self.lock_round.unwrap(), self.proposal.unwrap());
+                info!("still have lock block {} locked round {} {:?}", self.height, self.lock_round.unwrap(), self.proposal.unwrap());
             } else {
                 // else use proposal block，self.lock_round is none
                 let block = parse_from_bytes::<Block>(&proposal.block).unwrap();
@@ -939,12 +937,15 @@ impl TenderMint {
     }
 
     pub fn timeout_process(&mut self, tminfo: TimeoutInfo) {
-        trace!("timeout_process {:?}", tminfo);
+        trace!("timeout_process {:?} now height {},round {}，step {:?}", tminfo, self.height, self.round, self.step);
         if tminfo.height < self.height || (tminfo.height == self.height && tminfo.round < self.round && tminfo.step != Step::CommitWait) {
             return;
         }
 
         if tminfo.step == Step::ProposeWait {
+            if self.step != Step::ProposeWait {
+                return;
+            }
             let pres = self.proc_proposal(tminfo.height, tminfo.round);
             if !pres {
                 trace!("timeout_process proc_proposal res false height {} round {}", tminfo.height, tminfo.round);
@@ -952,7 +953,6 @@ impl TenderMint {
             self.change_state_step(tminfo.height, tminfo.round, Step::Prevote, false);
             self.pre_proc_prevote();
             //one node need this
-            //if self.params.authorities.len() < 2
             {
                 self.proc_prevote(tminfo.height, tminfo.round);
             }
@@ -997,6 +997,7 @@ impl TenderMint {
         } else if tminfo.step == Step::CommitWait {
             let res = self.proc_commit_after(tminfo.height, tminfo.round);
             if res {
+                self.htime = Instant::now();
                 self.redo_work();
             }
         }
@@ -1026,12 +1027,16 @@ impl TenderMint {
                     if let MsgClass::MSG(msg) = content_ext {
                         let res = self.handle_proposal(msg, true, true);
                         if let Ok((h, r)) = res {
-                            trace!("handle_proposal {:?}", (h, r));
-                            if h == self.height && r == self.round && self.step < Step::PrevoteWait {
-                                let pres = self.proc_proposal(h, r);
-                                if !pres {
-                                    trace!("proc_proposal res false height {}, round {}", h, r);
-                                }
+                            trace!("recive handle_proposal {:?} self height {} round {} step {:?}", (h, r), self.height, self.round, self.step);
+                            if h == self.height && r == self.round && self.step < Step::Prevote {
+                                self.step = Step::ProposeWait;
+                                WaitTimer::set_timer(self.timer_seter.clone(),
+                                                     TimeoutInfo {
+                                                         timeval: ::std::time::Duration::new(0, 0),
+                                                         height: h,
+                                                         round: r,
+                                                         step: Step::ProposeWait,
+                                                     });
                             }
                         }
                     }
@@ -1072,7 +1077,7 @@ impl TenderMint {
                 }
 
                 MsgClass::BLOCKTXS(block_txs) => {
-                    trace!("recive blocktxs height {} self height {}", block_txs.get_height(), self.height);
+                    info!("recive blocktxs height {} self height {}", block_txs.get_height(), self.height);
                     let height = block_txs.get_height() as usize;
                     let msg = block_txs.write_to_bytes().unwrap();
                     self.block_txs.push_back((height, block_txs));
@@ -1080,8 +1085,15 @@ impl TenderMint {
                     let now_height = self.height;
                     let now_round = self.round;
                     let now_step = self.step;
-                    if now_height == height + 1 && self.is_round_proposer(now_height, now_round, &self.params.signer.address).is_ok() && now_step < Step::Prevote && self.proposal.is_none() {
+                    if now_height == height + 1 && self.is_round_proposer(now_height, now_round, &self.params.signer.address).is_ok() && now_step == Step::ProposeWait && self.proposal.is_none() {
                         self.new_proposal();
+                        WaitTimer::set_timer(self.timer_seter.clone(),
+                                             TimeoutInfo {
+                                                 timeval: ::std::time::Duration::new(0, 0),
+                                                 height: now_height,
+                                                 round: now_round,
+                                                 step: Step::ProposeWait,
+                                             });
                     }
                 }
                 _ => {}
@@ -1130,12 +1142,18 @@ impl TenderMint {
             }
         }
 
+        let cost_time = Instant::now() - self.htime;
         let mut tv = self.params.timer.commit;
-        if height > status_height {
+        if height > status_height
+        //|| self.is_round_proposer(status_height+1,INIT_ROUND,&self.params.signer.address).is_ok()
+        {
             tv = ::std::time::Duration::new(0, 0);
+        } else if cost_time < self.params.duration {
+            tv = self.params.duration - cost_time;
         }
 
-        info!(" ######### height {} round {} chain status return time {:?} ", status_height, self.round, Instant::now() - self.htime);
+        self.change_state_step(status_height, r, Step::CommitWait, false);
+        info!(" ######### height {} round {} chain status return time {:?} ", status_height, self.round, cost_time);
         WaitTimer::set_timer(self.timer_seter.clone(),
                              TimeoutInfo {
                                  timeval: tv,
@@ -1146,17 +1164,21 @@ impl TenderMint {
     }
 
     fn new_round_start(&mut self, height: usize, round: usize) {
-        if round == INIT_ROUND {
-            self.htime = Instant::now();
-        }
-
-        if self.is_round_proposer(height, round, &self.params.signer.address).is_ok() {
+        //        if round == INIT_ROUND {
+        //            self.htime = Instant::now();
+        //        }
+        let mut tv = self.params.timer.propose * ((round + 1) as u32);
+        if self.proposals.get_proposal(height, round).is_some() {
+            tv = ::std::time::Duration::new(0, 0);
+        } else if self.is_round_proposer(height, round, &self.params.signer.address).is_ok() {
             self.new_proposal();
+            tv = ::std::time::Duration::new(0, 0);
         }
+        //if is proposal,enter prevote stage immedietly
         self.step = Step::ProposeWait;
         WaitTimer::set_timer(self.timer_seter.clone(),
                              TimeoutInfo {
-                                 timeval: self.params.timer.propose * ((round + 1) as u32),
+                                 timeval: tv,
                                  height: height,
                                  round: round,
                                  step: Step::ProposeWait,
