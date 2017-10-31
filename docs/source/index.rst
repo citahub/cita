@@ -57,6 +57,12 @@ CITA（ Cryptape Inter-enterprise Trust Automation ）是一个面向企业级�
 
 .. toctree::
    :maxdepth: 2
+   :caption: Bootstrap
+
+   cita_bootstrap
+
+.. toctree::
+   :maxdepth: 2
    :caption: 附录
 
    faq

@@ -15,6 +15,7 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
    
 安装完成后，可以重新登录使Rust相关的环境变量生效，也可直接使用以下命令立即生效：
 ::
+
    source ~/.cargo/env
 
 经过如上设置，CITA的依赖便安装完成了。
@@ -49,6 +50,7 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
 =============
 先切换到发布件目录,并将bin目录加入到PATH环境变量中:
 ::
+
    cd target/install
    export PATH=$PWD/bin:$PATH
    
