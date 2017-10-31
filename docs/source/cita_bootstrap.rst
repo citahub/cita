@@ -143,7 +143,7 @@ CITA 完全兼容以太坊的智能合约，``solidity`` 是智能合约最为�
 
 得到 ``solidity`` 文件字节码后，就可以将其部署到 ``CITA`` 链上了，部署的方法已经用 ``python`` 脚本封装，只需要传入私钥和字节码即可。
 
-目前支持的 ``python`` 版本是2.7，``python`` 脚本存放的位置为 ``（DIR)/cita/cita/scripts/contracts/txtool/txtool`` ，其中 ``$(DIR)`` 代表工程的目录地址，使用前你还需要提前安转好 ``python`` 脚本的依赖，具体安装方法可以参考 ``(DIR)/cita/cita/scripts/contracts/txtool`` 目录下的 ``README.md`` 文件。
+目前支持的 ``python`` 版本是2.7，``python`` 脚本存放的位置为 ``（DIR)/cita/cita/scripts/contracts/txtool/txtool`` ，其中 ``$(DIR)`` 代表工程的目录地址，使用前你还需要提前安装好 ``python`` 脚本的依赖，具体安装方法可以参考 ``(DIR)/cita/cita/scripts/contracts/txtool`` 目录下的 ``README.md`` 文件。
 
 在 ``Terminal`` 执行以下命令：
 
