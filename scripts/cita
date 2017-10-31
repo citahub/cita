@@ -33,7 +33,6 @@ setup() {
 start() {
     debug=$1
 
-    pid_file=.pid
     mkdir -p logs
 
     # clean queues
@@ -44,54 +43,11 @@ start() {
     curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/network   > /dev/null 2>&1 || true
 
     if [ -z ${debug} ]; then
-        nohup auth                                                       \
-              -c authconfig.json                                         \
-              >>logs/auth.log       2>&1 &
-        echo $! >> ${pid_file}
-        nohup network                                                    \
-              -c network.toml                                            \
-              >>logs/network.log    2>&1 &
-        echo $! >> ${pid_file}
-        nohup consensus_tendermint                                       \
-              -c consensus.json                                          \
-              >>logs/consensus.log  2>&1 &
-        echo $! >> ${pid_file}
-        nohup jsonrpc                                                    \
-              -c jsonrpc.json                                            \
-              >>logs/jsonrpc.log    2>&1 &
-        echo $! >> ${pid_file}
-        nohup chain                                                      \
-              -g genesis.json                                            \
-              -c chain.json                                              \
-              >>logs/chain.log        2>&1 &
-        echo $! >> ${pid_file}
-    else
-        RUST_LOG=auth=trace                                              \
-                auth                                                     \
-                -c authconfig.json                                       \
-                >>logs/auth.log       2>&1 &
-        echo $! >> ${pid_file}
-        RUST_LOG=network=trace                                           \
-                network                                                  \
-                -c network.toml                                          \
-                >>logs/network.log    2>&1 &
-        echo $! >> ${pid_file}
-        RUST_LOG=consensus_tendermint,proof,txpool,engine,libproto=trace \
-                consensus_tendermint                                     \
-                -c consensus.json                                        \
-                >>logs/consensus.log  2>&1 &
-        echo $! >> ${pid_file}
-        RUST_LOG=jsonrpc,jsonrpc_types=trace                             \
-                jsonrpc                                                  \
-                -c jsonrpc.json                                          \
-                >>logs/jsonrpc.log    2>&1 &
-        echo $! >> ${pid_file}
-        RUST_LOG=chain,core=trace                                        \
-                chain                                                    \
-                -g genesis.json                                          \
-                -c chain.json                                            \
-                >>logs/chain.log        2>&1 &
-        echo $! >> ${pid_file}
+        
+        monitor start > /dev/null
+    else                                        
+        RUST_LOG=auth,network,consensus_tendermint,proof,txpool,engine,libproto,jsonrpc,jsonrpc_types,chain,core=trace \
+        monitor start > /dev/null                                       
     fi
 }
 
@@ -110,22 +66,15 @@ clean() {
 }
 
 stop() {
-    pid_file=.pid
-    if [ -e ${pid_file} ] ; then
-        for pid in $(cat ${pid_file}) ; do
-            kill -9 ${pid} || true
-        done
-    fi
-    rm -f ${pid_file}
+    monitor stop > /dev/null
 }
 
 status() {
-    pid_file=.pid
-    if [ -e ${pid_file} ] ; then
-        for pid in $(cat ${pid_file}) ; do
-            ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep" || true
-        done
-    fi
+    for pid_file in `find . -name "*.pid"`; do
+        pid=$(cat ${pid_file})
+        ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep" || true        
+    done
+        
 }
 
 logs() {
@@ -135,7 +84,8 @@ logs() {
 
 stat() {
     stat_cmd="pidstat -r -u -d"
-    for pid in $(cat .pid); do
+    for pid_file in `find . -name "*.pid"`; do
+        pid=$(cat ${pid_file})
         stat_cmd=$stat_cmd" -p ${pid}"
     done
     while [ 1 ]; do

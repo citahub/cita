@@ -1,0 +1,52 @@
+
+name="monitor"
+command = "monitor"
+pidfile = ".monitor.pid"
+logfile = "logs/monitor.log"
+errfile = "logs/monitor.err.log"
+
+[[process]]
+name = "auth"
+command = "auth"
+args = ["-c","authconfig.json"]
+pidfile = ".auth.pid"
+logfile = "logs/auth.log"
+errfile = "logs/auth.err.log"
+respawn = 3
+
+[[process]]
+name = "network"
+command = "network"
+args = ["-c","network.toml"]
+pidfile = ".network.pid"
+logfile = "logs/network.log"
+errfile = "logs/network.err.log"
+respawn = 3
+
+[[process]]
+name = "consensus_tendermint"
+command = "consensus_tendermint"
+args = ["-c","consensus.json"]
+pidfile = ".consensus.pid"
+logfile = "logs/consensus.log"
+errfile = "logs/consensus.err.log"
+respawn = 3
+
+[[process]]
+name = "jsonrpc"
+command = "jsonrpc"
+args = ["-c","jsonrpc.json"]
+pidfile = ".jsonrpc.pid"
+logfile = "logs/jsonrpc.log"
+errfile = "logs/jsonrpc.err.log"
+respawn = 3
+
+
+[[process]]
+name = "chain"
+command = "chain"
+args = ["-g","genesis.json","-c","chain.json"]
+pidfile = ".chain.pid"
+logfile = "logs/chain.log"
+errfile = "logs/chain.err.log"
+respawn = 3

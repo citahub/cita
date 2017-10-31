@@ -11,7 +11,7 @@ sudo(){
 
 # 失败后不需要清理,保留现场;成功后清理现场.
 cleanup() {
-    for pid in jsonrpc auth chain network consensus_tendermint trans_evm ; do
+    for pid in monitor jsonrpc auth chain network consensus_tendermint trans_evm ; do
         ps ax |grep ${pid}|awk '{print $1}' |xargs -n 1  kill -9 ||true
     done
 

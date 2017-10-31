@@ -107,6 +107,10 @@ fi
 if [ ! -e "${CONFIG_DIR}/authconfig.json" ]; then
     cp ${BINARY_DIR}/scripts/admintool/authconfig_example.json ${CONFIG_DIR}/authconfig.json
 fi
+
+if [ ! -e "${CONFIG_DIR}/monitor.toml" ]; then
+    cp ${BINARY_DIR}/scripts/admintool/monitor_example.toml ${CONFIG_DIR}/monitor.toml
+fi
 echo "Step 1: ********************************************************"
 for ((ID=0;ID<$SIZE;ID++))
 do
@@ -131,6 +135,7 @@ do
     cp genesis.json ${CONFIG_DIR}/node${ID}/genesis.json
     cp chain.json ${CONFIG_DIR}/node${ID}/chain.json
     cp authconfig.json ${CONFIG_DIR}/node${ID}/authconfig.json
+    cp monitor.toml  ${CONFIG_DIR}/node${ID}/monitor.toml
 done
 
 echo "Step 3: ********************************************************"
@@ -201,6 +206,6 @@ if [ "$START_KAFKA" == "true" ];then
 fi
 
 # clean temp files
-rm -f ${CONFIG_DIR}/*.json ${CONFIG_DIR}/authorities
+rm -f ${CONFIG_DIR}/*.json ${CONFIG_DIR}/*.toml ${CONFIG_DIR}/authorities 
 echo "********************************************************"
 echo "WARN: remember then delete all privkey files!!!"

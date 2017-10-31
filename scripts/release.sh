@@ -30,6 +30,7 @@ cp -rf target/${type}/amqp_test            target/install/bin/
 cp -rf target/${type}/jsonrpc_performance  target/install/bin/
 cp -rf target/${type}/latency              target/install/bin/
 cp -rf target/${type}/benchmark_ws         target/install/bin/
+cp -rf target/${type}/monitor              target/install/bin/
 #strip                                     target/install/bin/*
 
 # 2) cita
@@ -45,6 +46,7 @@ cp -rf  scripts/admintool/*.md             target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.sh             target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.txt            target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.json           target/install/scripts/admintool/
+cp -rf  scripts/admintool/*.toml           target/install/scripts/admintool/
 ln -srf target/install/scripts/admintool/admintool.sh target/install/bin/
 
 # 5) Dockerfile
