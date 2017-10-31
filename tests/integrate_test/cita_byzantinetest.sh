@@ -32,7 +32,7 @@ echo "DONE"
 
 ################################################################################
 echo -n "4) check alive  ...  "
-timeout=$(check_height_growth_normal 0 8) || (echo "FAILED"
+timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                               echo "failed to check_height_growth 0: ${timeout}"
                                               exit 1)
 echo "${timeout}s DONE"
@@ -63,7 +63,7 @@ for i in {0..3}; do
     refer=$((($i+1)%4))
     port=$((4000+${id}))
     set_delay_at_port ${port} ${delay}
-    timeout1=$(check_height_growth_normal ${refer} 8) ||(echo "FAILED"
+    timeout1=$(check_height_growth_normal ${refer} 60) ||(echo "FAILED"
                                                          echo "failed to check_height_growth: ${timeout}"
                                                          exit 1)
     unset_delay_at_port ${port}
@@ -85,13 +85,13 @@ for i in {0..3}; do
     set_delay_at_port $((4000+${id1})) ${delay}
     set_delay_at_port $((4000+${id2})) ${delay}
 
-    timeout1=$(check_height_growth_normal ${refer} 30) ||(echo "FAILED"
+    timeout1=$(check_height_growth_normal ${refer} 100) ||(echo "FAILED"
                                                           echo "failed to check_height_growth ${refer}: ${timeout}"
                                                           exit 1)
     unset_delay_at_port $((4000+${id1}))
     unset_delay_at_port $((4000+${id2}))
     sleep 3
-    timeout=$(check_height_growth_normal ${refer} 8) ||(echo "FAILED"
+    timeout=$(check_height_growth_normal ${refer} 100) ||(echo "FAILED"
                                                         echo "failed to check_height_growth ${refer}: ${timeout}"
                                                         exit 1)
     #synch for node id1, id2

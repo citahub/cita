@@ -32,7 +32,7 @@ echo "DONE"
 
 ################################################################################
 echo -n "4) check height growth normal  ...  "
-timeout=$(check_height_growth_normal 0 20)||(echo "FAILED"
+timeout=$(check_height_growth_normal 0 60)||(echo "FAILED"
                                             echo "check_height_growth_normal: ${timeout}"
                                             exit 1)
 echo "${timeout}s DONE"
@@ -57,7 +57,7 @@ echo $! > /tmp/cita_basic-trans_evm.pid
 ################################################################################
 echo -n "7) stop node3, check height growth  ...  "
 bin/cita stop node3
-timeout=$(check_height_growth_normal 0 30) || (echo "FAILED"
+timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
                                                exit 1)
 echo "${timeout}s DONE"
@@ -73,7 +73,7 @@ echo "${timeout}s DONE"
 ################################################################################
 echo -n "9) start node2, check height growth  ...  "
 bin/cita start node2 debug
-timeout=$(check_height_growth_normal 0 30) || (echo "FAILED"
+timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
                                                exit 1)
 echo "${timeout}s DONE"

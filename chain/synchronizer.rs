@@ -113,7 +113,7 @@ impl Synchronizer {
         rich_status.set_nodes(RepeatedField::from_vec(node_list));
 
         let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
-        trace!("chain after sync current height {:?}  known height{:?}", current_height, max_height);
+        trace!("chain after sync current height {:?}  known height {:?}", current_height, max_height);
         ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
 
         let status: Status = rich_status.into();
