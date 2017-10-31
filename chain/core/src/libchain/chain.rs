@@ -56,6 +56,8 @@ use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
+use std::thread;
+use std::time::Instant;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LogEntry, LocalizedLogEntry};
@@ -769,23 +771,25 @@ impl Chain {
     }
 
     /// Delivery block tx hashes to auth
-    pub fn sync_block_tx_hashes(&self, block_height: u64, tx_hashes: Vec<H256>, ctx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn delivery_block_tx_hashes(&self, block_height: u64, tx_hashes: Vec<H256>, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let ctx_pub_clone = ctx_pub.clone();
         let mut block_tx_hashes = BlockTxHashes::new();
         block_tx_hashes.set_height(block_height);
-        let mut tx_hashes_in_u8 = Vec::new();
-        for tx_hash_in_h256 in tx_hashes.iter() {
-            tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
-        }
         {
-            block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
             block_tx_hashes.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
             block_tx_hashes.set_account_gas_limit(self.account_gas_limit.read().clone().into());
         }
+        thread::spawn(move || {
+            let mut tx_hashes_in_u8 = Vec::new();
+            for tx_hash_in_h256 in tx_hashes.iter() {
+                tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
+            }
+            block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
+            let msg = factory::create_msg(submodules::CHAIN, topics::BLOCK_TXHASHES, communication::MsgType::BLOCK_TXHASHES, block_tx_hashes.write_to_bytes().unwrap());
 
-        let msg = factory::create_msg(submodules::CHAIN, topics::BLOCK_TXHASHES, communication::MsgType::BLOCK_TXHASHES, block_tx_hashes.write_to_bytes().unwrap());
-
-        ctx_pub.send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-        trace!("sync block's tx hashes for height:{}", block_height);
+            ctx_pub_clone.send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            trace!("delivery block's tx hashes for height: {}", block_height);
+        });
     }
 
     /// Delivery rich status to consensus
@@ -983,16 +987,22 @@ impl Chain {
             let height = block.number();
             // Delivery block tx hashes to auth
             let tx_hashes = block.body().transaction_hashes();
-            self.sync_block_tx_hashes(height, tx_hashes, ctx_pub);
+            self.delivery_block_tx_hashes(height, tx_hashes, ctx_pub);
+            let now = Instant::now();
             let mut open_block = self.execute_block(block);
             let closed_block = open_block.close();
+            let new_now = Instant::now();
+            info!("execute block use {:?}", new_now.duration_since(now));
             let header = closed_block.header().clone();
             // reload_config
             self.reload_config();
             // Delivery rich status to consensus
             self.delivery_rich_status(&header, ctx_pub);
             // Commit block in db batch and update cache
+            let now = Instant::now();
             self.commit_block(batch, closed_block);
+            let new_now = Instant::now();
+            info!("commit block use {:?}", new_now.duration_since(now));
             self.update_last_hashes(&header.hash());
             Some(header)
         } else {
@@ -1050,7 +1060,10 @@ impl Chain {
                     _ => {}
                 }
                 // Saving in db
+                let now = Instant::now();
                 self.db.write(batch).expect("DB write failed.");
+                let new_now = Instant::now();
+                info!("db write use {:?}", new_now.duration_since(now));
 
                 info!("chain update {:?}", height);
                 Some(status.protobuf())

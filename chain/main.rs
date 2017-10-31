@@ -112,7 +112,7 @@ fn main() {
 
     let synchronizer = Synchronizer::new(chain.clone());
     let block_tx_hashes = chain.block_tx_hashes(status.get_height()).expect("shoud return current block tx hashes");
-    chain.sync_block_tx_hashes(status.get_height(), block_tx_hashes, &ctx_pub);
+    chain.delivery_block_tx_hashes(status.get_height(), block_tx_hashes, &ctx_pub);
     let chain1 = chain.clone();
     let ctx_pub1 = ctx_pub.clone();
     thread::spawn(move || loop {
