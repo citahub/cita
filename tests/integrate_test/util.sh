@@ -56,12 +56,12 @@ get_height(){
 
 # output information about time used if exit 0
 check_height_growth () {
-    if [ $# -ne 1 ] ; then
-        echo "usage: $0 node_id"
+    if [ $# -ne 2 ] ; then
+        echo "usage: $0 node_id timeout"
         return 1
     fi
     id=$1
-    timeout=60                  # seconds
+    timeout=$2                 # seconds
     old=$(get_height ${id})
     if [[ $? -ne 0 ]]; then
         echo "failed to get_height(old): ${old}"
@@ -99,9 +99,9 @@ check_height_growth_normal () {
     timeout=$2
     start=$(date +%s)
     for i in {0..1}; do
-        msg=$(check_height_growth ${id})
+        msg=$(check_height_growth ${id} ${timeout})
         if [ $? -ne 0 ] ; then
-            echo "failed to check_height_growth ${id}: ${msg}"
+            echo "failed to check_height_growth ${id} ${timeout}: ${msg}"
             return 1
         fi
         if [[ ${msg} -lt ${timeout} ]]; then

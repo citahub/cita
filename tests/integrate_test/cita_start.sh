@@ -34,7 +34,7 @@ for i in {0..3} ; do
 done
 
 echo -n "###check height growth"
-msg=$(check_height_growth 0)|| (echo "FAILED"
+msg=$(check_height_growth 0 60)|| (echo "FAILED"
                                 echo "check height growth: ${msg}"
                                 exit 1)
 echo "###CITA start OK"

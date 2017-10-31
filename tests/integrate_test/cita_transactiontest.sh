@@ -13,7 +13,7 @@ cd ${SOURCE_DIR}/tests/wrk_benchmark_test/
 sleep 10
 ./benchmark.sh config_call.json
 
-check_height_growth 0
+check_height_growth 0 60
 
 ${SOURCE_DIR}/tests/integrate_test/cita_stop.sh
 echo "###Test OK"

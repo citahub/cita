@@ -107,7 +107,7 @@ for i in {0..3}; do
     bin/cita start node$i debug
 done
 
-timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
+timeout=$(check_height_growth_normal 0 120) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
                                                exit 1)
 after_height=$(get_height 0)|| (echo "failed to get_height: ${after_height}"
