@@ -8,7 +8,7 @@ errfile = "logs/monitor.err.log"
 [[process]]
 name = "auth"
 command = "auth"
-args = ["-c","authconfig.json"]
+args = ["-c","auth.json"]
 pidfile = ".auth.pid"
 logfile = "logs/auth.log"
 errfile = "logs/auth.err.log"

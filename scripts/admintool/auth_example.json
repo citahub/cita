@@ -3,7 +3,7 @@
   "buffer_duration": 3000000,
   "tx_verify_thread_num": 10,
   "tx_verify_num_per_thread": 30,
-  "tx_pool_limit": 50000,
+  "tx_pool_limit": 0,
   "block_packet_tx_limit": 30000,
   "prof_start": 0,
   "prof_duration": 0

@@ -104,8 +104,8 @@ if [ ! -e "${CONFIG_DIR}/chain.json" ]; then
     cp ${BINARY_DIR}/scripts/admintool/chain_check_example.json ${CONFIG_DIR}/chain.json
 fi
 
-if [ ! -e "${CONFIG_DIR}/authconfig.json" ]; then
-    cp ${BINARY_DIR}/scripts/admintool/authconfig_example.json ${CONFIG_DIR}/authconfig.json
+if [ ! -e "${CONFIG_DIR}/auth.json" ]; then
+    cp ${BINARY_DIR}/scripts/admintool/auth_example.json ${CONFIG_DIR}/auth.json
 fi
 
 if [ ! -e "${CONFIG_DIR}/monitor.toml" ]; then
@@ -134,7 +134,7 @@ do
     echo "End creating Node " ${ID} "Configuration!"
     cp genesis.json ${CONFIG_DIR}/node${ID}/genesis.json
     cp chain.json ${CONFIG_DIR}/node${ID}/chain.json
-    cp authconfig.json ${CONFIG_DIR}/node${ID}/authconfig.json
+    cp auth.json ${CONFIG_DIR}/node${ID}/auth.json
     cp monitor.toml  ${CONFIG_DIR}/node${ID}/monitor.toml
 done
 

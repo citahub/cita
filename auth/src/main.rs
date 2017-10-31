@@ -46,7 +46,7 @@ pub mod dispatchtx;
 pub mod txwal;
 pub mod config;
 use clap::App;
-use config::AuthConfig;
+use config::Config;
 use cpuprofiler::PROFILER;
 use dispatchtx::Dispatchtx;
 use dotenv::dotenv;
@@ -100,7 +100,7 @@ fn main() {
         config_path = c;
     }
 
-    let config = AuthConfig::new(config_path);
+    let config = Config::new(config_path);
 
     let count_per_batch = config.count_per_batch;
     let buffer_duration = config.buffer_duration;
@@ -789,10 +789,7 @@ mod tests {
           "prof_duration": 0
         }"#;
 
-
-
-
-        let value: AuthConfig = serde_json::from_str(json).expect("read Error");
+        let value: Config = serde_json::from_str(json).expect("read Error");
         println!("{:?}", value);
         assert_eq!(30, value.count_per_batch);
         assert_eq!(3000000, value.buffer_duration);

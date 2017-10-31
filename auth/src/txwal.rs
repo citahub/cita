@@ -24,7 +24,6 @@ use util::H256;
 use util::datapath::DataPath;
 use util::kvdb::{DatabaseConfig, Database, KeyValueDB};
 
-
 #[derive(Clone)]
 pub struct Txwal {
     db: Arc<KeyValueDB>,
