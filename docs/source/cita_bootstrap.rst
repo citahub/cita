@@ -8,7 +8,7 @@ Bootstrap
 
 为了简化 ``CITA`` 的多机部署，帮助用户快速搭建 ``CITA`` 运行环境，我们推荐使用 ``docker`` 部署 ``CITA``。
 
-**安转docker**
+**安装docker**
 
 
 安装 ``docker`` 及 ``docker-compose``
