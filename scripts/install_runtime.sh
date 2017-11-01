@@ -6,7 +6,7 @@ sudo(){
     if [ "$(whoami)" == "root" ] ; then
         $*
     else
-        /usr/bin/sudo $*
+        /usr/bin/sudo -H $*
     fi
     set +o noglob
 }
@@ -28,7 +28,7 @@ sudo apt-get install -y libstdc++6 rabbitmq-server libssl-dev libgoogle-perftool
 
 # 4) install python package
 umask 022
-sudo -H pip install ethereum==2.0.4 pysodium
+sudo pip install ethereum==2.0.4 pysodium
 
 # 5) extra
 # 5.1) libgmssl

@@ -6,7 +6,7 @@ sudo(){
     if [ "$(whoami)" == "root" ] ; then
         $*
     else
-        /usr/bin/sudo $*
+        /usr/bin/sudo -H $*
     fi
     set +o noglob
 }
@@ -26,12 +26,11 @@ sudo add-apt-repository -y ppa:ethereum/ethereum
 # 3) install develop dependencies
 sudo apt-get update -q
 sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip solc curl jq  google-perftools capnproto wget git \
-     libsnappy-dev  libgoogle-perftools-dev   libsodium* libzmq3-dev \
-     libssl-dev libgoogle-perftools-dev
+     libsnappy-dev libgoogle-perftools-dev libsodium* libzmq3-dev libssl-dev 
 
 # 4) install python package
 umask 022
-sudo -H pip install ethereum==2.0.4 pysodium
+sudo pip install ethereum==2.0.4 pysodium
 
 # 5) extra
 # 5.1) libgmssl
