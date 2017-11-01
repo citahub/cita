@@ -100,7 +100,7 @@ impl Dispatchtx {
         }
     }
 
-    pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, tx_response: TxResponse, tx: &SignedTransaction, mq_pub: Sender<(String, Vec<u8>)>) {
+    pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, tx_response: TxResponse, tx: &SignedTransaction, mq_pub: &Sender<(String, Vec<u8>)>) {
         let mut error_msg: Option<String> = None;
         if self.add_tx_to_pool(&tx) {
             self.update_capacity();
@@ -132,7 +132,7 @@ impl Dispatchtx {
                 if count_buffered > self.batch_forward_info.count_per_batch || time_elapsed > self.batch_forward_info.buffer_duration {
                     trace!("Going to send new tx batch to peer auth with {} new tx and buffer {} ns", count_buffered, time_elapsed);
 
-                    self.batch_forward_tx_to_peer(mq_pub.clone());
+                    self.batch_forward_tx_to_peer(mq_pub);
                 }
             }
 
@@ -147,7 +147,7 @@ impl Dispatchtx {
         self.add_to_pool_cnt += 1;
     }
 
-    pub fn deal_txs(&mut self, height: usize, txs: &HashSet<H256>, mq_pub: Sender<(String, Vec<u8>)>, block_gas_limit: u64, account_gas_limit: AccountGasLimit) {
+    pub fn deal_txs(&mut self, height: usize, txs: &HashSet<H256>, mq_pub: &Sender<(String, Vec<u8>)>, block_gas_limit: u64, account_gas_limit: AccountGasLimit) {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
 
@@ -178,7 +178,7 @@ impl Dispatchtx {
         mq_pub.send(("auth.block_txs".to_string(), msg.write_to_bytes().unwrap())).unwrap();
     }
 
-    pub fn wait_timeout_process(&mut self, mq_pub: Sender<(String, Vec<u8>)>) {
+    pub fn wait_timeout_process(&mut self, mq_pub: &Sender<(String, Vec<u8>)>) {
         let time_elapsed = self.batch_forward_info.forward_stamp.elapsed().unwrap().subsec_nanos();
         let count_buffered = self.batch_forward_info.new_tx_request_buffer.len();
         if self.batch_forward_info.new_tx_request_buffer.len() > 0 {
@@ -248,7 +248,7 @@ impl Dispatchtx {
         size
     }
 
-    fn batch_forward_tx_to_peer(&mut self, mq_pub: Sender<(String, Vec<u8>)>) {
+    fn batch_forward_tx_to_peer(&mut self, mq_pub: &Sender<(String, Vec<u8>)>) {
         trace!("batch_forward_tx_to_peer is going to send {} new tx to peer", self.batch_forward_info.new_tx_request_buffer.len());
         let mut batch_request = BatchRequest::new();
         batch_request.set_new_tx_requests(RepeatedField::from_slice(&self.batch_forward_info.new_tx_request_buffer[..]));

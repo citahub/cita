@@ -114,7 +114,7 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
 }
 
 
-pub fn process_flow_control_failed(mut verify_info: VerifyRequestResponseInfo, resp_sender: Sender<VerifyRequestResponseInfo>) {
+pub fn process_flow_control_failed(mut verify_info: VerifyRequestResponseInfo, resp_sender: &Sender<VerifyRequestResponseInfo>) {
     let mut response = VerifyTxResp::new();
     if let VerifyRequestResponse::AuthRequest(req) = verify_info.req_resp {
         response.set_tx_hash(req.get_tx_hash().to_vec());
@@ -145,7 +145,7 @@ pub fn verify_tx_group_service(mut req_grp: Vec<VerifyRequestResponseInfo>, veri
     trace!("verify_tx_group_service Time cost {} ns for {} req ...", now.elapsed().unwrap().subsec_nanos(), len);
 }
 
-pub fn check_verify_request_preprocess(mut req_info: VerifyRequestResponseInfo, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, resp_sender: Sender<VerifyRequestResponseInfo>) -> VerifyResult {
+pub fn check_verify_request_preprocess(mut req_info: VerifyRequestResponseInfo, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, resp_sender: &Sender<VerifyRequestResponseInfo>) -> VerifyResult {
     if let VerifyRequestResponse::AuthRequest(req) = req_info.req_resp {
         let tx_hash = H256::from_slice(req.get_tx_hash());
         let mut final_response = VerifyTxResp::new();
@@ -187,7 +187,7 @@ fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxR
     if let Some(resp) = cache.read().get(tx_hash) { Some(resp.clone()) } else { None }
 }
 
-pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req_block: Sender<VerifyRequestResponseInfo>, tx_req_single: Sender<VerifyRequestResponseInfo>, tx_pub: Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, txs_sender: Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>, resp_sender: Sender<VerifyRequestResponseInfo>) {
+pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req_block: &Sender<VerifyRequestResponseInfo>, tx_req_single: &Sender<VerifyRequestResponseInfo>, tx_pub: &Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>, resp_sender: &Sender<VerifyRequestResponseInfo>) {
     let (cmdid, _origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
     match content {
@@ -257,7 +257,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                             req_resp: VerifyRequestResponse::AuthRequest(req.clone()),
                             un_tx: None,
                         };
-                        let result = check_verify_request_preprocess(verify_request_info, verifier.clone(), cache.clone(), resp_sender.clone());
+                        let result = check_verify_request_preprocess(verify_request_info, verifier.clone(), cache.clone(), &resp_sender);
                         match result {
                             VerifyResult::VerifySucceeded => {
                                 block_verify_status_guard.verify_success_cnt_capture += 1;
@@ -343,7 +343,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
     }
 }
 
-pub fn handle_verificaton_result(result_receiver: &Receiver<VerifyRequestResponseInfo>, tx_pub: &Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, tx_sender: Sender<(u32, Vec<u8>, TxResponse, SignedTransaction)>) {
+pub fn handle_verificaton_result(result_receiver: &Receiver<VerifyRequestResponseInfo>, tx_pub: &Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, tx_sender: &Sender<(u32, Vec<u8>, TxResponse, SignedTransaction)>) {
     match result_receiver.recv() {
         Ok(verify_response_info) => {
             if let VerifyRequestResponse::AuthResponse(resp) = verify_response_info.req_resp {
