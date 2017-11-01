@@ -326,20 +326,30 @@ impl TenderMint {
         *n == self.auth_manage.authority_n
     }
 
-    fn pre_proc_precommit(&mut self) {
+    fn pre_proc_precommit(&mut self) -> bool {
         let height = self.height;
         let round = self.round;
         let proposal = self.proposal.clone();
+        let mut verify_ok = false;
+        let mut lock_ok = false;
 
+        if !self.unverified_msg.contains(&(height, round)) {
+            verify_ok = true;
+        }
         if let Some(lround) = self.lock_round {
             trace!("pre_proc_precommit locked round,{},self round {}", lround, round);
             if lround == round {
-                self.pub_and_broadcast_message(height, round, Step::Precommit, proposal);
-            } else {
-                self.pub_and_broadcast_message(height, round, Step::Precommit, Some(H256::default()));
+                lock_ok = true;
             }
+        }
+        //polc is ok,but not verified , not send precommit
+        if lock_ok && !verify_ok {
+            return false;
+        }
+
+        if lock_ok && verify_ok {
+            self.pub_and_broadcast_message(height, round, Step::Precommit, proposal);
         } else {
-            trace!("pre_proc_precommit not locked ");
             self.pub_and_broadcast_message(height, round, Step::Precommit, Some(H256::default()));
         }
 
@@ -351,6 +361,7 @@ impl TenderMint {
                                  round: self.round,
                                  step: Step::Precommit,
                              });
+        true
     }
 
     fn retrans_vote(&mut self, height: usize, round: usize, step: Step) {
@@ -504,10 +515,6 @@ impl TenderMint {
         let height = self.height;
         let round = self.round;
 
-        if self.unverified_msg.contains(&(height, round)) {
-            warn!("proposal is not verified height {} round {}", height, round);
-            return false;
-        }
         //to be optimize
         self.clean_verified_info();
         trace!("commit_block begining {} {} proposal {:?}", height, round, self.proposal);
@@ -965,10 +972,7 @@ impl TenderMint {
 
             info!(" #########  height {} round {} prevote wait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
             self.change_state_step(tminfo.height, tminfo.round, Step::Precommit, false);
-            self.pre_proc_precommit();
-
-            //if self.params.authorities.len() < 2
-            {
+            if self.pre_proc_precommit() {
                 self.proc_precommit(tminfo.height, tminfo.round);
             }
         } else if tminfo.step == Step::Precommit {
@@ -1063,15 +1067,30 @@ impl TenderMint {
                 MsgClass::VERIFYBLKRESP(resp) => {
                     let verify_id = resp.get_id();
                     let idx = get_idx_from_reqid(verify_id);
+                    info!("recive VERIFYBLKRESP verify_id {} idx {}", verify_id, idx);
+                    let mut vheight = 0;
+                    let mut vround = 0;
+                    let mut verify_ok = false;
+
                     if let Some(elem) = self.unverified_msg.get_mut(idx as usize) {
-                        let (vheight, vround) = *elem;
+                        vheight = elem.0;
+                        vround = elem.1;
+                        *elem = (0, 0);
                         if resp.get_ret() == auth::Ret::Ok {
-                            let msg = serialize(&(vheight, vround, true), Infinite).unwrap();
-                            let _ = self.wal_log.save(LOG_TYPE_VERIFIED_PROPOSE, &msg);
-                            *elem = (0, 0);
-                        } else {
-                            let msg = serialize(&(vheight, vround, false), Infinite).unwrap();
-                            let _ = self.wal_log.save(LOG_TYPE_VERIFIED_PROPOSE, &msg);
+                            verify_ok = true;
+                        }
+                        let msg = serialize(&(vheight, vround, verify_ok), Infinite).unwrap();
+                        let _ = self.wal_log.save(LOG_TYPE_VERIFIED_PROPOSE, &msg);
+
+                    }
+                    info!("recive VERIFYBLKRESP verify_id {} idx {} height {} round {}", verify_id, idx, vheight, vround);
+                    if vheight == self.height && vround == self.round && self.step == Step::Precommit {
+                        if !verify_ok {
+                            //verify not ok,so clean the proposal info
+                            self.clean_saved_info();
+                        }
+                        if self.pre_proc_precommit() {
+                            self.proc_precommit(vheight, vround);
                         }
                     }
                 }
