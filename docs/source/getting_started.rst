@@ -8,7 +8,12 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
 
 安装编译器及开发库
 ---------------------------
+从Github仓库下载CITA的源代码，然后切换到CITA的源代码目录
+::
 
+  cd cita
+
+启动 ``install_develop.sh`` 脚本安装依赖，命令如下：
 ::
 
    sudo scripts/install_develop.sh
@@ -22,11 +27,6 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
 
 安装
 =============
-
-从Github仓库下载CITA的源代码，然后切换到CITA的源代码目录
-::
-
-  cd cita
 
 单元测试依赖rabbitmq, 如果没有启动, 需要用以下脚本启动并配置
 ::
@@ -54,12 +54,12 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
    cd target/install
    export PATH=$PWD/bin:$PATH
    
-启动的公共脚本位于 ``scripts/admintool`` 目录，主要用来创建创世块配置、节点相关配置、网络连接配置、私钥配置等相关文件。  
+另外，脚本 ``admintool.sh`` 主要用来创建创世块配置、节点相关配置、网络连接配置、私钥配置等相关文件。
 
 设置节点的配置信息，该默认示例Demo中配置了4个节点，对Demo中的节点进行默认初始化的操作命令为：
 ::
 
-   admintool.sh
+   ./bin/admintool.sh
 
 此外，用户可以根据需要更改其中的默认配置，使用命令 ``admintool.sh -h`` 来获得详细帮助，允许自定义配置包括：
 
@@ -89,19 +89,19 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
 
 .. code-block:: none
 
-  cita setup 0
+  cita setup node0
 
 2）启动节点 ``node0`` 的服务：
 
 .. code-block:: none
 
-  cita start 0
+  cita start node0
 
 而停止节点 ``node0`` 服务只需执行以下操作：
 
 .. code-block:: none
 
-  cita stop 0
+  cita stop node0
 
 此外， ``cita`` 命令中还包括其他操作，具体使用可以查看相关说明：
 ::
