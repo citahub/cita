@@ -273,7 +273,8 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
             let blk_height = problock.get_header().get_height();
 
             // Check transaction root
-            if !problock.check_hash() {
+            // ignore block which height is ::std::u64::MAX, it's only a proof
+            if blk_height != ::std::u64::MAX && !problock.check_hash() {
                 warn!("transactions root isn't correct, height is {}", blk_height);
                 return;
             }
