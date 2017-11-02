@@ -143,7 +143,7 @@ fn main() {
         // msg from mq need proc before broadcast
         let (key, body) = crx_sub.recv().unwrap();
         trace!("handle delivery id {:?} payload {:?}", key, body);
-        if let (_, true, msg) = is_need_proc(body.as_ref()) {
+        if let (_, true, msg) = is_need_proc(body.as_ref(), "mq") {
             ctx.send(msg).unwrap();
         }
 

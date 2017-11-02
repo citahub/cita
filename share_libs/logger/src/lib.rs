@@ -21,7 +21,7 @@ fn init_filter(filter: LogLevelFilter) {
     INIT_LOG.call_once(|| {
         let format = |record: &LogRecord| {
             let now = time::now();
-            format!("{} - {} - {}", time::strftime("%Y%m%d %H:%M:%S", &now).unwrap(), record.level(), record.args())
+            format!("{},{:03} - {} - {}", time::strftime("%Y%m%d %H:%M:%S", &now).unwrap(), now.tm_nsec / 1000_000, record.level(), record.args())
         };
 
         let mut builder = LogBuilder::new();

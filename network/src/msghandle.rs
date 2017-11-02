@@ -45,29 +45,29 @@ pub fn handle_rpc(con: &Connection, tx_pub: &Sender<(String, Vec<u8>)>, payload:
     }
 }
 
-pub fn is_need_proc(payload: &[u8]) -> (String, bool, communication::Message) {
+pub fn is_need_proc(payload: &[u8], source: &str) -> (String, bool, communication::Message) {
     if let Ok(msg) = parse_from_bytes::<communication::Message>(payload) {
         let mut topic = String::default();
         let mut is_proc = true;
         let t = msg.get_field_type();
         let cid = msg.get_cmd_id();
         if cid == cmd_id(submodules::AUTH, topics::REQUEST) && t == MsgType::REQUEST {
-            trace!("AUTH broadcast tx");
+            trace!("AUTH REQUEST from {}", source);
             topic = "net.tx".to_string();
-        } else if cid == cmd_id(submodules::CONSENSUS, topics::NEW_BLK) && t == MsgType::BLOCK {
-            info!("CONSENSUS pub blk");
-            topic = "net.blk".to_string();
         } else if cid == cmd_id(submodules::CHAIN, topics::NEW_BLK) && t == MsgType::BLOCK {
-            info!("CHAIN pub blk");
+            info!("CHAIN NEW_BLK from {}", source);
             topic = "net.blk".to_string();
         } else if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) && t == MsgType::STATUS {
-            info!("CHAIN pub status");
+            info!("CHAIN NEW_STATUS from {}", source);
             topic = "net.status".to_string();
         } else if cid == cmd_id(submodules::CHAIN, topics::SYNC_BLK) && t == MsgType::MSG {
-            info!("CHAIN sync blk");
+            info!("CHAIN SYNC_BLK from {}", source);
             topic = "net.sync".to_string();
-        } else if (cid == cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG) && t == MsgType::MSG) || (cid == cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) && t == MsgType::MSG) {
-            trace!("CONSENSUS pub msg");
+        } else if cid == cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG) && t == MsgType::MSG {
+            info!("CONSENSUS CONSENSUS_MSG from {}", source);
+            topic = "net.msg".to_string();
+        } else if cid == cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) && t == MsgType::MSG {
+            info!("CONSENSUS NEW_PROPOSAL from {}", source);
             topic = "net.msg".to_string();
         } else {
             is_proc = false;
@@ -79,8 +79,8 @@ pub fn is_need_proc(payload: &[u8]) -> (String, bool, communication::Message) {
 
 pub fn net_msg_handler(payload: CitaRequest, mysender: &MySender) -> Result<Vec<u8>, io::Error> {
     trace!("SERVER get msg: {:?}", payload);
-    if let (topic, true, msg) = is_need_proc(payload.as_ref()) {
-        info!("recive msg from origin = {:?} with topic: {:?}", msg.get_origin(), topic);
+    if let (topic, true, msg) = is_need_proc(payload.as_ref(), "net") {
+        trace!("recive msg from origin = {:?} with topic: {:?}", msg.get_origin(), topic);
         mysender.send((topic, payload))
     }
     Ok(vec![])
