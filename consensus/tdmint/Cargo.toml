@@ -26,3 +26,4 @@ logger = { path = "../../share_libs/logger" }
 core = { path = "../../chain/core" }
 cpuprofiler = "0.0.3"
 authority_manage = { path = "../authority_manage" }
+rustc-hex = "1.0"

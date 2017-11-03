@@ -28,7 +28,7 @@ use crypto::{CreateKey, Signature, Sign, pubkey_to_address, SIGNATURE_BYTES_LEN}
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto::{communication, submodules, topics, MsgClass, factory, auth};
 use libproto::blockchain::{Block, BlockWithProof, BlockTxs, RichStatus};
-
+use libproto::consensus::{ProposeStep, SignedProposeStep};
 use proof::TendermintProof;
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
@@ -200,11 +200,21 @@ impl TenderMint {
     }
 
     pub fn pub_proposal(&self, proposal: &Proposal) -> Vec<u8> {
-        let message = serialize(&(self.height, self.round, proposal), Infinite).unwrap();
+        info!("pub_proposal proposal {:?}", proposal);
+        let mut propose_step = ProposeStep::new();
+        propose_step.set_height(self.height as u64);
+        propose_step.set_round(self.round as u64);
+        propose_step.set_proposal(proposal.protobuf());
+
+        let message = propose_step.write_to_bytes().unwrap();
         let ref author = self.params.signer;
         let signature = Signature::sign(&author.keypair.privkey(), &message.crypt_hash().into()).unwrap();
         trace!("pub_proposal height {}, round {}, hash {}, signature {} ", self.height, self.round, message.crypt_hash(), signature);
-        let bmsg = serialize(&(message, signature), Infinite).unwrap();
+        let mut signed_propose_step = SignedProposeStep::new();
+        signed_propose_step.set_propose_step(propose_step);
+        signed_propose_step.set_signature(signature.to_vec());
+
+        let bmsg = signed_propose_step.write_to_bytes().unwrap();
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_PROPOSAL, communication::MsgType::MSG, bmsg.clone());
         self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         bmsg
@@ -684,6 +694,7 @@ impl TenderMint {
                             }
                             return Ok((h, r, step));
                         }
+
                         return Err(EngineError::DoubleVote(sender.into()));
                     }
                 }
@@ -788,28 +799,30 @@ impl TenderMint {
     }
 
     fn handle_proposal(&mut self, msg: Vec<u8>, wal_flag: bool, need_verify: bool) -> Result<(usize, usize), EngineError> {
-        let res = deserialize(&msg[..]);
-        if let Ok(decoded) = res {
-            let (message, signature): (Vec<u8>, &[u8]) = decoded;
+        let signed_propose_step_result = parse_from_bytes::<SignedProposeStep>(&msg);
+
+        if let Ok(signed_propose_step) = signed_propose_step_result {
+            let signature = signed_propose_step.get_signature();
+
             if signature.len() != SIGNATURE_BYTES_LEN {
                 return Err(EngineError::InvalidSignature);
             }
+
             let signature = Signature::from(signature);
+
+            let propose_step = signed_propose_step.get_propose_step();
+            let message = propose_step.write_to_bytes().unwrap();
             trace!("handle proposal message {:?}", message.crypt_hash());
 
             if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
-                let decoded = deserialize(&message[..]).unwrap();
-                let (height, round, proposal): (usize, usize, Proposal) = decoded;
-                trace!("handle_proposal height {:?}, round {:?} sender {:?}", height, round, pubkey_to_address(&pubkey));
+                let height = propose_step.get_height() as usize;
+                let round = propose_step.get_round() as usize;
+                let proto_proposal = propose_step.clone().take_proposal();
+                let block = proto_proposal.clone().take_block();
+                trace!("handle_proposal height {:?}, round {:?} sender {:?}, proposal {:?}", height, round, pubkey_to_address(&pubkey), proto_proposal);
 
                 if need_verify {
-                    // verify tx nonce and valid until block
-                    let block = parse_from_bytes::<Block>(&proposal.block);
-                    if block.is_err() {
-                        error!("parse block from proposal failed, height {}, round {}", height, round);
-                        return Err(EngineError::UnexpectedMessage);
-                    }
-                    if !self.verify_req(block.unwrap(), height, round) {
+                    if !self.verify_req(block, height, round) {
                         return Err(EngineError::InvalidTxInProposal);
                     }
                 }
@@ -823,7 +836,8 @@ impl TenderMint {
                     if wal_flag && height == self.height {
                         self.wal_log.save(LOG_TYPE_PROPOSE, &msg).unwrap();
                     }
-                    info!("add proposal height {} round {}!", height, round);
+                    info!("add proposal height {} round {}! proposal {:?}", height, round, proto_proposal);
+                    let proposal = proto_proposal.into();
                     self.proposals.add(height, round, proposal);
 
                     if height > self.height {
@@ -833,6 +847,7 @@ impl TenderMint {
                 }
             }
         }
+
         return Err(EngineError::UnexpectedMessage);
     }
 
@@ -934,6 +949,7 @@ impl TenderMint {
                 lock_votes: None,
             };
             trace!("pub proposal in not locked");
+
             let bmsg = self.pub_proposal(&proposal);
             self.wal_log.save(LOG_TYPE_PROPOSE, &bmsg).unwrap();
             trace!("proposor vote myslef in not locked");

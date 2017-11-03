@@ -31,10 +31,12 @@ pub mod request;
 pub mod into;
 pub mod auth;
 pub mod response;
+pub mod consensus;
 
 pub use auth::*;
 use blockchain::*;
 use communication::*;
+pub use consensus::*;
 use crypto::{PrivKey, PubKey, Signature, KeyPair, SIGNATURE_BYTES_LEN, Message as SignMessage, CreateKey, Sign};
 use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;

@@ -19,12 +19,16 @@ use super::{Step, Address};
 use bincode::{serialize, Infinite};
 use crypto::{Sign, pubkey_to_address, Signature};
 use libproto::blockchain::{Block, Transaction};
+use libproto::consensus::{VoteMessage as ProtoVoteMessage, VoteSet as ProtoVoteSet, Proposal as ProtoProposal};
 use lru_cache::LruCache;
+use protobuf::Message;
 use protobuf::core::parse_from_bytes;
+use rustc_hex::ToHex;
 use std::collections::HashMap;
+use std::str::FromStr;
 use util::{H256, Hashable, BLOCKLIMIT};
 
-//height -> round collector
+// height -> round collector
 #[derive(Debug)]
 pub struct VoteCollector {
     pub votes: LruCache<usize, RoundCollector>,
@@ -125,6 +129,28 @@ pub struct VoteSet {
     pub count: usize,
 }
 
+impl From<ProtoVoteSet> for VoteSet {
+    fn from(votes: ProtoVoteSet) -> Self {
+        let mut sender_votes = HashMap::new();
+        for (sender_string, vote_message) in votes.votes_by_sender {
+            //sender_votes.insert(sender_string, vote_message.into());
+            sender_votes.insert(Address::from_str(&sender_string).unwrap_or_default(), vote_message.into());
+        }
+
+        let mut proposal_votes = HashMap::new();
+        for (proposal_string, size) in votes.votes_by_proposal {
+            //proposal_votes.insert(proposal_string, size as usize);
+            proposal_votes.insert(H256::from_str(&proposal_string).unwrap_or_default(), size as usize);
+        }
+
+        VoteSet {
+            votes_by_sender: sender_votes,
+            votes_by_proposal: proposal_votes,
+            count: votes.count as usize,
+        }
+    }
+}
+
 impl VoteSet {
     pub fn new() -> Self {
         VoteSet {
@@ -185,12 +211,54 @@ impl VoteSet {
         }
         return Err("vote set check error!");
     }
+
+    pub fn protobuf(&self) -> ProtoVoteSet {
+        let mut vote_set = ProtoVoteSet::new();
+
+        let mut votes_by_sender = HashMap::new();
+        for (sender, vote_message) in self.votes_by_sender.clone() {
+            votes_by_sender.insert(sender.0.to_hex(), vote_message.protobuf());
+        }
+
+        let mut votes_by_proposal = HashMap::new();
+        for (proposal, size) in self.votes_by_proposal.clone() {
+            votes_by_proposal.insert(proposal.0.to_hex(), size as u64);
+        }
+
+        vote_set.set_votes_by_sender(votes_by_sender);
+        vote_set.set_votes_by_proposal(votes_by_proposal);
+        info!("VoteSet protobuf {:?}", vote_set.clone());
+        vote_set
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VoteMessage {
     pub proposal: Option<H256>,
     pub signature: Signature,
+}
+
+impl From<ProtoVoteMessage> for VoteMessage {
+    fn from(vote_message: ProtoVoteMessage) -> Self {
+        VoteMessage {
+            proposal: Some(H256::from(vote_message.proposal.as_slice())),
+            signature: Signature::from(vote_message.signature.as_slice()),
+        }
+    }
+}
+
+impl VoteMessage {
+    pub fn protobuf(&self) -> ProtoVoteMessage {
+        let mut vote_message = ProtoVoteMessage::new();
+
+        if let Some(proposal) = self.proposal {
+            vote_message.set_proposal(proposal.to_vec());
+        }
+
+        vote_message.set_signature(self.signature.to_vec());
+
+        vote_message
+    }
 }
 
 #[derive(Debug)]
@@ -258,6 +326,24 @@ pub struct Proposal {
     pub lock_votes: Option<VoteSet>,
 }
 
+impl From<ProtoProposal> for Proposal {
+    fn from(mut proposal: ProtoProposal) -> Self {
+        let mut lock_round = None;
+        let mut lock_votes = None;
+
+        if proposal.lock_votes.is_some() {
+            lock_round = Some(proposal.get_lock_round() as usize);
+            lock_votes = Some(proposal.take_lock_votes().into());
+        }
+
+        Proposal {
+            block: proposal.take_block().write_to_bytes().unwrap(),
+            lock_round: lock_round,
+            lock_votes: lock_votes,
+        }
+    }
+}
+
 // verify tx nonce and valid_until_block
 pub fn verify_tx(tx: &Transaction, height: u64) -> bool {
     let nonce = tx.get_nonce();
@@ -279,6 +365,7 @@ impl Proposal {
 
             if let Some(p) = ret.unwrap() {
                 let block = parse_from_bytes::<Block>(&self.block).unwrap();
+
                 let hash = block.crypt_hash().into();
                 if p == hash {
                     return true;
@@ -286,5 +373,20 @@ impl Proposal {
             }
             return false;
         }
+    }
+
+    pub fn protobuf(&self) -> ProtoProposal {
+        let mut proposal = ProtoProposal::new();
+        let proto_block = parse_from_bytes::<Block>(&self.block).unwrap();
+
+        proposal.set_block(proto_block);
+        if let Some(lock_round) = self.lock_round {
+            proposal.set_lock_round(lock_round as u64);
+        }
+        if let Some(ref lock_votes) = self.lock_votes {
+            proposal.set_lock_votes(lock_votes.clone().protobuf());
+        }
+
+        proposal
     }
 }

@@ -90,7 +90,20 @@ fn main() {
 
     let (tx, rx) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub("chain", vec!["net.blk", "net.status", "net.sync", "consensus.blk", "jsonrpc.request", "auth.blk_tx_hashs_req"], tx, crx_pub);
+    start_pubsub(
+        "chain",
+        vec![
+            "net.blk",
+            "net.status",
+            "net.sync",
+            "consensus.blk",
+            "jsonrpc.request",
+            "auth.blk_tx_hashs_req",
+            "consensus.msg",
+        ],
+        tx,
+        crx_pub,
+    );
 
     let nosql_path = DataPath::nosql_path();
     trace!("nosql_path is {:?}", nosql_path);

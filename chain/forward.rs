@@ -25,8 +25,10 @@ use jsonrpc_types::rpctypes::{Filter as RpcFilter, Log as RpcLog, Receipt as Rpc
 use libproto;
 pub use libproto::*;
 use libproto::blockchain::Block as ProtobufBlock;
+use libproto::consensus::SignedProposeStep;
 pub use libproto::request::Request_oneof_req as Request;
 use protobuf::{Message, RepeatedField};
+use protobuf::core::parse_from_bytes;
 use serde_json;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -371,8 +373,15 @@ pub fn chain_result(chain: Arc<Chain>, rx: &Receiver<(String, Vec<u8>)>, ctx_pub
                         }
                     }
                 }
+            } else if libproto::cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) == cmd_id {
+                info!("Receive new proposal.");
+                let signed_propose_step = parse_from_bytes::<SignedProposeStep>(&content).unwrap();
+
+                let proto_block = signed_propose_step.get_propose_step().get_proposal().get_block();
+                trace!("protobuf block is {:?}", proto_block);
+
             } else {
-                warn!("other content.");
+                trace!("Receive other message content.");
             }
         }
 

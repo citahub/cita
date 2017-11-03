@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+import "blockchain.proto";
+
+message VoteMessage {
+    bytes proposal = 1;
+    bytes signature = 2;
+}
+
+message VoteSet {
+    // map key is H160 converted hex string.
+    map<string, VoteMessage> votes_by_sender = 1;
+    // map key is H256 converted hex string.
+    map<string, uint64> votes_by_proposal = 2;
+    uint64 count = 3;
+}
+
+message Proposal {
+    Block block = 1;
+    uint64 lock_round = 2;
+    VoteSet lock_votes = 3;
+}
+
+message ProposeStep {
+    uint64 height = 1;
+    uint64 round = 2;
+    Proposal proposal = 3;
+}
+
+message SignedProposeStep {
+    ProposeStep propose_step = 1;
+    bytes signature = 2;
+}

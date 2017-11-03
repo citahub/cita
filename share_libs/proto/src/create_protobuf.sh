@@ -4,6 +4,7 @@ protoc communication.proto --rust_out .
 protoc auth.proto --rust_out .
 protoc request.proto --rust_out .
 protoc response.proto --rust_out .
+protoc consensus.proto --rust_out .
 
 case "$OSTYPE" in
     darwin*)  

@@ -36,6 +36,7 @@ extern crate logger;
 extern crate cpuprofiler;
 extern crate authority_manage;
 extern crate engine_json;
+extern crate rustc_hex;
 
 use clap::App;
 use std::sync::mpsc::channel;
