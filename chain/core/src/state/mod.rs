@@ -486,13 +486,14 @@ impl<B: Backend> State<B> {
 
     /// Execute a given transaction.
     /// This will change the state accordingly.
-    pub fn apply(&mut self, env_info: &EnvInfo, t: &mut SignedTransaction, tracing: bool, check_permission: bool) -> ApplyResult {
+    pub fn apply(&mut self, env_info: &EnvInfo, t: &mut SignedTransaction, tracing: bool, check_permission: bool, check_quota: bool) -> ApplyResult {
         //        let old = self.to_pod();
         let engine = &NullEngine::default();
         let options = TransactOptions {
             tracing: tracing,
             vm_tracing: false,
             check_permission: check_permission,
+            check_quota: check_quota,
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
@@ -798,7 +799,7 @@ mod tests {
         };
         let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(1));
         println!("contract_address {:?}", contract_address);
-        let result = state.apply(&info, &mut signed, true, false).unwrap();
+        let result = state.apply(&info, &mut signed, true, false, false).unwrap();
         println!("{:?}", state.code(&contract_address).expect("result should unwrap.").expect("option should unwrap"));
         println!("{:?}", result.trace);
         assert_eq!(state.code(&contract_address).unwrap().unwrap(),

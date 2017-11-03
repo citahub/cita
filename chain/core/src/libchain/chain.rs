@@ -98,11 +98,15 @@ pub struct Status {
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
     pub check_permission: bool,
+    pub check_quota: bool,
 }
 
 impl Config {
     pub fn new() -> Self {
-        Config { check_permission: false }
+        Config {
+            check_permission: false,
+            check_quota: false,
+        }
     }
 }
 
@@ -229,6 +233,7 @@ pub struct Chain {
 
     // switch, check permission or not
     pub check_permission: bool,
+    pub check_quota: bool,
 }
 
 /// Get latest status
@@ -321,6 +326,7 @@ impl Chain {
             block_gas_limit: AtomicUsize::new(18446744073709551615),
             account_gas_limit: RwLock::new(AccountGasLimit::new()),
             check_permission: sc.check_permission,
+            check_quota: sc.check_quota,
         };
 
         // Build chain config
@@ -924,6 +930,7 @@ impl Chain {
             tracing: analytics.transaction_tracing,
             vm_tracing: analytics.vm_tracing,
             check_permission: false,
+            check_quota: false,
         };
 
         let ret = Executive::new(&mut state, &env_info, &engine, &self.factories.vm, &self.factories.native)
@@ -952,7 +959,7 @@ impl Chain {
         let creators = self.creators.read().clone();
         let check_permission = self.check_permission;
         let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into(), &self.account_gas_limit.read().clone()).unwrap();
-        open_block.apply_transactions(check_permission);
+        open_block.apply_transactions(check_permission, self.check_quota);
 
         open_block
     }

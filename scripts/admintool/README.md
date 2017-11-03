@@ -109,13 +109,15 @@ $ ./admintool.sh
 
 ```
 {
-  "check_permission": true
+  "check_permission": true,
+  "check_quota": true
 }
 ```
 
 其中:
 
 * `check_permission`: 表示发送交易时，是否检查账户拥有相应的权限，其中true表示打开检查，false表示关闭检查，默认为true。
+* `check_quota`: 表示发送交易时，是否检查块的gas和Account的gas是否超过上限，其中true表示打开检查，false表示关闭检查，默认为true。
 
 ### 节点管理系统合约
 

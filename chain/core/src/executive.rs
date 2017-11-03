@@ -60,6 +60,8 @@ pub struct TransactOptions {
     pub vm_tracing: bool,
     /// Check permission before execution.
     pub check_permission: bool,
+    /// Check account gas limit
+    pub check_quota: bool,
 }
 
 /// Transaction executor.
@@ -156,19 +158,22 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         t.set_account_nonce(nonce);
 
-        // validate if transaction fits into given block
-        if sender != Address::zero() && self.info.gas_used + t.gas > self.info.gas_limit {
-            return Err(From::from(ExecutionError::BlockGasLimitReached {
-                                      gas_limit: self.info.gas_limit,
-                                      gas_used: self.info.gas_used,
-                                      gas: t.gas,
-                                  }));
-        }
-        if sender != Address::zero() && t.gas > self.info.account_gas_limit {
-            return Err(From::from(ExecutionError::AccountGasLimitReached {
-                                      gas_limit: self.info.account_gas_limit,
-                                      gas: t.gas,
-                                  }));
+        trace!("quota should be checked: {}", options.check_quota);
+        if options.check_quota {
+            // validate if transaction fits into given block
+            if sender != Address::zero() && self.info.gas_used + t.gas > self.info.gas_limit {
+                return Err(From::from(ExecutionError::BlockGasLimitReached {
+                                          gas_limit: self.info.gas_limit,
+                                          gas_used: self.info.gas_used,
+                                          gas: t.gas,
+                                      }));
+            }
+            if sender != Address::zero() && t.gas > self.info.account_gas_limit {
+                return Err(From::from(ExecutionError::AccountGasLimitReached {
+                                          gas_limit: self.info.account_gas_limit,
+                                          gas: t.gas,
+                                      }));
+            }
         }
 
         // NOTE: there can be no invalid transactions from this point
