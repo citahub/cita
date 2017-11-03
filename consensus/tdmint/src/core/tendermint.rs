@@ -26,11 +26,9 @@ use core::wal::Wal;
 
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address, SIGNATURE_BYTES_LEN};
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
-use libproto::{communication, submodules, topics, MsgClass, block_verify_req, factory, auth};
+use libproto::{communication, submodules, topics, MsgClass, factory, auth};
 use libproto::blockchain::{Block, BlockWithProof, BlockTxs, RichStatus};
 
-
-//use tx_pool::Pool;
 use proof::TendermintProof;
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
@@ -781,7 +779,7 @@ impl TenderMint {
             self.unverified_msg.push((vheight, vround));
             let idx = self.unverified_msg.len() as u64 - 1;
             let reqid = gen_reqid_from_idx(idx);
-            let verify_req = block_verify_req(&block, reqid);
+            let verify_req = block.block_verify_req(reqid);
             trace!("verify_req with {} txs with block verify request id: {} and height:{}", len, reqid, block.get_header().get_height());
             let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
             self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();

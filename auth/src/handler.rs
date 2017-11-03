@@ -310,7 +310,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                 trace!("get batch new tx request from module:{:?} in system time :{:?}, and has got {} new tx ", id_to_key(submodule), now, batch_new_tx.len());
 
                 for tx_req in batch_new_tx.iter() {
-                    let verify_tx_req = tx_verify_req_msg(tx_req.get_un_tx());
+                    let verify_tx_req = tx_req.get_un_tx().tx_verify_req_msg();
                     let verify_request_info = VerifyRequestResponseInfo {
                         sub_module: submodule,
                         verify_type: VerifyType::SingleVerify,
@@ -324,7 +324,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             } else if true == newtx_req.has_un_tx() {
                 let now = SystemTime::now();
                 trace!("get single new tx request from peer node with system time :{:?}", now);
-                let verify_tx_req = tx_verify_req_msg(newtx_req.get_un_tx());
+                let verify_tx_req = newtx_req.get_un_tx().tx_verify_req_msg();
                 let verify_request_info = VerifyRequestResponseInfo {
                     sub_module: submodule,
                     verify_type: VerifyType::SingleVerify,

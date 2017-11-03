@@ -211,38 +211,6 @@ pub mod factory {
 type CmdId = u32;
 pub type Origin = u32;
 
-pub fn tx_verify_req_msg(unverified_tx: &UnverifiedTransaction) -> VerifyTxReq {
-    let bytes = unverified_tx.get_transaction().write_to_bytes().unwrap();
-    let hash = bytes.crypt_hash();
-    let mut verify_tx_req = VerifyTxReq::new();
-    verify_tx_req.set_valid_until_block(unverified_tx.get_transaction().get_valid_until_block());
-    // tx hash
-    verify_tx_req.set_hash(hash.to_vec());
-    verify_tx_req.set_crypto(unverified_tx.get_crypto());
-    verify_tx_req.set_signature(unverified_tx.get_signature().to_vec());
-    verify_tx_req.set_nonce(unverified_tx.get_transaction().get_nonce().to_string());
-    // unverified tx hash
-    let tx_hash = unverified_tx.crypt_hash();
-    verify_tx_req.set_tx_hash(tx_hash.to_vec());
-    verify_tx_req
-}
-
-pub fn block_verify_req(block: &Block, request_id: u64) -> VerifyBlockReq {
-    let mut reqs: Vec<VerifyTxReq> = Vec::new();
-    let signed_txs = block.get_body().get_transactions();
-    for signed_tx in signed_txs {
-        let signer = signed_tx.get_signer();
-        let unverified_tx = signed_tx.get_transaction_with_sig();
-        let mut verify_tx_req = tx_verify_req_msg(unverified_tx);
-        verify_tx_req.set_signer(signer.to_vec());
-        reqs.push(verify_tx_req);
-    }
-    let mut verify_blk_req = VerifyBlockReq::new();
-    verify_blk_req.set_id(request_id);
-    verify_blk_req.set_reqs(RepeatedField::from_vec(reqs));
-    verify_blk_req
-}
-
 pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
     let mut msg = parse_from_bytes::<communication::Message>(msg.as_ref()).unwrap();
     let content_msg = msg.take_content();
@@ -339,6 +307,22 @@ impl blockchain::UnverifiedTransaction {
         let bytes = self.write_to_bytes().unwrap();
         bytes.crypt_hash()
     }
+
+    pub fn tx_verify_req_msg(&self) -> VerifyTxReq {
+        let bytes = self.get_transaction().write_to_bytes().unwrap();
+        let hash = bytes.crypt_hash();
+        let mut verify_tx_req = VerifyTxReq::new();
+        verify_tx_req.set_valid_until_block(self.get_transaction().get_valid_until_block());
+        // tx hash
+        verify_tx_req.set_hash(hash.to_vec());
+        verify_tx_req.set_crypto(self.get_crypto());
+        verify_tx_req.set_signature(self.get_signature().to_vec());
+        verify_tx_req.set_nonce(self.get_transaction().get_nonce().to_string());
+        // unverified tx hash
+        let tx_hash = self.crypt_hash();
+        verify_tx_req.set_tx_hash(tx_hash.to_vec());
+        verify_tx_req
+    }
 }
 
 impl Deref for SignedTransaction {
@@ -390,6 +374,22 @@ impl Block {
 
     pub fn check_hash(&self) -> bool {
         self.get_body().transactions_root().0 == *self.get_header().get_transactions_root()
+    }
+
+    pub fn block_verify_req(&self, request_id: u64) -> VerifyBlockReq {
+        let mut reqs: Vec<VerifyTxReq> = Vec::new();
+        let signed_txs = self.get_body().get_transactions();
+        for signed_tx in signed_txs {
+            let signer = signed_tx.get_signer();
+            let unverified_tx = signed_tx.get_transaction_with_sig();
+            let mut verify_tx_req = unverified_tx.tx_verify_req_msg();
+            verify_tx_req.set_signer(signer.to_vec());
+            reqs.push(verify_tx_req);
+        }
+        let mut verify_blk_req = VerifyBlockReq::new();
+        verify_blk_req.set_id(request_id);
+        verify_blk_req.set_reqs(RepeatedField::from_vec(reqs));
+        verify_blk_req
     }
 }
 
