@@ -77,11 +77,15 @@ pub fn is_need_proc(payload: &[u8], source: &str) -> (String, bool, communicatio
     ("".to_string(), false, communication::Message::new())
 }
 
-pub fn net_msg_handler(payload: CitaRequest, mysender: &MySender) -> Result<Vec<u8>, io::Error> {
+pub fn net_msg_handler(payload: CitaRequest, mysender: &MySender, mysender_tx: &MySender) -> Result<Vec<u8>, io::Error> {
     trace!("SERVER get msg: {:?}", payload);
     if let (topic, true, msg) = is_need_proc(payload.as_ref(), "net") {
         trace!("recive msg from origin = {:?} with topic: {:?}", msg.get_origin(), topic);
-        mysender.send((topic, payload))
+        if topic == "net.tx" {
+            mysender_tx.send((topic, payload));
+        } else {
+            mysender.send((topic, payload));
+        }
     }
     Ok(vec![])
 }

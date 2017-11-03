@@ -47,6 +47,7 @@ unsafe impl Sync for MySender {}
 
 struct Server {
     mysender: MySender,
+    mysender_tx: MySender,
 }
 
 impl Service for Server {
@@ -56,16 +57,21 @@ impl Service for Server {
     type Future = BoxFuture<Self::Response, io::Error>;
 
     fn call(&self, req: Self::Request) -> Self::Future {
-        result(net_msg_handler(req, &self.mysender)).boxed()
+        result(net_msg_handler(req, &self.mysender, &self.mysender_tx)).boxed()
     }
 }
 
-pub fn start_server(config: &NetConfig, mysender: MySender) {
+pub fn start_server(config: &NetConfig, mysender: MySender, mysender_tx: MySender) {
     let addr = format!("0.0.0.0:{}", config.port.unwrap());
     let addr = addr.parse::<SocketAddr>().unwrap();
 
     thread::spawn(move || {
-                      info!("start server on {:?}!", addr);
-                      TcpServer::new(CitaProto, addr).serve(move || Ok(Server { mysender: mysender.clone() }));
-                  });
+        info!("start server on {:?}!", addr);
+        TcpServer::new(CitaProto, addr).serve(move || {
+                                                  Ok(Server {
+                                                         mysender: mysender.clone(),
+                                                         mysender_tx: mysender_tx.clone(),
+                                                     })
+                                              });
+    });
 }

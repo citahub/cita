@@ -121,23 +121,45 @@ fn main() {
     let config = if is_test { NetConfig::test_config() } else { NetConfig::new(config_path) };
 
     // init pubsub
+    // split new_tx with other msg
+    let (ctx_sub_tx, crx_sub_tx) = channel();
+    let (ctx_pub_tx, crx_pub_tx) = channel();
+    start_pubsub("network_tx", vec!["auth.tx"], ctx_sub_tx, crx_pub_tx);
+
     let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
-
-    start_pubsub("network", vec!["auth.tx", "consensus.msg", "chain.status", "chain.blk", "chain.sync", "jsonrpc.net"], ctx_sub, crx_pub);
+    start_pubsub("network", vec!["consensus.msg", "chain.status", "chain.blk", "chain.sync", "jsonrpc.net"], ctx_sub, crx_pub);
 
     // start server
     // This brings up our server.
     // all server recv msg directly publish to mq
+    let mysender_tx = MySender::new(ctx_pub_tx.clone());
     let mysender = MySender::new(ctx_pub.clone());
-    start_server(&config, mysender);
+    start_server(&config, mysender, mysender_tx);
 
     // connect peers
     let con = Connection::new(&config);
     let con_lock = Arc::new(RwLock::new(con));
     do_connect(config_path, con_lock.clone());
+
+    // client for new tx
+    let (ctx_tx, crx_tx) = channel();
+    start_client(con_lock.clone(), crx_tx);
+
+    // client for other msg
     let (ctx, crx) = channel();
     start_client(con_lock.clone(), crx);
+
+    thread::spawn(move || {
+        loop {
+            // msg from tx mq need proc before broadcast
+            let (key, body) = crx_sub_tx.recv().unwrap();
+            trace!("handle delivery id {:?} payload {:?}", key, body);
+            if let (_, true, msg) = is_need_proc(body.as_ref(), "mq") {
+                ctx_tx.send(msg).unwrap();
+            }
+        }
+    });
 
     loop {
         // msg from mq need proc before broadcast
