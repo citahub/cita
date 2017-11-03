@@ -1067,7 +1067,6 @@ impl TenderMint {
                 MsgClass::VERIFYBLKRESP(resp) => {
                     let verify_id = resp.get_id();
                     let idx = get_idx_from_reqid(verify_id);
-                    info!("recive VERIFYBLKRESP verify_id {} idx {}", verify_id, idx);
                     let mut vheight = 0;
                     let mut vround = 0;
                     let mut verify_ok = false;
@@ -1183,9 +1182,6 @@ impl TenderMint {
     }
 
     fn new_round_start(&mut self, height: usize, round: usize) {
-        //        if round == INIT_ROUND {
-        //            self.htime = Instant::now();
-        //        }
         let mut tv = self.params.timer.propose * ((round + 1) as u32);
         if self.proposals.get_proposal(height, round).is_some() {
             tv = ::std::time::Duration::new(0, 0);
@@ -1296,7 +1292,13 @@ impl TenderMint {
                 if let Ok(decode) = deserialize(&vec_out) {
                     let (vheight, vround, verified): (usize, usize, bool) = decode;
                     if !verified {
-                        self.unverified_msg.push((vheight, vround));
+                        self.clean_saved_info();
+                    } else {
+                        for elem in self.unverified_msg.iter_mut() {
+                            if elem.0 == vheight && elem.1 == vround {
+                                *elem = (0, 0);
+                            }
+                        }
                     }
                 }
             } else if mtype == LOG_TYPE_AUTH_TXS {
