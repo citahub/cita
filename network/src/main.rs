@@ -14,7 +14,8 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#![allow(deprecated)]
+#![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
+#![feature(iter_rfind)]
 #[macro_use]
 extern crate log;
 extern crate clap;
@@ -32,59 +33,33 @@ extern crate logger;
 extern crate bytes;
 extern crate notify;
 extern crate util;
+extern crate rand;
+
 
 pub mod config;
-pub mod server;
+pub mod netserver;
 pub mod connection;
 pub mod citaprotocol;
-pub mod msghandle;
-
+pub mod synchronizer;
+//pub mod sync_vec;
+pub mod network;
 
 use clap::{App, SubCommand};
 use config::NetConfig;
-use connection::{Connection, do_connect as connect, start_client};
+use connection::Connection;
 use dotenv::dotenv;
-use msghandle::{is_need_proc, handle_rpc};
-use notify::{RecommendedWatcher, Watcher, RecursiveMode};
+use netserver::NetServer;
+use network::NetWork;
 use pubsub::start_pubsub;
-use server::MySender;
-use server::start_server;
 use std::env;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
-use std::time::Duration;
+use synchronizer::Synchronizer;
 use util::RwLock;
 use util::panichandler::set_panic_handler;
 
-
-pub fn do_connect(config_path: &str, con: Arc<RwLock<Connection>>) {
-
-    let do_con_lock = con.clone();
-    {
-        let do_con = &mut *do_con_lock.as_ref().write();
-        connect(do_con);
-    }
-
-    let (tx, rx) = channel();
-    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(5)).unwrap();
-    let _ = watcher.watch(config_path.clone(), RecursiveMode::Recursive).unwrap();
-    let config = String::from(config_path);
-    thread::spawn(move || loop {
-                      match rx.recv() {
-                          Ok(_) => {
-                              let config = NetConfig::new(&config.as_str());
-
-                              let con = &mut *con.as_ref().write();
-                              con.update(&config);
-                              connect(&con);
-                              //let con = &mut *con.as_ref().write();
-                              con.del_peer();
-                          }
-                          Err(e) => info!("watch error: {:?}", e),
-                      }
-                  });
-}
 
 
 fn main() {
@@ -109,7 +84,6 @@ fn main() {
         .get_matches();
 
     let mut config_path = "config";
-
     if let Some(c) = matches.value_of("config") {
         info!("Value for config: {}", c);
         config_path = c;
@@ -117,10 +91,10 @@ fn main() {
 
     // check for the existence of subcommands
     let is_test = matches.is_present("test");
-
     let config = if is_test { NetConfig::test_config() } else { NetConfig::new(config_path) };
 
     // init pubsub
+
     // split new_tx with other msg
     let (ctx_sub_tx, crx_sub_tx) = channel();
     let (ctx_pub_tx, crx_pub_tx) = channel();
@@ -128,35 +102,49 @@ fn main() {
 
     let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub("network", vec!["consensus.msg", "chain.status", "chain.blk", "chain.sync", "jsonrpc.net"], ctx_sub, crx_pub);
+    start_pubsub("network", vec!["consensus.msg", "chain.status", "chain.blk", "jsonrpc.net"], ctx_sub, crx_pub);
 
+    let (net_work_tx, net_work_rx) = channel();
     // start server
     // This brings up our server.
     // all server recv msg directly publish to mq
-    let mysender_tx = MySender::new(ctx_pub_tx.clone());
-    let mysender = MySender::new(ctx_pub.clone());
-    start_server(&config, mysender, mysender_tx);
+    let address_str = format!("0.0.0.0:{}", config.port.unwrap());
+    let address = address_str.parse::<SocketAddr>().unwrap();
+    let net_server = NetServer::new(net_work_tx.clone());
 
-    // connect peers
-    let con = Connection::new(&config);
-    let con_lock = Arc::new(RwLock::new(con));
-    do_connect(config_path, con_lock.clone());
+    //network server listener
+    thread::spawn(move || net_server.server(address));
 
-    // client for new tx
-    let (ctx_tx, crx_tx) = channel();
-    start_client(con_lock.clone(), crx_tx);
+    //connections manage to loop
+    let (sync_tx, sync_rx) = channel();
+    let con = Arc::new(RwLock::new(Connection::new(&config)));
+    let net_work = NetWork::new(con.clone(), ctx_pub.clone(), sync_tx, ctx_pub_tx);
+    net_work.manage_connect(config_path);
 
-    // client for other msg
-    let (ctx, crx) = channel();
-    start_client(con_lock.clone(), crx);
+    //loop deal data
+    thread::spawn(move || loop {
+                      if let Ok((source, data)) = net_work_rx.recv() {
+                          net_work.receiver(source, data);
+                      }
+                  });
 
+    //sync loop
+    let mut synchronizer = Synchronizer::new(ctx_pub, con.clone());
+    thread::spawn(move || loop {
+                      if let Ok((source, msg)) = sync_rx.recv() {
+                          synchronizer.receive(source, msg);
+                      }
+                  });
+
+    //sub new tx
     thread::spawn(move || {
         loop {
-            // msg from tx mq need proc before broadcast
+            // msg from sub  new tx
             let (key, body) = crx_sub_tx.recv().unwrap();
-            trace!("handle delivery id {:?} payload {:?}", key, body);
-            if let (_, true, msg) = is_need_proc(body.as_ref(), "mq") {
-                ctx_tx.send(msg).unwrap();
+            trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
+            let (topic, mut data) = NetWork::parse_msg(&body);
+            if topic == "net.tx".to_string() {
+                con.read().broadcast(data);
             }
         }
     });
@@ -165,11 +153,13 @@ fn main() {
         // msg from mq need proc before broadcast
         let (key, body) = crx_sub.recv().unwrap();
         trace!("handle delivery id {:?} payload {:?}", key, body);
-        if let (_, true, msg) = is_need_proc(body.as_ref(), "mq") {
-            ctx.send(msg).unwrap();
-        }
-
-        let con = &*con_lock.as_ref().read();
-        handle_rpc(&con, &ctx_pub, body.as_ref());
+        net_work_tx.send((Source::LOCAL, body)).unwrap();
     }
+}
+
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum Source {
+    LOCAL,
+    REMOTE,
 }

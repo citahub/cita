@@ -14,7 +14,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+#![allow(dead_code)]
 use bloomchain as bc;
 use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
@@ -54,7 +54,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Instant;
@@ -200,13 +200,10 @@ impl bc::group::BloomGroupDatabase for Chain {
 pub struct Chain {
     blooms_config: bc::Config,
     pub current_header: RwLock<Header>,
-    pub is_sync: AtomicBool,
-    pub max_height: AtomicUsize,
     // BtreeMap key: block height  Value: proof if ,block, is_verified
     // TODO: prune ancient
-    pub block_map: RwLock<BTreeMap<u64, (Option<ProtoProof>, Block, bool)>>,
+    pub block_map: RwLock<BTreeMap<u64, (Option<ProtoProof>, Option<Block>)>>,
     pub db: Arc<KeyValueDB>,
-    pub sync_sender: Mutex<Sender<u64>>,
     pub state_db: StateDB,
     pub factories: Factories,
     // Hash of the given block - only works for 256 most recent blocks excluding current
@@ -261,7 +258,7 @@ impl Chain {
     }
 
 
-    pub fn init_chain<R>(db: Arc<KeyValueDB>, mut genesis: Genesis, sync_sender: Sender<u64>, sconfig: R) -> (Arc<Chain>, ProtoRichStatus)
+    pub fn init_chain<R>(db: Arc<KeyValueDB>, mut genesis: Genesis, sconfig: R) -> Chain
     where
         R: Read,
     {
@@ -298,14 +295,10 @@ impl Chain {
 
         let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
         info!("config check: {:?}", sc);
-        let max_height = AtomicUsize::new(0);
-        max_height.store(header.number() as usize, Ordering::SeqCst);
 
-        let raw_chain = Chain {
+        let chain = Chain {
             blooms_config: blooms_config,
             current_header: RwLock::new(header.clone()),
-            is_sync: AtomicBool::new(false),
-            max_height: max_height,
             block_map: RwLock::new(BTreeMap::new()),
             block_headers: RwLock::new(HashMap::new()),
             block_bodies: RwLock::new(HashMap::new()),
@@ -317,7 +310,6 @@ impl Chain {
             db: db,
             state_db: state_db,
             factories: factories,
-            sync_sender: Mutex::new(sync_sender),
             last_hashes: RwLock::new(VecDeque::new()),
             polls_filter: Arc::new(Mutex::new(PollManager::new())),
             nodes: RwLock::new(Vec::new()),
@@ -330,25 +322,16 @@ impl Chain {
         };
 
         // Build chain config
-        let chain = Arc::new(raw_chain);
         chain.build_last_hashes(Some(header.hash()), header.number());
         chain.reload_config();
-
         {
             // Insert current proof for sync
             let block = chain.block_by_hash(header.hash()).expect("Failed to load current block.");
             let mut guard = chain.block_map.write();
-            let _ = guard.insert(header.number(), (proof, block, true));
+            let _ = guard.insert(header.number(), (proof, Some(block)));
         }
 
-        // Generate status
-        let mut status = RichStatus::new();
-        status.set_hash(header.hash());
-        status.set_number(header.number());
-        let nodes: Vec<Address> = chain.nodes.read().to_vec();
-        status.set_nodes(nodes);
-
-        (chain, status.protobuf())
+        chain
     }
 
     /// Get block number by BlockId
@@ -577,12 +560,12 @@ impl Chain {
         self.current_header.read().hash().clone()
     }
 
-    pub fn get_max_height(&self) -> u64 {
-        self.max_height.load(Ordering::SeqCst) as u64
-    }
-
     pub fn current_state_root(&self) -> H256 {
         *self.current_header.read().state_root()
+    }
+
+    pub fn current_block_poof(&self) -> Option<ProtoProof> {
+        self.db.read(db::COL_EXTRA, &CurrentProof)
     }
 
     pub fn logs<F>(&self, mut blocks: Vec<BlockNumber>, matches: F, limit: Option<usize>) -> Vec<LocalizedLogEntry>
@@ -1061,7 +1044,7 @@ impl Chain {
                 let status = self.save_status(&mut batch);
                 // Save current block proof
                 match self.block_map.read().get(&height) {
-                    Some(&(Some(ref proof), _, _)) => {
+                    Some(&(Some(ref proof), _)) => {
                         batch.write(db::COL_EXTRA, &CurrentProof, &proof);
                     }
                     _ => {}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+
+import "blockchain.proto";
+
+message SyncRequest {
+    repeated uint64 heights = 1;
+}
+
+message SyncResponse {
+    repeated Block blocks = 1;
+}

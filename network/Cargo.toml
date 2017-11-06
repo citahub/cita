@@ -22,3 +22,4 @@ protobuf = { version = "^1.0.0"}
 util = { path = "../share_libs/util"}
 pubsub = { path = "../share_libs/pubsub" }
 logger = { path = "../share_libs/logger" }
+rand = "0.3.*"

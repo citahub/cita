@@ -31,6 +31,7 @@ pub mod request;
 pub mod into;
 pub mod auth;
 pub mod response;
+pub mod sync;
 pub mod consensus;
 
 pub use auth::*;
@@ -46,6 +47,7 @@ use rlp::*;
 use rustc_serialize::hex::ToHex;
 use std::ops::Deref;
 use std::result::Result::Err;
+pub use sync::{SyncRequest, SyncResponse};
 use util::{H256, Hashable, merklehash};
 use util::snappy;
 
@@ -114,6 +116,8 @@ pub enum MsgClass {
     BLOCKTXS(BlockTxs),
     MSG(Vec<u8>),
     RICHSTATUS(RichStatus),
+    SYNCREQUEST(SyncRequest),
+    SYNCRESPONSE(SyncResponse),
 }
 
 pub fn topic_to_string(top: u16) -> &'static str {
@@ -239,7 +243,8 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
             MsgClass::MSG(content)
         }
         MsgType::RICH_STATUS => MsgClass::RICHSTATUS(parse_from_bytes::<RichStatus>(&content_msg).unwrap()),
-
+        MsgType::SYNC_REQ => MsgClass::SYNCREQUEST(parse_from_bytes::<SyncRequest>(&content_msg).unwrap()),
+        MsgType::SYNC_RES => MsgClass::SYNCRESPONSE(parse_from_bytes::<SyncResponse>(&content_msg).unwrap()),
     };
 
     (msg.get_cmd_id(), msg.get_origin(), msg_class)

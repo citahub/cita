@@ -182,8 +182,7 @@ fn main() {
     let genesis = Genesis::init(genesis_path);
 
     //chain初始化
-    let (sync_tx, _) = channel();
-    let call = Callchain::new(Arc::new(db), genesis, sync_tx, config_path);
+    let call = Callchain::new(Arc::new(db), genesis, config_path);
     let pre_hash = call.get_pre_hash();
     match method {
         "create" => create_contract(block_tx_num, call.clone(), pre_hash, flag_prof_start, flag_prof_duration, 0),

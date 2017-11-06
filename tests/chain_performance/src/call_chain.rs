@@ -33,10 +33,9 @@ pub struct Callchain {
 
 #[allow(unused_variables, dead_code)]
 impl Callchain {
-    pub fn new(db: Arc<KeyValueDB>, genesis: Genesis, sync_sender: Sender<u64>, path: &str) -> Self {
+    pub fn new(db: Arc<KeyValueDB>, genesis: Genesis, path: &str) -> Self {
         let config_file = File::open(path).unwrap();
-        let (chain, st) = Chain::init_chain(db, genesis, sync_sender, BufReader::new(config_file));
-        Callchain { chain: chain }
+        Callchain { chain: Arc::new(Chain::init_chain(db, genesis, BufReader::new(config_file))) }
     }
 
 

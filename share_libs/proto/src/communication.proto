@@ -16,9 +16,11 @@ enum MsgType {
     BLOCK_WITH_PROOF = 12;
     BLOCK_TXS = 13;
     RICH_STATUS = 14;
+    SYNC_REQ = 15;
+    SYNC_RES = 16;
 }
 
-enum OperateType{
+enum OperateType {
     BROADCAST = 0;
     SINGLE = 1;
     SUBTRACT = 2;

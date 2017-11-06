@@ -115,9 +115,7 @@ pub fn init_chain() -> Arc<Chain> {
         spec: spec,
         block: Block::default(),
     };
-    let (sync_tx, _) = channel();
-    let (chain, _) = Chain::init_chain::<&[u8]>(Arc::new(db), genesis, sync_tx, CHAIN_CONFIG.as_ref());
-    chain
+    Arc::new(Chain::init_chain::<&[u8]>(Arc::new(db), genesis, CHAIN_CONFIG.as_ref()))
 }
 
 pub fn create_block(chain: &Chain, to: Address, data: &Vec<u8>, nonce: (u32, u32)) -> Block {

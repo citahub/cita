@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(unused_must_use)]
+#![allow(unused_must_use, unused_assignments)]
 extern crate core;
 #[macro_use]
 extern crate log;
@@ -33,17 +33,13 @@ extern crate protobuf;
 extern crate error;
 extern crate proof;
 
-mod forward;
-mod synchronizer;
+pub mod forward;
 
 use clap::App;
 use core::db;
 use core::libchain;
 use core::libchain::Genesis;
-use core::libchain::submodules;
-use forward::*;
-use libproto::blockchain::Status;
-use protobuf::Message;
+use forward::Forward;
 use pubsub::start_pubsub;
 use std::fs::File;
 use std::io::BufReader;
@@ -52,7 +48,6 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time;
 use std::time::Duration;
-use synchronizer::Synchronizer;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 use util::panichandler::set_panic_handler;
@@ -90,57 +85,39 @@ fn main() {
 
     let (tx, rx) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub(
-        "chain",
-        vec![
-            "net.blk",
-            "net.status",
-            "net.sync",
-            "consensus.blk",
-            "jsonrpc.request",
-            "auth.blk_tx_hashs_req",
-            "consensus.msg",
-        ],
-        tx,
-        crx_pub,
-    );
+    start_pubsub("chain", vec!["net.blk", "net.sync", "consensus.blk", "jsonrpc.request", "auth.blk_tx_hashs_req", "consensus.msg"], tx, crx_pub);
 
     let nosql_path = DataPath::nosql_path();
     trace!("nosql_path is {:?}", nosql_path);
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &nosql_path).unwrap();
     let genesis = Genesis::init(genesis_path);
-    let (sync_tx, sync_rx) = channel();
     let config_file = File::open(config_path).unwrap();
-    let (chain, st) = libchain::chain::Chain::init_chain(Arc::new(db), genesis, sync_tx, BufReader::new(config_file));
+    let chain = Arc::new(libchain::chain::Chain::init_chain(Arc::new(db), genesis, BufReader::new(config_file)));
 
-    let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, st.write_to_bytes().unwrap());
-    info!("init status {:?}, {:?}", st.get_height(), st.get_hash());
-    ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+    let block_tx_hashes = chain.block_tx_hashes(chain.get_current_height()).expect("shoud return current block tx hashes");
+    chain.delivery_block_tx_hashes(chain.get_current_height(), block_tx_hashes, &ctx_pub);
 
-    let status: Status = st.into();
-    let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
-    trace!("chain.status {:?}, {:?}", status.get_height(), status.get_hash());
-    ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
-
-    let synchronizer = Synchronizer::new(chain.clone());
-    let block_tx_hashes = chain.block_tx_hashes(status.get_height()).expect("shoud return current block tx hashes");
-    chain.delivery_block_tx_hashes(status.get_height(), block_tx_hashes, &ctx_pub);
-    let chain1 = chain.clone();
-    let ctx_pub1 = ctx_pub.clone();
+    let (write_tx, write_rx) = channel();
+    let forward = Forward::new(chain.clone(), ctx_pub, write_tx);
+    forward.broad_current_status();
+    let forward_write = forward.clone();
+    //chain 读写分离
+    //chain 读数据 => 查询数据
     thread::spawn(move || loop {
-                      let chain = chain1.clone();
-                      forward::chain_result(chain, &rx, &ctx_pub1);
-                  });
-
-    thread::spawn(move || loop {
-                      let notify = sync_rx.recv_timeout(Duration::new(8, 0));
-                      if notify.is_ok() {
-                          synchronizer.sync(&ctx_pub);
-                      } else {
-                          synchronizer.sync_status(&ctx_pub);
+                      if let Ok((key, msg)) = rx.recv() {
+                          forward.dispatch_msg(key, msg);
                       }
                   });
+
+    //chain 写数据 => 添加块
+    thread::spawn(move || loop {
+                      if let Ok(blocks) = write_rx.recv_timeout(Duration::new(8, 0)) {
+                          forward_write.dispatch_blocks(blocks);
+                      }
+                      forward_write.broad_current_status();
+                  });
+
     //garbage collect
     let mut i: u32 = 0;
     loop {
