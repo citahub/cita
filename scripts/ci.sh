@@ -1,7 +1,7 @@
 #!/bin/bash
 
 IMAGE="cryptape/cita-build"
-docker images | grep $IMAGE
+docker images 2> /dev/null | grep $IMAGE > /dev/null 2>&1
 if [ $? == 0 ]; then
     # Only allocate tty if we detect one
     if [ -t 1 ]; then
@@ -19,9 +19,10 @@ if [ $? == 0 ]; then
     git status
     git rev-parse HEAD
 
-    docker run --rm $DOCKER_RUN_OPTIONS --env RUN_IN_DOCKER=1  -v $(pwd):$(pwd) -v $HOME/.cargo/registry:/root/.cargo/registry -v $HOME/.cargo/git:/root/.cargo/git -w "$(pwd)" $IMAGE "./scripts/ci.sh"
+    SCRIPT_PATH=`readlink -f $0`
+    docker run --rm $DOCKER_RUN_OPTIONS --env RUN_IN_DOCKER=1  -v $(pwd):$(pwd) -v $HOME/.cargo/registry:/root/.cargo/registry -v $HOME/.cargo/git:/root/.cargo/git -w "$(pwd)" $IMAGE "$SCRIPT_PATH"
 else
-    if [ $RUN_IN_DOCKER != 1 ]; then
+    if [ ! $RUN_IN_DOCKER ]; then
         SOURCE_DIR=$(readlink -f $(dirname $(readlink -f $0))/..)
         cd  ${SOURCE_DIR}
         git status
