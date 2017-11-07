@@ -271,7 +271,7 @@ impl Sendtx {
 
         let mut file = match File::open("hash.txt") {
             Ok(file) => file,
-            Err(_) => panic!("open [{}] fail", "has.txt"),
+            Err(_) => panic!("open [{}] fail", "hash.txt"),
         };
 
         let mut contents = String::new();
@@ -303,7 +303,7 @@ impl Sendtx {
 
         let sender = match action {
             Action::Create => "".to_string(),
-            Action::Store => "ffffffffffffffffffff".to_string(),
+            Action::Store => "ffffffffffffffffffffffffffffffffffffffff".to_string(),
             Action::Call => panic!("Action error"),
         };
 

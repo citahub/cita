@@ -26,6 +26,7 @@ for i in {0..3} ; do
     bin/cita setup node$i  > /dev/null
 done
 for i in {0..3} ; do
+    sed -i 's/"check_permission": true/"check_permission": false/g' node$i/chain.json
     bin/cita start node$i debug > /dev/null
 done
 echo "DONE"
@@ -39,7 +40,7 @@ echo "${timeout}s DONE"
 
 ################################################################################
 echo -n "5) create contract  ...  "
-${BINARY_DIR}/bin/trans_evm --config ${SOURCE_DIR}/tests/wrk_benchmark_test/config_create.json 2>&1 |grep "sucess" > /dev/null
+${BINARY_DIR}/bin/trans_evm --config ${SOURCE_DIR}/tests/wrk_benchmark_test/config_create.json 2>&1 | grep "sucess" > /dev/null
 if [ $? -ne 0 ] ; then
     exit 1
 fi
