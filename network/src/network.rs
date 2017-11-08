@@ -3,12 +3,12 @@ use config::NetConfig;
 use connection::Connection;
 use libproto::{Response, Request, communication, submodules, topics, cmd_id};
 use libproto::communication::MsgType;
-use notify::{RecommendedWatcher, Watcher, RecursiveMode};
+use notify::DebouncedEvent;
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 use std::sync::Arc;
+use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
-use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 use util::RwLock;
@@ -69,23 +69,36 @@ impl NetWork {
     }
 
 
-    pub fn manage_connect(&self, config_path: &str) {
+    pub fn manage_connect(&self, config_path: &str, rx: Receiver<DebouncedEvent>) {
         self.con.read().connect();
-        let (tx, rx) = channel();
-        let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(5)).unwrap();
-        let _ = watcher.watch(config_path.clone(), RecursiveMode::Recursive).unwrap();
         let config = String::from(config_path);
+
+        let con = self.con.clone();
+        thread::spawn(move || loop {
+                          con.write().del_peer();
+                          thread::sleep(Duration::from_millis(15000));
+                      });
+
         let con = self.con.clone();
         thread::spawn(move || loop {
                           match rx.recv() {
-                              Ok(_) => {
-                                  let config = NetConfig::new(&config.as_str());
-                                  {
-                                      let mut con = con.write();
-                                      con.update(&config);
-                                      con.connect();
-                                      //let con = &mut *con.as_ref().write();
-                                      con.del_peer();
+                              Ok(event) => {
+                                  match event {
+                                      DebouncedEvent::Create(path_buf) => {
+                                          if path_buf.is_file() {
+                                              let file_name = path_buf.file_name().unwrap().to_str().unwrap();
+                                              if file_name == config.as_str() {
+                                                  info!("file {} change", file_name);
+                                                  let config = NetConfig::new(&config.as_str());
+                                                  {
+                                                      let mut con = con.write();
+                                                      con.update(&config);
+                                                      con.connect();
+                                                  }
+                                              }
+                                          }
+                                      }
+                                      _ => (),
                                   }
                               }
                               Err(e) => info!("watch error: {:?}", e),

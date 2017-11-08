@@ -91,7 +91,12 @@ impl Connection {
                     *thread_exit = true;
                 }
             }
-            None => (),
+            None => {
+                for &(_, _, _, _, ref thread_exit) in &self.peers_pair {
+                    let thread_exit = &mut *thread_exit.as_ref().write();
+                    *thread_exit = true;
+                }
+            }
         }
     }
 

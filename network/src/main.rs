@@ -50,16 +50,17 @@ use connection::Connection;
 use dotenv::dotenv;
 use netserver::NetServer;
 use network::NetWork;
+use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use pubsub::start_pubsub;
 use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
+use std::time::Duration;
 use synchronizer::Synchronizer;
 use util::RwLock;
 use util::panichandler::set_panic_handler;
-
 
 
 fn main() {
@@ -116,10 +117,14 @@ fn main() {
     thread::spawn(move || net_server.server(address));
 
     //connections manage to loop
+    let (tx, rx) = channel();
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
+    let _ = watcher.watch(".", RecursiveMode::NonRecursive).unwrap();
+
     let (sync_tx, sync_rx) = channel();
     let con = Arc::new(RwLock::new(Connection::new(&config)));
     let net_work = NetWork::new(con.clone(), ctx_pub.clone(), sync_tx, ctx_pub_tx);
-    net_work.manage_connect(config_path);
+    net_work.manage_connect(config_path, rx);
 
     //loop deal data
     thread::spawn(move || loop {
