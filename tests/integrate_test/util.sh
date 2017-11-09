@@ -176,7 +176,8 @@ check_height_stopped () {
             echo "failed to get_height(new): ${new}"
             return 1
         fi
-        if [ $new -ne $old ]; then
+        if [ $new -gt $(($old + 1)) ]; then
+            # if two more blocks was generated, it shows cita still reach consensus.
             echo "height change from ${old} to ${new}"
             return 1
         fi
