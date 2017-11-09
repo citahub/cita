@@ -46,7 +46,7 @@ pub mod network;
 
 use clap::{App, SubCommand};
 use config::NetConfig;
-use connection::Connection;
+use connection::{Connection, manage_connect};
 use dotenv::dotenv;
 use netserver::NetServer;
 use network::NetWork;
@@ -59,7 +59,6 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 use synchronizer::Synchronizer;
-use util::RwLock;
 use util::panichandler::set_panic_handler;
 
 
@@ -122,9 +121,9 @@ fn main() {
     let _ = watcher.watch(".", RecursiveMode::NonRecursive).unwrap();
 
     let (sync_tx, sync_rx) = channel();
-    let con = Arc::new(RwLock::new(Connection::new(&config)));
+    let con = Arc::new(Connection::new(&config));
     let net_work = NetWork::new(con.clone(), ctx_pub.clone(), sync_tx, ctx_pub_tx);
-    net_work.manage_connect(config_path, rx);
+    manage_connect(con.clone(), config_path, rx);
 
     //loop deal data
     thread::spawn(move || loop {
@@ -149,7 +148,7 @@ fn main() {
             trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
             let (topic, mut data) = NetWork::parse_msg(&body);
             if topic == "net.tx".to_string() {
-                con.read().broadcast(data);
+                con.broadcast(data);
             }
         }
     });

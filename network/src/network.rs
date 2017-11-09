@@ -1,28 +1,22 @@
 use Source;
-use config::NetConfig;
 use connection::Connection;
 use libproto::{Response, Request, communication, submodules, topics, cmd_id};
 use libproto::communication::MsgType;
-use notify::DebouncedEvent;
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
 use std::sync::Arc;
-use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
-use std::thread;
-use std::time::Duration;
-use util::RwLock;
 
 
 pub struct NetWork {
-    con: Arc<RwLock<Connection>>,
+    con: Arc<Connection>,
     tx_pub: Sender<(String, Vec<u8>)>,
     tx_sync: Sender<(Source, communication::Message)>,
     tx_new_tx: Sender<(String, Vec<u8>)>,
 }
 
 impl NetWork {
-    pub fn new(con: Arc<RwLock<Connection>>, tx_pub: Sender<(String, Vec<u8>)>, tx_sync: Sender<(Source, communication::Message)>, tx_new_tx: Sender<(String, Vec<u8>)>) -> Self {
+    pub fn new(con: Arc<Connection>, tx_pub: Sender<(String, Vec<u8>)>, tx_sync: Sender<(Source, communication::Message)>, tx_new_tx: Sender<(String, Vec<u8>)>) -> Self {
         NetWork {
             con: con,
             tx_pub: tx_pub,
@@ -46,7 +40,7 @@ impl NetWork {
                     self.reply_rpc(msg.get_content());
 
                 } else if topic != "".to_string() {
-                    self.con.read().broadcast(msg);
+                    self.con.broadcast(msg);
                 }
             }
 
@@ -68,50 +62,12 @@ impl NetWork {
         }
     }
 
-
-    pub fn manage_connect(&self, config_path: &str, rx: Receiver<DebouncedEvent>) {
-        self.con.read().connect();
-        let config = String::from(config_path);
-
-        let con = self.con.clone();
-        thread::spawn(move || loop {
-                          con.write().del_peer();
-                          thread::sleep(Duration::from_millis(15000));
-                      });
-
-        let con = self.con.clone();
-        thread::spawn(move || loop {
-                          match rx.recv() {
-                              Ok(event) => {
-                                  match event {
-                                      DebouncedEvent::Create(path_buf) => {
-                                          if path_buf.is_file() {
-                                              let file_name = path_buf.file_name().unwrap().to_str().unwrap();
-                                              if file_name == config.as_str() {
-                                                  info!("file {} change", file_name);
-                                                  let config = NetConfig::new(&config.as_str());
-                                                  {
-                                                      let mut con = con.write();
-                                                      con.update(&config);
-                                                      con.connect();
-                                                  }
-                                              }
-                                          }
-                                      }
-                                      _ => (),
-                                  }
-                              }
-                              Err(e) => info!("watch error: {:?}", e),
-                          }
-                      });
-    }
-
     pub fn reply_rpc(&self, msg: &[u8]) {
         let mut ts = parse_from_bytes::<Request>(msg).unwrap();
         let mut response = Response::new();
         response.set_request_id(ts.take_request_id());
         if ts.has_peercount() {
-            let peercount = self.con.read().peers_pair.iter().filter(|x| x.2.as_ref().read().is_some()).count();
+            let peercount = self.con.peers_pair.read().iter().filter(|x| x.2.is_some()).count();
             response.set_peercount(peercount as u32);
             let ms: communication::Message = response.into();
             self.tx_pub.send(("chain.rpc".to_string(), ms.write_to_bytes().unwrap())).unwrap();

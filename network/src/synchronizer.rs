@@ -9,7 +9,6 @@ use std::collections::{BTreeMap, VecDeque};
 use std::sync::{Arc, mpsc};
 //use time::now;
 use std::time::{Duration, Instant};
-use util::RwLock;
 use util::snappy;
 
 const SYNC_STEP: u64 = 20;
@@ -17,7 +16,7 @@ const SYNC_TIME_OUT: u64 = 60;
 
 pub struct Synchronizer {
     tx_pub: mpsc::Sender<(String, Vec<u8>)>,
-    con: Arc<RwLock<Connection>>,
+    con: Arc<Connection>,
     current_status: Status,
     global_status: Status,
     sync_end_height: u64, //current_status <= sync_end_status
@@ -32,7 +31,7 @@ unsafe impl Sync for Synchronizer {}
 unsafe impl Send for Synchronizer {}
 
 impl Synchronizer {
-    pub fn new(tx_pub: mpsc::Sender<(String, Vec<u8>)>, con: Arc<RwLock<Connection>>) -> Self {
+    pub fn new(tx_pub: mpsc::Sender<(String, Vec<u8>)>, con: Arc<Connection>) -> Self {
         Synchronizer {
             tx_pub: tx_pub,
             con: con,
@@ -191,7 +190,7 @@ impl Synchronizer {
         if let Some((height, origins)) =
             self.latest_status_lists
                 .iter()
-                .rfind(|&(_, origins)| origins.len() >= (2 / 3 * self.con.read().peers_pair.len()))
+                .rfind(|&(_, origins)| origins.len() >= (2 / 3 * self.con.peers_pair.read().len()))
         {
             debug!("sync: start_sync_req: height = {}, origins = {:?}", height, origins);
             if let Some(origins) = self.latest_status_lists.get(height) {
@@ -242,7 +241,7 @@ impl Synchronizer {
             let mut sync_req = SyncRequest::new();
             sync_req.set_heights(heights);
             let msg = factory::create_msg_ex(submodules::CHAIN, topics::SYNC_BLK, communication::MsgType::SYNC_REQ, communication::OperateType::SINGLE, origin, sync_req.write_to_bytes().unwrap());
-            self.con.read().broadcast(msg);
+            self.con.broadcast(msg);
         }
     }
 
@@ -250,7 +249,7 @@ impl Synchronizer {
     fn broadcast_status(&mut self) {
         ("sync: broadcast status {:?}, {:?} to other nodes", self.current_status.get_height(), self.current_status.get_hash());
         let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, self.current_status.clone().write_to_bytes().unwrap());
-        self.con.read().broadcast(msg);
+        self.con.broadcast(msg);
     }
 
 
