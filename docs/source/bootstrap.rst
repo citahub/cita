@@ -24,11 +24,12 @@ For user in china, please use mirror of ``hub.docker.com`` to speed up image pul
 
 ::
 
-    sudo cat > /etc/docker/daemon.json  << EOF
+    cat > daemon.json  << EOF
     {
        "registry-mirror": [ "https://registry.docker-cn.com" ]
     }
     EOF
+    sudo mv daemon.json /etc/docker/
 
 
 **fetch CITA image**
