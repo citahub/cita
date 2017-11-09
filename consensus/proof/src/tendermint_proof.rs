@@ -29,9 +29,14 @@ use util::datapath::DataPath;
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Step {
     Propose,
+    ProposeWait,
     Prevote,
+    PrevoteWait,
+    PrecommitAuth,
     Precommit,
+    PrecommitWait,
     Commit,
+    CommitWait,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]

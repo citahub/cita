@@ -34,7 +34,7 @@ use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 use std::collections::{LinkedList, HashMap};
 use std::sync::mpsc::{Sender, Receiver, RecvError};
-use std::time::{SystemTime, UNIX_EPOCH, Duration, Instant};
+use std::time::Instant;
 
 use util::{H256, Address, Hashable};
 use util::datapath::DataPath;
@@ -54,7 +54,7 @@ const ID_CONSENSUS_MSG: u32 = (submodules::CONSENSUS << 16) + topics::CONSENSUS_
 const ID_NEW_PROPOSAL: u32 = (submodules::CONSENSUS << 16) + topics::NEW_PROPOSAL as u32;
 //const ID_NEW_STATUS: u32 = (submodules::CHAIN << 16) + topics::NEW_STATUS as u32;
 
-const TIMEOUT_RETRANSE_MULTIPLE: u32 = 10;
+const TIMEOUT_RETRANSE_MULTIPLE: u32 = 15;
 const TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE: u32 = 20;
 
 pub type TransType = (u32, u32, MsgClass);
@@ -63,10 +63,11 @@ pub type PubType = (String, Vec<u8>);
 #[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Eq, Clone, Copy, Hash)]
 pub enum Step {
     Propose,
-    Prevote,
-    Precommit,
     ProposeWait,
+    Prevote,
     PrevoteWait,
+    PrecommitAuth,
+    Precommit,
     PrecommitWait,
     Commit,
     CommitWait,
@@ -85,22 +86,22 @@ impl From<u8> for Step {
             1u8 => Step::ProposeWait,
             2u8 => Step::Prevote,
             3u8 => Step::PrevoteWait,
-            4u8 => Step::Precommit,
-            5u8 => Step::PrecommitWait,
-            6u8 => Step::Commit,
-            7u8 => Step::CommitWait,
+            4u8 => Step::PrecommitAuth,
+            5u8 => Step::Precommit,
+            6u8 => Step::PrecommitWait,
+            7u8 => Step::Commit,
+            8u8 => Step::CommitWait,
             _ => panic!("Invalid step."),
         }
     }
 }
 
-fn gen_reqid_from_idx(idx: u64) -> u64 {
-    let padding = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or(Duration::new(100, 0)).as_secs();
-    ((padding & 0xffffffffffff) << 16) | idx
+fn gen_reqid_from_idx(h: u64, r: u64) -> u64 {
+    ((h & 0xffffffffffff) << 16) | r
 }
 
-fn get_idx_from_reqid(reqid: u64) -> u64 {
-    reqid & 0xffff
+fn get_idx_from_reqid(reqid: u64) -> (u64, u64) {
+    (reqid >> 16, reqid & 0xffff)
 }
 
 pub struct TenderMint {
@@ -130,7 +131,7 @@ pub struct TenderMint {
     htime: Instant,
     auth_manage: AuthorityManage,
     consensus_power: bool,
-    unverified_msg: Vec<(usize, usize)>,
+    unverified_msg: HashMap<(usize, usize), communication::Message>,
     block_txs: LinkedList<(usize, BlockTxs)>,
     block_proof: Option<(usize, BlockWithProof)>,
 }
@@ -167,7 +168,7 @@ impl TenderMint {
             htime: Instant::now(),
             auth_manage: AuthorityManage::new(),
             consensus_power: false,
-            unverified_msg: Vec::new(),
+            unverified_msg: HashMap::new(),
             block_txs: LinkedList::new(),
             block_proof: None,
         }
@@ -361,7 +362,7 @@ impl TenderMint {
         let mut verify_ok = false;
         let mut lock_ok = false;
 
-        if !self.unverified_msg.contains(&(height, round)) {
+        if !self.unverified_msg.contains_key(&(height, round)) {
             verify_ok = true;
         }
         if let Some(lround) = self.lock_round {
@@ -475,7 +476,6 @@ impl TenderMint {
 
     fn proc_commit_after(&mut self, height: usize, round: usize) -> bool {
         let now_height = self.height;
-
         info!("proc_commit after self height {},round {} in height {} round {} ", now_height, self.round, height, round);
         if now_height < height + 1 {
             self.change_state_step(height + 1, INIT_ROUND, Step::Propose, true);
@@ -807,13 +807,12 @@ impl TenderMint {
                                                      });
         if (len > 0) && verify_ok {
             trace!("Going to send block verify request to auth");
-            self.unverified_msg.push((vheight, vround));
-            let idx = self.unverified_msg.len() as u64 - 1;
-            let reqid = gen_reqid_from_idx(idx);
+            let reqid = gen_reqid_from_idx(vheight as u64, vround as u64);
             let verify_req = block.block_verify_req(reqid);
-            trace!("verify_req with {} txs with block verify request id: {} and height:{}", len, reqid, block.get_header().get_height());
+            trace!("verify_req with {} txs with block verify request id: {} and height:{} round {} ", len, reqid, vheight, vround);
             let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
             self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            self.unverified_msg.insert((vheight, vround), msg);
         }
         verify_ok
     }
@@ -821,28 +820,31 @@ impl TenderMint {
     fn handle_proposal(&mut self, msg: Vec<u8>, wal_flag: bool, need_verify: bool) -> Result<(usize, usize), EngineError> {
         trace!("handle_proposal params wal_flag {}, need_verify {}", wal_flag, need_verify);
         let signed_proposal = parse_from_bytes::<SignedProposal>(&msg);
-
+        trace!("handle proposal here self height {} round {} step {:?}", self.height, self.round, self.step);
         if let Ok(signed_proposal) = signed_proposal {
             let signature = signed_proposal.get_signature();
-
             if signature.len() != SIGNATURE_BYTES_LEN {
                 return Err(EngineError::InvalidSignature);
             }
-
             let signature = Signature::from(signature);
 
             let proto_proposal = signed_proposal.get_proposal();
             let message = proto_proposal.write_to_bytes().unwrap();
             trace!("handle proposal message {:?}", message.crypt_hash());
-
             if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
                 let height = proto_proposal.get_height() as usize;
                 let round = proto_proposal.get_round() as usize;
+                if !(height == self.height && round == self.round && self.step < Step::Prevote) {
+                    info!("handle proposal get old proposal now height {} round {} step {:?}", self.height, self.round, self.step);
+                    return Err(EngineError::VoteMsgDelay(height));
+                }
+
                 let block = proto_proposal.clone().take_block();
                 trace!("handle_proposal height {:?}, round {:?} sender {:?}", height, round, pubkey_to_address(&pubkey));
 
                 if need_verify {
                     if !self.verify_req(block.clone(), height, round) {
+                        trace!("handle_proposal verify_req is error");
                         return Err(EngineError::InvalidTxInProposal);
                     }
                 }
@@ -889,7 +891,6 @@ impl TenderMint {
                 }
             }
         }
-
         return Err(EngineError::UnexpectedMessage);
     }
 
@@ -899,7 +900,6 @@ impl TenderMint {
         self.locked_vote = None;
         self.locked_block = None;
         self.last_commit_round = None;
-        //self.sync_ok = true;
     }
 
     fn clean_verified_info(&mut self) {
@@ -1001,46 +1001,56 @@ impl TenderMint {
 
     pub fn timeout_process(&mut self, tminfo: TimeoutInfo) {
         trace!("timeout_process {:?} now height {},round {}，step {:?}", tminfo, self.height, self.round, self.step);
-        if tminfo.height < self.height || (tminfo.height == self.height && tminfo.round < self.round && tminfo.step != Step::CommitWait) {
+        if tminfo.height < self.height {
             return;
         }
-
+        if tminfo.height == self.height && tminfo.round < self.round && tminfo.step != Step::CommitWait {
+            return;
+        }
+        if tminfo.height == self.height && tminfo.round == self.round && tminfo.step != self.step && tminfo.step != Step::CommitWait {
+            return;
+        }
         if tminfo.step == Step::ProposeWait {
-            if self.step != Step::ProposeWait {
-                return;
-            }
             let pres = self.proc_proposal(tminfo.height, tminfo.round);
             if !pres {
                 trace!("timeout_process proc_proposal res false height {} round {}", tminfo.height, tminfo.round);
             }
-            self.change_state_step(tminfo.height, tminfo.round, Step::Prevote, false);
             self.pre_proc_prevote();
+            self.change_state_step(tminfo.height, tminfo.round, Step::Prevote, false);
             //one node need this
             {
                 self.proc_prevote(tminfo.height, tminfo.round);
             }
 
         } else if tminfo.step == Step::Prevote {
-            if tminfo.height == self.height && tminfo.round == self.round && tminfo.step == self.step {
-                self.pre_proc_prevote();
-            }
+            self.pre_proc_prevote();
         } else if tminfo.step == Step::PrevoteWait {
-
             info!(" #########  height {} round {} prevote wait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
-            self.change_state_step(tminfo.height, tminfo.round, Step::Precommit, false);
             if self.pre_proc_precommit() {
+                self.change_state_step(tminfo.height, tminfo.round, Step::Precommit, false);
                 self.proc_precommit(tminfo.height, tminfo.round);
+            } else {
+                self.change_state_step(tminfo.height, tminfo.round, Step::PrecommitAuth, false);
+                WaitTimer::set_timer(self.timer_seter.clone(),
+                                     TimeoutInfo {
+                                         timeval: self.params.timer.prevote * TIMEOUT_RETRANSE_MULTIPLE,
+                                         height: tminfo.height,
+                                         round: tminfo.round,
+                                         step: Step::PrecommitAuth,
+                                     });
+            }
+        } else if tminfo.step == Step::PrecommitAuth {
+            let msg = self.unverified_msg.get(&(tminfo.height, tminfo.round));
+            if let Some(msg) = msg {
+                self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
             }
         } else if tminfo.step == Step::Precommit {
-            if tminfo.height == self.height && tminfo.round == self.round && tminfo.step == self.step {
-                /*in this case,need resend prevote : my net server can be connected but other node's
-                server not connected when staring.  maybe my node recive enough vote(prevote),but others
-                did not recive enough vote,so even if my node step precommit phase, i need resend prevote also.
-
-                */
-                self.pre_proc_prevote();
-                self.pre_proc_precommit();
-            }
+            /*in this case,need resend prevote : my net server can be connected but other node's
+            server not connected when staring.  maybe my node recive enough vote(prevote),but others
+            did not recive enough vote,so even if my node step precommit phase, i need resend prevote also.
+            */
+            self.pre_proc_prevote();
+            self.pre_proc_precommit();
         } else if tminfo.step == Step::PrecommitWait {
             info!(" ######### height {} round {} PrecommitWait time {:?} ", tminfo.height, tminfo.round, Instant::now() - self.htime);
             if self.pre_proc_commit(tminfo.height, tminfo.round) {
@@ -1124,24 +1134,21 @@ impl TenderMint {
 
                 MsgClass::VERIFYBLKRESP(resp) => {
                     let verify_id = resp.get_id();
-                    let idx = get_idx_from_reqid(verify_id);
-                    let mut vheight = 0;
-                    let mut vround = 0;
+                    let (vheight, vround) = get_idx_from_reqid(verify_id);
+                    let vheight = vheight as usize;
+                    let vround = vround as usize;
                     let mut verify_ok = false;
 
-                    if let Some(elem) = self.unverified_msg.get_mut(idx as usize) {
-                        vheight = elem.0;
-                        vround = elem.1;
-                        *elem = (0, 0);
+                    if self.unverified_msg.contains_key(&(vheight, vround)) {
                         if resp.get_ret() == auth::Ret::Ok {
                             verify_ok = true;
                         }
                         let msg = serialize(&(vheight, vround, verify_ok), Infinite).unwrap();
                         let _ = self.wal_log.save(LOG_TYPE_VERIFIED_PROPOSE, &msg);
-
+                        self.unverified_msg.remove(&(vheight as usize, vround as usize));
                     }
-                    info!("recive VERIFYBLKRESP verify_id {} idx {} height {} round {}", verify_id, idx, vheight, vround);
-                    if vheight == self.height && vround == self.round && self.step == Step::Precommit {
+                    info!("recive VERIFYBLKRESP verify_id {} height {} round {}", verify_id, vheight, vround);
+                    if vheight == self.height && vround == self.round && self.step == Step::PrecommitAuth {
                         if !verify_ok {
                             //verify not ok,so clean the proposal info
                             self.clean_saved_info();
@@ -1318,7 +1325,7 @@ impl TenderMint {
         for (mtype, vec_out) in vec_buf {
             trace!("******* wal_log type {}", mtype);
             if mtype == LOG_TYPE_PROPOSE {
-                let res = self.handle_proposal(vec_out, false, false);
+                let res = self.handle_proposal(vec_out, false, true);
                 if let Ok((h, r)) = res {
                     let pres = self.proc_proposal(h, r);
                     if !pres {
@@ -1352,11 +1359,7 @@ impl TenderMint {
                     if !verified {
                         self.clean_saved_info();
                     } else {
-                        for elem in self.unverified_msg.iter_mut() {
-                            if elem.0 == vheight && elem.1 == vround {
-                                *elem = (0, 0);
-                            }
-                        }
+                        self.unverified_msg.remove(&(vheight, vround));
                     }
                 }
             } else if mtype == LOG_TYPE_AUTH_TXS {
