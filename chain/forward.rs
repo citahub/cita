@@ -27,7 +27,7 @@ use libproto;
 use libproto::{communication, factory, topics, submodules, BlockTxHashes, SyncRequest, SyncResponse, parse_msg, response, request, MsgClass};
 use libproto::blockchain::{Block as ProtobufBlock, BlockWithProof};
 use libproto::blockchain::{Status, RichStatus, ProofType};
-use libproto::consensus::SignedProposeStep;
+use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use proof::TendermintProof;
 use protobuf::{Message, RepeatedField};
@@ -510,8 +510,7 @@ impl Forward {
 
     fn deal_new_proposal(&self, content: Vec<u8>) {
         info!("Receive new proposal.");
-        let signed_propose_step = parse_from_bytes::<SignedProposeStep>(&content).unwrap();
-        let proto_block = signed_propose_step.get_propose_step().get_proposal().get_block();
-        trace!("protobuf block is {:?}", proto_block);
+        let signed_proposal = parse_from_bytes::<SignedProposal>(&content).unwrap();
+        let _ = signed_proposal.get_proposal().get_block();
     }
 }

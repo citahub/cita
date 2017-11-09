@@ -28,9 +28,9 @@ use crypto::{CreateKey, Signature, Sign, pubkey_to_address, SIGNATURE_BYTES_LEN}
 use engine::{EngineError, Mismatch, unix_now, AsMillis};
 use libproto::{communication, submodules, topics, MsgClass, factory, auth};
 use libproto::blockchain::{Block, BlockWithProof, BlockTxs, RichStatus};
-use libproto::consensus::{ProposeStep, SignedProposeStep};
+use libproto::consensus::{Proposal as ProtoProposal, Vote as ProtoVote, SignedProposal};
 use proof::TendermintProof;
-use protobuf::Message;
+use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 use std::collections::{LinkedList, HashMap};
 use std::sync::mpsc::{Sender, Receiver, RecvError};
@@ -200,21 +200,41 @@ impl TenderMint {
     }
 
     pub fn pub_proposal(&self, proposal: &Proposal) -> Vec<u8> {
-        info!("pub_proposal proposal {:?}", proposal);
-        let mut propose_step = ProposeStep::new();
-        propose_step.set_height(self.height as u64);
-        propose_step.set_round(self.round as u64);
-        propose_step.set_proposal(proposal.protobuf());
+        let mut proto_proposal = ProtoProposal::new();
+        let pro_block = parse_from_bytes::<Block>(&proposal.block).unwrap();
+        proto_proposal.set_block(pro_block);
+        proto_proposal.set_islock(proposal.lock_round.is_some());
+        proto_proposal.set_round(self.round as u64);
+        proto_proposal.set_height(self.height as u64);
+        let is_lock = proposal.lock_round.is_some();
+        if is_lock {
+            proto_proposal.set_lock_round(proposal.lock_round.unwrap() as u64);
 
-        let message = propose_step.write_to_bytes().unwrap();
+            let mut votes = Vec::new();
+            for (sender, vote_message) in proposal.clone().lock_votes.unwrap().votes_by_sender {
+                let mut vote = ProtoVote::new();
+                if vote_message.proposal.is_none() {
+                    continue;
+                } else {
+                    vote.set_proposal(vote_message.proposal.unwrap().to_vec());
+                    vote.set_sender(sender.to_vec());
+                    vote.set_signature(vote_message.signature.to_vec());
+                    votes.push(vote);
+                }
+            }
+
+            proto_proposal.set_lock_votes(RepeatedField::from_slice(&votes[..]));
+        }
+
+        let message = proto_proposal.write_to_bytes().unwrap();
         let ref author = self.params.signer;
         let signature = Signature::sign(&author.keypair.privkey(), &message.crypt_hash().into()).unwrap();
         trace!("pub_proposal height {}, round {}, hash {}, signature {} ", self.height, self.round, message.crypt_hash(), signature);
-        let mut signed_propose_step = SignedProposeStep::new();
-        signed_propose_step.set_propose_step(propose_step);
-        signed_propose_step.set_signature(signature.to_vec());
+        let mut signed_proposal = SignedProposal::new();
+        signed_proposal.set_proposal(proto_proposal);
+        signed_proposal.set_signature(signature.to_vec());
 
-        let bmsg = signed_propose_step.write_to_bytes().unwrap();
+        let bmsg = signed_proposal.write_to_bytes().unwrap();
         let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_PROPOSAL, communication::MsgType::MSG, bmsg.clone());
         self.pub_sender.send(("consensus.msg".to_string(), msg.write_to_bytes().unwrap())).unwrap();
         bmsg
@@ -525,7 +545,7 @@ impl TenderMint {
 
         //to be optimize
         self.clean_verified_info();
-        trace!("commit_block begining {} {} proposal {:?}", height, round, self.proposal);
+        trace!("commit_block begining {} {}", height, round);
         if let Some(hash) = self.proposal {
             if self.locked_block.is_some() {
                 //generate proof
@@ -799,10 +819,11 @@ impl TenderMint {
     }
 
     fn handle_proposal(&mut self, msg: Vec<u8>, wal_flag: bool, need_verify: bool) -> Result<(usize, usize), EngineError> {
-        let signed_propose_step_result = parse_from_bytes::<SignedProposeStep>(&msg);
+        trace!("handle_proposal params wal_flag {}, need_verify {}", wal_flag, need_verify);
+        let signed_proposal = parse_from_bytes::<SignedProposal>(&msg);
 
-        if let Ok(signed_propose_step) = signed_propose_step_result {
-            let signature = signed_propose_step.get_signature();
+        if let Ok(signed_proposal) = signed_proposal {
+            let signature = signed_proposal.get_signature();
 
             if signature.len() != SIGNATURE_BYTES_LEN {
                 return Err(EngineError::InvalidSignature);
@@ -810,25 +831,25 @@ impl TenderMint {
 
             let signature = Signature::from(signature);
 
-            let propose_step = signed_propose_step.get_propose_step();
-            let message = propose_step.write_to_bytes().unwrap();
+            let proto_proposal = signed_proposal.get_proposal();
+            let message = proto_proposal.write_to_bytes().unwrap();
             trace!("handle proposal message {:?}", message.crypt_hash());
 
             if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
-                let height = propose_step.get_height() as usize;
-                let round = propose_step.get_round() as usize;
-                let proto_proposal = propose_step.clone().take_proposal();
+                let height = proto_proposal.get_height() as usize;
+                let round = proto_proposal.get_round() as usize;
                 let block = proto_proposal.clone().take_block();
-                trace!("handle_proposal height {:?}, round {:?} sender {:?}, proposal {:?}", height, round, pubkey_to_address(&pubkey), proto_proposal);
+                trace!("handle_proposal height {:?}, round {:?} sender {:?}", height, round, pubkey_to_address(&pubkey));
 
                 if need_verify {
-                    if !self.verify_req(block, height, round) {
+                    if !self.verify_req(block.clone(), height, round) {
                         return Err(EngineError::InvalidTxInProposal);
                     }
                 }
 
                 let ret = self.is_round_proposer(height, round, &pubkey_to_address(&pubkey));
                 if ret.is_err() {
+                    trace!("handle_proposal is_round_proposer {:?}", ret);
                     return Err(ret.err().unwrap());
                 }
 
@@ -836,8 +857,29 @@ impl TenderMint {
                     if wal_flag && height == self.height {
                         self.wal_log.save(LOG_TYPE_PROPOSE, &msg).unwrap();
                     }
-                    info!("add proposal height {} round {}! proposal {:?}", height, round, proto_proposal);
-                    let proposal = proto_proposal.into();
+                    info!("add proposal height {} round {}!", height, round);
+                    let blk = block.write_to_bytes().unwrap();
+                    let mut lock_round = None;
+                    let mut lock_votes = None;
+                    if proto_proposal.get_islock() {
+                        lock_round = Some(proto_proposal.get_lock_round() as usize);
+                        let mut vote_set = VoteSet::new();
+                        for vote in proto_proposal.get_lock_votes() {
+                            vote_set.add(Address::from_slice(vote.get_sender()),
+                                         VoteMessage {
+                                             proposal: Some(H256::from_slice(vote.get_proposal())),
+                                             signature: Signature::from(vote.get_signature()),
+                                         });
+                        }
+                        lock_votes = Some(vote_set);
+                    }
+
+                    let proposal = Proposal {
+                        block: blk,
+                        lock_round: lock_round,
+                        lock_votes: lock_votes,
+                    };
+
                     self.proposals.add(height, round, proposal);
 
                     if height > self.height {
@@ -1056,6 +1098,8 @@ impl TenderMint {
                                                          step: Step::ProposeWait,
                                                      });
                             }
+                        } else {
+                            trace!(" fail handle_proposal {}", res.err().unwrap());
                         }
                     }
                 }
