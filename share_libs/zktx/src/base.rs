@@ -13,7 +13,6 @@ pub const TREEDEPTH:usize = 40;
 pub const C2BPARAMPATH:&str = "PARAMS/c2bparams";
 pub const P2CPARAMPATH:&str = "PARAMS/p2cparams";
 pub const B2CPARAMPATH:&str = "PARAMS/b2cparams";
-pub const C2CPARAMPATH:&str = "PARAMS/c2cparams";
 pub const C2PPARAMPATH:&str = "PARAMS/c2pparams";
 pub const GENERATORPATH:&str = "PARAMS/generators";
 

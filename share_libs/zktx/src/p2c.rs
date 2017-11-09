@@ -2,7 +2,7 @@ use bellman::groth16::*;
 use pairing::*;
 use pairing::bls12_381::{Fr, FrRepr, Bls12};
 use bellman::*;
-use rand::thread_rng;
+use rand::{XorShiftRng,SeedableRng,thread_rng};
 
 use jubjub::*;
 
@@ -17,8 +17,6 @@ struct P2Ccircuit<'a>{
 
     //r_h
     rh:Vec<Assignment<bool>>,
-    //r_h-next
-    rhn:Vec<Assignment<bool>>,
     //r_cm
     rcm:Vec<Assignment<bool>>,
     //Balance
@@ -41,7 +39,6 @@ impl<'a> P2Ccircuit<'a>{
             generators,
             j,
             rh: (0..RHBIT).map(|_| Assignment::unknown()).collect(),
-            rhn: (0..RHBIT).map(|_| Assignment::unknown()).collect(),
             rcm: (0..RCMBIT).map(|_| Assignment::unknown()).collect(),
             ba:Assignment::unknown(),
             va:Assignment::unknown(),
@@ -53,7 +50,6 @@ impl<'a> P2Ccircuit<'a>{
         generators: &'a[(Vec<Fr>,Vec<Fr>)],
         j:&'a JubJub,
         rh:Vec<bool>,
-        rhn:Vec<bool>,
         rcm:Vec<bool>,
         ba:Fr,
         va:Fr,
@@ -62,7 +58,6 @@ impl<'a> P2Ccircuit<'a>{
     ) -> P2Ccircuit<'a>
     {
         assert_eq!(rh.len(), RHBIT);
-        assert_eq!(rhn.len(), RHBIT);
         assert_eq!(rcm.len(), RCMBIT);
         assert_eq!(addr.len(), PHBIT);
         assert_eq!(res.len(), 0);
@@ -70,7 +65,6 @@ impl<'a> P2Ccircuit<'a>{
             generators,
             j,
             rh:rh.iter().map(|&b|Assignment::known(b)).collect(),
-            rhn:rhn.iter().map(|&b|Assignment::known(b)).collect(),
             rcm:rcm.iter().map(|&b|Assignment::known(b)).collect(),
             ba:Assignment::known(ba),
             va:Assignment::known(va),
@@ -82,40 +76,55 @@ impl<'a> P2Ccircuit<'a>{
 
 struct P2CcircuitInput
 {
-    //H_B
-    hb:Num<Bls12>,
-    //H_B-next
-    hbn:Num<Bls12>,
+    //ba*P1+rh*P2
+    hb:(Num<Bls12>,Num<Bls12>),
     //coin
-    coin:Num<Bls12>
+    coin:Num<Bls12>,
+    //delta_balance,
+    delt_ba:(Num<Bls12>, Num<Bls12>)
 }
 
 impl<'a> Input<Bls12> for P2CcircuitInput{
     fn synthesize<CS:PublicConstraintSystem<Bls12>>(self,cs:&mut CS)->Result<(),Error>{
-        let hb_input = cs.alloc_input(||{
-            Ok(*self.hb.getvalue().get()?)
+        let delt_x_input = cs.alloc_input(||{
+            Ok(*self.delt_ba.0.getvalue().get()?)
+        })?;
+        let delt_y_input = cs.alloc_input(||{
+            Ok(*self.delt_ba.1.getvalue().get()?)
+        })?;
+        let hb_x_input = cs.alloc_input(||{
+            Ok(*self.hb.0.getvalue().get()?)
+        })?;
+        let hb_y_input = cs.alloc_input(||{
+            Ok(*self.hb.1.getvalue().get()?)
         })?;
         let coin_input = cs.alloc_input(||{
             Ok(*self.coin.getvalue().get()?)
         })?;
-        let hbn_input = cs.alloc_input(||{
-            Ok(*self.hbn.getvalue().get()?)
-        })?;
 
         cs.enforce(
-            LinearCombination::zero() + self.hb.getvar(),
+            LinearCombination::zero() + self.delt_ba.0.getvar(),
             LinearCombination::zero() + CS::one(),
-            LinearCombination::zero() + hb_input
+            LinearCombination::zero() + delt_x_input
+        );
+        cs.enforce(
+            LinearCombination::zero() + self.delt_ba.1.getvar(),
+            LinearCombination::zero() + CS::one(),
+            LinearCombination::zero() + delt_y_input
+        );
+        cs.enforce(
+            LinearCombination::zero() + self.hb.0.getvar(),
+            LinearCombination::zero() + CS::one(),
+            LinearCombination::zero() + hb_x_input
+        );cs.enforce(
+            LinearCombination::zero() + self.hb.1.getvar(),
+            LinearCombination::zero() + CS::one(),
+            LinearCombination::zero() + hb_y_input
         );
         cs.enforce(
             LinearCombination::zero() + self.coin.getvar(),
             LinearCombination::zero() + CS::one(),
             LinearCombination::zero() + coin_input
-        );
-        cs.enforce(
-            LinearCombination::zero() + self.hbn.getvar(),
-            LinearCombination::zero() + CS::one(),
-            LinearCombination::zero() + hbn_input
         );
 
         Ok(())
@@ -130,10 +139,6 @@ impl<'a> Circuit<Bls12> for P2Ccircuit<'a>{
         for b in self.rh.iter() {
             rh.push(Bit::alloc(cs, *b)?);
         }
-        let mut rhn = Vec::with_capacity(RHBIT);
-        for b in self.rhn.iter() {
-            rhn.push(Bit::alloc(cs, *b)?);
-        }
         let mut rcm = Vec::with_capacity(RCMBIT);
         for b in self.rcm.iter() {
             rcm.push(Bit::alloc(cs, *b)?);
@@ -145,35 +150,39 @@ impl<'a> Circuit<Bls12> for P2Ccircuit<'a>{
 
         let ba = Num::new(cs,self.ba)?;
         let va = Num::new(cs,self.va)?;
-        let bn = ba.sub(cs,&va)?;
         let bit_ba = ba.unpack_sized(cs, VBIT)?;
         let bit_va = va.unpack_sized(cs, VBIT)?;
-        let bit_bn = bn.unpack_sized(cs, VBIT)?;
         assert_eq!(bit_ba.len(), VBIT);
         assert_eq!(bit_va.len(), VBIT);
-        assert_eq!(bit_bn.len(), VBIT);
 
         assert_nonless_than(&bit_ba,&bit_va,cs)?;
 
-        let zero = PHIN - VBIT - RHBIT;
-        //H_B = PH(1*zeros|Balance|r_h)
-        let vin = {
-            for b in bit_ba.iter() {
-                rh.push(*b);
+        //ba*P1+rh*P2
+        let mut rng = XorShiftRng::from_seed([0x5dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654]);//TODO:choose the seed
+        let j = JubJub::new();
+        let mut p1 = Point::rand(&mut rng, &j).toNum(cs)?;
+        let mut p2 = Point::rand(&mut rng, &j).toNum(cs)?;
+        let mut p0 = Point::zero().toNum(cs)?;
+        for i in 0..VBIT{
+            p0 = Point::pointAdd(&p0,&Point::pointChoose(&p1,bit_ba[i],cs)?,cs)?;
+            if i!=VBIT-1 {
+                p1 = Point::pointDouble(&p1,cs)?;
             }
-            for _ in 0..zero {
-                rh.push(Bit::one(cs));
-            }
-            rh
-        };
-        assert_eq!(vin.len(), PHIN);
-        let hb = pedersen_hash(cs, &vin, self.generators, self.j)?;
-
-        if let Ok(x) = hb.getvalue().get(){
-            self.res.push(x.into_repr());
         }
+        for i in 0..RHBIT{
+            p0 = Point::pointAdd(&p0,&Point::pointChoose(&p2,rh[i],cs)?,cs)?;
+            if i!=RCMBIT-1 {
+                p2 = Point::pointDouble(&p2,cs)?;
+            }
+        }
+        if let (Ok(x),Ok(y)) = (p0.0.getvalue().get(),p0.1.getvalue().get()){
+            self.res.push(x.into_repr());
+            self.res.push(y.into_repr());
+        }
+        let hb = (p0.0,p0.1);
 
         //coin = PH(addr|value|rcm)
+        let rcm2 = rcm.clone();
         let vin = {
             for b in bit_va.iter(){
                 rcm.push(*b);
@@ -190,34 +199,42 @@ impl<'a> Circuit<Bls12> for P2Ccircuit<'a>{
             self.res.push(x.into_repr());
         }
 
-        let zero = PHIN - VBIT - RHBIT;
-        //H_b-next = PH(1*zeros|B-next|r_h-next)
-        let vin = {
-            for b in bit_bn.iter(){
-                rhn.push(*b);
+        //delta_ba
+        let rcm = rcm2;
+        let mut rng = XorShiftRng::from_seed([0x5dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654]);//TODO:choose the seed
+        let j = JubJub::new();
+        let mut p1 = Point::rand(&mut rng, &j).toNum(cs)?;
+        let mut p2 = Point::rand(&mut rng, &j).toNum(cs)?;
+        let mut p0 = Point::zero().toNum(cs)?;
+        for i in 0..VBIT{
+            p0 = Point::pointAdd(&p0,&Point::pointChoose(&p1,bit_va[i],cs)?,cs)?;
+            if i!=VBIT-1 {
+                p1 = Point::pointDouble(&p1,cs)?;
             }
-            for _ in 0..zero{
-                rhn.push(Bit::one(cs));
-            }
-            rhn
-        };
-        assert_eq!(vin.len(), PHIN);
-        let hbn = pedersen_hash(cs, &vin, self.generators, self.j)?;
-        if let Ok(x) = hbn.getvalue().get(){
-            self.res.push(x.into_repr());
         }
+        for i in 0..RCMBIT{
+            p0 = Point::pointAdd(&p0,&Point::pointChoose(&p2,rcm[i],cs)?,cs)?;
+            if i!=RCMBIT-1 {
+                p2 = Point::pointDouble(&p2,cs)?;
+            }
+        }
+        if let (Ok(x),Ok(y)) = (p0.0.getvalue().get(),p0.1.getvalue().get()){
+            self.res.push(x.into_repr());
+            self.res.push(y.into_repr());
+        }
+        let delt_ba = (p0.0,p0.1);
 
         Ok(P2CcircuitInput{
             hb,
             coin,
-            hbn
+            delt_ba
         })
     }
 }
 
-pub fn p2c_info(rh:Vec<bool>,rhn:Vec<bool>,rcm:Vec<bool>,ba:&str,va:&str,addr:Vec<bool>)->Result<(
+pub fn p2c_info(rh:Vec<bool>,rcm:Vec<bool>,ba:&str,va:&str,addr:Vec<bool>)->Result<(
     (([u64; 6], [u64; 6], bool), (([u64; 6], [u64; 6]), ([u64; 6], [u64; 6]), bool), ([u64; 6], [u64; 6], bool)),
-    [u64;4],[u64;4],[u64;4]),Error>{
+    ([u64;4],[u64;4]),[u64;4],([u64;4],[u64;4])),Error>{
     let rng = &mut thread_rng();
     let j = JubJub::new();
     //TODO:Balance&value<2^vbit
@@ -226,33 +243,36 @@ pub fn p2c_info(rh:Vec<bool>,rhn:Vec<bool>,rcm:Vec<bool>,ba:&str,va:&str,addr:Ve
         &ph_generator(),
         &j,
         rh,
-        rhn,
         rcm,
         Fr::from_str(ba).unwrap(),
         Fr::from_str(va).unwrap(),
         addr,
         &mut res
     ), p2c_param()?, rng)?.serial();
-    let hb = res[0].serial();
-    let coin = res[1].serial();
-    let hbn = res[2].serial();
-    Ok((proof,hb,coin,hbn))
+    let hb = (res[0].serial(),res[1].serial());
+    let coin = res[2].serial();
+    let delt_ba = (res[3].serial(),res[4].serial());
+    Ok((proof,hb,coin,delt_ba))
 }
 
-pub fn p2c_verify(hb:[u64;4], coin:[u64;4], hbn:[u64;4],
+pub fn p2c_verify(hb:([u64;4],[u64;4]), coin:[u64;4], delt_ba:([u64;4],[u64;4]),
                   proof:(([u64; 6], [u64; 6], bool), (([u64; 6], [u64; 6]), ([u64; 6], [u64; 6]), bool), ([u64; 6], [u64; 6], bool)),
                   )->Result<bool,Error>{
     verify_proof(&p2c_vk()?, &Proof::from_serial(proof), |cs| {
-        let hb = Fr::from_repr(FrRepr::from_serial(hb)).unwrap();
+        let delt_x = Fr::from_repr(FrRepr::from_serial(delt_ba.0)).unwrap();
+        let delt_y = Fr::from_repr(FrRepr::from_serial(delt_ba.1)).unwrap();
+        let hb_x = Fr::from_repr(FrRepr::from_serial(hb.0)).unwrap();
+        let hb_y = Fr::from_repr(FrRepr::from_serial(hb.1)).unwrap();
         let coin = Fr::from_repr(FrRepr::from_serial(coin)).unwrap();
-        let hbn = Fr::from_repr(FrRepr::from_serial(hbn)).unwrap();
-        let hb_var = cs.alloc({||Ok(hb)})?;
+        let delt_x_var = cs.alloc({||Ok(delt_x)})?;
+        let delt_y_var = cs.alloc({||Ok(delt_y)})?;
+        let hb_x_var = cs.alloc({||Ok(hb_x)})?;
+        let hb_y_var = cs.alloc({||Ok(hb_y)})?;
         let coin_var = cs.alloc({||Ok(coin)})?;
-        let hbn_var = cs.alloc({||Ok(hbn)})?;
         Ok(P2CcircuitInput{
-            hb:Num::create(Assignment::known(hb),hb_var),
+            hb:(Num::create(Assignment::known(hb_x),hb_x_var),Num::create(Assignment::known(hb_y),hb_y_var)),
             coin:Num::create(Assignment::known(coin),coin_var),
-            hbn:Num::create(Assignment::known(hbn),hbn_var)
+            delt_ba:(Num::create(Assignment::known(delt_x),delt_x_var),Num::create(Assignment::known(delt_y),delt_y_var)),
         })
     })
 }
@@ -281,7 +301,7 @@ pub fn p2c_param()->Result<ProverStream,Error>{
 pub fn p2c_vk()->Result<(PreparedVerifyingKey<Bls12>),Error>{
     ensure_p2c_param()?;
     let mut params = ProverStream::new(P2CPARAMPATH)?;
-    let vk2 = params.get_vk(4)?;
+    let vk2 = params.get_vk(6)?;
     let vk = prepare_verifying_key(&vk2);
     Ok(vk)
 }

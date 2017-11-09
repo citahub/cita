@@ -95,14 +95,14 @@ impl Bit {
         Ok(*self.1.get()?)
     }
 
-    pub fn isreal(&self)->bool{
-        match self.1{
-            Assignment::Unknown => false,
-            _ => true
-        }
-    }
+//    pub fn isreal(&self)->bool{
+//        match self.1{
+//            Assignment::Unknown => false,
+//            _ => true
+//        }
+//    }
 
-    fn mul<E:Engine,CS:ConstraintSystem<E>>(&self,cs:&mut CS, num:&Num<E>)->Result<Num<E>,Error>{
+    pub fn mul<E:Engine,CS:ConstraintSystem<E>>(&self,cs:&mut CS, num:&Num<E>)->Result<Num<E>,Error>{
         let mut value = Assignment::unknown();
         let var = cs.alloc(||{
             let e = if *self.1.get()?{
@@ -241,8 +241,8 @@ impl Bit {
 }
 
 pub struct Num<E: Engine> {
-    value: Assignment<E::Fr>,
-    var: Variable
+    pub value: Assignment<E::Fr>,
+    pub var: Variable
 }
 
 impl<E: Engine> Num<E>{
@@ -381,7 +381,7 @@ impl<E: Engine> Num<E> {
         Ok(bits)
     }
 
-    fn mul<CS: ConstraintSystem<E>>(
+    pub fn mul<CS: ConstraintSystem<E>>(
         &self,
         cs: &mut CS,
         other: &Num<E>
@@ -857,7 +857,7 @@ pub struct JubJub {
     // 40962
     //a: Fr,
     // -(10240/10241)
-    d: Fr,
+    pub d: Fr,
     // sqrt(-40964)
     //s: Fr
 }
@@ -879,6 +879,152 @@ impl JubJub {
 }
 
 impl Point {
+    pub fn toNum<CS:ConstraintSystem<Bls12>>(&self,cs:&mut CS)->Result<(Num<Bls12>,Num<Bls12>),Error>{
+        Ok((Num{value:Assignment::known(self.x),var:cs.alloc({||Ok(self.x)})?},Num{value:Assignment::known(self.y),var:cs.alloc({||Ok(self.y)})?}))
+    }
+
+    pub fn pointAdd<CS:ConstraintSystem<Bls12>>(p1:&(Num<Bls12>,Num<Bls12>),p2:&(Num<Bls12>,Num<Bls12>),cs:&mut CS)->Result<(Num<Bls12>,Num<Bls12>),Error>{
+        let x1y2 = p1.0.mul(cs, &p2.1)?;
+        let y1x2 = p1.1.mul(cs, &p2.0)?;
+        let y1y2 = p1.1.mul(cs, &p2.1)?;
+        let x1x2 = p1.0.mul(cs, &p2.0)?;
+        let tau = y1y2.mul(cs, &x1x2)?;
+
+        let j = JubJub::new();
+
+        let mut x3_val = Assignment::unknown();
+        let x3 = cs.alloc(|| {
+            let mut numerator = *x1y2.value.get()?;
+            numerator.add_assign(y1x2.value.get()?);
+
+            let mut denominator = *tau.value.get()?;
+            denominator.mul_assign(&j.d);
+            denominator.add_assign(&Fr::one());
+
+            numerator.mul_assign(&denominator.inverse().unwrap());
+
+            x3_val = Assignment::known(numerator);
+
+            Ok(numerator)
+        })?;
+
+        cs.enforce(
+            LinearCombination::zero() + CS::one() + (j.d, tau.var),
+            LinearCombination::zero() + x3,
+            LinearCombination::zero() + x1y2.var + y1x2.var
+        );
+
+        let cur_x = Num {
+            value: x3_val,
+            var: x3
+        };
+
+        let mut y3_val = Assignment::unknown();
+        let y3 = cs.alloc(|| {
+            let mut numerator = *x1x2.value.get()?;
+            numerator.add_assign(y1y2.value.get()?);
+
+            let mut denominator = *tau.value.get()?;
+            denominator.mul_assign(&j.d);
+            denominator.negate();
+            denominator.add_assign(&Fr::one());
+
+            numerator.mul_assign(&denominator.inverse().unwrap());
+
+            y3_val = Assignment::known(numerator);
+
+            Ok(numerator)
+        })?;
+
+        cs.enforce(
+            LinearCombination::zero() + CS::one() - (j.d, tau.var),
+            LinearCombination::zero() + y3,
+            LinearCombination::zero() + x1x2.var + y1y2.var
+        );
+
+        let cur_y = Num {
+            value: y3_val,
+            var: y3
+        };
+
+        Ok((cur_x,cur_y))
+    }
+
+    pub fn pointDouble<CS:ConstraintSystem<Bls12>>(p:&(Num<Bls12>,Num<Bls12>),cs:&mut CS)->Result<(Num<Bls12>,Num<Bls12>),Error>{
+        let xy = p.0.mul(cs, &p.1)?;
+        let yy = p.1.mul(cs, &p.1)?;
+        let xx = p.0.mul(cs, &p.0)?;
+        let tau = yy.mul(cs, &xx)?;
+
+        let j = JubJub::new();
+
+        let mut x3_val = Assignment::unknown();
+        let x3 = cs.alloc(|| {
+            let mut numerator = *xy.value.get()?;
+            numerator.add_assign(xy.value.get()?);
+
+            let mut denominator = *tau.value.get()?;
+            denominator.mul_assign(&j.d);
+            denominator.add_assign(&Fr::one());
+
+            numerator.mul_assign(&denominator.inverse().unwrap());
+
+            x3_val = Assignment::known(numerator);
+
+            Ok(numerator)
+        })?;
+
+        cs.enforce(
+            LinearCombination::zero() + CS::one() + (j.d, tau.var),
+            LinearCombination::zero() + x3,
+            LinearCombination::zero() + xy.var + xy.var
+        );
+
+        let cur_x = Num {
+            value: x3_val,
+            var: x3
+        };
+
+        let mut y3_val = Assignment::unknown();
+        let y3 = cs.alloc(|| {
+            let mut numerator = *xx.value.get()?;
+            numerator.add_assign(yy.value.get()?);
+
+            let mut denominator = *tau.value.get()?;
+            denominator.mul_assign(&j.d);
+            denominator.negate();
+            denominator.add_assign(&Fr::one());
+
+            numerator.mul_assign(&denominator.inverse().unwrap());
+
+            y3_val = Assignment::known(numerator);
+
+            Ok(numerator)
+        })?;
+
+        cs.enforce(
+            LinearCombination::zero() + CS::one() - (j.d, tau.var),
+            LinearCombination::zero() + y3,
+            LinearCombination::zero() + xx.var + yy.var
+        );
+
+        let cur_y = Num {
+            value: y3_val,
+            var: y3
+        };
+
+        Ok((cur_x,cur_y))
+    }
+
+    pub fn pointChoose< E:Engine,CS:ConstraintSystem<E>>(p:&(Num<E>,Num<E>),bit:Bit,cs:&mut CS)->Result<(Num<E>,Num<E>),Error>{
+        let cur_x = bit.mul(cs,&p.0)?;
+        let one = Num{value:Assignment::known(E::Fr::one()),var:CS::one()};
+        let ym1 = p.1.sub(cs,&one)?;
+        let ym1b = bit.mul(cs,&ym1)?;
+        let cur_y = ym1b.add(cs,&one)?;
+        Ok((cur_x,cur_y))
+    }
+
     pub fn rand<R: Rng>(rng: &mut R, j: &JubJub) -> Point {
         loop {
             let y = Fr::rand(rng);

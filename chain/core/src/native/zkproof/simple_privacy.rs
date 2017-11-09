@@ -20,6 +20,7 @@ use native::storage::{Scalar, Array, Map};
 
 pub struct Privacy {
     accounts: Map,        //  address -> balance
+    lastblock: Map,        //  address-> last spend block
     nullifier_set: Array,  // Vec<Nullifier>
     commitments: Map,    // Cmtree 序列化成bytes存储
     output: Vec<u8>,
@@ -63,6 +64,7 @@ impl Privacy {
     // validation 其他节点验证
     fn approve(&self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
 
+        //加入：验证是否是给自己的汇款
 
     }
 

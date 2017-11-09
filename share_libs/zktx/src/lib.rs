@@ -12,8 +12,6 @@ pub mod b2c;
 
 pub mod c2b;
 
-pub mod c2c;
-
 pub mod c2p;
 
 pub mod p2c;
@@ -41,3 +39,5 @@ pub fn pedersen_hash_root(c0:[u64;4],c1:[u64;4])->[u64;4]{
     }
     jubjub::pedersen_hash_real(v.as_slice(),&base::ph_generator()).unwrap().serial()
 }
+
+//pub fn homoHash()

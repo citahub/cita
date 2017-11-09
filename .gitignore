@@ -11,6 +11,9 @@
 # Executables
 *.exe
 
+# zk-SNARK params
+share_libs/zktx/PARAMS/
+
 # intermedia file directory
 target/
 */target/
