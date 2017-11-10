@@ -21,7 +21,7 @@ display_help()
     echo "-d block_duration    block generating duration(millisecond)"
     echo "    default value is '3000'"
     echo
-    echo "-t            consensus test flag, only valid for tendermint"
+    echo "-t consensus test flag, only valid for tendermint"
     echo
     echo "-h enable jsonrpc http"
     echo "   default enable 'true'"
@@ -33,15 +33,17 @@ display_help()
     echo "   default port is '1337' or '4337'"
     echo "-k start with kafka"
     echo
+    echo "-Q node id"
     echo
     exit 0
 }
+
 CONFIG_DIR=${PWD}
 BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
 export PATH=${PATH}:${BINARY_DIR}/bin
 
 # parse options
-while getopts 'a:l:n:m:d:t:h:w:P:k' OPT; do
+while getopts 'a:l:n:m:d:t:h:w:P:Q:k' OPT; do
     case $OPT in
         a)
             ADMIN_ID="$OPTARG";;
@@ -63,6 +65,8 @@ while getopts 'a:l:n:m:d:t:h:w:P:k' OPT; do
             WS="$OPTARG";;
         P)
             PORT="$OPTARG";;
+        Q)
+            NODE="$OPTARG";;
         ?)
             display_help
     esac
@@ -86,126 +90,137 @@ SIZE=${#TMP}
 
 : ${IS_TEST:=false}
 
-if [ -f "${CONFIG_DIR}/authorities" ]; then
-    rm ${CONFIG_DIR}/authorities
-fi
-
-if [ -f "genesis.json" ]; then
-    rm genesis.json
-fi
-
-if [ ! -e "${BINARY_DIR}/scripts/admintool/init_data.json" ]; then
-    cp ${BINARY_DIR}/scripts/admintool/init_data_example.json ${CONFIG_DIR}/init_data.json
-else
-    cp ${BINARY_DIR}/scripts/admintool/init_data.json ${CONFIG_DIR}/init_data.json
-fi
-
-if [ ! -e "${CONFIG_DIR}/chain.json" ]; then
-    cp ${BINARY_DIR}/scripts/admintool/chain_check_example.json ${CONFIG_DIR}/chain.json
-fi
-
-if [ ! -e "${CONFIG_DIR}/auth.json" ]; then
-    cp ${BINARY_DIR}/scripts/admintool/auth_example.json ${CONFIG_DIR}/auth.json
-fi
-
-if [ ! -e "${CONFIG_DIR}/monitor.toml" ]; then
-    cp ${BINARY_DIR}/scripts/admintool/monitor_example.toml ${CONFIG_DIR}/monitor.toml
-fi
-echo "Step 1: ********************************************************"
-for ((ID=0;ID<$SIZE;ID++))
-do
-    mkdir -p ${CONFIG_DIR}/node${ID}
-    echo "Start generating private Key for Node" ${ID} "!"
-    python ${BINARY_DIR}/scripts/admintool/create_keys_addr.py ${CONFIG_DIR} ${ID} create_key_addr
-    echo "[PrivateKey Path] : " ${CONFIG_DIR}/node${ID}
-    echo "End generating private Key for Node" ${ID} "!"
-    echo "Start creating Network Node" ${ID} "Configuration!"
-    python ${BINARY_DIR}/scripts/admintool/create_network_config.py ${CONFIG_DIR} ${ID} $SIZE $IP_LIST
-    echo "End creating Network Node" ${ID} "Configuration!"
-    echo "########################################################"
-done
-echo "Step 2: ********************************************************"
-
-python ${BINARY_DIR}/scripts/admintool/create_genesis.py --authorities "${CONFIG_DIR}/authorities" --init_data "${CONFIG_DIR}/init_data.json"
-for ((ID=0;ID<$SIZE;ID++))
-do
-    echo "Start creating Node " ${ID} " Configuration!"
-    python ${BINARY_DIR}/scripts/admintool/create_node_config.py ${CONFIG_DIR} $CONSENSUS_NAME ${ID} $DURATION $IS_TEST
-    echo "End creating Node " ${ID} "Configuration!"
-    cp genesis.json ${CONFIG_DIR}/node${ID}/genesis.json
-    cp chain.json ${CONFIG_DIR}/node${ID}/chain.json
-    cp auth.json ${CONFIG_DIR}/node${ID}/auth.json
-    cp monitor.toml  ${CONFIG_DIR}/node${ID}/monitor.toml
-done
-
-echo "Step 3: ********************************************************"
 sed -i "s/tendermint/$CONSENSUS_NAME/g" ${BINARY_DIR}/bin/cita
-for ((ID=0;ID<$SIZE;ID++))
-do
-    rm -f ${CONFIG_DIR}/node${ID}/.env
-    port=`expr 9092 + $ID`
-    echo "KAFKA_URL=localhost:$port"                         >> ${CONFIG_DIR}/node${ID}/.env
-    echo "AMQP_URL=amqp://guest:guest@localhost/node${ID}"  >> ${CONFIG_DIR}/node${ID}/.env
-    echo "DATA_PATH=./data"                                 >> ${CONFIG_DIR}/node${ID}/.env
-done
+
+create_genesis(){
+    if [ ! -e "${BINARY_DIR}/scripts/admintool/init_data.json" ]; then
+        cp ${BINARY_DIR}/scripts/admintool/init_data_example.json ${CONFIG_DIR}/init_data.json
+    else
+        cp ${BINARY_DIR}/scripts/admintool/init_data.json ${CONFIG_DIR}/init_data.json
+    fi
+    python ${BINARY_DIR}/scripts/admintool/create_genesis.py --authorities "${CONFIG_DIR}/authorities" --init_data "${CONFIG_DIR}/init_data.json"
+    rm -rf ${CONFIG_DIR}/init_data.json
+}
+
+create_key(){
+    python ${BINARY_DIR}/scripts/admintool/create_keys_addr.py ${CONFIG_DIR} ${1} create_key_addr
+}
+
+consensus(){
+    python ${BINARY_DIR}/scripts/admintool/create_node_config.py ${CONFIG_DIR} $CONSENSUS_NAME ${1} $DURATION $IS_TEST
+}
+
+# rabbitmq and kafka
+env(){
+    rm -rf ${CONFIG_DIR}/node${1}/.env
+    port=`expr 9092 + ${1}`
+    echo "KAFKA_URL=localhost:$port"                             >> ${CONFIG_DIR}/node${1}/.env
+    echo "AMQP_URL=amqp://guest:guest@localhost/node${1}"     >> ${CONFIG_DIR}/node${1}/.env
+    echo "DATA_PATH=./data"                                       >> ${CONFIG_DIR}/node${1}/.env
+}
+
+auth(){
+    cp -f ${BINARY_DIR}/scripts/admintool/auth_example.json  ${CONFIG_DIR}/node${1}/auth.json
+}
+
+network(){
+    python ${BINARY_DIR}/scripts/admintool/create_network_config.py ${CONFIG_DIR} ${1} $SIZE $IP_LIST
+    mv ${CONFIG_DIR}/network.toml ${CONFIG_DIR}/node${1}/
+}
 
 
-echo "JsonRpc Configuration creating!"
-echo "Step 4: ********************************************************"
+chain(){
+    cp genesis.json ${CONFIG_DIR}/node${1}/genesis.json
+    cp -f ${BINARY_DIR}/scripts/admintool/chain_check_example.json      ${CONFIG_DIR}/node${1}/chain.json
+}
 
-HTTP_PORT=1337
-HTTP_ENABLE="true"
-WS_PORT=4337
-WS_ENABLE="false"
-
-if [ "$HTTP" == "true" ]; then
+jsonrpc(){
+    HTTP_PORT=1337
     HTTP_ENABLE="true"
-    HTTP_PORT=${PORT:-1337}
-
     WS_PORT=4337
     WS_ENABLE="false"
-fi
 
-if [ "$WS" == "true" ]; then
-    WS_ENABLE="true"
-    WS_PORT=${PORT:-4337}
-    HTTP_PORT=1337
-    HTTP_ENABLE="false"
+    if [ "$HTTP" == "true" ]; then
+        HTTP_ENABLE="true"
+        HTTP_PORT=${PORT:-1337}
+        WS_PORT=4337
+        WS_ENABLE="false"
+    fi
 
-fi
+    if [ "$WS" == "true" ]; then
+        WS_ENABLE="true"
+        WS_PORT=${PORT:-4337}
+        HTTP_PORT=1337
+        HTTP_ENABLE="false"
+    fi
 
-for ((ID=0;ID<$SIZE;ID++))
-do
-    mkdir -p ${CONFIG_DIR}/node${ID}
     if [ -n "$DEV_MOD" ]; then
-        ((H_PORT=$HTTP_PORT+${ID}))
-        ((W_PORT=$WS_PORT+${ID}))
+        ((H_PORT=$HTTP_PORT+${1}))
+        ((W_PORT=$WS_PORT+${1}))
     else
         H_PORT=$HTTP_PORT
         W_PORT=$WS_PORT
     fi
-    echo "Start generating JsonRpc Configuration Node" ${ID} "!"
     python ${BINARY_DIR}/scripts/admintool/create_jsonrpc_config.py $HTTP_ENABLE $H_PORT $WS_ENABLE $W_PORT ${CONFIG_DIR}
-    echo "[JsonRpc Configuration Path] : " ${CONFIG_DIR}/node${ID}
-    echo "JsonRpc Configuration for Node" ${ID} "!"
-    cp ${CONFIG_DIR}/jsonrpc.json ${CONFIG_DIR}/node${ID}/
+    mv ${CONFIG_DIR}/jsonrpc.json ${CONFIG_DIR}/node${1}/
+}
 
-    echo "########################################################"
-done
+# Kafka Configuration creating
+kafka(){
+    if [ "$START_KAFKA" == "true" ];then
+        ${BINARY_DIR}/scripts/admintool/create_kafka_config.sh $1 $CONFIG_DIR/node${1}
+        ${BINARY_DIR}/scripts/admintool/create_zookeeper_config.sh $1 $CONFIG_DIR/node${1}
+    fi
+}
 
-if [ "$START_KAFKA" == "true" ];then
-    echo "Kafka Configuration creating!"
-    echo "Step 5: ********************************************************"
+moniter(){
+    cp -f ${BINARY_DIR}/scripts/admintool/monitor_example.toml          ${CONFIG_DIR}/node${1}/monitor.toml
+}
+
+node(){
+    mkdir -p ${CONFIG_DIR}/node${1}
+    cp $CONFIG_DIR/backup/*  ${CONFIG_DIR}/
+    create_key $1
+    jsonrpc $1
+    consensus $1
+    chain $1
+    python ${BINARY_DIR}/scripts/admintool/create_network_config.py ${CONFIG_DIR} 1 $SIZE $IP_LIST
+    mv ${CONFIG_DIR}/network.toml ${CONFIG_DIR}/node${1}/
+    auth $1
+    env $1
+    kafka $1
+    moniter $1
+}
+
+default(){
     for ((ID=0;ID<$SIZE;ID++))
     do
-        node_path=$CONFIG_DIR/node$ID
-        mkdir -p $node_path
-        ${BINARY_DIR}/scripts/admintool/create_kafka_config.sh $ID $node_path
-        ${BINARY_DIR}/scripts/admintool/create_zookeeper_config.sh $ID $node_path
+        mkdir -p ${CONFIG_DIR}/node${ID}
+        create_key $ID
     done
-fi
+    create_genesis
+    for ((ID=0;ID<$SIZE;ID++))
+    do
+        mkdir -p ${CONFIG_DIR}/node${ID}
+        jsonrpc $ID
+        consensus $ID
+        chain $ID
+        network $ID
+        auth $ID
+        env $ID
+        kafka $ID
+        moniter $ID
+    done
+    mkdir -p $CONFIG_DIR/backup
+    rm -rf $CONFIG_DIR/backup/*
+    mv ${CONFIG_DIR}/*.json ${CONFIG_DIR}/authorities $CONFIG_DIR/backup/
+}
 
-# clean temp files
-rm -f ${CONFIG_DIR}/*.json ${CONFIG_DIR}/*.toml ${CONFIG_DIR}/authorities 
-echo "********************************************************"
+echo "************************begin create node config******************************"
+if [ -z $NODE ]; then
+    default
+else
+    node $NODE
+fi
+echo "************************end create node config********************************"
 echo "WARN: remember then delete all privkey files!!!"

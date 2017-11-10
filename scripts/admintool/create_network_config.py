@@ -7,7 +7,7 @@ import sys
 
 def main():
     nid = int(sys.argv[2])
-    path = os.path.join(sys.argv[1], "node" + str(nid))
+    path = os.path.join(sys.argv[1])
     ip_list = (sys.argv[4]).split(',')
     port = ip_list[nid].split(':')[1]
     net_config_name = "network.toml"

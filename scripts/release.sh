@@ -50,8 +50,11 @@ cp -rf  scripts/admintool/*.toml           target/install/scripts/admintool/
 ln -srf target/install/scripts/admintool/admintool.sh target/install/bin/
 
 # 5) Dockerfile
-cp -rf  scripts/Dockerfile-run         	   target/install/scripts/
-cp -rf  scripts/Dockerfile           	   target/install/scripts/
+cp -rf  scripts/Dockerfile-run             target/install/scripts/
+cp -rf  scripts/Dockerfile                 target/install/scripts/
 cp -rf  scripts/install_runtime.sh         target/install/scripts/
 cp -rf  scripts/build_image_from_binary.sh target/install/scripts/
 cp -rf  scripts/docker-compose.yaml        target/install/scripts/
+
+# 6) txpool
+cp -rf scripts/txtool                      target/install/scripts/

@@ -9,7 +9,8 @@ $ pip install -r requirements.txt
 ## 主要功能
 可通过运行如下命令查看：
 ```
-./admintool.sh --help
+cd target/install
+./bin/admintool.sh --help
 ```
 
 结果如下：
@@ -41,25 +42,33 @@ option:
 
 -P define jsonrpc HTTP port or websocket port
    default port is '1337' or '4337'
+
+-k start with kafka
+
+-Q singel node id
+
+
 ```
 
 当前默认初始配置为四个节点，如果需要在admintool.sh脚本里**初始配置N个节点**，可通过如下命令，比如配置五个节点：
 ```
-./admintool.sh -l "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003,127.0.0.1:4004"
+./bin/admintool.sh -l "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003,127.0.0.1:4004"
 ```
 
 ## setup
 
 ```
-$ ./admintool.sh
+./bin/admintool.sh
 ```
 
-  运行之后会生成`release`文件夹，里面包含节点文件以及相关的配置文件，具体如下：
-- 生成私钥和地址，私钥存放在`admintool/release/nodeID/privkey`，其中nodeID为节点号；而所有节点地址都存放在`admintool/release/authorities`；
-- 生成网络配置文件，存放在`admintool/release/nodeID/network.toml`，文件内容主要为总节点数、本地节点端口以及其它节点的ip和端口号；
-- 生成genesis块文件，存放`在admintool/release/nodeID/genesis.json`， 其中timestamp为时间戳，秒为单位；prevhash指前一个块哈希，这里是默认值；而alloc指部署到创世块的合约内容；
-- 生成节点配置文件，存放在`admintool/release/nodeID/consensus.json`，主要包含共识算法的相关参数；
-- 生成jsonrpc配置文件，存放在`admintool/release/nodeID/jsonrpc.json`，主要包含jsonrpc模块的相关参数。
+  运行之后会生成`node*`以及backup备份文件夹．
+  node* 里面包含节点文件以及相关的配置文件，具体如下：
+- 生成私钥和地址，私钥存放在`node*/privkey`，其中nodeID为节点号；而所有节点地址都存放在`backup/authorities`；
+- 生成网络配置文件，存放在`node*/network.toml`，文件内容主要为总节点数、本地节点端口以及其它节点的ip和端口号；
+- 生成genesis块文件，存放`在node*/genesis.json`， 其中timestamp为时间戳，秒为单位；prevhash指前一个块哈希，这里是默认值；而alloc指部署到创世块的合约内容；
+- 生成节点配置文件，存放在`node*/consensus.json`，主要包含共识算法的相关参数；
+- 生成jsonrpc配置文件，存放在`node*/jsonrpc.json`，主要包含jsonrpc模块的相关参数。
+  backup文件下存放是用于增加单节点的备份信息，里面有authorities，genesis.json两个文件，其作用见下文［单独增加节点］
 
 ## 系统合约
 
@@ -121,7 +130,7 @@ $ ./admintool.sh
 
 ### 节点管理系统合约
 
-节点管理合约存放在`cita/contracts/node_manager.sol`，函数签名可通过`solc node_manager.sol --hashes`编译得到，也可以在[remix](https://remix.ethereum.org)上查看.
+节点管理合约存放在`install/scripts/contracts/node_manager.sol`，函数签名可通过`solc node_manager.sol --hashes`编译得到，也可以在[remix](https://remix.ethereum.org)上查看.
 node_manager.sol合约详情如下所示：
 ```
 contract address: 0x00000000000000000000000000000000013241a2
@@ -148,7 +157,7 @@ Function signatures:
 
 ### 配额管理系统合约
 
-配额管理合约存放在`cita/contracts/quota.sol`，合约详情如下所示：
+配额管理合约存放在`install/scripts/contracts/quota.sol`，合约详情如下所示：
 
 ```
 contract address: 0x00000000000000000000000000000000013241a3
@@ -193,7 +202,7 @@ contract address: 0x00000000000000000000000000000000013241a3
 
 ### 权限管理系统合约
 
-权限管理合约存放在`cita/contracts/permission_manager.sol`，该合约将权限管理引进系统，有效控制用户交易的权限，合约详情如下所示：
+权限管理合约存放在`install/scripts/contracts/permission_manager.sol`，该合约将权限管理引进系统，有效控制用户交易的权限，合约详情如下所示：
 ```
 contract address: 0x00000000000000000000000000000000013241a4
 Function signatures:
@@ -216,3 +225,20 @@ Function signatures:
 - `queryPermission(address)`，该方法是查询指定地址的权限，可通过eth_call调用该方法来查询。
 
 - `queryUsersOfPermission(uint8)`， 该方法是查询拥有指定权限的所有用户，可通过eth_call调用该方法来查询。
+
+
+### 单独增加节点
+主要原理:新增节点先以只读节点的身份介入，然后，通过发送身份验证（交易）控制新节点权限. 并且，单独增加节点需要依赖已有的节点信息如:authorities，genesis.json
+
+步骤：　　
+1. 确保已有数据不被破坏，请复制install/backup,install/bin, install/scripts三个文件及其内容到另外的目录．
+2. 运行命令：
+    ```
+    ./bin/admintool.sh -Q [nodeId]
+
+     如./bin/admintool.sh -Q 8
+    ```
+   在当前目录会生成指定节点的目录以及相关信息，随之生成最新的authorities文件.
+3. 配置节点信息，如network.toml,jsonrpc.json等．
+4. 确保无误，程序运行正确，备份最新的authorities文件.
+

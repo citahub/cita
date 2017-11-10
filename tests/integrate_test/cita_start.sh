@@ -1,12 +1,12 @@
 #!/bin/bash
 #usage: start demo nodes
 #       ./cita_start.sh 
-#       ./cita_start.sh tendermint debug
+#       ./cita_start.sh [error,info, warn, debug, trace] [tendermint]
 
 set +e
 
-consensus=$1
-debug=$2
+debug=$1
+consensus=$2
 
 SOURCE_DIR=$(readlink -f $(dirname $0)/../..)
 BINARY_DIR=${SOURCE_DIR}/target/install

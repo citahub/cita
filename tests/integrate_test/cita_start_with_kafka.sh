@@ -1,7 +1,7 @@
 #!/bin/bash
 #usage: start demo nodes
 #       ./cita_start_with_kafka.sh 
-#       ./cita_start_with_kafka.sh debug
+#       ./cita_start_with_kafka.sh [error,info, warn, debug, trace]
 
 set +e
 

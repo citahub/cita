@@ -47,7 +47,7 @@ start() {
         
         monitor start > /dev/null
     else                                        
-        RUST_LOG=auth,network,consensus_tendermint,proof,txpool,engine,libproto,jsonrpc,jsonrpc_types,chain,core=trace \
+        RUST_LOG=auth,network,consensus_tendermint,proof,txpool,engine,libproto,jsonrpc,jsonrpc_types,chain,core=${debug} \
         monitor start > /dev/null                                       
     fi
 }
