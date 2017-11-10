@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::PrivKey;
-use util::Address;
 
 /// Authority params deserialization.
 #[derive(Debug, PartialEq, Deserialize)]
@@ -24,8 +23,6 @@ pub struct TendermintParams {
     /// Block duration.
     pub duration: u64,
     pub is_test: bool,
-    /// Valid authorities
-    pub authorities: Vec<Address>,
     pub signer: PrivKey,
 
     #[serde(rename = "timeoutPropose")]
@@ -70,7 +67,6 @@ mod tests {
         let signer = generate_signer();
         let s = format!(
             r#"{{
-                "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
                 "duration": 3,
                 "signer": "{}",
                 "is_test": true
@@ -87,7 +83,6 @@ mod tests {
         let s = format!(
             r#"{{
                 "params": {{
-                    "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
                     "duration": 3,
                     "signer": "{}",
                     "is_test": true

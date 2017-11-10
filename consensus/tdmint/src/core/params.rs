@@ -18,7 +18,6 @@
 use crypto::Signer;
 use engine_json;
 use std::time::Duration;
-use util::Address;
 
 #[derive(Debug, Clone)]
 pub struct TendermintTimer {
@@ -44,9 +43,6 @@ pub struct TendermintParams {
     pub timer: TendermintTimer,
     pub duration: Duration,
     pub is_test: bool,
-    /// Valid authorities
-    pub authorities: Vec<Address>,
-    pub authority_n: usize,
     pub signer: Signer,
 }
 
@@ -60,8 +56,6 @@ impl From<engine_json::TendermintParams> for TendermintParams {
         TendermintParams {
             duration: Duration::from_millis(p.duration.into()),
             is_test: p.is_test,
-            authority_n: p.authorities.len(),
-            authorities: p.authorities.into_iter().map(Into::into).collect::<Vec<_>>(),
             signer: Signer::from(p.signer),
             timer: TendermintTimer {
                 propose: p.timeout_propose.map_or(dt.propose, to_duration),
