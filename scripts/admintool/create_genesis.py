@@ -17,12 +17,12 @@ from ethereum.tools._solidity import (
 from ethereum.abi import ContractTranslator
 
 SOLIDITY_AVAILABLE = get_solidity() is not None
-CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
+CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts/system')
 CONTRACTS = {
     '0x00000000000000000000000000000000013241a2': {'file': 'node_manager.sol',
                                                    'name': 'NodeManager'},
-    '0x00000000000000000000000000000000013241a3': {'file': 'quota.sol',
-                                                   'name': 'Quota'},
+    '0x00000000000000000000000000000000013241a3': {'file': 'quota_manager.sol',
+                                                   'name': 'QuotaManager'},
     '0x00000000000000000000000000000000013241a4': {'file': 'permission_manager.sol',
                                                    'name': 'PermissionManager'}
 }
