@@ -92,7 +92,6 @@ mod tests {
                 "engine": {{
                     "Tendermint": {{
                         "params": {{
-                            "authorities" : ["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a"],
                             "duration": 3,
                             "signer": "{}",
                             "is_test": true

@@ -22,7 +22,7 @@ def main():
         for authority in authority_file:
             authorities.append(authority.strip('\n'))
 
-    params = dict(authorities=authorities, duration=duration, is_test=is_test, signer=signer)
+    params = dict(duration=duration, is_test=is_test, signer=signer)
     name = sys.argv[2]
     if name == "tendermint":
         tendermint = dict(params=params)
