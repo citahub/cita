@@ -6,7 +6,7 @@ library SetOperate {
     enum SetOp { None, Union, Interaction, Diff }
 
     /// @notice Replace bytes32[] with string or not
-    function setOpBytes32(bytes32[] _one, bytes[] _other, SetOp _op) internal returns (bytes32[]) {
+    function setOpBytes32(bytes32[] _one, bytes32[] _other, SetOp _op) internal returns (bytes32[]) {
         _one;
         _other;
         _op;
