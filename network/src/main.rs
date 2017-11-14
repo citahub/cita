@@ -100,9 +100,13 @@ fn main() {
     let (ctx_pub_tx, crx_pub_tx) = channel();
     start_pubsub("network_tx", vec!["auth.tx"], ctx_sub_tx, crx_pub_tx);
 
+    let (ctx_sub_consensus, crx_sub_consensus) = channel();
+    let (ctx_pub_consensus, crx_pub_consensus) = channel();
+    start_pubsub("network_consensus", vec!["consensus.msg"], ctx_sub_consensus, crx_pub_consensus);
+
     let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub("network", vec!["consensus.msg", "chain.status", "chain.blk", "jsonrpc.net"], ctx_sub, crx_pub);
+    start_pubsub("network", vec!["chain.status", "chain.blk", "jsonrpc.net"], ctx_sub, crx_pub);
 
     let (net_work_tx, net_work_rx) = channel();
     // start server
@@ -122,7 +126,7 @@ fn main() {
 
     let (sync_tx, sync_rx) = channel();
     let con = Arc::new(Connection::new(&config));
-    let net_work = NetWork::new(con.clone(), ctx_pub.clone(), sync_tx, ctx_pub_tx);
+    let net_work = NetWork::new(con.clone(), ctx_pub.clone(), sync_tx, ctx_pub_tx, ctx_pub_consensus);
     manage_connect(con.clone(), config_path, rx);
 
     //loop deal data
@@ -141,6 +145,7 @@ fn main() {
                   });
 
     //sub new tx
+    let con_tx = con.clone();
     thread::spawn(move || {
         loop {
             // msg from sub  new tx
@@ -148,6 +153,19 @@ fn main() {
             trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
             let (topic, mut data) = NetWork::parse_msg(&body);
             if topic == "net.tx".to_string() {
+                con_tx.broadcast(data);
+            }
+        }
+    });
+
+    //sub consensus msg
+    thread::spawn(move || {
+        loop {
+            // msg from sub  new tx
+            let (key, body) = crx_sub_consensus.recv().unwrap();
+            trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
+            let (topic, mut data) = NetWork::parse_msg(&body);
+            if topic == "net.msg".to_string() {
                 con.broadcast(data);
             }
         }

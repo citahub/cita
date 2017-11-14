@@ -13,15 +13,17 @@ pub struct NetWork {
     tx_pub: Sender<(String, Vec<u8>)>,
     tx_sync: Sender<(Source, communication::Message)>,
     tx_new_tx: Sender<(String, Vec<u8>)>,
+    tx_consensus: Sender<(String, Vec<u8>)>,
 }
 
 impl NetWork {
-    pub fn new(con: Arc<Connection>, tx_pub: Sender<(String, Vec<u8>)>, tx_sync: Sender<(Source, communication::Message)>, tx_new_tx: Sender<(String, Vec<u8>)>) -> Self {
+    pub fn new(con: Arc<Connection>, tx_pub: Sender<(String, Vec<u8>)>, tx_sync: Sender<(Source, communication::Message)>, tx_new_tx: Sender<(String, Vec<u8>)>, tx_consensus: Sender<(String, Vec<u8>)>) -> Self {
         NetWork {
             con: con,
             tx_pub: tx_pub,
             tx_sync: tx_sync,
             tx_new_tx: tx_new_tx,
+            tx_consensus: tx_consensus,
         }
     }
 
@@ -49,14 +51,12 @@ impl NetWork {
                 if topic == "net.status".to_string() || topic == "net.blk".to_string() {
                     //sync
                     self.tx_sync.send((source, msg));
-
                 } else if topic == "net.tx".to_string() {
-
                     self.tx_new_tx.send((topic, data));
-
+                } else if topic == "net.msg".to_string() {
+                    self.tx_consensus.send((topic, data));
                 } else if topic != "".to_string() {
                     self.tx_pub.send((topic, data));
-
                 }
             }
         }
@@ -98,10 +98,12 @@ impl NetWork {
                 trace!("CHAIN sync blk");
                 topic = "net.blk".to_string();
 
-            } else if (cid == cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG) && t == MsgType::MSG) || (cid == cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) && t == MsgType::MSG) {
+            } else if cid == cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG) && t == MsgType::MSG {
                 trace!("CONSENSUS pub msg");
                 topic = "net.msg".to_string();
-
+            } else if cid == cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) && t == MsgType::MSG {
+                info!("CONSENSUS pub proposal");
+                topic = "net.msg".to_string();
             } else {
                 topic = "".to_string();
                 msg = communication::Message::new();
