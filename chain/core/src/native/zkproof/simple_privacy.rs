@@ -21,6 +21,7 @@ use native::storage::{Scalar, Array, Map};
 pub struct Privacy {
     accounts: Map,        //  address -> balance
     lastblock: Map,        //  address-> last spend block
+    public_key:Map,         // address-> public_key for Enc(trade)
     nullifier_set: Array,  // Vec<Nullifier>
     commitments: Map,    // Cmtree 序列化成bytes存储
     output: Vec<u8>,
@@ -48,14 +49,14 @@ impl Privacy {
         Ok(GasLeft::NeedsReturn(U256::from(100), self.output.as_slice()))
     }
 
-    // remittance transaction 汇款
+    // remittance transaction 汇款验证
     //
     fn send_remittance(&self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
 
 
     }
 
-    // collection transaction 收款
+    // collection transaction 收款验证
     fn send_collection(&self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
 
 

@@ -16,7 +16,7 @@ struct C2Bcircuit<'a>{
     j:& 'a JubJub,
 
     //r_cm
-    rcm:Vec<Assignment<bool>>,
+    rcm:Assignment<Fr>,
     //Balance
     ba:Assignment<Fr>,
     //value
@@ -41,11 +41,11 @@ impl<'a> C2Bcircuit<'a>{
         C2Bcircuit{
             generators,
             j,
-            rcm: (0..RCMBIT).map(|_| Assignment::unknown()).collect(),
+            rcm:Assignment::unknown(),
             ba:Assignment::unknown(),
             va:Assignment::unknown(),
             addr_sk: (0..ADSK).map(|_| Assignment::unknown()).collect(),
-            path: (0..TREEDEPTH).map(|_| (0..PHBIT).map(|_| Assignment::unknown()).collect()).collect(),
+            path: (0..TREEDEPTH).map(|_| (0..PHOUT).map(|_| Assignment::unknown()).collect()).collect(),
             loc: (0..TREEDEPTH).map(|_| Assignment::unknown()).collect(),
             res
         }
@@ -54,7 +54,7 @@ impl<'a> C2Bcircuit<'a>{
     fn new(
         generators: &'a[(Vec<Fr>,Vec<Fr>)],
         j:&'a JubJub,
-        rcm:Vec<bool>,
+        rcm:Fr,
         ba:Fr,
         va:Fr,
         addr_sk:Vec<bool>,
@@ -63,7 +63,6 @@ impl<'a> C2Bcircuit<'a>{
         res: &'a mut Vec<FrRepr>
     )->C2Bcircuit<'a>
     {
-        assert_eq!(rcm.len(), RCMBIT);
         assert_eq!(addr_sk.len(), ADSK);
         assert_eq!(res.len(), 0);
         assert_eq!(path.len(),TREEDEPTH);
@@ -83,7 +82,7 @@ impl<'a> C2Bcircuit<'a>{
         C2Bcircuit{
             generators,
             j,
-            rcm:rcm.iter().map(|&b|Assignment::known(b)).collect(),
+            rcm:Assignment::known(rcm),
             ba:Assignment::known(ba),
             va:Assignment::known(va),
             addr_sk:addr_sk.iter().map(|&b|Assignment::known(b)).collect(),
@@ -150,10 +149,8 @@ impl<'a> Circuit<Bls12> for C2Bcircuit<'a> {
     type InputMap = C2BcircuitInput;
 
     fn synthesize<CS: ConstraintSystem<Bls12>>(self, cs: &mut CS) -> Result<Self::InputMap, Error> {
-        let mut rcm = Vec::with_capacity(RCMBIT);
-        for b in self.rcm.iter() {
-            rcm.push(Bit::alloc(cs, *b)?);
-        }
+        let rcm_num = Num::new(cs,self.rcm)?;
+        let mut rcm = rcm_num.unpack_sized(cs,RCMBIT)?;
         let mut addr_sk = Vec::with_capacity(ADSK);
         for b in self.addr_sk.iter() {
             addr_sk.push(Bit::alloc(cs, *b)?);
@@ -190,12 +187,9 @@ impl<'a> Circuit<Bls12> for C2Bcircuit<'a> {
             self.res.push(x.into_repr());
         }
 
-        assert_eq!(addr_sk.len(), ADSK);
-        for _ in 0..(PHIN-ADSK){
-            addr_sk.push(Bit::one(cs));
-        }
-        let addr = pedersen_hash(cs, &addr_sk, self.generators, self.j)?;
-        let addr = addr.unpack_sized(cs, PHBIT)?;
+        let p1 = Point::enc_point_table(256, 1, cs)?;
+        let addr = Point::multiply(&p1,&addr_sk,cs)?;
+        let addr = addr.0.unpack_sized(cs, PHOUT)?;//取x
 
         //coin = PH(addr|value|rcm)
         let vin = {
@@ -216,7 +210,7 @@ impl<'a> Circuit<Bls12> for C2Bcircuit<'a> {
         }
 
         for (loc,sib) in locs.iter().zip(self.path.iter()){
-            let phbits = phout.unpack_sized(cs,PHBIT)?;
+            let phbits = phout.unpack_sized(cs, PHOUT)?;
 
             let mut vin = vec![];
             for (a,b) in sib.iter().zip(phbits.iter()){
@@ -248,7 +242,7 @@ impl<'a> Circuit<Bls12> for C2Bcircuit<'a> {
     }
 }
 
-pub fn c2b_info(rcm:Vec<bool>,ba:&str,va:&str,addr_sk:Vec<bool>,path:Vec<[u64;4]>,loc:Vec<bool>)->Result<(
+pub fn c2b_info(rcm:[u64;2],ba:[u64;2],va:[u64;2],addr_sk:Vec<bool>,path:Vec<[u64;4]>,loc:Vec<bool>)->Result<(
     (([u64; 6], [u64; 6], bool), (([u64; 6], [u64; 6]), ([u64; 6], [u64; 6]), bool), ([u64; 6], [u64; 6], bool)),
     [u64;4],[u64;4],[u64;4]),Error>{
     let rng = &mut thread_rng();
@@ -257,9 +251,9 @@ pub fn c2b_info(rcm:Vec<bool>,ba:&str,va:&str,addr_sk:Vec<bool>,path:Vec<[u64;4]
     let proof = create_random_proof::<Bls12, _, _, _>(C2Bcircuit::new(
         &ph_generator(),
         &j,
-        rcm,
-        Fr::from_str(ba).unwrap(),
-        Fr::from_str(va).unwrap(),
+        Fr::from_repr(FrRepr([rcm[0],rcm[1],0,0])).unwrap(),
+        Fr::from_repr(FrRepr([ba[0],ba[1],0,0])).unwrap(),
+        Fr::from_repr(FrRepr([va[0],va[1],0,0])).unwrap(),
         addr_sk,
         path,
         loc,
@@ -271,23 +265,19 @@ pub fn c2b_info(rcm:Vec<bool>,ba:&str,va:&str,addr_sk:Vec<bool>,path:Vec<[u64;4]
     Ok((proof,bn,nullifier,root))
 }
 
-pub fn c2b_verify(ba:&str, va:&str, nullifier:[u64;4], root:[u64;4],
+pub fn c2b_verify(ba:[u64;2], va:[u64;2], nullifier:[u64;4], root:[u64;4],
                   proof:(([u64; 6], [u64; 6], bool), (([u64; 6], [u64; 6]), ([u64; 6], [u64; 6]), bool), ([u64; 6], [u64; 6], bool)),
                   )->Result<bool,Error>{
     verify_proof(&c2b_vk()?, &Proof::from_serial(proof), |cs| {
-        let va = Fr::from_str(va).unwrap();
+        let va = Fr::from_repr(FrRepr([va[0],va[1],0,0])).unwrap();
         let nullifier = Fr::from_repr(FrRepr::from_serial(nullifier)).unwrap();
-        let ba = Fr::from_str(ba).unwrap();
+        let ba = Fr::from_repr(FrRepr([ba[0],ba[1],0,0])).unwrap();
         let root = Fr::from_repr(FrRepr::from_serial(root)).unwrap();
-        let ba_var = cs.alloc({||Ok(ba)})?;
-        let nullifier_var = cs.alloc({||Ok(nullifier)})?;
-        let va_var = cs.alloc({||Ok(va)})?;
-        let root_var = cs.alloc({||Ok(root)})?;
         Ok(C2BcircuitInput{
-            ba:Num::create(Assignment::known(ba),ba_var),
-            nullifier:Num::create(Assignment::known(nullifier),nullifier_var),
-            va:Num::create(Assignment::known(va),va_var),
-            root:Num::create(Assignment::known(root),root_var)
+            ba:Num::new(cs,Assignment::known(ba))?,
+            nullifier:Num::new(cs,Assignment::known(nullifier))?,
+            va:Num::new(cs,Assignment::known(va))?,
+            root:Num::new(cs,Assignment::known(root))?
         })
     })
 }

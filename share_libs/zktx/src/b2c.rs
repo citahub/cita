@@ -16,13 +16,13 @@ struct B2Ccircuit<'a>{
     j:&'a JubJub,
 
     //r_cm
-    rcm:Vec<Assignment<bool>>,
-    //Balance
-    ba:Assignment<Fr>,
+    rcm:Assignment<Fr>,
     //value
     va:Assignment<Fr>,
     //addr
-    addr:Vec<Assignment<bool>>,
+    addr:(Assignment<Fr>,Assignment<Fr>),
+    //random number,
+    random:Assignment<Fr>,
     //result
     res: &'a mut Vec<FrRepr>
 }
@@ -36,10 +36,10 @@ impl<'a> B2Ccircuit<'a>{
         B2Ccircuit{
             generators,
             j,
-            rcm: (0..RCMBIT).map(|_| Assignment::unknown()).collect(),
-            ba:Assignment::unknown(),
+            rcm:Assignment::unknown(),
             va:Assignment::unknown(),
-            addr: (0..PHBIT).map(|_| Assignment::unknown()).collect(),
+            addr:(Assignment::unknown(),Assignment::unknown()),
+            random:Assignment::unknown(),
             res
         }
     }
@@ -47,53 +47,54 @@ impl<'a> B2Ccircuit<'a>{
     fn new(
         generators: &'a[(Vec<Fr>,Vec<Fr>)],
         j:&'a JubJub,
-        rcm:Vec<bool>,
-        ba:Fr,
+        rcm:Fr,
         va:Fr,
-        addr:Vec<bool>,
+        addr:(Fr,Fr),
+        random:Fr,
         res: &'a mut Vec<FrRepr>
     )->B2Ccircuit<'a>{
-        assert_eq!(rcm.len(), RCMBIT);
-        assert_eq!(addr.len(), PHBIT);
         assert_eq!(res.len(), 0);
         B2Ccircuit{
             generators,
             j,
-            rcm:rcm.iter().map(|&b|Assignment::known(b)).collect(),
-            ba:Assignment::known(ba),
+            rcm:Assignment::known(rcm),
             va:Assignment::known(va),
-            addr:addr.iter().map(|&b|Assignment::known(b)).collect(),
+            addr:(Assignment::known(addr.0),Assignment::known(addr.1)),
+            random:Assignment::known(random),
             res
         }
     }
 }
 
 struct B2CcircuitInput{
-    //Balance
-    ba:Num<Bls12>,
     //value
     va:Num<Bls12>,
     //coin
-    coin:Num<Bls12>
+    coin:Num<Bls12>,
+    //rP
+    rp:(Num<Bls12>, Num<Bls12>),
+    //enc
+    enc:Num<Bls12>
 }
 
 impl<'a> Input<Bls12> for B2CcircuitInput{
     fn synthesize<CS:PublicConstraintSystem<Bls12>>(self,cs:&mut CS)->Result<(),Error>{
-        let ba_input = cs.alloc_input(||{
-            Ok(*self.ba.getvalue().get()?)
-        })?;
         let coin_input = cs.alloc_input(||{
             Ok(*self.coin.getvalue().get()?)
         })?;
         let va_input = cs.alloc_input(||{
             Ok(*self.va.getvalue().get()?)
         })?;
+        let rpx_input = cs.alloc_input(||{
+            Ok(*self.rp.0.getvalue().get()?)
+        })?;
+        let rpy_input = cs.alloc_input(||{
+            Ok(*self.rp.1.getvalue().get()?)
+        })?;
+        let enc_input = cs.alloc_input(||{
+            Ok(*self.enc.getvalue().get()?)
+        })?;
 
-        cs.enforce(
-            LinearCombination::zero() + self.ba.getvar(),
-            LinearCombination::zero() + CS::one(),
-            LinearCombination::zero() + ba_input
-        );
         cs.enforce(
             LinearCombination::zero() + self.coin.getvar(),
             LinearCombination::zero() + CS::one(),
@@ -104,6 +105,21 @@ impl<'a> Input<Bls12> for B2CcircuitInput{
             LinearCombination::zero() + CS::one(),
             LinearCombination::zero() + va_input
         );
+        cs.enforce(
+            LinearCombination::zero() + self.rp.0.getvar(),
+            LinearCombination::zero() + CS::one(),
+            LinearCombination::zero() + rpx_input
+        );
+        cs.enforce(
+            LinearCombination::zero() + self.rp.1.getvar(),
+            LinearCombination::zero() + CS::one(),
+            LinearCombination::zero() + rpy_input
+        );
+        cs.enforce(
+            LinearCombination::zero() + self.enc.getvar(),
+            LinearCombination::zero() + CS::one(),
+            LinearCombination::zero() + enc_input
+        );
 
         Ok(())
     }
@@ -113,37 +129,27 @@ impl<'a> Circuit<Bls12> for B2Ccircuit<'a>{
     type InputMap = B2CcircuitInput;
 
     fn synthesize<CS:ConstraintSystem<Bls12>>(self,cs:&mut CS)->Result<Self::InputMap,Error>{
-        let mut rcm = Vec::with_capacity(RCMBIT);
-        for b in self.rcm.iter() {
-            rcm.push(Bit::alloc(cs, *b)?);
-        }
-        let mut addr = Vec::with_capacity(PHBIT);
-        for b in self.addr.iter() {
-            addr.push(Bit::alloc(cs, *b)?);
-        }
+        let rcm_num = Num::new(cs,self.rcm)?;
+        let mut rcm = rcm_num.unpack_sized(cs,RCMBIT)?;
+        let random_num = Num::new(cs,self.random)?;
+        let random = random_num.unpack_sized(cs,256)?;
+        let addr_x_num = Num::new(cs,self.addr.0)?;
+        let addr_x_bit = addr_x_num.unpack_sized(cs, PHOUT)?;
+        let addr_y_num = Num::new(cs,self.addr.1)?;
 
-        let ba = Num::new(cs,self.ba)?;
         let va = Num::new(cs,self.va)?;
-        let bn = ba.sub(cs,&va)?;
-        let bit_ba = ba.unpack_sized(cs, VBIT)?;
         let bit_va = va.unpack_sized(cs, VBIT)?;
-        let bit_bn = bn.unpack_sized(cs, VBIT)?;
-        assert_eq!(bit_ba.len(), VBIT);
         assert_eq!(bit_va.len(), VBIT);
-        assert_eq!(bit_bn.len(), VBIT);
 
-        assert_nonless_than(&bit_ba,&bit_va,cs)?;
-
-        if let Ok(x) = bn.getvalue().get(){
-            self.res.push(x.into_repr());
-        }
+        //prepare table
+        let p1 = Point::enc_point_table(256, 1, cs)?;
 
         //coin = PH(addr|value|rcm)
         let vin = {
             for b in bit_va.iter(){
                 rcm.push(*b);
             }
-            for b in addr.iter(){
+            for b in addr_x_bit.iter(){
                 rcm.push(*b);
             }
             rcm
@@ -154,48 +160,68 @@ impl<'a> Circuit<Bls12> for B2Ccircuit<'a>{
             self.res.push(x.into_repr());
         }
 
+        //Enc
+        let message = {
+            let b128 = Num::new(cs,Assignment::known(Fr::from_repr(FrRepr::from_serial([0,0,1,0])).unwrap()))?;
+            va.mul(cs,&b128)?.add(cs,&rcm_num)
+        }?;
+        let qtable = Point::point_mul_table((&addr_x_num, &addr_y_num), 256, cs)?;
+        let rp = Point::multiply(&p1,&random,cs)?;
+        let rq = Point::multiply(&qtable,&random,cs)?;
+        if let (Ok(x),Ok(y)) = (rp.0.getvalue().get(),rp.1.getvalue().get()){
+            self.res.push(x.into_repr());
+            self.res.push(y.into_repr());
+        }
+        let key = rq.0;
+        let enc = key.add(cs,&message)?;
+        if let Ok(x) = enc.getvalue().get(){
+            self.res.push(x.into_repr());
+        }
+
         Ok(B2CcircuitInput{
-            ba,
             va,
-            coin
+            coin,
+            rp,
+            enc
         })
     }
 }
 
-pub fn b2c_info(rcm:Vec<bool>,ba:&str,va:&str,addr:Vec<bool>)->Result<(
+pub fn b2c_info(rcm:[u64;2],va:[u64;2],addr:([u64;4],[u64;4]),random:[u64;4])->Result<(
     (([u64; 6], [u64; 6], bool), (([u64; 6], [u64; 6]), ([u64; 6], [u64; 6]), bool), ([u64; 6], [u64; 6], bool)),
-    [u64;4],[u64;4]),Error>{
+    [u64;4],([u64;4],[u64;4]),[u64;4]),Error>{
     let rng = &mut thread_rng();
     let j = JubJub::new();
     let mut res: Vec<FrRepr> = vec![];
     let proof = create_random_proof::<Bls12, _, _, _>(B2Ccircuit::new(
         &ph_generator(),
         &j,
-        rcm,
-        Fr::from_str(ba).unwrap(),
-        Fr::from_str(va).unwrap(),
-        addr,
+        Fr::from_repr(FrRepr([rcm[0],rcm[1],0,0])).unwrap(),
+        Fr::from_repr(FrRepr([va[0],va[1],0,0])).unwrap(),
+        (Fr::from_repr(FrRepr(addr.0)).unwrap(),Fr::from_repr(FrRepr(addr.1)).unwrap()),
+        Fr::from_serial(random),
         &mut res
     ), b2c_param()?, rng)?.serial();
-    let bn = res[0].serial();
-    let coin = res[1].serial();
-    Ok((proof,bn,coin))
+    let coin = res[0].serial();
+    let rp = (res[1].serial(),res[2].serial());
+    let enc = res[3].serial();
+    Ok((proof,coin,rp,enc))
 }
 
-pub fn b2c_verify(ba:&str, va:&str, coin:[u64;4],
+pub fn b2c_verify(va:[u64;2], coin:[u64;4],rp:([u64;4],[u64;4]),enc:[u64;4],
                   proof:(([u64; 6], [u64; 6], bool), (([u64; 6], [u64; 6]), ([u64; 6], [u64; 6]), bool), ([u64; 6], [u64; 6], bool)),
                   )->Result<bool,Error>{
     verify_proof(&b2c_vk()?, &Proof::from_serial(proof), |cs| {
-        let ba = Fr::from_str(ba).unwrap();
         let coin = Fr::from_repr(FrRepr::from_serial(coin)).unwrap();
-        let va = Fr::from_str(va).unwrap();
-        let ba_var = cs.alloc({||Ok(ba)})?;
-        let coin_var = cs.alloc({||Ok(coin)})?;
-        let va_var = cs.alloc({||Ok(va)})?;
+        let va = Fr::from_repr(FrRepr([va[0],va[1],0,0])).unwrap();
+        let enc = Fr::from_repr(FrRepr::from_serial(enc)).unwrap();
+        let rpx = Fr::from_repr(FrRepr::from_serial(rp.0)).unwrap();
+        let rpy = Fr::from_repr(FrRepr::from_serial(rp.1)).unwrap();
         Ok(B2CcircuitInput{
-            ba:Num::create(Assignment::known(ba),ba_var),
-            coin:Num::create(Assignment::known(coin),coin_var),
-            va:Num::create(Assignment::known(va),va_var)
+            coin:Num::new(cs,Assignment::known(coin))?,
+            va:Num::new(cs,Assignment::known(va))?,
+            rp:(Num::new(cs, Assignment::known(rpx))?, Num::new(cs, Assignment::known(rpy))?),
+            enc:Num::new(cs,Assignment::known(enc))?
         })
     })
 }
@@ -224,7 +250,7 @@ fn b2c_param()->Result<ProverStream,Error>{
 fn b2c_vk()->Result<(PreparedVerifyingKey<Bls12>),Error>{
     ensure_b2c_param()?;
     let mut params = ProverStream::new(B2CPARAMPATH)?;
-    let vk2 = params.get_vk(4)?;
+    let vk2 = params.get_vk(6)?;
     let vk = prepare_verifying_key(&vk2);
     Ok(vk)
 }

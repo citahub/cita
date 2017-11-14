@@ -4,8 +4,6 @@ extern crate bellman;
 extern crate rand;
 extern crate jubjub;
 
-pub use pairing::bls12_381::FrRepr;
-
 pub mod base;
 
 pub mod b2c;
@@ -39,5 +37,3 @@ pub fn pedersen_hash_root(c0:[u64;4],c1:[u64;4])->[u64;4]{
     }
     jubjub::pedersen_hash_real(v.as_slice(),&base::ph_generator()).unwrap().serial()
 }
-
-//pub fn homoHash()

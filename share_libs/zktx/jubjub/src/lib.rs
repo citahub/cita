@@ -10,7 +10,7 @@ extern crate rand;
 use pairing::*;
 use pairing::bls12_381::{Fr, FrRepr, Bls12};
 use bellman::*;
-use rand::{Rng, Rand, thread_rng};
+use rand::{Rng, Rand, thread_rng,XorShiftRng,SeedableRng};
 
 // Synthesize the constants for each base pattern.
 fn synth<E: Engine>(
@@ -56,7 +56,7 @@ fn test_synth() {
             }
         }
 
-        assert!(acc == constants[b]);
+        assert_eq!(acc,constants[b]);
     }
 }
 
@@ -253,13 +253,6 @@ impl<E: Engine> Num<E>{
     pub fn getvar(&self) -> Variable{
         self.var
     }
-
-    pub fn create(value:Assignment<E::Fr>,var:Variable) -> Num<E>{
-        Num{
-            value,
-            var
-        }
-    }
 }
 
 fn assignment_into_bits<E: Engine, CS: ConstraintSystem<E>>(num: &Assignment<E::Fr>, cs: &mut CS) -> Result<Vec<Bit>, Error>
@@ -414,7 +407,7 @@ impl<E: Engine> Num<E> {
         value: Assignment<E::Fr>
     ) -> Result<Num<E>, Error>{
         let var = cs.alloc(||{
-            Ok(*value.get()?)//generator里不跑哈哈哈哈黄
+            Ok(*value.get()?)
         })?;
         Ok(Num{
             value,
@@ -479,19 +472,6 @@ impl<E: Engine> Num<E> {
             var:result_var
         })
     }
-
-//    fn nonless_than<CS: ConstraintSystem<E>>(
-//        &self,
-//        cs: &mut CS,
-//        other: &Num<E>
-//    ) -> Result<(), Error>
-//    {
-//        assert_nonless_than(&self.unpack(cs)?,&other.unpack(cs)?,cs).unwrap();
-//
-//        Ok(())
-//    }
-
-    //fn nonless_than_0 //QAP系统里大家都大于零，小于零会mod r，这个不需要
 }
 
 impl<E: Engine> Clone for Num<E> {
@@ -513,8 +493,8 @@ fn coordinate_lookup<E: Engine, CS: ConstraintSystem<E>>(
     d: Bit
 ) -> Result<Num<E>, Error>
 {
-    assert!(bits.len() == 4);
-    assert!(table.len() == 16);
+    assert_eq!(bits.len(),4);
+    assert_eq!(table.len(),16);
 
     // The result variable
     let mut r_val = Assignment::unknown();
@@ -580,9 +560,9 @@ fn point_lookup<E: Engine, CS: ConstraintSystem<E>>(
 ) -> Result<(Num<E>, Num<E>), Error>
     where E: Engine
 {
-    assert!(bits.len() == 4);
-    assert!(x_table.len() == 16);
-    assert!(y_table.len() == 16);
+    assert_eq!(bits.len(),4);
+    assert_eq!(x_table.len(),16);
+    assert_eq!(y_table.len(),16);
 
     // Three values need to be precomputed:
 
@@ -599,7 +579,7 @@ fn point_lookup<E: Engine, CS: ConstraintSystem<E>>(
 
 pub fn pedersen_hash_real(bits:&[bool],generators:&[(Vec<Fr>,Vec<Fr>)])->Result<FrRepr,Error>{
     assert_eq!(bits.len(),512);
-    assert!(generators.len() == (512/4));
+    assert_eq!(generators.len(), (512/4));
 
     let mut lookups = vec![];
 
@@ -662,9 +642,9 @@ pub fn pedersen_hash_real(bits:&[bool],generators:&[(Vec<Fr>,Vec<Fr>)])->Result<
 }
 
 fn point_lookup_real(x_table:&[Fr],y_table:&[Fr],bits:&[bool])->Result<(Fr,Fr),Error>{
-    assert!(bits.len() == 4);
-    assert!(x_table.len() == 16);
-    assert!(y_table.len() == 16);
+    assert_eq!(bits.len(), 4);
+    assert_eq!(x_table.len(), 16);
+    assert_eq!(y_table.len(), 16);
 
     let x = coordinate_lookup_real(&x_table, &bits)?;
     let y = coordinate_lookup_real(&y_table, &bits)?;
@@ -673,8 +653,8 @@ fn point_lookup_real(x_table:&[Fr],y_table:&[Fr],bits:&[bool])->Result<(Fr,Fr),E
 }
 
 fn coordinate_lookup_real(table:&[Fr],bits:&[bool])->Result<Fr,Error>{
-    assert!(bits.len() == 4);
-    assert!(table.len() == 16);
+    assert_eq!(bits.len(), 4);
+    assert_eq!(table.len(), 16);
 
     let mut idx = 0;
     for b in bits.iter().rev() {
@@ -716,7 +696,6 @@ fn test_fr_repr2bit(){
 fn test_pedersen_real(){
 
     use rand::{Rng, XorShiftRng, SeedableRng};
-    //TODO:ph_generator()
     const SEED:[u32;4] = [0x5dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654];
     let mut generator_rng = XorShiftRng::from_seed(SEED);
     println!("Creating random generators for the Pedersen hash...");
@@ -756,8 +735,8 @@ fn test_lookup() {
                 b1: Assignment::unknown(),
                 b2: Assignment::unknown(),
                 b3: Assignment::unknown(),
-                x_table: x_table,
-                y_table: y_table
+                x_table,
+                y_table
             }
         }
 
@@ -767,8 +746,8 @@ fn test_lookup() {
                 b1: Assignment::known(b),
                 b2: Assignment::known(c),
                 b3: Assignment::known(d),
-                x_table: x_table,
-                y_table: y_table
+                x_table,
+                y_table
             }
         }
     }
@@ -820,8 +799,8 @@ fn test_lookup() {
             let (x, y) = point_lookup(cs, self.x_table, self.y_table, &bits)?;
 
             Ok(MyLookupCircuitInput {
-                x: x,
-                y: y
+                x,
+                y
             })
         }
     }
@@ -879,11 +858,15 @@ impl JubJub {
 }
 
 impl Point {
-    pub fn toNum<CS:ConstraintSystem<Bls12>>(&self,cs:&mut CS)->Result<(Num<Bls12>,Num<Bls12>),Error>{
+    pub fn to_num<CS:ConstraintSystem<Bls12>>(&self, cs:&mut CS) ->Result<(Num<Bls12>, Num<Bls12>),Error>{
         Ok((Num{value:Assignment::known(self.x),var:cs.alloc({||Ok(self.x)})?},Num{value:Assignment::known(self.y),var:cs.alloc({||Ok(self.y)})?}))
     }
 
-    pub fn pointAdd<CS:ConstraintSystem<Bls12>>(p1:&(Num<Bls12>,Num<Bls12>),p2:&(Num<Bls12>,Num<Bls12>),cs:&mut CS)->Result<(Num<Bls12>,Num<Bls12>),Error>{
+    pub fn coordinate(&self)->(Fr,Fr){
+        (self.x,self.y)
+    }
+
+    pub fn point_add<CS:ConstraintSystem<Bls12>>(p1:&(Num<Bls12>, Num<Bls12>), p2:&(Num<Bls12>, Num<Bls12>), cs:&mut CS) ->Result<(Num<Bls12>, Num<Bls12>),Error>{
         let x1y2 = p1.0.mul(cs, &p2.1)?;
         let y1x2 = p1.1.mul(cs, &p2.0)?;
         let y1y2 = p1.1.mul(cs, &p2.1)?;
@@ -950,7 +933,7 @@ impl Point {
         Ok((cur_x,cur_y))
     }
 
-    pub fn pointDouble<CS:ConstraintSystem<Bls12>>(p:&(Num<Bls12>,Num<Bls12>),cs:&mut CS)->Result<(Num<Bls12>,Num<Bls12>),Error>{
+    pub fn point_double<CS:ConstraintSystem<Bls12>>(p:&(Num<Bls12>, Num<Bls12>), cs:&mut CS) ->Result<(Num<Bls12>, Num<Bls12>),Error>{
         let xy = p.0.mul(cs, &p.1)?;
         let yy = p.1.mul(cs, &p.1)?;
         let xx = p.0.mul(cs, &p.0)?;
@@ -1016,13 +999,55 @@ impl Point {
         Ok((cur_x,cur_y))
     }
 
-    pub fn pointChoose< E:Engine,CS:ConstraintSystem<E>>(p:&(Num<E>,Num<E>),bit:Bit,cs:&mut CS)->Result<(Num<E>,Num<E>),Error>{
+    pub fn point_choose< E:Engine,CS:ConstraintSystem<E>>(p:&(Num<E>, Num<E>), bit:&Bit, cs:&mut CS) ->Result<(Num<E>, Num<E>),Error>{
         let cur_x = bit.mul(cs,&p.0)?;
         let one = Num{value:Assignment::known(E::Fr::one()),var:CS::one()};
         let ym1 = p.1.sub(cs,&one)?;
         let ym1b = bit.mul(cs,&ym1)?;
         let cur_y = ym1b.add(cs,&one)?;
         Ok((cur_x,cur_y))
+    }
+
+    pub fn enc_point_table<CS:ConstraintSystem<Bls12>>(size:usize, num:usize, cs:&mut CS) ->Result<Vec<(Num<Bls12>, Num<Bls12>)>,Error>{
+        let mut rng = XorShiftRng::from_seed([0x5dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654]);//TODO:choose the seed
+        let j = JubJub::new();
+        for _ in 1..num{
+            let _ = Point::rand(&mut rng, &j);
+        }
+        let mut p1 = Point::rand(&mut rng, &j).to_num(cs)?;
+        let mut v1 = vec![];
+        v1.push(p1.clone());
+        for _ in 0..size - 1 {
+            p1 = Point::point_double(&p1, cs)?;
+            v1.push(p1.clone());
+        }
+        Ok(v1)
+    }
+
+    pub fn point_mul_table<CS:ConstraintSystem<Bls12>>(point:(&Num<Bls12>, &Num<Bls12>), size:usize, cs:&mut CS) ->Result<Vec<(Num<Bls12>, Num<Bls12>)>,Error>{
+        let mut point = (point.0.clone(),point.1.clone());
+        let mut v1 = vec![];
+        v1.push(point.clone());
+        for _ in 0..size - 1 {
+            point = Point::point_double(&point, cs)?;
+            v1.push(point.clone());
+        }
+        Ok(v1)
+    }
+
+    pub fn multiply<CS:ConstraintSystem<Bls12>>(table:&Vec<(Num<Bls12>,Num<Bls12>)>,num:&Vec<Bit>,cs:&mut CS)->Result<(Num<Bls12>,Num<Bls12>),Error>{
+        assert!(table.len()>=num.len());
+        let mut p0 = Point::point_choose(&table[0], &num[0], cs)?;
+        for i in 1..num.len(){
+            p0 = Point::point_add(&p0, &Point::point_choose(&table[i], &num[i], cs)?, cs)?;
+        }
+        Ok(p0)
+    }
+
+    pub fn encrypt<CS:ConstraintSystem<Bls12>>(table:(&Vec<(Num<Bls12>,Num<Bls12>)>,&Vec<(Num<Bls12>,Num<Bls12>)>),bit_va:&Vec<Bit>, rcm:&Vec<Bit>, cs:&mut CS) ->Result<(Num<Bls12>,Num<Bls12>),Error>{
+        let mut p0 = Point::multiply(&table.0,bit_va,cs)?;
+        p0 = Point::point_add(&p0, &Point::multiply(&table.1, rcm, cs)?, cs)?;
+        Ok(p0)
     }
 
     pub fn rand<R: Rng>(rng: &mut R, j: &JubJub) -> Point {
@@ -1042,8 +1067,8 @@ impl Point {
 
             if let Some(x) = n.sqrt() {
                 let mut tmp = Point {
-                    x: x,
-                    y: y
+                    x,
+                    y
                 };
 
                 assert!(tmp.is_on_curve(j)); 
@@ -1179,14 +1204,14 @@ pub fn pedersen_hash<CS>(
 ) -> Result<Num<Bls12>, Error>
     where CS: ConstraintSystem<Bls12>
 {
-    assert!(bits.len() == 512);
-    assert!(generators.len() == (512/4));
+    assert_eq!(bits.len(),512);
+    assert_eq!(generators.len(), (512/4));
 
     let mut lookups = vec![];
 
     for (fourbits, &(ref x_table, ref y_table)) in bits.chunks(4).zip(generators.iter()) {
-        assert!(x_table.len() == 16);
-        assert!(y_table.len() == 16);
+        assert_eq!(x_table.len(), 16);
+        assert_eq!(y_table.len(), 16);
 
         lookups.push(point_lookup(cs, x_table, y_table, fourbits)?);
     }
@@ -1283,8 +1308,8 @@ fn test_pedersen() {
         fn blank(generators: &'a [(Vec<Fr>, Vec<Fr>)], j: &'a JubJub) -> MyLookupCircuit<'a> {
             MyLookupCircuit {
                 bits: (0..512).map(|_| Assignment::unknown()).collect(),
-                generators: generators,
-                j: j
+                generators,
+                j
             }
         }
 
@@ -1294,12 +1319,12 @@ fn test_pedersen() {
             j: &'a JubJub
         ) -> MyLookupCircuit<'a>
         {
-            assert!(bits.len() == 512);
+            assert_eq!(bits.len(), 512);
 
             MyLookupCircuit {
                 bits: bits.iter().map(|&b| Assignment::known(b)).collect(),
-                generators: generators,
-                j: j
+                generators,
+                j
             }
         }
     }
@@ -1631,8 +1656,8 @@ fn testy_more_pedersen()
         fn blank(generators: &'a [(Vec<Fr>, Vec<Fr>)], j: &'a JubJub) -> MyLookupCircuit<'a> {
             MyLookupCircuit {
                 bits: (0..512).map(|_| Assignment::unknown()).collect(),
-                generators: generators,
-                j: j
+                generators,
+                j
             }
         }
 
@@ -1642,12 +1667,12 @@ fn testy_more_pedersen()
             j: &'a JubJub
         ) -> MyLookupCircuit<'a>
         {
-            assert!(bits.len() == 512);
+            assert_eq!(bits.len(), 512);
 
             MyLookupCircuit {
                 bits: bits.iter().map(|&b| Assignment::known(b)).collect(),
-                generators: generators,
-                j: j
+                generators,
+                j
             }
         }
     }
