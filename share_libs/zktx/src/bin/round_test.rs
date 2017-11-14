@@ -184,7 +184,7 @@ fn round_test(){
     let mut alice = Account::new([1001,0],[rng.gen(),rng.gen()]);
     let mut bob = Account::new([1000,0],[rng.gen(),rng.gen()]);
 
-    let (mut alice_send_message,alice_private_send_message) = alice.send([10,0],[rng.gen(),0],bob.get_address());
+    let (mut alice_send_message,alice_private_send_message) = alice.send([10,0],[rng.gen(),rng.gen()],bob.get_address());
     verify_send(&mut alice_send_message,&mut alice);
     alice.send_refresh(&alice_private_send_message,&alice_send_message);
     alice.state_out("alice");
@@ -193,6 +193,16 @@ fn round_test(){
     verify_receive(&mut bob_receive_message,&mut bob);
     bob.receive_refresh(&bob_private_receive_message,&bob_receive_message);
     bob.state_out("bob");
+
+    let (mut bob_send_message,bob_private_send_message) = bob.send([200,0],[rng.gen(),rng.gen()],alice.get_address());
+    verify_send(&mut bob_send_message,&mut bob);
+    bob.send_refresh(&bob_private_send_message,&bob_send_message);
+    bob.state_out("bob");
+
+    let (mut alice_receive_message,alice_private_receive_message) = alice.receive(bob_send_message);
+    verify_receive(&mut alice_receive_message,&mut alice);
+    alice.receive_refresh(&alice_private_receive_message,&alice_receive_message);
+    alice.state_out("alice");
 }
 
 fn main(){
