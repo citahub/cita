@@ -102,6 +102,7 @@ fn u8to64(nums:[u8;8])->u64{
 }
 
 pub fn address(addr_sk:&Vec<bool>) ->([u64;4], [u64;4]){
+    assert_eq!(addr_sk.len(),ADSK);
     let mut rng = XorShiftRng::from_seed([0x5dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654]);//TODO:choose the seed
     let j = JubJub::new();
     let (mut xp,mut yp) = Point::rand(&mut rng, &j).coordinate();
@@ -164,9 +165,18 @@ fn point_add(x0:&Fr, y0:&Fr, xp:&Fr, yp:&Fr, j: &JubJub) ->(Fr, Fr){
 }
 
 pub fn ecc_add(point1:([u64;4], [u64;4]), point2:([u64;4], [u64;4])) ->([u64;4], [u64;4]){
-    let (xfr,yfr) = point_add(&Fr::from_serial(point1.0), &Fr::from_serial(point1.1), &Fr::from_serial(point2.0), &Fr::from_serial(point2.1), &JubJub::new());
-    let x = xfr.serial();
-    let y = yfr.serial();
+    let (xfr,yfr) = point_add(&Fr::from_repr(FrRepr::from_serial(point1.0)).unwrap(), &Fr::from_repr(FrRepr::from_serial(point1.1)).unwrap(), &Fr::from_repr(FrRepr::from_serial(point2.0)).unwrap(), &Fr::from_repr(FrRepr::from_serial(point2.1)).unwrap(), &JubJub::new());
+    let x = xfr.into_repr().serial();
+    let y = yfr.into_repr().serial();
+    (x,y)
+}
+
+pub fn ecc_sub(point1:([u64;4], [u64;4]), point2:([u64;4], [u64;4])) ->([u64;4], [u64;4]){
+    let mut temp = Fr::from_repr(FrRepr::from_serial(point2.0)).unwrap();
+    temp.negate();
+    let (xfr,yfr) = point_add(&Fr::from_repr(FrRepr::from_serial(point1.0)).unwrap(), &Fr::from_repr(FrRepr::from_serial(point1.1)).unwrap(), &temp, &Fr::from_repr(FrRepr::from_serial(point2.1)).unwrap(), &JubJub::new());
+    let x = xfr.into_repr().serial();
+    let y = yfr.into_repr().serial();
     (x,y)
 }
 
@@ -234,7 +244,7 @@ pub fn v_p1_add_r_p2(v:[u64;2], r:[u64;2]) ->([u64;4], [u64;4]){
         }
     }
 
-    (x0.serial(),y0.serial())
+    (x0.into_repr().serial(),y0.into_repr().serial())
 }
 
 fn point_mul(point:([u64;4], [u64;4]), num:Vec<bool>) ->(Fr, Fr){
@@ -267,4 +277,18 @@ pub fn decrypt(secret:[u64;4], rp:([u64;4], [u64;4]), sk:Vec<bool>) ->([u64;2], 
     let va = [message[2],message[3]];
     let rcm = [message[0],message[1]];
     (va,rcm)
+}
+
+pub fn u644add(num1:[u64;4],num2:[u64;4])->[u64;4]{
+    let mut fr1 = Fr::from_repr(FrRepr::from_serial(num1)).unwrap();
+    let fr2 = Fr::from_repr(FrRepr::from_serial(num2)).unwrap();
+    fr1.add_assign(&fr2);
+    fr1.into_repr().serial()
+}
+
+pub fn u644sub(num1:[u64;4],num2:[u64;4])->[u64;4]{
+    let mut fr1 = Fr::from_repr(FrRepr::from_serial(num1)).unwrap();
+    let fr2 = Fr::from_repr(FrRepr::from_serial(num2)).unwrap();
+    fr1.sub_assign(&fr2);
+    fr1.into_repr().serial()
 }

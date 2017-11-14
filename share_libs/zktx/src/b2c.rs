@@ -187,7 +187,7 @@ impl<'a> Circuit<Bls12> for B2Ccircuit<'a>{
     }
 }
 
-pub fn b2c_info(rcm:[u64;2],va:[u64;2],addr:([u64;4],[u64;4]),random:[u64;4])->Result<(
+pub fn b2c_info(rcm:[u64;2],va:[u64;2],addr:([u64;4],[u64;4]),enc_random:[u64;4])->Result<(
     (([u64; 6], [u64; 6], bool), (([u64; 6], [u64; 6]), ([u64; 6], [u64; 6]), bool), ([u64; 6], [u64; 6], bool)),
     [u64;4],([u64;4],[u64;4]),[u64;4]),Error>{
     let rng = &mut thread_rng();
@@ -199,7 +199,7 @@ pub fn b2c_info(rcm:[u64;2],va:[u64;2],addr:([u64;4],[u64;4]),random:[u64;4])->R
         Fr::from_repr(FrRepr([rcm[0],rcm[1],0,0])).unwrap(),
         Fr::from_repr(FrRepr([va[0],va[1],0,0])).unwrap(),
         (Fr::from_repr(FrRepr(addr.0)).unwrap(),Fr::from_repr(FrRepr(addr.1)).unwrap()),
-        Fr::from_serial(random),
+        Fr::from_serial(enc_random),
         &mut res
     ), b2c_param()?, rng)?.serial();
     let coin = res[0].serial();
