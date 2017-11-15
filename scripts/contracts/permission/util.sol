@@ -2,7 +2,7 @@ pragma solidity ^0.4.14;
 
 /// @notice TODO: Address and bytes32. refactor the duplicate code.
 ///               The elements of set is different each othet. 
-library SetOperate {
+library Util {
 
     enum SetOp { None, Union, Interaction, Diff }
 
@@ -167,5 +167,34 @@ library SetOperate {
         }
 
         return result;
+    }
+
+    /// @dev Delete the value of the bytes32 array
+    function bytes32Delete(bytes32 _value, bytes32[] storage _array) internal returns (bool) {
+        var index = bytes32Index(_value,  _array);
+        // Not found
+        if (index >= _array.length)
+            return false;
+
+        // Remove the gap
+        for (uint i = index; i < _array.length - 1; i++) {
+            _array[i] = _array[i + 1];
+        }
+
+        // Also delete the last element
+        delete _array[_array.length - 1];
+        _array.length--;
+        return true;
+    }
+
+    /// @dev Get the index in the value of the bytes32 array
+    function bytes32Index(bytes32 _value, bytes32[] _array) internal returns (uint) {
+        // Find the index of the value in the array
+        for (uint i = 0; i < _array.length; i++) {
+            if (_value == _array[i])
+                return i;
+        }
+        // If i == length, means not find
+        return i;
     }
 }
