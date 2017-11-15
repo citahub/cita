@@ -8,6 +8,7 @@ pub struct Config {
     pub buffer_duration: u32,
     pub tx_verify_thread_num: usize,
     pub tx_verify_num_per_thread: usize,
+    pub proposal_tx_verify_num_per_thread: usize,
     pub tx_pool_limit: usize,
     pub block_packet_tx_limit: usize,
     pub prof_start: u64,

@@ -21,11 +21,12 @@ use libproto::blockchain::{SignedTransaction, AccountGasLimit, UnverifiedTransac
 use protobuf::Message;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering, ATOMIC_U64_INIT};
+use std::sync::atomic::{AtomicU64, Ordering, ATOMIC_U64_INIT, AtomicBool};
 use std::sync::mpsc::{Sender, Receiver};
 use std::time::SystemTime;
 use std::vec::*;
-use util::{H256, RwLock};
+use threadpool::ThreadPool;
+use util::{H256, RwLock, Mutex};
 use verify::Verifier;
 
 #[derive(Debug, Clone)]
@@ -187,7 +188,7 @@ fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxR
     if let Some(resp) = cache.read().get(tx_hash) { Some(resp.clone()) } else { None }
 }
 
-pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_req_block: &Sender<VerifyRequestResponseInfo>, tx_req_single: &Sender<VerifyRequestResponseInfo>, tx_pub: &Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>, resp_sender: &Sender<VerifyRequestResponseInfo>) {
+pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadpool: &Mutex<ThreadPool>, proposal_tx_verify_num_per_thread: usize, verifier: Arc<RwLock<Verifier>>, tx_req_single: &Sender<VerifyRequestResponseInfo>, tx_pub: &Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>, resp_sender: &Sender<VerifyRequestResponseInfo>) {
     let (cmdid, _origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
     match content {
@@ -225,9 +226,13 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
             }
             verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
         }
+        // TODO: Add ProposalVerifier { status, request_id, threadpool }, Status: On, Failed, Successed, Experied
+        // TODO: Make most of the logic asynchronous
+        // Verify Proposal from consensus
         MsgClass::VERIFYBLKREQ(blkreq) => {
             info!("get block verify request with {:?} request", blkreq.get_reqs().len());
             let tx_cnt = blkreq.get_reqs().len();
+            let mut tx_need_verify = Vec::new();
             if tx_cnt > 0 {
                 let request_id = blkreq.get_id();
                 let new_block_verify_status = BlockVerifyStatus {
@@ -268,7 +273,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                                 block_verify_status_guard.block_verify_result == VerifyResult::VerifyFailed;
                                 let tx_hash = H256::from_slice(req.get_tx_hash());
                                 let resp_ret;
-                                if let Some(resp) = get_resp_from_cache(&tx_hash, cache) {
+                                if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
                                     resp_ret = resp.get_ret();
                                 } else {
                                     error!("Can't get response from cache but could get it just right now");
@@ -287,18 +292,32 @@ pub fn handle_remote_msg(payload: Vec<u8>, verifier: Arc<RwLock<Verifier>>, tx_r
                                     req_resp: VerifyRequestResponse::AuthRequest(req.clone()),
                                     un_tx: None,
                                 };
-                                tx_req_block.send(verify_request_info).unwrap();
+                                tx_need_verify.push(verify_request_info);
                             }
-
                         }
                     }
-                    if block_verify_status_guard.verify_success_cnt_capture == block_verify_status_guard.verify_success_cnt_required {
-                        block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
-                        info!("Succeed to do verify blk req for request_id: {}, ret: {:?}, time cost: {:?}, and final status is: {:?}", request_id, Ret::Ok, block_verify_stamp.elapsed().unwrap(), *block_verify_status_guard);
-                        publish_block_verification_result(request_id, Ret::Ok, &tx_pub);
+                    let tx_need_verify_len = tx_need_verify.len();
+                    // Most of time nearly all the transactions hit the cache.
+                    if tx_need_verify_len > 0 {
+                        on_proposal.store(true, Ordering::SeqCst);
+                        let mut iter = tx_need_verify.chunks(proposal_tx_verify_num_per_thread);
+                        let pool = threadpool.lock();
+                        while let Some(group) = iter.next() {
+                            let verifier_clone = verifier.clone();
+                            let cache_clone = cache.clone();
+                            let resp_sender_clone = resp_sender.clone();
+                            let group_for_pool = group.to_vec().clone();
+                            pool.execute(move || { verify_tx_group_service(group_for_pool, verifier_clone, cache_clone, resp_sender_clone); });
+                        }
+                        on_proposal.store(false, Ordering::SeqCst);
+                    } else {
+                        if block_verify_status_guard.verify_success_cnt_capture == block_verify_status_guard.verify_success_cnt_required {
+                            block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
+                            info!("Succeed to do verify blk req for request_id: {}, ret: {:?}, time cost: {:?}, and final status is: {:?}", request_id, Ret::Ok, block_verify_stamp.elapsed().unwrap(), *block_verify_status_guard);
+                            publish_block_verification_result(request_id, Ret::Ok, &tx_pub);
+                        }
                     }
                 }
-
             } else {
                 error!("Wrong block verification request with 0 tx for block verify request_id: {} from sub_module: {}", blkreq.get_id(), submodule);
             }
