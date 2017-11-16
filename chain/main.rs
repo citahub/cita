@@ -98,9 +98,9 @@ fn main() {
     let block_tx_hashes = chain.block_tx_hashes(chain.get_current_height()).expect("shoud return current block tx hashes");
     chain.delivery_block_tx_hashes(chain.get_current_height(), block_tx_hashes, &ctx_pub);
 
-    let (write_tx, write_rx) = channel();
-    let forward = Forward::new(chain.clone(), ctx_pub, write_tx);
-    forward.broad_current_status();
+    let (write_sender, write_receiver) = channel();
+    let forward = Forward::new(chain.clone(), ctx_pub, write_sender);
+    forward.broadcast_current_status();
     let forward_write = forward.clone();
     //chain 读写分离
     //chain 读数据 => 查询数据
@@ -112,10 +112,11 @@ fn main() {
 
     //chain 写数据 => 添加块
     thread::spawn(move || loop {
-                      if let Ok(blocks) = write_rx.recv_timeout(Duration::new(8, 0)) {
+                      if let Ok(blocks) = write_receiver.recv_timeout(Duration::new(8, 0)) {
                           forward_write.dispatch_blocks(blocks);
+                      } else {
+                          forward_write.broadcast_current_status();
                       }
-                      forward_write.broad_current_status();
                   });
 
     //garbage collect
