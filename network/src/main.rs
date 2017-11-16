@@ -70,8 +70,8 @@ fn main() {
     //exit process when panic
     set_panic_handler();
 
-    // Init logger
-    logger::init();
+    // Init log4rs
+    logger::init_config("network");
     info!("CITA:network");
     // init app
     // todo load config

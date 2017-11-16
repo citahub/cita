@@ -57,7 +57,7 @@ fn main() {
     //exit process when panic
     set_panic_handler();
 
-    logger::init();
+    logger::init_config("consensus");
     println!("CITA:consensus:poa");
 
     let matches = App::new("authority_round")

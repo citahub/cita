@@ -10,8 +10,6 @@ pub struct MonitorConfig {
     pub command: Option<String>,
     pub args: Option<Vec<String>>,
     pub pidfile: Option<String>,
-    pub logfile: Option<String>,
-    pub errfile: Option<String>,
     pub process: Option<Vec<ProcessConfig>>,
 }
 
@@ -21,8 +19,6 @@ pub struct ProcessConfig {
     pub command: Option<String>,
     pub args: Option<Vec<String>>,
     pub pidfile: Option<String>,
-    pub logfile: Option<String>,
-    pub errfile: Option<String>,
     pub respawn: Option<u32>,
     pub pid: Option<u32>,
     pub respawns: Option<u32>,

@@ -96,7 +96,7 @@ fn main() {
     ::std::env::set_var("RUST_BACKTRACE", "full");
     //exit process when panic
     set_panic_handler();
-    logger::init();
+    logger::init_config("jsonrpc");
     info!("CITA:jsonrpc ");
 
     // todo load config

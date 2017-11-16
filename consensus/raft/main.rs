@@ -81,7 +81,7 @@ fn main() {
     ::std::env::set_var("RUST_BACKTRACE", "full");
     //exit process when panic
     set_panic_handler();
-    logger::init();
+    logger::init_config("consensus");
     let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
     info!("CITA:raft");
     let (tx_sub, rx_sub) = channel();

@@ -86,8 +86,8 @@ fn main() {
     //exit process when panic
     set_panic_handler();
 
-    // Init logger
-    logger::init();
+    // log4rs config
+    logger::init_config("auth");
     info!("CITA:auth");
     // init app
     let matches = App::new("auth")

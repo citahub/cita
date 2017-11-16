@@ -20,6 +20,7 @@ extern crate log;
 extern crate logger;
 extern crate rustc_serialize;
 extern crate clap;
+extern crate util;
 
 pub mod config;
 pub mod process;
@@ -46,6 +47,7 @@ fn main() {
                         .version("0.1")
                         .author("Cryptape"))
         .subcommand(SubCommand::with_name("stop").about("Stop all proccesses").version("0.1").author("Cryptape"))
+        .subcommand(SubCommand::with_name("logrotate").about("rotate logs").version("0.1").author("Cryptape"))
         .subcommand(SubCommand::with_name("")
                         .about("Start all proccesses in the foreground")
                         .version("0.1")
@@ -70,6 +72,9 @@ fn main() {
         }
         Some("stop") => {
             daemon.stop_all()
+        }
+        Some("logrotate") => {
+            daemon.logrotate()
         }
         Some(&_) => {}
         None => {

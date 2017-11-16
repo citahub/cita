@@ -1,9 +1,10 @@
 [package]
 name = "logger"
 version = "0.1.0"
-authors = ["urugang <urugang@gmail.com>"]
+authors = ["wangzhanfeng310103 <wangzhanfeng@cryptape.com>"]
 
 [dependencies]
 log = "0.3"
-time = "0.1"
-env_logger = "0.4"
+log4rs = "0.7"
+chan-signal = "0.3"
+chrono = "0.4"

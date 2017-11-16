@@ -8,6 +8,5 @@ toml = "0.2"
 rustc-serialize = "0.3"
 log = "0.3"
 clap = "2"
-
-logger =  { path = "../../share_libs/logger" }
-
+logger = { path = "../../share_libs/logger" }
+util = { path = "../../share_libs/util" }

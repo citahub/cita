@@ -1,3 +1,5 @@
+extern crate util;
+
 use config::{MonitorConfig, ProcessConfig};
 use std::collections::HashMap;
 use std::default::Default;
@@ -8,9 +10,9 @@ use std::io::{BufReader, Read};
 use std::io::Write;
 use std::process::Child;
 use std::process::Command;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
-
+use util::Mutex;
 
 #[derive(Debug, Default)]
 pub struct Processes {
@@ -26,8 +28,6 @@ impl Processes {
             command: monitorconfig.command.clone(),
             args: monitorconfig.args.clone(),
             pidfile: monitorconfig.pidfile.clone(),
-            logfile: monitorconfig.logfile.clone(),
-            errfile: monitorconfig.errfile.clone(),
             ..Default::default()
         };
 
@@ -55,7 +55,7 @@ impl Processes {
         }
     }
 
-    //find child process
+    // find child process
     pub fn find_process(&mut self) -> Option<u32> {
 
         if self.processcfg.pidfile == None {
@@ -70,92 +70,104 @@ impl Processes {
         is_exist
     }
 
-    //start  parent process
+    // start parent process
     pub fn start(&mut self) {
 
         let command = self.processcfg.command.clone().unwrap();
         let arg_null: Vec<String> = Vec::new();
         let args = self.processcfg.args.clone().unwrap_or(arg_null);
-        let log_path = self.processcfg.logfile.clone().unwrap();
-        let error_path = self.processcfg.errfile.clone().unwrap();
-        let child = Command::new(command)
-            .args(args)
-            .stdout(creat_file(log_path))
-            .stderr(creat_file(error_path))
-            .spawn()
-            .expect("failed to execute child");
+        let child = Command::new(command).args(args).spawn().expect("failed to execute child");
 
         self.processcfg.pid = Some(child.id());
 
-        //record pid
+        // record pid
         let pid = child.id();
         let pidfile = self.processcfg.pidfile.clone().unwrap();
         write_pid(pidfile, pid);
 
-        //record process handle
+        // record process handle
         self.processhandle = Some(child);
 
-        //record process status
+        // record process status
         let name = self.processcfg.name.clone().unwrap();
         info!("{} started", name);
 
     }
 
-    //run all child processes
+    // run all child processes
     pub fn start_all(self) {
         for (_, child_process) in self.children {
             run_process(child_process);
         }
     }
 
-    //stop process
+    // stop process
     pub fn stop(&mut self) {
         let name = self.processcfg.name.clone().unwrap();
         let pidfile = self.processcfg.pidfile.clone().unwrap();
         match self.find_process() {
-            None => {
-                warn!("{} not started", name);
-                return;
-            }
             Some(pid) => {
                 let pid_str = pid.to_string();
                 let args = vec!["-9", &pid_str];
                 Command::new("kill").args(args).spawn().expect("kill command failed to start");
                 info!("{} stopped", name);
-                //todo free resouce
                 delete_pidfile(pidfile);
+            }
+            None => {
+                warn!("{} not started", name);
+                return;
             }
         }
     }
-    //stop all  processes
+
+    // stop all processes
     pub fn stop_all(mut self) {
 
-        //stop parent process
+        // stop parent process
         self.stop();
 
-        //stop all child process
+        // stop all child process
         for (_, child_process) in self.children {
-            let mut process = child_process.lock().unwrap();
+            let mut process = child_process.lock();
             process.stop();
         }
 
     }
+
+    // all child processes logrotate
+    pub fn logrotate(self) {
+        for (_, child_process) in self.children {
+            let mut process = child_process.lock();
+            let name = process.processcfg.name.clone().unwrap();
+            match process.find_process() {
+                Some(pid) => {
+                    let pid_str = pid.to_string();
+                    //send signal(SIGUSR1) to child processes
+                    let args = vec!["-10", &pid_str];
+                    Command::new("kill").args(args).spawn().expect("kill command failed to start");
+                }
+                None => {
+                    warn!("{} not started", name);
+                }
+            }
+        }
+    }
 }
 
-//run child process
+// run child process
 pub fn run_process(child_process: Arc<Mutex<Processes>>) {
 
     thread::spawn(move || {
         loop {
             {
-                //wait until process exit,then restart process
+                // wait until process exit,then restart process
                 let process_wait = child_process.clone();
-                let mut process = process_wait.lock().unwrap();
+                let mut process = process_wait.lock();
 
                 let name = process.processcfg.name.clone().unwrap();
                 let pidfile = process.processcfg.pidfile.clone().unwrap();
 
-                //check process exsit
+                // check process exsit
                 match process.find_process() {
                     Some(pid) => {
                         warn!("{} already started,pid is {}", name, pid);
@@ -167,10 +179,8 @@ pub fn run_process(child_process: Arc<Mutex<Processes>>) {
                 // start child process
                 process.start();
 
-                let process_handle = &mut process.processhandle;
-
-                match process_handle {
-                    &mut Some(ref mut child) => {
+                match process.processhandle {
+                    Some(ref mut child) => {
                         match child.wait() {
                             Ok(_status) => {
                                 warn!("{} exit status is {:?}", name, _status);
@@ -183,8 +193,8 @@ pub fn run_process(child_process: Arc<Mutex<Processes>>) {
                             }
                         }
                     }
-                    &mut None => {
-                        //almost never happen
+                    None => {
+                        // almost never happen
                         delete_pidfile(pidfile);
                         warn!("{} processHandle is None", name);
                         return;
@@ -192,7 +202,7 @@ pub fn run_process(child_process: Arc<Mutex<Processes>>) {
                 }
             }
             match change_status(&child_process) {
-                //reach max respwawn times
+                // reach max respwawn times
                 false => return,
                 _ => {}
             }
@@ -202,18 +212,18 @@ pub fn run_process(child_process: Arc<Mutex<Processes>>) {
 
 }
 
-//change child status..
+// change child status..
 pub fn change_status(child_process: &Arc<Mutex<Processes>>) -> bool {
 
     let process_temp = child_process.clone();
-    let mut process = process_temp.lock().unwrap();
+    let mut process = process_temp.lock();
 
     let process_name = process.processcfg.name.clone().unwrap();
 
-    //repawns++
+    // repawns++
     process.processcfg.respawns = process.processcfg.respawns.unwrap_or(0).checked_add(1);
 
-    //reach max respawn times,default:3 times
+    // reach max respawn times,default:3 times
     if process.processcfg.respawns.unwrap() > process.processcfg.respawn.unwrap_or(3) {
         warn!("{} reach max respawn limit", process_name);
         return false;
@@ -221,7 +231,7 @@ pub fn change_status(child_process: &Arc<Mutex<Processes>>) -> bool {
     true
 }
 
-//write pid to the path file
+// write pid to the path file
 pub fn write_pid(path: String, pid: u32) {
     let mut pid_file: File = OpenOptions::new()
         .write(true)
@@ -248,29 +258,14 @@ pub fn read_pid(path: String) -> u32 {
     }
 }
 
-//delete pid file
+// delete pid file
 pub fn delete_pidfile(path: String) {
     remove_file(path).expect("delete pid failed");
 }
 
-
-//create log file
-fn creat_file(path: String) -> File {
-    let file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .append(true)
-        .open(path)
-        .expect("log path error!");
-
-    file
-}
-
-
-//whether process exsit
+// whether process exsit
 fn check_process(pidfile: String) -> Option<u32> {
-    //read pid from pidfile
+    // read pid from pidfile
     let pid: u32 = read_pid(pidfile);
     if pid == 0 {
         return None;
