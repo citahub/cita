@@ -1147,13 +1147,14 @@ impl TenderMint {
                         let _ = self.wal_log.save(LOG_TYPE_VERIFIED_PROPOSE, &msg);
                         self.unverified_msg.remove(&(vheight as usize, vround as usize));
                     }
-                    info!("recive VERIFYBLKRESP verify_id {} height {} round {}", verify_id, vheight, vround);
+                    info!("recive VERIFYBLKRESP verify_id {} height {} round {} ok {}", verify_id, vheight, vround, verify_ok);
                     if vheight == self.height && vround == self.round && self.step == Step::PrecommitAuth {
                         if !verify_ok {
                             //verify not ok,so clean the proposal info
                             self.clean_saved_info();
                         }
                         if self.pre_proc_precommit() {
+                            self.change_state_step(vheight, vround, Step::Precommit, false);
                             self.proc_precommit(vheight, vround);
                         }
                     }
@@ -1193,28 +1194,30 @@ impl TenderMint {
         if height > 0 && status_height + 1 < height {
             return;
         }
-        let mut r = INIT_ROUND;
 
-        if status_height == height || (height > 0 && status_height + 1 == height) {
-            let pre_hash = H256::from(H256::from_slice(&status.hash));
-            {
-                trace!("new_status hash is {:?}", pre_hash);
+        let pre_hash = H256::from(H256::from_slice(&status.hash));
+        if height > 0 && status_height + 1 == height {
+            // try efforts to save previous hash,when current block is not commit to chain
+            if step < Step::CommitWait {
                 self.pre_hash = Some(pre_hash);
             }
 
-            if status_height != height {
-                if step >= Step::Commit {
-                    if let Some((hi, ref bproof)) = self.block_proof {
-                        if hi == height {
-                            self.pub_block(bproof);
-                        }
+            // commit timeout since pub block to chain,so resending the block
+            if step >= Step::Commit {
+                if let Some((hi, ref bproof)) = self.block_proof {
+                    if hi == height {
+                        self.pub_block(bproof);
                     }
                 }
-                return;
+
             }
+            return;
+        }
+        let mut r = INIT_ROUND;
+        if status_height == height {
+            self.pre_hash = Some(pre_hash);
             r = self.round;
         }
-
         // try my effor to save proof,when I skipping commit_blcok by the chain sending new status.
         if self.proof.height != height {
             if let Some(hash) = self.proposal {
