@@ -1,15 +1,15 @@
 pragma solidity ^0.4.14;
 
 import "./set_operate.sol";
-import "./authorization_manager.sol";
 
-/// @notice TODO. Only from router's address
 /// @title Manager the role 
-contract RoleManager {
+library RoleManager {
 
     using SetOperate for *;
 
-    mapping(bytes32 => Role) roles;
+    struct Roles {
+        mapping(bytes32 => Role) roles;
+    }
 
     struct Role {
         bytes32 name;
@@ -26,12 +26,13 @@ contract RoleManager {
     /// @param _name The role name of the caller
     /// @return The new role name
     function newRole(
+        Roles storage self,
         bytes32 _name,
         bytes32 _newName,
         bytes32[] _newPermissions,
         SetOperate.SetOp _op
     )
-        public
+        internal 
         returns (bytes32) 
     {
         Role memory role;
@@ -41,7 +42,7 @@ contract RoleManager {
             for (uint i = 0; i < _newPermissions.length; i++)
                 role.permissions[i] = _newPermissions[i];
         } else {
-            bytes32[] memory one = SetOperate.setOpBytes32(roles[_name].permissions, _newPermissions, _op);
+            bytes32[] memory one = SetOperate.setOpBytes32(self.roles[_name].permissions, _newPermissions, _op);
             for (uint j = 0; j < one.length; j++)
                 role.permissions[j] = one[j];
         }
@@ -52,25 +53,22 @@ contract RoleManager {
     }
 
     /// @dev Modify the name
-    function modifyName(bytes32 _oldName, bytes32 _newName) public returns (bool) {
-        Role memory role = roles[_oldName];
+    function modifyName(Roles storage self, bytes32 _oldName, bytes32 _newName) internal returns (bool) {
+        Role memory role = self.roles[_oldName];
         role.name = _newName;
-        roles[_newName] = role;
-        delete roles[_oldName];
-        // Also change authorization
-        AuthorizationManager auth = new AuthorizationManager(); 
-        auth.replaceRole(_oldName, _newName); 
+        self.roles[_newName] = role;
+        delete self.roles[_oldName];
         NameModified(_oldName, _newName);
         return true;
 
     }
 
     /// @dev Add permissions 
-    function addPermissions(bytes32 _name, bytes32[] _permissions) public returns (bool) {
-        bytes32[] memory result = SetOperate.opUnionBytes32(roles[_name].permissions, _permissions);
+    function addPermissions(Roles storage self, bytes32 _name, bytes32[] _permissions) internal returns (bool) {
+        bytes32[] memory result = SetOperate.opUnionBytes32(self.roles[_name].permissions, _permissions);
 
         for (uint i = 0; i < result.length; i++)
-            roles[_name].permissions[i] = result[i];
+            self.roles[_name].permissions[i] = result[i];
 
         PermissionsAdded(_name, _permissions);
         return true;
@@ -78,11 +76,11 @@ contract RoleManager {
     }
 
     /// @dev Delete permissions 
-    function deletePermissions(bytes32 _name, bytes32[] _permissions) public returns (bool) {
-        bytes32[] memory result = SetOperate.opDiffBytes32(roles[_name].permissions, _permissions);
+    function deletePermissions(Roles storage self, bytes32 _name, bytes32[] _permissions) internal returns (bool) {
+        bytes32[] memory result = SetOperate.opDiffBytes32(self.roles[_name].permissions, _permissions);
 
         for (uint i = 0; i < result.length; i++)
-            roles[_name].permissions[i] = result[i];
+            self.roles[_name].permissions[i] = result[i];
 
         PermissionsDeleted(_name, _permissions);
         return true;
@@ -90,17 +88,14 @@ contract RoleManager {
     }
 
     /// @dev Delete permissions
-    function deleteRole(bytes32 _name) public returns (bool) {
-        delete roles[_name];
-        // Also delete the authorization
-        AuthorizationManager auth = new AuthorizationManager(); 
-        auth.deleteRole(_name);
+    function deleteRole(Roles storage self, bytes32 _name) internal returns (bool) {
+        delete self.roles[_name];
         RoleDeleted(_name);
         return true;
     }
 
     /// @dev Query the permissions 
-    function queryPermissions(bytes32 _name) public returns (bytes32[]) {
-        return roles[_name].permissions;
+    function queryPermissions(Roles storage self, bytes32 _name) constant returns (bytes32[]) {
+        return self.roles[_name].permissions;
     }
 }

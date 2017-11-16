@@ -1,15 +1,15 @@
 pragma solidity ^0.4.14;
 
-import "./set_operate.sol";
-import "./authorization_manager.sol";
+import "./util.sol";
 
-/// @notice TODO: Only from router's address. Need an address of the router contract
 /// @title Manager the group
-contract GroupManager {
+library GroupManager {
 
-    using SetOperate for *;
+    using Util for *;
 
-    mapping(bytes32 => Group) groups;
+    struct Groups {
+        mapping(bytes32 => Group) groups;
+    }
 
     struct Group {
         bytes32 name;
@@ -29,24 +29,25 @@ contract GroupManager {
     /// @param _name The group name of the caller
     /// @return The new group name
     function newGroup(
+        Groups storage self,
         bytes32 _name,
         bytes32 _newName,
         address[] _newUsers,
         bool _newSubSwitch,
-        SetOperate.SetOp _op
+        Util.SetOp _op
     )
-        public
+        internal 
         returns (bytes32)
     {
         Group memory group;
         group.name = _newName;
         group.subSwitch = _newSubSwitch;
 
-        if (SetOperate.SetOp.None == _op) {
+        if (Util.SetOp.None == _op) {
             for (uint i = 0; i < _newUsers.length; i++)
                 group.users[i] = _newUsers[i];
         } else {
-            address[] memory one = SetOperate.setOpAddress(groups[_name].users, _newUsers, _op);
+            address[] memory one = Util.setOpAddress(self.groups[_name].users, _newUsers, _op);
             for (uint j = 0; j < one.length; j++)
                 group.users[j] = one[j];
         }
@@ -57,31 +58,28 @@ contract GroupManager {
 
     /// @dev Modify the name
     /// @notice TODO. Need to change authorization too
-    function modifyName(bytes32 _oldName, bytes32 _newName) public returns (bool) {
-        Group memory group = groups[_oldName];
+    function modifyName(Groups storage self, bytes32 _oldName, bytes32 _newName) internal returns (bool) {
+        Group memory group = self.groups[_oldName];
         group.name = _newName;
-        groups[_newName] = group;
-        delete groups[_oldName];
-        // Also change authorization
-        AuthorizationManager auth = new AuthorizationManager();
-        auth.replaceGroup(_oldName, _newName); 
+        self.groups[_newName] = group;
+        delete self.groups[_oldName];
         NameModified(_oldName, _newName);
         return true;
     }
 
     /// @dev Modify the sub_switch
-    function modifySubSwitch(bytes32 _name, bool _newSubSwitch) public returns (bool) {
-        SubSwitchModified(groups[_name].subSwitch, _newSubSwitch);
-        groups[_name].subSwitch = _newSubSwitch;
+    function modifySubSwitch(Groups storage self, bytes32 _name, bool _newSubSwitch) internal returns (bool) {
+        SubSwitchModified(self.groups[_name].subSwitch, _newSubSwitch);
+        self.groups[_name].subSwitch = _newSubSwitch;
         return true;
     }
 
     /// @dev Add users 
-    function addUsers(bytes32 _name, address[] _users) public returns (bool) {
-        address[] memory result = SetOperate.opUnionAddress(groups[_name].users, _users);
+    function addUsers(Groups storage self, bytes32 _name, address[] _users) internal returns (bool) {
+        address[] memory result = Util.opUnionAddress(self.groups[_name].users, _users);
 
         for (uint i = 0; i < result.length; i++)
-            groups[_name].users[i] = result[i];
+            self.groups[_name].users[i] = result[i];
 
         UsersAdded(_name, _users);
         return true;
@@ -89,11 +87,11 @@ contract GroupManager {
     }
 
     /// @dev Delete users 
-    function deleteUsers(bytes32 _name, address[] _users) public returns (bool) {
-        address[] memory result = SetOperate.opDiffAddress(groups[_name].users, _users);
+    function deleteUsers(Groups storage self, bytes32 _name, address[] _users) internal returns (bool) {
+        address[] memory result = Util.opDiffAddress(self.groups[_name].users, _users);
 
         for (uint i = 0; i < result.length; i++)
-            groups[_name].users[i] = result[i];
+            self.groups[_name].users[i] = result[i];
 
         UsersDeleted(_name, _users);
         return true;
@@ -101,18 +99,15 @@ contract GroupManager {
 
     /// @dev Delete group
     /// @notice Delete a tree's node. Need to discuss. Only leaf node?
-    function deleteGroup(bytes32 _name) public returns (bool) {
-        delete groups[_name];
-        AuthorizationManager auth = new AuthorizationManager();
-        // Also delete the authorization
-        auth.deleteGroup(_name);
+    function deleteGroup(Groups storage self, bytes32 _name) internal returns (bool) {
+        delete self.groups[_name];
         GroupDeleted(_name);
         return true;
     }
 
     /// @notice Should check the sub_switch
     /// @dev Query the users
-    function queryUsers(bytes32 _name) public returns (address[]) {
-        return groups[_name].users;
+    function queryUsers(Groups storage self, bytes32 _name) constant returns (address[]) {
+        return self.groups[_name].users;
     }
 }
