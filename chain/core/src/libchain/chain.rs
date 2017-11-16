@@ -245,19 +245,6 @@ pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
 }
 
 impl Chain {
-    fn save_status(&self, batch: &mut DBTransaction) -> Status {
-        let current_height = self.get_current_height();
-        let current_hash = self.get_current_hash();
-
-        batch.write(db::COL_EXTRA, &CurrentHash, &current_hash);
-        //return status
-        let mut status = Status::new();
-        status.set_hash(current_hash);
-        status.set_number(current_height);
-        status
-    }
-
-
     pub fn init_chain<R>(db: Arc<KeyValueDB>, mut genesis: Genesis, sconfig: R) -> Chain
     where
         R: Read,
@@ -696,13 +683,13 @@ impl Chain {
         hashes.push_front(hash.clone());
     }
 
-    /// Commit block in db batch and update cache, including:
+    /// Prepare db batch and update cache, including:
     /// 1. Block including transactions
     /// 2. TransactionAddress
     /// 3. State
     /// 3. Receipts
     /// 4. Bloom
-    pub fn commit_block(&self, batch: &mut DBTransaction, block: ClosedBlock) {
+    pub fn prepare_update(&self, batch: &mut DBTransaction, block: ClosedBlock) {
 
         let height = block.number();
         let hash = block.hash().clone();
@@ -752,6 +739,13 @@ impl Chain {
         for (key, _) in block.transactions.clone() {
             self.cache_man.lock().note_used(CacheId::TransactionAddresses(key));
         }
+
+        // Save current block proof
+        if let Some(&(Some(ref proof), _)) = self.block_map.read().get(&height) {
+            batch.write(db::COL_EXTRA, &CurrentProof, &proof);
+        }
+
+        batch.write(db::COL_EXTRA, &CurrentHash, &hash);
 
         let mut state = block.drain();
         // Store triedb changes in journal db
@@ -837,6 +831,14 @@ impl Chain {
     /// Get transaction receipt.
     pub fn transaction_receipt(&self, address: &TransactionAddress) -> Option<Receipt> {
         self.block_receipts(address.block_hash.clone()).map_or(None, |r| r.receipts[address.index].clone())
+    }
+
+    /// Current status
+    fn current_status(&self) -> Status {
+        let mut status = Status::new();
+        status.set_hash(self.get_current_hash());
+        status.set_number(self.get_current_height());
+        status
     }
 
     /// Attempt to get a copy of a specific block's final state.
@@ -934,22 +936,7 @@ impl Chain {
         current_height + 1 == block_number
     }
 
-    /// Execute block in vm
-    fn execute_block(&self, block: Block) -> OpenBlock {
-        let current_state_root = self.current_state_root();
-        let last_hashes = self.last_hashes();
-        let senders = self.senders.read().clone();
-        let creators = self.creators.read().clone();
-        let check_permission = self.check_permission;
-        let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into(), &self.account_gas_limit.read().clone()).unwrap();
-        open_block.apply_transactions(check_permission, self.check_quota);
-
-        open_block
-    }
-
-    /*
-    Get the proof of height.
-    */
+    // Get the height of proof.
     pub fn get_block_proof_height(block: &Block) -> usize {
         match block.proof_type() {
             Some(ProofType::Tendermint) => {
@@ -966,41 +953,55 @@ impl Chain {
         }
     }
 
+    /// Execute Block
+    /// And set state_root, receipt_root, log_bloom of header
+    pub fn execute_block(&self, block: Block) -> ClosedBlock {
+        let now = Instant::now();
 
+        let current_state_root = self.current_state_root();
+        let last_hashes = self.last_hashes();
+        let senders = self.senders.read().clone();
+        let creators = self.creators.read().clone();
+        let check_permission = self.check_permission;
+        let mut open_block = OpenBlock::new(self.factories.clone(), senders, creators, false, block, self.state_db.boxed_clone(), current_state_root, last_hashes.into(), &self.account_gas_limit.read().clone()).unwrap();
 
-    /// Add block to chain:
-    /// 1. Execute block
-    /// 2. Commit block
-    /// 3. Update cache
-    pub fn add_block(&self, batch: &mut DBTransaction, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) -> Option<Header> {
-        if self.validate_hash(block.parent_hash()) {
-            let height = block.number();
-            // Delivery block tx hashes to auth
-            let tx_hashes = block.body().transaction_hashes();
-            self.delivery_block_tx_hashes(height, tx_hashes, ctx_pub);
-            let now = Instant::now();
-            let mut open_block = self.execute_block(block);
-            let closed_block = open_block.close();
-            let new_now = Instant::now();
-            info!("execute block use {:?}", new_now.duration_since(now));
-            let header = closed_block.header().clone();
-            // reload_config
-            self.reload_config();
-            // Delivery rich status to consensus
-            self.delivery_rich_status(&header, ctx_pub);
-            // Commit block in db batch and update cache
-            let now = Instant::now();
-            self.commit_block(batch, closed_block);
-            let new_now = Instant::now();
-            info!("commit block use {:?}", new_now.duration_since(now));
-            self.update_last_hashes(&header.hash());
-            Some(header)
-        } else {
-            None
+        open_block.apply_transactions(check_permission, self.check_quota);
+        let closed_block = open_block.close();
+
+        let new_now = Instant::now();
+        info!("execute block use {:?}", new_now.duration_since(now));
+        closed_block
+    }
+
+    /// Finalize block
+    /// 1. Delivery rich status
+    /// 2. Update cache
+    /// 3. Commited data to db
+    pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let mut batch = self.db.transaction();
+        let header = closed_block.header().clone();
+        // Reload config must come before delivery rich status
+        self.reload_config();
+        // Delivery rich status to consensus
+        self.delivery_rich_status(&header, ctx_pub);
+        {
+            *self.current_header.write() = header;
         }
+
+        self.prepare_update(&mut batch, closed_block);
+
+        // Saving in db
+        let now = Instant::now();
+        self.db.write(batch).expect("DB write failed.");
+        let new_now = Instant::now();
+        info!("db write use {:?}", new_now.duration_since(now));
+        self.update_last_hashes(&self.get_current_hash());
     }
 
     /// Reload system config from system contract
+    /// 1. Senders and creators
+    /// 2. Consensus nodes
+    /// 3. BlockGasLimit and AccountGasLimit
     pub fn reload_config(&self) {
         {
             // Reload senders and creators cache
@@ -1031,38 +1032,17 @@ impl Chain {
     pub fn set_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) -> Option<ProtoStatus> {
         let height = block.number();
         trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
-        if self.validate_height(height) {
-            let mut batch = self.db.transaction();
-            if let Some(header) = self.add_block(&mut batch, block, ctx_pub) {
+        if self.validate_height(height) && self.validate_hash(block.parent_hash()) {
+            // Delivery block tx hashes to auth
+            let tx_hashes = block.body().transaction_hashes();
+            self.delivery_block_tx_hashes(height, tx_hashes, ctx_pub);
 
-                trace!("set_block current_hash!!!!!!{:?} {:?}", height, header.hash());
+            let closed_block = self.execute_block(block);
+            self.finalize_block(closed_block, &ctx_pub);
 
-                {
-                    *self.current_header.write() = header;
-                }
-
-                let status = self.save_status(&mut batch);
-                // Save current block proof
-                match self.block_map.read().get(&height) {
-                    Some(&(Some(ref proof), _)) => {
-                        batch.write(db::COL_EXTRA, &CurrentProof, &proof);
-                    }
-                    _ => {}
-                }
-                // Saving in db
-                let now = Instant::now();
-                self.db.write(batch).expect("DB write failed.");
-                let new_now = Instant::now();
-                info!("db write use {:?}", new_now.duration_since(now));
-
-                info!("chain update {:?}", height);
-                Some(status.protobuf())
-            } else {
-                let mut guard = self.block_map.write();
-                let _ = guard.remove(&height);
-                warn!("add block failed");
-                None
-            }
+            let status = self.current_status();
+            info!("chain update {:?}", height);
+            Some(status.protobuf())
         } else {
             None
         }
