@@ -1,11 +1,11 @@
 pragma solidity ^0.4.14;
 
-import "./set_operate.sol";
+import "./util.sol";
 
 /// @title Manager the role 
 library RoleManager {
 
-    using SetOperate for *;
+    using Util for *;
 
     struct Roles {
         mapping(bytes32 => Role) roles;
@@ -30,7 +30,7 @@ library RoleManager {
         bytes32 _name,
         bytes32 _newName,
         bytes32[] _newPermissions,
-        SetOperate.SetOp _op
+        Util.SetOp _op
     )
         internal 
         returns (bytes32) 
@@ -38,11 +38,11 @@ library RoleManager {
         Role memory role;
         role.name = _newName;
 
-        if (SetOperate.SetOp.None == _op) {
+        if (Util.SetOp.None == _op) {
             for (uint i = 0; i < _newPermissions.length; i++)
                 role.permissions[i] = _newPermissions[i];
         } else {
-            bytes32[] memory one = SetOperate.setOpBytes32(self.roles[_name].permissions, _newPermissions, _op);
+            bytes32[] memory one = Util.setOpBytes32(self.roles[_name].permissions, _newPermissions, _op);
             for (uint j = 0; j < one.length; j++)
                 role.permissions[j] = one[j];
         }
@@ -65,7 +65,7 @@ library RoleManager {
 
     /// @dev Add permissions 
     function addPermissions(Roles storage self, bytes32 _name, bytes32[] _permissions) internal returns (bool) {
-        bytes32[] memory result = SetOperate.opUnionBytes32(self.roles[_name].permissions, _permissions);
+        bytes32[] memory result = Util.opUnionBytes32(self.roles[_name].permissions, _permissions);
 
         for (uint i = 0; i < result.length; i++)
             self.roles[_name].permissions[i] = result[i];
@@ -77,7 +77,7 @@ library RoleManager {
 
     /// @dev Delete permissions 
     function deletePermissions(Roles storage self, bytes32 _name, bytes32[] _permissions) internal returns (bool) {
-        bytes32[] memory result = SetOperate.opDiffBytes32(self.roles[_name].permissions, _permissions);
+        bytes32[] memory result = Util.opDiffBytes32(self.roles[_name].permissions, _permissions);
 
         for (uint i = 0; i < result.length; i++)
             self.roles[_name].permissions[i] = result[i];
