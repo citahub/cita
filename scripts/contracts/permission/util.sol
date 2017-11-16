@@ -197,4 +197,26 @@ library Util {
         // If i == length, means not find
         return i;
     }
+
+    /// @dev Check if the value in the array of bytes32
+    function bytes32InArray(bytes32 _value, bytes32[] _array) internal returns (bool) {
+        // Have found the value in array
+        for (uint i = 0; i < _array.length; i++) {
+            if (_value == _array[i])
+                return true;
+        }
+        // Not in
+        return false;
+    }
+
+    /// @dev Check if the value in the array of address
+    function addressInArray(address _value, address[] _array) internal returns (bool) {
+        // Have found the value in array
+        for (uint i = 0; i < _array.length; i++) {
+            if (_value == _array[i])
+                return true;
+        }
+        // Not in
+        return false;
+    }
 }
