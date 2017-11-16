@@ -108,14 +108,4 @@ library AuthorizationManager {
         RoleDeleted(_name);
         return true;
     }
-
-    /// @dev Query the roles of group
-    function queryRoles(Authorization storage self, bytes32 _group) constant returns(bytes32[]) {
-        return self.group_roles[_group];
-    }
-
-    /// @dev Query the groups of role
-    function queryGroups(Authorization storage self, bytes32 _role) constant returns(bytes32[]) {
-        return self.role_groups[_role] ;
-    }
 }
