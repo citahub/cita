@@ -25,8 +25,7 @@ use error::ErrorCode;
 use jsonrpc_types::rpctypes::{self as rpctypes, Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, CountOrCode, BlockNumber, BlockParamsByNumber, BlockParamsByHash, RpcBlock};
 use libproto;
 use libproto::{communication, factory, topics, submodules, BlockTxHashes, SyncRequest, SyncResponse, parse_msg, response, request, MsgClass};
-use libproto::blockchain::{Block as ProtobufBlock, BlockWithProof};
-use libproto::blockchain::{Status, RichStatus, ProofType};
+use libproto::blockchain::{Block as ProtobufBlock, BlockWithProof, ProofType};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use proof::TendermintProof;
@@ -65,28 +64,9 @@ impl Forward {
         }
     }
 
-    pub fn broad_current_status(&self) {
-        let current_hash = self.chain.get_current_hash();
-        let current_height = self.chain.get_current_height();
-        let nodes: Vec<Address> = {
-            self.chain.nodes.read().clone()
-        };
-        //drop(self);
-        info!("broad_current_status {:?}, {:?}", current_hash, current_height);
-        let mut rich_status = RichStatus::new();
-        rich_status.set_hash(current_hash.0.to_vec());
-        rich_status.set_height(current_height);
-        let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
-        rich_status.set_nodes(RepeatedField::from_vec(node_list));
-
-        let msg = factory::create_msg(submodules::CHAIN, topics::RICH_STATUS, communication::MsgType::RICH_STATUS, rich_status.write_to_bytes().unwrap());
-        trace!("chain after current height {:?}", current_height);
-        self.ctx_pub.send(("chain.richstatus".to_string(), msg.write_to_bytes().unwrap())).unwrap();
-
-        let status: Status = rich_status.into();
-        let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
-        trace!("add_block chain.status {:?}, {:?}", status.get_height(), status.get_hash());
-        self.ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
+    pub fn broadcast_current_status(&self) {
+        self.chain.delivery_current_rich_status(&self.ctx_pub);
+        self.chain.broadcast_status(&self.ctx_pub);
     }
 
     //注意: 划分函数处理流程
@@ -99,7 +79,7 @@ impl Forward {
             }
 
             MsgClass::BLOCKWITHPROOF(proof_blk) => {
-                //from consensus
+                // from consensus
                 self.write_sender.send(BlockFrom::CONSENSUS(proof_blk));
             }
 
@@ -112,7 +92,7 @@ impl Forward {
             }
 
             MsgClass::SYNCRESPONSE(sync_res) => {
-                //from sync
+                // from sync
                 self.write_sender.send(BlockFrom::SYNC(sync_res));
             }
 

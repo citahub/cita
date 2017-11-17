@@ -775,6 +775,12 @@ impl Chain {
         });
     }
 
+    /// Delivery current rich status
+    pub fn delivery_current_rich_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let header = &*self.current_header.read();
+        self.delivery_rich_status(header, ctx_pub);
+    }
+
     /// Delivery rich status to consensus
     /// Consensus should resend block if chain commit block failed.
     fn delivery_rich_status(&self, header: &Header, ctx_pub: &Sender<(String, Vec<u8>)>) {
@@ -995,7 +1001,17 @@ impl Chain {
         self.db.write(batch).expect("DB write failed.");
         let new_now = Instant::now();
         info!("db write use {:?}", new_now.duration_since(now));
+
+        self.broadcast_status(ctx_pub);
         self.update_last_hashes(&self.get_current_hash());
+    }
+
+    /// Broadcast new status
+    pub fn broadcast_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let status = self.current_status().protobuf();
+        let sync_msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, status.write_to_bytes().unwrap());
+        trace!("chain.status {:?}, {:?}", status.get_height(), status.get_hash());
+        ctx_pub.send(("chain.status".to_string(), sync_msg.write_to_bytes().unwrap())).unwrap();
     }
 
     /// Reload system config from system contract
