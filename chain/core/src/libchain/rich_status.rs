@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use util::{H256, Address};
-use protobuf::RepeatedField;
 use libproto::blockchain::RichStatus as ProtoRichStatus;
+use protobuf::RepeatedField;
+use util::{H256, Address};
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct RichStatus {
