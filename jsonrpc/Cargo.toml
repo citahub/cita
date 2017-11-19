@@ -4,7 +4,6 @@ version = "0.6.0"
 authors = ["https://github.com/u2"]
 
 [dependencies]
-futures = "0.1"
 hyper = "0.10"
 ws = "0.7"
 threadpool = "1.7.0"

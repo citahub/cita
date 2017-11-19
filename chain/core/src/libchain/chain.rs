@@ -14,6 +14,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 use bloomchain as bc;
 use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
@@ -34,8 +35,8 @@ pub use libchain::block::*;
 use libchain::cache::CacheSize;
 use libchain::call_request::CallRequest;
 use libchain::extras::*;
-use libchain::status::Status;
 use libchain::genesis::Genesis;
+use libchain::status::Status;
 pub use libchain::transaction::*;
 
 use libproto::*;

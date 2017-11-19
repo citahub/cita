@@ -247,7 +247,7 @@ impl Synchronizer {
 
 
     fn broadcast_status(&mut self) {
-        ("sync: broadcast status {:?}, {:?} to other nodes", self.current_status.get_height(), self.current_status.get_hash());
+        debug!("sync: broadcast status {:?}, {:?} to other nodes", self.current_status.get_height(), self.current_status.get_hash());
         let msg = factory::create_msg(submodules::CHAIN, topics::NEW_STATUS, communication::MsgType::STATUS, self.current_status.clone().write_to_bytes().unwrap());
         self.con.broadcast(msg);
     }

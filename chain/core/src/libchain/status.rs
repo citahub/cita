@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use util::H256;
 use libproto::blockchain::Status as ProtoStatus;
+use util::H256;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Status {

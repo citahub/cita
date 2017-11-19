@@ -454,5 +454,5 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
     blkresp.set_ret(ret);
 
     let msg = factory::create_msg(submodules::AUTH, topics::VERIFY_BLK_RESP, communication::MsgType::VERIFY_BLK_RESP, blkresp.write_to_bytes().unwrap());
-    tx_pub.send((String::from("verify_blk_consensus"), msg.write_to_bytes().unwrap())).unwrap();
+    tx_pub.send((String::from("auth.verify_blk_res"), msg.write_to_bytes().unwrap())).unwrap();
 }

@@ -811,7 +811,9 @@ impl TenderMint {
             let verify_req = block.block_verify_req(reqid);
             trace!("verify_req with {} txs with block verify request id: {} and height:{} round {} ", len, reqid, vheight, vround);
             let msg = factory::create_msg(submodules::CONSENSUS, topics::VERIFY_BLK_REQ, communication::MsgType::VERIFY_BLK_REQ, verify_req.write_to_bytes().unwrap());
-            self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            self.pub_sender
+                .send(("consensus.verify_blk_req".to_string(), msg.write_to_bytes().unwrap()))
+                .unwrap();
             self.unverified_msg.insert((vheight, vround), msg);
         }
         verify_ok
@@ -1042,7 +1044,9 @@ impl TenderMint {
         } else if tminfo.step == Step::PrecommitAuth {
             let msg = self.unverified_msg.get(&(tminfo.height, tminfo.round));
             if let Some(msg) = msg {
-                self.pub_sender.send(("consensus.verify_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                self.pub_sender
+                    .send(("consensus.verify_blk_req".to_string(), msg.write_to_bytes().unwrap()))
+                    .unwrap();
             }
         } else if tminfo.step == Step::Precommit {
             /*in this case,need resend prevote : my net server can be connected but other node's
