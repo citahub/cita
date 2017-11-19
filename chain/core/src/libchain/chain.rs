@@ -14,7 +14,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#![allow(dead_code)]
 use bloomchain as bc;
 use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
@@ -35,9 +34,10 @@ pub use libchain::block::*;
 use libchain::cache::CacheSize;
 use libchain::call_request::CallRequest;
 use libchain::extras::*;
-
+use libchain::status::Status;
 use libchain::genesis::Genesis;
 pub use libchain::transaction::*;
+
 use libproto::*;
 use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus, Proof as ProtoProof};
 
@@ -89,12 +89,6 @@ enum CacheId {
     BlockReceipts(H256),
 }
 
-#[derive(PartialEq, Clone, Debug)]
-pub struct Status {
-    number: u64,
-    hash: H256,
-}
-
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
     pub check_permission: bool,
@@ -107,82 +101,6 @@ impl Config {
             check_permission: false,
             check_quota: false,
         }
-    }
-}
-
-impl Status {
-    fn new() -> Self {
-        Status { number: 0, hash: H256::default() }
-    }
-
-    fn hash(&self) -> &H256 {
-        &self.hash
-    }
-
-    fn number(&self) -> u64 {
-        self.number
-    }
-
-    fn set_hash(&mut self, h: H256) {
-        self.hash = h;
-    }
-
-    fn set_number(&mut self, n: u64) {
-        self.number = n;
-    }
-
-    #[allow(dead_code)]
-    fn protobuf(&self) -> ProtoStatus {
-        let mut ps = ProtoStatus::new();
-        ps.set_height(self.number());
-        ps.set_hash(self.hash().to_vec());
-        ps
-    }
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct RichStatus {
-    number: u64,
-    hash: H256,
-    nodes: Vec<Address>,
-}
-
-impl RichStatus {
-    fn new() -> Self {
-        RichStatus {
-            number: 0,
-            hash: H256::default(),
-            nodes: vec![],
-        }
-    }
-
-    fn hash(&self) -> &H256 {
-        &self.hash
-    }
-
-    fn number(&self) -> u64 {
-        self.number
-    }
-
-    fn set_hash(&mut self, h: H256) {
-        self.hash = h;
-    }
-
-    fn set_number(&mut self, n: u64) {
-        self.number = n;
-    }
-
-    fn set_nodes(&mut self, nodes: Vec<Address>) {
-        self.nodes = nodes
-    }
-
-    fn protobuf(&self) -> ProtoRichStatus {
-        let mut ps = ProtoRichStatus::new();
-        ps.set_height(self.number());
-        ps.set_hash(self.hash().to_vec());
-        let node_list = self.nodes.clone().into_iter().map(|address| address.to_vec()).collect();
-        ps.set_nodes(RepeatedField::from_vec(node_list));
-        ps
     }
 }
 
