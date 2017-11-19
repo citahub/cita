@@ -1259,7 +1259,7 @@ contract SimpleStorage {
   }
 }"#;
         let (code, _) = solc("SimpleStorage", source);
-        let tpb = if bench_mode { 10000 } else { 1 };
+        let tpb = if bench_mode { 1000 } else { 1 };
         println!("pass");
         let evm = bench_chain(&code, &data, tpb, Address::zero());
         let native = bench_chain(&code, &data, tpb, Address::from(0x400));
