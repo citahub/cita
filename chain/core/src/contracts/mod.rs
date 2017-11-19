@@ -34,15 +34,16 @@ use util::{Address, U256, H160};
 
 
 /// Parse solidity return data `String` to rust `Vec<Address>`
-pub fn parse_string_to_addresses(data: &Vec<u8>) -> Vec<Address> {
+pub fn parse_string_to_addresses(data: &[u8]) -> Vec<Address> {
     let mut nodes = Vec::new();
     trace!("data.len is {:?}", data.len());
-    if data.len() > 0 {
+    if !data.is_empty() {
         let len_len = U256::from(&data[0..32]).as_u64() as usize;
         trace!("len_len is {:?}", len_len);
         if len_len <= 32 {
             let len = U256::from(&data[32..32 + len_len]).as_u64() as usize;
             let num = len / 20;
+            // TODO: Should optimize
             for i in 0..num {
                 let node = H160::from(&data[32 + len_len + i * 20..32 + len_len + (i + 1) * 20]);
                 trace!("node {:?}", node);
@@ -56,15 +57,16 @@ pub fn parse_string_to_addresses(data: &Vec<u8>) -> Vec<Address> {
 }
 
 /// parse quota
-pub fn parse_string_to_quota(data: &Vec<u8>) -> Vec<u64> {
+pub fn parse_string_to_quota(data: &[u8]) -> Vec<u64> {
     let mut quotas = Vec::new();
     trace!("parse_string_to_quota data.len is {:?}", data.len());
-    if data.len() > 0 {
+    if !data.is_empty() {
         let len_len = U256::from(&data[0..32]).as_u64() as usize;
         trace!("parse_string_to_quota len_len is {:?}", len_len);
         if len_len <= 32 {
             let len = U256::from(&data[32..32 + len_len]).as_u64() as usize;
             let num = len / 4;
+            // TODO: Should optimize
             for i in 0..num {
                 let quota = ToHex::to_hex(&data[32 + len_len + i * 4..32 + len_len + (i + 1) * 4]);
                 trace!("parse_string_to_addresses quota {:?}", quota);
@@ -92,9 +94,7 @@ impl ContractCallExt for Chain {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = self.eth_call(call_request, BlockId::Latest).expect(&format!("eth call address: {}", address));
-
-        output
+        self.eth_call(call_request, BlockId::Latest).expect(&format!("eth call address: {}", address))
     }
 }
 
@@ -105,6 +105,5 @@ pub fn encode_contract_name(method_name: &[u8]) -> Vec<u8> {
     unsafe {
         sha3_256(outptr, 32, method_name.as_ptr(), method_name.len());
     }
-    let func = out[0..4].to_vec();
-    func
+    out[0..4].to_vec()
 }

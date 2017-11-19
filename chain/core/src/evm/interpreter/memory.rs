@@ -76,11 +76,9 @@ impl Memory for Vec<u8> {
     }
 
     fn write_slice(&mut self, offset: U256, slice: &[u8]) {
-        let off = offset.low_u64() as usize;
-
-        // TODO [todr] Optimize?
-        for pos in off..off + slice.len() {
-            self[pos] = slice[pos - off];
+        if !slice.is_empty() {
+            let off = offset.low_u64() as usize;
+            self[off..(off + slice.len())].copy_from_slice(slice)
         }
     }
 

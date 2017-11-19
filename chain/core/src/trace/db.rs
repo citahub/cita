@@ -195,7 +195,7 @@ where
     /// Returns traces for block with hash.
     fn traces(&self, block_hash: &H256) -> Option<FlatBlockTraces> {
         let result = self.tracesdb.read_with_cache(db::COL_TRACE, &self.traces, block_hash);
-        self.note_used(CacheId::Trace(block_hash.clone()));
+        self.note_used(CacheId::Trace(*block_hash));
         result
     }
 
@@ -208,7 +208,7 @@ where
         let tx_traces: Vec<FlatTransactionTraces> = traces.into();
         tx_traces.into_iter()
                  .enumerate()
-                 .flat_map(|(tx_number, tx_trace)| self.matching_transaction_traces(filter, tx_trace, block_hash.clone(), block_number, tx_number))
+                 .flat_map(|(tx_number, tx_trace)| self.matching_transaction_traces(filter, tx_trace, block_hash, block_number, tx_number))
                  .collect()
     }
 
@@ -219,18 +219,19 @@ where
 
         let flat_traces: Vec<FlatTrace> = traces.into();
         flat_traces.into_iter()
-                   .filter_map(|trace| match filter.matches(&trace) {
-                                   true => Some(LocalizedTrace {
-                                                    action: trace.action,
-                                                    result: trace.result,
-                                                    subtraces: trace.subtraces,
-                                                    trace_address: trace.trace_address.into_iter().collect(),
-                                                    transaction_number: tx_number,
-                                                    transaction_hash: tx_hash.clone(),
-                                                    block_number: block_number,
-                                                    block_hash: block_hash,
-                                                }),
-                                   false => None,
+                   .filter_map(|trace| if filter.matches(&trace) {
+                                   Some(LocalizedTrace {
+                                            action: trace.action,
+                                            result: trace.result,
+                                            subtraces: trace.subtraces,
+                                            trace_address: trace.trace_address.into_iter().collect(),
+                                            transaction_number: tx_number,
+                                            transaction_hash: tx_hash,
+                                            block_number: block_number,
+                                            block_hash: block_hash,
+                                        })
+                               } else {
+                                   None
                                })
                    .collect()
     }
@@ -300,7 +301,7 @@ where
             // cause this value might be queried by hash later
             batch.write_with_cache(db::COL_TRACE, &mut *traces, request.block_hash, request.traces, CacheUpdatePolicy::Overwrite);
             // note_used must be called after locking traces to avoid cache/traces deadlock on garbage collection
-            self.note_used(CacheId::Trace(request.block_hash.clone()));
+            self.note_used(CacheId::Trace(request.block_hash));
         }
     }
 
@@ -348,7 +349,7 @@ where
                         subtraces: trace.subtraces,
                         trace_address: trace.trace_address.into_iter().collect(),
                         transaction_number: tx_position,
-                        transaction_hash: tx_hash.clone(),
+                        transaction_hash: tx_hash,
                         block_number: block_number,
                         block_hash: block_hash,
                     }
@@ -377,7 +378,7 @@ where
                             subtraces: trace.subtraces,
                             trace_address: trace.trace_address.into_iter().collect(),
                             transaction_number: tx_position,
-                            transaction_hash: tx_hash.clone(),
+                            transaction_hash: tx_hash,
                             block_number: block_number,
                             block_hash: block_hash,
                         }

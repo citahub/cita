@@ -315,7 +315,7 @@ impl Forward {
             Request::filter_logs(filter_id) => {
                 trace!("filter_log's id is {:?}", filter_id);
                 let index = rpctypes::Index(filter_id as usize);
-                let log = self.chain.filter_logs(index).unwrap_or(vec![]);
+                let log = self.chain.filter_logs(index).unwrap_or_default();
                 trace!("Log is: {:?}", log);
                 response.set_filter_logs(serde_json::to_string(&log).unwrap());
             }
@@ -419,14 +419,7 @@ impl Forward {
         match block.proof_type() {
             Some(ProofType::Tendermint) => {
                 let proof = TendermintProof::from(block.proof().clone());
-                let mut proof_height = 0;
-                if proof.height == ::std::usize::MAX {
-                    //block height 1's proof is height MAX
-                    proof_height = 0;
-
-                } else {
-                    proof_height = proof.height as u64;
-                }
+                let proof_height = if proof.height == ::std::usize::MAX { 0 } else { proof.height as u64 };
 
                 debug!("sync: add_sync_block: proof_height = {}, block height = {}", proof_height, block.header().number());
                 {
@@ -473,7 +466,7 @@ impl Forward {
             let mut block_tx_hashes = BlockTxHashes::new();
             block_tx_hashes.set_height(block_height);
             let mut tx_hashes_in_u8 = Vec::new();
-            for tx_hash_in_h256 in tx_hashes.iter() {
+            for tx_hash_in_h256 in &tx_hashes {
                 tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
             }
             block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));

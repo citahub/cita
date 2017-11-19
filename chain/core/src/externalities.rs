@@ -54,8 +54,8 @@ impl OriginInfo {
     /// Populates origin info from action params.
     pub fn from(params: &ActionParams) -> Self {
         OriginInfo {
-            address: params.address.clone(),
-            origin: params.origin.clone(),
+            address: params.address,
+            origin: params.origin,
             gas_price: params.gas_price,
             value: match params.value {
                 ActionValue::Transfer(val) |
@@ -147,18 +147,15 @@ where
 
     fn blockhash(&self, number: &U256) -> H256 {
         // TODO: comment out what this function expects from env_info, since it will produce panics if the latter is inconsistent
-        match *number < U256::from(self.env_info.number) && number.low_u64() >= cmp::max(256, self.env_info.number) - 256 {
-            true => {
-                let index = self.env_info.number - number.low_u64() - 1;
-                assert!(index < self.env_info.last_hashes.len() as u64, format!("Inconsistent env_info, should contain at least {:?} last hashes", index + 1));
-                let r = self.env_info.last_hashes[index as usize].clone();
-                trace!("ext: blockhash({}) -> {} self.env_info.number={}\n", number, r, self.env_info.number);
-                r
-            }
-            false => {
-                trace!("ext: blockhash({}) -> null self.env_info.number={}\n", number, self.env_info.number);
-                H256::zero()
-            }
+        if *number < U256::from(self.env_info.number) && number.low_u64() >= cmp::max(256, self.env_info.number) - 256 {
+            let index = self.env_info.number - number.low_u64() - 1;
+            assert!(index < self.env_info.last_hashes.len() as u64, format!("Inconsistent env_info, should contain at least {:?} last hashes", index + 1));
+            let r = self.env_info.last_hashes[index as usize];
+            trace!("ext: blockhash({}) -> {} self.env_info.number={}\n", number, r, self.env_info.number);
+            r
+        } else {
+            trace!("ext: blockhash({}) -> null self.env_info.number={}\n", number, self.env_info.number);
+            H256::zero()
         }
     }
 
@@ -174,10 +171,10 @@ where
 
         // prepare the params
         let params = ActionParams {
-            code_address: address.clone(),
-            address: address.clone(),
-            sender: self.origin_info.address.clone(),
-            origin: self.origin_info.origin.clone(),
+            code_address: address,
+            address: address,
+            sender: self.origin_info.address,
+            origin: self.origin_info.origin,
             gas: *gas,
             gas_price: self.origin_info.gas_price,
             value: ActionValue::Transfer(*value),
@@ -196,7 +193,7 @@ where
         // TODO: handle internal error separately
         match ex.create(params, self.substate, self.tracer, self.vm_tracer) {
             Ok(gas_left) => {
-                self.substate.contracts_created.push(address.clone());
+                self.substate.contracts_created.push(address);
                 evm::ContractCreateResult::Created(address, gas_left)
             }
             _ => evm::ContractCreateResult::Failed,
@@ -216,11 +213,11 @@ where
         };
 
         let mut params = ActionParams {
-            sender: sender_address.clone(),
-            address: receive_address.clone(),
+            sender: *sender_address,
+            address: *receive_address,
             value: ActionValue::Apparent(self.origin_info.value),
-            code_address: code_address.clone(),
-            origin: self.origin_info.origin.clone(),
+            code_address: *code_address,
+            origin: self.origin_info.origin,
             gas: *gas,
             gas_price: self.origin_info.gas_price,
             code: code,
@@ -274,10 +271,7 @@ where
             OutputPolicy::InitContract(ref mut copy) => {
                 let return_cost = U256::from(data.len()) * U256::from(self.schedule.create_data_gas);
                 if return_cost > *gas || data.len() > self.schedule.create_data_limit {
-                    return match self.schedule.exceptional_failed_code_deposit {
-                        true => Err(evm::Error::OutOfGas),
-                        false => Ok(*gas),
-                    };
+                    return if self.schedule.exceptional_failed_code_deposit { Err(evm::Error::OutOfGas) } else { Ok(*gas) };
                 }
 
                 handle_copy(copy);
@@ -291,7 +285,7 @@ where
     fn log(&mut self, topics: Vec<H256>, data: &[u8]) {
         use log_entry::LogEntry;
 
-        let address = self.origin_info.address.clone();
+        let address = self.origin_info.address;
         self.substate.logs.push(LogEntry {
                                     address: address,
                                     topics: topics,
@@ -300,7 +294,7 @@ where
     }
 
     fn suicide(&mut self, refund_address: &Address) -> trie::Result<()> {
-        let address = self.origin_info.address.clone();
+        let address = self.origin_info.address;
         let balance = self.balance(&address)?;
         // if &address == refund_address {
         //     // TODO [todr] To be consistent with CPP client we set balance to 0 in that case.
@@ -314,7 +308,7 @@ where
         //                           self.substate.to_cleanup_mode(&self.schedule))?;
         // }
 
-        self.tracer.trace_suicide(address, balance, refund_address.clone());
+        self.tracer.trace_suicide(address, balance, *refund_address);
         self.substate.suicides.insert(address);
 
         Ok(())

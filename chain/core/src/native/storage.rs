@@ -27,7 +27,7 @@ pub trait Serialize {
     fn serialize(&self) -> Result<Vec<u8>, EvmError>;
 }
 pub trait Deserialize: Sized {
-    fn deserialize(bytes: &Vec<u8>) -> Result<Self, EvmError>;
+    fn deserialize(bytes: &[u8]) -> Result<Self, EvmError>;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -40,8 +40,8 @@ impl Serialize for U256 {
     }
 }
 impl Deserialize for U256 {
-    fn deserialize(bytes: &Vec<u8>) -> Result<Self, EvmError> {
-        Ok(U256::from(bytes.as_slice()))
+    fn deserialize(bytes: &[u8]) -> Result<Self, EvmError> {
+        Ok(U256::from(bytes))
     }
 }
 
@@ -52,7 +52,7 @@ impl Serialize for String {
     }
 }
 impl Deserialize for String {
-    fn deserialize(bytes: &Vec<u8>) -> Result<Self, EvmError> {
+    fn deserialize(bytes: &[u8]) -> Result<Self, EvmError> {
         Ok(Self::from_utf8(bytes.to_owned())?)
     }
 }
@@ -93,16 +93,8 @@ impl Scalar {
         let length = encoded.len();
         if length < 32 {
             let mut byte32 = [0u8; 32];
-            let mut index = 0;
-            for c in encoded.iter() {
-                byte32[index] = *c;
-                index += 1;
-            }
-            while index < 31 {
-                byte32[index] = 0;
-                index += 1;
-            }
-            byte32[index] = (length * 2) as u8;
+            byte32[0..encoded.len()].copy_from_slice(&encoded);
+            byte32[31] = (length * 2) as u8;
             ext.set_storage(self.position, H256::from_slice(&byte32))?;
         } else {
             ext.set_storage(self.position, H256::from((length * 2 + 1) as u64))?;
@@ -125,9 +117,7 @@ impl Scalar {
         let first = ext.storage_at(&self.position)?;
         if first[31] % 2 == 0 {
             let len = (first[31] / 2) as usize;
-            for i in 0..len {
-                bytes.push(first[i]);
-            }
+            bytes.extend_from_slice(&first[0..len]);
             let decoded = T::deserialize(&bytes)?;
             Ok(Box::new(decoded))
         } else {
@@ -142,9 +132,7 @@ impl Scalar {
                     key = key + U256::one();
                     len -= 32;
                 } else {
-                    for i in 0..len {
-                        bytes.push(v[i]);
-                    }
+                    bytes.extend_from_slice(&v[0..len]);
                     len = 0;
                 }
             }

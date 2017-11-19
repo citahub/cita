@@ -36,7 +36,7 @@ where
 
 impl<F> PollManager<F, StandardTimer> {
     /// Creates new instance of indexer.
-    pub fn new() -> Self {
+    pub fn default() -> Self {
         PollManager::new_with_timer(Default::default())
     }
 }

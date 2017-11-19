@@ -138,7 +138,7 @@ impl Impl for EcRecover {
         let s = H256::from_slice(&input[96..128]);
 
         let bit = match v[31] {
-            27 | 28 if &v.0[..31] == &[0; 31] => v[31] - 27,
+            27 | 28 if v.0[..31] == [0; 31] => v[31] - 27,
             _ => return,
         };
 

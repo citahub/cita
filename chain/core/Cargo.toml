@@ -46,12 +46,15 @@ dotenv = "0.10.0"
 proof = { path = "../../consensus/proof" }
 common-types = { path = "../types" }
 jsonrpc_types = { path = "../../jsonrpc/types"}
+clippy = {version = "*", optional = true}
 
 [dev-dependencies]
 rand = "0.3"
 cpuprofiler = "0.0.3"
 mktemp = "0.3.1"
 logger =  { path = "../../share_libs/logger" }
+
 [features]
 default = []
 evm-debug= []
+dev = ["clippy"]

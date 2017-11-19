@@ -124,7 +124,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         T: Tracer,
         V: VMTracer,
     {
-        let sender = t.sender().clone();
+        let sender = *t.sender();
         let nonce = self.state.nonce(&sender)?;
 
         // check contract create/call permission
@@ -187,11 +187,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             Action::Create => {
                 let new_address = contract_address(&sender, &nonce);
                 let params = ActionParams {
-                    code_address: new_address.clone(),
+                    code_address: new_address,
                     code_hash: t.data.crypt_hash(),
                     address: new_address,
-                    sender: sender.clone(),
-                    origin: sender.clone(),
+                    sender: sender,
+                    origin: sender,
                     gas: t.gas - base_gas_required,
                     gas_price: t.gas_price,
                     value: ActionValue::Transfer(t.value),
@@ -203,10 +203,10 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             }
             Action::Call(ref address) => {
                 let params = ActionParams {
-                    code_address: address.clone(),
-                    address: address.clone(),
-                    sender: sender.clone(),
-                    origin: sender.clone(),
+                    code_address: *address,
+                    address: *address,
+                    sender: sender,
+                    origin: sender,
                     gas: t.gas - base_gas_required,
                     gas_price: t.gas_price,
                     value: ActionValue::Transfer(t.value),
@@ -392,7 +392,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let mut trace_output = tracer.prepare_trace_output();
         let mut subtracer = tracer.subtracer();
         let gas = params.gas;
-        let created = params.address.clone();
+        let created = params.address;
 
         let mut subvmtracer = vm_tracer.prepare_subtrace(params.code
                                                                .as_ref()

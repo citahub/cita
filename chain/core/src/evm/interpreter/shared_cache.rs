@@ -51,11 +51,11 @@ impl SharedCache {
         }
 
         if let Some(d) = self.jump_destinations.lock().get_mut(code_hash) {
-            return d.0.clone();
+            return Arc::clone(&d.0);
         }
 
         let d = Self::find_jump_destinations(code);
-        self.jump_destinations.lock().insert(code_hash.clone(), Bits(d.clone()));
+        self.jump_destinations.lock().insert(*code_hash, Bits(Arc::clone(&d)));
 
         d
     }

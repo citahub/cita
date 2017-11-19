@@ -63,7 +63,7 @@ impl Genesis {
     }
 
     pub fn lazy_execute(&mut self, state_db: &StateDB, factories: &Factories) -> Result<(), String> {
-        let mut state = State::from_existing(state_db.boxed_clone(), self.block.state_root().clone(), U256::from(0), factories.clone()).expect("state db error");
+        let mut state = State::from_existing(state_db.boxed_clone(), *self.block.state_root(), U256::from(0), factories.clone()).expect("state db error");
         self.block.set_version(0);
         self.block.set_parent_hash(self.spec.prevhash);
         self.block.set_timestamp(self.spec.timestamp);
@@ -75,8 +75,9 @@ impl Genesis {
             let address = Address::from_any_str(address.as_str()).unwrap();
 
             state.new_contract(&address, U256::from(0));
-            let _ = state.init_code(&address, clean_0x(&contract.code).from_hex().unwrap()).expect("init code fail");
-
+            {
+                state.init_code(&address, clean_0x(&contract.code).from_hex().unwrap()).expect("init code fail");
+            }
             for (key, values) in contract.storage.clone() {
                 state.set_storage(&address, H256::from_any_str(key.as_ref()).unwrap(), H256::from_any_str(values.as_ref()).unwrap())
                      .expect("init code set_storage fail");
@@ -94,7 +95,7 @@ impl Genesis {
         }
 
         info!("**** end **** \n");
-        let root = state.root().clone();
+        let root = *state.root();
         trace!("root {:?}", root);
         self.block.set_state_root(root);
         let db = state.clone().db();

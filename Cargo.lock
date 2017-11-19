@@ -391,6 +391,7 @@ version = "0.6.0"
 dependencies = [
  "byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.27.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clippy 0.0.103 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core 0.1.0",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -642,6 +643,7 @@ dependencies = [
  "cita-crypto 0.1.0",
  "cita-ed25519 0.6.0",
  "cita-secp256k1 0.6.0",
+ "clippy 0.0.103 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",

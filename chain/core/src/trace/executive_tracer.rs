@@ -205,7 +205,7 @@ impl VMTracer for ExecutiveVMTracer {
         self.data.operations.push(VMOperation {
                                       pc: pc,
                                       instruction: instruction,
-                                      gas_cost: gas_cost.clone(),
+                                      gas_cost: *gas_cost,
                                       executed: None,
                                   });
         true
@@ -214,13 +214,8 @@ impl VMTracer for ExecutiveVMTracer {
     fn trace_executed(&mut self, gas_used: U256, stack_push: &[U256], mem_diff: Option<(usize, &[u8])>, store_diff: Option<(U256, U256)>) {
         let ex = VMExecutedOperation {
             gas_used: gas_used,
-            stack_push: stack_push.iter().cloned().collect(),
-            mem_diff: mem_diff.map(|(s, r)| {
-                                       MemoryDiff {
-                                           offset: s,
-                                           data: r.iter().cloned().collect(),
-                                       }
-                                   }),
+            stack_push: stack_push.to_vec(),
+            mem_diff: mem_diff.map(|(s, r)| MemoryDiff { offset: s, data: r.to_vec() }),
             store_diff: store_diff.map(|(l, v)| StorageDiff { location: l, value: v }),
         };
         self.data

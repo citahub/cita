@@ -21,8 +21,11 @@ jsonrpc_types = { path = "../jsonrpc/types" }
 core = { path = "./core" }
 common-types = { path = "./types" }
 proof = { path = "../consensus/proof" }
-
+clippy = {version = "*", optional = true}
 
 [[bin]]
 path = "main.rs"
 name = "chain"
+
+[features]
+dev = ["clippy"]
