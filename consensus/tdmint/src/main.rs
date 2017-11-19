@@ -109,7 +109,7 @@ fn main() {
     let (mq2main, main4mq) = channel();
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("consensus", vec!["net.msg", "chain.richstatus", "auth.block_txs", "verify_blk_consensus"], tx_sub, rx_pub);
+    start_pubsub("consensus", vec!["net.msg", "chain.richstatus", "auth.block_txs", "auth.verify_blk_res"], tx_sub, rx_pub);
     thread::spawn(move || loop {
                       let (key, body) = rx_sub.recv().unwrap();
                       let tx = mq2main.clone();
