@@ -99,6 +99,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayvec"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "nodrop 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "atty"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -276,7 +284,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "blake2b"
 version = "0.1.0"
 dependencies = [
- "gcc 0.3.54 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -495,7 +503,7 @@ name = "cita-secp256k1"
 version = "0.6.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "eth-secp256k1 0.5.6 (git+https://github.com/ethcore/rust-secp256k1?rev=b6b67055edc929057e97d64f036c78ad91f58a7f)",
+ "eth-secp256k1 0.5.7 (git+https://github.com/paritytech/rust-secp256k1?rev=6370d63adf4e8c91e2eae9225eef4b4e0294c5d0)",
  "lazy_static 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.2.0",
@@ -840,7 +848,7 @@ dependencies = [
 [[package]]
 name = "eth-secp256k1"
 version = "0.5.6"
-source = "git+https://github.com/ethcore/rust-secp256k1?rev=b6b67055edc929057e97d64f036c78ad91f58a7f#b6b67055edc929057e97d64f036c78ad91f58a7f"
+source = "git+https://github.com/paritytech/rust-secp256k1?rev=b6b67055edc929057e97d64f036c78ad91f58a7f#b6b67055edc929057e97d64f036c78ad91f58a7f"
 dependencies = [
  "arrayvec 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "gcc 0.3.54 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -851,11 +859,11 @@ dependencies = [
 
 [[package]]
 name = "eth-secp256k1"
-version = "0.5.6"
-source = "git+https://github.com/paritytech/rust-secp256k1?rev=b6b67055edc929057e97d64f036c78ad91f58a7f#b6b67055edc929057e97d64f036c78ad91f58a7f"
+version = "0.5.7"
+source = "git+https://github.com/paritytech/rust-secp256k1?rev=6370d63adf4e8c91e2eae9225eef4b4e0294c5d0#6370d63adf4e8c91e2eae9225eef4b4e0294c5d0"
 dependencies = [
- "arrayvec 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "gcc 0.3.54 (registry+https://github.com/rust-lang/crates.io-index)",
+ "arrayvec 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2107,7 +2115,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "sha3"
 version = "0.1.0"
 dependencies = [
- "gcc 0.3.54 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2637,6 +2645,7 @@ dependencies = [
 "checksum ansi_term 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "23ac7c30002a5accbf7e8987d0632fa6de155b7c3d39d0067317a391e00a2ef6"
 "checksum antidote 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "34fde25430d87a9388dadbe6e34d7f72a462c8b43ac8d309b42b0a8505d7e2a5"
 "checksum arrayvec 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)" = "e003cbf6e0e1c43a0fc8df2ea8ea24174514d35cbcf60c35ca6112e0139f65e2"
+"checksum arrayvec 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "2f0ef4a9820019a0c91d918918c93dc71d469f581a49b47ddc1d285d4270bbe2"
 "checksum atty 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "21e50800ec991574876040fff8ee46b136a53e985286fbe6a3bdfe6421b78860"
 "checksum backtrace 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "346d7644f0b5f9bc73082d3b2236b69a05fd35cce0cfa3724e184e6a5c9e2a2f"
 "checksum backtrace 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "8709cc7ec06f6f0ae6c2c7e12f6ed41540781f72b488d83734978295ceae182e"
@@ -2685,8 +2694,8 @@ dependencies = [
 "checksum errno 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1e2b2decb0484e15560df3210cf0d78654bb0864b2c138977c07e377a1bae0e2"
 "checksum error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d9435d864e017c3c6afeac1654189b06cdb491cf2ff73dbf0d73b0f292f42ff8"
 "checksum error-chain 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "bd5c82c815138e278b8dcdeffc49f27ea6ffb528403e9dea4194f2e3dd40b143"
-"checksum eth-secp256k1 0.5.6 (git+https://github.com/ethcore/rust-secp256k1?rev=b6b67055edc929057e97d64f036c78ad91f58a7f)" = "<none>"
 "checksum eth-secp256k1 0.5.6 (git+https://github.com/paritytech/rust-secp256k1?rev=b6b67055edc929057e97d64f036c78ad91f58a7f)" = "<none>"
+"checksum eth-secp256k1 0.5.7 (git+https://github.com/paritytech/rust-secp256k1?rev=6370d63adf4e8c91e2eae9225eef4b4e0294c5d0)" = "<none>"
 "checksum filetime 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "aa75ec8f7927063335a9583e7fa87b0110bb888cf766dc01b54c0ff70d760c8e"
 "checksum flate2 0.2.20 (registry+https://github.com/rust-lang/crates.io-index)" = "e6234dd4468ae5d1e2dbb06fe2b058696fdc50a339c68a393aefbf00bc81e423"
 "checksum fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "2fad85553e09a6f881f739c29f0b00b0f01357c743266d478b68951ce23285f3"

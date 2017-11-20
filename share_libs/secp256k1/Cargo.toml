@@ -4,7 +4,7 @@ version = "0.6.0"
 authors = []
 
 [dependencies]
-eth-secp256k1 = { git = "https://github.com/ethcore/rust-secp256k1", rev = "b6b67055edc929057e97d64f036c78ad91f58a7f" }
+eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", rev = "6370d63adf4e8c91e2eae9225eef4b4e0294c5d0" }
 lazy_static = "0.2"
 rustc-serialize = "0.3"
 util = {path = "../../share_libs/util"}

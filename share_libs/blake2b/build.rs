@@ -14,9 +14,10 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#![allow(deprecated)]
-extern crate gcc;
+extern crate cc;
 
 fn main() {
-    gcc::compile_library("libblake2b.a", &["src/blake2b.c"]);
+    cc::Build::new()
+        .file("src/blake2b.c")
+        .compile("libblake2b.a");
 }
