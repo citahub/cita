@@ -80,11 +80,12 @@ impl From<RpcBlock> for Block {
         let proto_header = blk.take_header();
         let mut proto_body = blk.take_body();
         let block_transactions = proto_body.take_transactions();
-        let transactions = match block.include_txs {
-            true => block_transactions.into_iter().map(|x| BlockTransaction::Full(FullTransaction::from(x))).collect(),
-            false => block_transactions.into_iter()
-                                       .map(|x| BlockTransaction::Hash(H256::from_slice(x.get_tx_hash())))
-                                       .collect(),
+        let transactions = if block.include_txs {
+            block_transactions.into_iter().map(|x| BlockTransaction::Full(FullTransaction::from(x))).collect()
+        } else {
+            block_transactions.into_iter()
+                              .map(|x| BlockTransaction::Hash(H256::from_slice(x.get_tx_hash())))
+                              .collect()
         };
 
         Block {

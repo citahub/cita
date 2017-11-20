@@ -113,7 +113,7 @@ impl Sendtx {
                 ResultBody::BlockNumber(hei) => (format!("{}", hei), true),
                 ResultBody::Transaction(RpcTransaction) => {
                     let content = RpcTransaction.content;
-                    if !content.to_vec().is_empty() { (String::new(), true) } else { (String::new(), false) }
+                    if !content.vec().is_empty() { (String::new(), true) } else { (String::new(), false) }
                 }
 
                 ResultBody::FullBlock(full_block) => {

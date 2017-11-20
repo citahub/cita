@@ -78,7 +78,7 @@ impl HttpHandler {
         let id = rpc.id.clone();
         let jsonrpc_version = rpc.jsonrpc.clone();
         let topic = HttpHandler::select_topic(&rpc.method);
-        match self.method_handler.from_req(rpc) {
+        match self.method_handler.request(rpc) {
             Ok(req) => {
                 let request_id = req.request_id.clone();
                 //let msg: communication::Message = req.into();
@@ -89,19 +89,19 @@ impl HttpHandler {
                 trace!("wait response {:?}", String::from_utf8(request_id.clone()));
                 let mut timeout_count = 0;
                 loop {
-                    timeout_count = timeout_count + 1;
+                    timeout_count += 1;
                     if timeout_count > self.timeout_count {
                         return Err(RpcFailure::from_options(id, jsonrpc_version, Error::server_error(ErrorCode::time_out_error(), "system time out,please resend")));
                     }
-                    thread::sleep(Duration::new(0, (self.sleep_duration * 1000000) as u32));
+                    thread::sleep(Duration::new(0, (self.sleep_duration * 1_000_000) as u32));
                     if self.responses.read().contains_key(&request_id) {
                         let value = {
                             self.responses.write().remove(&request_id)
                         };
                         if let Some(res) = value {
                             match Output::from(res, id, jsonrpc_version) {
-                                Output::Success(success) => return Ok(success),
-                                Output::Failure(failure) => return Err(failure),
+                                Output::Success(success) => return Ok(*success),
+                                Output::Failure(failure) => return Err(*failure),
                             }
                         }
                     }

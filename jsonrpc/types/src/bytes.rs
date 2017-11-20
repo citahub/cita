@@ -30,7 +30,7 @@ impl Bytes {
         Bytes(bytes)
     }
     /// Convert back to vector
-    pub fn to_vec(self) -> Vec<u8> {
+    pub fn vec(self) -> Vec<u8> {
         self.0
     }
 }

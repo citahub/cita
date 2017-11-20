@@ -15,29 +15,33 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use jsonrpc_types::Id;
-use jsonrpc_types::error::Error;
-use jsonrpc_types::request::RpcRequest;
-use jsonrpc_types::request::Version;
+use jsonrpc_types::{Id, Error};
+use jsonrpc_types::request::{RpcRequest, Version};
+use libproto::Response;
 use serde_json;
+use std::collections::HashMap;
 use std::result;
-
+use std::sync::Arc;
+use util::{Mutex, RwLock};
+use ws;
+pub type WsMap = Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>;
+pub type HttpMap = Arc<RwLock<HashMap<Vec<u8>, Response>>>;
 
 pub type RpcResult<T> = result::Result<T, Error>;
 
 pub trait BaseHandler {
-    fn select_topic(method: &String) -> String {
-        let topic = if method.starts_with("cita_send") {
-                        "jsonrpc.new_tx"
-                    } else if method.starts_with("cita") || method.starts_with("eth") {
-                        "jsonrpc.request"
-                    } else if method.starts_with("net_") {
-                        "jsonrpc.net"
-                    } else {
-                        "jsonrpc"
-                    }
-                    .to_string();
-        topic
+    fn select_topic(method: &str) -> String {
+        if method.starts_with("cita_send") {
+            "jsonrpc.new_tx"
+        } else if method.starts_with("cita") || method.starts_with("eth") {
+            "jsonrpc.request"
+        } else if method.starts_with("net_") {
+            "jsonrpc.net"
+        } else {
+            "jsonrpc"
+        }
+        .to_string()
+
     }
 
     fn into_rpc(body: String) -> Result<RpcRequest, Error> {
@@ -89,11 +93,11 @@ mod test {
 
     #[test]
     fn test_get_topic() {
-        assert_eq!(Handler::select_topic(&"net_work".to_string()), "jsonrpc.net".to_string());
-        assert_eq!(Handler::select_topic(&"cita_send".to_string()), "jsonrpc.new_tx".to_string());
-        assert_eq!(Handler::select_topic(&"cita".to_string()), "jsonrpc.request".to_string());
-        assert_eq!(Handler::select_topic(&"eth".to_string()), "jsonrpc.request".to_string());
-        assert_eq!(Handler::select_topic(&"123".to_string()), "jsonrpc".to_string());
+        assert_eq!(Handler::select_topic("net_work"), "jsonrpc.net".to_string());
+        assert_eq!(Handler::select_topic("cita_send"), "jsonrpc.new_tx".to_string());
+        assert_eq!(Handler::select_topic("cita"), "jsonrpc.request".to_string());
+        assert_eq!(Handler::select_topic("eth"), "jsonrpc.request".to_string());
+        assert_eq!(Handler::select_topic("123"), "jsonrpc".to_string());
     }
 
 }

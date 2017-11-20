@@ -26,9 +26,9 @@ use serde::{Serializer, Deserializer, Deserialize, Serialize};
 use serde::de::Error as SError;
 use serde_json;
 use serde_json::{Value, from_value};
+use std::boxed::Box;
 use std::vec::Vec;
 use util::U256;
-
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
 pub enum ResultBody {
@@ -86,8 +86,8 @@ impl RpcSuccess {
         self
     }
 
-    pub fn to_out(self) -> Output {
-        Output::Success(self)
+    pub fn output(self) -> Output {
+        Output::Success(Box::new(self))
     }
 }
 
@@ -95,9 +95,9 @@ impl RpcSuccess {
 #[derive(Debug)]
 pub enum Output {
     /// Success
-    Success(RpcSuccess),
+    Success(Box<RpcSuccess>),
     /// Failure
-    Failure(RpcFailure),
+    Failure(Box<RpcFailure>),
 }
 
 impl Output {
@@ -111,41 +111,39 @@ impl Output {
                 match data.data.unwrap() {
                     Response_oneof_data::tx_state(tx_state) => {
                         let tx_response = serde_json::from_str(&tx_state).unwrap();
-                        success.set_result(ResultBody::TxResponse(tx_response)).to_out()
+                        success.set_result(ResultBody::TxResponse(tx_response)).output()
                     }
-                    Response_oneof_data::block_number(bn) => success.set_result(ResultBody::BlockNumber(U256::from(bn))).to_out(),
-                    Response_oneof_data::none(_) => success.to_out(),
+                    Response_oneof_data::block_number(bn) => success.set_result(ResultBody::BlockNumber(U256::from(bn))).output(),
+                    Response_oneof_data::none(_) => success.output(),
                     Response_oneof_data::block(rpc_block) => {
                         let rpc_block: RpcBlock = serde_json::from_str(&rpc_block).unwrap();
-                        success.set_result(ResultBody::FullBlock(rpc_block.into())).to_out()
+                        success.set_result(ResultBody::FullBlock(rpc_block.into())).output()
                     }
-                    Response_oneof_data::ts(x) => success.set_result(ResultBody::Transaction(RpcTransaction::from(x))).to_out(),
-                    Response_oneof_data::peercount(x) => success.set_result(ResultBody::PeerCount(U256::from(x))).to_out(),
-                    Response_oneof_data::call_result(x) => success.set_result(ResultBody::CallResult(Bytes::from(x))).to_out(),
+                    Response_oneof_data::ts(x) => success.set_result(ResultBody::Transaction(RpcTransaction::from(x))).output(),
+                    Response_oneof_data::peercount(x) => success.set_result(ResultBody::PeerCount(U256::from(x))).output(),
+                    Response_oneof_data::call_result(x) => success.set_result(ResultBody::CallResult(Bytes::from(x))).output(),
                     Response_oneof_data::logs(serialized) => success.set_result(ResultBody::Logs(serde_json::from_str::<Vec<Log>>(&serialized).unwrap()))
-                                                                    .to_out(),
+                                                                    .output(),
                     Response_oneof_data::receipt(serialized) => {
-                        success.set_result(serde_json::from_str::<Receipt>(&serialized)
-                                               .ok()
-                                               .map_or(ResultBody::Null, |receipt| ResultBody::Receipt(receipt)))
-                               .to_out()
+                        success.set_result(serde_json::from_str::<Receipt>(&serialized).ok().map_or(ResultBody::Null, ResultBody::Receipt))
+                               .output()
                     }
-                    Response_oneof_data::transaction_count(x) => success.set_result(ResultBody::TranactionCount(U256::from(x))).to_out(),
-                    Response_oneof_data::contract_code(x) => success.set_result(ResultBody::ContractCode(Bytes::from(x))).to_out(),
-                    Response_oneof_data::filter_id(id) => success.set_result(ResultBody::FilterId(U256::from(id))).to_out(),
-                    Response_oneof_data::uninstall_filter(is_uninstall) => success.set_result(ResultBody::UninstallFliter(is_uninstall)).to_out(),
+                    Response_oneof_data::transaction_count(x) => success.set_result(ResultBody::TranactionCount(U256::from(x))).output(),
+                    Response_oneof_data::contract_code(x) => success.set_result(ResultBody::ContractCode(Bytes::from(x))).output(),
+                    Response_oneof_data::filter_id(id) => success.set_result(ResultBody::FilterId(U256::from(id))).output(),
+                    Response_oneof_data::uninstall_filter(is_uninstall) => success.set_result(ResultBody::UninstallFliter(is_uninstall)).output(),
                     Response_oneof_data::filter_changes(log) => success.set_result(ResultBody::FilterChanges(serde_json::from_str::<Vec<Log>>(&log).unwrap()))
-                                                                       .to_out(),
-                    Response_oneof_data::filter_logs(log) => success.set_result(ResultBody::FilterLog(serde_json::from_str::<Vec<Log>>(&log).unwrap())).to_out(),
-                    Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(id.clone(), jsonrpc.clone(), Error::server_error(code, err_msg.as_ref()))),
+                                                                       .output(),
+                    Response_oneof_data::filter_logs(log) => success.set_result(ResultBody::FilterLog(serde_json::from_str::<Vec<Log>>(&log).unwrap())).output(),
+                    Response_oneof_data::error_msg(err_msg) => Output::Failure(Box::new(RpcFailure::from_options(id.clone(), jsonrpc.clone(), Error::server_error(code, err_msg.as_ref())))),
                 }
             }
             _ => {
                 match data.data.unwrap() {
-                    Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(id.clone(), jsonrpc.clone(), Error::server_error(code, err_msg.as_ref()))),
+                    Response_oneof_data::error_msg(err_msg) => Output::Failure(Box::new(RpcFailure::from_options(id.clone(), jsonrpc.clone(), Error::server_error(code, err_msg.as_ref())))),
                     _ => {
                         error!("return error message!!!");
-                        Output::Failure(RpcFailure::from(Error::server_error(code, "system error!")))
+                        Output::Failure(Box::new(RpcFailure::from(Error::server_error(code, "system error!"))))
                     }
                 }
             }
@@ -154,11 +152,11 @@ impl Output {
 
     /// Creates new failure output indicating malformed request.
     pub fn invalid_request(id: Id, jsonrpc: Option<Version>) -> Self {
-        Output::Failure(RpcFailure {
-                            id: id,
-                            jsonrpc: jsonrpc,
-                            error: Error::invalid_request(),
-                        })
+        Output::Failure(Box::new(RpcFailure {
+                                     id: id,
+                                     jsonrpc: jsonrpc,
+                                     error: Error::invalid_request(),
+                                 }))
     }
 }
 
