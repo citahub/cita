@@ -18,7 +18,7 @@
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
-#![feature(iter_rfind,entry_or_default)]
+#![feature(iter_rfind)]
 #[macro_use]
 extern crate log;
 extern crate clap;
