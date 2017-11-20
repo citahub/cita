@@ -118,7 +118,7 @@ impl Sendtx {
                     ResultBody::Transaction(RpcTransaction) => {
                         //let transaction = RpcTransaction.transaction;
                         let content = RpcTransaction.content;
-                        if !content.to_vec().is_empty() { (String::new(), true) } else { (String::new(), false) }
+                        if !content.vec().is_empty() { (String::new(), true) } else { (String::new(), false) }
                     }
 
                     ResultBody::FullBlock(full_block) => {

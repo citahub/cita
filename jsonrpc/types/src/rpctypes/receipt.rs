@@ -59,16 +59,16 @@ pub struct Receipt {
 impl From<LocalizedReceipt> for Receipt {
     fn from(r: LocalizedReceipt) -> Self {
         Receipt {
-            transaction_hash: Some(r.transaction_hash.into()),
+            transaction_hash: Some(r.transaction_hash),
             transaction_index: Some(r.transaction_index.into()),
-            block_hash: Some(r.block_hash.into()),
+            block_hash: Some(r.block_hash),
             block_number: Some(r.block_number.into()),
-            cumulative_gas_used: r.cumulative_gas_used.into(),
-            gas_used: Some(r.gas_used.into()),
+            cumulative_gas_used: r.cumulative_gas_used,
+            gas_used: Some(r.gas_used),
             contract_address: r.contract_address.map(Into::into),
             logs: r.logs.into_iter().map(Into::into).collect(),
             state_root: r.state_root.map(Into::into),
-            logs_bloom: r.log_bloom.into(),
+            logs_bloom: r.log_bloom,
             error_message: r.error.map(|error| error.description()),
         }
     }
@@ -77,16 +77,16 @@ impl From<LocalizedReceipt> for Receipt {
 impl From<RichReceipt> for Receipt {
     fn from(r: RichReceipt) -> Self {
         Receipt {
-            transaction_hash: Some(r.transaction_hash.into()),
+            transaction_hash: Some(r.transaction_hash),
             transaction_index: Some(r.transaction_index.into()),
             block_hash: None,
             block_number: None,
-            cumulative_gas_used: r.cumulative_gas_used.into(),
-            gas_used: Some(r.gas_used.into()),
+            cumulative_gas_used: r.cumulative_gas_used,
+            gas_used: Some(r.gas_used),
             contract_address: r.contract_address.map(Into::into),
             logs: r.logs.into_iter().map(Into::into).collect(),
             state_root: r.state_root.map(Into::into),
-            logs_bloom: r.log_bloom.into(),
+            logs_bloom: r.log_bloom,
             error_message: r.error.map(|error| error.description()),
         }
     }
@@ -99,12 +99,12 @@ impl From<EthReceipt> for Receipt {
             transaction_index: None,
             block_hash: None,
             block_number: None,
-            cumulative_gas_used: r.gas_used.into(),
+            cumulative_gas_used: r.gas_used,
             gas_used: None,
             contract_address: None,
             logs: r.logs.into_iter().map(Into::into).collect(),
             state_root: r.state_root.map(Into::into),
-            logs_bloom: r.log_bloom.into(),
+            logs_bloom: r.log_bloom,
             error_message: r.error.map(|error| error.description()),
         }
     }

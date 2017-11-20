@@ -15,21 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use base_hanlder::{TransferType, ReqInfo};
+use base_hanlder::{TransferType, HttpMap, WsMap};
 use jsonrpc_types::response::Output;
-use libproto::{parse_msg, display_cmd, MsgClass, Response};
+use libproto::{parse_msg, display_cmd, MsgClass};
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use util::{Mutex, RwLock};
-use ws;
 
 #[derive(Default)]
 pub struct MqHandler {
     transfer_type: TransferType,
     //TODO 定时清理工作
-    ws_responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>,
-    responses: Arc<RwLock<HashMap<Vec<u8>, Response>>>,
+    ws_responses: WsMap,
+    responses: HttpMap,
 }
 
 
@@ -46,16 +45,16 @@ impl MqHandler {
         self.transfer_type = transfer_type;
     }
 
-    pub fn set_http(&mut self, responses: Arc<RwLock<HashMap<Vec<u8>, Response>>>) {
+    pub fn set_http(&mut self, responses: HttpMap) {
         self.responses = responses;
     }
 
-    pub fn set_ws(&mut self, ws_responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>) {
+    pub fn set_ws(&mut self, ws_responses: WsMap) {
         self.ws_responses = ws_responses;
     }
 
-    pub fn handle(&mut self, key: String, body: Vec<u8>) {
-        let (id, _, content_ext) = parse_msg(body.as_slice());
+    pub fn handle(&mut self, key: &str, body: &[u8]) {
+        let (id, _, content_ext) = parse_msg(body);
         trace!("routint_key {:?},get msg cmd {:?}", key, display_cmd(id));
         //TODO match
         match content_ext {

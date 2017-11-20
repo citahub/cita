@@ -43,11 +43,11 @@ impl ErrorCode {
     /// Returns integer code value
     pub fn code(&self) -> i64 {
         match *self {
-            ErrorCode::ParseError => -32700,
-            ErrorCode::InvalidRequest => -32600,
-            ErrorCode::MethodNotFound => -32601,
-            ErrorCode::InvalidParams => -32602,
-            ErrorCode::InternalError => -32603,
+            ErrorCode::ParseError => -32_700,
+            ErrorCode::InvalidRequest => -32_600,
+            ErrorCode::MethodNotFound => -32_601,
+            ErrorCode::InvalidParams => -32_602,
+            ErrorCode::InternalError => -32_603,
             ErrorCode::ServerError(code) => code,
         }
     }
@@ -73,11 +73,11 @@ impl<'a> Deserialize<'a> for ErrorCode {
     {
         let v: Value = try!(Deserialize::deserialize(deserializer));
         match v.as_i64() {
-            Some(-32700) => Ok(ErrorCode::ParseError),
-            Some(-32600) => Ok(ErrorCode::InvalidRequest),
-            Some(-32601) => Ok(ErrorCode::MethodNotFound),
-            Some(-32602) => Ok(ErrorCode::InvalidParams),
-            Some(-32603) => Ok(ErrorCode::InternalError),
+            Some(-32_700) => Ok(ErrorCode::ParseError),
+            Some(-32_600) => Ok(ErrorCode::InvalidRequest),
+            Some(-32_601) => Ok(ErrorCode::MethodNotFound),
+            Some(-32_602) => Ok(ErrorCode::InvalidParams),
+            Some(-32_603) => Ok(ErrorCode::InternalError),
             Some(code) => Ok(ErrorCode::ServerError(code)),
             _ => unreachable!(),
         }

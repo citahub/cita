@@ -15,15 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use base_hanlder::{BaseHandler, ReqInfo};
+use base_hanlder::{BaseHandler, ReqInfo, WsMap};
 use jsonrpc_types::{method, Id};
 use jsonrpc_types::response::RpcFailure;
 use libproto::request as reqlib;
 use num_cpus;
 use serde_json;
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::mpsc::Sender;
+use std::sync::{Arc, mpsc};
 use threadpool::ThreadPool;
 use util::Mutex;
 use ws;
@@ -31,20 +29,15 @@ use ws::{Factory, CloseCode, Handler};
 
 pub struct WsFactory {
     //TODO 定时清理工作
-    responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>,
+    responses: WsMap,
     thread_pool: Arc<Mutex<ThreadPool>>,
-    tx: Sender<(String, reqlib::Request)>,
+    tx: mpsc::Sender<(String, reqlib::Request)>,
 }
 
 
 impl WsFactory {
-    pub fn new(responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>, tx: Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
-        let mut thread_number: usize = 0 as usize;
-        if thread_num == 0 {
-            thread_number = num_cpus::get() / 2;
-        } else {
-            thread_number = thread_num;
-        }
+    pub fn new(responses: WsMap, tx: mpsc::Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
+        let thread_number = if thread_num == 0 { num_cpus::get() / 2 } else { thread_num };
         let thread_pool = Arc::new(Mutex::new(ThreadPool::new_with_name("ws_thread_pool".to_string(), thread_number)));
         WsFactory {
             responses: responses,
@@ -60,9 +53,9 @@ impl Factory for WsFactory {
     fn connection_made(&mut self, ws: ws::Sender) -> WsHandler {
         WsHandler {
             sender: ws,
-            responses: self.responses.clone(),
+            responses: Arc::clone(&self.responses),
             tx: self.tx.clone(),
-            thread_pool: self.thread_pool.clone(),
+            thread_pool: Arc::clone(&self.thread_pool),
             method_handler: method::MethodHandler,
         }
     }
@@ -88,7 +81,7 @@ impl Handler for WsHandler {
                         jsonrpc: jsonrpc_version.clone(),
                         id: req_id.clone(),
                     };
-                    this.method_handler.from_req(rpc).map(|_req| {
+                    this.method_handler.request(rpc).map(|_req| {
                         let request_id = _req.request_id.clone();
                         //let data: communication::Message = _req.into();
                         //this.tx.send((topic, data.write_to_bytes().unwrap()));
@@ -118,9 +111,9 @@ impl Handler for WsHandler {
 
 #[derive(Clone)]
 pub struct WsHandler {
-    responses: Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>,
+    responses: WsMap,
     thread_pool: Arc<Mutex<ThreadPool>>,
     method_handler: method::MethodHandler,
     sender: ws::Sender,
-    tx: Sender<(String, reqlib::Request)>,
+    tx: mpsc::Sender<(String, reqlib::Request)>,
 }

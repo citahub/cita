@@ -14,7 +14,8 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
 #![allow(unused_assignments, unused_must_use, deprecated, unused_extern_crates)]
 extern crate hyper;
 extern crate libproto;
@@ -70,17 +71,15 @@ pub const TOPIC_NEW_TX: &str = "jsonrpc.new_tx";
 pub const TOPIC_NEW_TX_BATCH: &str = "jsonrpc.new_tx_batch";
 
 fn start_profile(config: &ProfileConfig) {
-    if config.enable {
-        if config.flag_prof_start != 0 && config.flag_prof_duration != 0 {
-            let start = config.flag_prof_start;
-            let duration = config.flag_prof_duration;
-            thread::spawn(move || {
-                              thread::sleep(Duration::new(start, 0));
-                              PROFILER.lock().unwrap().start("./jsonrpc.profile").expect("Couldn't start");
-                              thread::sleep(Duration::new(duration, 0));
-                              PROFILER.lock().unwrap().stop().unwrap();
-                          });
-        }
+    if config.enable && config.flag_prof_start != 0 && config.flag_prof_duration != 0 {
+        let start = config.flag_prof_start;
+        let duration = config.flag_prof_duration;
+        thread::spawn(move || {
+                          thread::sleep(Duration::new(start, 0));
+                          PROFILER.lock().unwrap().start("./jsonrpc.profile").expect("Couldn't start");
+                          thread::sleep(Duration::new(duration, 0));
+                          PROFILER.lock().unwrap().stop().unwrap();
+                      });
 
     }
 }
@@ -134,7 +133,7 @@ fn main() {
     if config.http_config.enable {
         mq_handle.set_http_or_ws(TransferType::HTTP);
         let http_responses = Arc::new(RwLock::new(HashMap::with_capacity(1000)));
-        mq_handle.set_http(http_responses.clone());
+        mq_handle.set_http(Arc::clone(&http_responses));
 
         let http_config = config.http_config.clone();
         //let sender_mq_http = tx_pub.clone();
@@ -158,7 +157,7 @@ fn main() {
     if config.ws_config.enable {
         mq_handle.set_http_or_ws(TransferType::WEBSOCKET);
         let ws_responses = Arc::new(Mutex::new(HashMap::with_capacity(1000)));
-        mq_handle.set_ws(ws_responses.clone());
+        mq_handle.set_ws(Arc::clone(&ws_responses));
         let ws_config = config.ws_config.clone();
         thread::spawn(move || {
             let url = ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
@@ -178,10 +177,10 @@ fn main() {
         loop {
             if let Ok(res) = rx_relay.try_recv() {
                 let (topic, req): (String, reqlib::Request) = res;
-                forward_service(topic, req, &mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone(), &config);
+                forward_service(topic, req, &mut new_tx_request_buffer, &mut time_stamp, &tx_pub, &config);
             } else {
-                if new_tx_request_buffer.len() > 0 {
-                    batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, tx_pub.clone());
+                if !new_tx_request_buffer.is_empty() {
+                    batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, &tx_pub);
                 }
                 thread::sleep(Duration::new(0, config.new_tx_flow_config.buffer_duration));
             }
@@ -191,13 +190,12 @@ fn main() {
 
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
-        mq_handle.handle(key, msg);
+        mq_handle.handle(&key, &msg);
     }
 }
 
-fn batch_forward_new_tx(new_tx_request_buffer: &mut Vec<reqlib::Request>, time_stamp: &mut SystemTime, tx_pub: Sender<(String, Vec<u8>)>) {
+fn batch_forward_new_tx(new_tx_request_buffer: &mut Vec<reqlib::Request>, time_stamp: &mut SystemTime, tx_pub: &Sender<(String, Vec<u8>)>) {
     trace!("Going to send new tx batch to auth with {} new tx and buffer time cost is {:?} ", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap());
-
     let mut batch_request = BatchRequest::new();
     batch_request.set_new_tx_requests(RepeatedField::from_slice(&new_tx_request_buffer[..]));
 
@@ -212,7 +210,7 @@ fn batch_forward_new_tx(new_tx_request_buffer: &mut Vec<reqlib::Request>, time_s
     new_tx_request_buffer.clear();
 }
 
-fn forward_service(topic: String, req: reqlib::Request, new_tx_request_buffer: &mut Vec<reqlib::Request>, time_stamp: &mut SystemTime, tx_pub: Sender<(String, Vec<u8>)>, config: &config::Config) {
+fn forward_service(topic: String, req: reqlib::Request, new_tx_request_buffer: &mut Vec<reqlib::Request>, time_stamp: &mut SystemTime, tx_pub: &Sender<(String, Vec<u8>)>, config: &config::Config) {
     if topic.as_str() != TOPIC_NEW_TX {
         let data: CommMsg = req.into();
         tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
@@ -220,7 +218,7 @@ fn forward_service(topic: String, req: reqlib::Request, new_tx_request_buffer: &
         new_tx_request_buffer.push(req);
         trace!("New tx is pushed and has {} new tx and buffer time cost is {:?}", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap());
         if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_duration {
-            batch_forward_new_tx(new_tx_request_buffer, time_stamp, tx_pub.clone());
+            batch_forward_new_tx(new_tx_request_buffer, time_stamp, tx_pub);
         }
     }
 }

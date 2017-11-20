@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
 #![allow(unused_extern_crates)]
 extern crate libproto;
 extern crate protobuf;
@@ -32,7 +33,6 @@ extern crate rustc_serialize;
 extern crate proof;
 extern crate common_types as types;
 extern crate cita_crypto as crypto;
-
 
 mod id;
 mod params;

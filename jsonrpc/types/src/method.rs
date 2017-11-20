@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{Params, Error, RpcRequest};
-#[warn(non_snake_case)]
+//#[warn(non_snake_case)]
 use libproto::blockchain;
 use libproto::request as reqlib;
 use protobuf::core::parse_from_bytes;
@@ -30,12 +30,12 @@ use uuid::Uuid;
 
 
 pub mod method {
-    pub const CITA_BLOCK_BUMBER: &'static str = "cita_blockNumber";
-    pub const CITA_GET_BLOCK_BY_HASH: &'static str = "cita_getBlockByHash";
-    pub const CITA_GET_BLOCK_BY_NUMBER: &'static str = "cita_getBlockByNumber";
-    pub const CITA_GET_TRANSACTION: &'static str = "cita_getTransaction";
-    pub const CITA_SEND_TRANSACTION: &'static str = "cita_sendTransaction";
-    pub const NET_PEER_COUNT: &'static str = "net_peerCount";
+    pub const CITA_BLOCK_BUMBER: &str = "cita_blockNumber";
+    pub const CITA_GET_BLOCK_BY_HASH: &str = "cita_getBlockByHash";
+    pub const CITA_GET_BLOCK_BY_NUMBER: &str = "cita_getBlockByNumber";
+    pub const CITA_GET_TRANSACTION: &str = "cita_getTransaction";
+    pub const CITA_SEND_TRANSACTION: &str = "cita_sendTransaction";
+    pub const NET_PEER_COUNT: &str = "net_peerCount";
     /// Executes a new message call immediately without creating a transaction on the block chain.
     /// Parameters
     /// 1. Object - The transaction call object
@@ -43,18 +43,18 @@ pub mod method {
     /// to: DATA, 20 Bytes - The address the transaction is directed to.
     /// data: DATA - (optional) Hash of the method signature and encoded parameters.
     /// 2. QUANTITY|TAG - integer block height, or the string "latest" or "earliest".
-    pub const ETH_GET_TRANSACTION_COUNT: &'static str = "eth_getTransactionCount";
-    pub const ETH_GET_CODE: &'static str = "eth_getCode";
-    pub const ETH_CALL: &'static str = "eth_call";
-    pub const ETH_GET_LOGS: &'static str = "eth_getLogs";
-    pub const ETH_GET_TRANSACTION_RECEIPT: &'static str = "eth_getTransactionReceipt";
+    pub const ETH_GET_TRANSACTION_COUNT: &str = "eth_getTransactionCount";
+    pub const ETH_GET_CODE: &str = "eth_getCode";
+    pub const ETH_CALL: &str = "eth_call";
+    pub const ETH_GET_LOGS: &str = "eth_getLogs";
+    pub const ETH_GET_TRANSACTION_RECEIPT: &str = "eth_getTransactionReceipt";
 
     /// filter
-    pub const ETH_NEW_FILTER: &'static str = "eth_newFilter";
-    pub const ETH_NEW_BLOCK_FILTER: &'static str = "eth_newBlockFilter";
-    pub const ETH_UNINSTALL_FILTER: &'static str = "eth_uninstallFilter";
-    pub const ETH_GET_FILTER_CHANGES: &'static str = "eth_getFilterChanges";
-    pub const ETH_GET_FILTER_LOGS: &'static str = "eth_getFilterLogs";
+    pub const ETH_NEW_FILTER: &str = "eth_newFilter";
+    pub const ETH_NEW_BLOCK_FILTER: &str = "eth_newBlockFilter";
+    pub const ETH_UNINSTALL_FILTER: &str = "eth_uninstallFilter";
+    pub const ETH_GET_FILTER_CHANGES: &str = "eth_getFilterChanges";
+    pub const ETH_GET_FILTER_LOGS: &str = "eth_getFilterLogs";
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -75,7 +75,7 @@ impl MethodHandler {
         request
     }
 
-    pub fn from_req(&self, rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn request(&self, rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         match rpc.method.as_str() {
             method::CITA_BLOCK_BUMBER => {
                 self.block_number(rpc)
@@ -158,7 +158,7 @@ impl MethodHandler {
         {
             let tx = un_tx.get_transaction();
             let to = clean_0x(tx.get_to());
-            if to.len() != 40 && to.len() != 0 {
+            if to.len() != 40 && !to.is_empty() {
                 return Err(Error::invalid_params("param 'to' length too short, or are you create contract?"));
             } else {
                 let _ = to.from_hex()
@@ -264,7 +264,7 @@ impl MethodHandler {
         let mut call = reqlib::Call::new();
         call.set_from(base.from.unwrap_or_default().to_vec());
         call.set_to(base.to.to_vec());
-        call.set_data(base.data.unwrap_or_default().to_vec());
+        call.set_data(base.data.unwrap_or_default().vec());
         serde_json::to_string(&id).map_err(|err| Error::invalid_params(err.to_string())).map(|height| {
                                                                                                  call.set_height(height);
                                                                                                  request.set_call(call);
@@ -476,7 +476,7 @@ mod tests {
         };
 
         let handler = MethodHandler;
-        assert!(handler.from_req(rpc).is_err());
+        assert!(handler.request(rpc).is_err());
     }
 
     #[test]
@@ -563,7 +563,7 @@ mod tests {
                    Bytes("d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
                              .from_hex()
                              .unwrap())
-                   .to_vec()
+                   .vec()
                    .as_slice());
         assert_eq!(call.get_height(), "\"0x22\"");
     }
@@ -585,7 +585,7 @@ mod tests {
                    Bytes("d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
                              .from_hex()
                              .unwrap())
-                   .to_vec()
+                   .vec()
                    .as_slice());
     }
 

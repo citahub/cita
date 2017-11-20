@@ -92,7 +92,7 @@ impl Into<EthFilter> for Filter {
             to_block: self.to_block.map_or_else(|| BlockId::Latest, Into::into),
             address: self.address.and_then(|address| match address {
                                                VariadicValue::Null => None,
-                                               VariadicValue::Single(a) => Some(vec![a.into()]),
+                                               VariadicValue::Single(a) => Some(vec![a]),
                                                VariadicValue::Multiple(a) => Some(a.into_iter().map(Into::into).collect()),
                                            }),
             topics: {
@@ -102,7 +102,7 @@ impl Into<EthFilter> for Filter {
                           .take(4)
                           .map(|topic| match topic {
                                    VariadicValue::Null => None,
-                                   VariadicValue::Single(t) => Some(vec![t.into()]),
+                                   VariadicValue::Single(t) => Some(vec![t]),
                                    VariadicValue::Multiple(t) => Some(t.into_iter().map(Into::into).collect()),
                                })
                           .collect()
@@ -122,7 +122,7 @@ impl Into<EthFilter> for Filter {
 }
 
 
-/// Results of the filter_changes RPC.
+// Results of the filter_changes RPC.
 #[derive(Debug, PartialEq)]
 pub enum FilterChanges {
     /// New logs.

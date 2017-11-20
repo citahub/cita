@@ -23,7 +23,11 @@ jsonrpc_types = { path = "types" }
 dotenv = "0.10.0"
 logger =  { path = "../share_libs/logger" }
 clap = "2"
+clippy = {version = "0.0.172", optional = true}
 
 [[bin]]
 name = "jsonrpc"
 path = "src/main.rs"
+
+[features]
+default = []
