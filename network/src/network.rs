@@ -33,29 +33,29 @@ impl NetWork {
         match source {
             Source::LOCAL => {
                 //send other node
-                if topic == "net.status".to_string() {
+                if topic == "net.status" {
                     //sync
                     self.tx_sync.send((source, msg));
 
-                } else if topic == "chain.rpc".to_string() {
+                } else if topic == "chain.rpc" {
                     //reply rpc
                     self.reply_rpc(msg.get_content());
 
-                } else if topic != "".to_string() {
+                } else if topic != "" {
                     self.con.broadcast(msg);
                 }
             }
 
             Source::REMOTE => {
                 //send mq
-                if topic == "net.status".to_string() || topic == "net.blk".to_string() {
+                if topic == "net.status" || topic == "net.blk" {
                     //sync
                     self.tx_sync.send((source, msg));
-                } else if topic == "net.tx".to_string() {
+                } else if topic == "net.tx" {
                     self.tx_new_tx.send((topic, data));
-                } else if topic == "net.msg".to_string() {
+                } else if topic == "net.msg" {
                     self.tx_consensus.send((topic, data));
-                } else if topic != "".to_string() {
+                } else if topic != "" {
                     self.tx_pub.send((topic, data));
                 }
             }

@@ -69,10 +69,10 @@ impl Decoder for CitaCodec {
 
         // check flag and msglen
         let request_id = BigEndian::read_u64(buf.as_ref());
-        if request_id & 0xffffffff00000000 != 0xDEADBEEF00000000 {
+        if request_id & 0xffff_ffff_0000_0000 != 0xDEAD_BEEF_0000_0000 {
             return Ok(None);
         }
-        let msg_len = request_id & 0x00000000ffffffff;
+        let msg_len = request_id & 0x0000_0000_ffff_ffff;
         if (msg_len + 8) > buf_len as u64 {
             return Ok(None);
         }
@@ -92,7 +92,7 @@ impl Encoder for CitaCodec {
     type Error = io::Error;
 
     fn encode(&mut self, msg: Self::Item, buf: &mut BytesMut) -> io::Result<()> {
-        let request_id = 0xDEADBEEF00000000 + msg.len();
+        let request_id = 0xDEAD_BEEF_0000_0000 + msg.len();
         trace!("encode msg {:?} {:?}", request_id, msg);
 
         let mut encoded_request_id = [0; 8];

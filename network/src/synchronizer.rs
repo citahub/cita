@@ -59,39 +59,35 @@ impl Synchronizer {
             let start_height = self.current_status.get_height() + 1;
             self.start_sync_req(start_height, 0);
 
-        } else {
-            if self.current_status.get_height() < self.sync_end_height {
-                //chain error.需要同步
-                let start_height = self.current_status.get_height() + 1;
-                let end_height = self.sync_end_height;
-                self.start_sync_req(start_height, end_height + 1);
-                self.sync_time_out = Instant::now();
-                self.is_synchronizing = true;
+        } else if self.current_status.get_height() < self.sync_end_height {
+            //chain error.需要同步
+            let start_height = self.current_status.get_height() + 1;
+            let end_height = self.sync_end_height;
+            self.start_sync_req(start_height, end_height + 1);
+            self.sync_time_out = Instant::now();
+            self.is_synchronizing = true;
 
-            } else if self.current_status.get_height() == self.sync_end_height {
-                let start_height = self.current_status.get_height() + 1;
-                let second = self.current_status.get_height() + 2;
-                debug!("sync: update_current_status: start_height = {}, second = {}, block_lists len = {}", start_height, second, self.block_lists.len());
-                if self.block_lists.contains_key(&start_height) && self.block_lists.contains_key(&second) {
-                    self.submit_blocks();
-
-                } else {
-                    self.start_sync_req(start_height, 0);
-                }
-
-                self.sync_time_out = Instant::now();
-                self.is_synchronizing = true;
+        } else if self.current_status.get_height() == self.sync_end_height {
+            let start_height = self.current_status.get_height() + 1;
+            let second = self.current_status.get_height() + 2;
+            debug!("sync: update_current_status: start_height = {}, second = {}, block_lists len = {}", start_height, second, self.block_lists.len());
+            if self.block_lists.contains_key(&start_height) && self.block_lists.contains_key(&second) {
+                self.submit_blocks();
 
             } else {
-
-                //大于时,表示最新.
-                self.sync_end_height = self.current_status.get_height();
-                self.is_synchronizing = false;
+                self.start_sync_req(start_height, 0);
             }
+
+            self.sync_time_out = Instant::now();
+            self.is_synchronizing = true;
+        } else {
+            //大于时,表示最新.
+            self.sync_end_height = self.current_status.get_height();
+            self.is_synchronizing = false;
         }
     }
 
-    pub fn update_global_status(&mut self, status: Status, origin: u32) {
+    pub fn update_global_status(&mut self, status: &Status, origin: u32) {
         debug!("sync: update_global_status: current height = {}, from node = {}, height = {}", self.current_status.get_height(), origin, status.get_height());
         let current_height = self.current_status.get_height();
         let old_global_status = self.global_status.clone();
@@ -162,7 +158,7 @@ impl Synchronizer {
                         self.update_current_status(status);
                     }
                     Source::REMOTE => {
-                        self.update_global_status(status, msg.get_origin());
+                        self.update_global_status(&status, msg.get_origin());
                     }
                 }
             }
@@ -190,7 +186,7 @@ impl Synchronizer {
         if let Some((height, origins)) =
             self.latest_status_lists
                 .iter()
-                .rfind(|&(_, origins)| origins.len() >= (2 / 3 * self.con.peers_pair.read().len()))
+                .rfind(|&(_, origins)| origins.len() >= (2 / (3 * self.con.peers_pair.read().len())))
         {
             debug!("sync: start_sync_req: height = {}, origins = {:?}", height, origins);
             if let Some(origins) = self.latest_status_lists.get(height) {
@@ -236,7 +232,7 @@ impl Synchronizer {
 
 
     fn send_sync_req(&self, heights: Vec<u64>, origin: u32) {
-        if heights.len() > 0 {
+        if !heights.is_empty() {
             debug!("sync: send_sync_req:current height = {},  heights = {:?} ,origin {:?}, chain.sync: OperateType {:?}", self.current_status.get_height(), heights, origin, communication::OperateType::SINGLE);
             let mut sync_req = SyncRequest::new();
             sync_req.set_heights(heights);
@@ -276,10 +272,9 @@ impl Synchronizer {
 
         if self.block_lists.contains_key(&::std::u64::MAX) && self.block_lists.len() == 1 {
             blocks.push(self.block_lists.remove(&::std::u64::MAX).unwrap());
-        } else {
-            if let Some(block) = blocks.last() {
-                self.block_lists.insert(block.get_header().get_height(), block.clone());
-            }
+
+        } else if let Some(block) = blocks.last() {
+            self.block_lists.insert(block.get_header().get_height(), block.clone());
         }
 
         self.pub_blocks(blocks);
@@ -287,7 +282,7 @@ impl Synchronizer {
 
 
     fn pub_blocks(&mut self, blocks: Vec<Block>) {
-        if blocks.len() > 0 {
+        if !blocks.is_empty() {
             let height = self.current_status.get_height();
             self.sync_end_height = height + (blocks.len() - 1) as u64;
             debug!("sync: pub_blocks: current height = {}, sync_end_height = {}, len = {}, ", self.current_status.get_height(), self.sync_end_height, blocks.len());
@@ -301,15 +296,6 @@ impl Synchronizer {
 
     fn add_latest_sync_lists(&mut self, height: u64, origin: u32) {
         debug!("sync: add_sync_lists: current height = {}, from node = {}, height = {}", self.current_status.get_height(), origin, height);
-        if self.latest_status_lists.contains_key(&height) {
-            if !self.latest_status_lists.get_mut(&height).unwrap().contains(&origin) {
-                self.latest_status_lists.get_mut(&height).unwrap().push_back(origin);
-            }
-
-        } else {
-            let mut val = VecDeque::new();
-            val.push_back(origin);
-            self.latest_status_lists.insert(height, val);
-        }
+        self.latest_status_lists.entry(height).or_default().push_back(origin);
     }
 }
