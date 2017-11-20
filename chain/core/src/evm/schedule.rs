@@ -104,12 +104,12 @@ pub struct Schedule {
 impl Schedule {
     /// Schedule for the Frontier-era of the Ethereum main net.
     pub fn new_frontier() -> Schedule {
-        Self::new(false, false, 21000)
+        Self::new(false, false, 21_000)
     }
 
     /// Schedule for the Homestead-era of the Ethereum main net.
     pub fn new_homestead() -> Schedule {
-        Self::new(true, true, 53000)
+        Self::new(true, true, 53_000)
     }
 
     /// Schedule for the post-EIP-150-era of the Ethereum main net.
@@ -125,25 +125,25 @@ impl Schedule {
             sha3_gas: 30,
             sha3_word_gas: 6,
             sload_gas: 200,
-            sstore_set_gas: 20000,
+            sstore_set_gas: 20_000,
             sstore_reset_gas: 5000,
-            sstore_refund_gas: 15000,
+            sstore_refund_gas: 15_000,
             jumpdest_gas: 1,
             log_gas: 375,
             log_data_gas: 8,
             log_topic_gas: 375,
-            create_gas: 32000,
+            create_gas: 32_000,
             call_gas: 700,
             call_stipend: 2300,
             call_value_transfer_gas: 9000,
-            call_new_account_gas: 25000,
-            suicide_refund_gas: 24000,
+            call_new_account_gas: 25_000,
+            suicide_refund_gas: 24_000,
             memory_gas: 3,
             quad_coeff_div: 512,
             create_data_gas: 200,
             create_data_limit: max_code_size,
-            tx_gas: 21000,
-            tx_create_gas: 53000,
+            tx_gas: 21_000,
+            tx_create_gas: 53_000,
             tx_data_zero_gas: 4,
             tx_data_non_zero_gas: 68,
             copy_gas: 3,
@@ -151,7 +151,7 @@ impl Schedule {
             extcodecopy_base_gas: 700,
             balance_gas: 400,
             suicide_gas: 5000,
-            suicide_to_new_account_cost: 25000,
+            suicide_to_new_account_cost: 25_000,
             sub_gas_cap_divisor: Some(64),
             no_empty: no_empty,
             kill_empty: kill_empty,
@@ -170,24 +170,24 @@ impl Schedule {
             sha3_gas: 30,
             sha3_word_gas: 6,
             sload_gas: 50,
-            sstore_set_gas: 20000,
+            sstore_set_gas: 20_000,
             sstore_reset_gas: 5000,
-            sstore_refund_gas: 15000,
+            sstore_refund_gas: 15_000,
             jumpdest_gas: 1,
             log_gas: 375,
             log_data_gas: 8,
             log_topic_gas: 375,
-            create_gas: 32000,
+            create_gas: 32_000,
             call_gas: 40,
             call_stipend: 2300,
             call_value_transfer_gas: 9000,
-            call_new_account_gas: 25000,
-            suicide_refund_gas: 24000,
+            call_new_account_gas: 25_000,
+            suicide_refund_gas: 24_000,
             memory_gas: 3,
             quad_coeff_div: 512,
             create_data_gas: 200,
             create_data_limit: usize::max_value(),
-            tx_gas: 21000,
+            tx_gas: 21_000,
             tx_create_gas: tcg,
             tx_data_zero_gas: 4,
             tx_data_non_zero_gas: 68,

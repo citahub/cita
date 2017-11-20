@@ -112,9 +112,9 @@ impl Factory {
     pub fn create(&self, gas: U256) -> Box<Evm> {
         match self.evm {
             VMType::Interpreter => if Self::can_fit_in_usize(gas) {
-                Box::new(super::interpreter::Interpreter::<usize>::new(self.evm_cache.clone()))
+                Box::new(super::interpreter::Interpreter::<usize>::new(Arc::clone(&self.evm_cache)))
             } else {
-                Box::new(super::interpreter::Interpreter::<U256>::new(self.evm_cache.clone()))
+                Box::new(super::interpreter::Interpreter::<U256>::new(Arc::clone(&self.evm_cache)))
             },
         }
     }

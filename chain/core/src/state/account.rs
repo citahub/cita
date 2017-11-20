@@ -178,7 +178,7 @@ impl Account {
 
         let item: U256 = t.get_with(key, ::rlp::decode)?.unwrap_or_else(U256::zero);
         let value: H256 = item.into();
-        self.storage_cache.borrow_mut().insert(key.clone(), value.clone());
+        self.storage_cache.borrow_mut().insert(*key, value);
         Ok(value)
     }
 
@@ -186,10 +186,10 @@ impl Account {
     /// key is not in the cache.
     pub fn cached_storage_at(&self, key: &H256) -> Option<H256> {
         if let Some(value) = self.storage_changes.get(key) {
-            return Some(value.clone());
+            return Some(*value);
         }
         if let Some(value) = self.storage_cache.borrow_mut().get_mut(key) {
-            return Some(value.clone());
+            return Some(*value);
         }
         None
     }
@@ -201,7 +201,7 @@ impl Account {
 
     /// return the code hash associated with this account.
     pub fn code_hash(&self) -> H256 {
-        self.code_hash.clone()
+        self.code_hash
     }
 
     /// return the code hash associated with this account.
@@ -209,7 +209,7 @@ impl Account {
         let hash = self.address_hash.get();
         hash.unwrap_or_else(|| {
                                 let hash = address.crypt_hash();
-                                self.address_hash.set(Some(hash.clone()));
+                                self.address_hash.set(Some(hash));
                                 hash
                             })
     }
@@ -220,13 +220,13 @@ impl Account {
         if self.code_hash != HASH_EMPTY && self.code_cache.is_empty() {
             return None;
         }
-        Some(self.code_cache.clone())
+        Some(Arc::clone(&self.code_cache))
     }
 
     /// returns the account's code size. If `None` then the code cache or code size cache isn't available -
     /// get someone who knows to call `note_code`.
     pub fn code_size(&self) -> Option<usize> {
-        self.code_size.clone()
+        self.code_size
     }
 
     #[cfg(test)]
@@ -253,14 +253,14 @@ impl Account {
         trace!("Account::cache_code: ic={}; self.code_hash={:?}, self.code_cache={}", self.is_cached(), self.code_hash, self.code_cache.pretty());
 
         if self.is_cached() {
-            return Some(self.code_cache.clone());
+            return Some(Arc::clone(&self.code_cache));
         }
 
         match db.get(&self.code_hash) {
             Some(x) => {
                 self.code_size = Some(x.len());
                 self.code_cache = Arc::new(x.to_vec());
-                Some(self.code_cache.clone())
+                Some(Arc::clone(&self.code_cache))
             }
             _ => {
                 warn!("Failed reverse get of {}", self.code_hash);
@@ -338,9 +338,10 @@ impl Account {
         for (k, v) in self.storage_changes.drain() {
             // cast key and value to trait type,
             // so we can call overloaded `to_bytes` method
-            match v.is_zero() {
-                true => t.remove(&k)?,
-                false => t.insert(&k, &encode(&U256::from(&*v)))?,
+            if v.is_zero() {
+                t.remove(&k)?
+            } else {
+                t.insert(&k, &encode(&U256::from(&*v)))?
             };
 
             self.storage_cache.borrow_mut().insert(k, v);
@@ -357,7 +358,7 @@ impl Account {
                 self.code_filth = Filth::Clean;
             }
             (true, false) => {
-                db.emplace(self.code_hash.clone(), DBValue::from_slice(&*self.code_cache));
+                db.emplace(self.code_hash, DBValue::from_slice(&*self.code_cache));
                 self.code_size = Some(self.code_cache.len());
                 self.code_filth = Filth::Clean;
             }
@@ -377,13 +378,13 @@ impl Account {
     /// Clone basic account data
     pub fn clone_basic(&self) -> Account {
         Account {
-            nonce: self.nonce.clone(),
-            storage_root: self.storage_root.clone(),
+            nonce: self.nonce,
+            storage_root: self.storage_root,
             storage_cache: Self::empty_storage_cache(),
             storage_changes: HashMap::new(),
-            code_hash: self.code_hash.clone(),
-            code_size: self.code_size.clone(),
-            code_cache: self.code_cache.clone(),
+            code_hash: self.code_hash,
+            code_size: self.code_size,
+            code_cache: Arc::clone(&self.code_cache),
             code_filth: self.code_filth,
             address_hash: self.address_hash.clone(),
         }
@@ -393,7 +394,7 @@ impl Account {
     pub fn clone_dirty(&self) -> Account {
         let mut account = self.clone_basic();
         account.storage_changes = self.storage_changes.clone();
-        account.code_cache = self.code_cache.clone();
+        account.code_cache = Arc::clone(&self.code_cache);
         account
     }
 
@@ -417,7 +418,7 @@ impl Account {
         self.address_hash = other.address_hash;
         let mut cache = self.storage_cache.borrow_mut();
         for (k, v) in other.storage_cache.into_inner() {
-            cache.insert(k.clone(), v.clone()); //TODO: cloning should not be required here
+            cache.insert(k, v); //TODO: cloning should not be required here
         }
         self.storage_changes = other.storage_changes;
     }

@@ -77,9 +77,8 @@ impl Factory {
 #[cfg(not(test))]
 impl Default for Factory {
     fn default() -> Self {
-        let factory = Factory { contracts: HashMap::new() };
+        Factory { contracts: HashMap::new() }
         // here we register contracts with addresses defined in genesis.json.
-        factory
     }
 }
 

@@ -19,7 +19,7 @@ use libproto::blockchain::RichStatus as ProtoRichStatus;
 use protobuf::RepeatedField;
 use util::{H256, Address};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Default)]
 pub struct RichStatus {
     number: u64,
     hash: H256,
@@ -27,14 +27,6 @@ pub struct RichStatus {
 }
 
 impl RichStatus {
-    pub fn new() -> Self {
-        RichStatus {
-            number: 0,
-            hash: H256::default(),
-            nodes: vec![],
-        }
-    }
-
     pub fn hash(&self) -> &H256 {
         &self.hash
     }

@@ -26,7 +26,7 @@ static NULL_RLP_STATIC: [u8; 1] = [0x80; 1];
 // leaves the first 96 bits untouched in order to support partial key lookup.
 #[inline]
 fn combine_key<'a>(address_hash: &'a H256, key: &'a H256) -> H256 {
-    let mut dst = key.clone();
+    let mut dst = *key;
     {
         let last_src: &[u8] = &*address_hash;
         let last_dst: &mut [u8] = &mut *dst;
@@ -151,7 +151,7 @@ impl<'db> AccountDBMut<'db> {
     pub fn immutable(&'db self) -> AccountDB<'db> {
         AccountDB {
             db: self.db,
-            address_hash: self.address_hash.clone(),
+            address_hash: self.address_hash,
         }
     }
 }
@@ -176,8 +176,8 @@ impl<'db> HashDB for AccountDBMut<'db> {
     }
 
     fn insert(&mut self, value: &[u8]) -> H256 {
-        if value == &NULL_RLP {
-            return HASH_NULL_RLP.clone();
+        if value == NULL_RLP {
+            return HASH_NULL_RLP;
         }
         let k = value.crypt_hash();
         let ak = combine_key(&self.address_hash, &k);
@@ -258,8 +258,8 @@ impl<'db> HashDB for WrappingMut<'db> {
     }
 
     fn insert(&mut self, value: &[u8]) -> H256 {
-        if value == &NULL_RLP {
-            return HASH_NULL_RLP.clone();
+        if value == NULL_RLP {
+            return HASH_NULL_RLP;
         }
         self.0.insert(value)
     }

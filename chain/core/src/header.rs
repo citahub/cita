@@ -88,7 +88,7 @@ impl Default for Header {
             transactions_root: HASH_NULL_RLP,
             state_root: HASH_NULL_RLP,
             receipts_root: HASH_NULL_RLP,
-            log_bloom: ZERO_LOGBLOOM.clone(),
+            log_bloom: ZERO_LOGBLOOM,
             gas_used: U256::default(),
             gas_limit: U256::from(u64::max_value()),
             proof: Proof::new(),
@@ -240,7 +240,7 @@ impl Header {
             Some(h) => h,
             None => {
                 let h = self.rlp_hash();
-                self.hash.set(Some(h.clone()));
+                self.hash.set(Some(h));
                 h
             }
         }

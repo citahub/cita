@@ -48,7 +48,7 @@ pub struct AccountGasLimit {
 impl AccountGasLimit {
     pub fn new() -> Self {
         AccountGasLimit {
-            common_gas_limit: 4294967296,
+            common_gas_limit: 4_294_967_296,
             specific_gas_limit: HashMap::new(),
         }
     }
@@ -89,7 +89,7 @@ impl QuotaManager {
         let quota = QuotaManager::quota(chain);
         let mut specific = HashMap::new();
         for (k, v) in users.iter().zip(quota.iter()) {
-            specific.insert(k.clone(), v.clone());
+            specific.insert(*k, *v);
         }
         specific
     }

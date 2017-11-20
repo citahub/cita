@@ -52,19 +52,21 @@ impl AddressesFilter {
 
     /// Returns blooms of this addresses filter.
     pub fn blooms(&self) -> Vec<LogBloom> {
-        match self.list.is_empty() {
-            true => vec![LogBloom::default()],
-            false => self.list.iter().map(|address| LogBloom::from_bloomed(&address.crypt_hash())).collect(),
+        if self.list.is_empty() {
+            vec![LogBloom::default()]
+        } else {
+            self.list.iter().map(|address| LogBloom::from_bloomed(&address.crypt_hash())).collect()
         }
     }
 
     /// Returns vector of blooms zipped with blooms of this addresses filter.
     pub fn with_blooms(&self, blooms: Vec<LogBloom>) -> Vec<LogBloom> {
-        match self.list.is_empty() {
-            true => blooms,
-            false => blooms.into_iter()
-                           .flat_map(|bloom| self.list.iter().map(|address| bloom.with_bloomed(&address.crypt_hash())).collect::<Vec<_>>())
-                           .collect(),
+        if self.list.is_empty() {
+            blooms
+        } else {
+            blooms.into_iter()
+                  .flat_map(|bloom| self.list.iter().map(|address| bloom.with_bloomed(&address.crypt_hash())).collect::<Vec<_>>())
+                  .collect()
         }
     }
 }

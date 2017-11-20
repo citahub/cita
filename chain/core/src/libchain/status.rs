@@ -18,17 +18,13 @@
 use libproto::blockchain::Status as ProtoStatus;
 use util::H256;
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Default)]
 pub struct Status {
     number: u64,
     hash: H256,
 }
 
 impl Status {
-    pub fn new() -> Self {
-        Status { number: 0, hash: H256::default() }
-    }
-
     pub fn hash(&self) -> &H256 {
         &self.hash
     }

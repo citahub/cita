@@ -45,12 +45,12 @@ const ONE: U256 = U256([1, 0, 0, 0]);
 const TWO: U256 = U256([2, 0, 0, 0]);
 const TWO_POW_5: U256 = U256([0x20, 0, 0, 0]);
 const TWO_POW_8: U256 = U256([0x100, 0, 0, 0]);
-const TWO_POW_16: U256 = U256([0x10000, 0, 0, 0]);
-const TWO_POW_24: U256 = U256([0x1000000, 0, 0, 0]);
+const TWO_POW_16: U256 = U256([0x1_0000, 0, 0, 0]);
+const TWO_POW_24: U256 = U256([0x100_0000, 0, 0, 0]);
 const TWO_POW_64: U256 = U256([0, 0x1, 0, 0]); // 0x1 00000000 00000000
-const TWO_POW_96: U256 = U256([0, 0x100000000, 0, 0]); //0x1 00000000 00000000 00000000
-const TWO_POW_224: U256 = U256([0, 0, 0, 0x100000000]); //0x1 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-const TWO_POW_248: U256 = U256([0, 0, 0, 0x100000000000000]); //0x1 00000000 00000000 00000000 00000000 00000000 00000000 00000000 000000
+const TWO_POW_96: U256 = U256([0, 0x1_0000_0000, 0, 0]); //0x1 00000000 00000000 00000000
+const TWO_POW_224: U256 = U256([0, 0, 0, 0x1_0000_0000]); //0x1 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+const TWO_POW_248: U256 = U256([0, 0, 0, 0x100_0000_0000_0000]); //0x1 00000000 00000000 00000000 00000000 00000000 00000000 00000000 000000
 
 /// Abstraction over raw vector of Bytes. Easier state management of PC.
 struct CodeReader<'a> {
@@ -130,9 +130,10 @@ impl<Cost: CostType> evm::Evm for Interpreter<Cost> {
                            informant.before_instruction(reader.position, instruction, info, &gasometer.current_gas, &stack)
                        });
 
-            let (mem_written, store_written) = match trace_executed {
-                true => (Self::mem_written(instruction, &stack), Self::store_written(instruction, &stack)),
-                false => (None, None),
+            let (mem_written, store_written) = if trace_executed {
+                (Self::mem_written(instruction, &stack), Self::store_written(instruction, &stack))
+            } else {
+                (None, None)
             };
 
             // Execute instruction
@@ -222,7 +223,7 @@ impl<Cost: CostType> Interpreter<Cost> {
 
     fn store_written(instruction: Instruction, stack: &Stack<U256>) -> Option<(U256, U256)> {
         match instruction {
-            instructions::SSTORE => Some((stack.peek(0).clone(), stack.peek(1).clone())),
+            instructions::SSTORE => Some((*stack.peek(0), *stack.peek(1))),
             _ => None,
         }
     }
@@ -287,11 +288,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 let out_size = stack.pop_back();
 
                 // Add stipend (only CALL|CALLCODE when value > 0)
-                let call_gas = call_gas +
-                    value.map_or_else(|| Cost::from(0), |val| match val.is_zero() {
-                        false => Cost::from(ext.schedule().call_stipend),
-                        true => Cost::from(0),
-                    });
+                let call_gas = call_gas + value.map_or_else(|| Cost::from(0), |val| if val.is_zero() { Cost::from(0) } else { Cost::from(ext.schedule().call_stipend) });
 
                 // Get sender & receive addresses, check if we have balance
                 let (sender_address, receive_address, has_balance, call_type) = match instruction {
@@ -379,7 +376,7 @@ impl<Cost: CostType> Interpreter<Cost> {
             instructions::SHA3 => {
                 let offset = stack.pop_back();
                 let size = stack.pop_back();
-                let sha3 = sha3(&self.mem.read_slice(offset, size));
+                let sha3 = sha3(self.mem.read_slice(offset, size));
                 stack.push(U256::from(&*sha3));
             }
             instructions::SLOAD => {
@@ -405,10 +402,10 @@ impl<Cost: CostType> Interpreter<Cost> {
                 stack.push(gas.as_u256());
             }
             instructions::ADDRESS => {
-                stack.push(address_to_u256(params.address.clone()));
+                stack.push(address_to_u256(params.address));
             }
             instructions::ORIGIN => {
-                stack.push(address_to_u256(params.origin.clone()));
+                stack.push(address_to_u256(params.origin));
             }
             instructions::BALANCE => {
                 let address = u256_to_address(&stack.pop_back());
@@ -416,7 +413,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 stack.push(balance);
             }
             instructions::CALLER => {
-                stack.push(address_to_u256(params.sender.clone()));
+                stack.push(address_to_u256(params.sender));
             }
             instructions::CALLVALUE => {
                 stack.push(match params.value {
@@ -464,7 +461,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 self.copy_data_to_memory(stack, &code);
             }
             instructions::GASPRICE => {
-                stack.push(params.gas_price.clone());
+                stack.push(params.gas_price);
             }
             instructions::BLOCKHASH => {
                 let block_number = stack.pop_back();
@@ -472,7 +469,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 stack.push(U256::from(&*block_hash));
             }
             instructions::COINBASE => {
-                stack.push(address_to_u256(ext.env_info().author.clone()));
+                stack.push(address_to_u256(ext.env_info().author));
             }
             instructions::TIMESTAMP => {
                 stack.push(U256::from(ext.env_info().timestamp));
@@ -481,10 +478,10 @@ impl<Cost: CostType> Interpreter<Cost> {
                 stack.push(U256::from(ext.env_info().number));
             }
             instructions::DIFFICULTY => {
-                stack.push(ext.env_info().difficulty.clone());
+                stack.push(ext.env_info().difficulty);
             }
             instructions::GASLIMIT => {
-                stack.push(ext.env_info().gas_limit.clone());
+                stack.push(ext.env_info().gas_limit);
             }
             _ => {
                 self.exec_stack_instruction(instruction, stack)?;
@@ -499,20 +496,19 @@ impl<Cost: CostType> Interpreter<Cost> {
         let size = stack.pop_back();
         let source_size = U256::from(source.len());
 
-        let output_end = match source_offset > source_size || size > source_size || source_offset + size > source_size {
-            true => {
-                let zero_slice = if source_offset > source_size {
-                    self.mem.writeable_slice(dest_offset, size)
-                } else {
-                    self.mem
-                        .writeable_slice(dest_offset + source_size - source_offset, source_offset + size - source_size)
-                };
-                for i in zero_slice.iter_mut() {
-                    *i = 0;
-                }
-                source.len()
+        let output_end = if source_offset > source_size || size > source_size || source_offset + size > source_size {
+            let zero_slice = if source_offset > source_size {
+                self.mem.writeable_slice(dest_offset, size)
+            } else {
+                self.mem
+                    .writeable_slice(dest_offset + source_size - source_offset, source_offset + size - source_size)
+            };
+            for i in zero_slice.iter_mut() {
+                *i = 0;
             }
-            false => (size.low_u64() + source_offset.low_u64()) as usize,
+            source.len()
+        } else {
+            (size.low_u64() + source_offset.low_u64()) as usize
         };
 
         if source_offset < source_size {
@@ -543,7 +539,7 @@ impl<Cost: CostType> Interpreter<Cost> {
         match instruction {
             instructions::DUP1...instructions::DUP16 => {
                 let position = instructions::get_dup_position(instruction);
-                let val = stack.peek(position).clone();
+                let val = *stack.peek(position);
                 stack.push(val);
             }
             instructions::SWAP1...instructions::SWAP16 => {
@@ -689,9 +685,10 @@ impl<Cost: CostType> Interpreter<Cost> {
             instructions::BYTE => {
                 let word = stack.pop_back();
                 let val = stack.pop_back();
-                let byte = match word < U256::from(32) {
-                    true => (val >> (8 * (31 - word.low_u64() as usize))) & U256::from(0xff),
-                    false => U256::zero(),
+                let byte = if word < U256::from(32) {
+                    (val >> (8 * (31 - word.low_u64() as usize))) & U256::from(0xff)
+                } else {
+                    U256::zero()
                 };
                 stack.push(byte);
             }

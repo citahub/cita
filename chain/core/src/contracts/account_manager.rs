@@ -37,8 +37,7 @@ lazy_static! {
         unsafe {
             sha3_256(outptr, 32, METHOD_NAME.as_ptr(), METHOD_NAME.len());
         }
-        let func = out[0..4].to_vec();
-        func
+        out[0..4].to_vec()
     };
     static ref QUERY_TX: Vec<u8> = "0000000000000000000000000000000000000000000000000000000000000001".from_hex().unwrap().into();
     static ref QUERY_CONTRACT: Vec<u8> = "0000000000000000000000000000000000000000000000000000000000000002".from_hex().unwrap().into();

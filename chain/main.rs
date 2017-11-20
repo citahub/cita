@@ -99,7 +99,7 @@ fn main() {
     chain.delivery_block_tx_hashes(chain.get_current_height(), block_tx_hashes, &ctx_pub);
 
     let (write_sender, write_receiver) = channel();
-    let forward = Forward::new(chain.clone(), ctx_pub, write_sender);
+    let forward = Forward::new(Arc::clone(&chain), ctx_pub, write_sender);
     forward.broadcast_current_status();
     let forward_write = forward.clone();
     //chain 读写分离
@@ -122,7 +122,7 @@ fn main() {
     //garbage collect
     let mut i: u32 = 0;
     loop {
-        thread::sleep(time::Duration::from_millis(10000));
+        thread::sleep(time::Duration::from_millis(10_000));
         if i > 100 {
             chain.collect_garbage();
             i = 0;

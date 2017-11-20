@@ -59,10 +59,7 @@ impl<Gas: CostType> Gasometer<Gas> {
     }
 
     pub fn verify_gas(&self, gas_cost: &Gas) -> evm::Result<()> {
-        match &self.current_gas < gas_cost {
-            true => Err(evm::Error::OutOfGas),
-            false => Ok(()),
-        }
+        if &self.current_gas < gas_cost { Err(evm::Error::OutOfGas) } else { Ok(()) }
     }
 
     /// How much gas is provided to a CALL/CREATE, given that we need to deduct `needed` for this operation

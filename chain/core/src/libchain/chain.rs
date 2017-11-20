@@ -97,7 +97,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new() -> Self {
+    pub fn default() -> Self {
         Config {
             check_permission: false,
             check_quota: false,
@@ -179,7 +179,7 @@ impl Chain {
             accountdb: Default::default(),
         };
 
-        let journal_db = journaldb::new(db.clone(), journaldb::Algorithm::Archive, COL_STATE);
+        let journal_db = journaldb::new(Arc::clone(&db), journaldb::Algorithm::Archive, COL_STATE);
         let state_db = StateDB::new(journal_db);
         let blooms_config = bc::Config {
             levels: LOG_BLOOMS_LEVELS,
@@ -217,11 +217,11 @@ impl Chain {
             state_db: state_db,
             factories: factories,
             last_hashes: RwLock::new(VecDeque::new()),
-            polls_filter: Arc::new(Mutex::new(PollManager::new())),
+            polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
             senders: RwLock::new(HashSet::new()),
             creators: RwLock::new(HashSet::new()),
-            block_gas_limit: AtomicUsize::new(18446744073709551615),
+            block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(AccountGasLimit::new()),
             check_permission: sc.check_permission,
             check_quota: sc.check_quota,
@@ -343,7 +343,7 @@ impl Chain {
 
     /// Get block tx hashes
     pub fn block_tx_hashes(&self, number: BlockNumber) -> Option<Vec<H256>> {
-        return self.block_body(BlockId::Number(number)).map(|body| body.transaction_hashes());
+        self.block_body(BlockId::Number(number)).map(|body| body.transaction_hashes())
     }
 
     /// Get transaction by hash
@@ -408,10 +408,10 @@ impl Chain {
         receipts.truncate(index + 1);
         let last_receipt = receipts.pop().expect("Current receipt is provided; qed");
 
-        receipts.retain(|ref r| r.is_some());
+        receipts.retain(|r| r.is_some());
 
         let prior_gas_used = match receipts.last() {
-            Some(&Some(ref r)) => r.gas_used.clone(),
+            Some(&Some(ref r)) => r.gas_used,
             _ => 0.into(),
         };
 
@@ -422,8 +422,8 @@ impl Chain {
             let stx = self.transaction_by_address(hash, index).unwrap();
             let number = self.block_number_by_hash(hash).unwrap_or(0);
 
-            let contract_address = match stx.action() {
-                &Action::Create => Some(contract_address(&stx.sender(), stx.account_nonce())),
+            let contract_address = match *stx.action() {
+                Action::Create => Some(contract_address(stx.sender(), stx.account_nonce())),
                 _ => None,
             };
 
@@ -463,7 +463,7 @@ impl Chain {
     }
 
     pub fn get_current_hash(&self) -> H256 {
-        self.current_header.read().hash().clone()
+        self.current_header.read().hash()
     }
 
     pub fn current_state_root(&self) -> H256 {
@@ -532,7 +532,7 @@ impl Chain {
     pub fn blocks_with_bloom(&self, bloom: &H2048, from_block: BlockNumber, to_block: BlockNumber) -> Vec<BlockNumber> {
         let range = from_block as bc::Number..to_block as bc::Number;
         let chain = bc::group::BloomGroupChain::new(self.blooms_config, self);
-        chain.with_bloom(&range, &Bloom::from(bloom.clone()).into())
+        chain.with_bloom(&range, &Bloom::from(*bloom).into())
              .into_iter()
              .map(|b| b as BlockNumber)
              .collect()
@@ -548,7 +548,7 @@ impl Chain {
 
     pub fn get_logs(&self, filter: Filter) -> Vec<LocalizedLogEntry> {
         let blocks = filter.bloom_possibilities().iter()
-            .filter_map(|bloom| self.blocks_with_bloom_by_id(bloom, filter.from_block.clone(), filter.to_block.clone()))
+            .filter_map(|bloom| self.blocks_with_bloom_by_id(bloom, filter.from_block, filter.to_block))
             .flat_map(|m| m)
             // remove duplicate elements
             .collect::<HashSet<u64>>()
@@ -584,7 +584,7 @@ impl Chain {
             match self.block_hash(height) {
                 Some(hash) => {
                     let index = (i + 1) as usize;
-                    last_hashes[index] = hash.clone();
+                    last_hashes[index] = hash;
                 }
                 None => break,
             }
@@ -599,7 +599,7 @@ impl Chain {
         if hashes.len() > 255 {
             hashes.pop_back();
         }
-        hashes.push_front(hash.clone());
+        hashes.push_front(*hash);
     }
 
     /// Prepare db batch and update cache, including:
@@ -611,20 +611,19 @@ impl Chain {
     pub fn prepare_update(&self, batch: &mut DBTransaction, block: ClosedBlock) {
 
         let height = block.number();
-        let hash = block.hash().clone();
+        let hash = block.hash();
         trace!("commit block in db {:?}, {:?}", hash, height);
 
         let log_bloom = *block.log_bloom();
 
-        let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = match log_bloom.is_zero() {
-            true => HashMap::new(),
-            false => {
-                let chain = bc::group::BloomGroupChain::new(self.blooms_config, self);
-                chain.insert(height as bc::Number, Bloom::from(log_bloom).into())
-                     .into_iter()
-                     .map(|p| (From::from(p.0), From::from(p.1)))
-                     .collect()
-            }
+        let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = if log_bloom.is_zero() {
+            HashMap::new()
+        } else {
+            let chain = bc::group::BloomGroupChain::new(self.blooms_config, self);
+            chain.insert(height as bc::Number, Bloom::from(log_bloom).into())
+                 .into_iter()
+                 .map(|p| (From::from(p.0), From::from(p.1)))
+                 .collect()
         };
 
         let block_receipts = BlockReceipts::new(block.receipts.clone());
@@ -661,7 +660,7 @@ impl Chain {
 
         // Save current block proof
         if let Some(&(Some(ref proof), _)) = self.block_map.read().get(&height) {
-            batch.write(db::COL_EXTRA, &CurrentProof, &proof);
+            batch.write(db::COL_EXTRA, &CurrentProof, proof);
         }
 
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
@@ -683,7 +682,7 @@ impl Chain {
         }
         thread::spawn(move || {
             let mut tx_hashes_in_u8 = Vec::new();
-            for tx_hash_in_h256 in tx_hashes.iter() {
+            for tx_hash_in_h256 in &tx_hashes {
                 tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
             }
             block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
@@ -703,10 +702,9 @@ impl Chain {
     /// Delivery rich status to consensus
     /// Consensus should resend block if chain commit block failed.
     fn delivery_rich_status(&self, header: &Header, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        let current_hash = header.hash().clone();
+        let current_hash = header.hash();
         let current_height = header.number();
         let nodes: Vec<Address> = self.nodes.read().clone();
-        drop(self);
 
         let mut rich_status = ProtoRichStatus::new();
         rich_status.set_hash(current_hash.0.to_vec());
@@ -755,12 +753,12 @@ impl Chain {
 
     /// Get transaction receipt.
     pub fn transaction_receipt(&self, address: &TransactionAddress) -> Option<Receipt> {
-        self.block_receipts(address.block_hash.clone()).map_or(None, |r| r.receipts[address.index].clone())
+        self.block_receipts(address.block_hash).map_or(None, |r| r.receipts[address.index].clone())
     }
 
     /// Current status
     fn current_status(&self) -> Status {
-        let mut status = Status::new();
+        let mut status = Status::default();
         status.set_hash(self.get_current_hash());
         status.set_number(self.get_current_height());
         status
@@ -802,7 +800,7 @@ impl Chain {
     }
 
     fn sign_call(&self, request: CallRequest) -> SignedTransaction {
-        let from = request.from.unwrap_or(Address::zero());
+        let from = request.from.unwrap_or_else(Address::zero);
         Transaction {
             nonce: "".to_string(),
             action: Action::Call(request.to),
@@ -973,7 +971,7 @@ impl Chain {
             self.delivery_block_tx_hashes(height, tx_hashes, ctx_pub);
 
             let closed_block = self.execute_block(block);
-            self.finalize_block(closed_block, &ctx_pub);
+            self.finalize_block(closed_block, ctx_pub);
 
             let status = self.current_status();
             info!("chain update {:?}", height);
@@ -1050,7 +1048,7 @@ impl Chain {
     }
 
     pub fn poll_filter(&self) -> Arc<Mutex<PollManager<PollFilter>>> {
-        self.polls_filter.clone()
+        Arc::clone(&self.polls_filter)
     }
 }
 
@@ -1261,7 +1259,7 @@ contract SimpleStorage {
   }
 }"#;
         let (code, _) = solc("SimpleStorage", source);
-        let tpb = if bench_mode { 10000 } else { 1 };
+        let tpb = if bench_mode { 1000 } else { 1 };
         println!("pass");
         let evm = bench_chain(&code, &data, tpb, Address::zero());
         let native = bench_chain(&code, &data, tpb, Address::from(0x400));

@@ -93,10 +93,7 @@ impl AccountEntry {
     /// basic account data and modified storage keys.
     /// Returns None if clean.
     fn clone_if_dirty(&self) -> Option<AccountEntry> {
-        match self.is_dirty() {
-            true => Some(self.clone_dirty()),
-            false => None,
-        }
+        if self.is_dirty() { Some(self.clone_dirty()) } else { None }
     }
 
     /// Clone dirty data into new `AccountEntry`. This includes
@@ -327,18 +324,18 @@ impl<B: Backend> State<B> {
         if account.is_dirty() {
             if let Some(ref mut checkpoint) = self.checkpoints.borrow_mut().last_mut() {
                 if !checkpoint.contains_key(address) {
-                    checkpoint.insert(address.clone(), self.cache.borrow_mut().insert(address.clone(), account));
+                    checkpoint.insert(*address, self.cache.borrow_mut().insert(*address, account));
                     return;
                 }
             }
         }
-        self.cache.borrow_mut().insert(address.clone(), account);
+        self.cache.borrow_mut().insert(*address, account);
     }
 
     fn note_cache(&self, address: &Address) {
         if let Some(ref mut checkpoint) = self.checkpoints.borrow_mut().last_mut() {
             if !checkpoint.contains_key(address) {
-                checkpoint.insert(address.clone(), self.cache.borrow().get(address).map(AccountEntry::clone_dirty));
+                checkpoint.insert(*address, self.cache.borrow().get(address).map(AccountEntry::clone_dirty));
             }
         }
     }
@@ -700,7 +697,7 @@ impl Clone for State<StateDB> {
             let mut cache: HashMap<Address, AccountEntry> = HashMap::new();
             for (key, val) in self.cache.borrow().iter() {
                 if let Some(entry) = val.clone_if_dirty() {
-                    cache.insert(key.clone(), entry);
+                    cache.insert(*key, entry);
                 }
             }
             cache
@@ -708,10 +705,10 @@ impl Clone for State<StateDB> {
 
         State {
             db: self.db.boxed_clone(),
-            root: self.root.clone(),
+            root: self.root,
             cache: RefCell::new(cache),
             checkpoints: RefCell::new(Vec::new()),
-            account_start_nonce: self.account_start_nonce.clone(),
+            account_start_nonce: self.account_start_nonce,
             factories: self.factories.clone(),
             creators: self.creators.clone(),
             senders: self.senders.clone(),

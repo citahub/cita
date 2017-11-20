@@ -299,7 +299,7 @@ impl OpenBlock {
             author: Address::default(),
             timestamp: self.timestamp(),
             difficulty: U256::default(),
-            last_hashes: self.last_hashes.clone(),
+            last_hashes: Arc::clone(&self.last_hashes),
             gas_used: self.current_gas_used,
             gas_limit: *self.gas_limit(),
             account_gas_limit: 0.into(),
@@ -310,7 +310,7 @@ impl OpenBlock {
     pub fn apply_transactions(&mut self, check_permission: bool, check_quota: bool) {
         let mut transactions = Vec::with_capacity(self.body.transactions.len());
         for mut t in self.body.transactions.clone() {
-            // Apply apply_transaction and set account nonce
+            // Apply transaction and set account nonce
             self.apply_transaction(&mut t, check_permission, check_quota);
             transactions.push(t);
         }
@@ -322,7 +322,7 @@ impl OpenBlock {
 
     pub fn apply_transaction(&mut self, t: &mut SignedTransaction, check_permission: bool, check_quota: bool) {
         let mut env_info = self.env_info();
-        if !self.account_gas.contains_key(&t.sender()) {
+        if !self.account_gas.contains_key(t.sender()) {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);
             env_info.account_gas_limit = self.account_gas_limit;
         }
@@ -336,8 +336,10 @@ impl OpenBlock {
                 self.traces.as_mut().map(|tr| tr.push(trace));
                 let transaction_gas_used = outcome.receipt.gas_used - self.current_gas_used;
                 self.current_gas_used = outcome.receipt.gas_used;
-                if let Some(value) = self.account_gas.get_mut(t.sender()) {
-                    *value = *value - transaction_gas_used;
+                if check_quota {
+                    if let Some(value) = self.account_gas.get_mut(t.sender()) {
+                        *value = *value - transaction_gas_used;
+                    }
                 }
                 self.receipts.push(Some(outcome.receipt));
             }
@@ -349,19 +351,15 @@ impl OpenBlock {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoContractPermission));
                 self.receipts.push(Some(receipt));
             }
-            Err(Error::Execution(ExecutionError::NotEnoughBaseGas { required: _, got: _ })) => {
+            Err(Error::Execution(ExecutionError::NotEnoughBaseGas { .. })) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NotEnoughBaseGas));
                 self.receipts.push(Some(receipt));
             }
-            Err(Error::Execution(ExecutionError::BlockGasLimitReached {
-                                     gas_limit: _,
-                                     gas_used: _,
-                                     gas: _,
-                                 })) => {
+            Err(Error::Execution(ExecutionError::BlockGasLimitReached { .. })) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::BlockGasLimitReached));
                 self.receipts.push(Some(receipt));
             }
-            Err(Error::Execution(ExecutionError::AccountGasLimitReached { gas_limit: _, gas: _ })) => {
+            Err(Error::Execution(ExecutionError::AccountGasLimitReached { .. })) => {
                 let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::AccountGasLimitReached));
                 self.receipts.push(Some(receipt));
             }
@@ -376,14 +374,14 @@ impl OpenBlock {
         let tx_hashs = self.body().transaction_hashes();
 
         // Rebuild block
-        let state_root = self.state.root().clone();
+        let state_root = *self.state.root();
         let receipts_root = merklehash::complete_merkle_root(self.receipts.iter().map(|r| r.rlp_bytes().to_vec()));
         self.set_state_root(state_root);
         self.set_receipts_root(receipts_root);
 
         // blocks blooms
         let log_bloom = self.receipts.clone().into_iter().filter_map(|r| r).fold(LogBloom::zero(), |mut b, r| {
-            b = &b | &r.log_bloom;
+            b = b | r.log_bloom;
             b
         });
 
