@@ -30,27 +30,24 @@ use std::time::Duration;
 use util::RwLock;
 
 const TIMEOUT: u64 = 15;
+type PeerPairs = Arc<RwLock<Vec<(u32, String, Option<TcpStream>)>>>;
 
 pub struct Connection {
     pub id_card: u32,
-    pub peers_pair: Arc<RwLock<Vec<(u32, String, Option<TcpStream>)>>>,
+    pub peers_pair: PeerPairs,
 }
 
 impl Connection {
     pub fn new(config: &config::NetConfig) -> Self {
         let id_card = config.id_card.unwrap();
         let mut peers_pair = Vec::default();
-        match config.peers.as_ref() {
-            Some(peers) => {
-                for peer in peers.iter() {
-                    let id_card: u32 = peer.id_card.unwrap();
-                    let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
-                    let addr = addr.parse::<String>().unwrap();
-                    peers_pair.push((id_card, addr, None));
-                }
+        if let Some(peers) = config.peers.as_ref() {
+            for peer in peers.iter() {
+                let id_card: u32 = peer.id_card.unwrap();
+                let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
+                let addr = addr.parse::<String>().unwrap();
+                peers_pair.push((id_card, addr, None));
             }
-            None => (),
-
         }
 
         Connection {
@@ -84,7 +81,7 @@ impl Connection {
                     self.peers_pair.write().push((id_card, addr, None));
                 }
                 loop {
-                    let index_opt = peers_addr.iter().position(|addr| !config_addr.contains(&addr));
+                    let index_opt = peers_addr.iter().position(|addr| !config_addr.contains(addr));
                     if let Some(index) = index_opt {
                         peers_addr.remove(index);
                         self.peers_pair.write().remove(index);
@@ -108,7 +105,7 @@ impl Connection {
 
         trace!("broadcast msg {:?} ", msg);
         let msg = msg.write_to_bytes().unwrap();
-        let request_id = 0xDEADBEEF00000000 + msg.len();
+        let request_id = 0xDEAD_BEEF_0000_0000 + msg.len();
         let mut encoded_request_id = [0; 8];
         BigEndian::write_u64(&mut encoded_request_id, request_id as u64);
         let mut buf = Vec::new();
@@ -134,7 +131,7 @@ fn connect(con: Arc<Connection>) {
                       for peer in con.peers_pair.write().iter_mut() {
                           let mut need_reconnect = true;
                           let mut header = [0; 8];
-                          BigEndian::write_u64(&mut header, 0xDEADBEEF00000000 as u64);
+                          BigEndian::write_u64(&mut header, 0xDEAD_BEEF_0000_0000 as u64);
                           if let Some(ref mut stream) = peer.2 {
                               let res = stream.write(&header);
                               if res.is_ok() {
@@ -152,11 +149,11 @@ fn connect(con: Arc<Connection>) {
                   });
 }
 
-pub fn manage_connect(con: Arc<Connection>, config_path: &str, rx: Receiver<DebouncedEvent>) {
-    connect(con.clone());
+pub fn manage_connect(con: &Arc<Connection>, config_path: &str, rx: Receiver<DebouncedEvent>) {
+    connect(Arc::clone(con));
     let config = String::from(config_path);
 
-    let con = con.clone();
+    let con = Arc::clone(con);
     thread::spawn(move || loop {
                       match rx.recv() {
                           Ok(event) => {
@@ -167,7 +164,7 @@ pub fn manage_connect(con: Arc<Connection>, config_path: &str, rx: Receiver<Debo
                                           let file_name = path_buf.file_name().unwrap().to_str().unwrap();
                                           if file_name == config.as_str() {
                                               info!("file {} change", file_name);
-                                              let config = NetConfig::new(&config.as_str());
+                                              let config = NetConfig::new(config.as_str());
                                               con.update(&config);
                                           }
                                       }

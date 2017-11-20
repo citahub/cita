@@ -14,8 +14,11 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
-#![feature(iter_rfind)]
+#![feature(iter_rfind,entry_or_default)]
 #[macro_use]
 extern crate log;
 extern crate clap;
@@ -34,7 +37,6 @@ extern crate bytes;
 extern crate notify;
 extern crate util;
 extern crate rand;
-
 
 pub mod config;
 pub mod netserver;
@@ -122,12 +124,12 @@ fn main() {
     //connections manage to loop
     let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
-    let _ = watcher.watch(".", RecursiveMode::NonRecursive).unwrap();
+    watcher.watch(".", RecursiveMode::NonRecursive);
 
     let (sync_tx, sync_rx) = channel();
     let con = Arc::new(Connection::new(&config));
-    let net_work = NetWork::new(con.clone(), ctx_pub.clone(), sync_tx, ctx_pub_tx, ctx_pub_consensus);
-    manage_connect(con.clone(), config_path, rx);
+    let net_work = NetWork::new(Arc::clone(&con), ctx_pub.clone(), sync_tx, ctx_pub_tx, ctx_pub_consensus);
+    manage_connect(&Arc::clone(&con), config_path, rx);
 
     //loop deal data
     thread::spawn(move || loop {
@@ -137,7 +139,7 @@ fn main() {
                   });
 
     //sync loop
-    let mut synchronizer = Synchronizer::new(ctx_pub, con.clone());
+    let mut synchronizer = Synchronizer::new(ctx_pub, Arc::clone(&con));
     thread::spawn(move || loop {
                       if let Ok((source, msg)) = sync_rx.recv() {
                           synchronizer.receive(source, msg);
@@ -145,14 +147,14 @@ fn main() {
                   });
 
     //sub new tx
-    let con_tx = con.clone();
+    let con_tx = Arc::clone(&con);
     thread::spawn(move || {
         loop {
             // msg from sub  new tx
             let (key, body) = crx_sub_tx.recv().unwrap();
             trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
             let (topic, mut data) = NetWork::parse_msg(&body);
-            if topic == "net.tx".to_string() {
+            if topic == "net.tx" {
                 con_tx.broadcast(data);
             }
         }
@@ -165,7 +167,7 @@ fn main() {
             let (key, body) = crx_sub_consensus.recv().unwrap();
             trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
             let (topic, mut data) = NetWork::parse_msg(&body);
-            if topic == "net.msg".to_string() {
+            if topic == "net.msg" {
                 con.broadcast(data);
             }
         }

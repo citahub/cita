@@ -23,3 +23,7 @@ util = { path = "../share_libs/util"}
 pubsub = { path = "../share_libs/pubsub" }
 logger = { path = "../share_libs/logger" }
 rand = "0.3.*"
+clippy = {version = "0.0.172", optional = true}
+
+[features]
+default = []
