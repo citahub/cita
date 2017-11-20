@@ -16,7 +16,7 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
 启动 ``install_develop.sh`` 脚本安装依赖，命令如下：
 ::
 
-   sudo scripts/install_develop.sh
+   scripts/install_develop.sh
    
 安装完成后，可以重新登录使Rust相关的环境变量生效，也可直接使用以下命令立即生效：
 ::
@@ -31,7 +31,7 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
 单元测试依赖rabbitmq, 如果没有启动, 需要用以下脚本启动并配置
 ::
 
-   sudo scripts/config_rabbitmq.sh
+   scripts/config_rabbitmq.sh
 
 可以按照自己的需求自行选择相应的编译方式（Debug-调试模式 或 Release-发行模式）
 ::
