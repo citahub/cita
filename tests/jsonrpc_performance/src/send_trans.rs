@@ -23,8 +23,12 @@ use jsonrpc_types::response::*;
 use libproto::blockchain::UnverifiedTransaction;
 use param::Param;
 use serde_json;
+use std::collections::BTreeMap;
 use std::fmt;
-use std::io::Read;
+use std::fs::File;
+use std::io::{Read, BufRead, Cursor};
+use std::io::prelude::*;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
@@ -43,6 +47,13 @@ pub enum TxCtx {
 }
 
 #[derive(Clone, Debug)]
+pub struct Info {
+    pub blocknum: u64,
+    pub time_stamp: u64,
+    pub use_time: u64,
+}
+
+#[derive(Clone, Debug)]
 pub struct Sendtx {
     txnum: i32,
     threads: i32,
@@ -53,7 +64,6 @@ pub struct Sendtx {
     contract_address: String,
     tx_type: TxCtx,
     analysis: bool,
-    start_h: u64,
     tx_format_err: bool,
     sys_time: Arc<Mutex<time::SystemTime>>,
     curr_height: u64,
@@ -61,7 +71,7 @@ pub struct Sendtx {
 
 #[allow(non_snake_case)]
 impl Sendtx {
-    pub fn new(param: &Param, start_h: u64, analysis: bool) -> Self {
+    pub fn new(param: &Param, analysis: bool) -> Self {
         let totaltx = param.txnum * param.threads;
 
         let tx_type = match param.tx_type.as_ref() {
@@ -81,7 +91,6 @@ impl Sendtx {
             contract_address: param.contract_address.clone(),
             tx_type: tx_type,
             analysis: analysis,
-            start_h: start_h,
             tx_format_err: param.tx_format_err,
             sys_time: Arc::new(Mutex::new(time::SystemTime::now())),
             curr_height: 0,
@@ -340,35 +349,105 @@ impl Sendtx {
         h
     }
 
+    fn get_start_height() -> u64 {
+        let mut file = match File::open("jsonrpc_performance.txt") {
+            Ok(file) => file,
+            Err(_) => panic!("open [{}] fail", "jsonrpc_performance.txt"),
+        };
+        let mut contents = String::new();
+        match file.read_to_string(&mut contents) {
+            Err(_) => panic!("read fail"),
+            Ok(_) => {
+                let cursor = Cursor::new(contents.clone());
+                let mut lines_iter = cursor.lines().map(|l| l.unwrap());
+                loop {
+                    if let Some(ctx) = lines_iter.next() {
+                        if ctx.find("start_h").is_some() {
+                            let v: Vec<&str> = ctx.split(':').collect();
+                            return u64::from_str_radix(v[1].trim(), 10).unwrap();
+                        }
+                    } else {
+                        break;
+                    }
+
+                }
+            }
+        }
+        0
+    }
+
     pub fn analyse_tx_info(&mut self) {
         let v_url = self.get_url();
         let mut _url = v_url[0].clone();
 
-
         let mut tx_num: u64 = 0;
         let mut start_time_stamp = 0;
         let mut _end_time_stamp = 0;
-        let mut h = self.start_h;
+        let mut h = Self::get_start_height();
         let mut start_h = h;
+        let mut pre_time = 0;
+
+        let mut tx_info = BTreeMap::new();
+        let mut result = String::new();
         loop {
             let (blocknum, time_stamp) = self.get_txinfo_by_height(_url.clone(), h);
-            tx_num += blocknum as u64;
+            if blocknum < 0 {
+                continue;
+            }
             if tx_num == 0 {
                 start_time_stamp = time_stamp;
                 start_h = h;
-                h += 1;
-                continue;
             }
+            tx_num += blocknum as u64;
             _end_time_stamp = time_stamp;
-            info!("height:{}, blocknum: {},  time stamp :{}", h, blocknum, time_stamp);
+            let info = Info {
+                blocknum: blocknum as u64,
+                time_stamp: time_stamp,
+                use_time: 0,
+            };
+            tx_info.insert(h, info);
+            let use_time = time_stamp - pre_time;
+            if let Some(info) = tx_info.get_mut(&(h - 1)) {
+                info.use_time = use_time;
+            }
             if tx_num >= self.totaltx || (tx_num > 0 && blocknum == 0) {
+                h += 1;
+                let (blocknum, time_stamp) = self.get_txinfo_by_height(_url.clone(), h);
+                let info = Info {
+                    blocknum: blocknum as u64,
+                    time_stamp: time_stamp,
+                    use_time: 0,
+                };
+                tx_info.insert(h, info);
+                let use_time = time_stamp - pre_time;
+                if let Some(info) = tx_info.get_mut(&(h - 1)) {
+                    info.use_time = use_time;
+                }
+
+                for (key, val) in &tx_info {
+                    let s = format!("height:{}, blocknum: {}, time stamp :{}, use time: {} ms\n", key, val.blocknum, val.time_stamp, val.use_time);
+                    result.push_str(&s);
+                }
                 break;
             }
+            pre_time = time_stamp;
             h += 1;
         }
         let secs = _end_time_stamp - start_time_stamp;
         let tps = if secs > 0 { (tx_num * 1000) as u64 / secs } else { tx_num as u64 };
         info!("tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}", tx_num, start_h, h, secs, tps);
+        let s = format!("tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}\n", tx_num, start_h, h, secs, tps);
+        result.push_str(&s);
+        let path = Path::new("cita_performance.txt");
+        let mut file = match File::create(&path) {
+            Err(_) => panic!("create fail"),
+            Ok(file) => file,
+        };
+
+        match file.write_all(result.as_bytes()) {
+            Err(_) => println!("write fail"),
+            Ok(_) => (),
+        }
     }
 
 
@@ -410,6 +489,7 @@ impl Sendtx {
                     let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
                     let mut secs = diff.as_secs();
                     let nanos = diff.subsec_nanos();
+                    let total_nanos = secs * 1000_000_000 + nanos as u64;
                     secs = secs * 1000 + (nanos / 1000000) as u64;
                     let tps = if secs > 0 { totaltx * 1000 / secs } else { totaltx };
                     _end_h = Self::get_height(url.clone());
@@ -423,8 +503,20 @@ impl Sendtx {
                             TxCtx::GetHeight => "jsonrpc + chain(get height)",
                         }
                     };
+                    //时间算到纳秒
+                    let single_tx_response_time = total_nanos / totaltx as u64;
                     unsafe {
-                        info!("test type: {}, tx_num:{}, start_h: {}, end_h: {}, jsonrpc use time:{} ms, tps: {}", buf, totaltx, START_H, _end_h, secs, tps);
+                        let result = format!("test type: {}\ntx_num: {}\nsucess: {}\nfail: {}\nstart_h: {}\nend_h: {}\njsonrpc use time: {} ms\ntps: {}\nsingle tx respone time: {} ns\n", buf, totaltx, sucess, fail, START_H, _end_h, secs, tps, single_tx_response_time);
+                        let path = Path::new("jsonrpc_performance.txt");
+                        let mut file = match File::create(&path) {
+                            Err(_) => panic!("create fail"),
+                            Ok(file) => file,
+                        };
+
+                        match file.write_all(result.as_bytes()) {
+                            Err(_) => println!("write fail"),
+                            Ok(_) => (),
+                        }
                     }
                     break;
                 }
