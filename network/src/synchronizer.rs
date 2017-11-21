@@ -296,6 +296,6 @@ impl Synchronizer {
 
     fn add_latest_sync_lists(&mut self, height: u64, origin: u32) {
         debug!("sync: add_sync_lists: current height = {}, from node = {}, height = {}", self.current_status.get_height(), origin, height);
-        self.latest_status_lists.entry(height).or_default().push_back(origin);
+        self.latest_status_lists.entry(height).or_insert(VecDeque::new()).push_back(origin);
     }
 }
