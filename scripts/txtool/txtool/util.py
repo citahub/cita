@@ -110,7 +110,7 @@ def solidity_file_dirname(solidity_filename):
             full_path_name =  os.path.abspath(file_path)
             return (solidity_filename,  os.path.dirname(file_path), full_path_name)
         else:
-            print "solidity file {} may be wrong format or not in folder 'solidity'".format(solidity_filename)
+            print("solidity file {} may be wrong format or not in folder 'solidity'".format(solidity_filename))
             return None
     else:
         return (os.path.basename(solidity_filename), os.path.dirname(solidity_filename), solidity_filename)
