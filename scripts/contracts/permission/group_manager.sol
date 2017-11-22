@@ -18,12 +18,34 @@ library GroupManager {
         bool subSwitch;
     }
 
-    event GroupNewed(bytes32 _name);
-    event NameModified(bytes32 _oldName, bytes32 _newName);
-    event SubSwitchModified(bool _oldSubSwitch, bool _newSubSwitch);
-    event UsersAdded(bytes32 _name, address[] _users);
-    event UsersDeleted(bytes32 _name, address[] _users);
-    event GroupDeleted(bytes32 _name);
+    event GroupNewed(bytes32 indexed _name);
+    event NameModified(bytes32 indexed _oldName, bytes32 indexed _newName);
+    event SubSwitchModified(bool indexed _oldSubSwitch, bool indexed _newSubSwitch);
+    event UsersAdded(bytes32 indexed _name, address[] _users);
+    event UsersDeleted(bytes32 indexed _name, address[] _users);
+    event GroupDeleted(bytes32 indexed _name);
+    event GroupInited(bytes32 indexed _root, address[] _adamEve, bool indexed _subSwitch);
+
+    /// @dev Init the root group
+    /// @return The root group name
+    function initGroup(
+        Groups storage self,
+        bytes32 _root,
+        address[] _adamEve,
+        bool _subSwitch
+    )
+        internal 
+        returns (bool)
+    {
+        self.groups[_root].name = _root;
+
+        for (uint i = 0; i < _adamEve.length; i++)
+            self.groups[_root].users[i] = _adamEve[i];
+
+        self.groups[_root].subSwitch = _subSwitch;
+        GroupInited(_root, _adamEve, _subSwitch);
+        return true;
+    }
 
     /// @dev New a group
     /// @param _name The group name of the caller
@@ -37,38 +59,45 @@ library GroupManager {
         Util.SetOp _op
     )
         internal 
-        returns (bytes32)
+        returns (bool)
     {
-        Group memory group;
-        group.name = _newName;
-        group.subSwitch = _newSubSwitch;
+        self.groups[_newName].name = _newName;
+        self.groups[_newName].subSwitch = _newSubSwitch;
 
         if (Util.SetOp.None == _op) {
             for (uint i = 0; i < _newUsers.length; i++)
-                group.users[i] = _newUsers[i];
+                self.groups[_newName].users[i] = _newUsers[i];
         } else {
             address[] memory one = Util.setOpAddress(self.groups[_name].users, _newUsers, _op);
             for (uint j = 0; j < one.length; j++)
-                group.users[j] = one[j];
+                self.groups[_newName].users[j] = one[j];
         }
 
+        self.groups[_name].subGroups.push(_newName);
         GroupNewed(_newName);
-        return group.name;
+        return true;
     }
 
     /// @dev Modify the name
-    /// @notice TODO. Need to change authorization too
     function modifyName(Groups storage self, bytes32 _oldName, bytes32 _newName) internal returns (bool) {
         Group memory group = self.groups[_oldName];
-        group.name = _newName;
+        // Will it work?
         self.groups[_newName] = group;
+        self.groups[_newName].name = _newName;
         delete self.groups[_oldName];
         NameModified(_oldName, _newName);
         return true;
     }
 
     /// @dev Modify the sub_switch
-    function modifySubSwitch(Groups storage self, bytes32 _name, bool _newSubSwitch) internal returns (bool) {
+    function modifySubSwitch(
+        Groups storage self,
+        bytes32 _name,
+        bool _newSubSwitch
+    )
+        internal
+        returns (bool)
+    {
         SubSwitchModified(self.groups[_name].subSwitch, _newSubSwitch);
         self.groups[_name].subSwitch = _newSubSwitch;
         return true;
@@ -103,11 +132,5 @@ library GroupManager {
         delete self.groups[_name];
         GroupDeleted(_name);
         return true;
-    }
-
-    /// @notice Should check the sub_switch
-    /// @dev Query the users
-    function queryUsers(Groups storage self, bytes32 _name) constant returns (address[]) {
-        return self.groups[_name].users;
     }
 }
