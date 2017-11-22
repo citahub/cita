@@ -499,7 +499,7 @@ impl TenderMint {
                 }
             }
             self.clean_saved_info();
-            self.clean_filtr_info();
+            self.clean_filter_info();
             self.clean_block_txs();
             return true;
         }
@@ -909,7 +909,7 @@ impl TenderMint {
         self.block_txs = self.block_txs.clone().into_iter().filter(|&(hi, _)| hi >= height).collect();
     }
 
-    fn clean_filtr_info(&mut self) {
+    fn clean_filter_info(&mut self) {
         self.send_filter.clear();
     }
 
