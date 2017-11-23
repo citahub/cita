@@ -3,7 +3,7 @@
 
 import argparse
 import os.path
-from solc import compile_standard
+from solc import compile_standard, compile_files, compile_source
 from pathlib import Path
 from util import findDict, run_command, path_leaf, add_hex_0x, solidity_file_dirname
 import simplejson
@@ -47,15 +47,19 @@ def main():
             'language': 'Solidity',
             'sources': {'standard.sol': {'content': solidity_source}}
         })
-        print "abi保存到output/compiled/abi文件中"
+        print("contract bytecode stored in 'output/compiled/bytecode'")
         save_abi(findDict(output['contracts'], 'abi'))
-        print "bincode保存到output/compiled/bytecode"
-        save_bincode(str(findDict(output, 'object')))
-
+        print("function signature stored in 'output/compiled/functions'")
         save_functions(findDict(output, 'methodIdentifiers'))
+
+        bytecode = compile_source(parsed.source)
+        print("contract bytecode stored in 'output/compiled/bytecode'")
+        save_bincode(str(findDict(bytecode, 'bin')))
+        print(str(findDict(bytecode, 'bin')))
+
     elif parsed.file:
         # TODO: 错误处理 文件格式检查
-        print parsed.file
+        print(parsed.file)
         paths = solidity_file_dirname(parsed.file)
         origin_path = os.getcwd()
         if paths is not None:
@@ -65,21 +69,26 @@ def main():
                 'language': 'Solidity',
                 'sources': {filename: {'urls': [fullpath]}},
             }, allow_paths=basepath)
+
             os.chdir(origin_path)
-            print "abi保存到output/compiled/abi文件中"
+            print("contract abi stored in 'output/compiled/abi'")
             save_abi(findDict(output['contracts'], 'abi'))
-            print "bincode保存到output/compiled/bytecode"
-            save_bincode(str(findDict(output, 'object')))
-        
+            print("function signature stored in 'output/compiled/functions'")
             save_functions(findDict(output, 'methodIdentifiers'))
+
+            bytecode = compile_files([parsed.file])
+            print("contract bytecode stored in 'output/compiled/bytecode'")
+            save_bincode(str(findDict(bytecode, 'bin')))
+            print(str(findDict(bytecode, 'bin')))
+
     elif parsed.procedure:
         key = parsed.procedure
         functions = read_functions()
         if functions is None or functions == "":
-            print "Compile Solidity source first."
+            print("Compile Solidity source first.")
         else:
             data = findDict(functions, key)
-            print add_hex_0x(data)     
+            print(add_hex_0x(data))
 
 
 if __name__ == "__main__":
