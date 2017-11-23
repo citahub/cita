@@ -40,7 +40,7 @@ use libchain::status::Status;
 pub use libchain::transaction::*;
 
 use libproto::*;
-use libproto::blockchain::{ProofType, Status as ProtoStatus, RichStatus as ProtoRichStatus, Proof as ProtoProof};
+use libproto::blockchain::{ProofType, RichStatus as ProtoRichStatus, Proof as ProtoProof};
 
 use native::Factory as NativeFactory;
 use proof::TendermintProof;
@@ -55,7 +55,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Instant;
@@ -114,14 +114,23 @@ impl bc::group::BloomGroupDatabase for Chain {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum BlockInQueue {
+    Proposal(Block),
+    ValidProposal(Block, ProtoProof),
+    ConsensusBlock(Block, ProtoProof),
+    SyncBlock((Block, Option<ProtoProof>)),
+}
+
 // TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
 // 所有直接unwrap的地方都可能会报错！
 pub struct Chain {
     blooms_config: bc::Config,
     pub current_header: RwLock<Header>,
-    // BtreeMap key: block height  Value: proof if ,block, is_verified
-    // TODO: prune ancient
-    pub block_map: RwLock<BTreeMap<u64, (Option<ProtoProof>, Option<Block>)>>,
+    pub is_sync: AtomicBool,
+    // Max height in block map
+    pub max_height: AtomicUsize,
+    pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
     pub db: Arc<KeyValueDB>,
     pub state_db: StateDB,
     pub factories: Factories,
@@ -197,14 +206,17 @@ impl Chain {
             }
         };
 
-        let proof: Option<ProtoProof> = db.read(db::COL_EXTRA, &CurrentProof);
-
         let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
         info!("config check: {:?}", sc);
+
+        let max_height = AtomicUsize::new(0);
+        max_height.store(header.number() as usize, Ordering::SeqCst);
 
         let chain = Chain {
             blooms_config: blooms_config,
             current_header: RwLock::new(header.clone()),
+            is_sync: AtomicBool::new(false),
+            max_height: max_height,
             block_map: RwLock::new(BTreeMap::new()),
             block_headers: RwLock::new(HashMap::new()),
             block_bodies: RwLock::new(HashMap::new()),
@@ -230,13 +242,6 @@ impl Chain {
         // Build chain config
         chain.build_last_hashes(Some(header.hash()), header.number());
         chain.reload_config();
-        {
-            // Insert current proof for sync
-            let block = chain.block_by_hash(header.hash()).expect("Failed to load current block.");
-            let mut guard = chain.block_map.write();
-            let _ = guard.insert(header.number(), (proof, Some(block)));
-        }
-
         chain
     }
 
@@ -466,6 +471,10 @@ impl Chain {
         self.current_header.read().hash()
     }
 
+    pub fn get_max_height(&self) -> u64 {
+        self.max_height.load(Ordering::SeqCst) as u64
+    }
+
     pub fn current_state_root(&self) -> H256 {
         *self.current_header.read().state_root()
     }
@@ -659,8 +668,15 @@ impl Chain {
         }
 
         // Save current block proof
-        if let Some(&(Some(ref proof), _)) = self.block_map.read().get(&height) {
-            batch.write(db::COL_EXTRA, &CurrentProof, proof);
+        {
+            if let Some(proof_block) = self.block_map.read().get(&height) {
+                match *proof_block {
+                    BlockInQueue::ValidProposal(_, ref proof) |
+                    BlockInQueue::ConsensusBlock(_, ref proof) |
+                    BlockInQueue::SyncBlock((_, Some(ref proof))) => batch.write(db::COL_EXTRA, &CurrentProof, &proof),
+                    _ => {}
+                }
+            }
         }
 
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
@@ -919,7 +935,6 @@ impl Chain {
         let new_now = Instant::now();
         info!("db write use {:?}", new_now.duration_since(now));
 
-        self.broadcast_status(ctx_pub);
         self.update_last_hashes(&self.get_current_hash());
     }
 
@@ -962,23 +977,14 @@ impl Chain {
         }
     }
 
-    pub fn set_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) -> Option<ProtoStatus> {
+    pub fn set_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        // Delivery block tx hashes to auth
         let height = block.number();
-        trace!("set_block height = {:?}, hash = {:?}", height, block.hash());
-        if self.validate_height(height) && self.validate_hash(block.parent_hash()) {
-            // Delivery block tx hashes to auth
-            let tx_hashes = block.body().transaction_hashes();
-            self.delivery_block_tx_hashes(height, tx_hashes, ctx_pub);
+        let tx_hashes = block.body().transaction_hashes();
+        self.delivery_block_tx_hashes(height, tx_hashes, ctx_pub);
 
-            let closed_block = self.execute_block(block);
-            self.finalize_block(closed_block, ctx_pub);
-
-            let status = self.current_status();
-            info!("chain update {:?}", height);
-            Some(status.protobuf())
-        } else {
-            None
-        }
+        let closed_block = self.execute_block(block);
+        self.finalize_block(closed_block, ctx_pub);
     }
 
     pub fn compare_status(&self, st: Status) -> (u64, u64) {

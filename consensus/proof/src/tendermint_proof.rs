@@ -42,6 +42,7 @@ pub enum Step {
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct TendermintProof {
     pub proposal: H256,
+    // Prev height
     pub height: usize,
     pub round: usize,
     pub commits: HashMap<Address, Signature>,
