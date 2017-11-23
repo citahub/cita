@@ -51,10 +51,6 @@ impl WaitTimer {
         }
     }
 
-    pub fn set_timer(ts: Sender<TimeoutInfo>, ti: TimeoutInfo) {
-        ts.send(ti).unwrap();
-    }
-
     pub fn start(&self) {
         let innersetter = &self.timer_seter;
         let zero_time = ::std::time::Duration::new(0, 0);

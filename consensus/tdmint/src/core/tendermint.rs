@@ -21,7 +21,7 @@ use bincode::{serialize, deserialize, Infinite};
 use core::params::TendermintParams;
 use core::voteset::{VoteCollector, ProposalCollector, VoteSet, Proposal, VoteMessage, verify_tx};
 
-use core::votetime::{WaitTimer, TimeoutInfo};
+use core::votetime::TimeoutInfo;
 use core::wal::Wal;
 
 use crypto::{CreateKey, Signature, Sign, pubkey_to_address, SIGNATURE_BYTES_LEN};
@@ -262,13 +262,12 @@ impl TenderMint {
             }
         }
         //this is for timeout resending votes
-        WaitTimer::set_timer(self.timer_seter.clone(),
-                             TimeoutInfo {
-                                 timeval: self.params.timer.prevote * TIMEOUT_RETRANSE_MULTIPLE,
-                                 height: height,
-                                 round: round,
-                                 step: Step::Prevote,
-                             });
+        self.timer_seter.send(TimeoutInfo {
+                                  timeval: self.params.timer.prevote * TIMEOUT_RETRANSE_MULTIPLE,
+                                  height: height,
+                                  round: round,
+                                  step: Step::Prevote,
+                              });
     }
 
     fn proc_prevote(&mut self, height: usize, round: usize) -> bool {
@@ -333,13 +332,12 @@ impl TenderMint {
 
                 if self.step == Step::Prevote {
                     self.change_state_step(height, round, Step::PrevoteWait, false);
-                    WaitTimer::set_timer(self.timer_seter.clone(),
-                                         TimeoutInfo {
-                                             timeval: tv,
-                                             height: height,
-                                             round: round,
-                                             step: Step::PrevoteWait,
-                                         });
+                    self.timer_seter.send(TimeoutInfo {
+                                              timeval: tv,
+                                              height: height,
+                                              round: round,
+                                              step: Step::PrevoteWait,
+                                          });
                 }
                 return true;
             }
@@ -383,13 +381,12 @@ impl TenderMint {
         }
 
         //timeout for resending vote msg
-        WaitTimer::set_timer(self.timer_seter.clone(),
-                             TimeoutInfo {
-                                 timeval: self.params.timer.precommit * TIMEOUT_RETRANSE_MULTIPLE,
-                                 height: self.height,
-                                 round: self.round,
-                                 step: Step::Precommit,
-                             });
+        self.timer_seter.send(TimeoutInfo {
+                                  timeval: self.params.timer.precommit * TIMEOUT_RETRANSE_MULTIPLE,
+                                  height: self.height,
+                                  round: self.round,
+                                  step: Step::Precommit,
+                              });
         true
     }
 
@@ -441,13 +438,12 @@ impl TenderMint {
 
                 if self.step == Step::Precommit {
                     self.change_state_step(height, round, Step::PrecommitWait, false);
-                    WaitTimer::set_timer(self.timer_seter.clone(),
-                                         TimeoutInfo {
-                                             timeval: tv,
-                                             height: height,
-                                             round: round,
-                                             step: Step::PrecommitWait,
-                                         });
+                    self.timer_seter.send(TimeoutInfo {
+                                              timeval: tv,
+                                              height: height,
+                                              round: round,
+                                              step: Step::PrecommitWait,
+                                          });
                 }
                 return true;
             }
@@ -503,7 +499,7 @@ impl TenderMint {
                 }
             }
             self.clean_saved_info();
-            self.clean_filtr_info();
+            self.clean_filter_info();
             self.clean_block_txs();
             return true;
         }
@@ -913,7 +909,7 @@ impl TenderMint {
         self.block_txs = self.block_txs.clone().into_iter().filter(|&(hi, _)| hi >= height).collect();
     }
 
-    fn clean_filtr_info(&mut self) {
+    fn clean_filter_info(&mut self) {
         self.send_filter.clear();
     }
 
@@ -1033,13 +1029,12 @@ impl TenderMint {
                 self.proc_precommit(tminfo.height, tminfo.round);
             } else {
                 self.change_state_step(tminfo.height, tminfo.round, Step::PrecommitAuth, false);
-                WaitTimer::set_timer(self.timer_seter.clone(),
-                                     TimeoutInfo {
-                                         timeval: self.params.timer.prevote * TIMEOUT_RETRANSE_MULTIPLE,
-                                         height: tminfo.height,
-                                         round: tminfo.round,
-                                         step: Step::PrecommitAuth,
-                                     });
+                self.timer_seter.send(TimeoutInfo {
+                                          timeval: self.params.timer.prevote * TIMEOUT_RETRANSE_MULTIPLE,
+                                          height: tminfo.height,
+                                          round: tminfo.round,
+                                          step: Step::PrecommitAuth,
+                                      });
             }
         } else if tminfo.step == Step::PrecommitAuth {
             let msg = self.unverified_msg.get(&(tminfo.height, tminfo.round));
@@ -1104,13 +1099,12 @@ impl TenderMint {
                             trace!("recive handle_proposal {:?} self height {} round {} step {:?}", (h, r), self.height, self.round, self.step);
                             if h == self.height && r == self.round && self.step < Step::Prevote {
                                 self.step = Step::ProposeWait;
-                                WaitTimer::set_timer(self.timer_seter.clone(),
-                                                     TimeoutInfo {
-                                                         timeval: ::std::time::Duration::new(0, 0),
-                                                         height: h,
-                                                         round: r,
-                                                         step: Step::ProposeWait,
-                                                     });
+                                self.timer_seter.send(TimeoutInfo {
+                                                          timeval: ::std::time::Duration::new(0, 0),
+                                                          height: h,
+                                                          round: r,
+                                                          step: Step::ProposeWait,
+                                                      });
                             }
                         } else {
                             trace!(" fail handle_proposal {}", res.err().unwrap());
@@ -1175,13 +1169,12 @@ impl TenderMint {
                     let now_step = self.step;
                     if now_height == height + 1 && self.is_round_proposer(now_height, now_round, &self.params.signer.address).is_ok() && now_step == Step::ProposeWait && self.proposal.is_none() {
                         self.new_proposal();
-                        WaitTimer::set_timer(self.timer_seter.clone(),
-                                             TimeoutInfo {
-                                                 timeval: ::std::time::Duration::new(0, 0),
-                                                 height: now_height,
-                                                 round: now_round,
-                                                 step: Step::ProposeWait,
-                                             });
+                        self.timer_seter.send(TimeoutInfo {
+                                                  timeval: ::std::time::Duration::new(0, 0),
+                                                  height: now_height,
+                                                  round: now_round,
+                                                  step: Step::ProposeWait,
+                                              });
                     }
                 }
                 _ => {}
@@ -1244,13 +1237,12 @@ impl TenderMint {
 
         self.change_state_step(status_height, r, Step::CommitWait, false);
         info!(" ######### height {} round {} chain status return time {:?} ", status_height, self.round, cost_time);
-        WaitTimer::set_timer(self.timer_seter.clone(),
-                             TimeoutInfo {
-                                 timeval: tv,
-                                 height: status_height,
-                                 round: r,
-                                 step: Step::CommitWait,
-                             });
+        self.timer_seter.send(TimeoutInfo {
+                                  timeval: tv,
+                                  height: status_height,
+                                  round: r,
+                                  step: Step::CommitWait,
+                              });
     }
 
     fn new_round_start(&mut self, height: usize, round: usize) {
@@ -1263,13 +1255,12 @@ impl TenderMint {
         }
         //if is proposal,enter prevote stage immedietly
         self.step = Step::ProposeWait;
-        WaitTimer::set_timer(self.timer_seter.clone(),
-                             TimeoutInfo {
-                                 timeval: tv,
-                                 height: height,
-                                 round: round,
-                                 step: Step::ProposeWait,
-                             });
+        self.timer_seter.send(TimeoutInfo {
+                                  timeval: tv,
+                                  height: height,
+                                  round: round,
+                                  step: Step::ProposeWait,
+                              });
     }
 
     pub fn redo_work(&mut self) {
@@ -1285,25 +1276,23 @@ impl TenderMint {
             self.proc_prevote(height, round);
 
             if self.step == Step::PrevoteWait {
-                WaitTimer::set_timer(self.timer_seter.clone(),
-                                     TimeoutInfo {
-                                         timeval: self.params.timer.prevote,
-                                         height: height,
-                                         round: round,
-                                         step: Step::PrevoteWait,
-                                     });
+                self.timer_seter.send(TimeoutInfo {
+                                          timeval: self.params.timer.prevote,
+                                          height: height,
+                                          round: round,
+                                          step: Step::PrevoteWait,
+                                      });
             }
         } else if self.step == Step::Precommit || self.step == Step::PrecommitWait {
             self.pre_proc_precommit();
             self.proc_precommit(height, round);
             if self.step == Step::PrecommitWait {
-                WaitTimer::set_timer(self.timer_seter.clone(),
-                                     TimeoutInfo {
-                                         timeval: self.params.timer.precommit,
-                                         height: height,
-                                         round: round,
-                                         step: Step::PrecommitWait,
-                                     });
+                self.timer_seter.send(TimeoutInfo {
+                                          timeval: self.params.timer.precommit,
+                                          height: height,
+                                          round: round,
+                                          step: Step::PrecommitWait,
+                                      });
             }
         } else if self.step == Step::Commit {
             /*when rebooting ,we did not know chain if is ready
@@ -1318,7 +1307,7 @@ impl TenderMint {
                 self.new_round_start(height, round + 1);
             }
         } else if self.step == Step::CommitWait {
-            /*WaitTimer::set_timer(self.timer_seter.clone(),
+            /*self.timer_seter.send(
                     TimeoutInfo{
                         timeval:self.params.timer.commit,
                         height:height,
