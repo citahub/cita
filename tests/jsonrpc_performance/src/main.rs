@@ -33,16 +33,14 @@ fn main() {
         .author("Cryptape")
         .about("CITA jsonrpc performance testing")
         .args_from_usage("--config=[file] 'config file for params'")
-        .args_from_usage("--start_h=[1] 'block chain height'")
         .args_from_usage("--analysis=[false] 'is analysis info ?'")
         .get_matches();
 
     let file_name = matches.value_of("config").unwrap_or("config_test.json");
 
-    let start_h = matches.value_of("start_h").unwrap_or("1").parse::<u64>().unwrap();
     let analysis = matches.value_of("analysis").unwrap_or("false").parse::<bool>().unwrap();
     let p: Param = Param::load_from_file(&file_name);
-    let mut work = Sendtx::new(&p, start_h, analysis);
+    let mut work = Sendtx::new(&p, analysis);
     work.start();
 
 }
