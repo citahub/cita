@@ -40,7 +40,7 @@ where
             jsonrpc: Some(Version::V2),
             method: method.to_string(),
             id: Id::Str(request_id.clone()),
-            params: params,
+            params: Some(params),
         };
         let _ = serde_json::to_string(&rpc).map(|data| {
                                                     self.send(data);
