@@ -35,6 +35,7 @@ extern crate dotenv;
 extern crate logger;
 extern crate bytes;
 extern crate notify;
+#[macro_use]
 extern crate util;
 extern crate rand;
 
@@ -49,12 +50,10 @@ pub mod network;
 use clap::{App, SubCommand};
 use config::NetConfig;
 use connection::{Connection, manage_connect};
-use dotenv::dotenv;
 use netserver::NetServer;
 use network::NetWork;
 use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use pubsub::start_pubsub;
-use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
@@ -65,16 +64,7 @@ use util::panichandler::set_panic_handler;
 
 
 fn main() {
-    dotenv().ok();
-    // Always print backtrace on panic.
-    env::set_var("RUST_BACKTRACE", "full");
-
-    //exit process when panic
-    set_panic_handler();
-
-    // Init log4rs
-    logger::init_config("network");
-    info!("CITA:network");
+    micro_service_init!("cita-network", "CITA:network");
     // init app
     // todo load config
     let matches = App::new("network")

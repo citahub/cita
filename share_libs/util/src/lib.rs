@@ -61,7 +61,8 @@ pub mod cache;
 pub mod crypto;
 pub mod datapath;
 pub mod panichandler;
-
+#[macro_use]
+pub mod init;
 
 pub use ansi_term::{Colour, Style};
 pub use bigint::*;
@@ -83,6 +84,7 @@ pub use semantic_version::*;
 pub use trie::{Trie, TrieMut, TrieDB, TrieDBMut, TrieFactory, TrieError, SecTrieDB, SecTrieDBMut};
 pub use triehash::*;
 pub use vector::*;
+pub use init::*;
 
 /// 160-bit integer representing account address
 pub type Address = H160;

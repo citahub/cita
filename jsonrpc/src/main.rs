@@ -22,6 +22,7 @@ extern crate libproto;
 extern crate protobuf;
 #[macro_use]
 extern crate log;
+#[macro_use]
 extern crate util;
 extern crate serde_json;
 #[macro_use]
@@ -49,7 +50,6 @@ use base_hanlder::TransferType;
 use clap::App;
 use config::ProfileConfig;
 use cpuprofiler::PROFILER;
-use dotenv::dotenv;
 use http_handler::HttpHandler;
 use hyper::server::Server;
 use jsonrpc_types::method;
@@ -87,12 +87,7 @@ fn start_profile(config: &ProfileConfig) {
 
 
 fn main() {
-    dotenv().ok();
-    ::std::env::set_var("RUST_BACKTRACE", "full");
-    //exit process when panic
-    set_panic_handler();
-    logger::init_config("jsonrpc");
-    info!("CITA:jsonrpc ");
+    micro_service_init!("cita-jsonrpc", "CITA:jsonrpc");
 
     // todo load config
     let matches = App::new("JsonRpc")

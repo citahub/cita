@@ -28,6 +28,7 @@ extern crate pubsub;
 extern crate cpuprofiler;
 extern crate libproto;
 extern crate cache_2q;
+#[macro_use]
 extern crate util;
 extern crate cita_crypto as crypto;
 extern crate threadpool;
@@ -49,11 +50,9 @@ use clap::App;
 use config::Config;
 use cpuprofiler::PROFILER;
 use dispatchtx::Dispatchtx;
-use dotenv::dotenv;
 use handler::*;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
-use std::env;
 use std::sync::Arc;
 use std::sync::atomic::{Ordering, AtomicBool};
 use std::sync::mpsc::channel;
@@ -79,16 +78,8 @@ fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
 }
 
 fn main() {
-    dotenv().ok();
-    // Always print backtrace on panic.
-    env::set_var("RUST_BACKTRACE", "full");
+    micro_service_init!("cita-auth", "CITA:auth");
 
-    //exit process when panic
-    set_panic_handler();
-
-    // log4rs config
-    logger::init_config("auth");
-    info!("CITA:auth");
     // init app
     let matches = App::new("auth")
         .version("0.1")
