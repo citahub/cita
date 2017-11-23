@@ -87,7 +87,7 @@ fn main() {
     set_panic_handler();
 
     // log4rs config
-    logger::init_config("auth");
+    logger::init_config("cita-auth");
     info!("CITA:auth");
     // init app
     let matches = App::new("auth")

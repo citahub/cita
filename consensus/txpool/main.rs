@@ -51,7 +51,7 @@ fn main() {
     dotenv::dotenv().ok();
     // Always print backtrace on panic.
     ::std::env::set_var("RUST_BACKTRACE", "1");
-    logger::init_config("consensus");
+    logger::init_config("cita-consensus");
     info!("CITA:txpool");
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();

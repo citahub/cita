@@ -61,7 +61,7 @@ fn main() {
     //exit process when panic
     set_panic_handler();
     //log4rs config
-    logger::init_config("chain");
+    logger::init_config("cita-chain");
     info!("CITA:chain");
     let matches = App::new("chain")
         .version("0.1")

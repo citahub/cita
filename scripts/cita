@@ -46,10 +46,10 @@ start() {
 
     if [ -z ${debug} ]; then
         
-        monitor start > /dev/null 2>&1
+        cita-monitor start > /dev/null 2>&1
     else                                        
         RUST_LOG=auth,network,consensus_tendermint,proof,txpool,engine,libproto,jsonrpc,jsonrpc_types,chain,core=${debug} \
-        monitor start > /dev/null 2>&1                                       
+        cita-monitor start > /dev/null 2>&1
     fi
 }
 
@@ -68,11 +68,11 @@ clean() {
 }
 
 stop() {
-    monitor stop > /dev/null 2>&1
+    cita-monitor stop > /dev/null 2>&1
 }
 
 rotate() {
-    monitor logrotate > /dev/null 2>&1
+    cita-monitor logrotate > /dev/null 2>&1
 }
 
 status() {
