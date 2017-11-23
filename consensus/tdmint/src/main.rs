@@ -74,7 +74,7 @@ fn main() {
     //exit process when panic
     set_panic_handler();
 
-    logger::init_config("consensus");
+    logger::init_config("cita-consensus");
     info!("CITA:consensus:tendermint");
 
     let matches = App::new("tendermint")

@@ -163,11 +163,11 @@ function cita_start()
     jsonrpc_host=$6
     chain_host=$7
     echo "starting ${node}"
-    ssh $user_name@$auth_host      "cd install/${node}; mkdir -p logs;nohup ../bin/auth                                       >logs/${node}.auth       2>&1 & echo $! >> .pid"
-    ssh $user_name@$network_host   "cd install/${node}; mkdir -p logs;nohup ../bin/network                 -c network.toml    >logs/${node}.network    2>&1 & echo $! >> .pid"
-    ssh $user_name@$consensus_host "cd install/${node}; mkdir -p logs;nohup ../bin/consensus_tendermint    -c consensus.json  >logs/${node}.consensus  2>&1 & echo $! >> .pid"
-    ssh $user_name@$jsonrpc_host   "cd install/${node}; mkdir -p logs;nohup ../bin/jsonrpc                 -c jsonrpc.json    >logs/${node}.jsonrpc    2>&1 & echo $! >> .pid"
-    ssh $user_name@$chain_host     "cd install/${node}; mkdir -p logs;nohup ../bin/chain  -g genesis.json  -c chain.json      >logs/${node}.chain      2>&1 & echo $! >> .pid"
+    ssh $user_name@$auth_host      "cd install/${node}; mkdir -p logs;nohup ../bin/cita-auth                                       >logs/${node}.auth       2>&1 & echo $! >> .pid"
+    ssh $user_name@$network_host   "cd install/${node}; mkdir -p logs;nohup ../bin/cita-network                 -c network.toml    >logs/${node}.network    2>&1 & echo $! >> .pid"
+    ssh $user_name@$consensus_host "cd install/${node}; mkdir -p logs;nohup ../bin/cita-consensus    -c consensus.json  >logs/${node}.consensus  2>&1 & echo $! >> .pid"
+    ssh $user_name@$jsonrpc_host   "cd install/${node}; mkdir -p logs;nohup ../bin/cita-jsonrpc                 -c jsonrpc.json    >logs/${node}.jsonrpc    2>&1 & echo $! >> .pid"
+    ssh $user_name@$chain_host     "cd install/${node}; mkdir -p logs;nohup ../bin/cita-chain  -g genesis.json  -c chain.json      >logs/${node}.chain      2>&1 & echo $! >> .pid"
 }
 
 #停止cita
@@ -181,11 +181,11 @@ function cita_stop()
     jsonrpc_host=$6
     chain_host=$7
     echo "stop ${node}"
-    ssh $user_name@$auth_host      "killall auth;cd install/${node}; rm -rf data/*"
-    ssh $user_name@$network_host   "killall network; cd install/${node}; rm -rf data/*"
-    ssh $user_name@$consensus_host "killall consensus_tendermint; cd install/${node}; rm -rf data/*"
-    ssh $user_name@$jsonrpc_host   "killall jsonrpc; cd install/${node}; rm -rf data/*"
-    ssh $user_name@$chain_host     "killall chain; cd install/${node}; rm -rf data/*"
+    ssh $user_name@$auth_host      "killall cita-auth;cd install/${node}; rm -rf data/*"
+    ssh $user_name@$network_host   "killall cita-network; cd install/${node}; rm -rf data/*"
+    ssh $user_name@$consensus_host "killall cita-consensus; cd install/${node}; rm -rf data/*"
+    ssh $user_name@$jsonrpc_host   "killall cita-jsonrpc; cd install/${node}; rm -rf data/*"
+    ssh $user_name@$chain_host     "killall cita-chain; cd install/${node}; rm -rf data/*"
 }
 
 

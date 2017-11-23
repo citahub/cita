@@ -73,7 +73,7 @@ fn main() {
     set_panic_handler();
 
     // Init log4rs
-    logger::init_config("network");
+    logger::init_config("cita-network");
     info!("CITA:network");
     // init app
     // todo load config
