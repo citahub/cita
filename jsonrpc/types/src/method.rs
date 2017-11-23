@@ -60,11 +60,15 @@ pub mod method {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct MethodHandler;
 impl MethodHandler {
-    pub fn params_len(&self, params: &Params) -> Result<usize, Error> {
-        match *params {
-            Params::Array(ref v) => Ok(v.len()),
-            Params::None => Ok(0),
-            _ => Err(Error::invalid_params("param is a few")),
+    pub fn params_len(&self, params: &Option<Params>) -> Result<usize, Error> {
+        if let &Some(ref params) = params {
+            match params {
+                &Params::Array(ref v) => Ok(v.len()),
+                &Params::None => Ok(0),
+                _ => Err(Error::invalid_params("param is a few")),
+            }
+        } else {
+            Ok(0)
         }
     }
 
@@ -141,7 +145,7 @@ impl MethodHandler {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
-        let params: (String,) = req_rpc.params.parse()?;
+        let params: (String,) = req_rpc.params.unwrap().parse()?;
         let data = clean_0x(&params.0);
         let un_tx = data.from_hex()
                         .map_err(|_err| {
@@ -178,7 +182,7 @@ impl MethodHandler {
         if 0 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
-        drop(req_rpc);
+
         let mut request = self.create_request();
         request.set_peercount(true);
         Ok(request)
@@ -189,7 +193,7 @@ impl MethodHandler {
         if 0 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
-        drop(req_rpc);
+
         let mut request = self.create_request();
         request.set_block_number(true);
         Ok(request)
@@ -201,7 +205,7 @@ impl MethodHandler {
             return Err(Error::invalid_params_len());
         }
         let mut request = self.create_request();
-        let (hash, is_block): (H256, bool) = req_rpc.params.parse()?;
+        let (hash, is_block): (H256, bool) = req_rpc.params.unwrap().parse()?;
         serde_json::to_string(&BlockParamsByHash::new(hash.to_vec(), is_block))
             .map_err(|err| Error::invalid_params(err.to_string()))
             .map(|block_hash| {
@@ -217,7 +221,7 @@ impl MethodHandler {
             return Err(Error::invalid_params_len());
         }
         let mut request = self.create_request();
-        let params: (BlockNumber, bool) = req_rpc.params.parse()?;
+        let params: (BlockNumber, bool) = req_rpc.params.unwrap().parse()?;
         serde_json::to_string(&BlockParamsByNumber::new(params.0, params.1))
             .map_err(|err| Error::invalid_params(err.to_string()))
             .map(|block_height| {
@@ -232,7 +236,7 @@ impl MethodHandler {
             return Err(Error::invalid_params_len());
         }
         let mut request = self.create_request();
-        let (hash,): (H256,) = req_rpc.params.parse()?;
+        let (hash,): (H256,) = req_rpc.params.unwrap().parse()?;
         request.set_transaction(hash.to_vec());
         Ok(request)
     }
@@ -244,6 +248,7 @@ impl MethodHandler {
             0 => Err(Error::invalid_params("must have 1 or 2 param!")),
             1 => {
                 req_rpc.params
+                       .unwrap()
                        .parse::<(CallRequest,)>()
                        .map(|(base,)| (base, BlockNumber::default()))
                        .map_err(|err| {
@@ -252,10 +257,14 @@ impl MethodHandler {
                                 })
             }
             2 => {
-                req_rpc.params.parse::<(CallRequest, BlockNumber)>().map(|(base, id)| (base, id)).map_err(|err| {
-                                                                                                              let err_msg = format!("param parse error : {:?}", err);
-                                                                                                              Error::parse_error_msg(err_msg.as_ref())
-                                                                                                          })
+                req_rpc.params
+                       .unwrap()
+                       .parse::<(CallRequest, BlockNumber)>()
+                       .map(|(base, id)| (base, id))
+                       .map_err(|err| {
+                                    let err_msg = format!("param parse error : {:?}", err);
+                                    Error::parse_error_msg(err_msg.as_ref())
+                                })
             }
             _ => Err(Error::invalid_params("have much param!")),
         };
@@ -277,7 +286,7 @@ impl MethodHandler {
             return Err(Error::invalid_params_len());
         }
         let mut request = self.create_request();
-        let (filter,): (Filter,) = req_rpc.params.parse()?;
+        let (filter,): (Filter,) = req_rpc.params.unwrap().parse()?;
         request.set_filter(serde_json::to_string(&filter).unwrap());
         Ok(request)
     }
@@ -288,7 +297,7 @@ impl MethodHandler {
             return Err(Error::invalid_params_len());
         }
         let mut request = self.create_request();
-        let (hash,): (H256,) = req_rpc.params.parse()?;
+        let (hash,): (H256,) = req_rpc.params.unwrap().parse()?;
         request.set_transaction_receipt(hash.to_vec());
         Ok(request)
     }
@@ -307,7 +316,7 @@ impl MethodHandler {
         if 2 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
-        let (address, number): (H160, BlockNumber) = req_rpc.params.parse()?;
+        let (address, number): (H160, BlockNumber) = req_rpc.params.unwrap().parse()?;
         let count_code = CountOrCode::new(address.to_vec(), number);
         match serde_json::to_string(&count_code) {
             Ok(data) => Ok(data),
@@ -329,7 +338,7 @@ impl MethodHandler {
             return Err(Error::invalid_params_len());
         }
         let mut request = self.create_request();
-        let (filter,): (Filter,) = req_rpc.params.parse()?;
+        let (filter,): (Filter,) = req_rpc.params.unwrap().parse()?;
         let filter = serde_json::to_string(&filter).map_err(|err| Error::invalid_params(format!("{:?}", err)))?;
         request.set_new_filter(filter);
         Ok(request)
@@ -340,7 +349,7 @@ impl MethodHandler {
         if 0 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
-        drop(req_rpc);
+
         let mut request = self.create_request();
         request.set_new_block_filter(true);
         Ok(request)
@@ -352,7 +361,7 @@ impl MethodHandler {
             return Err(Error::invalid_params_len());
         }
         let mut request = self.create_request();
-        let (filter_id,): (U256,) = req_rpc.params.parse()?;
+        let (filter_id,): (U256,) = req_rpc.params.unwrap().parse()?;
         trace!("uninstall_filter {:?}", filter_id);
         request.set_uninstall_filter(filter_id.into());
         Ok(request)
@@ -364,7 +373,7 @@ impl MethodHandler {
             return Err(Error::invalid_params_len());
         }
         let mut request = self.create_request();
-        let (filter_id,): (U256,) = req_rpc.params.parse()?;
+        let (filter_id,): (U256,) = req_rpc.params.unwrap().parse()?;
         request.set_filter_changes(filter_id.into());
         Ok(request)
     }
@@ -375,7 +384,7 @@ impl MethodHandler {
             return Err(Error::invalid_params_len());
         }
         let mut request = self.create_request();
-        let (filter_id,): (U256,) = req_rpc.params.parse()?;
+        let (filter_id,): (U256,) = req_rpc.params.unwrap().parse()?;
         request.set_filter_logs(filter_id.into());
         Ok(request)
     }
@@ -406,7 +415,7 @@ mod tests {
         assert_eq!(rpc.id, Id::Str("1".to_string()));
         assert_eq!(rpc.jsonrpc, Some(Version::V2));
         assert_eq!(rpc.method, "cita_blockNumber".to_string());
-        assert_eq!(rpc.params, Params::None);
+        assert_eq!(rpc.params.unwrap(), Params::None);
     }
 
     #[test]
@@ -415,7 +424,7 @@ mod tests {
             jsonrpc: Some(Version::V2),
             method: method::CITA_BLOCK_BUMBER.to_owned(),
             id: Id::Str("2".to_string()),
-            params: Params::Array(vec![]),
+            params: Some(Params::Array(vec![])),
         };
 
         let rpc_body = serde_json::to_string(&rpc).unwrap();
@@ -428,7 +437,7 @@ mod tests {
             jsonrpc: Some(Version::V2),
             method: method::CITA_BLOCK_BUMBER.to_owned(),
             id: Id::Str("2".to_string()),
-            params: Params::None,
+            params: Some(Params::None),
         };
 
         let rpc_body = serde_json::to_string(&rpc).unwrap();
@@ -441,7 +450,7 @@ mod tests {
             jsonrpc: Some(Version::V2),
             method: method::CITA_BLOCK_BUMBER.to_owned(),
             id: Id::Str("2".to_string()),
-            params: Params::Array(vec![]),
+            params: Some(Params::Array(vec![])),
         };
 
         let handler = MethodHandler;
@@ -458,7 +467,7 @@ mod tests {
             jsonrpc: Some(Version::V2),
             method: method::ETH_GET_TRANSACTION_RECEIPT.to_owned(),
             id: Id::Str("2".to_string()),
-            params: Params::Array(vec![Value::from(2)]),
+            params: Some(Params::Array(vec![Value::from(2)])),
         };
 
         let handler = MethodHandler;
@@ -472,7 +481,7 @@ mod tests {
             jsonrpc: Some(Version::V2),
             method: "cita_xxx".to_owned(),
             id: Id::Str("2".to_string()),
-            params: Params::Array(vec![]),
+            params: Some(Params::Array(vec![])),
         };
 
         let handler = MethodHandler;
@@ -494,14 +503,14 @@ mod tests {
             jsonrpc: Some(Version::V2),
             method: method::CITA_SEND_TRANSACTION.to_owned(),
             id: Id::Str("2".to_string()),
-            params: Params::Array(vec![Value::from(utx_string.to_hex().to_owned())]),
+            params: Some(Params::Array(vec![Value::from(utx_string.to_hex().to_owned())])),
         };
 
         let rpc2 = RpcRequest {
             jsonrpc: Some(Version::V2),
             method: method::CITA_SEND_TRANSACTION.to_owned(),
             id: Id::Str("2".to_string()),
-            params: Params::Array(vec![Value::from(clean_0x(&utx_string.to_hex()).to_owned())]),
+            params: Some(Params::Array(vec![Value::from(clean_0x(&utx_string.to_hex()).to_owned())])),
         };
         let handler = MethodHandler;
         let result1: Result<reqlib::Request, Error> = handler.send_transaction(rpc1);
@@ -515,7 +524,7 @@ mod tests {
         let rpc = "{\"id\":\"-8799978260242268161\",\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[\"1\",\"0x0a2833616538386665333730633339333834666331366461326339653736386366356432343935623438120d31343932353139393038393631\"]}";
 
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
-        let params: Result<(String, String), Error> = request.params.parse();
+        let params: Result<(String, String), Error> = request.params.unwrap().parse();
         assert!(params.is_ok());
     }
 
@@ -524,7 +533,7 @@ mod tests {
         let rpc = "{\"id\":\"-8799978260242268161\",\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[\"0x0a2833616538386665333730633339333834666331366461326339653736386366356432343935623438120d31343932353139393038393631\"]}";
 
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
-        let params: Result<(String, String), Error> = request.params.parse();
+        let params: Result<(String, String), Error> = request.params.unwrap().parse();
         assert!(params.is_err());
     }
 
@@ -533,7 +542,7 @@ mod tests {
         let rpc = "{\"id\":\"-8799978260242268161\",\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[\"0x0a2833616538386665333730633339333834666331366461326339653736386366356432343935623438120d31343932353139393038393631\"]}";
 
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
-        let params: Result<(String,), Error> = request.params.parse();
+        let params: Result<(String,), Error> = request.params.unwrap().parse();
         assert!(params.is_ok());
     }
 
@@ -542,7 +551,7 @@ mod tests {
     fn test_blocklimit_backword_compatibility() {
         let rpc = r#"{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["0x1201311a85010a401201311a3b2239080a12350a2430356162636538642d316431662d343536352d396636342d62623164303236393365333910641a03303037220443495441280312417922853b51d097df76791aa10836942c66bc522c24c8804c93e9230fc67dde897bbed399fa0f9e9ac0abc598cd92215fb362b9e31251bf784511be61d045703e00"],"id":2}"#;
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
-        let params: Result<(String,), Error> = request.params.parse();
+        let params: Result<(String,), Error> = request.params.unwrap().parse();
         assert!(params.is_ok());
     }
 
@@ -599,7 +608,7 @@ mod tests {
         assert!(request.is_ok());
         let request = request.unwrap();
         let filter = request.get_filter();
-        let params: Result<(Filter,), Error> = rpc_request.params.clone().parse();
+        let params: Result<(Filter,), Error> = rpc_request.params.unwrap().parse();
         assert_eq!(serde_json::to_string(&params.unwrap().0).unwrap(), filter);
     }
 }

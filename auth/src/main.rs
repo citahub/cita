@@ -79,7 +79,6 @@ fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
 
 fn main() {
     micro_service_init!("cita-auth", "CITA:auth");
-
     // init app
     let matches = App::new("auth")
         .version("0.1")

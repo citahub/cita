@@ -55,7 +55,6 @@ use util::panichandler::set_panic_handler;
 
 fn main() {
     micro_service_init!("cita-chain", "CITA:chain");
-
     let matches = App::new("chain")
         .version("0.1")
         .author("Cryptape")

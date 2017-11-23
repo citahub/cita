@@ -1,40 +1,39 @@
-
-name="monitor"
-command = "monitor"
-pidfile = ".monitor.pid"
+name="cita-monitor"
+command = "cita-monitor"
+pidfile = ".cita-monitor.pid"
 
 [[process]]
-name = "auth"
-command = "auth"
+name = "cita-auth"
+command = "cita-auth"
 args = ["-c","auth.json"]
-pidfile = ".auth.pid"
+pidfile = ".cita-auth.pid"
 respawn = 3
 
 [[process]]
-name = "network"
-command = "network"
+name = "cita-network"
+command = "cita-network"
 args = ["-c","network.toml"]
-pidfile = ".network.pid"
+pidfile = ".cita-network.pid"
 respawn = 3
 
 [[process]]
-name = "consensus_tendermint"
-command = "consensus_tendermint"
+name = "cita-consensus"
+command = "cita-consensus"
 args = ["-c","consensus.json"]
-pidfile = ".consensus.pid"
+pidfile = ".cita-consensus.pid"
 respawn = 3
 
 [[process]]
-name = "jsonrpc"
-command = "jsonrpc"
+name = "cita-jsonrpc"
+command = "cita-jsonrpc"
 args = ["-c","jsonrpc.json"]
-pidfile = ".jsonrpc.pid"
+pidfile = ".cita-jsonrpc.pid"
 respawn = 3
 
 
 [[process]]
-name = "chain"
-command = "chain"
+name = "cita-chain"
+command = "cita-chain"
 args = ["-g","genesis.json","-c","chain.json"]
-pidfile = ".chain.pid"
+pidfile = ".cita-chain.pid"
 respawn = 3

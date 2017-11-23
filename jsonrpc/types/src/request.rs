@@ -30,5 +30,5 @@ pub struct RpcRequest {
     pub jsonrpc: Option<Version>,
     pub method: String,
     pub id: Id,
-    pub params: Params,
+    pub params: Option<Params>,
 }
