@@ -21,6 +21,7 @@ extern crate core;
 extern crate log;
 extern crate libproto;
 extern crate pubsub;
+#[macro_use]
 extern crate util;
 extern crate clap;
 extern crate dotenv;
@@ -53,16 +54,7 @@ use util::kvdb::{Database, DatabaseConfig};
 use util::panichandler::set_panic_handler;
 
 fn main() {
-    dotenv::dotenv().ok();
-
-    // Always print backtrace on panic.
-    ::std::env::set_var("RUST_BACKTRACE", "full");
-
-    //exit process when panic
-    set_panic_handler();
-    //log4rs config
-    logger::init_config("cita-chain");
-    info!("CITA:chain");
+    micro_service_init!("cita-chain", "CITA:chain");
     let matches = App::new("chain")
         .version("0.1")
         .author("Cryptape")

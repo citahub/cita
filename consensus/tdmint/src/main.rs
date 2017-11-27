@@ -19,6 +19,7 @@
 #[macro_use]
 extern crate serde_derive;
 extern crate libproto;
+#[macro_use]
 extern crate util;
 extern crate threadpool;
 extern crate protobuf;
@@ -67,15 +68,7 @@ fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
 }
 
 fn main() {
-    dotenv::dotenv().ok();
-    // Always print backtrace on panic.
-    ::std::env::set_var("RUST_BACKTRACE", "full");
-
-    //exit process when panic
-    set_panic_handler();
-
-    logger::init_config("cita-consensus");
-    info!("CITA:consensus:tendermint");
+    micro_service_init!("cita-consensus", "CITA:consensus:tendermint");
 
     let matches = App::new("tendermint")
         .version("0.1")
