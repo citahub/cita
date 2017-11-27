@@ -8,7 +8,8 @@ import "./permission_check.sol";
 ///             : Mark resource
 ///             : Role tree
 ///             : Change bytes32 to uint8 of the permissions using enum and array
-/// @title Permission system including authentication(modifier)
+///             : Check the adding permissions is valid
+/// @title Permission system of CITA
 contract PermissionSystem is PermissionSysInterface, PermissionCheck {
 
     /// @dev Setup
@@ -64,7 +65,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     }
 
     /// @dev Apply to join the group
-    /// @notice Not check the SendTx permission. To discuss
+    /// @notice TODO: check the SendTx permission.
     function applyGroup(bytes32 _group) public returns (bool) {
         group_applicants[_group].push(msg.sender);
         GroupApplied(msg.sender, _group);
@@ -75,7 +76,6 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     function approveApply(bytes32 _group, bytes32 _resource, bytes32 _role)
         public
         can(msg.sender, _group, _resource, _role, bytes32("UpdateGroup"))
-        // userInGroup(msg.sender, _group)
         returns (bool)
     {
         ApplyApproved(msg.sender, _group, _resource, _role);
@@ -87,8 +87,6 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         public
         // Default resourceGroup is userGroup
         can(msg.sender, _group, _group, _role, bytes32("UpdateGroup"))
-        // userInGroup(msg.sender, _group)
-        // groupHasRole(_group, _role)
         returns (bool)
     {
         RoleGranted(_group, _resource, _role, _users);
@@ -99,8 +97,6 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     function revokeRole(bytes32 _group, bytes32 _resource, bytes32 _role, address[] _users)
         public
         can(msg.sender, _group, _resource, _role, bytes32("UpdateGroup"))
-        // userInGroup(msg.sender, _group)
-        // groupHasRole(_group, _role)
         returns (bool)
     {
         RoleRevoked(_group, _resource, _role, _users);
@@ -122,8 +118,6 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     function approveQuit(bytes32 _group, bytes32 _resource, bytes32 _role)
         public
         can(msg.sender, _group, _resource, _role, bytes32("UpdateGroup"))
-        // userInGroup(msg.sender, _group)
-        // groupHasRole(_group, _role)
         returns (bool)
     {
         QuitApproved(msg.sender, _group, _resource, _role);
@@ -131,27 +125,26 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     }
 
     /// @dev New a group
-    /// @param _groupName The group name of the caller
-    /// @return The new group name
+    /// @param _group The group of the caller
     function newGroup(
-        bytes32 _groupName,
-        bytes32 _newGroupName,
+        bytes32 _group,
+        bytes32 _newName,
         address[] _newUsers,
         bool _newSubSwitch,
         uint8 _op,
         bytes32 _role
     )
         public 
-        nameNotExist(_newGroupName, group_names)
-        can(msg.sender, _groupName, _groupName, _role, bytes32("CreateGroup"))
+        nameNotExist(_newName, group_names)
+        can(msg.sender, _group, _group, _role, bytes32("CreateGroup"))
         returns (bool)
     {
-        group_names.push(_newGroupName);
-        return GroupManager.newGroup(groups, _groupName, _newGroupName, _newUsers, _newSubSwitch, Util.SetOp(_op));
+        group_names.push(_newName);
+        return GroupManager.newGroup(groups, _group, _newName, _newUsers, _newSubSwitch, Util.SetOp(_op));
     }
 
     /// @dev Delete group
-    /// @notice Delete a tree's node. Need to discuss. Only leaf node?
+    /// @notice Delete a tree's node. Only leaf node
     function deleteGroup(bytes32 _group, bytes32 _resource, bytes32 _role)
         public
         nameExist(_group, group_names)
@@ -173,7 +166,6 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         public 
         nameNotExist(_newName, group_names)
         can(msg.sender, _oldName, _resource, _role, bytes32("UpdateGroup"))
-        // userInGroup(msg.sender, _oldName)
         returns (bool)
     {
         // Change the name in group 
@@ -194,18 +186,15 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     )
         public 
         can(msg.sender, _group, _resource, _role, bytes32("UpdateGroup"))
-        // userInGroup(msg.sender, _group)
         returns (bool)
     {
         return GroupManager.modifySubSwitch(groups, _group, _newSubSwitch);
     }
 
     /// @dev New a role
-    /// @param _name The role name of the caller
-    /// @return The new role name
-    /// @notice Should only by superAdmin or specify the userGroup?
+    /// @param _group The group of the caller
     function newRole(
-        bytes32 _name,
+        bytes32 _group,
         bytes32 _newName,
         bytes32 _role,
         bytes32[] _newPermissions,
@@ -214,11 +203,11 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         public
         nameNotExist(_newName, role_names)
         permissionsInRole(_newPermissions, _role)
-        can(msg.sender, _name, _name, _role, bytes32("CreateRole"))
+        can(msg.sender, _group, _group, _role, bytes32("CreateRole"))
         returns (bool) 
     {
         role_names.push(_newName);
-        return RoleManager.newRole(roles, _name, _newName, _newPermissions, Util.SetOp(_op));
+        return RoleManager.newRole(roles, _group, _newName, _newPermissions, Util.SetOp(_op));
     }
  
     /// @dev Delete role
@@ -254,22 +243,22 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     }
 
     /// @dev Add permissions 
-    function addPermissions(bytes32 _name, bytes32[] _permissions, bytes32 _group, bytes32 _resource)
+    function addPermissions(bytes32 _role, bytes32[] _permissions, bytes32 _group, bytes32 _resource)
         public 
-        nameExist(_name, role_names)
-        can(msg.sender, _group, _resource, _name, bytes32("UpdateRole"))
+        nameExist(_role, role_names)
+        can(msg.sender, _group, _resource, _role, bytes32("UpdateRole"))
         returns (bool)
     {
-        return RoleManager.addPermissions(roles, _name, _permissions);
+        return RoleManager.addPermissions(roles, _role, _permissions);
     }
 
     /// @dev Delete permissions 
-    function deletePermissions(bytes32 _name, bytes32[] _permissions, bytes32 _group, bytes32 _resource)
+    function deletePermissions(bytes32 _role, bytes32[] _permissions, bytes32 _group, bytes32 _resource)
         public 
-        can(msg.sender, _group, _resource, _name, bytes32("UpdateRole"))
+        can(msg.sender, _group, _resource, _role, bytes32("UpdateRole"))
         returns (bool)
     {
-        return RoleManager.deletePermissions(roles, _name, _permissions);
+        return RoleManager.deletePermissions(roles, _role, _permissions);
     }
 
     /// @dev Set authorization

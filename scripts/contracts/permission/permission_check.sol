@@ -2,7 +2,7 @@ pragma solidity ^0.4.14;
 
 import "./permission_data.sol";
 
-/// @title The modifier of the permission system
+/// @title The authentication of the permission system
 contract PermissionCheck is PermissionData {
 
     /// @dev User in group
@@ -37,12 +37,10 @@ contract PermissionCheck is PermissionData {
         // Need scope switch on
         require(groups.groups[_userGroup].subSwitch);
         require(Util.bytes32InArray(_resourceGroup, groups.groups[_userGroup].subGroups));
-        // Why not work??
-        // require(Util.bytes32InArray(_resourceGroup, GroupManager.querySubGroups(groups, _userGroup)));
         _; 
     }
 
-    /// @dev Resource group equal user group.
+    /// @dev Resource group belong user group.
     modifier resourceBelongGroup(bytes32 _resourceGroup, bytes32 _userGroup) {
         if (groups.groups[_userGroup].subSwitch)
             // Scope switch is on
@@ -53,48 +51,56 @@ contract PermissionCheck is PermissionData {
         _; 
     }
 
+    /// @dev Name does not exist
     modifier nameNotExist(bytes32 _name, bytes32[] _names) {
         require(!Util.bytes32InArray(_name, _names)); 
         _;
     }
 
+    /// @dev Name exists
     modifier nameExist(bytes32 _name, bytes32[] _names) {
         require(Util.bytes32InArray(_name, _names)); 
         _;
     }
 
-    modifier leafNode(bytes32 _name) {
-        require(Util.bytes32ArrayNul(groups.groups[_name].subGroups));
+    /// @dev Leaf node
+    modifier leafNode(bytes32 _group) {
+        require(Util.bytes32ArrayNul(groups.groups[_group].subGroups));
         _;
     }
 
+    /// @dev Only superAdmin
     modifier onlySuperAdmin {
         require(msg.sender == superAdmin);
         _;
     }
 
-    modifier groupNul(bytes32 _name) {
-        require(bytes32(0x0) == groups.groups[_name].name); 
-        require(Util.addressArrayNul(groups.groups[_name].users));
-        require(Util.bytes32ArrayNul(groups.groups[_name].subGroups));
-        require(false == groups.groups[_name].subSwitch); 
-        require(Util.bytes32ArrayNul(auth.group_roles[_name]));
+    /// @dev Group is null
+    modifier groupNul(bytes32 _group) {
+        require(bytes32(0x0) == groups.groups[_group].name); 
+        require(Util.addressArrayNul(groups.groups[_group].users));
+        require(Util.bytes32ArrayNul(groups.groups[_group].subGroups));
+        require(false == groups.groups[_group].subSwitch); 
+        require(Util.bytes32ArrayNul(auth.group_roles[_group]));
         _;
     }
 
-    modifier roleNul(bytes32 _name) {
-        require(bytes32(0x0) == roles.roles[_name].name); 
-        require(Util.bytes32ArrayNul(roles.roles[_name].permissions));
-        require(Util.bytes32ArrayNul(auth.role_groups[_name]));
+    /// @dev Role is null
+    modifier roleNul(bytes32 _role) {
+        require(bytes32(0x0) == roles.roles[_role].name); 
+        require(Util.bytes32ArrayNul(roles.roles[_role].permissions));
+        require(Util.bytes32ArrayNul(auth.role_groups[_role]));
         _; 
     }
 
+    /// @dev Authorization is null
     modifier authNul(bytes32 _group, bytes32 _role) {
         require(Util.bytes32ArrayNul(auth.role_groups[_role])); 
         require(Util.bytes32ArrayNul(auth.group_roles[_group])); 
         _;
     }
 
+    /// @dev Can do
     modifier can(
         address _user,
         bytes32 _userGroup,
