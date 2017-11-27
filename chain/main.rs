@@ -34,8 +34,10 @@ extern crate protobuf;
 extern crate error;
 extern crate proof;
 
-pub mod forward;
+mod forward;
+mod block_processor;
 
+use block_processor::BlockProcessor;
 use clap::App;
 use core::db;
 use core::libchain;
@@ -91,9 +93,11 @@ fn main() {
     chain.delivery_block_tx_hashes(chain.get_current_height(), block_tx_hashes, &ctx_pub);
 
     let (write_sender, write_receiver) = channel();
-    let forward = Forward::new(Arc::clone(&chain), ctx_pub, write_sender);
-    forward.broadcast_current_status();
-    let forward_write = forward.clone();
+    let forward = Forward::new(Arc::clone(&chain), ctx_pub.clone(), write_sender);
+
+    let block_processor = BlockProcessor::new(Arc::clone(&chain), ctx_pub);
+    block_processor.broadcast_current_status();
+
     //chain 读写分离
     //chain 读数据 => 查询数据
     thread::spawn(move || loop {
@@ -104,10 +108,10 @@ fn main() {
 
     //chain 写数据 => 添加块
     thread::spawn(move || loop {
-                      if let Ok(blocks) = write_receiver.recv_timeout(Duration::new(8, 0)) {
-                          forward_write.dispatch_blocks(blocks);
+                      if let Ok(number) = write_receiver.recv_timeout(Duration::new(8, 0)) {
+                          block_processor.set_block(number);
                       } else {
-                          forward_write.broadcast_current_status();
+                          block_processor.broadcast_current_status();
                       }
                   });
 

@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(unused_must_use, dead_code)]
+#![allow(unused_must_use)]
 
 use core::filters::eth_filter::EthFilter;
 use core::libchain::block::Block;
 use core::libchain::call_request::CallRequest;
-use core::libchain::chain::Chain;
+use core::libchain::chain::{Chain, BlockInQueue};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{self as rpctypes, Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, CountOrCode, BlockNumber, BlockParamsByNumber, BlockParamsByHash, RpcBlock};
 use libproto;
@@ -38,35 +38,23 @@ use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 use types::filter::Filter;
 use types::ids::BlockId;
-use util::Address;
-use util::H256;
-
-pub enum BlockFrom {
-    CONSENSUS(BlockWithProof),
-    SYNC(SyncResponse),
-}
+use util::{Address, H256};
 
 #[derive(Clone)]
 pub struct Forward {
-    write_sender: Sender<BlockFrom>,
-    //读写分离.
+    write_sender: Sender<u64>,
     chain: Arc<Chain>,
     ctx_pub: Sender<(String, Vec<u8>)>,
 }
 
-
+// TODO: Add future client to support forward
 impl Forward {
-    pub fn new(chain: Arc<Chain>, ctx_pub: Sender<(String, Vec<u8>)>, write_sender: Sender<BlockFrom>) -> Forward {
+    pub fn new(chain: Arc<Chain>, ctx_pub: Sender<(String, Vec<u8>)>, write_sender: Sender<u64>) -> Forward {
         Forward {
             chain: chain,
             ctx_pub: ctx_pub,
             write_sender: write_sender,
         }
-    }
-
-    pub fn broadcast_current_status(&self) {
-        self.chain.delivery_current_rich_status(&self.ctx_pub);
-        self.chain.broadcast_status(&self.ctx_pub);
     }
 
     //注意: 划分函数处理流程
@@ -79,8 +67,7 @@ impl Forward {
             }
 
             MsgClass::BLOCKWITHPROOF(proof_blk) => {
-                // from consensus
-                self.write_sender.send(BlockFrom::CONSENSUS(proof_blk));
+                self.consensus_block_enqueue(proof_blk);
             }
 
             MsgClass::SYNCREQUEST(sync_req) => {
@@ -92,8 +79,7 @@ impl Forward {
             }
 
             MsgClass::SYNCRESPONSE(sync_res) => {
-                // from sync
-                self.write_sender.send(BlockFrom::SYNC(sync_res));
+                self.deal_sync_blocks(sync_res)
             }
 
             MsgClass::BLOCKTXHASHESREQ(block_tx_hashes_req) => {
@@ -110,18 +96,6 @@ impl Forward {
 
             _ => {
                 error!("error MsgClass!!!!");
-            }
-        }
-    }
-
-    pub fn dispatch_blocks(&self, blocks: BlockFrom) {
-        match blocks {
-            BlockFrom::CONSENSUS(block) => {
-                self.deal_consensus_block(block)
-            }
-
-            BlockFrom::SYNC(blocks) => {
-                self.deal_sync_res(blocks)
             }
         }
     }
@@ -327,21 +301,23 @@ impl Forward {
         self.ctx_pub.send((topic, msg.write_to_bytes().unwrap())).unwrap();
     }
 
-    fn deal_consensus_block(&self, proof_blk: BlockWithProof) {
+    // Consensus block enqueue
+    fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
         let current_height = self.chain.get_current_height();
         let mut proof_blk = proof_blk;
         let block = proof_blk.take_blk();
         let proof = proof_blk.take_proof();
         let blk_height = block.get_header().get_height();
-        trace!("received proof block: block_number:{:?} current_height: {:?}", blk_height, current_height);
+        trace!("Received consensus block: block_number:{:?} current_height: {:?}", blk_height, current_height);
         if blk_height == (current_height + 1) {
             {
-                self.chain.block_map.write().insert(blk_height, (Some(proof), None));
-            }
-            if self.chain.set_block(Block::from(block), &self.ctx_pub).is_some() {
-                self.chain.block_map.write().clear();
-            }
-            trace!("block insert {:?}", blk_height);
+                self.chain
+                    .block_map
+                    .write()
+                    .insert(blk_height, BlockInQueue::ConsensusBlock(Block::from(block), proof));
+            };
+            self.chain.max_height.store(blk_height as usize, Ordering::SeqCst);
+            self.write_sender.send(blk_height);
         }
     }
 
@@ -376,86 +352,72 @@ impl Forward {
         }
     }
 
-    fn deal_sync_res(&self, sync_res: SyncResponse) {
-        let mut sync_res = sync_res;
-        let iter_res = sync_res.take_blocks().into_iter();
-        for block in iter_res {
-            debug!("sync: deal_sync_res: current height = {}", self.chain.get_current_height());
+    fn deal_sync_blocks(&self, mut sync_res: SyncResponse) {
+        debug!("sync: current height = {}", self.chain.get_current_height());
+        for block in sync_res.take_blocks().into_iter() {
             let blk_height = block.get_header().get_height();
+
+            // return if the block existed
+            if blk_height < self.chain.get_max_height() {
+                continue;
+            };
+
             // Check transaction root
-            if !block.check_hash() && blk_height != ::std::u64::MAX {
+            if blk_height != ::std::u64::MAX && !block.check_hash() {
                 warn!("sync: transactions root isn't correct, height is {}", blk_height);
-                return;
-            }
-
-            let block = Block::from(block);
-            if let (value, true) = self.add_sync_block(block) {
-                if let Some(block) = value {
-                    //add block
-                    if self.chain.set_block(block, &self.ctx_pub).is_some() {
-                        debug!("sync: deal_sync_res: set_block, current height = {}", self.chain.get_current_height());
-                        continue;
-
-                    } else {
-                        break;
-                    }
-                }
-
-            } else {
                 break;
             }
+
+            self.add_sync_block(Block::from(block));
         }
 
-        {
-            let mut guard = self.chain.block_map.write();
-            let new_map = guard.split_off(&self.chain.get_current_height());
-            *guard = new_map;
+        if !self.chain.is_sync.load(Ordering::SeqCst) {
+            let number = self.chain.get_current_height() + 1;
+            debug!("sync block number is {}", number);
+            self.write_sender.send(number);
         }
     }
 
-    fn add_sync_block(&self, block: Block) -> (Option<Block>, bool) {
-        let mut blk = None;
-        let mut is_countinue = false;
-        match block.proof_type() {
+    // Check block group from remote and enqueue
+    fn add_sync_block(&self, block: Block) {
+        let proof_type = block.proof_type();
+        match proof_type {
             Some(ProofType::Tendermint) => {
                 let proof = TendermintProof::from(block.proof().clone());
                 let proof_height = if proof.height == ::std::usize::MAX { 0 } else { proof.height as u64 };
 
-                debug!("sync: add_sync_block: proof_height = {}, block height = {}", proof_height, block.header().number());
-                {
-                    let mut blocks = self.chain.block_map.write();
-                    if proof_height == self.chain.get_current_height() && (block.number() as usize) != ::std::usize::MAX {
-                        debug!("sync: add_sync_block: proof == current, proof_height = {}, block height = {}", proof_height, block.number());
-                        if !blocks.contains_key(&block.number()) {
-                            blocks.insert(block.number(), (None, Some(block)));
-                        }
-                        is_countinue = true;
+                debug!("sync: add_sync_block: proof_height = {}, block height = {} max_height = {}", proof_height, block.number(), self.chain.get_max_height());
 
-                    } else if proof_height == (self.chain.get_current_height() + 1) {
-                        if let Some(value) = blocks.get_mut(&proof_height) {
-                            //save blk proof
-                            value.0 = Some(block.proof().clone());
-                            mem::swap(&mut (value.1), &mut blk);
-                            debug!("sync: add_sync_block:proof_height = (current_height + 1), is_countinue =  {}", is_countinue);
+                let mut blocks = self.chain.block_map.write();
+                if (block.number() as usize) != ::std::usize::MAX {
+                    if proof_height == self.chain.get_max_height() {
+                        // Set proof of prev sycc block
+                        if let Some(prev_block_in_queue) = blocks.get_mut(&proof_height) {
+                            if let &mut BlockInQueue::SyncBlock(ref mut value) = prev_block_in_queue {
+                                if value.1.is_none() {
+                                    debug!("sync: set prev sync block proof {}", value.0.number());
+                                    mem::swap(&mut value.1, &mut Some(block.proof().clone()));
+                                }
+                            }
                         }
 
-                        let authorities = self.chain.nodes.read().clone();
-                        if proof.check(proof_height as usize, &authorities) && blk.is_some() {
-                            blocks.insert(block.number(), (None, Some(block)));
-                            is_countinue = true;
-                            debug!("sync: add_sync_block: proof.check success, proof_height = {}, is_countinue = {}", proof_height, is_countinue);
-                        } else {
-                            error!("sync: proof check error!");
+                        self.chain.max_height.store(block.number() as usize, Ordering::SeqCst);
+                        debug!("sync: insert block-{} in map", block.number());
+                        blocks.insert(block.number(), BlockInQueue::SyncBlock((block, None)));
+                    }
+                } else {
+                    if let Some(block_in_queue) = blocks.get_mut(&proof_height) {
+                        if let &mut BlockInQueue::SyncBlock(ref mut value) = block_in_queue {
+                            if value.1.is_none() {
+                                debug!("sync: insert block proof {} in map", proof_height);
+                                mem::swap(&mut value.1, &mut Some(block.proof().clone()));
+                            }
                         }
                     }
                 }
-                debug!("sync: add_sync_block: is_countinue =  {}", is_countinue);
-                (blk, is_countinue)
             }
-
-            _ => {
-                (blk, is_countinue)
-            }
+            // TODO: Handle Raft and POA
+            _ => {}
         }
     }
 
