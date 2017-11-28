@@ -27,10 +27,14 @@ display_help()
     echo "   default enable 'true'"
     echo
     echo "-w enable jsonrpc websocket "
-    echo "   default enable 'false'"
+    echo "   default enable 'true'"
     echo
-    echo "-P define jsonrpc HTTP port or websocket port"
-    echo "   default port is '1337' or '4337'"
+    echo "-H define jsonrpc HTTP port"
+    echo "   default port is '1337'"
+    echo
+    echo "-W define jsonrpc websocket port"
+    echo "   default port is '4337'"
+    echo
     echo "-k start with kafka"
     echo
     echo "-Q node id"
@@ -43,7 +47,7 @@ BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
 export PATH=${PATH}:${BINARY_DIR}/bin
 
 # parse options
-while getopts 'a:l:n:m:d:t:h:w:P:Q:k' OPT; do
+while getopts 'a:l:n:m:d:t:h:w:H:W:Q:k' OPT; do
     case $OPT in
         a)
             ADMIN_ID="$OPTARG";;
@@ -60,11 +64,13 @@ while getopts 'a:l:n:m:d:t:h:w:P:Q:k' OPT; do
         k)
             START_KAFKA=true;;
         h)
-            HTTP="$OPTARG";;
+            HTTP_ENABLE="$OPTARG";;
         w)
-            WS="$OPTARG";;
-        P)
-            PORT="$OPTARG";;
+            WS_ENABLE="$OPTARG";;
+        H)
+            HTTP_PORT="$OPTARG";;
+        W)
+            WS_PORT="$OPTARG";;
         Q)
             NODE="$OPTARG";;
         ?)
@@ -135,33 +141,13 @@ chain(){
 }
 
 jsonrpc(){
-    HTTP_PORT=1337
-    HTTP_ENABLE="true"
-    WS_PORT=4337
-    WS_ENABLE="false"
-
-    if [ "$HTTP" == "true" ]; then
-        HTTP_ENABLE="true"
-        HTTP_PORT=${PORT:-1337}
-        WS_PORT=4337
-        WS_ENABLE="false"
-    fi
-
-    if [ "$WS" == "true" ]; then
-        WS_ENABLE="true"
-        WS_PORT=${PORT:-4337}
-        HTTP_PORT=1337
-        HTTP_ENABLE="false"
-    fi
-
+    H_PORT=${HTTP_PORT:-1337}
+    W_PORT=${WS_PORT:-4337}
     if [ -n "$DEV_MOD" ]; then
-        ((H_PORT=$HTTP_PORT+${1}))
-        ((W_PORT=$WS_PORT+${1}))
-    else
-        H_PORT=$HTTP_PORT
-        W_PORT=$WS_PORT
+        ((H_PORT=${H_PORT}+${1}))
+        ((W_PORT=${W_PORT}+${1}))
     fi
-    python ${BINARY_DIR}/scripts/admintool/create_jsonrpc_config.py $HTTP_ENABLE $H_PORT $WS_ENABLE $W_PORT ${CONFIG_DIR}
+    python ${BINARY_DIR}/scripts/admintool/create_jsonrpc_config.py ${HTTP_ENABLE:-"true"} $H_PORT ${WS_ENABLE:-"true"} $W_PORT ${CONFIG_DIR}
     mv ${CONFIG_DIR}/jsonrpc.json ${CONFIG_DIR}/node${1}/
 }
 
