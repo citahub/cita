@@ -17,16 +17,13 @@
 
 use jsonrpc_types::{Id, Error};
 use jsonrpc_types::request::{RpcRequest, Version};
-use libproto::Response;
 use serde_json;
 use std::collections::HashMap;
 use std::result;
-use std::sync::Arc;
-use util::{Mutex, RwLock};
+use std::sync::{Arc, mpsc};
+use util::Mutex;
 use ws;
-pub type WsMap = Arc<Mutex<HashMap<Vec<u8>, (ReqInfo, ws::Sender)>>>;
-pub type HttpMap = Arc<RwLock<HashMap<Vec<u8>, Response>>>;
-
+pub type RpcMap = Arc<Mutex<HashMap<Vec<u8>, TransferType>>>;
 pub type RpcResult<T> = result::Result<T, Error>;
 
 pub trait BaseHandler {
@@ -53,28 +50,17 @@ pub trait BaseHandler {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone)]
 pub enum TransferType {
-    ALL,
-    HTTP,
-    WEBSOCKET,
+    HTTP((ReqInfo, mpsc::Sender<String>)),
+    WEBSOCKET((ReqInfo, ws::Sender)),
 }
-
-
-impl Default for TransferType {
-    fn default() -> TransferType {
-        TransferType::ALL
-    }
-}
-
 
 #[derive(Debug, Clone)]
 pub struct ReqInfo {
     pub jsonrpc: Option<Version>,
     pub id: Id,
 }
-
-unsafe impl Send for ReqInfo {}
 
 impl ReqInfo {
     pub fn new(jsonrpc: Option<Version>, id: Id) -> ReqInfo {

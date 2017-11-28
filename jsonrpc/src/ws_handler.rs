@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use base_hanlder::{BaseHandler, ReqInfo, WsMap};
+use base_hanlder::{BaseHandler, ReqInfo, RpcMap, TransferType};
 use jsonrpc_types::{method, Id};
 use jsonrpc_types::response::RpcFailure;
 use libproto::request as reqlib;
@@ -29,14 +29,14 @@ use ws::{Factory, CloseCode, Handler};
 
 pub struct WsFactory {
     //TODO 定时清理工作
-    responses: WsMap,
+    responses: RpcMap,
     thread_pool: Arc<Mutex<ThreadPool>>,
     tx: mpsc::Sender<(String, reqlib::Request)>,
 }
 
 
 impl WsFactory {
-    pub fn new(responses: WsMap, tx: mpsc::Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
+    pub fn new(responses: RpcMap, tx: mpsc::Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
         let thread_number = if thread_num == 0 { num_cpus::get() / 2 } else { thread_num };
         let thread_pool = Arc::new(Mutex::new(ThreadPool::new_with_name("ws_thread_pool".to_string(), thread_number)));
         WsFactory {
@@ -88,7 +88,7 @@ impl Handler for WsHandler {
                         this.tx.send((topic, _req));
                         let value = (req_info, this.sender.clone());
                         {
-                            this.responses.lock().insert(request_id, value);
+                            this.responses.lock().insert(request_id, TransferType::WEBSOCKET(value));
                         }
                     })
                 }
@@ -111,7 +111,7 @@ impl Handler for WsHandler {
 
 #[derive(Clone)]
 pub struct WsHandler {
-    responses: WsMap,
+    responses: RpcMap,
     thread_pool: Arc<Mutex<ThreadPool>>,
     method_handler: method::MethodHandler,
     sender: ws::Sender,

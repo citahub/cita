@@ -46,7 +46,6 @@ pub mod base_hanlder;
 pub mod ws_handler;
 pub mod config;
 
-use base_hanlder::TransferType;
 use clap::App;
 use config::ProfileConfig;
 use cpuprofiler::PROFILER;
@@ -62,7 +61,7 @@ use std::sync::Arc;
 use std::sync::mpsc::{Sender, channel};
 use std::thread;
 use std::time::{Duration, SystemTime};
-use util::{RwLock, Mutex};
+use util::Mutex;
 use util::panichandler::set_panic_handler;
 use uuid::Uuid;
 use ws_handler::WsFactory;
@@ -106,9 +105,9 @@ fn main() {
     let config = config::read_user_from_file(config_path).expect("config error!");
     info!("CITA:jsonrpc config \n {:?}", serde_json::to_string_pretty(&config).unwrap());
 
-    //TODO not enable both HTTP and WebSocket server
-    if config.ws_config.enable == config.http_config.enable {
-        error!("not enable both HTTP and WebSocket server!");
+    //enable HTTP or WebSocket server!
+    if !config.ws_config.enable && !config.http_config.enable {
+        error!("enable HTTP or WebSocket server!");
         std::process::exit(-1);
     }
 
@@ -121,17 +120,16 @@ fn main() {
     let (tx_relay, rx_relay) = channel();
     start_pubsub("jsonrpc", vec!["auth.rpc", "chain.rpc"], tx_sub, rx_pub);
 
+    let responses = Arc::new(Mutex::new(HashMap::with_capacity(1000)));
+    let http_responses = Arc::clone(&responses);
+    let ws_responses = Arc::clone(&responses);
+
     //mq
-    let mut mq_handle = mq_hanlder::MqHandler::new();
+    let mut mq_handle = mq_hanlder::MqHandler::new(responses);
 
     //http
     if config.http_config.enable {
-        mq_handle.set_http_or_ws(TransferType::HTTP);
-        let http_responses = Arc::new(RwLock::new(HashMap::with_capacity(1000)));
-        mq_handle.set_http(Arc::clone(&http_responses));
-
         let http_config = config.http_config.clone();
-        //let sender_mq_http = tx_pub.clone();
         let sender_mq_http = tx_relay.clone();
         thread::spawn(move || {
             let url = http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
@@ -140,8 +138,7 @@ fn main() {
             let _ = Server::http(url).unwrap().handle_threads(HttpHandler {
                                                                   responses: http_responses,
                                                                   tx: arc_tx,
-                                                                  sleep_duration: http_config.sleep_duration,
-                                                                  timeout_count: http_config.timeout_count,
+                                                                  timeout: http_config.timeout,
                                                                   method_handler: method::MethodHandler,
                                                               },
                                                               http_config.thread_number);
@@ -150,9 +147,6 @@ fn main() {
 
     //ws
     if config.ws_config.enable {
-        mq_handle.set_http_or_ws(TransferType::WEBSOCKET);
-        let ws_responses = Arc::new(Mutex::new(HashMap::with_capacity(1000)));
-        mq_handle.set_ws(Arc::clone(&ws_responses));
         let ws_config = config.ws_config.clone();
         thread::spawn(move || {
             let url = ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();

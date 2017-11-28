@@ -126,6 +126,5 @@ pub struct HttpConfig {
     pub thread_number: usize,
     pub listen_ip: String,
     pub listen_port: String,
-    pub sleep_duration: usize,
-    pub timeout_count: usize,
+    pub timeout: usize,
 }

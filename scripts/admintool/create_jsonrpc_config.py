@@ -12,7 +12,7 @@ def main():
     ws_enable = sys.argv[3] == "true"
     profile_config = dict(enable=False, flag_prof_start=0, flag_prof_duration=0)
     http_config = dict(enable=http_enable, thread_number=200, listen_ip="0.0.0.0", listen_port=sys.argv[2],
-                       sleep_duration=1, timeout_count=3000)
+                       timeout=3)
 
     ws_config = dict(
         enable=ws_enable, thread_number=2,
@@ -30,7 +30,6 @@ def main():
         key_strict=False, method_strict=False,
         encrypt_server=False, tcp_nodelay=False
     )
-    
     new_tx_flow_config = dict(count_per_batch=30, buffer_duration=30000000)
 
     data = dict()

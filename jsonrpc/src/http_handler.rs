@@ -15,34 +15,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use base_hanlder::BaseHandler;
+use base_hanlder::{BaseHandler, RpcMap, TransferType, ReqInfo};
 use error::ErrorCode;
 use hyper::Post;
 use hyper::server::{Handler, Request, Response};
 use hyper::uri::RequestUri::AbsolutePath;
-use jsonrpc_types::{RpcRequest, method};
-use jsonrpc_types::error::Error;
-use jsonrpc_types::response::{RpcSuccess, RpcFailure, Output};
+use jsonrpc_types::{RpcRequest, method, Error};
+use jsonrpc_types::response::RpcFailure;
 use libproto::request as reqlib;
-use libproto::response;
 use serde_json;
-use std::collections::HashMap;
 use std::io::Read;
 use std::result;
-use std::sync::Arc;
-use std::sync::mpsc::Sender;
-use std::thread;
+use std::sync::{Arc, mpsc};
 use std::time::Duration;
-use util::{RwLock, Mutex};
+use util::Mutex;
 
 impl BaseHandler for HttpHandler {}
 
 pub struct HttpHandler {
-    pub tx: Arc<Mutex<Sender<(String, reqlib::Request)>>>,
-    //TODO 定时清理工作
-    pub responses: Arc<RwLock<HashMap<Vec<u8>, response::Response>>>,
-    pub sleep_duration: usize,
-    pub timeout_count: usize,
+    pub tx: Arc<Mutex<mpsc::Sender<(String, reqlib::Request)>>>,
+    pub responses: RpcMap,
+    pub timeout: usize,
     pub method_handler: method::MethodHandler,
 }
 
@@ -67,44 +60,37 @@ impl HttpHandler {
         }
     }
 
-    pub fn deal_req(&self, post_data: String) -> Result<RpcSuccess, RpcFailure> {
+    pub fn deal_req(&self, post_data: String) -> Result<String, RpcFailure> {
         match HttpHandler::into_rpc(post_data) {
             Err(err) => Err(RpcFailure::from(err)),
             Ok(rpc) => self.send_mq(rpc),
         }
     }
 
-    pub fn send_mq(&self, rpc: RpcRequest) -> Result<RpcSuccess, RpcFailure> {
+    pub fn send_mq(&self, rpc: RpcRequest) -> Result<String, RpcFailure> {
         let id = rpc.id.clone();
         let jsonrpc_version = rpc.jsonrpc.clone();
         let topic = HttpHandler::select_topic(&rpc.method);
         match self.method_handler.request(rpc) {
             Ok(req) => {
                 let request_id = req.request_id.clone();
-                //let msg: communication::Message = req.into();
+                trace!("wait response {:?}", request_id);
+                let (tx, rx) = mpsc::channel();
                 {
-                    //self.tx.lock().send((topic, msg.write_to_bytes().unwrap())).unwrap();
-                    self.tx.lock().send((topic, req)).unwrap();
+                    self.responses.lock().insert(request_id.clone(),
+                                                 TransferType::HTTP((ReqInfo {
+                                                                         id: id.clone(),
+                                                                         jsonrpc: jsonrpc_version.clone(),
+                                                                     },
+                                                                     tx)));
+                    self.tx.lock().send((topic, req));
                 }
-                trace!("wait response {:?}", String::from_utf8(request_id.clone()));
-                let mut timeout_count = 0;
-                loop {
-                    timeout_count += 1;
-                    if timeout_count > self.timeout_count {
-                        return Err(RpcFailure::from_options(id, jsonrpc_version, Error::server_error(ErrorCode::time_out_error(), "system time out,please resend")));
-                    }
-                    thread::sleep(Duration::new(0, (self.sleep_duration * 1_000_000) as u32));
-                    if self.responses.read().contains_key(&request_id) {
-                        let value = {
-                            self.responses.write().remove(&request_id)
-                        };
-                        if let Some(res) = value {
-                            match Output::from(res, id, jsonrpc_version) {
-                                Output::Success(success) => return Ok(*success),
-                                Output::Failure(failure) => return Err(*failure),
-                            }
-                        }
-                    }
+
+                if let Ok(res) = rx.recv_timeout(Duration::from_secs(self.timeout as u64)) {
+                    Ok(res)
+                } else {
+                    self.responses.lock().remove(&request_id);
+                    Err(RpcFailure::from_options(id, jsonrpc_version, Error::server_error(ErrorCode::time_out_error(), "system time out,please resend")))
                 }
             }
 
@@ -125,7 +111,7 @@ impl Handler for HttpHandler {
             Ok(body) => {
                 trace!("JsonRpc recive raw Request data {:?}", body);
                 match self.deal_req(body) {
-                    Ok(ret) => serde_json::to_string(&ret),
+                    Ok(ret) => Ok(ret),
                     Err(err) => serde_json::to_string(&err),
                 }
             }
