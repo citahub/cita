@@ -34,14 +34,14 @@ interface PermissionSysInterface {
         bytes32 _role
     ) public returns (bool);
 
-    function deleteGroup(bytes32 _name, bytes32 _resource, bytes32 _role) public returns (bool);
+    function deleteGroup(bytes32 _group, bytes32 _resource, bytes32 _role) public returns (bool);
     
     function modifyGroupName(bytes32 _oldName, bytes32 _newName, bytes32 _resource, bytes32 _role) public returns (bool);
 
     function modifySubSwitch(bytes32 _group, bytes32 _resource, bytes32 _role, bool _newSubSwitch) public returns (bool);
 
     function newRole(
-        bytes32 _name,
+        bytes32 _group,
         bytes32 _newName,
         bytes32 _role,
         bytes32[] _newPermissions,
@@ -52,9 +52,9 @@ interface PermissionSysInterface {
 
     function modifyRoleName(bytes32 _oldName, bytes32 _newName, bytes32 _group, bytes32 _resource) public returns (bool);
 
-    function addPermissions(bytes32 _name, bytes32[] _permissions, bytes32 _group, bytes32 _resource) public returns (bool);
+    function addPermissions(bytes32 _role, bytes32[] _permissions, bytes32 _group, bytes32 _resource) public returns (bool);
 
-    function deletePermissions(bytes32 _name, bytes32[] _permissions, bytes32 _group, bytes32 _resource) public returns (bool);
+    function deletePermissions(bytes32 _role, bytes32[] _permissions, bytes32 _group, bytes32 _resource) public returns (bool);
 
     function setAuthorization(bytes32 _group, bytes32 _role, bytes32 _resource) public returns(bool);
 

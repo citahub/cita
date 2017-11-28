@@ -18,16 +18,16 @@ contract PermissionData {
     AuthorizationManager.Authorization auth;
     // Cache for the user appling to join the group
     mapping(bytes32 => address[]) group_applicants;
+    // Cache for the user appling to quit the group
     mapping(bytes32 => address[]) group_resignations;
     mapping(address => bytes32[]) user_groups;
     bytes32[] group_names;
     bytes32[] role_names;
     address superAdmin;
 
-    // Read???
+    // Read?
     bytes32[21] permissions = [
-        // About transaction. SendTx???LaunchTx???. Should the basic permission of the others
-        bytes32("LaunchTx"),
+        bytes32("SendTx"),
         // Include: contract permission: DealTx.CreateContract
         bytes32("DealTx"),
 
@@ -62,9 +62,7 @@ contract PermissionData {
     ];
 
     enum Permissions {
-        // About transaction
-        // About transaction. SendTx???LaunchTx???. Should be the basic permission of others
-        LaunchTx,
+        SendTx,
         // Include: contract permission: DealTx.CreateContract
         DealTx,
 

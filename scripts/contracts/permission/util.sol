@@ -1,7 +1,7 @@
 pragma solidity ^0.4.14;
 
 /// @notice TODO: Address and bytes32. refactor the duplicate code.
-///               The elements of set is different each othet. 
+///               The elements of set is different each other. 
 library Util {
 
     enum SetOp { None, Union, Interaction, Diff }

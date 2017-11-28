@@ -2,7 +2,7 @@ pragma solidity ^0.4.14;
 
 import "./util.sol";
 
-/// @title Manager the group
+/// @title Manage the group
 library GroupManager {
 
     using Util for *;
@@ -18,12 +18,12 @@ library GroupManager {
         bool subSwitch;
     }
 
-    event GroupNewed(bytes32 indexed _name);
+    event GroupNewed(bytes32 indexed _group);
     event NameModified(bytes32 indexed _oldName, bytes32 indexed _newName);
     event SubSwitchModified(bool indexed _oldSubSwitch, bool indexed _newSubSwitch);
-    event UsersAdded(bytes32 indexed _name, address[] _users);
-    event UsersDeleted(bytes32 indexed _name, address[] _users);
-    event GroupDeleted(bytes32 indexed _name);
+    event UsersAdded(bytes32 indexed _group, address[] _users);
+    event UsersDeleted(bytes32 indexed _group, address[] _users);
+    event GroupDeleted(bytes32 indexed _group);
     event GroupInited(bytes32 indexed _root, address[] _adamEve, bool indexed _subSwitch);
 
     /// @dev Init the root group
@@ -48,11 +48,10 @@ library GroupManager {
     }
 
     /// @dev New a group
-    /// @param _name The group name of the caller
-    /// @return The new group name
+    /// @param _group The group of the caller
     function newGroup(
         Groups storage self,
-        bytes32 _name,
+        bytes32 _group,
         bytes32 _newName,
         address[] _newUsers,
         bool _newSubSwitch,
@@ -68,12 +67,12 @@ library GroupManager {
             for (uint i = 0; i < _newUsers.length; i++)
                 self.groups[_newName].users[i] = _newUsers[i];
         } else {
-            address[] memory one = Util.setOpAddress(self.groups[_name].users, _newUsers, _op);
+            address[] memory one = Util.setOpAddress(self.groups[_group].users, _newUsers, _op);
             for (uint j = 0; j < one.length; j++)
                 self.groups[_newName].users[j] = one[j];
         }
 
-        self.groups[_name].subGroups.push(_newName);
+        self.groups[_group].subGroups.push(_newName);
         GroupNewed(_newName);
         return true;
     }
@@ -92,45 +91,44 @@ library GroupManager {
     /// @dev Modify the sub_switch
     function modifySubSwitch(
         Groups storage self,
-        bytes32 _name,
+        bytes32 _group,
         bool _newSubSwitch
     )
         internal
         returns (bool)
     {
-        SubSwitchModified(self.groups[_name].subSwitch, _newSubSwitch);
-        self.groups[_name].subSwitch = _newSubSwitch;
+        SubSwitchModified(self.groups[_group].subSwitch, _newSubSwitch);
+        self.groups[_group].subSwitch = _newSubSwitch;
         return true;
     }
 
     /// @dev Add users 
-    function addUsers(Groups storage self, bytes32 _name, address[] _users) internal returns (bool) {
-        address[] memory result = Util.opUnionAddress(self.groups[_name].users, _users);
+    function addUsers(Groups storage self, bytes32 _group, address[] _users) internal returns (bool) {
+        address[] memory result = Util.opUnionAddress(self.groups[_group].users, _users);
 
         for (uint i = 0; i < result.length; i++)
-            self.groups[_name].users[i] = result[i];
+            self.groups[_group].users[i] = result[i];
 
-        UsersAdded(_name, _users);
+        UsersAdded(_group, _users);
         return true;
-
     }
 
     /// @dev Delete users 
-    function deleteUsers(Groups storage self, bytes32 _name, address[] _users) internal returns (bool) {
-        address[] memory result = Util.opDiffAddress(self.groups[_name].users, _users);
+    function deleteUsers(Groups storage self, bytes32 _group, address[] _users) internal returns (bool) {
+        address[] memory result = Util.opDiffAddress(self.groups[_group].users, _users);
 
         for (uint i = 0; i < result.length; i++)
-            self.groups[_name].users[i] = result[i];
+            self.groups[_group].users[i] = result[i];
 
-        UsersDeleted(_name, _users);
+        UsersDeleted(_group, _users);
         return true;
     }
 
     /// @dev Delete group
-    /// @notice Delete a tree's node. Need to discuss. Only leaf node?
-    function deleteGroup(Groups storage self, bytes32 _name) internal returns (bool) {
-        delete self.groups[_name];
-        GroupDeleted(_name);
+    /// @notice Delete a tree's node. Only leaf node
+    function deleteGroup(Groups storage self, bytes32 _group) internal returns (bool) {
+        delete self.groups[_group];
+        GroupDeleted(_group);
         return true;
     }
 }
