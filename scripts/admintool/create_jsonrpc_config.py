@@ -33,6 +33,7 @@ def main():
     new_tx_flow_config = dict(count_per_batch=30, buffer_duration=30000000)
 
     data = dict()
+    data["with_capacity"] = 1000
     data["profile_config"] = profile_config
     data["http_config"] = http_config
     data["ws_config"] = ws_config

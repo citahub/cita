@@ -120,7 +120,12 @@ fn main() {
     let (tx_relay, rx_relay) = channel();
     start_pubsub("jsonrpc", vec!["auth.rpc", "chain.rpc"], tx_sub, rx_pub);
 
-    let responses = Arc::new(Mutex::new(HashMap::with_capacity(1000)));
+    let with_capacity = if config.with_capacity > 2 * config.http_config.thread_number {
+        config.with_capacity
+    } else {
+        (3 * config.http_config.thread_number) / 2
+    };
+    let responses = Arc::new(Mutex::new(HashMap::with_capacity(with_capacity)));
     let http_responses = Arc::clone(&responses);
     let ws_responses = Arc::clone(&responses);
 

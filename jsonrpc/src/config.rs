@@ -35,6 +35,7 @@ pub fn read_user_from_file<P: AsRef<Path>>(path: P) -> Result<Config, Box<Error>
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
+    pub with_capacity: usize,
     pub profile_config: ProfileConfig,
     pub http_config: HttpConfig,
     pub ws_config: WsConfig,
