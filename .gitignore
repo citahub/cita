@@ -16,7 +16,7 @@ target/
 */target/
 
 # Cargo lock in subs
-*/Cargo.lock
+**/Cargo.lock
 
 
 # editor specific
@@ -49,4 +49,3 @@ tests/wrk_benchmark_test/hash.txt
 consensus/authority_round/data/
 
 scripts/txtool/output
-
