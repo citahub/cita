@@ -52,18 +52,18 @@ impl BlockProcessor {
                 if self.chain.validate_height(block.number()) && self.chain.validate_hash(block.parent_hash()) {
                     self.chain.set_block(block, &self.ctx_pub);
                     self.chain.broadcast_status(&self.ctx_pub);
-                    debug!("set consensus block-{}", number);
+                    info!("set consensus block-{}", number);
                 }
             }
             Some(BlockInQueue::SyncBlock((_, Some(_)))) => {
                 if number == self.chain.get_current_height() + 1 {
                     self.sync_blocks(number);
                     self.chain.broadcast_status(&self.ctx_pub);
-                    debug!("finish sync blocks to {}", number);
+                    info!("finish sync blocks to {}", number);
                 };
             }
             _ => {
-                debug!("block-{} in queue is invalid", number);
+                info!("block-{} in queue is invalid", number);
             }
         }
 
@@ -74,24 +74,24 @@ impl BlockProcessor {
 
     fn set_sync_block(&self, block: Block, proto_proof: Proof) -> bool {
         let number = block.number();
-        debug!("set sync block-{}", number);
+        info!("set sync block-{}", number);
         let proof = TendermintProof::from(proto_proof);
         let proof_height = if proof.height == ::std::usize::MAX { 0 } else { proof.height as u64 };
         let authorities = self.chain.nodes.read().clone();
         let mut result = false;
         if self.chain.validate_height(number) && self.chain.validate_hash(block.parent_hash()) && proof.check(proof_height as usize, &authorities) {
             self.chain.set_block(block, &self.ctx_pub);
-            debug!("set sync block-{} is finished", number);
+            info!("set sync block-{} is finished", number);
             result = true;
         } else {
-            debug!("sync block-{} is invalid", number);
+            info!("sync block-{} is invalid", number);
         }
         result
     }
 
     fn sync_blocks(&self, mut number: u64) {
         self.chain.is_sync.store(true, Ordering::SeqCst);
-        debug!("set sync block start from {}", number);
+        info!("set sync block start from {}", number);
         let mut invalid_block_in_queue = false;
         let mut block_map;
         {
@@ -105,12 +105,12 @@ impl BlockProcessor {
                         number += 1;
                     } else {
                         invalid_block_in_queue = true;
-                        debug!("set sync block end to {} as invalid block", number - 1);
+                        info!("set sync block end to {} as invalid block", number - 1);
                         break;
                     }
                 }
                 _ => {
-                    debug!("set sync block end to {}", number - 1);
+                    info!("set sync block end to {}", number - 1);
                     break;
                 }
             }

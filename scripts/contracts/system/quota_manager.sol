@@ -35,11 +35,11 @@ contract QuotaManager is QuotaInterface {
     function QuotaManager(address _account) {
         admins[_account] = true;
         is_global["blockGasLimit"] = true;
-        global["blockGasLimit"] = bytes32(61415926);
-        global["accountGasLimit"] = bytes32(25141592);
-        special[_account]["accountGasLimit"] = bytes32(61415926);
+        global["blockGasLimit"] = bytes32(1073741824);
+        global["accountGasLimit"] = bytes32(268435456);
+        special[_account]["accountGasLimit"] = bytes32(1073741824);
         special_users.push(_account);
-        users_quota.push(bytes32(61415926));
+        users_quota.push(bytes32(1073741824));
     }
 
     function addAdmin(address _account) public onlyAdmin returns (bool) {

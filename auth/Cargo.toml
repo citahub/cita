@@ -19,7 +19,6 @@ pubsub = { path = "../share_libs/pubsub" }
 logger = { path = "../share_libs/logger" }
 libproto = { path = "../share_libs/proto" }
 protobuf = { version = "^1.0.0"}
-cache_2q = "0.8.4"
 cita-crypto = { path = "../share_libs/crypto"}
 tx_pool = {path = "../share_libs/tx_pool"}
 core = { path = "../chain/core" }

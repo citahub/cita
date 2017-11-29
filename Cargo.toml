@@ -15,6 +15,7 @@ members = ["auth"
 ,"tests/latency"
 ,"tests/jsonrpc_performance"
 ,"tests/benchmark_ws"
+,"tests/chain_performance_by_mq"
 ]
 
 

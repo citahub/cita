@@ -73,6 +73,7 @@ pub use error::*;
 pub use hashable::*;
 pub use hashdb::*;
 pub use heapsize::HeapSizeOf;
+pub use init::*;
 pub use itertools::Itertools;
 pub use journaldb::JournalDB;
 pub use kvdb::*;
@@ -84,7 +85,6 @@ pub use semantic_version::*;
 pub use trie::{Trie, TrieMut, TrieDB, TrieDBMut, TrieFactory, TrieError, SecTrieDB, SecTrieDBMut};
 pub use triehash::*;
 pub use vector::*;
-pub use init::*;
 
 /// 160-bit integer representing account address
 pub type Address = H160;

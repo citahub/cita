@@ -88,7 +88,6 @@ dependencies = [
 name = "auth"
 version = "0.1.0"
 dependencies = [
- "cache_2q 0.8.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0",
  "clap 2.27.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "core 0.1.0",
@@ -312,11 +311,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cache_2q"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
 name = "capnp"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -409,6 +403,31 @@ dependencies = [
  "logger 0.1.0",
  "proof 0.6.0",
  "protobuf 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "util 0.6.0",
+ "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "chain_performance_by_mq"
+version = "0.1.0"
+dependencies = [
+ "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cita-crypto 0.1.0",
+ "clap 2.27.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "common-types 0.1.0",
+ "core 0.1.0",
+ "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libproto 0.6.0",
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0",
+ "proof 0.6.0",
+ "protobuf 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pubsub 0.6.0",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2703,7 +2722,6 @@ dependencies = [
 "checksum byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ff81738b726f5d099632ceaffe7fb65b90212e8dce59d518729e7e8634032d3d"
 "checksum bytes 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c129aff112dcc562970abb69e2508b40850dd24c274761bb50fb8a0067ba6c27"
 "checksum bytes 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "d828f97b58cc5de3e40c421d0cf2132d6b2da4ee0e11b8632fa838f0f9333ad6"
-"checksum cache_2q 0.8.4 (registry+https://github.com/rust-lang/crates.io-index)" = "888c7446c8037f61237cd399bf1a7dcbaebc2026ef208542f796f4db0d93497c"
 "checksum capnp 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)" = "4c3b702741e96c00ab2240c49c74c5e3394dcc4e791acd6b0dfd0baa5c69a2b7"
 "checksum capnp 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "2413f05bfed15863b5fd3c5b048d8efd324f6a0b2bc8c9e832de37446723a625"
 "checksum capnpc 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "6003f6766260e621ff980048a777c6e594bf5c5062c6e76be83262e11b25ae87"

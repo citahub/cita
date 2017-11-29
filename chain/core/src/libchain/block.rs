@@ -34,6 +34,7 @@ use state_db::StateDB;
 use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+use std::time::Instant;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
 use util::{U256, H256, Address, merklehash, HeapSizeOf};
@@ -315,7 +316,12 @@ impl OpenBlock {
             transactions.push(t);
         }
         self.body.set_transactions(transactions);
+
+        let now = Instant::now();
         self.state.commit().expect("commit trie error");
+        let new_now = Instant::now();
+        info!("state root use {:?}", new_now.duration_since(now));
+
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
     }
