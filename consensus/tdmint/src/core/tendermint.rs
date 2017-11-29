@@ -34,7 +34,7 @@ use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 use std::collections::{LinkedList, HashMap};
 use std::sync::mpsc::{Sender, Receiver, RecvError};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use util::{H256, Address, Hashable};
 use util::datapath::DataPath;
@@ -182,15 +182,15 @@ impl TenderMint {
             return Err(EngineError::NotAuthorized(Address::zero()));
         }
         let proposer_nonce = height + round;
-        let proposer = p.authorities
+        let proposer: &Address = p.authorities
                         .get(proposer_nonce % p.authority_n)
                         .expect("There are authority_n authorities; taking number modulo authority_n gives number in authority_n range; qed");
         if proposer == address {
             Ok(())
         } else {
             Err(EngineError::NotProposer(Mismatch {
-                                             expected: *proposer.into(),
-                                             found: *address.into(),
+                                             expected: *proposer,
+                                             found: *address,
                                          }))
         }
     }
@@ -275,11 +275,11 @@ impl TenderMint {
         trace!("proc_prevote vote_set {:?}", vote_set);
         if let Some(vote_set) = vote_set {
             if self.is_above_threshold(&vote_set.count) {
-                let tv = if elf.is_all_vote(&vote_set.count) {
-                    tv = ::std::time::Duration::new(0, 0)
+                let mut tv = if self.is_all_vote(&vote_set.count) {
+                    Duration::new(0, 0)
                 } else {
                     self.params.timer.prevote
-                }
+                };
 
                 for (hash, count) in &vote_set.votes_by_proposal {
                     if self.is_above_threshold(count) {
@@ -293,8 +293,8 @@ impl TenderMint {
 
                         if hash.is_zero() {
                             self.clean_saved_info();
-                            tv = ::std::time::Duration::new(0, 0);
-                        } else  if self.proposal == Some(*hash) {
+                            tv = Duration::new(0, 0);
+                        } else if self.proposal == Some(*hash) {
                             self.lock_round = Some(round);
                             self.locked_vote = Some(vote_set.clone());
                         } else {
@@ -398,17 +398,17 @@ impl TenderMint {
             if self.is_above_threshold(&vote_set.count) {
                 trace!("proc_precommit is_above_threshold height {} round {}", height, round);
 
-                let tv = if self.is_all_vote(&vote_set.count) {
-                    ::std::time::Duration::new(0, 0)
+                let mut tv = if self.is_all_vote(&vote_set.count) {
+                    Duration::new(0, 0)
                 } else {
                     self.params.timer.precommit
-                }
+                };
 
                 for (hash, count) in vote_set.votes_by_proposal {
                     if self.is_above_threshold(&count) {
                         trace!("proc_precommit is_above_threshold hash {:?} {}", hash, count);
                         if hash.is_zero() {
-                            tv = ::std::time::Duration::new(0, 0);
+                            tv = Duration::new(0, 0);
                             trace!("proc_precommit is zero");
                         //self.proposal = None;
                         } else if self.proposal.is_some() {
@@ -651,7 +651,7 @@ impl TenderMint {
                 if self.is_authority(&sender) && pubkey_to_address(&pubkey) == sender {
                     let mut trans_flag = false;
                     let mut add_flag = false;
-                    let now = ::std::time::Instant::now();
+                    let now = Instant::now();
 
                     //deal with equal height,and round fall behind
                     if h == self.height && r < self.round {
@@ -1089,7 +1089,7 @@ impl TenderMint {
                             if h == self.height && r == self.round && self.step < Step::Prevote {
                                 self.step = Step::ProposeWait;
                                 self.timer_seter.send(TimeoutInfo {
-                                                          timeval: ::std::time::Duration::new(0, 0),
+                                                          timeval: Duration::new(0, 0),
                                                           height: h,
                                                           round: r,
                                                           step: Step::ProposeWait,
@@ -1159,7 +1159,7 @@ impl TenderMint {
                     if now_height == height + 1 && self.is_round_proposer(now_height, now_round, &self.params.signer.address).is_ok() && now_step == Step::ProposeWait && self.proposal.is_none() {
                         self.new_proposal();
                         self.timer_seter.send(TimeoutInfo {
-                                                  timeval: ::std::time::Duration::new(0, 0),
+                                                  timeval: Duration::new(0, 0),
                                                   height: now_height,
                                                   round: now_round,
                                                   step: Step::ProposeWait,
@@ -1220,7 +1220,7 @@ impl TenderMint {
         if height > status_height
         //|| self.is_round_proposer(status_height+1,INIT_ROUND,&self.params.signer.address).is_ok()
         {
-            tv = ::std::time::Duration::new(0, 0);
+            tv = Duration::new(0, 0);
         } else if cost_time < self.params.duration {
             tv = self.params.duration - cost_time;
         }
@@ -1238,10 +1238,10 @@ impl TenderMint {
     fn new_round_start(&mut self, height: usize, round: usize) {
         let mut tv = self.params.timer.propose * ((round + 1) as u32);
         if self.proposals.get_proposal(height, round).is_some() {
-            tv = ::std::time::Duration::new(0, 0);
+            tv = Duration::new(0, 0);
         } else if self.is_round_proposer(height, round, &self.params.signer.address).is_ok() {
             self.new_proposal();
-            tv = ::std::time::Duration::new(0, 0);
+            tv = Duration::new(0, 0);
         }
         //if is proposal,enter prevote stage immedietly
         self.step = Step::ProposeWait;
