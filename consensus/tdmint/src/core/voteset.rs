@@ -37,20 +37,20 @@ impl VoteCollector {
 
     pub fn add(&mut self, height: usize, round: usize, step: Step, sender: Address, vote: VoteMessage) -> bool {
         if self.votes.contains_key(&height) {
-            return self.votes.get_mut(&height).unwrap().add(round, step, sender, vote);
+            self.votes.get_mut(&height).unwrap().add(round, step, sender, vote)
         } else {
             let mut round_votes = RoundCollector::new();
             round_votes.add(round, step, sender, vote);
             self.votes.insert(height, round_votes);
-            return true;
+            true
         }
     }
 
     pub fn get_voteset(&mut self, height: usize, round: usize, step: Step) -> Option<VoteSet> {
         if self.votes.contains_key(&height) {
-            return self.votes.get_mut(&height).unwrap().get_voteset(round, step);
+            self.votes.get_mut(&height).unwrap().get_voteset(round, step)
         } else {
-            return None;
+            None
         }
     }
 }
@@ -68,20 +68,20 @@ impl RoundCollector {
 
     pub fn add(&mut self, round: usize, step: Step, sender: Address, vote: VoteMessage) -> bool {
         if self.round_votes.contains_key(&round) {
-            return self.round_votes.get_mut(&round).unwrap().add(step, sender, vote);
+            self.round_votes.get_mut(&round).unwrap().add(step, sender, vote)
         } else {
             let mut step_votes = StepCollector::new();
             step_votes.add(step, sender, vote);
             self.round_votes.insert(round, step_votes);
-            return true;
+            true
         }
     }
 
     pub fn get_voteset(&mut self, round: usize, step: Step) -> Option<VoteSet> {
         if self.round_votes.contains_key(&round) {
-            return self.round_votes.get_mut(&round).unwrap().get_voteset(step);
+            self.round_votes.get_mut(&round).unwrap().get_voteset(step)
         } else {
-            return None;
+            None
         }
     }
 }
@@ -99,20 +99,20 @@ impl StepCollector {
 
     pub fn add(&mut self, step: Step, sender: Address, vote: VoteMessage) -> bool {
         if self.step_votes.contains_key(&step) {
-            return self.step_votes.get_mut(&step).unwrap().add(sender, vote);
+            self.step_votes.get_mut(&step).unwrap().add(sender, vote)
         } else {
             let mut vote_set = VoteSet::new();
             vote_set.add(sender, vote);
             self.step_votes.insert(step, vote_set);
-            return true;
+            true
         }
     }
 
     pub fn get_voteset(&self, step: Step) -> Option<VoteSet> {
         if self.step_votes.contains_key(&step) {
-            return Some(self.step_votes.get(&step).unwrap().clone());
+            Some((&self.step_votes[&step]).clone())
         } else {
-            return None;
+            None
         }
     }
 }
@@ -138,7 +138,7 @@ impl VoteSet {
     //just add ,not check
     pub fn add(&mut self, sender: Address, vote: VoteMessage) -> bool {
         if self.votes_by_sender.contains_key(&sender) {
-            return false;
+            false
         } else {
             self.count += 1;
             self.votes_by_sender.insert(sender, vote.clone());
@@ -147,10 +147,10 @@ impl VoteSet {
             if let Some(h) = proposal {
                 hash = h;
             }
-            if let Some(c) = self.votes_by_proposal.insert(hash.clone(), 1) {
-                self.votes_by_proposal.insert(hash.clone(), c + 1);
+            if let Some(c) = self.votes_by_proposal.insert(hash, 1) {
+                self.votes_by_proposal.insert(hash, c + 1);
             }
-            return true;
+            true
         }
     }
 
@@ -161,14 +161,14 @@ impl VoteSet {
                 let msg = serialize(&(h, r, step, sender, vote.proposal), Infinite).unwrap();
                 let signature = &vote.signature;
                 if let Ok(pubkey) = signature.recover(&msg.crypt_hash().into()) {
-                    if pubkey_to_address(&pubkey) == sender.clone() {
+                    if pubkey_to_address(&pubkey) == *sender {
                         let mut hash = H256::default();
                         if let Some(h) = vote.proposal {
                             hash = h;
                         }
                         // inc the count of vote for hash
                         if let Some(c) = votes_by_proposal.insert(hash, 1) {
-                            votes_by_proposal.insert(hash.clone(), c + 1);
+                            votes_by_proposal.insert(hash, c + 1);
                         }
                     }
                 }
@@ -179,12 +179,12 @@ impl VoteSet {
                 if hash.is_zero() {
                     return Ok(None);
                 } else {
-                    return Ok(Some(hash.clone()));
+                    return Ok(Some(*hash));
                 }
             }
 
         }
-        return Err("vote set check error!");
+        Err("vote set check error!")
     }
 }
 
@@ -207,20 +207,20 @@ impl ProposalCollector {
 
     pub fn add(&mut self, height: usize, round: usize, proposal: Proposal) -> bool {
         if self.proposals.contains_key(&height) {
-            return self.proposals.get_mut(&height).unwrap().add(round, proposal);
+            self.proposals.get_mut(&height).unwrap().add(round, proposal)
         } else {
             let mut round_proposals = ProposalRoundCollector::new();
             round_proposals.add(round, proposal);
             self.proposals.insert(height, round_proposals);
-            return true;
+            true
         }
     }
 
     pub fn get_proposal(&mut self, height: usize, round: usize) -> Option<Proposal> {
         if self.proposals.contains_key(&height) {
-            return self.proposals.get_mut(&height).unwrap().get_proposal(round);
+            self.proposals.get_mut(&height).unwrap().get_proposal(round)
         } else {
-            return None;
+            None
         }
     }
 }
@@ -237,18 +237,18 @@ impl ProposalRoundCollector {
 
     pub fn add(&mut self, round: usize, proposal: Proposal) -> bool {
         if self.round_proposals.contains_key(&round) {
-            return false;
+            false
         } else {
             self.round_proposals.insert(round, proposal);
-            return true;
+            true
         }
     }
 
     pub fn get_proposal(&mut self, round: usize) -> Option<Proposal> {
         if self.round_proposals.contains_key(&round) {
-            return Some(self.round_proposals.get_mut(&round).unwrap().clone());
+            Some(self.round_proposals.get_mut(&round).unwrap().clone())
         } else {
-            return None;
+            None
         }
     }
 }
@@ -288,7 +288,7 @@ impl Proposal {
                     return true;
                 }
             }
-            return false;
+            false
         }
     }
 }
