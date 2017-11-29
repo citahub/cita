@@ -46,7 +46,7 @@ dotenv = "0.10.0"
 proof = { path = "../../consensus/proof" }
 common-types = { path = "../types" }
 jsonrpc_types = { path = "../../jsonrpc/types"}
-clippy = {version = "*", optional = true}
+clippy = {version = "0.0.148", optional = true}
 
 [dev-dependencies]
 rand = "0.3"
