@@ -78,15 +78,17 @@ impl BlockProcessor {
         let proof = TendermintProof::from(proto_proof);
         let proof_height = if proof.height == ::std::usize::MAX { 0 } else { proof.height as u64 };
         let authorities = self.chain.nodes.read().clone();
-        let mut result = false;
-        if self.chain.validate_height(number) && self.chain.validate_hash(block.parent_hash()) && proof.check(proof_height as usize, &authorities) {
+        if self.chain.validate_height(number) &&
+            self.chain.validate_hash(block.parent_hash()) &&
+            proof.check(proof_height as usize, &authorities) 
+        {
             self.chain.set_block(block, &self.ctx_pub);
             info!("set sync block-{} is finished", number);
-            result = true;
+            true
         } else {
             info!("sync block-{} is invalid", number);
+            false 
         }
-        result
     }
 
     fn sync_blocks(&self, mut number: u64) {
