@@ -123,9 +123,35 @@ impl bc::group::BloomGroupDatabase for Chain {
 #[derive(Debug, Clone)]
 pub enum BlockInQueue {
     Proposal(Block),
-    ValidProposal(Block, ProtoProof),
     ConsensusBlock(Block, ProtoProof),
     SyncBlock((Block, Option<ProtoProof>)),
+}
+
+/// Rules
+/// 1. When chain receives proposal from consensus, pre-execute it firstly, set stage to `ExecutingProposal`.
+/// 2. When it receives another proposal,
+/// 2.1 and the new proposal is different from the current one(the same transaction root),
+///     interrupt the current executing and redo the new proposal;
+/// 2.2 otherwise ignore it.
+/// 3. When chain receives a consensus block, compares to the current excuting proposal,
+/// 3.1 if they are the same, replace the proposal to consensus block, change the stage to `ExecutingBlock`.
+/// 3.2 Otherwise check whether the propposal is executing,
+/// 3.2.1 if yes, interrupt the current proposal and execute the consensus block,
+/// 3.2.2 otherwise execute the consensus block.
+/// 4. When chain finishes executing proposal, check the stage,
+/// 4.1 if `ExecutingBlock`, continue;
+/// 4.2 if `ExecutingProposal`, go to `WaitFinalized`,
+/// 4.3 if `is_interrupt`, ignore.
+#[derive(Debug, Clone)]
+pub enum Stage {
+    /// Exeuting block
+    ExecutingBlock,
+    /// Executing proposal
+    ExecutingProposal,
+    /// Finish executing proposal and wait
+    WaitFinalized,
+    /// Finalized
+    Idle,
 }
 
 // TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
@@ -134,20 +160,23 @@ pub struct Chain {
     blooms_config: bc::Config,
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
-    // Max height in block map
+    /// Interrupt current proposal executing
+    pub is_interrupted: AtomicBool,
+    /// Max height in block map
     pub max_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
+    pub stage: RwLock<Stage>,
     pub db: Arc<KeyValueDB>,
     pub state_db: StateDB,
     pub factories: Factories,
-    // Hash of the given block - only works for 256 most recent blocks excluding current
+    /// Hash of the given block - only works for 256 most recent blocks excluding current
     pub last_hashes: RwLock<VecDeque<H256>>,
 
-    // block cache
+    /// Block cache
     block_headers: RwLock<HashMap<H256, Header>>,
     block_bodies: RwLock<HashMap<H256, BlockBody>>,
 
-    // extra caches
+    /// Extra caches
     block_hashes: RwLock<HashMap<BlockNumber, H256>>,
     transaction_addresses: RwLock<HashMap<TransactionId, TransactionAddress>>,
     blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
@@ -155,18 +184,18 @@ pub struct Chain {
     pub nodes: RwLock<Vec<Address>>,
     pub block_gas_limit: AtomicUsize,
     pub account_gas_limit: RwLock<AccountGasLimit>,
-    // System contract config cache
+    /// System contract config cache
     senders: RwLock<HashSet<Address>>,
     creators: RwLock<HashSet<Address>>,
 
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 
-    // switch, check permission or not
+    /// Switch, check permission or not
     pub check_permission: bool,
     pub check_quota: bool,
 
-    //switch, check proof type for add_sync_block
+    /// Switch, check proof type for add_sync_block
     pub check_prooftype: u8,
 }
 
@@ -225,8 +254,10 @@ impl Chain {
             blooms_config: blooms_config,
             current_header: RwLock::new(header.clone()),
             is_sync: AtomicBool::new(false),
+            is_interrupted: AtomicBool::new(false),
             max_height: max_height,
             block_map: RwLock::new(BTreeMap::new()),
+            stage: RwLock::new(Stage::Idle),
             block_headers: RwLock::new(HashMap::new()),
             block_bodies: RwLock::new(HashMap::new()),
             block_hashes: RwLock::new(HashMap::new()),
@@ -773,9 +804,7 @@ impl Chain {
         {
             if let Some(proof_block) = self.block_map.read().get(&height) {
                 match *proof_block {
-                    BlockInQueue::ValidProposal(_, ref proof)
-                    | BlockInQueue::ConsensusBlock(_, ref proof)
-                    | BlockInQueue::SyncBlock((_, Some(ref proof))) => {
+                    BlockInQueue::ConsensusBlock(_, ref proof) | BlockInQueue::SyncBlock((_, Some(ref proof))) => {
                         batch.write(db::COL_EXTRA, &CurrentProof, &proof)
                     }
                     _ => {}
@@ -1047,7 +1076,7 @@ impl Chain {
 
     /// Execute Block
     /// And set state_root, receipt_root, log_bloom of header
-    pub fn execute_block(&self, block: Block) -> ClosedBlock {
+    pub fn execute_block(&self, block: Block) -> Option<ClosedBlock> {
         let now = Instant::now();
 
         let current_state_root = self.current_state_root();
@@ -1067,12 +1096,14 @@ impl Chain {
             &self.account_gas_limit.read().clone(),
         ).unwrap();
 
-        open_block.apply_transactions(check_permission, self.check_quota);
-        let closed_block = open_block.close();
-
-        let new_now = Instant::now();
-        info!("execute block use {:?}", new_now.duration_since(now));
-        closed_block
+        if open_block.apply_transactions(self, check_permission, self.check_quota) {
+            let closed_block = open_block.close();
+            let new_now = Instant::now();
+            info!("execute block use {:?}", new_now.duration_since(now));
+            Some(closed_block)
+        } else {
+            None
+        }
     }
 
     /// Finalize block
@@ -1155,14 +1186,35 @@ impl Chain {
         }
     }
 
+    pub fn set_proposal(&self, block: Block) -> Option<ClosedBlock> {
+        self.execute_block(block)
+    }
+
+    pub fn finalize_proposal(
+        &self,
+        mut closed_block: ClosedBlock,
+        comming: Block,
+        ctx_pub: &Sender<(String, Vec<u8>)>,
+    ) {
+        let tx_hashes = closed_block.body().transaction_hashes();
+        self.delivery_block_tx_hashes(closed_block.number(), tx_hashes, ctx_pub);
+        closed_block.header.set_timestamp(comming.timestamp());
+        closed_block.header.set_proof(comming.proof().clone());
+        self.finalize_block(closed_block, ctx_pub);
+    }
+
     pub fn set_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) {
         // Delivery block tx hashes to auth
         let height = block.number();
         let tx_hashes = block.body().transaction_hashes();
         self.delivery_block_tx_hashes(height, tx_hashes, ctx_pub);
 
-        let closed_block = self.execute_block(block);
-        self.finalize_block(closed_block, ctx_pub);
+        if let Some(closed_block) = self.execute_block(block) {
+            self.finalize_block(closed_block, ctx_pub);
+        } else {
+            // Should never reach here!
+            warn!("executing block is interrupted.");
+        }
     }
 
     pub fn compare_status(&self, st: Status) -> (u64, u64) {
