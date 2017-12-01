@@ -124,16 +124,11 @@ pub fn process_flow_control_failed(mut verify_info: VerifyRequestResponseInfo, r
 }
 
 #[cfg_attr(feature = "clippy", allow(needless_pass_by_value))]
-pub fn verify_tx_group_service(
-    mut req_grp: Vec<VerifyRequestResponseInfo>, 
-    verifier: Arc<RwLock<Verifier>>, 
-    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
-    resp_sender: Sender<VerifyRequestResponseInfo>
-) {
+pub fn verify_tx_group_service(mut req_grp: Vec<VerifyRequestResponseInfo>, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, resp_sender: Sender<VerifyRequestResponseInfo>) {
     let now = SystemTime::now();
     let len = req_grp.len();
 
-    while let Some(mut req_info) = req_grp.pop() { 
+    while let Some(mut req_info) = req_grp.pop() {
         if let VerifyRequestResponse::AuthRequest(req) = req_info.req_resp {
             let tx_hash = H256::from_slice(req.get_tx_hash());
             let response = verfiy_tx(&req, &verifier.read());
@@ -190,19 +185,7 @@ fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxR
 // this function has too many arguments
 // the function has a cyclomatic complexity of 29
 // consider changing the type to: `&[u8]`
-pub fn handle_remote_msg(
-    payload: Vec<u8>, 
-    on_proposal: Arc<AtomicBool>, 
-    threadpool: &Mutex<ThreadPool>, 
-    proposal_tx_verify_num_per_thread: usize, 
-    verifier: Arc<RwLock<Verifier>>, 
-    tx_req_single: &Sender<VerifyRequestResponseInfo>, 
-    tx_pub: &Sender<(String, Vec<u8>)>, 
-    block_verify_status: Arc<RwLock<BlockVerifyStatus>>, 
-    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, 
-    txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>, 
-    resp_sender: &Sender<VerifyRequestResponseInfo>
-) {
+pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadpool: &Mutex<ThreadPool>, proposal_tx_verify_num_per_thread: usize, verifier: Arc<RwLock<Verifier>>, tx_req_single: &Sender<VerifyRequestResponseInfo>, tx_pub: &Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>, resp_sender: &Sender<VerifyRequestResponseInfo>) {
     let (cmdid, _origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
     match content {
@@ -324,9 +307,7 @@ pub fn handle_remote_msg(
                             let cache_clone = cache.clone();
                             let resp_sender_clone = resp_sender.clone();
                             let group_for_pool = group.to_vec().clone();
-                            pool.execute(move || { 
-                                verify_tx_group_service(group_for_pool, verifier_clone, cache_clone, resp_sender_clone); 
-                            });
+                            pool.execute(move || { verify_tx_group_service(group_for_pool, verifier_clone, cache_clone, resp_sender_clone); });
                         }
                         on_proposal.store(false, Ordering::SeqCst);
                     } else if block_verify_status_guard.verify_success_cnt_capture == block_verify_status_guard.verify_success_cnt_required {

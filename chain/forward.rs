@@ -378,7 +378,7 @@ impl Forward {
         }
     }
 
-    #[allow(single_match)]
+    #[cfg_attr(feature = "dev", allow(single_match))]
     // Check block group from remote and enqueue
     fn add_sync_block(&self, block: Block) {
         let proof_type = block.proof_type();

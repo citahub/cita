@@ -109,11 +109,7 @@ impl StepCollector {
     }
 
     pub fn get_voteset(&self, step: Step) -> Option<VoteSet> {
-        if self.step_votes.contains_key(&step) {
-            Some((&self.step_votes[&step]).clone())
-        } else {
-            None
-        }
+        if self.step_votes.contains_key(&step) { Some((&self.step_votes[&step]).clone()) } else { None }
     }
 }
 

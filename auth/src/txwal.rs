@@ -60,7 +60,7 @@ impl Txwal {
 
     pub fn read(&self, pool: &mut Pool) -> u64 {
         let mut num: u64 = 0;
-        let mut ite = self.db.iter(None);
+        let ite = self.db.iter(None);
         for item in ite {
             let tx = parse_from_bytes::<SignedTransaction>(item.1.as_ref()).unwrap();
             num += 1;

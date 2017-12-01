@@ -183,8 +183,8 @@ impl TenderMint {
         }
         let proposer_nonce = height + round;
         let proposer: &Address = p.authorities
-                        .get(proposer_nonce % p.authority_n)
-                        .expect("There are authority_n authorities; taking number modulo authority_n gives number in authority_n range; qed");
+                                  .get(proposer_nonce % p.authority_n)
+                                  .expect("There are authority_n authorities; taking number modulo authority_n gives number in authority_n range; qed");
         if proposer == address {
             Ok(())
         } else {
@@ -275,16 +275,12 @@ impl TenderMint {
         trace!("proc_prevote vote_set {:?}", vote_set);
         if let Some(vote_set) = vote_set {
             if self.is_above_threshold(&vote_set.count) {
-                let mut tv = if self.is_all_vote(&vote_set.count) {
-                    Duration::new(0, 0)
-                } else {
-                    self.params.timer.prevote
-                };
+                let mut tv = if self.is_all_vote(&vote_set.count) { Duration::new(0, 0) } else { self.params.timer.prevote };
 
                 for (hash, count) in &vote_set.votes_by_proposal {
                     if self.is_above_threshold(count) {
                         //we have lock block,and now polc  then unlock
-                        if self.lock_round.is_some() && self.lock_round.unwrap() < round && round <= self.round{
+                        if self.lock_round.is_some() && self.lock_round.unwrap() < round && round <= self.round {
                             //we see new lock block unlock mine
                             info!("unlock lock block height {:?}, hash {:?}", height, hash);
                             self.lock_round = None;
@@ -398,11 +394,7 @@ impl TenderMint {
             if self.is_above_threshold(&vote_set.count) {
                 trace!("proc_precommit is_above_threshold height {} round {}", height, round);
 
-                let mut tv = if self.is_all_vote(&vote_set.count) {
-                    Duration::new(0, 0)
-                } else {
-                    self.params.timer.precommit
-                };
+                let mut tv = if self.is_all_vote(&vote_set.count) { Duration::new(0, 0) } else { self.params.timer.precommit };
 
                 for (hash, count) in vote_set.votes_by_proposal {
                     if self.is_above_threshold(&count) {
@@ -542,9 +534,9 @@ impl TenderMint {
 
                 let gen_flag = if self.proof.height != height {
                     get_proof = self.generate_proof(height, round, hash);
-                    true 
-                } else { 
-                    false 
+                    true
+                } else {
+                    false
                 };
 
                 if let Some(proof) = get_proof {
@@ -591,14 +583,7 @@ impl TenderMint {
         //self.wal_log.save(LOG_TYPE_VOTE,&msg).unwrap();
 
         if self.height >= height || (self.height == height && self.round >= round) {
-            self.votes.add(height,
-                           round,
-                           step,
-                           author.address,
-                           VoteMessage {
-                               proposal: hash,
-                               signature,
-                           });
+            self.votes.add(height, round, step, author.address, VoteMessage { proposal: hash, signature });
         }
     }
 
@@ -664,8 +649,7 @@ impl TenderMint {
                                 if r < self.round {
                                     trans_flag = true;
                                 }
-                            } else if fround == r && step == fstep &&
-                                now - ins > self.params.timer.prevote * TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE {
+                            } else if fround == r && step == fstep && now - ins > self.params.timer.prevote * TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE {
                                 add_flag = true;
                                 trans_flag = true;
                             }
@@ -755,11 +739,7 @@ impl TenderMint {
 
             let proposal_lock_round = proposal.lock_round;
             //we have lock block,try unlock
-            if self.lock_round.is_some() &&
-                proposal_lock_round.is_some() &&
-                self.lock_round.unwrap() < proposal_lock_round.unwrap() &&
-                proposal_lock_round.unwrap() < round 
-            {
+            if self.lock_round.is_some() && proposal_lock_round.is_some() && self.lock_round.unwrap() < proposal_lock_round.unwrap() && proposal_lock_round.unwrap() < round {
                 //we see new lock block unlock mine
                 info!("unlock lock block: height {:?}, proposal {:?}", height, self.proposal);
                 self.clean_saved_info();
@@ -832,7 +812,7 @@ impl TenderMint {
                 let block = proto_proposal.clone().take_block();
                 trace!("handle_proposal height {:?}, round {:?} sender {:?}", height, round, pubkey_to_address(&pubkey));
 
-                if need_verify && !self.verify_req(block.clone(), height, round){
+                if need_verify && !self.verify_req(block.clone(), height, round) {
                     trace!("handle_proposal verify_req is error");
                     return Err(EngineError::InvalidTxInProposal);
                 }
@@ -850,7 +830,7 @@ impl TenderMint {
                     info!("add proposal height {} round {}!", height, round);
                     let blk = block.write_to_bytes().unwrap();
                     let mut lock_round = None;
-                    let lock_votes = if proto_proposal.get_islock() { 
+                    let lock_votes = if proto_proposal.get_islock() {
                         lock_round = Some(proto_proposal.get_lock_round() as usize);
                         let mut vote_set = VoteSet::new();
                         for vote in proto_proposal.get_lock_votes() {
@@ -860,9 +840,9 @@ impl TenderMint {
                                              signature: Signature::from(vote.get_signature()),
                                          });
                         }
-                        Some(vote_set) 
-                    } else { 
-                        None 
+                        Some(vote_set)
+                    } else {
+                        None
                     };
 
                     let proposal = Proposal {
@@ -1199,7 +1179,7 @@ impl TenderMint {
             }
             return;
         }
-        let r = if status_height == height { 
+        let r = if status_height == height {
             self.pre_hash = Some(pre_hash);
             self.round
         } else {
