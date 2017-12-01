@@ -381,8 +381,14 @@ impl Forward {
     #[cfg_attr(feature = "dev", allow(single_match))]
     // Check block group from remote and enqueue
     fn add_sync_block(&self, block: Block) {
-        let proof_type = block.proof_type();
-        match proof_type {
+        let block_proof_type = block.proof_type();
+        let chain_proof_type = self.chain.get_chain_prooftype();
+        //check sync_block's proof type, it must be consistent with chain
+        if chain_proof_type != block_proof_type {
+            error!("sync: block_proof_type {:?} mismatch with chain_proof_type {:?}", block_proof_type, chain_proof_type);
+            return;
+        }
+        match block_proof_type {
             Some(ProofType::Tendermint) => {
                 let proof = TendermintProof::from(block.proof().clone());
                 let proof_height = if proof.height == ::std::usize::MAX { 0 } else { proof.height as u64 };

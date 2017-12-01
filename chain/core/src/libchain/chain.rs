@@ -94,6 +94,7 @@ enum CacheId {
 pub struct Config {
     pub check_permission: bool,
     pub check_quota: bool,
+    pub check_prooftype: u8,
 }
 
 impl Config {
@@ -101,6 +102,7 @@ impl Config {
         Config {
             check_permission: false,
             check_quota: false,
+            check_prooftype: 2,
         }
     }
 }
@@ -159,6 +161,9 @@ pub struct Chain {
     // switch, check permission or not
     pub check_permission: bool,
     pub check_quota: bool,
+
+    //switch, check proof type for add_sync_block
+    pub check_prooftype: u8,
 }
 
 /// Get latest status
@@ -237,6 +242,7 @@ impl Chain {
             account_gas_limit: RwLock::new(AccountGasLimit::new()),
             check_permission: sc.check_permission,
             check_quota: sc.check_quota,
+            check_prooftype: sc.check_prooftype,
         };
 
         // Build chain config
@@ -481,6 +487,15 @@ impl Chain {
 
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
         self.db.read(db::COL_EXTRA, &CurrentProof)
+    }
+
+    pub fn get_chain_prooftype(&self) -> Option<ProofType> {
+        match self.check_prooftype {
+            0 => Some(ProofType::AuthorityRound),
+            1 => Some(ProofType::Raft),
+            2 => Some(ProofType::Tendermint),
+            _ => None,
+        }
     }
 
     pub fn logs<F>(&self, mut blocks: Vec<BlockNumber>, matches: F, limit: Option<usize>) -> Vec<LocalizedLogEntry>
