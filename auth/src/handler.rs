@@ -102,11 +102,9 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     }
     //check signer if req have
     let req_signer = req.get_signer();
-    if req_signer.len() != 0 {
-        if req_signer != ret.unwrap().to_vec().as_slice() {
-            resp.set_ret(Ret::BadSig);
-            return resp;
-        }
+    if !req_signer.is_empty() && req_signer != ret.unwrap().to_vec().as_slice() {
+        resp.set_ret(Ret::BadSig);
+        return resp;
     }
     resp.set_signer(ret.unwrap().to_vec());
     resp.set_ret(Ret::Ok);
@@ -125,21 +123,18 @@ pub fn process_flow_control_failed(mut verify_info: VerifyRequestResponseInfo, r
     }
 }
 
+#[cfg_attr(feature = "clippy", allow(needless_pass_by_value))]
 pub fn verify_tx_group_service(mut req_grp: Vec<VerifyRequestResponseInfo>, verifier: Arc<RwLock<Verifier>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, resp_sender: Sender<VerifyRequestResponseInfo>) {
     let now = SystemTime::now();
     let len = req_grp.len();
 
-    loop {
-        if let Some(mut req_info) = req_grp.pop() {
-            if let VerifyRequestResponse::AuthRequest(req) = req_info.req_resp {
-                let tx_hash = H256::from_slice(req.get_tx_hash());
-                let response = verfiy_tx(&req, &verifier.read());
-                cache.write().insert(tx_hash, response.clone());
-                req_info.req_resp = VerifyRequestResponse::AuthResponse(response);
-                resp_sender.send(req_info).unwrap();
-            }
-        } else {
-            break;
+    while let Some(mut req_info) = req_grp.pop() {
+        if let VerifyRequestResponse::AuthRequest(req) = req_info.req_resp {
+            let tx_hash = H256::from_slice(req.get_tx_hash());
+            let response = verfiy_tx(&req, &verifier.read());
+            cache.write().insert(tx_hash, response.clone());
+            req_info.req_resp = VerifyRequestResponse::AuthResponse(response);
+            resp_sender.send(req_info).unwrap();
         }
     }
 
@@ -160,14 +155,12 @@ pub fn check_verify_request_preprocess(mut req_info: VerifyRequestResponseInfo, 
             response.set_ret(Ret::InvalidUntilBlock);
             processed = true;
             final_response = response;
-        } else {
-            if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
-                processed = true;
-                final_response = resp;
-            }
+        } else if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
+            processed = true;
+            final_response = resp;
         }
 
-        if true == processed {
+        if processed {
             match final_response.get_ret() {
                 Ret::Ok => result = VerifyResult::VerifySucceeded,
                 _ => result = VerifyResult::VerifyFailed,
@@ -188,6 +181,10 @@ fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxR
     if let Some(resp) = cache.read().get(tx_hash) { Some(resp.clone()) } else { None }
 }
 
+
+// this function has too many arguments
+// the function has a cyclomatic complexity of 29
+// consider changing the type to: `&[u8]`
 pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadpool: &Mutex<ThreadPool>, proposal_tx_verify_num_per_thread: usize, verifier: Arc<RwLock<Verifier>>, tx_req_single: &Sender<VerifyRequestResponseInfo>, tx_pub: &Sender<(String, Vec<u8>)>, block_verify_status: Arc<RwLock<BlockVerifyStatus>>, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>, txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>, resp_sender: &Sender<VerifyRequestResponseInfo>) {
     let (cmdid, _origin, content) = parse_msg(payload.as_slice());
     let (submodule, _topic) = de_cmd_id(cmdid);
@@ -224,7 +221,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadp
                     let _ = txs_sender.send((height as usize, tx_hashes_in_h256.clone(), block_gas_limit, account_gas_limit));
                 }
             }
-            verifier.write().update_hashes(height, tx_hashes_in_h256, &tx_pub);
+            verifier.write().update_hashes(height, tx_hashes_in_h256, tx_pub);
         }
         // TODO: Add ProposalVerifier { status, request_id, threadpool }, Status: On, Failed, Successed, Experied
         // TODO: Make most of the logic asynchronous
@@ -262,7 +259,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadp
                             req_resp: VerifyRequestResponse::AuthRequest(req.clone()),
                             un_tx: None,
                         };
-                        let result = check_verify_request_preprocess(verify_request_info, verifier.clone(), cache.clone(), &resp_sender);
+                        let result = check_verify_request_preprocess(verify_request_info, verifier.clone(), cache.clone(), resp_sender);
                         match result {
                             VerifyResult::VerifySucceeded => {
                                 block_verify_status_guard.verify_success_cnt_capture += 1;
@@ -270,7 +267,10 @@ pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadp
                                 trace!("The verification request： {:?} has been cached already", req);
                             }
                             VerifyResult::VerifyFailed => {
+
+                                // statement with no effect, bug here?
                                 block_verify_status_guard.block_verify_result == VerifyResult::VerifyFailed;
+
                                 let tx_hash = H256::from_slice(req.get_tx_hash());
                                 let resp_ret;
                                 if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
@@ -280,7 +280,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadp
                                     resp_ret = Ret::BadSig;
                                 }
                                 warn!("Failed to do verify blk req for request_id: {}, ret: {:?}", request_id, resp_ret);
-                                publish_block_verification_result(request_id, resp_ret, &tx_pub);
+                                publish_block_verification_result(request_id, resp_ret, tx_pub);
                                 break;
                             }
                             _ => {
@@ -300,9 +300,9 @@ pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadp
                     // Most of time nearly all the transactions hit the cache.
                     if tx_need_verify_len > 0 {
                         on_proposal.store(true, Ordering::SeqCst);
-                        let mut iter = tx_need_verify.chunks(proposal_tx_verify_num_per_thread);
+                        let iter = tx_need_verify.chunks(proposal_tx_verify_num_per_thread);
                         let pool = threadpool.lock();
-                        while let Some(group) = iter.next() {
+                        for group in iter {
                             let verifier_clone = verifier.clone();
                             let cache_clone = cache.clone();
                             let resp_sender_clone = resp_sender.clone();
@@ -310,12 +310,10 @@ pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadp
                             pool.execute(move || { verify_tx_group_service(group_for_pool, verifier_clone, cache_clone, resp_sender_clone); });
                         }
                         on_proposal.store(false, Ordering::SeqCst);
-                    } else {
-                        if block_verify_status_guard.verify_success_cnt_capture == block_verify_status_guard.verify_success_cnt_required {
-                            block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
-                            info!("Succeed to do verify blk req for request_id: {}, ret: {:?}, time cost: {:?}, and final status is: {:?}", request_id, Ret::Ok, block_verify_stamp.elapsed().unwrap(), *block_verify_status_guard);
-                            publish_block_verification_result(request_id, Ret::Ok, &tx_pub);
-                        }
+                    } else if block_verify_status_guard.verify_success_cnt_capture == block_verify_status_guard.verify_success_cnt_required {
+                        block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
+                        info!("Succeed to do verify blk req for request_id: {}, ret: {:?}, time cost: {:?}, and final status is: {:?}", request_id, Ret::Ok, block_verify_stamp.elapsed().unwrap(), *block_verify_status_guard);
+                        publish_block_verification_result(request_id, Ret::Ok, tx_pub);
                     }
                 }
             } else {
@@ -323,7 +321,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadp
             }
         }
         MsgClass::REQUEST(newtx_req) => {
-            if true == newtx_req.has_batch_req() {
+            if newtx_req.has_batch_req() {
                 let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
                 let now = SystemTime::now();
                 trace!("get batch new tx request from module:{:?} in system time :{:?}, and has got {} new tx ", id_to_key(submodule), now, batch_new_tx.len());
@@ -340,7 +338,7 @@ pub fn handle_remote_msg(payload: Vec<u8>, on_proposal: Arc<AtomicBool>, threadp
                     };
                     tx_req_single.send(verify_request_info).unwrap();
                 }
-            } else if true == newtx_req.has_un_tx() {
+            } else if newtx_req.has_un_tx() {
                 let now = SystemTime::now();
                 trace!("get single new tx request from peer node with system time :{:?}", now);
                 let verify_tx_req = newtx_req.get_un_tx().tx_verify_req_msg();
@@ -381,8 +379,7 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<VerifyRequestRespons
                                     signed_tx.set_signer(resp.get_signer().to_vec());
                                     signed_tx.set_tx_hash(tx_hash.to_vec());
                                     let tx_response = TxResponse::new(tx_hash, result.clone());
-                                    let _ = tx_sender.send((verify_response_info.sub_module, request_id.clone(), tx_response, signed_tx.clone()))
-                                                     .unwrap();
+                                    let _ = tx_sender.send((verify_response_info.sub_module, request_id.clone(), tx_response, signed_tx.clone()));
                                     trace!("Send singed tx to txpool");
                                 }
                                 _ => {
@@ -410,7 +407,7 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<VerifyRequestRespons
                                 if request_id == block_verify_status_guard.request_id && VerifyResult::VerifyFailed != block_verify_status_guard.block_verify_result {
                                     block_verify_status_guard.block_verify_result = VerifyResult::VerifyFailed;
                                     warn!("Failed to do verify blk req for request_id: {}, ret: {:?}, from submodule: {}", request_id, result, verify_response_info.sub_module);
-                                    publish_block_verification_result(request_id, result, &tx_pub);
+                                    publish_block_verification_result(request_id, result, tx_pub);
 
                                 }
                             } else {
@@ -421,7 +418,7 @@ pub fn handle_verificaton_result(result_receiver: &Receiver<VerifyRequestRespons
                                     if block_verify_status_guard.verify_success_cnt_capture == block_verify_status_guard.verify_success_cnt_required {
                                         block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
                                         info!("Succeed to do verify blk req for request_id: {}, ret: {:?}, time cost: {:?}, and final status is: {:?}", request_id, Ret::Ok, verify_response_info.time_stamp.elapsed().unwrap(), *block_verify_status_guard);
-                                        publish_block_verification_result(request_id, Ret::Ok, &tx_pub);
+                                        publish_block_verification_result(request_id, Ret::Ok, tx_pub);
                                     }
                                 }
                             }

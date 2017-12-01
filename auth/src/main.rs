@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
+
 #![feature(integer_atomics)]
 
 extern crate protobuf;
@@ -144,7 +147,7 @@ fn main() {
                           loop {
                               let res_local = single_req_receiver.try_recv();
 
-                              if true == res_local.is_ok() {
+                              if res_local.is_ok() {
                                   let verify_req_info: VerifyRequestResponseInfo = res_local.unwrap();
                                   // verify tx pool flow control
                                   let capacity = tx_pool_capacity.clone();
@@ -165,11 +168,11 @@ fn main() {
                               }
                           }
                           {
-                              if req_grp.len() > 0 && !on_proposal_clone.load(Ordering::SeqCst) {
+                              if !req_grp.is_empty() && !on_proposal_clone.load(Ordering::SeqCst) {
                                   trace!("main processing: {} reqs are push into req_grp", req_grp.len());
                                   break;
                               } else {
-                                  thread::sleep(Duration::new(0, 5000000));
+                                  thread::sleep(Duration::new(0, 5_000_000));
                               }
                           }
                       }
@@ -198,7 +201,7 @@ fn main() {
                 dispatch.lock().deal_tx(modid, reqid, tx_res, &tx, &txs_pub_clone);
                 flag = true;
             } else {
-                if true == flag {
+                if flag {
                     dispatch.lock().wait_timeout_process(&txs_pub_clone);
                     flag = false;
                 }

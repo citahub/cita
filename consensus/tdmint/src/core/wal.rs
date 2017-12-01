@@ -61,11 +61,9 @@ impl Wal {
         let fs = OpenOptions::new().read(true).create(true).write(true).open(big_path)?;
         let hstr = tmp.into_string().unwrap();
         let hi = hstr.parse::<u32>();
-        match hi {
-            Err(_) => {
-                return Err(io::Error::new(io::ErrorKind::Other, "not number file name"));
-            }
-            Ok(_) => {}
+
+        if hi.is_err() {
+            return Err(io::Error::new(io::ErrorKind::Other, "not number file name"));
         }
 
         Ok(Wal { fs: fs, dir: dir.to_string() })
@@ -73,7 +71,7 @@ impl Wal {
 
     pub fn set_height(&mut self, height: usize) -> Result<(), io::Error> {
         let mut name = height.to_string();
-        name = name + ".log";
+        name += ".log";
 
         let pathname = self.dir.clone() + "/";
         let filename = pathname.clone() + &*name;
@@ -81,14 +79,14 @@ impl Wal {
 
         if height > 2 {
             let mut delname = (height - 2).to_string();
-            delname = delname + ".log";
+            delname += ".log";
             let delfilename = pathname + &*delname;
             let _ = ::std::fs::remove_file(delfilename);
         }
         Ok(())
     }
 
-    pub fn save(&mut self, mtype: u8, msg: &Vec<u8>) -> io::Result<usize> {
+    pub fn save(&mut self, mtype: u8, msg: &[u8]) -> io::Result<usize> {
         let mlen = msg.len() as u32;
         if mlen == 0 {
             return Ok(0);
@@ -96,9 +94,9 @@ impl Wal {
         let len_bytes: [u8; 4] = unsafe { transmute(mlen.to_le()) };
         let type_bytes: [u8; 1] = unsafe { transmute(mtype.to_le()) };
         self.fs.seek(io::SeekFrom::End(0))?;
-        self.fs.write(&len_bytes[..])?;
-        self.fs.write(&type_bytes[..])?;
-        let hlen = self.fs.write(msg.as_slice())?;
+        self.fs.write_all(&len_bytes[..])?;
+        self.fs.write_all(&type_bytes[..])?;
+        let hlen = self.fs.write(msg)?;
         self.fs.flush()?;
         Ok(hlen)
     }

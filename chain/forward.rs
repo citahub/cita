@@ -378,6 +378,7 @@ impl Forward {
         }
     }
 
+    #[cfg_attr(feature = "dev", allow(single_match))]
     // Check block group from remote and enqueue
     fn add_sync_block(&self, block: Block) {
         let proof_type = block.proof_type();
@@ -393,7 +394,7 @@ impl Forward {
                     if proof_height == self.chain.get_max_height() {
                         // Set proof of prev sycc block
                         if let Some(prev_block_in_queue) = blocks.get_mut(&proof_height) {
-                            if let &mut BlockInQueue::SyncBlock(ref mut value) = prev_block_in_queue {
+                            if let BlockInQueue::SyncBlock(ref mut value) = *prev_block_in_queue {
                                 if value.1.is_none() {
                                     debug!("sync: set prev sync block proof {}", value.0.number());
                                     mem::swap(&mut value.1, &mut Some(block.proof().clone()));
@@ -405,13 +406,11 @@ impl Forward {
                         debug!("sync: insert block-{} in map", block.number());
                         blocks.insert(block.number(), BlockInQueue::SyncBlock((block, None)));
                     }
-                } else {
-                    if let Some(block_in_queue) = blocks.get_mut(&proof_height) {
-                        if let &mut BlockInQueue::SyncBlock(ref mut value) = block_in_queue {
-                            if value.1.is_none() {
-                                debug!("sync: insert block proof {} in map", proof_height);
-                                mem::swap(&mut value.1, &mut Some(block.proof().clone()));
-                            }
+                } else if let Some(block_in_queue) = blocks.get_mut(&proof_height) {
+                    if let BlockInQueue::SyncBlock(ref mut value) = *block_in_queue {
+                        if value.1.is_none() {
+                            debug!("sync: insert block proof {} in map", proof_height);
+                            mem::swap(&mut value.1, &mut Some(block.proof().clone()));
                         }
                     }
                 }

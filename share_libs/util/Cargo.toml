@@ -17,7 +17,7 @@ rlp = { path = "../rlp" }
 heapsize = "0.4"
 itertools = "0.5"
 sha3 = { path = "../sha3"}
-clippy = { version = "0.0.103", optional = true }
+clippy = {version = "0.0.148", optional = true}
 libc = "0.2.7"
 vergen = "0.1"
 target_info = "0.1"

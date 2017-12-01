@@ -34,7 +34,7 @@ use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 use std::collections::{LinkedList, HashMap};
 use std::sync::mpsc::{Sender, Receiver, RecvError};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use util::{H256, Address, Hashable};
 use util::datapath::DataPath;
@@ -97,7 +97,7 @@ impl From<u8> for Step {
 }
 
 fn gen_reqid_from_idx(h: u64, r: u64) -> u64 {
-    ((h & 0xffffffffffff) << 16) | r
+    ((h & 0xffff_ffff_ffff) << 16) | r
 }
 
 fn get_idx_from_reqid(reqid: u64) -> (u64, u64) {
@@ -132,7 +132,7 @@ pub struct TenderMint {
     auth_manage: AuthorityManage,
     consensus_power: bool,
     unverified_msg: HashMap<(usize, usize), communication::Message>,
-    block_txs: LinkedList<(usize, BlockTxs)>,
+    block_txs: LinkedList<(usize, BlockTxs)>, // VecDeque might work, Almost always it is better to use Vec or VecDeque instead of LinkedList
     block_proof: Option<(usize, BlockWithProof)>,
 }
 
@@ -176,21 +176,21 @@ impl TenderMint {
 
     fn is_round_proposer(&self, height: usize, round: usize, address: &Address) -> Result<(), EngineError> {
         //let ref p = self.params;
-        let ref p = self.auth_manage;
+        let p = &self.auth_manage;
         if p.authority_n == 0 {
             info!("authority_n is {}", p.authority_n);
             return Err(EngineError::NotAuthorized(Address::zero()));
         }
         let proposer_nonce = height + round;
-        let proposer = p.authorities
-                        .get(proposer_nonce % p.authority_n)
-                        .expect("There are authority_n authorities; taking number modulo authority_n gives number in authority_n range; qed");
+        let proposer: &Address = p.authorities
+                                  .get(proposer_nonce % p.authority_n)
+                                  .expect("There are authority_n authorities; taking number modulo authority_n gives number in authority_n range; qed");
         if proposer == address {
             Ok(())
         } else {
             Err(EngineError::NotProposer(Mismatch {
-                                             expected: proposer.clone().into(),
-                                             found: address.clone().into(),
+                                             expected: *proposer,
+                                             found: *address,
                                          }))
         }
     }
@@ -216,20 +216,19 @@ impl TenderMint {
                 let mut vote = ProtoVote::new();
                 if vote_message.proposal.is_none() {
                     continue;
-                } else {
-                    vote.set_proposal(vote_message.proposal.unwrap().to_vec());
-                    vote.set_sender(sender.to_vec());
-                    vote.set_signature(vote_message.signature.to_vec());
-                    votes.push(vote);
                 }
+                vote.set_proposal(vote_message.proposal.unwrap().to_vec());
+                vote.set_sender(sender.to_vec());
+                vote.set_signature(vote_message.signature.to_vec());
+                votes.push(vote);
             }
 
             proto_proposal.set_lock_votes(RepeatedField::from_slice(&votes[..]));
         }
 
         let message = proto_proposal.write_to_bytes().unwrap();
-        let ref author = self.params.signer;
-        let signature = Signature::sign(&author.keypair.privkey(), &message.crypt_hash().into()).unwrap();
+        let author = &self.params.signer;
+        let signature = Signature::sign(author.keypair.privkey(), &message.crypt_hash().into()).unwrap();
         trace!("pub_proposal height {}, round {}, hash {}, signature {} ", self.height, self.round, message.crypt_hash(), signature);
         let mut signed_proposal = SignedProposal::new();
         signed_proposal.set_proposal(proto_proposal);
@@ -242,7 +241,7 @@ impl TenderMint {
     }
 
     fn pre_proc_prevote(&mut self) {
-        let prop = self.proposal.clone();
+        let prop = self.proposal;
         let height = self.height;
         let round = self.round;
 
@@ -250,16 +249,12 @@ impl TenderMint {
             self.proc_proposal(height, round);
         }
         info!("pre_proc_prevote height {},round {} hash {:?} locked_round {:?}", height, round, prop, self.lock_round);
-        if self.lock_round.is_some() {
+        if self.lock_round.is_some() || prop.is_some() {
             //let hash = H256::from(self.locked_block.clone().unwrap().crypt_hash());
             self.pub_and_broadcast_message(height, round, Step::Prevote, prop);
         } else {
-            if prop.is_some() {
-                self.pub_and_broadcast_message(height, round, Step::Prevote, prop);
-            } else {
-                info!("pre_proc_prevote not have any thing in {} {}", height, round);
-                self.pub_and_broadcast_message(height, round, Step::Prevote, Some(H256::default()));
-            }
+            info!("pre_proc_prevote not have any thing in {} {}", height, round);
+            self.pub_and_broadcast_message(height, round, Step::Prevote, Some(H256::default()));
         }
         //this is for timeout resending votes
         self.timer_seter.send(TimeoutInfo {
@@ -280,49 +275,42 @@ impl TenderMint {
         trace!("proc_prevote vote_set {:?}", vote_set);
         if let Some(vote_set) = vote_set {
             if self.is_above_threshold(&vote_set.count) {
-                let mut tv = self.params.timer.prevote;
-                if self.is_all_vote(&vote_set.count) {
-                    tv = ::std::time::Duration::new(0, 0);
-                }
+                let mut tv = if self.is_all_vote(&vote_set.count) { Duration::new(0, 0) } else { self.params.timer.prevote };
 
                 for (hash, count) in &vote_set.votes_by_proposal {
                     if self.is_above_threshold(count) {
                         //we have lock block,and now polc  then unlock
-                        if self.lock_round.is_some() {
-                            if self.lock_round.unwrap() < round && round <= self.round {
-                                //we see new lock block unlock mine
-                                info!("unlock lock block height {:?}, hash {:?}", height, hash);
-                                self.lock_round = None;
-                                self.locked_vote = None;
-                            }
+                        if self.lock_round.is_some() && self.lock_round.unwrap() < round && round <= self.round {
+                            //we see new lock block unlock mine
+                            info!("unlock lock block height {:?}, hash {:?}", height, hash);
+                            self.lock_round = None;
+                            self.locked_vote = None;
                         }
 
                         if hash.is_zero() {
                             self.clean_saved_info();
-                            tv = ::std::time::Duration::new(0, 0);
+                            tv = Duration::new(0, 0);
+                        } else if self.proposal == Some(*hash) {
+                            self.lock_round = Some(round);
+                            self.locked_vote = Some(vote_set.clone());
                         } else {
-                            if self.proposal == Some(*hash) {
-                                self.lock_round = Some(round);
-                                self.locked_vote = Some(vote_set.clone());
-                            } else {
-                                let mut clean_flag = true;
-                                let op = self.proposals.get_proposal(height, round);
-                                if op.is_some() {
-                                    let pro_block = parse_from_bytes::<Block>(&op.unwrap().block);
-                                    if let Ok(block) = pro_block {
-                                        let bhash: H256 = block.crypt_hash().into();
-                                        if bhash == *hash {
-                                            self.locked_block = Some(block);
-                                            self.proposal = Some(*hash);
-                                            self.locked_vote = Some(vote_set.clone());
-                                            self.lock_round = Some(round);
-                                            clean_flag = false;
-                                        }
+                            let mut clean_flag = true;
+                            let op = self.proposals.get_proposal(height, round);
+                            if op.is_some() {
+                                let pro_block = parse_from_bytes::<Block>(&op.unwrap().block);
+                                if let Ok(block) = pro_block {
+                                    let bhash: H256 = block.crypt_hash().into();
+                                    if bhash == *hash {
+                                        self.locked_block = Some(block);
+                                        self.proposal = Some(*hash);
+                                        self.locked_vote = Some(vote_set.clone());
+                                        self.lock_round = Some(round);
+                                        clean_flag = false;
                                     }
                                 }
-                                if clean_flag {
-                                    self.clean_saved_info();
-                                }
+                            }
+                            if clean_flag {
+                                self.clean_saved_info();
                             }
                         }
                         //more than one hash have threahold is wrong !! do some check ??
@@ -342,7 +330,7 @@ impl TenderMint {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     fn is_above_threshold(&self, n: &usize) -> bool {
@@ -356,7 +344,7 @@ impl TenderMint {
     fn pre_proc_precommit(&mut self) -> bool {
         let height = self.height;
         let round = self.round;
-        let proposal = self.proposal.clone();
+        let proposal = self.proposal;
         let mut verify_ok = false;
         let mut lock_ok = false;
 
@@ -406,31 +394,27 @@ impl TenderMint {
             if self.is_above_threshold(&vote_set.count) {
                 trace!("proc_precommit is_above_threshold height {} round {}", height, round);
 
-                let mut tv = self.params.timer.precommit;
-                if self.is_all_vote(&vote_set.count) {
-                    tv = ::std::time::Duration::new(0, 0);
-                }
+                let mut tv = if self.is_all_vote(&vote_set.count) { Duration::new(0, 0) } else { self.params.timer.precommit };
+
                 for (hash, count) in vote_set.votes_by_proposal {
                     if self.is_above_threshold(&count) {
                         trace!("proc_precommit is_above_threshold hash {:?} {}", hash, count);
                         if hash.is_zero() {
-                            tv = ::std::time::Duration::new(0, 0);
+                            tv = Duration::new(0, 0);
                             trace!("proc_precommit is zero");
                         //self.proposal = None;
-                        } else {
-                            if self.proposal.is_some() {
-                                if hash != self.proposal.unwrap() {
-                                    info!("proc_precommit why this hanppen self.proposql {:?} hash {:?}", self.proposal.unwrap(), hash);
-                                    self.clean_saved_info();
-                                    return false;
-                                } else {
-                                    self.proposal = Some(hash);
-                                    self.last_commit_round = Some(round);
-                                }
-                            } else {
-                                trace!("proc_precommit hash is ok,but self.propose is noe");
+                        } else if self.proposal.is_some() {
+                            if hash != self.proposal.unwrap() {
+                                info!("proc_precommit why this hanppen self.proposql {:?} hash {:?}", self.proposal.unwrap(), hash);
+                                self.clean_saved_info();
                                 return false;
+                            } else {
+                                self.proposal = Some(hash);
+                                self.last_commit_round = Some(round);
                             }
+                        } else {
+                            trace!("proc_precommit hash is ok,but self.propose is noe");
+                            return false;
                         }
                         break;
                     }
@@ -448,7 +432,7 @@ impl TenderMint {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     fn pre_proc_commit(&mut self, h: usize, r: usize) -> bool {
@@ -482,9 +466,9 @@ impl TenderMint {
 
             if self.proof.height != now_height && now_height > 0 {
                 if let Some(phash) = self.proposal {
-                    let mut res = self.last_commit_round.and_then(|cround| self.generate_proof(now_height, cround, phash.clone()));
+                    let mut res = self.last_commit_round.and_then(|cround| self.generate_proof(now_height, cround, phash));
                     if res.is_none() {
-                        res = self.lock_round.and_then(|cround| self.generate_proof(now_height, cround, phash.clone()));
+                        res = self.lock_round.and_then(|cround| self.generate_proof(now_height, cround, phash));
                     }
                     if let Some(proof) = res {
                         self.proof = proof;
@@ -517,7 +501,7 @@ impl TenderMint {
                         continue;
                     }
                     if vote.proposal.unwrap() == hash {
-                        num = num + 1;
+                        num += 1;
                         commits.insert(*sender, vote.signature.clone());
                     }
                 }
@@ -531,7 +515,7 @@ impl TenderMint {
         proof.round = round;
         proof.proposal = hash;
         proof.commits = commits;
-        return Some(proof);
+        Some(proof)
     }
 
     fn commit_block(&mut self) -> bool {
@@ -547,11 +531,13 @@ impl TenderMint {
                 //generate proof
                 trace!("commit_block proof is {:?}", self.proof);
                 let mut get_proof = Some(self.proof.clone());
-                let mut gen_flag = false;
-                if self.proof.height != height {
+
+                let gen_flag = if self.proof.height != height {
                     get_proof = self.generate_proof(height, round, hash);
-                    gen_flag = true;
-                }
+                    true
+                } else {
+                    false
+                };
 
                 if let Some(proof) = get_proof {
                     if gen_flag {
@@ -564,6 +550,7 @@ impl TenderMint {
                     proof_blk.set_blk(blk.unwrap());
                     proof_blk.set_proof(proof.into());
 
+                    // statement with no effect, bug here?
                     self.block_proof == Some((height, proof_blk.clone()));
                     info!(" ######### height {} consensus time {:?} ", height, Instant::now() - self.htime);
                     self.pub_block(&proof_blk);
@@ -575,7 +562,7 @@ impl TenderMint {
             }
         }
         //goto next round
-        return false;
+        false
     }
 
 
@@ -585,9 +572,9 @@ impl TenderMint {
     }
 
     fn pub_and_broadcast_message(&mut self, height: usize, round: usize, step: Step, hash: Option<H256>) {
-        let ref author = self.params.signer;
-        let msg = serialize(&(height, round, step, author.address.clone(), hash.clone()), Infinite).unwrap();
-        let signature = Signature::sign(&author.keypair.privkey(), &msg.crypt_hash().into()).unwrap();
+        let author = &self.params.signer;
+        let msg = serialize(&(height, round, step, author.address, hash), Infinite).unwrap();
+        let signature = Signature::sign(author.keypair.privkey(), &msg.crypt_hash().into()).unwrap();
         let sig = signature.clone();
         let msg = serialize(&(msg, sig), Infinite).unwrap();
 
@@ -596,14 +583,7 @@ impl TenderMint {
         //self.wal_log.save(LOG_TYPE_VOTE,&msg).unwrap();
 
         if self.height >= height || (self.height == height && self.round >= round) {
-            self.votes.add(height,
-                           round,
-                           step,
-                           author.address.clone(),
-                           VoteMessage {
-                               proposal: hash.clone(),
-                               signature,
-                           });
+            self.votes.add(height, round, step, author.address, VoteMessage { proposal: hash, signature });
         }
     }
 
@@ -656,7 +636,7 @@ impl TenderMint {
                 if self.is_authority(&sender) && pubkey_to_address(&pubkey) == sender {
                     let mut trans_flag = false;
                     let mut add_flag = false;
-                    let now = ::std::time::Instant::now();
+                    let now = Instant::now();
 
                     //deal with equal height,and round fall behind
                     if h == self.height && r < self.round {
@@ -669,11 +649,9 @@ impl TenderMint {
                                 if r < self.round {
                                     trans_flag = true;
                                 }
-                            } else if fround == r && step == fstep {
-                                if now - ins > self.params.timer.prevote * TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE {
-                                    add_flag = true;
-                                    trans_flag = true;
-                                }
+                            } else if fround == r && step == fstep && now - ins > self.params.timer.prevote * TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE {
+                                add_flag = true;
+                                trans_flag = true;
                             }
                         } else {
                             add_flag = true;
@@ -748,33 +726,27 @@ impl TenderMint {
                     if !proof.check(height - 1, &self.auth_manage.authorities_old) {
                         return false;
                     }
-                } else {
-                    if !proof.check(height - 1, &self.auth_manage.authorities) {
-                        return false;
-                    }
+                } else if !proof.check(height - 1, &self.auth_manage.authorities) {
+                    return false;
                 }
 
                 if self.proof.height != height - 1 {
                     self.proof = proof;
                 }
-            } else {
-                if height != INIT_HEIGHT {
-                    return false;
-                }
+            } else if height != INIT_HEIGHT {
+                return false;
             }
 
             let proposal_lock_round = proposal.lock_round;
             //we have lock block,try unlock
-            if self.lock_round.is_some() && proposal_lock_round.is_some() {
-                if self.lock_round.unwrap() < proposal_lock_round.unwrap() && proposal_lock_round.unwrap() < round {
-                    //we see new lock block unlock mine
-                    info!("unlock lock block: height {:?}, proposal {:?}", height, self.proposal);
-                    self.clean_saved_info();
-                }
+            if self.lock_round.is_some() && proposal_lock_round.is_some() && self.lock_round.unwrap() < proposal_lock_round.unwrap() && proposal_lock_round.unwrap() < round {
+                //we see new lock block unlock mine
+                info!("unlock lock block: height {:?}, proposal {:?}", height, self.proposal);
+                self.clean_saved_info();
             }
             // still lock on a blk,next prevote it
             if self.lock_round.is_some() {
-                let ref lock_block = self.locked_block.clone().unwrap();
+                let lock_block = &self.locked_block.clone().unwrap();
                 self.proposal = Some(lock_block.crypt_hash().into());
                 info!("still have lock block {} locked round {} {:?}", self.height, self.lock_round.unwrap(), self.proposal.unwrap());
             } else {
@@ -787,7 +759,7 @@ impl TenderMint {
             }
             return true;
         }
-        return false;
+        false
     }
 
     fn verify_req(&mut self, block: Block, vheight: usize, vround: usize) -> bool {
@@ -840,11 +812,9 @@ impl TenderMint {
                 let block = proto_proposal.clone().take_block();
                 trace!("handle_proposal height {:?}, round {:?} sender {:?}", height, round, pubkey_to_address(&pubkey));
 
-                if need_verify {
-                    if !self.verify_req(block.clone(), height, round) {
-                        trace!("handle_proposal verify_req is error");
-                        return Err(EngineError::InvalidTxInProposal);
-                    }
+                if need_verify && !self.verify_req(block.clone(), height, round) {
+                    trace!("handle_proposal verify_req is error");
+                    return Err(EngineError::InvalidTxInProposal);
                 }
 
                 let ret = self.is_round_proposer(height, round, &pubkey_to_address(&pubkey));
@@ -860,8 +830,7 @@ impl TenderMint {
                     info!("add proposal height {} round {}!", height, round);
                     let blk = block.write_to_bytes().unwrap();
                     let mut lock_round = None;
-                    let mut lock_votes = None;
-                    if proto_proposal.get_islock() {
+                    let lock_votes = if proto_proposal.get_islock() {
                         lock_round = Some(proto_proposal.get_lock_round() as usize);
                         let mut vote_set = VoteSet::new();
                         for vote in proto_proposal.get_lock_votes() {
@@ -871,8 +840,10 @@ impl TenderMint {
                                              signature: Signature::from(vote.get_signature()),
                                          });
                         }
-                        lock_votes = Some(vote_set);
-                    }
+                        Some(vote_set)
+                    } else {
+                        None
+                    };
 
                     let proposal = Proposal {
                         block: blk,
@@ -889,7 +860,7 @@ impl TenderMint {
                 }
             }
         }
-        return Err(EngineError::UnexpectedMessage);
+        Err(EngineError::UnexpectedMessage)
     }
 
     fn clean_saved_info(&mut self) {
@@ -915,8 +886,8 @@ impl TenderMint {
 
     pub fn new_proposal(&mut self) {
         if let Some(lock_round) = self.lock_round {
-            let ref lock_blk = self.locked_block;
-            let ref lock_vote = self.locked_vote;
+            let lock_blk = &self.locked_block;
+            let lock_vote = &self.locked_vote;
             let lock_blk = lock_blk.clone().unwrap();
             {
                 let lock_blk_hash = H256::from(lock_blk.crypt_hash());
@@ -962,11 +933,9 @@ impl TenderMint {
                 warn!("there is no proof height {} round {}", self.height, self.round);
                 return;
             }
-            if self.height > INIT_HEIGHT {
-                if proof.height != self.height - 1 {
-                    warn!("proof is old,proof height {}, round {}", proof.height, proof.round);
-                    return;
-                }
+            if self.height > INIT_HEIGHT && proof.height != self.height - 1 {
+                warn!("proof is old,proof height {}, round {}", proof.height, proof.round);
+                return;
             }
             block.mut_header().set_proof(proof.into());
 
@@ -1100,7 +1069,7 @@ impl TenderMint {
                             if h == self.height && r == self.round && self.step < Step::Prevote {
                                 self.step = Step::ProposeWait;
                                 self.timer_seter.send(TimeoutInfo {
-                                                          timeval: ::std::time::Duration::new(0, 0),
+                                                          timeval: Duration::new(0, 0),
                                                           height: h,
                                                           round: r,
                                                           step: Step::ProposeWait,
@@ -1170,7 +1139,7 @@ impl TenderMint {
                     if now_height == height + 1 && self.is_round_proposer(now_height, now_round, &self.params.signer.address).is_ok() && now_step == Step::ProposeWait && self.proposal.is_none() {
                         self.new_proposal();
                         self.timer_seter.send(TimeoutInfo {
-                                                  timeval: ::std::time::Duration::new(0, 0),
+                                                  timeval: Duration::new(0, 0),
                                                   height: now_height,
                                                   round: now_round,
                                                   step: Step::ProposeWait,
@@ -1210,11 +1179,12 @@ impl TenderMint {
             }
             return;
         }
-        let mut r = INIT_ROUND;
-        if status_height == height {
+        let r = if status_height == height {
             self.pre_hash = Some(pre_hash);
-            r = self.round;
-        }
+            self.round
+        } else {
+            INIT_ROUND
+        };
         // try my effor to save proof,when I skipping commit_blcok by the chain sending new status.
         if self.proof.height != height {
             if let Some(hash) = self.proposal {
@@ -1230,7 +1200,7 @@ impl TenderMint {
         if height > status_height
         //|| self.is_round_proposer(status_height+1,INIT_ROUND,&self.params.signer.address).is_ok()
         {
-            tv = ::std::time::Duration::new(0, 0);
+            tv = Duration::new(0, 0);
         } else if cost_time < self.params.duration {
             tv = self.params.duration - cost_time;
         }
@@ -1248,10 +1218,10 @@ impl TenderMint {
     fn new_round_start(&mut self, height: usize, round: usize) {
         let mut tv = self.params.timer.propose * ((round + 1) as u32);
         if self.proposals.get_proposal(height, round).is_some() {
-            tv = ::std::time::Duration::new(0, 0);
+            tv = Duration::new(0, 0);
         } else if self.is_round_proposer(height, round, &self.params.signer.address).is_ok() {
             self.new_proposal();
-            tv = ::std::time::Duration::new(0, 0);
+            tv = Duration::new(0, 0);
         }
         //if is proposal,enter prevote stage immedietly
         self.step = Step::ProposeWait;

@@ -102,7 +102,7 @@ impl Dispatchtx {
 
     pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, tx_response: TxResponse, tx: &SignedTransaction, mq_pub: &Sender<(String, Vec<u8>)>) {
         let mut error_msg: Option<String> = None;
-        if self.add_tx_to_pool(&tx) {
+        if self.add_tx_to_pool(tx) {
             self.update_capacity();
         } else {
             error_msg = Some(String::from("Dup"));
@@ -181,7 +181,7 @@ impl Dispatchtx {
     pub fn wait_timeout_process(&mut self, mq_pub: &Sender<(String, Vec<u8>)>) {
         let time_elapsed = self.batch_forward_info.forward_stamp.elapsed().unwrap().subsec_nanos();
         let count_buffered = self.batch_forward_info.new_tx_request_buffer.len();
-        if self.batch_forward_info.new_tx_request_buffer.len() > 0 {
+        if !self.batch_forward_info.new_tx_request_buffer.is_empty() {
             trace!("wait_timeout_process is going to send new tx batch to peer auth with {} new tx and buffer {} ns", count_buffered, time_elapsed);
             self.batch_forward_tx_to_peer(mq_pub);
         }
@@ -190,13 +190,13 @@ impl Dispatchtx {
     pub fn add_tx_to_pool(&self, tx: &SignedTransaction) -> bool {
         //交易放入pool，
         //放入pool完成后，持久化
-        let ref mut txs_pool = self.txs_pool.borrow_mut();
+        let txs_pool = &mut self.txs_pool.borrow_mut();
         let success = txs_pool.enqueue(tx.clone());
         if self.wal_enable {
             if success {
-                self.wal.write(&tx);
+                self.wal.write(tx);
             } else {
-                self.filter_wal.write(&tx);
+                self.filter_wal.write(tx);
             }
         }
         success
@@ -207,9 +207,8 @@ impl Dispatchtx {
             self.data_from_pool.store(false, Ordering::SeqCst);
             Vec::new()
         } else {
-            let ref mut txs_pool = self.txs_pool.borrow_mut();
-            let txs = txs_pool.package(height, block_gas_limit, account_gas_limit);
-            txs
+            let txs_pool = &mut self.txs_pool.borrow_mut();
+            txs_pool.package(height, block_gas_limit, account_gas_limit)
         }
     }
 

@@ -33,14 +33,20 @@ pub struct Verifier {
     hashes: HashMap<u64, HashSet<H256>>,
 }
 
-impl Verifier {
-    pub fn new() -> Self {
+impl Default for Verifier {
+    fn default() -> Verifier {
         Verifier {
             inited: false,
             height_latest: None,
             height_low: None,
             hashes: HashMap::with_capacity(BLOCKLIMIT as usize),
         }
+    }
+}
+
+impl Verifier {
+    pub fn new() -> Self {
+        Verifier::default()
     }
 
     pub fn is_inited(&self) -> bool {
@@ -90,13 +96,13 @@ impl Verifier {
         if !self.inited {
             return true;
         }
-        for (height, hashes) in self.hashes.iter() {
+        for (height, hashes) in &self.hashes {
             if hashes.contains(hash) {
                 trace!("Tx with hash {:?} has already existed in height:{}", hash.0, height);
                 return true;
             }
         }
-        return false;
+        false
     }
 
     pub fn verify_sig(&self, req: &VerifyTxReq) -> Result<PubKey, ()> {
@@ -122,7 +128,7 @@ impl Verifier {
         let mut result = false;
         if let Some(height) = self.height_latest {
             result = valid_until_block > height && valid_until_block <= (height + BLOCKLIMIT);
-            if false == result {
+            if result {
                 warn!("The new tx is out of time valid_until_block: {:?}, height: {:?}, BLOCKLIMIT: {:?}", valid_until_block, height, BLOCKLIMIT);
             }
 
