@@ -61,9 +61,9 @@ impl Txwal {
     pub fn read(&self, pool: &mut Pool) -> u64 {
         let mut num: u64 = 0;
         let mut ite = self.db.iter(None);
-        while let Some(item) = ite.next() {
+        for item in ite {
             let tx = parse_from_bytes::<SignedTransaction>(item.1.as_ref()).unwrap();
-            num = num + 1;
+            num += 1;
             pool.enqueue(tx);
         }
         info!("read tx num [{}] from pool.", num);
