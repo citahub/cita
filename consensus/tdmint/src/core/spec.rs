@@ -38,7 +38,7 @@ impl From<SpecJson> for Spec {
 impl Spec {
     fn params(engine_json: EngineJson) -> TendermintParams {
         match engine_json {
-            EngineJson::Tendermint(tendermint) => return From::from(tendermint.params),
+            EngineJson::Tendermint(tendermint) => From::from(tendermint.params),
             _ => panic!("Failed to start Tendermint consensus engine."),
         }
     }
