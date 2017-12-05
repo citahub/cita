@@ -17,28 +17,28 @@
 
 #![allow(dead_code, unused_variables, unused_must_use, unused_mut, unused_imports, unused_extern_crates)]
 #![feature(test)]
-extern crate test;
-extern crate ws;
-extern crate url;
-extern crate time;
+extern crate cita_crypto as crypto;
+extern crate clap;
 #[macro_use]
 extern crate env_logger;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
+extern crate jsonrpc_types;
+extern crate libproto;
 #[macro_use]
 extern crate log;
-extern crate clap;
-extern crate cita_crypto as crypto;
-extern crate libproto;
-extern crate jsonrpc_types;
 extern crate protobuf;
+extern crate pubsub;
+extern crate rand;
 extern crate rustc_hex;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+extern crate test;
+extern crate time;
+extern crate url;
 extern crate util;
 extern crate uuid;
-extern crate rand;
-extern crate pubsub;
+extern crate ws;
 
 pub mod method;
 pub mod connection;
@@ -50,7 +50,7 @@ use clap::App;
 use client::*;
 use config::Config;
 use connection::*;
-use rand::{thread_rng, ThreadRng, Rng};
+use rand::{thread_rng, Rng, ThreadRng};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::mpsc;
@@ -79,7 +79,10 @@ fn main() {
     }
 
     let config: Config = config::read_user_from_file(config_path).unwrap_or(Config::default());
-    println!("CITA:bench_ws config \n {:?}", serde_json::to_string_pretty(&config).unwrap());
+    println!(
+        "CITA:bench_ws config \n {:?}",
+        serde_json::to_string_pretty(&config).unwrap()
+    );
 
 
     let (tx, rx) = mpsc::channel();
@@ -87,10 +90,10 @@ fn main() {
     let fac_con = FactoryConnection::new(ws_senders.clone(), tx);
     let mut ws = Builder::new()
         .with_settings(Settings {
-                           max_connections: config.max_connections,
-                           queue_size: config.param.number + 5,
-                           ..Settings::default()
-                       })
+            max_connections: config.max_connections,
+            queue_size: config.param.number + 5,
+            ..Settings::default()
+        })
         .build(fac_con)
         .unwrap();
 

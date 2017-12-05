@@ -38,7 +38,10 @@ impl ChannelStateMachine {
 
 impl StateMachine for ChannelStateMachine {
     fn apply(&mut self, command: &[u8]) -> Vec<u8> {
-        self.tx.send(command.to_vec()).map(|_| Vec::new()).unwrap_or(b"An error occured."[..].into())
+        self.tx
+            .send(command.to_vec())
+            .map(|_| Vec::new())
+            .unwrap_or(b"An error occured."[..].into())
     }
 
     fn query(&self, _query: &[u8]) -> Vec<u8> {

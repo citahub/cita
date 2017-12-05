@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Trace database.
+#![rustfmt_skip]
 
 use super::flat::{FlatTrace, FlatBlockTraces, FlatTransactionTraces};
 use bloomchain::{Number, Config as BloomConfig};

@@ -23,14 +23,14 @@ pub mod quota_manager;
 
 pub use self::account_manager::AccountManager;
 pub use self::node_manager::NodeManager;
-pub use self::quota_manager::{QuotaManager, AccountGasLimit};
+pub use self::quota_manager::{AccountGasLimit, QuotaManager};
 
 use libchain::call_request::CallRequest;
 use libchain::chain::Chain;
 use rustc_hex::ToHex;
 use sha3::sha3_256;
 use types::ids::BlockId;
-use util::{Address, U256, H160};
+use util::{Address, H160, U256};
 
 
 /// Parse solidity return data `String` to rust `Vec<Address>`
@@ -94,7 +94,8 @@ impl ContractCallExt for Chain {
         };
 
         trace!("data: {:?}", call_request.data);
-        self.eth_call(call_request, BlockId::Latest).expect(&format!("eth call address: {}", address))
+        self.eth_call(call_request, BlockId::Latest)
+            .expect(&format!("eth call address: {}", address))
     }
 }
 

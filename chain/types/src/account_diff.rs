@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Diff between two accounts.
+#![rustfmt_skip]
 
 use std::cmp::*;
 use std::collections::BTreeMap;

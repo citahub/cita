@@ -16,22 +16,23 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(unused_must_use, unused_variables, dead_code, unreachable_patterns, unused_imports)]
-extern crate threadpool;
-extern crate tx_pool;
+#![feature(custom_attribute)]
+extern crate bincode;
+extern crate dotenv;
+extern crate engine;
+extern crate error;
+extern crate libproto;
 #[macro_use]
 extern crate log;
-extern crate libproto;
+extern crate logger;
 extern crate protobuf;
+extern crate pubsub;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-extern crate bincode;
-extern crate pubsub;
-extern crate logger;
-extern crate engine;
-extern crate dotenv;
+extern crate threadpool;
+extern crate tx_pool;
 extern crate util;
-extern crate error;
 
 mod candidate_pool;
 mod dispatch;
@@ -56,17 +57,27 @@ fn main() {
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
     let (tx, rx) = channel();
-    let keys = vec!["net.*", "consensus_cmd.default", "consensus.blk", "chain.richstatus", "jsonrpc.new_tx"];
+    let keys = vec![
+        "net.*",
+        "consensus_cmd.default",
+        "consensus.blk",
+        "chain.richstatus",
+        "jsonrpc.new_tx",
+    ];
     let pool = ThreadPool::new(THREAD_POOL_NUMBER);
     start_pubsub("consensus", keys, tx_sub, rx_pub);
-    thread::spawn(move || loop {
-                      let sender = tx.clone();
-                      let (key, body) = rx_sub.recv().unwrap();
-                      pool.execute(move || {
-                                       let (cmd_id, origin, content) = parse_msg(&body);
-                                       sender.send((key_to_id(&key), cmd_id, origin, content)).unwrap();
-                                   });
-                  });
+    thread::spawn(move || {
+        loop {
+            let sender = tx.clone();
+            let (key, body) = rx_sub.recv().unwrap();
+            pool.execute(move || {
+                let (cmd_id, origin, content) = parse_msg(&body);
+                sender
+                    .send((key_to_id(&key), cmd_id, origin, content))
+                    .unwrap();
+            });
+        }
+    });
 
     let mut candidate_pool = CandidatePool::new(tx_pub.clone());
     loop {

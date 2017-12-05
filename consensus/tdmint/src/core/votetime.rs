@@ -42,7 +42,6 @@ pub struct WaitTimer {
 
 impl WaitTimer {
     pub fn new(ts: Sender<TimeoutInfo>, rs: Receiver<TimeoutInfo>) -> WaitTimer {
-
         let pool = ThreadPool::new(THREAD_POOL_NUM);
         WaitTimer {
             timer_notify: ts,

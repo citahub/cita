@@ -45,9 +45,9 @@ impl<'a, Q: Query> Lookup<'a, Q> {
                 Some(value) => value,
                 None => {
                     return Err(Box::new(match depth {
-                                            0 => AVLError::InvalidStateRoot(hash),
-                                            _ => AVLError::IncompleteDatabase(hash),
-                                        }));
+                        0 => AVLError::InvalidStateRoot(hash),
+                        _ => AVLError::IncompleteDatabase(hash),
+                    }));
                 }
             };
 
@@ -60,9 +60,9 @@ impl<'a, Q: Query> Lookup<'a, Q> {
                 match Node::decoded(node_data) {
                     Node::Leaf(k, value) => {
                         return Ok(match k == key {
-                                      true => Some(self.query.decode(value)),
-                                      false => None,
-                                  });
+                            true => Some(self.query.decode(value)),
+                            false => None,
+                        });
                     }
                     Node::Branch(_, k, children) => {
                         let idx = if key < k { 0 } else { 1 };

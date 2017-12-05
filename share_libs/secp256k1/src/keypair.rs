@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{PrivKey, PubKey, Address, SECP256K1, Error};
+use super::{Address, Error, PrivKey, PubKey, SECP256K1};
 use rand::thread_rng;
 use rustc_serialize::hex::ToHex;
 use secp256k1::key;
@@ -58,7 +58,10 @@ impl CreateKey for KeyPair {
         let mut pubkey = PubKey::default();
         pubkey.0.copy_from_slice(&serialized[1..65]);
 
-        let keypair = KeyPair { privkey: privkey, pubkey: pubkey };
+        let keypair = KeyPair {
+            privkey: privkey,
+            pubkey: pubkey,
+        };
 
         Ok(keypair)
     }
@@ -71,7 +74,10 @@ impl CreateKey for KeyPair {
         privkey.0.copy_from_slice(&s[0..32]);
         let mut pubkey = PubKey::default();
         pubkey.0.copy_from_slice(&serialized[1..65]);
-        KeyPair { privkey: privkey, pubkey: pubkey }
+        KeyPair {
+            privkey: privkey,
+            pubkey: pubkey,
+        }
     }
 
     fn privkey(&self) -> &Self::PrivKey {
@@ -96,7 +102,9 @@ mod tests {
 
     #[test]
     fn from_privkey() {
-        let privkey = PrivKey::from(Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap());
+        let privkey = PrivKey::from(
+            Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap(),
+        );
         let _ = KeyPair::from_privkey(privkey).unwrap();
     }
 }

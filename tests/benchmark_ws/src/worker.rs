@@ -19,7 +19,7 @@ use client::{Client, RpcMethod};
 use config::Param;
 use connection::*;
 use jsonrpc_types::response::{Output, ResultBody};
-use rand::{thread_rng, ThreadRng, Rng};
+use rand::{thread_rng, Rng, ThreadRng};
 use serde_json;
 use std::collections::VecDeque;
 use std::str::FromStr;
@@ -29,7 +29,7 @@ use std::thread;
 use std::time::Duration;
 use time;
 use util::RwLock;
-use ws::{Sender, CloseCode, Message};
+use ws::{CloseCode, Message, Sender};
 type Number = u64;
 type Timetamp = u64;
 type TxCount = usize;
@@ -60,7 +60,12 @@ impl Worker {
     pub fn genrate_tx(&self, quota: u64) -> String {
         let client = Client::new();
         let height = self.current_height;
-        client.create_contract_data(self.param.tx_param.codes[0].clone(), "".to_string(), height, quota)
+        client.create_contract_data(
+            self.param.tx_param.codes[0].clone(),
+            "".to_string(),
+            height,
+            quota,
+        )
     }
 
     fn rand_send(&mut self, data: String) {
@@ -70,7 +75,10 @@ impl Worker {
 
     pub fn bench_peer_count(&mut self) {
         for i in 0..self.param.number {
-            let peer = format!("{{\"jsonrpc\":\"2.0\",\"method\":\"net_peerCount\",\"params\":[],\"id\":{:?}}}", i);
+            let peer = format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"net_peerCount\",\"params\":[],\"id\":{:?}}}",
+                i
+            );
             self.rand_send(peer);
         }
         self.start_time = time::precise_time_ns();
@@ -84,11 +92,13 @@ impl Worker {
 
     pub fn heart_beat_height(&mut self) {
         let sender = self.ws_senders.read()[0].clone();
-        thread::spawn(move || loop {
-                          thread::sleep(Duration::new(1, 0));
-                          let client = Client::new();
-                          let _ = sender.send(client.get_data_by_method(RpcMethod::Height));
-                      });
+        thread::spawn(move || {
+            loop {
+                thread::sleep(Duration::new(1, 0));
+                let client = Client::new();
+                let _ = sender.send(client.get_data_by_method(RpcMethod::Height));
+            }
+        });
     }
 
     pub fn bench_tx(&mut self) {
@@ -132,112 +142,158 @@ impl Worker {
                 //println!("from server data = {:?}", text);
                 serde_json::from_str(text)
                     .map(|out| match out {
-                             Output::Success(success) => {
-                                 match success.result {
-                                     ResultBody::BlockNumber(number) => {
-                                         let number = format!("{}", number);
-                                         //println!("number = {:?}", number);
-                                         let number = u64::from_str(number.as_str()).unwrap();
+                        Output::Success(success) => {
+                            match success.result {
+                                ResultBody::BlockNumber(number) => {
+                                    let number = format!("{}", number);
+                                    //println!("number = {:?}", number);
+                                    let number = u64::from_str(number.as_str()).unwrap();
 
-                                         if is_bench_tx {
-                                             println!("current height = {}, check_height_break = {}", number, check_height_break);
-                                             let mut is_send = true;
-                                             if self.current_height < number {
-                                                 self.current_height = number;
-                                                 check_height_break = CHECK_HEIGHT;
-                                             } else {
-                                                 is_send = false;
-                                                 check_height_break -= 1;
-                                             }
-                                             if check_height_break <= 0 {
-                                                 self.close_all();
-                                             }
+                                    if is_bench_tx {
+                                        println!(
+                                            "current height = {}, check_height_break = {}",
+                                            number,
+                                            check_height_break
+                                        );
+                                        let mut is_send = true;
+                                        if self.current_height < number {
+                                            self.current_height = number;
+                                            check_height_break = CHECK_HEIGHT;
+                                        } else {
+                                            is_send = false;
+                                            check_height_break -= 1;
+                                        }
+                                        if check_height_break <= 0 {
+                                            self.close_all();
+                                        }
 
-                                             if is_first {
-                                                 if self.current_height > 10 {
-                                                     is_first = false;
-                                                     self.bench_tx();
-                                                 }
-                                             } else {
-                                                 if is_send {
-                                                     self.full_block();
-                                                 }
-                                             }
-                                         }
+                                        if is_first {
+                                            if self.current_height > 10 {
+                                                is_first = false;
+                                                self.bench_tx();
+                                            }
+                                        } else {
+                                            if is_send {
+                                                self.full_block();
+                                            }
+                                        }
+                                    }
 
-                                         if is_bench_peer {
-                                             success_count += 1;
-                                             if success_count + failure_count >= self.param.number {
-                                                 let secs = (time::precise_time_ns() - self.start_time) / 1000000;
-                                                 let tps = if secs > 0 { (self.param.number * 1000) as u64 / secs } else { self.param.number as u64 };
-                                                 println!("send = {}, tps = {} ,recice respone cast time = {:?} ms , success_count = {:?}, failure_count = {:?}", self.param.number, tps, secs, success_count, failure_count);
-                                                 self.close_all();
-                                             }
-                                         }
-                                     }
+                                    if is_bench_peer {
+                                        success_count += 1;
+                                        if success_count + failure_count >= self.param.number {
+                                            let secs = (time::precise_time_ns() - self.start_time) / 1000000;
+                                            let tps = if secs > 0 {
+                                                (self.param.number * 1000) as u64 / secs
+                                            } else {
+                                                self.param.number as u64
+                                            };
+                                            println!(
+                                                "send = {}, \
+                                                 tps = {}, \
+                                                 recice respone cast time = {:?} ms ,\
+                                                 success_count = {:?}, \
+                                                 failure_count = {:?}",
+                                                self.param.number,
+                                                tps,
+                                                secs,
+                                                success_count,
+                                                failure_count
+                                            );
+                                            self.close_all();
+                                        }
+                                    }
+                                }
 
-                                     ResultBody::FullBlock(block) => {
-                                         let body = block.body;
-                                         let txs_len = body.transactions.len();
-                                         let time_stamp = block.header.timestamp;
-                                         let block_height = u64::from_str(format!("{}", block.header.number).as_str()).unwrap();
-                                         actual_tx_count += txs_len;
-                                         println!("block_height = {:?}, check_block_break = {:?} ", block_height, check_block_break);
-                                         if txs_len == 0 {
-                                             check_block_break -= 1;
-                                             if block_info.len() > 0 {
-                                                 is_end_flag = true;
-                                                 block_info.push_back((block_height, time_stamp, txs_len));
-                                                 println!("last block!");
-                                             }
+                                ResultBody::FullBlock(block) => {
+                                    let body = block.body;
+                                    let txs_len = body.transactions.len();
+                                    let time_stamp = block.header.timestamp;
+                                    let block_height =
+                                        u64::from_str(format!("{}", block.header.number).as_str()).unwrap();
+                                    actual_tx_count += txs_len;
+                                    println!(
+                                        "block_height = {:?}, check_block_break = {:?} ",
+                                        block_height,
+                                        check_block_break
+                                    );
+                                    if txs_len == 0 {
+                                        check_block_break -= 1;
+                                        if block_info.len() > 0 {
+                                            is_end_flag = true;
+                                            block_info.push_back((block_height, time_stamp, txs_len));
+                                            println!("last block!");
+                                        }
+                                    } else {
+                                        block_info.push_back((block_height, time_stamp, txs_len));
+                                    }
 
-                                         } else {
-                                             block_info.push_back((block_height, time_stamp, txs_len));
-                                         }
+                                    if check_block_break <= 0 || is_end_flag {
+                                        println!("blocks infomation: {:?}", block_info);
+                                        let mut first = (0, 0, 0);
+                                        let mut last = (0, 0, 0);
+                                        if let Some(f) = block_info.pop_front() {
+                                            first = f;
+                                        }
+                                        if let Some(l) = block_info.pop_back() {
+                                            last = l;
+                                        }
+                                        let secs = last.1 - first.1;
+                                        let tps = if secs > 0 {
+                                            (actual_tx_count * 1000) as u64 / secs
+                                        } else {
+                                            actual_tx_count as u64
+                                        };
+                                        println!(
+                                            "total_count: {}, start height: {},  use time: {} ms, tps: {}",
+                                            actual_tx_count,
+                                            first.0,
+                                            secs,
+                                            tps
+                                        );
+                                        self.close_all();
+                                    }
+                                }
 
-                                         if check_block_break <= 0 || is_end_flag {
-                                             println!("blocks infomation: {:?}", block_info);
-                                             let mut first = (0, 0, 0);
-                                             let mut last = (0, 0, 0);
-                                             if let Some(f) = block_info.pop_front() {
-                                                 first = f;
+                                ResultBody::TxResponse(_tx_res) => {
+                                    success_count += 1;
+                                    if success_count + failure_count >= self.param.number {
+                                        let secs = (time::precise_time_ns() - self.start_time) / 1000000;
+                                        let tps = if secs > 0 {
+                                            (self.param.number * 1000) as u64 / secs
+                                        } else {
+                                            self.param.number as u64
+                                        };
+                                        println!(
+                                            "send = {}, tps = {} ,\
+                                             recice respone cast time = {:?} ms ,\
+                                             success_count = {:?} ,\
+                                             failure_count = {:?}",
+                                            self.param.number,
+                                            tps,
+                                            secs,
+                                            success_count,
+                                            failure_count
+                                        );
+                                    }
+                                }
 
-                                             }
-                                             if let Some(l) = block_info.pop_back() {
-                                                 last = l;
-                                             }
-                                             let secs = last.1 - first.1;
-                                             let tps = if secs > 0 { (actual_tx_count * 1000) as u64 / secs } else { actual_tx_count as u64 };
-                                             println!("total_count: {}, start height: {},  use time: {} ms, tps: {}", actual_tx_count, first.0, secs, tps);
-                                             self.close_all();
-                                         }
-                                     }
+                                _ => {
+                                    failure_count += 1;
+                                    error!("error info!");
+                                }
+                            }
+                        }
 
-                                     ResultBody::TxResponse(_tx_res) => {
-                                         success_count += 1;
-                                         if success_count + failure_count >= self.param.number {
-                                             let secs = (time::precise_time_ns() - self.start_time) / 1000000;
-                                             let tps = if secs > 0 { (self.param.number * 1000) as u64 / secs } else { self.param.number as u64 };
-                                             println!("send = {}, tps = {} ,recice respone cast time = {:?} ms , success_count = {:?}, failure_count = {:?}", self.param.number, tps, secs, success_count, failure_count);
-                                         }
-                                     }
-
-                                     _ => {
-                                         failure_count += 1;
-                                         error!("error info!");
-                                     }
-                                 }
-                             }
-
-                             Output::Failure(failure) => {
-                                 println!("failure {:?}", failure);
-                                 failure_count += 1;
-                             }
-                         })
+                        Output::Failure(failure) => {
+                            println!("failure {:?}", failure);
+                            failure_count += 1;
+                        }
+                    })
                     .map_err(|err| {
-                                 println!("{}", err);
-                                 failure_count += 1;
-                             })
+                        println!("{}", err);
+                        failure_count += 1;
+                    })
             });
         }
     }

@@ -16,12 +16,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use BlockNumber;
-use crypto::{Signature, Public, pubkey_to_address, SIGNATURE_BYTES_LEN, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, PubKey};
-use libproto::blockchain::{Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction, SignedTransaction as ProtoSignedTransaction, Crypto as ProtoCrypto};
+use crypto::{pubkey_to_address, PubKey, Public, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN};
+use libproto::blockchain::{Crypto as ProtoCrypto, SignedTransaction as ProtoSignedTransaction,
+                           Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{H256, Address, U256, Bytes, HeapSizeOf};
+use util::{Address, Bytes, H256, HeapSizeOf, U256};
 
 // pub const STORE_ADDRESS: H160 =  H160( [0xff; 20] );
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
@@ -59,7 +60,11 @@ impl Decodable for Action {
         } else {
             let store_addr: Address = STORE_ADDRESS.into();
             let addr: Address = rlp.as_val()?;
-            if addr == store_addr { Ok(Action::Store) } else { Ok(Action::Call(addr)) }
+            if addr == store_addr {
+                Ok(Action::Store)
+            } else {
+                Ok(Action::Call(addr))
+            }
         }
     }
 }
@@ -148,14 +153,14 @@ impl Decodable for Transaction {
             return Err(DecoderError::RlpIncorrectListLen);
         }
         Ok(Transaction {
-               nonce: d.val_at(0)?,
-               gas_price: d.val_at(1)?,
-               gas: d.val_at(2)?,
-               action: d.val_at(3)?,
-               value: d.val_at(4)?,
-               data: d.val_at(5)?,
-               block_limit: d.val_at(6)?,
-           })
+            nonce: d.val_at(0)?,
+            gas_price: d.val_at(1)?,
+            gas: d.val_at(2)?,
+            action: d.val_at(3)?,
+            value: d.val_at(4)?,
+            data: d.val_at(5)?,
+            block_limit: d.val_at(6)?,
+        })
     }
 }
 
@@ -171,24 +176,23 @@ impl Encodable for Transaction {
 impl Transaction {
     pub fn new(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
         Ok(Transaction {
-               nonce: plain_transaction.get_nonce().to_owned(),
-               gas_price: U256::default(),
-               gas: U256::from(plain_transaction.get_quota()),
-               action: {
-                   let to = plain_transaction.get_to();
-                   match to.is_empty() {
-                       true => Action::Create,
-                       false => match to {
-                           STORE_ADDRESS => Action::Store,
-                           _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
-                       },
-                   }
-               },
-               value: U256::default(),
-               data: plain_transaction.get_data().into(),
-               block_limit: plain_transaction.get_valid_until_block(),
-           })
-
+            nonce: plain_transaction.get_nonce().to_owned(),
+            gas_price: U256::default(),
+            gas: U256::from(plain_transaction.get_quota()),
+            action: {
+                let to = plain_transaction.get_to();
+                match to.is_empty() {
+                    true => Action::Create,
+                    false => match to {
+                        STORE_ADDRESS => Action::Store,
+                        _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
+                    },
+                }
+            },
+            value: U256::default(),
+            data: plain_transaction.get_data().into(),
+            block_limit: plain_transaction.get_valid_until_block(),
+        })
     }
 
     pub fn nonce(&self) -> &String {
@@ -276,11 +280,11 @@ impl Decodable for UnverifiedTransaction {
             return Err(DecoderError::RlpIncorrectListLen);
         }
         Ok(UnverifiedTransaction {
-               unsigned: d.val_at(0)?,
-               signature: d.val_at(1)?,
-               crypto_type: d.val_at(2)?,
-               hash: d.val_at(3)?,
-           })
+            unsigned: d.val_at(0)?,
+            signature: d.val_at(1)?,
+            crypto_type: d.val_at(2)?,
+            hash: d.val_at(3)?,
+        })
     }
 }
 
@@ -292,17 +296,16 @@ impl Encodable for UnverifiedTransaction {
 
 impl UnverifiedTransaction {
     fn new(utx: &ProtoUnverifiedTransaction, hash: H256) -> Result<Self, Error> {
-
         if utx.get_signature().len() != SIGNATURE_BYTES_LEN {
             return Err(Error::InvalidSignature);
         }
 
         Ok(UnverifiedTransaction {
-               unsigned: Transaction::new(utx.get_transaction())?,
-               signature: Signature::from(utx.get_signature()),
-               crypto_type: CryptoType::from(utx.get_crypto()),
-               hash: hash,
-           })
+            unsigned: Transaction::new(utx.get_transaction())?,
+            signature: Signature::from(utx.get_signature()),
+            crypto_type: CryptoType::from(utx.get_crypto()),
+            hash: hash,
+        })
     }
 
     /// Append object with a signature into RLP stream
@@ -358,24 +361,24 @@ impl Decodable for SignedTransaction {
         let public: PubKey = d.val_at(10)?;
 
         Ok(SignedTransaction {
-               transaction: UnverifiedTransaction {
-                   unsigned: Transaction {
-                       nonce: d.val_at(0)?,
-                       gas_price: d.val_at(1)?,
-                       gas: d.val_at(2)?,
-                       action: d.val_at(3)?,
-                       value: d.val_at(4)?,
-                       data: d.val_at(5)?,
-                       block_limit: d.val_at(6)?,
-                   },
-                   signature: d.val_at(7)?,
-                   crypto_type: d.val_at(8)?,
-                   hash: d.val_at(9)?,
-               },
-               sender: pubkey_to_address(&public),
-               public: public,
-               account_nonce: d.val_at(11)?,
-           })
+            transaction: UnverifiedTransaction {
+                unsigned: Transaction {
+                    nonce: d.val_at(0)?,
+                    gas_price: d.val_at(1)?,
+                    gas: d.val_at(2)?,
+                    action: d.val_at(3)?,
+                    value: d.val_at(4)?,
+                    data: d.val_at(5)?,
+                    block_limit: d.val_at(6)?,
+                },
+                signature: d.val_at(7)?,
+                crypto_type: d.val_at(8)?,
+                hash: d.val_at(9)?,
+            },
+            sender: pubkey_to_address(&public),
+            public: public,
+            account_nonce: d.val_at(11)?,
+        })
     }
 }
 
@@ -435,11 +438,11 @@ impl SignedTransaction {
         let public = PubKey::from_slice(stx.get_signer());
         let sender = pubkey_to_address(&public);
         Ok(SignedTransaction {
-               transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,
-               sender: sender,
-               public: public,
-               account_nonce: U256::zero(),
-           })
+            transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,
+            sender: sender,
+            public: public,
+            account_nonce: U256::zero(),
+        })
     }
 
     /// Returns transaction sender.

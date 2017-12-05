@@ -19,7 +19,7 @@
 
 use H256;
 use hashable::HASH_NULL_RLP;
-use hashdb::{HashDB, DBValue};
+use hashdb::{DBValue, HashDB};
 use std::fmt;
 
 /// Export the standardmap module.
@@ -44,7 +44,7 @@ mod lookup;
 
 // pub use self::standardmap::{Alphabet, StandardMap, ValueMode};
 
-pub use self::avldb::{AVLDB, AVLDBIterator};
+pub use self::avldb::{AVLDBIterator, AVLDB};
 pub use self::avldbmut::AVLDBMut;
 pub use self::fatdb::{FatDB, FatDBIterator};
 pub use self::fatdbmut::FatDBMut;
@@ -68,9 +68,7 @@ impl fmt::Display for AVLError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             AVLError::InvalidStateRoot(ref root) => write!(f, "Invalid state root: {}", root),
-            AVLError::IncompleteDatabase(ref missing) => {
-                write!(f, "Database missing expected key: {}", missing)
-            }
+            AVLError::IncompleteDatabase(ref missing) => write!(f, "Database missing expected key: {}", missing),
         }
     }
 }

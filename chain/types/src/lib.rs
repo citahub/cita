@@ -14,12 +14,13 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-extern crate util;
-extern crate rlp;
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
 extern crate bloomable;
 extern crate cita_crypto as crypto;
 extern crate libproto;
+extern crate rlp;
+extern crate util;
 pub mod account_diff;
 pub mod basic_account;
 pub mod blockchain_info;

@@ -60,7 +60,10 @@ impl BlockParamsByHash {
 
 impl Default for BlockParamsByHash {
     fn default() -> BlockParamsByHash {
-        BlockParamsByHash { hash: vec![], include_txs: false }
+        BlockParamsByHash {
+            hash: vec![],
+            include_txs: false,
+        }
     }
 }
 

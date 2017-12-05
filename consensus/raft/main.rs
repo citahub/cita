@@ -17,22 +17,23 @@
 
 // In order to use Serde we need to enable these nightly features.
 #![allow(unused_must_use)]
-
-extern crate libraft; // <--- Kind of a big deal for this!
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
 extern crate docopt;
-extern crate serde_json;
-extern crate rustc_serialize;
-extern crate mio;
-#[macro_use]
-extern crate serde_derive;
+extern crate dotenv;
 extern crate libproto;
+extern crate libraft; // <--- Kind of a big deal for this!
 #[macro_use]
 extern crate log;
+extern crate logger;
+extern crate mio;
+extern crate pubsub;
+extern crate rustc_serialize;
 #[macro_use]
 extern crate scoped_log;
-extern crate pubsub;
-extern crate dotenv;
-extern crate logger;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 extern crate util;
 
 mod raft_server;
@@ -41,7 +42,7 @@ mod log_store;
 mod dispatch;
 
 use docopt::Docopt;
-use libproto::{parse_msg, MsgClass, key_to_id};
+use libproto::{key_to_id, parse_msg, MsgClass};
 use pubsub::start_pubsub;
 use raft_server::*;
 use std::sync::mpsc::{channel, Receiver};
@@ -82,17 +83,26 @@ fn main() {
     //exit process when panic
     set_panic_handler();
     logger::init_config("cita-consensus");
-    let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
+    let args: Args = Docopt::new(USAGE)
+        .and_then(|d| d.decode())
+        .unwrap_or_else(|e| e.exit());
     info!("CITA:raft");
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
     let (tx, rx) = channel();
-    start_pubsub("consensus_cmd", vec!["chain.richstatus", "consensus.default"], tx_sub, rx_pub);
-    thread::spawn(move || loop {
-                      let (key, body) = rx_sub.recv().unwrap();
-                      let (cmd_id, _, content) = parse_msg(body.as_slice());
-                      tx.send((key_to_id(&key), cmd_id, content)).unwrap();
-                  });
+    start_pubsub(
+        "consensus_cmd",
+        vec!["chain.richstatus", "consensus.default"],
+        tx_sub,
+        rx_pub,
+    );
+    thread::spawn(move || {
+        loop {
+            let (key, body) = rx_sub.recv().unwrap();
+            let (cmd_id, _, content) = parse_msg(body.as_slice());
+            tx.send((key_to_id(&key), cmd_id, content)).unwrap();
+        }
+    });
 
     let (mut server, mut event_loop) = server(&args);
     let actions = server.consensus.init();
@@ -104,7 +114,9 @@ fn main() {
 }
 
 fn thread_handler(rx: Receiver<(u32, u32, MsgClass)>, notifix: mio::Sender<libraft::NotifyMessage>) {
-    thread::spawn(move || loop {
-                      dispatch::dispatch(&notifix, &rx);
-                  });
+    thread::spawn(move || {
+        loop {
+            dispatch::dispatch(&notifix, &rx);
+        }
+    });
 }

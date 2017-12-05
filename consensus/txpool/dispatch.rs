@@ -16,11 +16,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use candidate_pool::CandidatePool;
-use cmd::{Command, decode};
+use cmd::{decode, Command};
 use libproto;
-use libproto::{MsgClass, submodules, topics};
+use libproto::{submodules, topics, MsgClass};
 use libproto::blockchain::AccountGasLimit;
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::{Receiver, Sender};
 
 pub type PubType = (String, Vec<u8>);
 
@@ -51,17 +51,18 @@ pub fn dispatch(candidate_pool: &mut CandidatePool, rx: &Receiver<(u32, u32, u32
                             let txs = blk.get_body().get_transactions();
                             candidate_pool.update_txpool(txs);
                         } else {
-                            warn!("tx_pool's height:{:?}, received from consensus's height:{:?}", candidate_pool.get_height(), height);
+                            warn!(
+                                "tx_pool's height:{:?}, received from consensus's height:{:?}",
+                                candidate_pool.get_height(),
+                                height
+                            );
                         }
                     }
                     Command::PoolSituation(_, _, _) => info!("not expected."),
-
                 }
             }
         }
-        MsgClass::RICHSTATUS(rich_status) => {
-            info!("txtool MsgClass rich_status is {:?}", rich_status)
-        }
+        MsgClass::RICHSTATUS(rich_status) => info!("txtool MsgClass rich_status is {:?}", rich_status),
         _ => error!("match not exsit msg content!!!"),
     }
 }

@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{Engine, AuthorityRound};
+use super::{AuthorityRound, Engine};
 use engine_json::{Engine as EngineJson, Spec as SpecJson};
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::sync::Arc;
-use std::sync::mpsc::{channel, Sender, Receiver};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 pub struct Spec {
     pub name: String,
@@ -43,9 +43,8 @@ impl From<SpecJson> for Spec {
 impl Spec {
     fn engine(engine_json: EngineJson, tx: Sender<usize>) -> Arc<Engine> {
         match engine_json {
-            EngineJson::AuthorityRound(authority_round) => {
-                AuthorityRound::new(From::from(authority_round.params), tx).expect("Failed to start AuthorityRound consensus engine.")
-            }
+            EngineJson::AuthorityRound(authority_round) => AuthorityRound::new(From::from(authority_round.params), tx)
+                .expect("Failed to start AuthorityRound consensus engine."),
             _ => {
                 panic!("Failed to start AuthorityRound consensus engine.");
             }

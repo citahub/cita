@@ -14,45 +14,46 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
 #![cfg_attr(test, feature(test))]
-extern crate libproto;
-extern crate protobuf;
 extern crate byteorder;
+extern crate libproto;
 #[macro_use]
 extern crate log;
+extern crate lru_cache;
+extern crate proof;
+extern crate protobuf;
+extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 extern crate util;
-extern crate proof;
-extern crate lru_cache;
-extern crate rlp;
 
+extern crate bloomable;
+extern crate bloomchain;
 #[macro_use]
 extern crate rlp_derive;
-extern crate bloomchain;
-extern crate bloomable;
 extern crate rustc_hex;
 
+extern crate bit_set;
+extern crate cita_ed25519;
+extern crate cita_secp256k1;
+extern crate common_types as types;
+extern crate crossbeam;
+extern crate crypto;
+extern crate ethcore_io;
+extern crate jsonrpc_types;
 #[macro_use]
 extern crate lazy_static;
-extern crate bit_set;
-extern crate crypto;
-extern crate time;
-extern crate crossbeam;
-extern crate transient_hashmap;
-extern crate ethcore_io;
-extern crate cita_ed25519;
-extern crate common_types as types;
-extern crate jsonrpc_types;
-extern crate cita_secp256k1;
 extern crate sha3;
+extern crate time;
+extern crate transient_hashmap;
 
 #[cfg(test)]
-extern crate test;
-#[cfg(test)]
 extern crate cita_crypto;
+#[cfg(test)]
+extern crate test;
 
 pub mod state;
 pub mod account_db;

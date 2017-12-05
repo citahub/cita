@@ -17,6 +17,7 @@
 //! Evm factory.
 //!
 //! TODO: consider spliting it into two separate files.
+#![rustfmt_skip]
 
 use super::interpreter::SharedCache;
 use evm::Evm;

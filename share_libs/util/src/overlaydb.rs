@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Disk-backed `HashDB` implementation.
+#![rustfmt_skip]
 
 use error::*;
 use hash::*;

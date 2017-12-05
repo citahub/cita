@@ -13,6 +13,10 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
+
+#![rustfmt_skip]
 
 extern crate rand;
 extern crate tiny_keccak;
@@ -39,7 +43,8 @@ pub mod math;
 
 pub use self::brain::Brain;
 pub use self::error::Error;
-pub use self::extended::{ExtendedPublic, ExtendedSecret, ExtendedKeyPair, DerivationError, Derivation};
+pub use self::extended::{ExtendedPublic, ExtendedSecret, ExtendedKeyPair, DerivationError,
+Derivation};
 pub use self::keypair::{KeyPair, public_to_address};
 pub use self::math::public_is_valid;
 pub use self::prefix::Prefix;

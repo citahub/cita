@@ -77,7 +77,10 @@ where
         Ok(())
     }
 
-    let borrowed_segments: &[&[Word]] = &segments.iter().map(|segment| &segment[..]).collect::<Vec<_>>()[..];
+    let borrowed_segments: &[&[Word]] = &segments
+        .iter()
+        .map(|segment| &segment[..])
+        .collect::<Vec<_>>()[..];
     write_segment_table(write, borrowed_segments).unwrap();
     write_segments(write, borrowed_segments).unwrap();
 }

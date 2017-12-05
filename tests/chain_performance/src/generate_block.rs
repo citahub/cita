@@ -19,13 +19,13 @@ use bincode::{serialize, Infinite};
 use core::libchain::block::Block;
 use core::transaction::SignedTransaction;
 use crypto::*;
-use libproto::{factory, communication, topics, submodules};
+use libproto::{communication, factory, submodules, topics};
 use libproto::blockchain::Transaction;
 use proof::TendermintProof;
 use protobuf::core::Message;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
-use std::time::{UNIX_EPOCH, Duration};
+use std::time::{Duration, UNIX_EPOCH};
 use util::H256;
 use util::Hashable;
 
@@ -56,7 +56,9 @@ pub struct Generateblock {
 #[allow(unused_variables, dead_code)]
 impl Generateblock {
     pub fn new() -> Self {
-        Generateblock { pre_hash: H256::default() }
+        Generateblock {
+            pre_hash: H256::default(),
+        }
     }
 
     pub fn set_pre_hash(&mut self, pre_hash: H256) {
@@ -98,13 +100,27 @@ impl Generateblock {
         proof.round = 0;
         proof.proposal = H256::default();
         let mut commits = HashMap::new();
-        let msg = serialize(&(proof.height, proof.round, Step::Precommit, sender.clone(), Some(proof.proposal.clone())), Infinite).unwrap();
+        let msg = serialize(
+            &(
+                proof.height,
+                proof.round,
+                Step::Precommit,
+                sender.clone(),
+                Some(proof.proposal.clone()),
+            ),
+            Infinite,
+        ).unwrap();
         let signature = Signature::sign(pv, &msg.crypt_hash().into()).unwrap();
         commits.insert((*sender).into(), signature.into());
         proof.commits = commits;
         block.set_proof(proof.into());
 
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.protobuf().write_to_bytes().unwrap());
+        let msg = factory::create_msg(
+            submodules::CONSENSUS,
+            topics::NEW_BLK,
+            communication::MsgType::BLOCK,
+            block.protobuf().write_to_bytes().unwrap(),
+        );
         (msg.write_to_bytes().unwrap(), block)
     }
 

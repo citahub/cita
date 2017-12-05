@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Bridge between bloomchain crate types and ethcore.
-
+#![rustfmt_skip]
 mod bloom;
 mod bloom_group;
 mod group_position;

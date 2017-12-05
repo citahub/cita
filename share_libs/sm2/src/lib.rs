@@ -17,17 +17,17 @@
 
 #![feature(libc)]
 #![feature(unique)]
-extern crate libc;
 #[macro_use]
 extern crate lazy_static;
-extern crate util;
-extern crate rustc_serialize;
+extern crate libc;
 extern crate rlp;
+extern crate rustc_serialize;
 extern crate serde;
+extern crate util;
 
 use libc::c_int;
 use std::ptr::Unique;
-use util::{H256, H512, Address};
+use util::{Address, H256, H512};
 
 mod keypair;
 mod error;

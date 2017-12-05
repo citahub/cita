@@ -16,6 +16,10 @@
 
 //! Bloom operations.
 
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
+
+#![rustfmt_skip]
 extern crate bigint;
 
 use bigint::{H64, H160, H256, H512, H520, H2048};
@@ -34,7 +38,8 @@ pub fn log2(x: usize) -> u32 {
 
 /// Bloom operations.
 pub trait Bloomable: Sized + Default + DerefMut<Target = [u8]> {
-    /// When interpreting self as a bloom output, augment (bit-wise OR) with the a bloomed version of `b`.
+    /// When interpreting self as a bloom output,
+    /// augment (bit-wise OR) with the a bloomed version of `b`.
     fn shift_bloomed<'a, T>(&'a mut self, b: &T) -> &'a mut Self
     where
         T: Bloomable;

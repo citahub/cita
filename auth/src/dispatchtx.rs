@@ -18,15 +18,15 @@
 extern crate tx_pool;
 
 use error::ErrorCode;
-use libproto::{submodules, topics, factory, communication, Response, TxResponse, Request, BatchRequest};
-use libproto::blockchain::{BlockBody, SignedTransaction, BlockTxs, AccountGasLimit};
+use libproto::{communication, factory, submodules, topics, BatchRequest, Request, Response, TxResponse};
+use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use protobuf::{Message, RepeatedField};
 use serde_json;
 
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering, AtomicUsize};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::SystemTime;
@@ -56,7 +56,13 @@ pub struct BatchForwardInfo {
 }
 
 impl Dispatchtx {
-    pub fn new(package_limit: usize, limit: usize, count_per_batch: usize, buffer_duration: u32, wal_enable: bool) -> Self {
+    pub fn new(
+        package_limit: usize,
+        limit: usize,
+        count_per_batch: usize,
+        buffer_duration: u32,
+        wal_enable: bool,
+    ) -> Self {
         let batch_forward_info = BatchForwardInfo {
             count_per_batch: count_per_batch,
             buffer_duration: buffer_duration,
@@ -100,7 +106,14 @@ impl Dispatchtx {
         }
     }
 
-    pub fn deal_tx(&mut self, modid: u32, req_id: Vec<u8>, tx_response: TxResponse, tx: &SignedTransaction, mq_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn deal_tx(
+        &mut self,
+        modid: u32,
+        req_id: Vec<u8>,
+        tx_response: TxResponse,
+        tx: &SignedTransaction,
+        mq_pub: &Sender<(String, Vec<u8>)>,
+    ) {
         let mut error_msg: Option<String> = None;
         if self.add_tx_to_pool(tx) {
             self.update_capacity();
@@ -127,19 +140,40 @@ impl Dispatchtx {
                 self.batch_forward_info.new_tx_request_buffer.push(request);
 
                 let count_buffered = self.batch_forward_info.new_tx_request_buffer.len();
-                let time_elapsed = self.batch_forward_info.forward_stamp.elapsed().unwrap().subsec_nanos();
+                let time_elapsed = self.batch_forward_info
+                    .forward_stamp
+                    .elapsed()
+                    .unwrap()
+                    .subsec_nanos();
 
-                if count_buffered > self.batch_forward_info.count_per_batch || time_elapsed > self.batch_forward_info.buffer_duration {
-                    trace!("Going to send new tx batch to peer auth with {} new tx and buffer {} ns", count_buffered, time_elapsed);
+                if count_buffered > self.batch_forward_info.count_per_batch
+                    || time_elapsed > self.batch_forward_info.buffer_duration
+                {
+                    trace!(
+                        "Going to send new tx batch to peer auth with {} new tx and buffer {} ns",
+                        count_buffered,
+                        time_elapsed
+                    );
 
                     self.batch_forward_tx_to_peer(mq_pub);
                 }
             }
 
-            let msg = factory::create_msg(submodules::AUTH, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
+            let msg = factory::create_msg(
+                submodules::AUTH,
+                topics::RESPONSE,
+                communication::MsgType::RESPONSE,
+                response.write_to_bytes().unwrap(),
+            );
             self.response_jsonrpc_cnt += 1;
-            trace!("response new tx {:?}, with response_jsonrpc_cnt = {}", response, self.response_jsonrpc_cnt);
-            mq_pub.send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            trace!(
+                "response new tx {:?}, with response_jsonrpc_cnt = {}",
+                response,
+                self.response_jsonrpc_cnt
+            );
+            mq_pub
+                .send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap()))
+                .unwrap();
         }
         if 0 == self.add_to_pool_cnt {
             self.start_verify_time = SystemTime::now();
@@ -147,7 +181,14 @@ impl Dispatchtx {
         self.add_to_pool_cnt += 1;
     }
 
-    pub fn deal_txs(&mut self, height: usize, txs: &HashSet<H256>, mq_pub: &Sender<(String, Vec<u8>)>, block_gas_limit: u64, account_gas_limit: AccountGasLimit) {
+    pub fn deal_txs(
+        &mut self,
+        height: usize,
+        txs: &HashSet<H256>,
+        mq_pub: &Sender<(String, Vec<u8>)>,
+        block_gas_limit: u64,
+        account_gas_limit: AccountGasLimit,
+    ) {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
 
@@ -157,12 +198,22 @@ impl Dispatchtx {
         }
 
         let out_txs = self.get_txs_from_pool(height as u64, block_gas_limit, account_gas_limit);
-        info!("public block txs height {} with {:?} txs on timestamp: {:?}", height, out_txs.len(), SystemTime::now());
+        info!(
+            "public block txs height {} with {:?} txs on timestamp: {:?}",
+            height,
+            out_txs.len(),
+            SystemTime::now()
+        );
         {
             let duration = self.start_verify_time.elapsed().unwrap();
             let time_duration_in_usec = duration.as_secs() * 1_000_000 + (duration.subsec_nanos() / 1_000) as u64;
             if 0 != time_duration_in_usec {
-                info!("{} txs have been added into tx_pool, and time cost is {:?}, tps: {:?}", self.add_to_pool_cnt, duration, self.add_to_pool_cnt * 1_000_000 / time_duration_in_usec);
+                info!(
+                    "{} txs have been added into tx_pool, and time cost is {:?}, tps: {:?}",
+                    self.add_to_pool_cnt,
+                    duration,
+                    self.add_to_pool_cnt * 1_000_000 / time_duration_in_usec
+                );
             }
             self.add_to_pool_cnt = 0;
         }
@@ -174,15 +225,30 @@ impl Dispatchtx {
         block_txs.set_height(height as u64);
         block_txs.set_body(body);
         trace!("deal_txs send height {}", height);
-        let msg = factory::create_msg(submodules::AUTH, topics::BLOCK_TXS, communication::MsgType::BLOCK_TXS, block_txs.write_to_bytes().unwrap());
-        mq_pub.send(("auth.block_txs".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+        let msg = factory::create_msg(
+            submodules::AUTH,
+            topics::BLOCK_TXS,
+            communication::MsgType::BLOCK_TXS,
+            block_txs.write_to_bytes().unwrap(),
+        );
+        mq_pub
+            .send(("auth.block_txs".to_string(), msg.write_to_bytes().unwrap()))
+            .unwrap();
     }
 
     pub fn wait_timeout_process(&mut self, mq_pub: &Sender<(String, Vec<u8>)>) {
-        let time_elapsed = self.batch_forward_info.forward_stamp.elapsed().unwrap().subsec_nanos();
+        let time_elapsed = self.batch_forward_info
+            .forward_stamp
+            .elapsed()
+            .unwrap()
+            .subsec_nanos();
         let count_buffered = self.batch_forward_info.new_tx_request_buffer.len();
         if !self.batch_forward_info.new_tx_request_buffer.is_empty() {
-            trace!("wait_timeout_process is going to send new tx batch to peer auth with {} new tx and buffer {} ns", count_buffered, time_elapsed);
+            trace!(
+                "wait_timeout_process is going to send new tx batch to peer auth with {} new tx and buffer {} ns",
+                count_buffered,
+                time_elapsed
+            );
             self.batch_forward_tx_to_peer(mq_pub);
         }
     }
@@ -202,7 +268,12 @@ impl Dispatchtx {
         success
     }
 
-    pub fn get_txs_from_pool(&self, height: u64, block_gas_limit: u64, account_gas_limit: AccountGasLimit) -> Vec<SignedTransaction> {
+    pub fn get_txs_from_pool(
+        &self,
+        height: u64,
+        block_gas_limit: u64,
+        account_gas_limit: AccountGasLimit,
+    ) -> Vec<SignedTransaction> {
         if self.data_from_pool.load(Ordering::SeqCst) {
             self.data_from_pool.store(false, Ordering::SeqCst);
             Vec::new()
@@ -221,9 +292,11 @@ impl Dispatchtx {
         if self.wal_enable {
             let mut wal = self.wal.clone();
             let txs = txs.clone();
-            thread::spawn(move || for tx in txs {
-                              wal.delete_with_hash(&tx);
-                          });
+            thread::spawn(move || {
+                for tx in txs {
+                    wal.delete_with_hash(&tx);
+                }
+            });
         }
     }
 
@@ -235,9 +308,11 @@ impl Dispatchtx {
         //改成多线程删除数据
         if self.wal_enable {
             let mut wal = self.wal.clone();
-            thread::spawn(move || for tx in txs {
-                              wal.delete(&tx);
-                          });
+            thread::spawn(move || {
+                for tx in txs {
+                    wal.delete(&tx);
+                }
+            });
         }
     }
 
@@ -248,17 +323,29 @@ impl Dispatchtx {
     }
 
     fn batch_forward_tx_to_peer(&mut self, mq_pub: &Sender<(String, Vec<u8>)>) {
-        trace!("batch_forward_tx_to_peer is going to send {} new tx to peer", self.batch_forward_info.new_tx_request_buffer.len());
+        trace!(
+            "batch_forward_tx_to_peer is going to send {} new tx to peer",
+            self.batch_forward_info.new_tx_request_buffer.len()
+        );
         let mut batch_request = BatchRequest::new();
-        batch_request.set_new_tx_requests(RepeatedField::from_slice(&self.batch_forward_info.new_tx_request_buffer[..]));
+        batch_request.set_new_tx_requests(RepeatedField::from_slice(
+            &self.batch_forward_info.new_tx_request_buffer[..],
+        ));
 
         let request_id = Uuid::new_v4().as_bytes().to_vec();
         let mut request = Request::new();
         request.set_batch_req(batch_request);
         request.set_request_id(request_id);
 
-        let msg = factory::create_msg(submodules::AUTH, topics::REQUEST, communication::MsgType::REQUEST, request.write_to_bytes().unwrap());
-        mq_pub.send(("auth.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+        let msg = factory::create_msg(
+            submodules::AUTH,
+            topics::REQUEST,
+            communication::MsgType::REQUEST,
+            request.write_to_bytes().unwrap(),
+        );
+        mq_pub
+            .send(("auth.tx".to_string(), msg.write_to_bytes().unwrap()))
+            .unwrap();
 
         self.batch_forward_info.forward_stamp = SystemTime::now();
         self.batch_forward_info.new_tx_request_buffer.clear();

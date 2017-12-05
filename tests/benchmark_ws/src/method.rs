@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use jsonrpc_types::{RpcRequest, Params, Id, Error};
+use jsonrpc_types::{Error, Id, Params, RpcRequest};
 use jsonrpc_types::method::method;
 use jsonrpc_types::request::Version;
 use jsonrpc_types::response::ResultBody;
@@ -43,9 +43,9 @@ where
             params: Some(params),
         };
         let _ = serde_json::to_string(&rpc).map(|data| {
-                                                    self.send(data);
-                                                    self.insert(request_id, call_back);
-                                                });
+            self.send(data);
+            self.insert(request_id, call_back);
+        });
     }
 
     fn send_transaction(&mut self, params: Params, call_back: F) {
@@ -72,18 +72,22 @@ pub trait Work {
     fn send(&mut self, data: String);
 }
 
-//impl Work for Worker {
-//    fn insert<F: 'static + FnMut(Result<ResultBody, Error>)>(&mut self, id: String, call_back: F) -> bool {
-//        self.requests.insert(id, Box::new(call_back)).is_some()
-//    }
-//
-//    fn is_exist(&self, id: &String) -> bool {
-//        self.requests.contains_key(id)
-//    }
-//
-//    fn exce(&mut self, id: &String, ret: Result<ResultBody, Error>) {
-//        if let Some(mut call_back) = self.requests.remove(id) {
-//            call_back(ret);
-//        }
-//    }
-//}
+// impl Work for Worker {
+//     fn insert<F: 'static + FnMut(Result<ResultBody, Error>)>(
+//         &mut self,
+//         id: String,
+//         call_back: F,
+//     ) -> bool {
+//         self.requests.insert(id, Box::new(call_back)).is_some()
+//     }
+
+//     fn is_exist(&self, id: &String) -> bool {
+//         self.requests.contains_key(id)
+//     }
+
+//     fn exce(&mut self, id: &String, ret: Result<ResultBody, Error>) {
+//         if let Some(mut call_back) = self.requests.remove(id) {
+//             call_back(ret);
+//         }
+//     }
+// }

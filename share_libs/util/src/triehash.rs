@@ -17,6 +17,7 @@
 //! Generetes trie root.
 //!
 //! This module should be used to generate trie root hash.
+#![rustfmt_skip]
 
 use Hashable;
 use hash::*;

@@ -14,31 +14,32 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy))]
+#![feature(custom_attribute)]
 #![allow(unused_assignments, unused_must_use, deprecated, unused_extern_crates)]
+extern crate clap;
+extern crate cpuprofiler;
+extern crate dotenv;
+extern crate error;
 extern crate hyper;
+extern crate jsonrpc_types;
 extern crate libproto;
-extern crate protobuf;
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate util;
-extern crate serde_json;
+extern crate logger;
+extern crate num_cpus;
+extern crate protobuf;
+extern crate pubsub;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
-extern crate pubsub;
-extern crate cpuprofiler;
-extern crate jsonrpc_types;
-extern crate dotenv;
-extern crate logger;
+extern crate serde_json;
 extern crate threadpool;
-extern crate num_cpus;
-extern crate ws;
-extern crate clap;
+#[macro_use]
+extern crate util;
 extern crate uuid;
-extern crate error;
+extern crate ws;
 
 pub mod http_handler;
 pub mod mq_hanlder;
@@ -58,7 +59,7 @@ use protobuf::{Message, RepeatedField};
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::sync::mpsc::{Sender, channel};
+use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use std::time::{Duration, SystemTime};
 use util::Mutex;
@@ -74,12 +75,15 @@ fn start_profile(config: &ProfileConfig) {
         let start = config.flag_prof_start;
         let duration = config.flag_prof_duration;
         thread::spawn(move || {
-                          thread::sleep(Duration::new(start, 0));
-                          PROFILER.lock().unwrap().start("./jsonrpc.profile").expect("Couldn't start");
-                          thread::sleep(Duration::new(duration, 0));
-                          PROFILER.lock().unwrap().stop().unwrap();
-                      });
-
+            thread::sleep(Duration::new(start, 0));
+            PROFILER
+                .lock()
+                .unwrap()
+                .start("./jsonrpc.profile")
+                .expect("Couldn't start");
+            thread::sleep(Duration::new(duration, 0));
+            PROFILER.lock().unwrap().stop().unwrap();
+        });
     }
 }
 
@@ -103,7 +107,10 @@ fn main() {
     }
 
     let config = config::read_user_from_file(config_path).expect("config error!");
-    info!("CITA:jsonrpc config \n {:?}", serde_json::to_string_pretty(&config).unwrap());
+    info!(
+        "CITA:jsonrpc config \n {:?}",
+        serde_json::to_string_pretty(&config).unwrap()
+    );
 
     //enable HTTP or WebSocket server!
     if !config.ws_config.enable && !config.http_config.enable {
@@ -140,13 +147,15 @@ fn main() {
             let url = http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
             let arc_tx = Arc::new(Mutex::new(sender_mq_http));
             info!("Http Listening on {}", url);
-            let _ = Server::http(url).unwrap().handle_threads(HttpHandler {
-                                                                  responses: http_responses,
-                                                                  tx: arc_tx,
-                                                                  timeout: http_config.timeout,
-                                                                  method_handler: method::MethodHandler,
-                                                              },
-                                                              http_config.thread_number);
+            let _ = Server::http(url).unwrap().handle_threads(
+                HttpHandler {
+                    responses: http_responses,
+                    tx: arc_tx,
+                    timeout: http_config.timeout,
+                    method_handler: method::MethodHandler,
+                },
+                http_config.thread_number,
+            );
         });
     }
 
@@ -171,14 +180,20 @@ fn main() {
         loop {
             if let Ok(res) = rx_relay.try_recv() {
                 let (topic, req): (String, reqlib::Request) = res;
-                forward_service(topic, req, &mut new_tx_request_buffer, &mut time_stamp, &tx_pub, &config);
+                forward_service(
+                    topic,
+                    req,
+                    &mut new_tx_request_buffer,
+                    &mut time_stamp,
+                    &tx_pub,
+                    &config,
+                );
             } else {
                 if !new_tx_request_buffer.is_empty() {
                     batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, &tx_pub);
                 }
                 thread::sleep(Duration::new(0, config.new_tx_flow_config.buffer_duration));
             }
-
         }
     });
 
@@ -188,8 +203,16 @@ fn main() {
     }
 }
 
-fn batch_forward_new_tx(new_tx_request_buffer: &mut Vec<reqlib::Request>, time_stamp: &mut SystemTime, tx_pub: &Sender<(String, Vec<u8>)>) {
-    trace!("Going to send new tx batch to auth with {} new tx and buffer time cost is {:?} ", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap());
+fn batch_forward_new_tx(
+    new_tx_request_buffer: &mut Vec<reqlib::Request>,
+    time_stamp: &mut SystemTime,
+    tx_pub: &Sender<(String, Vec<u8>)>,
+) {
+    trace!(
+        "Going to send new tx batch to auth with {} new tx and buffer time cost is {:?} ",
+        new_tx_request_buffer.len(),
+        time_stamp.elapsed().unwrap()
+    );
     let mut batch_request = BatchRequest::new();
     batch_request.set_new_tx_requests(RepeatedField::from_slice(&new_tx_request_buffer[..]));
 
@@ -199,19 +222,39 @@ fn batch_forward_new_tx(new_tx_request_buffer: &mut Vec<reqlib::Request>, time_s
     request.set_request_id(request_id);
 
     let data: CommMsg = request.into();
-    tx_pub.send((String::from(TOPIC_NEW_TX_BATCH), data.write_to_bytes().unwrap())).unwrap();
+    tx_pub
+        .send((
+            String::from(TOPIC_NEW_TX_BATCH),
+            data.write_to_bytes().unwrap(),
+        ))
+        .unwrap();
     *time_stamp = SystemTime::now();
     new_tx_request_buffer.clear();
 }
 
-fn forward_service(topic: String, req: reqlib::Request, new_tx_request_buffer: &mut Vec<reqlib::Request>, time_stamp: &mut SystemTime, tx_pub: &Sender<(String, Vec<u8>)>, config: &config::Config) {
+fn forward_service(
+    topic: String,
+    req: reqlib::Request,
+    new_tx_request_buffer: &mut Vec<reqlib::Request>,
+    time_stamp: &mut SystemTime,
+    tx_pub: &Sender<(String, Vec<u8>)>,
+    config: &config::Config,
+) {
     if topic.as_str() != TOPIC_NEW_TX {
         let data: CommMsg = req.into();
-        tx_pub.send((topic, data.write_to_bytes().unwrap())).unwrap();
+        tx_pub
+            .send((topic, data.write_to_bytes().unwrap()))
+            .unwrap();
     } else {
         new_tx_request_buffer.push(req);
-        trace!("New tx is pushed and has {} new tx and buffer time cost is {:?}", new_tx_request_buffer.len(), time_stamp.elapsed().unwrap());
-        if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_duration {
+        trace!(
+            "New tx is pushed and has {} new tx and buffer time cost is {:?}",
+            new_tx_request_buffer.len(),
+            time_stamp.elapsed().unwrap()
+        );
+        if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch
+            || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_duration
+        {
             batch_forward_new_tx(new_tx_request_buffer, time_stamp, tx_pub);
         }
     }

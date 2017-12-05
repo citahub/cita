@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! General error types for use in ethcore.
+#![rustfmt_skip]
 
 use basic_types::LogBloom;
 use cita_ed25519::Error as EthkeyError;

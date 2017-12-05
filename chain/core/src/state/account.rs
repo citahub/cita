@@ -20,7 +20,7 @@
 use lru_cache::LruCache;
 use pod_account::*;
 use rlp::*;
-use std::cell::{RefCell, Cell};
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
@@ -102,11 +102,13 @@ impl Account {
             code_hash: pod.code.as_ref().map_or(HASH_EMPTY, |c| c.crypt_hash()),
             code_filth: Filth::Dirty,
             code_size: Some(pod.code.as_ref().map_or(0, |c| c.len())),
-            code_cache: Arc::new(pod.code.map_or_else(|| {
-                                                          warn!("POD account with unknown code is being created! Assuming no code.");
-                                                          vec![]
-                                                      },
-                                                      |c| c)),
+            code_cache: Arc::new(pod.code.map_or_else(
+                || {
+                    warn!("POD account with unknown code is being created! Assuming no code.");
+                    vec![]
+                },
+                |c| c,
+            )),
             address_hash: Cell::new(None),
         }
     }
@@ -208,10 +210,10 @@ impl Account {
     pub fn address_hash(&self, address: &Address) -> H256 {
         let hash = self.address_hash.get();
         hash.unwrap_or_else(|| {
-                                let hash = address.crypt_hash();
-                                self.address_hash.set(Some(hash));
-                                hash
-                            })
+            let hash = address.crypt_hash();
+            self.address_hash.set(Some(hash));
+            hash
+        })
     }
 
     /// returns the account's code. If `None` then the code cache isn't available -
@@ -250,7 +252,12 @@ impl Account {
     /// Provide a database to get `code_hash`. Should not be called if it is a contract without code.
     pub fn cache_code(&mut self, db: &HashDB) -> Option<Arc<Bytes>> {
         // TODO: fill out self.code_cache;
-        trace!("Account::cache_code: ic={}; self.code_hash={:?}, self.code_cache={}", self.is_cached(), self.code_hash, self.code_cache.pretty());
+        trace!(
+            "Account::cache_code: ic={}; self.code_hash={:?}, self.code_cache={}",
+            self.is_cached(),
+            self.code_hash,
+            self.code_cache.pretty()
+        );
 
         if self.is_cached() {
             return Some(Arc::clone(&self.code_cache));
@@ -272,7 +279,12 @@ impl Account {
     /// Provide code to cache. For correctness, should be the correct code for the
     /// account.
     pub fn cache_given_code(&mut self, code: Arc<Bytes>) {
-        trace!("Account::cache_given_code: ic={}; self.code_hash={:?}, self.code_cache={}", self.is_cached(), self.code_hash, self.code_cache.pretty());
+        trace!(
+            "Account::cache_given_code: ic={}; self.code_hash={:?}, self.code_cache={}",
+            self.is_cached(),
+            self.code_hash,
+            self.code_cache.pretty()
+        );
 
         self.code_size = Some(code.len());
         self.code_cache = code;
@@ -281,22 +293,26 @@ impl Account {
     /// Provide a database to get `code_size`. Should not be called if it is a contract without code.
     pub fn cache_code_size(&mut self, db: &HashDB) -> bool {
         // TODO: fill out self.code_cache;
-        trace!("Account::cache_code_size: ic={}; self.code_hash={:?}, self.code_cache={}", self.is_cached(), self.code_hash, self.code_cache.pretty());
-        self.code_size.is_some() ||
-            if self.code_hash != HASH_EMPTY {
-                match db.get(&self.code_hash) {
-                    Some(x) => {
-                        self.code_size = Some(x.len());
-                        true
-                    }
-                    _ => {
-                        warn!("Failed reverse get of {}", self.code_hash);
-                        false
-                    }
+        trace!(
+            "Account::cache_code_size: ic={}; self.code_hash={:?}, self.code_cache={}",
+            self.is_cached(),
+            self.code_hash,
+            self.code_cache.pretty()
+        );
+        self.code_size.is_some() || if self.code_hash != HASH_EMPTY {
+            match db.get(&self.code_hash) {
+                Some(x) => {
+                    self.code_size = Some(x.len());
+                    true
                 }
-            } else {
-                false
+                _ => {
+                    warn!("Failed reverse get of {}", self.code_hash);
+                    false
+                }
             }
+        } else {
+            false
+        }
     }
 
     /// Determine whether there are any un-`commit()`-ed storage-setting operations.
@@ -308,7 +324,10 @@ impl Account {
     ///
     /// NOTE: Will panic if `!self.storage_is_clean()`
     pub fn is_empty(&self) -> bool {
-        assert!(self.storage_is_clean(), "Account::is_empty() may only legally be called when storage is clean.");
+        assert!(
+            self.storage_is_clean(),
+            "Account::is_empty() may only legally be called when storage is clean."
+        );
         self.is_null() && self.storage_root == HASH_NULL_RLP
     }
 
@@ -319,7 +338,11 @@ impl Account {
 
     /// Return the storage root associated with this account or None if it has been altered via the overlay.
     pub fn storage_root(&self) -> Option<&H256> {
-        if self.storage_is_clean() { Some(&self.storage_root) } else { None }
+        if self.storage_is_clean() {
+            Some(&self.storage_root)
+        } else {
+            None
+        }
     }
 
     /// Return the storage overlay.
@@ -351,7 +374,12 @@ impl Account {
 
     /// Commit any unsaved code. `code_hash` will always return the hash of the `code_cache` after this.
     pub fn commit_code(&mut self, db: &mut HashDB) {
-        trace!("Commiting code of {:?} - {:?}, {:?}", self, self.code_filth == Filth::Dirty, self.code_cache.is_empty());
+        trace!(
+            "Commiting code of {:?} - {:?}, {:?}",
+            self,
+            self.code_filth == Filth::Dirty,
+            self.code_cache.is_empty()
+        );
         match (self.code_filth == Filth::Dirty, self.code_cache.is_empty()) {
             (true, true) => {
                 self.code_size = Some(0);
@@ -434,7 +462,7 @@ impl fmt::Debug for Account {
 mod tests {
     use super::*;
     use account_db::*;
-    use rlp::{UntrustedRlp, RlpType, Compressible};
+    use rlp::{Compressible, RlpType, UntrustedRlp};
     use util::hashable::HASH_NAME;
 
     #[test]
@@ -453,7 +481,10 @@ mod tests {
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         let rlp = {
             let mut a = Account::new_contract(0.into());
-            a.set_storage(H256::from(&U256::from(0x00u64)), H256::from(&U256::from(0x1234u64)));
+            a.set_storage(
+                H256::from(&U256::from(0x00u64)),
+                H256::from(&U256::from(0x1234u64)),
+            );
             a.commit_storage(&Default::default(), &mut db).unwrap();
             a.init_code(vec![]);
             a.commit_code(&mut db);
@@ -462,12 +493,32 @@ mod tests {
 
         let a = Account::from_rlp(&rlp);
         if HASH_NAME == "sha3" {
-            assert_eq!(a.storage_root().unwrap().hex(), "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2");
+            assert_eq!(
+                a.storage_root().unwrap().hex(),
+                "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
+            );
         } else if HASH_NAME == "balec2b" {
-            assert_eq!(a.storage_root().unwrap().hex(), "f2294578afd49317eb0ac5349dbf9206abcfc1484b25b04aa68df925c629c3ef");
+            assert_eq!(
+                a.storage_root().unwrap().hex(),
+                "f2294578afd49317eb0ac5349dbf9206abcfc1484b25b04aa68df925c629c3ef"
+            );
         }
-        assert_eq!(a.storage_at(&Default::default(), &db.immutable(), &H256::from(&U256::from(0x00u64))).unwrap(), H256::from(&U256::from(0x1234u64)));
-        assert_eq!(a.storage_at(&Default::default(), &db.immutable(), &H256::from(&U256::from(0x01u64))).unwrap(), H256::new());
+        assert_eq!(
+            a.storage_at(
+                &Default::default(),
+                &db.immutable(),
+                &H256::from(&U256::from(0x00u64))
+            ).unwrap(),
+            H256::from(&U256::from(0x1234u64))
+        );
+        assert_eq!(
+            a.storage_at(
+                &Default::default(),
+                &db.immutable(),
+                &H256::from(&U256::from(0x01u64))
+            ).unwrap(),
+            H256::new()
+        );
     }
 
     #[test]
@@ -498,10 +549,16 @@ mod tests {
         assert_eq!(a.storage_root(), None);
         if HASH_NAME == "sha3" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
-            assert_eq!(a.storage_root().unwrap().hex(), "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2");
+            assert_eq!(
+                a.storage_root().unwrap().hex(),
+                "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
+            );
         } else if HASH_NAME == "blake2b" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
-            assert_eq!(a.storage_root().unwrap().hex(), "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b");
+            assert_eq!(
+                a.storage_root().unwrap().hex(),
+                "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b"
+            );
         }
     }
 
@@ -517,10 +574,16 @@ mod tests {
         a.set_storage(1.into(), 0.into());
         if HASH_NAME == "sha3" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
-            assert_eq!(a.storage_root().unwrap().hex(), "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2");
+            assert_eq!(
+                a.storage_root().unwrap().hex(),
+                "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
+            );
         } else if HASH_NAME == "blake2b" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
-            assert_eq!(a.storage_root().unwrap().hex(), "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b");
+            assert_eq!(
+                a.storage_root().unwrap().hex(),
+                "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b"
+            );
         }
     }
 
@@ -534,11 +597,16 @@ mod tests {
         assert_eq!(a.code_size(), Some(3));
         a.commit_code(&mut db);
         if HASH_NAME == "sha3" {
-            assert_eq!(a.code_hash().hex(), "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb");
+            assert_eq!(
+                a.code_hash().hex(),
+                "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
+            );
         } else if HASH_NAME == "blake2b" {
-            assert_eq!(a.code_hash().hex(), "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845");
+            assert_eq!(
+                a.code_hash().hex(),
+                "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
+            );
         }
-
     }
 
     #[test]
@@ -551,17 +619,29 @@ mod tests {
         a.commit_code(&mut db);
         assert_eq!(a.code_filth, Filth::Clean);
         if HASH_NAME == "sha3" {
-            assert_eq!(a.code_hash().hex(), "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb");
+            assert_eq!(
+                a.code_hash().hex(),
+                "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
+            );
         } else if HASH_NAME == "blake2b" {
-            assert_eq!(a.code_hash().hex(), "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845");
+            assert_eq!(
+                a.code_hash().hex(),
+                "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
+            );
         }
         a.reset_code(vec![0x55]);
         assert_eq!(a.code_filth, Filth::Dirty);
         a.commit_code(&mut db);
         if HASH_NAME == "sha3" {
-            assert_eq!(a.code_hash().hex(), "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be");
+            assert_eq!(
+                a.code_hash().hex(),
+                "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be"
+            );
         } else if HASH_NAME == "blake2b" {
-            assert_eq!(a.code_hash().hex(), "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01");
+            assert_eq!(
+                a.code_hash().hex(),
+                "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01"
+            );
         }
     }
 
@@ -578,9 +658,19 @@ mod tests {
     fn new_account() {
         let a = Account::new(U256::from(0u8), HashMap::new(), Bytes::new());
         if HASH_NAME == "sha3" {
-            assert_eq!(a.rlp().to_hex(), "f84380a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+            assert_eq!(
+                a.rlp().to_hex(),
+                "f84380a056e81f171bcc55a6ff8345e692c0f86e5b48e0\
+                 1b996cadc001622fb5e363b421a0c5d2460186f7233c927\
+                 e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+            );
         } else if HASH_NAME == "blake2b" {
-            assert_eq!(a.rlp().to_hex(), "f84380a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f");
+            assert_eq!(
+                a.rlp().to_hex(),
+                "f84380a0c14af59107ef14003e4697a40ea912d865eb1\
+                 463086a4649977c13ea69b0d9afa0d67f729f8d19ed2e9\
+                 2f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
+            );
         }
         assert_eq!(a.nonce(), &U256::from(0u8));
         assert_eq!(a.code_hash(), HASH_EMPTY);
@@ -591,9 +681,19 @@ mod tests {
     fn create_account() {
         let a = Account::new(U256::from(0u8), HashMap::new(), Bytes::new());
         if HASH_NAME == "sha3" {
-            assert_eq!(a.rlp().to_hex(), "f84380a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+            assert_eq!(
+                a.rlp().to_hex(),
+                "f84380a056e81f171bcc55a6ff8345e692c0f86e5b4\
+                 8e01b996cadc001622fb5e363b421a0c5d2460186f72\
+                 33c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+            );
         } else if HASH_NAME == "blake2b" {
-            assert_eq!(a.rlp().to_hex(), "f84380a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f");
+            assert_eq!(
+                a.rlp().to_hex(),
+                "f84380a0c14af59107ef14003e4697a40ea912d865eb\
+                 1463086a4649977c13ea69b0d9afa0d67f729f8d19ed2\
+                 e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
+            );
         }
     }
 

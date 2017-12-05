@@ -17,7 +17,7 @@
 
 use builtin::Builtin;
 use std::collections::BTreeMap;
-use util::{Address, U256, BytesRef};
+use util::{Address, BytesRef, U256};
 pub trait Engine: Sync + Send {
     /// The name of this engine.
     fn name(&self) -> &str;
@@ -26,7 +26,9 @@ pub trait Engine: Sync + Send {
     /// (In principle these are just hints for the engine since that has the last word on them.)
     fn builtins(&self) -> &BTreeMap<Address, Builtin>;
 
-    // TODO: builtin contract routing - to do this properly, it will require removing the built-in configuration-reading logic
+    // TODO: builtin contract routing - to do this properly,
+    // it will require removing the built-in configuration-reading logic
+
     // from Spec into here and removing the Spec::builtins field.
     /// Determine whether a particular address is a builtin contract.
     fn is_builtin(&self, a: &Address) -> bool {
@@ -35,12 +37,18 @@ pub trait Engine: Sync + Send {
     /// Determine the code execution cost of the builtin contract with address `a`.
     /// Panics if `is_builtin(a)` is not true.
     fn cost_of_builtin(&self, a: &Address, input: &[u8]) -> U256 {
-        self.builtins().get(a).expect("queried cost of nonexistent builtin").cost(input.len())
+        self.builtins()
+            .get(a)
+            .expect("queried cost of nonexistent builtin")
+            .cost(input.len())
     }
     /// Execution the builtin contract `a` on `input` and return `output`.
     /// Panics if `is_builtin(a)` is not true.
     fn execute_builtin(&self, a: &Address, input: &[u8], output: &mut BytesRef) {
-        self.builtins().get(a).expect("attempted to execute nonexistent builtin").execute(input, output);
+        self.builtins()
+            .get(a)
+            .expect("attempted to execute nonexistent builtin")
+            .execute(input, output);
     }
     // fn register(&mut self, addr: Address, contract: Box<native::Contract>);
     // fn unregister(&mut self, addr: Address) -> Option<Box<native::Contract>>;

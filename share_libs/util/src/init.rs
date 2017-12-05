@@ -1,4 +1,3 @@
-
 #[macro_export]
 macro_rules! micro_service_init {
     ($x:expr, $y:expr) => {

@@ -42,7 +42,9 @@ pub struct HashmapStateMachine {
 /// Implement anything you want... A `new()` is generally a great idea.
 impl HashmapStateMachine {
     pub fn new() -> HashmapStateMachine {
-        HashmapStateMachine { map: HashMap::new() }
+        HashmapStateMachine {
+            map: HashMap::new(),
+        }
     }
 }
 

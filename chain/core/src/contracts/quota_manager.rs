@@ -17,7 +17,7 @@
 
 //! Quota manager.
 
-use super::{parse_string_to_addresses, parse_string_to_quota, encode_contract_name};
+use super::{encode_contract_name, parse_string_to_addresses, parse_string_to_quota};
 use super::ContractCallExt;
 use libchain::chain::Chain;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
@@ -74,7 +74,10 @@ impl Into<ProtoAccountGasLimit> for AccountGasLimit {
     fn into(self) -> ProtoAccountGasLimit {
         let mut r = ProtoAccountGasLimit::new();
         r.common_gas_limit = self.common_gas_limit;
-        let specific_gas_limit: HashMap<String, u64> = self.get_specific_gas_limit().iter().map(|(k, v)| (k.hex(), *v)).collect();
+        let specific_gas_limit: HashMap<String, u64> = self.get_specific_gas_limit()
+            .iter()
+            .map(|(k, v)| (k.hex(), *v))
+            .collect();
         r.set_specific_gas_limit(specific_gas_limit);
         r
     }
@@ -153,7 +156,7 @@ mod tests {
     use std::time::UNIX_EPOCH;
     use tests::helpers::init_chain;
     use types::transaction::SignedTransaction;
-    use util::{U256, Address};
+    use util::{Address, U256};
 
     #[allow(dead_code)]
     fn create_block(chain: &Chain, privkey: &PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
@@ -180,7 +183,6 @@ mod tests {
 
             let new_tx = SignedTransaction::new(&stx).unwrap();
             txs.push(new_tx);
-
         }
         body.set_transactions(txs);
         block.set_body(body);
@@ -190,7 +192,11 @@ mod tests {
     #[test]
     fn test_users() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+            PrivKey::from(
+                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e\
+                 304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd9786\
+                 61983b8af4bc115d2d66",
+            )
         } else if SIGNATURE_NAME == "secp256k1" {
             PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
         } else {
@@ -203,13 +209,22 @@ mod tests {
         let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*USERS_METHOD_HASH.as_slice());
         let users = parse_string_to_addresses(&output);
 
-        assert_eq!(users, vec![H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap()]);
+        assert_eq!(
+            users,
+            vec![
+                H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap(),
+            ]
+        );
     }
 
     #[test]
     fn test_quota() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+            PrivKey::from(
+                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8\
+                 c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcf\
+                 d978661983b8af4bc115d2d66",
+            )
         } else if SIGNATURE_NAME == "secp256k1" {
             PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
         } else {
@@ -228,7 +243,11 @@ mod tests {
     #[test]
     fn test_block_gas_limit() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+            PrivKey::from(
+                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c9\
+                 ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed\
+                 2bcbcfd978661983b8af4bc115d2d66",
+            )
         } else if SIGNATURE_NAME == "secp256k1" {
             PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
         } else {
@@ -248,7 +267,11 @@ mod tests {
     #[test]
     fn test_account_gas_limit() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+            PrivKey::from(
+                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c\
+                 9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223\
+                 ed2bcbcfd978661983b8af4bc115d2d66",
+            )
         } else if SIGNATURE_NAME == "secp256k1" {
             PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
         } else {

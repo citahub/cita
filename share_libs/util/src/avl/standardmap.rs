@@ -59,7 +59,8 @@ pub struct StandardMap {
 }
 
 impl StandardMap {
-    /// Get a bunch of random bytes, at least `min_count` bytes, at most `min_count` + `journal_count` bytes.
+    /// Get a bunch of random bytes, at least `min_count` bytes,
+    /// at most `min_count` + `journal_count` bytes.
     /// `seed` is mutated pseudoramdonly and used.
     fn random_bytes(min_count: usize, journal_count: usize, seed: &mut H256) -> Vec<u8> {
         assert!(min_count + journal_count <= 32);
@@ -68,7 +69,8 @@ impl StandardMap {
         seed[0..r].to_vec()
     }
 
-    /// Get a random value. Equal chance of being 1 byte as of 32. `seed` is mutated pseudoramdonly and used.
+    /// Get a random value. Equal chance of being 1 byte as of 32.
+    /// `seed` is mutated pseudoramdonly and used.
     fn random_value(seed: &mut H256) -> Bytes {
         *seed = seed.crypt_hash();
         match seed[0] % 2 {
@@ -77,8 +79,10 @@ impl StandardMap {
         }
     }
 
-    /// Get a random word of, at least `min_count` bytes, at most `min_count` + `journal_count` bytes.
-    /// Each byte is an item from `alphabet`. `seed` is mutated pseudoramdonly and used.
+    /// Get a random word of, at least `min_count` bytes,
+    /// at most `min_count` + `journal_count` bytes.
+    /// Each byte is an item from `alphabet`.
+    /// `seed` is mutated pseudoramdonly and used.
     fn random_word(alphabet: &[u8], min_count: usize, journal_count: usize, seed: &mut H256) -> Vec<u8> {
         assert!(min_count + journal_count <= 32);
         *seed = seed.crypt_hash();
@@ -95,7 +99,8 @@ impl StandardMap {
         self.make_with(&mut H256::new())
     }
 
-    /// Create the standard map (set of keys and values) for the object's fields, using the given seed.
+    /// Create the standard map (set of keys and values) for the object's fields,
+    /// using the given seed.
     pub fn make_with(&self, seed: &mut H256) -> Vec<(Bytes, Bytes)> {
         let low = b"abcdef";
         let mid = b"@QWERTYUIOPASDFGHJKLZXCVBNM[/]^_";
@@ -106,9 +111,7 @@ impl StandardMap {
                 Alphabet::All => Self::random_bytes(self.min_key, self.journal_key, seed),
                 Alphabet::Low => Self::random_word(low, self.min_key, self.journal_key, seed),
                 Alphabet::Mid => Self::random_word(mid, self.min_key, self.journal_key, seed),
-                Alphabet::Custom(ref a) => {
-                    Self::random_word(a, self.min_key, self.journal_key, seed)
-                }
+                Alphabet::Custom(ref a) => Self::random_word(a, self.min_key, self.journal_key, seed),
             };
             let v = match self.value_mode {
                 ValueMode::Mirror => k.clone(),

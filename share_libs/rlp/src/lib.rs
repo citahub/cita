@@ -37,6 +37,9 @@
 //! * You are working on input data.
 //! * You want to get view onto rlp-slice.
 //! * You don't want to decode whole rlp at once.
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
+#![rustfmt_skip]
 
 extern crate byteorder;
 extern crate bigint;

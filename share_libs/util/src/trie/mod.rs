@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Trie interface and implementation.
+#![rustfmt_skip]
 
 use hash::H256;
 use hashdb::{HashDB, DBValue};

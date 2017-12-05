@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Transaction execution format module.
+#![rustfmt_skip]
 
 use evm;
 use rlp::*;

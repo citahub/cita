@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{PrivKey, PubKey, Address};
+use super::{Address, PrivKey, PubKey};
 use error::Error;
 use rustc_serialize::hex::ToHex;
-use sodiumoxide::crypto::sign::{keypair_from_privkey, gen_keypair};
+use sodiumoxide::crypto::sign::{gen_keypair, keypair_from_privkey};
 use std::fmt;
 use util::{H160, Hashable};
 use util::crypto::CreateKey;
@@ -51,9 +51,9 @@ impl CreateKey for KeyPair {
         match keypair {
             None => Err(Error::InvalidPrivKey),
             Some((pk, sk)) => Ok(KeyPair {
-                                     privkey: PrivKey::from(sk.0),
-                                     pubkey: PubKey::from(pk.0),
-                                 }),
+                privkey: PrivKey::from(sk.0),
+                pubkey: PubKey::from(pk.0),
+            }),
         }
     }
 

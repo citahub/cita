@@ -68,10 +68,10 @@ impl Recorder {
 
         if depth >= self.min_depth {
             self.nodes.push(Record {
-                                depth: depth,
-                                data: data.into(),
-                                hash: *hash,
-                            })
+                depth: depth,
+                data: data.into(),
+                hash: *hash,
+            })
         }
     }
 
@@ -131,18 +131,20 @@ mod tests {
 
         assert_eq!(records.len(), 1);
 
-        assert_eq!(records[0].clone(),
-                   Record {
-                       data: node2,
-                       hash: hash2,
-                       depth: 456,
-                   });
+        assert_eq!(
+            records[0].clone(),
+            Record {
+                data: node2,
+                hash: hash2,
+                depth: 456,
+            }
+        );
     }
 
     #[test]
     #[cfg(feature = "sha3hash")]
     fn avl_record() {
-        use avl::{AVLDB, AVLDBMut, AVL, AVLMut};
+        use avl::{AVLDBMut, AVLMut, AVL, AVLDB};
         use memorydb::MemoryDB;
 
         let mut db = MemoryDB::new();

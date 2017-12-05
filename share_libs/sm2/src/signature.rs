@@ -15,11 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{PrivKey, PubKey, Address, Message, SIGNATURE_BYTES_LEN, sm2_sign, sm2_recover, pubkey_to_address, Error, GROUP, PUBKEY_BYTES_LEN};
+use super::{pubkey_to_address, Address, Error, Message, PrivKey, PubKey, sm2_recover, sm2_sign, GROUP,
+            PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN};
 use rlp::*;
 use rustc_serialize::hex::ToHex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{Error as SerdeError, Visitor, SeqAccess};
+use serde::de::{Error as SerdeError, SeqAccess, Visitor};
 use serde::ser::SerializeSeq;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -38,10 +39,10 @@ impl PartialEq for Signature {
 impl Decodable for Signature {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         rlp.decoder().decode_value(|bytes| {
-                                       let mut sig = [0u8; 65];
-                                       sig[0..65].copy_from_slice(bytes);
-                                       Ok(Signature(sig))
-                                   })
+            let mut sig = [0u8; 65];
+            sig[0..65].copy_from_slice(bytes);
+            Ok(Signature(sig))
+        })
     }
 }
 
@@ -106,10 +107,10 @@ impl Eq for Signature {}
 impl fmt::Debug for Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         f.debug_struct("Signature")
-         .field("r", &self.0[1..33].to_hex())
-         .field("s", &self.0[33..65].to_hex())
-         .field("v", &self.0[0..1].to_hex())
-         .finish()
+            .field("r", &self.0[1..33].to_hex())
+            .field("s", &self.0[33..65].to_hex())
+            .field("v", &self.0[0..1].to_hex())
+            .finish()
     }
 }
 
@@ -199,7 +200,12 @@ impl Sign for Signature {
     fn sign(privkey: &Self::PrivKey, message: &Self::Message) -> Result<Self, Error> {
         let mut signature: [u8; SIGNATURE_BYTES_LEN] = [0; SIGNATURE_BYTES_LEN];
         unsafe {
-            sm2_sign(GROUP.as_ptr(), privkey.as_ref().as_ptr(), message.as_ref().as_ptr(), signature.as_mut_ptr());
+            sm2_sign(
+                GROUP.as_ptr(),
+                privkey.as_ref().as_ptr(),
+                message.as_ref().as_ptr(),
+                signature.as_mut_ptr(),
+            );
         }
         Ok(Signature(signature))
     }
@@ -207,7 +213,12 @@ impl Sign for Signature {
     fn recover(&self, message: &Message) -> Result<Self::PubKey, Error> {
         let mut pubkey: [u8; PUBKEY_BYTES_LEN] = [0; PUBKEY_BYTES_LEN];
         unsafe {
-            let result = sm2_recover(GROUP.as_ptr(), self.0.as_ptr(), message.as_ptr(), pubkey.as_mut_ptr());
+            let result = sm2_recover(
+                GROUP.as_ptr(),
+                self.0.as_ptr(),
+                message.as_ptr(),
+                pubkey.as_mut_ptr(),
+            );
             if result <= 0 {
                 return Err(Error::RecoverError);
             }

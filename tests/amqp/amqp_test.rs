@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate pubsub;
 extern crate dotenv;
+extern crate pubsub;
 
 use dotenv::dotenv;
 use pubsub::start_pubsub;
@@ -50,9 +50,11 @@ fn main() {
     });
 
 
-    thread::spawn(move || for _ in 1..max + 1 {
-                      tx_pub.send(("request".to_string(), vec![0, 1])).unwrap();
-                  });
+    thread::spawn(move || {
+        for _ in 1..max + 1 {
+            tx_pub.send(("request".to_string(), vec![0, 1])).unwrap();
+        }
+    });
 
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
@@ -60,7 +62,9 @@ fn main() {
         if count == max {
             println!("{} {:?}", key, msg);
             let sys_time = SystemTime::now();
-            let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+            let diff = sys_time
+                .duration_since(start)
+                .expect("SystemTime::duration_since failed");
             println!{"count {:?}, timer diff: {:?}", count, diff};
             thread::sleep(Duration::new(2, 0));
             break;

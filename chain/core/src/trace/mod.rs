@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Tracing
+#![rustfmt_skip]
 
 mod bloom;
 mod config;

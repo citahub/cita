@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Diff misc.
+#![rustfmt_skip]
 
 use Bytes;
 use rlp::RlpStream;

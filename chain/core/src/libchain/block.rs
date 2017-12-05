@@ -37,7 +37,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
-use util::{U256, H256, Address, merklehash, HeapSizeOf};
+use util::{merklehash, Address, H256, HeapSizeOf, U256};
 
 /// Trait for a object that has a state database.
 pub trait Drain {
@@ -60,9 +60,9 @@ impl Decodable for Block {
             return Err(DecoderError::RlpIncorrectListLen);
         }
         Ok(Block {
-               header: r.val_at(0)?,
-               body: r.val_at(1)?,
-           })
+            header: r.val_at(0)?,
+            body: r.val_at(1)?,
+        })
     }
 }
 
@@ -151,16 +151,18 @@ impl From<ProtoBlockBody> for BlockBody {
     fn from(body: ProtoBlockBody) -> Self {
         BlockBody {
             transactions: body.get_transactions()
-                              .iter()
-                              .map(|t| SignedTransaction::new(t).expect("transaction can not be converted"))
-                              .collect(),
+                .iter()
+                .map(|t| SignedTransaction::new(t).expect("transaction can not be converted"))
+                .collect(),
         }
     }
 }
 
 impl BlockBody {
     pub fn new() -> Self {
-        BlockBody { transactions: Vec::new() }
+        BlockBody {
+            transactions: Vec::new(),
+        }
     }
 
     pub fn transactions(&self) -> &[SignedTransaction] {
@@ -275,7 +277,17 @@ impl DerefMut for OpenBlock {
 }
 
 impl OpenBlock {
-    pub fn new(factories: Factories, senders: HashSet<Address>, creators: HashSet<Address>, tracing: bool, block: Block, db: StateDB, state_root: H256, last_hashes: Arc<LastHashes>, account_gas_limit: &AccountGasLimit) -> Result<Self, Error> {
+    pub fn new(
+        factories: Factories,
+        senders: HashSet<Address>,
+        creators: HashSet<Address>,
+        tracing: bool,
+        block: Block,
+        db: StateDB,
+        state_root: H256,
+        last_hashes: Arc<LastHashes>,
+        account_gas_limit: &AccountGasLimit,
+    ) -> Result<Self, Error> {
         let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
         state.senders = senders;
         state.creators = creators;
@@ -284,10 +296,13 @@ impl OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes: last_hashes,
             account_gas_limit: account_gas_limit.common_gas_limit.into(),
-            account_gas: account_gas_limit.specific_gas_limit.iter().fold(HashMap::new(), |mut acc, (key, value)| {
-                acc.insert(*key, (*value).into());
-                acc
-            }),
+            account_gas: account_gas_limit
+                .specific_gas_limit
+                .iter()
+                .fold(HashMap::new(), |mut acc, (key, value)| {
+                    acc.insert(*key, (*value).into());
+                    acc
+                }),
         };
 
         Ok(r)
@@ -332,10 +347,14 @@ impl OpenBlock {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);
             env_info.account_gas_limit = self.account_gas_limit;
         }
-        env_info.account_gas_limit = *self.account_gas.get(t.sender()).expect("account should exist in account_gas_limit");
+        env_info.account_gas_limit = *self.account_gas
+            .get(t.sender())
+            .expect("account should exist in account_gas_limit");
 
         let has_traces = self.traces.is_some();
-        match self.state.apply(&env_info, t, has_traces, check_permission, check_quota) {
+        match self.state
+            .apply(&env_info, t, has_traces, check_permission, check_quota)
+        {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());
@@ -350,23 +369,48 @@ impl OpenBlock {
                 self.receipts.push(Some(outcome.receipt));
             }
             Err(Error::Execution(ExecutionError::NoTransactionPermission)) => {
-                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoTransactionPermission));
+                let receipt = Receipt::new(
+                    None,
+                    0.into(),
+                    Vec::new(),
+                    Some(ReceiptError::NoTransactionPermission),
+                );
                 self.receipts.push(Some(receipt));
             }
             Err(Error::Execution(ExecutionError::NoContractPermission)) => {
-                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NoContractPermission));
+                let receipt = Receipt::new(
+                    None,
+                    0.into(),
+                    Vec::new(),
+                    Some(ReceiptError::NoContractPermission),
+                );
                 self.receipts.push(Some(receipt));
             }
             Err(Error::Execution(ExecutionError::NotEnoughBaseGas { .. })) => {
-                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::NotEnoughBaseGas));
+                let receipt = Receipt::new(
+                    None,
+                    0.into(),
+                    Vec::new(),
+                    Some(ReceiptError::NotEnoughBaseGas),
+                );
                 self.receipts.push(Some(receipt));
             }
             Err(Error::Execution(ExecutionError::BlockGasLimitReached { .. })) => {
-                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::BlockGasLimitReached));
+                let receipt = Receipt::new(
+                    None,
+                    0.into(),
+                    Vec::new(),
+                    Some(ReceiptError::BlockGasLimitReached),
+                );
                 self.receipts.push(Some(receipt));
             }
             Err(Error::Execution(ExecutionError::AccountGasLimitReached { .. })) => {
-                let receipt = Receipt::new(None, 0.into(), Vec::new(), Some(ReceiptError::AccountGasLimitReached));
+                let receipt = Receipt::new(
+                    None,
+                    0.into(),
+                    Vec::new(),
+                    Some(ReceiptError::AccountGasLimitReached),
+                );
                 self.receipts.push(Some(receipt));
             }
             Err(_) => {
@@ -386,10 +430,14 @@ impl OpenBlock {
         self.set_receipts_root(receipts_root);
 
         // blocks blooms
-        let log_bloom = self.receipts.clone().into_iter().filter_map(|r| r).fold(LogBloom::zero(), |mut b, r| {
-            b = b | r.log_bloom;
-            b
-        });
+        let log_bloom = self.receipts
+            .clone()
+            .into_iter()
+            .filter_map(|r| r)
+            .fold(LogBloom::zero(), |mut b, r| {
+                b = b | r.log_bloom;
+                b
+            });
 
         self.set_log_bloom(log_bloom);
 
@@ -397,7 +445,10 @@ impl OpenBlock {
         let hash = self.hash();
         let mut transactions = HashMap::new();
         for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
-            let address = TransactionAddress { block_hash: hash, index: i };
+            let address = TransactionAddress {
+                block_hash: hash,
+                index: i,
+            };
             transactions.insert(tx_hash, address);
         }
 
@@ -420,7 +471,9 @@ mod tests {
         let mut stx = SignedTransaction::default();
         stx.data = vec![1; 200];
         let transactions = vec![stx; 200];
-        let body = BlockBody { transactions: transactions };
+        let body = BlockBody {
+            transactions: transactions,
+        };
         let body_rlp = rlp::encode(&body);
         let body: BlockBody = rlp::decode(&body_rlp);
         let body_encoded = rlp::encode(&body).into_vec();

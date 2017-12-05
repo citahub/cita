@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use {syn, quote};
+use {quote, syn};
 
 struct ParseQuotes {
     single: quote::Tokens,
@@ -46,8 +46,9 @@ pub fn impl_decodable(ast: &syn::DeriveInput) -> quote::Tokens {
     };
 
     let stmts: Vec<_> = match *body {
-        syn::VariantData::Struct(ref fields) | syn::VariantData::Tuple(ref fields) =>
-            fields.iter().enumerate().map(decodable_field_map).collect(),
+        syn::VariantData::Struct(ref fields) | syn::VariantData::Tuple(ref fields) => {
+            fields.iter().enumerate().map(decodable_field_map).collect()
+        }
         syn::VariantData::Unit => panic!("#[derive(RlpDecodable)] is not defined for Unit structs."),
     };
 
@@ -89,7 +90,7 @@ pub fn impl_decodable_wrapper(ast: &syn::DeriveInput) -> quote::Tokens {
             } else {
                 panic!("#[derive(RlpDecodableWrapper)] is only defined for structs with one field.")
             }
-        },
+        }
         syn::VariantData::Unit => panic!("#[derive(RlpDecodableWrapper)] is not defined for Unit structs."),
     };
 
@@ -135,7 +136,10 @@ fn decodable_field(index: usize, field: &syn::Field, quotes: ParseQuotes) -> quo
 
     match field.ty {
         syn::Ty::Path(_, ref path) => {
-            let ident = &path.segments.first().expect("there must be at least 1 segment").ident;
+            let ident = &path.segments
+                .first()
+                .expect("there must be at least 1 segment")
+                .ident;
             if &ident.to_string() == "Vec" {
                 if quotes.takes_index {
                     quote! { #id: #list(#index)?, }
@@ -149,8 +153,7 @@ fn decodable_field(index: usize, field: &syn::Field, quotes: ParseQuotes) -> quo
                     quote! { #id: #single()?, }
                 }
             }
-        },
+        }
         _ => panic!("rlp_derive not supported"),
     }
 }
-

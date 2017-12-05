@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Nibble-orientated view onto byte-slice, allowing nibble-precision offsets.
+#![rustfmt_skip]
 
 use elastic_array::ElasticArray36;
 use std::cmp::*;

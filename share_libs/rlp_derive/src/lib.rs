@@ -16,9 +16,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate proc_macro;
-extern crate syn;
 #[macro_use]
 extern crate quote;
+extern crate syn;
 
 mod en;
 mod de;

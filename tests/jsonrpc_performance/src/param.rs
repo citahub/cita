@@ -38,7 +38,6 @@ pub struct Param {
 
 impl Param {
     pub fn load_from_file(path: &str) -> Self {
-
         let config_file = File::open(path).unwrap();
         let fconfig = BufReader::new(config_file);
         serde_json::from_reader(fconfig).expect(concat!("json is invalid."))

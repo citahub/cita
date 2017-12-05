@@ -73,9 +73,7 @@ impl DataPath {
                 };
                 path
             }
-            Err(_) => {
-                Uuid::new_v4().simple().to_string()
-            }
+            Err(_) => Uuid::new_v4().simple().to_string(),
         };
 
         let is_using_vagrant = DataPath::is_using_vagrant();

@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{Value, Error};
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
-use serde::de::{Visitor, SeqAccess, MapAccess, DeserializeOwned};
+use super::{Error, Value};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{DeserializeOwned, MapAccess, SeqAccess, Visitor};
 use serde_json;
 use serde_json::value::from_value;
 use std::fmt;
@@ -90,7 +90,11 @@ impl<'a> Visitor<'a> for ParamsVisitor {
             values.push(value);
         }
 
-        if values.is_empty() { Ok(Params::None) } else { Ok(Params::Array(values)) }
+        if values.is_empty() {
+            Ok(Params::None)
+        } else {
+            Ok(Params::Array(values))
+        }
     }
 
     fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
@@ -103,14 +107,18 @@ impl<'a> Visitor<'a> for ParamsVisitor {
             values.insert(key, value);
         }
 
-        Ok(if values.is_empty() { Params::None } else { Params::Map(values) })
+        Ok(if values.is_empty() {
+            Params::None
+        } else {
+            Params::Map(values)
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::Params;
-    use {Value, Error};
+    use {Error, Value};
     use rpctypes::Filter;
     use serde_json;
     use serde_json::Map;
@@ -189,9 +197,9 @@ mod tests {
 
     #[test]
     fn should_parse_filter() {
-        let s = r#"{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3",
-                                    "0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3",
-                                    "0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"]}"#;
+        let s = "{\"topics\":[\"0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3\",\
+                 \"0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3\",\
+                 \"0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3\"]}";
         let deserialized: Filter = serde_json::from_str(s).unwrap();
         println!("deserialized = {:?}", deserialized);
 

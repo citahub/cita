@@ -17,7 +17,7 @@
 
 use libproto::blockchain::RichStatus as ProtoRichStatus;
 use protobuf::RepeatedField;
-use util::{H256, Address};
+use util::{Address, H256};
 
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct RichStatus {
@@ -51,7 +51,11 @@ impl RichStatus {
         let mut ps = ProtoRichStatus::new();
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
-        let node_list = self.nodes.clone().into_iter().map(|address| address.to_vec()).collect();
+        let node_list = self.nodes
+            .clone()
+            .into_iter()
+            .map(|address| address.to_vec())
+            .collect();
         ps.set_nodes(RepeatedField::from_vec(node_list));
         ps
     }

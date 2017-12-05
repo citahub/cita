@@ -17,7 +17,7 @@
 
 //! Node manager.
 
-use super::{parse_string_to_addresses, encode_contract_name};
+use super::{encode_contract_name, parse_string_to_addresses};
 use super::ContractCallExt;
 use libchain::chain::Chain;
 use rustc_hex::ToHex;

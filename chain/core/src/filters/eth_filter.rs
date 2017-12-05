@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{PollFilter, PollId, limit_logs};
-use jsonrpc_types::rpctypes::{Filter, Log, Index, FilterChanges};
+use super::{limit_logs, PollFilter, PollId};
+use jsonrpc_types::rpctypes::{Filter, FilterChanges, Index, Log};
 use libchain::chain::Chain;
 use types::filter::Filter as EthcoreFilter;
 use types::ids::BlockId;
@@ -36,14 +36,18 @@ impl EthFilter for Chain {
     fn new_filter(&self, filter: Filter) -> PollId {
         let polls = self.poll_filter();
         let block_number = self.get_current_height();
-        let id = polls.lock().create_poll(PollFilter::Logs(block_number, Default::default(), filter));
+        let id = polls
+            .lock()
+            .create_poll(PollFilter::Logs(block_number, Default::default(), filter));
         drop(polls);
         id
     }
 
     fn new_block_filter(&self) -> PollId {
         let polls = self.poll_filter();
-        let id = polls.lock().create_poll(PollFilter::Block(self.get_current_height()));
+        let id = polls
+            .lock()
+            .create_poll(PollFilter::Block(self.get_current_height()));
         drop(polls);
         id
     }
@@ -63,7 +67,6 @@ impl EthFilter for Chain {
 
                     *block_number = current_number;
                     Some(FilterChanges::Hashes(hashes))
-
                 }
                 PollFilter::Logs(ref mut block_number, ref mut _previous_logs, ref filter) => {
                     // retrive the current block number
@@ -77,7 +80,10 @@ impl EthFilter for Chain {
                     *block_number = current_number + 1;
                     // retrieve logs in range from_block..min(BlockId::Latest..to_block)
                     let limit = filter.limit;
-                    Some(FilterChanges::Logs(limit_logs(self.get_logs(filter).into_iter().map(Into::into).collect(), limit)))
+                    Some(FilterChanges::Logs(limit_logs(
+                        self.get_logs(filter).into_iter().map(Into::into).collect(),
+                        limit,
+                    )))
                 }
             },
         };

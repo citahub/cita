@@ -15,20 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate sodiumoxide;
-extern crate rustc_serialize;
-extern crate util;
-extern crate rlp;
-extern crate serde;
 #[cfg(test)]
 extern crate bincode;
+extern crate rlp;
+extern crate rustc_serialize;
+extern crate serde;
+extern crate sodiumoxide;
+extern crate util;
 
 mod keypair;
 mod error;
 mod signature;
 mod signer;
 
-use util::{H256, H512, Address};
+use util::{Address, H256, H512};
 
 pub const ADDR_BYTES_LEN: usize = 20;
 pub const PUBKEY_BYTES_LEN: usize = 32;

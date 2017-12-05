@@ -81,7 +81,6 @@ impl<'a> Deserialize<'a> for ErrorCode {
             Some(code) => Ok(ErrorCode::ServerError(code)),
             _ => unreachable!(),
         }
-
     }
 }
 
@@ -200,6 +199,16 @@ impl From<serde_json::Error> for Error {
 
 // TODO: 对用户更友好的错误提示。错误码提示修改 https://github.com/ethereum/wiki/wiki/JSON-RPC-Error-Codes-Improvement-Proposal
 // 比如可以提示期待3或2个参数，收到4个参数等等
-// eg: {"jsonrpc":"2.0","error":{"code":-32602,"message":"unknown field `input`, expected one of `from`, `to`, `gasPrice`, `gas`, `value`, `data`, `nonce`","data":null},"id":1}
+// eg:
+// {
+//     "jsonrpc": "2.0",
+//     "error": {
+//         "code": -32602,
+//         "message": "unknown field `input`, expected one of `from`, \
+//                        `to`, `gasPrice`, `gas`, `value`, `data`, `nonce`",
+//         "data": null
+//     },
+//     "id": 1
+// }
 // {"jsonrpc":"2.0","error":{"code":-32602,"message":"Invalid length.","data":null},"id":1}
 // {"jsonrpc":"2.0","error":{"code":-32602,"message":"invalid format","data":null},"id":1}

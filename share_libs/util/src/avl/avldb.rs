@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{AVL, AVLItem, AVLError, AVLIterator, Query};
+use super::{AVLError, AVLItem, AVLIterator, Query, AVL};
 use super::lookup::Lookup;
-use super::node::{Node, OwnedNode, NodeKey};
+use super::node::{Node, NodeKey, OwnedNode};
 use H256;
 use bytes::*;
 use hashdb::*;
@@ -64,10 +64,10 @@ impl<'db> AVLDB<'db> {
             Err(Box::new(AVLError::InvalidStateRoot(*root)))
         } else {
             Ok(AVLDB {
-                   db: db,
-                   root: root,
-                   hash_count: 0,
-               })
+                db: db,
+                root: root,
+                hash_count: 0,
+            })
         }
     }
 
@@ -78,7 +78,9 @@ impl<'db> AVLDB<'db> {
 
     /// Get the data of the root node.
     fn root_data(&self) -> super::Result<DBValue> {
-        self.db.get(self.root).ok_or_else(|| Box::new(AVLError::InvalidStateRoot(*self.root)))
+        self.db
+            .get(self.root)
+            .ok_or_else(|| Box::new(AVLError::InvalidStateRoot(*self.root)))
     }
 
     /// Indentation helper for `format_all`.
@@ -121,15 +123,17 @@ impl<'db> AVLDB<'db> {
     }
 
     /// Given some node-describing data `node`, return the actual node RLP.
-    /// This could be a simple identity operation in the case that the node is sufficiently small, but
-    /// may require a database lookup.
+    /// This could be a simple identity operation in the case that the node is sufficiently small,
+    /// but may require a database lookup.
     fn get_raw_or_lookup(&'db self, node: &'db [u8]) -> super::Result<DBValue> {
         // check if its hash + len
         let r = Rlp::new(node);
         match r.is_data() && r.size() == 32 {
             true => {
                 let key = r.as_val::<H256>();
-                self.db.get(&key).ok_or_else(|| Box::new(AVLError::IncompleteDatabase(key)))
+                self.db
+                    .get(&key)
+                    .ok_or_else(|| Box::new(AVLError::IncompleteDatabase(key)))
             }
             false => Ok(DBValue::from_slice(node)),
         }
@@ -153,8 +157,7 @@ impl<'db> AVL for AVLDB<'db> {
             db: self.db,
             query: query,
             hash: self.root.clone(),
-        }
-        .look_up(key.to_vec())
+        }.look_up(key.to_vec())
     }
 }
 
@@ -204,7 +207,10 @@ pub struct AVLDBIterator<'a> {
 impl<'a> AVLDBIterator<'a> {
     /// Create a new iterator.
     pub fn new(db: &'a AVLDB) -> super::Result<AVLDBIterator<'a>> {
-        let mut r = AVLDBIterator { db: db, trail: vec![] };
+        let mut r = AVLDBIterator {
+            db: db,
+            trail: vec![],
+        };
 
         db.root_data().and_then(|root| r.descend(&root))?;
         Ok(r)
@@ -217,14 +223,14 @@ impl<'a> AVLDBIterator<'a> {
                 if k <= key {
                     println!("{:?}, {:?}", key, k);
                     self.trail.push(Crumb {
-                                        status: Status::At,
-                                        node: node.clone().into(),
-                                    });
+                        status: Status::At,
+                        node: node.clone().into(),
+                    });
                 } else {
                     self.trail.push(Crumb {
-                                        status: Status::Entering,
-                                        node: node.clone().into(),
-                                    });
+                        status: Status::Entering,
+                        node: node.clone().into(),
+                    });
                 }
 
                 Ok(())
@@ -232,9 +238,9 @@ impl<'a> AVLDBIterator<'a> {
             Node::Branch(_, ref k, ref nodes) => {
                 let idx = if key < k { 0 } else { 1 };
                 self.trail.push(Crumb {
-                                    status: Status::AtChild(idx as usize),
-                                    node: node.clone().into(),
-                                });
+                    status: Status::AtChild(idx as usize),
+                    node: node.clone().into(),
+                });
                 let child = self.db.get_raw_or_lookup(&*nodes[idx as usize])?;
                 self.seek_descend(child, &key)
             }
@@ -245,9 +251,9 @@ impl<'a> AVLDBIterator<'a> {
     /// Descend into a payload.
     fn descend(&mut self, d: &[u8]) -> super::Result<()> {
         self.trail.push(Crumb {
-                            status: Status::Entering,
-                            node: Node::decoded(&self.db.get_raw_or_lookup(d)?).into(),
-                        });
+            status: Status::Entering,
+            node: Node::decoded(&self.db.get_raw_or_lookup(d)?).into(),
+        });
         Ok(())
     }
 }
@@ -320,8 +326,14 @@ fn iterator() {
     }
 
     let t = AVLDB::new(&memdb, &root).unwrap();
-    assert_eq!(d.iter().map(|i| i.clone().to_vec()).collect::<Vec<_>>(), t.iter().unwrap().map(|x| x.unwrap().0).collect::<Vec<_>>());
-    assert_eq!(d, t.iter().unwrap().map(|x| x.unwrap().1).collect::<Vec<_>>());
+    assert_eq!(
+        d.iter().map(|i| i.clone().to_vec()).collect::<Vec<_>>(),
+        t.iter().unwrap().map(|x| x.unwrap().0).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        d,
+        t.iter().unwrap().map(|x| x.unwrap().1).collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -348,7 +360,10 @@ fn iterator_seek() {
 
     let t = AVLDB::new(&memdb, &root).unwrap();
     let mut iter = t.iter().unwrap();
-    assert_eq!(iter.next(), Some(Ok((b"A".to_vec(), DBValue::from_slice(b"A")))));
+    assert_eq!(
+        iter.next(),
+        Some(Ok((b"A".to_vec(), DBValue::from_slice(b"A"))))
+    );
     iter.seek(b"!").unwrap();
     assert_eq!(d, iter.map(|x| x.unwrap().1).collect::<Vec<_>>());
     let mut iter = t.iter().unwrap();

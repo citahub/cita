@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Indexes all rpc poll requests.
+#![rustfmt_skip]
 
 use transient_hashmap::{TransientHashMap, Timer, StandardTimer};
 

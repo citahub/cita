@@ -33,10 +33,8 @@ pub struct FullTransaction {
 pub struct RpcTransaction {
     pub hash: H256,
     pub content: Bytes,
-    #[serde(rename = "blockNumber")]
-    pub block_number: U256,
-    #[serde(rename = "blockHash")]
-    pub block_hash: H256,
+    #[serde(rename = "blockNumber")] pub block_number: U256,
+    #[serde(rename = "blockHash")] pub block_hash: H256,
     pub index: U256,
 }
 
@@ -55,7 +53,14 @@ impl From<PTransaction> for RpcTransaction {
 
         let unverified_tx = stx.get_transaction_with_sig();
         let tx = unverified_tx.get_transaction();
-        trace!("GET ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}", tx.get_nonce(), tx.get_valid_until_block(), tx.get_data(), tx.get_quota(), tx.get_to());
+        trace!(
+            "GET ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}",
+            tx.get_nonce(),
+            tx.get_valid_until_block(),
+            tx.get_data(),
+            tx.get_quota(),
+            tx.get_to()
+        );
 
         RpcTransaction {
             hash: H256::from_slice(stx.get_tx_hash()),

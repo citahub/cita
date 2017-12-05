@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use state::backend::*;
-use util::{JournalDB, DBTransaction, H256, UtilError, HashDB};
+use util::{DBTransaction, H256, HashDB, JournalDB, UtilError};
 
 pub struct StateDB {
     /// Backing database.
@@ -30,7 +30,9 @@ impl StateDB {
 
     /// Clone the database.
     pub fn boxed_clone(&self) -> StateDB {
-        StateDB { db: self.db.boxed_clone() }
+        StateDB {
+            db: self.db.boxed_clone(),
+        }
     }
 
     /// Journal all recent operations under the given era and ID.

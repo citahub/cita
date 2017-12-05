@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! In-memory trie representation.
+#![rustfmt_skip]
 
 use super::{TrieError, TrieMut};
 use super::lookup::Lookup;

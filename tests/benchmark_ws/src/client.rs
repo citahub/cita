@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crypto::{KeyPair, PrivKey, pubkey_to_address};
-use libproto::blockchain::{UnverifiedTransaction, Transaction};
+use crypto::{pubkey_to_address, KeyPair, PrivKey};
+use libproto::blockchain::{Transaction, UnverifiedTransaction};
 use protobuf::Message;
 use rustc_hex::FromHex;
 use test::Bencher;
@@ -43,7 +43,6 @@ pub struct Client {
 
 impl Client {
     pub fn new() -> Self {
-
         let key_pair = KeyPair::gen_keypair();
         let address = pubkey_to_address(key_pair.pubkey());
         Client {
@@ -65,27 +64,32 @@ impl Client {
     }
 
     pub fn create_contract_data(&self, code: String, to: String, height: u64, quota: u64) -> String {
-        self.get_data_by_method(RpcMethod::SendTransaction(self.generate_tx(code, to, self.key_pair.privkey(), height, quota)))
+        self.get_data_by_method(RpcMethod::SendTransaction(
+            self.generate_tx(code, to, self.key_pair.privkey(), height, quota),
+        ))
     }
 
     pub fn get_data_by_method(&self, method: RpcMethod) -> String {
-
         let tx_data = match method {
-            RpcMethod::SendTransaction(tx) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())
-            }
+            RpcMethod::SendTransaction(tx) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}",
+                tx.write_to_bytes().unwrap().to_hex()
+            ),
             RpcMethod::Height => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_blockNumber\",\"params\":[],\"id\":2}}")
             }
-            RpcMethod::GetBlockbyheiht(h) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getBlockByNumber\",\"params\":[\"{}\",false],\"id\":2}}", format!("{:x}", h))
-            }
-            RpcMethod::GetTransaction(hash) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getTransaction\",\"params\":[\"{}\"],\"id\":2}}", hash)
-            }
-            RpcMethod::GetReceipt(hash) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"eth_getTransactionReceipt\",\"params\":[\"{}\"],\"id\":2}}", hash)
-            }
+            RpcMethod::GetBlockbyheiht(h) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getBlockByNumber\",\"params\":[\"{}\",false],\"id\":2}}",
+                format!("{:x}", h)
+            ),
+            RpcMethod::GetTransaction(hash) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getTransaction\",\"params\":[\"{}\"],\"id\":2}}",
+                hash
+            ),
+            RpcMethod::GetReceipt(hash) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"eth_getTransactionReceipt\",\"params\":[\"{}\"],\"id\":2}}",
+                hash
+            ),
 
             RpcMethod::PeerCount => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"net_peerCount\",\"params\":[],\"id\":2}}")

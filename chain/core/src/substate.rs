@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Execution environment substate.
+#![rustfmt_skip]
 
 use evm::Schedule;
 use log_entry::LogEntry;

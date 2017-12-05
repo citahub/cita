@@ -21,11 +21,11 @@ use jsonrpc_types::response::RpcFailure;
 use libproto::request as reqlib;
 use num_cpus;
 use serde_json;
-use std::sync::{Arc, mpsc};
+use std::sync::{mpsc, Arc};
 use threadpool::ThreadPool;
 use util::Mutex;
 use ws;
-use ws::{Factory, CloseCode, Handler};
+use ws::{CloseCode, Factory, Handler};
 
 pub struct WsFactory {
     //TODO 定时清理工作
@@ -37,8 +37,15 @@ pub struct WsFactory {
 
 impl WsFactory {
     pub fn new(responses: RpcMap, tx: mpsc::Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
-        let thread_number = if thread_num == 0 { num_cpus::get() / 2 } else { thread_num };
-        let thread_pool = Arc::new(Mutex::new(ThreadPool::new_with_name("ws_thread_pool".to_string(), thread_number)));
+        let thread_number = if thread_num == 0 {
+            num_cpus::get() / 2
+        } else {
+            thread_num
+        };
+        let thread_pool = Arc::new(Mutex::new(ThreadPool::new_with_name(
+            "ws_thread_pool".to_string(),
+            thread_number,
+        )));
         WsFactory {
             responses: responses,
             thread_pool: thread_pool,
@@ -88,7 +95,9 @@ impl Handler for WsHandler {
                         this.tx.send((topic, _req));
                         let value = (req_info, this.sender.clone());
                         {
-                            this.responses.lock().insert(request_id, TransferType::WEBSOCKET(value));
+                            this.responses
+                                .lock()
+                                .insert(request_id, TransferType::WEBSOCKET(value));
                         }
                     })
                 }
@@ -96,7 +105,7 @@ impl Handler for WsHandler {
             //TODO 错误返回
             if let Err(err) = err {
                 let _ = this.sender
-                            .send(serde_json::to_string(&RpcFailure::from_options(req_id, jsonrpc_version, err)).unwrap());
+                    .send(serde_json::to_string(&RpcFailure::from_options(req_id, jsonrpc_version, err)).unwrap());
             }
         });
         //
@@ -104,7 +113,12 @@ impl Handler for WsHandler {
     }
 
     fn on_close(&mut self, code: CloseCode, reason: &str) {
-        info!("WebSocket closing for ({:?}) {} token {}", code, reason, self.sender.token().0);
+        info!(
+            "WebSocket closing for ({:?}) {} token {}",
+            code,
+            reason,
+            self.sender.token().0
+        );
     }
 }
 

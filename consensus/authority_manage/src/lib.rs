@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate util;
 extern crate bincode;
+extern crate util;
 
 mod wal;
 
-use bincode::{serialize, deserialize, Infinite};
+use bincode::{deserialize, serialize, Infinite};
 use util::Address;
 use wal::Wal;
 
@@ -60,7 +60,9 @@ impl AuthorityManage {
                 authority_manage.authorities.extend_from_slice(&auth);
                 authority_manage.authority_n = authority_manage.authorities.len();
 
-                authority_manage.authorities_old.extend_from_slice(&auth_old);
+                authority_manage
+                    .authorities_old
+                    .extend_from_slice(&auth_old);
                 authority_manage.authority_n_old = authority_manage.authorities_old.len();
                 authority_manage.authority_h_old = h;
             }
@@ -70,9 +72,7 @@ impl AuthorityManage {
     }
 
     pub fn receive_authorities_list(&mut self, height: usize, authorities: Vec<Address>) {
-
         if self.authorities != authorities {
-
             self.authorities_old.clear();
             self.authorities_old.extend_from_slice(&self.authorities);
             self.authority_n_old = self.authority_n;
@@ -82,7 +82,14 @@ impl AuthorityManage {
             self.authorities.extend_from_slice(&authorities);
             self.authority_n = self.authorities.len();
 
-            let bmsg = serialize(&(height, self.authority_n_old.clone(), self.authorities.clone()), Infinite).unwrap();
+            let bmsg = serialize(
+                &(
+                    height,
+                    self.authority_n_old.clone(),
+                    self.authorities.clone(),
+                ),
+                Infinite,
+            ).unwrap();
             let _ = self.authorities_log.save(LOG_TYPE_AUTHORITIES, &bmsg);
         }
     }

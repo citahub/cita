@@ -16,6 +16,7 @@
 
 //! Trie lookup via HashDB.
 
+#![rustfmt_skip]
 
 use super::{TrieError, Query};
 use super::node::Node;

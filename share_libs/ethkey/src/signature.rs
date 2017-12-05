@@ -13,6 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+#![rustfmt_skip]
 
 use {Secret, Public, SECP256K1, Error, Message, public_to_address, Address};
 use bigint::hash::{H520, H256};

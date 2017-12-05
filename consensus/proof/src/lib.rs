@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate libproto;
-extern crate util;
 extern crate bincode;
 extern crate cita_crypto as crypto;
+extern crate libproto;
 extern crate rustc_serialize;
 #[macro_use]
 extern crate serde_derive;
+extern crate util;
 
 mod authority_round_proof;
 mod tendermint_proof;
@@ -47,7 +47,6 @@ impl From<Proof> for CitaProof {
             ProofType::Raft => CitaProof::Raft,
             ProofType::Tendermint => CitaProof::Tendermint(TendermintProof::from(p)),
         }
-
     }
 }
 

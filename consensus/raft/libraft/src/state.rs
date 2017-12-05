@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+#![rustfmt_skip]
 
 use ClientId;
 use LogIndex;
@@ -55,8 +55,16 @@ impl LeaderState {
     ///                        time of election.
     /// * `peers` - The set of peer cluster members.
     pub fn new(latest_log_index: LogIndex, peers: &HashSet<ServerId>) -> LeaderState {
-        let next_index = peers.iter().cloned().map(|peer| (peer, latest_log_index + 1)).collect();
-        let match_index = peers.iter().cloned().map(|peer| (peer, LogIndex::from(0))).collect();
+        let next_index = peers
+            .iter()
+            .cloned()
+            .map(|peer| (peer, latest_log_index + 1))
+            .collect();
+        let match_index = peers
+            .iter()
+            .cloned()
+            .map(|peer| (peer, LogIndex::from(0)))
+            .collect();
 
         LeaderState {
             next_index: next_index,
@@ -108,7 +116,9 @@ pub struct CandidateState {
 impl CandidateState {
     /// Creates a new `CandidateState`.
     pub fn new() -> CandidateState {
-        CandidateState { granted_votes: HashSet::new() }
+        CandidateState {
+            granted_votes: HashSet::new(),
+        }
     }
 
     /// Records a vote from `voter`.

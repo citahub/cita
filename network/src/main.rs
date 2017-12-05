@@ -15,30 +15,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
-
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy))]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
 #![feature(iter_rfind)]
+extern crate byteorder;
+extern crate bytes;
+extern crate clap;
+extern crate dotenv;
+extern crate futures;
+extern crate libproto;
 #[macro_use]
 extern crate log;
-extern crate clap;
-extern crate futures;
+extern crate logger;
+extern crate notify;
+extern crate protobuf;
+extern crate pubsub;
+extern crate rand;
+extern crate rustc_serialize;
 extern crate tokio_io;
 extern crate tokio_proto;
 extern crate tokio_service;
-extern crate byteorder;
-extern crate rustc_serialize;
-extern crate libproto;
-extern crate protobuf;
-extern crate pubsub;
-extern crate dotenv;
-extern crate logger;
-extern crate bytes;
-extern crate notify;
 #[macro_use]
 extern crate util;
-extern crate rand;
 
 pub mod config;
 pub mod netserver;
@@ -50,10 +49,10 @@ pub mod network;
 
 use clap::{App, SubCommand};
 use config::NetConfig;
-use connection::{Connection, manage_connect};
+use connection::{manage_connect, Connection};
 use netserver::NetServer;
 use network::NetWork;
-use notify::{RecommendedWatcher, Watcher, RecursiveMode};
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use pubsub::start_pubsub;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -84,7 +83,11 @@ fn main() {
 
     // check for the existence of subcommands
     let is_test = matches.is_present("test");
-    let config = if is_test { NetConfig::test_config() } else { NetConfig::new(config_path) };
+    let config = if is_test {
+        NetConfig::test_config()
+    } else {
+        NetConfig::new(config_path)
+    };
 
     // init pubsub
 
@@ -95,11 +98,21 @@ fn main() {
 
     let (ctx_sub_consensus, crx_sub_consensus) = channel();
     let (ctx_pub_consensus, crx_pub_consensus) = channel();
-    start_pubsub("network_consensus", vec!["consensus.msg"], ctx_sub_consensus, crx_pub_consensus);
+    start_pubsub(
+        "network_consensus",
+        vec!["consensus.msg"],
+        ctx_sub_consensus,
+        crx_pub_consensus,
+    );
 
     let (ctx_sub, crx_sub) = channel();
     let (ctx_pub, crx_pub) = channel();
-    start_pubsub("network", vec!["chain.status", "chain.blk", "jsonrpc.net"], ctx_sub, crx_pub);
+    start_pubsub(
+        "network",
+        vec!["chain.status", "chain.blk", "jsonrpc.net"],
+        ctx_sub,
+        crx_pub,
+    );
 
     let (net_work_tx, net_work_rx) = channel();
     // start server
@@ -119,23 +132,33 @@ fn main() {
 
     let (sync_tx, sync_rx) = channel();
     let con = Arc::new(Connection::new(&config));
-    let net_work = NetWork::new(Arc::clone(&con), ctx_pub.clone(), sync_tx, ctx_pub_tx, ctx_pub_consensus);
+    let net_work = NetWork::new(
+        Arc::clone(&con),
+        ctx_pub.clone(),
+        sync_tx,
+        ctx_pub_tx,
+        ctx_pub_consensus,
+    );
     manage_connect(&Arc::clone(&con), config_path, rx);
 
     //loop deal data
-    thread::spawn(move || loop {
-                      if let Ok((source, data)) = net_work_rx.recv() {
-                          net_work.receiver(source, data);
-                      }
-                  });
+    thread::spawn(move || {
+        loop {
+            if let Ok((source, data)) = net_work_rx.recv() {
+                net_work.receiver(source, data);
+            }
+        }
+    });
 
     //sync loop
     let mut synchronizer = Synchronizer::new(ctx_pub, Arc::clone(&con));
-    thread::spawn(move || loop {
-                      if let Ok((source, msg)) = sync_rx.recv() {
-                          synchronizer.receive(source, msg);
-                      }
-                  });
+    thread::spawn(move || {
+        loop {
+            if let Ok((source, msg)) = sync_rx.recv() {
+                synchronizer.receive(source, msg);
+            }
+        }
+    });
 
     //sub new tx
     let con_tx = Arc::clone(&con);

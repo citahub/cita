@@ -33,7 +33,7 @@ mod buf;
 mod test_utils;
 
 
-use buf::{MutBuf, Buf};
+use buf::{Buf, MutBuf};
 
 use byteorder::{ByteOrder, LittleEndian};
 use capnp::Word;
@@ -53,7 +53,9 @@ pub struct Segments {
 
 impl ReaderSegments for Segments {
     fn get_segment(&self, id: u32) -> Option<&[Word]> {
-        self.segments.get(id as usize).map(|buf| Word::bytes_to_words(&*buf))
+        self.segments
+            .get(id as usize)
+            .map(|buf| Word::bytes_to_words(&*buf))
     }
 }
 
@@ -174,10 +176,17 @@ where
 
         *buf_offset += (remaining_segments.len() / 2 + 1) * 8;
 
-        let total_len = remaining_segments.iter().fold(Some(0u64), |acc, &len| acc.and_then(|n| n.checked_add(len as u64)));
+        let total_len = remaining_segments.iter().fold(Some(0u64), |acc, &len| {
+            acc.and_then(|n| n.checked_add(len as u64))
+        });
         match total_len {
             Some(len) if len <= options.traversal_limit_in_words * 8 => (),
-            _ => return Err(io::Error::new(io::ErrorKind::InvalidData, "Cap'n Proto message is too large".to_string())),
+            _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Cap'n Proto message is too large".to_string(),
+                ))
+            }
         }
 
         remaining_segments.reverse();
@@ -212,7 +221,12 @@ where
         }
 
 
-        Ok(Reader::new(Segments { segments: mem::replace(&mut self.segments, Vec::new()) }, self.options.clone()))
+        Ok(Reader::new(
+            Segments {
+                segments: mem::replace(&mut self.segments, Vec::new()),
+            },
+            self.options.clone(),
+        ))
     }
 
     /// Returns the next message from the stream, or `None` if the entire
@@ -234,7 +248,12 @@ where
     S: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "MessageStream {{ inner: {:?}, outbound_messages: {} }}", self.inner, self.outbound_queue_len())
+        write!(
+            f,
+            "MessageStream {{ inner: {:?}, outbound_messages: {} }}",
+            self.inner,
+            self.outbound_queue_len()
+        )
     }
 }
 
@@ -265,7 +284,12 @@ where
 {
     while !buf.is_empty() {
         match write.write(buf) {
-            Ok(0) => return result::Result::Err(io::Error::new(io::ErrorKind::WriteZero, "failed to write whole message")),
+            Ok(0) => {
+                return result::Result::Err(io::Error::new(
+                    io::ErrorKind::WriteZero,
+                    "failed to write whole message",
+                ))
+            }
             Ok(n) => {
                 *offset += n;
                 buf = &buf[n..]
@@ -277,20 +301,33 @@ where
     Ok(())
 }
 
-fn write_message<W>(write: &mut W, segment_table: &[u8], segments: &[&[Word]], write_progress: &mut (usize, usize)) -> io::Result<()>
+fn write_message<W>(
+    write: &mut W,
+    segment_table: &[u8],
+    segments: &[&[Word]],
+    write_progress: &mut (usize, usize),
+) -> io::Result<()>
 where
     W: io::Write,
 {
     let (ref mut segment_index, ref mut segment_offset) = *write_progress;
 
     if *segment_index == 0 {
-        try!(write_segment(write, &segment_table[*segment_offset..], segment_offset));
+        try!(write_segment(
+            write,
+            &segment_table[*segment_offset..],
+            segment_offset
+        ));
         *segment_offset = 0;
         *segment_index += 1;
     }
 
     for segment in &segments[(*segment_index - 1)..] {
-        try!(write_segment(write, &Word::words_to_bytes(segment)[*segment_offset..], segment_offset));
+        try!(write_segment(
+            write,
+            &Word::words_to_bytes(segment)[*segment_offset..],
+            segment_offset
+        ));
         *segment_offset = 0;
         *segment_index += 1;
     }
@@ -309,7 +346,6 @@ where
     /// If an `Err` result is returned, then the stream must be considered
     /// corrupt, and `write` or `write_message` must not be called again.
     pub fn write(&mut self) -> io::Result<()> {
-
         let MessageStream {
             ref mut inner,
             ref mut outbound_queue,
@@ -326,9 +362,9 @@ where
                 };
 
                 *write_progress = write_progress.or_else(|| {
-                                                             serialize_segment_table(current_segment_table, &*message.get_segments_for_output());
-                                                             Some((0, 0))
-                                                         });
+                    serialize_segment_table(current_segment_table, &*message.get_segments_for_output());
+                    Some((0, 0))
+                });
 
                 let progress: &mut (usize, usize) = write_progress.as_mut().unwrap();
                 let segments = &*message.get_segments_for_output();
@@ -382,9 +418,18 @@ fn parse_segment_table(buf: &[u8], lengths: &mut Vec<usize>) -> Result<usize> {
     let segment_count = <LittleEndian as ByteOrder>::read_u32(&buf[0..4]).wrapping_add(1) as usize;
 
     if segment_count >= 512 {
-        return result::Result::Err(Error::new(ErrorKind::InvalidData, format!("too many segments in Cap'n Proto message: {}", segment_count)));
+        return result::Result::Err(Error::new(
+            ErrorKind::InvalidData,
+            format!(
+                "too many segments in Cap'n Proto message: {}",
+                segment_count
+            ),
+        ));
     } else if segment_count == 0 {
-        return result::Result::Err(Error::new(ErrorKind::InvalidData, "zero segments Cap'n Proto message".to_string()));
+        return result::Result::Err(Error::new(
+            ErrorKind::InvalidData,
+            "zero segments Cap'n Proto message".to_string(),
+        ));
     }
 
     let len = (segment_count / 2 + 1) * 8;
@@ -404,9 +449,9 @@ fn parse_segment_table(buf: &[u8], lengths: &mut Vec<usize>) -> Result<usize> {
 #[cfg(test)]
 pub mod test {
 
-    use super::{MessageStream, parse_segment_table, serialize_segment_table, write_message};
+    use super::{parse_segment_table, serialize_segment_table, write_message, MessageStream};
 
-    use capnp::{Word, message};
+    use capnp::{message, Word};
     use capnp::message::ReaderSegments;
     use quickcheck::{quickcheck, TestResult};
 
@@ -422,13 +467,33 @@ pub mod test {
             assert_eq!(expected, &*actual);
         }
 
-        compare(&[0 * 8],
-                &[0,0,0,0,   // 1 segments
-                  0,0,0,0]); // 0 words
+        compare(
+            &[0 * 8],
+            &[
+                0,
+                0,
+                0,
+                0, // 1 segments
+                0,
+                0,
+                0,
+                0,
+            ],
+        ); // 0 words
 
-        compare(&[1 * 8],
-                &[0,0,0,0,   // 1 segments
-                  1,0,0,0]); // 1 word
+        compare(
+            &[1 * 8],
+            &[
+                0,
+                0,
+                0,
+                0, // 1 segments
+                1,
+                0,
+                0,
+                0,
+            ],
+        ); // 1 word
 
         compare(
             &[1 * 8, 1 * 8],
@@ -510,8 +575,14 @@ pub mod test {
         let mut v = Vec::new();
         assert!(parse_segment_table(&[255, 1, 0, 0, 0, 0, 0, 0], &mut v).is_err());
         assert_eq!(8, parse_segment_table(&[0, 0, 0, 0], &mut v).unwrap());
-        assert_eq!(8, parse_segment_table(&[0, 0, 0, 0, 0, 0, 0], &mut v).unwrap());
-        assert_eq!(16, parse_segment_table(&[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], &mut v).unwrap());
+        assert_eq!(
+            8,
+            parse_segment_table(&[0, 0, 0, 0, 0, 0, 0], &mut v).unwrap()
+        );
+        assert_eq!(
+            16,
+            parse_segment_table(&[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], &mut v).unwrap()
+        );
         assert!(parse_segment_table(&[255, 255, 255, 255, 0, 0, 0, 0], &mut v).is_err());
     }
 
@@ -530,9 +601,12 @@ pub mod test {
             let message = message_reader.read_message().unwrap().unwrap();
             let result_segments = message.into_segments();
 
-            TestResult::from_bool(segments.iter()
-                                          .enumerate()
-                                          .all(|(i, segment)| &segment[..] == result_segments.get_segment(i as u32).unwrap()))
+            TestResult::from_bool(
+                segments
+                    .iter()
+                    .enumerate()
+                    .all(|(i, segment)| &segment[..] == result_segments.get_segment(i as u32).unwrap()),
+            )
         }
 
         quickcheck(read_segments as fn(Vec<Vec<Word>>) -> TestResult);
@@ -544,7 +618,10 @@ pub mod test {
     where
         W: Write,
     {
-        let segments: &[&[Word]] = &segments.iter().map(|segment| &segment[..]).collect::<Vec<_>>()[..];
+        let segments: &[&[Word]] = &segments
+            .iter()
+            .map(|segment| &segment[..])
+            .collect::<Vec<_>>()[..];
         let mut segment_table = Vec::new();
         serialize_segment_table(&mut segment_table, segments);
         let mut write_progress = (0, 0);
@@ -603,7 +680,6 @@ pub mod test {
                         return TestResult::failed();
                     }
                 }
-
             }
             TestResult::passed()
         }
@@ -640,7 +716,6 @@ pub mod test {
                         return TestResult::failed();
                     }
                 }
-
             }
             TestResult::passed()
         }

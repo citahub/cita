@@ -65,7 +65,11 @@ pub struct Factory {
 
 impl Factory {
     pub fn new_contract(&self, address: Address) -> Option<Box<Contract>> {
-        if let Some(contract) = self.contracts.get(&address) { Some(contract.create()) } else { None }
+        if let Some(contract) = self.contracts.get(&address) {
+            Some(contract.create())
+        } else {
+            None
+        }
     }
     pub fn register(&mut self, address: Address, contract: Box<Contract>) {
         self.contracts.insert(address, contract);
@@ -77,7 +81,9 @@ impl Factory {
 #[cfg(not(test))]
 impl Default for Factory {
     fn default() -> Self {
-        Factory { contracts: HashMap::new() }
+        Factory {
+            contracts: HashMap::new(),
+        }
         // here we register contracts with addresses defined in genesis.json.
     }
 }
@@ -86,7 +92,9 @@ impl Default for Factory {
 impl Default for Factory {
     fn default() -> Self {
         use self::tests::SimpleStorage;
-        let mut factory = Factory { contracts: HashMap::new() };
+        let mut factory = Factory {
+            contracts: HashMap::new(),
+        };
         // here we register contracts with addresses defined in genesis.json.
         factory.register(Address::from(0x400), Box::new(SimpleStorage::default()));
         factory

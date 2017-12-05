@@ -20,7 +20,7 @@ use evm::Ext;
 use std::boxed::Box;
 use std::convert::From;
 use std::string::FromUtf8Error;
-use util::{U256, H256, sha3};
+use util::{H256, U256, sha3};
 
 ////////////////////////////////////////////////////////////////////////////////
 pub trait Serialize {
@@ -112,7 +112,6 @@ impl Scalar {
     where
         T: Deserialize,
     {
-
         let mut bytes = Vec::<u8>::new();
         let first = ext.storage_at(&self.position)?;
         if first[31] % 2 == 0 {
@@ -342,7 +341,9 @@ mod tests {
     fn test_array_simple() {
         let mut ext = FakeExt::new();
         let length = 7u64;
-        let array = Array { position: H256::from(0) };
+        let array = Array {
+            position: H256::from(0),
+        };
         // 1) length
         assert!(array.set_len(&mut ext, length).is_ok());
         assert_eq!(array.get_len(&ext).unwrap(), length);
@@ -414,8 +415,17 @@ mod tests {
         // 4) array[1]["key"] = "1234"
         let key = String::from("key");
         let expected = String::from("1234");
-        assert!(submap.set_bytes::<String, String>(&mut ext, key.clone(), expected.clone()).is_ok());
-        assert_eq!(submap.get_bytes::<String, String>(&ext, key.clone()).unwrap(), expected.clone());
+        assert!(
+            submap
+                .set_bytes::<String, String>(&mut ext, key.clone(), expected.clone())
+                .is_ok()
+        );
+        assert_eq!(
+            submap
+                .get_bytes::<String, String>(&ext, key.clone())
+                .unwrap(),
+            expected.clone()
+        );
     }
 
     #[test]
@@ -433,13 +443,19 @@ mod tests {
         let key = U256::from(1);
         let value = String::from("1234567890");
         assert!(map.set_bytes(&mut ext, key, value.clone()).is_ok());
-        assert_eq!(map.get_bytes::<U256, String>(&ext, key).unwrap(), value.clone());
+        assert_eq!(
+            map.get_bytes::<U256, String>(&ext, key).unwrap(),
+            value.clone()
+        );
 
         // 3) map[0] = "123456789012345678901234567890123"
         let key = U256::from(1);
         let value = String::from("123456789012345678901234567890123");
         assert!(map.set_bytes(&mut ext, key, value.clone()).is_ok());
-        assert_eq!(map.get_bytes::<U256, String>(&ext, key).unwrap(), value.clone());
+        assert_eq!(
+            map.get_bytes::<U256, String>(&ext, key).unwrap(),
+            value.clone()
+        );
 
         // 4) map["key"] = 0x1234;
         let key = String::from("key");
@@ -458,8 +474,15 @@ mod tests {
         let index = 2u64;
         let value = String::from("1234567890");
         let sub_array = map.get_array(key1).unwrap();
-        assert!(sub_array.set_bytes(&mut ext, index.clone(), value.clone()).is_ok());
-        assert_eq!(*sub_array.get_bytes::<String>(&ext, index.clone()).unwrap(), value.clone());
+        assert!(
+            sub_array
+                .set_bytes(&mut ext, index.clone(), value.clone())
+                .is_ok()
+        );
+        assert_eq!(
+            *sub_array.get_bytes::<String>(&ext, index.clone()).unwrap(),
+            value.clone()
+        );
 
 
         // 2) map["key1"][2] = "1234567890"
@@ -467,13 +490,19 @@ mod tests {
         let index = 4u64;
         let value = String::from("1234567890");
         let sub_array = map.get_array(key1).unwrap();
-        assert!(sub_array.set_bytes(&mut ext, index.clone(), value.clone()).is_ok());
-        assert_eq!(*sub_array.get_bytes::<String>(&ext, index.clone()).unwrap(), value.clone());
+        assert!(
+            sub_array
+                .set_bytes(&mut ext, index.clone(), value.clone())
+                .is_ok()
+        );
+        assert_eq!(
+            *sub_array.get_bytes::<String>(&ext, index.clone()).unwrap(),
+            value.clone()
+        );
     }
 
     #[test]
     fn test_map_with_sub_map() {
-
         let mut ext = FakeExt::new();
         let mut map = Map::new(H256::from(1));
 
@@ -482,8 +511,17 @@ mod tests {
         let key2 = String::from("key2");
         let value = String::from("1234567890");
         let sub_map = map.get_map(key1).unwrap();
-        assert!(sub_map.set_bytes(&mut ext, key2.clone(), value.clone()).is_ok());
-        assert_eq!(sub_map.get_bytes::<String, String>(&ext, key2.clone()).unwrap(), value.clone());
+        assert!(
+            sub_map
+                .set_bytes(&mut ext, key2.clone(), value.clone())
+                .is_ok()
+        );
+        assert_eq!(
+            sub_map
+                .get_bytes::<String, String>(&ext, key2.clone())
+                .unwrap(),
+            value.clone()
+        );
 
         // 2) map["key1"][2] = "1234567890"
         let key1 = String::from("key1");
@@ -491,6 +529,9 @@ mod tests {
         let value = String::from("1234567890");
         let sub_map = map.get_map(key1).unwrap();
         assert!(sub_map.set_bytes(&mut ext, key2, value.clone()).is_ok());
-        assert_eq!(sub_map.get_bytes::<_, String>(&ext, key2).unwrap(), value.clone());
+        assert_eq!(
+            sub_map.get_bytes::<_, String>(&ext, key2).unwrap(),
+            value.clone()
+        );
     }
 }

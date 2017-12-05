@@ -22,7 +22,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
-use util::{H256, H160};
+use util::{H160, H256};
 use util::KeyValueDB;
 
 #[allow(unused_variables, dead_code)]
@@ -35,7 +35,9 @@ pub struct Callchain {
 impl Callchain {
     pub fn new(db: Arc<KeyValueDB>, genesis: Genesis, path: &str) -> Self {
         let config_file = File::open(path).unwrap();
-        Callchain { chain: Arc::new(Chain::init_chain(db, genesis, BufReader::new(config_file))) }
+        Callchain {
+            chain: Arc::new(Chain::init_chain(db, genesis, BufReader::new(config_file))),
+        }
     }
 
 

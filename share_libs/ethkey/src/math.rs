@@ -13,6 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+#![rustfmt_skip]
 
 use super::{SECP256K1, Public, Secret, Error};
 use bigint::U256;

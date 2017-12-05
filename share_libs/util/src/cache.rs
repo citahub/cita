@@ -17,6 +17,7 @@
 //! Lru-cache related utilities as quick-and-dirty wrappers around the lru-cache
 //! crate.
 // TODO: push changes upstream in a clean way.
+#![rustfmt_skip]
 
 use heapsize::HeapSizeOf;
 use lru_cache::LruCache;

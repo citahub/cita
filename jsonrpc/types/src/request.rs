@@ -15,14 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{Params, Id};
+use super::{Id, Params};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Version {
-    #[serde(rename = "1.0")]
-    V1,
-    #[serde(rename = "2.0")]
-    V2,
+    #[serde(rename = "1.0")] V1,
+    #[serde(rename = "2.0")] V2,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

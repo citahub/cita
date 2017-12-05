@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Key-value datastore with a modified Merkle tree.
+#![rustfmt_skip]
 extern crate rand;
 
 use bytes::*;

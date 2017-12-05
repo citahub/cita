@@ -15,14 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use bincode::{serialize, deserialize, Infinite};
-use crypto::{Signature, Sign, pubkey_to_address};
+use bincode::{deserialize, serialize, Infinite};
+use crypto::{pubkey_to_address, Sign, Signature};
 use libproto::blockchain::{Proof, ProofType};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::usize::MAX;
-use util::{H256, Address};
+use util::{Address, H256};
 use util::Hashable;
 use util::datapath::DataPath;
 
@@ -110,7 +110,16 @@ impl TendermintProof {
         }
         self.commits.iter().all(|(sender, sig)| {
             if authorities.contains(sender) {
-                let msg = serialize(&(h, self.round, Step::Precommit, sender, Some(self.proposal.clone())), Infinite).unwrap();
+                let msg = serialize(
+                    &(
+                        h,
+                        self.round,
+                        Step::Precommit,
+                        sender,
+                        Some(self.proposal.clone()),
+                    ),
+                    Infinite,
+                ).unwrap();
                 let signature = Signature(sig.0.into());
                 if let Ok(pubkey) = signature.recover(&msg.crypt_hash().into()) {
                     return pubkey_to_address(&pubkey) == sender.clone().into();

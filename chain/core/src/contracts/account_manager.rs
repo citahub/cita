@@ -39,9 +39,13 @@ lazy_static! {
         }
         out[0..4].to_vec()
     };
-    static ref QUERY_TX: Vec<u8> = "0000000000000000000000000000000000000000000000000000000000000001".from_hex().unwrap().into();
-    static ref QUERY_CONTRACT: Vec<u8> = "0000000000000000000000000000000000000000000000000000000000000002".from_hex().unwrap().into();
-    static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a4").unwrap();
+    static ref QUERY_TX: Vec<u8> = "00000000000000000000000000000000000000000\
+                                    00000000000000000000001".from_hex().unwrap().into();
+    static ref QUERY_CONTRACT: Vec<u8> = "00000000000000000000000000000000000\
+                                          00000000000000000000000000002".from_hex().unwrap().into();
+    static ref CONTRACT_ADDRESS: H160 = H160::from_str(
+        "00000000000000000000000000000000013241a4"
+    ).unwrap();
 }
 
 pub struct AccountManager;
@@ -58,7 +62,9 @@ impl AccountManager {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = chain.eth_call(call_request, BlockId::Latest).expect("load senders eth call");
+        let output = chain
+            .eth_call(call_request, BlockId::Latest)
+            .expect("load senders eth call");
         trace!("read account which has tx permission output: {:?}", output);
         let accounts: Vec<Address> = parse_string_to_addresses(&output);
         trace!("accounts: {:?}", accounts);
@@ -79,8 +85,13 @@ impl AccountManager {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = chain.eth_call(call_request, BlockId::Latest).expect("load creators eth call");
-        trace!("read account which has contract permission output: {:?}", output);
+        let output = chain
+            .eth_call(call_request, BlockId::Latest)
+            .expect("load creators eth call");
+        trace!(
+            "read account which has contract permission output: {:?}",
+            output
+        );
         let accounts: Vec<Address> = parse_string_to_addresses(&output);
         trace!("accounts: {:?}", accounts);
         for account in accounts {

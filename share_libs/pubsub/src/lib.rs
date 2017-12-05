@@ -14,13 +14,13 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+extern crate dotenv;
 #[cfg(feature = "kafka")]
 extern crate pubsub_kafka;
 #[cfg(feature = "rabbitmq")]
 extern crate pubsub_rabbitmq;
 #[cfg(feature = "zeromq")]
 extern crate pubsub_zeromq;
-extern crate dotenv;
 use dotenv::dotenv;
 
 
@@ -61,20 +61,35 @@ mod test {
     use std::sync::mpsc::channel;
     #[test]
     fn basics() {
-
         let (ntx_sub, nrx_sub) = channel();
         let (ntx_pub, nrx_pub) = channel();
-        start_pubsub("network", vec!["chain.newtx", "chain.newblk"], ntx_sub, nrx_pub);
+        start_pubsub(
+            "network",
+            vec!["chain.newtx", "chain.newblk"],
+            ntx_sub,
+            nrx_pub,
+        );
 
         let (ctx_sub, crx_sub) = channel();
         let (ctx_pub, crx_pub) = channel();
-        start_pubsub("chain", vec!["network.newtx", "network.newblk"], ctx_sub, crx_pub);
+        start_pubsub(
+            "chain",
+            vec!["network.newtx", "network.newblk"],
+            ctx_sub,
+            crx_pub,
+        );
 
-        ntx_pub.send(("network.newtx".to_string(), vec![49])).unwrap();
-        ntx_pub.send(("network.newblk".to_string(), vec![50])).unwrap();
+        ntx_pub
+            .send(("network.newtx".to_string(), vec![49]))
+            .unwrap();
+        ntx_pub
+            .send(("network.newblk".to_string(), vec![50]))
+            .unwrap();
 
         ctx_pub.send(("chain.newtx".to_string(), vec![51])).unwrap();
-        ctx_pub.send(("chain.newblk".to_string(), vec![52])).unwrap();
+        ctx_pub
+            .send(("chain.newblk".to_string(), vec![52]))
+            .unwrap();
 
 
         let mut chain = HashMap::new();
@@ -94,7 +109,5 @@ mod test {
 
         assert_eq!(network.get(&"chain.newtx".to_string()).unwrap(), &vec![51]);
         assert_eq!(network.get(&"chain.newblk".to_string()).unwrap(), &vec![52]);
-
-
     }
 }

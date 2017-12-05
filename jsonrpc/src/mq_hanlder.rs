@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use base_hanlder::{TransferType, RpcMap};
+use base_hanlder::{RpcMap, TransferType};
 use jsonrpc_types::response::Output;
-use libproto::{parse_msg, display_cmd, MsgClass};
+use libproto::{display_cmd, parse_msg, MsgClass};
 use serde_json;
 
 #[derive(Default)]
@@ -28,7 +28,9 @@ pub struct MqHandler {
 
 impl MqHandler {
     pub fn new(responses: RpcMap) -> Self {
-        MqHandler { responses: responses }
+        MqHandler {
+            responses: responses,
+        }
     }
 
     pub fn handle(&mut self, key: &str, body: &[u8]) {
@@ -38,23 +40,23 @@ impl MqHandler {
         match content_ext {
             MsgClass::RESPONSE(content) => {
                 trace!("from response request_id {:?}", content.request_id);
-                let value = {
-                    self.responses.lock().remove(&content.request_id)
-                };
+                let value = { self.responses.lock().remove(&content.request_id) };
                 if let Some(val) = value {
                     match val {
                         TransferType::HTTP((req_info, sender)) => {
-                            sender.send(serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap());
+                            sender.send(
+                                serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
+                            );
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
-                            sender.send(serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap());
+                            sender.send(
+                                serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
+                            );
                         }
                     }
-
                 } else {
                     warn!("Unable handle msg {:?}", content);
                 }
-
             }
             _ => {
                 warn!("Unable handle msg {:?}", content_ext);

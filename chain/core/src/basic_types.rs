@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Ethcore basic typenames.
-
+#![rustfmt_skip]
 use util::H2048;
 
 /// Type for a 2048-bit log-bloom, as used by our blocks.

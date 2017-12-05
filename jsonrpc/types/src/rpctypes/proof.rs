@@ -17,9 +17,9 @@
 
 use bincode::deserialize;
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
-use proof::{TendermintProof as TProof, AuthorityRoundProof as AProof};
+use proof::{AuthorityRoundProof as AProof, TendermintProof as TProof};
 use std::collections::HashMap;
-use util::{H256, Address};
+use util::{Address, H256};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Proof {

@@ -14,8 +14,8 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-use bincode::{serialize, deserialize, Infinite};
+#![rustfmt_skip]
+use bincode::{deserialize, serialize, Infinite};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub enum Command {

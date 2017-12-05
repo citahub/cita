@@ -13,8 +13,9 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
-
-
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
+#![rustfmt_skip]
 extern crate siphasher;
 
 use siphasher::sip::SipHasher;
@@ -71,7 +72,10 @@ impl BitVecJournal {
     }
 
     pub fn saturation(&self) -> f64 {
-        self.elems.iter().fold(0u64, |acc, e| acc + e.count_ones() as u64) as f64 / (self.elems.len() * 64) as f64
+        self.elems.iter().fold(
+            0u64,
+            |acc, e| acc + e.count_ones() as u64
+        ) as f64 / (self.elems.len() * 64) as f64
     }
 }
 

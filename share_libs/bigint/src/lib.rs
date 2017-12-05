@@ -7,13 +7,14 @@
 // except according to those terms.
 
 //! Efficient large, fixed-size big integers and hashes.
-
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
 #![cfg_attr(asm_available, feature(asm))]
 
 extern crate byteorder;
+extern crate libc;
 extern crate rand;
 extern crate rustc_hex;
-extern crate libc;
 extern crate serde;
 
 #[cfg(feature = "heapsizeof")]

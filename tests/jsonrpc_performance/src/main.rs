@@ -1,20 +1,20 @@
 #![allow(unused_extern_crates)]
 extern crate cita_crypto as crypto;
+extern crate hyper;
+extern crate jsonrpc_types;
 extern crate libproto;
 extern crate protobuf;
-extern crate util;
-extern crate serde;
-extern crate hyper;
-extern crate serde_json;
-extern crate jsonrpc_types;
 extern crate rustc_hex;
+extern crate serde;
+extern crate serde_json;
+extern crate util;
 
-#[macro_use]
-extern crate serde_derive;
 extern crate clap;
 #[macro_use]
 extern crate log;
 extern crate logger;
+#[macro_use]
+extern crate serde_derive;
 
 
 pub mod param;
@@ -38,9 +38,12 @@ fn main() {
 
     let file_name = matches.value_of("config").unwrap_or("config_test.json");
 
-    let analysis = matches.value_of("analysis").unwrap_or("false").parse::<bool>().unwrap();
+    let analysis = matches
+        .value_of("analysis")
+        .unwrap_or("false")
+        .parse::<bool>()
+        .unwrap();
     let p: Param = Param::load_from_file(&file_name);
     let mut work = Sendtx::new(&p, analysis);
     work.start();
-
 }

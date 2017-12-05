@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use {syn, quote};
+use {quote, syn};
 
 pub fn impl_encodable(ast: &syn::DeriveInput) -> quote::Tokens {
     let body = match ast.body {
@@ -24,8 +24,9 @@ pub fn impl_encodable(ast: &syn::DeriveInput) -> quote::Tokens {
     };
 
     let stmts: Vec<_> = match *body {
-        syn::VariantData::Struct(ref fields) | syn::VariantData::Tuple(ref fields) =>
-            fields.iter().enumerate().map(encodable_field_map).collect(),
+        syn::VariantData::Struct(ref fields) | syn::VariantData::Tuple(ref fields) => {
+            fields.iter().enumerate().map(encodable_field_map).collect()
+        }
         syn::VariantData::Unit => panic!("#[derive(RlpEncodable)] is not defined for Unit structs."),
     };
 
@@ -65,7 +66,7 @@ pub fn impl_encodable_wrapper(ast: &syn::DeriveInput) -> quote::Tokens {
             } else {
                 panic!("#[derive(RlpEncodableWrapper)] is only defined for structs with one field.")
             }
-        },
+        }
         syn::VariantData::Unit => panic!("#[derive(RlpEncodableWrapper)] is not defined for Unit structs."),
     };
 
@@ -103,25 +104,34 @@ fn encodable_field(index: usize, field: &syn::Field) -> quote::Tokens {
 
     match field.ty {
         syn::Ty::Path(_, ref path) => {
-            let top_segment = path.segments.first().expect("there must be at least 1 segment");
+            let top_segment = path.segments
+                .first()
+                .expect("there must be at least 1 segment");
             let ident = &top_segment.ident;
             if &ident.to_string() == "Vec" {
                 let inner_ident = match top_segment.parameters {
                     syn::PathParameters::AngleBracketed(ref angle) => {
-                        let ty = angle.types.first().expect("Vec has only one angle bracketed type; qed");
+                        let ty = angle
+                            .types
+                            .first()
+                            .expect("Vec has only one angle bracketed type; qed");
                         match *ty {
-                            syn::Ty::Path(_, ref path) => &path.segments.first().expect("there must be at least 1 segment").ident,
+                            syn::Ty::Path(_, ref path) => {
+                                &path.segments
+                                    .first()
+                                    .expect("there must be at least 1 segment")
+                                    .ident
+                            }
                             _ => panic!("rlp_derive not supported"),
                         }
-                    },
+                    }
                     _ => unreachable!("Vec has only one angle bracketed type; qed"),
                 };
                 quote! { stream.append_list::<#inner_ident, _>(&#id); }
             } else {
                 quote! { stream.append(&#id); }
             }
-        },
+        }
         _ => panic!("rlp_derive not supported"),
     }
 }
-

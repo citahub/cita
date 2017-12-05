@@ -15,18 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use base_hanlder::{BaseHandler, RpcMap, TransferType, ReqInfo};
+use base_hanlder::{BaseHandler, ReqInfo, RpcMap, TransferType};
 use error::ErrorCode;
 use hyper::Post;
 use hyper::server::{Handler, Request, Response};
 use hyper::uri::RequestUri::AbsolutePath;
-use jsonrpc_types::{RpcRequest, method, Error};
+use jsonrpc_types::{method, Error, RpcRequest};
 use jsonrpc_types::response::RpcFailure;
 use libproto::request as reqlib;
 use serde_json;
 use std::io::Read;
 use std::result;
-use std::sync::{Arc, mpsc};
+use std::sync::{mpsc, Arc};
 use std::time::Duration;
 use util::Mutex;
 
@@ -50,7 +50,7 @@ impl HttpHandler {
                         let mut body = String::new();
                         match req.read_to_string(&mut body) {
                             Ok(_) => Ok(body),
-                            Err(_) => Err(Error::invalid_request()),//TODO
+                            Err(_) => Err(Error::invalid_request()), //TODO
                         }
                     }
                     _ => result::Result::Err(Error::invalid_request()),
@@ -77,12 +77,16 @@ impl HttpHandler {
                 trace!("wait response {:?}", request_id);
                 let (tx, rx) = mpsc::channel();
                 {
-                    self.responses.lock().insert(request_id.clone(),
-                                                 TransferType::HTTP((ReqInfo {
-                                                                         id: id.clone(),
-                                                                         jsonrpc: jsonrpc_version.clone(),
-                                                                     },
-                                                                     tx)));
+                    self.responses.lock().insert(
+                        request_id.clone(),
+                        TransferType::HTTP((
+                            ReqInfo {
+                                id: id.clone(),
+                                jsonrpc: jsonrpc_version.clone(),
+                            },
+                            tx,
+                        )),
+                    );
                     self.tx.lock().send((topic, req));
                 }
 
@@ -90,13 +94,15 @@ impl HttpHandler {
                     Ok(res)
                 } else {
                     self.responses.lock().remove(&request_id);
-                    Err(RpcFailure::from_options(id, jsonrpc_version, Error::server_error(ErrorCode::time_out_error(), "system time out,please resend")))
+                    Err(RpcFailure::from_options(
+                        id,
+                        jsonrpc_version,
+                        Error::server_error(ErrorCode::time_out_error(), "system time out,please resend"),
+                    ))
                 }
             }
 
-            Err(err) => {
-                Err(RpcFailure::from_options(id, jsonrpc_version, err))
-            }
+            Err(err) => Err(RpcFailure::from_options(id, jsonrpc_version, err)),
         }
     }
 }
@@ -119,6 +125,9 @@ impl Handler for HttpHandler {
 
         //TODO
         trace!("JsonRpc respone data {:?}", data);
-        res.send(data.expect("return client's respone data unwrap error").as_ref());
+        res.send(
+            data.expect("return client's respone data unwrap error")
+                .as_ref(),
+        );
     }
 }

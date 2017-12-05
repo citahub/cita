@@ -15,16 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #![allow(unused_extern_crates)]
-#[macro_use]
-extern crate lazy_static;
-extern crate secp256k1;
-extern crate rustc_serialize;
-extern crate util;
-extern crate rand;
-extern crate rlp;
-extern crate serde;
 #[cfg(test)]
 extern crate bincode;
+#[macro_use]
+extern crate lazy_static;
+extern crate rand;
+extern crate rlp;
+extern crate rustc_serialize;
+extern crate secp256k1;
+extern crate serde;
+extern crate util;
 
 pub type PrivKey = H256;
 pub type PubKey = H512;
@@ -46,7 +46,7 @@ pub use self::error::*;
 pub use self::keypair::*;
 pub use self::signature::*;
 pub use self::signer::Signer;
-use util::{H256, H512, Address};
+use util::{Address, H256, H512};
 
 lazy_static! {
     pub static ref SECP256K1: secp256k1::Secp256k1 = secp256k1::Secp256k1::new();

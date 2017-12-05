@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Trie query recorder.
+#![rustfmt_skip]
 
 use {Bytes, H256};
 use hashable::Hashable;

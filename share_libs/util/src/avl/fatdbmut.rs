@@ -18,7 +18,7 @@
 use super::{AVLDBMut, AVLMut};
 use H256;
 use hashable::Hashable;
-use hashdb::{HashDB, DBValue};
+use hashdb::{DBValue, HashDB};
 
 /// A mutable `AVL` implementation which hashes keys and uses a generic `HashDB` backing database.
 /// Additionaly it stores inserted hash-key mappings for later retrieval.
@@ -33,14 +33,18 @@ impl<'db> FatDBMut<'db> {
     /// Initialise to the state entailed by the genesis block.
     /// This guarantees the avl is built correctly.
     pub fn new(db: &'db mut HashDB, root: &'db mut H256) -> Self {
-        FatDBMut { raw: AVLDBMut::new(db, root) }
+        FatDBMut {
+            raw: AVLDBMut::new(db, root),
+        }
     }
 
     /// Create a new avl with the backing database `db` and `root`.
     ///
     /// Returns an error if root does not exist.
     pub fn from_existing(db: &'db mut HashDB, root: &'db mut H256) -> super::Result<Self> {
-        Ok(FatDBMut { raw: AVLDBMut::from_existing(db, root)? })
+        Ok(FatDBMut {
+            raw: AVLDBMut::from_existing(db, root)?,
+        })
     }
 
     /// Get the backing database.
@@ -116,5 +120,8 @@ fn fatdb_to_avl() {
         t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
     }
     let t = AVLDB::new(&memdb, &root).unwrap();
-    assert_eq!(t.get(&(&[0x01u8, 0x23]).crypt_hash()).unwrap().unwrap(), DBValue::from_slice(&[0x01u8, 0x23]));
+    assert_eq!(
+        t.get(&(&[0x01u8, 0x23]).crypt_hash()).unwrap().unwrap(),
+        DBValue::from_slice(&[0x01u8, 0x23])
+    );
 }

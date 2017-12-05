@@ -18,6 +18,7 @@
 //!
 //! Includes a pretty-printer for bytes, in the form of `ToPretty` and `PrettySlice`
 //! as
+#![rustfmt_skip]
 
 use std::cmp::min;
 use std::fmt;

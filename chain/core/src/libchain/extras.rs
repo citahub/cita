@@ -18,7 +18,7 @@
 //! Blockchain DB extras.
 
 use bloomchain;
-use blooms::{GroupPosition, BloomGroup};
+use blooms::{BloomGroup, GroupPosition};
 use db::Key;
 use header::{BlockNumber, Header};
 use libchain::block::BlockBody;
@@ -212,7 +212,9 @@ impl BlockReceipts {
 
 impl Decodable for BlockReceipts {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        Ok(BlockReceipts { receipts: rlp.as_list()? })
+        Ok(BlockReceipts {
+            receipts: rlp.as_list()?,
+        })
     }
 }
 
