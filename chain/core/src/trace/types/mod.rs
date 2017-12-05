@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Types used in the public api
+#![rustfmt_skip]
 
 pub mod error;
 pub mod filter;

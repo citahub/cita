@@ -38,10 +38,10 @@ use std::process::Command;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
-use std::time::{UNIX_EPOCH, Instant};
+use std::time::{Instant, UNIX_EPOCH};
 use test::black_box;
 use types::transaction::SignedTransaction;
-use util::{U256, Address};
+use util::{Address, U256};
 use util::KeyValueDB;
 use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
@@ -110,16 +110,20 @@ pub fn init_chain() -> Arc<Chain> {
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
     // Load from genesis json file
-    let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref()).expect("Failed to load genesis.");
+    let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref())
+        .expect("Failed to load genesis.");
     let genesis = Genesis {
         spec: spec,
         block: Block::default(),
     };
-    Arc::new(Chain::init_chain::<&[u8]>(Arc::new(db), genesis, CHAIN_CONFIG.as_ref()))
+    Arc::new(Chain::init_chain::<&[u8]>(
+        Arc::new(db),
+        genesis,
+        CHAIN_CONFIG.as_ref(),
+    ))
 }
 
 pub fn create_block(chain: &Chain, to: Address, data: &Vec<u8>, nonce: (u32, u32)) -> Block {
-
     let mut block = Block::new();
 
     block.set_parent_hash(chain.get_current_hash());
@@ -156,9 +160,11 @@ pub fn create_block(chain: &Chain, to: Address, data: &Vec<u8>, nonce: (u32, u32
 pub fn bench_chain(code: &Vec<u8>, data: &Vec<u8>, tpb: u32, native_address: Address) -> u64 {
     let chain = init_chain();
     let (sync_tx, recv) = channel();
-    thread::spawn(move || loop {
-                      let _ = recv.recv();
-                  });
+    thread::spawn(move || {
+        loop {
+            let _ = recv.recv();
+        }
+    });
     // 1) deploy contract
     let block = create_block(&chain, Address::from(0), code, (0, 1));
     chain.set_block(block.clone(), &sync_tx);
@@ -167,14 +173,19 @@ pub fn bench_chain(code: &Vec<u8>, data: &Vec<u8>, tpb: u32, native_address: Add
     let mut nonce = 1;
     let txhash = block.body().transactions()[0].hash();
     let receipt = chain.localized_receipt(txhash).expect("no receipt found");
-    let addr = if native_address == Address::zero() { receipt.contract_address.unwrap() } else { native_address };
+    let addr = if native_address == Address::zero() {
+        receipt.contract_address.unwrap()
+    } else {
+        native_address
+    };
     let bench = |to: Address, tpb: u32, nonce: u32, data: &Vec<u8>| -> u64 {
         let block = create_block(&chain, to, data, (nonce, tpb + nonce));
         let start = Instant::now();
         black_box(chain.set_block(block, &sync_tx));
         let elapsed = start.elapsed();
         chain.collect_garbage();
-        u64::from(tpb) * 1_000_000_000 / (elapsed.as_secs() * 1_000_000_000 + u64::from(elapsed.subsec_nanos()))
+        u64::from(tpb) * 1_000_000_000
+            / (elapsed.as_secs() * 1_000_000_000 + u64::from(elapsed.subsec_nanos()))
     };
 
     let blocks = 10;

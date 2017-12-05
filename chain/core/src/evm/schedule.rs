@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Cost schedule and other parameterisations for the EVM.
+#![rustfmt_skip]
 
 /// Definition of the cost schedule and other parameterisations for the EVM.
 pub struct Schedule {

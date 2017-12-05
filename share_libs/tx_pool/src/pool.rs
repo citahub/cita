@@ -16,10 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::{pubkey_to_address, PubKey};
-use libproto::blockchain::{SignedTransaction, AccountGasLimit};
+use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet, BTreeSet};
-use util::{H256, Address, BLOCKLIMIT};
+use std::collections::{BTreeSet, HashMap, HashSet};
+use util::{Address, H256, BLOCKLIMIT};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Strategy {
@@ -36,7 +36,10 @@ struct TxOrder {
 
 impl TxOrder {
     fn new(hash: H256, order: u64) -> Self {
-        TxOrder { hash: hash, order: order }
+        TxOrder {
+            hash: hash,
+            order: order,
+        }
     }
 }
 
@@ -123,7 +126,11 @@ impl Pool {
     }
 
     fn update_order_set(&mut self, hash_list: &HashSet<H256>) {
-        self.order_set = self.order_set.iter().cloned().filter(|order| !hash_list.contains(&order.hash)).collect();
+        self.order_set = self.order_set
+            .iter()
+            .cloned()
+            .filter(|order| !hash_list.contains(&order.hash))
+            .collect();
     }
 
     pub fn update(&mut self, txs: &[SignedTransaction]) {
@@ -143,7 +150,12 @@ impl Pool {
         self.update_order_set(txs);
     }
 
-    pub fn package(&mut self, height: u64, block_gas_limit: u64, account_gas_limit: AccountGasLimit) -> Vec<SignedTransaction> {
+    pub fn package(
+        &mut self,
+        height: u64,
+        block_gas_limit: u64,
+        account_gas_limit: AccountGasLimit,
+    ) -> Vec<SignedTransaction> {
         let mut tx_list = Vec::new();
         let mut invalid_tx_list = Vec::new();
         let mut n = block_gas_limit;
@@ -161,7 +173,9 @@ impl Pool {
                 let tx = self.txs.get(&hash);
                 let tx_is_valid = |signed_tx: &SignedTransaction, height: u64| {
                     let valid_until_block = signed_tx.get_transaction().get_valid_until_block();
-                    (valid_until_block == 0) || (height < valid_until_block && valid_until_block <= (height + BLOCKLIMIT))
+                    (valid_until_block == 0)
+                        || (height < valid_until_block
+                            && valid_until_block <= (height + BLOCKLIMIT))
                 };
                 if let Some(tx) = tx {
                     if tx_is_valid(tx, height) {
@@ -222,7 +236,13 @@ impl Pool {
                 let hash = order.unwrap().hash;
                 let tx = self.txs.get(&hash);
                 if let Some(tx) = tx {
-                    if tx.get_transaction_with_sig().get_transaction().valid_until_block >= height && tx.get_transaction_with_sig().get_transaction().valid_until_block < (height + BLOCKLIMIT) {
+                    if tx.get_transaction_with_sig()
+                        .get_transaction()
+                        .valid_until_block >= height
+                        && tx.get_transaction_with_sig()
+                            .get_transaction()
+                            .valid_until_block < (height + BLOCKLIMIT)
+                    {
                         tx_list.push(tx.clone());
                         n = n - 1;
                         if n == 0 {
@@ -250,10 +270,14 @@ impl Pool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crypto::{KeyPair, PrivKey, CreateKey};
-    use libproto::blockchain::{SignedTransaction, Transaction, AccountGasLimit};
+    use crypto::{CreateKey, KeyPair, PrivKey};
+    use libproto::blockchain::{AccountGasLimit, SignedTransaction, Transaction};
 
-    pub fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
+    pub fn generate_tx(
+        data: Vec<u8>,
+        valid_until_block: u64,
+        privkey: &PrivKey,
+    ) -> SignedTransaction {
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_to("1234567".to_string());
@@ -286,7 +310,10 @@ mod tests {
         assert_eq!(p.len(), 3);
         p.update(&vec![tx1.clone()]);
         assert_eq!(p.len(), 2);
-        assert_eq!(p.package(5, 30, account_gas_limit.clone()), vec![tx3.clone()]);
+        assert_eq!(
+            p.package(5, 30, account_gas_limit.clone()),
+            vec![tx3.clone()]
+        );
         p.update(&vec![tx3.clone()]);
         assert_eq!(p.package(4, 30, account_gas_limit.clone()), vec![tx4]);
         assert_eq!(p.len(), 1);

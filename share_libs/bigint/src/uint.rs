@@ -28,6 +28,7 @@
 //! The functions here are designed to be fast. There are optional `x86_64`
 //! implementations for even more speed, hidden behind the `x64_arithmetic`
 //! feature flag.
+#![rustfmt_skip]
 
 use byteorder::{ByteOrder, BigEndian, LittleEndian};
 use rustc_hex::{ToHex, FromHex, FromHexError};

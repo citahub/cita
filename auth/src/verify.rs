@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-use crypto::{PubKey, Signature, Sign, SIGNATURE_BYTES_LEN};
+use crypto::{PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use libproto::*;
 use libproto::blockchain::*;
 use protobuf::Message;
@@ -61,22 +61,45 @@ impl Verifier {
         self.height_low
     }
 
-    pub fn update_hashes(&mut self, h: u64, hashes: HashSet<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn update_hashes(
+        &mut self,
+        h: u64,
+        hashes: HashSet<H256>,
+        tx_pub: &Sender<(String, Vec<u8>)>,
+    ) {
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
-            self.height_low = if h < BLOCKLIMIT { Some(0) } else { Some(h - BLOCKLIMIT + 1) };
+            self.height_low = if h < BLOCKLIMIT {
+                Some(0)
+            } else {
+                Some(h - BLOCKLIMIT + 1)
+            };
             for i in self.height_low.unwrap()..h {
                 let mut req = BlockTxHashesReq::new();
                 req.set_height(i as u64);
-                let msg = factory::create_msg(submodules::AUTH, topics::BLOCK_TXHASHES_REQ, communication::MsgType::BLOCK_TXHASHES_REQ, req.write_to_bytes().unwrap());
-                tx_pub.send(("auth.blk_tx_hashs_req".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+                let msg = factory::create_msg(
+                    submodules::AUTH,
+                    topics::BLOCK_TXHASHES_REQ,
+                    communication::MsgType::BLOCK_TXHASHES_REQ,
+                    req.write_to_bytes().unwrap(),
+                );
+                tx_pub
+                    .send((
+                        "auth.blk_tx_hashs_req".to_string(),
+                        msg.write_to_bytes().unwrap(),
+                    ))
+                    .unwrap();
             }
         } else {
             let current_height = self.height_latest.unwrap();
             let current_height_low = self.height_low.unwrap();
             if h > current_height {
                 self.height_latest = Some(h);
-                self.height_low = if h < BLOCKLIMIT { Some(0) } else { Some(h - BLOCKLIMIT + 1) };
+                self.height_low = if h < BLOCKLIMIT {
+                    Some(0)
+                } else {
+                    Some(h - BLOCKLIMIT + 1)
+                };
                 for i in current_height_low..self.height_low.unwrap() {
                     self.hashes.remove(&i);
                 }
@@ -87,7 +110,8 @@ impl Verifier {
         }
         trace!("update block's tx hashes for height:{} and the current low height:{} and latest height:{}", h, self.height_low.unwrap(), self.height_latest.unwrap());
         self.hashes.insert(h, hashes);
-        if self.hashes.len() as u64 == (self.height_latest.unwrap() - self.height_low.unwrap() + 1) {
+        if self.hashes.len() as u64 == (self.height_latest.unwrap() - self.height_low.unwrap() + 1)
+        {
             self.inited = true;
         }
     }
@@ -98,7 +122,11 @@ impl Verifier {
         }
         for (height, hashes) in &self.hashes {
             if hashes.contains(hash) {
-                trace!("Tx with hash {:?} has already existed in height:{}", hash.0, height);
+                trace!(
+                    "Tx with hash {:?} has already existed in height:{}",
+                    hash.0,
+                    height
+                );
                 return true;
             }
         }
@@ -114,9 +142,7 @@ impl Verifier {
         }
         let sig = Signature::from(sig_bytes);
         match req.get_crypto() {
-            Crypto::SECP => {
-                sig.recover(&hash).map_err(|_| ())
-            }
+            Crypto::SECP => sig.recover(&hash).map_err(|_| ()),
             _ => {
                 warn!("Unexpected crypto");
                 Err(())
@@ -131,7 +157,6 @@ impl Verifier {
             if result {
                 warn!("The new tx is out of time valid_until_block: {:?}, height: {:?}, BLOCKLIMIT: {:?}", valid_until_block, height, BLOCKLIMIT);
             }
-
         }
         result
     }

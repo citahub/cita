@@ -31,17 +31,12 @@ pub struct BlockBody {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct BlockHeader {
     pub timestamp: u64,
-    #[serde(rename = "prevHash")]
-    pub prev_hash: H256,
+    #[serde(rename = "prevHash")] pub prev_hash: H256,
     pub number: U256,
-    #[serde(rename = "stateRoot")]
-    pub state_root: H256,
-    #[serde(rename = "transactionsRoot")]
-    pub transactions_root: H256,
-    #[serde(rename = "receiptsRoot")]
-    pub receipts_root: H256,
-    #[serde(rename = "gasUsed")]
-    pub gas_used: U256,
+    #[serde(rename = "stateRoot")] pub state_root: H256,
+    #[serde(rename = "transactionsRoot")] pub transactions_root: H256,
+    #[serde(rename = "receiptsRoot")] pub receipts_root: H256,
+    #[serde(rename = "gasUsed")] pub gas_used: U256,
     pub proof: Option<Proof>,
 }
 
@@ -59,7 +54,11 @@ impl From<ProtoBlockHeader> for BlockHeader {
             0 | 1 => None,
             _ => Some(proto_header.clone().take_proof().into()),
         };
-        trace!("number = {}, proof = {:?}", U256::from(proto_header.get_height()), proof);
+        trace!(
+            "number = {}, proof = {:?}",
+            U256::from(proto_header.get_height()),
+            proof
+        );
 
         BlockHeader {
             timestamp: proto_header.timestamp,
@@ -81,17 +80,23 @@ impl From<RpcBlock> for Block {
         let mut proto_body = blk.take_body();
         let block_transactions = proto_body.take_transactions();
         let transactions = if block.include_txs {
-            block_transactions.into_iter().map(|x| BlockTransaction::Full(FullTransaction::from(x))).collect()
+            block_transactions
+                .into_iter()
+                .map(|x| BlockTransaction::Full(FullTransaction::from(x)))
+                .collect()
         } else {
-            block_transactions.into_iter()
-                              .map(|x| BlockTransaction::Hash(H256::from_slice(x.get_tx_hash())))
-                              .collect()
+            block_transactions
+                .into_iter()
+                .map(|x| BlockTransaction::Hash(H256::from_slice(x.get_tx_hash())))
+                .collect()
         };
 
         Block {
             version: blk.version,
             header: BlockHeader::from(proto_header),
-            body: BlockBody { transactions: transactions },
+            body: BlockBody {
+                transactions: transactions,
+            },
             hash: H256::from_slice(&block.hash),
         }
     }

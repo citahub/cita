@@ -15,24 +15,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy))]
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
 #![allow(unused_extern_crates)]
+extern crate bincode;
+extern crate cita_crypto as crypto;
+extern crate common_types as types;
 extern crate libproto;
-extern crate protobuf;
-extern crate uuid;
 #[macro_use]
 extern crate log;
-extern crate util;
+extern crate proof;
+extern crate protobuf;
+extern crate rustc_serialize;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate bincode;
 extern crate serde_json;
-extern crate serde;
-extern crate rustc_serialize;
-extern crate proof;
-extern crate common_types as types;
-extern crate cita_crypto as crypto;
+extern crate util;
+extern crate uuid;
 
 mod id;
 mod params;

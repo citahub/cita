@@ -23,15 +23,32 @@ const SNAPPY_INVALID_INPUT: c_int = 1;
 const SNAPPY_BUFFER_TOO_SMALL: c_int = 2;
 #[link(name = "snappy")]
 extern "C" {
-    fn snappy_compress(input: *const c_char, input_len: size_t, compressed: *mut c_char, compressed_len: *mut size_t) -> c_int;
+    fn snappy_compress(
+        input: *const c_char,
+        input_len: size_t,
+        compressed: *mut c_char,
+        compressed_len: *mut size_t,
+    ) -> c_int;
 
     fn snappy_max_compressed_length(source_len: size_t) -> size_t;
 
-    fn snappy_uncompress(compressed: *const c_char, compressed_len: size_t, uncompressed: *mut c_char, uncompressed_len: *mut size_t) -> c_int;
+    fn snappy_uncompress(
+        compressed: *const c_char,
+        compressed_len: size_t,
+        uncompressed: *mut c_char,
+        uncompressed_len: *mut size_t,
+    ) -> c_int;
 
-    fn snappy_uncompressed_length(compressed: *const c_char, compressed_len: size_t, result: *mut size_t) -> c_int;
+    fn snappy_uncompressed_length(
+        compressed: *const c_char,
+        compressed_len: size_t,
+        result: *mut size_t,
+    ) -> c_int;
 
-    fn snappy_validate_compressed_buffer(compressed: *const c_char, compressed_len: size_t) -> c_int;
+    fn snappy_validate_compressed_buffer(
+        compressed: *const c_char,
+        compressed_len: size_t,
+    ) -> c_int;
 }
 
 /// Attempted to decompress an uncompressed buffer.
@@ -53,8 +70,14 @@ pub fn max_compressed_len(len: usize) -> usize {
 pub fn decompressed_len(compressed: &[u8]) -> Result<usize, InvalidInput> {
     let mut size: size_t = 0;
     let len = compressed.len() as size_t;
-    let status = unsafe { snappy_uncompressed_length(compressed.as_ptr() as *const c_char, len, &mut size) };
-    if status == SNAPPY_INVALID_INPUT { Err(InvalidInput) } else { Ok(size) }
+    let status = unsafe {
+        snappy_uncompressed_length(compressed.as_ptr() as *const c_char, len, &mut size)
+    };
+    if status == SNAPPY_INVALID_INPUT {
+        Err(InvalidInput)
+    } else {
+        Ok(size)
+    }
 }
 
 /// Compress a buffer using snappy.
@@ -65,7 +88,6 @@ pub fn compress(input: &[u8]) -> Vec<u8> {
     compress_into(input, &mut buf);
     trace!("---compress-after size = {}--", buf.len());
     buf
-
 }
 
 /// Compress a buffer using snappy, writing the result into
@@ -76,7 +98,14 @@ pub fn compress_into(input: &[u8], output: &mut Vec<u8>) -> usize {
     if output.len() < len {
         output.resize(len, 0);
     }
-    let status = unsafe { snappy_compress(input.as_ptr() as *const c_char, input.len() as size_t, output.as_mut_ptr() as *mut c_char, &mut len as &mut size_t) };
+    let status = unsafe {
+        snappy_compress(
+            input.as_ptr() as *const c_char,
+            input.len() as size_t,
+            output.as_mut_ptr() as *mut c_char,
+            &mut len as &mut size_t,
+        )
+    };
     match status {
         SNAPPY_OK => unsafe {
             output.set_len(len);
@@ -96,7 +125,6 @@ pub fn decompress(input: &[u8]) -> Result<Vec<u8>, InvalidInput> {
     //Ok(buf)
     let mut v = Vec::new();
     decompress_into(input, &mut v).map(|_| v)
-
 }
 
 /// Decompress a buffer using snappy, writing the result into
@@ -108,7 +136,14 @@ pub fn decompress_into(input: &[u8], output: &mut Vec<u8>) -> Result<usize, Inva
     if output.len() < len {
         output.resize(len, 0);
     }
-    let status = unsafe { snappy_uncompress(input.as_ptr() as *const c_char, input.len() as size_t, output.as_mut_ptr() as *mut c_char, &mut len as &mut size_t) };
+    let status = unsafe {
+        snappy_uncompress(
+            input.as_ptr() as *const c_char,
+            input.len() as size_t,
+            output.as_mut_ptr() as *mut c_char,
+            &mut len as &mut size_t,
+        )
+    };
 
     match status {
         SNAPPY_OK => Ok(len as usize),
@@ -122,13 +157,19 @@ pub fn decompress_into(input: &[u8], output: &mut Vec<u8>) -> Result<usize, Inva
 
 /// Validate a compressed buffer. True if valid, false if not.
 pub fn validate_compressed_buffer(input: &[u8]) -> bool {
-    let status = unsafe { snappy_validate_compressed_buffer(input.as_ptr() as *const c_char, input.len() as size_t) };
+    let status = unsafe {
+        snappy_validate_compressed_buffer(input.as_ptr() as *const c_char, input.len() as size_t)
+    };
     status == SNAPPY_OK
 }
 
 const CITA_COMPRESS_SIZE: usize = 40 * 1024;
 pub fn cita_compresse(input: Vec<u8>) -> Vec<u8> {
-    if input.len() > CITA_COMPRESS_SIZE { compress(&input) } else { input }
+    if input.len() > CITA_COMPRESS_SIZE {
+        compress(&input)
+    } else {
+        input
+    }
 }
 
 pub fn cita_decompress(input: Vec<u8>) -> Vec<u8> {

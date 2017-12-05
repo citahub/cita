@@ -7,6 +7,7 @@
 // except according to those terms.
 
 //! Common RLP traits
+#![rustfmt_skip]
 
 use {DecoderError, UntrustedRlp, RlpStream};
 use elastic_array::ElasticArray1024;

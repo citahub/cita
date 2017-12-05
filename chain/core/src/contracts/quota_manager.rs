@@ -17,7 +17,7 @@
 
 //! Quota manager.
 
-use super::{parse_string_to_addresses, parse_string_to_quota, encode_contract_name};
+use super::{encode_contract_name, parse_string_to_addresses, parse_string_to_quota};
 use super::ContractCallExt;
 use libchain::chain::Chain;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
@@ -74,7 +74,10 @@ impl Into<ProtoAccountGasLimit> for AccountGasLimit {
     fn into(self) -> ProtoAccountGasLimit {
         let mut r = ProtoAccountGasLimit::new();
         r.common_gas_limit = self.common_gas_limit;
-        let specific_gas_limit: HashMap<String, u64> = self.get_specific_gas_limit().iter().map(|(k, v)| (k.hex(), *v)).collect();
+        let specific_gas_limit: HashMap<String, u64> = self.get_specific_gas_limit()
+            .iter()
+            .map(|(k, v)| (k.hex(), *v))
+            .collect();
         r.set_specific_gas_limit(specific_gas_limit);
         r
     }
@@ -118,7 +121,8 @@ impl QuotaManager {
 
     /// Global gas limit
     pub fn block_gas_limit(chain: &Chain) -> u64 {
-        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
+        let output =
+            chain.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
         trace!("block_gas_limit output: {:?}", output);
 
         let output_hex = ToHex::to_hex(output.as_slice());
@@ -130,7 +134,8 @@ impl QuotaManager {
 
     /// Global account gas limit
     pub fn account_gas_limit(chain: &Chain) -> u64 {
-        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
+        let output =
+            chain.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
         trace!("account_gas_limit output: {:?}", output);
 
         let output_hex = ToHex::to_hex(output.as_slice());
@@ -153,10 +158,16 @@ mod tests {
     use std::time::UNIX_EPOCH;
     use tests::helpers::init_chain;
     use types::transaction::SignedTransaction;
-    use util::{U256, Address};
+    use util::{Address, U256};
 
     #[allow(dead_code)]
-    fn create_block(chain: &Chain, privkey: &PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
+    fn create_block(
+        chain: &Chain,
+        privkey: &PrivKey,
+        to: Address,
+        data: Vec<u8>,
+        nonce: (u32, u32),
+    ) -> Block {
         let mut block = Block::new();
 
         block.set_parent_hash(chain.get_current_hash());
@@ -180,7 +191,6 @@ mod tests {
 
             let new_tx = SignedTransaction::new(&stx).unwrap();
             txs.push(new_tx);
-
         }
         body.set_transactions(txs);
         block.set_body(body);
@@ -203,7 +213,12 @@ mod tests {
         let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*USERS_METHOD_HASH.as_slice());
         let users = parse_string_to_addresses(&output);
 
-        assert_eq!(users, vec![H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap()]);
+        assert_eq!(
+            users,
+            vec![
+                H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap(),
+            ]
+        );
     }
 
     #[test]
@@ -238,7 +253,8 @@ mod tests {
         let chain = init_chain();
         println!("init chain finish");
 
-        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
+        let output =
+            chain.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
         let output_hex = ToHex::to_hex(output.as_slice());
         let block_gas_limit = u32::from_str_radix(&*output_hex, 16).unwrap();
 
@@ -258,7 +274,8 @@ mod tests {
         let chain = init_chain();
         println!("init chain finish");
 
-        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
+        let output =
+            chain.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
         let output_hex = ToHex::to_hex(output.as_slice());
         println!("output hex {:?}", output_hex);
         let account_gas_limit = u32::from_str_radix(&*output_hex, 16).unwrap();

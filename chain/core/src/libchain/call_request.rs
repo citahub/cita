@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use libproto::request::Call;
-use util::{Bytes, Address};
+use util::{Address, Bytes};
 
 /// Call request
 #[derive(Debug, Default, PartialEq)]
@@ -32,9 +32,17 @@ pub struct CallRequest {
 impl From<Call> for CallRequest {
     fn from(call: Call) -> Self {
         CallRequest {
-            from: if call.get_from().is_empty() { None } else { Some(Address::from(call.get_from())) },
+            from: if call.get_from().is_empty() {
+                None
+            } else {
+                Some(Address::from(call.get_from()))
+            },
             to: Address::from(call.get_to()),
-            data: if call.data.is_empty() { None } else { Some(Bytes::from(call.data)) },
+            data: if call.data.is_empty() {
+                None
+            } else {
+                Some(Bytes::from(call.data))
+            },
         }
     }
 }

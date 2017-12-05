@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::*;
-use libproto::blockchain::{UnverifiedTransaction, Transaction};
+use libproto::blockchain::{Transaction, UnverifiedTransaction};
 use protobuf::core::Message;
 use rustc_hex::FromHex;
 use util::*;
@@ -41,11 +41,17 @@ pub struct Trans {
 #[allow(dead_code, unused_variables)]
 impl Trans {
     pub fn new() -> Self {
-        Trans { tx: Transaction::new() }
+        Trans {
+            tx: Transaction::new(),
+        }
     }
 
-    pub fn generate_tx(code: &str, address: String, pv: &PrivKey, curh: u64) -> UnverifiedTransaction {
-
+    pub fn generate_tx(
+        code: &str,
+        address: String,
+        pv: &PrivKey,
+        curh: u64,
+    ) -> UnverifiedTransaction {
         let data = code.from_hex().unwrap();
 
         let mut tx = Transaction::new();
@@ -60,7 +66,6 @@ impl Trans {
     }
 
     pub fn generate_tx_data(method: Methods) -> String {
-
         let txdata = match method {
             Methods::Sendtx(tx) => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())

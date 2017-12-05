@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{Step, Address};
+use super::{Address, Step};
 use bincode::{serialize, Infinite};
-use crypto::{Sign, pubkey_to_address, Signature};
+use crypto::{pubkey_to_address, Sign, Signature};
 use libproto::blockchain::{Block, Transaction};
 use lru_cache::LruCache;
 use protobuf::core::parse_from_bytes;
@@ -32,12 +32,24 @@ pub struct VoteCollector {
 
 impl VoteCollector {
     pub fn new() -> Self {
-        VoteCollector { votes: LruCache::new(16) }
+        VoteCollector {
+            votes: LruCache::new(16),
+        }
     }
 
-    pub fn add(&mut self, height: usize, round: usize, step: Step, sender: Address, vote: VoteMessage) -> bool {
+    pub fn add(
+        &mut self,
+        height: usize,
+        round: usize,
+        step: Step,
+        sender: Address,
+        vote: VoteMessage,
+    ) -> bool {
         if self.votes.contains_key(&height) {
-            self.votes.get_mut(&height).unwrap().add(round, step, sender, vote)
+            self.votes
+                .get_mut(&height)
+                .unwrap()
+                .add(round, step, sender, vote)
         } else {
             let mut round_votes = RoundCollector::new();
             round_votes.add(round, step, sender, vote);
@@ -48,7 +60,10 @@ impl VoteCollector {
 
     pub fn get_voteset(&mut self, height: usize, round: usize, step: Step) -> Option<VoteSet> {
         if self.votes.contains_key(&height) {
-            self.votes.get_mut(&height).unwrap().get_voteset(round, step)
+            self.votes
+                .get_mut(&height)
+                .unwrap()
+                .get_voteset(round, step)
         } else {
             None
         }
@@ -63,12 +78,17 @@ pub struct RoundCollector {
 
 impl RoundCollector {
     pub fn new() -> Self {
-        RoundCollector { round_votes: LruCache::new(16) }
+        RoundCollector {
+            round_votes: LruCache::new(16),
+        }
     }
 
     pub fn add(&mut self, round: usize, step: Step, sender: Address, vote: VoteMessage) -> bool {
         if self.round_votes.contains_key(&round) {
-            self.round_votes.get_mut(&round).unwrap().add(step, sender, vote)
+            self.round_votes
+                .get_mut(&round)
+                .unwrap()
+                .add(step, sender, vote)
         } else {
             let mut step_votes = StepCollector::new();
             step_votes.add(step, sender, vote);
@@ -94,7 +114,9 @@ pub struct StepCollector {
 
 impl StepCollector {
     pub fn new() -> Self {
-        StepCollector { step_votes: HashMap::new() }
+        StepCollector {
+            step_votes: HashMap::new(),
+        }
     }
 
     pub fn add(&mut self, step: Step, sender: Address, vote: VoteMessage) -> bool {
@@ -109,7 +131,11 @@ impl StepCollector {
     }
 
     pub fn get_voteset(&self, step: Step) -> Option<VoteSet> {
-        if self.step_votes.contains_key(&step) { Some((&self.step_votes[&step]).clone()) } else { None }
+        if self.step_votes.contains_key(&step) {
+            Some((&self.step_votes[&step]).clone())
+        } else {
+            None
+        }
     }
 }
 
@@ -150,7 +176,13 @@ impl VoteSet {
         }
     }
 
-    pub fn check(&self, h: usize, r: usize, step: Step, authorities: &[Address]) -> Result<Option<H256>, &str> {
+    pub fn check(
+        &self,
+        h: usize,
+        r: usize,
+        step: Step,
+        authorities: &[Address],
+    ) -> Result<Option<H256>, &str> {
         let mut votes_by_proposal = HashMap::new();
         for (sender, vote) in &self.votes_by_sender {
             if authorities.contains(sender) {
@@ -178,7 +210,6 @@ impl VoteSet {
                     return Ok(Some(*hash));
                 }
             }
-
         }
         Err("vote set check error!")
     }
@@ -198,12 +229,17 @@ pub struct ProposalCollector {
 
 impl ProposalCollector {
     pub fn new() -> Self {
-        ProposalCollector { proposals: LruCache::new(16) }
+        ProposalCollector {
+            proposals: LruCache::new(16),
+        }
     }
 
     pub fn add(&mut self, height: usize, round: usize, proposal: Proposal) -> bool {
         if self.proposals.contains_key(&height) {
-            self.proposals.get_mut(&height).unwrap().add(round, proposal)
+            self.proposals
+                .get_mut(&height)
+                .unwrap()
+                .add(round, proposal)
         } else {
             let mut round_proposals = ProposalRoundCollector::new();
             round_proposals.add(round, proposal);
@@ -228,7 +264,9 @@ pub struct ProposalRoundCollector {
 
 impl ProposalRoundCollector {
     pub fn new() -> Self {
-        ProposalRoundCollector { round_proposals: LruCache::new(16) }
+        ProposalRoundCollector {
+            round_proposals: LruCache::new(16),
+        }
     }
 
     pub fn add(&mut self, round: usize, proposal: Proposal) -> bool {
@@ -261,7 +299,8 @@ pub struct Proposal {
 pub fn verify_tx(tx: &Transaction, height: u64) -> bool {
     let nonce = tx.get_nonce();
     let valid_until_block = tx.get_valid_until_block();
-    (nonce.len() <= 128) && (height <= valid_until_block && valid_until_block < (height + BLOCKLIMIT))
+    (nonce.len() <= 128)
+        && (height <= valid_until_block && valid_until_block < (height + BLOCKLIMIT))
 }
 
 impl Proposal {
@@ -271,7 +310,10 @@ impl Proposal {
         } else {
             let round = self.lock_round.unwrap();
 
-            let ret = self.lock_votes.as_ref().unwrap().check(h, round, Step::Prevote, authorities);
+            let ret = self.lock_votes
+                .as_ref()
+                .unwrap()
+                .check(h, round, Step::Prevote, authorities);
             if ret.is_err() {
                 return false;
             }

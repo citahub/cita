@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use jsonrpc_types::{Id, Error};
+use jsonrpc_types::{Error, Id};
 use jsonrpc_types::request::{RpcRequest, Version};
 use serde_json;
 use std::collections::HashMap;
 use std::result;
-use std::sync::{Arc, mpsc};
+use std::sync::{mpsc, Arc};
 use util::Mutex;
 use ws;
 pub type RpcMap = Arc<Mutex<HashMap<Vec<u8>, TransferType>>>;
@@ -36,9 +36,7 @@ pub trait BaseHandler {
             "jsonrpc.net"
         } else {
             "jsonrpc"
-        }
-        .to_string()
-
+        }.to_string()
     }
 
     fn into_rpc(body: String) -> Result<RpcRequest, Error> {
@@ -64,7 +62,10 @@ pub struct ReqInfo {
 
 impl ReqInfo {
     pub fn new(jsonrpc: Option<Version>, id: Id) -> ReqInfo {
-        ReqInfo { jsonrpc: jsonrpc, id: id }
+        ReqInfo {
+            jsonrpc: jsonrpc,
+            id: id,
+        }
     }
 }
 
@@ -80,7 +81,10 @@ mod test {
     #[test]
     fn test_get_topic() {
         assert_eq!(Handler::select_topic("net_work"), "jsonrpc.net".to_string());
-        assert_eq!(Handler::select_topic("cita_send"), "jsonrpc.new_tx".to_string());
+        assert_eq!(
+            Handler::select_topic("cita_send"),
+            "jsonrpc.new_tx".to_string()
+        );
         assert_eq!(Handler::select_topic("cita"), "jsonrpc.request".to_string());
         assert_eq!(Handler::select_topic("eth"), "jsonrpc.request".to_string());
         assert_eq!(Handler::select_topic("123"), "jsonrpc".to_string());

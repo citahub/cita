@@ -14,11 +14,11 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+extern crate chan_signal;
+extern crate chrono;
+extern crate log4rs;
 #[macro_use]
 extern crate log;
-extern crate log4rs;
-extern crate chrono;
-extern crate chan_signal;
 
 use chan_signal::Signal;
 use chrono::Local;
@@ -37,7 +37,6 @@ use std::vec::Vec;
 static INIT_LOG: Once = ONCE_INIT;
 
 pub fn init_config(service_name: &str) {
-
     INIT_LOG.call_once(|| {
         // parse RUST_LOG
         let mut filter: (Vec<String>, LogLevelFilter) = (Vec::new(), LogLevelFilter::Info);
@@ -59,32 +58,30 @@ pub fn init_config(service_name: &str) {
         // If a thread starts before notify is called, it will not have the correct signal mask.
         // When a signal is delivered, the result is indeterminate.
         let service_name_clone = service_name.to_string();
-        thread::spawn(move || loop {
+        thread::spawn(move || {
+            loop {
+                //Blocks until this process is sent an USR1 signal.
+                signal.recv().unwrap();
 
-                          //Blocks until this process is sent an USR1 signal.
-                          signal.recv().unwrap();
+                //rotate current log file
+                let time_stamp = Local::now().format("_%Y-%m-%d_%H-%M-%S");
+                let log_rotate_name = format!("logs/{}{}.log", &service_name_clone, time_stamp);
+                if let Err(e) = fs::rename(&log_name, log_rotate_name) {
+                    warn!("logrotate failed because of {:?}", e.kind());
+                    continue;
+                }
 
-                          //rotate current log file
-                          let time_stamp = Local::now().format("_%Y-%m-%d_%H-%M-%S");
-                          let log_rotate_name = format!("logs/{}{}.log", &service_name_clone, time_stamp);
-                          if let Err(e) = fs::rename(&log_name, log_rotate_name) {
-                              warn!("logrotate failed because of {:?}", e.kind());
-                              continue;
-                          }
-
-                          //reconfig
-                          let filter_clone = filter.clone();
-                          let new_config = config_file_appender(&log_name, filter_clone);
-                          handle.set_config(new_config);
-
-                      });
-
+                //reconfig
+                let filter_clone = filter.clone();
+                let new_config = config_file_appender(&log_name, filter_clone);
+                handle.set_config(new_config);
+            }
+        });
     });
 }
 
 // use in tests
 pub fn init() {
-
     INIT_LOG.call_once(|| {
         // parse RUST_LOG
         let mut filter: (Vec<String>, LogLevelFilter) = (Vec::new(), LogLevelFilter::Info);
@@ -99,14 +96,15 @@ pub fn init() {
 // use in unit case
 pub fn silent() {
     INIT_LOG.call_once(|| {
-                           let config = Config::builder().build(Root::builder().build(LogLevelFilter::Off)).unwrap();
-                           log4rs::init_config(config).unwrap();
-                       });
+        let config = Config::builder()
+            .build(Root::builder().build(LogLevelFilter::Off))
+            .unwrap();
+        log4rs::init_config(config).unwrap();
+    });
 }
 
 // simple parse env (e.g: crate1,crate2::mod,crate3::mod=trace)
 fn env_parse(s: &str) -> (Vec<String>, LogLevelFilter) {
-
     let mut mod_list = Vec::new();
     let mut section = s.split('=');
 
@@ -122,22 +120,18 @@ fn env_parse(s: &str) -> (Vec<String>, LogLevelFilter) {
 
     //parse log level
     let level = match section.next() {
-        Some(level_str) => {
-            match LogLevelFilter::from_str(level_str.trim()) {
-                Ok(log_level) => (log_level),
-                Err(_) => (LogLevelFilter::Info),
-            }
-        }
+        Some(level_str) => match LogLevelFilter::from_str(level_str.trim()) {
+            Ok(log_level) => (log_level),
+            Err(_) => (LogLevelFilter::Info),
+        },
         None => (LogLevelFilter::Info),
     };
 
     (mod_list, level)
-
 }
 
 // create loggers
 fn creat_loggers(filter: (Vec<String>, LogLevelFilter), appender: String) -> Vec<Logger> {
-
     let mut loggers = Vec::new();
 
     if filter.0.len() == 0 {
@@ -147,7 +141,10 @@ fn creat_loggers(filter: (Vec<String>, LogLevelFilter), appender: String) -> Vec
     //creat loggers via module/crate and log level
     for mod_name in filter.0 {
         let appender_clone = appender.clone();
-        let logger = Logger::builder().appender(appender_clone).additive(false).build(mod_name, filter.1);
+        let logger = Logger::builder()
+            .appender(appender_clone)
+            .additive(false)
+            .build(mod_name, filter.1);
         loggers.push(logger);
     }
 
@@ -155,13 +152,13 @@ fn creat_loggers(filter: (Vec<String>, LogLevelFilter), appender: String) -> Vec
 }
 // creat FileAppender config
 fn config_file_appender(file_path: &str, filter: (Vec<String>, LogLevelFilter)) -> Config {
-
     let requests = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{d} - {l} - {m}{n}")))
         .build(file_path)
         .unwrap();
 
-    let mut config_builder = Config::builder().appender(Appender::builder().build("requests", Box::new(requests)));
+    let mut config_builder =
+        Config::builder().appender(Appender::builder().build("requests", Box::new(requests)));
 
     let loggers = creat_loggers(filter, "requests".to_string());
 
@@ -171,18 +168,23 @@ fn config_file_appender(file_path: &str, filter: (Vec<String>, LogLevelFilter)) 
     }
 
     //config global log level
-    let config = config_builder.build(Root::builder().appender("requests").build(LogLevelFilter::Info)).unwrap();
+    let config = config_builder
+        .build(
+            Root::builder()
+                .appender("requests")
+                .build(LogLevelFilter::Info),
+        )
+        .unwrap();
 
     config
-
 }
 
 // creat ConsoleAppender config
 fn config_console_appender(filter: (Vec<String>, LogLevelFilter)) -> Config {
-
     let stdout = ConsoleAppender::builder().build();
 
-    let mut config_builder = Config::builder().appender(Appender::builder().build("stdout", Box::new(stdout)));
+    let mut config_builder =
+        Config::builder().appender(Appender::builder().build("stdout", Box::new(stdout)));
 
     let loggers = creat_loggers(filter, "stdout".to_string());
 
@@ -192,10 +194,15 @@ fn config_console_appender(filter: (Vec<String>, LogLevelFilter)) -> Config {
     }
 
     //config global log level
-    let config = config_builder.build(Root::builder().appender("stdout").build(LogLevelFilter::Info)).unwrap();
+    let config = config_builder
+        .build(
+            Root::builder()
+                .appender("stdout")
+                .build(LogLevelFilter::Info),
+        )
+        .unwrap();
 
     config
-
 }
 
 

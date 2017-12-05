@@ -15,19 +15,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{Engine, EngineError, Signable, unix_now, AsMillis};
+use super::{unix_now, AsMillis, Engine, EngineError, Signable};
 use authority_manage::AuthorityManage;
-use crypto::{Signature, Signer, CreateKey, SIGNATURE_BYTES_LEN};
+use crypto::{CreateKey, Signature, Signer, SIGNATURE_BYTES_LEN};
 use engine_json;
 use error::ErrorCode;
 use libproto::*;
-use libproto::blockchain::{BlockBody, Proof, Block, SignedTransaction, RichStatus};
+use libproto::blockchain::{Block, BlockBody, Proof, RichStatus, SignedTransaction};
 use proof::AuthorityRoundProof;
 use protobuf::{Message, RepeatedField};
 use rustc_serialize::hex::ToHex;
 use serde_json;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use tx_pool::Pool;
@@ -64,20 +64,27 @@ pub struct AuthorityRound {
 
 impl AuthorityRound {
     /// Create a new instance of POA engine
-    pub fn new(params: AuthorityRoundParams, ready: Sender<usize>) -> Result<Arc<Self>, EngineError> {
-        let position = params.authorities.iter().position(|&a| a == params.signer.address.clone().into()).unwrap() as u64;
+    pub fn new(
+        params: AuthorityRoundParams,
+        ready: Sender<usize>,
+    ) -> Result<Arc<Self>, EngineError> {
+        let position = params
+            .authorities
+            .iter()
+            .position(|&a| a == params.signer.address.clone().into())
+            .unwrap() as u64;
 
         let engine = Arc::new(AuthorityRound {
-                                  params: params,
-                                  position: position,
-                                  tx_pool: Arc::new(RwLock::new(Pool::new(3000))),
-                                  height: AtomicUsize::new(INIT_HEIGHT),
-                                  pre_hash: RwLock::new(None),
-                                  sealing: AtomicBool::new(false),
-                                  step: AtomicUsize::new(INIT_STEP),
-                                  ready: Mutex::new(ready),
-                                  auth_manage: RwLock::new(AuthorityManage::new()),
-                              });
+            params: params,
+            position: position,
+            tx_pool: Arc::new(RwLock::new(Pool::new(3000))),
+            height: AtomicUsize::new(INIT_HEIGHT),
+            pre_hash: RwLock::new(None),
+            sealing: AtomicBool::new(false),
+            step: AtomicUsize::new(INIT_STEP),
+            ready: Mutex::new(ready),
+            auth_manage: RwLock::new(AuthorityManage::new()),
+        });
         Ok(engine)
     }
 
@@ -93,7 +100,8 @@ impl AuthorityRound {
     }
 
     pub fn generate_proof(&self, body: &mut BlockBody, step: u64) -> Proof {
-        let signature = body.sign_with_privkey(self.params.signer.keypair.privkey()).unwrap();
+        let signature = body.sign_with_privkey(self.params.signer.keypair.privkey())
+            .unwrap();
         let proof: Proof = AuthorityRoundProof::new(step, signature).into();
         proof
     }
@@ -110,11 +118,15 @@ impl AuthorityRound {
             {
                 let mut tx_pool = self.tx_pool.write();
                 let txs: Vec<SignedTransaction> = tx_pool.package_backword_compatible(height);
-                block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
+                block
+                    .mut_body()
+                    .set_transactions(RepeatedField::from_slice(&txs[..]));
                 let proof = self.generate_proof(block.mut_body(), step);
                 block.mut_header().set_timestamp(block_time.as_millis());
                 let transactions_root = block.get_body().transactions_root();
-                block.mut_header().set_transactions_root(transactions_root.to_vec());
+                block
+                    .mut_header()
+                    .set_transactions_root(transactions_root.to_vec());
                 block.mut_header().set_proof(proof);
             }
             trace!("generate_block {:?}", block.crypt_hash());
@@ -125,17 +137,31 @@ impl AuthorityRound {
     }
 
     pub fn pub_transaction(&self, tx_req: &Request, tx_pub: Sender<(String, Vec<u8>)>) {
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::REQUEST, communication::MsgType::REQUEST, tx_req.write_to_bytes().unwrap());
+        let msg = factory::create_msg(
+            submodules::CONSENSUS,
+            topics::REQUEST,
+            communication::MsgType::REQUEST,
+            tx_req.write_to_bytes().unwrap(),
+        );
         trace!("broadcast new tx {:?}", tx_req);
-        tx_pub.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+        tx_pub
+            .send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap()))
+            .unwrap();
     }
 
 
     //call by seal_block and update_head, broadcast block to other node and also pass to chain
     pub fn pub_block(&self, block: &Block, tx_pub: Sender<(String, Vec<u8>)>) {
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
+        let msg = factory::create_msg(
+            submodules::CONSENSUS,
+            topics::NEW_BLK,
+            communication::MsgType::BLOCK,
+            block.write_to_bytes().unwrap(),
+        );
         trace!("publish block {:?}", block.crypt_hash());
-        tx_pub.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+        tx_pub
+            .send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap()))
+            .unwrap();
     }
 }
 
@@ -144,7 +170,10 @@ impl From<engine_json::AuthorityRoundParams> for AuthorityRoundParams {
         AuthorityRoundParams {
             duration: Duration::from_millis(p.duration.into()),
             authority_n: p.authorities.len() as u64,
-            authorities: p.authorities.into_iter().map(Into::into).collect::<Vec<_>>(),
+            authorities: p.authorities
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<_>>(),
             signer: Signer::from(p.signer),
         }
     }
@@ -166,7 +195,10 @@ impl Engine for AuthorityRound {
             return Err(EngineError::BadSignature(proof.signature));
         }
         let signature = Signature::from(proof.signature);
-        let author = block.get_body().recover_address_with_signature(&signature).unwrap();
+        let author = block
+            .get_body()
+            .recover_address_with_signature(&signature)
+            .unwrap();
         //if !self.params.authorities.contains(&author) {
         if !self.auth_manage.read().authorities.contains(&author) {
             trace!("verify_block author {:?}", author.to_hex());
@@ -185,9 +217,15 @@ impl Engine for AuthorityRound {
         let height = self.height.load(Ordering::SeqCst);
         trace!("new_status status {:?} height {:?}", status, height);
 
-        let authorities: Vec<Address> = status.get_nodes().into_iter().map(|node| Address::from_slice(node)).collect();
+        let authorities: Vec<Address> = status
+            .get_nodes()
+            .into_iter()
+            .map(|node| Address::from_slice(node))
+            .collect();
         {
-            self.auth_manage.write().receive_authorities_list(height, authorities);
+            self.auth_manage
+                .write()
+                .receive_authorities_list(height, authorities);
         }
 
         if new_height == INIT_HEIGHT {
@@ -231,7 +269,13 @@ impl Engine for AuthorityRound {
         }
     }
 
-    fn receive_new_transaction(&self, tx_req: &Request, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool) {
+    fn receive_new_transaction(
+        &self,
+        tx_req: &Request,
+        tx_pub: Sender<(String, Vec<u8>)>,
+        _origin: u32,
+        from_broadcast: bool,
+    ) {
         let unverified_tx = tx_req.get_un_tx();
         let result = SignedTransaction::verify_transaction(unverified_tx.clone());
         let mut response = Response::new();
@@ -259,8 +303,15 @@ impl Engine for AuthorityRound {
         }
 
         if !from_broadcast {
-            let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
-            tx_pub.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            let msg = factory::create_msg(
+                submodules::CONSENSUS,
+                topics::RESPONSE,
+                communication::MsgType::RESPONSE,
+                response.write_to_bytes().unwrap(),
+            );
+            tx_pub
+                .send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap()))
+                .unwrap();
         }
     }
 
@@ -287,12 +338,20 @@ impl Engine for AuthorityRound {
     }
 
     #[allow(unused_variables)]
-    fn handle_message(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError> {
+    fn handle_message(
+        &self,
+        _message: Vec<u8>,
+        tx_pub: Sender<(String, Vec<u8>)>,
+    ) -> Result<(), EngineError> {
         unimplemented!()
     }
 
     #[allow(unused_variables)]
-    fn handle_proposal(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError> {
+    fn handle_proposal(
+        &self,
+        _message: Vec<u8>,
+        tx_pub: Sender<(String, Vec<u8>)>,
+    ) -> Result<(), EngineError> {
         unimplemented!()
     }
 }

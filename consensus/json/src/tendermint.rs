@@ -25,8 +25,7 @@ pub struct TendermintParams {
     pub is_test: bool,
     pub signer: PrivKey,
 
-    #[serde(rename = "timeoutPropose")]
-    pub timeout_propose: Option<u64>,
+    #[serde(rename = "timeoutPropose")] pub timeout_propose: Option<u64>,
     /// Prevote step timeout in milliseconds.
     #[serde(rename = "timeoutPrevote")]
     pub timeout_prevote: Option<u64>,

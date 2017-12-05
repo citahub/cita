@@ -15,25 +15,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate cita_crypto as crypto;
-extern crate libproto;
-extern crate protobuf;
-extern crate util;
-extern crate rustc_serialize;
-extern crate proof;
-extern crate clap;
-extern crate core;
-extern crate dotenv;
 extern crate bincode;
-extern crate cpuprofiler;
+extern crate cita_crypto as crypto;
+extern crate clap;
 extern crate common_types;
+extern crate core;
+extern crate cpuprofiler;
+extern crate dotenv;
+extern crate libproto;
+extern crate proof;
+extern crate protobuf;
+extern crate rustc_serialize;
+extern crate util;
 
-#[macro_use]
-extern crate serde_derive;
 #[macro_use]
 extern crate log;
 extern crate logger;
 extern crate pubsub;
+#[macro_use]
+extern crate serde_derive;
 
 mod generate_block;
 
@@ -49,7 +49,17 @@ use util::H256;
 
 pub type PubType = (String, Vec<u8>);
 
-fn create_contract(block_tx_num: u64, pre_hash: H256, flag: i32, h: u64, pub_sender: Sender<PubType>, sys_time: Arc<Mutex<time::SystemTime>>, quota: u64, flag_multi_sender: i32, pk: PrivKey) {
+fn create_contract(
+    block_tx_num: u64,
+    pre_hash: H256,
+    flag: i32,
+    h: u64,
+    pub_sender: Sender<PubType>,
+    sys_time: Arc<Mutex<time::SystemTime>>,
+    quota: u64,
+    flag_multi_sender: i32,
+    pk: PrivKey,
+) {
     let code = "60606040523415600e57600080fd5b5b5b5b60948061001f6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603d575b600080fd5b3415604757600080fd5b605b6004808035906020019091905050605d565b005b806000819055505b505600a165627a7a72305820c471b4376626da2540b2374e8b4110501051c426ff46814a6170ce9e219e49a80029";
     let mut contract_address = "".to_string();
     if flag != 0 {
@@ -57,10 +67,17 @@ fn create_contract(block_tx_num: u64, pre_hash: H256, flag: i32, h: u64, pub_sen
     }
     let mut txs = Vec::new();
     for _ in 0..block_tx_num - 1 {
-        let tx = Generateblock::generate_tx(code.clone(), contract_address.clone(), quota, flag_multi_sender, pk);
+        let tx = Generateblock::generate_tx(
+            code.clone(),
+            contract_address.clone(),
+            quota,
+            flag_multi_sender,
+            pk,
+        );
         txs.push(tx);
     }
-    let tx = Generateblock::generate_tx(code, contract_address.clone(), quota, flag_multi_sender, pk);
+    let tx =
+        Generateblock::generate_tx(code, contract_address.clone(), quota, flag_multi_sender, pk);
     txs.push(tx);
 
     //构造block
@@ -68,7 +85,9 @@ fn create_contract(block_tx_num: u64, pre_hash: H256, flag: i32, h: u64, pub_sen
     info!("===============send block===============");
     let mut sys_time_lock = sys_time.lock().unwrap();
     *sys_time_lock = time::SystemTime::now();
-    pub_sender.send(("consensus.blk".to_string(), send_data.clone())).unwrap();
+    pub_sender
+        .send(("consensus.blk".to_string(), send_data.clone()))
+        .unwrap();
 }
 
 fn main() {
@@ -85,10 +104,26 @@ fn main() {
         .arg_from_usage("--flag_tx_type=[1] 'tx type: 0 is store, 1 is creating contract'")
         .get_matches();
 
-    let totaltx = matches.value_of("totaltx").unwrap_or("40000").parse::<u64>().unwrap();
-    let flag_multi_sender = matches.value_of("flag_multi_sender").unwrap_or("0").parse::<i32>().unwrap();
-    let quota = matches.value_of("quota").unwrap_or("1000").parse::<u64>().unwrap();
-    let flag_tx_type = matches.value_of("flag_tx_type").unwrap_or("0").parse::<i32>().unwrap();
+    let totaltx = matches
+        .value_of("totaltx")
+        .unwrap_or("40000")
+        .parse::<u64>()
+        .unwrap();
+    let flag_multi_sender = matches
+        .value_of("flag_multi_sender")
+        .unwrap_or("0")
+        .parse::<i32>()
+        .unwrap();
+    let quota = matches
+        .value_of("quota")
+        .unwrap_or("1000")
+        .parse::<u64>()
+        .unwrap();
+    let flag_tx_type = matches
+        .value_of("flag_tx_type")
+        .unwrap_or("0")
+        .parse::<i32>()
+        .unwrap();
 
     let mut send_flag = true;
     let mut height = 0;
@@ -110,24 +145,44 @@ fn main() {
                 if !send_flag && rich_status.height == height {
                     let start_time = sys_time.lock().unwrap();
                     let end_time = time::SystemTime::now();
-                    let diff = end_time.duration_since(*start_time).expect("SystemTime::duration_since failed");
+                    let diff = end_time
+                        .duration_since(*start_time)
+                        .expect("SystemTime::duration_since failed");
                     let mut secs = diff.as_secs();
                     let nanos = diff.subsec_nanos();
                     secs = secs * 1000 + (nanos / 1000000) as u64;
-                    let tps = if secs > 0 { totaltx * 1000 / secs } else { totaltx };
+                    let tps = if secs > 0 {
+                        totaltx * 1000 / secs
+                    } else {
+                        totaltx
+                    };
 
-                    info!("tx_num = {}, use time = {} ms, tps = {}", totaltx, secs, tps);
+                    info!(
+                        "tx_num = {}, use time = {} ms, tps = {}",
+                        totaltx,
+                        secs,
+                        tps
+                    );
                     send_flag = true;
                 }
                 if send_flag {
                     height = rich_status.height + 1;
                     info!("send consensus blk . h = {:?}", height);
-                    create_contract(totaltx, H256::from_slice(&rich_status.hash), flag_tx_type, height, tx_pub.clone(), sys_time.clone(), quota, flag_multi_sender, pk.clone());
+                    create_contract(
+                        totaltx,
+                        H256::from_slice(&rich_status.hash),
+                        flag_tx_type,
+                        height,
+                        tx_pub.clone(),
+                        sys_time.clone(),
+                        quota,
+                        flag_multi_sender,
+                        pk.clone(),
+                    );
                     send_flag = false;
                 }
             }
             _ => (),
         }
     }
-
 }

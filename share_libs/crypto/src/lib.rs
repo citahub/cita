@@ -29,7 +29,7 @@ pub use cita_ed25519::*;
 pub use cita_secp256k1::*;
 #[cfg(feature = "sm2")]
 pub use cita_sm2::*;
-pub use util::crypto::{Sign, CreateKey};
+pub use util::crypto::{CreateKey, Sign};
 
 #[cfg(feature = "ed25519")]
 pub const SIGNATURE_NAME: &str = "ed25519";

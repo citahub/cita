@@ -57,7 +57,9 @@ impl Connection {
     }
 
     pub fn is_send(id_card: u32, origin: u32, operate: communication::OperateType) -> bool {
-        operate == communication::OperateType::BROADCAST || (operate == communication::OperateType::SINGLE && id_card == origin) || (operate == communication::OperateType::SUBTRACT && origin != id_card)
+        operate == communication::OperateType::BROADCAST
+            || (operate == communication::OperateType::SINGLE && id_card == origin)
+            || (operate == communication::OperateType::SUBTRACT && origin != id_card)
     }
 
     pub fn update(&self, config: &config::NetConfig) {
@@ -81,7 +83,9 @@ impl Connection {
                     self.peers_pair.write().push((id_card, addr, None));
                 }
                 loop {
-                    let index_opt = peers_addr.iter().position(|addr| !config_addr.contains(addr));
+                    let index_opt = peers_addr
+                        .iter()
+                        .position(|addr| !config_addr.contains(addr));
                     if let Some(index) = index_opt {
                         peers_addr.remove(index);
                         self.peers_pair.write().remove(index);
@@ -122,31 +126,38 @@ impl Connection {
             }
         }
 
-        trace!("{:?} broadcast msg to nodes {:?} {:?}", self.id_card, operate, peers);
+        trace!(
+            "{:?} broadcast msg to nodes {:?} {:?}",
+            self.id_card,
+            operate,
+            peers
+        );
     }
 }
 
 fn connect(con: Arc<Connection>) {
-    thread::spawn(move || loop {
-                      for peer in con.peers_pair.write().iter_mut() {
-                          let mut need_reconnect = true;
-                          let mut header = [0; 8];
-                          BigEndian::write_u64(&mut header, 0xDEAD_BEEF_0000_0000 as u64);
-                          if let Some(ref mut stream) = peer.2 {
-                              let res = stream.write(&header);
-                              if res.is_ok() {
-                                  need_reconnect = false;
-                              }
-                          }
-                          if need_reconnect {
-                              warn!("connect {:?}!", peer.1);
-                              peer.2 = TcpStream::connect(peer.1.clone()).ok();
-                          }
-                      }
+    thread::spawn(move || {
+        loop {
+            for peer in con.peers_pair.write().iter_mut() {
+                let mut need_reconnect = true;
+                let mut header = [0; 8];
+                BigEndian::write_u64(&mut header, 0xDEAD_BEEF_0000_0000 as u64);
+                if let Some(ref mut stream) = peer.2 {
+                    let res = stream.write(&header);
+                    if res.is_ok() {
+                        need_reconnect = false;
+                    }
+                }
+                if need_reconnect {
+                    warn!("connect {:?}!", peer.1);
+                    peer.2 = TcpStream::connect(peer.1.clone()).ok();
+                }
+            }
 
-                      thread::sleep(Duration::from_millis(TIMEOUT * 1000));
-                      trace!("after sleep retry connect!");
-                  });
+            thread::sleep(Duration::from_millis(TIMEOUT * 1000));
+            trace!("after sleep retry connect!");
+        }
+    });
 }
 
 pub fn manage_connect(con: &Arc<Connection>, config_path: &str, rx: Receiver<DebouncedEvent>) {
@@ -154,27 +165,26 @@ pub fn manage_connect(con: &Arc<Connection>, config_path: &str, rx: Receiver<Deb
     let config = String::from(config_path);
 
     let con = Arc::clone(con);
-    thread::spawn(move || loop {
-                      match rx.recv() {
-                          Ok(event) => {
-                              match event {
-                                  DebouncedEvent::Create(path_buf) |
-                                  DebouncedEvent::Write(path_buf) => {
-                                      if path_buf.is_file() {
-                                          let file_name = path_buf.file_name().unwrap().to_str().unwrap();
-                                          if file_name == config.as_str() {
-                                              info!("file {} change", file_name);
-                                              let config = NetConfig::new(config.as_str());
-                                              con.update(&config);
-                                          }
-                                      }
-                                  }
-                                  _ => trace!("file notify event: {:?}", event),
-                              }
-                          }
-                          Err(e) => warn!("watch error: {:?}", e),
-                      }
-                  });
+    thread::spawn(move || {
+        loop {
+            match rx.recv() {
+                Ok(event) => match event {
+                    DebouncedEvent::Create(path_buf) | DebouncedEvent::Write(path_buf) => {
+                        if path_buf.is_file() {
+                            let file_name = path_buf.file_name().unwrap().to_str().unwrap();
+                            if file_name == config.as_str() {
+                                info!("file {} change", file_name);
+                                let config = NetConfig::new(config.as_str());
+                                con.update(&config);
+                            }
+                        }
+                    }
+                    _ => trace!("file notify event: {:?}", event),
+                },
+                Err(e) => warn!("watch error: {:?}", e),
+            }
+        }
+    });
 }
 
 
@@ -184,13 +194,37 @@ mod test {
     use libproto::communication;
     #[test]
     fn is_send_mag() {
-        assert!(Connection::is_send(0, 0, communication::OperateType::BROADCAST));
-        assert!(Connection::is_send(0, 1, communication::OperateType::BROADCAST));
+        assert!(Connection::is_send(
+            0,
+            0,
+            communication::OperateType::BROADCAST
+        ));
+        assert!(Connection::is_send(
+            0,
+            1,
+            communication::OperateType::BROADCAST
+        ));
 
-        assert!(Connection::is_send(0, 0, communication::OperateType::SINGLE));
-        assert!(!Connection::is_send(0, 1, communication::OperateType::SINGLE));
+        assert!(Connection::is_send(
+            0,
+            0,
+            communication::OperateType::SINGLE
+        ));
+        assert!(!Connection::is_send(
+            0,
+            1,
+            communication::OperateType::SINGLE
+        ));
 
-        assert!(!Connection::is_send(0, 0, communication::OperateType::SUBTRACT));
-        assert!(Connection::is_send(0, 1, communication::OperateType::SUBTRACT));
+        assert!(!Connection::is_send(
+            0,
+            0,
+            communication::OperateType::SUBTRACT
+        ));
+        assert!(Connection::is_send(
+            0,
+            1,
+            communication::OperateType::SUBTRACT
+        ));
     }
 }

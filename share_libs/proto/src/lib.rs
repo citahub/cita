@@ -15,15 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate protobuf;
-extern crate util;
-extern crate rustc_serialize;
-extern crate rlp;
-#[macro_use]
-extern crate serde_derive;
 extern crate cita_crypto as crypto;
 #[macro_use]
 extern crate log as rlog;
+extern crate protobuf;
+extern crate rlp;
+extern crate rustc_serialize;
+#[macro_use]
+extern crate serde_derive;
+extern crate util;
 
 pub mod blockchain;
 pub mod communication;
@@ -38,7 +38,8 @@ pub use auth::*;
 use blockchain::*;
 use communication::*;
 pub use consensus::*;
-use crypto::{PrivKey, PubKey, Signature, KeyPair, SIGNATURE_BYTES_LEN, Message as SignMessage, CreateKey, Sign};
+use crypto::{CreateKey, KeyPair, Message as SignMessage, PrivKey, PubKey, Sign, Signature,
+             SIGNATURE_BYTES_LEN};
 use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 pub use request::*;
@@ -48,7 +49,7 @@ use rustc_serialize::hex::ToHex;
 use std::ops::Deref;
 use std::result::Result::Err;
 pub use sync::{SyncRequest, SyncResponse};
-use util::{H256, Hashable, merklehash};
+use util::{merklehash, H256, Hashable};
 use util::snappy;
 
 //TODO respone contain error
@@ -60,7 +61,10 @@ pub struct TxResponse {
 
 impl TxResponse {
     pub fn new(hash: H256, status: String) -> Self {
-        TxResponse { hash: hash, status: status }
+        TxResponse {
+            hash: hash,
+            status: status,
+        }
     }
 }
 
@@ -194,7 +198,12 @@ pub mod factory {
     use super::*;
     pub const ZERO_ORIGIN: u32 = 99999;
 
-    pub fn create_msg(sub: u32, top: u16, msg_type: MsgType, content: Vec<u8>) -> communication::Message {
+    pub fn create_msg(
+        sub: u32,
+        top: u16,
+        msg_type: MsgType,
+        content: Vec<u8>,
+    ) -> communication::Message {
         let mut msg = communication::Message::new();
         msg.set_cmd_id(cmd_id(sub, top));
         msg.set_field_type(msg_type);
@@ -206,7 +215,14 @@ pub mod factory {
     }
 
     ///for crate_msg extral version
-    pub fn create_msg_ex(sub: u32, top: u16, msg_type: MsgType, operate: communication::OperateType, origin: u32, content: Vec<u8>) -> communication::Message {
+    pub fn create_msg_ex(
+        sub: u32,
+        top: u16,
+        msg_type: MsgType,
+        operate: communication::OperateType,
+        origin: u32,
+        content: Vec<u8>,
+    ) -> communication::Message {
         let mut msg = factory::create_msg(sub, top, msg_type, content);
         msg.set_origin(origin);
         msg.set_operate(operate);
@@ -229,22 +245,44 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
         MsgType::HEADER => MsgClass::HEADER(parse_from_bytes::<BlockHeader>(&content_msg).unwrap()),
         MsgType::BLOCK => MsgClass::BLOCK(parse_from_bytes::<Block>(&content_msg).unwrap()),
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
-        MsgType::VERIFY_TX_REQ => MsgClass::VERIFYTXREQ(parse_from_bytes::<VerifyTxReq>(&content_msg).unwrap()),
-        MsgType::VERIFY_TX_RESP => MsgClass::VERIFYTXRESP(parse_from_bytes::<VerifyTxResp>(&content_msg).unwrap()),
-        MsgType::VERIFY_BLK_REQ => MsgClass::VERIFYBLKREQ(parse_from_bytes::<VerifyBlockReq>(&content_msg).unwrap()),
-        MsgType::VERIFY_BLK_RESP => MsgClass::VERIFYBLKRESP(parse_from_bytes::<VerifyBlockResp>(&content_msg).unwrap()),
-        MsgType::BLOCK_TXHASHES => MsgClass::BLOCKTXHASHES(parse_from_bytes::<BlockTxHashes>(&content_msg).unwrap()),
-        MsgType::BLOCK_TXHASHES_REQ => MsgClass::BLOCKTXHASHESREQ(parse_from_bytes::<BlockTxHashesReq>(&content_msg).unwrap()),
-        MsgType::BLOCK_WITH_PROOF => MsgClass::BLOCKWITHPROOF(parse_from_bytes::<BlockWithProof>(&content_msg).unwrap()),
-        MsgType::BLOCK_TXS => MsgClass::BLOCKTXS(parse_from_bytes::<BlockTxs>(&content_msg).unwrap()),
+        MsgType::VERIFY_TX_REQ => {
+            MsgClass::VERIFYTXREQ(parse_from_bytes::<VerifyTxReq>(&content_msg).unwrap())
+        }
+        MsgType::VERIFY_TX_RESP => {
+            MsgClass::VERIFYTXRESP(parse_from_bytes::<VerifyTxResp>(&content_msg).unwrap())
+        }
+        MsgType::VERIFY_BLK_REQ => {
+            MsgClass::VERIFYBLKREQ(parse_from_bytes::<VerifyBlockReq>(&content_msg).unwrap())
+        }
+        MsgType::VERIFY_BLK_RESP => {
+            MsgClass::VERIFYBLKRESP(parse_from_bytes::<VerifyBlockResp>(&content_msg).unwrap())
+        }
+        MsgType::BLOCK_TXHASHES => {
+            MsgClass::BLOCKTXHASHES(parse_from_bytes::<BlockTxHashes>(&content_msg).unwrap())
+        }
+        MsgType::BLOCK_TXHASHES_REQ => {
+            MsgClass::BLOCKTXHASHESREQ(parse_from_bytes::<BlockTxHashesReq>(&content_msg).unwrap())
+        }
+        MsgType::BLOCK_WITH_PROOF => {
+            MsgClass::BLOCKWITHPROOF(parse_from_bytes::<BlockWithProof>(&content_msg).unwrap())
+        }
+        MsgType::BLOCK_TXS => {
+            MsgClass::BLOCKTXS(parse_from_bytes::<BlockTxs>(&content_msg).unwrap())
+        }
         MsgType::MSG => {
             let mut content = Vec::new();
             content.extend_from_slice(&content_msg);
             MsgClass::MSG(content)
         }
-        MsgType::RICH_STATUS => MsgClass::RICHSTATUS(parse_from_bytes::<RichStatus>(&content_msg).unwrap()),
-        MsgType::SYNC_REQ => MsgClass::SYNCREQUEST(parse_from_bytes::<SyncRequest>(&content_msg).unwrap()),
-        MsgType::SYNC_RES => MsgClass::SYNCRESPONSE(parse_from_bytes::<SyncResponse>(&content_msg).unwrap()),
+        MsgType::RICH_STATUS => {
+            MsgClass::RICHSTATUS(parse_from_bytes::<RichStatus>(&content_msg).unwrap())
+        }
+        MsgType::SYNC_REQ => {
+            MsgClass::SYNCREQUEST(parse_from_bytes::<SyncRequest>(&content_msg).unwrap())
+        }
+        MsgType::SYNC_RES => {
+            MsgClass::SYNCRESPONSE(parse_from_bytes::<SyncResponse>(&content_msg).unwrap())
+        }
     };
 
     (msg.get_cmd_id(), msg.get_origin(), msg_class)
@@ -293,9 +331,7 @@ impl blockchain::UnverifiedTransaction {
                 Crypto::SECP => {
                     let signature = Signature::from(self.get_signature());
                     match signature.recover(&hash) {
-                        Ok(pubkey) => {
-                            Ok((pubkey, tx_hash))
-                        }
+                        Ok(pubkey) => Ok((pubkey, tx_hash)),
                         _ => {
                             trace!("Recover error {}", tx_hash);
                             Err((tx_hash, String::from("Recover error")))
@@ -360,7 +396,8 @@ impl Eq for Proof {}
 
 impl Decodable for Proof {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        rlp.decoder().decode_value(|bytes| Ok(parse_from_bytes::<Proof>(&bytes).unwrap()))
+        rlp.decoder()
+            .decode_value(|bytes| Ok(parse_from_bytes::<Proof>(&bytes).unwrap()))
     }
 }
 
@@ -414,7 +451,10 @@ impl BlockHeader {
 
 impl BlockBody {
     pub fn transaction_hashes(&self) -> Vec<H256> {
-        self.get_transactions().iter().map(|ts| H256::from_slice(ts.get_tx_hash())).collect()
+        self.get_transactions()
+            .iter()
+            .map(|ts| H256::from_slice(ts.get_tx_hash()))
+            .collect()
     }
 
     pub fn transactions_root(&self) -> H256 {
@@ -446,6 +486,9 @@ mod tests {
         tx.set_quota(999999999);
 
         let signed_tx = tx.sign(*pv);
-        assert_eq!(signed_tx.crypt_hash(), signed_tx.get_transaction_with_sig().crypt_hash());
+        assert_eq!(
+            signed_tx.crypt_hash(),
+            signed_tx.get_transaction_with_sig().crypt_hash()
+        );
     }
 }

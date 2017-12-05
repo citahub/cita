@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use alloc::allocator::{Layout, Alloc, AllocErr};
+use alloc::allocator::{Alloc, AllocErr, Layout};
 use alloc::heap::Heap;
 use std::{cmp, io, mem, ops, ptr, slice};
 
@@ -41,7 +41,11 @@ impl io::Write for MutBuf {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         unsafe {
             let count = cmp::min(buf.len(), self.raw.len() - self.offset);
-            ptr::copy_nonoverlapping(buf.as_ptr(), self.raw.buf().offset(self.offset as isize), count);
+            ptr::copy_nonoverlapping(
+                buf.as_ptr(),
+                self.raw.buf().offset(self.offset as isize),
+                count,
+            );
             self.offset += count;
             Ok(count)
         }
@@ -57,7 +61,10 @@ impl MutBuf {
     }
 
     pub fn with_capacity(cap: usize) -> MutBuf {
-        MutBuf { raw: RawBuf::new(cap), offset: 0 }
+        MutBuf {
+            raw: RawBuf::new(cap),
+            offset: 0,
+        }
     }
 
     pub fn buf(&self, offset: usize, len: usize) -> Buf {
@@ -80,11 +87,19 @@ impl MutBuf {
         unsafe {
             let remaining_capacity = self.raw.len() - self.offset;
             assert!(remaining_capacity >= amount);
-            let mut buf = slice::from_raw_parts_mut(self.raw.buf().offset(self.offset as isize), remaining_capacity);
+            let mut buf = slice::from_raw_parts_mut(
+                self.raw.buf().offset(self.offset as isize),
+                remaining_capacity,
+            );
             let target_offset = self.offset + amount;
             while self.offset < target_offset {
                 match try!(read.read(&mut buf)) {
-                    0 => return Result::Err(io::Error::new(io::ErrorKind::UnexpectedEof, "failed to fill whole buffer")),
+                    0 => {
+                        return Result::Err(io::Error::new(
+                            io::ErrorKind::UnexpectedEof,
+                            "failed to fill whole buffer",
+                        ))
+                    }
                     n => {
                         self.offset += n;
                         let tmp = buf;
@@ -101,7 +116,12 @@ impl MutBuf {
     ///
     /// If the buffer does not have enough capacity it is replaced with a new
     /// one, and `from` is reset to the corresponding offset in the new buffer.
-    pub fn fill_or_replace<R>(&mut self, read: &mut R, from: &mut usize, amount: usize) -> io::Result<()>
+    pub fn fill_or_replace<R>(
+        &mut self,
+        read: &mut R,
+        from: &mut usize,
+        amount: usize,
+    ) -> io::Result<()>
     where
         R: io::Read,
     {
@@ -113,7 +133,6 @@ impl MutBuf {
         let remaining_amount = amount - buffered_amount;
 
         if remaining_amount > self.raw.len() - self.offset {
-
             // Replace self with a new buffer with sufficient capacity. Copy
             // over all bytes between `from` and the current write offset, and
             // reset `from` to 0.
@@ -218,7 +237,10 @@ impl Clone for RawBuf {
     fn clone(&self) -> RawBuf {
         unsafe {
             *(self.bytes.offset(-(mem::size_of::<u64>() as isize)) as *mut u64) += 1;
-            RawBuf { bytes: self.bytes, len: self.len }
+            RawBuf {
+                bytes: self.bytes,
+                len: self.len,
+            }
         }
     }
 }
@@ -231,7 +253,8 @@ impl Drop for RawBuf {
             let refcount = allocation as *mut u64;
             *refcount -= 1;
             if *refcount == 0 {
-                let layout = Layout::from_size_align(self.len + refcount_len, refcount_len).unwrap();
+                let layout =
+                    Layout::from_size_align(self.len + refcount_len, refcount_len).unwrap();
                 Heap.dealloc(allocation, layout);
             }
         }
@@ -287,7 +310,8 @@ mod test {
         let mut buf = MutBuf::with_capacity(14);
         buf.write_all(b"abcdef").unwrap();
         let mut offset = 3;
-        buf.fill_or_replace(&mut Cursor::new("ghi"), &mut offset, 6).unwrap();
+        buf.fill_or_replace(&mut Cursor::new("ghi"), &mut offset, 6)
+            .unwrap();
         assert_eq!(b"defghi", &*buf.buf(offset, 6));
     }
 
@@ -351,7 +375,8 @@ mod test {
 
             let mut offset = a.len();
 
-            buf.fill_or_replace(&mut Cursor::new(&c), &mut offset, b.len() + c.len()).unwrap();
+            buf.fill_or_replace(&mut Cursor::new(&c), &mut offset, b.len() + c.len())
+                .unwrap();
 
             if &b[..] != &*buf.buf(offset, b.len()) {
                 return TestResult::failed();

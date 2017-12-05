@@ -93,7 +93,11 @@ impl AccountEntry {
     /// basic account data and modified storage keys.
     /// Returns None if clean.
     fn clone_if_dirty(&self) -> Option<AccountEntry> {
-        if self.is_dirty() { Some(self.clone_dirty()) } else { None }
+        if self.is_dirty() {
+            Some(self.clone_dirty())
+        } else {
+            None
+        }
     }
 
     /// Clone dirty data into new `AccountEntry`. This includes
@@ -245,7 +249,12 @@ impl<B: Backend> State<B> {
     }
 
     /// Creates new state with existing state root
-    pub fn from_existing(db: B, root: H256, account_start_nonce: U256, factories: Factories) -> Result<State<B>, TrieError> {
+    pub fn from_existing(
+        db: B,
+        root: H256,
+        account_start_nonce: U256,
+        factories: Factories,
+    ) -> Result<State<B>, TrieError> {
         if !db.as_hashdb().contains(&root) {
             return Err(TrieError::InvalidStateRoot(root));
         }
@@ -335,7 +344,13 @@ impl<B: Backend> State<B> {
     fn note_cache(&self, address: &Address) {
         if let Some(ref mut checkpoint) = self.checkpoints.borrow_mut().last_mut() {
             if !checkpoint.contains_key(address) {
-                checkpoint.insert(*address, self.cache.borrow().get(address).map(AccountEntry::clone_dirty));
+                checkpoint.insert(
+                    *address,
+                    self.cache
+                        .borrow()
+                        .get(address)
+                        .map(AccountEntry::clone_dirty),
+                );
             }
         }
     }
@@ -357,7 +372,12 @@ impl<B: Backend> State<B> {
     /// Create a new contract at address `contract`. If there is already an account at the address
     /// it will have its code reset, ready for `init_code()`.
     pub fn new_contract(&mut self, contract: &Address, nonce_offset: U256) {
-        self.insert_cache(contract, AccountEntry::new_dirty(Some(Account::new_contract(self.account_start_nonce + nonce_offset))));
+        self.insert_cache(
+            contract,
+            AccountEntry::new_dirty(Some(Account::new_contract(
+                self.account_start_nonce + nonce_offset,
+            ))),
+        );
     }
 
     /// Remove an existing account.
@@ -375,17 +395,25 @@ impl<B: Backend> State<B> {
 
     /// Determine whether an account exists and if not empty.
     pub fn exists_and_not_null(&self, a: &Address) -> trie::Result<bool> {
-        self.ensure_cached(a, RequireCache::None, false, |a| a.map_or(false, |a| !a.is_null()))
+        self.ensure_cached(a, RequireCache::None, false, |a| {
+            a.map_or(false, |a| !a.is_null())
+        })
     }
 
     /// Get the nonce of account `a`.
     pub fn nonce(&self, a: &Address) -> trie::Result<U256> {
-        self.ensure_cached(a, RequireCache::None, true, |a| a.as_ref().map_or(self.account_start_nonce, |account| *account.nonce()))
+        self.ensure_cached(a, RequireCache::None, true, |a| {
+            a.as_ref()
+                .map_or(self.account_start_nonce, |account| *account.nonce())
+        })
     }
 
     /// Get the storage root of account `a`.
     pub fn storage_root(&self, a: &Address) -> trie::Result<Option<H256>> {
-        self.ensure_cached(a, RequireCache::None, true, |a| a.as_ref().and_then(|account| account.storage_root().cloned()))
+        self.ensure_cached(a, RequireCache::None, true, |a| {
+            a.as_ref()
+                .and_then(|account| account.storage_root().cloned())
+        })
     }
 
     // TODO: Add global cache.
@@ -416,7 +444,9 @@ impl<B: Backend> State<B> {
             // otherwise cache the account localy and cache storage key there.
             if let Some(ref mut acc) = local_account {
                 if let Some(ref account) = acc.account {
-                    let account_db = self.factories.accountdb.readonly(self.db.as_hashdb(), account.address_hash(address));
+                    let account_db = self.factories
+                        .accountdb
+                        .readonly(self.db.as_hashdb(), account.address_hash(address));
                     return account.storage_at(&self.factories.trie, account_db.as_hashdb(), key);
                 } else {
                     return Ok(H256::new());
@@ -427,10 +457,15 @@ impl<B: Backend> State<B> {
         // TODO: add account bloom. check if the account could exist before any requests to trie
 
         // account is not found in the global cache, get from the DB and insert into local
-        let db = self.factories.trie.readonly(self.db.as_hashdb(), &self.root).expect(SEC_TRIE_DB_UNWRAP_STR);
+        let db = self.factories
+            .trie
+            .readonly(self.db.as_hashdb(), &self.root)
+            .expect(SEC_TRIE_DB_UNWRAP_STR);
         let maybe_acc = db.get_with(address, Account::from_rlp)?;
         let r = maybe_acc.as_ref().map_or(Ok(H256::new()), |a| {
-            let account_db = self.factories.accountdb.readonly(self.db.as_hashdb(), a.address_hash(address));
+            let account_db = self.factories
+                .accountdb
+                .readonly(self.db.as_hashdb(), a.address_hash(address));
             a.storage_at(&self.factories.trie, account_db.as_hashdb(), key)
         });
         self.insert_cache(address, AccountEntry::new_clean(maybe_acc));
@@ -439,17 +474,23 @@ impl<B: Backend> State<B> {
 
     /// Get accounts' code.
     pub fn code(&self, a: &Address) -> trie::Result<Option<Arc<Bytes>>> {
-        self.ensure_cached(a, RequireCache::Code, true, |a| a.as_ref().map_or(None, |a| a.code().clone()))
+        self.ensure_cached(a, RequireCache::Code, true, |a| {
+            a.as_ref().map_or(None, |a| a.code().clone())
+        })
     }
 
     /// Get an account's code hash.
     pub fn code_hash(&self, a: &Address) -> trie::Result<H256> {
-        self.ensure_cached(a, RequireCache::None, true, |a| a.as_ref().map_or(HASH_EMPTY, |a| a.code_hash()))
+        self.ensure_cached(a, RequireCache::None, true, |a| {
+            a.as_ref().map_or(HASH_EMPTY, |a| a.code_hash())
+        })
     }
 
     /// Get accounts' code size.
     pub fn code_size(&self, a: &Address) -> trie::Result<Option<usize>> {
-        self.ensure_cached(a, RequireCache::CodeSize, true, |a| a.as_ref().and_then(|a| a.code_size()))
+        self.ensure_cached(a, RequireCache::CodeSize, true, |a| {
+            a.as_ref().and_then(|a| a.code_size())
+        })
     }
 
     /// Increment the nonce of account `a` by 1.
@@ -469,21 +510,38 @@ impl<B: Backend> State<B> {
     /// Initialise the code of account `a` so that it is `code`.
     /// NOTE: Account should have been created with `new_contract`.
     pub fn init_code(&mut self, a: &Address, code: Bytes) -> trie::Result<()> {
-        self.require_or_from(a, true, || Account::new_contract(self.account_start_nonce), |_| {})?
+        self.require_or_from(
+            a,
+            true,
+            || Account::new_contract(self.account_start_nonce),
+            |_| {},
+        )?
             .init_code(code);
         Ok(())
     }
 
     /// Reset the code of account `a` so that it is `code`.
     pub fn reset_code(&mut self, a: &Address, code: Bytes) -> trie::Result<()> {
-        self.require_or_from(a, true, || Account::new_contract(self.account_start_nonce), |_| {})?
+        self.require_or_from(
+            a,
+            true,
+            || Account::new_contract(self.account_start_nonce),
+            |_| {},
+        )?
             .reset_code(code);
         Ok(())
     }
 
     /// Execute a given transaction.
     /// This will change the state accordingly.
-    pub fn apply(&mut self, env_info: &EnvInfo, t: &mut SignedTransaction, tracing: bool, check_permission: bool, check_quota: bool) -> ApplyResult {
+    pub fn apply(
+        &mut self,
+        env_info: &EnvInfo,
+        t: &mut SignedTransaction,
+        tracing: bool,
+        check_permission: bool,
+        check_quota: bool,
+    ) -> ApplyResult {
         //        let old = self.to_pod();
         let engine = &NullEngine::default();
         let options = TransactOptions {
@@ -494,28 +552,37 @@ impl<B: Backend> State<B> {
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
-        let e = Executive::new(self, env_info, engine, &vm_factory, &native_factory).transact(t, options)?;
+        let e = Executive::new(self, env_info, engine, &vm_factory, &native_factory)
+            .transact(t, options)?;
 
         // TODO uncomment once to_pod() works correctly.
         //        trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
         let receipt_error = e.exception.and_then(|evm_error| match evm_error {
-                                                     EvmError::OutOfGas => Some(ReceiptError::OutOfGas),
-                                                     EvmError::BadJumpDestination { .. } => Some(ReceiptError::BadJumpDestination),
-                                                     EvmError::BadInstruction { .. } => Some(ReceiptError::BadInstruction),
-                                                     EvmError::StackUnderflow { .. } => Some(ReceiptError::StackUnderflow),
-                                                     EvmError::OutOfStack { .. } => Some(ReceiptError::OutOfStack),
-                                                     EvmError::Internal(_) => Some(ReceiptError::Internal),
-                                                 });
+            EvmError::OutOfGas => Some(ReceiptError::OutOfGas),
+            EvmError::BadJumpDestination { .. } => Some(ReceiptError::BadJumpDestination),
+            EvmError::BadInstruction { .. } => Some(ReceiptError::BadInstruction),
+            EvmError::StackUnderflow { .. } => Some(ReceiptError::StackUnderflow),
+            EvmError::OutOfStack { .. } => Some(ReceiptError::OutOfStack),
+            EvmError::Internal(_) => Some(ReceiptError::Internal),
+        });
         let receipt = Receipt::new(None, e.cumulative_gas_used, e.logs, receipt_error);
         trace!(target: "state", "Transaction receipt: {:?}", receipt);
-        Ok(ApplyOutcome { receipt: receipt, trace: e.trace })
+        Ok(ApplyOutcome {
+            receipt: receipt,
+            trace: e.trace,
+        })
     }
 
     /// Commit accounts to SecTrieDBMut. This is similar to cpp-ethereum's dev::eth::commit.
     /// `accounts` is mutable because we may need to commit the code or storage and record that.
     #[cfg_attr(feature = "dev", allow(match_ref_pats))]
     #[cfg_attr(feature = "dev", allow(needless_borrow))]
-    fn commit_into(factories: &Factories, db: &mut B, root: &mut H256, accounts: &mut HashMap<Address, AccountEntry>) -> Result<(), Error> {
+    fn commit_into(
+        factories: &Factories,
+        db: &mut B,
+        root: &mut H256,
+        accounts: &mut HashMap<Address, AccountEntry>,
+    ) -> Result<(), Error> {
         // first, commit the sub trees.
         for (address, ref mut a) in accounts.iter_mut().filter(|&(_, ref a)| a.is_dirty()) {
             if let Some(ref mut account) = a.account {
@@ -550,7 +617,12 @@ impl<B: Backend> State<B> {
     /// Commits our cached account changes into the trie.
     pub fn commit(&mut self) -> Result<(), Error> {
         assert!(self.checkpoints.borrow().is_empty());
-        Self::commit_into(&self.factories, &mut self.db, &mut self.root, &mut *self.cache.borrow_mut())
+        Self::commit_into(
+            &self.factories,
+            &mut self.db,
+            &mut self.root,
+            &mut *self.cache.borrow_mut(),
+        )
     }
 
     /// Clear state cache
@@ -567,8 +639,7 @@ impl<B: Backend> State<B> {
         db: &HashDB,
     ) {
         match (account.is_cached(), require) {
-            (true, _) |
-            (false, RequireCache::None) => {}
+            (true, _) | (false, RequireCache::None) => {}
             (false, _) => {
                 // if there's already code in the global cache, always cache it
                 // locally.
@@ -599,18 +670,28 @@ impl<B: Backend> State<B> {
     /// Check caches for required data
     /// First searches for account in the local, then the shared cache.
     /// Populates local cache if nothing found.
-    fn ensure_cached<F, U>(&self, a: &Address, require: RequireCache, _: bool, f: F) -> trie::Result<U>
+    fn ensure_cached<F, U>(
+        &self,
+        a: &Address,
+        require: RequireCache,
+        _: bool,
+        f: F,
+    ) -> trie::Result<U>
     where
         F: Fn(Option<&Account>) -> U,
     {
         // check local cache first
         if let Some(ref mut maybe_acc) = self.cache.borrow_mut().get_mut(a) {
             if let Some(ref mut account) = maybe_acc.account {
-                let accountdb = self.factories.accountdb.readonly(self.db.as_hashdb(), account.address_hash(a));
-                Self::update_account_cache(require,
-                                           account,
-                                           /* &self.db, */
-                                           accountdb.as_hashdb());
+                let accountdb = self.factories
+                    .accountdb
+                    .readonly(self.db.as_hashdb(), account.address_hash(a));
+                Self::update_account_cache(
+                    require,
+                    account,
+                    /* &self.db, */
+                    accountdb.as_hashdb(),
+                );
                 return Ok(f(Some(account)));
             }
             return Ok(f(None));
@@ -620,14 +701,20 @@ impl<B: Backend> State<B> {
         // first check if it is not in database for sure
 
         // not found in the global cache, get from the DB and insert into local
-        let db = self.factories.trie.readonly(self.db.as_hashdb(), &self.root)?;
+        let db = self.factories
+            .trie
+            .readonly(self.db.as_hashdb(), &self.root)?;
         let mut maybe_acc = db.get_with(a, Account::from_rlp)?;
         if let Some(ref mut account) = maybe_acc.as_mut() {
-            let accountdb = self.factories.accountdb.readonly(self.db.as_hashdb(), account.address_hash(a));
-            Self::update_account_cache(require,
-                                       account,
-                                       /* &self.db, */
-                                       accountdb.as_hashdb());
+            let accountdb = self.factories
+                .accountdb
+                .readonly(self.db.as_hashdb(), account.address_hash(a));
+            Self::update_account_cache(
+                require,
+                account,
+                /* &self.db, */
+                accountdb.as_hashdb(),
+            );
         }
         let r = f(maybe_acc.as_ref());
         self.insert_cache(a, AccountEntry::new_clean(maybe_acc));
@@ -636,19 +723,32 @@ impl<B: Backend> State<B> {
 
     /// Pull account `a` in our cache from the trie DB. `require_code` requires that the code be cached, too.
     fn require<'a>(&'a self, a: &Address, require_code: bool) -> trie::Result<RefMut<'a, Account>> {
-        self.require_or_from(a, require_code, || Account::new_basic(self.account_start_nonce), |_| {})
+        self.require_or_from(
+            a,
+            require_code,
+            || Account::new_basic(self.account_start_nonce),
+            |_| {},
+        )
     }
 
     /// Pull account `a` in our cache from the trie DB. `require_code` requires that the code be cached, too.
     /// If it doesn't exist, make account equal the evaluation of `default`.
-    fn require_or_from<'a, F, G>(&'a self, a: &Address, require_code: bool, default: F, not_default: G) -> trie::Result<RefMut<'a, Account>>
+    fn require_or_from<'a, F, G>(
+        &'a self,
+        a: &Address,
+        require_code: bool,
+        default: F,
+        not_default: G,
+    ) -> trie::Result<RefMut<'a, Account>>
     where
         F: FnOnce() -> Account,
         G: FnOnce(&mut Account),
     {
         let contains_key = self.cache.borrow().contains_key(a);
         if !contains_key {
-            let db = self.factories.trie.readonly(self.db.as_hashdb(), &self.root)?;
+            let db = self.factories
+                .trie
+                .readonly(self.db.as_hashdb(), &self.root)?;
             let maybe_acc = AccountEntry::new_clean(db.get_with(a, Account::from_rlp)?);
             self.insert_cache(a, maybe_acc);
         }
@@ -656,7 +756,8 @@ impl<B: Backend> State<B> {
 
         // at this point the entry is guaranteed to be in the cache.
         Ok(RefMut::map(self.cache.borrow_mut(), |c| {
-            let entry = c.get_mut(a).expect("entry known to exist in the cache; qed");
+            let entry = c.get_mut(a)
+                .expect("entry known to exist in the cache; qed");
 
             match &mut entry.account {
                 &mut Some(ref mut acc) => not_default(acc),
@@ -669,11 +770,15 @@ impl<B: Backend> State<B> {
                 Some(ref mut account) => {
                     if require_code {
                         let addr_hash = account.address_hash(a);
-                        let accountdb = self.factories.accountdb.readonly(self.db.as_hashdb(), addr_hash);
-                        Self::update_account_cache(RequireCache::Code,
-                                                   account,
-                                                   /* &self.db, */
-                                                   accountdb.as_hashdb());
+                        let accountdb = self.factories
+                            .accountdb
+                            .readonly(self.db.as_hashdb(), addr_hash);
+                        Self::update_account_cache(
+                            RequireCache::Code,
+                            account,
+                            /* &self.db, */
+                            accountdb.as_hashdb(),
+                        );
                     }
                     account
                 }
@@ -719,8 +824,8 @@ impl Clone for State<StateDB> {
 #[cfg(test)]
 mod tests {
     extern crate libproto;
-    extern crate rustc_hex;
     extern crate logger;
+    extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 
     use self::libproto::blockchain;
@@ -730,7 +835,7 @@ mod tests {
     use env_info::EnvInfo;
     use std::sync::Arc;
     use tests::helpers::*;
-    use util::{H256, Address};
+    use util::{Address, H256};
     use util::crypto::CreateKey;
     use util::hashable::HASH_NAME;
 
@@ -797,7 +902,13 @@ mod tests {
         let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(1));
         println!("contract_address {:?}", contract_address);
         let result = state.apply(&info, &mut signed, true, false, false).unwrap();
-        println!("{:?}", state.code(&contract_address).expect("result should unwrap.").expect("option should unwrap"));
+        println!(
+            "{:?}",
+            state
+                .code(&contract_address)
+                .expect("result should unwrap.")
+                .expect("option should unwrap")
+        );
         println!("{:?}", result.trace);
         assert_eq!(state.code(&contract_address).unwrap().unwrap(),
                    Arc::new("60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
@@ -1688,18 +1799,29 @@ mod tests {
         let a = Address::zero();
         let (root, db) = {
             let mut state = get_temp_state();
-            state.require_or_from(&a, false, || Account::new_contract(0.into()), |_| {}).unwrap();
+            state
+                .require_or_from(&a, false, || Account::new_contract(0.into()), |_| {})
+                .unwrap();
             state.init_code(&a, vec![1, 2, 3]).unwrap();
-            assert_eq!(state.code(&a).unwrap(), Some(Arc::new([1u8, 2, 3].to_vec())));
+            assert_eq!(
+                state.code(&a).unwrap(),
+                Some(Arc::new([1u8, 2, 3].to_vec()))
+            );
 
             state.commit().unwrap();
-            assert_eq!(state.code(&a).unwrap(), Some(Arc::new([1u8, 2, 3].to_vec())));
+            assert_eq!(
+                state.code(&a).unwrap(),
+                Some(Arc::new([1u8, 2, 3].to_vec()))
+            );
             state.drop()
         };
 
         let state = State::from_existing(db, root, U256::from(0u8), Default::default()).unwrap();
 
-        assert_eq!(state.code(&a).unwrap(), Some(Arc::new([1u8, 2, 3].to_vec())));
+        assert_eq!(
+            state.code(&a).unwrap(),
+            Some(Arc::new([1u8, 2, 3].to_vec()))
+        );
     }
 
     #[test]
@@ -1707,13 +1829,18 @@ mod tests {
         let a = Address::zero();
         let (root, db) = {
             let mut state = get_temp_state();
-            state.set_storage(&a, H256::from(1u64), H256::from(69u64)).unwrap();
+            state
+                .set_storage(&a, H256::from(1u64), H256::from(69u64))
+                .unwrap();
             state.commit().unwrap();
             state.drop()
         };
 
         let s = State::from_existing(db, root, U256::from(0u8), Default::default()).unwrap();
-        assert_eq!(s.storage_at(&a, &H256::from(1u64)).unwrap(), H256::from(69u64));
+        assert_eq!(
+            s.storage_at(&a, &H256::from(1u64)).unwrap(),
+            H256::from(69u64)
+        );
     }
 
     #[test]
@@ -1789,7 +1916,8 @@ mod tests {
         };
 
         let (root, db) = {
-            let mut state = State::from_existing(db, root, U256::from(0u8), Default::default()).unwrap();
+            let mut state =
+                State::from_existing(db, root, U256::from(0u8), Default::default()).unwrap();
             assert_eq!(state.exists(&a).unwrap(), true);
             assert_eq!(state.nonce(&a).unwrap(), U256::from(1u64));
             state.kill_account(&a);
@@ -1836,9 +1964,15 @@ mod tests {
         state.require(&a, false).unwrap();
         state.commit().unwrap();
         if HASH_NAME == "sha3" {
-            assert_eq!(state.root().hex(), "42d8434e6d43bbdfa67dee7c7ef5c17159056e7727ac1ad5ba9928aeb9eb0112");
+            assert_eq!(
+                state.root().hex(),
+                "42d8434e6d43bbdfa67dee7c7ef5c17159056e7727ac1ad5ba9928aeb9eb0112"
+            );
         } else if HASH_NAME == "blake2b" {
-            assert_eq!(state.root().hex(), "a989e73cbcbb961ac9777ca453449c42a0c008c70ef16326b7d4c96681f5d90d");
+            assert_eq!(
+                state.root().hex(),
+                "a989e73cbcbb961ac9777ca453449c42a0c008c70ef16326b7d4c96681f5d90d"
+            );
         }
     }
 
@@ -1879,10 +2013,16 @@ mod tests {
         let mut state = get_temp_state();
         if HASH_NAME == "sha3" {
             state.commit().unwrap();
-            assert_eq!(state.root().hex(), "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
+            assert_eq!(
+                state.root().hex(),
+                "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+            );
         } else if HASH_NAME == "blake2b" {
             state.commit().unwrap();
-            assert_eq!(state.root().hex(), "c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9af");
+            assert_eq!(
+                state.root().hex(),
+                "c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9af"
+            );
         }
     }
 

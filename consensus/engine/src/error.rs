@@ -48,7 +48,10 @@ impl fmt::Display for EngineError {
             InvalidProof => "Invalid proof.".into(),
             NotAboveThreshold(vote) => format!("Vote is not above threshold: {}", vote),
             UnexpectedMessage => "This Engine should not be fed messages.".into(),
-            VoteMsgDelay(height) => format!("The vote message is delayed and missed the current height:{}", height),
+            VoteMsgDelay(height) => format!(
+                "The vote message is delayed and missed the current height:{}",
+                height
+            ),
             VoteMsgForth(height) => format!("The vote message is fulture height :{}", height),
             InvalidSignature => "Invalid Signature.".into(),
             InvalidTxInProposal => "Invalid Tx In Proposal.".into(),
@@ -68,6 +71,10 @@ pub struct Mismatch<T: fmt::Debug> {
 
 impl<T: fmt::Debug + fmt::Display> fmt::Display for Mismatch<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_fmt(format_args!("Expected {}, found {}", self.expected, self.found))
+        f.write_fmt(format_args!(
+            "Expected {}, found {}",
+            self.expected,
+            self.found
+        ))
     }
 }

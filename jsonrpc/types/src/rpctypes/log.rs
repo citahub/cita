@@ -16,8 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bytes::Bytes;
-use types::log_entry::{LogEntry, LocalizedLogEntry};
-use util::{H256, H160, U256};
+use types::log_entry::{LocalizedLogEntry, LogEntry};
+use util::{H160, H256, U256};
 
 /// Log
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -93,11 +93,16 @@ mod tests {
         let log = Log {
             address: H160::from_str("33990122638b9132ca29c723bdf037f1a891a70c").unwrap(),
             topics: vec![
-                H256::from_str("a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc").unwrap(),
-                H256::from_str("4861736852656700000000000000000000000000000000000000000000000000").unwrap(),
+                H256::from_str("a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc")
+                    .unwrap(),
+                H256::from_str("4861736852656700000000000000000000000000000000000000000000000000")
+                    .unwrap(),
             ],
             data: vec![].into(),
-            block_hash: Some(H256::from_str("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5").unwrap()),
+            block_hash: Some(
+                H256::from_str("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5")
+                    .unwrap(),
+            ),
             block_number: Some(U256::from(0x4510c)),
             transaction_hash: Some(H256::default()),
             transaction_index: Some(U256::default()),

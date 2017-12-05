@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use bincode::{serialize, deserialize, Infinite};
+use bincode::{deserialize, serialize, Infinite};
 use crypto::Signature;
 use libproto::blockchain::{Proof, ProofType};
 use rustc_serialize::hex::ToHex;
@@ -29,7 +29,10 @@ pub struct AuthorityRoundProof {
 
 impl AuthorityRoundProof {
     pub fn new(step: u64, signature: Signature) -> AuthorityRoundProof {
-        AuthorityRoundProof { step: step, signature: signature }
+        AuthorityRoundProof {
+            step: step,
+            signature: signature,
+        }
     }
 }
 
@@ -52,7 +55,12 @@ impl Into<Proof> for AuthorityRoundProof {
 
 impl fmt::Display for AuthorityRoundProof {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "step: {}, signature: {}", self.step, self.signature.to_hex())
+        write!(
+            f,
+            "step: {}, signature: {}",
+            self.step,
+            self.signature.to_hex()
+        )
     }
 }
 
@@ -60,7 +68,7 @@ impl fmt::Display for AuthorityRoundProof {
 mod tests {
     extern crate cita_crypto as crypto;
 
-    use super::{Signature, AuthorityRoundProof};
+    use super::{AuthorityRoundProof, Signature};
     use crypto::SIGNATURE_NAME;
     use libproto::blockchain::Proof;
 

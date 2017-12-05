@@ -81,7 +81,6 @@ impl<'a> Deserialize<'a> for ErrorCode {
             Some(code) => Ok(ErrorCode::ServerError(code)),
             _ => unreachable!(),
         }
-
     }
 }
 

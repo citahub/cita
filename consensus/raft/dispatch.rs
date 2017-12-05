@@ -17,7 +17,7 @@
 
 #![allow(unused_variables)]
 use libproto::*;
-use libraft::{NotifyMessage, Command, decode};
+use libraft::{decode, Command, NotifyMessage};
 use mio;
 use std::sync::mpsc::Receiver;
 
@@ -30,17 +30,15 @@ pub fn dispatch(notifix: &mio::Sender<NotifyMessage>, rx: &Receiver<(u32, u32, M
                 notifix.send(NotifyMessage::NewStatus(status.hash, status.height));
             }
         }
-        MsgClass::MSG(content) => {
-            match decode(&content) {
-                Command::SpawnBlk(..) => {
-                    info!("not expected");
-                }
-                Command::PoolSituation(height, hash, proof) => {
-                    info!("receive pool situation");
-                    notifix.send(NotifyMessage::NewStatus(hash.unwrap(), height));
-                }
+        MsgClass::MSG(content) => match decode(&content) {
+            Command::SpawnBlk(..) => {
+                info!("not expected");
             }
-        }
+            Command::PoolSituation(height, hash, proof) => {
+                info!("receive pool situation");
+                notifix.send(NotifyMessage::NewStatus(hash.unwrap(), height));
+            }
+        },
         MsgClass::RICHSTATUS(rich_status) => {
             info!("raft dispatch rich_status is {:?}", rich_status);
             //todo

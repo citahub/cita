@@ -16,11 +16,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(unused_extern_crates)]
+extern crate cita_crypto as crypto;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate serde_json;
-extern crate cita_crypto as crypto;
 extern crate util;
 
 mod engine;

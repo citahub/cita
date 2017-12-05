@@ -22,7 +22,7 @@ use bytes::BufMut;
 use bytes::BytesMut;
 use std::io;
 use tokio_io::{AsyncRead, AsyncWrite};
-use tokio_io::codec::{Framed, Encoder, Decoder};
+use tokio_io::codec::{Decoder, Encoder, Framed};
 use tokio_proto::pipeline::ServerProto;
 
 pub type CitaRequest = Vec<u8>;

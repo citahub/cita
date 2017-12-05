@@ -15,24 +15,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #![allow(unused_extern_crates)]
-extern crate rustc_hex;
-extern crate rocksdb;
-extern crate elastic_array;
-extern crate libc;
-extern crate target_info;
-extern crate bigint;
-extern crate parking_lot;
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
 extern crate ansi_term;
-extern crate rlp;
-extern crate regex;
-extern crate lru_cache;
-extern crate heapsize;
-extern crate itertools;
-extern crate sha3;
+extern crate bigint;
 #[cfg(feature = "blake2bhash")]
 extern crate blake2b;
+extern crate elastic_array;
+extern crate heapsize;
+extern crate itertools;
+extern crate libc;
+extern crate lru_cache;
+extern crate parking_lot;
+extern crate regex;
+extern crate rlp;
+extern crate rocksdb;
+extern crate rustc_hex;
+extern crate sha3;
 #[cfg(feature = "sm3hash")]
 extern crate sm3;
+extern crate target_info;
 
 #[macro_use]
 extern crate log as rlog;
@@ -82,7 +84,7 @@ pub use misc::*;
 pub use overlaydb::*;
 pub use parking_lot::{Condvar, Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 pub use semantic_version::*;
-pub use trie::{Trie, TrieMut, TrieDB, TrieDBMut, TrieFactory, TrieError, SecTrieDB, SecTrieDBMut};
+pub use trie::{SecTrieDB, SecTrieDBMut, Trie, TrieDB, TrieDBMut, TrieError, TrieFactory, TrieMut};
 pub use triehash::*;
 pub use vector::*;
 

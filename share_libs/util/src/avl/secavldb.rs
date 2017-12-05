@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{AVL, AVLItem, AVLIterator, Query};
+use super::{AVLItem, AVLIterator, Query, AVL};
 use super::avldb::AVLDB;
 use H256;
 use hashable::Hashable;
@@ -35,7 +35,9 @@ impl<'db> SecAVLDB<'db> {
     /// This guarantees the avl is built correctly.
     /// Returns an error if root does not exist.
     pub fn new(db: &'db HashDB, root: &'db H256) -> super::Result<Self> {
-        Ok(SecAVLDB { raw: AVLDB::new(db, root)? })
+        Ok(SecAVLDB {
+            raw: AVLDB::new(db, root)?,
+        })
     }
 
     /// Get a reference to the underlying raw `AVLDB` struct.
@@ -62,7 +64,11 @@ impl<'db> AVL for SecAVLDB<'db> {
         self.raw.contains(&key.crypt_hash())
     }
 
-    fn get_with<'a, 'key, Q: Query>(&'a self, key: &'key [u8], query: Q) -> super::Result<Option<Q::Item>>
+    fn get_with<'a, 'key, Q: Query>(
+        &'a self,
+        key: &'key [u8],
+        query: Q,
+    ) -> super::Result<Option<Q::Item>>
     where
         'a: 'key,
     {
@@ -81,8 +87,12 @@ fn avl_to_secavl() {
     let mut root = H256::default();
     {
         let mut t = AVLDBMut::new(&mut memdb, &mut root);
-        t.insert(&(&[0x01u8, 0x23]).crypt_hash(), &[0x01u8, 0x23]).unwrap();
+        t.insert(&(&[0x01u8, 0x23]).crypt_hash(), &[0x01u8, 0x23])
+            .unwrap();
     }
     let t = SecAVLDB::new(&memdb, &root).unwrap();
-    assert_eq!(t.get(&[0x01u8, 0x23]).unwrap().unwrap(), DBValue::from_slice(&[0x01u8, 0x23]));
+    assert_eq!(
+        t.get(&[0x01u8, 0x23]).unwrap().unwrap(),
+        DBValue::from_slice(&[0x01u8, 0x23])
+    );
 }

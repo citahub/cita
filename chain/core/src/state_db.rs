@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use state::backend::*;
-use util::{JournalDB, DBTransaction, H256, UtilError, HashDB};
+use util::{DBTransaction, H256, HashDB, JournalDB, UtilError};
 
 pub struct StateDB {
     /// Backing database.
@@ -30,14 +30,26 @@ impl StateDB {
 
     /// Clone the database.
     pub fn boxed_clone(&self) -> StateDB {
-        StateDB { db: self.db.boxed_clone() }
+        StateDB {
+            db: self.db.boxed_clone(),
+        }
     }
 
     /// Journal all recent operations under the given era and ID.
-    pub fn journal_under(&mut self, batch: &mut DBTransaction, now: u64, id: &H256) -> Result<u32, UtilError> {
+    pub fn journal_under(
+        &mut self,
+        batch: &mut DBTransaction,
+        now: u64,
+        id: &H256,
+    ) -> Result<u32, UtilError> {
         self.db.journal_under(batch, now, id)
     }
-    pub fn mark_canonical(&mut self, batch: &mut DBTransaction, now: u64, id: &H256) -> Result<u32, UtilError> {
+    pub fn mark_canonical(
+        &mut self,
+        batch: &mut DBTransaction,
+        now: u64,
+        id: &H256,
+    ) -> Result<u32, UtilError> {
         self.db.mark_canonical(batch, now, id)
     }
 

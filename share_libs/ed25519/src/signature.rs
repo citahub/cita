@@ -15,17 +15,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{PrivKey, PubKey, Address, Message, Error, KeyPair, pubkey_to_address, SIGNATURE_BYTES_LEN};
+use super::{pubkey_to_address, Address, Error, KeyPair, Message, PrivKey, PubKey,
+            SIGNATURE_BYTES_LEN};
 use rlp::*;
 use rustc_serialize::hex::ToHex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{Visitor, SeqAccess, Error as SerdeError};
+use serde::de::{Error as SerdeError, SeqAccess, Visitor};
 use serde::ser::SerializeSeq;
-use sodiumoxide::crypto::sign::{sign_detached, verify_detached, SecretKey, Signature as EdSignature, PublicKey as EdPublicKey};
+use sodiumoxide::crypto::sign::{sign_detached, verify_detached, PublicKey as EdPublicKey,
+                                SecretKey, Signature as EdSignature};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 use util::H768;
-use util::crypto::{Sign, CreateKey};
+use util::crypto::{CreateKey, Sign};
 
 pub struct Signature(pub [u8; 96]);
 
@@ -48,10 +50,10 @@ impl PartialEq for Signature {
 impl Decodable for Signature {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         rlp.decoder().decode_value(|bytes| {
-                                       let mut sig = [0u8; 96];
-                                       sig[0..96].copy_from_slice(bytes);
-                                       Ok(Signature(sig))
-                                   })
+            let mut sig = [0u8; 96];
+            sig[0..96].copy_from_slice(bytes);
+            Ok(Signature(sig))
+        })
     }
 }
 
@@ -114,9 +116,9 @@ impl Eq for Signature {}
 impl fmt::Debug for Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         f.debug_struct("Signature")
-         .field("signature", &self.0[0..64].to_hex())
-         .field("pubkey", &self.0[64..96].to_hex())
-         .finish()
+            .field("signature", &self.0[0..64].to_hex())
+            .field("pubkey", &self.0[64..96].to_hex())
+            .finish()
     }
 }
 
@@ -218,20 +220,40 @@ impl Sign for Signature {
     fn recover(&self, message: &Self::Message) -> Result<Self::PubKey, Self::Error> {
         let sig = self.sig();
         let pubkey = self.pk();
-        let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(), message.as_ref(), &EdPublicKey::from_slice(&pubkey).unwrap());
+        let is_valid = verify_detached(
+            &EdSignature::from_slice(&sig).unwrap(),
+            message.as_ref(),
+            &EdPublicKey::from_slice(&pubkey).unwrap(),
+        );
 
-        if !is_valid { Err(Error::InvalidSignature) } else { Ok(PubKey::from_slice(&pubkey)) }
+        if !is_valid {
+            Err(Error::InvalidSignature)
+        } else {
+            Ok(PubKey::from_slice(&pubkey))
+        }
     }
 
-    fn verify_public(&self, pubkey: &Self::PubKey, message: &Self::Message) -> Result<bool, Self::Error> {
+    fn verify_public(
+        &self,
+        pubkey: &Self::PubKey,
+        message: &Self::Message,
+    ) -> Result<bool, Self::Error> {
         let sig = self.sig();
         let pk = self.pk();
         if pk != pubkey.as_ref() {
             return Err(Error::InvalidPubKey);
         }
 
-        let is_valid = verify_detached(&EdSignature::from_slice(&sig).unwrap(), message.as_ref(), &EdPublicKey::from_slice(&pubkey).unwrap());
-        if !is_valid { Err(Error::InvalidSignature) } else { Ok(true) }
+        let is_valid = verify_detached(
+            &EdSignature::from_slice(&sig).unwrap(),
+            message.as_ref(),
+            &EdPublicKey::from_slice(&pubkey).unwrap(),
+        );
+        if !is_valid {
+            Err(Error::InvalidSignature)
+        } else {
+            Ok(true)
+        }
     }
 
     fn verify_address(&self, address: &Address, message: &Message) -> Result<bool, Self::Error> {
@@ -244,7 +266,7 @@ impl Sign for Signature {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bincode::{serialize, deserialize, Infinite};
+    use bincode::{deserialize, serialize, Infinite};
     use util::crypto::CreateKey;
 
     const MESSAGE: [u8; 32] = [

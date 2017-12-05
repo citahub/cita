@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crypto::{KeyPair, PrivKey, pubkey_to_address};
-use libproto::blockchain::{UnverifiedTransaction, Transaction};
+use crypto::{pubkey_to_address, KeyPair, PrivKey};
+use libproto::blockchain::{Transaction, UnverifiedTransaction};
 use protobuf::Message;
 use rustc_hex::FromHex;
 use test::Bencher;
@@ -43,7 +43,6 @@ pub struct Client {
 
 impl Client {
     pub fn new() -> Self {
-
         let key_pair = KeyPair::gen_keypair();
         let address = pubkey_to_address(key_pair.pubkey());
         Client {
@@ -53,7 +52,14 @@ impl Client {
         }
     }
 
-    fn generate_tx(&self, code: String, address: String, pv: &PrivKey, curh: u64, quota: u64) -> UnverifiedTransaction {
+    fn generate_tx(
+        &self,
+        code: String,
+        address: String,
+        pv: &PrivKey,
+        curh: u64,
+        quota: u64,
+    ) -> UnverifiedTransaction {
         let data = code.from_hex().unwrap();
         let mut tx = Transaction::new();
         tx.set_data(data);
@@ -64,12 +70,23 @@ impl Client {
         tx.sign(*pv).take_transaction_with_sig()
     }
 
-    pub fn create_contract_data(&self, code: String, to: String, height: u64, quota: u64) -> String {
-        self.get_data_by_method(RpcMethod::SendTransaction(self.generate_tx(code, to, self.key_pair.privkey(), height, quota)))
+    pub fn create_contract_data(
+        &self,
+        code: String,
+        to: String,
+        height: u64,
+        quota: u64,
+    ) -> String {
+        self.get_data_by_method(RpcMethod::SendTransaction(self.generate_tx(
+            code,
+            to,
+            self.key_pair.privkey(),
+            height,
+            quota,
+        )))
     }
 
     pub fn get_data_by_method(&self, method: RpcMethod) -> String {
-
         let tx_data = match method {
             RpcMethod::SendTransaction(tx) => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())

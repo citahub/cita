@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Basic account type -- the decoded RLP from the state trie.
+#![rustfmt_skip]
 
 use rlp::*;
 use util::{U256, H256};

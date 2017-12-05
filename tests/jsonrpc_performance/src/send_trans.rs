@@ -26,7 +26,7 @@ use serde_json;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::fs::File;
-use std::io::{Read, BufRead, Cursor};
+use std::io::{BufRead, Cursor, Read};
 use std::io::prelude::*;
 use std::path::Path;
 use std::str::FromStr;
@@ -103,7 +103,6 @@ impl Sendtx {
     }
 
     pub fn send_data(url: String, method: Methods) -> Result<Response, i32> {
-
         let client = Client::new();
         let data = Trans::generate_tx_data(method);
         match client.post(&url).body(&data).send() {
@@ -115,14 +114,16 @@ impl Sendtx {
     pub fn parse_data(data: String) -> (String, bool) {
         let mut _ret = (String::new(), false);
         if let Ok(deserialized) = serde_json::from_str(&data) {
-
             let deserialized: RpcSuccess = deserialized;
             _ret = match deserialized.result {
-
                 ResultBody::BlockNumber(hei) => (format!("{}", hei), true),
                 ResultBody::Transaction(RpcTransaction) => {
                     let content = RpcTransaction.content;
-                    if !content.vec().is_empty() { (String::new(), true) } else { (String::new(), false) }
+                    if !content.vec().is_empty() {
+                        (String::new(), true)
+                    } else {
+                        (String::new(), false)
+                    }
                 }
 
                 ResultBody::FullBlock(full_block) => {
@@ -142,7 +143,6 @@ impl Sendtx {
                 }
                 _ => (String::new(), false),
             }
-
         } else {
             _ret = (String::new(), false);
         }
@@ -179,12 +179,16 @@ impl Sendtx {
         } else {
             let _ = sync_send.send((0, 1));
         }
-
     }
 
 
-    pub fn send_tx(&self, thd_index: i32, sync_send: mpsc::Sender<(u64, u64)>, first_tx: Arc<Mutex<bool>>, sys_time: Arc<Mutex<time::SystemTime>>) {
-
+    pub fn send_tx(
+        &self,
+        thd_index: i32,
+        sync_send: mpsc::Sender<(u64, u64)>,
+        first_tx: Arc<Mutex<bool>>,
+        sys_time: Arc<Mutex<time::SystemTime>>,
+    ) {
         let v_url = self.get_url();
         let num = v_url.len();
         let mut _pos = 0;
@@ -216,8 +220,13 @@ impl Sendtx {
         }
     }
 
-    pub fn send_height_tx(&self, thd_index: i32, sync_send: mpsc::Sender<(u64, u64)>, first_tx: Arc<Mutex<bool>>, sys_time: Arc<Mutex<time::SystemTime>>) {
-
+    pub fn send_height_tx(
+        &self,
+        thd_index: i32,
+        sync_send: mpsc::Sender<(u64, u64)>,
+        first_tx: Arc<Mutex<bool>>,
+        sys_time: Arc<Mutex<time::SystemTime>>,
+    ) {
         let v_url = self.get_url();
         let num = v_url.len();
         let mut _pos = 0;
@@ -245,7 +254,6 @@ impl Sendtx {
 
     //分配线程
     pub fn dispatch_thd(&mut self, sync_send: mpsc::Sender<(u64, u64)>) {
-
         let first_tx = Arc::new(Mutex::new(true));
         let v_url = self.get_url();
         self.curr_height = Self::get_height(v_url[0].clone());
@@ -255,11 +263,13 @@ impl Sendtx {
             let sync_send = sync_send.clone();
             let first_tx_clone = first_tx.clone();
             let sys_time_clone = self.sys_time.clone();
-            let ret = thread::Builder::new().name(threadname).spawn(move || if t.tx_type == TxCtx::GetHeight {
-                                                                        t.send_height_tx(index, sync_send, first_tx_clone, sys_time_clone);
-                                                                    } else {
-                                                                        t.send_tx(index, sync_send, first_tx_clone, sys_time_clone);
-                                                                    });
+            let ret = thread::Builder::new().name(threadname).spawn(move || {
+                if t.tx_type == TxCtx::GetHeight {
+                    t.send_height_tx(index, sync_send, first_tx_clone, sys_time_clone);
+                } else {
+                    t.send_tx(index, sync_send, first_tx_clone, sys_time_clone);
+                }
+            });
             if ret.is_err() {
                 info!("thread create fail: {:?}", ret.unwrap_err());
             }
@@ -293,15 +303,36 @@ impl Sendtx {
                 TxCtx::Dup => {
                     //重复交易
                     pv_change = false;
-                    Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 88, self.quota, false)
+                    Trans::generate_tx(
+                        &self.code,
+                        self.contract_address.clone(),
+                        frompv,
+                        self.curr_height + 88,
+                        self.quota,
+                        false,
+                    )
                 }
                 TxCtx::SignErr => {
                     //交易签名错误
-                    Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 88, self.quota, true)
+                    Trans::generate_tx(
+                        &self.code,
+                        self.contract_address.clone(),
+                        frompv,
+                        self.curr_height + 88,
+                        self.quota,
+                        true,
+                    )
                 }
                 TxCtx::Correct => {
                     //正确交易
-                    Trans::generate_tx(&self.code, self.contract_address.clone(), frompv, self.curr_height + 88, self.quota, false)
+                    Trans::generate_tx(
+                        &self.code,
+                        self.contract_address.clone(),
+                        frompv,
+                        self.curr_height + 88,
+                        self.quota,
+                        false,
+                    )
                 }
                 TxCtx::GetHeight => {
                     continue;
@@ -312,7 +343,6 @@ impl Sendtx {
     }
 
     pub fn get_txinfo_by_height(&self, url: String, h: u64) -> (i32, u64) {
-
         let mut num = -1;
         let mut time_stamp = 0;
         if let Ok(mut res) = Self::send_data(url.clone(), Methods::Blockbyheiht(h)) {
@@ -369,7 +399,6 @@ impl Sendtx {
                     } else {
                         break;
                     }
-
                 }
             }
         }
@@ -425,7 +454,13 @@ impl Sendtx {
                 }
 
                 for (key, val) in &tx_info {
-                    let s = format!("height:{}, blocknum: {}, time stamp :{}, use time: {} ms\n", key, val.blocknum, val.time_stamp, val.use_time);
+                    let s = format!(
+                        "height:{}, blocknum: {}, time stamp :{}, use time: {} ms\n",
+                        key,
+                        val.blocknum,
+                        val.time_stamp,
+                        val.use_time
+                    );
                     result.push_str(&s);
                 }
                 break;
@@ -434,9 +469,27 @@ impl Sendtx {
             h += 1;
         }
         let secs = _end_time_stamp - start_time_stamp;
-        let tps = if secs > 0 { (tx_num * 1000) as u64 / secs } else { tx_num as u64 };
-        info!("tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}", tx_num, start_h, h, secs, tps);
-        let s = format!("tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}\n", tx_num, start_h, h, secs, tps);
+        let tps = if secs > 0 {
+            (tx_num * 1000) as u64 / secs
+        } else {
+            tx_num as u64
+        };
+        info!(
+            "tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}",
+            tx_num,
+            start_h,
+            h,
+            secs,
+            tps
+        );
+        let s = format!(
+            "tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}\n",
+            tx_num,
+            start_h,
+            h,
+            secs,
+            tps
+        );
         result.push_str(&s);
         let path = Path::new("cita_performance.txt");
         let mut file = match File::create(&path) {
@@ -466,13 +519,10 @@ impl Sendtx {
             //jsonrpc返回成功的数量==入块的成功数退出循环
             self.wait(self.totaltx, sync_recv, _url);
         }
-
-
     }
 
 
     fn wait(&self, totaltx: u64, sync_recv: mpsc::Receiver<(u64, u64)>, url: String) {
-
         let mut sucess = 0;
         let mut fail = 0;
         let mut _end_h = 0;
@@ -486,12 +536,18 @@ impl Sendtx {
                     //获取一次高度
                     let start = self.get_first_tx_time();
                     let sys_time = time::SystemTime::now();
-                    let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+                    let diff = sys_time
+                        .duration_since(start)
+                        .expect("SystemTime::duration_since failed");
                     let mut secs = diff.as_secs();
                     let nanos = diff.subsec_nanos();
                     let total_nanos = secs * 1000_000_000 + nanos as u64;
                     secs = secs * 1000 + (nanos / 1000000) as u64;
-                    let tps = if secs > 0 { totaltx * 1000 / secs } else { totaltx };
+                    let tps = if secs > 0 {
+                        totaltx * 1000 / secs
+                    } else {
+                        totaltx
+                    };
                     _end_h = Self::get_height(url.clone());
                     let buf = if self.tx_format_err {
                         "jsonrpc(err format)"

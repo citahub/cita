@@ -21,7 +21,7 @@ use std::process;
 pub fn set_panic_handler() {
     let orig_handler = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info| {
-                                 orig_handler(panic_info);
-                                 process::exit(1);
-                             }));
+        orig_handler(panic_info);
+        process::exit(1);
+    }));
 }

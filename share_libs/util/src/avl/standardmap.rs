@@ -79,7 +79,12 @@ impl StandardMap {
 
     /// Get a random word of, at least `min_count` bytes, at most `min_count` + `journal_count` bytes.
     /// Each byte is an item from `alphabet`. `seed` is mutated pseudoramdonly and used.
-    fn random_word(alphabet: &[u8], min_count: usize, journal_count: usize, seed: &mut H256) -> Vec<u8> {
+    fn random_word(
+        alphabet: &[u8],
+        min_count: usize,
+        journal_count: usize,
+        seed: &mut H256,
+    ) -> Vec<u8> {
         assert!(min_count + journal_count <= 32);
         *seed = seed.crypt_hash();
         let r = min_count + (seed[31] as usize % (journal_count + 1));

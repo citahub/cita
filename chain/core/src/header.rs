@@ -18,7 +18,7 @@
 //! Block header.
 
 use basic_types::{LogBloom, ZERO_LOGBLOOM};
-use libproto::blockchain::{Proof, ProofType, BlockHeader};
+use libproto::blockchain::{BlockHeader, Proof, ProofType};
 use rlp::*;
 use std::cell::Cell;
 use std::cmp;
@@ -74,8 +74,11 @@ pub struct Header {
 
 impl PartialEq for Header {
     fn eq(&self, c: &Header) -> bool {
-        self.parent_hash == c.parent_hash && self.timestamp == c.timestamp && self.number == c.number && self.transactions_root == c.transactions_root && self.state_root == c.state_root && self.receipts_root == c.receipts_root && self.log_bloom == c.log_bloom && self.gas_used == c.gas_used && self.gas_limit == c.gas_limit && self.proof == c.proof
-
+        self.parent_hash == c.parent_hash && self.timestamp == c.timestamp
+            && self.number == c.number && self.transactions_root == c.transactions_root
+            && self.state_root == c.state_root && self.receipts_root == c.receipts_root
+            && self.log_bloom == c.log_bloom && self.gas_used == c.gas_used
+            && self.gas_limit == c.gas_limit && self.proof == c.proof
     }
 }
 
@@ -169,7 +172,11 @@ impl Header {
     }
     /// Get the proof type field of the header.
     pub fn proof_type(&self) -> Option<ProofType> {
-        if self.proof == Proof::new() { None } else { Some(self.proof.get_field_type()) }
+        if self.proof == Proof::new() {
+            None
+        } else {
+            Some(self.proof.get_field_type())
+        }
     }
 
     /// Set the number field of the header.
@@ -266,7 +273,6 @@ impl Header {
         s.append(&self.timestamp);
         s.append(&self.version);
         s.append(&self.proof);
-
     }
 
     /// Get the RLP of this header.

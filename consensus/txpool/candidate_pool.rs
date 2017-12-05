@@ -52,9 +52,15 @@ impl CandidatePool {
     }
 
     pub fn broadcast_tx(&self, tx_req: &Request) {
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::REQUEST, communication::MsgType::REQUEST, tx_req.write_to_bytes().unwrap());
+        let msg = factory::create_msg(
+            submodules::CONSENSUS,
+            topics::REQUEST,
+            communication::MsgType::REQUEST,
+            tx_req.write_to_bytes().unwrap(),
+        );
         trace!("broadcast new tx {:?}", tx_req);
-        self.sender.send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
+        self.sender
+            .send(("consensus.tx".to_string(), msg.write_to_bytes().unwrap()));
     }
 
     pub fn add_tx(&mut self, tx_req: &Request, is_from_broadcast: bool) {
@@ -88,8 +94,15 @@ impl CandidatePool {
 
         // Response RPC
         if !is_from_broadcast {
-            let msg = factory::create_msg(submodules::CONSENSUS, topics::RESPONSE, communication::MsgType::RESPONSE, response.write_to_bytes().unwrap());
-            self.sender.send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap())).unwrap();
+            let msg = factory::create_msg(
+                submodules::CONSENSUS,
+                topics::RESPONSE,
+                communication::MsgType::RESPONSE,
+                response.write_to_bytes().unwrap(),
+            );
+            self.sender
+                .send(("consensus.rpc".to_string(), msg.write_to_bytes().unwrap()))
+                .unwrap();
         }
     }
 
@@ -97,7 +110,11 @@ impl CandidatePool {
         let mut block = Block::new();
         info!("spawn new blk height:{:?}.", height);
         if height != self.height + 1 {
-            warn!("block height is not match, expect: {}, but get {}", height, self.height);
+            warn!(
+                "block height is not match, expect: {}, but get {}",
+                height,
+                self.height
+            );
         }
         let mut proof = Proof::new();
         proof.set_field_type(ProofType::Raft);
@@ -109,17 +126,27 @@ impl CandidatePool {
 
         block.mut_header().set_prevhash(hash);
         block.mut_header().set_timestamp(block_time.as_millis());
-        block.mut_body().set_transactions(RepeatedField::from_slice(&txs[..]));
+        block
+            .mut_body()
+            .set_transactions(RepeatedField::from_slice(&txs[..]));
         let transaction_root = block.mut_body().transactions_root();
-        block.mut_header().set_transactions_root(transaction_root.to_vec());
+        block
+            .mut_header()
+            .set_transactions_root(transaction_root.to_vec());
         block.mut_header().set_proof(proof);
         block
     }
 
     pub fn pub_block(&self, block: &Block) {
-        let msg = factory::create_msg(submodules::CONSENSUS, topics::NEW_BLK, communication::MsgType::BLOCK, block.write_to_bytes().unwrap());
+        let msg = factory::create_msg(
+            submodules::CONSENSUS,
+            topics::NEW_BLK,
+            communication::MsgType::BLOCK,
+            block.write_to_bytes().unwrap(),
+        );
         trace!("publish block {:?}", block);
-        self.sender.send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap()));
+        self.sender
+            .send(("consensus.blk".to_string(), msg.write_to_bytes().unwrap()));
     }
 
     pub fn update_txpool(&mut self, txs: &[SignedTransaction]) {

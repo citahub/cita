@@ -19,7 +19,7 @@ use std::sync::Arc;
 use std::sync::mpsc;
 use util::RwLock;
 use worker::*;
-use ws::{Sender, CloseCode, Handler, Message, Handshake, Result, Factory};
+use ws::{CloseCode, Factory, Handler, Handshake, Message, Result, Sender};
 
 pub struct Connection {
     pub sender: Sender,
@@ -52,8 +52,14 @@ pub struct FactoryConnection {
 }
 
 impl FactoryConnection {
-    pub fn new(ws_senders: Arc<RwLock<Vec<Sender>>>, tx: mpsc::Sender<Message>) -> FactoryConnection {
-        FactoryConnection { ws_senders: ws_senders, tx: tx }
+    pub fn new(
+        ws_senders: Arc<RwLock<Vec<Sender>>>,
+        tx: mpsc::Sender<Message>,
+    ) -> FactoryConnection {
+        FactoryConnection {
+            ws_senders: ws_senders,
+            tx: tx,
+        }
     }
 }
 
@@ -63,6 +69,9 @@ impl Factory for FactoryConnection {
 
     fn connection_made(&mut self, out: Sender) -> Connection {
         self.ws_senders.write().push(out.clone());
-        Connection { sender: out, tx: self.tx.clone() }
+        Connection {
+            sender: out,
+            tx: self.tx.clone(),
+        }
     }
 }

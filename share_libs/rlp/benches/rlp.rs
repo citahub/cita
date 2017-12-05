@@ -13,7 +13,7 @@
 //! ```
 
 #![cfg_attr(test, feature(test))]
-
+#![rustfmt_skip]
 extern crate test;
 extern crate bigint;
 extern crate rlp;

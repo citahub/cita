@@ -44,9 +44,7 @@ impl<'a> Node<'a> {
             // if leaf, second item is a value (is_data())
             // if extension, second item is a node (either SHA3 to be looked up and
             // fed back into this function or inline RLP which can be fed back into this function).
-            Prototype::List(2) => {
-                Node::Leaf(r.at(0).data().to_vec(), r.at(1).data())
-            }
+            Prototype::List(2) => Node::Leaf(r.at(0).data().to_vec(), r.at(1).data()),
             // branch - first 16 are nodes, 17th is a value (or empty).
             Prototype::List(4) => {
                 let mut nodes = [&[] as &[u8]; 2];

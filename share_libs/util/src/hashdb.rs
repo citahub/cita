@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Database of byte-slices keyed to their Keccak hash.
+#![rustfmt_skip]
 
 use elastic_array::ElasticArray128;
 use hash::*;

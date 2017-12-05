@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![crate_name = "libraft"]
-#![crate_type="lib"]
+#![crate_type = "lib"]
 #![doc(html_logo_url = "https://raw.githubusercontent.com/Hoverbear/raft/master/raft.png")]
 #![doc(html_root_url = "https://hoverbear.github.io/raft/raft/")]
 
@@ -91,27 +91,27 @@
 
 #![allow(unused_extern_crates)]
 #![cfg_attr(test, feature(test))]
+extern crate bincode;
 extern crate bufstream;
 extern crate capnp;
 extern crate capnp_nonblock;
-extern crate mio;
-extern crate rand;
-extern crate uuid;
 extern crate libproto;
-extern crate protobuf;
-extern crate serde;
-extern crate serde_json;
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate serde_derive;
-extern crate bincode;
+extern crate mio;
+extern crate protobuf;
+extern crate rand;
 #[macro_use]
 extern crate scoped_log;
+extern crate serde;
 #[macro_use]
-extern crate wrapped_enum;
+extern crate serde_derive;
+extern crate serde_json;
 #[cfg(test)]
 extern crate test;
+extern crate uuid;
+#[macro_use]
+extern crate wrapped_enum;
 
 
 /// Prepares the environment testing. Should be called as the first line of every test with the
@@ -140,13 +140,13 @@ mod state;
 mod cmd;
 
 pub use client::Client;
-pub use cmd::{Command, encode, decode};
+pub use cmd::{decode, encode, Command};
 pub use persistent_log::Log;
 pub use server::NotifyMessage;
 pub use server::Server;
 pub use state_machine::StateMachine;
 
-use std::{io, net, ops, fmt};
+use std::{fmt, io, net, ops};
 
 use uuid::Uuid;
 
@@ -227,13 +227,21 @@ impl Into<u64> for Term {
 impl ops::Add<u64> for Term {
     type Output = Term;
     fn add(self, rhs: u64) -> Term {
-        Term(self.0.checked_add(rhs).expect("overflow while incrementing Term"))
+        Term(
+            self.0
+                .checked_add(rhs)
+                .expect("overflow while incrementing Term"),
+        )
     }
 }
 impl ops::Sub<u64> for Term {
     type Output = Term;
     fn sub(self, rhs: u64) -> Term {
-        Term(self.0.checked_sub(rhs).expect("underflow while decrementing Term"))
+        Term(
+            self.0
+                .checked_sub(rhs)
+                .expect("underflow while decrementing Term"),
+        )
     }
 }
 impl fmt::Display for Term {
@@ -263,20 +271,30 @@ impl Into<u64> for LogIndex {
 impl ops::Add<u64> for LogIndex {
     type Output = LogIndex;
     fn add(self, rhs: u64) -> LogIndex {
-        LogIndex(self.0.checked_add(rhs).expect("overflow while incrementing LogIndex"))
+        LogIndex(
+            self.0
+                .checked_add(rhs)
+                .expect("overflow while incrementing LogIndex"),
+        )
     }
 }
 impl ops::Sub<u64> for LogIndex {
     type Output = LogIndex;
     fn sub(self, rhs: u64) -> LogIndex {
-        LogIndex(self.0.checked_sub(rhs).expect("underflow while decrementing LogIndex"))
+        LogIndex(
+            self.0
+                .checked_sub(rhs)
+                .expect("underflow while decrementing LogIndex"),
+        )
     }
 }
 /// Find the offset between two log indices.
 impl ops::Sub for LogIndex {
     type Output = u64;
     fn sub(self, rhs: LogIndex) -> u64 {
-        self.0.checked_sub(rhs.0).expect("underflow while subtracting LogIndex")
+        self.0
+            .checked_sub(rhs.0)
+            .expect("underflow while subtracting LogIndex")
     }
 }
 impl fmt::Display for LogIndex {

@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+extern crate cita_crypto as crypto;
 extern crate libproto;
 extern crate util;
-extern crate cita_crypto as crypto;
 
 mod error;
 mod instrument;
@@ -43,7 +43,13 @@ pub trait Engine: Sync + Send {
 
     fn verify_block(&self, block: &Block) -> Result<(), EngineError>;
 
-    fn receive_new_transaction(&self, tx_req: &Request, tx_pub: Sender<(String, Vec<u8>)>, _origin: u32, from_broadcast: bool);
+    fn receive_new_transaction(
+        &self,
+        tx_req: &Request,
+        tx_pub: Sender<(String, Vec<u8>)>,
+        _origin: u32,
+        from_broadcast: bool,
+    );
 
     fn receive_new_block(&self, block: &Block, tx_pub: Sender<(String, Vec<u8>)>);
 
@@ -55,9 +61,17 @@ pub trait Engine: Sync + Send {
 
     fn new_messages(&self, tx_pub: Sender<(String, Vec<u8>)>);
 
-    fn handle_message(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError>;
+    fn handle_message(
+        &self,
+        _message: Vec<u8>,
+        tx_pub: Sender<(String, Vec<u8>)>,
+    ) -> Result<(), EngineError>;
 
-    fn handle_proposal(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError>;
+    fn handle_proposal(
+        &self,
+        _message: Vec<u8>,
+        tx_pub: Sender<(String, Vec<u8>)>,
+    ) -> Result<(), EngineError>;
 }
 
 #[test]

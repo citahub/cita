@@ -7,7 +7,7 @@
 // except according to those terms.
 
 //! Contains RLPs used for compression.
-
+#![rustfmt_skip]
 use compression::InvalidRlpSwapper;
 
 lazy_static! {

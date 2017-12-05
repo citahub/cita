@@ -16,8 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use rpctypes::log::Log;
-use types::receipt::{Receipt as EthReceipt, RichReceipt, LocalizedReceipt};
-use util::{H160, H256, Bloom, U256};
+use types::receipt::{LocalizedReceipt, Receipt as EthReceipt, RichReceipt};
+use util::{Bloom, H160, H256, U256};
 
 /// Receipt
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -113,16 +113,20 @@ impl From<EthReceipt> for Receipt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bincode::{serialize, deserialize, Infinite};
+    use bincode::{deserialize, serialize, Infinite};
     use serde_json;
-    use util::{H256 as Hash256, H2048 as Hash2048};
+    use util::{H2048 as Hash2048, H256 as Hash256};
 
     #[test]
     fn receipt_serialization() {
         let receipt = Receipt {
             transaction_hash: Some(Hash256::from(0).into()),
             transaction_index: Some(0.into()),
-            block_hash: Some("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5".parse().unwrap()),
+            block_hash: Some(
+                "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
+                    .parse()
+                    .unwrap(),
+            ),
             block_number: Some(0x4510c.into()),
             cumulative_gas_used: 0x20.into(),
             gas_used: Some(0x10.into()),
@@ -131,11 +135,19 @@ mod tests {
                 Log {
                     address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),
                     topics: vec![
-                        "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc".parse().unwrap(),
-                        "4861736852656700000000000000000000000000000000000000000000000000".parse().unwrap(),
+                        "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc"
+                            .parse()
+                            .unwrap(),
+                        "4861736852656700000000000000000000000000000000000000000000000000"
+                            .parse()
+                            .unwrap(),
                     ],
                     data: vec![].into(),
-                    block_hash: Some("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5".parse().unwrap()),
+                    block_hash: Some(
+                        "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
+                            .parse()
+                            .unwrap(),
+                    ),
                     block_number: Some(0x4510c.into()),
                     transaction_hash: Some(Hash256::from(0).into()),
                     transaction_index: Some(0.into()),
@@ -158,7 +170,11 @@ mod tests {
         let receipt = Receipt {
             transaction_hash: Some(Hash256::from(0).into()),
             transaction_index: Some(0.into()),
-            block_hash: Some("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5".parse().unwrap()),
+            block_hash: Some(
+                "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
+                    .parse()
+                    .unwrap(),
+            ),
             block_number: Some(0x4510c.into()),
             cumulative_gas_used: 0x20.into(),
             gas_used: Some(0x10.into()),
@@ -167,11 +183,19 @@ mod tests {
                 Log {
                     address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),
                     topics: vec![
-                        "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc".parse().unwrap(),
-                        "4861736852656700000000000000000000000000000000000000000000000000".parse().unwrap(),
+                        "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc"
+                            .parse()
+                            .unwrap(),
+                        "4861736852656700000000000000000000000000000000000000000000000000"
+                            .parse()
+                            .unwrap(),
                     ],
                     data: vec![].into(),
-                    block_hash: Some("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5".parse().unwrap()),
+                    block_hash: Some(
+                        "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
+                            .parse()
+                            .unwrap(),
+                    ),
                     block_number: Some(0x4510c.into()),
                     transaction_hash: Some(Hash256::from(0).into()),
                     transaction_index: Some(0.into()),

@@ -62,8 +62,17 @@ impl Genesis {
         }
     }
 
-    pub fn lazy_execute(&mut self, state_db: &StateDB, factories: &Factories) -> Result<(), String> {
-        let mut state = State::from_existing(state_db.boxed_clone(), *self.block.state_root(), U256::from(0), factories.clone()).expect("state db error");
+    pub fn lazy_execute(
+        &mut self,
+        state_db: &StateDB,
+        factories: &Factories,
+    ) -> Result<(), String> {
+        let mut state = State::from_existing(
+            state_db.boxed_clone(),
+            *self.block.state_root(),
+            U256::from(0),
+            factories.clone(),
+        ).expect("state db error");
         self.block.set_version(0);
         self.block.set_parent_hash(self.spec.prevhash);
         self.block.set_timestamp(self.spec.timestamp);
@@ -76,11 +85,18 @@ impl Genesis {
 
             state.new_contract(&address, U256::from(0));
             {
-                state.init_code(&address, clean_0x(&contract.code).from_hex().unwrap()).expect("init code fail");
+                state
+                    .init_code(&address, clean_0x(&contract.code).from_hex().unwrap())
+                    .expect("init code fail");
             }
             for (key, values) in contract.storage.clone() {
-                state.set_storage(&address, H256::from_any_str(key.as_ref()).unwrap(), H256::from_any_str(values.as_ref()).unwrap())
-                     .expect("init code set_storage fail");
+                state
+                    .set_storage(
+                        &address,
+                        H256::from_any_str(key.as_ref()).unwrap(),
+                        H256::from_any_str(values.as_ref()).unwrap(),
+                    )
+                    .expect("init code set_storage fail");
             }
         }
         state.commit().expect("state commit error");
@@ -89,8 +105,16 @@ impl Genesis {
             let address = Address::from_any_str(address.as_str()).unwrap();
             for (key, values) in &contract.storage {
                 let result = state.storage_at(&address, &H256::from_any_str(key.as_ref()).unwrap());
-                info!("address = {:?}, key = {:?}, result = {:?}", address, key, result);
-                assert_eq!(H256::from_any_str(values.as_ref()).unwrap(), result.expect("storage error"));
+                info!(
+                    "address = {:?}, key = {:?}, result = {:?}",
+                    address,
+                    key,
+                    result
+                );
+                assert_eq!(
+                    H256::from_any_str(values.as_ref()).unwrap(),
+                    result.expect("storage error")
+                );
             }
         }
 
@@ -111,7 +135,10 @@ impl Genesis {
         batch.write(db::COL_BODIES, &hash, self.block.body());
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
         batch.write(db::COL_EXTRA, &height, &hash);
-        state.db().journal_under(&mut batch, height, &hash).expect("DB commit failed");
+        state
+            .db()
+            .journal_under(&mut batch, height, &hash)
+            .expect("DB commit failed");
         db.write(batch)
     }
 }

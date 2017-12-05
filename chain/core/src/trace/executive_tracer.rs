@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Simple executive tracer.
+#![rustfmt_skip]
 
 use action_params::ActionParams;
 use trace::{Tracer, VMTracer, FlatTrace, TraceError};

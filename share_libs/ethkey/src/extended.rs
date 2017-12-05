@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Extended keys
+#![rustfmt_skip]
 
 pub use self::derivation::Error as DerivationError;
 use Public;

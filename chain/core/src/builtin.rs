@@ -13,7 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
-
+#![rustfmt_skip]
 #![allow(dead_code)]
 use cita_ed25519::{Signature as ED_Signature, Message as ED_Message};
 use cita_secp256k1::Signature;

@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use core::libchain::block::Block;
-use core::libchain::chain::{Chain, BlockInQueue};
+use core::libchain::chain::{BlockInQueue, Chain};
 use libproto::blockchain::Proof;
 use proof::TendermintProof;
 use std::sync::Arc;
@@ -31,7 +31,10 @@ pub struct BlockProcessor {
 
 impl BlockProcessor {
     pub fn new(chain: Arc<Chain>, ctx_pub: Sender<(String, Vec<u8>)>) -> Self {
-        BlockProcessor { chain: chain, ctx_pub: ctx_pub }
+        BlockProcessor {
+            chain: chain,
+            ctx_pub: ctx_pub,
+        }
     }
 
     pub fn broadcast_current_status(&self) {
@@ -49,7 +52,9 @@ impl BlockProcessor {
         }
         match block_in_queue {
             Some(BlockInQueue::ConsensusBlock(block, _)) => {
-                if self.chain.validate_height(block.number()) && self.chain.validate_hash(block.parent_hash()) {
+                if self.chain.validate_height(block.number())
+                    && self.chain.validate_hash(block.parent_hash())
+                {
                     self.chain.set_block(block, &self.ctx_pub);
                     self.chain.broadcast_status(&self.ctx_pub);
                     info!("set consensus block-{}", number);
@@ -76,9 +81,15 @@ impl BlockProcessor {
         let number = block.number();
         info!("set sync block-{}", number);
         let proof = TendermintProof::from(proto_proof);
-        let proof_height = if proof.height == ::std::usize::MAX { 0 } else { proof.height as u64 };
+        let proof_height = if proof.height == ::std::usize::MAX {
+            0
+        } else {
+            proof.height as u64
+        };
         let authorities = self.chain.nodes.read().clone();
-        if self.chain.validate_height(number) && self.chain.validate_hash(block.parent_hash()) && proof.check(proof_height as usize, &authorities) {
+        if self.chain.validate_height(number) && self.chain.validate_hash(block.parent_hash())
+            && proof.check(proof_height as usize, &authorities)
+        {
             self.chain.set_block(block, &self.ctx_pub);
             info!("set sync block-{} is finished", number);
             true

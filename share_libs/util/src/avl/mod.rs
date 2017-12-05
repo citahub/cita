@@ -19,7 +19,7 @@
 
 use H256;
 use hashable::HASH_NULL_RLP;
-use hashdb::{HashDB, DBValue};
+use hashdb::{DBValue, HashDB};
 use std::fmt;
 
 /// Export the standardmap module.
@@ -44,7 +44,7 @@ mod lookup;
 
 // pub use self::standardmap::{Alphabet, StandardMap, ValueMode};
 
-pub use self::avldb::{AVLDB, AVLDBIterator};
+pub use self::avldb::{AVLDBIterator, AVLDB};
 pub use self::avldbmut::AVLDBMut;
 pub use self::fatdb::{FatDB, FatDBIterator};
 pub use self::fatdbmut::FatDBMut;
@@ -295,7 +295,11 @@ impl AVLFactory {
     }
 
     /// Create new mutable instance of AVL and check for errors.
-    pub fn from_existing<'db>(&self, db: &'db mut HashDB, root: &'db mut H256) -> Result<Box<AVLMut + 'db>> {
+    pub fn from_existing<'db>(
+        &self,
+        db: &'db mut HashDB,
+        root: &'db mut H256,
+    ) -> Result<Box<AVLMut + 'db>> {
         match self.spec {
             AVLSpec::Generic => Ok(Box::new(AVLDBMut::from_existing(db, root)?)),
             AVLSpec::Secure => Ok(Box::new(SecAVLDBMut::from_existing(db, root)?)),

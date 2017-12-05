@@ -17,17 +17,17 @@
 
 #![feature(libc)]
 #![feature(unique)]
-extern crate libc;
 #[macro_use]
 extern crate lazy_static;
-extern crate util;
-extern crate rustc_serialize;
+extern crate libc;
 extern crate rlp;
+extern crate rustc_serialize;
 extern crate serde;
+extern crate util;
 
 use libc::c_int;
 use std::ptr::Unique;
-use util::{H256, H512, Address};
+use util::{Address, H256, H512};
 
 mod keypair;
 mod error;
@@ -60,8 +60,18 @@ extern "C" {
     //pub fn EC_GROUP_free(group: *mut EcGroup);
     pub fn sm2_generate_key(group: *const EcGroup, privkey: *mut u8, pubkey: *mut u8);
     pub fn sm2_pubkey_from_privkey(group: *const EcGroup, privkey: *const u8, pubkey: *mut u8);
-    pub fn sm2_sign(group: *const EcGroup, privkey: *const u8, message: *const u8, signature: *mut u8);
-    pub fn sm2_recover(group: *const EcGroup, signature: *const u8, message: *const u8, pubkey: *mut u8) -> c_int;
+    pub fn sm2_sign(
+        group: *const EcGroup,
+        privkey: *const u8,
+        message: *const u8,
+        signature: *mut u8,
+    );
+    pub fn sm2_recover(
+        group: *const EcGroup,
+        signature: *const u8,
+        message: *const u8,
+        pubkey: *mut u8,
+    ) -> c_int;
 }
 
 lazy_static! {

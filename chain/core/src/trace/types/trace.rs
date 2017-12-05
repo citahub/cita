@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Tracing datatypes.
+#![rustfmt_skip]
 
 use super::error::Error;
 

@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Transaction Execution environment.
+#![rustfmt_skip]
 
 use action_params::{ActionParams, ActionValue};
 use crossbeam;

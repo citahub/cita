@@ -57,7 +57,9 @@ fn main() {
         count = count + 1;
         if count == max {
             let sys_time = SystemTime::now();
-            let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+            let diff = sys_time
+                .duration_since(start)
+                .expect("SystemTime::duration_since failed");
             println!{"count {:?}, timer diff: {:?}", count, diff};
             thread::sleep(Duration::new(2, 0));
             break;

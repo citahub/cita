@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! DB backend wrapper for Account trie
-
+#![rustfmt_skip]
 use rlp::NULL_RLP;
 use std::collections::HashMap;
 use util::*;

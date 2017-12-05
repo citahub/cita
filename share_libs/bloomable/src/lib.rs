@@ -16,6 +16,10 @@
 
 //! Bloom operations.
 
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
+
+#![rustfmt_skip]
 extern crate bigint;
 
 use bigint::{H64, H160, H256, H512, H520, H2048};

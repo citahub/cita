@@ -16,7 +16,7 @@
 
 //! Transaction Execution environment.
 
-
+#![rustfmt_skip]
 ////////////////////////////////////////////////////////////////////////////////
 
 use action_params::{ActionParams, ActionValue};

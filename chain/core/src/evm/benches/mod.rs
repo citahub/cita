@@ -19,7 +19,7 @@
 //! ```bash
 //! multirust run nightly cargo bench
 //! ```
-
+#![rustfmt_skip]
 
 use action_params::ActionParams;
 use evm::{self, Factory, VMType};

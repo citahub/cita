@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Receipt
-
+#![rustfmt_skip]
 
 use BlockNumber;
 use log_entry::{LogBloom, LogEntry, LocalizedLogEntry};

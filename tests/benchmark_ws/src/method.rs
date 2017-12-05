@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use jsonrpc_types::{RpcRequest, Params, Id, Error};
+use jsonrpc_types::{Error, Id, Params, RpcRequest};
 use jsonrpc_types::method::method;
 use jsonrpc_types::request::Version;
 use jsonrpc_types::response::ResultBody;
@@ -43,9 +43,9 @@ where
             params: Some(params),
         };
         let _ = serde_json::to_string(&rpc).map(|data| {
-                                                    self.send(data);
-                                                    self.insert(request_id, call_back);
-                                                });
+            self.send(data);
+            self.insert(request_id, call_back);
+        });
     }
 
     fn send_transaction(&mut self, params: Params, call_back: F) {

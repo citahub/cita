@@ -27,7 +27,7 @@ pub use self::spec::*;
 pub use self::tendermint::*;
 pub use self::voteset::*;
 
-pub use libproto::blockchain::{BlockHeader, Block, Transaction, BlockBody, Proof, Status};
+pub use libproto::blockchain::{Block, BlockBody, BlockHeader, Proof, Status, Transaction};
 
 use util::Address;
 use util::H256;

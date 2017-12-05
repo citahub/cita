@@ -18,18 +18,22 @@
 use super::Engine;
 use libproto::*;
 use std::sync::Arc;
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::{Receiver, Sender};
 use threadpool::*;
 
 pub fn receive(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id: u32, msg: Vec<u8>) {
     let tx = tx.clone();
     pool.execute(move || {
-                     let (cmd_id, origin, content) = parse_msg(msg.as_slice());
-                     tx.send((id, cmd_id, origin, content)).unwrap();
-                 });
+        let (cmd_id, origin, content) = parse_msg(msg.as_slice());
+        tx.send((id, cmd_id, origin, content)).unwrap();
+    });
 }
 
-pub fn process(engine: Arc<Engine>, rx: &Receiver<(u32, u32, u32, MsgClass)>, tx_pub: Sender<(String, Vec<u8>)>) {
+pub fn process(
+    engine: Arc<Engine>,
+    rx: &Receiver<(u32, u32, u32, MsgClass)>,
+    tx_pub: Sender<(String, Vec<u8>)>,
+) {
     let (id, cmd_id, _origin, content_ext) = rx.recv().unwrap();
     let from_broadcast = id == submodules::NET;
     if from_broadcast {

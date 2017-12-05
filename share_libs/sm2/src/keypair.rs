@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{PrivKey, PubKey, Address, GROUP, Error, sm2_generate_key, sm2_pubkey_from_privkey, PUBKEY_BYTES_LEN, PRIVKEY_BYTES_LEN};
+use super::{Address, Error, PrivKey, PubKey, sm2_generate_key, sm2_pubkey_from_privkey, GROUP,
+            PRIVKEY_BYTES_LEN, PUBKEY_BYTES_LEN};
 use rustc_serialize::hex::ToHex;
 use std::fmt;
 use util::H160 as Hash160;
@@ -48,12 +49,16 @@ impl CreateKey for KeyPair {
     fn from_privkey(privkey: Self::PrivKey) -> Result<Self, Self::Error> {
         let mut pubkey: [u8; PUBKEY_BYTES_LEN] = [0; PUBKEY_BYTES_LEN];
         unsafe {
-            sm2_pubkey_from_privkey(GROUP.as_ptr(), privkey.as_ref().as_ptr(), pubkey.as_mut_ptr());
+            sm2_pubkey_from_privkey(
+                GROUP.as_ptr(),
+                privkey.as_ref().as_ptr(),
+                pubkey.as_mut_ptr(),
+            );
         }
         Ok(KeyPair {
-               privkey: privkey,
-               pubkey: PubKey::from(pubkey),
-           })
+            privkey: privkey,
+            pubkey: PubKey::from(pubkey),
+        })
     }
 
     fn gen_keypair() -> Self {

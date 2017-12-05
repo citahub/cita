@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
-use serde::de::{Visitor, Error};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{Error, Visitor};
 use std::fmt;
 use types::ids::BlockId;
 use util::clean_0x;
@@ -24,10 +24,8 @@ use util::clean_0x;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Hash, Eq)]
 pub enum BlockTag {
-    #[serde(rename = "latest")]
-    Latest,
-    #[serde(rename = "earliest")]
-    Earliest,
+    #[serde(rename = "latest")] Latest,
+    #[serde(rename = "earliest")] Earliest,
 }
 
 /// Represents rpc api block height param.
@@ -87,7 +85,6 @@ impl<'a> Visitor<'a> for BlockNumberVisitor {
                 u64::from_str_radix(&val[0..], 16)
                     .map(BlockNumber::Height)
                     .map_err(|_| Error::custom("invalid hex block number"))
-
             }
         }
     }
@@ -127,7 +124,10 @@ mod tests {
     fn lower_hex_number_deserialization() {
         let s3 = r#"["0xA", "latest"]"#;
         let deserialized3: Vec<BlockNumber> = serde_json::from_str(s3).unwrap();
-        assert_eq!(deserialized3, vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)])
+        assert_eq!(
+            deserialized3,
+            vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]
+        )
     }
 
     #[test]
@@ -141,45 +141,66 @@ mod tests {
     fn hex_number_deserialization() {
         let s3 = r#"["10", "latest"]"#;
         let deserialized3: Vec<BlockNumber> = serde_json::from_str(s3).unwrap();
-        assert_eq!(deserialized3, vec![BlockNumber::Height(16), BlockNumber::Tag(BlockTag::Latest)])
+        assert_eq!(
+            deserialized3,
+            vec![BlockNumber::Height(16), BlockNumber::Tag(BlockTag::Latest)]
+        )
     }
 
     #[test]
     fn hex_number_serialization() {
         let right = "[\"0x10\",\"latest\"]";
-        let left = serde_json::to_string(&vec![BlockNumber::Height(16), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        let left = serde_json::to_string(&vec![
+            BlockNumber::Height(16),
+            BlockNumber::Tag(BlockTag::Latest),
+        ]).unwrap();
         assert_eq!(left, right)
     }
 
     #[test]
     fn decimal_number_serialization() {
         let right = "[10,\"latest\"]";
-        let left = serde_json::to_string(&vec![BlockNumber::Height(16), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        let left = serde_json::to_string(&vec![
+            BlockNumber::Height(16),
+            BlockNumber::Tag(BlockTag::Latest),
+        ]).unwrap();
         assert_ne!(left, right)
     }
 
     #[test]
     fn decimal_hex_number_serialization() {
         let right = "[10,\"latest\"]";
-        let left = serde_json::to_string(&vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        let left = serde_json::to_string(&vec![
+            BlockNumber::Height(10),
+            BlockNumber::Tag(BlockTag::Latest),
+        ]).unwrap();
         assert_ne!(left, right)
     }
 
     #[test]
     fn decimal_into_number_serialization() {
         let right = "[0xa,\"latest\"]";
-        let left = serde_json::to_string(&vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        let left = serde_json::to_string(&vec![
+            BlockNumber::Height(10),
+            BlockNumber::Tag(BlockTag::Latest),
+        ]).unwrap();
         assert_ne!(left, right)
     }
 
     #[test]
     fn decimal_into_hex_serialization() {
         let right = "[\"0xa\",\"latest\"]";
-        let left = serde_json::to_string(&vec![BlockNumber::Height(10), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        let left = serde_json::to_string(&vec![
+            BlockNumber::Height(10),
+            BlockNumber::Tag(BlockTag::Latest),
+        ]).unwrap();
         assert_eq!(left, right);
 
         let right = "[\"0x10\",\"latest\"]";
-        let left = serde_json::to_string(&vec![BlockNumber::Height(16), BlockNumber::Tag(BlockTag::Latest)]).unwrap();
+        let left = serde_json::to_string(&vec![
+            BlockNumber::Height(16),
+            BlockNumber::Tag(BlockTag::Latest),
+        ]).unwrap();
         assert_eq!(left, right)
     }
 }

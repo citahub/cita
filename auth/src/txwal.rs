@@ -17,12 +17,12 @@
 
 use chain_core::db;
 use libproto::blockchain::SignedTransaction;
-use protobuf::core::{Message, parse_from_bytes};
+use protobuf::core::{parse_from_bytes, Message};
 use std::sync::Arc;
 use tx_pool::Pool;
 use util::H256;
 use util::datapath::DataPath;
-use util::kvdb::{DatabaseConfig, Database, KeyValueDB};
+use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
 
 #[derive(Clone)]
 pub struct Txwal {

@@ -15,26 +15,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+extern crate authority_manage;
+extern crate cita_crypto as crypto;
+extern crate clap;
+extern crate cpuprofiler;
+extern crate dotenv;
+extern crate engine;
+extern crate engine_json;
+extern crate error;
 extern crate libproto;
-extern crate util;
-extern crate threadpool;
-extern crate rustc_serialize;
-extern crate protobuf;
 #[macro_use]
 extern crate log;
-extern crate clap;
-extern crate tx_pool;
-extern crate cita_crypto as crypto;
-extern crate proof;
-extern crate pubsub;
-extern crate engine_json;
-extern crate engine;
-extern crate cpuprofiler;
 extern crate logger;
-extern crate dotenv;
+extern crate proof;
+extern crate protobuf;
+extern crate pubsub;
+extern crate rustc_serialize;
 extern crate serde_json;
-extern crate authority_manage;
-extern crate error;
+extern crate threadpool;
+extern crate tx_pool;
+extern crate util;
 
 pub mod core;
 
@@ -88,61 +88,76 @@ fn main() {
     }
     if prof_start != 0 && prof_duration != 0 {
         thread::spawn(move || {
-                          thread::sleep(Duration::new(prof_start, 0));
-                          println!("******Profiling Start******");
-                          PROFILER.lock().unwrap().start("./consensus_poa.profile").expect("Couldn't start");
-                          thread::sleep(Duration::new(prof_duration, 0));
-                          println!("******Profiling Stop******");
-                          PROFILER.lock().unwrap().stop().unwrap();
-                      });
+            thread::sleep(Duration::new(prof_start, 0));
+            println!("******Profiling Start******");
+            PROFILER
+                .lock()
+                .unwrap()
+                .start("./consensus_poa.profile")
+                .expect("Couldn't start");
+            thread::sleep(Duration::new(prof_duration, 0));
+            println!("******Profiling Stop******");
+            PROFILER.lock().unwrap().stop().unwrap();
+        });
     }
 
     let threadpool = threadpool::ThreadPool::new(2);
     let (tx, rx) = channel();
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    start_pubsub("consensus", vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.richstatus"], tx_sub, rx_pub);
-    thread::spawn(move || loop {
-                      let (key, body) = rx_sub.recv().unwrap();
-                      let tx = tx.clone();
-                      handler::receive(&threadpool, &tx, key_to_id(&key), body);
-                  });
+    start_pubsub(
+        "consensus",
+        vec!["net.tx", "jsonrpc.new_tx", "net.msg", "chain.richstatus"],
+        tx_sub,
+        rx_pub,
+    );
+    thread::spawn(move || {
+        loop {
+            let (key, body) = rx_sub.recv().unwrap();
+            let tx = tx.clone();
+            handler::receive(&threadpool, &tx, key_to_id(&key), body);
+        }
+    });
     let spec = Spec::new_test_round(config_path);
     let engine = spec.engine;
     let ready = spec.rx;
 
     let process = engine.clone();
     let tx_pub1 = tx_pub.clone();
-    thread::spawn(move || loop {
-                      let process = process.clone();
-                      handler::process(process, &rx, tx_pub1.clone());
-                  });
+    thread::spawn(move || {
+        loop {
+            let process = process.clone();
+            handler::process(process, &rx, tx_pub1.clone());
+        }
+    });
 
     let seal = engine.clone();
     let dur = engine.duration();
     let mut old_height = 0;
     let mut new_height = 0;
     let tx_pub = tx_pub.clone();
-    thread::spawn(move || loop {
-                      let seal = seal.clone();
-                      trace!("seal worker lock!");
-                      loop {
-                          new_height = ready.recv().unwrap();
-                          if new_height > old_height {
-                              old_height = new_height;
-                              break;
-                          }
-                      }
-                      trace!("seal worker go {}!!!", new_height);
-                      let now = Instant::now();
-                      trace!("seal worker ready!");
-                      handler::seal(seal, tx_pub.clone());
-                      let elapsed = now.elapsed();
-                      if let Some(dur1) = dur.checked_sub(elapsed) {
-                          trace!("seal worker sleep !!!!!{:?}", dur1);
-                          thread::sleep(dur1);
-                      }
-                  });
+    thread::spawn(move || {
+        loop {
+            let seal = seal.clone();
+            trace!("seal worker lock!");
+            loop {
+                new_height = ready.recv().unwrap();
+                if new_height > old_height {
+                    old_height = new_height;
+                    break;
+                }
+            }
+            trace!("seal worker go {}!!!", new_height);
+            let now = Instant::now();
+            trace!("seal worker ready!");
+            handler::seal(seal, tx_pub.clone());
+            let elapsed = now.elapsed();
+            if let Some(dur1) = dur.checked_sub(elapsed) {
+                trace!("seal worker sleep !!!!!{:?}", dur1);
+                thread::sleep(dur1);
+            }
+        }
+    });
 
     loop {
         thread::sleep(Duration::from_millis(10000));

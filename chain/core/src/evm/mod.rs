@@ -15,7 +15,9 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Ethereum virtual machine.
-
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
+#![rustfmt_skip]
 pub mod ext;
 pub mod evm;
 pub mod interpreter;

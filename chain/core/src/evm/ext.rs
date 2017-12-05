@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Interface for Evm externalities.
+#![rustfmt_skip]
 
 use env_info::*;
 use evm::{self, Schedule};

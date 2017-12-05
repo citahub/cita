@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Traces import request.
+#![rustfmt_skip]
 
 use header::BlockNumber;
 use trace::FlatBlockTraces;

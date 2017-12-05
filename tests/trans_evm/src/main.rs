@@ -16,18 +16,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #![allow(unused_extern_crates)]
 extern crate cita_crypto as crypto;
+extern crate hyper;
+extern crate jsonrpc_types;
 extern crate libproto;
 extern crate protobuf;
-extern crate util;
-extern crate serde;
-extern crate hyper;
-extern crate serde_json;
-extern crate jsonrpc_types;
 extern crate rustc_hex;
+extern crate serde;
+extern crate serde_json;
+extern crate util;
 
+extern crate clap;
 #[macro_use]
 extern crate serde_derive;
-extern crate clap;
 
 mod core;
 
@@ -37,7 +37,6 @@ use core::send_trans::Sendtx;
 //use std::sync::mpsc;
 
 fn main() {
-
     let matches = App::new("trans_evm")
         .version("0.1")
         .author("Cryptape")

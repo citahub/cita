@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::fs::{File, read_dir, OpenOptions, DirBuilder};
+use std::fs::{read_dir, DirBuilder, File, OpenOptions};
 use std::io;
-use std::io::{Write, Read, Seek};
+use std::io::{Read, Seek, Write};
 use std::mem::transmute;
 //use std::path::{PathBuf, Path};
 use std::path::Path;
@@ -40,8 +40,15 @@ impl Wal {
 
         let fpath = dir.to_string() + "/authorities_old";
         let big_path = Path::new(&*fpath).to_path_buf();
-        let fs = OpenOptions::new().read(true).create(true).write(true).open(big_path)?;
-        Ok(Wal { fs: fs, dir: dir.to_string() })
+        let fs = OpenOptions::new()
+            .read(true)
+            .create(true)
+            .write(true)
+            .open(big_path)?;
+        Ok(Wal {
+            fs: fs,
+            dir: dir.to_string(),
+        })
     }
 
     pub fn save(&mut self, mtype: u8, msg: &Vec<u8>) -> io::Result<usize> {
@@ -75,11 +82,15 @@ impl Wal {
         }
         let mut index = 0;
         loop {
-
             if index + 5 > fsize {
                 break;
             }
-            let hd: [u8; 4] = [vec_buf[index], vec_buf[index + 1], vec_buf[index + 2], vec_buf[index + 3]];
+            let hd: [u8; 4] = [
+                vec_buf[index],
+                vec_buf[index + 1],
+                vec_buf[index + 2],
+                vec_buf[index + 3],
+            ];
             let tmp: u32 = unsafe { transmute::<[u8; 4], u32>(hd) };
             let bodylen = tmp as usize;
             let mtype = vec_buf[index + 4];

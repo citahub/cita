@@ -48,7 +48,12 @@ fn parse_addr(addr: &str) -> SocketAddr {
 }
 
 /// Creates a Raft server using the specified ID from the list of nodes.
-pub fn server(args: &Args) -> (Server<Store, HashmapStateMachine>, EventLoop<Server<Store, HashmapStateMachine>>) {
+pub fn server(
+    args: &Args,
+) -> (
+    Server<Store, HashmapStateMachine>,
+    EventLoop<Server<Store, HashmapStateMachine>>,
+) {
     // Creating a raft server requires several things:
 
     // A persistent log implementation, which manages the persistent, replicated log...
@@ -65,10 +70,11 @@ pub fn server(args: &Args) -> (Server<Store, HashmapStateMachine>, EventLoop<Ser
         node_id.push(i as u64 + 1);
     }
     // ...  And a list of peers.
-    let mut peers = node_id.iter()
-                           .zip(args.arg_node_address.iter())
-                           .map(|(&id, addr)| (ServerId::from(id), parse_addr(&addr)))
-                           .collect::<HashMap<_, _>>();
+    let mut peers = node_id
+        .iter()
+        .zip(args.arg_node_address.iter())
+        .map(|(&id, addr)| (ServerId::from(id), parse_addr(&addr)))
+        .collect::<HashMap<_, _>>();
     println!("peers:{:?}", peers);
 
     // The Raft Server will return an error if its ID is inside of its peer set. Don't do that.

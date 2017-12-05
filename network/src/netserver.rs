@@ -23,7 +23,7 @@ use std::io;
 use std::net::SocketAddr;
 use std::sync::mpsc::Sender;
 use tokio_proto::TcpServer;
-use tokio_service::{Service, NewService};
+use tokio_service::{NewService, Service};
 
 #[derive(Clone)]
 pub struct NetServer {
@@ -57,7 +57,9 @@ impl NewService for NetServer {
 
 impl NetServer {
     pub fn new(net_sender: Sender<(Source, CitaRequest)>) -> NetServer {
-        NetServer { net_sender: net_sender }
+        NetServer {
+            net_sender: net_sender,
+        }
     }
 
     pub fn server(self, addr: SocketAddr) {

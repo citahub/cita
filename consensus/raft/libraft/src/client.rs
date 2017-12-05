@@ -144,7 +144,9 @@ impl Client {
                         Ok(command_response::Which::NotLeader(leader)) => {
                             scoped_debug!("received response NotLeader");
                             let leader_str = try!(leader);
-                            if !self.cluster.contains(&try!(SocketAddr::from_str(leader_str))) {
+                            if !self.cluster
+                                .contains(&try!(SocketAddr::from_str(leader_str)))
+                            {
                                 scoped_debug!("cluster violation detected");
                                 return Err(RaftError::ClusterViolation.into()); // Exit the function.
                             }
@@ -175,14 +177,14 @@ impl fmt::Debug for Client {
 mod tests {
     extern crate logger;
 
-    use {Client, messages, Result};
+    use {messages, Client, Result};
     use bufstream::BufStream;
     use capnp::message::ReaderOptions;
     use capnp::serialize;
-    use messages_capnp::{connection_preamble, client_request};
+    use messages_capnp::{client_request, connection_preamble};
     use std::collections::HashSet;
     use std::io::Write;
-    use std::net::{TcpStream, TcpListener};
+    use std::net::{TcpListener, TcpStream};
     use std::thread;
 
     use uuid::Uuid;

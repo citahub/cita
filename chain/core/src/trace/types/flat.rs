@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Flat trace module
+#![rustfmt_skip]
 
 use super::trace::{Action, Res};
 use basic_types::LogBloom;

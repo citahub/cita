@@ -59,7 +59,6 @@ pub struct Sendtx {
 #[allow(dead_code, unused_variables, unused_assignments, non_snake_case, unused_mut)]
 impl Sendtx {
     pub fn new(param: &Param) -> Self {
-
         //let (sync_send, sync_recv) = mpsc::channel();
         let totaltx = param.txnum * param.threads;
         let trans = Sendtx {
@@ -76,7 +75,6 @@ impl Sendtx {
     }
 
     pub fn generate_primacron(&self) -> Result<KeyPair, Error> {
-
         let path = Path::new(&self.pvfile);
         let mut file = match File::open(&path) {
             Ok(file) => file,
@@ -97,11 +95,13 @@ impl Sendtx {
     }
 
     pub fn send_data(&self, url: String, method: Methods) -> Result<Response, i32> {
-
         let client = Client::new();
         let data = Trans::generate_tx_data(method);
-        if let Ok(res) = client.post(&url).body(&data).send() { Ok(res) } else { Err(-1) }
-
+        if let Ok(res) = client.post(&url).body(&data).send() {
+            Ok(res)
+        } else {
+            Err(-1)
+        }
     }
 
     pub fn parse_response(res: &mut Response) -> (String, bool) {
@@ -110,15 +110,17 @@ impl Sendtx {
         if let Ok(len) = (*res).read_to_string(&mut buf) {
             buf.truncate(len);
             if let Ok(deserialized) = serde_json::from_str(&buf) {
-
                 let deserialized: RpcSuccess = deserialized;
                 ret = match deserialized.result {
-
                     ResultBody::BlockNumber(hei) => (format!("{}", hei), true),
                     ResultBody::Transaction(RpcTransaction) => {
                         //let transaction = RpcTransaction.transaction;
                         let content = RpcTransaction.content;
-                        if !content.vec().is_empty() { (String::new(), true) } else { (String::new(), false) }
+                        if !content.vec().is_empty() {
+                            (String::new(), true)
+                        } else {
+                            (String::new(), false)
+                        }
                     }
 
                     ResultBody::FullBlock(full_block) => {
@@ -138,17 +140,13 @@ impl Sendtx {
                         }
                     }
 
-                    ResultBody::Receipt(Receipt) => {
-
-                        match Receipt.contract_address {
-                            Some(contract_address) => (format!("{:?}", contract_address), true),
-                            None => (String::new(), false),
-                        }
-                    }
+                    ResultBody::Receipt(Receipt) => match Receipt.contract_address {
+                        Some(contract_address) => (format!("{:?}", contract_address), true),
+                        None => (String::new(), false),
+                    },
 
                     _ => (String::new(), false),
                 }
-
             } else {
                 println!("jsonrpc response: {:?}", buf);
                 ret = (String::new(), false);
@@ -158,8 +156,13 @@ impl Sendtx {
     }
 
 
-    pub fn send_tx(&self, action: Action, sync_send: mpsc::Sender<(u64, u64)>, send_h: mpsc::Sender<u64>, sender: String) {
-
+    pub fn send_tx(
+        &self,
+        action: Action,
+        sync_send: mpsc::Sender<(u64, u64)>,
+        send_h: mpsc::Sender<u64>,
+        sender: String,
+    ) {
         let mut sucess = 0;
         let mut fail = 0;
         let v_url = self.get_url();
@@ -172,16 +175,12 @@ impl Sendtx {
             let frompv = keypair.privkey();
             let curh = self.get_height(url.clone());
             let tx = match action {
-                Action::Create => {
-                    Trans::generate_tx(&self.code, sender.clone(), frompv, curh)
-                }
+                Action::Create => Trans::generate_tx(&self.code, sender.clone(), frompv, curh),
                 Action::Call => {
                     //读取合约地址
                     Trans::generate_tx(&self.code, sender.clone(), &frompv, curh)
                 }
-                Action::Store => {
-                    Trans::generate_tx(&self.code, sender.clone(), frompv, curh)
-                }
+                Action::Store => Trans::generate_tx(&self.code, sender.clone(), frompv, curh),
             };
             {
                 let mut firsttx = self.first.lock().unwrap();
@@ -247,7 +246,6 @@ impl Sendtx {
     }
 
     pub fn get_txnum_by_height(&self, url: String, h: u64) -> i32 {
-
         let mut num = -1;
 
         if let Ok(mut res) = self.send_data(url.clone(), Methods::Blockbyheiht(h)) {
@@ -265,7 +263,6 @@ impl Sendtx {
     }
 
     pub fn get_contract_address(&self) -> String {
-
         let mut address = "".to_string();
         let v_url = self.get_url();
 
@@ -299,8 +296,12 @@ impl Sendtx {
 
     //创建合约线程
 
-    pub fn dispatch_create_contracts_thd(&self, sync_send: mpsc::Sender<(u64, u64)>, send_h: mpsc::Sender<u64>, action: Action) {
-
+    pub fn dispatch_create_contracts_thd(
+        &self,
+        sync_send: mpsc::Sender<(u64, u64)>,
+        send_h: mpsc::Sender<u64>,
+        action: Action,
+    ) {
         let sender = match action {
             Action::Create => "".to_string(),
             Action::Store => "ffffffffffffffffffffffffffffffffffffffff".to_string(),
@@ -314,16 +315,19 @@ impl Sendtx {
             let send_h = send_h.clone();
             let action = action.clone();
             let sender = sender.clone();
-            let _ = thread::Builder::new()
-                .name(threadname)
-                .spawn(move || { t.send_tx(action, sync_send, send_h, sender); });
+            let _ = thread::Builder::new().name(threadname).spawn(move || {
+                t.send_tx(action, sync_send, send_h, sender);
+            });
         }
     }
 
 
     //执行合约的交易线程
-    pub fn dispatch_send_thd(&self, sync_send: mpsc::Sender<(u64, u64)>, send_h: mpsc::Sender<u64>) {
-
+    pub fn dispatch_send_thd(
+        &self,
+        sync_send: mpsc::Sender<(u64, u64)>,
+        send_h: mpsc::Sender<u64>,
+    ) {
         //获取合约地址
         let sender = self.get_contract_address();
 
@@ -335,9 +339,9 @@ impl Sendtx {
             let sync_send = sync_send.clone();
             let send_h = send_h.clone();
             let sender = sender.clone();
-            let _ = thread::Builder::new()
-                .name(threadname)
-                .spawn(move || { t.send_tx(Action::Call, sync_send, send_h, sender); });
+            let _ = thread::Builder::new().name(threadname).spawn(move || {
+                t.send_tx(Action::Call, sync_send, send_h, sender);
+            });
         }
     }
 
@@ -349,63 +353,73 @@ impl Sendtx {
         let url_num = v_url.len();
         let mut pos = 0;
         let mut url = v_url[pos].clone();
-        let _ = thread::Builder::new().name("analysistransinfo".into()).spawn(move || {
-            let mut flag = 0;
-            let mut txnum = 0;
-            let mut starth = 0;
-            let mut endh = 0;
-            let mut sys_time = time::SystemTime::now();
-            let cl = s.clone();
-            loop {
+        let _ = thread::Builder::new()
+            .name("analysistransinfo".into())
+            .spawn(move || {
+                let mut flag = 0;
+                let mut txnum = 0;
+                let mut starth = 0;
+                let mut endh = 0;
+                let mut sys_time = time::SystemTime::now();
+                let cl = s.clone();
+                loop {
+                    match endh {
+                        0 => {
+                            //endh = cl.get_height(url.clone());
+                            let h = recvh.recv_timeout(time::Duration::new(0, 0));
 
-                match endh {
-                    0 => {
-                        //endh = cl.get_height(url.clone());
-                        let h = recvh.recv_timeout(time::Duration::new(0, 0));
-
-                        if h.is_ok() {
-                            endh = h.unwrap();
-                            println!("================== {}", endh);
-                        }
-                        sys_time = time::SystemTime::now();
-                    }
-                    _ => {
-                        let blocknum = cl.get_txnum_by_height(url.clone(), endh);
-                        if blocknum >= 0 {
-                            if blocknum > 0 && starth == 0 {
-                                starth = endh;
+                            if h.is_ok() {
+                                endh = h.unwrap();
+                                println!("================== {}", endh);
                             }
-                            endh = endh + 1;
-                            txnum = txnum + blocknum;
-                            println!("current tx num: {}, use time:{}s", txnum, sys_time.elapsed().unwrap().as_secs());
-                        } else if blocknum == -2 {
-                            pos += 1;
+                            sys_time = time::SystemTime::now();
+                        }
+                        _ => {
+                            let blocknum = cl.get_txnum_by_height(url.clone(), endh);
+                            if blocknum >= 0 {
+                                if blocknum > 0 && starth == 0 {
+                                    starth = endh;
+                                }
+                                endh = endh + 1;
+                                txnum = txnum + blocknum;
+                                println!(
+                                    "current tx num: {}, use time:{}s",
+                                    txnum,
+                                    sys_time.elapsed().unwrap().as_secs()
+                                );
+                            } else if blocknum == -2 {
+                                pos += 1;
+                            }
                         }
                     }
-                }
 
-                match pos {
-                    x if x < url_num => url = v_url[pos].clone(),
-                    _ => panic!("connect jsonrpc fail"),
-                }
-
-                let notify = recv.recv_timeout(time::Duration::new(0, 0));
-                if notify.is_ok() {
-                    sucess = notify.unwrap().0;
-                    fail = notify.unwrap().1;
-                }
-
-                if (sucess + fail) >= s.totaltx as u64 && txnum as u64 >= sucess {
-                    unsafe {
-                        EXIT = true;
+                    match pos {
+                        x if x < url_num => url = v_url[pos].clone(),
+                        _ => panic!("connect jsonrpc fail"),
                     }
-                    break;
-                }
-                thread::sleep(time::Duration::new(0, 100));
-            }
-            println!("send tx num:{}, start h:{}, end h:{}, Total time:{}s", txnum, starth, endh, sys_time.elapsed().unwrap().as_secs());
-        });
 
+                    let notify = recv.recv_timeout(time::Duration::new(0, 0));
+                    if notify.is_ok() {
+                        sucess = notify.unwrap().0;
+                        fail = notify.unwrap().1;
+                    }
+
+                    if (sucess + fail) >= s.totaltx as u64 && txnum as u64 >= sucess {
+                        unsafe {
+                            EXIT = true;
+                        }
+                        break;
+                    }
+                    thread::sleep(time::Duration::new(0, 100));
+                }
+                println!(
+                    "send tx num:{}, start h:{}, end h:{}, Total time:{}s",
+                    txnum,
+                    starth,
+                    endh,
+                    sys_time.elapsed().unwrap().as_secs()
+                );
+            });
     }
 
     pub fn get_url(&self) -> Vec<String> {
@@ -419,7 +433,6 @@ impl Sendtx {
     }
 
     pub fn start(&self, category: u8) {
-
         let (sync_send, sync_recv) = mpsc::channel();
         let (send_h, recv_h) = mpsc::channel();
         let (send, recv) = mpsc::channel();
@@ -436,12 +449,10 @@ impl Sendtx {
         //发送完成输出完成的总数
         //jsonrpc返回成功的数量==入块的成功数退出循环
         Self::wait(self.totaltx, sync_recv, send);
-
     }
 
 
     fn wait(totaltx: u64, sync_recv: mpsc::Receiver<(u64, u64)>, send: mpsc::Sender<(u64, u64)>) {
-
         let mut sucess = 0;
         let mut fail = 0;
         let sys_time = time::SystemTime::now();
@@ -453,7 +464,10 @@ impl Sendtx {
                 fail += notify.unwrap().1;
                 if (sucess + fail) >= totaltx {
                     send.send((sucess, fail)).unwrap();
-                    println!(" jsonrpc use time:{}s", sys_time.elapsed().unwrap().as_secs());
+                    println!(
+                        " jsonrpc use time:{}s",
+                        sys_time.elapsed().unwrap().as_secs()
+                    );
                     println!("write successfully.[{}]", sucess);
                 }
             }

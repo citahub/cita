@@ -55,8 +55,13 @@
 //! ```
 
 //TODO: use Poll from mio
+// skip fmt
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
+
 #![allow(deprecated)]
 
+#![rustfmt_skip]
 extern crate mio;
 #[macro_use]
 extern crate log as rlog;
