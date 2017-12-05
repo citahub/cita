@@ -1,7 +1,7 @@
 [package]
 name = "pubsub_kafka"
 version = "0.1.0"
-authors = ["lycbitbucket <liuyucheng@cryptape.com>"]
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies.rdkafka]
 git = "https://github.com/fede1024/rust-rdkafka.git"

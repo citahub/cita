@@ -1,7 +1,7 @@
 [package]
 name = "trans_evm"
 version = "0.1.0"
-authors = ["wz <wangzhang@cryptape.com>"]
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies]
 serde = "1.0"
@@ -17,4 +17,3 @@ hyper =  "0.10.7"
 logger = { path = "../../share_libs/logger" }
 jsonrpc_types = { path = "../../jsonrpc/types" }
 rustc-hex = "1.0"
-

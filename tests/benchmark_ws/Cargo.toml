@@ -1,7 +1,7 @@
 [package]
 name = "benchmark_ws"
 version = "0.1.0"
-authors = ["suyanlong <592938410@qq.com>"]
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies]
 ws = "0.*"

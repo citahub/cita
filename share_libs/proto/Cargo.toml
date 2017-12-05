@@ -2,7 +2,7 @@
 description = "proto"
 name = "libproto"
 version = "0.6.0"
-authors = ["gguoss"]
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies]
 protobuf = { version = "^1.0.0"}
