@@ -144,8 +144,7 @@ fn main() {
         let http_config = config.http_config.clone();
         let sender_mq_http = tx_relay.clone();
         thread::spawn(move || {
-            let url =
-                http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
+            let url = http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
             let arc_tx = Arc::new(Mutex::new(sender_mq_http));
             info!("Http Listening on {}", url);
             let _ = Server::http(url).unwrap().handle_threads(
@@ -164,8 +163,7 @@ fn main() {
     if config.ws_config.enable {
         let ws_config = config.ws_config.clone();
         thread::spawn(move || {
-            let url =
-                ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
+            let url = ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
             //let factory = WsFactory::new(ws_responses, tx_pub, 0);
             let factory = WsFactory::new(ws_responses, tx_relay, 0);
             info!("WebSocket Listening on {}", url);
@@ -255,8 +253,7 @@ fn forward_service(
             time_stamp.elapsed().unwrap()
         );
         if new_tx_request_buffer.len() > config.new_tx_flow_config.count_per_batch
-            || time_stamp.elapsed().unwrap().subsec_nanos()
-                > config.new_tx_flow_config.buffer_duration
+            || time_stamp.elapsed().unwrap().subsec_nanos() > config.new_tx_flow_config.buffer_duration
         {
             batch_forward_new_tx(new_tx_request_buffer, time_stamp, tx_pub);
         }

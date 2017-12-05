@@ -45,20 +45,12 @@ impl MqHandler {
                     match val {
                         TransferType::HTTP((req_info, sender)) => {
                             sender.send(
-                                serde_json::to_string(&Output::from(
-                                    content,
-                                    req_info.id,
-                                    req_info.jsonrpc,
-                                )).unwrap(),
+                                serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
                             );
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
                             sender.send(
-                                serde_json::to_string(&Output::from(
-                                    content,
-                                    req_info.id,
-                                    req_info.jsonrpc,
-                                )).unwrap(),
+                                serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
                             );
                         }
                     }

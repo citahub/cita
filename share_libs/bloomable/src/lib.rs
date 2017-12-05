@@ -38,7 +38,8 @@ pub fn log2(x: usize) -> u32 {
 
 /// Bloom operations.
 pub trait Bloomable: Sized + Default + DerefMut<Target = [u8]> {
-    /// When interpreting self as a bloom output, augment (bit-wise OR) with the a bloomed version of `b`.
+    /// When interpreting self as a bloom output,
+    /// augment (bit-wise OR) with the a bloomed version of `b`.
     fn shift_bloomed<'a, T>(&'a mut self, b: &T) -> &'a mut Self
     where
         T: Bloomable;

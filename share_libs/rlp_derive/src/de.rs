@@ -49,9 +49,7 @@ pub fn impl_decodable(ast: &syn::DeriveInput) -> quote::Tokens {
         syn::VariantData::Struct(ref fields) | syn::VariantData::Tuple(ref fields) => {
             fields.iter().enumerate().map(decodable_field_map).collect()
         }
-        syn::VariantData::Unit => {
-            panic!("#[derive(RlpDecodable)] is not defined for Unit structs.")
-        }
+        syn::VariantData::Unit => panic!("#[derive(RlpDecodable)] is not defined for Unit structs."),
     };
 
     let name = &ast.ident;
@@ -93,9 +91,7 @@ pub fn impl_decodable_wrapper(ast: &syn::DeriveInput) -> quote::Tokens {
                 panic!("#[derive(RlpDecodableWrapper)] is only defined for structs with one field.")
             }
         }
-        syn::VariantData::Unit => {
-            panic!("#[derive(RlpDecodableWrapper)] is not defined for Unit structs.")
-        }
+        syn::VariantData::Unit => panic!("#[derive(RlpDecodableWrapper)] is not defined for Unit structs."),
     };
 
     let name = &ast.ident;

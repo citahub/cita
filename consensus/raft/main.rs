@@ -17,7 +17,8 @@
 
 // In order to use Serde we need to enable these nightly features.
 #![allow(unused_must_use)]
-
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
 extern crate docopt;
 extern crate dotenv;
 extern crate libproto;
@@ -112,10 +113,7 @@ fn main() {
     event_loop.run(&mut server);
 }
 
-fn thread_handler(
-    rx: Receiver<(u32, u32, MsgClass)>,
-    notifix: mio::Sender<libraft::NotifyMessage>,
-) {
+fn thread_handler(rx: Receiver<(u32, u32, MsgClass)>, notifix: mio::Sender<libraft::NotifyMessage>) {
     thread::spawn(move || {
         loop {
             dispatch::dispatch(&notifix, &rx);

@@ -52,14 +52,7 @@ impl Client {
         }
     }
 
-    fn generate_tx(
-        &self,
-        code: String,
-        address: String,
-        pv: &PrivKey,
-        curh: u64,
-        quota: u64,
-    ) -> UnverifiedTransaction {
+    fn generate_tx(&self, code: String, address: String, pv: &PrivKey, curh: u64, quota: u64) -> UnverifiedTransaction {
         let data = code.from_hex().unwrap();
         let mut tx = Transaction::new();
         tx.set_data(data);
@@ -70,39 +63,33 @@ impl Client {
         tx.sign(*pv).take_transaction_with_sig()
     }
 
-    pub fn create_contract_data(
-        &self,
-        code: String,
-        to: String,
-        height: u64,
-        quota: u64,
-    ) -> String {
-        self.get_data_by_method(RpcMethod::SendTransaction(self.generate_tx(
-            code,
-            to,
-            self.key_pair.privkey(),
-            height,
-            quota,
-        )))
+    pub fn create_contract_data(&self, code: String, to: String, height: u64, quota: u64) -> String {
+        self.get_data_by_method(RpcMethod::SendTransaction(
+            self.generate_tx(code, to, self.key_pair.privkey(), height, quota),
+        ))
     }
 
     pub fn get_data_by_method(&self, method: RpcMethod) -> String {
         let tx_data = match method {
-            RpcMethod::SendTransaction(tx) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())
-            }
+            RpcMethod::SendTransaction(tx) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}",
+                tx.write_to_bytes().unwrap().to_hex()
+            ),
             RpcMethod::Height => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_blockNumber\",\"params\":[],\"id\":2}}")
             }
-            RpcMethod::GetBlockbyheiht(h) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getBlockByNumber\",\"params\":[\"{}\",false],\"id\":2}}", format!("{:x}", h))
-            }
-            RpcMethod::GetTransaction(hash) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getTransaction\",\"params\":[\"{}\"],\"id\":2}}", hash)
-            }
-            RpcMethod::GetReceipt(hash) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"eth_getTransactionReceipt\",\"params\":[\"{}\"],\"id\":2}}", hash)
-            }
+            RpcMethod::GetBlockbyheiht(h) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getBlockByNumber\",\"params\":[\"{}\",false],\"id\":2}}",
+                format!("{:x}", h)
+            ),
+            RpcMethod::GetTransaction(hash) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getTransaction\",\"params\":[\"{}\"],\"id\":2}}",
+                hash
+            ),
+            RpcMethod::GetReceipt(hash) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"eth_getTransactionReceipt\",\"params\":[\"{}\"],\"id\":2}}",
+                hash
+            ),
 
             RpcMethod::PeerCount => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"net_peerCount\",\"params\":[],\"id\":2}}")

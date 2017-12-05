@@ -38,8 +38,7 @@ pub use auth::*;
 use blockchain::*;
 use communication::*;
 pub use consensus::*;
-use crypto::{CreateKey, KeyPair, Message as SignMessage, PrivKey, PubKey, Sign, Signature,
-             SIGNATURE_BYTES_LEN};
+use crypto::{CreateKey, KeyPair, Message as SignMessage, PrivKey, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
 pub use request::*;
@@ -198,12 +197,7 @@ pub mod factory {
     use super::*;
     pub const ZERO_ORIGIN: u32 = 99999;
 
-    pub fn create_msg(
-        sub: u32,
-        top: u16,
-        msg_type: MsgType,
-        content: Vec<u8>,
-    ) -> communication::Message {
+    pub fn create_msg(sub: u32, top: u16, msg_type: MsgType, content: Vec<u8>) -> communication::Message {
         let mut msg = communication::Message::new();
         msg.set_cmd_id(cmd_id(sub, top));
         msg.set_field_type(msg_type);
@@ -239,50 +233,30 @@ pub fn parse_msg(msg: &[u8]) -> (CmdId, Origin, MsgClass) {
     let content_msg = snappy::cita_decompress(content_msg);
     let msg_class = match msg.get_field_type() {
         MsgType::REQUEST => MsgClass::REQUEST(parse_from_bytes::<Request>(&content_msg).unwrap()),
-        MsgType::RESPONSE => {
-            MsgClass::RESPONSE(parse_from_bytes::<Response>(&content_msg).unwrap())
-        }
+        MsgType::RESPONSE => MsgClass::RESPONSE(parse_from_bytes::<Response>(&content_msg).unwrap()),
         MsgType::HEADER => MsgClass::HEADER(parse_from_bytes::<BlockHeader>(&content_msg).unwrap()),
         MsgType::BLOCK => MsgClass::BLOCK(parse_from_bytes::<Block>(&content_msg).unwrap()),
         MsgType::STATUS => MsgClass::STATUS(parse_from_bytes::<Status>(&content_msg).unwrap()),
-        MsgType::VERIFY_TX_REQ => {
-            MsgClass::VERIFYTXREQ(parse_from_bytes::<VerifyTxReq>(&content_msg).unwrap())
-        }
-        MsgType::VERIFY_TX_RESP => {
-            MsgClass::VERIFYTXRESP(parse_from_bytes::<VerifyTxResp>(&content_msg).unwrap())
-        }
-        MsgType::VERIFY_BLK_REQ => {
-            MsgClass::VERIFYBLKREQ(parse_from_bytes::<VerifyBlockReq>(&content_msg).unwrap())
-        }
-        MsgType::VERIFY_BLK_RESP => {
-            MsgClass::VERIFYBLKRESP(parse_from_bytes::<VerifyBlockResp>(&content_msg).unwrap())
-        }
-        MsgType::BLOCK_TXHASHES => {
-            MsgClass::BLOCKTXHASHES(parse_from_bytes::<BlockTxHashes>(&content_msg).unwrap())
-        }
+        MsgType::VERIFY_TX_REQ => MsgClass::VERIFYTXREQ(parse_from_bytes::<VerifyTxReq>(&content_msg).unwrap()),
+        MsgType::VERIFY_TX_RESP => MsgClass::VERIFYTXRESP(parse_from_bytes::<VerifyTxResp>(&content_msg).unwrap()),
+        MsgType::VERIFY_BLK_REQ => MsgClass::VERIFYBLKREQ(parse_from_bytes::<VerifyBlockReq>(&content_msg).unwrap()),
+        MsgType::VERIFY_BLK_RESP => MsgClass::VERIFYBLKRESP(parse_from_bytes::<VerifyBlockResp>(&content_msg).unwrap()),
+        MsgType::BLOCK_TXHASHES => MsgClass::BLOCKTXHASHES(parse_from_bytes::<BlockTxHashes>(&content_msg).unwrap()),
         MsgType::BLOCK_TXHASHES_REQ => {
             MsgClass::BLOCKTXHASHESREQ(parse_from_bytes::<BlockTxHashesReq>(&content_msg).unwrap())
         }
         MsgType::BLOCK_WITH_PROOF => {
             MsgClass::BLOCKWITHPROOF(parse_from_bytes::<BlockWithProof>(&content_msg).unwrap())
         }
-        MsgType::BLOCK_TXS => {
-            MsgClass::BLOCKTXS(parse_from_bytes::<BlockTxs>(&content_msg).unwrap())
-        }
+        MsgType::BLOCK_TXS => MsgClass::BLOCKTXS(parse_from_bytes::<BlockTxs>(&content_msg).unwrap()),
         MsgType::MSG => {
             let mut content = Vec::new();
             content.extend_from_slice(&content_msg);
             MsgClass::MSG(content)
         }
-        MsgType::RICH_STATUS => {
-            MsgClass::RICHSTATUS(parse_from_bytes::<RichStatus>(&content_msg).unwrap())
-        }
-        MsgType::SYNC_REQ => {
-            MsgClass::SYNCREQUEST(parse_from_bytes::<SyncRequest>(&content_msg).unwrap())
-        }
-        MsgType::SYNC_RES => {
-            MsgClass::SYNCRESPONSE(parse_from_bytes::<SyncResponse>(&content_msg).unwrap())
-        }
+        MsgType::RICH_STATUS => MsgClass::RICHSTATUS(parse_from_bytes::<RichStatus>(&content_msg).unwrap()),
+        MsgType::SYNC_REQ => MsgClass::SYNCREQUEST(parse_from_bytes::<SyncRequest>(&content_msg).unwrap()),
+        MsgType::SYNC_RES => MsgClass::SYNCRESPONSE(parse_from_bytes::<SyncResponse>(&content_msg).unwrap()),
     };
 
     (msg.get_cmd_id(), msg.get_origin(), msg_class)

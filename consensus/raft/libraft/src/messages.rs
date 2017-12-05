@@ -17,7 +17,7 @@
 
 //! Utility functions for working with Cap'n Proto Raft messages.
 #![allow(dead_code)]
-
+#![rustfmt_skip]
 
 use {ClientId, LogIndex, ServerId, Term};
 

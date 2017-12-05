@@ -175,8 +175,7 @@ impl BlockBody {
 
     pub fn protobuf(&self) -> ProtoBlockBody {
         let mut body = ProtoBlockBody::new();
-        let txs: Vec<ProtoSignedTransaction> =
-            self.transactions.iter().map(|t| t.protobuf()).collect();
+        let txs: Vec<ProtoSignedTransaction> = self.transactions.iter().map(|t| t.protobuf()).collect();
         body.set_transactions(RepeatedField::from_slice(&txs[..]));
         body
     }
@@ -297,13 +296,13 @@ impl OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes: last_hashes,
             account_gas_limit: account_gas_limit.common_gas_limit.into(),
-            account_gas: account_gas_limit.specific_gas_limit.iter().fold(
-                HashMap::new(),
-                |mut acc, (key, value)| {
+            account_gas: account_gas_limit
+                .specific_gas_limit
+                .iter()
+                .fold(HashMap::new(), |mut acc, (key, value)| {
                     acc.insert(*key, (*value).into());
                     acc
-                },
-            ),
+                }),
         };
 
         Ok(r)
@@ -342,12 +341,7 @@ impl OpenBlock {
         self.set_gas_used(gas_used);
     }
 
-    pub fn apply_transaction(
-        &mut self,
-        t: &mut SignedTransaction,
-        check_permission: bool,
-        check_quota: bool,
-    ) {
+    pub fn apply_transaction(&mut self, t: &mut SignedTransaction, check_permission: bool, check_quota: bool) {
         let mut env_info = self.env_info();
         if !self.account_gas.contains_key(t.sender()) {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);
@@ -431,19 +425,19 @@ impl OpenBlock {
 
         // Rebuild block
         let state_root = *self.state.root();
-        let receipts_root =
-            merklehash::complete_merkle_root(self.receipts.iter().map(|r| r.rlp_bytes().to_vec()));
+        let receipts_root = merklehash::complete_merkle_root(self.receipts.iter().map(|r| r.rlp_bytes().to_vec()));
         self.set_state_root(state_root);
         self.set_receipts_root(receipts_root);
 
         // blocks blooms
-        let log_bloom = self.receipts.clone().into_iter().filter_map(|r| r).fold(
-            LogBloom::zero(),
-            |mut b, r| {
+        let log_bloom = self.receipts
+            .clone()
+            .into_iter()
+            .filter_map(|r| r)
+            .fold(LogBloom::zero(), |mut b, r| {
                 b = b | r.log_bloom;
                 b
-            },
-        );
+            });
 
         self.set_log_bloom(log_bloom);
 

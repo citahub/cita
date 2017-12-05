@@ -39,9 +39,13 @@ lazy_static! {
         }
         out[0..4].to_vec()
     };
-    static ref QUERY_TX: Vec<u8> = "0000000000000000000000000000000000000000000000000000000000000001".from_hex().unwrap().into();
-    static ref QUERY_CONTRACT: Vec<u8> = "0000000000000000000000000000000000000000000000000000000000000002".from_hex().unwrap().into();
-    static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a4").unwrap();
+    static ref QUERY_TX: Vec<u8> = "00000000000000000000000000000000000000000\
+                                    00000000000000000000001".from_hex().unwrap().into();
+    static ref QUERY_CONTRACT: Vec<u8> = "00000000000000000000000000000000000\
+                                          00000000000000000000000000002".from_hex().unwrap().into();
+    static ref CONTRACT_ADDRESS: H160 = H160::from_str(
+        "00000000000000000000000000000000013241a4"
+    ).unwrap();
 }
 
 pub struct AccountManager;

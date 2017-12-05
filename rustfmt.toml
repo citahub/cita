@@ -1,4 +1,5 @@
-max_width=100
+max_width=120
+max_comments=120
 tab_spaces=4
 fn_call_width=100
 struct_lit_width=32

@@ -670,12 +670,7 @@ impl<'a> AVLDBMut<'a> {
     }
 
     /// the removal inspector
-    fn remove_inspector(
-        &mut self,
-        node: Node,
-        key: NodeKey,
-        old_val: &mut Option<DBValue>,
-    ) -> super::Result<Action> {
+    fn remove_inspector(&mut self, node: Node, key: NodeKey, old_val: &mut Option<DBValue>) -> super::Result<Action> {
         Ok(match node {
             Node::Empty => Action::Delete,
             Node::Leaf(k, v) => match k == key {
@@ -745,8 +740,7 @@ impl<'a> AVLDBMut<'a> {
             Stored::Cached(node, hash) => {
                 // probably won't happen, but update the root and move on.
                 *self.root = hash;
-                self.root_handle =
-                    NodeHandle::InMemory(self.storage.alloc(Stored::Cached(node, hash)));
+                self.root_handle = NodeHandle::InMemory(self.storage.alloc(Stored::Cached(node, hash)));
             }
         }
     }
@@ -864,7 +858,11 @@ mod tests {
     use memorydb::*;
     // use super::super::standardmap::*;
 
-    // fn populate_avl<'db>(db: &'db mut HashDB, root: &'db mut H256, v: &[(Vec<u8>, Vec<u8>)]) -> AVLDBMut<'db> {
+    // fn populate_avl<'db>(
+    //     db: &'db mut HashDB,
+    //     root: &'db mut H256,
+    //     v: &[(Vec<u8>, Vec<u8>)]
+    // ) -> AVLDBMut<'db> {
     //     let mut t = AVLDBMut::new(db, root);
     //     for i in 0..v.len() {
     //         let key: &[u8] = &v[i].0;

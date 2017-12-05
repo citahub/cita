@@ -60,7 +60,18 @@ fn create_contract(
     flag_multi_sender: i32,
     pk: PrivKey,
 ) {
-    let code = "60606040523415600e57600080fd5b5b5b5b60948061001f6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603d575b600080fd5b3415604757600080fd5b605b6004808035906020019091905050605d565b005b806000819055505b505600a165627a7a72305820c471b4376626da2540b2374e8b4110501051c426ff46814a6170ce9e219e49a80029";
+    let code = "60606040523415600e57600080fd5b\
+                5b5b5b60948061001f6000396000f3\
+                0060606040526000357c0100000000\
+                000000000000000000000000000000\
+                000000000000000000900463ffffff\
+                ff1680635524107714603d575b6000\
+                80fd5b3415604757600080fd5b605b\
+                600480803590602001909190505060\
+                5d565b005b806000819055505b5056\
+                00a165627a7a72305820c471b43766\
+                26da2540b2374e8b4110501051c426\
+                ff46814a6170ce9e219e49a80029";
     let mut contract_address = "".to_string();
     if flag != 0 {
         contract_address = "ffffffffffffffffffffffffffffffffffffffff".to_string();
@@ -76,8 +87,7 @@ fn create_contract(
         );
         txs.push(tx);
     }
-    let tx =
-        Generateblock::generate_tx(code, contract_address.clone(), quota, flag_multi_sender, pk);
+    let tx = Generateblock::generate_tx(code, contract_address.clone(), quota, flag_multi_sender, pk);
     txs.push(tx);
 
     //构造block

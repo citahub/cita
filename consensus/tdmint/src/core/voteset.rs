@@ -37,14 +37,7 @@ impl VoteCollector {
         }
     }
 
-    pub fn add(
-        &mut self,
-        height: usize,
-        round: usize,
-        step: Step,
-        sender: Address,
-        vote: VoteMessage,
-    ) -> bool {
+    pub fn add(&mut self, height: usize, round: usize, step: Step, sender: Address, vote: VoteMessage) -> bool {
         if self.votes.contains_key(&height) {
             self.votes
                 .get_mut(&height)
@@ -176,13 +169,7 @@ impl VoteSet {
         }
     }
 
-    pub fn check(
-        &self,
-        h: usize,
-        r: usize,
-        step: Step,
-        authorities: &[Address],
-    ) -> Result<Option<H256>, &str> {
+    pub fn check(&self, h: usize, r: usize, step: Step, authorities: &[Address]) -> Result<Option<H256>, &str> {
         let mut votes_by_proposal = HashMap::new();
         for (sender, vote) in &self.votes_by_sender {
             if authorities.contains(sender) {
@@ -299,8 +286,7 @@ pub struct Proposal {
 pub fn verify_tx(tx: &Transaction, height: u64) -> bool {
     let nonce = tx.get_nonce();
     let valid_until_block = tx.get_valid_until_block();
-    (nonce.len() <= 128)
-        && (height <= valid_until_block && valid_until_block < (height + BLOCKLIMIT))
+    (nonce.len() <= 128) && (height <= valid_until_block && valid_until_block < (height + BLOCKLIMIT))
 }
 
 impl Proposal {

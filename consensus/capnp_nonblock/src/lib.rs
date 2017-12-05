@@ -362,10 +362,7 @@ where
                 };
 
                 *write_progress = write_progress.or_else(|| {
-                    serialize_segment_table(
-                        current_segment_table,
-                        &*message.get_segments_for_output(),
-                    );
+                    serialize_segment_table(current_segment_table, &*message.get_segments_for_output());
                     Some((0, 0))
                 });
 
@@ -600,15 +597,15 @@ pub mod test {
             test_utils::write_message_segments(&mut cursor, &segments);
             cursor.set_position(0);
 
-            let mut message_reader =
-                MessageStream::<_, (), ()>::new(&mut cursor, message::ReaderOptions::new());
+            let mut message_reader = MessageStream::<_, (), ()>::new(&mut cursor, message::ReaderOptions::new());
             let message = message_reader.read_message().unwrap().unwrap();
             let result_segments = message.into_segments();
 
             TestResult::from_bool(
-                segments.iter().enumerate().all(|(i, segment)| {
-                    &segment[..] == result_segments.get_segment(i as u32).unwrap()
-                }),
+                segments
+                    .iter()
+                    .enumerate()
+                    .all(|(i, segment)| &segment[..] == result_segments.get_segment(i as u32).unwrap()),
             )
         }
 
@@ -673,8 +670,7 @@ pub mod test {
             }
             cursor.set_position(0);
 
-            let mut message_reader =
-                MessageStream::<_, (), ()>::new(&mut cursor, message::ReaderOptions::new());
+            let mut message_reader = MessageStream::<_, (), ()>::new(&mut cursor, message::ReaderOptions::new());
 
             for segments in &messages {
                 let message = message_reader.read_message().unwrap().unwrap();
@@ -707,8 +703,7 @@ pub mod test {
             }
             stream.inner_mut().set_position(0);
 
-            let mut message_reader =
-                MessageStream::<_, (), ()>::new(&mut stream, message::ReaderOptions::new());
+            let mut message_reader = MessageStream::<_, (), ()>::new(&mut stream, message::ReaderOptions::new());
 
             for segments in &messages {
                 let mut message = None;

@@ -26,7 +26,9 @@ pub trait Engine: Sync + Send {
     /// (In principle these are just hints for the engine since that has the last word on them.)
     fn builtins(&self) -> &BTreeMap<Address, Builtin>;
 
-    // TODO: builtin contract routing - to do this properly, it will require removing the built-in configuration-reading logic
+    // TODO: builtin contract routing - to do this properly,
+    // it will require removing the built-in configuration-reading logic
+
     // from Spec into here and removing the Spec::builtins field.
     /// Determine whether a particular address is a builtin contract.
     fn is_builtin(&self, a: &Address) -> bool {

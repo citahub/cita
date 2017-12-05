@@ -46,12 +46,7 @@ impl Trans {
         }
     }
 
-    pub fn generate_tx(
-        code: &str,
-        address: String,
-        pv: &PrivKey,
-        curh: u64,
-    ) -> UnverifiedTransaction {
+    pub fn generate_tx(code: &str, address: String, pv: &PrivKey, curh: u64) -> UnverifiedTransaction {
         let data = code.from_hex().unwrap();
 
         let mut tx = Transaction::new();
@@ -67,21 +62,25 @@ impl Trans {
 
     pub fn generate_tx_data(method: Methods) -> String {
         let txdata = match method {
-            Methods::Sendtx(tx) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())
-            }
-            Methods::Height => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_blockNumber\",\"params\":[],\"id\":2}}")
-            }
-            Methods::Blockbyheiht(h) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getBlockByNumber\",\"params\":[\"{}\",false],\"id\":2}}", format!("{:#X}", h))
-            }
-            Methods::Trans(hash) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getTransaction\",\"params\":[\"{}\"],\"id\":2}}", hash)
-            }
-            Methods::Receipt(hash) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"eth_getTransactionReceipt\",\"params\":[\"{}\"],\"id\":2}}", hash)
-            }
+            Methods::Sendtx(tx) => format!(
+                r#"{{"jsonrpc":"2.0",\
+                "method":"cita_sendTransaction",\
+                "params":["{}"],"id":2}}"#,
+                tx.write_to_bytes().unwrap().to_hex()
+            ),
+            Methods::Height => format!(r#"{{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":2}}"#),
+            Methods::Blockbyheiht(h) => format!(
+                r#"{{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":["{}",false],"id":2}}"#,
+                format!("{:#X}", h)
+            ),
+            Methods::Trans(hash) => format!(
+                r#"{{"jsonrpc":"2.0","method":"cita_getTransaction","params":["{}"],"id":2}}"#,
+                hash
+            ),
+            Methods::Receipt(hash) => format!(
+                r#"{{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["{}"],"id":2}}"#,
+                hash
+            ),
         };
         txdata
         //Self::new(txdata)

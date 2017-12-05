@@ -82,8 +82,7 @@ mod tests {
 
     #[test]
     fn tendermint_proof_convert() {
-        let o_proof =
-            CitaProof::Tendermint(TendermintProof::new(0, 1, H256::default(), HashMap::new()));
+        let o_proof = CitaProof::Tendermint(TendermintProof::new(0, 1, H256::default(), HashMap::new()));
         let proto_proof: Proof = o_proof.clone().into();
         let de_proof: CitaProof = proto_proof.into();
         assert_eq!(o_proof, de_proof);

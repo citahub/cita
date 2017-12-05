@@ -110,8 +110,7 @@ pub fn init_chain() -> Arc<Chain> {
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
     // Load from genesis json file
-    let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref())
-        .expect("Failed to load genesis.");
+    let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref()).expect("Failed to load genesis.");
     let genesis = Genesis {
         spec: spec,
         block: Block::default(),
@@ -184,8 +183,7 @@ pub fn bench_chain(code: &Vec<u8>, data: &Vec<u8>, tpb: u32, native_address: Add
         black_box(chain.set_block(block, &sync_tx));
         let elapsed = start.elapsed();
         chain.collect_garbage();
-        u64::from(tpb) * 1_000_000_000
-            / (elapsed.as_secs() * 1_000_000_000 + u64::from(elapsed.subsec_nanos()))
+        u64::from(tpb) * 1_000_000_000 / (elapsed.as_secs() * 1_000_000_000 + u64::from(elapsed.subsec_nanos()))
     };
 
     let blocks = 10;

@@ -16,11 +16,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use BlockNumber;
-use crypto::{pubkey_to_address, PubKey, Public, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN,
-             SIGNATURE_BYTES_LEN};
+use crypto::{pubkey_to_address, PubKey, Public, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN};
 use libproto::blockchain::{Crypto as ProtoCrypto, SignedTransaction as ProtoSignedTransaction,
-                           Transaction as ProtoTransaction,
-                           UnverifiedTransaction as ProtoUnverifiedTransaction};
+                           Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;

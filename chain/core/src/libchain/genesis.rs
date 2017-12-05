@@ -62,11 +62,7 @@ impl Genesis {
         }
     }
 
-    pub fn lazy_execute(
-        &mut self,
-        state_db: &StateDB,
-        factories: &Factories,
-    ) -> Result<(), String> {
+    pub fn lazy_execute(&mut self, state_db: &StateDB, factories: &Factories) -> Result<(), String> {
         let mut state = State::from_existing(
             state_db.boxed_clone(),
             *self.block.state_root(),

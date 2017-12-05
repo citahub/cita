@@ -19,7 +19,7 @@
 //! instances, responding to commands from the `Client`, and applying commands to a local
 //! `StateMachine` consensus. A `Server` may be a `Leader`, `Follower`, or `Candidate` at any given
 //! time as described by the Raft Consensus Algorithm.
-
+#![rustfmt_skip]
 
 use ClientId;
 use Error;

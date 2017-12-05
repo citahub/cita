@@ -28,7 +28,7 @@
 //!
 //! In response to an event, the `Consensus` may mutate its own state, apply a command to the local
 //! `StateMachine`, or return an event to be sent to one or more remote peers or clients.
-
+#![rustfmt_skip]
 
 use {messages, ClientId, LogIndex, ServerId, Term};
 

@@ -22,12 +22,11 @@ use core::libchain::block::Block;
 use core::libchain::call_request::CallRequest;
 use core::libchain::chain::{BlockInQueue, Chain};
 use error::ErrorCode;
-use jsonrpc_types::rpctypes::{self as rpctypes, BlockNumber, BlockParamsByHash,
-                              BlockParamsByNumber, CountOrCode, Filter as RpcFilter,
-                              Log as RpcLog, Receipt as RpcReceipt, RpcBlock};
+use jsonrpc_types::rpctypes::{self as rpctypes, BlockNumber, BlockParamsByHash, BlockParamsByNumber, CountOrCode,
+                              Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, RpcBlock};
 use libproto;
-use libproto::{communication, factory, parse_msg, request, response, submodules, topics,
-               BlockTxHashes, MsgClass, SyncRequest, SyncResponse};
+use libproto::{communication, factory, parse_msg, request, response, submodules, topics, BlockTxHashes, MsgClass,
+               SyncRequest, SyncResponse};
 use libproto::blockchain::{Block as ProtobufBlock, BlockWithProof, ProofType};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
@@ -52,11 +51,7 @@ pub struct Forward {
 
 // TODO: Add future client to support forward
 impl Forward {
-    pub fn new(
-        chain: Arc<Chain>,
-        ctx_pub: Sender<(String, Vec<u8>)>,
-        write_sender: Sender<u64>,
-    ) -> Forward {
+    pub fn new(chain: Arc<Chain>, ctx_pub: Sender<(String, Vec<u8>)>, write_sender: Sender<u64>) -> Forward {
         Forward {
             chain: chain,
             ctx_pub: ctx_pub,
@@ -148,8 +143,7 @@ impl Forward {
             }
 
             Request::block_by_height(block_height) => {
-                let block_height: BlockParamsByNumber =
-                    serde_json::from_str(&block_height).expect("Invalid param");
+                let block_height: BlockParamsByNumber = serde_json::from_str(&block_height).expect("Invalid param");
                 let include_txs = block_height.include_txs;
                 match self.chain.block(block_height.block_id.into()) {
                     Some(block) => {
@@ -171,16 +165,14 @@ impl Forward {
                 }
             }
 
-            Request::transaction(hash) => {
-                match self.chain.full_transaction(H256::from_slice(&hash)) {
-                    Some(ts) => {
-                        response.set_ts(ts);
-                    }
-                    None => {
-                        response.set_none(true);
-                    }
+            Request::transaction(hash) => match self.chain.full_transaction(H256::from_slice(&hash)) {
+                Some(ts) => {
+                    response.set_ts(ts);
                 }
-            }
+                None => {
+                    response.set_none(true);
+                }
+            },
 
             Request::transaction_receipt(hash) => {
                 let tx_hash = H256::from_slice(&hash);
@@ -277,8 +269,7 @@ impl Forward {
 
             Request::new_filter(new_filter) => {
                 trace!("new_filter {:?}", new_filter);
-                let new_filter: RpcFilter =
-                    serde_json::from_str(&new_filter).expect("Invalid param");
+                let new_filter: RpcFilter = serde_json::from_str(&new_filter).expect("Invalid param");
                 trace!("new_filter {:?}", new_filter);
                 response.set_filter_id(self.chain.new_filter(new_filter) as u64);
             }
@@ -505,10 +496,8 @@ impl Forward {
                 tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
             }
             block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
-            block_tx_hashes
-                .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes
-                .set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
+            block_tx_hashes.set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
             let msg = factory::create_msg(
                 submodules::CHAIN,
                 topics::BLOCK_TXHASHES,

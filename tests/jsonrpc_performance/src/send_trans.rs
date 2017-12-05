@@ -562,7 +562,26 @@ impl Sendtx {
                     //时间算到纳秒
                     let single_tx_response_time = total_nanos / totaltx as u64;
                     unsafe {
-                        let result = format!("test type: {}\ntx_num: {}\nsucess: {}\nfail: {}\nstart_h: {}\nend_h: {}\njsonrpc use time: {} ms\ntps: {}\nsingle tx respone time: {} ns\n", buf, totaltx, sucess, fail, START_H, _end_h, secs, tps, single_tx_response_time);
+                        let result = format!(
+                            r#"test type: {}
+                            tx_num: {}
+                            sucess: {}
+                            fail: {}
+                            start_h: {}
+                            end_h: {}
+                            jsonrpc use time: {} ms
+                            tps: {}
+                            single tx respone time: {} ns"#,
+                            buf,
+                            totaltx,
+                            sucess,
+                            fail,
+                            START_H,
+                            _end_h,
+                            secs,
+                            tps,
+                            single_tx_response_time
+                        );
                         let path = Path::new("jsonrpc_performance.txt");
                         let mut file = match File::create(&path) {
                             Err(_) => panic!("create fail"),

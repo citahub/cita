@@ -72,18 +72,22 @@ pub trait Work {
     fn send(&mut self, data: String);
 }
 
-//impl Work for Worker {
-//    fn insert<F: 'static + FnMut(Result<ResultBody, Error>)>(&mut self, id: String, call_back: F) -> bool {
-//        self.requests.insert(id, Box::new(call_back)).is_some()
-//    }
-//
-//    fn is_exist(&self, id: &String) -> bool {
-//        self.requests.contains_key(id)
-//    }
-//
-//    fn exce(&mut self, id: &String, ret: Result<ResultBody, Error>) {
-//        if let Some(mut call_back) = self.requests.remove(id) {
-//            call_back(ret);
-//        }
-//    }
-//}
+// impl Work for Worker {
+//     fn insert<F: 'static + FnMut(Result<ResultBody, Error>)>(
+//         &mut self,
+//         id: String,
+//         call_back: F,
+//     ) -> bool {
+//         self.requests.insert(id, Box::new(call_back)).is_some()
+//     }
+
+//     fn is_exist(&self, id: &String) -> bool {
+//         self.requests.contains_key(id)
+//     }
+
+//     fn exce(&mut self, id: &String, ret: Result<ResultBody, Error>) {
+//         if let Some(mut call_back) = self.requests.remove(id) {
+//             call_back(ret);
+//         }
+//     }
+// }

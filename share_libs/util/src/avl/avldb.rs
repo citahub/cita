@@ -123,8 +123,8 @@ impl<'db> AVLDB<'db> {
     }
 
     /// Given some node-describing data `node`, return the actual node RLP.
-    /// This could be a simple identity operation in the case that the node is sufficiently small, but
-    /// may require a database lookup.
+    /// This could be a simple identity operation in the case that the node is sufficiently small,
+    /// but may require a database lookup.
     fn get_raw_or_lookup(&'db self, node: &'db [u8]) -> super::Result<DBValue> {
         // check if its hash + len
         let r = Rlp::new(node);
@@ -149,11 +149,7 @@ impl<'db> AVL for AVLDB<'db> {
         self.root
     }
 
-    fn get_with<'a, 'key, Q: Query>(
-        &'a self,
-        key: &'key [u8],
-        query: Q,
-    ) -> super::Result<Option<Q::Item>>
+    fn get_with<'a, 'key, Q: Query>(&'a self, key: &'key [u8], query: Q) -> super::Result<Option<Q::Item>>
     where
         'a: 'key,
     {
@@ -292,9 +288,7 @@ impl<'a> Iterator for AVLDBIterator<'a> {
                     return Some(Ok((k, v)));
                 }
                 (Status::At, OwnedNode::Branch(_, _, _)) => {}
-                (Status::AtChild(i), OwnedNode::Branch(_, _, ref children))
-                    if children[i].len() > 0 =>
-                {
+                (Status::AtChild(i), OwnedNode::Branch(_, _, ref children)) if children[i].len() > 0 => {
                     if let Err(e) = self.descend(&*children[i]) {
                         return Some(Err(e));
                     }

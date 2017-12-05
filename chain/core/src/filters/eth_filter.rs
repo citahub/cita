@@ -36,10 +36,9 @@ impl EthFilter for Chain {
     fn new_filter(&self, filter: Filter) -> PollId {
         let polls = self.poll_filter();
         let block_number = self.get_current_height();
-        let id =
-            polls
-                .lock()
-                .create_poll(PollFilter::Logs(block_number, Default::default(), filter));
+        let id = polls
+            .lock()
+            .create_poll(PollFilter::Logs(block_number, Default::default(), filter));
         drop(polls);
         id
     }

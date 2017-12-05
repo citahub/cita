@@ -18,8 +18,7 @@
 extern crate tx_pool;
 
 use error::ErrorCode;
-use libproto::{communication, factory, submodules, topics, BatchRequest, Request, Response,
-               TxResponse};
+use libproto::{communication, factory, submodules, topics, BatchRequest, Request, Response, TxResponse};
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use protobuf::{Message, RepeatedField};
 use serde_json;
@@ -207,8 +206,7 @@ impl Dispatchtx {
         );
         {
             let duration = self.start_verify_time.elapsed().unwrap();
-            let time_duration_in_usec =
-                duration.as_secs() * 1_000_000 + (duration.subsec_nanos() / 1_000) as u64;
+            let time_duration_in_usec = duration.as_secs() * 1_000_000 + (duration.subsec_nanos() / 1_000) as u64;
             if 0 != time_duration_in_usec {
                 info!(
                     "{} txs have been added into tx_pool, and time cost is {:?}, tps: {:?}",
@@ -246,7 +244,11 @@ impl Dispatchtx {
             .subsec_nanos();
         let count_buffered = self.batch_forward_info.new_tx_request_buffer.len();
         if !self.batch_forward_info.new_tx_request_buffer.is_empty() {
-            trace!("wait_timeout_process is going to send new tx batch to peer auth with {} new tx and buffer {} ns", count_buffered, time_elapsed);
+            trace!(
+                "wait_timeout_process is going to send new tx batch to peer auth with {} new tx and buffer {} ns",
+                count_buffered,
+                time_elapsed
+            );
             self.batch_forward_tx_to_peer(mq_pub);
         }
     }

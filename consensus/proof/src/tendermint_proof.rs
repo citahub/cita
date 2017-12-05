@@ -49,12 +49,7 @@ pub struct TendermintProof {
 }
 
 impl TendermintProof {
-    pub fn new(
-        height: usize,
-        round: usize,
-        proposal: H256,
-        commits: HashMap<Address, Signature>,
-    ) -> TendermintProof {
+    pub fn new(height: usize, round: usize, proposal: H256, commits: HashMap<Address, Signature>) -> TendermintProof {
         TendermintProof {
             height: height,
             round: round,

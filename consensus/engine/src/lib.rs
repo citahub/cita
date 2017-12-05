@@ -61,17 +61,9 @@ pub trait Engine: Sync + Send {
 
     fn new_messages(&self, tx_pub: Sender<(String, Vec<u8>)>);
 
-    fn handle_message(
-        &self,
-        _message: Vec<u8>,
-        tx_pub: Sender<(String, Vec<u8>)>,
-    ) -> Result<(), EngineError>;
+    fn handle_message(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError>;
 
-    fn handle_proposal(
-        &self,
-        _message: Vec<u8>,
-        tx_pub: Sender<(String, Vec<u8>)>,
-    ) -> Result<(), EngineError>;
+    fn handle_proposal(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError>;
 }
 
 #[test]

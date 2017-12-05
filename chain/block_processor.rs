@@ -52,9 +52,7 @@ impl BlockProcessor {
         }
         match block_in_queue {
             Some(BlockInQueue::ConsensusBlock(block, _)) => {
-                if self.chain.validate_height(block.number())
-                    && self.chain.validate_hash(block.parent_hash())
-                {
+                if self.chain.validate_height(block.number()) && self.chain.validate_hash(block.parent_hash()) {
                     self.chain.set_block(block, &self.ctx_pub);
                     self.chain.broadcast_status(&self.ctx_pub);
                     info!("set consensus block-{}", number);

@@ -61,12 +61,7 @@ impl Verifier {
         self.height_low
     }
 
-    pub fn update_hashes(
-        &mut self,
-        h: u64,
-        hashes: HashSet<H256>,
-        tx_pub: &Sender<(String, Vec<u8>)>,
-    ) {
+    pub fn update_hashes(&mut self, h: u64, hashes: HashSet<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
             self.height_low = if h < BLOCKLIMIT {
@@ -108,10 +103,14 @@ impl Verifier {
                 return;
             }
         }
-        trace!("update block's tx hashes for height:{} and the current low height:{} and latest height:{}", h, self.height_low.unwrap(), self.height_latest.unwrap());
+        trace!(
+            "update block's tx hashes for height:{} and the current low height:{} and latest height:{}",
+            h,
+            self.height_low.unwrap(),
+            self.height_latest.unwrap()
+        );
         self.hashes.insert(h, hashes);
-        if self.hashes.len() as u64 == (self.height_latest.unwrap() - self.height_low.unwrap() + 1)
-        {
+        if self.hashes.len() as u64 == (self.height_latest.unwrap() - self.height_low.unwrap() + 1) {
             self.inited = true;
         }
     }
@@ -155,7 +154,12 @@ impl Verifier {
         if let Some(height) = self.height_latest {
             result = valid_until_block > height && valid_until_block <= (height + BLOCKLIMIT);
             if result {
-                warn!("The new tx is out of time valid_until_block: {:?}, height: {:?}, BLOCKLIMIT: {:?}", valid_until_block, height, BLOCKLIMIT);
+                warn!(
+                    "The new tx is out of time valid_until_block: {:?}, height: {:?}, BLOCKLIMIT: {:?}",
+                    valid_until_block,
+                    height,
+                    BLOCKLIMIT
+                );
             }
         }
         result

@@ -104,9 +104,7 @@ impl Into<EthFilter> for Filter {
                             .map(|topic| match topic {
                                 VariadicValue::Null => None,
                                 VariadicValue::Single(t) => Some(vec![t]),
-                                VariadicValue::Multiple(t) => {
-                                    Some(t.into_iter().map(Into::into).collect())
-                                }
+                                VariadicValue::Multiple(t) => Some(t.into_iter().map(Into::into).collect()),
                             })
                             .collect()
                     })
@@ -162,26 +160,26 @@ mod tests {
 
     #[test]
     fn topic_deserialization() {
-        let s = r#"["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", null, ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"]]"#;
+        let s = r#"["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", \
+                   null, \
+                   ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", \
+                   "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"]]"#;
         let deserialized: Vec<Topic> = serde_json::from_str(s).unwrap();
         assert_eq!(
             deserialized,
             vec![
                 VariadicValue::Single(
-                    H256::from_str(
-                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-                    ).unwrap()
+                    H256::from_str("000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+                        .unwrap()
                         .into(),
                 ),
                 VariadicValue::Null,
                 VariadicValue::Multiple(vec![
-                    H256::from_str(
-                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-                    ).unwrap()
+                    H256::from_str("000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+                        .unwrap()
                         .into(),
-                    H256::from_str(
-                        "0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc",
-                    ).unwrap()
+                    H256::from_str("0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc")
+                        .unwrap()
                         .into(),
                 ]),
             ]
@@ -206,8 +204,7 @@ mod tests {
 
     #[test]
     fn filter_deserialization2() {
-        let s =
-            r#"{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"]}"#;
+        let s = r#"{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"]}"#;
         let deserialized: Filter = serde_json::from_str(s).unwrap();
         assert_eq!(
             deserialized,
@@ -217,9 +214,8 @@ mod tests {
                 address: None,
                 topics: Some(vec![
                     VariadicValue::Single(
-                        H256::from_str(
-                            "8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3",
-                        ).unwrap()
+                        H256::from_str("8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3")
+                            .unwrap()
                             .into(),
                     ),
                 ]),
@@ -237,9 +233,8 @@ mod tests {
             topics: Some(vec![
                 VariadicValue::Null,
                 VariadicValue::Single(
-                    H256::from_str(
-                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-                    ).unwrap()
+                    H256::from_str("000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+                        .unwrap()
                         .into(),
                 ),
                 VariadicValue::Null,

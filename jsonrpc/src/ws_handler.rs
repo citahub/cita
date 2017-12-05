@@ -36,11 +36,7 @@ pub struct WsFactory {
 
 
 impl WsFactory {
-    pub fn new(
-        responses: RpcMap,
-        tx: mpsc::Sender<(String, reqlib::Request)>,
-        thread_num: usize,
-    ) -> WsFactory {
+    pub fn new(responses: RpcMap, tx: mpsc::Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
         let thread_number = if thread_num == 0 {
             num_cpus::get() / 2
         } else {
@@ -108,10 +104,8 @@ impl Handler for WsHandler {
             };
             //TODO 错误返回
             if let Err(err) = err {
-                let _ = this.sender.send(
-                    serde_json::to_string(&RpcFailure::from_options(req_id, jsonrpc_version, err))
-                        .unwrap(),
-                );
+                let _ = this.sender
+                    .send(serde_json::to_string(&RpcFailure::from_options(req_id, jsonrpc_version, err)).unwrap());
             }
         });
         //

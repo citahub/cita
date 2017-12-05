@@ -29,11 +29,7 @@ pub fn receive(pool: &ThreadPool, tx: &Sender<(u32, u32, u32, MsgClass)>, id: u3
     });
 }
 
-pub fn process(
-    engine: Arc<Engine>,
-    rx: &Receiver<(u32, u32, u32, MsgClass)>,
-    tx_pub: Sender<(String, Vec<u8>)>,
-) {
+pub fn process(engine: Arc<Engine>, rx: &Receiver<(u32, u32, u32, MsgClass)>, tx_pub: Sender<(String, Vec<u8>)>) {
     let (id, cmd_id, _origin, content_ext) = rx.recv().unwrap();
     let from_broadcast = id == submodules::NET;
     if from_broadcast {

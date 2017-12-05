@@ -224,7 +224,9 @@ pub enum CleanupMode<'a> {
     KillEmpty(&'a mut HashSet<Address>),
 }
 
-const SEC_TRIE_DB_UNWRAP_STR: &'static str = "A state can only be created with valid root. Creating a SecTrieDB with a valid root will not fail. Therefore creating a SecTrieDB with this state's root will not fail.";
+const SEC_TRIE_DB_UNWRAP_STR: &'static str = "A state can only be created with valid root.\
+                                              Creating a SecTrieDB with a valid root will not fail.\
+                                              Therefore creating a SecTrieDB with this state's root will not fail.";
 
 impl<B: Backend> State<B> {
     /// Creates new state with empty state root
@@ -390,7 +392,9 @@ impl<B: Backend> State<B> {
     pub fn exists(&self, a: &Address) -> trie::Result<bool> {
         // Bloom filter does not contain empty accounts, so it is important here to
         // check if account exists in the database directly before EIP-161 is in effect.
-        self.ensure_cached(a, RequireCache::None, false, |a| a.is_some())
+        self.ensure_cached(a, RequireCache::None, false, |a| {
+            a.is_some()
+        })
     }
 
     /// Determine whether an account exists and if not empty.
@@ -552,8 +556,7 @@ impl<B: Backend> State<B> {
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
-        let e = Executive::new(self, env_info, engine, &vm_factory, &native_factory)
-            .transact(t, options)?;
+        let e = Executive::new(self, env_info, engine, &vm_factory, &native_factory).transact(t, options)?;
 
         // TODO uncomment once to_pod() works correctly.
         //        trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
@@ -670,13 +673,7 @@ impl<B: Backend> State<B> {
     /// Check caches for required data
     /// First searches for account in the local, then the shared cache.
     /// Populates local cache if nothing found.
-    fn ensure_cached<F, U>(
-        &self,
-        a: &Address,
-        require: RequireCache,
-        _: bool,
-        f: F,
-    ) -> trie::Result<U>
+    fn ensure_cached<F, U>(&self, a: &Address, require: RequireCache, _: bool, f: F) -> trie::Result<U>
     where
         F: Fn(Option<&Account>) -> U,
     {
@@ -686,12 +683,7 @@ impl<B: Backend> State<B> {
                 let accountdb = self.factories
                     .accountdb
                     .readonly(self.db.as_hashdb(), account.address_hash(a));
-                Self::update_account_cache(
-                    require,
-                    account,
-                    /* &self.db, */
-                    accountdb.as_hashdb(),
-                );
+                Self::update_account_cache(require, account, /* &self.db, */ accountdb.as_hashdb());
                 return Ok(f(Some(account)));
             }
             return Ok(f(None));
@@ -709,12 +701,7 @@ impl<B: Backend> State<B> {
             let accountdb = self.factories
                 .accountdb
                 .readonly(self.db.as_hashdb(), account.address_hash(a));
-            Self::update_account_cache(
-                require,
-                account,
-                /* &self.db, */
-                accountdb.as_hashdb(),
-            );
+            Self::update_account_cache(require, account, /* &self.db, */ accountdb.as_hashdb());
         }
         let r = f(maybe_acc.as_ref());
         self.insert_cache(a, AccountEntry::new_clean(maybe_acc));
@@ -857,9 +844,16 @@ mod tests {
 
         ======= contracts/AbiTest.sol:AbiTest =======
         Binary:
-        60606040523415600b57fe5b5b5b5b608e8061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
+        60606040523415600b57fe5b5b5b5b608e8061001c6000396000f300606060405260003
+        57c0100000000000000000000000000000000000000000000000000000000900463ffff
+        ffff1680635524107714603a575bfe5b3415604157fe5b6055600480803590602001909
+        19050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c2
+        4124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
         Binary of the runtime part:
-        60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
+        60606040526000357c01000000000000000000000000000000000000000000000000000
+        00000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b6055600480
+        80359060200190919050506057565b005b806000819055505b505600a165627a7a72305
+        82079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
         Function signatures:
         55241077: setValue(uint256)
          */
@@ -873,9 +867,25 @@ mod tests {
         let block_limit = 100;
         tx.set_valid_until_block(block_limit);
         tx.set_quota(1844673);
-        tx.set_data("6060604052341561000f57600080fd5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a1610175806100926000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100485780636d4ce63c1461006b57600080fd5b341561005357600080fd5b6100696004808035906020019091905050610094565b005b341561007657600080fd5b61007e610140565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a150565b600080549050905600a165627a7a723058208777d774164b22030e359c5220ad3599f2a294b4a0ae14b78c4f6a3246525c180029"
-                        .from_hex()
-                        .unwrap());
+        tx.set_data(
+            "6060604052341561000f57600080fd5b60646000819055507f8fb1356be\
+             6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373\
+             ffffffffffffffffffffffffffffffffffffffff1673fffffffffffffffffffffffffffff\
+             fffffffffff1681526020018281526020019250505060405180910390a161017580610092\
+             6000396000f30060606040526000357c01000000000000000000000000000000000000000\
+             00000000000000000900463ffffffff16806360fe47b1146100485780636d4ce63c146100\
+             6b57600080fd5b341561005357600080fd5b6100696004808035906020019091905050610\
+             094565b005b341561007657600080fd5b61007e610140565b604051808281526020019150\
+             5060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce\
+             75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507f\
+             fd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b9338260405\
+             1808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffff\
+             ffffffffffffffffff1681526020018281526020019250505060405180910390a150565b6\
+             00080549050905600a165627a7a723058208777d774164b22030e359c5220ad3599f2a294\
+             b4a0ae14b78c4f6a3246525c180029"
+                .from_hex()
+                .unwrap(),
+        );
 
         // 2) stx = (from, content(code, nonce, signature))
         // TODO: Should get or generate private key that have send transation permission.
@@ -910,10 +920,18 @@ mod tests {
                 .expect("option should unwrap")
         );
         println!("{:?}", result.trace);
-        assert_eq!(state.code(&contract_address).unwrap().unwrap(),
-                   Arc::new("60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b605560048080359060200190919050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029"
-                                .from_hex()
-                                .unwrap()));
+        assert_eq!(
+            state.code(&contract_address).unwrap().unwrap(),
+            Arc::new(
+                "60606040526000357c010000000000000000000000000000000000000000000000\
+                 0000000000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b\
+                 605560048080359060200190919050506057565b005b806000819055505b505600\
+                 a165627a7a7230582079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e37\
+                 1628798c41e292ca0029"
+                    .from_hex()
+                    .unwrap()
+            )
+        );
     }
 
     #[test]
@@ -1916,8 +1934,7 @@ mod tests {
         };
 
         let (root, db) = {
-            let mut state =
-                State::from_existing(db, root, U256::from(0u8), Default::default()).unwrap();
+            let mut state = State::from_existing(db, root, U256::from(0u8), Default::default()).unwrap();
             assert_eq!(state.exists(&a).unwrap(), true);
             assert_eq!(state.nonce(&a).unwrap(), U256::from(1u64));
             state.kill_account(&a);

@@ -91,11 +91,7 @@ impl Generateblock {
         tx.sign(pv)
     }
 
-    pub fn build_block_with_proof(
-        txs: Vec<SignedTransaction>,
-        pre_hash: H256,
-        h: u64,
-    ) -> (Vec<u8>, BlockWithProof) {
+    pub fn build_block_with_proof(txs: Vec<SignedTransaction>, pre_hash: H256, h: u64) -> (Vec<u8>, BlockWithProof) {
         let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
         let pk = keypair.pubkey();

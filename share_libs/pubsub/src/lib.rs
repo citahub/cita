@@ -37,33 +37,18 @@ use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 
 #[cfg(feature = "rabbitmq")]
-pub fn start_pubsub(
-    name: &str,
-    keys: Vec<&str>,
-    tx: Sender<(String, Vec<u8>)>,
-    rx: Receiver<(String, Vec<u8>)>,
-) {
+pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
     dotenv().ok();
     start_rabbitmq(name, keys, tx, rx);
 }
 
 #[cfg(feature = "zeromq")]
-pub fn start_pubsub(
-    name: &str,
-    keys: Vec<&str>,
-    tx: Sender<(String, Vec<u8>)>,
-    rx: Receiver<(String, Vec<u8>)>,
-) {
+pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
     dotenv().ok();
     start_zeromq(name, keys, tx, rx);
 }
 #[cfg(feature = "kafka")]
-pub fn start_pubsub(
-    name: &str,
-    keys: Vec<&str>,
-    tx: Sender<(String, Vec<u8>)>,
-    rx: Receiver<(String, Vec<u8>)>,
-) {
+pub fn start_pubsub(name: &str, keys: Vec<&str>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
     dotenv().ok();
     let keys = keys.iter().map(|elem| elem.to_string()).collect::<Vec<_>>();
     start_kafka(name, keys, tx, rx);

@@ -43,10 +43,8 @@ impl From<SpecJson> for Spec {
 impl Spec {
     fn engine(engine_json: EngineJson, tx: Sender<usize>) -> Arc<Engine> {
         match engine_json {
-            EngineJson::AuthorityRound(authority_round) => {
-                AuthorityRound::new(From::from(authority_round.params), tx)
-                    .expect("Failed to start AuthorityRound consensus engine.")
-            }
+            EngineJson::AuthorityRound(authority_round) => AuthorityRound::new(From::from(authority_round.params), tx)
+                .expect("Failed to start AuthorityRound consensus engine."),
             _ => {
                 panic!("Failed to start AuthorityRound consensus engine.");
             }

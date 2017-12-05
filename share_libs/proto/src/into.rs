@@ -34,12 +34,17 @@ impl Into<communication::Message> for Request {
     }
 }
 
-//impl Into<communication::Message> for blockchain::UnverifiedTransaction {
-//    fn into(self) -> communication::Message {
-//        let msg = factory::create_msg(submodules::JSON_RPC, topics::NEW_TX, communication::MsgType::TX, self.write_to_bytes().unwrap());
-//        msg
-//    }
-//}
+// impl Into<communication::Message> for blockchain::UnverifiedTransaction {
+//     fn into(self) -> communication::Message {
+//         let msg = factory::create_msg(
+//             submodules::JSON_RPC,
+//             topics::NEW_TX,
+//             communication::MsgType::TX,
+//             self.write_to_bytes().unwrap(),
+//         );
+//         msg
+//     }
+// }
 
 impl Into<communication::Message> for Response {
     fn into(self) -> communication::Message {

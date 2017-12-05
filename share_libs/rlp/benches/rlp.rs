@@ -47,7 +47,8 @@ fn bench_stream_u256_value(b: &mut Bencher) {
     b.iter(|| {
                // u256
                let mut stream = RlpStream::new();
-               let uint: U256 = "8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0".into();
+               let uint: U256 = "8090a0b0c0d0e0f009102030405060770000000000000\
+                                 00100000000000012f0".into();
                stream.append(&uint);
                let _ = stream.out();
            });

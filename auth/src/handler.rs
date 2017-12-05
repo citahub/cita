@@ -203,10 +203,7 @@ pub fn check_verify_request_preprocess(
     }
 }
 
-fn get_resp_from_cache(
-    tx_hash: &H256,
-    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
-) -> Option<VerifyTxResp> {
+fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>) -> Option<VerifyTxResp> {
     if let Some(resp) = cache.read().get(tx_hash) {
         Some(resp.clone())
     } else {
@@ -303,13 +300,21 @@ pub fn handle_remote_msg(
                     cache_hit: 0,
                 };
 
-                info!("Coming new block verify request with request_id: {}, and the init block_verify_status: {:?}", request_id, new_block_verify_status);
+                info!(
+                    "Coming new block verify request with request_id: {}, and the init block_verify_status: {:?}",
+                    request_id,
+                    new_block_verify_status
+                );
                 //add big brace here to release write lock as soon as poobible
                 {
                     let mut block_verify_status_guard = block_verify_status.write();
-                    if block_verify_status_guard.block_verify_result == VerifyResult::VerifyOngoing
-                    {
-                        warn!("block verification request with request_id: {:?} has been expired, and the current info is: {:?}", block_verify_status_guard.request_id, *block_verify_status_guard);
+                    if block_verify_status_guard.block_verify_result == VerifyResult::VerifyOngoing {
+                        warn!(
+                            "block verification request with request_id: {:?} \
+                             has been expired, and the current info is: {:?}",
+                            block_verify_status_guard.request_id,
+                            *block_verify_status_guard
+                        );
                     }
                     let block_verify_stamp = SystemTime::now();
                     *block_verify_status_guard = new_block_verify_status;
@@ -340,8 +345,7 @@ pub fn handle_remote_msg(
                             }
                             VerifyResult::VerifyFailed => {
                                 // statement with no effect, bug here?
-                                block_verify_status_guard.block_verify_result
-                                    == VerifyResult::VerifyFailed;
+                                block_verify_status_guard.block_verify_result == VerifyResult::VerifyFailed;
 
                                 let tx_hash = H256::from_slice(req.get_tx_hash());
                                 let resp_ret;
@@ -396,30 +400,45 @@ pub fn handle_remote_msg(
                     } else if block_verify_status_guard.verify_success_cnt_capture
                         == block_verify_status_guard.verify_success_cnt_required
                     {
-                        block_verify_status_guard.block_verify_result =
-                            VerifyResult::VerifySucceeded;
-                        info!("Succeed to do verify blk req for request_id: {}, ret: {:?}, time cost: {:?}, and final status is: {:?}", request_id, Ret::Ok, block_verify_stamp.elapsed().unwrap(), *block_verify_status_guard);
+                        block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
+                        info!(
+                            "Succeed to do verify blk req for request_id: {}, \
+                             ret: {:?}, \
+                             time cost: {:?}, \
+                             and final status is: {:?}",
+                            request_id,
+                            Ret::Ok,
+                            block_verify_stamp.elapsed().unwrap(),
+                            *block_verify_status_guard
+                        );
                         publish_block_verification_result(request_id, Ret::Ok, tx_pub);
                     }
                 }
             } else {
-                error!("Wrong block verification request with 0 tx for block verify request_id: {} from sub_module: {}", blkreq.get_id(), submodule);
+                error!(
+                    "Wrong block verification request with 0 tx for block verify request_id: {} from sub_module: {}",
+                    blkreq.get_id(),
+                    submodule
+                );
             }
         }
         MsgClass::REQUEST(newtx_req) => {
             if newtx_req.has_batch_req() {
                 let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
                 let now = SystemTime::now();
-                trace!("get batch new tx request from module:{:?} in system time :{:?}, and has got {} new tx ", id_to_key(submodule), now, batch_new_tx.len());
+                trace!(
+                    "get batch new tx request from module:{:?} in system time :{:?}, and has got {} new tx ",
+                    id_to_key(submodule),
+                    now,
+                    batch_new_tx.len()
+                );
 
                 for tx_req in batch_new_tx.iter() {
                     let verify_tx_req = tx_req.get_un_tx().tx_verify_req_msg();
                     let verify_request_info = VerifyRequestResponseInfo {
                         sub_module: submodule,
                         verify_type: VerifyType::SingleVerify,
-                        request_id: VerifyRequestID::SingleVerifyRequestID(
-                            tx_req.get_request_id().to_vec(),
-                        ),
+                        request_id: VerifyRequestID::SingleVerifyRequestID(tx_req.get_request_id().to_vec()),
                         time_stamp: now,
                         req_resp: VerifyRequestResponse::AuthRequest(verify_tx_req),
                         un_tx: Some(tx_req.get_un_tx().clone()),
@@ -436,9 +455,7 @@ pub fn handle_remote_msg(
                 let verify_request_info = VerifyRequestResponseInfo {
                     sub_module: submodule,
                     verify_type: VerifyType::SingleVerify,
-                    request_id: VerifyRequestID::SingleVerifyRequestID(
-                        newtx_req.get_request_id().to_vec(),
-                    ),
+                    request_id: VerifyRequestID::SingleVerifyRequestID(newtx_req.get_request_id().to_vec()),
                     time_stamp: now,
                     req_resp: VerifyRequestResponse::AuthRequest(verify_tx_req),
                     un_tx: Some(newtx_req.get_un_tx().clone()),
@@ -478,16 +495,12 @@ pub fn handle_verificaton_result(
                             resp.get_ret()
                         );
 
-                        if let VerifyRequestID::SingleVerifyRequestID(request_id) =
-                            verify_response_info.request_id
-                        {
+                        if let VerifyRequestID::SingleVerifyRequestID(request_id) = verify_response_info.request_id {
                             let result = format!("{:?}", resp.get_ret());
                             match resp.get_ret() {
                                 Ret::Ok => {
                                     let mut signed_tx = SignedTransaction::new();
-                                    signed_tx.set_transaction_with_sig(
-                                        verify_response_info.un_tx.unwrap(),
-                                    );
+                                    signed_tx.set_transaction_with_sig(verify_response_info.un_tx.unwrap());
                                     signed_tx.set_signer(resp.get_signer().to_vec());
                                     signed_tx.set_tx_hash(tx_hash.to_vec());
                                     let tx_response = TxResponse::new(tx_hash, result.clone());
@@ -516,10 +529,7 @@ pub fn handle_verificaton_result(
                                         );
                                         trace!("response new tx {:?}", response);
                                         tx_pub
-                                            .send((
-                                                "auth.rpc".to_string(),
-                                                msg.write_to_bytes().unwrap(),
-                                            ))
+                                            .send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap()))
                                             .unwrap();
                                     }
                                 }
@@ -527,19 +537,20 @@ pub fn handle_verificaton_result(
                         }
                     }
                     VerifyType::BlockVerify => {
-                        if let VerifyRequestID::BlockVerifyRequestID(request_id) =
-                            verify_response_info.request_id
-                        {
+                        if let VerifyRequestID::BlockVerifyRequestID(request_id) = verify_response_info.request_id {
                             let result = resp.get_ret();
                             if Ret::Ok != result {
                                 let mut block_verify_status_guard = block_verify_status.write();
                                 if request_id == block_verify_status_guard.request_id
-                                    && VerifyResult::VerifyFailed
-                                        != block_verify_status_guard.block_verify_result
+                                    && VerifyResult::VerifyFailed != block_verify_status_guard.block_verify_result
                                 {
-                                    block_verify_status_guard.block_verify_result =
-                                        VerifyResult::VerifyFailed;
-                                    warn!("Failed to do verify blk req for request_id: {}, ret: {:?}, from submodule: {}", request_id, result, verify_response_info.sub_module);
+                                    block_verify_status_guard.block_verify_result = VerifyResult::VerifyFailed;
+                                    warn!(
+                                        "Failed to do verify blk req for request_id: {}, ret: {:?}, from submodule: {}",
+                                        request_id,
+                                        result,
+                                        verify_response_info.sub_module
+                                    );
                                     publish_block_verification_result(request_id, result, tx_pub);
                                 }
                             } else {
@@ -554,14 +565,18 @@ pub fn handle_verificaton_result(
                                     if block_verify_status_guard.verify_success_cnt_capture
                                         == block_verify_status_guard.verify_success_cnt_required
                                     {
-                                        block_verify_status_guard.block_verify_result =
-                                            VerifyResult::VerifySucceeded;
-                                        info!("Succeed to do verify blk req for request_id: {}, ret: {:?}, time cost: {:?}, and final status is: {:?}", request_id, Ret::Ok, verify_response_info.time_stamp.elapsed().unwrap(), *block_verify_status_guard);
-                                        publish_block_verification_result(
+                                        block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
+                                        info!(
+                                            "Succeed to do verify blk req for request_id: {}, \
+                                             ret: {:?}, \
+                                             time cost: {:?}, \
+                                             and final status is: {:?}",
                                             request_id,
                                             Ret::Ok,
-                                            tx_pub,
+                                            verify_response_info.time_stamp.elapsed().unwrap(),
+                                            *block_verify_status_guard
                                         );
+                                        publish_block_verification_result(request_id, Ret::Ok, tx_pub);
                                     }
                                 }
                             }
@@ -598,11 +613,7 @@ pub fn publish_block_verification_fail_result(
     publish_block_verification_result(request_id, ret, tx_pub);
 }
 
-fn publish_block_verification_result(
-    request_id: u64,
-    ret: Ret,
-    tx_pub: &Sender<(String, Vec<u8>)>,
-) {
+fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<(String, Vec<u8>)>) {
     let mut blkresp = VerifyBlockResp::new();
     blkresp.set_id(request_id);
     blkresp.set_ret(ret);

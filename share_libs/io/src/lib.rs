@@ -58,16 +58,14 @@
 // skip fmt
 #![feature(custom_attribute)]
 #![allow(unused_attributes)]
-
 #![allow(deprecated)]
 
-#![rustfmt_skip]
-extern crate mio;
+extern crate crossbeam;
 #[macro_use]
 extern crate log as rlog;
-extern crate slab;
-extern crate crossbeam;
+extern crate mio;
 extern crate parking_lot;
+extern crate slab;
 
 mod service;
 mod worker;
@@ -109,7 +107,10 @@ where
     Message: Send + Clone,
 {
     fn from(_err: NotifyError<service::IoMessage<Message>>) -> IoError {
-        IoError::Mio(::std::io::Error::new(::std::io::ErrorKind::ConnectionAborted, "Network IO notification error"))
+        IoError::Mio(::std::io::Error::new(
+            ::std::io::ErrorKind::ConnectionAborted,
+            "Network IO notification error",
+        ))
     }
 }
 

@@ -32,10 +32,7 @@ pub trait Signable {
     fn sign_with_privkey(&self, privkey: &PrivKey) -> Result<Signature, CryptoError> {
         Signature::sign(privkey, &self.bare_hash().into())
     }
-    fn recover_address_with_signature(
-        &self,
-        signature: &Signature,
-    ) -> Result<Address, CryptoError> {
+    fn recover_address_with_signature(&self, signature: &Signature) -> Result<Address, CryptoError> {
         let pubkey = signature.recover(&self.bare_hash().into()).unwrap();
         Ok(pubkey_to_address(&pubkey).into())
     }

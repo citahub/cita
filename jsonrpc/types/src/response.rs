@@ -167,23 +167,19 @@ impl Output {
                             serde_json::from_str::<Vec<Log>>(&log).unwrap(),
                         ))
                         .output(),
-                    Response_oneof_data::error_msg(err_msg) => {
-                        Output::Failure(Box::new(RpcFailure::from_options(
-                            id.clone(),
-                            jsonrpc.clone(),
-                            Error::server_error(code, err_msg.as_ref()),
-                        )))
-                    }
-                }
-            }
-            _ => match data.data.unwrap() {
-                Response_oneof_data::error_msg(err_msg) => {
-                    Output::Failure(Box::new(RpcFailure::from_options(
+                    Response_oneof_data::error_msg(err_msg) => Output::Failure(Box::new(RpcFailure::from_options(
                         id.clone(),
                         jsonrpc.clone(),
                         Error::server_error(code, err_msg.as_ref()),
-                    )))
+                    ))),
                 }
+            }
+            _ => match data.data.unwrap() {
+                Response_oneof_data::error_msg(err_msg) => Output::Failure(Box::new(RpcFailure::from_options(
+                    id.clone(),
+                    jsonrpc.clone(),
+                    Error::server_error(code, err_msg.as_ref()),
+                ))),
                 _ => {
                     error!("return error message!!!");
                     Output::Failure(Box::new(RpcFailure::from(Error::server_error(

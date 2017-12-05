@@ -182,14 +182,24 @@ impl Worker {
                                     if is_bench_peer {
                                         success_count += 1;
                                         if success_count + failure_count >= self.param.number {
-                                            let secs = (time::precise_time_ns() - self.start_time)
-                                                / 1000000;
+                                            let secs = (time::precise_time_ns() - self.start_time) / 1000000;
                                             let tps = if secs > 0 {
                                                 (self.param.number * 1000) as u64 / secs
                                             } else {
                                                 self.param.number as u64
                                             };
-                                            println!("send = {}, tps = {} ,recice respone cast time = {:?} ms , success_count = {:?}, failure_count = {:?}", self.param.number, tps, secs, success_count, failure_count);
+                                            println!(
+                                                "send = {}, \
+                                                 tps = {}, \
+                                                 recice respone cast time = {:?} ms ,\
+                                                 success_count = {:?}, \
+                                                 failure_count = {:?}",
+                                                self.param.number,
+                                                tps,
+                                                secs,
+                                                success_count,
+                                                failure_count
+                                            );
                                             self.close_all();
                                         }
                                     }
@@ -199,9 +209,8 @@ impl Worker {
                                     let body = block.body;
                                     let txs_len = body.transactions.len();
                                     let time_stamp = block.header.timestamp;
-                                    let block_height = u64::from_str(
-                                        format!("{}", block.header.number).as_str(),
-                                    ).unwrap();
+                                    let block_height =
+                                        u64::from_str(format!("{}", block.header.number).as_str()).unwrap();
                                     actual_tx_count += txs_len;
                                     println!(
                                         "block_height = {:?}, check_block_break = {:?} ",
@@ -212,11 +221,7 @@ impl Worker {
                                         check_block_break -= 1;
                                         if block_info.len() > 0 {
                                             is_end_flag = true;
-                                            block_info.push_back((
-                                                block_height,
-                                                time_stamp,
-                                                txs_len,
-                                            ));
+                                            block_info.push_back((block_height, time_stamp, txs_len));
                                             println!("last block!");
                                         }
                                     } else {
@@ -239,7 +244,13 @@ impl Worker {
                                         } else {
                                             actual_tx_count as u64
                                         };
-                                        println!("total_count: {}, start height: {},  use time: {} ms, tps: {}", actual_tx_count, first.0, secs, tps);
+                                        println!(
+                                            "total_count: {}, start height: {},  use time: {} ms, tps: {}",
+                                            actual_tx_count,
+                                            first.0,
+                                            secs,
+                                            tps
+                                        );
                                         self.close_all();
                                     }
                                 }
@@ -247,14 +258,23 @@ impl Worker {
                                 ResultBody::TxResponse(_tx_res) => {
                                     success_count += 1;
                                     if success_count + failure_count >= self.param.number {
-                                        let secs =
-                                            (time::precise_time_ns() - self.start_time) / 1000000;
+                                        let secs = (time::precise_time_ns() - self.start_time) / 1000000;
                                         let tps = if secs > 0 {
                                             (self.param.number * 1000) as u64 / secs
                                         } else {
                                             self.param.number as u64
                                         };
-                                        println!("send = {}, tps = {} ,recice respone cast time = {:?} ms , success_count = {:?}, failure_count = {:?}", self.param.number, tps, secs, success_count, failure_count);
+                                        println!(
+                                            "send = {}, tps = {} ,\
+                                             recice respone cast time = {:?} ms ,\
+                                             success_count = {:?} ,\
+                                             failure_count = {:?}",
+                                            self.param.number,
+                                            tps,
+                                            secs,
+                                            success_count,
+                                            failure_count
+                                        );
                                     }
                                 }
 

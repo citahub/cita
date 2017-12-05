@@ -78,21 +78,25 @@ impl Trans {
 
     pub fn generate_tx_data(method: Methods) -> String {
         let txdata = match method {
-            Methods::Sendtx(tx) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())
-            }
-            Methods::Formaterr(tx) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"\":[\"{}\"],\"id\":2}}", tx.write_to_bytes().unwrap().to_hex())
-            }
+            Methods::Sendtx(tx) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}",
+                tx.write_to_bytes().unwrap().to_hex()
+            ),
+            Methods::Formaterr(tx) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"\":[\"{}\"],\"id\":2}}",
+                tx.write_to_bytes().unwrap().to_hex()
+            ),
             Methods::Height => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_blockNumber\",\"params\":[],\"id\":2}}")
             }
-            Methods::Blockbyheiht(h) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getBlockByNumber\",\"params\":[\"{}\",false],\"id\":2}}", format!("{:#X}", h))
-            }
-            Methods::Trans(hash) => {
-                format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getTransaction\",\"params\":[\"{}\"],\"id\":2}}", hash)
-            }
+            Methods::Blockbyheiht(h) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getBlockByNumber\",\"params\":[\"{}\",false],\"id\":2}}",
+                format!("{:#X}", h)
+            ),
+            Methods::Trans(hash) => format!(
+                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_getTransaction\",\"params\":[\"{}\"],\"id\":2}}",
+                hash
+            ),
         };
         trace!("{}", txdata);
         txdata

@@ -116,12 +116,7 @@ impl MutBuf {
     ///
     /// If the buffer does not have enough capacity it is replaced with a new
     /// one, and `from` is reset to the corresponding offset in the new buffer.
-    pub fn fill_or_replace<R>(
-        &mut self,
-        read: &mut R,
-        from: &mut usize,
-        amount: usize,
-    ) -> io::Result<()>
+    pub fn fill_or_replace<R>(&mut self, read: &mut R, from: &mut usize, amount: usize) -> io::Result<()>
     where
         R: io::Read,
     {
@@ -253,8 +248,7 @@ impl Drop for RawBuf {
             let refcount = allocation as *mut u64;
             *refcount -= 1;
             if *refcount == 0 {
-                let layout =
-                    Layout::from_size_align(self.len + refcount_len, refcount_len).unwrap();
+                let layout = Layout::from_size_align(self.len + refcount_len, refcount_len).unwrap();
                 Heap.dealloc(allocation, layout);
             }
         }

@@ -111,11 +111,7 @@ impl Log for MemLog {
         Ok((term, bytes))
     }
 
-    fn append_entries(
-        &mut self,
-        from: LogIndex,
-        entries: &[(Term, &[u8])],
-    ) -> result::Result<(), Error> {
+    fn append_entries(&mut self, from: LogIndex, entries: &[(Term, &[u8])]) -> result::Result<(), Error> {
         assert!(self.latest_log_index().unwrap() + 1 >= from);
         self.entries.truncate((from - 1).as_u64() as usize);
         Ok(self.entries.extend(

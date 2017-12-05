@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{Address, Error, PrivKey, PubKey, sm2_generate_key, sm2_pubkey_from_privkey, GROUP,
-            PRIVKEY_BYTES_LEN, PUBKEY_BYTES_LEN};
+use super::{Address, Error, PrivKey, PubKey, sm2_generate_key, sm2_pubkey_from_privkey, GROUP, PRIVKEY_BYTES_LEN,
+            PUBKEY_BYTES_LEN};
 use rustc_serialize::hex::ToHex;
 use std::fmt;
 use util::H160 as Hash160;

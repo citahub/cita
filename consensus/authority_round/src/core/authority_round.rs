@@ -64,10 +64,7 @@ pub struct AuthorityRound {
 
 impl AuthorityRound {
     /// Create a new instance of POA engine
-    pub fn new(
-        params: AuthorityRoundParams,
-        ready: Sender<usize>,
-    ) -> Result<Arc<Self>, EngineError> {
+    pub fn new(params: AuthorityRoundParams, ready: Sender<usize>) -> Result<Arc<Self>, EngineError> {
         let position = params
             .authorities
             .iter()
@@ -338,20 +335,12 @@ impl Engine for AuthorityRound {
     }
 
     #[allow(unused_variables)]
-    fn handle_message(
-        &self,
-        _message: Vec<u8>,
-        tx_pub: Sender<(String, Vec<u8>)>,
-    ) -> Result<(), EngineError> {
+    fn handle_message(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError> {
         unimplemented!()
     }
 
     #[allow(unused_variables)]
-    fn handle_proposal(
-        &self,
-        _message: Vec<u8>,
-        tx_pub: Sender<(String, Vec<u8>)>,
-    ) -> Result<(), EngineError> {
+    fn handle_proposal(&self, _message: Vec<u8>, tx_pub: Sender<(String, Vec<u8>)>) -> Result<(), EngineError> {
         unimplemented!()
     }
 }

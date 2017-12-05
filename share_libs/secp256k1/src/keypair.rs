@@ -103,8 +103,7 @@ mod tests {
     #[test]
     fn from_privkey() {
         let privkey = PrivKey::from(
-            Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
-                .unwrap(),
+            Hash256::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap(),
         );
         let _ = KeyPair::from_privkey(privkey).unwrap();
     }

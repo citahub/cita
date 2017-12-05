@@ -36,20 +36,10 @@ impl StateDB {
     }
 
     /// Journal all recent operations under the given era and ID.
-    pub fn journal_under(
-        &mut self,
-        batch: &mut DBTransaction,
-        now: u64,
-        id: &H256,
-    ) -> Result<u32, UtilError> {
+    pub fn journal_under(&mut self, batch: &mut DBTransaction, now: u64, id: &H256) -> Result<u32, UtilError> {
         self.db.journal_under(batch, now, id)
     }
-    pub fn mark_canonical(
-        &mut self,
-        batch: &mut DBTransaction,
-        now: u64,
-        id: &H256,
-    ) -> Result<u32, UtilError> {
+    pub fn mark_canonical(&mut self, batch: &mut DBTransaction, now: u64, id: &H256) -> Result<u32, UtilError> {
         self.db.mark_canonical(batch, now, id)
     }
 

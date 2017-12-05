@@ -35,11 +35,7 @@ impl ConsumerContext for ConsumerContextExample {
         trace!("Post rebalance {:?}", rebalance);
     }
 
-    fn commit_callback(
-        &self,
-        _result: KafkaResult<()>,
-        _offsets: *mut types::RDKafkaTopicPartitionList,
-    ) {
+    fn commit_callback(&self, _result: KafkaResult<()>, _offsets: *mut types::RDKafkaTopicPartitionList) {
         trace!("Committing offsets");
     }
 }
@@ -47,12 +43,7 @@ impl ConsumerContext for ConsumerContextExample {
 
 pub const KAFKA_URL: &'static str = "KAFKA_URL";
 
-pub fn start_kafka(
-    name: &str,
-    keys: Vec<String>,
-    tx: Sender<(String, Vec<u8>)>,
-    rx: Receiver<(String, Vec<u8>)>,
-) {
+pub fn start_kafka(name: &str, keys: Vec<String>, tx: Sender<(String, Vec<u8>)>, rx: Receiver<(String, Vec<u8>)>) {
     let brokers = std::env::var(KAFKA_URL).expect(format!("{} must be set", KAFKA_URL).as_str());
     let consumer_brokers = brokers.clone();
     let _ = thread::Builder::new()

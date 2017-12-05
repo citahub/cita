@@ -39,9 +39,7 @@ pub struct AuthorityManage {
 
 impl AuthorityManage {
     pub fn new() -> Self {
-        let logpath = ::std::env::var(DATA_PATH)
-            .expect(format!("{} must be set", DATA_PATH).as_str())
-            + "/authorities";
+        let logpath = ::std::env::var(DATA_PATH).expect(format!("{} must be set", DATA_PATH).as_str()) + "/authorities";
 
         let mut authority_manage = AuthorityManage {
             authorities: Vec::new(),

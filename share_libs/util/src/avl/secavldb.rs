@@ -64,11 +64,7 @@ impl<'db> AVL for SecAVLDB<'db> {
         self.raw.contains(&key.crypt_hash())
     }
 
-    fn get_with<'a, 'key, Q: Query>(
-        &'a self,
-        key: &'key [u8],
-        query: Q,
-    ) -> super::Result<Option<Q::Item>>
+    fn get_with<'a, 'key, Q: Query>(&'a self, key: &'key [u8], query: Q) -> super::Result<Option<Q::Item>>
     where
         'a: 'key,
     {

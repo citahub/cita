@@ -97,10 +97,7 @@ impl HttpHandler {
                     Err(RpcFailure::from_options(
                         id,
                         jsonrpc_version,
-                        Error::server_error(
-                            ErrorCode::time_out_error(),
-                            "system time out,please resend",
-                        ),
+                        Error::server_error(ErrorCode::time_out_error(), "system time out,please resend"),
                     ))
                 }
             }

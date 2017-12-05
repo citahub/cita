@@ -174,8 +174,7 @@ impl Pool {
                 let tx_is_valid = |signed_tx: &SignedTransaction, height: u64| {
                     let valid_until_block = signed_tx.get_transaction().get_valid_until_block();
                     (valid_until_block == 0)
-                        || (height < valid_until_block
-                            && valid_until_block <= (height + BLOCKLIMIT))
+                        || (height < valid_until_block && valid_until_block <= (height + BLOCKLIMIT))
                 };
                 if let Some(tx) = tx {
                     if tx_is_valid(tx, height) {
@@ -273,11 +272,7 @@ mod tests {
     use crypto::{CreateKey, KeyPair, PrivKey};
     use libproto::blockchain::{AccountGasLimit, SignedTransaction, Transaction};
 
-    pub fn generate_tx(
-        data: Vec<u8>,
-        valid_until_block: u64,
-        privkey: &PrivKey,
-    ) -> SignedTransaction {
+    pub fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_to("1234567".to_string());

@@ -20,8 +20,7 @@ use super::{Error, Params, RpcRequest};
 use libproto::blockchain;
 use libproto::request as reqlib;
 use protobuf::core::parse_from_bytes;
-use rpctypes::{BlockNumber, BlockParamsByHash, BlockParamsByNumber, CallRequest, CountOrCode,
-               Filter};
+use rpctypes::{BlockNumber, BlockParamsByHash, BlockParamsByNumber, CallRequest, CountOrCode, Filter};
 use rustc_serialize::hex::FromHex;
 use serde_json;
 use util::{H160, H256, U256};
@@ -122,15 +121,13 @@ impl MethodHandler {
                 Error::parse_error_msg(err_msg.as_ref())
             })
             .and_then(|content| {
-                parse_from_bytes::<blockchain::UnverifiedTransaction>(&content[..]).map_err(
-                    |_err| {
-                        let err_msg = format!(
-                            "parse protobuf UnverifiedTransaction data error : {:?}",
-                            _err
-                        );
-                        Error::parse_error_msg(err_msg.as_ref())
-                    },
-                )
+                parse_from_bytes::<blockchain::UnverifiedTransaction>(&content[..]).map_err(|_err| {
+                    let err_msg = format!(
+                        "parse protobuf UnverifiedTransaction data error : {:?}",
+                        _err
+                    );
+                    Error::parse_error_msg(err_msg.as_ref())
+                })
             })?;
 
         {
@@ -146,7 +143,14 @@ impl MethodHandler {
                     Error::parse_error_msg(err_msg.as_ref())
                 })?;
             }
-            trace!("SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}", tx.get_nonce(), tx.get_valid_until_block(), tx.get_data(), tx.get_quota(), tx.get_to());
+            trace!(
+                "SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}",
+                tx.get_nonce(),
+                tx.get_valid_until_block(),
+                tx.get_data(),
+                tx.get_quota(),
+                tx.get_to()
+            );
         }
         request.set_un_tx(un_tx);
         Ok(request)
@@ -313,8 +317,7 @@ impl MethodHandler {
         }
         let mut request = self.create_request();
         let (filter,): (Filter,) = req_rpc.params.unwrap().parse()?;
-        let filter = serde_json::to_string(&filter)
-            .map_err(|err| Error::invalid_params(format!("{:?}", err)))?;
+        let filter = serde_json::to_string(&filter).map_err(|err| Error::invalid_params(format!("{:?}", err)))?;
         request.set_new_filter(filter);
         Ok(request)
     }
@@ -506,7 +509,12 @@ mod tests {
 
     #[test]
     fn test_rpc_request_parse() {
-        let rpc = "{\"id\":\"-8799978260242268161\",\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[\"1\",\"0x0a2833616538386665333730633339333834666331366461326339653736386366356432343935623438120d31343932353139393038393631\"]}";
+        let rpc = r#"{"id":"-8799978260242268161",\
+                    "jsonrpc":"2.0",\
+                    "method":"eth_call",\
+                    "params":["1",\
+                    "0x0a283361653838666533373063333933383466633136646132633965373638\
+                    6366356432343935623438120d31343932353139393038393631"]}"#;
 
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let params: Result<(String, String), Error> = request.params.unwrap().parse();
@@ -515,7 +523,11 @@ mod tests {
 
     #[test]
     fn test_rpc_request_parse1() {
-        let rpc = "{\"id\":\"-8799978260242268161\",\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[\"0x0a2833616538386665333730633339333834666331366461326339653736386366356432343935623438120d31343932353139393038393631\"]}";
+        let rpc = r#"{"id":"-8799978260242268161",\
+                    "jsonrpc":"2.0",\
+                    "method":"eth_call",\
+                    "params":["0x0a28336165383866653337306333393338346663313664613263\
+                    39653736386366356432343935623438120d31343932353139393038393631"]}"#;
 
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let params: Result<(String, String), Error> = request.params.unwrap().parse();
@@ -524,7 +536,11 @@ mod tests {
 
     #[test]
     fn test_rpc_request_parse2() {
-        let rpc = "{\"id\":\"-8799978260242268161\",\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[\"0x0a2833616538386665333730633339333834666331366461326339653736386366356432343935623438120d31343932353139393038393631\"]}";
+        let rpc = r#"{"id":"-8799978260242268161",\
+                    "jsonrpc":"2.0",\
+                    "method":"eth_call",\
+                    "params":["0x0a28336165383866653337306333393338346663313664613263\
+                    39653736386366356432343935623438120d31343932353139393038393631"]}"#;
 
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let params: Result<(String,), Error> = request.params.unwrap().parse();
@@ -534,7 +550,13 @@ mod tests {
     #[test]
     // 交易添加valid_until_block后，兼容测试以前的交易。
     fn test_blocklimit_backword_compatibility() {
-        let rpc = r#"{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["0x1201311a85010a401201311a3b2239080a12350a2430356162636538642d316431662d343536352d396636342d62623164303236393365333910641a03303037220443495441280312417922853b51d097df76791aa10836942c66bc522c24c8804c93e9230fc67dde897bbed399fa0f9e9ac0abc598cd92215fb362b9e31251bf784511be61d045703e00"],"id":2}"#;
+        let rpc = r#"{"jsonrpc":"2.0",\
+                      "method":"cita_sendTransaction",\
+                      "params":["0x1201311a85010a401201311a3b2239080a12350a24303561626\
+                      36538642d316431662d343536352d396636342d6262316430323639336533391\
+                      0641a03303037220443495441280312417922853b51d097df76791aa10836942\
+                      c66bc522c24c8804c93e9230fc67dde897bbed399fa0f9e9ac0abc598cd92215\
+                      fb362b9e31251bf784511be61d045703e00"],"id":2}"#;
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let params: Result<(String,), Error> = request.params.unwrap().parse();
         assert!(params.is_ok());
@@ -542,7 +564,12 @@ mod tests {
 
     #[test]
     fn eth_call_with_blockid_deserialization() {
-        let rpc = r#"{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"d46e8dd67c5d32be8058bb8eb970870f07244567","to":"b60e8dd61c5d32be8058bb8eb970870f07233155","data":"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"}, "22"],"id":2}"#;
+        let rpc = r#"{"jsonrpc":"2.0",\
+                      "method":"eth_call",\
+                      "params":[{"from":"d46e8dd67c5d32be8058bb8eb970870f07244567",\
+                      "to":"b60e8dd61c5d32be8058bb8eb970870f07233155",\
+                      "data":"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"},\
+                       "22"],"id":2}"#;
         let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
 
         let handler = MethodHandler;
@@ -563,18 +590,27 @@ mod tests {
                 .to_vec()
                 .as_slice()
         );
-        assert_eq!(call.get_data(),
-                   Bytes("d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
-                             .from_hex()
-                             .unwrap())
-                   .vec()
-                   .as_slice());
+        assert_eq!(
+            call.get_data(),
+            Bytes(
+                "d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
+                    .from_hex()
+                    .unwrap()
+            ).vec()
+                .as_slice()
+        );
         assert_eq!(call.get_height(), "\"0x22\"");
     }
 
     #[test]
     fn eth_call_deserialization() {
-        let rpc = r#"{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"d46e8dd67c5d32be8058bb8eb970870f07244567","to":"b60e8dd61c5d32be8058bb8eb970870f07233155","data":"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"}],"id":2}"#;
+        let rpc = r#"{"jsonrpc":"2.0",\
+                      "method":"eth_call",\
+                      "params":[{"from":"d46e8dd67c5d32be8058bb8eb970870f07244567",\
+                      "to":"b60e8dd61c5d32be8058bb8eb970870f07233155",\
+                      "data":"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f07\
+                      2445675058bb8eb970870f072445675"}],\
+                      "id":2}"#;
         let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
 
         let handler = MethodHandler;
@@ -595,17 +631,29 @@ mod tests {
                 .to_vec()
                 .as_slice()
         );
-        assert_eq!(call.get_data(),
-                   Bytes("d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
-                             .from_hex()
-                             .unwrap())
-                   .vec()
-                   .as_slice());
+        assert_eq!(
+            call.get_data(),
+            Bytes(
+                "d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
+                    .from_hex()
+                    .unwrap()
+            ).vec()
+                .as_slice()
+        );
     }
 
     #[test]
     fn cita_get_log_deserialization() {
-        let rpc = r#"{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"fromBlock":"0x1","toBlock":"0x2","address":"8888f1f195afa192cfee860698584c030f4c9db1","topics": ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", null, ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"]]}],"id":2}"#;
+        let rpc = r#"{"jsonrpc":"2.0",\
+                    "method":"eth_getLogs",\
+                    "params":[{"fromBlock":"0x1",\
+                    "toBlock":"0x2",\
+                    "address":"8888f1f195afa192cfee860698584c030f4c9db1",\
+                    "topics": ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", \
+                    null, \
+                    ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", \
+                    "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"]]}],\
+                    "id":2}"#;
         let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let handler = MethodHandler;
         let request: Result<request::Request, Error> = handler.get_logs(rpc_request.clone());

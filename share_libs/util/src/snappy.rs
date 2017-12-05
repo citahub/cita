@@ -39,16 +39,9 @@ extern "C" {
         uncompressed_len: *mut size_t,
     ) -> c_int;
 
-    fn snappy_uncompressed_length(
-        compressed: *const c_char,
-        compressed_len: size_t,
-        result: *mut size_t,
-    ) -> c_int;
+    fn snappy_uncompressed_length(compressed: *const c_char, compressed_len: size_t, result: *mut size_t) -> c_int;
 
-    fn snappy_validate_compressed_buffer(
-        compressed: *const c_char,
-        compressed_len: size_t,
-    ) -> c_int;
+    fn snappy_validate_compressed_buffer(compressed: *const c_char, compressed_len: size_t) -> c_int;
 }
 
 /// Attempted to decompress an uncompressed buffer.
@@ -70,9 +63,7 @@ pub fn max_compressed_len(len: usize) -> usize {
 pub fn decompressed_len(compressed: &[u8]) -> Result<usize, InvalidInput> {
     let mut size: size_t = 0;
     let len = compressed.len() as size_t;
-    let status = unsafe {
-        snappy_uncompressed_length(compressed.as_ptr() as *const c_char, len, &mut size)
-    };
+    let status = unsafe { snappy_uncompressed_length(compressed.as_ptr() as *const c_char, len, &mut size) };
     if status == SNAPPY_INVALID_INPUT {
         Err(InvalidInput)
     } else {
@@ -112,9 +103,7 @@ pub fn compress_into(input: &[u8], output: &mut Vec<u8>) -> usize {
             len as usize
         },
         SNAPPY_INVALID_INPUT => panic!("snappy compression has no concept of invalid input"),
-        SNAPPY_BUFFER_TOO_SMALL => {
-            panic!("buffer cannot be too small, the capacity was just ensured.")
-        }
+        SNAPPY_BUFFER_TOO_SMALL => panic!("buffer cannot be too small, the capacity was just ensured."),
         _ => panic!("snappy returned unspecified status"),
     }
 }
@@ -148,18 +137,15 @@ pub fn decompress_into(input: &[u8], output: &mut Vec<u8>) -> Result<usize, Inva
     match status {
         SNAPPY_OK => Ok(len as usize),
         SNAPPY_INVALID_INPUT => Err(InvalidInput),
-        SNAPPY_BUFFER_TOO_SMALL => {
-            panic!("buffer cannot be too small, size was just set to large enough.")
-        }
+        SNAPPY_BUFFER_TOO_SMALL => panic!("buffer cannot be too small, size was just set to large enough."),
         _ => panic!("snappy returned unspecified status"),
     }
 }
 
 /// Validate a compressed buffer. True if valid, false if not.
 pub fn validate_compressed_buffer(input: &[u8]) -> bool {
-    let status = unsafe {
-        snappy_validate_compressed_buffer(input.as_ptr() as *const c_char, input.len() as size_t)
-    };
+    let status =
+        unsafe { snappy_validate_compressed_buffer(input.as_ptr() as *const c_char, input.len() as size_t) };
     status == SNAPPY_OK
 }
 

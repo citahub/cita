@@ -643,9 +643,7 @@ mod tests {
         );
         let verify_req_info: VerifyRequestResponseInfo = req_receiver.recv().unwrap();
         assert_eq!(verify_req_info.verify_type, VerifyType::SingleVerify);
-        if let VerifyRequestID::SingleVerifyRequestID(single_request_id) =
-            verify_req_info.request_id
-        {
+        if let VerifyRequestID::SingleVerifyRequestID(single_request_id) = verify_req_info.request_id {
             assert_eq!(request_id, single_request_id);
         }
 
@@ -890,7 +888,14 @@ mod tests {
         }
         // keep the receiver live long enough
         thread::sleep(Duration::new(0, 9000000));
-        println!("rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}, pool_txs_receiver {:?}", rx_pub, req_receiver, resp_receiver, pool_tx_receiver, pool_txs_receiver);
+        println!(
+            "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}, pool_txs_receiver {:?}",
+            rx_pub,
+            req_receiver,
+            resp_receiver,
+            pool_tx_receiver,
+            pool_txs_receiver
+        );
     }
 
     #[test]
@@ -967,7 +972,14 @@ mod tests {
         }
         // keep the receiver live long enough
         thread::sleep(Duration::new(0, 9000000));
-        println!("rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}, pool_txs_receiver {:?}", rx_pub, req_receiver, resp_receiver, pool_tx_receiver, pool_txs_receiver);
+        println!(
+            "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}, pool_txs_receiver {:?}",
+            rx_pub,
+            req_receiver,
+            resp_receiver,
+            pool_tx_receiver,
+            pool_txs_receiver
+        );
     }
 
     #[test]

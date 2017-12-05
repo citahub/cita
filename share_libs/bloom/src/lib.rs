@@ -72,7 +72,10 @@ impl BitVecJournal {
     }
 
     pub fn saturation(&self) -> f64 {
-        self.elems.iter().fold(0u64, |acc, e| acc + e.count_ones() as u64) as f64 / (self.elems.len() * 64) as f64
+        self.elems.iter().fold(
+            0u64,
+            |acc, e| acc + e.count_ones() as u64
+        ) as f64 / (self.elems.len() * 64) as f64
     }
 }
 

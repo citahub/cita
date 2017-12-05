@@ -171,12 +171,7 @@ impl Account {
 
     /// Get (and cache) the contents of the trie's storage at `key`.
     /// Takes modifed storage into account.
-    pub fn storage_at(
-        &self,
-        trie_factory: &TrieFactory,
-        db: &HashDB,
-        key: &H256,
-    ) -> trie::Result<H256> {
+    pub fn storage_at(&self, trie_factory: &TrieFactory, db: &HashDB, key: &H256) -> trie::Result<H256> {
         if let Some(value) = self.cached_storage_at(key) {
             return Ok(value);
         }
@@ -361,11 +356,7 @@ impl Account {
     }
 
     /// Commit the `storage_changes` to the backing DB and update `storage_root`.
-    pub fn commit_storage(
-        &mut self,
-        trie_factory: &TrieFactory,
-        db: &mut HashDB,
-    ) -> trie::Result<()> {
+    pub fn commit_storage(&mut self, trie_factory: &TrieFactory, db: &mut HashDB) -> trie::Result<()> {
         let mut t = trie_factory.from_existing(db, &mut self.storage_root)?;
         for (k, v) in self.storage_changes.drain() {
             // cast key and value to trait type,
@@ -667,9 +658,19 @@ mod tests {
     fn new_account() {
         let a = Account::new(U256::from(0u8), HashMap::new(), Bytes::new());
         if HASH_NAME == "sha3" {
-            assert_eq!(a.rlp().to_hex(), "f84380a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+            assert_eq!(
+                a.rlp().to_hex(),
+                "f84380a056e81f171bcc55a6ff8345e692c0f86e5b48e0\
+                 1b996cadc001622fb5e363b421a0c5d2460186f7233c927\
+                 e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+            );
         } else if HASH_NAME == "blake2b" {
-            assert_eq!(a.rlp().to_hex(), "f84380a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f");
+            assert_eq!(
+                a.rlp().to_hex(),
+                "f84380a0c14af59107ef14003e4697a40ea912d865eb1\
+                 463086a4649977c13ea69b0d9afa0d67f729f8d19ed2e9\
+                 2f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
+            );
         }
         assert_eq!(a.nonce(), &U256::from(0u8));
         assert_eq!(a.code_hash(), HASH_EMPTY);
@@ -680,9 +681,19 @@ mod tests {
     fn create_account() {
         let a = Account::new(U256::from(0u8), HashMap::new(), Bytes::new());
         if HASH_NAME == "sha3" {
-            assert_eq!(a.rlp().to_hex(), "f84380a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+            assert_eq!(
+                a.rlp().to_hex(),
+                "f84380a056e81f171bcc55a6ff8345e692c0f86e5b4\
+                 8e01b996cadc001622fb5e363b421a0c5d2460186f72\
+                 33c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+            );
         } else if HASH_NAME == "blake2b" {
-            assert_eq!(a.rlp().to_hex(), "f84380a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f");
+            assert_eq!(
+                a.rlp().to_hex(),
+                "f84380a0c14af59107ef14003e4697a40ea912d865eb\
+                 1463086a4649977c13ea69b0d9afa0d67f729f8d19ed2\
+                 e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
+            );
         }
     }
 

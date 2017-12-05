@@ -68,9 +68,7 @@ impl fmt::Display for AVLError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             AVLError::InvalidStateRoot(ref root) => write!(f, "Invalid state root: {}", root),
-            AVLError::IncompleteDatabase(ref missing) => {
-                write!(f, "Database missing expected key: {}", missing)
-            }
+            AVLError::IncompleteDatabase(ref missing) => write!(f, "Database missing expected key: {}", missing),
         }
     }
 }
@@ -295,11 +293,7 @@ impl AVLFactory {
     }
 
     /// Create new mutable instance of AVL and check for errors.
-    pub fn from_existing<'db>(
-        &self,
-        db: &'db mut HashDB,
-        root: &'db mut H256,
-    ) -> Result<Box<AVLMut + 'db>> {
+    pub fn from_existing<'db>(&self, db: &'db mut HashDB, root: &'db mut H256) -> Result<Box<AVLMut + 'db>> {
         match self.spec {
             AVLSpec::Generic => Ok(Box::new(AVLDBMut::from_existing(db, root)?)),
             AVLSpec::Secure => Ok(Box::new(SecAVLDBMut::from_existing(db, root)?)),

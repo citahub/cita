@@ -520,12 +520,7 @@ impl Chain {
         }
     }
 
-    pub fn logs<F>(
-        &self,
-        mut blocks: Vec<BlockNumber>,
-        matches: F,
-        limit: Option<usize>,
-    ) -> Vec<LocalizedLogEntry>
+    pub fn logs<F>(&self, mut blocks: Vec<BlockNumber>, matches: F, limit: Option<usize>) -> Vec<LocalizedLogEntry>
     where
         F: Fn(&LogEntry) -> bool,
         Self: Sized,
@@ -547,7 +542,13 @@ impl Chain {
             })
             .flat_map(|(number, hash, mut receipts, mut hashes)| {
                 if receipts.len() != hashes.len() {
-                    warn!("Block {} ({}) has different number of receipts ({}) to transactions ({}). Database corrupt?", number, hash, receipts.len(), hashes.len());
+                    warn!(
+                        "Block {} ({}) has different number of receipts ({}) to transactions ({}). Database corrupt?",
+                        number,
+                        hash,
+                        receipts.len(),
+                        hashes.len()
+                    );
                     assert!(false);
                 }
                 log_index = receipts.iter().fold(0, |sum, receipt| {
@@ -590,12 +591,7 @@ impl Chain {
     }
 
     /// Returns numbers of blocks containing given bloom.
-    pub fn blocks_with_bloom(
-        &self,
-        bloom: &H2048,
-        from_block: BlockNumber,
-        to_block: BlockNumber,
-    ) -> Vec<BlockNumber> {
+    pub fn blocks_with_bloom(&self, bloom: &H2048, from_block: BlockNumber, to_block: BlockNumber) -> Vec<BlockNumber> {
         let range = from_block as bc::Number..to_block as bc::Number;
         let chain = bc::group::BloomGroupChain::new(self.blooms_config, self);
         chain
@@ -1233,10 +1229,8 @@ impl Chain {
             block_receipts.shrink_to_fit();
 
             block_headers.heap_size_of_children() + block_bodies.heap_size_of_children()
-                + block_hashes.heap_size_of_children()
-                + transaction_addresses.heap_size_of_children()
-                + blocks_blooms.heap_size_of_children()
-                + block_receipts.heap_size_of_children()
+                + block_hashes.heap_size_of_children() + transaction_addresses.heap_size_of_children()
+                + blocks_blooms.heap_size_of_children() + block_receipts.heap_size_of_children()
         });
     }
 
@@ -1533,7 +1527,9 @@ contract SimpleStorage {
     #[bench]
     fn bench_string_set(b: &mut Bencher) {
         let name = "bench_string_set";
-        let data = "c9615770000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033132330000000000000000000000000000000000000000000000000000000000"
+        let data = "c9615770000000000000000000000000000000000000000000000000000000000000002\
+                    00000000000000000000000000000000000000000000000000000000000000003313233\
+                    0000000000000000000000000000000000000000000000000000000000"
             .from_hex()
             .unwrap();
         bench_simple_storage(name, &data);
@@ -1551,7 +1547,8 @@ contract SimpleStorage {
     #[bench]
     fn bench_array_set(b: &mut Bencher) {
         let name = "bench_array_set";
-        let data = "118b229c0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000b"
+        let data = "118b229c00000000000000000000000000000000000000000000000000000000000000\
+                    01000000000000000000000000000000000000000000000000000000000000000b"
             .from_hex()
             .unwrap();
         bench_simple_storage(name, &data);
@@ -1571,7 +1568,8 @@ contract SimpleStorage {
     #[bench]
     fn bench_map_set(b: &mut Bencher) {
         let name = "bench_map_set";
-        let data = "118b229c0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000c"
+        let data = "118b229c000000000000000000000000000000000000000000000000000000000000000\
+                    1000000000000000000000000000000000000000000000000000000000000000c"
             .from_hex()
             .unwrap();
         bench_simple_storage(name, &data);

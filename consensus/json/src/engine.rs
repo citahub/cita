@@ -38,9 +38,15 @@ mod tests {
 
     fn generate_signer() -> String {
         if SIGNATURE_NAME == "ed25519" {
-            "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65".to_string()
+            "a100df7a048e50ed308ea696dc60021\
+             5098141cb391e9527329df289f9383f6\
+             5a100df7a048e50ed308ea696dc60021\
+             5098141cb391e9527329df289f9383f65"
+                .to_string()
         } else if SIGNATURE_NAME == "secp256k1" {
-            "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65".to_string()
+            "a100df7a048e50ed308ea696dc60021\
+             5098141cb391e9527329df289f9383f65"
+                .to_string()
         } else {
             "".to_string()
         }

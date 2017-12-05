@@ -60,18 +60,8 @@ extern "C" {
     //pub fn EC_GROUP_free(group: *mut EcGroup);
     pub fn sm2_generate_key(group: *const EcGroup, privkey: *mut u8, pubkey: *mut u8);
     pub fn sm2_pubkey_from_privkey(group: *const EcGroup, privkey: *const u8, pubkey: *mut u8);
-    pub fn sm2_sign(
-        group: *const EcGroup,
-        privkey: *const u8,
-        message: *const u8,
-        signature: *mut u8,
-    );
-    pub fn sm2_recover(
-        group: *const EcGroup,
-        signature: *const u8,
-        message: *const u8,
-        pubkey: *mut u8,
-    ) -> c_int;
+    pub fn sm2_sign(group: *const EcGroup, privkey: *const u8, message: *const u8, signature: *mut u8);
+    pub fn sm2_recover(group: *const EcGroup, signature: *const u8, message: *const u8, pubkey: *mut u8) -> c_int;
 }
 
 lazy_static! {

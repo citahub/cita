@@ -88,7 +88,8 @@
 //! least the majority of the cluster and has been commited. `.query()` will perform better if
 //! you wish to only read data and not have it pass through the persisted log.
 //!
-
+#![feature(custom_attribute)]
+#![allow(unused_attributes)]
 #![allow(unused_extern_crates)]
 #![cfg_attr(test, feature(test))]
 extern crate bincode;

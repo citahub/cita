@@ -104,14 +104,10 @@ impl NetWork {
             } else if cid == cmd_id(submodules::CHAIN, topics::NEW_BLK) && t == MsgType::SYNC_RES {
                 trace!("CHAIN sync blk");
                 topic = "net.blk".to_string();
-            } else if cid == cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG)
-                && t == MsgType::MSG
-            {
+            } else if cid == cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG) && t == MsgType::MSG {
                 trace!("CONSENSUS pub msg");
                 topic = "net.msg".to_string();
-            } else if cid == cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL)
-                && t == MsgType::MSG
-            {
+            } else if cid == cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) && t == MsgType::MSG {
                 info!("CONSENSUS pub proposal");
                 topic = "net.msg".to_string();
             } else {

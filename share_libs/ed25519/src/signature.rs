@@ -15,15 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{pubkey_to_address, Address, Error, KeyPair, Message, PrivKey, PubKey,
-            SIGNATURE_BYTES_LEN};
+use super::{pubkey_to_address, Address, Error, KeyPair, Message, PrivKey, PubKey, SIGNATURE_BYTES_LEN};
 use rlp::*;
 use rustc_serialize::hex::ToHex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error as SerdeError, SeqAccess, Visitor};
 use serde::ser::SerializeSeq;
-use sodiumoxide::crypto::sign::{sign_detached, verify_detached, PublicKey as EdPublicKey,
-                                SecretKey, Signature as EdSignature};
+use sodiumoxide::crypto::sign::{sign_detached, verify_detached, PublicKey as EdPublicKey, SecretKey,
+                                Signature as EdSignature};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 use util::H768;
@@ -63,7 +62,8 @@ impl Encodable for Signature {
     }
 }
 
-// TODO: Maybe it should be implemented with rust macro(https://github.com/rust-lang/rfcs/issues/1038)
+// TODO: Maybe it should be implemented with rust macro
+// https://github.com/rust-lang/rfcs/issues/1038
 impl<'de> Deserialize<'de> for Signature {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -233,11 +233,7 @@ impl Sign for Signature {
         }
     }
 
-    fn verify_public(
-        &self,
-        pubkey: &Self::PubKey,
-        message: &Self::Message,
-    ) -> Result<bool, Self::Error> {
+    fn verify_public(&self, pubkey: &Self::PubKey, message: &Self::Message) -> Result<bool, Self::Error> {
         let sig = self.sig();
         let pk = self.pk();
         if pk != pubkey.as_ref() {

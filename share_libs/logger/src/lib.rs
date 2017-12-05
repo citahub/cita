@@ -157,8 +157,7 @@ fn config_file_appender(file_path: &str, filter: (Vec<String>, LogLevelFilter)) 
         .build(file_path)
         .unwrap();
 
-    let mut config_builder =
-        Config::builder().appender(Appender::builder().build("requests", Box::new(requests)));
+    let mut config_builder = Config::builder().appender(Appender::builder().build("requests", Box::new(requests)));
 
     let loggers = creat_loggers(filter, "requests".to_string());
 
@@ -183,8 +182,7 @@ fn config_file_appender(file_path: &str, filter: (Vec<String>, LogLevelFilter)) 
 fn config_console_appender(filter: (Vec<String>, LogLevelFilter)) -> Config {
     let stdout = ConsoleAppender::builder().build();
 
-    let mut config_builder =
-        Config::builder().appender(Appender::builder().build("stdout", Box::new(stdout)));
+    let mut config_builder = Config::builder().appender(Appender::builder().build("stdout", Box::new(stdout)));
 
     let loggers = creat_loggers(filter, "stdout".to_string());
 

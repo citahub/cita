@@ -15,8 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(dead_code, unused_variables, unused_must_use, unused_mut, unused_imports,
-         unused_extern_crates)]
+#![allow(dead_code, unused_variables, unused_must_use, unused_mut, unused_imports, unused_extern_crates)]
 #![feature(test)]
 extern crate cita_crypto as crypto;
 extern crate clap;

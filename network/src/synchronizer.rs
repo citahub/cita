@@ -47,7 +47,14 @@ impl Synchronizer {
     }
 
     pub fn update_current_status(&mut self, latest_status: Status) {
-        debug!("sync: update_current_status: current height = {}, before height = {}, sync_end_height = {}", latest_status.get_height(), self.current_status.get_height(), self.sync_end_height);
+        debug!(
+            "sync: update_current_status: current height = {}, \
+             before height = {}, \
+             sync_end_height = {}",
+            latest_status.get_height(),
+            self.current_status.get_height(),
+            self.sync_end_height
+        );
         let old_height = self.current_status.get_height();
         self.latest_status_lists = self.latest_status_lists
             .split_off(&(latest_status.get_height() + 1));
@@ -75,9 +82,7 @@ impl Synchronizer {
                 second,
                 self.block_lists.len()
             );
-            if self.block_lists.contains_key(&start_height)
-                && self.block_lists.contains_key(&second)
-            {
+            if self.block_lists.contains_key(&start_height) && self.block_lists.contains_key(&second) {
                 self.submit_blocks();
             } else {
                 self.start_sync_req(start_height, 0);
@@ -112,9 +117,7 @@ impl Synchronizer {
             //即将同步,保存
             self.add_latest_sync_lists(status.get_height(), origin);
 
-            if self.global_status.get_height() > old_global_status.get_height()
-                && self.is_synchronizing
-            {
+            if self.global_status.get_height() > old_global_status.get_height() && self.is_synchronizing {
                 self.start_sync_req(status.get_height(), status.get_height());
             } else {
                 self.is_synchronizing = false;
@@ -126,9 +129,7 @@ impl Synchronizer {
             if self.sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT || !self.is_synchronizing {
                 self.sync_time_out = Instant::now();
                 self.start_sync_req(current_height + 1, status.get_height());
-            } else if self.global_status.get_height() > old_global_status.get_height()
-                && self.is_synchronizing
-            {
+            } else if self.global_status.get_height() > old_global_status.get_height() && self.is_synchronizing {
                 self.start_sync_req(status.get_height(), status.get_height());
             }
 
@@ -227,7 +228,16 @@ impl Synchronizer {
 
     fn sync_strategy(&self, start_height: u64, end_height: u64, origin: u32) {
         //current height = 155,start_height = 156, end height = 160, to origin = 1
-        debug!("sync: sync_strategy: current height = {},start_height = {}, end height = {}, to origin = {}", self.current_status.get_height(), start_height, end_height, origin);
+        debug!(
+            "sync: sync_strategy: current height = {}, \
+             start_height = {}, \
+             end height = {}, \
+             to origin = {}",
+            self.current_status.get_height(),
+            start_height,
+            end_height,
+            origin
+        );
         if start_height >= self.current_status.get_height() && start_height <= end_height {
             let mut start_height = start_height;
             let mut step_sum = SYNC_STEP;
@@ -251,7 +261,16 @@ impl Synchronizer {
 
     fn send_sync_req(&self, heights: Vec<u64>, origin: u32) {
         if !heights.is_empty() {
-            debug!("sync: send_sync_req:current height = {},  heights = {:?} ,origin {:?}, chain.sync: OperateType {:?}", self.current_status.get_height(), heights, origin, communication::OperateType::SINGLE);
+            debug!(
+                "sync: send_sync_req:current height = {}, \
+                 heights = {:?}, \
+                 origin {:?}, \
+                 chain.sync: OperateType {:?}",
+                self.current_status.get_height(),
+                heights,
+                origin,
+                communication::OperateType::SINGLE
+            );
             let mut sync_req = SyncRequest::new();
             sync_req.set_heights(heights);
             let msg = factory::create_msg_ex(
@@ -286,7 +305,16 @@ impl Synchronizer {
     //提交连续的块
     fn submit_blocks(&mut self) {
         let mut height = self.current_status.get_height() + 1;
-        debug!("sync: submit_blocks:submit_height = {}, current height = {}, sync_end_height = {}, block_lists = {}", height, self.current_status.get_height(), self.sync_end_height, self.block_lists.len());
+        debug!(
+            "sync: submit_blocks:submit_height = {},\
+             current height = {},\
+             sync_end_height = {},\
+             block_lists = {}",
+            height,
+            self.current_status.get_height(),
+            self.sync_end_height,
+            self.block_lists.len()
+        );
         let mut blocks = vec![];
         self.block_lists = self.block_lists.split_off(&height);
         let end_height = height + SYNC_STEP;
@@ -320,7 +348,9 @@ impl Synchronizer {
             let height = self.current_status.get_height();
             self.sync_end_height = height + (blocks.len() - 1) as u64;
             debug!(
-                "sync: pub_blocks: current height = {}, sync_end_height = {}, len = {}, ",
+                "sync: pub_blocks: current height = {}, \
+                 sync_end_height = {}, \
+                 len = {}, ",
                 self.current_status.get_height(),
                 self.sync_end_height,
                 blocks.len()
@@ -341,7 +371,9 @@ impl Synchronizer {
 
     fn add_latest_sync_lists(&mut self, height: u64, origin: u32) {
         debug!(
-            "sync: add_sync_lists: current height = {}, from node = {}, height = {}",
+            "sync: add_sync_lists: current height = {}, \
+             from node = {}, \
+             height = {}",
             self.current_status.get_height(),
             origin,
             height

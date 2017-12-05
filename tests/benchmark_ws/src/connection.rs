@@ -52,10 +52,7 @@ pub struct FactoryConnection {
 }
 
 impl FactoryConnection {
-    pub fn new(
-        ws_senders: Arc<RwLock<Vec<Sender>>>,
-        tx: mpsc::Sender<Message>,
-    ) -> FactoryConnection {
+    pub fn new(ws_senders: Arc<RwLock<Vec<Sender>>>, tx: mpsc::Sender<Message>) -> FactoryConnection {
         FactoryConnection {
             ws_senders: ws_senders,
             tx: tx,

@@ -323,11 +323,7 @@ impl Sendtx {
 
 
     //执行合约的交易线程
-    pub fn dispatch_send_thd(
-        &self,
-        sync_send: mpsc::Sender<(u64, u64)>,
-        send_h: mpsc::Sender<u64>,
-    ) {
+    pub fn dispatch_send_thd(&self, sync_send: mpsc::Sender<(u64, u64)>, send_h: mpsc::Sender<u64>) {
         //获取合约地址
         let sender = self.get_contract_address();
 

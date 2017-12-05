@@ -121,8 +121,7 @@ impl QuotaManager {
 
     /// Global gas limit
     pub fn block_gas_limit(chain: &Chain) -> u64 {
-        let output =
-            chain.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
+        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
         trace!("block_gas_limit output: {:?}", output);
 
         let output_hex = ToHex::to_hex(output.as_slice());
@@ -134,8 +133,7 @@ impl QuotaManager {
 
     /// Global account gas limit
     pub fn account_gas_limit(chain: &Chain) -> u64 {
-        let output =
-            chain.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
+        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
         trace!("account_gas_limit output: {:?}", output);
 
         let output_hex = ToHex::to_hex(output.as_slice());
@@ -161,13 +159,7 @@ mod tests {
     use util::{Address, U256};
 
     #[allow(dead_code)]
-    fn create_block(
-        chain: &Chain,
-        privkey: &PrivKey,
-        to: Address,
-        data: Vec<u8>,
-        nonce: (u32, u32),
-    ) -> Block {
+    fn create_block(chain: &Chain, privkey: &PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
         let mut block = Block::new();
 
         block.set_parent_hash(chain.get_current_hash());
@@ -200,7 +192,11 @@ mod tests {
     #[test]
     fn test_users() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+            PrivKey::from(
+                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e\
+                 304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd9786\
+                 61983b8af4bc115d2d66",
+            )
         } else if SIGNATURE_NAME == "secp256k1" {
             PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
         } else {
@@ -224,7 +220,11 @@ mod tests {
     #[test]
     fn test_quota() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+            PrivKey::from(
+                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8\
+                 c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcf\
+                 d978661983b8af4bc115d2d66",
+            )
         } else if SIGNATURE_NAME == "secp256k1" {
             PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
         } else {
@@ -243,7 +243,11 @@ mod tests {
     #[test]
     fn test_block_gas_limit() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+            PrivKey::from(
+                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c9\
+                 ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed\
+                 2bcbcfd978661983b8af4bc115d2d66",
+            )
         } else if SIGNATURE_NAME == "secp256k1" {
             PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
         } else {
@@ -253,8 +257,7 @@ mod tests {
         let chain = init_chain();
         println!("init chain finish");
 
-        let output =
-            chain.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
+        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
         let output_hex = ToHex::to_hex(output.as_slice());
         let block_gas_limit = u32::from_str_radix(&*output_hex, 16).unwrap();
 
@@ -264,7 +267,11 @@ mod tests {
     #[test]
     fn test_account_gas_limit() {
         let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from("fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd978661983b8af4bc115d2d66")
+            PrivKey::from(
+                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c\
+                 9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223\
+                 ed2bcbcfd978661983b8af4bc115d2d66",
+            )
         } else if SIGNATURE_NAME == "secp256k1" {
             PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
         } else {
@@ -274,8 +281,7 @@ mod tests {
         let chain = init_chain();
         println!("init chain finish");
 
-        let output =
-            chain.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
+        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
         let output_hex = ToHex::to_hex(output.as_slice());
         println!("output hex {:?}", output_hex);
         let account_gas_limit = u32::from_str_radix(&*output_hex, 16).unwrap();

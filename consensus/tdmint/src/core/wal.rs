@@ -44,8 +44,7 @@ impl Wal {
             let entry = dir_entry?;
             let epath = entry.path();
             if let Some(fname) = epath.clone().file_stem() {
-                if tmp.len() < fname.len() || (tmp.len() == fname.len() && tmp.as_os_str() < fname)
-                {
+                if tmp.len() < fname.len() || (tmp.len() == fname.len() && tmp.as_os_str() < fname) {
                     tmp = fname.to_os_string();
                     big_path = epath;
                     fnum += 1;
