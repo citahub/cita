@@ -1,7 +1,7 @@
 [package]
 name = "consensus_tendermint"
 version = "0.1.0"
-authors = ["yubo <yubo@cryptape.com>"]
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies]
 dotenv = "0.10.0"

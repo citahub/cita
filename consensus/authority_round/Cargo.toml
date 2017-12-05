@@ -1,7 +1,7 @@
 [package]
 name = "consensus_poa"
 version = "0.6.0"
-authors = []
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies]
 threadpool = "1.7.0"

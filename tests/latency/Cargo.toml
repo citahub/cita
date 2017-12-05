@@ -2,7 +2,7 @@
 description = "CITA node."
 name = "latency"
 version = "0.1.0"
-authors = ["ptting <ptting@cryptape.com>"]
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [[bin]]
 path = "latency.rs"

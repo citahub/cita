@@ -2,7 +2,7 @@
 name = "common-types"
 description = "Common types used throughout the codebase"
 version = "0.1.0"
-authors = ["Cryptape"]
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies]
 rlp = { path = "../../share_libs/rlp" }

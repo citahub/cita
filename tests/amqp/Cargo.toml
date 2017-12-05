@@ -2,7 +2,7 @@
 description = "CITA node."
 name = "amqp_test"
 version = "0.1.0"
-authors = ["gguoss <gavin@Cryptape.com>"]
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [[bin]]
 path = "amqp_test.rs"

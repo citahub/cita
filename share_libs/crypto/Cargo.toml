@@ -1,7 +1,7 @@
 [package]
 name = "cita-crypto"
 version = "0.1.0"
-authors = ["lbqds <lbqds@cryptape.com>"]
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies]
 cita-ed25519 = { path = "../ed25519", optional = true }
