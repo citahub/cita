@@ -509,12 +509,12 @@ mod tests {
 
     #[test]
     fn test_rpc_request_parse() {
-        let rpc = r#"{"id":"-8799978260242268161",\
-                    "jsonrpc":"2.0",\
-                    "method":"eth_call",\
-                    "params":["1",\
-                    "0x0a283361653838666533373063333933383466633136646132633965373638\
-                    6366356432343935623438120d31343932353139393038393631"]}"#;
+        let rpc = "{\"id\":\"-8799978260242268161\",\
+                   \"jsonrpc\":\"2.0\",\
+                   \"method\":\"eth_call\",\
+                   \"params\":[\"1\",\
+                   \"0x0a283361653838666533373063333933383466633136646132633965373638\
+                   6366356432343935623438120d31343932353139393038393631\"]}";
 
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let params: Result<(String, String), Error> = request.params.unwrap().parse();
@@ -523,11 +523,11 @@ mod tests {
 
     #[test]
     fn test_rpc_request_parse1() {
-        let rpc = r#"{"id":"-8799978260242268161",\
-                    "jsonrpc":"2.0",\
-                    "method":"eth_call",\
-                    "params":["0x0a28336165383866653337306333393338346663313664613263\
-                    39653736386366356432343935623438120d31343932353139393038393631"]}"#;
+        let rpc = "{\"id\":\"-8799978260242268161\",\
+                   \"jsonrpc\":\"2.0\",\
+                   \"method\":\"eth_call\",\
+                   \"params\":[\"0x0a28336165383866653337306333393338346663313664613263\
+                   39653736386366356432343935623438120d31343932353139393038393631\"]}";
 
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let params: Result<(String, String), Error> = request.params.unwrap().parse();
@@ -536,11 +536,11 @@ mod tests {
 
     #[test]
     fn test_rpc_request_parse2() {
-        let rpc = r#"{"id":"-8799978260242268161",\
-                    "jsonrpc":"2.0",\
-                    "method":"eth_call",\
-                    "params":["0x0a28336165383866653337306333393338346663313664613263\
-                    39653736386366356432343935623438120d31343932353139393038393631"]}"#;
+        let rpc = "{\"id\":\"-8799978260242268161\",\
+                   \"jsonrpc\":\"2.0\",\
+                   \"method\":\"eth_call\",\
+                   \"params\":[\"0x0a28336165383866653337306333393338346663313664613263\
+                   39653736386366356432343935623438120d31343932353139393038393631\"]}";
 
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let params: Result<(String,), Error> = request.params.unwrap().parse();
@@ -550,13 +550,13 @@ mod tests {
     #[test]
     // 交易添加valid_until_block后，兼容测试以前的交易。
     fn test_blocklimit_backword_compatibility() {
-        let rpc = r#"{"jsonrpc":"2.0",\
-                      "method":"cita_sendTransaction",\
-                      "params":["0x1201311a85010a401201311a3b2239080a12350a24303561626\
-                      36538642d316431662d343536352d396636342d6262316430323639336533391\
-                      0641a03303037220443495441280312417922853b51d097df76791aa10836942\
-                      c66bc522c24c8804c93e9230fc67dde897bbed399fa0f9e9ac0abc598cd92215\
-                      fb362b9e31251bf784511be61d045703e00"],"id":2}"#;
+        let rpc = "{\"jsonrpc\":\"2.0\",\
+                   \"method\":\"cita_sendTransaction\",\
+                   \"params\":[\"0x1201311a85010a401201311a3b2239080a12350a24303561626\
+                   36538642d316431662d343536352d396636342d6262316430323639336533391\
+                   0641a03303037220443495441280312417922853b51d097df76791aa10836942\
+                   c66bc522c24c8804c93e9230fc67dde897bbed399fa0f9e9ac0abc598cd92215\
+                   fb362b9e31251bf784511be61d045703e00\"],\"id\":2}";
         let request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let params: Result<(String,), Error> = request.params.unwrap().parse();
         assert!(params.is_ok());
@@ -564,12 +564,13 @@ mod tests {
 
     #[test]
     fn eth_call_with_blockid_deserialization() {
-        let rpc = r#"{"jsonrpc":"2.0",\
-                      "method":"eth_call",\
-                      "params":[{"from":"d46e8dd67c5d32be8058bb8eb970870f07244567",\
-                      "to":"b60e8dd61c5d32be8058bb8eb970870f07233155",\
-                      "data":"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"},\
-                       "22"],"id":2}"#;
+        let rpc = "{\"jsonrpc\":\"2.0\",\
+                   \"method\":\"eth_call\",\
+                   \"params\":[{\"from\":\"d46e8dd67c5d32be8058bb8eb970870f07244567\",\
+                   \"to\":\"b60e8dd61c5d32be8058bb8eb970870f07233155\",\
+                   \"data\":\"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f0724456\
+                   75058bb8eb970870f072445675\"},\
+                   \"22\"],\"id\":2}";
         let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
 
         let handler = MethodHandler;
@@ -604,13 +605,13 @@ mod tests {
 
     #[test]
     fn eth_call_deserialization() {
-        let rpc = r#"{"jsonrpc":"2.0",\
-                      "method":"eth_call",\
-                      "params":[{"from":"d46e8dd67c5d32be8058bb8eb970870f07244567",\
-                      "to":"b60e8dd61c5d32be8058bb8eb970870f07233155",\
-                      "data":"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f07\
-                      2445675058bb8eb970870f072445675"}],\
-                      "id":2}"#;
+        let rpc = "{\"jsonrpc\":\"2.0\",\
+                   \"method\":\"eth_call\",\
+                   \"params\":[{\"from\":\"d46e8dd67c5d32be8058bb8eb970870f07244567\",\
+                   \"to\":\"b60e8dd61c5d32be8058bb8eb970870f07233155\",\
+                   \"data\":\"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f07\
+                   2445675058bb8eb970870f072445675\"}],\
+                   \"id\":2}";
         let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
 
         let handler = MethodHandler;
@@ -644,16 +645,16 @@ mod tests {
 
     #[test]
     fn cita_get_log_deserialization() {
-        let rpc = r#"{"jsonrpc":"2.0",\
-                    "method":"eth_getLogs",\
-                    "params":[{"fromBlock":"0x1",\
-                    "toBlock":"0x2",\
-                    "address":"8888f1f195afa192cfee860698584c030f4c9db1",\
-                    "topics": ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", \
-                    null, \
-                    ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", \
-                    "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"]]}],\
-                    "id":2}"#;
+        let rpc = "{\"jsonrpc\":\"2.0\",\
+                   \"method\":\"eth_getLogs\",\
+                   \"params\":[{\"fromBlock\":\"0x1\",\
+                   \"toBlock\":\"0x2\",\
+                   \"address\":\"8888f1f195afa192cfee860698584c030f4c9db1\",\
+                   \"topics\": [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
+                   null,\
+                   [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
+                   \"0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc\"]]}],\
+                   \"id\":2}";
         let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
         let handler = MethodHandler;
         let request: Result<request::Request, Error> = handler.get_logs(rpc_request.clone());

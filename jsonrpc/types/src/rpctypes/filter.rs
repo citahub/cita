@@ -160,10 +160,10 @@ mod tests {
 
     #[test]
     fn topic_deserialization() {
-        let s = r#"["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", \
-                   null, \
-                   ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b", \
-                   "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"]]"#;
+        let s = "[\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
+                 null,\
+                 [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
+                 \"0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc\"]]";
         let deserialized: Vec<Topic> = serde_json::from_str(s).unwrap();
         assert_eq!(
             deserialized,

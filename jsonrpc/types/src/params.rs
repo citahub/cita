@@ -197,9 +197,9 @@ mod tests {
 
     #[test]
     fn should_parse_filter() {
-        let s = r#"{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3",
-                                    "0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3",
-                                    "0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"]}"#;
+        let s = "{\"topics\":[\"0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3\",\
+                 \"0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3\",\
+                 \"0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3\"]}";
         let deserialized: Filter = serde_json::from_str(s).unwrap();
         println!("deserialized = {:?}", deserialized);
 

@@ -63,9 +63,9 @@ impl Trans {
     pub fn generate_tx_data(method: Methods) -> String {
         let txdata = match method {
             Methods::Sendtx(tx) => format!(
-                r#"{{"jsonrpc":"2.0",\
-                "method":"cita_sendTransaction",\
-                "params":["{}"],"id":2}}"#,
+                "{{\"jsonrpc\":\"2.0\",\
+                 \"method\":\"cita_sendTransaction\",\
+                 \"params\":[\"{}\"],\"id\":2}}",
                 tx.write_to_bytes().unwrap().to_hex()
             ),
             Methods::Height => format!(r#"{{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":2}}"#),
