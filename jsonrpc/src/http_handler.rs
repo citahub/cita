@@ -18,14 +18,13 @@
 use base_hanlder::{BaseHandler, ReqInfo, RpcMap, TransferType};
 use error::ErrorCode;
 use hyper::Post;
+use hyper::status::StatusCode;
 use hyper::server::{Handler, Request, Response};
 use hyper::uri::RequestUri::AbsolutePath;
 use jsonrpc_types::{method, Error, RpcRequest};
 use jsonrpc_types::response::RpcFailure;
 use libproto::request as reqlib;
-use serde_json;
-use std::io::Read;
-use std::result;
+use serde_json::{self, from_value, Value};
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
 use util::Mutex;
@@ -35,46 +34,19 @@ impl BaseHandler for HttpHandler {}
 pub struct HttpHandler {
     pub tx: Arc<Mutex<mpsc::Sender<(String, reqlib::Request)>>>,
     pub responses: RpcMap,
-    pub timeout: usize,
+    pub timeout: u64,
     pub method_handler: method::MethodHandler,
 }
 
 impl HttpHandler {
-    pub fn pase_url(&self, mut req: Request) -> Result<String, Error> {
-        let uri = req.uri.clone();
-        let method = req.method.clone();
-        match uri {
-            AbsolutePath(ref path) => {
-                match (&method, &path[..]) {
-                    (&Post, "/") => {
-                        let mut body = String::new();
-                        match req.read_to_string(&mut body) {
-                            Ok(_) => Ok(body),
-                            Err(_) => Err(Error::invalid_request()), //TODO
-                        }
-                    }
-                    _ => result::Result::Err(Error::invalid_request()),
-                }
-            }
-            _ => result::Result::Err(Error::invalid_request()),
-        }
-    }
-
-    pub fn deal_req(&self, post_data: String) -> Result<String, RpcFailure> {
-        match HttpHandler::into_rpc(post_data) {
-            Err(err) => Err(RpcFailure::from(err)),
-            Ok(rpc) => self.send_mq(rpc),
-        }
-    }
-
-    pub fn send_mq(&self, rpc: RpcRequest) -> Result<String, RpcFailure> {
+    pub fn send_mq(&self, rpc: RpcRequest) -> String {
         let id = rpc.id.clone();
         let jsonrpc_version = rpc.jsonrpc.clone();
         let topic = HttpHandler::select_topic(&rpc.method);
-        match self.method_handler.request(rpc) {
-            Ok(req) => {
+        self.method_handler
+            .request(rpc)
+            .map(|req| {
                 let request_id = req.request_id.clone();
-                trace!("wait response {:?}", request_id);
                 let (tx, rx) = mpsc::channel();
                 {
                     self.responses.lock().insert(
@@ -89,45 +61,70 @@ impl HttpHandler {
                     );
                     self.tx.lock().send((topic, req));
                 }
-
-                if let Ok(res) = rx.recv_timeout(Duration::from_secs(self.timeout as u64)) {
-                    Ok(res)
-                } else {
-                    self.responses.lock().remove(&request_id);
-                    Err(RpcFailure::from_options(
-                        id,
-                        jsonrpc_version,
-                        Error::server_error(ErrorCode::time_out_error(), "system time out,please resend"),
-                    ))
-                }
-            }
-
-            Err(err) => Err(RpcFailure::from_options(id, jsonrpc_version, err)),
-        }
+                rx.recv_timeout(Duration::from_secs(self.timeout))
+                    .unwrap_or_else(|_| {
+                        self.responses.lock().remove(&request_id);
+                        let failure = RpcFailure::from_options(
+                            id.clone(),
+                            jsonrpc_version.clone(),
+                            Error::server_error(
+                                ErrorCode::time_out_error(),
+                                "system time out, please resend",
+                            ),
+                        );
+                        serde_json::to_string(&failure).expect("should be serialize by serde_json")
+                    })
+            })
+            .unwrap_or_else(|err| {
+                serde_json::to_string(&RpcFailure::from_options(id, jsonrpc_version, err))
+                    .expect("should be serialize by serde_json")
+            })
     }
 }
 
 
 
 impl Handler for HttpHandler {
-    fn handle(&self, req: Request, res: Response) {
-        //TODO 不允许在这里做业务处理。
-        let data = match self.pase_url(req) {
-            Err(err) => serde_json::to_string(&RpcFailure::from(err)),
-            Ok(body) => {
-                trace!("JsonRpc recive raw Request data {:?}", body);
-                match self.deal_req(body) {
-                    Ok(ret) => Ok(ret),
-                    Err(err) => serde_json::to_string(&err),
-                }
-            }
-        };
+    fn handle(&self, request: Request, mut response: Response) {
+        if request.uri != AbsolutePath(String::from("/")) {
+            *response.status_mut() = StatusCode::NotFound;
+            return;
+        }
+        if request.method != Post {
+            *response.status_mut() = StatusCode::BadRequest;
+            return;
+        }
 
-        //TODO
-        trace!("JsonRpc respone data {:?}", data);
-        res.send(
-            data.expect("return client's respone data unwrap error")
-                .as_ref(),
-        );
+        serde_json::from_reader::<_, Value>(request)
+            .map_err(|_| *response.status_mut() = StatusCode::BadRequest) // failed to parse json
+            .map(|json| {
+                trace!("recv: {:?}", json);
+                from_value(json.clone())
+                    .map(|item: RpcRequest| self.send_mq(item)) // try single request
+                    .map_err(|_| {                              // try batch request
+                        from_value(json).map(|array: Vec<RpcRequest>| {
+                            let mut first = true;
+                            array
+                                .into_iter()
+                                .map(|item| self.send_mq(item))
+                                .fold(String::from("["), |last, item| {
+                                    if first {
+                                        first = false;
+                                        last + item.as_ref()
+                                    } else {
+                                        last + "," + item.as_ref()
+                                    }
+                                }) + "]"
+                        })
+                    })
+                    .map_err(|_|{ // failure
+                        *response.status_mut() = StatusCode::InternalServerError;
+                    })
+                    .map(|result| { // success
+                        trace!("send: {}", result);
+                        response.send(result.as_ref());
+                    })
+
+        });
     }
 }
