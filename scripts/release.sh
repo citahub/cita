@@ -17,9 +17,6 @@ mkdir -p                                   target/install/bin/
 # 1) binary
 cp -rf target/${type}/chain                target/install/bin/cita-chain
 cp -rf target/${type}/consensus_tendermint target/install/bin/cita-consensus
-cp -rf target/${type}/consensus_poa        target/install/bin/
-cp -rf target/${type}/raft                 target/install/bin/
-cp -rf target/${type}/txpool               target/install/bin/
 cp -rf target/${type}/jsonrpc              target/install/bin/cita-jsonrpc
 cp -rf target/${type}/auth                 target/install/bin/cita-auth
 cp -rf target/${type}/network              target/install/bin/cita-network
@@ -56,5 +53,5 @@ cp -rf  scripts/install_runtime.sh         target/install/scripts/
 cp -rf  scripts/build_image_from_binary.sh target/install/scripts/
 cp -rf  scripts/docker-compose.yaml        target/install/scripts/
 
-# 6) txpool
+# 6) txtool
 cp -rf scripts/txtool                      target/install/scripts/

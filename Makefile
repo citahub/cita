@@ -58,8 +58,6 @@ bench:
 	@-rm -f target/bench.log
 	@find chain  consensus  jsonrpc network share_libs tests              		  \
 		  -name 'Cargo.toml'                                                      \
-		  -not -path 'consensus/raft/*'                                           \
-		  -not -path 'consensus/capnp_nonblock/*'                                 \
 		  -exec cargo bench  --manifest-path {} 2>&1 \; |tee -a target/bench.log
 	@echo "################################################################################"
 	@echo "bench error:"
