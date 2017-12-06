@@ -19,12 +19,16 @@ sudo apt-get install -y software-properties-common
 if [ $(lsb_release -s -c) = "trusty" ]; then
     sudo add-apt-repository -y ppa:chris-lea/libsodium
 fi;
-# 2.2) add ethereum repository
-sudo add-apt-repository -y ppa:ethereum/ethereum
 
 # 3) install runtime dependencies
 sudo apt-get update -q
-sudo apt-get install -y libstdc++6 rabbitmq-server libssl-dev libgoogle-perftools4 python-pip wget solc libsodium*
+sudo apt-get install -y libstdc++6 rabbitmq-server libssl-dev libgoogle-perftools4 python-pip wget libsodium*
+
+# 3.1) install solc
+wget https://github.com/ethereum/solidity/releases/download/v0.4.19/solidity_0.4.19.tar.gz
+tar -xf solidity_0.4.19.tar.gz
+./solidity_0.4.19/scripts/install_deps.sh
+./solidity_0.4.19/scripts/build.sh
 
 # 4) install python package
 umask 022
