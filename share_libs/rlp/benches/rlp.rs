@@ -13,45 +13,46 @@
 //! ```
 
 #![cfg_attr(test, feature(test))]
-#![rustfmt_skip]
-extern crate test;
+
 extern crate bigint;
 extern crate rlp;
+extern crate test;
 
 use bigint::U256;
-use rlp::{RlpStream, Rlp};
+use rlp::{Rlp, RlpStream};
 use test::Bencher;
 
 #[bench]
 fn bench_stream_u64_value(b: &mut Bencher) {
     b.iter(|| {
-               // u64
-               let mut stream = RlpStream::new();
-               stream.append(&0x1023456789abcdefu64);
-               let _ = stream.out();
-           });
+        // u64
+        let mut stream = RlpStream::new();
+        stream.append(&0x1023456789abcdefu64);
+        let _ = stream.out();
+    });
 }
 
 #[bench]
 fn bench_decode_u64_value(b: &mut Bencher) {
     b.iter(|| {
-               // u64
-               let data = vec![0x88, 0x10, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef];
-               let rlp = Rlp::new(&data);
-               let _: u64 = rlp.as_val();
-           });
+        // u64
+        let data = vec![0x88, 0x10, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef];
+        let rlp = Rlp::new(&data);
+        let _: u64 = rlp.as_val();
+    });
 }
 
 #[bench]
 fn bench_stream_u256_value(b: &mut Bencher) {
     b.iter(|| {
-               // u256
-               let mut stream = RlpStream::new();
-               let uint: U256 = "8090a0b0c0d0e0f009102030405060770000000000000\
-                                 00100000000000012f0".into();
-               stream.append(&uint);
-               let _ = stream.out();
-           });
+        // u256
+        let mut stream = RlpStream::new();
+        let uint: U256 = "8090a0b0c0d0e0f009102030405060770000000000000\
+                          00100000000000012f0"
+            .into();
+        stream.append(&uint);
+        let _ = stream.out();
+    });
 }
 
 #[bench]
@@ -101,13 +102,17 @@ fn bench_decode_u256_value(b: &mut Bencher) {
 #[bench]
 fn bench_stream_nested_empty_lists(b: &mut Bencher) {
     b.iter(|| {
-               // [ [], [[]], [ [], [[]] ] ]
-               let mut stream = RlpStream::new_list(3);
-               stream.begin_list(0);
-               stream.begin_list(1).begin_list(0);
-               stream.begin_list(2).begin_list(0).begin_list(1).begin_list(0);
-               let _ = stream.out();
-           });
+        // [ [], [[]], [ [], [[]] ] ]
+        let mut stream = RlpStream::new_list(3);
+        stream.begin_list(0);
+        stream.begin_list(1).begin_list(0);
+        stream
+            .begin_list(2)
+            .begin_list(0)
+            .begin_list(1)
+            .begin_list(0);
+        let _ = stream.out();
+    });
 }
 
 #[bench]
@@ -127,10 +132,10 @@ fn bench_decode_nested_empty_lists(b: &mut Bencher) {
 #[bench]
 fn bench_stream_1000_empty_lists(b: &mut Bencher) {
     b.iter(|| {
-               let mut stream = RlpStream::new_list(1000);
-               for _ in 0..1000 {
-                   stream.begin_list(0);
-               }
-               let _ = stream.out();
-           });
+        let mut stream = RlpStream::new_list(1000);
+        for _ in 0..1000 {
+            stream.begin_list(0);
+        }
+        let _ = stream.out();
+    });
 }
