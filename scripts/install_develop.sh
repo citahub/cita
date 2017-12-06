@@ -20,13 +20,17 @@ sudo apt-get install -y software-properties-common
 if [ $(lsb_release -s -c) = "trusty" ]; then
     sudo add-apt-repository -y ppa:chris-lea/libsodium;
 fi;
-# 2.2) add ethereum repository
-sudo add-apt-repository -y ppa:ethereum/ethereum
 
 # 3) install develop dependencies
 sudo apt-get update -q
-sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip solc curl jq  google-perftools capnproto wget git \
-     libsnappy-dev libgoogle-perftools-dev libsodium* libzmq3-dev libssl-dev 
+sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip curl jq  google-perftools capnproto wget git \
+     libsnappy-dev libgoogle-perftools-dev libsodium* libzmq3-dev libssl-dev cmake
+
+# 3.1) install solc
+wget https://github.com/ethereum/solidity/releases/download/v0.4.19/solidity_0.4.19.tar.gz
+tar -xf solidity_0.4.19.tar.gz
+./solidity_0.4.19/scripts/install_deps.sh
+./solidity_0.4.19/scripts/build.sh
 
 # 4) install python package
 umask 022
@@ -41,8 +45,8 @@ sudo ln -srf /usr/local/lib/libgmssl.so.1.0.0 /usr/local/lib/libgmssl.so
 
 # 6) install rust&rustfmt
 # 6.1) rust
-which cargo || (curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-08-04)
+which cargo || (curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-12-05)
 . ${HOME}/.cargo/env
 
 # 6.2) rustfmt
-which rustfmt|| cargo install --force --vers 0.9.0 rustfmt
+which rustfmt|| cargo install --force --vers 0.2.17 rustfmt-nightly
