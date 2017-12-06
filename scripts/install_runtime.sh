@@ -22,13 +22,13 @@ fi;
 
 # 3) install runtime dependencies
 sudo apt-get update -q
-sudo apt-get install -y libstdc++6 rabbitmq-server libssl-dev libgoogle-perftools4 python-pip wget libsodium*
+sudo apt-get install -y libstdc++6 rabbitmq-server libssl-dev libgoogle-perftools4 python-pip wget \
+                        libsodium* libz3-dev cmake libz3-dev libboost-all-dev
 
 # 3.1) install solc
 wget https://github.com/ethereum/solidity/releases/download/v0.4.19/solidity_0.4.19.tar.gz
 tar -xf solidity_0.4.19.tar.gz
-sudo ./solidity_0.4.19/scripts/install_deps.sh
-sudo ./solidity_0.4.19/scripts/build.sh
+./solidity_0.4.19/scripts/build.sh
 
 # 4) install python package
 umask 022
