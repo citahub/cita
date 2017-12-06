@@ -17,13 +17,13 @@
 
 
 #![cfg_attr(test, feature(test))]
-extern crate tx_pool;
-extern crate test;
-extern crate libproto;
-extern crate util;
 extern crate cita_crypto as crypto;
+extern crate libproto;
+extern crate test;
+extern crate tx_pool;
+extern crate util;
 
-use crypto::{KeyPair, CreateKey};
+use crypto::{CreateKey, KeyPair};
 use libproto::blockchain::AccountGasLimit;
 use libproto::blockchain::Transaction;
 use std::collections::HashMap;
@@ -38,9 +38,16 @@ fn bench_base(b: &mut Bencher) {
         tx.set_data(format!("{}", i).as_bytes().to_vec());
     }
     let sys_time = SystemTime::now();
-    let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+    let diff = sys_time
+        .duration_since(start)
+        .expect("SystemTime::duration_since failed");
     println!("pass");
-    println!("test {:20} ... bench: {}.{} s/iter", "bench_base", diff.as_secs(), diff.subsec_nanos());
+    println!(
+        "test {:20} ... bench: {}.{} s/iter",
+        "bench_base",
+        diff.as_secs(),
+        diff.subsec_nanos()
+    );
     b.iter(|| {});
 }
 
@@ -61,9 +68,16 @@ fn bench_enqueue(b: &mut Bencher) {
         p.enqueue(tx.sign(*pv));
     }
     let sys_time = SystemTime::now();
-    let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+    let diff = sys_time
+        .duration_since(start)
+        .expect("SystemTime::duration_since failed");
     println!("pass");
-    println!("test {:20} ... bench: {}.{} s/iter", "bench_enqueue", diff.as_secs(), diff.subsec_nanos());
+    println!(
+        "test {:20} ... bench: {}.{} s/iter",
+        "bench_enqueue",
+        diff.as_secs(),
+        diff.subsec_nanos()
+    );
     b.iter(|| {});
 }
 
@@ -94,9 +108,16 @@ fn bench_package(b: &mut Bencher) {
 
     p.package(height, block_gas_limit, account_gas_limit.clone());
     let sys_time = SystemTime::now();
-    let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+    let diff = sys_time
+        .duration_since(start)
+        .expect("SystemTime::duration_since failed");
     println!("pass");
-    println!("test {:20} ... bench: {}.{} s/iter", "bench_package", diff.as_secs(), diff.subsec_nanos());
+    println!(
+        "test {:20} ... bench: {}.{} s/iter",
+        "bench_package",
+        diff.as_secs(),
+        diff.subsec_nanos()
+    );
     b.iter(|| {});
 }
 
@@ -129,8 +150,15 @@ fn bench_update(b: &mut Bencher) {
     let txs = p.package(height, block_gas_limit, account_gas_limit.clone());
     p.update(&txs);
     let sys_time = SystemTime::now();
-    let diff = sys_time.duration_since(start).expect("SystemTime::duration_since failed");
+    let diff = sys_time
+        .duration_since(start)
+        .expect("SystemTime::duration_since failed");
     println!("pass");
-    println!("test {:20} ... bench: {}.{} s/iter", "bench_update", diff.as_secs(), diff.subsec_nanos());
+    println!(
+        "test {:20} ... bench: {}.{} s/iter",
+        "bench_update",
+        diff.as_secs(),
+        diff.subsec_nanos()
+    );
     b.iter(|| {});
 }

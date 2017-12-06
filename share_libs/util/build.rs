@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate vergen;
 extern crate rustc_version;
+extern crate vergen;
 
 use std::env;
 use std::fs::File;
@@ -37,8 +37,6 @@ fn main() {
         }}
     ",
             rustc_version::version()
-        )
-        .as_bytes(),
-    )
-     .unwrap();
+        ).as_bytes(),
+    ).unwrap();
 }
