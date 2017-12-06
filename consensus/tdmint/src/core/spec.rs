@@ -29,7 +29,7 @@ pub struct Spec {
 impl From<SpecJson> for Spec {
     fn from(s: SpecJson) -> Self {
         Spec {
-            name: s.name.clone().into(),
+            name: s.name.clone(),
             params: Spec::params(s.engine),
         }
     }

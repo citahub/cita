@@ -112,6 +112,7 @@ impl StepCollector {
         }
     }
 
+    #[cfg_attr(feature = "clippy", allow(map_entry))]
     pub fn add(&mut self, step: Step, sender: Address, vote: VoteMessage) -> bool {
         if self.step_votes.contains_key(&step) {
             self.step_votes.get_mut(&step).unwrap().add(sender, vote)
@@ -151,13 +152,15 @@ impl VoteSet {
     }
 
     //just add ,not check
+    #[cfg_attr(feature = "clippy", allow(map_entry))]
     pub fn add(&mut self, sender: Address, vote: VoteMessage) -> bool {
         if self.votes_by_sender.contains_key(&sender) {
             false
         } else {
             self.count += 1;
-            self.votes_by_sender.insert(sender, vote.clone());
             let proposal = vote.proposal;
+            self.votes_by_sender.insert(sender, vote);
+
             let mut hash = H256::default();
             if let Some(h) = proposal {
                 hash = h;
@@ -175,7 +178,7 @@ impl VoteSet {
             if authorities.contains(sender) {
                 let msg = serialize(&(h, r, step, sender, vote.proposal), Infinite).unwrap();
                 let signature = &vote.signature;
-                if let Ok(pubkey) = signature.recover(&msg.crypt_hash().into()) {
+                if let Ok(pubkey) = signature.recover(&msg.crypt_hash()) {
                     if pubkey_to_address(&pubkey) == *sender {
                         let mut hash = H256::default();
                         if let Some(h) = vote.proposal {
@@ -307,7 +310,7 @@ impl Proposal {
             if let Some(p) = ret.unwrap() {
                 let block = parse_from_bytes::<Block>(&self.block).unwrap();
 
-                let hash = block.crypt_hash().into();
+                let hash = block.crypt_hash();
                 if p == hash {
                     return true;
                 }

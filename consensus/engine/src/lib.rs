@@ -53,7 +53,7 @@ pub trait Engine: Sync + Send {
 
     fn receive_new_block(&self, block: &Block, tx_pub: Sender<(String, Vec<u8>)>);
 
-    fn receive_new_status(&self, status: RichStatus);
+    fn receive_new_status(&self, status: &RichStatus);
 
     fn new_block(&self, tx_pub: Sender<(String, Vec<u8>)>);
 

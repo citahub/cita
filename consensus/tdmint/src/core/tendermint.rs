@@ -32,7 +32,7 @@ use libproto::consensus::{Proposal as ProtoProposal, SignedProposal, Vote as Pro
 use proof::TendermintProof;
 use protobuf::{Message, RepeatedField};
 use protobuf::core::parse_from_bytes;
-use std::collections::{HashMap, LinkedList};
+use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc::{Receiver, RecvError, Sender};
 use std::time::{Duration, Instant};
 
@@ -50,7 +50,9 @@ const LOG_TYPE_COMMITS: u8 = 5;
 const LOG_TYPE_VERIFIED_PROPOSE: u8 = 6;
 const LOG_TYPE_AUTH_TXS: u8 = 7;
 
+#[cfg_attr(feature = "clippy", allow(cast_lossless))]
 const ID_CONSENSUS_MSG: u32 = (submodules::CONSENSUS << 16) + topics::CONSENSUS_MSG as u32;
+#[cfg_attr(feature = "clippy", allow(cast_lossless))]
 const ID_NEW_PROPOSAL: u32 = (submodules::CONSENSUS << 16) + topics::NEW_PROPOSAL as u32;
 //const ID_NEW_STATUS: u32 = (submodules::CHAIN << 16) + topics::NEW_STATUS as u32;
 
@@ -133,7 +135,7 @@ pub struct TenderMint {
     consensus_power: bool,
     unverified_msg: HashMap<(usize, usize), communication::Message>,
     // VecDeque might work, Almost always it is better to use Vec or VecDeque instead of LinkedList
-    block_txs: LinkedList<(usize, BlockTxs)>,
+    block_txs: VecDeque<(usize, BlockTxs)>,
     block_proof: Option<(usize, BlockWithProof)>,
 }
 
@@ -176,7 +178,7 @@ impl TenderMint {
             auth_manage: AuthorityManage::new(),
             consensus_power: false,
             unverified_msg: HashMap::new(),
-            block_txs: LinkedList::new(),
+            block_txs: VecDeque::new(),
             block_proof: None,
         }
     }
@@ -243,7 +245,7 @@ impl TenderMint {
 
         let message = proto_proposal.write_to_bytes().unwrap();
         let author = &self.params.signer;
-        let signature = Signature::sign(author.keypair.privkey(), &message.crypt_hash().into()).unwrap();
+        let signature = Signature::sign(author.keypair.privkey(), &message.crypt_hash()).unwrap();
         trace!(
             "pub_proposal height {}, round {}, hash {}, signature {} ",
             self.height,
@@ -349,7 +351,7 @@ impl TenderMint {
                             if op.is_some() {
                                 let pro_block = parse_from_bytes::<Block>(&op.unwrap().block);
                                 if let Ok(block) = pro_block {
-                                    let bhash: H256 = block.crypt_hash().into();
+                                    let bhash: H256 = block.crypt_hash();
                                     if bhash == *hash {
                                         self.locked_block = Some(block);
                                         self.proposal = Some(*hash);
@@ -654,7 +656,7 @@ impl TenderMint {
                     proof_blk.set_proof(proof.into());
 
                     // statement with no effect, bug here?
-                    self.block_proof == Some((height, proof_blk.clone()));
+                    // self.block_proof == Some((height, proof_blk.clone()));
                     info!(
                         " ######### height {} consensus time {:?} ",
                         height,
@@ -692,7 +694,7 @@ impl TenderMint {
     fn pub_and_broadcast_message(&mut self, height: usize, round: usize, step: Step, hash: Option<H256>) {
         let author = &self.params.signer;
         let msg = serialize(&(height, round, step, author.address, hash), Infinite).unwrap();
-        let signature = Signature::sign(author.keypair.privkey(), &msg.crypt_hash().into()).unwrap();
+        let signature = Signature::sign(author.keypair.privkey(), &msg.crypt_hash()).unwrap();
         let sig = signature.clone();
         let msg = serialize(&(msg, sig), Infinite).unwrap();
 
@@ -724,7 +726,7 @@ impl TenderMint {
 
     fn is_authority(&self, address: &Address) -> bool {
         //self.params.authorities.contains(address.into())
-        self.auth_manage.authorities.contains(address.into())
+        self.auth_manage.authorities.contains(address)
     }
 
     fn change_state_step(&mut self, height: usize, round: usize, s: Step, newflag: bool) {
@@ -740,8 +742,8 @@ impl TenderMint {
         let _ = self.wal_log.save(LOG_TYPE_STATE, &message);
     }
 
-    fn handle_state(&mut self, msg: Vec<u8>) {
-        if let Ok(decoded) = deserialize(&msg[..]) {
+    fn handle_state(&mut self, msg: &[u8]) {
+        if let Ok(decoded) = deserialize(msg) {
             let (h, r, s) = decoded;
             self.height = h;
             self.round = r;
@@ -749,9 +751,9 @@ impl TenderMint {
         }
     }
 
-    fn handle_message(&mut self, message: Vec<u8>, wal_flag: bool) -> Result<(usize, usize, Step), EngineError> {
+    fn handle_message(&mut self, message: &[u8], wal_flag: bool) -> Result<(usize, usize, Step), EngineError> {
         trace!("handle_message beginning now !");
-        let log_msg = message.clone();
+        let log_msg = message.to_owned();
         let res = deserialize(&message[..]);
         if let Ok(decoded) = res {
             let (message, signature): (Vec<u8>, &[u8]) = decoded;
@@ -759,7 +761,7 @@ impl TenderMint {
                 return Err(EngineError::InvalidSignature);
             }
             let signature = Signature::from(signature);
-            if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
+            if let Ok(pubkey) = signature.recover(&message.crypt_hash()) {
                 let decoded = deserialize(&message[..]).unwrap();
                 let (h, r, step, sender, hash) = decoded;
                 trace!(
@@ -851,7 +853,7 @@ impl TenderMint {
                             return Ok((h, r, step));
                         }
 
-                        return Err(EngineError::DoubleVote(sender.into()));
+                        return Err(EngineError::DoubleVote(sender));
                     }
                 }
             }
@@ -880,7 +882,7 @@ impl TenderMint {
                 let mut block_prehash = Vec::new();
                 block_prehash.extend_from_slice(block.get_header().get_prevhash());
                 {
-                    if hash != H256::from(block_prehash.as_slice()).into() {
+                    if hash != H256::from(block_prehash.as_slice()) {
                         trace!(
                             "proc proposal pre_hash error height {} round {} self height {} round {}",
                             height,
@@ -928,7 +930,7 @@ impl TenderMint {
             // still lock on a blk,next prevote it
             if self.lock_round.is_some() {
                 let lock_block = &self.locked_block.clone().unwrap();
-                self.proposal = Some(lock_block.crypt_hash().into());
+                self.proposal = Some(lock_block.crypt_hash());
                 info!(
                     "still have lock block {} locked round {} {:?}",
                     self.height,
@@ -939,7 +941,7 @@ impl TenderMint {
                 // else use proposal block，self.lock_round is none
                 let block = parse_from_bytes::<Block>(&proposal.block).unwrap();
                 let block_hash = block.crypt_hash();
-                self.proposal = Some(block_hash.into());
+                self.proposal = Some(block_hash);
                 info!(
                     "save the proposal's hash: height {:?}, round {}, proposal {:?}",
                     self.height,
@@ -953,7 +955,7 @@ impl TenderMint {
         false
     }
 
-    fn verify_req(&mut self, block: Block, vheight: usize, vround: usize) -> bool {
+    fn verify_req(&mut self, block: &Block, vheight: usize, vround: usize) -> bool {
         let transactions = block.get_body().get_transactions();
         let len = transactions.len();
         let verify_ok = transactions.into_iter().all(|tx| {
@@ -999,7 +1001,7 @@ impl TenderMint {
 
     fn handle_proposal(
         &mut self,
-        msg: Vec<u8>,
+        msg: &[u8],
         wal_flag: bool,
         need_verify: bool,
     ) -> Result<(usize, usize), EngineError> {
@@ -1008,7 +1010,7 @@ impl TenderMint {
             wal_flag,
             need_verify
         );
-        let signed_proposal = parse_from_bytes::<SignedProposal>(&msg);
+        let signed_proposal = parse_from_bytes::<SignedProposal>(msg);
         trace!(
             "handle proposal here self height {} round {} step {:?}",
             self.height,
@@ -1025,7 +1027,7 @@ impl TenderMint {
             let proto_proposal = signed_proposal.get_proposal();
             let message = proto_proposal.write_to_bytes().unwrap();
             trace!("handle proposal message {:?}", message.crypt_hash());
-            if let Ok(pubkey) = signature.recover(&message.crypt_hash().into()) {
+            if let Ok(pubkey) = signature.recover(&message.crypt_hash()) {
                 let height = proto_proposal.get_height() as usize;
                 let round = proto_proposal.get_round() as usize;
                 if !(height == self.height && round == self.round && self.step < Step::Prevote) {
@@ -1046,7 +1048,7 @@ impl TenderMint {
                     pubkey_to_address(&pubkey)
                 );
 
-                if need_verify && !self.verify_req(block.clone(), height, round) {
+                if need_verify && !self.verify_req(&block, height, round) {
                     trace!("handle_proposal verify_req is error");
                     return Err(EngineError::InvalidTxInProposal);
                 }
@@ -1059,7 +1061,7 @@ impl TenderMint {
 
                 if (height == self.height && round >= self.round) || height > self.height {
                     if wal_flag && height == self.height {
-                        self.wal_log.save(LOG_TYPE_PROPOSE, &msg).unwrap();
+                        self.wal_log.save(LOG_TYPE_PROPOSE, msg).unwrap();
                     }
                     info!("add proposal height {} round {}!", height, round);
                     let blk = block.write_to_bytes().unwrap();
@@ -1111,12 +1113,13 @@ impl TenderMint {
         self.unverified_msg.clear();
     }
 
+    // use iter + cloned, do not copy all block_txs
     fn clean_block_txs(&mut self) {
         let height = self.height - 1;
         self.block_txs = self.block_txs
-            .clone()
-            .into_iter()
-            .filter(|&(hi, _)| hi >= height)
+            .iter()
+            .filter(|&&(hi, _)| hi >= height)
+            .cloned()
             .collect();
     }
 
@@ -1130,7 +1133,7 @@ impl TenderMint {
             let lock_vote = &self.locked_vote;
             let lock_blk = lock_blk.clone().unwrap();
             {
-                let lock_blk_hash = H256::from(lock_blk.crypt_hash());
+                let lock_blk_hash = lock_blk.crypt_hash();
                 info!(
                     "proposal lock block: height {:?}, block hash {:?}",
                     self.height,
@@ -1158,13 +1161,13 @@ impl TenderMint {
             let mut block = Block::new();
             let mut flag = false;
 
-            for (height, ref blocktxs) in self.block_txs.clone() {
+            for &(ref height, ref blocktxs) in &self.block_txs {
                 trace!(
                     "BLOCKTXS get height {}, self height {}",
-                    height,
+                    *height,
                     self.height
                 );
-                if height == self.height - 1 {
+                if *height == self.height - 1 {
                     flag = true;
                     block.set_body(blocktxs.get_body().clone());
                 }
@@ -1238,7 +1241,7 @@ impl TenderMint {
         }
     }
 
-    pub fn timeout_process(&mut self, tminfo: TimeoutInfo) {
+    pub fn timeout_process(&mut self, tminfo: &TimeoutInfo) {
         trace!(
             "timeout_process {:?} now height {},round {}，step {:?}",
             tminfo,
@@ -1345,7 +1348,7 @@ impl TenderMint {
                 ID_CONSENSUS_MSG => {
                     //trace!("net receive_new_consensus msg");
                     if let MsgClass::MSG(msg) = content_ext {
-                        let res = self.handle_message(msg, true);
+                        let res = self.handle_message(&msg[..], true);
 
                         if let Ok((h, r, s)) = res {
                             if s == Step::Prevote {
@@ -1359,7 +1362,7 @@ impl TenderMint {
 
                 ID_NEW_PROPOSAL => {
                     if let MsgClass::MSG(msg) = content_ext {
-                        let res = self.handle_proposal(msg, true, true);
+                        let res = self.handle_proposal(&msg[..], true, true);
                         if let Ok((h, r)) = res {
                             trace!(
                                 "recive handle_proposal {:?} self height {} round {} step {:?}",
@@ -1389,7 +1392,7 @@ impl TenderMint {
                 //接受chain发送的 authorities_list
                 MsgClass::RICHSTATUS(rich_status) => {
                     trace!("get new local status {:?}", rich_status.height);
-                    self.receive_new_status(rich_status.clone());
+                    self.receive_new_status(&rich_status);
                     let authorities: Vec<Address> = rich_status
                         .get_nodes()
                         .into_iter()
@@ -1475,7 +1478,7 @@ impl TenderMint {
         }
     }
 
-    fn receive_new_status(&mut self, status: RichStatus) {
+    fn receive_new_status(&mut self, status: &RichStatus) {
         let status_height = status.height as usize;
         let height = self.height;
         let round = self.round;
@@ -1489,7 +1492,7 @@ impl TenderMint {
             return;
         }
 
-        let pre_hash = H256::from(H256::from_slice(&status.hash));
+        let pre_hash = H256::from_slice(&status.hash);
         if height > 0 && status_height + 1 == height {
             // try efforts to save previous hash,when current block is not commit to chain
             if step < Step::CommitWait {
@@ -1619,12 +1622,13 @@ impl TenderMint {
         }
     }
 
+    // the function has a cyclomatic complexity of 29
     pub fn start(&mut self) {
         let vec_buf = self.wal_log.load();
         for (mtype, vec_out) in vec_buf {
             trace!("******* wal_log type {}", mtype);
             if mtype == LOG_TYPE_PROPOSE {
-                let res = self.handle_proposal(vec_out, false, true);
+                let res = self.handle_proposal(&vec_out[..], false, true);
                 if let Ok((h, r)) = res {
                     let pres = self.proc_proposal(h, r);
                     if !pres {
@@ -1632,7 +1636,7 @@ impl TenderMint {
                     }
                 }
             } else if mtype == LOG_TYPE_VOTE {
-                let res = self.handle_message(vec_out, false);
+                let res = self.handle_message(&vec_out[..], false);
                 if let Ok((h, r, s)) = res {
                     if s == Step::Prevote {
                         self.proc_prevote(h, r);
@@ -1641,9 +1645,9 @@ impl TenderMint {
                     }
                 }
             } else if mtype == LOG_TYPE_STATE {
-                self.handle_state(vec_out);
+                self.handle_state(&vec_out[..]);
             } else if mtype == LOG_TYPE_PREV_HASH {
-                let pre_hash = H256::from(H256::from_slice(&vec_out));
+                let pre_hash = H256::from_slice(&vec_out);
                 self.pre_hash = Some(pre_hash);
             } else if mtype == LOG_TYPE_COMMITS {
                 trace!(" wal proof begining!");
@@ -1695,7 +1699,7 @@ impl TenderMint {
 
             if let Ok(oktm) = gtm {
                 //trace!("in select !height {},round {},step {:?}",oktm.height,oktm.round,oktm.step);
-                self.timeout_process(oktm);
+                self.timeout_process(&oktm);
             }
 
             if let Ok(tinfo) = ginfo {

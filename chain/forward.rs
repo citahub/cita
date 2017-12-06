@@ -60,8 +60,8 @@ impl Forward {
     }
 
     //注意: 划分函数处理流程
-    pub fn dispatch_msg(&self, key: String, msg: Vec<u8>) {
-        let (cmd_id, origin, content_ext) = parse_msg(msg.as_slice());
+    pub fn dispatch_msg(&self, key: &str, msg: &[u8]) {
+        let (cmd_id, origin, content_ext) = parse_msg(msg);
         trace!("dispatch_msg call {:?}", key);
         match content_ext {
             MsgClass::REQUEST(req) => {
@@ -83,12 +83,12 @@ impl Forward {
             MsgClass::SYNCRESPONSE(sync_res) => self.deal_sync_blocks(sync_res),
 
             MsgClass::BLOCKTXHASHESREQ(block_tx_hashes_req) => {
-                self.deal_block_tx_req(block_tx_hashes_req);
+                self.deal_block_tx_req(&block_tx_hashes_req);
             }
 
             MsgClass::MSG(content) => {
                 if libproto::cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) == cmd_id {
-                    self.deal_new_proposal(content);
+                    self.deal_new_proposal(&content[..]);
                 } else {
                     trace!("Receive other message content.");
                 }
@@ -422,8 +422,8 @@ impl Forward {
         }
     }
 
-    #[cfg_attr(feature = "dev", allow(single_match))]
     // Check block group from remote and enqueue
+    #[cfg_attr(feature = "clippy", allow(single_match))]
     fn add_sync_block(&self, block: Block) {
         let block_proof_type = block.proof_type();
         let chain_proof_type = self.chain.get_chain_prooftype();
@@ -485,7 +485,7 @@ impl Forward {
         }
     }
 
-    fn deal_block_tx_req(&self, block_tx_hashes_req: libproto::BlockTxHashesReq) {
+    fn deal_block_tx_req(&self, block_tx_hashes_req: &libproto::BlockTxHashesReq) {
         let block_height = block_tx_hashes_req.get_height();
         if let Some(tx_hashes) = self.chain.transaction_hashes(BlockId::Number(block_height)) {
             //prepare and send the block tx hashes to auth
@@ -513,9 +513,9 @@ impl Forward {
         }
     }
 
-    fn deal_new_proposal(&self, content: Vec<u8>) {
+    fn deal_new_proposal(&self, content: &[u8]) {
         info!("Receive new proposal.");
-        let signed_proposal = parse_from_bytes::<SignedProposal>(&content).unwrap();
+        let signed_proposal = parse_from_bytes::<SignedProposal>(content).unwrap();
         let _ = signed_proposal.get_proposal().get_block();
     }
 }
