@@ -29,6 +29,7 @@ sudo apt-get install -y build-essential pkg-config rabbitmq-server python-pip cu
 # 3.1) install solc
 wget https://github.com/ethereum/solidity/releases/download/v0.4.19/solidity_0.4.19.tar.gz
 tar -xf solidity_0.4.19.tar.gz
+./solidity_0.4.19/scripts/install_deps.sh
 ./solidity_0.4.19/scripts/build.sh
 
 # 4) install python package
