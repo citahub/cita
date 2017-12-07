@@ -26,4 +26,4 @@ logger = { path = "../../share_libs/logger" }
 cpuprofiler = "0.0.3"
 authority_manage = { path = "../authority_manage" }
 rustc-hex = "1.0"
-clippy = {version = "0.0.148", optional = true}
+clippy = {version = "0.0.175", optional = true}

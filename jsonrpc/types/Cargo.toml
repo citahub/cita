@@ -21,7 +21,7 @@ time = "0.1"
 proof = { path = "../../consensus/proof" }
 common-types = { path = "../../chain/types" }
 cita-crypto = { path = "../../share_libs/crypto" }
-clippy = {version = "0.0.148", optional = true}
+clippy = {version = "0.0.175", optional = true}
 
 [features]
 default = []

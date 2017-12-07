@@ -124,7 +124,7 @@ fn main() {
     thread::spawn(move || {
         loop {
             if let Ok((key, msg)) = rx.recv() {
-                forward.dispatch_msg(key, msg);
+                forward.dispatch_msg(&key, &msg[..]);
             }
         }
     });

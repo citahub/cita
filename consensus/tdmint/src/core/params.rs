@@ -54,7 +54,7 @@ impl From<engine_json::TendermintParams> for TendermintParams {
     fn from(p: engine_json::TendermintParams) -> Self {
         let dt = TendermintTimer::default();
         TendermintParams {
-            duration: Duration::from_millis(p.duration.into()),
+            duration: Duration::from_millis(p.duration),
             is_test: p.is_test,
             signer: Signer::from(p.signer),
             timer: TendermintTimer {
