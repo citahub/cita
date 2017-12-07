@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 import "./permission_data.sol";
 
@@ -121,7 +121,8 @@ contract PermissionCheck is PermissionData {
         bytes32 _role,
         bytes32 _permission
     )
-        constant 
+        view 
+        public
         userInGroup(_user, _userGroup)
         groupHasRole(_userGroup, _role)
         permissionInRole(_permission, _role)

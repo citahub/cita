@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 import "./util.sol";
 
@@ -20,7 +20,10 @@ library AuthorizationManager {
     event RoleDeleted(bytes32 indexed _role);
 
     /// @dev Set authorization
-    function setAuthorization(Authorization storage self, bytes32 _group, bytes32 _role) internal returns(bool) {
+    function setAuthorization(Authorization storage self, bytes32 _group, bytes32 _role)
+        internal
+        returns(bool)
+    {
         self.role_groups[_role].push(_group);
         self.group_roles[_group].push(_role);
         AuthorizationSetted(_group, _role);
@@ -28,7 +31,10 @@ library AuthorizationManager {
     }
 
     /// @dev Cancel authorization
-    function cancelAuthorization(Authorization storage self, bytes32 _group, bytes32 _role) internal returns(bool) {
+    function cancelAuthorization(Authorization storage self, bytes32 _group, bytes32 _role)
+        internal
+        returns(bool)
+    {
         delete self.role_groups[_role];
         delete self.group_roles[_group];
         AuthorizationCanceled(_group, _role);
@@ -36,7 +42,10 @@ library AuthorizationManager {
     }
 
     /// @dev Replace the group name
-    function replaceGroup(Authorization storage self, bytes32 _oldGroup, bytes32 _newGroup) internal returns(bool) {
+    function replaceGroup(Authorization storage self, bytes32 _oldGroup, bytes32 _newGroup)
+        internal
+        returns(bool)
+    {
         bytes32[] memory roles = self.group_roles[_oldGroup];
 
         // Change the role_groups
@@ -58,7 +67,10 @@ library AuthorizationManager {
     }
 
     /// @dev Replace the role name
-    function replaceRole(Authorization storage self, bytes32 _oldRole, bytes32 _newRole) internal returns(bool) {
+    function replaceRole(Authorization storage self, bytes32 _oldRole, bytes32 _newRole)
+        internal
+        returns(bool)
+    {
         bytes32[] memory groups = self.group_roles[_oldRole];
 
         // Change the group_roles
@@ -80,7 +92,10 @@ library AuthorizationManager {
     }
 
     /// @dev Delete the group
-    function deleteGroup(Authorization storage self, bytes32 _group) internal returns (bool) {
+    function deleteGroup(Authorization storage self, bytes32 _group)
+        internal
+        returns (bool)
+    {
         bytes32[] memory roles = self.group_roles[_group];
 
         // Change the role_groups
@@ -95,7 +110,10 @@ library AuthorizationManager {
     }
 
     /// @dev Delete the role
-    function deleteRole(Authorization storage self, bytes32 _role) internal returns (bool) {
+    function deleteRole(Authorization storage self, bytes32 _role)
+        internal
+        returns (bool)
+    {
         bytes32[] memory groups = self.role_groups[_role];
 
         // Change the group_roles

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 /// @title The interface of the permission system
 interface PermissionSysInterface {
@@ -13,17 +13,39 @@ interface PermissionSysInterface {
     event GroupQuitted(address indexed _user, bytes32 indexed _group);
     event QuitApproved(address indexed _user, bytes32 indexed _group, bytes32 indexed _resource, bytes32 _role);
 
-    function applyGroup(bytes32 _group) public returns (bool);
+    function applyGroup(
+        bytes32 _group
+    ) public returns (bool);
 
-    function approveApply(bytes32 _group, bytes32 _resource, bytes32 _role) public returns (bool);
+    function approveApply(
+        bytes32 _group,
+        bytes32 _resource,
+        bytes32 _role
+    ) public returns (bool);
 
-    function grantRole(bytes32 _group, bytes32 _resource, bytes32 _role, address[] _users) public returns (bool);
+    function grantRole(
+        bytes32 _group,
+        bytes32 _resource,
+        bytes32 _role,
+        address[] _users
+    ) public returns (bool);
 
-    function revokeRole(bytes32 _group, bytes32 _resource, bytes32 _role, address[] _users) public returns (bool);
+    function revokeRole(
+        bytes32 _group,
+        bytes32 _resource,
+        bytes32 _role,
+        address[] _users
+    ) public returns (bool);
     
-    function quitGroup(bytes32 _group) public returns (bool);
+    function quitGroup(
+        bytes32 _group
+    ) public returns (bool);
 
-    function approveQuit(bytes32 _group, bytes32 _resource, bytes32 _role) public returns (bool);
+    function approveQuit(
+        bytes32 _group,
+        bytes32 _resource,
+        bytes32 _role
+    ) public returns (bool);
 
     function newGroup(
         bytes32 _name,
@@ -34,11 +56,25 @@ interface PermissionSysInterface {
         bytes32 _role
     ) public returns (bool);
 
-    function deleteGroup(bytes32 _group, bytes32 _resource, bytes32 _role) public returns (bool);
+    function deleteGroup(
+        bytes32 _group,
+        bytes32 _resource,
+        bytes32 _role
+    ) public returns (bool);
     
-    function modifyGroupName(bytes32 _oldName, bytes32 _newName, bytes32 _resource, bytes32 _role) public returns (bool);
+    function modifyGroupName(
+        bytes32 _oldName,
+        bytes32 _newName,
+        bytes32 _resource,
+        bytes32 _role
+    ) public returns (bool);
 
-    function modifySubSwitch(bytes32 _group, bytes32 _resource, bytes32 _role, bool _newSubSwitch) public returns (bool);
+    function modifySubSwitch(
+        bytes32 _group,
+        bytes32 _resource,
+        bytes32 _role,
+        bool _newSubSwitch
+    ) public returns (bool);
 
     function newRole(
         bytes32 _group,
@@ -48,17 +84,44 @@ interface PermissionSysInterface {
         uint8 _op
     ) public returns (bool);
 
-    function deleteRole(bytes32 _role, bytes32 _group, bytes32 _resource) public returns (bool);
+    function deleteRole(
+        bytes32 _role,
+        bytes32 _group,
+        bytes32 _resource
+    ) public returns (bool);
 
-    function modifyRoleName(bytes32 _oldName, bytes32 _newName, bytes32 _group, bytes32 _resource) public returns (bool);
+    function modifyRoleName(
+        bytes32 _oldName,
+        bytes32 _newName,
+        bytes32 _group,
+        bytes32 _resource
+    ) public returns (bool);
 
-    function addPermissions(bytes32 _role, bytes32[] _permissions, bytes32 _group, bytes32 _resource) public returns (bool);
+    function addPermissions(
+        bytes32 _role,
+        bytes32[] _permissions,
+        bytes32 _group,
+        bytes32 _resource
+    ) public returns (bool);
 
-    function deletePermissions(bytes32 _role, bytes32[] _permissions, bytes32 _group, bytes32 _resource) public returns (bool);
+    function deletePermissions(
+        bytes32 _role,
+        bytes32[] _permissions,
+        bytes32 _group,
+        bytes32 _resource
+    ) public returns (bool);
 
-    function setAuthorization(bytes32 _group, bytes32 _role, bytes32 _resource) public returns(bool);
+    function setAuthorization(
+        bytes32 _group,
+        bytes32 _role,
+        bytes32 _resource
+    ) public returns(bool);
 
-    function cancelAuthorization(bytes32 _group, bytes32 _role, bytes32 _resource) public returns(bool);
+    function cancelAuthorization(
+        bytes32 _group,
+        bytes32 _role,
+        bytes32 _resource
+    ) public returns(bool);
 
     function check(
         address _user,
@@ -66,17 +129,29 @@ interface PermissionSysInterface {
         bytes32 _resourceGroup,
         bytes32 _role,
         bytes32 _permission
-    ) constant returns (bool);
+    ) view public returns (bool);
 
-    function queryRole(bytes32 _group) constant returns (bytes32[]);
+    function queryRole(
+        bytes32 _group
+    ) view public returns (bytes32[]);
 
-    function queryPermissions(bytes32 _role) constant returns (bytes32[]);
+    function queryPermissions(
+        bytes32 _role
+    ) view public returns (bytes32[]);
 
-    function queryGroup(address _user) constant returns (bytes32[]);
+    function queryGroup(
+        address _user
+    ) view public returns (bytes32[]);
 
-    function queryUsers(bytes32 _group) constant returns (address[]);
+    function queryUsers(
+        bytes32 _group
+    ) view public returns (address[]);
 
-    function querySubGroups(bytes32 _group) constant returns (bytes32[]);
+    function querySubGroups(
+        bytes32 _group
+    ) view public returns (bytes32[]);
 
-    function querySubSwitch(bytes32 _group) constant returns (bool);
+    function querySubSwitch(
+        bytes32 _group
+    ) view public returns (bool);
 }

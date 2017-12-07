@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 interface QuotaInterface {
     
@@ -14,11 +14,11 @@ interface QuotaInterface {
     function setBlockGasLimit(uint _value) public returns (bool);
     function setGlobalAccountGasLimit(uint _value) public returns (bool);
     function setAccountGasLimit(address _account, uint _value) public returns (bool);
-    function isAdmin(address _account) constant returns (bool);
-    function getData(bytes32 _key) constant returns (bytes32);
-    function getSpecialUsers() constant returns (string);
-    function getUsersQuota() constant returns (string);
-    function getblockGasLimit() constant returns (bytes32);
-    function getAccountGasLimit() constant returns (bytes32);
-    function getAccountQuota(address _user) constant returns (bytes32);
+    function isAdmin(address _account) view public returns (bool);
+    function getData(bytes32 _key) view public returns (bytes32);
+    function getSpecialUsers() view public returns (string);
+    function getUsersQuota() view public returns (string);
+    function getblockGasLimit() view public returns (bytes32);
+    function getAccountGasLimit() view public returns (bytes32);
+    function getAccountQuota(address _user) view public returns (bytes32);
 }

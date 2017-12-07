@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 import "./permission_sys_interface.sol";
 import "./permission_check.sol";
@@ -16,7 +16,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     /// @param _superAdmin The address of superAdmin
     /// @param _adamEve Address as Adam and EVe of the permission system world.
     ///                 These address will have the basic permission
-    function PermissionSystem(address _superAdmin, address[] _adamEve) {
+    function PermissionSystem(address _superAdmin, address[] _adamEve) public {
         // User can give up it by setting address 0x0
         if (address(0x0) != _superAdmin)
             superAdmin = _superAdmin; 
@@ -139,8 +139,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         can(msg.sender, _group, _group, _role, bytes32("CreateGroup"))
         returns (bool)
     {
-        group_names.push(_newName);
-        return GroupManager.newGroup(groups, _group, _newName, _newUsers, _newSubSwitch, Util.SetOp(_op));
+        return _newGroup(_group, _newName, _newUsers, _newSubSwitch, _op);
     }
 
     /// @dev Delete group
@@ -193,6 +192,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
 
     /// @dev New a role
     /// @param _group The group of the caller
+    /// @param _role The role of the caller
     function newRole(
         bytes32 _group,
         bytes32 _newName,
@@ -206,8 +206,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         can(msg.sender, _group, _group, _role, bytes32("CreateRole"))
         returns (bool) 
     {
-        role_names.push(_newName);
-        return RoleManager.newRole(roles, _group, _newName, _newPermissions, Util.SetOp(_op));
+        return _newRole(_group, _newName,  _newPermissions, _op);
     }
  
     /// @dev Delete role
@@ -280,37 +279,63 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     }
 
     /// @dev Query the role of the group
-    function queryRole(bytes32 _group) constant returns (bytes32[]) {
+    function queryRole(bytes32 _group)
+        view
+        public
+        returns (bytes32[])
+    {
         return auth.group_roles[_group];
     }
 
     /// @dev Query the permissions 
-    function queryPermissions(bytes32 _role) constant returns (bytes32[]) {
+    function queryPermissions(bytes32 _role)
+        view
+        public
+        returns (bytes32[])
+    {
         return roles.roles[_role].permissions;
     }
 
     /// @dev Query the the groups of the user
-    function queryGroup(address _user) constant returns (bytes32[]) {
+    function queryGroup(address _user)
+        view
+        public
+        returns (bytes32[])
+    {
         return user_groups[_user];
     }
 
     /// @dev Query the users
-    function queryUsers(bytes32 _group) constant returns (address[]) {
+    function queryUsers(bytes32 _group)
+        view
+        public
+        returns (address[])
+    {
         return groups.groups[_group].users;
     }
 
     /// @dev Query the subGroups
-    function querySubGroups(bytes32 _group) constant returns (bytes32[]) {
+    function querySubGroups(bytes32 _group)
+        view
+        public
+        returns (bytes32[])
+    {
         return groups.groups[_group].subGroups;
     }
 
     /// @dev Query the subSwitch
-    function querySubSwitch(bytes32 _group) constant returns (bool) {
+    function querySubSwitch(bytes32 _group)
+        view
+        public
+        returns (bool)
+    {
         return groups.groups[_group].subSwitch;
     }
 
     // Create the genensis: group, role and authorization when the superAdmin is nul
-    function genesis(address[] _adamEve) private {
+    function genesis(address[] _adamEve)
+        private
+    {
         // Init the group. 
         _initGroup(bytes32("root"), _adamEve);
         // Init the role
@@ -334,14 +359,12 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         private 
         returns (bool)
     {
-        // TODO: Move the basic to the permission_data 
-        bytes32[] storage _per;
-        _per.push(bytes32("SendTx"));
-        _per.push(bytes32("CreateGroup"));
-        _per.push(bytes32("CreateRole"));
-        _per.push(bytes32("CreateAuth"));
+        _per_basic.push(bytes32("SendTx"));
+        _per_basic.push(bytes32("CreateGroup"));
+        _per_basic.push(bytes32("CreateRole"));
+        _per_basic.push(bytes32("CreateAuth"));
         role_names.push(_basic);
-        return RoleManager.initRole(roles, _basic, _per);
+        return RoleManager.initRole(roles, _basic, _per_basic);
     }
 
     /// @dev Init gengesis's authorization: root group and basic role
@@ -352,5 +375,34 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         auth.role_groups[_role].push( _role);
         auth.group_roles[_group].push(_group);
         return true; 
+    }
+
+    /// @dev New a role
+    function _newRole(
+        bytes32 _group,
+        bytes32 _newName,
+        bytes32[] _newPermissions,
+        uint8 _op
+    )
+        private
+        returns (bool)
+    {
+        role_names.push(_newName);
+        return RoleManager.newRole(roles, _group, _newName, _newPermissions, Util.SetOp(_op));
+    }
+
+    /// @dev New a group 
+    function _newGroup(
+        bytes32 _group,
+        bytes32 _newName,
+        address[] _newUsers,
+        bool _newSubSwitch,
+        uint8 _op
+    )
+        private
+        returns (bool)
+    {
+        group_names.push(_newName);
+        return GroupManager.newGroup(groups, _group, _newName, _newUsers, _newSubSwitch, Util.SetOp(_op));
     }
 }

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 import "./group_manager.sol";
 import "./role_manager.sol";
@@ -24,6 +24,8 @@ contract PermissionData {
     bytes32[] group_names;
     bytes32[] role_names;
     address superAdmin;
+    // The permissions of the basic role
+    bytes32[] _per_basic;
 
     // Read?
     bytes32[21] permissions = [

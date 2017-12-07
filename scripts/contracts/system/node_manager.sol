@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 import "./strings.sol";
 import "./node_interface.sol";
@@ -44,7 +44,7 @@ contract NodeManager is NodeInterface {
     }
 
     /// Setup
-    function NodeManager(address[] _nodes, address[] _admins) {
+    function NodeManager(address[] _nodes, address[] _admins) public {
         // Initialize the address to Start
         for (uint i = 0; i < _nodes.length; i++) {
             status[_nodes[i]] = NodeStatus.Start;
@@ -56,13 +56,21 @@ contract NodeManager is NodeInterface {
             admins[_admins[j]] = true;
     }
 
-    function addAdmin(address _node) public onlyAdmin returns (bool) {
+    function addAdmin(address _node)
+        public
+        onlyAdmin
+        returns (bool)
+    {
         admins[_node] = true;
         AddAdmin(_node, msg.sender);
         return true;
     }
 
-    function newNode(address _node) public onlyClose(_node) returns (bool) {
+    function newNode(address _node)
+        public
+        onlyClose(_node)
+        returns (bool)
+    {
         status[_node] = NodeStatus.Ready;
         NewNode(_node);
         return true;
@@ -109,7 +117,11 @@ contract NodeManager is NodeInterface {
     }
 
    /// Link address to a long string
-    function concatNodes(address[] _add) internal returns (string nodeList) {
+    function concatNodes(address[] _add)
+        pure 
+        internal
+        returns (string nodeList)
+    {
         if (_add.length > 0)
             nodeList = toString(_add[0]);
 
@@ -118,7 +130,11 @@ contract NodeManager is NodeInterface {
     }
 
     /// Get the index in the nodes_of_start array
-    function nodeIndex(address _node) internal returns (uint) {
+    function nodeIndex(address _node)
+        view 
+        internal
+        returns (uint)
+    {
         // Find the index of the member
         for (uint i = 0; i < nodes.length; i++) {
             if (_node == nodes[i])
@@ -130,7 +146,11 @@ contract NodeManager is NodeInterface {
 
     /// Address to string
     /// The returned string is ABI encoded
-    function toString(address x) internal returns (string) {
+    function toString(address x)
+        pure
+        internal
+        returns (string)
+    {
         bytes memory b = new bytes(20);
 
         for (uint i = 0; i < 20; i++)
@@ -139,15 +159,15 @@ contract NodeManager is NodeInterface {
         return string(b);
     }
 
-    function listNode() constant returns (string) {
+    function listNode() view public returns (string) {
         return concatNodes(nodes);
     }
 
-    function getStatus(address _node) constant returns (uint8) {
+    function getStatus(address _node) view public returns (uint8) {
         return uint8(status[_node]);
     }
 
-    function isAdmin(address _node) constant returns (bool) {
+    function isAdmin(address _node) view public returns (bool) {
         return admins[_node];
     }
 }

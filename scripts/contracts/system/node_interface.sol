@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 interface NodeInterface {
 
@@ -16,13 +16,13 @@ interface NodeInterface {
     function deleteNode(address _node) public returns (bool);
     /// @dev List the consensus nodes that have been approved
     ///      which means list the node whose status is start
-    function listNode() constant returns (string);
+    function listNode() view public returns (string);
     /*
      * @dev Get the status of the node:
      * @return 0: Close
      * @return 1: Ready
      * @return 2: Start
      */
-    function getStatus(address _node) constant returns (uint8);
-    function isAdmin(address) constant returns (bool);
+    function getStatus(address _node) view public returns (uint8);
+    function isAdmin(address) view public returns (bool);
 }

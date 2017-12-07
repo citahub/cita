@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 import "./util.sol";
 
@@ -69,7 +69,14 @@ library RoleManager {
     }
 
     /// @dev Modify the name
-    function modifyName(Roles storage self, bytes32 _oldName, bytes32 _newName) internal returns (bool) {
+    function modifyName(
+        Roles storage self,
+        bytes32 _oldName,
+        bytes32 _newName
+    )
+        internal
+        returns (bool)
+    {
         Role memory role = self.roles[_oldName];
         role.name = _newName;
         self.roles[_newName] = role;
@@ -79,7 +86,14 @@ library RoleManager {
     }
 
     /// @dev Add permissions 
-    function addPermissions(Roles storage self, bytes32 _role, bytes32[] _permissions) internal returns (bool) {
+    function addPermissions(
+        Roles storage self,
+        bytes32 _role,
+        bytes32[] _permissions
+    )
+        internal
+        returns (bool)
+    {
         bytes32[] memory result = Util.opUnionBytes32(self.roles[_role].permissions, _permissions);
 
         for (uint i = 0; i < result.length; i++)
@@ -90,7 +104,14 @@ library RoleManager {
     }
 
     /// @dev Delete permissions 
-    function deletePermissions(Roles storage self, bytes32 _role, bytes32[] _permissions) internal returns (bool) {
+    function deletePermissions(
+        Roles storage self,
+        bytes32 _role,
+        bytes32[] _permissions
+    )
+        internal
+        returns (bool)
+    {
         bytes32[] memory result = Util.opDiffBytes32(self.roles[_role].permissions, _permissions);
 
         for (uint i = 0; i < result.length; i++)
@@ -101,7 +122,13 @@ library RoleManager {
     }
 
     /// @dev Delete role
-    function deleteRole(Roles storage self, bytes32 _role) internal returns (bool) {
+    function deleteRole(
+        Roles storage self,
+        bytes32 _role
+    )
+        internal
+        returns (bool)
+    {
         delete self.roles[_role];
         RoleDeleted(_role);
         return true;

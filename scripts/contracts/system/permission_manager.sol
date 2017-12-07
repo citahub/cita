@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 import "./strings.sol";
 import "./permission_interface.sol";
@@ -38,7 +38,7 @@ contract PermissionManager is PermissionInterface {
     }
 
     /// @dev Setup
-    function PermissionManager(address[] _senders, address[] _creators) {
+    function PermissionManager(address[] _senders, address[] _creators) public {
         // Init the senders
         for(uint i = 0; i < _senders.length; i++) {
             senders.push(_senders[i]);
@@ -91,7 +91,11 @@ contract PermissionManager is PermissionInterface {
     }
 
     /// @dev Cancat
-    function concatUser(address[] _users) internal returns (string userList) {
+    function concatUser(address[] _users)
+        pure 
+        internal
+        returns (string userList)
+    {
         if (_users.length > 0)
             userList = toString(_users[0]);
 
@@ -100,7 +104,10 @@ contract PermissionManager is PermissionInterface {
     }
 
     /// @dev Delete the user of the users
-    function deleteUser(address _user, address[] storage _users) internal returns (bool) {
+    function deleteUser(address _user, address[] storage _users)
+        internal
+        returns (bool)
+    {
         var index = indexUser(_user,  _users);
         // Not found
         if (index >= _users.length)
@@ -117,7 +124,11 @@ contract PermissionManager is PermissionInterface {
     }
 
     /// @dev Get the index in the nodes_of_start array
-    function indexUser(address _user, address[] _users) internal returns (uint) {
+    function indexUser(address _user, address[] _users)
+        pure
+        internal
+        returns (uint)
+    {
         // Find the index of the member
         for (uint i = 0; i < _users.length; i++) {
             if (_user == _users[i])
@@ -129,7 +140,11 @@ contract PermissionManager is PermissionInterface {
 
     /// @dev Address to string
     /// @return The returned string is ABI encoded
-    function toString(address x) internal returns (string) {
+    function toString(address x)
+        pure
+        internal
+        returns (string)
+    {
         bytes memory b = new bytes(20);
 
         for (uint i = 0; i < 20; i++)
@@ -138,14 +153,22 @@ contract PermissionManager is PermissionInterface {
         return string(b);
     }
 
-    function queryUsersOfPermission(uint8 _permission) constant returns (string) {
+    function queryUsersOfPermission(uint8 _permission)
+        view
+        public
+        returns (string)
+    {
         if (_permission == uint8(UserPermission.Send))
             return concatUser(senders);
         if (_permission == uint8(UserPermission.Create))
             return concatUser(creators);
     }
 
-    function queryPermission(address _user) constant returns (uint8) {
+    function queryPermission(address _user)
+        view
+        public
+        returns (uint8)
+    {
         return uint8(user_permission[_user]);
     }
 }

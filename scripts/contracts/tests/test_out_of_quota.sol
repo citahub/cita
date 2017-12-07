@@ -1,11 +1,11 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 contract SimpleStorage {
     uint storedData;
 
     event Set(uint);
 
-    function set(uint x) {
+    function set(uint x) public {
         uint num = 100000;
 
         for (uint i = 0; i < num; i++) {
@@ -15,7 +15,7 @@ contract SimpleStorage {
         Set(x);
     }
 
-    function get() constant returns (uint) {
+    function get() view public returns (uint) {
         return storedData;
     }
 }

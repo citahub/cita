@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 import "./util.sol";
 
@@ -78,7 +78,14 @@ library GroupManager {
     }
 
     /// @dev Modify the name
-    function modifyName(Groups storage self, bytes32 _oldName, bytes32 _newName) internal returns (bool) {
+    function modifyName(
+        Groups storage self,
+        bytes32 _oldName,
+        bytes32 _newName
+    )
+        internal
+        returns (bool)
+    {
         Group memory group = self.groups[_oldName];
         // Will it work?
         self.groups[_newName] = group;
@@ -103,7 +110,14 @@ library GroupManager {
     }
 
     /// @dev Add users 
-    function addUsers(Groups storage self, bytes32 _group, address[] _users) internal returns (bool) {
+    function addUsers(
+        Groups storage self,
+        bytes32 _group,
+        address[] _users
+    )
+        internal
+        returns (bool)
+    {
         address[] memory result = Util.opUnionAddress(self.groups[_group].users, _users);
 
         for (uint i = 0; i < result.length; i++)
@@ -114,7 +128,14 @@ library GroupManager {
     }
 
     /// @dev Delete users 
-    function deleteUsers(Groups storage self, bytes32 _group, address[] _users) internal returns (bool) {
+    function deleteUsers(
+        Groups storage self,
+        bytes32 _group,
+        address[] _users
+    )
+        internal
+        returns (bool)
+    {
         address[] memory result = Util.opDiffAddress(self.groups[_group].users, _users);
 
         for (uint i = 0; i < result.length; i++)
@@ -126,7 +147,13 @@ library GroupManager {
 
     /// @dev Delete group
     /// @notice Delete a tree's node. Only leaf node
-    function deleteGroup(Groups storage self, bytes32 _group) internal returns (bool) {
+    function deleteGroup(
+        Groups storage self,
+        bytes32 _group
+    )
+        internal
+        returns (bool)
+    {
         delete self.groups[_group];
         GroupDeleted(_group);
         return true;

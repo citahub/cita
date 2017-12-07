@@ -32,7 +32,7 @@ contract QuotaManager is QuotaInterface {
         _;
     }
 
-    function QuotaManager(address _account) {
+    function QuotaManager(address _account) public {
         admins[_account] = true;
         is_global["blockGasLimit"] = true;
         global["blockGasLimit"] = bytes32(1073741824);
@@ -42,18 +42,30 @@ contract QuotaManager is QuotaInterface {
         users_quota.push(bytes32(1073741824));
     }
 
-    function addAdmin(address _account) public onlyAdmin returns (bool) {
+    function addAdmin(address _account)
+        public
+        onlyAdmin
+        returns (bool)
+    {
         admins[_account] = true;
         AddAdminEvent(_account, msg.sender);
     }
 
-    function setIsGlobal(bytes32 key, bool value) public onlyAdmin returns (bool) {
+    function setIsGlobal(bytes32 key, bool value)
+        public
+        onlyAdmin
+        returns (bool)
+    {
         is_global[key] = value;
         SetIsGlobalEvent(key, value, msg.sender);
         return true;
     }
 
-    function setGlobal(bytes32 key, bytes32 value) public onlyAdmin returns (bool) {
+    function setGlobal(bytes32 key, bytes32 value)
+        public
+        onlyAdmin
+        returns (bool)
+    {
         global[key] = value;
         SetGlobalEvent(key, value, msg.sender);
         return true;
@@ -119,7 +131,11 @@ contract QuotaManager is QuotaInterface {
     }
 
     /// Cancat bytes32 
-    function concatBytes(bytes32[] _users) internal returns (string bytes32List) {
+    function concatBytes(bytes32[] _users)
+        pure 
+        internal
+        returns (string bytes32List)
+    {
         if (_users.length > 0)
             bytes32List = bytes32ToString(_users[0]);
 
@@ -128,7 +144,11 @@ contract QuotaManager is QuotaInterface {
     }
 
     /// Cancat address
-    function concatUser(address[] _users) internal returns (string userList) {
+    function concatUser(address[] _users)
+        pure 
+        internal
+        returns (string userList)
+    {
         if (_users.length > 0)
             userList = toString(_users[0]);
 
@@ -136,7 +156,11 @@ contract QuotaManager is QuotaInterface {
             userList = userList.toSlice().concat(toString(_users[i]).toSlice());
     }
 
-    function _getData(bytes32 key) internal returns (bytes32) {
+    function _getData(bytes32 key)
+        view
+        internal
+        returns (bytes32)
+    {
         bytes32 blank;
         if (special[msg.sender][key] != blank)
             return special[msg.sender][key];
@@ -146,7 +170,11 @@ contract QuotaManager is QuotaInterface {
 
     /// Address to string 
     /// The returned string is ABI encoded
-    function toString(address x) internal returns (string) {
+    function toString(address x)
+        pure 
+        internal
+        returns (string)
+    {
         bytes memory b = new bytes(20);
 
         for (uint i = 0; i < 20; i++)
@@ -155,7 +183,11 @@ contract QuotaManager is QuotaInterface {
         return string(b);
     }
 
-    function bytes32ToString(bytes32 x) internal returns (string) {
+    function bytes32ToString(bytes32 x)
+        pure 
+        internal
+        returns (string)
+    {
         bytes memory bytesString = new bytes(32);
         uint charCount = 0;
 
@@ -175,34 +207,62 @@ contract QuotaManager is QuotaInterface {
         return string(bytesStringTrimmed);
     }
 
-    function isAdmin(address _account) constant returns (bool) {
+    function isAdmin(address _account)
+        view
+        public
+        returns (bool)
+    {
         return admins[_account];
     }
 
-    function getData(bytes32 key) constant returns (bytes32) {
+    function getData(bytes32 key)
+        view
+        public
+        returns (bytes32)
+    {
         if (is_global[key])
             return global[key];
         else
             return _getData(key);
     }
 
-    function getSpecialUsers() constant returns (string) {
+    function getSpecialUsers()
+        view
+        public
+        returns (string)
+    {
         return concatUser(special_users);
     }
 
-    function getUsersQuota() constant returns (string) {
+    function getUsersQuota()
+        view
+        public
+        returns (string)
+    {
         return concatBytes(users_quota);
     }
 
-    function getblockGasLimit() constant returns (bytes32) {
+    function getblockGasLimit()
+        view
+        public
+        returns (bytes32)
+    {
         return global["blockGasLimit"];
     }
 
-    function getAccountGasLimit() constant returns (bytes32) {
+    function getAccountGasLimit()
+        view
+        public
+        returns (bytes32)
+    {
         return global["accountGasLimit"];
     }
 
-    function getAccountQuota(address _user) constant returns (bytes32) {
+    function getAccountQuota(address _user)
+        view
+        public
+        returns (bytes32)
+    {
         // Not special users, then return accountGasLimit
         // or query the special users array
         if (special[_user]["accountGasLimit"] == bytes32(0))
