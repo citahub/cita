@@ -1,12 +1,14 @@
 ## 运行脚本
 
-1. 切换目录，运行如下命令:
+1. 修改节点chain.json的配置，关闭权限管理，将check_permission设置为false。
+
+2. 切换目录，运行如下命令:
 
 ```
 cd cita/tests/jsonrpc_performance
 ```
 
-2. 运行如下命令: 
+3. 运行如下命令: 
 
 ```
 ../../target/install/bin/jsonrpc_performance --config config_err_format.json

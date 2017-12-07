@@ -153,7 +153,7 @@ impl Verifier {
         let mut result = false;
         if let Some(height) = self.height_latest {
             result = valid_until_block > height && valid_until_block <= (height + BLOCKLIMIT);
-            if result {
+            if !result {
                 warn!(
                     "The new tx is out of time valid_until_block: {:?}, height: {:?}, BLOCKLIMIT: {:?}",
                     valid_until_block,
