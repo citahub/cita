@@ -52,7 +52,7 @@ clippy = {version = "0.0.148", optional = true}
 rand = "0.3"
 cpuprofiler = "0.0.3"
 mktemp = "0.3.1"
-logger =  { path = "../../share_libs/logger" }
+logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
 
 [features]
 default = []
