@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #![allow(unused_extern_crates)]
+#![feature(test)]
+
 #[cfg(test)]
 extern crate bincode;
 #[macro_use]
@@ -24,6 +26,7 @@ extern crate rlp;
 extern crate rustc_serialize;
 extern crate secp256k1;
 extern crate serde;
+extern crate test;
 extern crate util;
 
 pub type PrivKey = H256;

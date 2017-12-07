@@ -15,4 +15,11 @@ members = ["auth"
 ,"tests/chain_performance_by_mq"
 ]
 
-
+[profile.bench]
+opt-level = 3
+debug = false
+rpath = false
+lto = false
+debug-assertions = false
+codegen-units = 1
+panic = 'unwind'

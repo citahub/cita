@@ -370,6 +370,7 @@ mod tests {
     use super::super::KeyPair;
     use bincode::{deserialize, serialize, Infinite};
     use std::str::FromStr;
+    use test::Bencher;
     use util::{H256, Hashable};
     use util::crypto::{CreateKey, Sign};
 
@@ -426,5 +427,79 @@ mod tests {
         println!("message {:?}", message);
         let signature = Signature::sign(&sk, &message.into()).unwrap();
         println!("signature {:?}", signature);
+    }
+
+    /// baseline for other Bencher.iter, baseline should return 0 ns/iter.
+    #[bench]
+    fn baseline(b: &mut Bencher) {
+        b.iter(|| 1)
+    }
+
+    #[bench]
+    fn bench_sign(b: &mut Bencher) {
+        const MESSAGE: [u8; 32] = [
+            0x01,
+            0x02,
+            0x03,
+            0x04,
+            0x19,
+            0xab,
+            0xfe,
+            0x39,
+            0x6f,
+            0x28,
+            0x79,
+            0x00,
+            0x08,
+            0xdf,
+            0x9a,
+            0xef,
+            0xfb,
+            0x77,
+            0x42,
+            0xae,
+            0xad,
+            0xfc,
+            0xcf,
+            0x12,
+            0x24,
+            0x45,
+            0x29,
+            0x89,
+            0x29,
+            0x45,
+            0x3f,
+            0xf8,
+        ];
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let msg = Message::from_slice(&MESSAGE[..]);
+
+        b.iter(|| {
+            Signature::sign(privkey, &msg).unwrap();
+        });
+    }
+
+    #[bench]
+    fn bench_recover(b: &mut Bencher) {
+        let keypair = KeyPair::gen_keypair();
+        let msg = Message::default();
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
+
+        b.iter(|| {
+            &sig.recover(&msg).unwrap();
+        });
+    }
+
+    #[bench]
+    fn bench_verify(b: &mut Bencher) {
+        let keypair = KeyPair::gen_keypair();
+        let pubkey = keypair.pubkey();
+        let msg = Message::default();
+        let sig = Signature::sign(keypair.privkey(), &msg).unwrap();
+
+        b.iter(|| {
+            sig.verify_public(pubkey, &msg).unwrap();
+        });
     }
 }
