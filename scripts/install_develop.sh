@@ -41,6 +41,7 @@ wget https://github.com/cryptape/GmSSL/releases/download/v1.0/libgmssl.so.1.0.0.
 gzip -d libgmssl.so.1.0.0.gz
 sudo mv libgmssl.so.1.0.0 /usr/local/lib/
 sudo ln -srf /usr/local/lib/libgmssl.so.1.0.0 /usr/local/lib/libgmssl.so
+sudo ldconfig
 
 # 6) install rust&rustfmt
 # 6.1) rust
