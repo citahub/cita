@@ -21,5 +21,7 @@
 extern crate cc;
 
 fn main() {
-    cc::Build::new().file("src/tinykeccak.c").compile("libtinykeccak.a");
+    cc::Build::new()
+        .file("src/tinykeccak.c")
+        .compile("libtinykeccak.a");
 }

@@ -18,11 +18,11 @@
 //! benchmarking for AVL and Trie
 // TODO: bench merklehash.
 #![cfg_attr(test, feature(test))]
-extern crate util;
 extern crate test;
+extern crate util;
 
 use test::Bencher;
-use util::{HashDB, H256};
+use util::{H256, HashDB};
 use util::avl::AVLMut;
 use util::avl::avldbmut::*;
 use util::avl::standardmap::*;
@@ -54,13 +54,12 @@ fn populate_avl<'db>(db: &'db mut HashDB, root: &'db mut H256, v: &[(Vec<u8>, Ve
 fn bench_avl_update(b: &mut Bencher) {
     let mut seed = H256::default();
     let x = StandardMap {
-                alphabet: Alphabet::All,
-                min_key: 32,
-                journal_key: 0,
-                value_mode: ValueMode::Mirror,
-                count: SIZE,
-            }
-            .make_with(&mut seed);
+        alphabet: Alphabet::All,
+        min_key: 32,
+        journal_key: 0,
+        value_mode: ValueMode::Mirror,
+        count: SIZE,
+    }.make_with(&mut seed);
 
     let mut memdb = MemoryDB::new();
     let mut root = H256::default();
@@ -69,24 +68,24 @@ fn bench_avl_update(b: &mut Bencher) {
     memavl.commit();
     let mut i: usize = 1000;
     b.iter(|| {
-               memavl.insert(&x[i % SIZE].0, &(i.to_string().as_bytes().to_vec())).unwrap();
-               // memavl.commit();
-               i += 1;
-           });
-
+        memavl
+            .insert(&x[i % SIZE].0, &(i.to_string().as_bytes().to_vec()))
+            .unwrap();
+        // memavl.commit();
+        i += 1;
+    });
 }
 
 #[bench]
 fn bench_avl_commit(b: &mut Bencher) {
     let mut seed = H256::default();
     let x = StandardMap {
-                alphabet: Alphabet::All,
-                min_key: 4,
-                journal_key: 0,
-                value_mode: ValueMode::Mirror,
-                count: SIZE,
-            }
-            .make_with(&mut seed);
+        alphabet: Alphabet::All,
+        min_key: 4,
+        journal_key: 0,
+        value_mode: ValueMode::Mirror,
+        count: SIZE,
+    }.make_with(&mut seed);
 
     let mut memdb = MemoryDB::new();
     let mut root = H256::default();
@@ -95,24 +94,24 @@ fn bench_avl_commit(b: &mut Bencher) {
     memavl.commit();
     let mut i: usize = 1000;
     b.iter(|| {
-               memavl.insert(&x[i % SIZE].0, &(i.to_string().as_bytes().to_vec())).unwrap();
-               memavl.commit();
-               i += 1;
-           });
-
+        memavl
+            .insert(&x[i % SIZE].0, &(i.to_string().as_bytes().to_vec()))
+            .unwrap();
+        memavl.commit();
+        i += 1;
+    });
 }
 
 #[bench]
 fn bench_avl_query(b: &mut Bencher) {
     let mut seed = H256::default();
     let x = StandardMap {
-                alphabet: Alphabet::All,
-                min_key: 32,
-                journal_key: 0,
-                value_mode: ValueMode::Mirror,
-                count: SIZE,
-            }
-            .make_with(&mut seed);
+        alphabet: Alphabet::All,
+        min_key: 32,
+        journal_key: 0,
+        value_mode: ValueMode::Mirror,
+        count: SIZE,
+    }.make_with(&mut seed);
 
     let mut memdb = MemoryDB::new();
     let mut root = H256::default();
@@ -121,12 +120,11 @@ fn bench_avl_query(b: &mut Bencher) {
     memavl.commit();
     let mut i: usize = 0;
     b.iter(|| {
-               //memavl.insert(&x[i%SIZE].0, &(i.to_string().as_bytes().to_vec()));
-               // memavl.commit();
-               memavl.get(&x[i % SIZE].0).unwrap().unwrap();
-               i += 1;
-           });
-
+        //memavl.insert(&x[i%SIZE].0, &(i.to_string().as_bytes().to_vec()));
+        // memavl.commit();
+        memavl.get(&x[i % SIZE].0).unwrap().unwrap();
+        i += 1;
+    });
 }
 
 fn populate_trie<'db>(db: &'db mut HashDB, root: &'db mut H256, v: &[(Vec<u8>, Vec<u8>)]) -> TrieDBMut<'db> {
@@ -150,13 +148,12 @@ fn populate_trie<'db>(db: &'db mut HashDB, root: &'db mut H256, v: &[(Vec<u8>, V
 fn bench_trie_update(b: &mut Bencher) {
     let mut seed = H256::default();
     let x = StandardMap {
-                alphabet: Alphabet::All,
-                min_key: 32,
-                journal_key: 0,
-                value_mode: ValueMode::Mirror,
-                count: SIZE,
-            }
-            .make_with(&mut seed);
+        alphabet: Alphabet::All,
+        min_key: 32,
+        journal_key: 0,
+        value_mode: ValueMode::Mirror,
+        count: SIZE,
+    }.make_with(&mut seed);
 
     let mut memdb = MemoryDB::new();
     let mut root = H256::default();
@@ -165,24 +162,24 @@ fn bench_trie_update(b: &mut Bencher) {
     memtrie.commit();
     let mut i: usize = 1000;
     b.iter(|| {
-               memtrie.insert(&x[i % SIZE].0, &(i.to_string().as_bytes().to_vec())).unwrap();
-               // memtrie.commit();
-               i += 1;
-           });
-
+        memtrie
+            .insert(&x[i % SIZE].0, &(i.to_string().as_bytes().to_vec()))
+            .unwrap();
+        // memtrie.commit();
+        i += 1;
+    });
 }
 
 #[bench]
 fn bench_trie_commit(b: &mut Bencher) {
     let mut seed = H256::default();
     let x = StandardMap {
-                alphabet: Alphabet::All,
-                min_key: 32,
-                journal_key: 0,
-                value_mode: ValueMode::Mirror,
-                count: SIZE,
-            }
-            .make_with(&mut seed);
+        alphabet: Alphabet::All,
+        min_key: 32,
+        journal_key: 0,
+        value_mode: ValueMode::Mirror,
+        count: SIZE,
+    }.make_with(&mut seed);
 
     let mut memdb = MemoryDB::new();
     let mut root = H256::default();
@@ -191,24 +188,24 @@ fn bench_trie_commit(b: &mut Bencher) {
     memtrie.commit();
     let mut i: usize = 1000;
     b.iter(|| {
-               memtrie.insert(&x[i % SIZE].0, &(i.to_string().as_bytes().to_vec())).unwrap();
-               memtrie.commit();
-               i += 1;
-           });
-
+        memtrie
+            .insert(&x[i % SIZE].0, &(i.to_string().as_bytes().to_vec()))
+            .unwrap();
+        memtrie.commit();
+        i += 1;
+    });
 }
 
 #[bench]
 fn bench_trie_query(b: &mut Bencher) {
     let mut seed = H256::default();
     let x = StandardMap {
-                alphabet: Alphabet::All,
-                min_key: 32,
-                journal_key: 0,
-                value_mode: ValueMode::Mirror,
-                count: SIZE,
-            }
-            .make_with(&mut seed);
+        alphabet: Alphabet::All,
+        min_key: 32,
+        journal_key: 0,
+        value_mode: ValueMode::Mirror,
+        count: SIZE,
+    }.make_with(&mut seed);
 
     let mut memdb = MemoryDB::new();
     let mut root = H256::default();
@@ -217,8 +214,7 @@ fn bench_trie_query(b: &mut Bencher) {
     memtrie.commit();
     let mut i: usize = 0;
     b.iter(|| {
-               memtrie.get(&x[i % SIZE].0).unwrap().unwrap();
-               i += 1;
-           });
-
+        memtrie.get(&x[i % SIZE].0).unwrap().unwrap();
+        i += 1;
+    });
 }

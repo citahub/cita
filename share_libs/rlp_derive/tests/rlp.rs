@@ -19,7 +19,7 @@ extern crate rlp;
 #[macro_use]
 extern crate rlp_derive;
 
-use rlp::{encode, decode};
+use rlp::{decode, encode};
 
 #[derive(Debug, PartialEq, RlpEncodable, RlpDecodable)]
 struct Foo {
