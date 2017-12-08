@@ -27,8 +27,8 @@ contract QuotaManager is QuotaInterface {
     }
 
     modifier checkBlockLimit(uint _v) {
-        uint blockLimit = 2 ** 25 -1;
-        require(_v >= blockLimit);
+        uint blockLimit = 2 ** 28 -1;
+        require(_v > blockLimit);
         _;
     }
 
@@ -90,6 +90,7 @@ contract QuotaManager is QuotaInterface {
         public 
         onlyAdmin
         checkLimit(_value)
+        checkBlockLimit(_value)
         returns (bool)
     {
         bytes32 value = bytes32(_value);
