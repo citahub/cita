@@ -16,7 +16,7 @@ libproto = {path = "../share_libs/proto"}
 pubsub = { path = "../share_libs/pubsub" }
 util = { path = "../share_libs/util" }
 error = { path = "../share_libs/error" }
-logger = { path = "../share_libs/logger" }
+logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
 jsonrpc_types = { path = "../jsonrpc/types" }
 core = { path = "./core" }
 common-types = { path = "./types" }

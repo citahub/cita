@@ -21,7 +21,7 @@ pubsub = { path = "../share_libs/pubsub" }
 cpuprofiler = "0.0.3"
 jsonrpc_types = { path = "types" }
 dotenv = "0.10.0"
-logger =  { path = "../share_libs/logger" }
+logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
 clap = "2"
 clippy = {version = "0.0.175", optional = true}
 

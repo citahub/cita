@@ -17,7 +17,7 @@ util = { path = "../../share_libs/util" }
 dotenv = "0.10.0"
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.3.0"
-logger = { path = "../../share_libs/logger" }
+logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
 proof = { path = "../../consensus/proof" }
 core = { path = "../../chain/core" }
 common-types = { path = "../../chain/types" }

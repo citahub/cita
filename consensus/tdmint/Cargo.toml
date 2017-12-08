@@ -22,7 +22,7 @@ time = "0.1.36"
 engine_json = { path = "../json" }
 engine = { path = "../engine" }
 lru-cache = "0.1"
-logger = { path = "../../share_libs/logger" }
+logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
 cpuprofiler = "0.0.3"
 authority_manage = { path = "../authority_manage" }
 rustc-hex = "1.0"
