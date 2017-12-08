@@ -13,11 +13,11 @@ libproto = { path = "../share_libs/proto" }
 protobuf = { version = "^1.0.0" }
 log = "0.3"
 util = { path = "../share_libs/util"}
-error = { path = "../share_libs/error"}
+error = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "191fdee" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-pubsub = { path = "../share_libs/pubsub" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
 cpuprofiler = "0.0.3"
 jsonrpc_types = { path = "types" }
 dotenv = "0.10.0"

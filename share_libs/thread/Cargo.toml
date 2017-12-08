@@ -1,6 +1,0 @@
-[package]
-name = "thread"
-version = "0.1.0"
-authors = ["Cryptape Technologies <arch@cryptape.com>"]
-
-[dependencies]

@@ -10,4 +10,4 @@ name = "amqp_test"
 
 [dependencies]
 dotenv = "0.10.0"
-pubsub = { path = "../../share_libs/pubsub" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }

@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["debris <marek.kotewicz@gmail.com>"]
 
 [dependencies]
-bigint = { path = "../bigint" }
+bigint = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "191fdee" }
 
 [dev-dependencies]
 tiny-keccak = "1.3"

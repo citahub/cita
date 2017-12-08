@@ -1,8 +1,0 @@
-[package]
-name = "pubsub_rabbitmq"
-version = "0.1.0"
-authors = ["Cryptape Technologies <arch@cryptape.com>"]
-
-[dependencies.amqp]
-version = "0.1"
-default-features = false

@@ -20,7 +20,7 @@ notify = "4.0.0"
 libproto = { path = "../share_libs/proto" }
 protobuf = { version = "^1.0.0"}
 util = { path = "../share_libs/util"}
-pubsub = { path = "../share_libs/pubsub" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
 logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
 rand = "0.3.*"
 clippy = {version = "0.0.175", optional = true}

@@ -20,7 +20,7 @@ util = { path = "../../share_libs/util" }
 dotenv = "0.10.*"
 log = "0.*"
 jsonrpc_types = { path = "../../jsonrpc/types" }
-pubsub = { path = "../../share_libs/pubsub" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
 rustc-hex = "1.*"
 threadpool = "1.*"
 num_cpus = "1.*"

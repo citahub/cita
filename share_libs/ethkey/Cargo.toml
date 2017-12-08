@@ -9,6 +9,6 @@ lazy_static = "0.2"
 tiny-keccak = "1.3"
 eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", rev = "b6b67055edc929057e97d64f036c78ad91f58a7f" }
 rustc-hex = "1.0"
-bigint = { path = "../bigint" }
+bigint = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "191fdee" }
 rust-crypto = "0.2"
 byteorder = "1.0"

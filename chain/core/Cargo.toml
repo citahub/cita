@@ -33,7 +33,7 @@ time = "0.1"
 crossbeam = "0.2"
 transient-hashmap = "0.4.0"
 
-ethcore-io = { path = "../../share_libs/io" }
+ethcore-io = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "191fdee" }
 cita-ed25519 = { path = "../../share_libs/ed25519" }
 cita-secp256k1 = { path = "../../share_libs/secp256k1" }
 cita-crypto = { path = "../../share_libs/crypto" }
@@ -41,7 +41,7 @@ sha3 = { path = "../../share_libs/sha3" }
 
 protobuf = { version = "^1.0.0"}
 threadpool = "1.7.0"
-pubsub = { path = "../../share_libs/pubsub" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
 dotenv = "0.10.0"
 proof = { path = "../../consensus/proof" }
 common-types = { path = "../types" }

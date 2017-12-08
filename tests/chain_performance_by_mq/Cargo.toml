@@ -23,4 +23,4 @@ core = { path = "../../chain/core" }
 common-types = { path = "../../chain/types" }
 bincode = "0.8.0"
 cpuprofiler = "0.0.3"
-pubsub = { path = "../../share_libs/pubsub" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
