@@ -43,9 +43,9 @@ pub fn parse_string_to_addresses(data: &[u8]) -> Vec<Address> {
         if len_len <= 32 {
             let len = U256::from(&data[32..32 + len_len]).as_u64() as usize;
             let num = len / 20;
-            // TODO: Should optimize
-            for i in 0..num {
-                let node = H160::from(&data[32 + len_len + i * 20..32 + len_len + (i + 1) * 20]);
+            let mut iter = data[32 + len_len..].chunks(20);
+            for _i in 0..num {
+                let node = H160::from(iter.next().expect("string cann't parse to addresses"));
                 trace!("node {:?}", node);
                 if node != H160::default() {
                     nodes.push(node);
@@ -66,9 +66,9 @@ pub fn parse_string_to_quota(data: &[u8]) -> Vec<u64> {
         if len_len <= 32 {
             let len = U256::from(&data[32..32 + len_len]).as_u64() as usize;
             let num = len / 4;
-            // TODO: Should optimize
-            for i in 0..num {
-                let quota = ToHex::to_hex(&data[32 + len_len + i * 4..32 + len_len + (i + 1) * 4]);
+            let mut iter = data[32 + len_len..].chunks(4);
+            for _i in 0..num {
+                let quota = ToHex::to_hex(iter.next().expect("string cann't parse to addresses"));
                 trace!("parse_string_to_addresses quota {:?}", quota);
                 if !quota.is_empty() {
                     let q = u64::from_str_radix(&*quota, 16).unwrap();
