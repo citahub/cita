@@ -45,7 +45,7 @@ pub enum ResultBody {
     ContractCode(Bytes),
     FilterId(U256),
     UninstallFliter(bool),
-    FilterChanges(Vec<Log>),
+    FilterChanges(Vec<String>),
     FilterLog(Vec<Log>),
 }
 
@@ -157,11 +157,13 @@ impl Output {
                     Response_oneof_data::uninstall_filter(is_uninstall) => success
                         .set_result(ResultBody::UninstallFliter(is_uninstall))
                         .output(),
-                    Response_oneof_data::filter_changes(log) => success
-                        .set_result(ResultBody::FilterChanges(
-                            serde_json::from_str::<Vec<Log>>(&log).unwrap(),
-                        ))
-                        .output(),
+                    Response_oneof_data::filter_changes(data) => {
+                        let changes =
+                            serde_json::from_str::<Vec<String>>(&data).expect("failed to parse into Vec<String>");
+                        success
+                            .set_result(ResultBody::FilterChanges(changes))
+                            .output()
+                    }
                     Response_oneof_data::filter_logs(log) => success
                         .set_result(ResultBody::FilterLog(
                             serde_json::from_str::<Vec<Log>>(&log).unwrap(),

@@ -10,7 +10,6 @@ fi
 type=$1
 
 # 0) setup
-rm    -rf                                  target/install
 mkdir -p                                   target/install/scripts/
 mkdir -p                                   target/install/bin/
 
