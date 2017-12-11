@@ -5,8 +5,8 @@ authors = ["Cryptape Technologies <arch@cryptape.com>"]
 build = "build.rs"
 
 [dependencies]
-blake2b = { path = "../blake2b", optional = true }
-sm3 = { path = "../sm3", optional = true }
+blake2b = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "c3d9d2c", optional = true }
+sm3 = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "c3d9d2c", optional = true }
 log = "0.3"
 rustc-hex = "1.0"
 rand = "0.3.12"
@@ -16,7 +16,7 @@ elastic-array = "0.9"
 rlp = { path = "../rlp" }
 heapsize = "0.4"
 itertools = "0.5"
-sha3 = { path = "../sha3"}
+sha3 = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "c3d9d2c" }
 clippy = {version = "0.0.175", optional = true}
 libc = "0.2.7"
 vergen = "0.1"
