@@ -19,7 +19,7 @@ rlp = { path = "../../share_libs/rlp" }
 rlp_derive = { path = "../../share_libs/rlp_derive" }
 bloomchain = "0.1"
 ethcore-bloom-journal = { path = "../../share_libs/bloom" }
-bloomable = { path = "../../share_libs/bloomable" }
+bloomable = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "c3d9d2c" }
 ethkey = { path = "../../share_libs/ethkey" }
 lazy_static = "0.2"
 bit-set = "0.4"
@@ -37,7 +37,7 @@ ethcore-io = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "19
 cita-ed25519 = { path = "../../share_libs/ed25519" }
 cita-secp256k1 = { path = "../../share_libs/secp256k1" }
 cita-crypto = { path = "../../share_libs/crypto" }
-sha3 = { path = "../../share_libs/sha3" }
+sha3 = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "c3d9d2c" }
 
 protobuf = { version = "^1.0.0"}
 threadpool = "1.7.0"
