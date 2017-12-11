@@ -1097,7 +1097,7 @@ impl Chain {
         ).unwrap();
 
         if open_block.apply_transactions(self, check_permission, self.check_quota) {
-            let closed_block = open_block.close();
+            let closed_block = open_block.into_closed_block();
             let new_now = Instant::now();
             info!("execute block use {:?}", new_now.duration_since(now));
             Some(closed_block)
