@@ -20,14 +20,14 @@
 use core::filters::eth_filter::EthFilter;
 use core::libchain::block::Block;
 use core::libchain::call_request::CallRequest;
-use core::libchain::chain::{BlockInQueue, Chain};
+use core::libchain::chain::{BlockInQueue, Chain, Stage};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{self as rpctypes, BlockNumber, BlockParamsByHash, BlockParamsByNumber, CountOrCode,
                               Filter as RpcFilter, Log as RpcLog, Receipt as RpcReceipt, RpcBlock};
 use libproto;
 use libproto::{communication, factory, parse_msg, request, response, submodules, topics, BlockTxHashes, MsgClass,
                SyncRequest, SyncResponse};
-use libproto::blockchain::{Block as ProtobufBlock, BlockWithProof, ProofType};
+use libproto::blockchain::{Block as ProtobufBlock, BlockWithProof, Proof, ProofType};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use proof::TendermintProof;
@@ -88,7 +88,7 @@ impl Forward {
 
             MsgClass::MSG(content) => {
                 if libproto::cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) == cmd_id {
-                    self.deal_new_proposal(&content[..]);
+                    self.proposal_enqueue(&content[..]);
                 } else {
                     trace!("Receive other message content.");
                 }
@@ -315,25 +315,58 @@ impl Forward {
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
         let current_height = self.chain.get_current_height();
         let mut proof_blk = proof_blk;
-        let block = proof_blk.take_blk();
+        let proto_block = proof_blk.take_blk();
         let proof = proof_blk.take_proof();
-        let blk_height = block.get_header().get_height();
-        trace!(
-            "Received consensus block: block_number:{:?} current_height: {:?}",
+        let blk_height = proto_block.get_header().get_height();
+        let block = Block::from(proto_block);
+
+        let block_in_queue = {
+            let block_map = self.chain.block_map.read();
+            block_map.get(&blk_height).cloned()
+        };
+        let stage = { self.chain.stage.read().clone() };
+
+        debug!(
+            "Received consensus block, block_number: {:?} current_height: {:?}, stage: {:?}",
             blk_height,
-            current_height
+            current_height,
+            stage
         );
-        if blk_height == (current_height + 1) {
-            {
-                self.chain.block_map.write().insert(
-                    blk_height,
-                    BlockInQueue::ConsensusBlock(Block::from(block), proof),
-                );
-            };
-            self.chain
-                .max_height
-                .store(blk_height as usize, Ordering::SeqCst);
-            self.write_sender.send(blk_height);
+
+        if self.chain.validate_height(block.number()) && self.chain.validate_hash(block.parent_hash()) {
+            match stage {
+                Stage::ExecutingProposal => {
+                    if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
+                        if value.header().transactions_root() != block.transactions_root() {
+                            if !self.chain.is_interrupted.load(Ordering::SeqCst) {
+                                self.chain.is_interrupted.store(true, Ordering::SeqCst);
+                            }
+                            self.send_block(blk_height, block, proof);
+                        } else {
+                            self.send_block(blk_height, block, proof);
+                        }
+                    }
+                }
+                Stage::WaitFinalized => {
+                    if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
+                        // Not interrupt but to notify chain to execute the block
+                        if value.header().transactions_root() != block.transactions_root()
+                            && !self.chain.is_interrupted.load(Ordering::SeqCst)
+                        {
+                            self.chain.is_interrupted.store(true, Ordering::SeqCst);
+                        }
+                        self.send_block(blk_height, block, proof);
+                    }
+                }
+                Stage::Idle => {
+                    self.send_block(blk_height, block, proof);
+                }
+                Stage::ExecutingBlock => {
+                    warn!("Something is wrong! Coming consensus block while executing consensus block");
+                }
+            }
+        } else {
+            warn!("something is wrong! Coming consensus is not valid");
         }
     }
 
@@ -455,7 +488,7 @@ impl Forward {
                 let mut blocks = self.chain.block_map.write();
                 if (block.number() as usize) != ::std::usize::MAX {
                     if proof_height == self.chain.get_max_height() {
-                        // Set proof of prev sycc block
+                        // Set proof of prev sync block
                         if let Some(prev_block_in_queue) = blocks.get_mut(&proof_height) {
                             if let BlockInQueue::SyncBlock(ref mut value) = *prev_block_in_queue {
                                 if value.1.is_none() {
@@ -471,17 +504,21 @@ impl Forward {
                         debug!("sync: insert block-{} in map", block.number());
                         blocks.insert(block.number(), BlockInQueue::SyncBlock((block, None)));
                     }
-                } else if let Some(block_in_queue) = blocks.get_mut(&proof_height) {
-                    if let BlockInQueue::SyncBlock(ref mut value) = *block_in_queue {
-                        if value.1.is_none() {
-                            debug!("sync: insert block proof {} in map", proof_height);
-                            mem::swap(&mut value.1, &mut Some(block.proof().clone()));
+                } else if proof_height > self.chain.get_current_height() {
+                    if let Some(block_in_queue) = blocks.get_mut(&proof_height) {
+                        if let BlockInQueue::SyncBlock(ref mut value) = *block_in_queue {
+                            if value.1.is_none() {
+                                debug!("sync: insert block proof {} in map", proof_height);
+                                mem::swap(&mut value.1, &mut Some(block.proof().clone()));
+                            }
                         }
                     }
                 }
             }
             // TODO: Handle Raft and POA
-            _ => {}
+            _ => {
+                unimplemented!();
+            }
         }
     }
 
@@ -513,9 +550,77 @@ impl Forward {
         }
     }
 
-    fn deal_new_proposal(&self, content: &[u8]) {
-        info!("Receive new proposal.");
-        let signed_proposal = parse_from_bytes::<SignedProposal>(content).unwrap();
-        let _ = signed_proposal.get_proposal().get_block();
+    fn proposal_enqueue(&self, content: &[u8]) {
+        info!("receive new proposal.");
+        let mut signed_proposal = parse_from_bytes::<SignedProposal>(content).unwrap();
+        let proposal = signed_proposal.take_proposal().take_block();
+
+        let current_height = self.chain.get_current_height();
+        let blk_height = proposal.get_header().get_height();
+        let block = Block::from(proposal);
+
+        let block_in_queue = {
+            let block_map = self.chain.block_map.read();
+            block_map.get(&blk_height).cloned()
+        };
+
+        let stage = { self.chain.stage.read().clone() };
+        debug!(
+            "received proposal, block_number: {:?} current_height: {:?}, stage: {:?}",
+            blk_height,
+            current_height,
+            stage
+        );
+
+        if self.chain.validate_height(blk_height) && self.chain.validate_hash(block.parent_hash()) {
+            match stage {
+                Stage::ExecutingProposal => {
+                    if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
+                        if value.header().transactions_root() != block.transactions_root() {
+                            if !self.chain.is_interrupted.load(Ordering::SeqCst) {
+                                self.chain.is_interrupted.store(true, Ordering::SeqCst);
+                            }
+                            self.send_proposal(blk_height, block);
+                        }
+                    }
+                }
+                Stage::WaitFinalized => {
+                    if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
+                        if value.header().transactions_root() != block.transactions_root() {
+                            self.send_proposal(blk_height, block);
+                        }
+                    }
+                }
+                Stage::Idle => {
+                    self.send_proposal(blk_height, block);
+                }
+                Stage::ExecutingBlock => {
+                    warn!("Something wrong! Coming proposal while executing consensus block");
+                }
+            }
+        }
+    }
+
+    fn send_block(&self, blk_height: u64, block: Block, proof: Proof) {
+        {
+            self.chain
+                .block_map
+                .write()
+                .insert(blk_height, BlockInQueue::ConsensusBlock(block, proof));
+        };
+        self.chain
+            .max_height
+            .store(blk_height as usize, Ordering::SeqCst);
+        self.write_sender.send(blk_height);
+    }
+
+    fn send_proposal(&self, blk_height: u64, block: Block) {
+        {
+            self.chain
+                .block_map
+                .write()
+                .insert(blk_height, BlockInQueue::Proposal(block));
+        };
+        self.write_sender.send(blk_height);
     }
 }

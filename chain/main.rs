@@ -17,8 +17,9 @@
 
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
-#![allow(unused_must_use, unused_assignments)]
+#![allow(unused_must_use)]
 #![feature(custom_attribute)]
+#![feature(refcell_replace_swap)]
 extern crate byteorder;
 extern crate clap;
 extern crate common_types as types;
@@ -91,6 +92,7 @@ fn main() {
             "jsonrpc.request",
             "auth.blk_tx_hashs_req",
             "consensus.msg",
+            "net.msg",
         ],
         tx,
         crx_pub,

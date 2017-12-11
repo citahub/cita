@@ -22,6 +22,7 @@ use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
+use libchain::chain::Chain;
 use libchain::extras::TransactionAddress;
 
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
@@ -34,10 +35,14 @@ use state_db::StateDB;
 use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::time::Instant;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
 use util::{merklehash, Address, H256, HeapSizeOf, U256};
+
+//  Check the 256 transactions once
+const CHECK_NUM: usize = 0xff;
 
 /// Trait for a object that has a state database.
 pub trait Drain {
@@ -323,9 +328,14 @@ impl OpenBlock {
     }
 
     ///execute transactions
-    pub fn apply_transactions(&mut self, check_permission: bool, check_quota: bool) {
+    pub fn apply_transactions(&mut self, chain: &Chain, check_permission: bool, check_quota: bool) -> bool {
         let mut transactions = Vec::with_capacity(self.body.transactions.len());
-        for mut t in self.body.transactions.clone() {
+        for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
+            if index & CHECK_NUM == 0 {
+                if chain.is_interrupted.load(Ordering::SeqCst) {
+                    return false;
+                }
+            }
             // Apply transaction and set account nonce
             self.apply_transaction(&mut t, check_permission, check_quota);
             transactions.push(t);
@@ -339,6 +349,7 @@ impl OpenBlock {
 
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
+        true
     }
 
     pub fn apply_transaction(&mut self, t: &mut SignedTransaction, check_permission: bool, check_quota: bool) {
@@ -420,7 +431,7 @@ impl OpenBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(&mut self) -> ClosedBlock {
+    pub fn close(mut self) -> ClosedBlock {
         let tx_hashs = self.body().transaction_hashes();
 
         // Rebuild block
@@ -452,6 +463,7 @@ impl OpenBlock {
             transactions.insert(tx_hash, address);
         }
 
+        // TODO: Optimize, avoid clone()
         ClosedBlock {
             block: self.block.clone(),
             transactions: transactions,
