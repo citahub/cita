@@ -12,15 +12,15 @@ log = "0.3.0"
 clap = "2"
 byteorder = { version = "1", default-features = false }
 serde_json = "1.0"
-libproto = {path = "../share_libs/proto"}
-pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
-util = { path = "../share_libs/util" }
+libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6a635aa" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "3910698" }
+util = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "47da817" }
 error = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "191fdee" }
 logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
 jsonrpc_types = { path = "../jsonrpc/types" }
 core = { path = "./core" }
 common-types = { path = "./types" }
-proof = { path = "../consensus/proof" }
+proof = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "73f647c" }
 clippy = {version = "0.0.175", optional = true}
 
 [[bin]]

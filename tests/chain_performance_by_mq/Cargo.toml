@@ -9,18 +9,18 @@ serde_derive = "1.0"
 serde_json = "1.0"
 clap = "2"
 
-libproto = { path = "../../share_libs/proto"}
+libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6a635aa" }
 protobuf = { version = "^1.0.0" }
 rustc-serialize = "0.3"
-cita-crypto = { path = "../../share_libs/crypto" }
-util = { path = "../../share_libs/util" }
+cita-crypto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "b8a467c" }
+util = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "47da817" }
 dotenv = "0.10.0"
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.3.0"
 logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
-proof = { path = "../../consensus/proof" }
+proof = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "73f647c" }
 core = { path = "../../chain/core" }
 common-types = { path = "../../chain/types" }
 bincode = "0.8.0"
 cpuprofiler = "0.0.3"
-pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "3910698" }
