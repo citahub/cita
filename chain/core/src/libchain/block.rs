@@ -194,29 +194,27 @@ impl BlockBody {
 #[derive(Clone)]
 pub struct ClosedBlock {
     /// Protobuf Block
-    pub block: Block,
+    pub block: OpenBlock,
     pub transactions: HashMap<H256, TransactionAddress>,
-    pub receipts: Vec<Option<Receipt>>,
-    pub state: State<StateDB>,
 }
 
 impl Drain for ClosedBlock {
     /// Drop this object and return the underlieing database.
     fn drain(self) -> StateDB {
-        self.state.drop().1
+        self.block.drain()
     }
 }
 
 impl Deref for ClosedBlock {
-    type Target = Block;
+    type Target = OpenBlock;
 
-    fn deref(&self) -> &Block {
+    fn deref(&self) -> &OpenBlock {
         &self.block
     }
 }
 
 impl DerefMut for ClosedBlock {
-    fn deref_mut(&mut self) -> &mut Block {
+    fn deref_mut(&mut self) -> &mut OpenBlock {
         &mut self.block
     }
 }
@@ -228,6 +226,12 @@ pub struct ExecutedBlock {
     pub state: State<StateDB>,
     pub current_gas_used: U256,
     traces: Option<Vec<Vec<FlatTrace>>>,
+}
+
+impl Drain for ExecutedBlock {
+    fn drain(self) -> StateDB {
+        self.state.drop().1
+    }
 }
 
 impl Deref for ExecutedBlock {
@@ -260,11 +264,18 @@ impl ExecutedBlock {
     }
 }
 
+#[derive(Clone)]
 pub struct OpenBlock {
     exec_block: ExecutedBlock,
     last_hashes: Arc<LastHashes>,
     account_gas_limit: U256,
     account_gas: HashMap<Address, U256>,
+}
+
+impl Drain for OpenBlock {
+    fn drain(self) -> StateDB {
+        self.exec_block.drain()
+    }
 }
 
 impl Deref for OpenBlock {
@@ -431,7 +442,7 @@ impl OpenBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(mut self) -> ClosedBlock {
+    pub fn into_closed_block(mut self) -> ClosedBlock {
         let tx_hashs = self.body().transaction_hashes();
 
         // Rebuild block
@@ -463,12 +474,9 @@ impl OpenBlock {
             transactions.insert(tx_hash, address);
         }
 
-        // TODO: Optimize, avoid clone()
         ClosedBlock {
-            block: self.block.clone(),
+            block: self,
             transactions: transactions,
-            receipts: self.receipts.clone(),
-            state: self.state.clone(),
         }
     }
 }
