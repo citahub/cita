@@ -9,21 +9,21 @@ threadpool = "1.7.0"
 serde = "1.0"
 serde_derive = "1.0"
 bincode = "0.8.0"
-libproto = {path = "../../share_libs/proto"}
-util = {path = "../../share_libs/util"}
+libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6a635aa" }
+util = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "47da817" }
 rustc-serialize = "0.3"
 protobuf = { version = "^1.0.0" }
 log = "0.3"
 clap = "2"
-pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
-cita-crypto = { path = "../../share_libs/crypto" }
-proof = { path = "../proof" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "3910698" }
+cita-crypto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "b8a467c" }
+proof = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "73f647c" }
 time = "0.1.36"
-engine_json = { path = "../json" }
-engine = { path = "../engine" }
+engine_json = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6a635aa" }
+engine = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "863d43e" }
 lru-cache = "0.1"
 logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
 cpuprofiler = "0.0.3"
-authority_manage = { path = "../authority_manage" }
+authority_manage = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "07cfa04" }
 rustc-hex = "1.0"
 clippy = {version = "0.0.175", optional = true}

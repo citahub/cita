@@ -13,14 +13,14 @@ rustc-serialize = "0.3"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
-util = { path = "../share_libs/util"}
+util = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "47da817" }
 error = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "191fdee" }
-pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "3910698" }
 logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
-libproto = { path = "../share_libs/proto" }
+libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6a635aa" }
 protobuf = { version = "^1.0.0"}
-cita-crypto = { path = "../share_libs/crypto"}
-tx_pool = {path = "../share_libs/tx_pool"}
+cita-crypto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "b8a467c" }
+tx_pool = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "73f647c" }
 core = { path = "../chain/core" }
 uuid = { version = "0.4", features = ["v4"] }
 clippy = {version = "0.0.175", optional = true}

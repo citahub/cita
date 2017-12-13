@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies]
-libproto = {path = "../../share_libs/proto"}
+libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6a635aa" }
 byteorder = { version = "1", default-features = false }
 log = "0.3.0"
 bincode = "0.8.0"
@@ -12,15 +12,15 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 rustc-hex = "1.0"
-util = { path = "../../share_libs/util" }
+util = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "47da817" }
 rustc-serialize = "0.3"
 lru-cache = "0.1.1"
-rlp = { path = "../../share_libs/rlp" }
-rlp_derive = { path = "../../share_libs/rlp_derive" }
+rlp = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "77e2c45" }
+rlp_derive = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "e650d3a" }
 bloomchain = "0.1"
-ethcore-bloom-journal = { path = "../../share_libs/bloom" }
+ethcore-bloom-journal = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "139529a" }
 bloomable = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "c3d9d2c" }
-ethkey = { path = "../../share_libs/ethkey" }
+ethkey = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6f0abf0" }
 lazy_static = "0.2"
 bit-set = "0.4"
 rust-crypto = "0.2.34"
@@ -33,17 +33,17 @@ time = "0.1"
 crossbeam = "0.2"
 transient-hashmap = "0.4.0"
 
-ethcore-io = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "191fdee" }
-cita-ed25519 = { path = "../../share_libs/ed25519" }
-cita-secp256k1 = { path = "../../share_libs/secp256k1" }
-cita-crypto = { path = "../../share_libs/crypto" }
+ethcore-io = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "139529a" }
+cita-ed25519 = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "07cfa04" }
+cita-secp256k1 = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "07cfa04" }
+cita-crypto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "b8a467c" }
 sha3 = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "c3d9d2c" }
 
 protobuf = { version = "^1.0.0"}
 threadpool = "1.7.0"
-pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "11e8929" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "3910698" }
 dotenv = "0.10.0"
-proof = { path = "../../consensus/proof" }
+proof = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "73f647c" }
 common-types = { path = "../types" }
 jsonrpc_types = { path = "../../jsonrpc/types"}
 clippy = {version = "0.0.175", optional = true}

@@ -1,9 +1,0 @@
-[package]
-name = "tx_pool"
-version = "0.6.0"
-authors = ["Cryptape Technologies <arch@cryptape.com>"]
-
-[dependencies]
-libproto = { path = "../proto" }
-util = { path = "../util" }
-cita-crypto = { path = "../crypto" }

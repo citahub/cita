@@ -5,9 +5,9 @@ version = "0.1.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
 [dependencies]
-rlp = { path = "../../share_libs/rlp" }
-util = { path = "../../share_libs/util" }
+rlp = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "77e2c45" }
+util = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "47da817" }
 bloomable = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "c3d9d2c" }
-cita-crypto = { path = "../../share_libs/crypto" }
-libproto = { path = "../../share_libs/proto" }
+cita-crypto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "b8a467c" }
+libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6a635aa" }
 rustc-hex = "1.0"

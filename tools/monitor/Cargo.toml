@@ -9,4 +9,4 @@ rustc-serialize = "0.3"
 log = "0.3"
 clap = "2"
 logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
-util = { path = "../../share_libs/util" }
+util = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "47da817" }
