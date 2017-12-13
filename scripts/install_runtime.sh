@@ -32,7 +32,7 @@ tar -xf solidity_0.4.19.tar.gz
 
 # 4) install python package
 umask 022
-sudo pip install ethereum==2.0.4 pysodium
+sudo pip install ethereum==2.2.0 pysodium
 
 # 5) extra
 # 5.1) libgmssl
