@@ -94,37 +94,53 @@ impl Handler for HttpHandler {
             *response.status_mut() = StatusCode::BadRequest;
             return;
         }
-
-        serde_json::from_reader::<_, Value>(request)
-            .map_err(|_| *response.status_mut() = StatusCode::BadRequest) // failed to parse json
+        let result: Result<String, StatusCode> = serde_json::from_reader::<_, Value>(request)
             .map(|json| {
-                trace!("recv: {:?}", json);
+                trace!("recv: {}", json);
                 from_value(json.clone())
-                    .map(|item: RpcRequest| self.send_mq(item)) // try single request
-                    .map_err(|_| {                              // try batch request
-                        from_value(json).map(|array: Vec<RpcRequest>| {
-                            let mut first = true;
-                            array
-                                .into_iter()
-                                .map(|item| self.send_mq(item))
-                                .fold(String::from("["), |last, item| {
-                                    if first {
-                                        first = false;
-                                        last + item.as_ref()
-                                    } else {
-                                        last + "," + item.as_ref()
-                                    }
-                                }) + "]"
-                        })
+                    .map(|item: RpcRequest| {
+                        // single request
+                        self.send_mq(item)
                     })
-                    .map_err(|_|{ // failure
-                        *response.status_mut() = StatusCode::InternalServerError;
+                    .or_else(|_| {
+                        from_value(json.clone())
+                            .map(|items: Vec<RpcRequest>| {
+                                // batch request
+                                let mut first = true;
+                                items.into_iter().map(|item| self.send_mq(item)).fold(
+                                    String::from("["),
+                                    |last, item| {
+                                        if first {
+                                            first = false;
+                                            last + item.as_ref()
+                                        } else {
+                                            last + "," + item.as_ref()
+                                        }
+                                    },
+                                ) + "]"
+                            })
+                            .map_err(|err| {
+                                warn!("failed to parse batch request: {}", err);
+                                StatusCode::BadRequest
+                            })
                     })
-                    .map(|result| { // success
-                        trace!("send: {}", result);
-                        response.send(result.as_ref());
-                    })
+            })
+            .map_err(|err| {
+                warn!("failed to parse into Value: {}", err);
+                StatusCode::BadRequest
+            })
+            .and_then(|result| match result {
+                Ok(text) => Ok(text),
+                Err(err) => Err(err),
+            });
 
-        });
+        result
+            .map_err(|status| {
+                *response.status_mut() = status;
+            })
+            .map(|text| {
+                trace!("send: {}", text);
+                response.send(text.as_ref());
+            });
     }
 }
