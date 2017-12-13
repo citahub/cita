@@ -157,7 +157,7 @@ library strings {
         // Starting at ptr-31 means the LSB will be the byte we care about
         var ptr = self._ptr - 31;
         var end = ptr + self._len;
-        for (uint len = 0; ptr < end; len++) {
+        for (uint l = 0; ptr < end; l++) {
             uint8 b;
             assembly { b := and(mload(ptr), 0xFF) }
             if (b < 0x80) {
@@ -174,7 +174,7 @@ library strings {
                 ptr += 6;
             }
         }
-        return len;
+        return l;
     }
 
     /*
@@ -247,31 +247,31 @@ library strings {
             return rune;
         }
 
-        uint len;
+        uint l;
         uint b;
         // Load the first byte of the rune into the LSBs of b
         assembly { b := and(mload(sub(mload(add(self, 32)), 31)), 0xFF) }
         if (b < 0x80) {
-            len = 1;
+            l = 1;
         } else if(b < 0xE0) {
-            len = 2;
+            l = 2;
         } else if(b < 0xF0) {
-            len = 3;
+            l = 3;
         } else {
-            len = 4;
+            l = 4;
         }
 
         // Check for truncated codepoints
-        if (len > self._len) {
+        if (l > self._len) {
             rune._len = self._len;
             self._ptr += self._len;
             self._len = 0;
             return rune;
         }
 
-        self._ptr += len;
-        self._len -= len;
-        rune._len = len;
+        self._ptr += l;
+        self._len -= l;
+        rune._len = l;
         return rune;
     }
 
@@ -296,34 +296,34 @@ library strings {
         }
 
         uint word;
-        uint len;
-        uint div = 2 ** 248;
+        uint l;
+        uint d = 2 ** 248;
 
         // Load the rune into the MSBs of b
         assembly { word:= mload(mload(add(self, 32))) }
-        var b = word / div;
+        var b = word / d;
         if (b < 0x80) {
             ret = b;
-            len = 1;
+            l = 1;
         } else if(b < 0xE0) {
             ret = b & 0x1F;
-            len = 2;
+            l = 2;
         } else if(b < 0xF0) {
             ret = b & 0x0F;
-            len = 3;
+            l = 3;
         } else {
             ret = b & 0x07;
-            len = 4;
+            l = 4;
         }
 
         // Check for truncated codepoints
-        if (len > self._len) {
+        if (l > self._len) {
             return 0;
         }
 
-        for (uint i = 1; i < len; i++) {
-            div = div / 256;
-            b = (word / div) & 0xFF;
+        for (uint i = 1; i < l; i++) {
+            d = d / 256;
+            b = (word / d) & 0xFF;
             if (b & 0xC0 != 0x80) {
                 // Invalid UTF-8 sequence
                 return 0;
@@ -643,10 +643,10 @@ library strings {
      * @param needle The text to search for in `self`.
      * @return The number of occurrences of `needle` found in `self`.
      */
-    function count(slice self, slice needle) internal returns (uint count) {
+    function count(slice self, slice needle) internal returns (uint c) {
         uint ptr = findPtr(self._len, self._ptr, needle._len, needle._ptr) + needle._len;
         while (ptr <= self._ptr + self._len) {
-            count++;
+            c++;
             ptr = findPtr(self._len - (ptr - self._ptr), ptr, needle._len, needle._ptr) + needle._len;
         }
     }
@@ -689,11 +689,11 @@ library strings {
         if (parts.length == 0)
             return "";
 
-        uint len = self._len * (parts.length - 1);
+        uint l = self._len * (parts.length - 1);
         for(uint i = 0; i < parts.length; i++)
-            len += parts[i]._len;
+            l += parts[i]._len;
 
-        var ret = new string(len);
+        var ret = new string(l);
         uint retptr;
         assembly { retptr := add(ret, 32) }
 

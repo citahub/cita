@@ -116,7 +116,7 @@ CITA 完全兼容以太坊的智能合约，``solidity`` 是智能合约最为�
 1. 通过在线 ``solidity`` 实时编译器来编译。 `访问地址 <https://remix.ethereum.org/>`_
 2. 安装 ``solc`` 编译器编译
 
-本文采用第二种方式，``solc`` 编译器是一个来自 ``C++`` 客户端实现的组件，安装方法请参考 `这里 <http://www.ethdocs.org/en/latest/ethereum-clients/cpp-ethereum/index.html>`_ 。
+本文采用第二种方式，``solc`` 编译器是一个来自 ``C++`` 客户端实现的组件，安装方法请参考 `这里 <http://solidity.readthedocs.io/en/latest/installing-solidity.html#installing-solidity>`_ 。
 
 安装完成后，在 ``Terminal`` 中执行 ``solc --version`` ，如果返回值为：
 
@@ -234,7 +234,7 @@ CITA 完全兼容以太坊的智能合约，``solidity`` 是智能合约最为�
 
 **通过 python 脚本发送交易命令**
 
-在 ``Terminal`` 中执行： ``python sen_tx.py``
+在 ``Terminal`` 中执行： ``python send_tx.py``
 
 ::
 
@@ -279,10 +279,10 @@ CITA 完全兼容以太坊的智能合约，``solidity`` 是智能合约最为�
 
 ::
 
-    curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "0x15"],"id":2}' 127.0.0.1:1337
+    curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "latest"],"id":2}' 127.0.0.1:1337
 
 
-其中0x15为以上命令获取的 ``blockNumber`` ， ``to`` 参数为合约目标地址， ``data`` 为 ``get`` 方法的 ``hash`` 值
+其中 ``to`` 参数为合约目标地址， ``data`` 为 ``get`` 方法的 ``hash`` 值
 
 结果如下：
 

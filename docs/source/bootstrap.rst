@@ -126,7 +126,7 @@ contract source can be compiled with multiple way.
 1. access from online web ide <https://remix.ethereum.org/>
 2. alternatively, install ``solc`` compiler and compile contract source from command line
 
-please refer to here  <http://www.ethdocs.org/en/latest/ethereum-clients/cpp-ethereum/index.html> for installation.
+please refer to here  <http://solidity.readthedocs.io/en/latest/installing-solidity.html#installing-solidity> for installation.
 
 After installation finished, check result from shell using ``solc --version``:
 
@@ -241,7 +241,7 @@ Here ``get`` and ``set`` method ``hash`` is unique id in contract ``SimpleStorag
 
 ::
 
-   python sen_tx.py
+   python send_tx.py
 
 Output displayed as below:   
 ::
@@ -284,9 +284,9 @@ Output displayed as below:
 
 ::
 
-    curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "0x15"],"id":2}' 127.0.0.1:1337
+    curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "latest"],"id":2}' 127.0.0.1:1337
 
-Here ``to`` means contract address, ``data``means method(``get``) hash, and ``0x15`` means block number from previous step.
+Here ``to`` means contract address, ``data``means method(``get``) hash
 
 Result displayed as below:
 ::
