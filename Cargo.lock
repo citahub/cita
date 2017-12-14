@@ -43,7 +43,7 @@ name = "amqp_test"
 version = "0.1.0"
 dependencies = [
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
 ]
 
 [[package]]
@@ -93,37 +93,38 @@ dependencies = [
 name = "auth"
 version = "0.1.0"
 dependencies = [
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "clap 2.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "core 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "error 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee)",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "tx_pool 0.6.0",
- "util 0.6.0",
+ "tx_pool 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "authority_manage"
 version = "0.1.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04#07cfa0499ff78fd4be648bad6fc120df54c19036"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -176,17 +177,17 @@ dependencies = [
 name = "benchmark_ws"
 version = "0.1.0"
 dependencies = [
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "clap 2.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
  "rand 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -196,7 +197,7 @@ dependencies = [
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ws 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -259,18 +260,11 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "blake2b"
-version = "0.1.0"
-dependencies = [
- "cc 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "bloomable"
 version = "0.1.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=c3d9d2c#c3d9d2c59333558ee04c0bfb2f89745aafc85fff"
 dependencies = [
  "bigint 3.0.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee)",
- "tiny-keccak 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -344,15 +338,15 @@ dependencies = [
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "error 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee)",
  "jsonrpc_types 0.1.0",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
- "proof 0.6.0",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -360,22 +354,22 @@ name = "chain_performance"
 version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "clap 2.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
- "proof 0.6.0",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -384,23 +378,23 @@ name = "chain_performance_by_mq"
 version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "clap 2.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
- "proof 0.6.0",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -444,50 +438,39 @@ dependencies = [
 [[package]]
 name = "cita-crypto"
 version = "0.1.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c#b8a467c3e8b8c762dc810b7401ecbef58caf94b0"
 dependencies = [
- "cita-ed25519 0.6.0",
- "cita-secp256k1 0.6.0",
- "cita-sm2 0.1.0",
- "util 0.6.0",
+ "cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
 name = "cita-ed25519"
 version = "0.6.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04#07cfa0499ff78fd4be648bad6fc120df54c19036"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0",
+ "rlp 0.2.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=77e2c45)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "sodiumoxide 0.0.14 (git+https://github.com/cryptape/sodiumoxide.git?rev=c324e11a2db461ec6878c55bd6616f75b2e4d16a)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
 name = "cita-secp256k1"
 version = "0.6.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04#07cfa0499ff78fd4be648bad6fc120df54c19036"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "eth-secp256k1 0.5.7 (git+https://github.com/paritytech/rust-secp256k1?rev=6370d63adf4e8c91e2eae9225eef4b4e0294c5d0)",
  "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0",
+ "rlp 0.2.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=77e2c45)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
-]
-
-[[package]]
-name = "cita-sm2"
-version = "0.1.0"
-dependencies = [
- "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0",
- "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -547,41 +530,41 @@ dependencies = [
 name = "common-types"
 version = "0.1.0"
 dependencies = [
- "bloomable 0.1.0",
- "cita-crypto 0.1.0",
- "libproto 0.6.0",
- "rlp 0.2.0",
+ "bloomable 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=c3d9d2c)",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
+ "rlp 0.2.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=77e2c45)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
 name = "consensus_tendermint"
 version = "0.1.0"
 dependencies = [
- "authority_manage 0.1.0",
+ "authority_manage 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04)",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "clap 2.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "engine 0.6.0",
- "engine_json 0.6.0",
- "libproto 0.6.0",
+ "engine 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=863d43e)",
+ "engine_json 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "proof 0.6.0",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -590,48 +573,48 @@ version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bit-set 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "bloomable 0.1.0",
+ "bloomable 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=c3d9d2c)",
  "bloomchain 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bn 0.4.4 (git+https://github.com/paritytech/bn?rev=c9831a8d10d55045692394cbc10efe0321ddb16f)",
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-crypto 0.1.0",
- "cita-ed25519 0.6.0",
- "cita-secp256k1 0.6.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
+ "cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04)",
+ "cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "ethcore-bloom-journal 0.1.0",
- "ethcore-io 1.8.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee)",
- "ethkey 0.2.0",
+ "ethcore-bloom-journal 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=139529a)",
+ "ethcore-io 1.8.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=139529a)",
+ "ethkey 0.2.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6f0abf0)",
  "futures 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
  "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mktemp 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "proof 0.6.0",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
  "rand 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0",
- "rlp_derive 0.1.0",
+ "rlp 0.2.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=77e2c45)",
+ "rlp_derive 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=e650d3a)",
  "rust-crypto 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "sha3 0.1.0",
+ "sha3 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=c3d9d2c)",
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "transient-hashmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -647,8 +630,8 @@ dependencies = [
 name = "create_key_addr"
 version = "0.1.0"
 dependencies = [
- "cita-crypto 0.1.0",
- "util 0.6.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -705,25 +688,27 @@ dependencies = [
 [[package]]
 name = "engine"
 version = "0.6.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=863d43e#863d43ec707c603955a7aea64f904198a833cd98"
 dependencies = [
- "cita-crypto 0.1.0",
- "engine_json 0.6.0",
- "libproto 0.6.0",
- "proof 0.6.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
+ "engine_json 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
- "util 0.6.0",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
 name = "engine_json"
 version = "0.6.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa#6a635aa83843363015f323aa6fab736a46ad539f"
 dependencies = [
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -800,6 +785,7 @@ dependencies = [
 [[package]]
 name = "ethcore-bloom-journal"
 version = "0.1.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=139529a#139529a4f87c3e424b505dc5ea2216f72f09612f"
 dependencies = [
  "siphasher 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -807,7 +793,7 @@ dependencies = [
 [[package]]
 name = "ethcore-io"
 version = "1.8.0"
-source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee#191fdee90a6e816d87d1fc668b27e5c7d224192f"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=139529a#139529a4f87c3e424b505dc5ea2216f72f09612f"
 dependencies = [
  "crossbeam 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -819,6 +805,7 @@ dependencies = [
 [[package]]
 name = "ethkey"
 version = "0.2.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=6f0abf0#6f0abf05beb1313a37e61f4f6983ff0cf0651684"
 dependencies = [
  "bigint 3.0.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee)",
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1018,17 +1005,17 @@ dependencies = [
  "error 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
  "num_cpus 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ws 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1037,12 +1024,12 @@ dependencies = [
 name = "jsonrpc_performance"
 version = "0.1.0"
 dependencies = [
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "clap 2.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1050,7 +1037,7 @@ dependencies = [
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -1058,22 +1045,22 @@ name = "jsonrpc_types"
 version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "futures 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "proof 0.6.0",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1095,7 +1082,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "latency"
 version = "0.1.0"
 dependencies = [
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
 ]
 
 [[package]]
@@ -1116,16 +1103,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "libproto"
 version = "0.6.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa#6a635aa83843363015f323aa6fab736a46ad539f"
 dependencies = [
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0",
+ "rlp 0.2.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=77e2c45)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -1321,7 +1309,7 @@ dependencies = [
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -1347,19 +1335,19 @@ dependencies = [
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-cpupool 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
  "notify 4.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)",
  "rand 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-io 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-proto 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-service 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -1523,15 +1511,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "proof"
 version = "0.6.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c#73f647c2cb2ba1855bd5fb25cb37ecd278415dbd"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-crypto 0.1.0",
- "libproto 0.6.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -1542,7 +1531,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "pubsub"
 version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929#11e89292bbbcad2004d19bd0ab9830d259b45a41"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698#3910698544185d5541f37bb81ce9587e2d0f0e99"
 dependencies = [
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub_rabbitmq 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=8d1ecd1)",
@@ -1667,6 +1656,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "rlp"
 version = "0.2.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=77e2c45#77e2c45bf2dbe18bfacd7a21fec2fe4fe9ee2aed"
 dependencies = [
  "bigint 3.0.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee)",
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1678,9 +1668,9 @@ dependencies = [
 [[package]]
 name = "rlp_derive"
 version = "0.1.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=e650d3a#e650d3aa7a2d90d67098a12ff16ca7f69e4bc928"
 dependencies = [
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0",
  "syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1851,6 +1841,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "sha3"
 version = "0.1.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=c3d9d2c#c3d9d2c59333558ee04c0bfb2f89745aafc85fff"
 dependencies = [
  "cc 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1888,10 +1879,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "slab"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "sm3"
-version = "0.1.0"
 
 [[package]]
 name = "smallvec"
@@ -2111,19 +2098,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "trans_evm"
 version = "0.1.0"
 dependencies = [
- "cita-crypto 0.1.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
  "clap 2.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
- "libproto 0.6.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -2137,10 +2124,11 @@ dependencies = [
 [[package]]
 name = "tx_pool"
 version = "0.6.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c#73f647c2cb2ba1855bd5fb25cb37ecd278415dbd"
 dependencies = [
- "cita-crypto 0.1.0",
- "libproto 0.6.0",
- "util 0.6.0",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)",
 ]
 
 [[package]]
@@ -2234,29 +2222,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "util"
 version = "0.6.0"
+source = "git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817#47da817a82033ec5f1bce0d7d2922526fc897ea6"
 dependencies = [
  "ansi_term 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bigint 3.0.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee)",
- "blake2b 0.1.0",
- "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "elastic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ethcore-bloom-journal 0.1.0",
+ "ethcore-bloom-journal 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=139529a)",
  "heapsize 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=056d5bd)",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "mktemp 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0",
+ "rlp 0.2.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=77e2c45)",
  "rocksdb 0.4.5 (git+https://github.com/paritytech/rust-rocksdb?rev=4364caec4dd5da1a1d78c39276774ee65bf55c7d)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc_version 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "sha3 0.1.0",
- "sm3 0.1.0",
+ "sha3 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=c3d9d2c)",
  "target_info 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "tiny-keccak 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2367,6 +2352,7 @@ dependencies = [
 "checksum arrayvec 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)" = "e003cbf6e0e1c43a0fc8df2ea8ea24174514d35cbcf60c35ca6112e0139f65e2"
 "checksum arrayvec 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "2f0ef4a9820019a0c91d918918c93dc71d469f581a49b47ddc1d285d4270bbe2"
 "checksum atty 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "21e50800ec991574876040fff8ee46b136a53e985286fbe6a3bdfe6421b78860"
+"checksum authority_manage 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04)" = "<none>"
 "checksum backtrace 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "346d7644f0b5f9bc73082d3b2236b69a05fd35cce0cfa3724e184e6a5c9e2a2f"
 "checksum backtrace 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "8709cc7ec06f6f0ae6c2c7e12f6ed41540781f72b488d83734978295ceae182e"
 "checksum backtrace-sys 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)" = "44585761d6161b0f57afc49482ab6bd067e4edef48c12a152c237eb0203f7661"
@@ -2379,6 +2365,7 @@ dependencies = [
 "checksum bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aad18937a628ec6abcd26d1489012cc0e18c21798210f491af69ded9b881106d"
 "checksum bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4efd02e230a02e18f92fc2735f44597385ed02ad8f831e7c1c1156ee5e1ab3a5"
 "checksum bitflags 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b3c30d3802dfb7281680d6285f2ccdaa8c2d8fee41f93805dba5c4cf50dc23cf"
+"checksum bloomable 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=c3d9d2c)" = "<none>"
 "checksum bloomchain 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3f421095d2a76fc24cd3fb3f912b90df06be7689912b1bdb423caefae59c258d"
 "checksum bn 0.4.4 (git+https://github.com/paritytech/bn?rev=c9831a8d10d55045692394cbc10efe0321ddb16f)" = "<none>"
 "checksum byteorder 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0fc10e8cc6b2580fda3f36eb6dc5316657f812a3df879a44a66fc9f0fdbc4855"
@@ -2392,6 +2379,9 @@ dependencies = [
 "checksum chan-signal 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f1f1e11f6e1c14c9e805a87c622cb8fcb636283b3119a2150af390cc6702d7fe"
 "checksum chrono 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "158b0bd7d75cbb6bf9c25967a48a2e9f77da95876b858eadfabaa99cd069de6e"
 "checksum chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7c20ebe0b2b08b0aeddba49c609fe7957ba2e33449882cb186a180bc60682fa9"
+"checksum cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=b8a467c)" = "<none>"
+"checksum cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04)" = "<none>"
+"checksum cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=07cfa04)" = "<none>"
 "checksum clap 2.28.0 (registry+https://github.com/rust-lang/crates.io-index)" = "dc34bf7d5d66268b466b9852bca925ec1d2650654dab4da081e63fd230145c2e"
 "checksum clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)" = "2dae056aaec8acd5fc26722234cc9fa03b969a860d9aef0da6c5e5c996ce66ae"
 "checksum clippy_lints 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)" = "d04f24bc10870e19880865d8f206168993bfc6df9cc7335c0692cad98378a4b6"
@@ -2404,6 +2394,8 @@ dependencies = [
 "checksum dtoa 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "09c3753c3db574d215cba4ea76018483895d7bff25a31b49ba45db21c48e50ab"
 "checksum either 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "740178ddf48b1a9e878e6d6509a1442a2d42fd2928aae8e7a6f8a36fb01981b3"
 "checksum elastic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "258ff6a9a94f648d0379dbd79110e057edbb53eb85cc237e33eadf8e5a30df85"
+"checksum engine 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=863d43e)" = "<none>"
+"checksum engine_json 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)" = "<none>"
 "checksum enum_primitive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "be4551092f4d519593039259a9ed8daedf0da12e5109c5280338073eaeb81180"
 "checksum env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "15abd780e45b3ea4f76b4e9a26ff4843258dd8a3eed2775a0e7368c2e7936c2f"
 "checksum env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3ddf21e73e016298f5cb37d6ef8e8da8e39f91f9ec8b0df44b7deb16a9f8cd5b"
@@ -2412,7 +2404,9 @@ dependencies = [
 "checksum error-chain 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "bd5c82c815138e278b8dcdeffc49f27ea6ffb528403e9dea4194f2e3dd40b143"
 "checksum eth-secp256k1 0.5.6 (git+https://github.com/paritytech/rust-secp256k1?rev=b6b67055edc929057e97d64f036c78ad91f58a7f)" = "<none>"
 "checksum eth-secp256k1 0.5.7 (git+https://github.com/paritytech/rust-secp256k1?rev=6370d63adf4e8c91e2eae9225eef4b4e0294c5d0)" = "<none>"
-"checksum ethcore-io 1.8.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=191fdee)" = "<none>"
+"checksum ethcore-bloom-journal 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=139529a)" = "<none>"
+"checksum ethcore-io 1.8.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=139529a)" = "<none>"
+"checksum ethkey 0.2.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6f0abf0)" = "<none>"
 "checksum filetime 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "aa75ec8f7927063335a9583e7fa87b0110bb888cf766dc01b54c0ff70d760c8e"
 "checksum flate2 0.2.20 (registry+https://github.com/rust-lang/crates.io-index)" = "e6234dd4468ae5d1e2dbb06fe2b058696fdc50a339c68a393aefbf00bc81e423"
 "checksum fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "2fad85553e09a6f881f739c29f0b00b0f01357c743266d478b68951ce23285f3"
@@ -2440,6 +2434,7 @@ dependencies = [
 "checksum lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "76f033c7ad61445c5b347c7382dd1237847eb1bce590fe50365dcb33d546be73"
 "checksum lazycell 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3b585b7a6811fb03aa10e74b278a0f00f8dd9b45dc681f148bb29fa5cb61859b"
 "checksum libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)" = "36fbc8a8929c632868295d0178dd8f63fc423fd7537ad0738372bd010b3ac9b0"
+"checksum libproto 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=6a635aa)" = "<none>"
 "checksum libsodium-sys 0.0.14 (git+https://github.com/cryptape/sodiumoxide.git?rev=c324e11a2db461ec6878c55bd6616f75b2e4d16a)" = "<none>"
 "checksum linked-hash-map 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7860ec297f7008ff7a1e3382d7f7e1dcd69efc94751a2284bafc3d013c2aa939"
 "checksum linked-hash-map 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2d2aab0478615bb586559b0114d94dd8eca4fdbb73b443adcb0d00b61692b4bf"
@@ -2478,8 +2473,9 @@ dependencies = [
 "checksum parking_lot_core 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "6c677d78851950b3aec390e681a411f78cc250cba277d4f578758a377f727970"
 "checksum percent-encoding 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "31010dd2e1ac33d5b46a5b413495239882813e0369f8ed8a5e266f173602f831"
 "checksum pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "3a8b4c6b8165cd1a1cd4b9b120978131389f64bdaf456435caa41e630edba903"
+"checksum proof 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)" = "<none>"
 "checksum protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "bec26e67194b7d991908145fdf21b7cae8b08423d96dcb9e860cd31f854b9506"
-"checksum pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=11e8929)" = "<none>"
+"checksum pubsub 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=3910698)" = "<none>"
 "checksum pubsub_rabbitmq 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=8d1ecd1)" = "<none>"
 "checksum pulldown-cmark 0.0.15 (registry+https://github.com/rust-lang/crates.io-index)" = "378e941dbd392c101f2cb88097fa4d7167bc421d4b88de3ff7dbee503bc3233b"
 "checksum pulldown-cmark 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "8361e81576d2e02643b04950e487ec172b687180da65c731c03cf336784e6c07"
@@ -2495,6 +2491,8 @@ dependencies = [
 "checksum regex 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ac6ab4e9218ade5b423358bbd2567d1617418403c7a512603630181813316322"
 "checksum regex-syntax 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "f9ec002c35e86791825ed294b50008eea9ddfc8def4420124fbc6b08db834957"
 "checksum regex-syntax 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ad890a5eef7953f55427c50575c680c42841653abd2b028b68cd223d157f62db"
+"checksum rlp 0.2.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=77e2c45)" = "<none>"
+"checksum rlp_derive 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=e650d3a)" = "<none>"
 "checksum rocksdb 0.4.5 (git+https://github.com/paritytech/rust-rocksdb?rev=4364caec4dd5da1a1d78c39276774ee65bf55c7d)" = "<none>"
 "checksum rocksdb-sys 0.3.0 (git+https://github.com/paritytech/rust-rocksdb?rev=4364caec4dd5da1a1d78c39276774ee65bf55c7d)" = "<none>"
 "checksum rust-crypto 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)" = "f76d05d3993fd5f4af9434e8e436db163a12a9d40e1a58a726f27a01dfd12a2a"
@@ -2517,6 +2515,7 @@ dependencies = [
 "checksum serde_json 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "ea28ea0cca944668919bec6af209864a8dfe769fd2b0b723f36b22e20c1bf69f"
 "checksum serde_yaml 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e0f868d400d9d13d00988da49f7f02aeac6ef00f11901a8c535bd59d777b9e19"
 "checksum sha1 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "cc30b1e1e8c40c121ca33b86c23308a090d19974ef001b4bf6e61fd1a0fb095c"
+"checksum sha3 0.1.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=c3d9d2c)" = "<none>"
 "checksum siphasher 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "833011ca526bd88f16778d32c699d325a9ad302fa06381cd66f7be63351d3f6d"
 "checksum skeptic 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "24ebf8a06f5f8bae61ae5bbc7af7aac4ef6907ae975130faba1199e5fe82256a"
 "checksum slab 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "d807fd58c4181bbabed77cb3b891ba9748241a552bcc5be698faaebefc54f46e"
@@ -2550,6 +2549,7 @@ dependencies = [
 "checksum toml 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "a7540f4ffc193e0d3c94121edb19b055670d369f77d5804db11ae053a45b6e7e"
 "checksum traitobject 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
 "checksum transient-hashmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "715254c8f0811be1a79ad3ea5e6fa3c8eddec2b03d7f5ba78cf093e56d79c24f"
+"checksum tx_pool 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=73f647c)" = "<none>"
 "checksum typeable 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1410f6f91f21d1612654e7cc69193b0334f909dcf2c790c4826254fbb86f8887"
 "checksum typemap 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "653be63c80a3296da5551e1bfd2cca35227e13cdd08c6668903ae2f4f77aa1f6"
 "checksum unicase 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7f4765f83163b74f957c797ad9253caf97f103fb064d3999aea9568d09fc8a33"
@@ -2563,6 +2563,7 @@ dependencies = [
 "checksum url 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fa35e768d4daf1d85733418a49fb42e10d7f633e394fccab4ab7aba897053fe2"
 "checksum utf8-ranges 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "a1ca13c08c41c9c3e04224ed9ff80461d97e121589ff27c753a16cb10830ae0f"
 "checksum utf8-ranges 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "662fab6525a98beff2921d7f61a39e7d59e0b425ebc7d0d9e66d316e55124122"
+"checksum util 0.6.0 (git+https://github.com/cryptape/cita-sharelibs.git?rev=47da817)" = "<none>"
 "checksum uuid 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)" = "78c590b5bd79ed10aad8fb75f078a59d8db445af6c743e55c4a53227fc01c13f"
 "checksum uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7cfec50b0842181ba6e713151b72f4ec84a6a7e2c9c8a8a3ffc37bb1cd16b231"
 "checksum vec_map 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "887b5b631c2ad01628bbbaa7dd4c869f80d3186688f8d0b6f58774fbe324988c"
