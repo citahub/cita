@@ -8,7 +8,7 @@ import time
 from os import path
 import binascii
 
-from ethereum.tools.tester import Chain
+from ethereum.tools.tester import (Chain, get_env)
 from ethereum.tools._solidity import (
     get_solidity,
     compile_file,
@@ -17,19 +17,23 @@ from ethereum.tools._solidity import (
 from ethereum.abi import ContractTranslator
 
 SOLIDITY_AVAILABLE = get_solidity() is not None
-CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts/system')
+CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
 CONTRACTS = {
-    '0x00000000000000000000000000000000013241a2': {'file': 'node_manager.sol',
+    '0x00000000000000000000000000000000013241a2': {'file': 'system/node_manager.sol',
                                                    'name': 'NodeManager'},
-    '0x00000000000000000000000000000000013241a3': {'file': 'quota_manager.sol',
+    '0x00000000000000000000000000000000013241a3': {'file': 'system/quota_manager.sol',
                                                    'name': 'QuotaManager'},
-    '0x00000000000000000000000000000000013241a4': {'file': 'permission_manager.sol',
-                                                   'name': 'PermissionManager'}
+    '0x00000000000000000000000000000000013241a4': {'file': 'system/permission_manager.sol',
+                                                   'name': 'PermissionManager'},
+    '0x00000000000000000000000000000000013241a5': {'file': 'permission/permission_system.sol',
+                                                   'name': 'PermissionSystem'}
 }
 
 def init_contracts(nodes):
     result = dict()
-    tester_state = Chain()
+    env = get_env(None);
+    env.config['BLOCK_GAS_LIMIT'] = 471238800
+    tester_state = Chain(env=env)
     for address, contract in CONTRACTS.iteritems():
         contract_path = path.join(CONTRACTS_DIR, contract['file'])
         simple_compiled = compile_file(contract_path)
@@ -45,7 +49,7 @@ def init_contracts(nodes):
         else:
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
         print(binascii.hexlify(simple_data['bin'] + extra))
-        abi_address = tester_state.contract(simple_data['bin'] + extra)
+        abi_address = tester_state.contract(simple_data['bin'] + extra, language='evm', startgas=30000000)
         tester_state.mine()
         account = tester_state.chain.state.account_to_dict(abi_address)
         result[address] = {'code': account['code'], 'storage': account['storage'], 'nonce': account['nonce']}

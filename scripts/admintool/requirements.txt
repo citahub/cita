@@ -1,2 +1,2 @@
-ethereum==2.0.4
+ethereum==2.2.0
 pysodium
