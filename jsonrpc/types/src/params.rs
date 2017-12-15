@@ -69,7 +69,7 @@ impl<'a> Deserialize<'a> for Params {
     where
         D: Deserializer<'a>,
     {
-        deserializer.deserialize_identifier(ParamsVisitor)
+        deserializer.deserialize_any(ParamsVisitor)
     }
 }
 
