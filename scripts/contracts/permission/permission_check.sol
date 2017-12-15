@@ -108,7 +108,8 @@ contract PermissionCheck is PermissionData {
         bytes32 _role,
         bytes32 _permission
     ) {
-        require(check(_user, _userGroup, _resourceGroup, _role , _permission)); 
+        if (_user != superAdmin)
+            require(check(_user, _userGroup, _resourceGroup, _role , _permission)); 
         _;
     }
 
