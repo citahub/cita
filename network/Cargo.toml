@@ -17,11 +17,11 @@ log = "0.3"
 dotenv = "0.10.0"
 bytes = "0.4"
 notify = "4.0.0"
-libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6a635aa" }
+libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
 protobuf = { version = "^1.0.0"}
-util = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "47da817" }
-pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "3910698" }
-logger = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "056d5bd" }
+util = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
+logger = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
 rand = "0.3.*"
 clippy = {version = "0.0.175", optional = true}
 

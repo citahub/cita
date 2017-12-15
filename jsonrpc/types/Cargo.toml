@@ -7,20 +7,20 @@ authors = ["Cryptape Technologies <arch@cryptape.com>"]
 bincode = "0.8"
 futures = "0.1"
 hyper = "0.10"
-libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "6a635aa" }
+libproto = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
 protobuf = { version = "^1.0.0" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.3"
-util = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "47da817" }
+util = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 rustc-serialize = "0.3"
-pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "3910698" }
+pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
 time = "0.1"
-proof = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "73f647c" }
+proof = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
 common-types = { path = "../../chain/types" }
-cita-crypto = { git = "https://github.com/cryptape/cita-sharelibs.git", rev = "b8a467c" }
+cita-crypto = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
 clippy = {version = "0.0.175", optional = true}
 
 [features]
