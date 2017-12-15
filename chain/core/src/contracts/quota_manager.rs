@@ -237,7 +237,7 @@ mod tests {
         let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*QUOTA_ENCODED.as_slice());
         let quota = parse_string_to_quota(&output);
 
-        assert_eq!(quota, vec![61415926]);
+        assert_eq!(quota, vec![1073741824]);
     }
 
     #[test]
@@ -261,7 +261,7 @@ mod tests {
         let output_hex = ToHex::to_hex(output.as_slice());
         let block_gas_limit = u32::from_str_radix(&*output_hex, 16).unwrap();
 
-        assert_eq!(block_gas_limit, 61415926);
+        assert_eq!(block_gas_limit, 1073741824);
     }
 
     #[test]
@@ -287,6 +287,6 @@ mod tests {
         let account_gas_limit = u32::from_str_radix(&*output_hex, 16).unwrap();
 
 
-        assert_eq!(account_gas_limit, 25141592);
+        assert_eq!(account_gas_limit, 268435456);
     }
 }

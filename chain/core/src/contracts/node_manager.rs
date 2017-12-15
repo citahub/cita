@@ -64,10 +64,10 @@ mod tests {
         assert_eq!(
             nodes,
             vec![
-                H160::from_str("b3be80767bf8fae05ec3c52352c78591fb32fb33").unwrap(),
-                H160::from_str("99412aeaa8ec63a836b7db7363dfdc2cedb23759").unwrap(),
-                H160::from_str("4a0f3167c431aebff783652ae87778f5a38d25ee").unwrap(),
-                H160::from_str("ae8186524072bf873da07c71e4194e37d6bfa736").unwrap(),
+                H160::from_str("21d10282823a4ace270ccb7fc1d315be3975ae43").unwrap(),
+                H160::from_str("90d41e9011d62ccdf218a1ee01704a638ade7cf8").unwrap(),
+                H160::from_str("85437217bc98b42d679442ea56590c04f7730edd").unwrap(),
+                H160::from_str("5f87051d7f9a0f05ad50469571757bc9ffc2af72").unwrap(),
             ]
         )
     }
