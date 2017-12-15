@@ -97,6 +97,7 @@ impl AccountManager {
         for account in accounts {
             creators.insert(account);
         }
+        assert!(!creators.is_empty(), "there must be at least one creator");
         creators
     }
 }
