@@ -1,4 +1,4 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 import "./strings.sol";
 import "./quota_interface.sol";
@@ -13,7 +13,7 @@ contract QuotaManager is QuotaInterface {
     mapping (address => mapping(bytes32 => bytes32)) special;
     address[] special_users;
     bytes32[] users_quota;
-    
+
     modifier onlyAdmin {
         require(admins[msg.sender]);
         _;
@@ -72,22 +72,22 @@ contract QuotaManager is QuotaInterface {
     }
 
     function setSpecial(address _account, bytes32 key, bytes32 value)
-        public 
+        public
         onlyAdmin
         returns (bool)
     {
         special[_account][key] = value;
         SetSpecialEvent(
-            _account, 
-            key, 
-            value, 
+            _account,
+            key,
+            value,
             msg.sender
         );
         return true;
     }
 
     function setBlockGasLimit(uint _value)
-        public 
+        public
         onlyAdmin
         checkLimit(_value)
         checkBlockLimit(_value)
@@ -100,7 +100,7 @@ contract QuotaManager is QuotaInterface {
     }
 
     function setGlobalAccountGasLimit(uint _value)
-        public 
+        public
         onlyAdmin
         checkLimit(_value)
         returns (bool)
@@ -112,7 +112,7 @@ contract QuotaManager is QuotaInterface {
     }
 
     function setAccountGasLimit(address _account, uint _value)
-        public 
+        public
         onlyAdmin
         checkLimit(_value)
         returns (bool)
@@ -123,17 +123,17 @@ contract QuotaManager is QuotaInterface {
         special_users.push(_account);
         users_quota.push(bytes32(value));
         SetSpecialEvent(
-            _account, 
-            key, 
-            value, 
+            _account,
+            key,
+            value,
             msg.sender
         );
         return true;
     }
 
-    /// Cancat bytes32 
+    /// Cancat bytes32
     function concatBytes(bytes32[] _users)
-        pure 
+        pure
         internal
         returns (string bytes32List)
     {
@@ -146,7 +146,7 @@ contract QuotaManager is QuotaInterface {
 
     /// Cancat address
     function concatUser(address[] _users)
-        pure 
+        pure
         internal
         returns (string userList)
     {
@@ -169,10 +169,10 @@ contract QuotaManager is QuotaInterface {
             return global[key];
     }
 
-    /// Address to string 
+    /// Address to string
     /// The returned string is ABI encoded
     function toString(address x)
-        pure 
+        pure
         internal
         returns (string)
     {
@@ -185,7 +185,7 @@ contract QuotaManager is QuotaInterface {
     }
 
     function bytes32ToString(bytes32 x)
-        pure 
+        pure
         internal
         returns (string)
     {

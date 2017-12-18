@@ -14,8 +14,8 @@ interface PermissionInterface {
     /*
      * @dev Query the user's permission:
      * @return 0: "None" - no pemission
-     * @return 1: "Create" - create contract
-     * @return 2: "Send" - send tx
+     * @return 1: "Send" - send tx
+     * @return 2: "Create" - create contract
      */
     function queryPermission(address _user) view public returns (uint8);
 }
