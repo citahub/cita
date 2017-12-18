@@ -21,7 +21,7 @@ use error::Error;
 use libproto::TxResponse;
 use libproto::response::{Response, Response_oneof_data};
 use request::Version;
-use rpctypes::{Block, Log, Receipt, RpcBlock, RpcTransaction};
+use rpctypes::{Block, FilterChanges, Log, Receipt, RpcBlock, RpcTransaction};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error as SError;
 use serde_json;
@@ -45,7 +45,7 @@ pub enum ResultBody {
     ContractCode(Bytes),
     FilterId(U256),
     UninstallFliter(bool),
-    FilterChanges(Vec<String>),
+    FilterChanges(FilterChanges),
     FilterLog(Vec<Log>),
 }
 
@@ -159,7 +159,7 @@ impl Output {
                         .output(),
                     Response_oneof_data::filter_changes(data) => {
                         let changes =
-                            serde_json::from_str::<Vec<String>>(&data).expect("failed to parse into Vec<String>");
+                            serde_json::from_str::<FilterChanges>(&data).expect("failed to parse into FilterChanges");
                         success
                             .set_result(ResultBody::FilterChanges(changes))
                             .output()

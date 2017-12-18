@@ -147,16 +147,38 @@ impl Serialize for FilterChanges {
     }
 }
 
+impl<'de> Deserialize<'de> for FilterChanges {
+    fn deserialize<D>(deserializer: D) -> Result<FilterChanges, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let v: Value = Deserialize::deserialize(deserializer)?;
+        match v.clone() {
+            Value::Array(filter_change) => {
+                if filter_change.len() == 0 {
+                    Ok(FilterChanges::Empty)
+                } else {
+                    from_value(v.clone())
+                        .map(FilterChanges::Logs)
+                        .or_else(|_| from_value(v).map(FilterChanges::Hashes))
+                        .map_err(|_| D::Error::custom("Invalid type."))
+                }
+            }
+            Value::Null => Ok(FilterChanges::Empty),
+            _ => Err(D::Error::custom("Invalid type.")),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
-    use super::{Filter, Topic, VariadicValue};
+    use super::{Filter, FilterChanges, Log, Topic, VariadicValue};
     use rpctypes::block_number::{BlockNumber, BlockTag};
     use serde_json;
     use std::str::FromStr;
     use types::filter::Filter as EthFilter;
     use types::ids::BlockId;
-    use util::H256;
+    use util::{H160, H256, U256};
 
     #[test]
     fn topic_deserialization() {
@@ -260,5 +282,57 @@ mod tests {
                 limit: None,
             }
         );
+    }
+
+    #[test]
+    fn test_filter_changes_serde() {
+        assert_eq!("[]", serde_json::to_string(&FilterChanges::Empty).unwrap());
+        assert_eq!(FilterChanges::Empty, serde_json::from_str("[]").unwrap());
+
+        assert_eq!(
+            "[\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\"]",
+            serde_json::to_string(&FilterChanges::Hashes(vec![
+                "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b".into(),
+            ])).unwrap()
+        );
+
+        assert_eq!(
+            FilterChanges::Hashes(vec![
+                "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b".into(),
+            ]),
+            serde_json::from_str("[\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\"]").unwrap()
+        );
+
+        let s = "[{\"address\":\"0x33990122638b9132ca29c723bdf037f1a891a70c\",\
+                 \"topics\":[\"0xa6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc\",\
+                 \"0x4861736852656700000000000000000000000000000000000000000000000000\"],\
+                 \"data\":\"0x\",\
+                 \"blockHash\":\"0xed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5\",\
+                 \"blockNumber\":\"0x4510c\",\
+                 \"transactionHash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\",\
+                 \"transactionIndex\":\"0x0\",\"logIndex\":\"0x1\",\"transactionLogIndex\":\"0x1\"}]";
+
+        let log = FilterChanges::Logs(vec![
+            Log {
+                address: H160::from_str("33990122638b9132ca29c723bdf037f1a891a70c").unwrap(),
+                topics: vec![
+                    H256::from_str("a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc").unwrap(),
+                    H256::from_str("4861736852656700000000000000000000000000000000000000000000000000").unwrap(),
+                ],
+                data: vec![].into(),
+                block_hash: Some(
+                    H256::from_str("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5").unwrap(),
+                ),
+                block_number: Some(U256::from(0x4510c)),
+                transaction_hash: Some(H256::default()),
+                transaction_index: Some(U256::default()),
+                transaction_log_index: Some(1.into()),
+                log_index: Some(U256::from(1)),
+            },
+        ]);
+
+        let serialized = serde_json::to_string(&log).unwrap();
+        assert_eq!(serialized, s);
+        assert_eq!(serde_json::from_str::<FilterChanges>(s).unwrap(), log);
     }
 }
