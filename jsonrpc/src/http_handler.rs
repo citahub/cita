@@ -59,11 +59,16 @@ impl HttpHandler {
                             tx,
                         )),
                     );
+                }
+                {
                     self.tx.lock().send((topic, req));
                 }
+
                 rx.recv_timeout(Duration::from_secs(self.timeout))
                     .unwrap_or_else(|_| {
-                        self.responses.lock().remove(&request_id);
+                        {
+                            self.responses.lock().remove(&request_id);
+                        }
                         let failure = RpcFailure::from_options(
                             id.clone(),
                             jsonrpc_version.clone(),

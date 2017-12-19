@@ -23,14 +23,12 @@ use num_cpus;
 use serde_json;
 use std::sync::{mpsc, Arc};
 use threadpool::ThreadPool;
-use util::Mutex;
-use ws;
-use ws::{CloseCode, Factory, Handler};
+use ws::{self as ws, CloseCode, Factory, Handler};
 
 pub struct WsFactory {
     //TODO 定时清理工作
     responses: RpcMap,
-    thread_pool: Arc<Mutex<ThreadPool>>,
+    thread_pool: ThreadPool,
     tx: mpsc::Sender<(String, reqlib::Request)>,
 }
 
@@ -38,14 +36,11 @@ pub struct WsFactory {
 impl WsFactory {
     pub fn new(responses: RpcMap, tx: mpsc::Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
         let thread_number = if thread_num == 0 {
-            num_cpus::get() / 2
+            num_cpus::get()
         } else {
             thread_num
         };
-        let thread_pool = Arc::new(Mutex::new(ThreadPool::new_with_name(
-            "ws_thread_pool".to_string(),
-            thread_number,
-        )));
+        let thread_pool = ThreadPool::new_with_name("ws_thread_pool".to_string(), thread_number);
         WsFactory {
             responses: responses,
             thread_pool: thread_pool,
@@ -62,7 +57,7 @@ impl Factory for WsFactory {
             sender: ws,
             responses: Arc::clone(&self.responses),
             tx: self.tx.clone(),
-            thread_pool: Arc::clone(&self.thread_pool),
+            thread_pool: self.thread_pool.clone(),
             method_handler: method::MethodHandler,
         }
     }
@@ -75,7 +70,7 @@ impl Handler for WsHandler {
     fn on_message(&mut self, msg: ws::Message) -> ws::Result<()> {
         trace!("Server got message '{}'  post thread_pool deal task ", msg);
         let this = self.clone();
-        self.thread_pool.lock().execute(move || {
+        self.thread_pool.execute(move || {
             let mut req_id = Id::Null;
             let mut jsonrpc_version = None;
             let err = match WsHandler::into_rpc(msg.into_text().unwrap()) {
@@ -126,7 +121,7 @@ impl Handler for WsHandler {
 #[derive(Clone)]
 pub struct WsHandler {
     responses: RpcMap,
-    thread_pool: Arc<Mutex<ThreadPool>>,
+    thread_pool: ThreadPool,
     method_handler: method::MethodHandler,
     sender: ws::Sender,
     tx: mpsc::Sender<(String, reqlib::Request)>,
