@@ -321,8 +321,10 @@ library Util {
         internal
         returns (bool)
     {
+        if (_array.length == 0)
+            return true;
         for (uint i = 0; i < _array.length; i++) {
-            if (bytes32(0x0) == _array[i])
+            if (bytes32(0x0) != _array[i])
                 return false;
         }
 
@@ -335,8 +337,10 @@ library Util {
         internal
         returns (bool)
     {
+        if (_array.length == 0)
+            return true;
         for (uint i = 0; i < _array.length; i++) {
-            if (address(0x0) == _array[i])
+            if (address(0x0) != _array[i])
                 return false;
         }
 
