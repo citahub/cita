@@ -10,4 +10,4 @@ name = "latency"
 
 
 [dependencies]
-pubsub = { git = "https://github.com/cryptape/cita-sharelibs.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
