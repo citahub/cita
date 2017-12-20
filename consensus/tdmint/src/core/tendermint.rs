@@ -1420,7 +1420,7 @@ impl TenderMint {
                     let mut verify_ok = false;
 
                     if self.unverified_msg.contains_key(&(vheight, vround)) {
-                        if resp.get_ret() == auth::Ret::Ok {
+                        if resp.get_ret() == auth::Ret::OK {
                             verify_ok = true;
                         }
                         let msg = serialize(&(vheight, vround, verify_ok), Infinite).unwrap();

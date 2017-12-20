@@ -107,7 +107,7 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
         return resp;
     }
     resp.set_signer(ret.unwrap().to_vec());
-    resp.set_ret(Ret::Ok);
+    resp.set_ret(Ret::OK);
     trace!(
         "verfiy_tx's result:tx_hash={:?}, ret={:?}, signer={:?}",
         resp.get_tx_hash(),
@@ -188,7 +188,7 @@ pub fn check_verify_request_preprocess(
 
         if processed {
             match final_response.get_ret() {
-                Ret::Ok => result = VerifyResult::VerifySucceeded,
+                Ret::OK => result = VerifyResult::VerifySucceeded,
                 _ => result = VerifyResult::VerifyFailed,
             }
             //only send result when the verify type is single
@@ -407,11 +407,11 @@ pub fn handle_remote_msg(
                              time cost: {:?}, \
                              and final status is: {:?}",
                             request_id,
-                            Ret::Ok,
+                            Ret::OK,
                             block_verify_stamp.elapsed().unwrap(),
                             *block_verify_status_guard
                         );
-                        publish_block_verification_result(request_id, Ret::Ok, tx_pub);
+                        publish_block_verification_result(request_id, Ret::OK, tx_pub);
                     }
                 }
             } else {
@@ -498,7 +498,7 @@ pub fn handle_verificaton_result(
                         if let VerifyRequestID::SingleVerifyRequestID(request_id) = verify_response_info.request_id {
                             let result = format!("{:?}", resp.get_ret());
                             match resp.get_ret() {
-                                Ret::Ok => {
+                                Ret::OK => {
                                     let mut signed_tx = SignedTransaction::new();
                                     signed_tx.set_transaction_with_sig(verify_response_info.un_tx.unwrap());
                                     signed_tx.set_signer(resp.get_signer().to_vec());
@@ -539,7 +539,7 @@ pub fn handle_verificaton_result(
                     VerifyType::BlockVerify => {
                         if let VerifyRequestID::BlockVerifyRequestID(request_id) = verify_response_info.request_id {
                             let result = resp.get_ret();
-                            if Ret::Ok != result {
+                            if Ret::OK != result {
                                 let mut block_verify_status_guard = block_verify_status.write();
                                 if request_id == block_verify_status_guard.request_id
                                     && VerifyResult::VerifyFailed != block_verify_status_guard.block_verify_result
@@ -572,11 +572,11 @@ pub fn handle_verificaton_result(
                                              time cost: {:?}, \
                                              and final status is: {:?}",
                                             request_id,
-                                            Ret::Ok,
+                                            Ret::OK,
                                             verify_response_info.time_stamp.elapsed().unwrap(),
                                             *block_verify_status_guard
                                         );
-                                        publish_block_verification_result(request_id, Ret::Ok, tx_pub);
+                                        publish_block_verification_result(request_id, Ret::OK, tx_pub);
                                     }
                                 }
                             }
