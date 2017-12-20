@@ -47,6 +47,7 @@ proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop
 common-types = { path = "../types" }
 jsonrpc_types = { path = "../../jsonrpc/types"}
 clippy = {version = "0.0.175", optional = true}
+ethabi = "4.2.0"
 
 [dev-dependencies]
 rand = "0.3"

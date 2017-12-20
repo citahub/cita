@@ -166,10 +166,11 @@ Function signatures:
 
 ### 配额管理系统合约
 
-配额管理合约存放在`install/scripts/contracts/quota.sol`，合约详情如下所示：
+配额管理合约存放在`install/scripts/contracts/system/quota_manager.sol`，合约详情如下所示：
 
 ```
 contract address: 0x00000000000000000000000000000000013241a3
+    Function signatures: 
     70480275: addAdmin(address)
     dae99b3a: getAccountGasLimit()
     776dd3b6: getAccountQuota(address)
@@ -180,10 +181,10 @@ contract address: 0x00000000000000000000000000000000013241a3
     24d7806c: isAdmin(address)
     dfa87425: setAccountGasLimit(address,uint256)
     a69257f3: setBlockGasLimit(uint256)
-    eb93eddf: setGlobal(bytes32,bytes32)
+    e64eca2b: setGlobal(bytes32,uint256)
     c9bcec77: setGlobalAccountGasLimit(uint256)
     748ba8dd: setIsGlobal(bytes32,bool)
-    50f2ee97: setSpecial(address,bytes32,bytes32)
+    be0266cd: setSpecial(address,bytes32,uint256)
 ```
 
 配额管理合约为每个block和account设置gasLimit，其中block中的gasLimit有效地控制该区块中的交易数量，account中的gasLimit有效地控制该用户在当前区块中发送的交易数量，
@@ -250,4 +251,3 @@ Function signatures:
    在当前目录会生成指定节点的目录以及相关信息，随之生成最新的authorities文件.
 3. 配置节点信息，如network.toml,jsonrpc.json等．
 4. 确保无误，程序运行正确，备份最新的authorities文件.
-

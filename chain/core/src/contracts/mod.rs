@@ -27,7 +27,6 @@ pub use self::quota_manager::{AccountGasLimit, QuotaManager};
 
 use libchain::call_request::CallRequest;
 use libchain::chain::Chain;
-use rustc_hex::ToHex;
 use sha3::sha3_256;
 use types::ids::BlockId;
 use util::{Address, H160, U256};
@@ -54,35 +53,6 @@ pub fn parse_string_to_addresses(data: &[u8]) -> Vec<Address> {
         }
     }
     nodes
-}
-
-/// parse quota
-pub fn parse_string_to_quota(data: &Vec<u8>) -> Vec<u64> {
-    let mut quotas = Vec::new();
-    trace!("parse_string_to_quota data.len is {:?}", data.len());
-    if data.len() > 0 {
-        let bytes_store_quota_metadata = U256::from(&data[0..32]).as_u64() as usize;
-        trace!(
-            "parse_string_to_quota bytes_store_quota_metadata is {:?}",
-            bytes_store_quota_metadata
-        );
-        let metadata_start = 32;
-        let metadata_end = metadata_start + bytes_store_quota_metadata;
-        let quota_length = U256::from(&data[metadata_start..metadata_end]).as_u64() as usize;
-
-        let bytes_per_quota = 4;
-        for i in 0..quota_length {
-            let quota_start = metadata_end + i * bytes_per_quota;
-            let quota_end = quota_start + bytes_per_quota;
-            let quota = ToHex::to_hex(&data[quota_start..quota_end]);
-            trace!("parse_string_to_addresses quota {:?}", quota);
-            if !quota.is_empty() {
-                let q = u64::from_str_radix(&*quota, 16).unwrap();
-                quotas.push(q);
-            }
-        }
-    }
-    quotas
 }
 
 // Should move to project top-level for code reuse.
