@@ -57,23 +57,28 @@ pub fn parse_string_to_addresses(data: &[u8]) -> Vec<Address> {
 }
 
 /// parse quota
-pub fn parse_string_to_quota(data: &[u8]) -> Vec<u64> {
+pub fn parse_string_to_quota(data: &Vec<u8>) -> Vec<u64> {
     let mut quotas = Vec::new();
     trace!("parse_string_to_quota data.len is {:?}", data.len());
-    if !data.is_empty() {
-        let len_len = U256::from(&data[0..32]).as_u64() as usize;
-        trace!("parse_string_to_quota len_len is {:?}", len_len);
-        if len_len <= 32 {
-            let len = U256::from(&data[32..32 + len_len]).as_u64() as usize;
-            let num = len / 4;
-            let mut iter = data[32 + len_len..].chunks(4);
-            for _i in 0..num {
-                let quota = ToHex::to_hex(iter.next().expect("string cann't parse to addresses"));
-                trace!("parse_string_to_addresses quota {:?}", quota);
-                if !quota.is_empty() {
-                    let q = u64::from_str_radix(&*quota, 16).unwrap();
-                    quotas.push(q);
-                }
+    if data.len() > 0 {
+        let bytes_store_quota_metadata = U256::from(&data[0..32]).as_u64() as usize;
+        trace!(
+            "parse_string_to_quota bytes_store_quota_metadata is {:?}",
+            bytes_store_quota_metadata
+        );
+        let metadata_start = 32;
+        let metadata_end = metadata_start + bytes_store_quota_metadata;
+        let quota_length = U256::from(&data[metadata_start..metadata_end]).as_u64() as usize;
+
+        let bytes_per_quota = 4;
+        for i in 0..quota_length {
+            let quota_start = metadata_end + i * bytes_per_quota;
+            let quota_end = quota_start + bytes_per_quota;
+            let quota = ToHex::to_hex(&data[quota_start..quota_end]);
+            trace!("parse_string_to_addresses quota {:?}", quota);
+            if !quota.is_empty() {
+                let q = u64::from_str_radix(&*quota, 16).unwrap();
+                quotas.push(q);
             }
         }
     }
