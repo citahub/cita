@@ -1,18 +1,15 @@
 pragma solidity ^0.4.18;
 
-import "./strings.sol";
 import "./quota_interface.sol";
 
 contract QuotaManager is QuotaInterface {
 
-    using strings for *;
-
     mapping (address => bool) admins;
     mapping (bytes32 => bool) is_global;
-    mapping (bytes32 => bytes32) global;
-    mapping (address => mapping(bytes32 => bytes32)) special;
+    mapping (bytes32 => uint) global;
+    mapping (address => mapping(bytes32 => uint)) special;
     address[] special_users;
-    bytes32[] users_quota;
+    uint[] users_quota;
 
     modifier onlyAdmin {
         require(admins[msg.sender]);
@@ -27,7 +24,7 @@ contract QuotaManager is QuotaInterface {
     }
 
     modifier checkBlockLimit(uint _v) {
-        uint blockLimit = 2 ** 28 -1;
+        uint blockLimit = 2 ** 28 - 1;
         require(_v > blockLimit);
         _;
     }
@@ -35,11 +32,11 @@ contract QuotaManager is QuotaInterface {
     function QuotaManager(address _account) public {
         admins[_account] = true;
         is_global["blockGasLimit"] = true;
-        global["blockGasLimit"] = bytes32(1073741824);
-        global["accountGasLimit"] = bytes32(268435456);
-        special[_account]["accountGasLimit"] = bytes32(1073741824);
+        global["blockGasLimit"] = 1073741824;
+        global["accountGasLimit"] = 268435456;
+        special[_account]["accountGasLimit"] = 1073741824;
         special_users.push(_account);
-        users_quota.push(bytes32(1073741824));
+        users_quota.push(1073741824);
     }
 
     function addAdmin(address _account)
@@ -61,7 +58,7 @@ contract QuotaManager is QuotaInterface {
         return true;
     }
 
-    function setGlobal(bytes32 key, bytes32 value)
+    function setGlobal(bytes32 key, uint value)
         public
         onlyAdmin
         returns (bool)
@@ -71,7 +68,7 @@ contract QuotaManager is QuotaInterface {
         return true;
     }
 
-    function setSpecial(address _account, bytes32 key, bytes32 value)
+    function setSpecial(address _account, bytes32 key, uint value)
         public
         onlyAdmin
         returns (bool)
@@ -93,9 +90,8 @@ contract QuotaManager is QuotaInterface {
         checkBlockLimit(_value)
         returns (bool)
     {
-        bytes32 value = bytes32(_value);
-        global["blockGasLimit"] = value;
-        SetGlobalEvent(bytes32("blockGasLimit"), value, msg.sender);
+        global["blockGasLimit"] = _value;
+        SetGlobalEvent(bytes32("blockGasLimit"), _value, msg.sender);
         return true;
     }
 
@@ -105,9 +101,8 @@ contract QuotaManager is QuotaInterface {
         checkLimit(_value)
         returns (bool)
     {
-        bytes32 value = bytes32(_value);
-        global["accountGasLimit"] = bytes32(value);
-        SetGlobalEvent(bytes32("accountGasLimit"), bytes32(value), msg.sender);
+        global["accountGasLimit"] = _value;
+        SetGlobalEvent(bytes32("accountGasLimit"), _value, msg.sender);
         return true;
     }
 
@@ -118,94 +113,27 @@ contract QuotaManager is QuotaInterface {
         returns (bool)
     {
         bytes32 key = bytes32("accountGasLimit");
-        bytes32 value = bytes32(_value);
-        special[_account]["accountGasLimit"] = value;
+        special[_account]["accountGasLimit"] = _value;
         special_users.push(_account);
-        users_quota.push(bytes32(value));
+        users_quota.push(_value);
         SetSpecialEvent(
             _account,
             key,
-            value,
+            _value,
             msg.sender
         );
         return true;
     }
 
-    /// Cancat bytes32
-    function concatBytes(bytes32[] _users)
-        pure
-        internal
-        returns (string bytes32List)
-    {
-        if (_users.length > 0)
-            bytes32List = bytes32ToString(_users[0]);
-
-        for (uint i = 1; i < _users.length; i++)
-            bytes32List = bytes32List.toSlice().concat(bytes32ToString(_users[i]).toSlice());
-    }
-
-    /// Cancat address
-    function concatUser(address[] _users)
-        pure
-        internal
-        returns (string userList)
-    {
-        if (_users.length > 0)
-            userList = toString(_users[0]);
-
-        for (uint i = 1; i < _users.length; i++)
-            userList = userList.toSlice().concat(toString(_users[i]).toSlice());
-    }
-
     function _getData(bytes32 key)
         view
         internal
-        returns (bytes32)
+        returns (uint)
     {
-        bytes32 blank;
-        if (special[msg.sender][key] != blank)
+        if (special[msg.sender][key] != 0)
             return special[msg.sender][key];
         else
             return global[key];
-    }
-
-    /// Address to string
-    /// The returned string is ABI encoded
-    function toString(address x)
-        pure
-        internal
-        returns (string)
-    {
-        bytes memory b = new bytes(20);
-
-        for (uint i = 0; i < 20; i++)
-            b[i] = byte(uint8(uint(x) / (2**(8*(19 - i)))));
-
-        return string(b);
-    }
-
-    function bytes32ToString(bytes32 x)
-        pure
-        internal
-        returns (string)
-    {
-        bytes memory bytesString = new bytes(32);
-        uint charCount = 0;
-
-        for (uint j = 0; j < 32; j++) {
-            byte char = byte(bytes32(uint(x) * 2 ** (8 * j)));
-            if (char != 0) {
-                bytesString[charCount] = char;
-                charCount++;
-            }
-        }
-
-        bytes memory bytesStringTrimmed = new bytes(charCount);
-
-        for (j = 0; j < charCount; j++)
-            bytesStringTrimmed[j] = bytesString[j];
-
-        return string(bytesStringTrimmed);
     }
 
     function isAdmin(address _account)
@@ -219,7 +147,7 @@ contract QuotaManager is QuotaInterface {
     function getData(bytes32 key)
         view
         public
-        returns (bytes32)
+        returns (uint)
     {
         if (is_global[key])
             return global[key];
@@ -230,23 +158,23 @@ contract QuotaManager is QuotaInterface {
     function getSpecialUsers()
         view
         public
-        returns (string)
+        returns (address[])
     {
-        return concatUser(special_users);
+        return special_users;
     }
 
     function getUsersQuota()
         view
         public
-        returns (string)
+        returns (uint[])
     {
-        return concatBytes(users_quota);
+        return users_quota;
     }
 
     function getblockGasLimit()
         view
         public
-        returns (bytes32)
+        returns (uint)
     {
         return global["blockGasLimit"];
     }
@@ -254,7 +182,7 @@ contract QuotaManager is QuotaInterface {
     function getAccountGasLimit()
         view
         public
-        returns (bytes32)
+        returns (uint)
     {
         return global["accountGasLimit"];
     }
@@ -262,11 +190,11 @@ contract QuotaManager is QuotaInterface {
     function getAccountQuota(address _user)
         view
         public
-        returns (bytes32)
+        returns (uint)
     {
         // Not special users, then return accountGasLimit
         // or query the special users array
-        if (special[_user]["accountGasLimit"] == bytes32(0))
+        if (special[_user]["accountGasLimit"] == 0)
             return global["accountGasLimit"];
         return special[_user]["accountGasLimit"];
     }
