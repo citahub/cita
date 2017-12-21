@@ -231,7 +231,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":[
   "id": 1,
   "result": {
     "hash": "0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236",
-    "status": "Ok"
+    "status": "OK"
   }
 }
 
@@ -641,7 +641,7 @@ get some infomation like eg:
   "id": 1,
   "result": {
     "hash": "0xf31e32611322f410f430ef8141c2237c19dd1034eddef8dedba692ec9851799b",
-    "status": "4:OK"
+    "status": "OK"
   }
 }
 ```

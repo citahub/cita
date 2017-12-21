@@ -803,7 +803,7 @@ mod tests {
             &pool_tx_sender,
         );
         let (_, _, resp_msg, _) = pool_tx_receiver.try_recv().unwrap();
-        let ok_result = format!("{:?}", Ret::Ok);
+        let ok_result = format!("{:?}", Ret::OK);
         assert_eq!(resp_msg.status, ok_result);
         assert_eq!(tx_hash, resp_msg.hash.to_vec());
         // keep the receiver live long enough
@@ -881,7 +881,7 @@ mod tests {
         let (_, _, content) = parse_msg(resp_msg.as_slice());
         match content {
             MsgClass::VERIFYBLKRESP(resp) => {
-                assert_eq!(resp.get_ret(), Ret::Ok);
+                assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
             _ => panic!("test failed"),
@@ -1047,7 +1047,7 @@ mod tests {
         let (_, _, content) = parse_msg(resp_msg.as_slice());
         match content {
             MsgClass::VERIFYBLKRESP(resp) => {
-                assert_eq!(resp.get_ret(), Ret::Ok);
+                assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
             _ => panic!("test failed"),
@@ -1072,7 +1072,7 @@ mod tests {
         let (_, _, content) = parse_msg(resp_msg.as_slice());
         match content {
             MsgClass::VERIFYBLKRESP(resp) => {
-                assert_eq!(resp.get_ret(), Ret::Ok);
+                assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
             _ => panic!("test failed"),
