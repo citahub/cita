@@ -131,7 +131,7 @@ impl Sendtx {
                     }
 
                     ResultBody::TxResponse(response) => {
-                        if response.status == "Ok" {
+                        if response.status == "OK" {
                             let hash = response.hash;
                             (format!("{:?}", hash), true)
                         } else {
