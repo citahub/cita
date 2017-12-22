@@ -1,0 +1,64 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: cryptape/cita-build:latest
+    working_directory: ~/cita-build
+    steps:
+      - checkout
+      - run:
+          name: format
+          command: 'cargo fmt --all  -- --write-mode diff'
+      - run: 
+          name: build
+          command: 'cargo build --all'
+      - save_cache:
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/cita-build
+      - save_cache:
+          key: deps-{{ checksum "Cargo.lock" }}
+          paths:
+            - ~/.cargo
+
+  basic_test:
+    docker:
+      - image: cryptape/cita-build:latest
+    working_directory: ~/cita-build
+    steps:
+      - restore_cache:
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+      - restore_cache:
+          key: deps-{{ checksum "Cargo.lock" }}
+      - run:
+          name: test
+          command: 'cargo test --tests'
+
+  integrate_test:
+    docker:
+      - image: cryptape/cita-build:latest
+    working_directory: ~/cita-build
+    steps:
+      - restore_cache:
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: config
+          command: './scripts/release.sh debug'      
+      - run:
+          name: basic
+          command: './tests/integrate_test/cita_basic.sh'
+      - run:
+          name: byzantine
+          command: './tests/integrate_test/cita_byzantinetest.sh'
+
+workflows:
+  version: 2
+  build-and-test:
+    jobs:
+      - build
+      - basic_test:
+          requires:
+            - build
+      - integrate_test:
+          requires:
+            - build
