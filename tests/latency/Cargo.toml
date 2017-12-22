@@ -8,6 +8,11 @@ authors = ["Cryptape Technologies <arch@cryptape.com>"]
 path = "latency.rs"
 name = "latency"
 
-
 [dependencies]
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+
+[features]
+default = ["rabbitmq"]
+rabbitmq = ["pubsub/rabbitmq"]
+zeromq = ["pubsub/zeromq"]
+kafka = ["pubsub/kafka"]
