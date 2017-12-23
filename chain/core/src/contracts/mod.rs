@@ -31,25 +31,20 @@ use sha3::sha3_256;
 use types::ids::BlockId;
 use util::{Address, H160, U256};
 
-
-/// Parse solidity return data `String` to rust `Vec<Address>`
-pub fn parse_string_to_addresses(data: &[u8]) -> Vec<Address> {
+/// Parse solidity return data `address[]` to rust `Vec<Address>`
+pub fn parse_output_to_addresses(data: &Vec<u8>) -> Vec<Address> {
     let mut nodes = Vec::new();
     trace!("data.len is {:?}", data.len());
-    if !data.is_empty() {
-        let len_len = U256::from(&data[0..32]).as_u64() as usize;
-        trace!("len_len is {:?}", len_len);
-        if len_len <= 32 {
-            let len = U256::from(&data[32..32 + len_len]).as_u64() as usize;
-            let num = len / 20;
-            let mut iter = data[32 + len_len..].chunks(20);
-            for _i in 0..num {
-                let node = H160::from(iter.next().expect("string cann't parse to addresses"));
-                trace!("node {:?}", node);
-                if node != H160::default() {
-                    nodes.push(node);
-                }
-            }
+    if data.len() > 0 {
+        let num = U256::from(&data[32..64]).as_u64() as usize;
+        trace!("length of node list is {:?}", num);
+        let bytes_per_keys = 32;
+        for i in 0..num {
+            let start = 64 + i * bytes_per_keys;
+            let end = start + bytes_per_keys;
+            let key = H160::from(&data[(start + 12)..end]);
+            trace!("identity {:?}", key);
+            nodes.push(key);
         }
     }
     nodes

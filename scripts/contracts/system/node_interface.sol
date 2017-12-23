@@ -16,7 +16,7 @@ interface NodeInterface {
     function deleteNode(address _node) public returns (bool);
     /// @dev List the consensus nodes that have been approved
     ///      which means list the node whose status is start
-    function listNode() view public returns (string);
+    function listNode() view public returns (address[]);
     /*
      * @dev Get the status of the node:
      * @return 0: Close
