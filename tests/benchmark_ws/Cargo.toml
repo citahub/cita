@@ -27,3 +27,15 @@ num_cpus = "1.*"
 parking_lot = "0.4.*"
 uuid = { version = "0.4", features = ["v4"] }
 rand = "0.3.17"
+
+[features]
+default = ["secp256k1", "sha3hash", "rabbitmq"]
+secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1"]
+ed25519 = ["cita-crypto/ed25519", "libproto/ed25519"]
+sm2 = ["cita-crypto/sm2", "libproto/sm2"]
+sha3hash = ["util/sha3hash", "libproto/sha3hash"]
+blake2bhash = ["util/blake2bhash", "libproto/blake2bhash"]
+sm3hash = ["util/sm3hash", "libproto/sm3hash"]
+rabbitmq = ["pubsub/rabbitmq"]
+zeromq = ["pubsub/zeromq"]
+kafka = ["pubsub/kafka"]

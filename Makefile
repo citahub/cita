@@ -22,14 +22,6 @@ release:
 test:
 	$(CARGO) test --all 2>&1 |tee target/test.log
 
-
-test_ed25519_blake2b:
-	sed -i 's/\["secp256k1"\]/\["ed25519"\]/g' share_libs/crypto/Cargo.toml
-	sed -i 's/\["sha3hash"\]/\["blake2bhash"\]/g' share_libs/util/Cargo.toml
-	$(CARGO) test  --all 2>&1 |tee target/test.log
-	sed -i 's/\["ed25519"\]/\["secp256k1"\]/g' share_libs/crypto/Cargo.toml
-	sed -i 's/\["blake2bhash"\]/\["sha3hash"\]/g' share_libs/util/Cargo.toml
-
 bench:
 	-rm target/bench.log
 	cargo bench --all --no-run |tee target/bench.log

@@ -18,3 +18,12 @@ logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develo
 jsonrpc_types = { path = "../../jsonrpc/types" }
 rustc-hex = "1.0"
 log = "0.3"
+
+[features]
+default = ["secp256k1", "sha3hash"]
+secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1"]
+ed25519 = ["cita-crypto/ed25519", "libproto/ed25519"]
+sm2 = ["cita-crypto/sm2", "libproto/sm2"]
+sha3hash = ["util/sha3hash", "libproto/sha3hash"]
+blake2bhash = ["util/blake2bhash", "libproto/blake2bhash"]
+sm3hash = ["util/sm3hash", "libproto/sm3hash"]

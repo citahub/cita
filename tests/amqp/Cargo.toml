@@ -11,3 +11,9 @@ name = "amqp_test"
 [dependencies]
 dotenv = "0.10.0"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+
+[features]
+default = ["rabbitmq"]
+rabbitmq = ["pubsub/rabbitmq"]
+zeromq = ["pubsub/zeromq"]
+kafka = ["pubsub/kafka"]
