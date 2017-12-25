@@ -1,11 +1,8 @@
 pragma solidity ^0.4.18;
 
-import "./strings.sol";
 import "./node_interface.sol";
 
 contract NodeManager is NodeInterface {
-
-    using strings for *;
 
     mapping(address => NodeStatus) public status;
     mapping (address => bool) admins;
@@ -116,19 +113,6 @@ contract NodeManager is NodeInterface {
         return true;
     }
 
-   /// Link address to a long string
-    function concatNodes(address[] _add)
-        pure 
-        internal
-        returns (string nodeList)
-    {
-        if (_add.length > 0)
-            nodeList = toString(_add[0]);
-
-        for (uint i = 1; i < _add.length; i++)
-            nodeList = nodeList.toSlice().concat(toString(_add[i]).toSlice());
-    }
-
     /// Get the index in the nodes_of_start array
     function nodeIndex(address _node)
         view 
@@ -144,23 +128,8 @@ contract NodeManager is NodeInterface {
         return i;
     }
 
-    /// Address to string
-    /// The returned string is ABI encoded
-    function toString(address x)
-        pure
-        internal
-        returns (string)
-    {
-        bytes memory b = new bytes(20);
-
-        for (uint i = 0; i < 20; i++)
-            b[i] = byte(uint8(uint(x) / (2**(8*(19 - i)))));
-
-        return string(b);
-    }
-
-    function listNode() view public returns (string) {
-        return concatNodes(nodes);
+    function listNode() view public returns (address[]) {
+        return nodes;
     }
 
     function getStatus(address _node) view public returns (uint8) {

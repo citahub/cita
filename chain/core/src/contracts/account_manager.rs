@@ -17,7 +17,7 @@
 
 //! Account Permission manager.
 
-use super::parse_string_to_addresses;
+use super::parse_output_to_addresses;
 use libchain::call_request::CallRequest;
 use libchain::chain::Chain;
 use rustc_hex::FromHex;
@@ -66,7 +66,7 @@ impl AccountManager {
             .eth_call(call_request, BlockId::Latest)
             .expect("load senders eth call");
         trace!("read account which has tx permission output: {:?}", output);
-        let accounts: Vec<Address> = parse_string_to_addresses(&output);
+        let accounts: Vec<Address> = parse_output_to_addresses(&output);
         trace!("accounts: {:?}", accounts);
         for account in accounts {
             senders.insert(account);
@@ -92,7 +92,7 @@ impl AccountManager {
             "read account which has contract permission output: {:?}",
             output
         );
-        let accounts: Vec<Address> = parse_string_to_addresses(&output);
+        let accounts: Vec<Address> = parse_output_to_addresses(&output);
         trace!("accounts: {:?}", accounts);
         for account in accounts {
             creators.insert(account);

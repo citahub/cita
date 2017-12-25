@@ -10,7 +10,7 @@ interface PermissionInterface {
     /// @dev Revoke the permission of a user
     function revokePermission(address _user, uint8 _permission) public returns (bool);
     /// @dev Query users of the permission
-    function queryUsersOfPermission(uint8 _permission) view public returns (string);
+    function queryUsersOfPermission(uint8 _permission) view public returns (address[]);
     /*
      * @dev Query the user's permission:
      * @return 0: "None" - no pemission

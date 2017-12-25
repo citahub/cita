@@ -17,7 +17,7 @@
 
 //! Node manager.
 
-use super::{encode_contract_name, parse_string_to_addresses};
+use super::{encode_contract_name, parse_output_to_addresses};
 use super::ContractCallExt;
 use libchain::chain::Chain;
 use rustc_hex::ToHex;
@@ -38,7 +38,7 @@ impl NodeManager {
         let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
         trace!("nodemanager output: {:?}", ToHex::to_hex(output.as_slice()));
 
-        let nodes: Vec<Address> = parse_string_to_addresses(&output);
+        let nodes: Vec<Address> = parse_output_to_addresses(&output);
         trace!("nodemanager nodes: {:?}", nodes);
         nodes
     }
@@ -59,15 +59,15 @@ mod tests {
         let chain = init_chain();
         let contract_address = Address::from(0x13241a2);
         let output = chain.call_contract_method(&contract_address, &*LIST_NODE_ENCODED.as_slice());
-        let nodes: Vec<Address> = parse_string_to_addresses(&output);
+        let nodes: Vec<Address> = parse_output_to_addresses(&output);
 
         assert_eq!(
             nodes,
             vec![
-                H160::from_str("1774aabcaf13797cfe790176bb737224d830216d").unwrap(),
-                H160::from_str("14b94a9a0c7978290bbfbfa3e847f595d17cd236").unwrap(),
-                H160::from_str("926d1090c1e1f082eb4b8c5db1a84532d7bab549").unwrap(),
-                H160::from_str("69f9e419ae1903f444efa238d625cc76b3a61f23").unwrap(),
+                H160::from_str("0b69ddaa0077b74d8573b09ef001452a8dd4bb4f").unwrap(),
+                H160::from_str("41ab058a475327a2ac2607f2a4e9c65263e7e7ad").unwrap(),
+                H160::from_str("6b70dc983106f701e1eb2ce6b22a4139a83a8ac3").unwrap(),
+                H160::from_str("93895adf32fb397120061ab858b378c7203bee32").unwrap(),
             ]
         )
     }

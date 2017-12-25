@@ -1,11 +1,8 @@
 pragma solidity ^0.4.18;
 
-import "./strings.sol";
 import "./permission_interface.sol";
 
 contract PermissionManager is PermissionInterface {
-
-    using strings for *;
 
     // The users having the send tx permission
     address[] senders;
@@ -90,19 +87,6 @@ contract PermissionManager is PermissionInterface {
         return true;
     }
 
-    /// @dev Cancat
-    function concatUser(address[] _users)
-        pure 
-        internal
-        returns (string userList)
-    {
-        if (_users.length > 0)
-            userList = toString(_users[0]);
-
-        for (uint i = 1; i < _users.length; i++)
-            userList = userList.toSlice().concat(toString(_users[i]).toSlice());
-    }
-
     /// @dev Delete the user of the users
     function deleteUser(address _user, address[] storage _users)
         internal
@@ -138,30 +122,15 @@ contract PermissionManager is PermissionInterface {
         return i;
     }
 
-    /// @dev Address to string
-    /// @return The returned string is ABI encoded
-    function toString(address x)
-        pure
-        internal
-        returns (string)
-    {
-        bytes memory b = new bytes(20);
-
-        for (uint i = 0; i < 20; i++)
-            b[i] = byte(uint8(uint(x) / (2**(8*(19 - i)))));
-
-        return string(b);
-    }
-
     function queryUsersOfPermission(uint8 _permission)
         view
         public
-        returns (string)
+        returns (address[])
     {
         if (_permission == uint8(UserPermission.Send))
-            return concatUser(senders);
+            return senders;
         if (_permission == uint8(UserPermission.Create))
-            return concatUser(creators);
+            return creators;
     }
 
     function queryPermission(address _user)
