@@ -1,25 +1,18 @@
-language: rust
+language: generic
+sudo: required
 cache:
-  cargo: true
-rust: nightly-2017-08-04
-dist: trusty
-sudo: true
+  timeout: 600
+  directories:
+  - $HOME/.cargo
+  - $TRAVIS_BUILD_DIR/target
+services:
+  - docker
 jobs:
   include:
-    - stage: build & test1
+    - stage: Build & Test
       script:
-        - |
-          set -e
-          echo '################################################################################'
-          echo '1) setup'
-          time scripts/install_develop.sh
-          time scripts/config_rabbitmq.sh
-          echo '################################################################################'
-          echo '2) format'
-          time make fmt
-          echo '################################################################################'
-          echo '3) build'
-          time make debug
-          echo '################################################################################'
-          echo '4) unit test'
-          time make test
+        - docker pull cryptape/cita-build:latest
+        - bash 'scripts/ci.sh'
+before_cache:
+    - sudo chown -R travis:travis $HOME/.cargo
+    - sudo chown -R travis:travis $TRAVIS_BUILD_DIR/target
