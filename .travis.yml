@@ -1,8 +1,8 @@
 language: rust
 cache:
   cargo: true
-rust: nightly-2017-08-04
-dist: trusty
+rust: nightly-2017-12-05
+dist: xenial
 sudo: true
 jobs:
   include:
