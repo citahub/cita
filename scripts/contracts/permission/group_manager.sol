@@ -16,14 +16,18 @@ library GroupManager {
         address[] users;
         bytes32[] subGroups;
         bool subSwitch;
+        // Not a tree but a graph
+        bytes32[] parentGroups;
+        // HTTP: url or IPFS: fingerprint
+        string profile;
     }
 
-    event GroupNewed(bytes32 indexed _group);
+    event GroupNewed(bytes32 indexed _group, bytes32 indexed _parentGroup);
     event NameModified(bytes32 indexed _oldName, bytes32 indexed _newName);
     event SubSwitchModified(bool indexed _oldSubSwitch, bool indexed _newSubSwitch);
     event UsersAdded(bytes32 indexed _group, address[] _users);
     event UsersDeleted(bytes32 indexed _group, address[] _users);
-    event GroupDeleted(bytes32 indexed _group);
+    event GroupDeleted(bytes32 indexed _group, bytes32[] parentGroups);
     event GroupInited(bytes32 indexed _root, address[] _adamEve, bool indexed _subSwitch);
 
     /// @dev Init the root group
@@ -55,13 +59,16 @@ library GroupManager {
         bytes32 _newName,
         address[] _newUsers,
         bool _newSubSwitch,
-        Util.SetOp _op
+        Util.SetOp _op,
+        string _profile
     )
         internal 
         returns (bool)
     {
         self.groups[_newName].name = _newName;
         self.groups[_newName].subSwitch = _newSubSwitch;
+        self.groups[_newName].parentGroups.push(_group);
+        self.groups[_newName].profile = _profile;
 
         if (Util.SetOp.None == _op) {
             for (uint i = 0; i < _newUsers.length; i++)
@@ -73,7 +80,7 @@ library GroupManager {
         }
 
         self.groups[_group].subGroups.push(_newName);
-        GroupNewed(_newName);
+        GroupNewed(_newName, _group);
         return true;
     }
 
@@ -87,7 +94,6 @@ library GroupManager {
         returns (bool)
     {
         Group memory group = self.groups[_oldName];
-        // Will it work?
         self.groups[_newName] = group;
         self.groups[_newName].name = _newName;
         delete self.groups[_oldName];
@@ -147,6 +153,7 @@ library GroupManager {
 
     /// @dev Delete group
     /// @notice Delete a tree's node. Only leaf node
+    ///         Also delete the subGroups of parentGroups
     function deleteGroup(
         Groups storage self,
         bytes32 _group
@@ -154,8 +161,10 @@ library GroupManager {
         internal
         returns (bool)
     {
+        GroupDeleted(_group, self.groups[_group].parentGroups);
+        for (uint i = 0; i < self.groups[_group].parentGroups.length; i++)
+            Util.bytes32Delete(_group, self.groups[_group].parentGroups);
         delete self.groups[_group];
-        GroupDeleted(_group);
         return true;
     }
 }
