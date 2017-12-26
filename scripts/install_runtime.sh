@@ -26,9 +26,9 @@ sudo apt-get install -y libstdc++6 rabbitmq-server libssl-dev libgoogle-perftool
                         libsodium* libz3-dev cmake libz3-dev libboost-all-dev
 
 # 3.1) install solc
-wget https://github.com/ethereum/solidity/releases/download/v0.4.19/solidity_0.4.19.tar.gz
-tar -xf solidity_0.4.19.tar.gz
-./solidity_0.4.19/scripts/build.sh
+wget https://github.com/ethereum/solidity/releases/download/v0.4.19/solc-static-linux
+chmod +x solc-static-linux
+sudo mv solc-static-linux /usr/local/bin/solc
 
 # 4) install python package
 umask 022
