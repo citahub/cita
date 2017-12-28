@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use base_hanlder::{RpcMap, TransferType};
+use helper::{RpcMap, TransferType};
 use jsonrpc_types::response::Output;
 use libproto::{display_cmd, parse_msg, MsgClass};
 use serde_json;
@@ -24,7 +24,6 @@ use serde_json;
 pub struct MqHandler {
     responses: RpcMap,
 }
-
 
 impl MqHandler {
     pub fn new(responses: RpcMap) -> Self {
@@ -35,8 +34,8 @@ impl MqHandler {
 
     pub fn handle(&mut self, key: &str, body: &[u8]) {
         let (id, _, content_ext) = parse_msg(body);
-        trace!("routint_key {:?},get msg cmd {:?}", key, display_cmd(id));
-        //TODO match
+        trace!("routint_key {:?}, get msg cmd {:?}", key, display_cmd(id));
+
         match content_ext {
             MsgClass::RESPONSE(content) => {
                 trace!("from response request_id {:?}", content.request_id);
@@ -44,22 +43,22 @@ impl MqHandler {
                 if let Some(val) = value {
                     match val {
                         TransferType::HTTP((req_info, sender)) => {
-                            sender.send(
-                                serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
+                            let _ = sender.send(
+                                serde_json::to_vec(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
                             );
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
-                            sender.send(
+                            let _ = sender.send(
                                 serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
                             );
                         }
                     }
                 } else {
-                    warn!("Unable handle msg {:?}", content);
+                    warn!("receive lost request_id {:?}", content.request_id);
                 }
             }
             _ => {
-                warn!("Unable handle msg {:?}", content_ext);
+                warn!("receive unexpect msg format {:?}", content_ext);
             }
         }
     }

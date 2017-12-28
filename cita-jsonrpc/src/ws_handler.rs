@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use base_hanlder::{BaseHandler, ReqInfo, RpcMap, TransferType};
+use helper::{encode_request, select_topic, ReqInfo, RpcMap, TransferType};
 use jsonrpc_types::{method, Id};
 use jsonrpc_types::response::RpcFailure;
 use libproto::request as reqlib;
@@ -40,7 +40,7 @@ impl WsFactory {
         } else {
             thread_num
         };
-        let thread_pool = ThreadPool::new_with_name("ws_thread_pool".to_string(), thread_number);
+        let thread_pool = ThreadPool::with_name("ws_thread_pool".to_string(), thread_number);
         WsFactory {
             responses: responses,
             thread_pool: thread_pool,
@@ -63,34 +63,36 @@ impl Factory for WsFactory {
     }
 }
 
-
-impl BaseHandler for WsHandler {}
-
 impl Handler for WsHandler {
     fn on_message(&mut self, msg: ws::Message) -> ws::Result<()> {
         trace!("Server got message '{}'  post thread_pool deal task ", msg);
-        let this = self.clone();
+        // let this = self.clone();
+        let method_handler = self.method_handler;
+        let tx = self.tx.clone();
+        let response = Arc::clone(&self.responses);
+        let sender = self.sender.clone();
+
         self.thread_pool.execute(move || {
             let mut req_id = Id::Null;
             let mut jsonrpc_version = None;
-            let err = match WsHandler::into_rpc(msg.into_text().unwrap()) {
+            let err = match encode_request(msg.into_text().unwrap()) {
                 Err(err) => Err(err),
                 Ok(rpc) => {
                     req_id = rpc.id.clone();
                     jsonrpc_version = rpc.jsonrpc.clone();
-                    let topic = WsHandler::select_topic(&rpc.method);
+                    let topic = select_topic(&rpc.method);
                     let req_info = ReqInfo {
                         jsonrpc: jsonrpc_version.clone(),
                         id: req_id.clone(),
                     };
-                    this.method_handler.request(rpc).map(|_req| {
-                        let request_id = _req.request_id.clone();
+                    method_handler.request(rpc).map(|req| {
+                        let request_id = req.request_id.clone();
                         //let data: communication::Message = _req.into();
                         //this.tx.send((topic, data.write_to_bytes().unwrap()));
-                        this.tx.send((topic, _req));
-                        let value = (req_info, this.sender.clone());
+                        let _ = tx.send((topic, req));
+                        let value = (req_info, sender.clone());
                         {
-                            this.responses
+                            response
                                 .lock()
                                 .insert(request_id, TransferType::WEBSOCKET(value));
                         }
@@ -99,7 +101,7 @@ impl Handler for WsHandler {
             };
             //TODO 错误返回
             if let Err(err) = err {
-                let _ = this.sender
+                let _ = sender
                     .send(serde_json::to_string(&RpcFailure::from_options(req_id, jsonrpc_version, err)).unwrap());
             }
         });

@@ -45,7 +45,7 @@ pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develo
 dotenv = "0.10.0"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../types" }
-jsonrpc_types = { path = "../../jsonrpc/types"}
+jsonrpc_types = { path = "../../jsonrpc_types"}
 clippy = {version = "0.0.175", optional = true}
 ethabi = "4.2.0"
 

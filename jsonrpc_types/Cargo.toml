@@ -6,10 +6,9 @@ authors = ["Cryptape Technologies <arch@cryptape.com>"]
 [dependencies]
 bincode = "0.8"
 futures = "0.1"
-hyper = "0.10"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 protobuf = { version = "^1.0.0" }
-uuid = { version = "0.4", features = ["v4"] }
+uuid = { version = "0.5", features = ["v4"] }
 log = "0.3"
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 serde = "1.0"
@@ -19,7 +18,7 @@ rustc-serialize = "0.3"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 time = "0.1"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-common-types = { path = "../../chain/types" }
+common-types = { path = "../cita-chain/types" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 clippy = {version = "0.0.175", optional = true}
 

@@ -15,7 +15,7 @@ util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop"
 dotenv = "0.10.0"
 hyper =  "0.10.7"
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc_types = { path = "../../jsonrpc/types" }
+jsonrpc_types = { path = "../../jsonrpc_types"}
 rustc-hex = "1.0"
 log = "0.3"
 

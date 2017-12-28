@@ -19,8 +19,8 @@ uuid = { version = "0.4", features = ["v4"] }
 log = "0.3.0"
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-core = { path = "../../chain/core" }
-common-types = { path = "../../chain/types" }
+core = { path = "../../cita-chain/core" }
+common-types = { path = "../../cita-chain/types" }
 bincode = "0.8.0"
 cpuprofiler = "0.0.3"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

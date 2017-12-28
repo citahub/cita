@@ -7,6 +7,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: checkout_submodule
+          command: 'git submodule update --init'
+      - run:
           name: format
           command: 'cargo fmt --all  -- --write-mode diff'
       - run: 

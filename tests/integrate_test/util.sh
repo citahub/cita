@@ -11,7 +11,7 @@ sudo(){
 
 # 失败后不需要清理,保留现场;成功后清理现场.
 cleanup() {
-    for pid in cita-monitor cita-jsonrpc cita-auth cita-chain cita-network cita-consensus trans_evm ; do
+    for pid in cita-monitor cita-jsonrpc cita-auth cita-chain cita-network cita-tendermint trans_evm ; do
         ps ax |grep ${pid}|awk '{print $1}' |xargs -n 1 -I %  kill -9 % 2>&1 >/dev/null ||true
     done
 

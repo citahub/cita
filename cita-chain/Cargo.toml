@@ -1,6 +1,6 @@
 [package]
 description = "CITA node."
-name = "chain"
+name = "cita-chain"
 version = "0.6.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
@@ -17,7 +17,7 @@ pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develo
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc_types = { path = "../jsonrpc/types" }
+jsonrpc_types = { path = "../jsonrpc_types"}
 core = { path = "./core" }
 common-types = { path = "./types" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -25,7 +25,7 @@ clippy = {version = "0.0.175", optional = true}
 
 [[bin]]
 path = "main.rs"
-name = "chain"
+name = "cita-chain"
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
