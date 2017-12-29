@@ -18,7 +18,7 @@ rustc-serialize = "0.3"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 time = "0.1"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-common-types = { path = "../chain/types" }
+common-types = { path = "../cita-chain/types" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 clippy = {version = "0.0.175", optional = true}
 
