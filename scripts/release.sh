@@ -16,7 +16,7 @@ mkdir -p                                   target/install/bin/
 # 1) binary
 cp -rf target/${type}/chain                target/install/bin/cita-chain
 cp -rf target/${type}/consensus_tendermint target/install/bin/cita-consensus
-cp -rf target/${type}/jsonrpc              target/install/bin/cita-jsonrpc
+# cp -rf target/${type}/jsonrpc              target/install/bin/cita-jsonrpc
 cp -rf target/${type}/auth                 target/install/bin/cita-auth
 cp -rf target/${type}/network              target/install/bin/cita-network
 cp -rf target/${type}/trans_evm            target/install/bin/
@@ -27,6 +27,7 @@ cp -rf target/${type}/jsonrpc_performance  target/install/bin/
 cp -rf target/${type}/latency              target/install/bin/
 cp -rf target/${type}/benchmark_ws         target/install/bin/
 cp -rf target/${type}/monitor              target/install/bin/cita-monitor
+cp -rf target/${type}/tokio-jsonrpc        target/install/bin/cita-jsonrpc
 #strip                                     target/install/bin/*
 
 # 2) cita

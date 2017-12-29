@@ -19,7 +19,7 @@ serde_derive = "1.0"
 serde_json = "1.0"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cpuprofiler = "0.0.3"
-jsonrpc_types = { path = "types" }
+jsonrpc_types = { path = "../jsonrpc_types" }
 dotenv = "0.10.0"
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 clap = "2"
