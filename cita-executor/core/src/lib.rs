@@ -61,6 +61,9 @@ extern crate ethabi;
 #[cfg(test)]
 extern crate test;
 
+#[cfg(feature = "privatetx")]
+extern crate zktx;
+
 pub mod state;
 pub mod account_db;
 pub mod executed;
