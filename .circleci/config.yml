@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: cryptape/cita-build:latest
+      - image: cita/cita-build:latest
     working_directory: ~/cita-build
     steps:
       - checkout
@@ -26,7 +26,7 @@ jobs:
 
   basic_test:
     docker:
-      - image: cryptape/cita-build:latest
+      - image: cita/cita-build:latest
     working_directory: ~/cita-build
     steps:
       - restore_cache:
@@ -39,7 +39,7 @@ jobs:
 
   integrate_test:
     docker:
-      - image: cryptape/cita-build:latest
+      - image: cita/cita-build:latest
     working_directory: ~/cita-build
     steps:
       - restore_cache:
