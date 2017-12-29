@@ -11,7 +11,7 @@ def main():
     http_enable = sys.argv[1] == "true"
     ws_enable = sys.argv[3] == "true"
     profile_config = dict(enable=False, flag_prof_start=0, flag_prof_duration=0)
-    http_config = dict(enable=http_enable, thread_number=200, listen_ip="0.0.0.0", listen_port=sys.argv[2],
+    http_config = dict(enable=http_enable, listen_ip="0.0.0.0", listen_port=sys.argv[2],
                        timeout=3)
 
     ws_config = dict(
@@ -33,7 +33,7 @@ def main():
     new_tx_flow_config = dict(count_per_batch=30, buffer_duration=30000000)
 
     data = dict()
-    data["with_capacity"] = 1000
+    data["backlog_capacity"] = 1000
     data["profile_config"] = profile_config
     data["http_config"] = http_config
     data["ws_config"] = ws_config

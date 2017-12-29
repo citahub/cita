@@ -35,7 +35,7 @@ pub fn read_user_from_file<P: AsRef<Path>>(path: P) -> Result<Config, Box<Error>
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
-    pub with_capacity: usize,
+    pub backlog_capacity: usize,
     pub profile_config: ProfileConfig,
     pub http_config: HttpConfig,
     pub ws_config: WsConfig,
@@ -124,7 +124,7 @@ impl Into<Settings> for WsConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HttpConfig {
     pub enable: bool,
-    pub thread_number: usize,
+    pub thread_number: Option<usize>,
     pub listen_ip: String,
     pub listen_port: String,
     pub timeout: u64,

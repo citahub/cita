@@ -95,13 +95,9 @@ fn main() {
     let (tx_relay, rx_relay) = channel();
     start_pubsub("jsonrpc", vec!["auth.rpc", "chain.rpc"], tx_sub, rx_pub);
 
-    let capacity = if config.with_capacity > 2 * config.http_config.thread_number {
-        config.with_capacity
-    } else {
-        (3 * config.http_config.thread_number) / 2
-    };
+    let backlog_capacity = config.backlog_capacity;
 
-    let responses = Arc::new(Mutex::new(HashMap::with_capacity(capacity)));
+    let responses = Arc::new(Mutex::new(HashMap::with_capacity(backlog_capacity)));
     let http_responses = Arc::clone(&responses);
     let ws_responses = Arc::clone(&responses);
     let mut mq_handle = mq_handler::MqHandler::new(responses);
@@ -152,8 +148,12 @@ fn main() {
         let addr = http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
         info!("Http Listening on {}", &addr);
 
-        let threads = ::std::cmp::max(2, num_cpus::get());
-        let _ = (0..threads - 1)
+        let threads: usize = config
+            .http_config
+            .thread_number
+            .unwrap_or_else(num_cpus::get);
+
+        let _ = (0..threads)
             .map(|i| {
                 let addr = addr.clone().parse().unwrap();
                 let tx = tx_relay.clone();
