@@ -1,6 +1,6 @@
 [package]
 description = "CITA node."
-name = "chain"
+name = "cita-chain"
 version = "0.6.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
@@ -25,7 +25,7 @@ clippy = {version = "0.0.175", optional = true}
 
 [[bin]]
 path = "main.rs"
-name = "chain"
+name = "cita-chain"
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

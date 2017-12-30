@@ -1,5 +1,5 @@
 [package]
-name = "auth"
+name = "cita-auth"
 version = "0.1.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
@@ -21,7 +21,7 @@ libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "deve
 protobuf = { version = "^1.0.0"}
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 tx_pool = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-core = { path = "../chain/core" }
+core = { path = "../cita-chain/core" }
 uuid = { version = "0.4", features = ["v4"] }
 clippy = {version = "0.0.175", optional = true}
 

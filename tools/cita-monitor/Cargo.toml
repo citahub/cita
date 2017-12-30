@@ -1,5 +1,5 @@
 [package]
-name = "monitor"
+name = "cita-monitor"
 version = "0.1.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 

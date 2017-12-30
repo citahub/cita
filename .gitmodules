@@ -1,0 +1,4 @@
+[submodule "cita-tendermint"]
+	path = cita-tendermint
+	url = https://github.com/cryptape/cita-tendermint.git
+	branch = develop

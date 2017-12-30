@@ -1,5 +1,5 @@
 [package]
-name = "network"
+name = "cita-network"
 version = "0.6.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 

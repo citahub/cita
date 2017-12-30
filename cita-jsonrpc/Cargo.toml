@@ -1,5 +1,5 @@
 [package]
-name = "tokio-jsonrpc"
+name = "cita-jsonrpc"
 version = "0.1.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
@@ -14,7 +14,7 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 cpuprofiler = "0.0.3"
-jsonrpc_types = { path = "../jsonrpc_types"}
+jsonrpc_types = { path = "../jsonrpc_types" }
 dotenv = "0.10.0"
 clap = "2"
 clippy = {version = "0.0.175", optional = true}
