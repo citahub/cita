@@ -7,6 +7,7 @@ import os
 import time
 from os import path
 import binascii
+import hashlib
 
 from ethereum.tools.tester import (Chain, get_env)
 from ethereum.tools._solidity import (
@@ -63,10 +64,13 @@ def main():
         "--authorities", help="Authorities nodes list file.")
     parser.add_argument(
         "--init_data", help="init with constructor_arguments.")
+    parser.add_argument(
+            "--resource", help="chain resource folder.")
 
     args = parser.parse_args()
     init_path = os.path.join(args.init_data)
     auth_path = os.path.join(args.authorities)
+    res_path = os.path.join(args.resource)
 
     authorities = []
     with open(auth_path, "r") as f:
@@ -83,7 +87,25 @@ def main():
 
     data = dict()
     timestamp = int(time.time())
-    data["prevhash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+    if os.path.exists(res_path) and os.path.isdir(res_path):
+        #file list make sure same order when calc hash
+        file_list = ""
+        res_path_len = len(res_path)
+        md5obj = hashlib.md5()
+        for root, dirs, files in os.walk(res_path, True):
+            for name in files:
+                filepath = os.path.join(root, name)
+                with open(filepath,'rb') as f:
+                    md5obj.update(f.read())
+                    file_list += filepath[res_path_len:] + "\n"
+        res_hash = md5obj.hexdigest()
+
+        file_list_path = os.path.join(res_path, "file_list")
+        with open(file_list_path,'w') as f:
+            f.write(file_list)
+        data["prevhash"] = "0x00000000000000000000000000000000" + res_hash
+    else:
+        data["prevhash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
     data["timestamp"] = timestamp
 
     print "init data", init_data

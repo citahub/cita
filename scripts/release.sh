@@ -12,6 +12,7 @@ type=$1
 # 0) setup
 mkdir -p                                   target/install/scripts/
 mkdir -p                                   target/install/bin/
+mkdir -p                                   target/install/resource/
 
 # 1) binary
 cp -rf target/${type}/cita-chain           target/install/bin/
