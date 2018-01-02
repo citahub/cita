@@ -26,7 +26,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::time::SystemTime;
 use std::vec::*;
 use threadpool::ThreadPool;
-use util::{H256, Mutex, RwLock};
+use util::{H256, RwLock};
 use verify::Verifier;
 
 #[derive(Debug, Clone)]
@@ -218,7 +218,7 @@ fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxR
 pub fn handle_remote_msg(
     payload: Vec<u8>,
     on_proposal: Arc<AtomicBool>,
-    threadpool: &Mutex<ThreadPool>,
+    pool: &ThreadPool,
     proposal_tx_verify_num_per_thread: usize,
     verifier: Arc<RwLock<Verifier>>,
     tx_req_single: &Sender<VerifyRequestResponseInfo>,
@@ -381,7 +381,6 @@ pub fn handle_remote_msg(
                     if tx_need_verify_len > 0 {
                         on_proposal.store(true, Ordering::SeqCst);
                         let iter = tx_need_verify.chunks(proposal_tx_verify_num_per_thread);
-                        let pool = threadpool.lock();
                         for group in iter {
                             let verifier_clone = verifier.clone();
                             let cache_clone = cache.clone();
