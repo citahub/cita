@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cryptape/cita-build:latest"
+DOCKER_IMAGE="cita/cita-build:latest"
 
 SCRIPT_PATH=$(readlink -f $0)
 SOURCE_DIR=$(readlink -f "$(dirname ${SCRIPT_PATH})/..")
