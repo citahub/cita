@@ -153,25 +153,22 @@ fn main() {
             .thread_number
             .unwrap_or_else(num_cpus::get);
 
-        let _ = (0..threads)
-            .map(|i| {
-                let addr = addr.clone().parse().unwrap();
-                let tx = tx_relay.clone();
-                let timeout = http_config.timeout;
-                let http_responses = Arc::clone(&http_responses);
-                let tb = thread::Builder::new()
-                    .name(format!("worker{}", i))
-                    .spawn(move || {
-                        let core = Core::new().unwrap();
-                        let handle = core.handle();
-                        let timeout = Duration::from_secs(timeout);
-                        let listener = http_server::listener(&addr, &handle).unwrap();
-                        Server::start(core, listener, tx, http_responses, timeout);
-                    })
-                    .unwrap();
-                tb
-            })
-            .collect::<Vec<_>>();
+        for i in 0..threads {
+            let addr = addr.clone().parse().unwrap();
+            let tx = tx_relay.clone();
+            let timeout = http_config.timeout;
+            let http_responses = Arc::clone(&http_responses);
+            let _ = thread::Builder::new()
+                .name(format!("worker{}", i))
+                .spawn(move || {
+                    let core = Core::new().unwrap();
+                    let handle = core.handle();
+                    let timeout = Duration::from_secs(timeout);
+                    let listener = http_server::listener(&addr, &handle).unwrap();
+                    Server::start(core, listener, tx, http_responses, timeout);
+                })
+                .unwrap();
+        }
     }
 
     loop {
