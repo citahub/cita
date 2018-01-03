@@ -33,13 +33,11 @@ pub enum RpcMethod {
     PeerCount,
 }
 
-
 pub struct Client {
     key_pair: KeyPair,
     eoa: Address,
     contract_address: Vec<Address>,
 }
-
 
 impl Client {
     pub fn new() -> Self {

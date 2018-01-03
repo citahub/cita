@@ -17,14 +17,14 @@
 
 //! Quota manager.
 
-use super::encode_contract_name;
 use super::ContractCallExt;
+use super::encode_contract_name;
+use ethabi::{decode, ParamType};
 use libchain::chain::Chain;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
 use util::*;
-use ethabi::{decode, ParamType};
 
 const QUOTA: &'static [u8] = &*b"getUsersQuota()";
 const USERS_METHOD_NAME: &'static [u8] = &*b"getSpecialUsers()";
@@ -294,7 +294,6 @@ mod tests {
         println!("init chain finish");
 
         let account_gas_limit = QuotaManager::account_gas_limit(&chain);
-
 
         assert_eq!(account_gas_limit, 268435456);
     }

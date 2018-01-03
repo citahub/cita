@@ -35,23 +35,23 @@ mod ws_handler;
 mod mq_handler;
 mod http_server;
 
-use std::thread;
-use std::sync::Arc;
-use pubsub::start_pubsub;
-use std::collections::HashMap;
 use clap::App;
+use config::{NewTxFlowConfig, ProfileConfig};
+use cpuprofiler::PROFILER;
 use http_server::Server;
-use std::sync::mpsc::{channel, Sender};
-use util::Mutex;
-use std::time::{Duration, SystemTime};
 use libproto::communication::Message as CommMsg;
 use libproto::request::{self as reqlib, BatchRequest};
 use protobuf::{Message, RepeatedField};
-use uuid::Uuid;
-use util::panichandler::set_panic_handler;
-use cpuprofiler::PROFILER;
-use config::{NewTxFlowConfig, ProfileConfig};
+use pubsub::start_pubsub;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::mpsc::{channel, Sender};
+use std::thread;
+use std::time::{Duration, SystemTime};
 use tokio_core::reactor::Core;
+use util::Mutex;
+use util::panichandler::set_panic_handler;
+use uuid::Uuid;
 use ws_handler::WsFactory;
 
 pub const TOPIC_NEW_TX: &str = "jsonrpc.new_tx";
@@ -176,7 +176,6 @@ fn main() {
         mq_handle.handle(&key, &msg);
     }
 }
-
 
 fn batch_forward_new_tx(
     new_tx_request_buffer: &mut Vec<reqlib::Request>,

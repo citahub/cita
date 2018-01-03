@@ -71,7 +71,7 @@ impl<'a> Deserialize<'a> for ErrorCode {
     where
         D: Deserializer<'a>,
     {
-        let v: Value = try!(Deserialize::deserialize(deserializer));
+        let v: Value = Deserialize::deserialize(deserializer)?;
         match v.as_i64() {
             Some(-32_700) => Ok(ErrorCode::ParseError),
             Some(-32_600) => Ok(ErrorCode::InvalidRequest),
@@ -182,8 +182,6 @@ impl Error {
     }
 }
 
-
-
 use serde_json;
 impl From<serde_json::Error> for Error {
     fn from(err: serde_json::Error) -> Error {
@@ -194,8 +192,6 @@ impl From<serde_json::Error> for Error {
         }
     }
 }
-
-
 
 // TODO: 对用户更友好的错误提示。错误码提示修改 https://github.com/ethereum/wiki/wiki/JSON-RPC-Error-Codes-Improvement-Proposal
 // 比如可以提示期待3或2个参数，收到4个参数等等

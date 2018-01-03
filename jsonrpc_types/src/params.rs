@@ -157,7 +157,6 @@ mod tests {
         assert!(v2.is_err());
     }
 
-
     #[test]
     fn should_parse() {
         let s = r#"["sdasda"]"#;

@@ -21,7 +21,6 @@ use std::fmt;
 use types::ids::BlockId;
 use util::clean_0x;
 
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Hash, Eq)]
 pub enum BlockTag {
     #[serde(rename = "latest")] Latest,

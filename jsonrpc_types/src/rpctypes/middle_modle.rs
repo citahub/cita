@@ -42,7 +42,6 @@ impl Default for CountOrCode {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct BlockParamsByHash {
     pub hash: ::std::vec::Vec<u8>,
@@ -66,7 +65,6 @@ impl Default for BlockParamsByHash {
         }
     }
 }
-
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct BlockParamsByNumber {
@@ -92,7 +90,6 @@ impl Default for BlockParamsByNumber {
         }
     }
 }
-
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct RpcBlock {

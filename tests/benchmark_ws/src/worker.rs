@@ -34,7 +34,6 @@ type Number = u64;
 type Timetamp = u64;
 type TxCount = usize;
 
-
 const CHECK_HEIGHT: i64 = 100;
 
 pub struct Worker {
@@ -44,7 +43,6 @@ pub struct Worker {
     current_height: u64,
     rand: ThreadRng,
 }
-
 
 impl Worker {
     pub fn new(ws_senders: Arc<RwLock<Vec<Sender>>>, param: Param) -> Self {
@@ -92,12 +90,10 @@ impl Worker {
 
     pub fn heart_beat_height(&mut self) {
         let sender = self.ws_senders.read()[0].clone();
-        thread::spawn(move || {
-            loop {
-                thread::sleep(Duration::new(1, 0));
-                let client = Client::new();
-                let _ = sender.send(client.get_data_by_method(RpcMethod::Height));
-            }
+        thread::spawn(move || loop {
+            thread::sleep(Duration::new(1, 0));
+            let client = Client::new();
+            let _ = sender.send(client.get_data_by_method(RpcMethod::Height));
         });
     }
 
@@ -120,7 +116,6 @@ impl Worker {
         let height = self.current_height;
         self.rand_send(client.get_data_by_method(RpcMethod::GetBlockbyheiht(height)));
     }
-
 
     pub fn recive(&mut self, rx: mpsc::Receiver<Message>) {
         let mut check_height_break = CHECK_HEIGHT;
@@ -152,8 +147,7 @@ impl Worker {
                                     if is_bench_tx {
                                         println!(
                                             "current height = {}, check_height_break = {}",
-                                            number,
-                                            check_height_break
+                                            number, check_height_break
                                         );
                                         let mut is_send = true;
                                         if self.current_height < number {
@@ -194,11 +188,7 @@ impl Worker {
                                                  recice respone cast time = {:?} ms ,\
                                                  success_count = {:?}, \
                                                  failure_count = {:?}",
-                                                self.param.number,
-                                                tps,
-                                                secs,
-                                                success_count,
-                                                failure_count
+                                                self.param.number, tps, secs, success_count, failure_count
                                             );
                                             self.close_all();
                                         }
@@ -214,8 +204,7 @@ impl Worker {
                                     actual_tx_count += txs_len;
                                     println!(
                                         "block_height = {:?}, check_block_break = {:?} ",
-                                        block_height,
-                                        check_block_break
+                                        block_height, check_block_break
                                     );
                                     if txs_len == 0 {
                                         check_block_break -= 1;
@@ -246,10 +235,7 @@ impl Worker {
                                         };
                                         println!(
                                             "total_count: {}, start height: {},  use time: {} ms, tps: {}",
-                                            actual_tx_count,
-                                            first.0,
-                                            secs,
-                                            tps
+                                            actual_tx_count, first.0, secs, tps
                                         );
                                         self.close_all();
                                     }
@@ -269,11 +255,7 @@ impl Worker {
                                              recice respone cast time = {:?} ms ,\
                                              success_count = {:?} ,\
                                              failure_count = {:?}",
-                                            self.param.number,
-                                            tps,
-                                            secs,
-                                            success_count,
-                                            failure_count
+                                            self.param.number, tps, secs, success_count, failure_count
                                         );
                                     }
                                 }
@@ -298,7 +280,6 @@ impl Worker {
         }
     }
 }
-
 
 mod test {
     use rand::Rng;

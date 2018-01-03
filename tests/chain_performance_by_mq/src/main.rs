@@ -169,9 +169,7 @@ fn main() {
 
                     info!(
                         "tx_num = {}, use time = {} ms, tps = {}",
-                        totaltx,
-                        secs,
-                        tps
+                        totaltx, secs, tps
                     );
                     send_flag = true;
                 }

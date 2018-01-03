@@ -60,8 +60,6 @@ impl NetConfig {
     }
 }
 
-
-
 #[cfg(test)]
 mod test {
     use super::NetConfig;

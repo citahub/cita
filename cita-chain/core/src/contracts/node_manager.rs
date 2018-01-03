@@ -53,7 +53,6 @@ mod tests {
     use tests::helpers::init_chain;
     use util::Address;
 
-
     #[test]
     fn test_node_manager_contract() {
         let chain = init_chain();

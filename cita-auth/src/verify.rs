@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 use crypto::{PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use libproto::*;
 use libproto::blockchain::*;
@@ -156,9 +155,7 @@ impl Verifier {
             if !result {
                 warn!(
                     "The new tx is out of time valid_until_block: {:?}, height: {:?}, BLOCKLIMIT: {:?}",
-                    valid_until_block,
-                    height,
-                    BLOCKLIMIT
+                    valid_until_block, height, BLOCKLIMIT
                 );
             }
         }

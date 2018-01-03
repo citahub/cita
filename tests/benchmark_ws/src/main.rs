@@ -84,7 +84,6 @@ fn main() {
         serde_json::to_string_pretty(&config).unwrap()
     );
 
-
     let (tx, rx) = mpsc::channel();
     let ws_senders = Arc::new(RwLock::new(vec![]));
     let fac_con = FactoryConnection::new(ws_senders.clone(), tx);

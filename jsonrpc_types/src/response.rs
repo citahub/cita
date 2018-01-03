@@ -49,7 +49,6 @@ pub enum ResultBody {
     FilterLog(Vec<Log>),
 }
 
-
 impl Default for ResultBody {
     fn default() -> Self {
         ResultBody::Null
@@ -70,7 +69,6 @@ pub struct RpcSuccess {
     pub result: ResultBody,
 }
 
-
 impl RpcSuccess {
     pub fn new(id: Id, jsonrpc: Option<Version>) -> RpcSuccess {
         RpcSuccess {
@@ -89,7 +87,6 @@ impl RpcSuccess {
         Output::Success(Box::new(self))
     }
 }
-
 
 #[derive(Debug)]
 pub enum Output {
@@ -203,7 +200,6 @@ impl Output {
     }
 }
 
-
 impl<'a> Deserialize<'a> for Output {
     fn deserialize<D>(deserializer: D) -> Result<Output, D::Error>
     where
@@ -229,8 +225,6 @@ impl Serialize for Output {
     }
 }
 
-
-
 impl From<Error> for RpcFailure {
     fn from(err: Error) -> Self {
         RpcFailure {
@@ -250,7 +244,6 @@ impl RpcFailure {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

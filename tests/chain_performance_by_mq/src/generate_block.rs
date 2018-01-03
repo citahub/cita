@@ -36,7 +36,6 @@ pub enum Step {
     Commit,
 }
 
-
 pub trait AsMillis {
     fn as_millis(&self) -> u64;
 }

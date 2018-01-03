@@ -181,7 +181,6 @@ impl Sendtx {
         }
     }
 
-
     pub fn send_tx(
         &self,
         thd_index: i32,
@@ -456,10 +455,7 @@ impl Sendtx {
                 for (key, val) in &tx_info {
                     let s = format!(
                         "height:{}, blocknum: {}, time stamp :{}, use time: {} ms\n",
-                        key,
-                        val.blocknum,
-                        val.time_stamp,
-                        val.use_time
+                        key, val.blocknum, val.time_stamp, val.use_time
                     );
                     result.push_str(&s);
                 }
@@ -476,19 +472,11 @@ impl Sendtx {
         };
         info!(
             "tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}",
-            tx_num,
-            start_h,
-            h,
-            secs,
-            tps
+            tx_num, start_h, h, secs, tps
         );
         let s = format!(
             "tx_num: {}, start_h: {}, end_h: {}, use time: {} ms, tps: {}\n",
-            tx_num,
-            start_h,
-            h,
-            secs,
-            tps
+            tx_num, start_h, h, secs, tps
         );
         result.push_str(&s);
         let path = Path::new("cita_performance.txt");
@@ -502,7 +490,6 @@ impl Sendtx {
             Ok(_) => (),
         }
     }
-
 
     pub fn start(&mut self) {
         //发送重复交易
@@ -520,7 +507,6 @@ impl Sendtx {
             self.wait(self.totaltx, sync_recv, _url);
         }
     }
-
 
     fn wait(&self, totaltx: u64, sync_recv: mpsc::Receiver<(u64, u64)>, url: String) {
         let mut sucess = 0;
@@ -572,15 +558,7 @@ impl Sendtx {
                             jsonrpc use time: {} ms
                             tps: {}
                             single tx respone time: {} ns"#,
-                            buf,
-                            totaltx,
-                            sucess,
-                            fail,
-                            START_H,
-                            _end_h,
-                            secs,
-                            tps,
-                            single_tx_response_time
+                            buf, totaltx, sucess, fail, START_H, _end_h, secs, tps, single_tx_response_time
                         );
                         let path = Path::new("jsonrpc_performance.txt");
                         let mut file = match File::create(&path) {
