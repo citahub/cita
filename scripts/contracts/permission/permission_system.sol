@@ -132,14 +132,15 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         address[] _newUsers,
         bool _newSubSwitch,
         uint8 _op,
-        bytes32 _role
+        bytes32 _role,
+        string _profile
     )
         public 
         nameNotExist(_newName, group_names)
         can(msg.sender, _group, _group, _role, bytes32("CreateGroup"))
         returns (bool)
     {
-        return _newGroup(_group, _newName, _newUsers, _newSubSwitch, _op);
+        return _newGroup(_group, _newName, _newUsers, _newSubSwitch, _op, _profile);
     }
 
     /// @dev Delete group
@@ -397,12 +398,13 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         bytes32 _newName,
         address[] _newUsers,
         bool _newSubSwitch,
-        uint8 _op
+        uint8 _op,
+        string _profile
     )
         private
         returns (bool)
     {
         group_names.push(_newName);
-        return GroupManager.newGroup(groups, _group, _newName, _newUsers, _newSubSwitch, Util.SetOp(_op));
+        return GroupManager.newGroup(groups, _group, _newName, _newUsers, _newSubSwitch, Util.SetOp(_op), _profile);
     }
 }
