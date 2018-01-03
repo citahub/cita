@@ -104,7 +104,7 @@ create_genesis(){
     else
         cp ${BINARY_DIR}/scripts/admintool/init_data.json ${CONFIG_DIR}/init_data.json
     fi
-    python ${BINARY_DIR}/scripts/admintool/create_genesis.py --authorities "${CONFIG_DIR}/authorities" --init_data "${CONFIG_DIR}/init_data.json"
+    python ${BINARY_DIR}/scripts/admintool/create_genesis.py --authorities "${CONFIG_DIR}/authorities" --init_data "${CONFIG_DIR}/init_data.json" --resource "${CONFIG_DIR}/resource/"
     rm -rf ${CONFIG_DIR}/init_data.json
 }
 
@@ -137,6 +137,9 @@ network(){
 
 chain(){
     cp genesis.json ${CONFIG_DIR}/node${1}/genesis.json
+    if [ -d "${CONFIG_DIR}/resource" ]; then
+        cp -rf resource ${CONFIG_DIR}/node${1}/
+    fi
     cp -f ${BINARY_DIR}/scripts/admintool/chain_check_example.json      ${CONFIG_DIR}/node${1}/chain.json
 }
 
@@ -165,7 +168,7 @@ monitor(){
 
 node(){
     mkdir -p ${CONFIG_DIR}/node${1}
-    cp $CONFIG_DIR/backup/*  ${CONFIG_DIR}/
+    cp -rf $CONFIG_DIR/backup/*  ${CONFIG_DIR}/
     create_key $1
     jsonrpc $1
     consensus $1
@@ -200,6 +203,9 @@ default(){
     mkdir -p $CONFIG_DIR/backup
     rm -rf $CONFIG_DIR/backup/*
     mv ${CONFIG_DIR}/*.json ${CONFIG_DIR}/authorities $CONFIG_DIR/backup/
+    if [ -d "${CONFIG_DIR}/resource" ]; then
+        mv ${CONFIG_DIR}/resource $CONFIG_DIR/backup/
+    fi
 }
 
 echo "************************begin create node config******************************"
