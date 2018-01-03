@@ -119,9 +119,7 @@ fn main() {
         "{} threads are configured for parallel verification",
         tx_verify_thread_num
     );
-    let threadpool = Arc::new(Mutex::new(threadpool::ThreadPool::new(
-        tx_verify_thread_num,
-    )));
+    let threadpool = threadpool::ThreadPool::new(tx_verify_thread_num);
     let on_proposal = Arc::new(AtomicBool::new(false));
 
     profifer(flag_prof_start, flag_prof_duration);
@@ -222,7 +220,7 @@ fn main() {
             let verifier_clone_for_pool = verifier_clone.clone();
             let cache_clone_for_pool = cache_clone.clone();
             let resp_sender_clone = resp_sender_main.clone();
-            pool.lock().execute(move || {
+            pool.execute(move || {
                 verify_tx_group_service(
                     req_grp,
                     verifier_clone_for_pool,
@@ -485,7 +483,7 @@ mod tests {
         let (pool_txs_sender, pool_txs_receiver) = channel();
         let verify_cache = HashMap::new();
         let cache = Arc::new(RwLock::new(verify_cache));
-        let pool = Mutex::new(threadpool::ThreadPool::new(10));
+        let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
 
@@ -549,7 +547,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         let height = 1;
-        let pool = Mutex::new(threadpool::ThreadPool::new(10));
+        let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
 
         handle_remote_msg(
@@ -624,7 +622,7 @@ mod tests {
         let tx_hash = tx.get_tx_hash().to_vec().clone();
         let req = generate_request(tx);
         let request_id = req.get_request_id().to_vec();
-        let pool = Mutex::new(threadpool::ThreadPool::new(10));
+        let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
 
@@ -680,7 +678,7 @@ mod tests {
         let (pool_txs_sender, pool_txs_receiver) = channel();
         let verify_cache = HashMap::new();
         let cache = Arc::new(RwLock::new(verify_cache));
-        let pool = Mutex::new(threadpool::ThreadPool::new(10));
+        let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
@@ -754,7 +752,7 @@ mod tests {
         let (pool_tx_sender, pool_tx_receiver) = channel();
         let verify_cache_hashmap = HashMap::new();
         let cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let pool = Mutex::new(threadpool::ThreadPool::new(10));
+        let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
@@ -834,7 +832,7 @@ mod tests {
         let (pool_tx_sender, pool_tx_receiver) = channel();
         let verify_cache_hashmap = HashMap::new();
         let cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let pool = Mutex::new(threadpool::ThreadPool::new(10));
+        let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let height = 0;
         let verifier = Arc::new(RwLock::new(Verifier::new()));
@@ -916,7 +914,7 @@ mod tests {
         let (pool_tx_sender, pool_tx_receiver) = channel();
         let verify_cache_hashmap = HashMap::new();
         let cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let pool = Mutex::new(threadpool::ThreadPool::new(10));
+        let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
@@ -1000,7 +998,7 @@ mod tests {
         let verifier = Arc::new(RwLock::new(Verifier::new()));
         let (pool_txs_sender, _) = channel();
         let (pool_tx_sender, _) = channel();
-        let pool = Mutex::new(threadpool::ThreadPool::new(10));
+        let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
 
