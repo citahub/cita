@@ -1,6 +1,6 @@
-name="cita-monitor"
-command = "cita-monitor"
-pidfile = ".cita-monitor.pid"
+name="cita-forever"
+command = "cita-forever"
+pidfile = ".cita-forever.pid"
 
 [[process]]
 name = "cita-auth"
