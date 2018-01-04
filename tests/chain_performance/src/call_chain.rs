@@ -40,7 +40,6 @@ impl Callchain {
         }
     }
 
-
     pub fn add_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) {
         self.chain.set_block(block, ctx_pub);
     }

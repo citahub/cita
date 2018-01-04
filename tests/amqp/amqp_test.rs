@@ -49,7 +49,6 @@ fn main() {
         }
     });
 
-
     thread::spawn(move || {
         for _ in 1..max + 1 {
             tx_pub.send(("request".to_string(), vec![0, 1])).unwrap();

@@ -155,7 +155,6 @@ impl Sendtx {
         ret
     }
 
-
     pub fn send_tx(
         &self,
         action: Action,
@@ -321,7 +320,6 @@ impl Sendtx {
         }
     }
 
-
     //执行合约的交易线程
     pub fn dispatch_send_thd(&self, sync_send: mpsc::Sender<(u64, u64)>, send_h: mpsc::Sender<u64>) {
         //获取合约地址
@@ -446,7 +444,6 @@ impl Sendtx {
         //jsonrpc返回成功的数量==入块的成功数退出循环
         Self::wait(self.totaltx, sync_recv, send);
     }
-
 
     fn wait(totaltx: u64, sync_recv: mpsc::Receiver<(u64, u64)>, send: mpsc::Sender<(u64, u64)>) {
         let mut sucess = 0;

@@ -1,13 +1,13 @@
-use util::Mutex;
-use libproto::request as reqlib;
 use futures::sync::oneshot;
-use std::sync::mpsc;
-use std::sync::Arc;
-use std::collections::HashMap;
-use jsonrpc_types::request::{RpcRequest, Version};
 use jsonrpc_types::{Error, Id};
-use ws;
+use jsonrpc_types::request::{RpcRequest, Version};
+use libproto::request as reqlib;
 use serde_json;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::mpsc;
+use util::Mutex;
+use ws;
 
 pub enum TransferType {
     HTTP((ReqInfo, oneshot::Sender<Vec<u8>>)),
@@ -22,7 +22,6 @@ pub struct ReqInfo {
 
 pub type RpcMap = Arc<Mutex<HashMap<Vec<u8>, TransferType>>>;
 pub type ReqSender = Mutex<mpsc::Sender<(String, reqlib::Request)>>;
-
 
 impl ReqInfo {
     pub fn new(jsonrpc: Option<Version>, id: Id) -> ReqInfo {
@@ -52,8 +51,6 @@ pub fn select_topic(method: &str) -> String {
         "jsonrpc"
     }.to_string()
 }
-
-
 
 #[cfg(test)]
 mod test {

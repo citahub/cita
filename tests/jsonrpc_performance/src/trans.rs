@@ -31,7 +31,6 @@ pub enum Methods {
     Trans(String),
 }
 
-
 #[allow(dead_code, unused_variables)]
 #[derive(Debug, Clone)]
 pub struct Trans {

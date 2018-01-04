@@ -27,8 +27,6 @@ use util::{H160, H256, U256};
 use util::clean_0x;
 use uuid::Uuid;
 
-
-
 pub mod method {
     pub const CITA_BLOCK_BUMBER: &str = "cita_blockNumber";
     pub const CITA_GET_BLOCK_BY_HASH: &str = "cita_getBlockByHash";
@@ -106,7 +104,6 @@ impl MethodHandler {
     }
 }
 
-
 impl MethodHandler {
     pub fn send_transaction(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
@@ -156,7 +153,6 @@ impl MethodHandler {
         Ok(request)
     }
 
-
     pub fn peer_count(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 0 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
@@ -167,7 +163,6 @@ impl MethodHandler {
         Ok(request)
     }
 
-
     pub fn block_number(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 0 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
@@ -177,7 +172,6 @@ impl MethodHandler {
         request.set_block_number(true);
         Ok(request)
     }
-
 
     pub fn get_block_by_hash(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 2 != self.params_len(&req_rpc.params)? {
@@ -193,7 +187,6 @@ impl MethodHandler {
             })
     }
 
-
     pub fn get_block_by_number(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 2 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
@@ -207,7 +200,6 @@ impl MethodHandler {
                 request
             })
     }
-
 
     pub fn get_transaction(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
@@ -269,7 +261,6 @@ impl MethodHandler {
         Ok(request)
     }
 
-
     pub fn get_transaction_receipt(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
@@ -280,7 +271,6 @@ impl MethodHandler {
         Ok(request)
     }
 
-
     pub fn get_transaction_count(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let tx_count = self.code_or_count(req_rpc)?;
@@ -288,7 +278,6 @@ impl MethodHandler {
         request.set_transaction_count(tx_count);
         Ok(request)
     }
-
 
     fn code_or_count(&self, req_rpc: RpcRequest) -> Result<String, Error> {
         if 2 != self.params_len(&req_rpc.params)? {
@@ -302,14 +291,12 @@ impl MethodHandler {
         }
     }
 
-
     pub fn get_code(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let code = self.code_or_count(req_rpc)?;
         request.set_code(code);
         Ok(request)
     }
-
 
     pub fn new_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
@@ -322,7 +309,6 @@ impl MethodHandler {
         Ok(request)
     }
 
-
     pub fn new_block_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 0 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
@@ -332,7 +318,6 @@ impl MethodHandler {
         request.set_new_block_filter(true);
         Ok(request)
     }
-
 
     pub fn uninstall_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
@@ -345,7 +330,6 @@ impl MethodHandler {
         Ok(request)
     }
 
-
     pub fn get_filter_changes(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
@@ -355,7 +339,6 @@ impl MethodHandler {
         request.set_filter_changes(filter_id.into());
         Ok(request)
     }
-
 
     pub fn get_filter_logs(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {

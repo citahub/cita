@@ -55,13 +55,11 @@ pub trait Contract: Sync + Send + ContractClone {
     fn create(&self) -> Box<Contract>;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 #[derive(Clone)]
 pub struct Factory {
     contracts: HashMap<Address, Box<Contract>>,
 }
-
 
 impl Factory {
     pub fn new_contract(&self, address: Address) -> Option<Box<Contract>> {

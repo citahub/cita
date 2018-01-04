@@ -32,7 +32,6 @@ pub struct WsFactory {
     tx: mpsc::Sender<(String, reqlib::Request)>,
 }
 
-
 impl WsFactory {
     pub fn new(responses: RpcMap, tx: mpsc::Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
         let thread_number = if thread_num == 0 {
@@ -48,7 +47,6 @@ impl WsFactory {
         }
     }
 }
-
 
 impl Factory for WsFactory {
     type Handler = WsHandler;
@@ -118,7 +116,6 @@ impl Handler for WsHandler {
         );
     }
 }
-
 
 #[derive(Clone)]
 pub struct WsHandler {

@@ -137,14 +137,12 @@ impl Block {
     }
 }
 
-
 /// body of block.
 #[derive(Default, Debug, Clone, PartialEq, RlpEncodableWrapper, RlpDecodableWrapper)]
 pub struct BlockBody {
     /// The transactions in this body.
     pub transactions: Vec<SignedTransaction>,
 }
-
 
 impl HeapSizeOf for BlockBody {
     fn heap_size_of_children(&self) -> usize {

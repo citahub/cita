@@ -50,7 +50,6 @@ use util::H256;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 
-
 //创建合约交易性能
 fn create_contract(
     block_tx_num: i32,
@@ -89,10 +88,8 @@ fn create_contract(
     profifer(flag_prof_start, flag_prof_duration);
     let sys_time = time::SystemTime::now();
     let (ctx_pub, recv) = channel();
-    thread::spawn(move || {
-        loop {
-            let _ = recv.recv();
-        }
+    thread::spawn(move || loop {
+        let _ = recv.recv();
     });
     call.add_block(block.clone(), &ctx_pub);
     info!("===============end add block===============");
@@ -106,7 +103,6 @@ fn create_contract(
     );
     info!("receipt = {:?}", call.get_receipt(hash));
 }
-
 
 //发送合约交易性能
 #[allow(unused_assignments)]
@@ -129,10 +125,8 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
     txs.push(tx);
 
     let (ctx_pub, recv) = channel();
-    thread::spawn(move || {
-        loop {
-            let _ = recv.recv();
-        }
+    thread::spawn(move || loop {
+        let _ = recv.recv();
     });
 
     //构造block
@@ -173,7 +167,6 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
     info!("receipt = {:?}", call.get_receipt(hash));
 }
 
-
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
     let start = flag_prof_start;
@@ -189,7 +182,6 @@ fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
         PROFILER.lock().unwrap().stop().unwrap();
     });
 }
-
 
 fn main() {
     dotenv::dotenv().ok();

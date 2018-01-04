@@ -89,7 +89,7 @@ impl Scalar {
     where
         T: Serialize,
     {
-        let encoded = try!(value.serialize());
+        let encoded = value.serialize()?;
         let length = encoded.len();
         if length < 32 {
             let mut byte32 = [0u8; 32];
@@ -205,7 +205,6 @@ impl Array {
     }
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Map {
@@ -316,7 +315,6 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
 
-
         // 4) length=43
         let expected = format!("012345678901234567890123456789012");
         assert!(scalar.set_bytes(&mut ext, expected.clone()).is_ok());
@@ -403,7 +401,6 @@ mod tests {
         assert!(array.set_len(&mut ext, length).is_ok());
         assert_eq!(array.get_len(&ext).unwrap(), length);
 
-
         // 2) array[1][2] = 0x1234
         let index = 1;
         let key = U256::from(2);
@@ -483,7 +480,6 @@ mod tests {
             *sub_array.get_bytes::<String>(&ext, index.clone()).unwrap(),
             value.clone()
         );
-
 
         // 2) map["key1"][2] = "1234567890"
         let key1 = String::from("key1");

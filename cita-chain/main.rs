@@ -123,22 +123,18 @@ fn main() {
 
     //chain 读写分离
     //chain 读数据 => 查询数据
-    thread::spawn(move || {
-        loop {
-            if let Ok((key, msg)) = rx.recv() {
-                forward.dispatch_msg(&key, &msg[..]);
-            }
+    thread::spawn(move || loop {
+        if let Ok((key, msg)) = rx.recv() {
+            forward.dispatch_msg(&key, &msg[..]);
         }
     });
 
     //chain 写数据 => 添加块
-    thread::spawn(move || {
-        loop {
-            if let Ok(number) = write_receiver.recv_timeout(Duration::new(8, 0)) {
-                block_processor.set_block(number);
-            } else {
-                block_processor.broadcast_current_status();
-            }
+    thread::spawn(move || loop {
+        if let Ok(number) = write_receiver.recv_timeout(Duration::new(8, 0)) {
+            block_processor.set_block(number);
+        } else {
+            block_processor.broadcast_current_status();
         }
     });
 

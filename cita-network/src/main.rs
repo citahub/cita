@@ -62,7 +62,6 @@ use std::time::Duration;
 use synchronizer::Synchronizer;
 use util::panichandler::set_panic_handler;
 
-
 fn main() {
     micro_service_init!("cita-network", "CITA:network");
     // init app
@@ -142,21 +141,17 @@ fn main() {
     manage_connect(&Arc::clone(&con), config_path, rx);
 
     //loop deal data
-    thread::spawn(move || {
-        loop {
-            if let Ok((source, data)) = net_work_rx.recv() {
-                net_work.receiver(source, data);
-            }
+    thread::spawn(move || loop {
+        if let Ok((source, data)) = net_work_rx.recv() {
+            net_work.receiver(source, data);
         }
     });
 
     //sync loop
     let mut synchronizer = Synchronizer::new(ctx_pub, Arc::clone(&con));
-    thread::spawn(move || {
-        loop {
-            if let Ok((source, msg)) = sync_rx.recv() {
-                synchronizer.receive(source, msg);
-            }
+    thread::spawn(move || loop {
+        if let Ok((source, msg)) = sync_rx.recv() {
+            synchronizer.receive(source, msg);
         }
     });
 
@@ -194,7 +189,6 @@ fn main() {
         net_work_tx.send((Source::LOCAL, body)).unwrap();
     }
 }
-
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Source {

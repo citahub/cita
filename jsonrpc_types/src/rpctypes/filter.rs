@@ -122,7 +122,6 @@ impl Into<EthFilter> for Filter {
     }
 }
 
-
 // Results of the filter_changes RPC.
 #[derive(Debug, PartialEq)]
 pub enum FilterChanges {

@@ -1,27 +1,27 @@
+use error::ErrorCode;
+use futures;
+use futures::Stream;
+use futures::future::Either;
 use futures::future::Future;
+use futures::sync::oneshot;
+use helper::{select_topic, ReqInfo, ReqSender, RpcMap, TransferType};
 use hyper;
-use jsonrpc_types::response::RpcFailure;
 use hyper::{Method, StatusCode};
 use hyper::server::{Http, NewService, Request, Response, Service};
 use jsonrpc_types::{method, Error, RpcRequest};
-use serde_json;
-use util::Mutex;
+use jsonrpc_types::response::RpcFailure;
 use libproto::request as reqlib;
-use futures::sync::oneshot;
-use std::sync::mpsc;
-use futures::Stream;
+use net2;
+use serde_json;
 use std::io;
+use std::net::SocketAddr;
 use std::sync::Arc;
-use futures;
-use helper::{select_topic, ReqInfo, ReqSender, RpcMap, TransferType};
+use std::sync::mpsc;
+use std::time::Duration;
 use tokio_core::net::TcpListener;
 use tokio_core::reactor::{Core, Handle};
-use std::net::SocketAddr;
-use net2;
 use tokio_core::reactor::Timeout;
-use futures::future::Either;
-use error::ErrorCode;
-use std::time::Duration;
+use util::Mutex;
 
 const TCP_BACKLOG: i32 = 1024;
 
@@ -143,7 +143,6 @@ impl Service for Server {
     }
 }
 
-
 impl Server {
     pub fn start(
         core: Core,
@@ -169,7 +168,6 @@ impl Server {
         server.run().unwrap();
     }
 }
-
 
 pub fn listener(addr: &SocketAddr, handle: &Handle) -> io::Result<TcpListener> {
     let listener = match *addr {

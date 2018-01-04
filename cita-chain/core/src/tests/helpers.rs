@@ -63,7 +63,6 @@ pub fn get_temp_state_db() -> StateDB {
     StateDB::new(journal_db)
 }
 
-
 pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
     // input and output of solc command
     let contract_file = Temp::new_file().unwrap().to_path_buf();
@@ -159,10 +158,8 @@ pub fn create_block(chain: &Chain, to: Address, data: &Vec<u8>, nonce: (u32, u32
 pub fn bench_chain(code: &Vec<u8>, data: &Vec<u8>, tpb: u32, native_address: Address) -> u64 {
     let chain = init_chain();
     let (sync_tx, recv) = channel();
-    thread::spawn(move || {
-        loop {
-            let _ = recv.recv();
-        }
+    thread::spawn(move || loop {
+        let _ = recv.recv();
     });
     // 1) deploy contract
     let block = create_block(&chain, Address::from(0), code, (0, 1));

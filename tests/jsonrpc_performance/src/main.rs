@@ -16,7 +16,6 @@ extern crate logger;
 #[macro_use]
 extern crate serde_derive;
 
-
 pub mod param;
 pub mod trans;
 pub mod send_trans;

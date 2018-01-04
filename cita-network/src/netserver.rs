@@ -54,7 +54,6 @@ impl NewService for NetServer {
     }
 }
 
-
 impl NetServer {
     pub fn new(net_sender: Sender<(Source, CitaRequest)>) -> NetServer {
         NetServer {

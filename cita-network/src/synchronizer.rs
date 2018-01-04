@@ -137,7 +137,6 @@ impl Synchronizer {
         }
     }
 
-
     pub fn is_synchronizing(&self) -> bool {
         self.is_synchronizing
     }
@@ -156,7 +155,6 @@ impl Synchronizer {
         debug!("sync: process_sync: heights = {:?}", heights);
         self.submit_blocks();
     }
-
 
     pub fn receive(&mut self, from: Source, mut msg: communication::Message) {
         let t = msg.get_field_type();
@@ -206,8 +204,7 @@ impl Synchronizer {
         {
             debug!(
                 "sync: start_sync_req: height = {}, origins = {:?}",
-                height,
-                origins
+                height, origins
             );
             if let Some(origins) = self.latest_status_lists.get(height) {
                 if *height > self.current_status.get_height() {
@@ -224,7 +221,6 @@ impl Synchronizer {
             self.sync_strategy(start_height, end_height, origin);
         }
     }
-
 
     fn sync_strategy(&self, start_height: u64, end_height: u64, origin: u32) {
         //current height = 155,start_height = 156, end height = 160, to origin = 1
@@ -258,7 +254,6 @@ impl Synchronizer {
         }
     }
 
-
     fn send_sync_req(&self, heights: Vec<u64>, origin: u32) {
         if !heights.is_empty() {
             debug!(
@@ -285,7 +280,6 @@ impl Synchronizer {
         }
     }
 
-
     fn broadcast_status(&mut self) {
         debug!(
             "sync: broadcast status {:?}, {:?} to other nodes",
@@ -300,7 +294,6 @@ impl Synchronizer {
         );
         self.con.broadcast(msg);
     }
-
 
     //提交连续的块
     fn submit_blocks(&mut self) {
@@ -342,7 +335,6 @@ impl Synchronizer {
         self.pub_blocks(blocks);
     }
 
-
     fn pub_blocks(&mut self, blocks: Vec<Block>) {
         if !blocks.is_empty() {
             let height = self.current_status.get_height();
@@ -367,7 +359,6 @@ impl Synchronizer {
                 .send(("net.blk".to_string(), msg.write_to_bytes().unwrap()));
         }
     }
-
 
     fn add_latest_sync_lists(&mut self, height: u64, origin: u32) {
         debug!(

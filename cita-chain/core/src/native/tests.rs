@@ -12,7 +12,6 @@ pub struct SimpleStorage {
     output: Vec<u8>,
 }
 
-
 impl Contract for SimpleStorage {
     fn exec(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let signature = BigEndian::read_u32(params.clone().data.unwrap().get(0..4).unwrap());

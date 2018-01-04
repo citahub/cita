@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+use crypto::digest::Digest;
+use crypto::md5::Md5;
 use db::{self as db, Writable};
 use factory::Factories;
 use libchain::block::Block;
@@ -27,14 +28,12 @@ use state_db::StateDB;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::Read;
+use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
 use util::{Address, H256, U256, clean_0x};
 use util::kvdb::KeyValueDB;
-use crypto::md5::Md5;
-use crypto::digest::Digest;
-use std::path::Path;
-use std::io::Read;
-use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Deserialize, Clone)]
 pub struct Contract {
@@ -139,9 +138,7 @@ impl Genesis {
                 let result = state.storage_at(&address, &H256::from_any_str(key.as_ref()).unwrap());
                 info!(
                     "address = {:?}, key = {:?}, result = {:?}",
-                    address,
-                    key,
-                    result
+                    address, key, result
                 );
                 assert_eq!(
                     H256::from_any_str(values.as_ref()).unwrap(),

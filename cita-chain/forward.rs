@@ -328,9 +328,7 @@ impl Forward {
 
         debug!(
             "Received consensus block, block_number: {:?} current_height: {:?}, stage: {:?}",
-            blk_height,
-            current_height,
-            stage
+            blk_height, current_height, stage
         );
 
         if self.chain.validate_height(block.number()) && self.chain.validate_hash(block.parent_hash()) {
@@ -375,8 +373,7 @@ impl Forward {
         let heights = sync_req.take_heights();
         debug!(
             "sync: receive sync from node {:?}, height lists = {:?}",
-            origin,
-            heights
+            origin, heights
         );
 
         let mut res_vec = SyncResponse::new();
@@ -464,8 +461,7 @@ impl Forward {
         if chain_proof_type != block_proof_type {
             error!(
                 "sync: block_proof_type {:?} mismatch with chain_proof_type {:?}",
-                block_proof_type,
-                chain_proof_type
+                block_proof_type, chain_proof_type
             );
             return;
         }
@@ -567,9 +563,7 @@ impl Forward {
         let stage = { self.chain.stage.read().clone() };
         debug!(
             "received proposal, block_number: {:?} current_height: {:?}, stage: {:?}",
-            blk_height,
-            current_height,
-            stage
+            blk_height, current_height, stage
         );
 
         if self.chain.validate_height(blk_height) && self.chain.validate_hash(block.parent_hash()) {

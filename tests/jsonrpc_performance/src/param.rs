@@ -35,7 +35,6 @@ pub struct Param {
     pub tx_format_err: bool,
 }
 
-
 impl Param {
     pub fn load_from_file(path: &str) -> Self {
         let config_file = File::open(path).unwrap();

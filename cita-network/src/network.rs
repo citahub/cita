@@ -7,7 +7,6 @@ use protobuf::core::parse_from_bytes;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
-
 pub struct NetWork {
     con: Arc<Connection>,
     tx_pub: Sender<(String, Vec<u8>)>,

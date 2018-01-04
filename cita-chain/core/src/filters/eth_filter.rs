@@ -22,7 +22,6 @@ use types::filter::Filter as EthcoreFilter;
 use types::ids::BlockId;
 use util::H256;
 
-
 pub trait EthFilter {
     fn new_filter(&self, filter: Filter) -> PollId;
     fn new_block_filter(&self) -> PollId;
@@ -30,7 +29,6 @@ pub trait EthFilter {
     fn filter_logs(&self, index: Index) -> Option<Vec<Log>>;
     fn uninstall_filter(&self, index: Index) -> bool;
 }
-
 
 impl EthFilter for Chain {
     fn new_filter(&self, filter: Filter) -> PollId {

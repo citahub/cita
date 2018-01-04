@@ -31,7 +31,6 @@ pub struct Param {
     pub code: String,
 }
 
-
 impl Param {
     #[allow(dead_code, unused_variables)]
     pub fn load_from_file(path: &str) -> Self {

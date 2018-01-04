@@ -37,7 +37,6 @@ pub struct Config {
     pub param: Param,
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Param {
     pub number: usize,
@@ -55,7 +54,6 @@ impl Default for Param {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BenchTxParam {
     pub enable: bool,
@@ -68,8 +66,6 @@ pub struct BenchTxParam {
 pub struct BenchPeerParam {
     pub enable: bool,
 }
-
-
 
 impl Default for BenchPeerParam {
     fn default() -> Self {
@@ -95,7 +91,6 @@ impl Default for BenchTxParam {
         }
     }
 }
-
 
 impl Default for Config {
     fn default() -> Self {

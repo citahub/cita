@@ -28,7 +28,7 @@ pub struct Connection {
 
 impl Handler for Connection {
     fn on_open(&mut self, shake: Handshake) -> Result<()> {
-        if let Some(addr) = try!(shake.remote_addr()) {
+        if let Some(addr) = shake.remote_addr()? {
             println!("Connection with {} now open", addr);
         }
         Ok(())
@@ -44,7 +44,6 @@ impl Handler for Connection {
     }
 }
 
-
 #[derive(Clone)]
 pub struct FactoryConnection {
     ws_senders: Arc<RwLock<Vec<Sender>>>,
@@ -59,7 +58,6 @@ impl FactoryConnection {
         }
     }
 }
-
 
 impl Factory for FactoryConnection {
     type Handler = Connection;

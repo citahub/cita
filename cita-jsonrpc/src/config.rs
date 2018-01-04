@@ -32,7 +32,6 @@ pub fn read_user_from_file<P: AsRef<Path>>(path: P) -> Result<Config, Box<Error>
     Ok(u)
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub backlog_capacity: usize,
@@ -54,7 +53,6 @@ pub struct ProfileConfig {
     pub flag_prof_start: u64,
     pub flag_prof_duration: u64,
 }
-
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WsConfig {
@@ -88,7 +86,6 @@ pub struct WsConfig {
     encrypt_server: bool,
     tcp_nodelay: bool,
 }
-
 
 impl Into<Settings> for WsConfig {
     fn into(self) -> Settings {

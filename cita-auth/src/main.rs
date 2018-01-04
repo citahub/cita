@@ -65,7 +65,6 @@ use util::{Mutex, RwLock};
 use util::panichandler::set_panic_handler;
 use verify::Verifier;
 
-
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
     let start = flag_prof_start;
@@ -280,31 +279,29 @@ fn main() {
     let single_req_sender = single_req_sender.clone();
     let txs_pub_clone = txs_pub.clone();
     let resp_sender = resp_sender_clone.clone();
-    thread::spawn(move || {
-        loop {
-            match rx_sub.recv() {
-                Ok((_key, msg)) => {
-                    let verifier = verifier.clone();
-                    handle_remote_msg(
-                        msg,
-                        on_proposal.clone(),
-                        &threadpool,
-                        proposal_tx_verify_num_per_thread,
-                        verifier.clone(),
-                        &single_req_sender,
-                        &txs_pub_clone,
-                        block_verify_status_hdl_remote.clone(),
-                        cache.clone(),
-                        &pool_txs_sender,
-                        &resp_sender.clone(),
-                    );
-                }
-                Err(err_info) => {
-                    error!(
-                        "Failed to receive message from rx_sub due to {:?}",
-                        err_info
-                    );
-                }
+    thread::spawn(move || loop {
+        match rx_sub.recv() {
+            Ok((_key, msg)) => {
+                let verifier = verifier.clone();
+                handle_remote_msg(
+                    msg,
+                    on_proposal.clone(),
+                    &threadpool,
+                    proposal_tx_verify_num_per_thread,
+                    verifier.clone(),
+                    &single_req_sender,
+                    &txs_pub_clone,
+                    block_verify_status_hdl_remote.clone(),
+                    cache.clone(),
+                    &pool_txs_sender,
+                    &resp_sender.clone(),
+                );
+            }
+            Err(err_info) => {
+                error!(
+                    "Failed to receive message from rx_sub due to {:?}",
+                    err_info
+                );
             }
         }
     });
@@ -318,7 +315,6 @@ fn main() {
         );
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -519,10 +515,7 @@ mod tests {
         thread::sleep(Duration::new(0, 9000000));
         println!(
             "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub,
-            req_receiver,
-            resp_receiver,
-            pool_txs_receiver
+            rx_pub, req_receiver, resp_receiver, pool_txs_receiver
         );
     }
 
@@ -590,10 +583,7 @@ mod tests {
         thread::sleep(Duration::new(0, 9000000));
         println!(
             "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub,
-            req_receiver,
-            resp_receiver,
-            pool_txs_receiver
+            rx_pub, req_receiver, resp_receiver, pool_txs_receiver
         );
     }
 
@@ -653,10 +643,7 @@ mod tests {
         thread::sleep(Duration::new(0, 9000000));
         println!(
             "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}",
-            rx_pub,
-            req_receiver,
-            resp_receiver,
-            pool_tx_receiver
+            rx_pub, req_receiver, resp_receiver, pool_tx_receiver
         );
     }
 
@@ -725,10 +712,7 @@ mod tests {
         thread::sleep(Duration::new(0, 9000000));
         println!(
             "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub,
-            req_receiver,
-            resp_receiver,
-            pool_txs_receiver
+            rx_pub, req_receiver, resp_receiver, pool_txs_receiver
         );
     }
 
@@ -808,10 +792,7 @@ mod tests {
         thread::sleep(Duration::new(0, 9000000));
         println!(
             "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}",
-            rx_pub,
-            req_receiver,
-            resp_receiver,
-            pool_tx_receiver
+            rx_pub, req_receiver, resp_receiver, pool_tx_receiver
         );
     }
 
@@ -888,11 +869,7 @@ mod tests {
         thread::sleep(Duration::new(0, 9000000));
         println!(
             "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub,
-            req_receiver,
-            resp_receiver,
-            pool_tx_receiver,
-            pool_txs_receiver
+            rx_pub, req_receiver, resp_receiver, pool_tx_receiver, pool_txs_receiver
         );
     }
 
@@ -972,11 +949,7 @@ mod tests {
         thread::sleep(Duration::new(0, 9000000));
         println!(
             "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub,
-            req_receiver,
-            resp_receiver,
-            pool_tx_receiver,
-            pool_txs_receiver
+            rx_pub, req_receiver, resp_receiver, pool_tx_receiver, pool_txs_receiver
         );
     }
 
@@ -1016,7 +989,6 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
         );
-
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();

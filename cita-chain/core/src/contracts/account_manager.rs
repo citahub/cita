@@ -29,7 +29,6 @@ use util::*;
 
 const METHOD_NAME: &'static [u8] = &*b"queryUsersOfPermission(uint8)";
 
-
 lazy_static! {
     static ref METHOD_NAME_HASH: Vec<u8> = {
         let out :&mut[u8;32] = &mut [0;32];

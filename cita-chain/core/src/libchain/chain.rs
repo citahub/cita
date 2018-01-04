@@ -502,16 +502,14 @@ impl Chain {
                     .logs
                     .into_iter()
                     .enumerate()
-                    .map(|(i, log)| {
-                        LocalizedLogEntry {
-                            entry: log,
-                            block_hash: hash,
-                            block_number: number,
-                            transaction_hash: id,
-                            transaction_index: index,
-                            transaction_log_index: i,
-                            log_index: no_of_logs + i,
-                        }
+                    .map(|(i, log)| LocalizedLogEntry {
+                        entry: log,
+                        block_hash: hash,
+                        block_number: number,
+                        transaction_hash: id,
+                        transaction_index: index,
+                        transaction_log_index: i,
+                        log_index: no_of_logs + i,
                     })
                     .collect(),
                 log_bloom: last_receipt.log_bloom,
@@ -1304,7 +1302,6 @@ mod tests {
     use tests::helpers::{bench_chain, create_block, init_chain, solc};
     use util::{Address, H256};
 
-
     #[test]
     fn test_heapsizeof() {
         let test: Vec<String> = Vec::new();
@@ -1364,10 +1361,8 @@ mod tests {
 
         let block = create_block(&chain, Address::from(0), &data, (0, 2));
         let (ctx_pub, recv) = channel();
-        thread::spawn(move || {
-            loop {
-                let _ = recv.recv();
-            }
+        thread::spawn(move || loop {
+            let _ = recv.recv();
         });
         chain.set_block(block.clone(), &ctx_pub);
 
@@ -1415,10 +1410,8 @@ mod tests {
         let (data, _) = solc("ConstructSol", source);
         let block = create_block(&chain, Address::from(0), &data, (0, 1));
         let (ctx_pub, recv) = channel();
-        thread::spawn(move || {
-            loop {
-                let _ = recv.recv();
-            }
+        thread::spawn(move || loop {
+            let _ = recv.recv();
         });
         chain.set_block(block.clone(), &ctx_pub);
 
@@ -1450,38 +1443,7 @@ mod tests {
         assert_eq!(
             call_result,
             Ok(Bytes::from(vec![
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                10,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10
             ]))
         );
         println!("call_result: {:?}", call_result);

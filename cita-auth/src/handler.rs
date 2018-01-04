@@ -117,7 +117,6 @@ fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     resp
 }
 
-
 pub fn process_flow_control_failed(
     mut verify_info: VerifyRequestResponseInfo,
     resp_sender: &Sender<VerifyRequestResponseInfo>,
@@ -211,7 +210,6 @@ fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxR
     }
 }
 
-
 // this function has too many arguments
 // the function has a cyclomatic complexity of 29
 // consider changing the type to: `&[u8]`
@@ -264,8 +262,7 @@ pub fn handle_remote_msg(
                     let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
                     info!(
                         "Auth rich status block gas limit: {:?}, account gas limit {:?}",
-                        block_gas_limit,
-                        account_gas_limit
+                        block_gas_limit, account_gas_limit
                     );
 
                     let _ = txs_sender.send((
@@ -302,8 +299,7 @@ pub fn handle_remote_msg(
 
                 info!(
                     "Coming new block verify request with request_id: {}, and the init block_verify_status: {:?}",
-                    request_id,
-                    new_block_verify_status
+                    request_id, new_block_verify_status
                 );
                 //add big brace here to release write lock as soon as poobible
                 {
@@ -312,8 +308,7 @@ pub fn handle_remote_msg(
                         warn!(
                             "block verification request with request_id: {:?} \
                              has been expired, and the current info is: {:?}",
-                            block_verify_status_guard.request_id,
-                            *block_verify_status_guard
+                            block_verify_status_guard.request_id, *block_verify_status_guard
                         );
                     }
                     let block_verify_stamp = SystemTime::now();
@@ -357,8 +352,7 @@ pub fn handle_remote_msg(
                                 }
                                 warn!(
                                     "Failed to do verify blk req for request_id: {}, ret: {:?}",
-                                    request_id,
-                                    resp_ret
+                                    request_id, resp_ret
                                 );
                                 publish_block_verification_result(request_id, resp_ret, tx_pub);
                                 break;
@@ -546,9 +540,7 @@ pub fn handle_verificaton_result(
                                     block_verify_status_guard.block_verify_result = VerifyResult::VerifyFailed;
                                     warn!(
                                         "Failed to do verify blk req for request_id: {}, ret: {:?}, from submodule: {}",
-                                        request_id,
-                                        result,
-                                        verify_response_info.sub_module
+                                        request_id, result, verify_response_info.sub_module
                                     );
                                     publish_block_verification_result(request_id, result, tx_pub);
                                 }
