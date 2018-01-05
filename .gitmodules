@@ -2,3 +2,6 @@
 	path = cita-tendermint
 	url = https://github.com/cryptape/cita-tendermint.git
 	branch = develop
+[submodule "cita-forever"]
+	path = cita-forever
+	url = https://github.com/cryptape/cita-forever.git

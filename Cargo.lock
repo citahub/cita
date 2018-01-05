@@ -476,6 +476,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cita-forever"
+version = "0.1.0"
+dependencies = [
+ "clap 2.29.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+]
+
+[[package]]
 name = "cita-jsonrpc"
 version = "0.1.0"
 dependencies = [
@@ -507,18 +519,6 @@ dependencies = [
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ws 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cita-monitor"
-version = "0.1.0"
-dependencies = [
- "clap 2.29.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "toml 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
 ]
 
 [[package]]

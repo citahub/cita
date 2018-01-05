@@ -1,6 +1,6 @@
-name="cita-monitor"
-command = "cita-monitor"
-pidfile = ".cita-monitor.pid"
+name="cita-forever"
+command = "cita-forever"
+pidfile = ".cita-forever.pid"
 
 [[process]]
 name = "cita-auth"
@@ -17,10 +17,10 @@ pidfile = ".cita-network.pid"
 respawn = 3
 
 [[process]]
-name = "cita-consensus"
-command = "cita-consensus"
+name = "cita-tendermint"
+command = "cita-tendermint"
 args = ["-c","consensus.json"]
-pidfile = ".cita-consensus.pid"
+pidfile = ".cita-tendermint.pid"
 respawn = 3
 
 [[process]]

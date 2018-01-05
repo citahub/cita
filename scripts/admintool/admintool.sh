@@ -162,8 +162,8 @@ kafka(){
     fi
 }
 
-monitor(){
-    cp -f ${BINARY_DIR}/scripts/admintool/monitor_example.toml          ${CONFIG_DIR}/node${1}/monitor.toml
+forever(){
+    cp -f ${BINARY_DIR}/scripts/admintool/forever_example.toml          ${CONFIG_DIR}/node${1}/forever.toml
 }
 
 node(){
@@ -178,7 +178,7 @@ node(){
     auth $1
     env $1
     kafka $1
-    monitor $1
+    forever $1
 }
 
 default(){
@@ -198,7 +198,7 @@ default(){
         auth $ID
         env $ID
         kafka $ID
-        monitor $ID
+        forever $ID
     done
     mkdir -p $CONFIG_DIR/backup
     rm -rf $CONFIG_DIR/backup/*
