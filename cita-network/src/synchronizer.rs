@@ -186,7 +186,7 @@ impl Synchronizer {
         }
     }
 
-    //发起同步请求
+    // 发起同步请求
     fn start_sync_req(&mut self, start_height: u64, end_height: u64) {
         debug!(
             "sync: start_sync_req: start_height = {}, end_height = {},current height = {}",

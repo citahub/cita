@@ -59,10 +59,9 @@ impl Forward {
         }
     }
 
-    //注意: 划分函数处理流程
-    pub fn dispatch_msg(&self, key: &str, msg: &[u8]) {
+    // 注意: 划分函数处理流程
+    pub fn dispatch_msg(&self, _key: &str, msg: &[u8]) {
         let (cmd_id, origin, content_ext) = parse_msg(msg);
-        trace!("dispatch_msg call {:?}", key);
         match content_ext {
             MsgClass::REQUEST(req) => {
                 self.reply_request(req);
@@ -75,8 +74,6 @@ impl Forward {
             MsgClass::SYNCREQUEST(sync_req) => {
                 if libproto::cmd_id(submodules::CHAIN, topics::SYNC_BLK) == cmd_id {
                     self.reply_syn_req(sync_req, origin);
-                } else {
-                    warn!("sync: other content.");
                 }
             }
 
@@ -88,9 +85,11 @@ impl Forward {
 
             MsgClass::MSG(content) => {
                 if libproto::cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) == cmd_id {
-                    self.proposal_enqueue(&content[..]);
-                } else {
-                    trace!("Receive other message content.");
+                    if !self.chain.is_sync.load(Ordering::SeqCst) {
+                        self.proposal_enqueue(&content[..]);
+                    } else {
+                        debug!("receive proposal while sync");
+                    }
                 }
             }
 
