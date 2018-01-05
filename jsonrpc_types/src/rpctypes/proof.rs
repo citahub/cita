@@ -21,7 +21,7 @@ use proof::{AuthorityRoundProof as AProof, TendermintProof as TProof};
 use std::collections::HashMap;
 use util::{Address, H256};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Proof {
     AuthorityRound(AuthorityRoundProof),
     Raft,
@@ -38,7 +38,7 @@ impl From<ProtoProof> for Proof {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct TendermintProof {
     pub proposal: H256,
     pub height: usize,
@@ -63,7 +63,7 @@ impl From<ProtoProof> for TendermintProof {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct AuthorityRoundProof {
     pub signature: String,
     pub step: u64,

@@ -20,7 +20,7 @@ use types::receipt::{LocalizedReceipt, Receipt as EthReceipt, RichReceipt};
 use util::{Bloom, H160, H256, U256};
 
 /// Receipt
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Receipt {
     /// Transaction Hash
     #[serde(rename = "transactionHash")]

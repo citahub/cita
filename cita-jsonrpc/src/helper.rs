@@ -1,6 +1,7 @@
 use futures::sync::oneshot;
-use jsonrpc_types::{Error, Id};
-use jsonrpc_types::request::{RpcRequest, Version};
+use jsonrpc_types::{Call, Error, Id};
+use jsonrpc_types::request::Version;
+use jsonrpc_types::response::Output;
 use libproto::request as reqlib;
 use serde_json;
 use std::collections::HashMap;
@@ -10,7 +11,7 @@ use util::Mutex;
 use ws;
 
 pub enum TransferType {
-    HTTP((ReqInfo, oneshot::Sender<Vec<u8>>)),
+    HTTP((ReqInfo, oneshot::Sender<Output>)),
     WEBSOCKET((ReqInfo, ws::Sender)),
 }
 
@@ -32,8 +33,8 @@ impl ReqInfo {
     }
 }
 
-pub fn encode_request(body: String) -> Result<RpcRequest, Error> {
-    let rpc: Result<RpcRequest, serde_json::Error> = serde_json::from_str(&body);
+pub fn encode_request(body: String) -> Result<Call, Error> {
+    let rpc: Result<Call, serde_json::Error> = serde_json::from_str(&body);
     match rpc {
         Err(_err_msg) => Err(Error::from(_err_msg)),
         Ok(rpc) => Ok(rpc),

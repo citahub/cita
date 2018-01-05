@@ -16,7 +16,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use error::ErrorCode;
-use libproto::*;
+use jsonrpc_types::rpctypes::TxResponse;
+use libproto::{communication, de_cmd_id, factory, id_to_key, parse_msg, submodules, topics, MsgClass, Response, Ret,
+               VerifyBlockResp, VerifyTxReq, VerifyTxResp};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction, UnverifiedTransaction};
 use protobuf::Message;
 use std::collections::{HashMap, HashSet};

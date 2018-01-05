@@ -413,6 +413,7 @@ dependencies = [
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "error 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "jsonrpc_types 0.1.0",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",

@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{Error, Params, RpcRequest};
+use super::{Call, Error, Params};
 //#[warn(non_snake_case)]
 use libproto::blockchain;
 use libproto::request as reqlib;
@@ -77,7 +77,7 @@ impl MethodHandler {
         request
     }
 
-    pub fn request(&self, rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn request(&self, rpc: Call) -> Result<reqlib::Request, Error> {
         match rpc.method.as_str() {
             method::CITA_BLOCK_BUMBER => self.block_number(rpc),
             method::NET_PEER_COUNT => self.peer_count(rpc),
@@ -102,10 +102,8 @@ impl MethodHandler {
             _ => Err(Error::method_not_found()),
         }
     }
-}
 
-impl MethodHandler {
-    pub fn send_transaction(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn send_transaction(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
@@ -153,7 +151,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn peer_count(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn peer_count(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 0 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -163,7 +161,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn block_number(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn block_number(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 0 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -173,7 +171,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn get_block_by_hash(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn get_block_by_hash(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 2 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -187,7 +185,7 @@ impl MethodHandler {
             })
     }
 
-    pub fn get_block_by_number(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn get_block_by_number(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 2 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -201,7 +199,7 @@ impl MethodHandler {
             })
     }
 
-    pub fn get_transaction(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn get_transaction(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -211,7 +209,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn call(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn call(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let len = self.params_len(&req_rpc.params)?;
         let params = match len {
@@ -251,7 +249,7 @@ impl MethodHandler {
             })
     }
 
-    pub fn get_logs(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn get_logs(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -261,7 +259,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn get_transaction_receipt(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn get_transaction_receipt(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -271,7 +269,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn get_transaction_count(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn get_transaction_count(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let tx_count = self.code_or_count(req_rpc)?;
         trace!("count = {:?}", tx_count);
@@ -279,7 +277,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    fn code_or_count(&self, req_rpc: RpcRequest) -> Result<String, Error> {
+    fn code_or_count(&self, req_rpc: Call) -> Result<String, Error> {
         if 2 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -291,14 +289,14 @@ impl MethodHandler {
         }
     }
 
-    pub fn get_code(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn get_code(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         let mut request = self.create_request();
         let code = self.code_or_count(req_rpc)?;
         request.set_code(code);
         Ok(request)
     }
 
-    pub fn new_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn new_filter(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -309,7 +307,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn new_block_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn new_block_filter(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 0 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -319,7 +317,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn uninstall_filter(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn uninstall_filter(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -330,7 +328,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn get_filter_changes(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn get_filter_changes(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }
@@ -340,7 +338,7 @@ impl MethodHandler {
         Ok(request)
     }
 
-    pub fn get_filter_logs(&self, req_rpc: RpcRequest) -> Result<reqlib::Request, Error> {
+    pub fn get_filter_logs(&self, req_rpc: Call) -> Result<reqlib::Request, Error> {
         if 1 != self.params_len(&req_rpc.params)? {
             return Err(Error::invalid_params_len());
         }

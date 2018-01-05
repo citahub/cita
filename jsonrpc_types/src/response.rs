@@ -18,18 +18,17 @@
 use Id;
 use bytes::Bytes;
 use error::Error;
-use libproto::TxResponse;
 use libproto::response::{Response, Response_oneof_data};
 use request::Version;
-use rpctypes::{Block, FilterChanges, Log, Receipt, RpcBlock, RpcTransaction};
+use rpctypes::{Block, FilterChanges, Log, Receipt, RpcBlock, RpcTransaction, TxResponse};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error as SError;
 use serde_json;
 use serde_json::{from_value, Value};
-use std::boxed::Box;
 use std::vec::Vec;
 use util::U256;
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ResultBody {
     BlockNumber(U256),
@@ -55,16 +54,16 @@ impl Default for ResultBody {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct RpcFailure {
-    pub jsonrpc: Option<Version>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub jsonrpc: Option<Version>,
     pub id: Id,
     pub error: Error,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct RpcSuccess {
-    pub jsonrpc: Option<Version>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub jsonrpc: Option<Version>,
     pub id: Id,
     pub result: ResultBody,
 }
@@ -84,16 +83,16 @@ impl RpcSuccess {
     }
 
     pub fn output(self) -> Output {
-        Output::Success(Box::new(self))
+        Output::Success(self)
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Output {
     /// Success
-    Success(Box<RpcSuccess>),
+    Success(RpcSuccess),
     /// Failure
-    Failure(Box<RpcFailure>),
+    Failure(RpcFailure),
 }
 
 impl Output {
@@ -166,25 +165,22 @@ impl Output {
                             serde_json::from_str::<Vec<Log>>(&log).unwrap(),
                         ))
                         .output(),
-                    Response_oneof_data::error_msg(err_msg) => Output::Failure(Box::new(RpcFailure::from_options(
+                    Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(
                         id.clone(),
                         jsonrpc.clone(),
                         Error::server_error(code, err_msg.as_ref()),
-                    ))),
+                    )),
                 }
             }
             _ => match data.data.unwrap() {
-                Response_oneof_data::error_msg(err_msg) => Output::Failure(Box::new(RpcFailure::from_options(
+                Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(
                     id.clone(),
                     jsonrpc.clone(),
                     Error::server_error(code, err_msg.as_ref()),
-                ))),
+                )),
                 _ => {
                     error!("return error message!!!");
-                    Output::Failure(Box::new(RpcFailure::from(Error::server_error(
-                        code,
-                        "system error!",
-                    ))))
+                    Output::Failure(RpcFailure::from(Error::server_error(code, "system error!")))
                 }
             },
         }
@@ -192,11 +188,11 @@ impl Output {
 
     /// Creates new failure output indicating malformed request.
     pub fn invalid_request(id: Id, jsonrpc: Option<Version>) -> Self {
-        Output::Failure(Box::new(RpcFailure {
+        Output::Failure(RpcFailure {
             id: id,
             jsonrpc: jsonrpc,
             error: Error::invalid_request(),
-        }))
+        })
     }
 }
 
@@ -241,6 +237,39 @@ impl RpcFailure {
             id: id,
             jsonrpc: jsonrpc,
             error: err,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum RpcResponse {
+    /// Single response
+    Single(Output),
+    /// Response to batch request (batch of responses)
+    Batch(Vec<Output>),
+}
+
+impl<'a> Deserialize<'a> for RpcResponse {
+    fn deserialize<D>(deserializer: D) -> Result<RpcResponse, D::Error>
+    where
+        D: Deserializer<'a>,
+    {
+        let v: Value = Deserialize::deserialize(deserializer)?;
+        from_value(v.clone())
+            .map(RpcResponse::Batch)
+            .or_else(|_| from_value(v).map(RpcResponse::Single))
+            .map_err(|_| D::Error::custom("")) // types must match
+    }
+}
+
+impl Serialize for RpcResponse {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match *self {
+            RpcResponse::Single(ref o) => o.serialize(serializer),
+            RpcResponse::Batch(ref b) => b.serialize(serializer),
         }
     }
 }

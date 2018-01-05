@@ -43,9 +43,7 @@ impl MqHandler {
                 if let Some(val) = value {
                     match val {
                         TransferType::HTTP((req_info, sender)) => {
-                            let _ = sender.send(
-                                serde_json::to_vec(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
-                            );
+                            let _ = sender.send(Output::from(content, req_info.id, req_info.jsonrpc));
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
                             let _ = sender.send(
