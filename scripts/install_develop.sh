@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -e -o pipefail
 
 sudo(){
     set -o noglob
@@ -49,4 +49,4 @@ which cargo || (curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain
 . ${HOME}/.cargo/env
 
 # 6.2) rustfmt
-cargo install --force --vers 0.2.17 rustfmt-nightly
+cargo install --force --vers 0.3.0 rustfmt-nightly
