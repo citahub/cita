@@ -270,11 +270,10 @@ impl Server {
                 method_handler: method::MethodHandler,
             }),
         };
-        let mut server = Http::new()
+        let server = Http::new()
             .keep_alive(true)
             .bind_listener(core, listener, new_service)
             .unwrap();
-        server.no_proto();
         server.run().unwrap();
     }
 }
