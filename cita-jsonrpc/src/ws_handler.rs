@@ -83,7 +83,7 @@ impl Handler for WsHandler {
                         jsonrpc: jsonrpc_version.clone(),
                         id: req_id.clone(),
                     };
-                    method_handler.request(rpc).map(|req| {
+                    method_handler.request(&rpc).map(|req| {
                         let request_id = req.request_id.clone();
                         //let data: communication::Message = _req.into();
                         //this.tx.send((topic, data.write_to_bytes().unwrap()));

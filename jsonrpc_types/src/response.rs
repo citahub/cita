@@ -168,7 +168,7 @@ impl Output {
                     Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(
                         id.clone(),
                         jsonrpc.clone(),
-                        Error::server_error(code, err_msg.as_ref()),
+                        Error::server_error(code, err_msg),
                     )),
                 }
             }
@@ -176,7 +176,7 @@ impl Output {
                 Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(
                     id.clone(),
                     jsonrpc.clone(),
-                    Error::server_error(code, err_msg.as_ref()),
+                    Error::server_error(code, err_msg),
                 )),
                 _ => {
                     error!("return error message!!!");

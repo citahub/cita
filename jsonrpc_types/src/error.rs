@@ -156,18 +156,24 @@ impl Error {
         }
     }
 
-    pub fn server_error(err_code: i64, err_msg: &str) -> Self {
+    pub fn server_error<M>(err_code: i64, message: M) -> Self
+    where
+        M: Into<String>,
+    {
         Error {
             code: ErrorCode::ServerError(err_code),
-            message: err_msg.to_owned(),
+            message: message.into(),
             data: None,
         }
     }
 
-    pub fn parse_error_msg(err_msg: &str) -> Self {
+    pub fn parse_error_with_message<M>(message: M) -> Self
+    where
+        M: Into<String>,
+    {
         Error {
             code: ErrorCode::ParseError,
-            message: err_msg.to_string(),
+            message: message.into(),
             data: Some(Value::Null),
         }
     }
@@ -176,7 +182,7 @@ impl Error {
     pub fn invalid_params_len() -> Self {
         Error {
             code: ErrorCode::InvalidParams,
-            message: "invalid JsonRpc params length".to_string(),
+            message: "invalid JsonRpc params length".to_owned(),
             data: None,
         }
     }

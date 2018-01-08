@@ -77,8 +77,8 @@ impl Service for Server {
                 let mapping = req.body().concat2().and_then(move |chunk| {
                     if let Ok(rpc) = serde_json::from_slice::<RpcRequest>(&chunk) {
                         match rpc {
-                            RpcRequest::Single(call) => match read_single(call, method_handler) {
-                                Ok((call, req)) => {
+                            RpcRequest::Single(call) => match read_single(&call, method_handler) {
+                                Ok(req) => {
                                     if let Ok(timeout) = Timeout::new(timeout, &reactor_handle) {
                                         let id = call.id.clone();
                                         let jsonrpc_version = call.jsonrpc.clone();
@@ -172,12 +172,15 @@ impl Service for Server {
     }
 }
 
-fn read_single(call: Call, method_handler: MethodHandler) -> Result<(Call, reqlib::Request), Response> {
-    match method_handler.request(call.clone()) {
-        Ok(req) => Ok((call, req)),
+fn read_single(call: &Call, method_handler: MethodHandler) -> Result<reqlib::Request, Response> {
+    match method_handler.request(call) {
+        Ok(req) => Ok(req),
         Err(e) => {
-            let resp_body = serde_json::to_vec(&RpcFailure::from_options(call.id, call.jsonrpc, e))
-                .expect("should be serialize by serde_json");
+            let resp_body = serde_json::to_vec(&RpcFailure::from_options(
+                call.id.clone(),
+                call.jsonrpc.clone(),
+                e,
+            )).expect("should be serialize by serde_json");
             Err(Response::new().with_body(resp_body))
         }
     }
@@ -207,7 +210,7 @@ fn handle_single(
 fn read_batch(calls: Vec<Call>, method_handler: MethodHandler) -> Result<Vec<(Call, reqlib::Request)>, Response> {
     let mut reqs = Vec::with_capacity(calls.len());
     for call in calls {
-        match method_handler.request(call.clone()) {
+        match method_handler.request(&call) {
             Ok(req) => {
                 reqs.push((call, req));
             }
