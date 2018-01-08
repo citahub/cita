@@ -108,6 +108,10 @@ fn main() {
         BufReader::new(config_file),
     ));
 
+    if let Some(block_tx_hashes) = chain.block_tx_hashes(chain.get_current_height()) {
+        chain.delivery_block_tx_hashes(chain.get_current_height(), block_tx_hashes, &ctx_pub);
+    }
+
     let (write_sender, write_receiver) = channel();
     let forward = Forward::new(Arc::clone(&chain), ctx_pub.clone(), write_sender);
 
