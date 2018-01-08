@@ -131,8 +131,11 @@ impl Service for Server {
                                         let resp = mq_resp.select2(timeout).then(move |res| match res {
                                             Ok(Either::A((got, _timeout))) => Ok(got),
                                             Ok(Either::B((_timeout_error, _get))) => {
-                                                for request_id in request_ids {
-                                                    timeout_responses.lock().remove(&request_id);
+                                                {
+                                                    let mut guard = timeout_responses.lock();
+                                                    for request_id in request_ids {
+                                                        guard.remove(&request_id);
+                                                    }
                                                 }
                                                 let failure = RpcFailure::from(Error::server_error(
                                                     ErrorCode::time_out_error(),
@@ -201,7 +204,7 @@ fn handle_single(
     {
         responses
             .lock()
-            .insert(request_id.clone(), TransferType::HTTP(req_info));
+            .insert(request_id, TransferType::HTTP(req_info));
     }
     let _ = sender.send((topic, req));
     rx.map(|resp_body| Response::new().with_body(serde_json::to_vec(&resp_body).unwrap()))
@@ -240,7 +243,7 @@ fn handle_batch(
         {
             responses
                 .lock()
-                .insert(request_id.clone(), TransferType::HTTP(req_info));
+                .insert(request_id, TransferType::HTTP(req_info));
         }
         let _ = sender.send((topic, req));
         rxs.push(rx);
