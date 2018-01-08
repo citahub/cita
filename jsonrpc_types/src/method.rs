@@ -369,7 +369,7 @@ mod tests {
     #[test]
     fn test_rpc_serialize() {
         let rpc_body = r#"{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":"1"}"#;
-        let rpc: RpcRequest = serde_json::from_str(rpc_body).unwrap();
+        let rpc: Call = serde_json::from_str(rpc_body).unwrap();
 
         assert_eq!(rpc.id, Id::Str("1".to_string()));
         assert_eq!(rpc.jsonrpc, Some(Version::V2));
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_rpc_deserialize() {
-        let rpc = RpcRequest {
+        let rpc = Call {
             jsonrpc: Some(Version::V2),
             method: method::CITA_BLOCK_BUMBER.to_owned(),
             id: Id::Str("2".to_string()),
@@ -395,7 +395,7 @@ mod tests {
 
     #[test]
     fn test_rpc_deserialize1() {
-        let rpc = RpcRequest {
+        let rpc = Call {
             jsonrpc: Some(Version::V2),
             method: method::CITA_BLOCK_BUMBER.to_owned(),
             id: Id::Str("2".to_string()),
@@ -411,7 +411,7 @@ mod tests {
 
     #[test]
     fn test_rpc_into() {
-        let rpc = RpcRequest {
+        let rpc = Call {
             jsonrpc: Some(Version::V2),
             method: method::CITA_BLOCK_BUMBER.to_owned(),
             id: Id::Str("2".to_string()),
@@ -428,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_rpc_into_err() {
-        let rpc = RpcRequest {
+        let rpc = Call {
             jsonrpc: Some(Version::V2),
             method: method::ETH_GET_TRANSACTION_RECEIPT.to_owned(),
             id: Id::Str("2".to_string()),
@@ -442,7 +442,7 @@ mod tests {
 
     #[test]
     fn test_rpc_into_err2() {
-        let rpc = RpcRequest {
+        let rpc = Call {
             jsonrpc: Some(Version::V2),
             method: "cita_xxx".to_owned(),
             id: Id::Str("2".to_string()),
@@ -464,7 +464,7 @@ mod tests {
         utx.set_transaction(tx);
         let utx_string = utx.write_to_bytes().unwrap();
 
-        let rpc1 = RpcRequest {
+        let rpc1 = Call {
             jsonrpc: Some(Version::V2),
             method: method::CITA_SEND_TRANSACTION.to_owned(),
             id: Id::Str("2".to_string()),
@@ -473,7 +473,7 @@ mod tests {
             ])),
         };
 
-        let rpc2 = RpcRequest {
+        let rpc2 = Call {
             jsonrpc: Some(Version::V2),
             method: method::CITA_SEND_TRANSACTION.to_owned(),
             id: Id::Str("2".to_string()),
@@ -497,7 +497,7 @@ mod tests {
                    \"0x0a283361653838666533373063333933383466633136646132633965373638\
                    6366356432343935623438120d31343932353139393038393631\"]}";
 
-        let request: RpcRequest = serde_json::from_str(rpc).unwrap();
+        let request: Call = serde_json::from_str(rpc).unwrap();
         let params: Result<(String, String), Error> = request.params.unwrap().parse();
         assert!(params.is_ok());
     }
@@ -510,7 +510,7 @@ mod tests {
                    \"params\":[\"0x0a28336165383866653337306333393338346663313664613263\
                    39653736386366356432343935623438120d31343932353139393038393631\"]}";
 
-        let request: RpcRequest = serde_json::from_str(rpc).unwrap();
+        let request: Call = serde_json::from_str(rpc).unwrap();
         let params: Result<(String, String), Error> = request.params.unwrap().parse();
         assert!(params.is_err());
     }
@@ -523,7 +523,7 @@ mod tests {
                    \"params\":[\"0x0a28336165383866653337306333393338346663313664613263\
                    39653736386366356432343935623438120d31343932353139393038393631\"]}";
 
-        let request: RpcRequest = serde_json::from_str(rpc).unwrap();
+        let request: Call = serde_json::from_str(rpc).unwrap();
         let params: Result<(String,), Error> = request.params.unwrap().parse();
         assert!(params.is_ok());
     }
@@ -538,7 +538,7 @@ mod tests {
                    0641a03303037220443495441280312417922853b51d097df76791aa10836942\
                    c66bc522c24c8804c93e9230fc67dde897bbed399fa0f9e9ac0abc598cd92215\
                    fb362b9e31251bf784511be61d045703e00\"],\"id\":2}";
-        let request: RpcRequest = serde_json::from_str(rpc).unwrap();
+        let request: Call = serde_json::from_str(rpc).unwrap();
         let params: Result<(String,), Error> = request.params.unwrap().parse();
         assert!(params.is_ok());
     }
@@ -552,7 +552,7 @@ mod tests {
                    \"data\":\"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f0724456\
                    75058bb8eb970870f072445675\"},\
                    \"22\"],\"id\":2}";
-        let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
+        let rpc_request: Call = serde_json::from_str(rpc).unwrap();
 
         let handler = MethodHandler;
         let request: Result<request::Request, Error> = handler.call(rpc_request);
@@ -593,7 +593,7 @@ mod tests {
                    \"data\":\"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f07\
                    2445675058bb8eb970870f072445675\"}],\
                    \"id\":2}";
-        let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
+        let rpc_request: Call = serde_json::from_str(rpc).unwrap();
 
         let handler = MethodHandler;
         let request: Result<request::Request, Error> = handler.call(rpc_request);
@@ -636,7 +636,7 @@ mod tests {
                    [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
                    \"0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc\"]]}],\
                    \"id\":2}";
-        let rpc_request: RpcRequest = serde_json::from_str(rpc).unwrap();
+        let rpc_request: Call = serde_json::from_str(rpc).unwrap();
         let handler = MethodHandler;
         let request: Result<request::Request, Error> = handler.get_logs(rpc_request.clone());
 
