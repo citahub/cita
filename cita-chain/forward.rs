@@ -101,7 +101,7 @@ impl Forward {
             // TODO: should check the result, parse it first!
             Request::block_number(_) => {
                 // let sys_time = SystemTime::now();
-                let height = self.chain.get_current_height();
+                let height = self.chain.get_max_store_height();
                 response.set_block_number(height);
             }
 
@@ -270,9 +270,10 @@ impl Forward {
             {
                 self.chain.block_map.write().insert(
                     blk_height,
-                    BlockInQueue::ConsensusBlock(rblock.clone(), proof),
+                    BlockInQueue::ConsensusBlock(rblock.clone(), proof.clone()),
                 );
             };
+            self.chain.save_current_block_poof(proof);
             self.chain
                 .max_store_height
                 .store(blk_height as usize, Ordering::SeqCst);

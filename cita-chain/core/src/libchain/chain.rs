@@ -723,12 +723,22 @@ impl Chain {
         self.max_height.load(Ordering::SeqCst) as u64
     }
 
+    pub fn get_max_store_height(&self) -> u64 {
+        self.max_store_height.load(Ordering::SeqCst) as u64
+    }
+
     pub fn current_state_root(&self) -> H256 {
         *self.current_header.read().state_root()
     }
 
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
         self.db.read(db::COL_EXTRA, &CurrentProof)
+    }
+
+    pub fn save_current_block_poof(&self,proof: ProtoProof) {
+        let mut batch = DBTransaction::new();
+        batch.write(db::COL_EXTRA, &CurrentProof, &proof);
+        self.db.write(batch).expect("save_current_block_poof DB write failed.");
     }
 
     pub fn get_chain_prooftype(&self) -> Option<ProofType> {
