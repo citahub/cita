@@ -676,37 +676,3 @@ impl Executor {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    extern crate rustc_serialize;
-
-    use self::rustc_serialize::hex::FromHex;
-    use super::*;
-    use std::env;
-    use std::sync::mpsc::channel;
-    use std::thread;
-    use util::{Address, H256};
-
-    #[test]
-    fn test_heapsizeof() {
-        let test: Vec<String> = Vec::new();
-        assert_eq!(test.heap_size_of_children(), 0);
-    }
-    #[test]
-    fn test_cache_size() {
-        let transaction_addresses: HashMap<TransactionId, TransactionAddress> = HashMap::new();
-        let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = HashMap::new();
-        let mut block_receipts: HashMap<H256, BlockReceipts> = HashMap::new();
-
-        assert_eq!(transaction_addresses.heap_size_of_children(), 0);
-        assert_eq!(blocks_blooms.heap_size_of_children(), 0);
-        assert_eq!(block_receipts.heap_size_of_children(), 0);
-
-        block_receipts.insert(
-            H256::from("000000000000000000000000000000000000000000000000123456789abcdef0"),
-            BlockReceipts::new(vec![]),
-        );
-        assert_eq!(block_receipts.heap_size_of_children(), 1856);
-    }
-}

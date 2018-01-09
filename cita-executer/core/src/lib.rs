@@ -61,6 +61,8 @@ pub mod state;
 pub mod account_db;
 pub mod executed;
 pub mod factory;
+#[cfg(test)]
+pub mod tests;
 pub mod action_params;
 pub mod db;
 pub mod state_db;

@@ -1134,16 +1134,8 @@ impl Chain {
 
 #[cfg(test)]
 mod tests {
-    extern crate rustc_serialize;
-
-    use self::rustc_serialize::hex::FromHex;
     use super::*;
-    use std::env;
-    use std::sync::mpsc::channel;
-    use std::thread;
-    use test::Bencher;
-    use tests::helpers::{bench_chain, create_block, init_chain, solc};
-    use util::{Address, H256};
+    use util::H256;
 
     #[test]
     fn test_heapsizeof() {
@@ -1165,65 +1157,5 @@ mod tests {
             BlockReceipts::new(vec![]),
         );
         assert_eq!(block_receipts.heap_size_of_children(), 1856);
-    }
-
-    #[test]
-    fn test_code_at() {
-        let chain = init_chain();
-        let source = r#"
-            pragma solidity ^0.4.8;
-
-            contract mortal {
-                /* Define variable owner of the type address*/
-                address owner;
-
-                /* this function is executed at initialization and sets the owner of the contract */
-                function mortal() { owner = msg.sender; }
-
-                /* Function to recover the funds on the contract */
-                function kill() { if (msg.sender == owner) selfdestruct(owner); }
-            }
-
-            contract greeter is mortal {
-                /* define variable greeting of the type string */
-                string greeting;
-
-                /* this runs when the contract is executed */
-                function greeter(string _greeting) public {
-                    greeting = _greeting;
-                }
-
-                /* main function */
-                function greet() constant returns (string) {
-                    return greeting;
-                }
-            }
-"#;
-        let (data, _) = solc("mortal", source);
-        println!("data: {:?}", data);
-
-        let block = create_block(&chain, Address::from(0), &data, (0, 2));
-        let (ctx_pub, recv) = channel();
-        thread::spawn(move || loop {
-            let _ = recv.recv();
-        });
-        chain.set_block(block.clone(), &ctx_pub);
-
-        let tx = &block.body.transactions[0];
-        let txhash = tx.hash();
-        let receipt = chain.localized_receipt(txhash).unwrap();
-
-        let contract_address = receipt.contract_address.unwrap();
-        println!("contract address: {}", contract_address);
-        let code = chain.code_at(&contract_address, BlockId::Latest);
-        assert!(code.is_some());
-        assert!(code.unwrap().is_some());
-
-        let tx1 = &block.body.transactions[1];
-        let tx1hash = tx1.hash();
-        let receipt1 = chain.localized_receipt(tx1hash).unwrap();
-
-        let contract_address1 = receipt1.contract_address.unwrap();
-        assert!(contract_address != contract_address1);
     }
 }

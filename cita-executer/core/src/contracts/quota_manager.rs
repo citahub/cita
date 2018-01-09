@@ -164,32 +164,9 @@ impl QuotaManager {
 mod tests {
     extern crate logger;
     extern crate mktemp;
-    use self::Executor;
     use super::*;
     use cita_crypto::{PrivKey, SIGNATURE_NAME};
-    use libchain::block::{Block, BlockBody};
-    use libproto::blockchain;
-    use std::time::UNIX_EPOCH;
-    use types::transaction::SignedTransaction;
-    use util::{Address, U256};
-    const EXECUTER_CONFIG: &str = include_str!("../../executer.json");
-
-    fn init_executor() -> Arc<Executor> {
-        let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
-        let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-        // Load from genesis json file
-        let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref()).expect("Failed to load genesis.");
-        let genesis = Genesis {
-            spec: spec,
-            block: Block::default(),
-        };
-        Arc::new(Executor::init_executor::<&[u8]>(
-            Arc::new(db),
-            genesis,
-            EXECUTER_CONFIG.as_ref(),
-        ))
-    }
+    use tests::helpers::init_executor;
 
     #[test]
     fn test_users() {
