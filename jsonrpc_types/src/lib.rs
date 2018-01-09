@@ -47,7 +47,7 @@ pub mod method;
 pub use self::error::*;
 pub use self::id::*;
 pub use self::params::*;
-pub use self::request::RpcRequest;
+pub use self::request::*;
 pub use serde_json::Value;
 pub use serde_json::to_string;
 pub use serde_json::value::to_value;

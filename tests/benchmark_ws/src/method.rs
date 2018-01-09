@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use jsonrpc_types::{Error, Id, Params, RpcRequest};
+use jsonrpc_types::{Call, Error, Id, Params, RpcRequest};
 use jsonrpc_types::method::method;
 use jsonrpc_types::request::Version;
 use jsonrpc_types::response::ResultBody;
@@ -36,7 +36,7 @@ where
 {
     fn request(&mut self, method: &str, params: Params, call_back: F) {
         let request_id = Uuid::new_v4().to_string();
-        let rpc = RpcRequest {
+        let rpc = Call {
             jsonrpc: Some(Version::V2),
             method: method.to_string(),
             id: Id::Str(request_id.clone()),

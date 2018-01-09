@@ -23,12 +23,12 @@ use libproto::blockchain::BlockHeader as ProtoBlockHeader;
 use protobuf::core::parse_from_bytes;
 use util::{H256, U256};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BlockBody {
     pub transactions: Vec<BlockTransaction>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BlockHeader {
     pub timestamp: u64,
     #[serde(rename = "prevHash")] pub prev_hash: H256,
@@ -40,7 +40,7 @@ pub struct BlockHeader {
     pub proof: Option<Proof>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Block {
     pub version: u32,
     pub hash: H256,

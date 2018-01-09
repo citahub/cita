@@ -26,6 +26,7 @@ extern crate core as chain_core;
 extern crate cpuprofiler;
 extern crate dotenv;
 extern crate error;
+extern crate jsonrpc_types;
 extern crate libproto;
 #[macro_use]
 extern crate log;
@@ -33,15 +34,14 @@ extern crate logger;
 extern crate protobuf;
 extern crate pubsub;
 extern crate rustc_serialize;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 extern crate threadpool;
 extern crate tx_pool;
 #[macro_use]
 extern crate util;
 extern crate uuid;
-
-#[macro_use]
-extern crate serde_derive;
 
 pub mod handler;
 pub mod verify;

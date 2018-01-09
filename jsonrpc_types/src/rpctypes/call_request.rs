@@ -19,7 +19,7 @@ use bytes::Bytes;
 use util::Address;
 
 /// Call request
-#[derive(Debug, Default, PartialEq, Deserialize)]
+#[derive(Debug, Default, PartialEq, Clone, Deserialize)]
 pub struct CallRequest {
     /// From
     pub from: Option<Address>,

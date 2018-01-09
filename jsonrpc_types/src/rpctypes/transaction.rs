@@ -23,13 +23,13 @@ use util::H256;
 use util::U256;
 
 // TODO: No need Deserialize. Just because test in trans.rs
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct FullTransaction {
     pub hash: H256,
     pub content: Bytes,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct RpcTransaction {
     pub hash: H256,
     pub content: Bytes,
@@ -38,7 +38,7 @@ pub struct RpcTransaction {
     pub index: U256,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BlockTransaction {
     Full(FullTransaction),

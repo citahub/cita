@@ -18,7 +18,8 @@
 extern crate tx_pool;
 
 use error::ErrorCode;
-use libproto::{communication, factory, submodules, topics, BatchRequest, Request, Response, TxResponse};
+use jsonrpc_types::rpctypes::TxResponse;
+use libproto::{communication, factory, submodules, topics, BatchRequest, Request, Response};
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use protobuf::{Message, RepeatedField};
 use serde_json;

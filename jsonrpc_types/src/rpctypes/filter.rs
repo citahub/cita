@@ -123,7 +123,7 @@ impl Into<EthFilter> for Filter {
 }
 
 // Results of the filter_changes RPC.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum FilterChanges {
     /// New logs.
     Logs(Vec<Log>),

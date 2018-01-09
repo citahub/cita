@@ -47,6 +47,14 @@ impl Params {
 
         from_value(value).map_err(|e| Error::invalid_params(format!("Invalid params: {}.", e)))
     }
+
+    pub fn len(&self) -> usize {
+        match *self {
+            Params::Array(ref vec) => vec.len(),
+            Params::Map(ref map) => map.len(),
+            Params::None => 0,
+        }
+    }
 }
 
 impl Serialize for Params {
