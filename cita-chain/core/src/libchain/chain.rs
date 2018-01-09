@@ -735,10 +735,12 @@ impl Chain {
         self.db.read(db::COL_EXTRA, &CurrentProof)
     }
 
-    pub fn save_current_block_poof(&self,proof: ProtoProof) {
+    pub fn save_current_block_poof(&self, proof: ProtoProof) {
         let mut batch = DBTransaction::new();
         batch.write(db::COL_EXTRA, &CurrentProof, &proof);
-        self.db.write(batch).expect("save_current_block_poof DB write failed.");
+        self.db
+            .write(batch)
+            .expect("save_current_block_poof DB write failed.");
     }
 
     pub fn get_chain_prooftype(&self) -> Option<ProofType> {
