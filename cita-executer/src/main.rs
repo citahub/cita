@@ -28,7 +28,7 @@ use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
-use util::panichandler::set_panic_handler;
+use util::set_panic_handler;
 
 fn main() {
     micro_service_init!("cita-executer", "CITA:executer");
