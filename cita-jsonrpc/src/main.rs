@@ -49,8 +49,7 @@ use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use std::time::{Duration, SystemTime};
 use tokio_core::reactor::Core;
-use util::Mutex;
-use util::panichandler::set_panic_handler;
+use util::{set_panic_handler, Mutex};
 use uuid::Uuid;
 use ws_handler::WsFactory;
 
