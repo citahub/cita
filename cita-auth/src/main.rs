@@ -61,8 +61,7 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
-use util::{Mutex, RwLock};
-use util::panichandler::set_panic_handler;
+use util::{set_panic_handler, Mutex, RwLock};
 use verify::Verifier;
 
 fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {

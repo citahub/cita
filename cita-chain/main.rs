@@ -57,7 +57,7 @@ use std::time;
 use std::time::Duration;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
-use util::panichandler::set_panic_handler;
+use util::set_panic_handler;
 
 fn main() {
     micro_service_init!("cita-chain", "CITA:chain");

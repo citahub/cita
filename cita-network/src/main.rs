@@ -60,7 +60,7 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 use synchronizer::Synchronizer;
-use util::panichandler::set_panic_handler;
+use util::set_panic_handler;
 
 fn main() {
     micro_service_init!("cita-network", "CITA:network");
