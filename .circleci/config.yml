@@ -15,6 +15,7 @@ jobs:
       - run: 
           name: build
           command: 'cargo build --all'
+          no_output_timeout: 20m
       - save_cache:
           key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
           paths:
