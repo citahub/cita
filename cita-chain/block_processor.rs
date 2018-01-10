@@ -117,7 +117,6 @@ impl BlockProcessor {
                         *self.chain.stage.write() = Stage::Idle;
                     }
                     self.chain.broadcast_status(&self.ctx_pub);
-                    info!("finish sync blocks to {}", number);
                     need_clean_map = true;
                 };
             }
@@ -171,7 +170,7 @@ impl BlockProcessor {
                 }
             }
             _ => {
-                warn!("block-{} in queue is invalid", number);
+                info!("block-{} in queue is without proof", number);
             }
         }
 
