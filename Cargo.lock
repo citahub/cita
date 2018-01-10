@@ -185,11 +185,7 @@ dependencies = [
 [[package]]
 name = "bigint"
 version = "3.0.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "heapsize 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -246,11 +242,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "blake2b"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "cc 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -258,11 +250,7 @@ dependencies = [
 [[package]]
 name = "bloomable"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "bigint 3.0.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
 ]
@@ -466,11 +454,7 @@ dependencies = [
 [[package]]
 name = "cita-crypto"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -481,11 +465,7 @@ dependencies = [
 [[package]]
 name = "cita-ed25519"
 version = "0.6.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -592,11 +572,7 @@ dependencies = [
 [[package]]
 name = "cita-secp256k1"
 version = "0.6.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "eth-secp256k1 0.5.7 (git+https://github.com/paritytech/rust-secp256k1?rev=6370d63adf4e8c91e2eae9225eef4b4e0294c5d0)",
@@ -612,11 +588,7 @@ dependencies = [
 [[package]]
 name = "cita-sm2"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -895,11 +867,7 @@ dependencies = [
 [[package]]
 name = "engine"
 version = "0.6.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "engine_json 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -913,11 +881,8 @@ dependencies = [
 [[package]]
 name = "engine_json"
 version = "0.6.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "serde 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -965,11 +930,7 @@ dependencies = [
 [[package]]
 name = "error"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 
 [[package]]
 name = "error-chain"
@@ -1032,11 +993,7 @@ dependencies = [
 [[package]]
 name = "ethcore-bloom-journal"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "siphasher 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1044,11 +1001,7 @@ dependencies = [
 [[package]]
 name = "ethcore-io"
 version = "1.8.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "crossbeam 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1060,11 +1013,7 @@ dependencies = [
 [[package]]
 name = "ethkey"
 version = "0.2.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "bigint 3.0.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1387,11 +1336,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "libproto"
 version = "0.6.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1492,11 +1437,7 @@ dependencies = [
 [[package]]
 name = "logger"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "chan-signal 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1831,11 +1772,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "proof"
 version = "0.6.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -1855,11 +1792,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "pubsub"
 version = "0.6.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub_kafka 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -1870,11 +1803,7 @@ dependencies = [
 [[package]]
 name = "pubsub_kafka"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "errno 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1887,11 +1816,7 @@ dependencies = [
 [[package]]
 name = "pubsub_rabbitmq"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "amqp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1899,11 +1824,7 @@ dependencies = [
 [[package]]
 name = "pubsub_zeromq"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "zmq 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2054,11 +1975,7 @@ dependencies = [
 [[package]]
 name = "rlp"
 version = "0.2.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "bigint 3.0.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2070,11 +1987,7 @@ dependencies = [
 [[package]]
 name = "rlp_derive"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2246,11 +2159,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "sha3"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "cc 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -2292,11 +2201,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "sm3"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 
 [[package]]
 name = "smallvec"
@@ -2541,11 +2446,7 @@ dependencies = [
 [[package]]
 name = "tx_pool"
 version = "0.6.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -2651,11 +2552,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "util"
 version = "0.6.0"
-<<<<<<< HEAD
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8b391f12942e8742dd47dae57fda59ad39b8f1ff"
-=======
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#6315a140bd55dbbcbf5b3b2e98e01f6278a4e36b"
->>>>>>> 4ca87eb... fix conflict
 dependencies = [
  "ansi_term 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bigint 3.0.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
