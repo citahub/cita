@@ -20,7 +20,7 @@
 use super::ContractCallExt;
 use super::encode_contract_name;
 use ethabi::{decode, ParamType};
-use libchain::chain::Chain;
+use libexecuter::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -87,9 +87,9 @@ pub struct QuotaManager;
 
 impl QuotaManager {
     /// Special account gas limit
-    pub fn specific(chain: &Chain) -> HashMap<Address, u64> {
-        let users = QuotaManager::users(chain);
-        let quota = QuotaManager::quota(chain);
+    pub fn specific(executor: &Executor) -> HashMap<Address, u64> {
+        let users = QuotaManager::users(executor);
+        let quota = QuotaManager::quota(executor);
         let mut specific = HashMap::new();
         for (k, v) in users.iter().zip(quota.iter()) {
             specific.insert(*k, *v);
@@ -98,8 +98,8 @@ impl QuotaManager {
     }
 
     /// Quota array
-    pub fn quota(chain: &Chain) -> Vec<u64> {
-        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*QUOTA_ENCODED.as_slice());
+    pub fn quota(executor: &Executor) -> Vec<u64> {
+        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*QUOTA_ENCODED.as_slice());
         trace!("quota output: {:?}", output);
 
         let mut decoded = decode(&[ParamType::Array(Box::new(ParamType::Uint(256)))], &output).unwrap();
@@ -117,8 +117,8 @@ impl QuotaManager {
     }
 
     /// Account array
-    pub fn users(chain: &Chain) -> Vec<Address> {
-        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*USERS_METHOD_HASH.as_slice());
+    pub fn users(executor: &Executor) -> Vec<Address> {
+        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*USERS_METHOD_HASH.as_slice());
         trace!("users output: {:?}", output);
 
         let mut decoded = decode(&[ParamType::Array(Box::new(ParamType::Address))], &output).unwrap();
@@ -132,8 +132,8 @@ impl QuotaManager {
     }
 
     /// Global gas limit
-    pub fn block_gas_limit(chain: &Chain) -> u64 {
-        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
+    pub fn block_gas_limit(executor: &Executor) -> u64 {
+        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
         trace!("block_gas_limit output: {:?}", output);
 
         let mut decoded = decode(&[ParamType::Uint(256)], &output).expect("decode quota");
@@ -146,8 +146,8 @@ impl QuotaManager {
     }
 
     /// Global account gas limit
-    pub fn account_gas_limit(chain: &Chain) -> u64 {
-        let output = chain.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
+    pub fn account_gas_limit(executor: &Executor) -> u64 {
+        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
         trace!("account_gas_limit output: {:?}", output);
 
         let mut decoded = decode(&[ParamType::Uint(256)], &output).expect("decode quota");
@@ -164,45 +164,31 @@ impl QuotaManager {
 mod tests {
     extern crate logger;
     extern crate mktemp;
-    use self::Chain;
+    use self::Executor;
     use super::*;
     use cita_crypto::{PrivKey, SIGNATURE_NAME};
     use libchain::block::{Block, BlockBody};
     use libproto::blockchain;
     use std::time::UNIX_EPOCH;
-    use tests::helpers::init_chain;
     use types::transaction::SignedTransaction;
     use util::{Address, U256};
+    const EXECUTER_CONFIG: &str = include_str!("../../executer.json");
 
-    #[allow(dead_code)]
-    fn create_block(chain: &Chain, privkey: &PrivKey, to: Address, data: Vec<u8>, nonce: (u32, u32)) -> Block {
-        let mut block = Block::new();
-
-        block.set_parent_hash(chain.get_current_hash());
-        block.set_timestamp(UNIX_EPOCH.elapsed().unwrap().as_secs());
-        block.set_number(chain.get_current_height() + 1);
-
-        let mut body = BlockBody::new();
-        let mut txs = Vec::new();
-        for i in nonce.0..nonce.1 {
-            let mut tx = blockchain::Transaction::new();
-            if to == Address::from(0) {
-                tx.set_to(String::from(""));
-            } else {
-                tx.set_to(to.hex());
-            }
-            tx.set_nonce(U256::from(i).to_hex());
-            tx.set_data(data.clone());
-            tx.set_valid_until_block(100);
-            tx.set_quota(999999);
-            let stx = tx.sign(*privkey);
-
-            let new_tx = SignedTransaction::new(&stx).unwrap();
-            txs.push(new_tx);
-        }
-        body.set_transactions(txs);
-        block.set_body(body);
-        block
+    fn init_executor() -> Arc<Executor> {
+        let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
+        let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
+        let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
+        // Load from genesis json file
+        let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref()).expect("Failed to load genesis.");
+        let genesis = Genesis {
+            spec: spec,
+            block: Block::default(),
+        };
+        Arc::new(Executor::init_executor::<&[u8]>(
+            Arc::new(db),
+            genesis,
+            EXECUTER_CONFIG.as_ref(),
+        ))
     }
 
     #[test]
@@ -219,10 +205,10 @@ mod tests {
             panic!("unexcepted signature algorithm");
         };
         println!("privkey: {:?}", privkey);
-        let chain = init_chain();
-        println!("init chain finish");
+        let executor = init_executor();
+        println!("init executor finish");
 
-        let users = QuotaManager::users(&chain);
+        let users = QuotaManager::users(&executor);
 
         assert_eq!(
             users,
@@ -246,10 +232,10 @@ mod tests {
             panic!("unexcepted signature algorithm");
         };
         println!("privkey: {:?}", privkey);
-        let chain = init_chain();
-        println!("init chain finish");
+        let executor = init_executor();
+        println!("init executor finish");
 
-        let quota = QuotaManager::quota(&chain);
+        let quota = QuotaManager::quota(&executor);
 
         assert_eq!(quota, vec![1073741824]);
     }
@@ -268,10 +254,10 @@ mod tests {
             panic!("unexcepted signature algorithm");
         };
         println!("privkey: {:?}", privkey);
-        let chain = init_chain();
-        println!("init chain finish");
+        let executor = init_executor();
+        println!("init executor finish");
 
-        let block_gas_limit = QuotaManager::block_gas_limit(&chain);
+        let block_gas_limit = QuotaManager::block_gas_limit(&executor);
 
         assert_eq!(block_gas_limit, 1073741824);
     }
@@ -290,10 +276,10 @@ mod tests {
             panic!("unexcepted signature algorithm");
         };
         println!("privkey: {:?}", privkey);
-        let chain = init_chain();
-        println!("init chain finish");
+        let executor = init_executor();
+        println!("init executor finish");
 
-        let account_gas_limit = QuotaManager::account_gas_limit(&chain);
+        let account_gas_limit = QuotaManager::account_gas_limit(&executor);
 
         assert_eq!(account_gas_limit, 268435456);
     }

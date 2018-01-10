@@ -21,13 +21,14 @@ use BlockNumber;
 use bloomable::Bloomable;
 use rlp::*;
 use std::ops::Deref;
-use util::{H256, Address, Bytes, HeapSizeOf, Hashable};
+use util::{Address, Bytes, H256, Hashable, HeapSizeOf};
+use libproto::executer::LogEntry as ProtoLogEntry;
 // use ethjson;
 
 pub type LogBloom = ::util::H2048;
 
 /// A record of execution for a `LOG` operation.
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 pub struct LogEntry {
     /// The address of the contract executing at the point of the `LOG` operation.
     pub address: Address,
@@ -66,9 +67,23 @@ impl HeapSizeOf for LogEntry {
 impl LogEntry {
     /// Calculates the bloom of this log entry.
     pub fn bloom(&self) -> LogBloom {
-        self.topics
-            .iter()
-            .fold(LogBloom::from_bloomed(&self.address.crypt_hash()), |b, t| b.with_bloomed(&t.crypt_hash()))
+        self.topics.iter().fold(
+            LogBloom::from_bloomed(&self.address.crypt_hash()),
+            |b, t| b.with_bloomed(&t.crypt_hash()),
+        )
+    }
+
+    pub fn protobuf(&self) -> ProtoLogEntry {
+        let mut proto_log_entry = ProtoLogEntry::new();
+
+        proto_log_entry.set_address(self.address.to_vec());
+        proto_log_entry.topics = self.topics
+            .clone()
+            .into_iter()
+            .map(|topic| topic.to_vec())
+            .collect();
+        proto_log_entry.set_data(self.data.clone());
+        proto_log_entry
     }
 }
 

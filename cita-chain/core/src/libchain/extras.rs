@@ -39,6 +39,10 @@ pub enum ExtrasIndex {
     BlocksBlooms = 2,
     /// Block hash index
     BlockHash = 3,
+    /// Block head index
+    BlockHeadHash = 4,
+    /// Block body index
+    BlockBodyHash = 5,
 }
 
 pub struct CurrentHash;
@@ -77,6 +81,14 @@ impl Key<BlockBody> for H256 {
     }
 }
 
+impl Key<BlockNumber> for H256 {
+    type Target = H256;
+
+    fn key(&self) -> H256 {
+        *self
+    }
+}
+
 pub struct BlockNumberKey([u8; 5]);
 
 impl Deref for BlockNumberKey {
@@ -84,6 +96,52 @@ impl Deref for BlockNumberKey {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+pub struct BlockNumberKeyLong([u8; 9]);
+
+impl Deref for BlockNumberKeyLong {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Key<Header> for BlockNumber {
+    type Target = BlockNumberKeyLong;
+
+    fn key(&self) -> Self::Target {
+        let mut result = [0u8; 9];
+        result[0] = ExtrasIndex::BlockHeadHash as u8;
+        result[1] = (self >> 56) as u8;
+        result[2] = (self >> 48) as u8;
+        result[3] = (self >> 40) as u8;
+        result[4] = (self >> 32) as u8;
+        result[5] = (self >> 24) as u8;
+        result[6] = (self >> 16) as u8;
+        result[7] = (self >> 8) as u8;
+        result[8] = *self as u8;
+        BlockNumberKeyLong(result)
+    }
+}
+
+impl Key<BlockBody> for BlockNumber {
+    type Target = BlockNumberKeyLong;
+
+    fn key(&self) -> Self::Target {
+        let mut result = [0u8; 9];
+        result[0] = ExtrasIndex::BlockBodyHash as u8;
+        result[1] = (self >> 56) as u8;
+        result[2] = (self >> 48) as u8;
+        result[3] = (self >> 40) as u8;
+        result[4] = (self >> 32) as u8;
+        result[5] = (self >> 24) as u8;
+        result[6] = (self >> 16) as u8;
+        result[7] = (self >> 8) as u8;
+        result[8] = *self as u8;
+        BlockNumberKeyLong(result)
     }
 }
 
@@ -165,7 +223,7 @@ impl Key<BloomGroup> for LogGroupPosition {
 }
 
 /// Represents address of certain transaction within block
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct TransactionAddress {
     /// Block hash
     pub block_hash: H256,

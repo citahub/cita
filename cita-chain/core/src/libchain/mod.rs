@@ -19,13 +19,10 @@ pub mod cache;
 pub mod chain;
 pub mod transaction;
 pub mod block;
-pub mod genesis;
 mod extras;
-pub mod call_request;
 pub mod status;
 pub mod rich_status;
 
-pub use self::genesis::Genesis;
 pub use libproto::*;
 pub use log::*;
 pub use util::journaldb;

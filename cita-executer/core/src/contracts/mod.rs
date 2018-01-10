@@ -25,8 +25,8 @@ pub use self::account_manager::AccountManager;
 pub use self::node_manager::NodeManager;
 pub use self::quota_manager::{AccountGasLimit, QuotaManager};
 
-use libchain::call_request::CallRequest;
-use libchain::chain::Chain;
+use libexecuter::call_request::CallRequest;
+use libexecuter::executor::Executor;
 use sha3::sha3_256;
 use types::ids::BlockId;
 use util::{Address, H160, U256};
@@ -55,7 +55,7 @@ trait ContractCallExt {
     fn call_contract_method(&self, address: &Address, encoded_method: &[u8]) -> Vec<u8>;
 }
 
-impl ContractCallExt for Chain {
+impl ContractCallExt for Executor {
     fn call_contract_method(&self, address: &Address, encoded_method: &[u8]) -> Vec<u8> {
         let call_request = CallRequest {
             from: None,

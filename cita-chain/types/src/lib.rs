@@ -20,6 +20,8 @@ extern crate bloomable;
 extern crate cita_crypto as crypto;
 extern crate libproto;
 extern crate rlp;
+#[macro_use]
+extern crate serde_derive;
 extern crate util;
 pub mod account_diff;
 pub mod basic_account;

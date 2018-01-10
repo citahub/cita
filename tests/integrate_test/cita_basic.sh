@@ -27,7 +27,7 @@ for i in {0..3} ; do
 done
 for i in {0..3} ; do
     sed -i 's/"check_permission": true/"check_permission": false/g' node$i/chain.json
-    bin/cita start node$i debug > /dev/null
+    bin/cita start node$i trace > /dev/null
 done
 echo "DONE"
 
@@ -73,7 +73,7 @@ echo "${timeout}s DONE"
 
 ################################################################################
 echo -n "9) start node2, check height growth  ...  "
-bin/cita start node2 debug
+bin/cita start node2 trace
 timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
                                                exit 1)
@@ -87,7 +87,7 @@ if [ $? -ne 0 ] ; then
     echo "failed to get_height: ${node0_height}"
     exit 1
 fi
-bin/cita start node3 debug
+bin/cita start node3 trace 
 timeout=$(check_height_sync 3 0) || (echo "FAILED"
                                      echo "failed to check_height_synch 3 0: ${timeout}"
                                      exit 1)
@@ -105,7 +105,7 @@ for i in {0..3}; do
 done
 # sleep 1 # TODO: change to this value will produce very different result
 for i in {0..3}; do
-    bin/cita start node$i debug
+    bin/cita start node$i trace 
 done
 
 timeout=$(check_height_growth_normal 0 300) || (echo "FAILED"
@@ -124,7 +124,7 @@ echo "${timeout}s DONE"
 echo -n "12) stop&clean node3, check height synch after restart  ...  "
 bin/cita stop node3
 bin/cita clean node3
-bin/cita start node3 debug
+bin/cita start node3 trace 
 timeout=$(check_height_sync 3 0) || (echo "FAILED"
                                      echo "failed to check_height_synch 3 0: ${timeout}"
                                      exit 1)

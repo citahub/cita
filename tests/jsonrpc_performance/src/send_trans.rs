@@ -35,6 +35,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::time;
 use trans::*;
+use uuid::Uuid;
 
 static mut START_H: u64 = 1;
 
@@ -67,6 +68,7 @@ pub struct Sendtx {
     tx_format_err: bool,
     sys_time: Arc<Mutex<time::SystemTime>>,
     curr_height: u64,
+    is_change_acct: bool,
 }
 
 #[allow(non_snake_case)]
@@ -94,6 +96,7 @@ impl Sendtx {
             tx_format_err: param.tx_format_err,
             sys_time: Arc::new(Mutex::new(time::SystemTime::now())),
             curr_height: 0,
+            is_change_acct: param.is_change_acct,
         };
         trans
     }
@@ -308,6 +311,7 @@ impl Sendtx {
                         frompv,
                         self.curr_height + 88,
                         self.quota,
+                        "0".to_owned(),
                         false,
                     )
                 }
@@ -319,17 +323,23 @@ impl Sendtx {
                         frompv,
                         self.curr_height + 88,
                         self.quota,
+                        "0".to_owned(),
                         true,
                     )
                 }
                 TxCtx::Correct => {
                     //正确交易
+                    if !self.is_change_acct {
+                        pv_change = false;
+                    }
+                    let nonce = Uuid::new_v4().to_string();
                     Trans::generate_tx(
                         &self.code,
                         self.contract_address.clone(),
                         frompv,
                         self.curr_height + 88,
                         self.quota,
+                        nonce,
                         false,
                     )
                 }
@@ -557,7 +567,7 @@ impl Sendtx {
                             end_h: {}
                             jsonrpc use time: {} ms
                             tps: {}
-                            single tx respone time: {} ns"#,
+                            single tx respone time: {} ns\n"#,
                             buf, totaltx, sucess, fail, START_H, _end_h, secs, tps, single_tx_response_time
                         );
                         let path = Path::new("jsonrpc_performance.txt");

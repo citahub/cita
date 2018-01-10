@@ -21,7 +21,7 @@ use basic_types::LogBloom;
 use cita_ed25519::Error as EthkeyError;
 use ethcore_io::*;
 
-pub use executed::{ExecutionError, CallError};
+
 use header::BlockNumber;
 use std::fmt;
 use util::*;
@@ -212,6 +212,83 @@ impl fmt::Display for ImportError {
         };
 
         f.write_fmt(format_args!("Block import error ({})", msg))
+    }
+}
+
+/// Result of executing the transaction.
+#[derive(PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "ipc", binary)]
+pub enum ExecutionError {
+    /// Returned when there gas paid for transaction execution is
+    /// lower than base gas required.
+    NotEnoughBaseGas {
+        /// Absolute minimum gas required.
+        required: U256,
+        /// Gas provided.
+        got: U256,
+    },
+    /// Returned when block (gas_used + gas) > gas_limit.
+    ///
+    /// If gas =< gas_limit, upstream may try to execute the transaction
+    /// in next block.
+    BlockGasLimitReached {
+        /// Gas limit of block for transaction.
+        gas_limit: U256,
+        /// Gas used in block prior to transaction.
+        gas_used: U256,
+        /// Amount of gas in block.
+        gas: U256,
+    },
+    AccountGasLimitReached {
+        /// Account Gas limit left
+        gas_limit: U256,
+        /// Amount of gas in transaction
+        gas: U256,
+    },
+    /// Returned when transaction nonce does not match state nonce.
+    InvalidNonce {
+        /// Nonce expected.
+        expected: U256,
+        /// Nonce found.
+        got: U256,
+    },
+    /// Returned when cost of transaction (value + gas_price * gas) exceeds
+    /// current sender balance.
+    NotEnoughCash {
+        /// Minimum required balance.
+        required: U512,
+        /// Actual balance.
+        got: U512,
+    },
+    NoTransactionPermission,
+    NoContractPermission,
+    /// Returned when internal evm error occurs.
+    Internal(String),
+    /// Returned when generic transaction occurs
+    TransactionMalformed(String),
+}
+
+impl fmt::Display for ExecutionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ExecutionError::*;
+
+        let msg = match *self {
+            NotEnoughBaseGas { ref required, ref got } => format!("Not enough base gas. {} is required, but only {} paid", required, got),
+            BlockGasLimitReached {
+                ref gas_limit,
+                ref gas_used,
+                ref gas,
+            } => format!("Block gas limit reached. The limit is {}, {} has already been used, and {} more is required", gas_limit, gas_used, gas),
+            AccountGasLimitReached { ref gas_limit, ref gas } => format!("Account gas limit reached. The limit is {}, {} more is required", gas_limit, gas),
+            InvalidNonce { ref expected, ref got } => format!("Invalid transaction nonce: expected {}, found {}", expected, got),
+            NotEnoughCash { ref required, ref got } => format!("Cost of transaction exceeds sender balance. {} is required but the sender only has {}", required, got),
+            Internal(ref msg) => msg.clone(),
+            TransactionMalformed(ref err) => format!("Malformed transaction: {}", err),
+            NoTransactionPermission => "No transaction permission".to_owned(),
+            NoContractPermission => "No contract permission".to_owned(),
+        };
+
+        f.write_fmt(format_args!("Transaction execution error ({}).", msg))
     }
 }
 

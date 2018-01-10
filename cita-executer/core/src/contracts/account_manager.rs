@@ -18,8 +18,8 @@
 //! Account Permission manager.
 
 use super::parse_output_to_addresses;
-use libchain::call_request::CallRequest;
-use libchain::chain::Chain;
+use libexecuter::call_request::CallRequest;
+use libexecuter::executor::Executor;
 use rustc_hex::FromHex;
 use sha3::sha3_256;
 use std::collections::HashSet;
@@ -50,7 +50,7 @@ lazy_static! {
 pub struct AccountManager;
 
 impl AccountManager {
-    pub fn load_senders(chain: &Chain) -> HashSet<Address> {
+    pub fn load_senders(executor: &Executor) -> HashSet<Address> {
         let mut senders = HashSet::new();
         let mut tx_data = METHOD_NAME_HASH.to_vec().clone();
         tx_data.extend(QUERY_TX.to_vec());
@@ -61,7 +61,7 @@ impl AccountManager {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = chain
+        let output = executor
             .eth_call(call_request, BlockId::Latest)
             .expect("load senders eth call");
         trace!("read account which has tx permission output: {:?}", output);
@@ -73,7 +73,7 @@ impl AccountManager {
         senders
     }
 
-    pub fn load_creators(chain: &Chain) -> HashSet<Address> {
+    pub fn load_creators(executor: &Executor) -> HashSet<Address> {
         let mut creators = HashSet::new();
         let mut contract_data = METHOD_NAME_HASH.to_vec().clone();
         contract_data.extend(QUERY_CONTRACT.to_vec());
@@ -84,7 +84,7 @@ impl AccountManager {
         };
 
         trace!("data: {:?}", call_request.data);
-        let output = chain
+        let output = executor
             .eth_call(call_request, BlockId::Latest)
             .expect("load creators eth call");
         trace!(

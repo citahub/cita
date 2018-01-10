@@ -51,6 +51,7 @@ impl Trans {
         pv: &PrivKey,
         valid_until_block: u64,
         quota: u64,
+        nonce: String,
         sign_err: bool,
     ) -> UnverifiedTransaction {
         let data = code.from_hex().unwrap();
@@ -59,7 +60,7 @@ impl Trans {
         tx.set_data(data);
         //设置空，则创建合约
         tx.set_to(address);
-        tx.set_nonce("0".to_string());
+        tx.set_nonce(nonce);
         tx.set_valid_until_block(valid_until_block);
         tx.set_quota(quota);
         let mut signed_tx = tx.sign(*pv);

@@ -45,7 +45,7 @@ use block_processor::BlockProcessor;
 use clap::App;
 use core::db;
 use core::libchain;
-use core::libchain::Genesis;
+//use core::libchain::Genesis;
 use forward::Forward;
 use pubsub::start_pubsub;
 use std::fs::File;
@@ -69,10 +69,10 @@ fn main() {
         .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
         .get_matches();
 
-    let mut genesis_path = "genesis";
+    //let mut genesis_path = "genesis";
     if let Some(ge) = matches.value_of("genesis") {
         trace!("Value for genesis: {}", ge);
-        genesis_path = ge;
+        // genesis_path = ge;
     }
 
     let mut config_path = "config";
@@ -91,8 +91,7 @@ fn main() {
             "consensus.blk",
             "jsonrpc.request",
             "auth.blk_tx_hashs_req",
-            "consensus.msg",
-            "net.msg",
+            "executor.result",
         ],
         tx,
         crx_pub,
@@ -102,18 +101,12 @@ fn main() {
     trace!("nosql_path is {:?}", nosql_path);
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &nosql_path).unwrap();
-    let genesis = Genesis::init(genesis_path);
+    //let genesis = Genesis::init(genesis_path);
     let config_file = File::open(config_path).unwrap();
     let chain = Arc::new(libchain::chain::Chain::init_chain(
         Arc::new(db),
-        genesis,
         BufReader::new(config_file),
     ));
-
-    let block_tx_hashes = chain
-        .block_tx_hashes(chain.get_current_height())
-        .expect("shoud return current block tx hashes");
-    chain.delivery_block_tx_hashes(chain.get_current_height(), block_tx_hashes, &ctx_pub);
 
     let (write_sender, write_receiver) = channel();
     let forward = Forward::new(Arc::clone(&chain), ctx_pub.clone(), write_sender);
@@ -125,16 +118,19 @@ fn main() {
     //chain 读数据 => 查询数据
     thread::spawn(move || loop {
         if let Ok((key, msg)) = rx.recv() {
-            forward.dispatch_msg(&key, &msg[..]);
+            forward.dispatch_msg(&key, &msg);
         }
     });
 
     //chain 写数据 => 添加块
-    thread::spawn(move || loop {
-        if let Ok(number) = write_receiver.recv_timeout(Duration::new(8, 0)) {
-            block_processor.set_block(number);
-        } else {
-            block_processor.broadcast_current_status();
+    thread::spawn(move || {
+        loop {
+            if let Ok(einfo) = write_receiver.recv_timeout(Duration::new(18, 0)) {
+                block_processor.set_excuted_result(einfo);
+            } else {
+                //here maybe need send blockbody when max_store_height > max_height
+                block_processor.broadcast_current_block();
+            }
         }
     });
 

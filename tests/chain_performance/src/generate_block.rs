@@ -16,8 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, Infinite};
-use core::libchain::block::Block;
-use core::transaction::SignedTransaction;
+use core_executer::libexecuter::block::Block;
+use core_executer::transaction::SignedTransaction;
 use crypto::*;
 use libproto::{communication, factory, submodules, topics};
 use libproto::blockchain::Transaction;

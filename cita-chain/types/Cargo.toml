@@ -11,6 +11,8 @@ bloomable = { git = "https://github.com/cryptape/cita-common.git", branch = "dev
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rustc-hex = "1.0"
+serde = "1.0"
+serde_derive = "1.0"
 
 [features]
 default = ["secp256k1", "sha3hash"]
