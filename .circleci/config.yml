@@ -4,6 +4,7 @@ jobs:
     docker:
       - image: cita/cita-build:latest
     working_directory: ~/cita-build
+    resource_class: large
     steps:
       - checkout
       - run:
@@ -14,7 +15,7 @@ jobs:
           command: 'cargo fmt --all  -- --write-mode diff'
       - run: 
           name: build
-          command: 'cargo build -j1 --all'
+          command: 'cargo build --all'
           no_output_timeout: 20m
       - save_cache:
           key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
@@ -29,6 +30,7 @@ jobs:
     docker:
       - image: cita/cita-build:latest
     working_directory: ~/cita-build
+    resource_class: large
     steps:
       - restore_cache:
           key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
@@ -42,6 +44,7 @@ jobs:
     docker:
       - image: cita/cita-build:latest
     working_directory: ~/cita-build
+    resource_class: large
     steps:
       - restore_cache:
           key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
