@@ -16,8 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use common_types::receipt::LocalizedReceipt;
-use core::libchain::Genesis;
-use core::libchain::chain::*;
+use core::libchain::chain::Chain;
+use core_executer::libexecuter::Genesis;
+use core_executer::libexecuter::executor::Block;
+use core_executer::libexecuter::executor::Executor;
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::Arc;
@@ -27,32 +29,39 @@ use util::KeyValueDB;
 
 #[allow(unused_variables, dead_code)]
 #[derive(Clone)]
-pub struct Callchain {
-    chain: Arc<Chain>,
+pub struct Callexet {
+    pub exet: Arc<Executor>,
+    pub chain: Arc<Chain>,
 }
 
 #[allow(unused_variables, dead_code)]
-impl Callchain {
-    pub fn new(db: Arc<KeyValueDB>, genesis: Genesis, path: &str) -> Self {
+impl Callexet {
+    pub fn new(db: Arc<KeyValueDB>, chain: Arc<Chain>, genesis: Genesis, path: &str) -> Self {
         let config_file = File::open(path).unwrap();
-        Callchain {
-            chain: Arc::new(Chain::init_chain(db, genesis, BufReader::new(config_file))),
+        Callexet {
+            exet: Arc::new(Executor::init_executor(
+                db,
+                genesis,
+                BufReader::new(config_file),
+            )),
+            chain: chain,
         }
     }
 
     pub fn add_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        self.chain.set_block(block, ctx_pub);
+        self.exet.execute_block(block, ctx_pub);
     }
 
     pub fn get_height(&self) -> u64 {
-        self.chain.get_current_height()
+        self.exet.get_current_height()
     }
 
     pub fn get_pre_hash(&self) -> H256 {
-        self.chain.get_current_hash()
+        self.exet.get_current_hash()
     }
 
     pub fn get_contract_address(&self, hash: H256) -> H160 {
+        info!("------------------  get_contract_address {:?}", hash);
         let receipt = self.chain.localized_receipt(hash).unwrap();
         match receipt.contract_address {
             Some(contract_address) => contract_address,
@@ -61,6 +70,10 @@ impl Callchain {
     }
 
     pub fn get_receipt(&self, hash: H256) -> LocalizedReceipt {
+        info!(
+            "------------------- self.chain.localized_receipt(hash) {:?}",
+            hash
+        );
         self.chain.localized_receipt(hash).unwrap()
     }
 }

@@ -11,5 +11,6 @@
     "contract_address": "",
     "quota": 1000,
     "tx_type": "Correct",
-    "tx_format_err": false
+    "tx_format_err": false,
+    "is_change_acct": false
 }

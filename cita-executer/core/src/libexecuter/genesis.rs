@@ -15,12 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crypto::digest::Digest;
-use crypto::md5::Md5;
 use db::{self as db, Writable};
 use factory::Factories;
-use libchain::block::Block;
-use libchain::extras::*;
+use libexecuter::block::Block;
+use libexecuter::extras::*;
 use rustc_hex::FromHex;
 use serde_json;
 use state::State;
@@ -28,9 +26,6 @@ use state_db::StateDB;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
-use std::io::Read;
-use std::path::Path;
-use std::str::FromStr;
 use std::sync::Arc;
 use util::{Address, H256, U256, clean_0x};
 use util::kvdb::KeyValueDB;
@@ -60,37 +55,6 @@ impl Genesis {
         let config_file = File::open(path).unwrap();
         let fconfig = BufReader::new(config_file);
         let spec: Spec = serde_json::from_reader(fconfig).expect("Failed to load genesis.");
-
-        // check resource with pre hash in genesis
-        // default pre hash is zero
-        let mut pre_hash = H256::zero();
-        // resource folder at the same place with genesis file
-        let resource_path = Path::new(path).parent().unwrap().join("resource");
-        if resource_path.exists() {
-            let file_list_path = resource_path.join("file_list");
-            if file_list_path.exists() {
-                let file_list = File::open(file_list_path).unwrap();
-                let mut buf_reader = BufReader::new(file_list);
-                let mut contents = String::new();
-                buf_reader.read_to_string(&mut contents).unwrap();
-                let mut hasher = Md5::new();
-                for p in contents.lines() {
-                    let path = resource_path.join(p);
-                    let file = File::open(path).unwrap();
-                    let mut buf_reader = BufReader::new(file);
-                    let mut buf = Vec::new();
-                    buf_reader.read_to_end(&mut buf).unwrap();
-                    hasher.input(&buf);
-                }
-                let mut hash_str = "0x00000000000000000000000000000000".to_string();
-                hash_str += &hasher.result_str();
-                info!("resource hash {}", hash_str);
-                pre_hash = H256::from_str(hash_str.as_str()).unwrap();
-            }
-        }
-
-        assert_eq!(pre_hash, spec.prevhash);
-
         Genesis {
             spec: spec,
             block: Block::default(),
@@ -151,6 +115,7 @@ impl Genesis {
         let root = *state.root();
         trace!("root {:?}", root);
         self.block.set_state_root(root);
+
         let db = state.clone().db();
         let journal_db = db.journal_db();
         self.save(state, journal_db.backing())
@@ -160,8 +125,8 @@ impl Genesis {
         let mut batch = db.transaction();
         let hash = self.block.hash();
         let height = self.block.number();
+        //初始化的时候需要获取头部信息
         batch.write(db::COL_HEADERS, &hash, self.block.header());
-        batch.write(db::COL_BODIES, &hash, self.block.body());
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
         batch.write(db::COL_EXTRA, &height, &hash);
         state

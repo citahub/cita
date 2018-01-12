@@ -60,7 +60,7 @@ impl EthFilter for Chain {
                     let current_number = self.get_current_height() + 1;
                     let hashes = (*block_number..current_number)
                         .into_iter()
-                        .filter_map(|_id| self.block_hash(_id))
+                        .filter_map(|_id| self.block_hash_by_height(_id))
                         .collect::<Vec<H256>>();
 
                     *block_number = current_number;

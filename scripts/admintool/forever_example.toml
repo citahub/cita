@@ -37,3 +37,10 @@ command = "cita-chain"
 args = ["-g","genesis.json","-c","chain.json"]
 pidfile = ".cita-chain.pid"
 respawn = 3
+
+[[process]]
+name = "cita-executer"
+command = "cita-executer"
+args = ["-g","genesis.json","-c","executer.json"]
+pidfile = ".cita-executer.pid"
+respawn = 3

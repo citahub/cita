@@ -20,6 +20,7 @@ extern crate cita_crypto as crypto;
 extern crate clap;
 extern crate common_types;
 extern crate core;
+extern crate core_executer;
 extern crate cpuprofiler;
 extern crate dotenv;
 extern crate libproto;
@@ -35,12 +36,14 @@ extern crate logger;
 extern crate serde_derive;
 
 mod generate_block;
-mod call_chain;
+mod call_exet;
 
-use call_chain::Callchain;
+use call_exet::Callexet;
 use clap::App;
-use core::db;
-use core::libchain::Genesis;
+use core::libchain::*;
+use core::libchain::block::Block as ChainBlock;
+use core_executer::db;
+use core_executer::libexecuter::Genesis;
 use cpuprofiler::PROFILER;
 use generate_block::Generateblock;
 use std::{thread, time};
@@ -49,11 +52,13 @@ use std::sync::mpsc::channel;
 use util::H256;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
+//use common_types::receipt;
+use std::io::BufReader;
 
 //创建合约交易性能
 fn create_contract(
     block_tx_num: i32,
-    call: Callchain,
+    call: Callexet,
     pre_hash: H256,
     flag_prof_start: u64,
     flag_prof_duration: u64,
@@ -87,9 +92,28 @@ fn create_contract(
     info!("===============start add block===============");
     profifer(flag_prof_start, flag_prof_duration);
     let sys_time = time::SystemTime::now();
-    let (ctx_pub, recv) = channel();
-    thread::spawn(move || loop {
-        let _ = recv.recv();
+    let (ctx_pub, recv) = channel::<(String, Vec<u8>)>();
+    let inblock = block.clone();
+    let inchain = call.chain.clone();
+    thread::spawn(move || {
+        loop {
+            if let Ok((_, msg)) = recv.recv() {
+                let (_, _, content_ext) = parse_msg(msg.clone().as_slice());
+                match content_ext {
+                    MsgClass::EXECUTED(info) => {
+                        //info!("**** get excuted info {:?}", info);
+                        let pro = inblock.protobuf();
+                        let chan_block = ChainBlock::from(pro);
+                        inchain.set_block_body(h, &chan_block);
+                        inchain.set_db_result(&info, &chan_block);
+                    }
+
+                    _ => {}
+                }
+            } else {
+                break;
+            }
+        }
     });
     call.add_block(block.clone(), &ctx_pub);
     info!("===============end add block===============");
@@ -101,12 +125,14 @@ fn create_contract(
         send_data.len(),
         secs
     );
+
+    std::thread::sleep(std::time::Duration::new(5, 0));
     info!("receipt = {:?}", call.get_receipt(hash));
 }
 
 //发送合约交易性能
 #[allow(unused_assignments)]
-fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_prof_start: u64, flag_prof_duration: u64) {
+fn send_contract_tx(block_tx_num: i32, call: Callexet, pre_hash: H256, flag_prof_start: u64, flag_prof_duration: u64) {
     //构造创建合约的交易交易
     let mut code = "60606040523415600e57600080fd5b5b5b5b609480\
                     61001f6000396000f30060606040526000357c0100\
@@ -124,15 +150,32 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
     hash = tx.hash();
     txs.push(tx);
 
-    let (ctx_pub, recv) = channel();
+    let (ctx_pub, recv) = channel::<(String, Vec<u8>)>();
+
+    let h = call.get_height() + 1;
+    let (_, block) = Generateblock::build_block(txs.clone(), pre_hash, h as u64);
+    let inblock = block.clone();
+    let inchain = call.chain.clone();
     thread::spawn(move || loop {
-        let _ = recv.recv();
+        if let Ok((_, msg)) = recv.recv() {
+            let (_, _, content_ext) = parse_msg(msg.clone().as_slice());
+            match content_ext {
+                MsgClass::EXECUTED(info) => {
+                    let pro = inblock.protobuf();
+                    let chan_block = ChainBlock::from(pro);
+                    inchain.set_block_body(h, &chan_block);
+                    inchain.set_db_result(&info, &chan_block);
+                }
+
+                _ => {}
+            }
+        } else {
+            break;
+        }
     });
 
     //构造block
     {
-        let h = call.get_height() + 1;
-        let (_, block) = Generateblock::build_block(txs.clone(), pre_hash, h as u64);
         call.add_block(block.clone(), &ctx_pub);
     }
 
@@ -164,6 +207,8 @@ fn send_contract_tx(block_tx_num: i32, call: Callchain, pre_hash: H256, flag_pro
         send_data.len(),
         secs
     );
+
+    std::thread::sleep(std::time::Duration::new(5, 0));
     info!("receipt = {:?}", call.get_receipt(hash));
 }
 
@@ -220,12 +265,20 @@ fn main() {
 
     //数据库配置
     let nosql_path = DataPath::nosql_path();
+    let state_path = DataPath::state_path();
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    let db = Database::open(&config, &nosql_path).unwrap();
+    let db = Database::open(&config, &state_path).unwrap();
+    let chain_db = Database::open(&config, &nosql_path).unwrap();
     let genesis = Genesis::init(genesis_path);
 
+    let config_file = std::fs::File::open(config_path).unwrap();
+    let chain = Arc::new(chain::Chain::init_chain(
+        Arc::new(chain_db),
+        BufReader::new(config_file),
+    ));
+
     //chain初始化
-    let call = Callchain::new(Arc::new(db), genesis, config_path);
+    let call = Callexet::new(Arc::new(db), chain, genesis, config_path);
     let pre_hash = call.get_pre_hash();
     match method {
         "create" => create_contract(

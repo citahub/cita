@@ -19,30 +19,23 @@ use bloomchain as bc;
 use blooms::*;
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
-use call_analytics::CallAnalytics;
-use contracts::{AccountGasLimit, AccountManager, NodeManager, QuotaManager};
 use db;
 use db::*;
-use engines::NullEngine;
-use env_info::{EnvInfo, LastHashes};
-use error::CallError;
-use evm::Factory as EvmFactory;
-use executive::{contract_address, Executed, Executive, TransactOptions};
-use factory::*;
+
 use filters::{PollFilter, PollManager};
 use header::*;
 pub use libchain::block::*;
 use libchain::cache::CacheSize;
-use libchain::call_request::CallRequest;
+
 use libchain::extras::*;
-use libchain::genesis::Genesis;
 use libchain::status::Status;
 pub use libchain::transaction::*;
 
 use libproto::*;
-use libproto::blockchain::{Proof as ProtoProof, ProofType, RichStatus as ProtoRichStatus};
+use libproto::blockchain::{AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
+                           RichStatus as ProtoRichStatus};
 
-use native::Factory as NativeFactory;
+use libproto::executer::ExecutedResult;
 use proof::TendermintProof;
 use protobuf::Message;
 use protobuf::RepeatedField;
@@ -50,25 +43,22 @@ use receipt::{LocalizedReceipt, Receipt};
 use serde_json;
 use state::State;
 use state_db::StateDB;
-
-use std::collections::{BTreeMap, VecDeque};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Read;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
-use std::time::Instant;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
-use types::transaction::{Action, SignedTransaction, Transaction};
-use util::{journaldb, Address, Bytes, H2048, H256, U256};
+use types::transaction::{Action, SignedTransaction};
+use util::{journaldb, Address, H2048, H256, U256};
 use util::{Mutex, RwLock};
+use util::Hashable;
 use util::HeapSizeOf;
-use util::UtilError;
 use util::kvdb::*;
-use util::trie::{TrieFactory, TrieSpec};
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
@@ -82,9 +72,10 @@ pub enum BlockSource {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum CacheId {
-    BlockHeaders(H256),
+    /*    BlockHeaders(H256),
     BlockBodies(H256),
     BlockHashes(BlockNumber),
+*/
     TransactionAddresses(H256),
     BlocksBlooms(LogGroupPosition),
     BlockReceipts(H256),
@@ -127,73 +118,35 @@ pub enum BlockInQueue {
     SyncBlock((Block, Option<ProtoProof>)),
 }
 
-/// Rules
-/// 1. When chain receives proposal from consensus, pre-execute it firstly, set stage to `ExecutingProposal`.
-/// 2. When it receives another proposal,
-/// 2.1 and the new proposal is different from the current one(the same transaction root),
-///     interrupt the current executing and redo the new proposal;
-/// 2.2 otherwise ignore it.
-/// 3. When chain receives a consensus block, compares to the current excuting proposal,
-/// 3.1 if they are the same, replace the proposal to consensus block, change the stage to `ExecutingBlock`.
-/// 3.2 Otherwise check whether the propposal is executing,
-/// 3.2.1 if yes, interrupt the current proposal and execute the consensus block,
-/// 3.2.2 otherwise execute the consensus block.
-/// 4. When chain finishes executing proposal, check the stage,
-/// 4.1 if `ExecutingBlock`, continue;
-/// 4.2 if `ExecutingProposal`, go to `WaitFinalized`,
-/// 4.3 if `is_interrupt`, ignore.
-#[derive(Debug, Clone)]
-pub enum Stage {
-    /// Exeuting block
-    ExecutingBlock,
-    /// Executing proposal
-    ExecutingProposal,
-    /// Finish executing proposal and wait
-    WaitFinalized,
-    /// Finalized
-    Idle,
-}
-
 // TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
 // 所有直接unwrap的地方都可能会报错！
 pub struct Chain {
     blooms_config: bc::Config,
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
-    /// Interrupt current proposal executing
-    pub is_interrupted: AtomicBool,
-    /// Max height in block map
+    // Max height in block map
     pub max_height: AtomicUsize,
+    pub max_store_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
-    pub stage: RwLock<Stage>,
     pub db: Arc<KeyValueDB>,
     pub state_db: StateDB,
-    pub factories: Factories,
-    /// Hash of the given block - only works for 256 most recent blocks excluding current
-    pub last_hashes: RwLock<VecDeque<H256>>,
 
-    /// Block cache
-    block_headers: RwLock<HashMap<H256, Header>>,
-    block_bodies: RwLock<HashMap<H256, BlockBody>>,
+    // block cache
+    pub block_headers: RwLock<HashMap<BlockNumber, Header>>,
+    pub block_bodies: RwLock<HashMap<BlockNumber, BlockBody>>,
 
-    /// Extra caches
-    block_hashes: RwLock<HashMap<BlockNumber, H256>>,
-    transaction_addresses: RwLock<HashMap<TransactionId, TransactionAddress>>,
-    blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
-    block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
+    // extra caches
+    pub block_hashes: RwLock<HashMap<H256, BlockNumber>>,
+    pub transaction_addresses: RwLock<HashMap<TransactionId, TransactionAddress>>,
+    pub blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
+    pub block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
     pub nodes: RwLock<Vec<Address>>,
+
     pub block_gas_limit: AtomicUsize,
-    pub account_gas_limit: RwLock<AccountGasLimit>,
-    /// System contract config cache
-    senders: RwLock<HashSet<Address>>,
-    creators: RwLock<HashSet<Address>>,
+    pub account_gas_limit: RwLock<ProtoAccountGasLimit>,
 
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
-
-    /// Switch, check permission or not
-    pub check_permission: bool,
-    pub check_quota: bool,
 
     /// Switch, check proof type for add_sync_block
     pub check_prooftype: u8,
@@ -203,28 +156,36 @@ pub struct Chain {
 pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
     let h: Option<H256> = db.read(db::COL_EXTRA, &CurrentHash);
     if let Some(hash) = h {
-        db.read(db::COL_HEADERS, &hash)
+        let hi: Option<BlockNumber> = db.read(db::COL_EXTRA, &hash);
+        if let Some(h) = hi {
+            warn!("get_chain hash {:?}  bn{:?}  CurrentHash", hash, h);
+            db.read(db::COL_HEADERS, &h)
+        } else {
+            warn!("not expected get_chain_current_head height");
+            None
+        }
     } else {
-        warn!("not expected get_chain.");
+        warn!("not expected get_chain_current_head hash.");
         None
     }
 }
 
+pub fn contract_address(address: &Address, nonce: &U256) -> Address {
+    use rlp::RlpStream;
+
+    let mut stream = RlpStream::new_list(2);
+    stream.append(address);
+    stream.append(nonce);
+    From::from(stream.out().crypt_hash())
+}
+
 impl Chain {
-    pub fn init_chain<R>(db: Arc<KeyValueDB>, mut genesis: Genesis, sconfig: R) -> Chain
+    pub fn init_chain<R>(db: Arc<KeyValueDB>, sconfig: R) -> Chain
     where
         R: Read,
     {
         // 400 is the avarage size of the key
         let cache_man = CacheManager::new(1 << 14, 1 << 20, 400);
-
-        let trie_factory = TrieFactory::new(TrieSpec::Generic);
-        let factories = Factories {
-            vm: EvmFactory::default(),
-            native: NativeFactory::default(),
-            trie: trie_factory,
-            accountdb: Default::default(),
-        };
 
         let journal_db = journaldb::new(Arc::clone(&db), journaldb::Algorithm::Archive, COL_STATE);
         let state_db = StateDB::new(journal_db);
@@ -233,31 +194,26 @@ impl Chain {
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
         };
 
-        let header = match get_chain(&*db) {
-            Some(header) => header,
-            _ => {
-                genesis
-                    .lazy_execute(&state_db, &factories)
-                    .expect("Failed to save genesis.");
-                info!("init genesis {:?}", genesis);
-                genesis.block.header().clone()
-            }
-        };
-
         let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
         info!("config check: {:?}", sc);
 
+        //        let mut is_genesis_ok = false;
+        let header = get_chain(&*db).unwrap_or(Header::default());
+        info!("get chain head is : {:?}", header);
         let max_height = AtomicUsize::new(0);
         max_height.store(header.number() as usize, Ordering::SeqCst);
+        let max_store_height = AtomicUsize::new(0);
+        //        max_store_height.store(header.number() as usize, Ordering::SeqCst);
+        max_store_height.store(::std::u64::MAX as usize, Ordering::SeqCst);
 
         let chain = Chain {
             blooms_config: blooms_config,
             current_header: RwLock::new(header.clone()),
             is_sync: AtomicBool::new(false),
-            is_interrupted: AtomicBool::new(false),
             max_height: max_height,
+            //TODO need to get saved body
+            max_store_height: max_store_height,
             block_map: RwLock::new(BTreeMap::new()),
-            stage: RwLock::new(Stage::Idle),
             block_headers: RwLock::new(HashMap::new()),
             block_bodies: RwLock::new(HashMap::new()),
             block_hashes: RwLock::new(HashMap::new()),
@@ -267,22 +223,13 @@ impl Chain {
             cache_man: Mutex::new(cache_man),
             db: db,
             state_db: state_db,
-            factories: factories,
-            last_hashes: RwLock::new(VecDeque::new()),
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
-            senders: RwLock::new(HashSet::new()),
-            creators: RwLock::new(HashSet::new()),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
-            account_gas_limit: RwLock::new(AccountGasLimit::new()),
-            check_permission: sc.check_permission,
-            check_quota: sc.check_quota,
+            account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
             check_prooftype: sc.check_prooftype,
         };
 
-        // Build chain config
-        chain.build_last_hashes(Some(header.hash()), header.number());
-        chain.reload_config();
         chain
     }
 
@@ -290,24 +237,265 @@ impl Chain {
     fn block_number(&self, id: BlockId) -> Option<BlockNumber> {
         match id {
             BlockId::Number(number) => Some(number),
-            BlockId::Hash(hash) => self.block_number_by_hash(hash),
+            BlockId::Hash(hash) => self.block_height_by_hash(hash),
             BlockId::Earliest => Some(0),
             BlockId::Latest => Some(self.get_current_height()),
         }
     }
 
-    // Get block hash by number
-    pub fn block_hash(&self, index: BlockNumber) -> Option<H256> {
+    /*fn write_cache<K, T>(&mut self, cache: &mut HashMap<K, T>, key: K, value: T)
+    {
+        cache.insert(key, value);
+    }*/
+
+    pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
         let result = self.db
-            .read_with_cache(db::COL_EXTRA, &self.block_hashes, &index);
-        self.cache_man.lock().note_used(CacheId::BlockHashes(index));
+            .read_with_cache(db::COL_EXTRA, &self.block_hashes, &hash);
+        //self.cache_man.lock().note_used(CacheId::BlockHashes(index));
         result
     }
 
-    /// Get block number by hash.
-    fn block_number_by_hash(&self, hash: H256) -> Option<BlockNumber> {
-        self.block_header_by_hash(hash)
-            .map_or(None, |h| Some(h.number()))
+    pub fn set_excuted_result_genesis(&self, ret: &ExecutedResult) {
+        let blk = Block::default();
+        self.set_db_result(ret, &blk);
+    }
+
+    pub fn set_db_config(&self, ret: &ExecutedResult) {
+        let conf = ret.get_config();
+        let nodes = conf.get_nodes();
+        let nodes: Vec<Address> = nodes
+            .into_iter()
+            .map(|vecaddr| Address::from_slice(&vecaddr[..]))
+            .collect();
+        info!("consensus nodes {:?}", nodes);
+        self.set_excuted_config(
+            conf.get_block_gas_limit(),
+            conf.get_account_gas_limit(),
+            &nodes,
+        );
+    }
+
+    pub fn set_db_result(&self, ret: &ExecutedResult, block: &Block) {
+        //config set in memory
+        self.set_db_config(ret);
+
+        let info = ret.get_executed_info();
+        let number = info.get_header().get_height();
+        let mut hdr = Header::new();
+        let log_bloom = H2048::from(info.get_header().get_log_bloom());
+        hdr.set_gas_limit(U256::from(info.get_header().get_gas_limit()));
+        hdr.set_gas_used(U256::from(info.get_header().get_gas_used()));
+        hdr.set_number(number);
+        //        hdr.set_parent_hash(*block.parent_hash());
+        hdr.set_parent_hash(H256::from_slice(info.get_header().get_prevhash()));
+        hdr.set_receipts_root(H256::from(info.get_header().get_receipts_root()));
+        hdr.set_state_root(H256::from(info.get_header().get_state_root()));
+        hdr.set_timestamp(info.get_header().get_timestamp());
+        hdr.set_transactions_root(H256::from(info.get_header().get_transactions_root()));
+        hdr.set_log_bloom(log_bloom.clone());
+        hdr.set_proof(block.proof().clone());
+
+        let hash = hdr.hash();
+        let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = if log_bloom.is_zero() {
+            HashMap::new()
+        } else {
+            let bgroup = bc::group::BloomGroupChain::new(self.blooms_config, self);
+            bgroup
+                .insert(number as bc::Number, Bloom::from(log_bloom).into())
+                .into_iter()
+                .map(|p| (From::from(p.0), From::from(p.1)))
+                .collect()
+        };
+
+        let mut batch = DBTransaction::new();
+        if info.get_receipts().len() > 0 {
+            let receipts: Vec<Option<Receipt>> = info.get_receipts()
+                .into_iter()
+                .map(|receipt_with_option| {
+                    let mut receipt = None;
+                    if receipt_with_option.receipt.is_some() {
+                        receipt = Some(Receipt::from(receipt_with_option.get_receipt().clone()));
+                    }
+                    receipt
+                })
+                .collect();
+
+            let block_receipts = BlockReceipts::new(receipts.clone());
+            let mut write_receipts = self.block_receipts.write();
+            batch.write_with_cache(
+                db::COL_EXTRA,
+                &mut *write_receipts,
+                hash,
+                block_receipts,
+                CacheUpdatePolicy::Overwrite,
+            );
+        }
+        if info.get_transactions().len() > 0 {
+            let transactions: HashMap<H256, TransactionAddress> = info.get_transactions()
+                .into_iter()
+                .map(|(k, v)| {
+                    let block_hash = H256::from_slice(v.get_block_hash());
+                    let address = TransactionAddress {
+                        block_hash: block_hash,
+                        index: v.index as usize,
+                    };
+                    let k = H256::from_str(k).unwrap();
+                    (k, address)
+                })
+                .collect();
+
+            let mut write_txs = self.transaction_addresses.write();
+            batch.extend_with_cache(
+                db::COL_EXTRA,
+                &mut *write_txs,
+                transactions.clone(),
+                CacheUpdatePolicy::Overwrite,
+            );
+        }
+
+        let mut write_headers = self.block_headers.write();
+        let mut write_bodies = self.block_bodies.write();
+        let mut write_blooms = self.blocks_blooms.write();
+        let mut write_hashes = self.block_hashes.write();
+
+        batch.write_with_cache(
+            db::COL_HEADERS,
+            &mut *write_headers,
+            number as BlockNumber,
+            hdr.clone(),
+            CacheUpdatePolicy::Overwrite,
+        );
+        let mheight = self.max_store_height.load(Ordering::SeqCst) as u64;
+        if mheight != ::std::u64::MAX && mheight < number {
+            batch.write_with_cache(
+                db::COL_BODIES,
+                &mut *write_bodies,
+                number,
+                block.body().clone(),
+                CacheUpdatePolicy::Overwrite,
+            );
+        }
+        self.max_height.store(number as usize, Ordering::SeqCst);
+        batch.write_with_cache(
+            db::COL_EXTRA,
+            &mut *write_hashes,
+            hash,
+            number as BlockNumber,
+            CacheUpdatePolicy::Overwrite,
+        );
+        batch.extend_with_cache(
+            db::COL_EXTRA,
+            &mut *write_blooms,
+            blocks_blooms.clone(),
+            CacheUpdatePolicy::Overwrite,
+        );
+        batch.write(db::COL_EXTRA, &CurrentHash, &hash);
+        self.db.write(batch).expect("DB write failed.");
+        {
+            *self.current_header.write() = hdr;
+        }
+    }
+
+    pub fn broadcast_current_block(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let mheight = self.max_store_height.load(Ordering::SeqCst) as u64;
+        let height = self.max_height.load(Ordering::SeqCst) as u64;
+
+        if mheight > height {
+            let body = self.db
+                .read_with_cache(db::COL_BODIES, &self.block_bodies, &mheight);
+            if let Some(blockbody) = body {
+                let mut block = Block::new();
+                block.set_body(blockbody);
+
+                let mut blocks = vec![];
+                blocks.push(block.protobuf());
+
+                let mut sync_res = SyncResponse::new();
+                sync_res.set_blocks(RepeatedField::from_vec(blocks));
+                let msg = factory::create_msg(
+                    submodules::CHAIN,
+                    topics::NEW_BLK,
+                    communication::MsgType::SYNC_RES,
+                    sync_res.write_to_bytes().unwrap(),
+                );
+                ctx_pub
+                    .clone()
+                    .send(("net.blk".to_string(), msg.write_to_bytes().unwrap()))
+                    .unwrap();
+            }
+        }
+    }
+
+    pub fn broadcast_current_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        self.delivery_current_rich_status(&ctx_pub);
+        if !self.is_sync.load(Ordering::SeqCst) {
+            self.broadcast_status(&ctx_pub);
+        }
+    }
+
+    pub fn set_excuted_result(&self, ret: &ExecutedResult, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let info = ret.get_executed_info();
+        let number = info.get_header().get_height();
+        if number == 0 {
+            if self.max_store_height.load(Ordering::SeqCst) as u64 == ::std::u64::MAX {
+                self.set_excuted_result_genesis(ret);
+            }
+            let block_tx_hashes = Vec::new();
+            self.delivery_block_tx_hashes(number, block_tx_hashes, &ctx_pub);
+            self.broadcast_current_status(&ctx_pub);
+            return;
+        }
+
+        if number == self.get_current_height() {
+            self.set_db_config(ret);
+            self.broadcast_current_status(&ctx_pub);
+            return;
+        }
+
+        let block_in_queue: Option<BlockInQueue>;
+        //get block saved
+        {
+            let block_map = self.block_map.read();
+            block_in_queue = block_map.get(&number).cloned();
+        }
+
+        match block_in_queue {
+            Some(BlockInQueue::ConsensusBlock(block, _)) => {
+                if self.validate_height(block.number()) && self.validate_hash(block.parent_hash()) {
+                    self.set_db_result(&ret, &block);
+                    self.broadcast_current_status(&ctx_pub);
+                    debug!("set consensus block-{}", number);
+                }
+            }
+            Some(BlockInQueue::SyncBlock((block, op))) => {
+                if let Some(_) = op {
+                    debug!("SyncBlock has proof in  {} ", block.number());
+                } else {
+                    debug!("SyncBlock not has proof in  {}", block.number());
+                }
+                if number == self.get_current_height() + 1 {
+                    self.set_db_result(&ret, &block);
+                    self.is_sync.store(true, Ordering::SeqCst);
+                    self.broadcast_current_status(&ctx_pub);
+                    self.is_sync.store(false, Ordering::SeqCst);
+                    debug!("finish sync blocks to {}", number);
+                };
+            }
+            _ => {
+                debug!("block-{} in queue is invalid", number);
+            }
+        }
+
+        let mut guard = self.block_map.write();
+        let new_map = guard.split_off(&self.get_current_height());
+        *guard = new_map;
+    }
+
+    pub fn set_excuted_config(&self, bgas_limit: u64, agas_limit: &ProtoAccountGasLimit, nodes: &Vec<Address>) {
+        self.block_gas_limit
+            .store(bgas_limit as usize, Ordering::SeqCst);
+        *self.account_gas_limit.write() = agas_limit.clone();
+        *self.nodes.write() = nodes.clone();
     }
 
     /// Get block by BlockId
@@ -322,19 +510,19 @@ impl Chain {
 
     // Get block by hash
     pub fn block_by_hash(&self, hash: H256) -> Option<Block> {
-        match (
-            self.block_header_by_hash(hash),
-            self.block_body_by_hash(hash),
-        ) {
-            (Some(h), Some(b)) => Some(Block { header: h, body: b }),
-            _ => None,
-        }
+        self.block_height_by_hash(hash)
+            .map_or(None, |h| self.block_by_height(h))
     }
 
     /// Get block by height
     pub fn block_by_height(&self, number: BlockNumber) -> Option<Block> {
-        self.block_hash(number)
-            .map_or(None, |h| self.block_by_hash(h))
+        match (
+            self.block_header_by_height(number),
+            self.block_body_by_height(number),
+        ) {
+            (Some(h), Some(b)) => Some(Block { header: h, body: b }),
+            _ => None,
+        }
     }
 
     /// Get block header by BlockId
@@ -355,22 +543,21 @@ impl Chain {
                 return Some(header.clone());
             }
         }
-        let result = self.db
-            .read_with_cache(db::COL_HEADERS, &self.block_headers, &hash);
-        self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
-        result
+        self.block_height_by_hash(hash)
+            .map_or(None, |h| self.block_header_by_height(h))
     }
 
-    /// Get block header by height
-    fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
+    fn block_header_by_height(&self, idx: BlockNumber) -> Option<Header> {
         {
             let header = self.current_header.read();
-            if header.number() == number {
+            if header.number() == idx {
                 return Some(header.clone());
             }
         }
-        self.block_hash(number)
-            .map_or(None, |h| self.block_header_by_hash(h))
+        let result = self.db
+            .read_with_cache(db::COL_HEADERS, &self.block_headers, &idx);
+        //self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
+        result
     }
 
     /// Get block body by BlockId
@@ -383,23 +570,27 @@ impl Chain {
         }
     }
 
+    pub fn block_hash_by_height(&self, height: BlockNumber) -> Option<H256> {
+        self.block_header_by_height(height)
+            .map_or(None, |hdr| Some(hdr.hash()))
+    }
     // Get block body by hash
     fn block_body_by_hash(&self, hash: H256) -> Option<BlockBody> {
-        let result = self.db
-            .read_with_cache(db::COL_BODIES, &self.block_bodies, &hash);
-        self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
-        result
+        self.block_height_by_hash(hash)
+            .map_or(None, |h| self.block_body_by_height(h))
     }
 
     /// Get block body by height
     fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
-        self.block_hash(number)
-            .map_or(None, |h| self.block_body_by_hash(h))
+        let result = self.db
+            .read_with_cache(db::COL_BODIES, &self.block_bodies, &number);
+        //self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
+        result
     }
 
     /// Get block tx hashes
     pub fn block_tx_hashes(&self, number: BlockNumber) -> Option<Vec<H256>> {
-        self.block_body(BlockId::Number(number))
+        self.block_body_by_height(number)
             .map(|body| body.transaction_hashes())
     }
 
@@ -483,7 +674,7 @@ impl Chain {
         last_receipt.and_then(|last_receipt| {
             // Get sender
             let stx = self.transaction_by_address(hash, index).unwrap();
-            let number = self.block_number_by_hash(hash).unwrap_or(0);
+            let number = self.block_height_by_hash(hash).unwrap_or(0);
 
             let contract_address = match *stx.action() {
                 Action::Create => Some(contract_address(stx.sender(), stx.account_nonce())),
@@ -532,12 +723,24 @@ impl Chain {
         self.max_height.load(Ordering::SeqCst) as u64
     }
 
+    pub fn get_max_store_height(&self) -> u64 {
+        self.max_store_height.load(Ordering::SeqCst) as u64
+    }
+
     pub fn current_state_root(&self) -> H256 {
         *self.current_header.read().state_root()
     }
 
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
         self.db.read(db::COL_EXTRA, &CurrentProof)
+    }
+
+    pub fn save_current_block_poof(&self, proof: ProtoProof) {
+        let mut batch = DBTransaction::new();
+        batch.write(db::COL_EXTRA, &CurrentProof, &proof);
+        self.db
+            .write(batch)
+            .expect("save_current_block_poof DB write failed.");
     }
 
     pub fn get_chain_prooftype(&self) -> Option<ProofType> {
@@ -560,7 +763,7 @@ impl Chain {
         let mut log_index = 0;
         let mut logs = blocks
             .into_iter()
-            .filter_map(|number| self.block_hash(number).map(|hash| (number, hash)))
+            .filter_map(|number| self.block_hash_by_height(number).map(|hash| (number, hash)))
             .filter_map(|(number, hash)| {
                 self.block_receipts(hash)
                     .map(|r| (number, hash, r.receipts))
@@ -655,171 +858,6 @@ impl Chain {
         self.logs(blocks, |entry| filter.matches(entry), filter.limit)
     }
 
-    fn last_hashes(&self) -> LastHashes {
-        LastHashes::from(self.last_hashes.read().clone())
-    }
-
-    /// Build last 256 block hashes.
-    fn build_last_hashes(&self, prevhash: Option<H256>, parent_height: u64) -> Arc<LastHashes> {
-        let parent_hash = prevhash.unwrap_or_else(|| {
-            self.block_hash(parent_height)
-                .expect("Block height always valid.")
-        });
-        {
-            let hashes = self.last_hashes.read();
-            if hashes.front().map_or(false, |h| h == &parent_hash) {
-                let mut res = Vec::from(hashes.clone());
-                res.resize(256, H256::default());
-                return Arc::new(res);
-            }
-        }
-        let mut last_hashes = LastHashes::new();
-        last_hashes.resize(256, H256::default());
-        last_hashes[0] = parent_hash;
-        for i in 0..255 {
-            if parent_height < i + 1 {
-                break;
-            };
-            let height = parent_height - i - 1;
-            match self.block_hash(height) {
-                Some(hash) => {
-                    let index = (i + 1) as usize;
-                    last_hashes[index] = hash;
-                }
-                None => break,
-            }
-        }
-        let mut cached_hashes = self.last_hashes.write();
-        *cached_hashes = VecDeque::from(last_hashes.clone());
-        Arc::new(last_hashes)
-    }
-
-    fn update_last_hashes(&self, hash: &H256) {
-        let mut hashes = self.last_hashes.write();
-        if hashes.len() > 255 {
-            hashes.pop_back();
-        }
-        hashes.push_front(*hash);
-    }
-
-    /// Prepare db batch and update cache, including:
-    /// 1. Block including transactions
-    /// 2. TransactionAddress
-    /// 3. State
-    /// 3. Receipts
-    /// 4. Bloom
-    pub fn prepare_update(&self, batch: &mut DBTransaction, block: ClosedBlock) {
-        let height = block.number();
-        let hash = block.hash();
-        trace!("commit block in db {:?}, {:?}", hash, height);
-
-        let log_bloom = *block.log_bloom();
-
-        let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = if log_bloom.is_zero() {
-            HashMap::new()
-        } else {
-            let chain = bc::group::BloomGroupChain::new(self.blooms_config, self);
-            chain
-                .insert(height as bc::Number, Bloom::from(log_bloom).into())
-                .into_iter()
-                .map(|p| (From::from(p.0), From::from(p.1)))
-                .collect()
-        };
-
-        let block_receipts = BlockReceipts::new(block.receipts.clone());
-
-        {
-            let mut write_headers = self.block_headers.write();
-            let mut write_bodies = self.block_bodies.write();
-            let mut write_receipts = self.block_receipts.write();
-            let mut write_blooms = self.blocks_blooms.write();
-            let mut write_hashes = self.block_hashes.write();
-            let mut write_txs = self.transaction_addresses.write();
-
-            batch.write_with_cache(
-                db::COL_HEADERS,
-                &mut *write_headers,
-                hash,
-                block.header().clone(),
-                CacheUpdatePolicy::Overwrite,
-            );
-            batch.write_with_cache(
-                db::COL_BODIES,
-                &mut *write_bodies,
-                hash,
-                block.body().clone(),
-                CacheUpdatePolicy::Overwrite,
-            );
-            batch.write_with_cache(
-                db::COL_EXTRA,
-                &mut *write_hashes,
-                height as BlockNumber,
-                hash,
-                CacheUpdatePolicy::Overwrite,
-            );
-            batch.write_with_cache(
-                db::COL_EXTRA,
-                &mut *write_receipts,
-                hash,
-                block_receipts,
-                CacheUpdatePolicy::Overwrite,
-            );
-            batch.extend_with_cache(
-                db::COL_EXTRA,
-                &mut *write_blooms,
-                blocks_blooms.clone(),
-                CacheUpdatePolicy::Overwrite,
-            );
-            batch.extend_with_cache(
-                db::COL_EXTRA,
-                &mut *write_txs,
-                block.transactions.clone(),
-                CacheUpdatePolicy::Overwrite,
-            );
-        }
-
-        //note used
-        self.cache_man
-            .lock()
-            .note_used(CacheId::BlockHashes(height as BlockNumber));
-        self.cache_man
-            .lock()
-            .note_used(CacheId::BlockReceipts(hash));
-        self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
-        self.cache_man.lock().note_used(CacheId::BlockBodies(hash));
-
-        for (key, _) in blocks_blooms {
-            self.cache_man.lock().note_used(CacheId::BlocksBlooms(key));
-        }
-
-        for (key, _) in block.transactions.clone() {
-            self.cache_man
-                .lock()
-                .note_used(CacheId::TransactionAddresses(key));
-        }
-
-        // Save current block proof
-        {
-            if let Some(proof_block) = self.block_map.read().get(&height) {
-                match *proof_block {
-                    BlockInQueue::ConsensusBlock(_, ref proof) | BlockInQueue::SyncBlock((_, Some(ref proof))) => {
-                        batch.write(db::COL_EXTRA, &CurrentProof, &proof)
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        batch.write(db::COL_EXTRA, &CurrentHash, &hash);
-
-        let mut state = block.drain();
-        // Store triedb changes in journal db
-        state
-            .journal_under(batch, height, &hash)
-            .expect("DB commit failed");
-        self.prune_ancient(state).expect("mark_canonical failed");
-    }
-
     /// Delivery block tx hashes to auth
     pub fn delivery_block_tx_hashes(
         &self,
@@ -827,10 +865,15 @@ impl Chain {
         tx_hashes: Vec<H256>,
         ctx_pub: &Sender<(String, Vec<u8>)>,
     ) {
+        if block_height == ::std::u64::MAX {
+            return;
+        }
+
         let ctx_pub_clone = ctx_pub.clone();
         let mut block_tx_hashes = BlockTxHashes::new();
         block_tx_hashes.set_height(block_height);
         {
+            //Need
             block_tx_hashes.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
             block_tx_hashes.set_account_gas_limit(self.account_gas_limit.read().clone().into());
         }
@@ -856,6 +899,9 @@ impl Chain {
 
     /// Delivery current rich status
     pub fn delivery_current_rich_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        if self.max_height.load(Ordering::SeqCst) as u64 == ::std::u64::MAX {
+            return;
+        }
         let header = &*self.current_header.read();
         self.delivery_rich_status(header, ctx_pub);
     }
@@ -863,6 +909,9 @@ impl Chain {
     /// Delivery rich status to consensus
     /// Consensus should resend block if chain commit block failed.
     fn delivery_rich_status(&self, header: &Header, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        if self.nodes.read().is_empty() {
+            return;
+        }
         let current_hash = header.hash();
         let current_height = header.number();
         let nodes: Vec<Address> = self.nodes.read().clone();
@@ -885,34 +934,6 @@ impl Chain {
                 msg.write_to_bytes().unwrap(),
             ))
             .unwrap();
-    }
-
-    fn prune_ancient(&self, mut state_db: StateDB) -> Result<(), UtilError> {
-        let number = match state_db.journal_db().latest_era() {
-            Some(n) => n,
-            None => return Ok(()),
-        };
-        let history = 2;
-        // prune all ancient eras until we're below the memory target,
-        // but have at least the minimum number of states.
-        loop {
-            match state_db.journal_db().earliest_era() {
-                Some(era) if era + history <= number => {
-                    trace!(target: "client", "Pruning state for ancient era {}", era);
-                    match self.block_hash(era) {
-                        Some(ancient_hash) => {
-                            let mut batch = DBTransaction::new();
-                            state_db.mark_canonical(&mut batch, era, &ancient_hash)?;
-                            self.db.write_buffered(batch);
-                            state_db.journal_db().flush();
-                        }
-                        None => debug!(target: "client", "Missing expected hash for block {}", era),
-                    }
-                }
-                _ => break, // means that every era is kept, no pruning necessary.
-            }
-        }
-        Ok(())
     }
 
     /// Get receipts of block with given hash.
@@ -948,93 +969,7 @@ impl Chain {
     /// generate block's final state.
     pub fn gen_state(&self, root: H256) -> Option<State<StateDB>> {
         let db = self.state_db.boxed_clone();
-        State::from_existing(db, root, U256::from(0), self.factories.clone()).ok()
-    }
-
-    /// Get a copy of the best block's state.
-    pub fn state(&self) -> State<StateDB> {
-        let mut state = self.gen_state(self.current_state_root())
-            .expect("State root of current block is invalid.");
-        state.senders = self.senders.read().clone();
-        state.creators = self.creators.read().clone();
-        state
-    }
-
-    /// Get code by address
-    pub fn code_at(&self, address: &Address, id: BlockId) -> Option<Option<Bytes>> {
-        self.state_at(id)
-            .and_then(|s| s.code(address).ok())
-            .map(|c| c.map(|c| (&*c).clone()))
-    }
-
-    /// Get transaction count by address
-    pub fn nonce(&self, address: &Address, id: BlockId) -> Option<U256> {
-        self.state_at(id).and_then(|s| s.nonce(address).ok())
-    }
-
-    pub fn eth_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
-        let mut signed = self.sign_call(request);
-        let result = self.call(&mut signed, id, Default::default());
-        result
-            .map(|b| b.output.into())
-            .or_else(|e| Err(format!("Call Error {}", e)))
-    }
-
-    fn sign_call(&self, request: CallRequest) -> SignedTransaction {
-        let from = request.from.unwrap_or_else(Address::zero);
-        Transaction {
-            nonce: "".to_string(),
-            action: Action::Call(request.to),
-            gas: U256::from(50_000_000),
-            gas_price: U256::zero(),
-            value: U256::zero(),
-            data: request.data.map_or_else(Vec::new, |d| d.to_vec()),
-            block_limit: u64::max_value(),
-        }.fake_sign(from)
-    }
-
-    fn call(
-        &self,
-        t: &mut SignedTransaction,
-        block_id: BlockId,
-        analytics: CallAnalytics,
-    ) -> Result<Executed, CallError> {
-        let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
-        let last_hashes = self.build_last_hashes(None, header.number());
-        let env_info = EnvInfo {
-            number: header.number(),
-            author: Address::default(),
-            timestamp: header.timestamp(),
-            difficulty: U256::default(),
-            last_hashes: last_hashes,
-            gas_used: *header.gas_used(),
-            gas_limit: *header.gas_limit(),
-            account_gas_limit: u64::max_value().into(),
-        };
-        // that's just a copy of the state.
-        let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
-
-        state.senders = self.senders.read().clone();
-        state.creators = self.creators.read().clone();
-
-        let engine = NullEngine::default();
-
-        let options = TransactOptions {
-            tracing: analytics.transaction_tracing,
-            vm_tracing: analytics.vm_tracing,
-            check_permission: false,
-            check_quota: false,
-        };
-
-        let ret = Executive::new(
-            &mut state,
-            &env_info,
-            &engine,
-            &self.factories.vm,
-            &self.factories.native,
-        ).transact(t, options)?;
-
-        Ok(ret)
+        State::from_existing(db, root).ok()
     }
 
     pub fn validate_hash(&self, block_hash: &H256) -> bool {
@@ -1072,66 +1007,11 @@ impl Chain {
         }
     }
 
-    /// Execute Block
-    /// And set state_root, receipt_root, log_bloom of header
-    pub fn execute_block(&self, block: Block) -> Option<ClosedBlock> {
-        let now = Instant::now();
-
-        let current_state_root = self.current_state_root();
-        let last_hashes = self.last_hashes();
-        let senders = self.senders.read().clone();
-        let creators = self.creators.read().clone();
-        let check_permission = self.check_permission;
-        let mut open_block = OpenBlock::new(
-            self.factories.clone(),
-            senders,
-            creators,
-            false,
-            block,
-            self.state_db.boxed_clone(),
-            current_state_root,
-            last_hashes.into(),
-            &self.account_gas_limit.read().clone(),
-        ).unwrap();
-
-        if open_block.apply_transactions(self, check_permission, self.check_quota) {
-            let closed_block = open_block.into_closed_block();
-            let new_now = Instant::now();
-            info!("execute block use {:?}", new_now.duration_since(now));
-            Some(closed_block)
-        } else {
-            None
-        }
-    }
-
-    /// Finalize block
-    /// 1. Delivery rich status
-    /// 2. Update cache
-    /// 3. Commited data to db
-    pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        let mut batch = self.db.transaction();
-        let header = closed_block.header().clone();
-        // Reload config must come before delivery rich status
-        self.reload_config();
-        // Delivery rich status to consensus
-        self.delivery_rich_status(&header, ctx_pub);
-        {
-            *self.current_header.write() = header;
-        }
-
-        self.prepare_update(&mut batch, closed_block);
-
-        // Saving in db
-        let now = Instant::now();
-        self.db.write(batch).expect("DB write failed.");
-        let new_now = Instant::now();
-        info!("db write use {:?}", new_now.duration_since(now));
-
-        self.update_last_hashes(&self.get_current_hash());
-    }
-
     /// Broadcast new status
     pub fn broadcast_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        if self.max_height.load(Ordering::SeqCst) as u64 == ::std::u64::MAX {
+            return;
+        }
         let status = self.current_status().protobuf();
         let sync_msg = factory::create_msg(
             submodules::CHAIN,
@@ -1139,7 +1019,7 @@ impl Chain {
             communication::MsgType::STATUS,
             status.write_to_bytes().unwrap(),
         );
-        trace!(
+        info!(
             "chain.status {:?}, {:?}",
             status.get_height(),
             status.get_hash()
@@ -1152,53 +1032,19 @@ impl Chain {
             .unwrap();
     }
 
-    /// Reload system config from system contract
-    /// 1. Senders and creators
-    /// 2. Consensus nodes
-    /// 3. BlockGasLimit and AccountGasLimit
-    pub fn reload_config(&self) {
+    pub fn set_block_body(&self, height: u64, block: &Block) {
+        let mut batch = DBTransaction::new();
         {
-            // Reload senders and creators cache
-            *self.senders.write() = AccountManager::load_senders(self);
-            *self.creators.write() = AccountManager::load_creators(self);
+            let mut write_bodies = self.block_bodies.write();
+            batch.write_with_cache(
+                db::COL_BODIES,
+                &mut *write_bodies,
+                height as BlockNumber,
+                block.body().clone(),
+                CacheUpdatePolicy::Overwrite,
+            );
         }
-
-        {
-            // Reload consensus nodes cache
-            *self.nodes.write() = NodeManager::read(self);
-        }
-        {
-            // Reload BlockGasLimit cache
-            let block_gas_limit = QuotaManager::block_gas_limit(self);
-            self.block_gas_limit
-                .swap(block_gas_limit as usize, Ordering::SeqCst);
-        }
-
-        {
-            // Reload AccountGasLimit cache
-            let common_gas_limit = QuotaManager::account_gas_limit(self);
-            let specific = QuotaManager::specific(self);
-            let mut account_gas_limit = self.account_gas_limit.write();
-            account_gas_limit.set_common_gas_limit(common_gas_limit);
-            account_gas_limit.set_specific_gas_limit(specific);
-        }
-    }
-
-    pub fn set_proposal(&self, block: Block) -> Option<ClosedBlock> {
-        self.execute_block(block)
-    }
-
-    pub fn finalize_proposal(
-        &self,
-        mut closed_block: ClosedBlock,
-        comming: Block,
-        ctx_pub: &Sender<(String, Vec<u8>)>,
-    ) {
-        let tx_hashes = closed_block.body().transaction_hashes();
-        self.delivery_block_tx_hashes(closed_block.number(), tx_hashes, ctx_pub);
-        closed_block.header.set_timestamp(comming.timestamp());
-        closed_block.header.set_proof(comming.proof().clone());
-        self.finalize_block(closed_block, ctx_pub);
+        let _ = self.db.write(batch);
     }
 
     pub fn set_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) {
@@ -1207,12 +1053,9 @@ impl Chain {
         let tx_hashes = block.body().transaction_hashes();
         self.delivery_block_tx_hashes(height, tx_hashes, ctx_pub);
 
-        if let Some(closed_block) = self.execute_block(block) {
-            self.finalize_block(closed_block, ctx_pub);
-        } else {
-            // Should never reach here!
-            warn!("executing block is interrupted.");
-        }
+        //Need to send block to
+        //let closed_block = self.execute_block(block);
+        //self.finalize_block(closed_block, ctx_pub);
     }
 
     pub fn compare_status(&self, st: Status) -> (u64, u64) {
@@ -1250,15 +1093,15 @@ impl Chain {
         cache_man.collect_garbage(current_size, |ids| {
             for id in &ids {
                 match *id {
-                    CacheId::BlockHeaders(ref h) => {
-                        block_headers.remove(h);
+                    /*CacheId::BlockHeaders(_) => {
+                        //block_headers.remove(h);
                     }
-                    CacheId::BlockBodies(ref h) => {
-                        block_bodies.remove(h);
+                    CacheId::BlockBodies(_) => {
+                        //block_bodies.remove(h);
                     }
-                    CacheId::BlockHashes(ref h) => {
-                        block_hashes.remove(h);
-                    }
+                    CacheId::BlockHashes(_) => {
+                        //block_hashes.remove(h);
+                    }*/
                     CacheId::TransactionAddresses(ref h) => {
                         transaction_addresses.remove(h);
                     }
@@ -1291,16 +1134,8 @@ impl Chain {
 
 #[cfg(test)]
 mod tests {
-    extern crate rustc_serialize;
-
-    use self::rustc_serialize::hex::FromHex;
     use super::*;
-    use std::env;
-    use std::sync::mpsc::channel;
-    use std::thread;
-    use test::Bencher;
-    use tests::helpers::{bench_chain, create_block, init_chain, solc};
-    use util::{Address, H256};
+    use util::H256;
 
     #[test]
     fn test_heapsizeof() {
@@ -1322,281 +1157,5 @@ mod tests {
             BlockReceipts::new(vec![]),
         );
         assert_eq!(block_receipts.heap_size_of_children(), 1856);
-    }
-
-    #[test]
-    fn test_code_at() {
-        let chain = init_chain();
-        let source = r#"
-            pragma solidity ^0.4.8;
-
-            contract mortal {
-                /* Define variable owner of the type address*/
-                address owner;
-
-                /* this function is executed at initialization and sets the owner of the contract */
-                function mortal() { owner = msg.sender; }
-
-                /* Function to recover the funds on the contract */
-                function kill() { if (msg.sender == owner) selfdestruct(owner); }
-            }
-
-            contract greeter is mortal {
-                /* define variable greeting of the type string */
-                string greeting;
-
-                /* this runs when the contract is executed */
-                function greeter(string _greeting) public {
-                    greeting = _greeting;
-                }
-
-                /* main function */
-                function greet() constant returns (string) {
-                    return greeting;
-                }
-            }
-"#;
-        let (data, _) = solc("mortal", source);
-        println!("data: {:?}", data);
-
-        let block = create_block(&chain, Address::from(0), &data, (0, 2));
-        let (ctx_pub, recv) = channel();
-        thread::spawn(move || loop {
-            let _ = recv.recv();
-        });
-        chain.set_block(block.clone(), &ctx_pub);
-
-        let tx = &block.body.transactions[0];
-        let txhash = tx.hash();
-        let receipt = chain.localized_receipt(txhash).unwrap();
-
-        let contract_address = receipt.contract_address.unwrap();
-        println!("contract address: {}", contract_address);
-        let code = chain.code_at(&contract_address, BlockId::Latest);
-        assert!(code.is_some());
-        assert!(code.unwrap().is_some());
-
-        let tx1 = &block.body.transactions[1];
-        let tx1hash = tx1.hash();
-        let receipt1 = chain.localized_receipt(tx1hash).unwrap();
-
-        let contract_address1 = receipt1.contract_address.unwrap();
-        assert!(contract_address != contract_address1);
-    }
-
-    #[test]
-    fn test_contract() {
-        let chain = init_chain();
-        let source = r#"
-            pragma solidity ^0.4.8;
-            contract ConstructSol {
-                uint a;
-                event LogCreate(address contractAddr);
-                event A(uint);
-                function ConstructSol(){
-                    LogCreate(this);
-                }
-
-                function set(uint _a) {
-                    a = _a;
-                    A(a);
-                }
-
-                function get() returns (uint) {
-                    return a;
-                }
-            }
-        "#;
-        let (data, _) = solc("ConstructSol", source);
-        let block = create_block(&chain, Address::from(0), &data, (0, 1));
-        let (ctx_pub, recv) = channel();
-        thread::spawn(move || loop {
-            let _ = recv.recv();
-        });
-        chain.set_block(block.clone(), &ctx_pub);
-
-        let txhash = block.body().transactions()[0].hash();
-        let receipt = chain.localized_receipt(txhash).unwrap();
-        let contract_address = receipt.contract_address.unwrap();
-
-        let log = &receipt.logs[0];
-        assert_eq!(contract_address, log.address);
-
-        // set a=10
-        let data = "60fe47b1000000000000000000000000000000000000000000000000000000000000000a"
-            .from_hex()
-            .unwrap();
-        let block = create_block(&chain, contract_address, &data, (1, 2));
-        chain.set_block(block.clone(), &ctx_pub);
-        let txhash = block.body().transactions()[0].hash();
-        let receipt = chain.localized_receipt(txhash).unwrap();
-        println!("{:?}", receipt);
-
-        // get a is 10
-        let data = "6d4ce63c".from_hex().unwrap();
-        let call_request = CallRequest {
-            from: None,
-            to: contract_address,
-            data: Some(data.into()),
-        };
-        let call_result = chain.eth_call(call_request, BlockId::Latest);
-        assert_eq!(
-            call_result,
-            Ok(Bytes::from(vec![
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10
-            ]))
-        );
-        println!("call_result: {:?}", call_result);
-    }
-
-    fn bench_simple_storage(name: &str, data: &Vec<u8>) {
-        let bench_mode = env::args().find(|x| x.contains("--bench")).is_some();
-        let source = r#"
-pragma solidity ^0.4.0;
-
-contract SimpleStorage {
-  uint uint_value;             // 0
-  string string_value;// 1
-  uint[] array_value;//2
-  mapping (uint => uint) public map_value;//3
-
-  function SimpleStorage() {
-    uint_value = 0;
-    string_value='string';
-    array_value= new uint[](3);
-    map_value[0]= 0;
-  }
-
-  /* 0) uint */
-  function uint_set(uint value) {
-    uint_value =  value;
-  }
-
-  function uint_get() returns (uint) {
-    return uint_value;
-  }
-
-  /* 1) string */
-  function string_set(string  value) {
-    string_value =  value;
-  }
-
-  function string_get() returns (string) {
-    return string_value;
-  }
-
-  /* 2 array*/
-  function array_set(uint index, uint value) {
-    array_value[index]=  value;
-  }
-
-  function array_get(uint  index) returns (uint) {
-    return array_value[index];
-  }
-
-  /* 3) map */
-  function map_set(uint key, uint value) {
-    map_value[key] = value;
-  }
-
-  function map_get(uint key) returns (uint) {
-    return map_value[key];
-  }
-}"#;
-        let (code, _) = solc("SimpleStorage", source);
-        let tpb = if bench_mode { 1000 } else { 1 };
-        println!("pass");
-        let evm = bench_chain(&code, &data, tpb, Address::zero());
-        let native = bench_chain(&code, &data, tpb, Address::from(0x400));
-        println!(
-            "test {:20} ... bench: {:5} tpb {:10} tps(evm) {:10} tps(native) {:3.2}% ",
-            name,
-            tpb,
-            evm,
-            native,
-            native as f32 / evm as f32 * 100.0
-        );
-    }
-
-    #[bench]
-    fn bench_uint_set(b: &mut Bencher) {
-        let name = "bench_uint_set";
-        let data = "aa91543e000000000000000000000000000000000000000000000000000000000000000a"
-            .from_hex()
-            .unwrap();
-        bench_simple_storage(name, &data);
-        b.iter(|| {});
-    }
-
-    #[bench]
-    fn bench_uint_get(b: &mut Bencher) {
-        let name = "bench_uint_get";
-        let data = "aa91543e000000000000000000000000000000000000000000000000000000000000000a"
-            .from_hex()
-            .unwrap();
-        bench_simple_storage(name, &data);
-        b.iter(|| {});
-    }
-
-    #[bench]
-    fn bench_string_set(b: &mut Bencher) {
-        let name = "bench_string_set";
-        let data = "c9615770000000000000000000000000000000000000000000000000000000000000002\
-                    00000000000000000000000000000000000000000000000000000000000000003313233\
-                    0000000000000000000000000000000000000000000000000000000000"
-            .from_hex()
-            .unwrap();
-        bench_simple_storage(name, &data);
-        b.iter(|| {});
-    }
-
-    #[bench]
-    fn bench_string_get(b: &mut Bencher) {
-        let name = "bench_string_get";
-        let data = "e3135d14".from_hex().unwrap();
-        bench_simple_storage(name, &data);
-        b.iter(|| {});
-    }
-
-    #[bench]
-    fn bench_array_set(b: &mut Bencher) {
-        let name = "bench_array_set";
-        let data = "118b229c00000000000000000000000000000000000000000000000000000000000000\
-                    01000000000000000000000000000000000000000000000000000000000000000b"
-            .from_hex()
-            .unwrap();
-        bench_simple_storage(name, &data);
-        b.iter(|| {});
-    }
-
-    #[bench]
-    fn bench_array_get(b: &mut Bencher) {
-        let name = "bench_array_get";
-        let data = "180a4bbf0000000000000000000000000000000000000000000000000000000000000001"
-            .from_hex()
-            .unwrap();
-        bench_simple_storage(name, &data);
-        b.iter(|| {});
-    }
-
-    #[bench]
-    fn bench_map_set(b: &mut Bencher) {
-        let name = "bench_map_set";
-        let data = "118b229c000000000000000000000000000000000000000000000000000000000000000\
-                    1000000000000000000000000000000000000000000000000000000000000000c"
-            .from_hex()
-            .unwrap();
-        bench_simple_storage(name, &data);
-        b.iter(|| {});
-    }
-
-    #[bench]
-    fn bench_map_get(b: &mut Bencher) {
-        let name = "bench_map_get";
-        let data = "180a4bbf0000000000000000000000000000000000000000000000000000000000000001"
-            .from_hex()
-            .unwrap();
-        bench_simple_storage(name, &data);
-        b.iter(|| {});
     }
 }

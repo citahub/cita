@@ -18,12 +18,14 @@
 #![rustfmt_skip]
 
 use BlockNumber;
-use log_entry::{LogBloom, LogEntry, LocalizedLogEntry};
+use log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
 use rlp::*;
-use util::{H256, U256, Address};
+use util::{Address, H256, U256, Bytes};
 use util::HeapSizeOf;
+use std::str::FromStr;
+use libproto::executer::{Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot};
 
-#[derive(Debug, PartialEq, Clone, Copy, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
     //ExecutionError
     NoTransactionPermission,
@@ -58,6 +60,39 @@ impl ReceiptError {
         };
         desc.to_string()
     }
+
+    pub fn protobuf(&self) -> ProtoReceiptError {
+        match *self {
+            ReceiptError::NoTransactionPermission => ProtoReceiptError::NoTransactionPermission,
+            ReceiptError::NoContractPermission => ProtoReceiptError::NoContractPermission,
+            ReceiptError::NotEnoughBaseGas => ProtoReceiptError::NotEnoughBaseGas,
+            ReceiptError::BlockGasLimitReached => ProtoReceiptError::BlockGasLimitReached,
+            ReceiptError::AccountGasLimitReached => ProtoReceiptError::AccountGasLimitReached,
+            ReceiptError::OutOfGas => ProtoReceiptError::OutOfGas,
+            ReceiptError::BadJumpDestination => ProtoReceiptError::BadJumpDestination,
+            ReceiptError::BadInstruction => ProtoReceiptError::BadInstruction,
+            ReceiptError::StackUnderflow => ProtoReceiptError::StackUnderflow,
+            ReceiptError::OutOfStack => ProtoReceiptError::OutOfStack,
+            ReceiptError::Internal => ProtoReceiptError::Internal,
+        }
+    }
+    
+    fn from_proto(receipt_error: ProtoReceiptError) -> Self {
+        match receipt_error {
+            ProtoReceiptError::NoTransactionPermission => ReceiptError::NoTransactionPermission,
+            ProtoReceiptError::NoContractPermission => ReceiptError::NoContractPermission,
+            ProtoReceiptError::NotEnoughBaseGas => ReceiptError::NotEnoughBaseGas,
+            ProtoReceiptError::BlockGasLimitReached => ReceiptError::BlockGasLimitReached,
+            ProtoReceiptError::AccountGasLimitReached => ReceiptError::AccountGasLimitReached,
+            ProtoReceiptError::OutOfGas => ReceiptError::OutOfGas,
+            ProtoReceiptError::BadJumpDestination => ReceiptError::BadJumpDestination,
+            ProtoReceiptError::BadInstruction => ReceiptError::BadInstruction,
+            ProtoReceiptError::StackUnderflow => ReceiptError::StackUnderflow,
+            ProtoReceiptError::OutOfStack => ReceiptError::OutOfStack,
+            ProtoReceiptError::Internal => ReceiptError::Internal,
+        }
+    }
+
 }
 
 impl Decodable for ReceiptError {
@@ -85,7 +120,7 @@ impl Encodable for ReceiptError {
 }
 
 /// Information describing execution of a transaction.
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 pub struct Receipt {
     /// The state root after executing the transaction. Optional since EIP98
     pub state_root: Option<H256>,
@@ -112,6 +147,63 @@ impl Receipt {
             logs: logs,
             error: error,
         }
+    }
+
+    pub fn protobuf(&self) -> ProtoReceipt {
+        let mut receipt_proto = ProtoReceipt::new();
+        let mut state_root_option = StateRoot::new();
+        let mut receipt_error_with_option = ReceiptErrorWithOption::new();
+
+
+        if let Some(state_root) = self.state_root {
+            state_root_option.set_state_root(state_root.to_vec());
+            receipt_proto.set_state_root(state_root_option);
+        }
+
+        if let Some(error) = self.error {
+            receipt_error_with_option.set_error(error.protobuf());
+            receipt_proto.set_error(receipt_error_with_option);
+        }
+
+        receipt_proto.set_gas_used(self.gas_used.to_hex());
+        receipt_proto.set_log_bloom(self.log_bloom.to_vec());
+        receipt_proto.logs = self.logs
+            .clone()
+            .into_iter()
+            .map(|log_entry| log_entry.protobuf())
+            .collect();
+        receipt_proto
+    }
+}
+
+impl From<ProtoReceipt> for Receipt {
+    fn from(receipt: ProtoReceipt) -> Self {
+        let mut state_root = None;
+        if receipt.state_root.is_some() {
+            state_root = Some(H256::from_slice(
+                receipt.clone().take_state_root().get_state_root(),
+            ));
+        }
+
+        let gas_used: U256 = U256::from_str(receipt.get_gas_used()).unwrap();
+        let mut error = None;
+
+        let logs = receipt.get_logs().into_iter().map(|log_entry|{
+            let address: Address = Address::from_slice(log_entry.get_address());
+            let topics: Vec<H256> = log_entry.get_topics().into_iter().map(|topic|{H256::from_slice(topic)}).collect();
+            let data: Bytes = Bytes::from(log_entry.get_data());
+            LogEntry {
+                address: address,
+                topics: topics,
+                data: data,
+            }
+        }).collect();
+
+        if receipt.error.is_some() {
+            error = Some(ReceiptError::from_proto(receipt.clone().take_error().get_error()));
+        }
+
+        Receipt::new(state_root, gas_used, logs, error)
     }
 }
 

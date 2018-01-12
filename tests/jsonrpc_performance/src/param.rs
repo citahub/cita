@@ -33,6 +33,7 @@ pub struct Param {
     //Dup, SignErr, Correct
     pub tx_type: String,
     pub tx_format_err: bool,
+    pub is_change_acct: bool,
 }
 
 impl Param {

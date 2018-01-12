@@ -14,7 +14,8 @@ jobs:
           command: 'cargo fmt --all  -- --write-mode diff'
       - run: 
           name: build
-          command: 'cargo build --all'
+          command: 'cargo build -j1 --all'
+          no_output_timeout: 20m
       - save_cache:
           key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
           paths:
