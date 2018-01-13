@@ -72,10 +72,9 @@ pub enum BlockSource {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum CacheId {
-    /*    BlockHeaders(H256),
-    BlockBodies(H256),
-    BlockHashes(BlockNumber),
-*/
+    BlockHeaders(BlockNumber),
+    BlockBodies(BlockNumber),
+    BlockHashes(H256),
     TransactionAddresses(H256),
     BlocksBlooms(LogGroupPosition),
     BlockReceipts(H256),
@@ -243,15 +242,10 @@ impl Chain {
         }
     }
 
-    /*fn write_cache<K, T>(&mut self, cache: &mut HashMap<K, T>, key: K, value: T)
-    {
-        cache.insert(key, value);
-    }*/
-
     pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
         let result = self.db
             .read_with_cache(db::COL_EXTRA, &self.block_hashes, &hash);
-        //self.cache_man.lock().note_used(CacheId::BlockHashes(index));
+        self.cache_man.lock().note_used(CacheId::BlockHashes(hash));
         result
     }
 
@@ -556,7 +550,7 @@ impl Chain {
         }
         let result = self.db
             .read_with_cache(db::COL_HEADERS, &self.block_headers, &idx);
-        //self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
+        self.cache_man.lock().note_used(CacheId::BlockHeaders(idx));
         result
     }
 
@@ -584,7 +578,9 @@ impl Chain {
     fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
         let result = self.db
             .read_with_cache(db::COL_BODIES, &self.block_bodies, &number);
-        //self.cache_man.lock().note_used(CacheId::BlockHeaders(hash));
+        self.cache_man
+            .lock()
+            .note_used(CacheId::BlockBodies(number));
         result
     }
 
@@ -1093,15 +1089,15 @@ impl Chain {
         cache_man.collect_garbage(current_size, |ids| {
             for id in &ids {
                 match *id {
-                    /*CacheId::BlockHeaders(_) => {
-                        //block_headers.remove(h);
+                    CacheId::BlockHeaders(ref h) => {
+                        block_headers.remove(h);
                     }
-                    CacheId::BlockBodies(_) => {
-                        //block_bodies.remove(h);
+                    CacheId::BlockBodies(ref h) => {
+                        block_bodies.remove(h);
                     }
-                    CacheId::BlockHashes(_) => {
-                        //block_hashes.remove(h);
-                    }*/
+                    CacheId::BlockHashes(ref h) => {
+                        block_hashes.remove(h);
+                    }
                     CacheId::TransactionAddresses(ref h) => {
                         transaction_addresses.remove(h);
                     }

@@ -101,7 +101,10 @@ impl Forward {
             // TODO: should check the result, parse it first!
             Request::block_number(_) => {
                 // let sys_time = SystemTime::now();
-                let height = self.chain.get_max_store_height();
+                let mut height = self.chain.get_max_store_height();
+                if height == ::std::u64::MAX {
+                    height = self.chain.get_max_height();
+                }
                 response.set_block_number(height);
             }
 
