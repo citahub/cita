@@ -197,16 +197,19 @@ impl Forward {
             Request::call(call) => {
                 trace!("Chainvm Call {:?}", call);
                 self.ctx_pub.send((retrans_topic, imsg)).unwrap();
+                return;
             }
 
             Request::transaction_count(tx_count) => {
                 trace!("transaction count request from jsonrpc {:?}", tx_count);
                 self.ctx_pub.send((retrans_topic, imsg)).unwrap();
+                return;
             }
 
             Request::code(code_content) => {
                 trace!("code request from josnrpc  {:?}", code_content);
                 self.ctx_pub.send((retrans_topic, imsg)).unwrap();
+                return;
             }
 
             Request::new_filter(new_filter) => {
