@@ -90,7 +90,7 @@ fn create_contract(
     let (send_data, block) = Generateblock::build_block(txs, pre_hash, h as u64);
 
     info!("===============start add block===============");
-    profifer(flag_prof_start, flag_prof_duration);
+    profiler(flag_prof_start, flag_prof_duration);
     let sys_time = time::SystemTime::now();
     let (ctx_pub, recv) = channel::<(String, Vec<u8>)>();
     let inblock = block.clone();
@@ -195,7 +195,7 @@ fn send_contract_tx(block_tx_num: i32, call: Callexet, pre_hash: H256, flag_prof
     let pre_hash = call.get_pre_hash();
     let (send_data, block) = Generateblock::build_block(txs.clone(), pre_hash, h as u64);
     info!("===============start add block===============");
-    profifer(flag_prof_start, flag_prof_duration);
+    profiler(flag_prof_start, flag_prof_duration);
     let sys_time = time::SystemTime::now();
     call.add_block(block.clone(), &ctx_pub);
     let duration = sys_time.elapsed().unwrap();
@@ -212,7 +212,7 @@ fn send_contract_tx(block_tx_num: i32, call: Callexet, pre_hash: H256, flag_prof
     info!("receipt = {:?}", call.get_receipt(hash));
 }
 
-fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
+fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
     let start = flag_prof_start;
     let duration = flag_prof_duration;

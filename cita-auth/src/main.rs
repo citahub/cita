@@ -64,7 +64,7 @@ use std::time::SystemTime;
 use util::{set_panic_handler, Mutex, RwLock};
 use verify::Verifier;
 
-fn profifer(flag_prof_start: u64, flag_prof_duration: u64) {
+fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
     let start = flag_prof_start;
     let duration = flag_prof_duration;
@@ -120,7 +120,7 @@ fn main() {
     let threadpool = threadpool::ThreadPool::new(tx_verify_thread_num);
     let on_proposal = Arc::new(AtomicBool::new(false));
 
-    profifer(flag_prof_start, flag_prof_duration);
+    profiler(flag_prof_start, flag_prof_duration);
 
     let verifier = Arc::new(RwLock::new(Verifier::new()));
     let verify_cache = HashMap::new();
