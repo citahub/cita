@@ -515,10 +515,14 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"topics"
  * from: DATA, 20 Bytes - (optional) The address the transaction is sent from.
  * to:   DATA, 20 Bytes - The address the transaction is directed to.
  * data: DATA - (optional) Hash of the method signature and encoded parameters. For details see [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)
-2. QUANTITY - integer block height
+2. QUANTITY - block parameter
+ * HEX String - an integer block number
+ * String "earliest" for the earliest/genesis block
+ * String "latest" - for the latest mined block
+
 
 ```js
-params: [{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5","data":"0x6d4ce63c"}, 0x1d23]
+params: [{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5","data":"0x6d4ce63c"}, "0x1d23"]
 ```
 
 ##### Returns
@@ -535,7 +539,7 @@ params: [{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call",
 "params":[{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5",
-"data":"0x6d4ce63c"}, 6],"id":2}'
+"data":"0x6d4ce63c"}, "0x6"],"id":2}'
 
 // Result
 {
