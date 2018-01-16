@@ -12,6 +12,8 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
 ::
 
   cd cita
+  git submodule init
+  git submodule update
 
 启动 ``install_develop.sh`` 脚本安装依赖，命令如下：
 ::
@@ -85,13 +87,13 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
 
 启动节点的服务步骤都是相同的，以 ``node0`` 为例，其启动CITA节点的具体步骤为：
 
-1）启动节点 ``node0`` 之前需进行初始化：
+1) 启动节点 ``node0`` 之前需进行初始化：
 
 .. code-block:: none
 
   cita setup node0
 
-2）启动节点 ``node0`` 的服务：
+2) 启动节点 ``node0`` 的服务：
 
 .. code-block:: none
 
@@ -121,6 +123,15 @@ CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。C
 
 备注：以上示例Demo的节点启动都是位于同一台机器上，如果需要部署到不同的服务器上，只需删除其他节点的配置("target/install/nodeX"),并保留自己节点的配置,然后将整个目录（即 ``target/install`` 目录）拷贝到其他服务器上运行即可。
 
+3) 将不同节点部署到不同服务器
+
+节点的服务器需要安装依赖
+::
+
+  bash ./scripts/install_runtime.sh
+
+将节点拷贝到对应的服务器，并修改 ``network.toml`` 目录下的配置文件，修改为对应的IP地址。
+使用 ``cita start`` 启动各个节点。
 
 验证
 =============
