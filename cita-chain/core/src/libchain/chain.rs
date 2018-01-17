@@ -410,7 +410,7 @@ impl Chain {
                     submodules::CHAIN,
                     topics::NEW_BLK,
                     communication::MsgType::SYNC_RES,
-                    sync_res.write_to_bytes().unwrap(),
+                    MsgClass::SYNCRESPONSE(sync_res),
                 );
                 ctx_pub
                     .clone()
@@ -883,7 +883,7 @@ impl Chain {
                 submodules::CHAIN,
                 topics::BLOCK_TXHASHES,
                 communication::MsgType::BLOCK_TXHASHES,
-                block_tx_hashes.write_to_bytes().unwrap(),
+                MsgClass::BLOCKTXHASHES(block_tx_hashes),
             );
 
             ctx_pub_clone
@@ -922,7 +922,7 @@ impl Chain {
             submodules::CHAIN,
             topics::RICH_STATUS,
             communication::MsgType::RICH_STATUS,
-            rich_status.write_to_bytes().unwrap(),
+            MsgClass::RICHSTATUS(rich_status),
         );
         ctx_pub
             .send((
@@ -1009,16 +1009,16 @@ impl Chain {
             return;
         }
         let status = self.current_status().protobuf();
-        let sync_msg = factory::create_msg(
-            submodules::CHAIN,
-            topics::NEW_STATUS,
-            communication::MsgType::STATUS,
-            status.write_to_bytes().unwrap(),
-        );
         info!(
             "chain.status {:?}, {:?}",
             status.get_height(),
             status.get_hash()
+        );
+        let sync_msg = factory::create_msg(
+            submodules::CHAIN,
+            topics::NEW_STATUS,
+            communication::MsgType::STATUS,
+            MsgClass::STATUS(status),
         );
         ctx_pub
             .send((

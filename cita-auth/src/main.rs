@@ -351,7 +351,7 @@ mod tests {
             submodules::JSON_RPC,
             topics::REQUEST,
             communication::MsgType::REQUEST,
-            request.write_to_bytes().unwrap(),
+            MsgClass::REQUEST(request),
         );
         msg.write_to_bytes().unwrap()
     }
@@ -366,7 +366,7 @@ mod tests {
             submodules::JSON_RPC,
             topics::REQUEST,
             communication::MsgType::REQUEST,
-            request.write_to_bytes().unwrap(),
+            MsgClass::REQUEST(request),
         );
         msg.write_to_bytes().unwrap()
     }
@@ -397,7 +397,7 @@ mod tests {
             submodules::CONSENSUS,
             topics::VERIFY_BLK_REQ,
             communication::MsgType::VERIFY_BLK_REQ,
-            blkreq.write_to_bytes().unwrap(),
+            MsgClass::VERIFYBLKREQ(blkreq),
         );
         msg.write_to_bytes().unwrap()
     }
@@ -430,7 +430,7 @@ mod tests {
             submodules::CONSENSUS,
             topics::VERIFY_BLK_REQ,
             communication::MsgType::VERIFY_BLK_REQ,
-            blkreq.write_to_bytes().unwrap(),
+            MsgClass::VERIFYBLKREQ(blkreq),
         );
         msg.write_to_bytes().unwrap()
     }
@@ -455,7 +455,7 @@ mod tests {
             submodules::CHAIN,
             topics::BLOCK_TXHASHES,
             communication::MsgType::BLOCK_TXHASHES,
-            block_tx_hashes.write_to_bytes().unwrap(),
+            MsgClass::BLOCKTXHASHES(block_tx_hashes),
         );
         msg.write_to_bytes().unwrap()
     }

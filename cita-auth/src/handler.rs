@@ -516,13 +516,13 @@ pub fn handle_verificaton_result(
                                         response.set_code(ErrorCode::tx_auth_error());
                                         response.set_error_msg(tx_response.status);
 
+                                        trace!("response new tx {:?}", response);
                                         let msg = factory::create_msg(
                                             submodules::AUTH,
                                             topics::RESPONSE,
                                             communication::MsgType::RESPONSE,
-                                            response.write_to_bytes().unwrap(),
+                                            MsgClass::RESPONSE(response),
                                         );
-                                        trace!("response new tx {:?}", response);
                                         tx_pub
                                             .send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap()))
                                             .unwrap();
@@ -615,7 +615,7 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
         submodules::AUTH,
         topics::VERIFY_BLK_RESP,
         communication::MsgType::VERIFY_BLK_RESP,
-        blkresp.write_to_bytes().unwrap(),
+        MsgClass::VERIFYBLKRESP(blkresp),
     );
     tx_pub
         .send((

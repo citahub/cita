@@ -519,7 +519,7 @@ impl Executor {
             submodules::EXECUTER,
             topics::EXECUTED_RESULT,
             communication::MsgType::EXECUTED_RESULT,
-            executed_result.write_to_bytes().unwrap(),
+            MsgClass::EXECUTED(executed_result),
         );
         ctx_pub
             .send(("executor.result".to_string(), msg.write_to_bytes().unwrap()))

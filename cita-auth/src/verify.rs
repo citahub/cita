@@ -75,7 +75,7 @@ impl Verifier {
                     submodules::AUTH,
                     topics::BLOCK_TXHASHES_REQ,
                     communication::MsgType::BLOCK_TXHASHES_REQ,
-                    req.write_to_bytes().unwrap(),
+                    MsgClass::BLOCKTXHASHESREQ(req),
                 );
                 tx_pub
                     .send((
