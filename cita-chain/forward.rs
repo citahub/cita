@@ -333,7 +333,7 @@ impl Forward {
                 communication::MsgType::SYNC_RES,
                 communication::OperateType::SINGLE,
                 origin,
-                res_vec.write_to_bytes().unwrap(),
+                MsgClass::SYNCRESPONSE(res_vec),
             );
             trace!(
                 "sync: origin {:?}, chain.blk: OperateType {:?}",
@@ -458,7 +458,7 @@ impl Forward {
                 submodules::CHAIN,
                 topics::BLOCK_TXHASHES,
                 communication::MsgType::BLOCK_TXHASHES,
-                block_tx_hashes.write_to_bytes().unwrap(),
+                MsgClass::BLOCKTXHASHES(block_tx_hashes),
             );
             self.ctx_pub
                 .send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap()))

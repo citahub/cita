@@ -20,7 +20,7 @@ use config;
 use config::NetConfig;
 use libproto::communication;
 use notify::DebouncedEvent;
-use protobuf::Message;
+use protobuf::{parse_from_bytes, Message};
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
@@ -132,6 +132,11 @@ impl Connection {
             operate,
             peers
         );
+    }
+
+    pub fn broadcast_rawbytes(&self, data: &[u8]) {
+        let mut msg = parse_from_bytes::<communication::Message>(data.as_ref()).unwrap();
+        self.broadcast(msg);
     }
 }
 

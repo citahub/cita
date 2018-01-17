@@ -80,6 +80,9 @@ impl Decoder for CitaCodec {
         buf.split_to(8);
         // get msg
         let payload = buf.split_to(msg_len as usize).to_vec();
+        if payload.len() == 0 {
+            return Ok(None);
+        }
 
         trace!("decode msg {:?} {:?}", request_id, payload);
 

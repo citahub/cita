@@ -1,16 +1,14 @@
 use Source;
 use connection::Connection;
-use libproto::{cmd_id, communication, submodules, topics, Request, Response};
-use libproto::communication::MsgType;
+use libproto::{cmd_id, communication, parse_msg, submodules, topics, MsgClass, Response};
 use protobuf::Message;
-use protobuf::core::parse_from_bytes;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
 pub struct NetWork {
     con: Arc<Connection>,
     tx_pub: Sender<(String, Vec<u8>)>,
-    tx_sync: Sender<(Source, communication::Message)>,
+    tx_sync: Sender<(Source, Vec<u8>)>,
     tx_new_tx: Sender<(String, Vec<u8>)>,
     tx_consensus: Sender<(String, Vec<u8>)>,
 }
@@ -19,7 +17,7 @@ impl NetWork {
     pub fn new(
         con: Arc<Connection>,
         tx_pub: Sender<(String, Vec<u8>)>,
-        tx_sync: Sender<(Source, communication::Message)>,
+        tx_sync: Sender<(Source, Vec<u8>)>,
         tx_new_tx: Sender<(String, Vec<u8>)>,
         tx_consensus: Sender<(String, Vec<u8>)>,
     ) -> Self {
@@ -34,18 +32,18 @@ impl NetWork {
 
     pub fn receiver(&self, source: Source, data: Vec<u8>) {
         trace!("receiver: from {:?}", source);
-        let (topic, msg) = NetWork::parse_msg(&data);
+        let (topic, content) = NetWork::parse_topic(&data);
         match source {
             Source::LOCAL => {
                 //send other node
                 if topic == "net.status" {
                     //sync
-                    self.tx_sync.send((source, msg));
+                    self.tx_sync.send((source, data));
                 } else if topic == "chain.rpc" {
                     //reply rpc
-                    self.reply_rpc(msg.get_content());
+                    self.reply_rpc(content);
                 } else if topic != "" {
-                    self.con.broadcast(msg);
+                    self.con.broadcast_rawbytes(&data);
                 }
             }
 
@@ -53,7 +51,7 @@ impl NetWork {
                 //send mq
                 if topic == "net.status" || topic == "net.blk" {
                     //sync
-                    self.tx_sync.send((source, msg));
+                    self.tx_sync.send((source, data));
                 } else if topic == "net.tx" {
                     self.tx_new_tx.send((topic, data));
                 } else if topic == "net.msg" {
@@ -65,57 +63,75 @@ impl NetWork {
         }
     }
 
-    pub fn reply_rpc(&self, msg: &[u8]) {
-        let mut ts = parse_from_bytes::<Request>(msg).unwrap();
-        let mut response = Response::new();
-        response.set_request_id(ts.take_request_id());
-        if ts.has_peercount() {
-            let peercount = self.con
-                .peers_pair
-                .read()
-                .iter()
-                .filter(|x| x.2.is_some())
-                .count();
-            response.set_peercount(peercount as u32);
-            let ms: communication::Message = response.into();
-            self.tx_pub
-                .send(("chain.rpc".to_string(), ms.write_to_bytes().unwrap()))
-                .unwrap();
+    pub fn reply_rpc(&self, msg_class: MsgClass) {
+        match msg_class {
+            MsgClass::REQUEST(mut ts) => {
+                let mut response = Response::new();
+                response.set_request_id(ts.take_request_id());
+                if ts.has_peercount() {
+                    let peercount = self.con
+                        .peers_pair
+                        .read()
+                        .iter()
+                        .filter(|x| x.2.is_some())
+                        .count();
+                    response.set_peercount(peercount as u32);
+                    let ms: communication::Message = response.into();
+                    self.tx_pub
+                        .send(("chain.rpc".to_string(), ms.write_to_bytes().unwrap()))
+                        .unwrap();
+                }
+            }
+            _ => {
+                warn!("receive: unexpected data type = {:?}", msg_class);
+            }
         }
     }
 
-    pub fn parse_msg(payload: &[u8]) -> (String, communication::Message) {
-        if let Ok(mut msg) = parse_from_bytes::<communication::Message>(payload) {
-            let mut topic = String::new();
-            let t = msg.get_field_type();
-            let cid = msg.get_cmd_id();
-            if cid == cmd_id(submodules::JSON_RPC, topics::REQUEST) && t == MsgType::REQUEST {
-                topic = "chain.rpc".to_string();
-            } else if cid == cmd_id(submodules::AUTH, topics::REQUEST) && t == MsgType::REQUEST {
-                trace!("AUTH broadcast tx");
-                topic = "net.tx".to_string();
-            } else if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) && t == MsgType::STATUS {
-                trace!("CHAIN pub status");
-                topic = "net.status".to_string();
-            } else if cid == cmd_id(submodules::CHAIN, topics::SYNC_BLK) && t == MsgType::SYNC_REQ {
-                trace!("CHAIN sync blk");
-                topic = "net.sync".to_string();
-            } else if cid == cmd_id(submodules::CHAIN, topics::NEW_BLK) && t == MsgType::SYNC_RES {
-                trace!("CHAIN sync blk");
-                topic = "net.blk".to_string();
-            } else if cid == cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG) && t == MsgType::MSG {
-                trace!("CONSENSUS pub msg");
-                topic = "net.msg".to_string();
-            } else if cid == cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) && t == MsgType::MSG {
-                info!("CONSENSUS pub proposal");
-                topic = "net.msg".to_string();
-            } else {
-                topic = "".to_string();
-                msg = communication::Message::new();
+    pub fn parse_topic(data: &[u8]) -> (String, MsgClass) {
+        let (cid, _, content) = parse_msg(data);
+        let topic = match content {
+            MsgClass::REQUEST(_) => {
+                if cid == cmd_id(submodules::JSON_RPC, topics::REQUEST) {
+                    "chain.rpc"
+                } else if cid == cmd_id(submodules::AUTH, topics::REQUEST) {
+                    "net.tx"
+                } else {
+                    ""
+                }
             }
-            (topic, msg)
-        } else {
-            ("".to_string(), communication::Message::new())
-        }
+            MsgClass::STATUS(_) => {
+                if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) {
+                    "net.status"
+                } else {
+                    ""
+                }
+            }
+            MsgClass::SYNCREQUEST(_) => {
+                if cid == cmd_id(submodules::CHAIN, topics::SYNC_BLK) {
+                    "net.sync"
+                } else {
+                    ""
+                }
+            }
+            MsgClass::SYNCRESPONSE(_) => {
+                if cid == cmd_id(submodules::CHAIN, topics::NEW_BLK) {
+                    "net.blk"
+                } else {
+                    ""
+                }
+            }
+            MsgClass::MSG(_) => {
+                if cid == cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG)
+                    || cid == cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL)
+                {
+                    "net.msg"
+                } else {
+                    ""
+                }
+            }
+            _ => "",
+        }.to_string();
+        (topic, content)
     }
 }

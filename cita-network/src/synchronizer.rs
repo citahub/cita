@@ -1,15 +1,13 @@
 use Source;
 use connection::Connection;
-use libproto::{cmd_id, communication, factory, submodules, topics, SyncRequest, SyncResponse};
+use libproto::{cmd_id, communication, factory, parse_msg, submodules, topics, MsgClass, SyncRequest, SyncResponse};
 use libproto::blockchain::{Block, Status};
-use libproto::communication::MsgType;
-use protobuf::{parse_from_bytes, Message, RepeatedField};
+use protobuf::{Message, RepeatedField};
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::{mpsc, Arc};
 //use time::now;
 use std::time::{Duration, Instant};
-use util::snappy;
 
 const SYNC_STEP: u64 = 20;
 const SYNC_TIME_OUT: u64 = 60;
@@ -156,34 +154,37 @@ impl Synchronizer {
         self.submit_blocks();
     }
 
-    pub fn receive(&mut self, from: Source, mut msg: communication::Message) {
-        let t = msg.get_field_type();
-        let cid = msg.get_cmd_id();
-        let data = snappy::cita_decompress(msg.take_content());
-
-        if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) && t == MsgType::STATUS {
-            if let Ok(status) = parse_from_bytes::<Status>(&data) {
-                match from {
-                    Source::LOCAL => {
-                        self.update_current_status(status);
+    pub fn receive(&mut self, from: Source, data: Vec<u8>) {
+        let (cid, origin, content) = parse_msg(&data);
+        match content {
+            MsgClass::STATUS(status) => {
+                if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) {
+                    match from {
+                        Source::LOCAL => {
+                            self.update_current_status(status);
+                        }
+                        Source::REMOTE => {
+                            self.update_global_status(&status, origin);
+                        }
                     }
-                    Source::REMOTE => {
-                        self.update_global_status(&status, msg.get_origin());
+                };
+            }
+            MsgClass::SYNCRESPONSE(blocks) => {
+                if cid == cmd_id(submodules::CHAIN, topics::NEW_BLK) {
+                    match from {
+                        Source::LOCAL => {
+                            error!("sync: msg not parse!");
+                        }
+                        Source::REMOTE => {
+                            self.process_sync(blocks);
+                        }
                     }
                 }
             }
-        } else if cid == cmd_id(submodules::CHAIN, topics::NEW_BLK) && t == MsgType::SYNC_RES {
-            if let Ok(blocks) = parse_from_bytes::<SyncResponse>(&data) {
-                match from {
-                    Source::LOCAL => {
-                        error!("sync: msg not parse!");
-                    }
-                    Source::REMOTE => {
-                        self.process_sync(blocks);
-                    }
-                }
+            _ => {
+                warn!("receive: unexpected data type = {:?}", content);
             }
-        }
+        };
     }
 
     // 发起同步请求
@@ -274,7 +275,7 @@ impl Synchronizer {
                 communication::MsgType::SYNC_REQ,
                 communication::OperateType::SINGLE,
                 origin,
-                sync_req.write_to_bytes().unwrap(),
+                MsgClass::SYNCREQUEST(sync_req),
             );
             self.con.broadcast(msg);
         }
@@ -290,7 +291,7 @@ impl Synchronizer {
             submodules::CHAIN,
             topics::NEW_STATUS,
             communication::MsgType::STATUS,
-            self.current_status.clone().write_to_bytes().unwrap(),
+            MsgClass::STATUS(self.current_status.clone()),
         );
         self.con.broadcast(msg);
     }
@@ -353,7 +354,7 @@ impl Synchronizer {
                 submodules::CHAIN,
                 topics::NEW_BLK,
                 communication::MsgType::SYNC_RES,
-                sync_res.write_to_bytes().unwrap(),
+                MsgClass::SYNCRESPONSE(sync_res),
             );
             self.tx_pub
                 .send(("net.blk".to_string(), msg.write_to_bytes().unwrap()));

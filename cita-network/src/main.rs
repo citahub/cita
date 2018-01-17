@@ -162,9 +162,9 @@ fn main() {
             // msg from sub  new tx
             let (key, body) = crx_sub_tx.recv().unwrap();
             trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
-            let (topic, mut data) = NetWork::parse_msg(&body);
+            let (topic, _) = NetWork::parse_topic(&body);
             if topic == "net.tx" {
-                con_tx.broadcast(data);
+                con_tx.broadcast_rawbytes(&body);
             }
         }
     });
@@ -175,9 +175,9 @@ fn main() {
             // msg from sub  new tx
             let (key, body) = crx_sub_consensus.recv().unwrap();
             trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
-            let (topic, mut data) = NetWork::parse_msg(&body);
+            let (topic, _) = NetWork::parse_topic(&body);
             if topic == "net.msg" {
-                con.broadcast(data);
+                con.broadcast_rawbytes(&body);
             }
         }
     });

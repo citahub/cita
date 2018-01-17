@@ -17,7 +17,7 @@
 
 use bincode::{serialize, Infinite};
 use crypto::*;
-use libproto::{communication, factory, submodules, topics};
+use libproto::{communication, factory, submodules, topics, MsgClass};
 use libproto::blockchain::{Block, BlockWithProof, SignedTransaction, Transaction};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
@@ -135,7 +135,7 @@ impl Generateblock {
             submodules::CONSENSUS,
             topics::NEW_PROOF_BLOCK,
             communication::MsgType::BLOCK_WITH_PROOF,
-            proof_blk.write_to_bytes().unwrap(),
+            MsgClass::BLOCKWITHPROOF(proof_blk.clone()),
         );
         (msg.write_to_bytes().unwrap(), proof_blk)
     }
