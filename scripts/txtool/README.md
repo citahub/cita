@@ -4,6 +4,7 @@
 
 ```
 $ sudo add-apt-repository ppa:ethereum/ethereum
+$ sudo add-apt-repository ppa:ethereum/ethereum-dev
 $ sudo apt-get update
 $ sudo apt-get install solc
 ```
