@@ -17,7 +17,7 @@
 
 use helper::{RpcMap, TransferType};
 use jsonrpc_types::response::Output;
-use libproto::{display_cmd, parse_msg, MsgClass};
+use libproto::{parse_msg, MsgClass};
 use serde_json;
 
 #[derive(Default)]
@@ -34,7 +34,7 @@ impl MqHandler {
 
     pub fn handle(&mut self, key: &str, body: &[u8]) {
         let (id, _, content_ext) = parse_msg(body);
-        trace!("routint_key {:?}, get msg cmd {:?}", key, display_cmd(id));
+        trace!("routint_key {:?}, get msg cmd {}", key, id);
 
         match content_ext {
             MsgClass::RESPONSE(content) => {

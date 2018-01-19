@@ -17,7 +17,7 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{communication, de_cmd_id, factory, id_to_key, parse_msg, submodules, topics, MsgClass, Response, Ret,
+use libproto::{communication, factory, parse_msg, submodules, topics, MsgClass, Response, Ret,
                VerifyBlockResp, VerifyTxReq, VerifyTxResp};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction, UnverifiedTransaction};
 use protobuf::Message;
@@ -229,7 +229,7 @@ pub fn handle_remote_msg(
     resp_sender: &Sender<VerifyRequestResponseInfo>,
 ) {
     let (cmdid, _origin, content) = parse_msg(payload.as_slice());
-    let (submodule, _topic) = de_cmd_id(cmdid);
+    let submodule: u32 = cmdid >> 16;
     match content {
         MsgClass::BLOCKTXHASHES(block_tx_hashes) => {
             let height = block_tx_hashes.get_height();
@@ -422,8 +422,8 @@ pub fn handle_remote_msg(
                 let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
                 let now = SystemTime::now();
                 trace!(
-                    "get batch new tx request from module:{:?} in system time :{:?}, and has got {} new tx ",
-                    id_to_key(submodule),
+                    "get batch new tx request from module:{} in system time :{:?}, and has got {} new tx ",
+                    submodule,
                     now,
                     batch_new_tx.len()
                 );
