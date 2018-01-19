@@ -17,7 +17,7 @@ hyper =  "0.10.7"
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 jsonrpc_types = { path = "../../jsonrpc_types" }
 rustc-hex = "1.0"
-log = "0.3"
+log = "0.4"
 uuid = { version = "0.4", features = ["v4"] }
 
 [features]

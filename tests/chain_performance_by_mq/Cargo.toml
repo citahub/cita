@@ -16,7 +16,7 @@ cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "d
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 dotenv = "0.10.0"
 uuid = { version = "0.4", features = ["v4"] }
-log = "0.3.0"
+log = "0.4.0"
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 core = { path = "../../cita-chain/core" }

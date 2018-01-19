@@ -6,7 +6,7 @@ authors = ["u2 <zhangyaning1985@gmail.com>"]
 [dependencies]
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 byteorder = { version = "1", default-features = false }
-log = "0.3.0"
+log = "0.4.0"
 bincode = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"

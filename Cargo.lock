@@ -159,7 +159,7 @@ version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core-executer 0.1.0",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -182,7 +182,7 @@ name = "benchmark_ws"
 version = "0.1.0"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
@@ -344,14 +344,14 @@ version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core 0.1.0",
  "core-executer 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -369,13 +369,13 @@ version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -421,7 +421,7 @@ name = "cita-auth"
 version = "0.1.0"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "core 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -429,7 +429,7 @@ dependencies = [
  "error 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -448,7 +448,7 @@ name = "cita-chain"
 version = "0.6.0"
 dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core 0.1.0",
@@ -456,7 +456,7 @@ dependencies = [
  "error 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -495,7 +495,7 @@ name = "cita-executer"
 version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core-executer 0.1.0",
@@ -503,7 +503,7 @@ dependencies = [
  "error 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -516,7 +516,7 @@ dependencies = [
 name = "cita-forever"
 version = "0.1.0"
 dependencies = [
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -529,18 +529,18 @@ name = "cita-jsonrpc"
 version = "0.1.0"
 dependencies = [
  "bytes 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "error 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "futures 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "http 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "httparse 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "httparse 1.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.11.11 (git+https://github.com/cryptape/hyper.git?branch=reuse_port)",
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "net2 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -564,13 +564,13 @@ version = "0.6.0"
 dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-cpupool 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "notify 4.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -620,7 +620,7 @@ dependencies = [
  "authority_manage 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -644,7 +644,7 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "2.29.1"
+version = "2.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "ansi_term 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -765,7 +765,7 @@ dependencies = [
  "jsonrpc_types 0.1.0",
  "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mktemp 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -816,7 +816,7 @@ dependencies = [
  "jsonrpc_types 0.1.0",
  "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mktemp 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1176,7 +1176,7 @@ dependencies = [
 
 [[package]]
 name = "httparse"
-version = "1.2.3"
+version = "1.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -1193,7 +1193,7 @@ version = "0.10.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "base64 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "httparse 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "httparse 1.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "language-tags 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "mime 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1214,7 +1214,7 @@ dependencies = [
  "bytes 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-cpupool 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "httparse 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "httparse 1.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "language-tags 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mime 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1286,12 +1286,12 @@ name = "jsonrpc_performance"
 version = "0.1.0"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1312,7 +1312,7 @@ dependencies = [
  "common-types 0.1.0",
  "futures 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "protobuf 1.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -2453,7 +2453,7 @@ name = "trans_evm"
 version = "0.1.0"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc_types 0.1.0",
@@ -2712,7 +2712,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "httparse 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "httparse 1.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "mio 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.20 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2800,7 +2800,7 @@ dependencies = [
 "checksum cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum cita-sm2 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum clap 2.29.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8f4a2b3bb7ef3c672d7c13d15613211d5a6976b6892c598b0fcb5d40765f19c2"
+"checksum clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)" = "4151c5790817c7d21bbdc6c3530811f798172915f93258244948b93ba19604a6"
 "checksum clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)" = "2dae056aaec8acd5fc26722234cc9fa03b969a860d9aef0da6c5e5c996ce66ae"
 "checksum clippy 0.0.180 (registry+https://github.com/rust-lang/crates.io-index)" = "2f4d28dcaffa26ee7e1e11edb658195dc34ddc9f855ade3583ba30fc0f7aaf69"
 "checksum clippy_lints 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)" = "d04f24bc10870e19880865d8f206168993bfc6df9cc7335c0692cad98378a4b6"
@@ -2844,7 +2844,7 @@ dependencies = [
 "checksum getopts 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)" = "65922871abd2f101a2eb0eaebadc66668e54a87ad9c3dd82520b5f86ede5eff9"
 "checksum heapsize 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "54fab2624374e5137ae4df13bf32b0b269cb804df42d13a51221bbd431d1a237"
 "checksum http 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "bf8217d8829cc05dedadc08b4bc0684e5e3fbba1126c5edc680af49053fa230c"
-"checksum httparse 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "af2f2dd97457e8fb1ae7c5a420db346af389926e36f43768b96f101546b04a07"
+"checksum httparse 1.2.4 (registry+https://github.com/rust-lang/crates.io-index)" = "c2f407128745b78abc95c0ffbe4e5d37427fdc0d45470710cfef8c44522a2e37"
 "checksum humantime 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0e9298fffb2a54569e1fcb818e9c2ff77caa2fad68d64b6e409b9f777bdb1960"
 "checksum hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)" = "368cb56b2740ebf4230520e2b90ebb0461e69034d85d1945febd9b3971426db2"
 "checksum hyper 0.11.11 (git+https://github.com/cryptape/hyper.git?branch=reuse_port)" = "<none>"
