@@ -25,6 +25,7 @@ library GroupManager {
     event GroupNewed(bytes32 indexed _group, bytes32 indexed _parentGroup);
     event NameModified(bytes32 indexed _oldName, bytes32 indexed _newName);
     event SubSwitchModified(bool indexed _oldSubSwitch, bool indexed _newSubSwitch);
+    event ProfileModified(string _oldSubSwitch, string _newProfile);
     event UsersAdded(bytes32 indexed _group, address[] _users);
     event UsersDeleted(bytes32 indexed _group, address[] _users);
     event GroupDeleted(bytes32 indexed _group, bytes32[] parentGroups);
@@ -44,7 +45,7 @@ library GroupManager {
         self.groups[_root].name = _root;
 
         for (uint i = 0; i < _adamEve.length; i++)
-            self.groups[_root].users[i] = _adamEve[i];
+            self.groups[_root].users.push(_adamEve[i]);
 
         self.groups[_root].subSwitch = _subSwitch;
         GroupInited(_root, _adamEve, _subSwitch);
@@ -72,11 +73,11 @@ library GroupManager {
 
         if (Util.SetOp.None == _op) {
             for (uint i = 0; i < _newUsers.length; i++)
-                self.groups[_newName].users[i] = _newUsers[i];
+                self.groups[_newName].users.push(_newUsers[i]);
         } else {
             address[] memory one = Util.setOpAddress(self.groups[_group].users, _newUsers, _op);
             for (uint j = 0; j < one.length; j++)
-                self.groups[_newName].users[j] = one[j];
+                self.groups[_newName].users.push(one[j]);
         }
 
         self.groups[_group].subGroups.push(_newName);
@@ -101,7 +102,7 @@ library GroupManager {
         return true;
     }
 
-    /// @dev Modify the sub_switch
+    /// @dev Modify the subSwitch
     function modifySubSwitch(
         Groups storage self,
         bytes32 _group,
@@ -110,8 +111,22 @@ library GroupManager {
         internal
         returns (bool)
     {
-        SubSwitchModified(self.groups[_group].subSwitch, _newSubSwitch);
         self.groups[_group].subSwitch = _newSubSwitch;
+        SubSwitchModified(self.groups[_group].subSwitch, _newSubSwitch);
+        return true;
+    }
+
+    /// @dev Modify the profile
+    function modifyProfile(
+        Groups storage self,
+        bytes32 _group,
+        string _newProfile
+    )
+        internal
+        returns (bool)
+    {
+        self.groups[_group].profile = _newProfile;
+        ProfileModified(self.groups[_group].profile, _newProfile);
         return true;
     }
 
@@ -127,7 +142,7 @@ library GroupManager {
         address[] memory result = Util.opUnionAddress(self.groups[_group].users, _users);
 
         for (uint i = 0; i < result.length; i++)
-            self.groups[_group].users[i] = result[i];
+            self.groups[_group].users.push(result[i]);
 
         UsersAdded(_group, _users);
         return true;
@@ -145,7 +160,7 @@ library GroupManager {
         address[] memory result = Util.opDiffAddress(self.groups[_group].users, _users);
 
         for (uint i = 0; i < result.length; i++)
-            self.groups[_group].users[i] = result[i];
+            self.groups[_group].users.push(result[i]);
 
         UsersDeleted(_group, _users);
         return true;
@@ -161,10 +176,12 @@ library GroupManager {
         internal
         returns (bool)
     {
-        GroupDeleted(_group, self.groups[_group].parentGroups);
-        for (uint i = 0; i < self.groups[_group].parentGroups.length; i++)
-            Util.bytes32Delete(_group, self.groups[_group].parentGroups);
+        bytes32[] memory parents = self.groups[_group].parentGroups;
+        for (uint i = 0; i < parents.length; i++) 
+            Util.bytes32Delete(_group, self.groups[parents[i]].subGroups);
+
         delete self.groups[_group];
+        GroupDeleted(_group, self.groups[_group].parentGroups);
         return true;
     }
 }

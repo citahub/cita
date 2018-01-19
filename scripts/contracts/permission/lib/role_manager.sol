@@ -35,7 +35,7 @@ library RoleManager {
         self.roles[_basic].name = _basic;
   
         for (uint i = 0; i < _permissions.length; i++)
-            self.roles[_basic].permissions[i] = _permissions[i];
+            self.roles[_basic].permissions.push(_permissions[i]);
 
         RoleInited(_basic, _permissions);
         return true;
@@ -55,13 +55,13 @@ library RoleManager {
     {
         self.roles[_newName].name = _newName;
 
-        if (Util.SetOp.None == _op) {
+        if (Util.SetOp.None == _op)
             for (uint i = 0; i < _newPermissions.length; i++)
-                self.roles[_newName].permissions[i] = _newPermissions[i];
-        } else {
+                self.roles[_newName].permissions.push(_newPermissions[i]);
+        else {
             bytes32[] memory one = Util.setOpBytes32(self.roles[_role].permissions, _newPermissions, _op);
             for (uint j = 0; j < one.length; j++)
-                self.roles[_newName].permissions[j] = one[j];
+                self.roles[_newName].permissions.push(one[j]);
         }
 
         RoleNewed(_newName);
@@ -97,7 +97,7 @@ library RoleManager {
         bytes32[] memory result = Util.opUnionBytes32(self.roles[_role].permissions, _permissions);
 
         for (uint i = 0; i < result.length; i++)
-            self.roles[_role].permissions[i] = result[i];
+            self.roles[_role].permissions.push(result[i]);
 
         PermissionsAdded(_role, _permissions);
         return true;
@@ -115,7 +115,7 @@ library RoleManager {
         bytes32[] memory result = Util.opDiffBytes32(self.roles[_role].permissions, _permissions);
 
         for (uint i = 0; i < result.length; i++)
-            self.roles[_role].permissions[i] = result[i];
+            self.roles[_role].permissions.push(result[i]);
 
         PermissionsDeleted(_role, _permissions);
         return true;

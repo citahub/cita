@@ -1,0 +1,18 @@
+{
+  "name": "permission-test",
+  "version": "0.1.0",
+  "description": "CITA permission system test using web3.js",
+  "main": "",
+  "devDependencies": {
+    "jshint": ">=2.5.0",
+    "chai": "^3.0.0",
+    "mocha": ">=2.3.3",
+    "web3": "https://github.com/cryptape/web3.js#cita_support"
+  },
+  "scripts": {
+    "test": "mocha -t 60s; jshint test"
+  },
+  "repository": {},
+  "author": "Cryptape Technologies <arch@cryptape.com>",
+  "license": "GPL-3.0+"
+}

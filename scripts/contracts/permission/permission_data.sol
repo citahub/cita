@@ -1,9 +1,8 @@
 pragma solidity ^0.4.18;
 
-import "./group_manager.sol";
-import "./role_manager.sol";
-import "./auth_manager.sol";
-import "./util.sol";
+import "./lib/group_manager.sol";
+import "./lib/role_manager.sol";
+import "./lib/auth_manager.sol";
 
 /// @title The data of permission system
 contract PermissionData {
@@ -11,7 +10,6 @@ contract PermissionData {
     using GroupManager for *;
     using RoleManager for *;
     using AuthorizationManager for *;
-    using Util for *;
 
     GroupManager.Groups groups;
     RoleManager.Roles roles;
@@ -58,7 +56,7 @@ contract PermissionData {
 
         // About key
         bytes32("AddKey"),
-        bytes32("Freezekey"),
+        bytes32("FreezeKey"),
         bytes32("ActiveKey"),
         bytes32("ResetKey")
     ];
@@ -93,7 +91,7 @@ contract PermissionData {
 
         // About key
         AddKey,
-        Freezekey,
+        FreezeKey,
         ActiveKey,
         ResetKey
     }

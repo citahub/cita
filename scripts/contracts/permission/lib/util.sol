@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
 /// @notice TODO: Address and bytes32. refactor the duplicate code.
-///               The elements of set is different each other. 
+///               The elements of set is different each other.
 library Util {
 
     enum SetOp { None, Union, Interaction, Diff }
@@ -30,7 +30,7 @@ library Util {
 
         for (uint i = 0; i < _other.length; i++)
             result[i] = _other[i];
-        
+
         for (uint j = 0; j < _one.length; j++) {
             flag = true;
 
@@ -53,7 +53,7 @@ library Util {
         returns (bytes32[] result)
     {
         uint index;
-        bool flag; 
+        bool flag;
 
         for (uint i = 0; i < _one.length; i++) {
             flag = false;
@@ -119,7 +119,7 @@ library Util {
 
         for (uint i = 0; i < _other.length; i++)
             result[i] = _other[i];
-        
+
         for (uint j = 0; j < _one.length; j++) {
             flag = true;
 
@@ -142,7 +142,7 @@ library Util {
         returns (address[] result)
     {
         uint index;
-        bool flag; 
+        bool flag;
 
         for (uint i = 0; i < _one.length; i++) {
             flag = false;
@@ -301,18 +301,17 @@ library Util {
     }
 
     /// @dev Replace the value in the array of bytes32
-    function bytes32Replace(bytes32 _old, bytes32 _new, bytes32[] _array)
-        pure
+    function bytes32Replace(bytes32 _old, bytes32 _new, bytes32[] storage _array)
         internal
         returns(bool)
     {
         // Find the value in array and repalce it
         for (uint i = 0; i < _array.length; i++) {
-            if (_old == _array[i])
+            if (_old == _array[i]) {
                 _array[i]  = _new;
+                return true;
+            }
         }
-
-        return true;
     }
 
     /// @dev Check the array of bytes32 is nul

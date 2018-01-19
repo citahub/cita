@@ -35,8 +35,8 @@ library AuthorizationManager {
         internal
         returns(bool)
     {
-        delete self.role_groups[_role];
-        delete self.group_roles[_group];
+        Util.bytes32Delete(_group, self.role_groups[_role]);
+        Util.bytes32Delete(_role, self.group_roles[_group]);
         AuthorizationCanceled(_group, _role);
         return true;
     }

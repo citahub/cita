@@ -9,25 +9,26 @@ contract PermissionCheck is PermissionData {
     modifier userInGroup(address _user, bytes32 _group) {
         if (_user != superAdmin)
             require(Util.addressInArray(_user, groups.groups[_group].users));
-        _; 
+        _;
     }
 
     /// @dev Permission in role
     modifier permissionInRole(bytes32 _permission, bytes32 _role) {
-       require(Util.bytes32InArray(_permission, roles.roles[_role].permissions));
-        _; 
+        require(Util.bytes32InArray(_permission, roles.roles[_role].permissions));
+        _;
     }
 
     /// @dev Permissions in role
     modifier permissionsInRole(bytes32[] _permissions, bytes32 _role) {
-       require(Util.bytes32SubSet(_permissions, roles.roles[_role].permissions));
-        _; 
+        if (bytes32(0x0) != _role)
+            require(Util.bytes32SubSet(_permissions, roles.roles[_role].permissions));
+        _;
     }
 
-    /// @dev Group has role 
+    /// @dev Group has role
     modifier groupHasRole(bytes32 _group, bytes32 _role) {
         require(Util.bytes32InArray(_role, auth.group_roles[_group]));
-        _; 
+        _;
     }
 
     /// @dev Resource group in zone of the user group
@@ -37,7 +38,7 @@ contract PermissionCheck is PermissionData {
         // Need scope switch on
         require(groups.groups[_userGroup].subSwitch);
         require(Util.bytes32InArray(_resourceGroup, groups.groups[_userGroup].subGroups));
-        _; 
+        _;
     }
 
     /// @dev Resource group belong user group.
@@ -48,18 +49,18 @@ contract PermissionCheck is PermissionData {
         else
             // Scope switch is off
             require(_resourceGroup == _userGroup);
-        _; 
+        _;
     }
 
     /// @dev Name does not exist
     modifier nameNotExist(bytes32 _name, bytes32[] _names) {
-        require(!Util.bytes32InArray(_name, _names)); 
+        require(!Util.bytes32InArray(_name, _names));
         _;
     }
 
     /// @dev Name exists
     modifier nameExist(bytes32 _name, bytes32[] _names) {
-        require(Util.bytes32InArray(_name, _names)); 
+        require(Util.bytes32InArray(_name, _names));
         _;
     }
 
@@ -77,26 +78,26 @@ contract PermissionCheck is PermissionData {
 
     /// @dev Group is null
     modifier groupNul(bytes32 _group) {
-        require(bytes32(0x0) == groups.groups[_group].name); 
+        require(bytes32(0x0) == groups.groups[_group].name);
         require(Util.addressArrayNul(groups.groups[_group].users));
         require(Util.bytes32ArrayNul(groups.groups[_group].subGroups));
-        require(false == groups.groups[_group].subSwitch); 
+        require(false == groups.groups[_group].subSwitch);
         require(Util.bytes32ArrayNul(auth.group_roles[_group]));
         _;
     }
 
     /// @dev Role is null
     modifier roleNul(bytes32 _role) {
-        require(bytes32(0x0) == roles.roles[_role].name); 
+        require(bytes32(0x0) == roles.roles[_role].name);
         require(Util.bytes32ArrayNul(roles.roles[_role].permissions));
         require(Util.bytes32ArrayNul(auth.role_groups[_role]));
-        _; 
+        _;
     }
 
     /// @dev Authorization is null
     modifier authNul(bytes32 _group, bytes32 _role) {
-        require(Util.bytes32ArrayNul(auth.role_groups[_role])); 
-        require(Util.bytes32ArrayNul(auth.group_roles[_group])); 
+        require(Util.bytes32ArrayNul(auth.role_groups[_role]));
+        require(Util.bytes32ArrayNul(auth.group_roles[_group]));
         _;
     }
 
@@ -109,12 +110,12 @@ contract PermissionCheck is PermissionData {
         bytes32 _permission
     ) {
         if (_user != superAdmin)
-            require(check(_user, _userGroup, _resourceGroup, _role , _permission)); 
+            require(check(_user, _userGroup, _resourceGroup, _role , _permission));
         _;
     }
 
     /// @dev Check user group has the permission with the scope of the resource group
-    /// @notice For external function calls 
+    /// @notice For external function calls
     function check(
         address _user,
         bytes32 _userGroup,
@@ -122,13 +123,13 @@ contract PermissionCheck is PermissionData {
         bytes32 _role,
         bytes32 _permission
     )
-        view 
-        public
+        view
+        private
         userInGroup(_user, _userGroup)
         groupHasRole(_userGroup, _role)
         permissionInRole(_permission, _role)
         resourceBelongGroup(_resourceGroup, _userGroup)
-        returns (bool) 
+        returns (bool)
     {
         return true;
     }
