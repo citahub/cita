@@ -19,7 +19,7 @@
 
 use basic_types::{LogBloom, ZERO_LOGBLOOM};
 use libproto::blockchain::{BlockHeader, Proof, ProofType};
-use libproto::executer::ExecutedHeader;
+use libproto::executor::ExecutedHeader;
 use rlp::*;
 use std::cell::Cell;
 use std::cmp;

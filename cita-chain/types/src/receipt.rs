@@ -23,7 +23,7 @@ use rlp::*;
 use util::{Address, H256, U256, Bytes};
 use util::HeapSizeOf;
 use std::str::FromStr;
-use libproto::executer::{Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot};
+use libproto::executor::{Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {

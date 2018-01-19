@@ -96,7 +96,7 @@ impl Forward {
         let mut response = response::Response::new();
         response.set_request_id(req.take_request_id());
         let topic = "chain.rpc".to_string();
-        let retrans_topic = "executer.rpc".to_string();
+        let retrans_topic = "executor.rpc".to_string();
         match req.req.unwrap() {
             // TODO: should check the result, parse it first!
             Request::block_number(_) => {

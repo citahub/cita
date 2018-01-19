@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use core::libchain::chain::Chain;
-use libproto::executer::ExecutedResult;
+use libproto::executor::ExecutedResult;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;

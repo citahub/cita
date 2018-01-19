@@ -18,7 +18,7 @@
 extern crate cita_crypto;
 extern crate clap;
 extern crate common_types as types;
-extern crate core_executer;
+extern crate core_executor;
 extern crate dotenv;
 extern crate libproto;
 #[macro_use]
@@ -30,15 +30,15 @@ extern crate serde_json;
 extern crate util;
 
 use cita_crypto::KeyPair;
-use core_executer::libexecuter::block::{Block, BlockBody, Drain, OpenBlock};
+use core_executor::libexecutor::block::{Block, BlockBody, Drain, OpenBlock};
 use mktemp::Temp;
 use rustc_serialize::hex::FromHex;
-//use core_executer::libexecuter::block::{Block, BlockBody};
-use core_executer::db;
-use core_executer::db::*;
-use core_executer::env_info::LastHashes;
-use core_executer::libexecuter::executor::Executor;
-use core_executer::libexecuter::genesis::Genesis;
+//use core_executor::libexecutor::block::{Block, BlockBody};
+use core_executor::db;
+use core_executor::db::*;
+use core_executor::env_info::LastHashes;
+use core_executor::libexecutor::executor::Executor;
+use core_executor::libexecutor::genesis::Genesis;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
@@ -344,6 +344,6 @@ fn main() {
         .unwrap();
 
     let genesis_path = matches.value_of("genesis").unwrap_or("genesis.json");
-    let config_path = matches.value_of("config").unwrap_or("executer.json");
+    let config_path = matches.value_of("config").unwrap_or("executor.json");
     bench_execute_trans(config_path, genesis_path, block_tx_num, is_change_pv, max_h);
 }

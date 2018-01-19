@@ -19,7 +19,7 @@ rustc-serialize = "0.3"
 dotenv = "0.10.0"
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.3.0"
-core-executer = { path = "../../cita-executer/core/" }
+core-executor = { path = "../../cita-executor/core/" }
 common-types = { path = "../../cita-chain/types" }
 bincode = "0.8.0"
 mktemp = "0.3.1"

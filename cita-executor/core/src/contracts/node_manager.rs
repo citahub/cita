@@ -19,7 +19,7 @@
 
 use super::{encode_contract_name, parse_output_to_addresses};
 use super::ContractCallExt;
-use libexecuter::executor::Executor;
+use libexecutor::executor::Executor;
 use rustc_hex::ToHex;
 use std::str::FromStr;
 use util::*;

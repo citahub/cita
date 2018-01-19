@@ -18,8 +18,8 @@
 //! Account Permission manager.
 
 use super::parse_output_to_addresses;
-use libexecuter::call_request::CallRequest;
-use libexecuter::executor::Executor;
+use libexecutor::call_request::CallRequest;
+use libexecutor::executor::Executor;
 use rustc_hex::FromHex;
 use sha3::sha3_256;
 use std::collections::HashSet;

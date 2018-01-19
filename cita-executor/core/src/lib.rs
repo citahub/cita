@@ -84,7 +84,7 @@ pub mod error;
 pub mod engines;
 pub mod native;
 
-pub mod libexecuter;
+pub mod libexecutor;
 pub mod contracts;
 
 pub use factory::*;

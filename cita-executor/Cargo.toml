@@ -1,5 +1,5 @@
 [package]
-name = "cita-executer"
+name = "cita-executor"
 version = "0.1.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
@@ -17,7 +17,7 @@ pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develo
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 error =  { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-core-executer = { path = "./core" }
+core-executor = { path = "./core" }
 common-types = { path = "../cita-chain/types" }
 jsonrpc_types = { path = "../jsonrpc_types" }
 

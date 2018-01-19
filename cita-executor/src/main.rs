@@ -5,7 +5,7 @@
 #![feature(refcell_replace_swap)]
 extern crate bincode;
 extern crate clap;
-extern crate core_executer as core;
+extern crate core_executor as core;
 extern crate dotenv;
 extern crate error;
 extern crate jsonrpc_types;
@@ -31,9 +31,9 @@ use std::time::Duration;
 use util::set_panic_handler;
 
 fn main() {
-    micro_service_init!("cita-executer", "CITA:executer");
+    micro_service_init!("cita-executor", "CITA:executor");
 
-    let matches = App::new("executer")
+    let matches = App::new("executor")
         .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
@@ -57,11 +57,11 @@ fn main() {
     let (write_sender, write_receiver) = channel();
     let (ctx_pub, crx_pub) = channel();
     start_pubsub(
-        "executer",
+        "executor",
         vec![
             "net.blk",
             "consensus.blk",
-            "executer.rpc",
+            "executor.rpc",
             "consensus.msg",
             "net.msg",
         ],

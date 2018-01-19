@@ -35,7 +35,7 @@ use libproto::*;
 use libproto::blockchain::{AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
                            RichStatus as ProtoRichStatus};
 
-use libproto::executer::ExecutedResult;
+use libproto::executor::ExecutedResult;
 use proof::TendermintProof;
 use protobuf::Message;
 use protobuf::RepeatedField;

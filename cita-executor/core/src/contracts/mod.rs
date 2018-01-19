@@ -25,8 +25,8 @@ pub use self::account_manager::AccountManager;
 pub use self::node_manager::NodeManager;
 pub use self::quota_manager::{AccountGasLimit, QuotaManager};
 
-use libexecuter::call_request::CallRequest;
-use libexecuter::executor::Executor;
+use libexecutor::call_request::CallRequest;
+use libexecutor::executor::Executor;
 use sha3::sha3_256;
 use types::ids::BlockId;
 use util::{Address, H160, U256};

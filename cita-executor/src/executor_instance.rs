@@ -1,8 +1,8 @@
 use core::db;
-use core::libexecuter::Genesis;
-use core::libexecuter::block::{Block, ClosedBlock};
-use core::libexecuter::call_request::CallRequest;
-use core::libexecuter::executor::{BlockInQueue, Executor, Stage};
+use core::libexecutor::Genesis;
+use core::libexecutor::block::{Block, ClosedBlock};
+use core::libexecutor::call_request::CallRequest;
+use core::libexecutor::executor::{BlockInQueue, Executor, Stage};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, CountOrCode};
 use libproto;

@@ -21,7 +21,7 @@ use bloomchain;
 use blooms::{BloomGroup, GroupPosition};
 use db::Key;
 use header::{BlockNumber, Header};
-use libexecuter::block::BlockBody;
+use libexecutor::block::BlockBody;
 use libproto::blockchain::Proof;
 use receipt::Receipt;
 use rlp::*;

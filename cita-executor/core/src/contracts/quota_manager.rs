@@ -20,7 +20,7 @@
 use super::ContractCallExt;
 use super::encode_contract_name;
 use ethabi::{decode, ParamType};
-use libexecuter::executor::Executor;
+use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
