@@ -22,7 +22,53 @@ use protobuf::Message;
 use std::collections::{HashMap, HashSet};
 use std::result::Result;
 use std::sync::mpsc::Sender;
+use std::time::SystemTime;
 use util::{H256, BLOCKLIMIT};
+
+#[derive(Debug, Clone)]
+pub enum VerifyRequestID {
+    SingleVerifyRequestID(Vec<u8>),
+    BlockVerifyRequestID(u64),
+}
+
+#[derive(Debug, Clone)]
+pub enum VerifyRequestResponse {
+    AuthRequest(VerifyTxReq),
+    AuthResponse(VerifyTxResp),
+}
+
+#[derive(Debug, Clone)]
+pub struct VerifyRequestResponseInfo {
+    pub sub_module: u32,
+    pub verify_type: VerifyType,
+    pub request_id: VerifyRequestID,
+    pub time_stamp: SystemTime,
+    pub req_resp: VerifyRequestResponse,
+    pub un_tx: Option<UnverifiedTransaction>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum VerifyResult {
+    VerifyNotBegin,
+    VerifyOngoing,
+    VerifyFailed,
+    VerifySucceeded,
+}
+
+#[derive(Debug)]
+pub struct BlockVerifyStatus {
+    pub request_id: u64,
+    pub block_verify_result: VerifyResult,
+    pub verify_success_cnt_required: usize,
+    pub verify_success_cnt_capture: usize,
+    pub cache_hit: usize,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum VerifyType {
+    SingleVerify,
+    BlockVerify,
+}
 
 #[derive(Debug, Clone)]
 pub struct Verifier {
@@ -154,6 +200,47 @@ impl Verifier {
                 Err(())
             }
         }
+    }
+
+    pub fn verfiy_tx(&self, req: &VerifyTxReq) -> VerifyTxResp {
+        let mut resp = VerifyTxResp::new();
+        resp.set_tx_hash(req.get_tx_hash().to_vec());
+
+        if req.get_nonce().len() > 128 {
+            resp.set_ret(Ret::InvalidNonce);
+            return resp;
+        }
+
+        let tx_hash = H256::from_slice(req.get_tx_hash());
+        let ret = self.check_hash_exist(&tx_hash);
+        if ret {
+            if self.is_inited() {
+                resp.set_ret(Ret::Dup);
+            } else {
+                resp.set_ret(Ret::NotReady);
+            }
+            return resp;
+        }
+        let ret = self.verify_sig(req);
+        if ret.is_err() {
+            resp.set_ret(Ret::BadSig);
+            return resp;
+        }
+        //check signer if req have
+        let req_signer = req.get_signer();
+        if !req_signer.is_empty() && req_signer != ret.unwrap().to_vec().as_slice() {
+            resp.set_ret(Ret::BadSig);
+            return resp;
+        }
+        resp.set_signer(ret.unwrap().to_vec());
+        resp.set_ret(Ret::OK);
+        trace!(
+            "verfiy_tx's result:tx_hash={:?}, ret={:?}, signer={:?}",
+            resp.get_tx_hash(),
+            resp.get_ret(),
+            resp.get_signer()
+        );
+        resp
     }
 
     pub fn verify_valid_until_block(&self, valid_until_block: u64) -> bool {
