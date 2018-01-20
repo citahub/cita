@@ -409,7 +409,6 @@ impl Chain {
                 let msg = factory::create_msg(
                     submodules::CHAIN,
                     topics::NEW_BLK,
-                    communication::MsgType::SYNC_RES,
                     MsgClass::SYNCRESPONSE(sync_res),
                 );
                 ctx_pub
@@ -882,7 +881,6 @@ impl Chain {
             let msg = factory::create_msg(
                 submodules::CHAIN,
                 topics::BLOCK_TXHASHES,
-                communication::MsgType::BLOCK_TXHASHES,
                 MsgClass::BLOCKTXHASHES(block_tx_hashes),
             );
 
@@ -921,7 +919,6 @@ impl Chain {
         let msg = factory::create_msg(
             submodules::CHAIN,
             topics::RICH_STATUS,
-            communication::MsgType::RICH_STATUS,
             MsgClass::RICHSTATUS(rich_status),
         );
         ctx_pub
@@ -1017,7 +1014,6 @@ impl Chain {
         let sync_msg = factory::create_msg(
             submodules::CHAIN,
             topics::NEW_STATUS,
-            communication::MsgType::STATUS,
             MsgClass::STATUS(status),
         );
         ctx_pub

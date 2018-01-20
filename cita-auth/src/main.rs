@@ -350,7 +350,6 @@ mod tests {
         let msg = factory::create_msg(
             submodules::JSON_RPC,
             topics::REQUEST,
-            communication::MsgType::REQUEST,
             MsgClass::REQUEST(request),
         );
         msg.write_to_bytes().unwrap()
@@ -365,7 +364,6 @@ mod tests {
         let msg = factory::create_msg(
             submodules::JSON_RPC,
             topics::REQUEST,
-            communication::MsgType::REQUEST,
             MsgClass::REQUEST(request),
         );
         msg.write_to_bytes().unwrap()
@@ -396,7 +394,6 @@ mod tests {
         let msg = factory::create_msg(
             submodules::CONSENSUS,
             topics::VERIFY_BLK_REQ,
-            communication::MsgType::VERIFY_BLK_REQ,
             MsgClass::VERIFYBLKREQ(blkreq),
         );
         msg.write_to_bytes().unwrap()
@@ -429,7 +426,6 @@ mod tests {
         let msg = factory::create_msg(
             submodules::CONSENSUS,
             topics::VERIFY_BLK_REQ,
-            communication::MsgType::VERIFY_BLK_REQ,
             MsgClass::VERIFYBLKREQ(blkreq),
         );
         msg.write_to_bytes().unwrap()
@@ -454,7 +450,6 @@ mod tests {
         let msg = factory::create_msg(
             submodules::CHAIN,
             topics::BLOCK_TXHASHES,
-            communication::MsgType::BLOCK_TXHASHES,
             MsgClass::BLOCKTXHASHES(block_tx_hashes),
         );
         msg.write_to_bytes().unwrap()

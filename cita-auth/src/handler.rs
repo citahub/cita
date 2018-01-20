@@ -17,8 +17,8 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{communication, factory, parse_msg, submodules, topics, MsgClass, Response, Ret,
-               VerifyBlockResp, VerifyTxReq, VerifyTxResp};
+use libproto::{factory, parse_msg, submodules, topics, MsgClass, Response, Ret, VerifyBlockResp, VerifyTxReq,
+               VerifyTxResp};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction, UnverifiedTransaction};
 use protobuf::Message;
 use std::collections::{HashMap, HashSet};
@@ -520,7 +520,6 @@ pub fn handle_verificaton_result(
                                         let msg = factory::create_msg(
                                             submodules::AUTH,
                                             topics::RESPONSE,
-                                            communication::MsgType::RESPONSE,
                                             MsgClass::RESPONSE(response),
                                         );
                                         tx_pub
@@ -614,7 +613,6 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
     let msg = factory::create_msg(
         submodules::AUTH,
         topics::VERIFY_BLK_RESP,
-        communication::MsgType::VERIFY_BLK_RESP,
         MsgClass::VERIFYBLKRESP(blkresp),
     );
     tx_pub

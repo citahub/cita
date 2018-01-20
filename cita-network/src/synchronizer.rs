@@ -272,7 +272,6 @@ impl Synchronizer {
             let msg = factory::create_msg_ex(
                 submodules::CHAIN,
                 topics::SYNC_BLK,
-                communication::MsgType::SYNC_REQ,
                 communication::OperateType::SINGLE,
                 origin,
                 MsgClass::SYNCREQUEST(sync_req),
@@ -290,7 +289,6 @@ impl Synchronizer {
         let msg = factory::create_msg(
             submodules::CHAIN,
             topics::NEW_STATUS,
-            communication::MsgType::STATUS,
             MsgClass::STATUS(self.current_status.clone()),
         );
         self.con.broadcast(msg);
@@ -353,7 +351,6 @@ impl Synchronizer {
             let msg = factory::create_msg(
                 submodules::CHAIN,
                 topics::NEW_BLK,
-                communication::MsgType::SYNC_RES,
                 MsgClass::SYNCRESPONSE(sync_res),
             );
             self.tx_pub
