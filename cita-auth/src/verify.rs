@@ -74,7 +74,6 @@ impl Verifier {
                 let msg = factory::create_msg(
                     submodules::AUTH,
                     topics::BLOCK_TXHASHES_REQ,
-                    communication::MsgType::BLOCK_TXHASHES_REQ,
                     MsgClass::BLOCKTXHASHESREQ(req),
                 );
                 tx_pub

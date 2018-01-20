@@ -330,7 +330,6 @@ impl Forward {
             let msg = factory::create_msg_ex(
                 submodules::CHAIN,
                 topics::NEW_BLK,
-                communication::MsgType::SYNC_RES,
                 communication::OperateType::SINGLE,
                 origin,
                 MsgClass::SYNCRESPONSE(res_vec),
@@ -457,7 +456,6 @@ impl Forward {
             let msg = factory::create_msg(
                 submodules::CHAIN,
                 topics::BLOCK_TXHASHES,
-                communication::MsgType::BLOCK_TXHASHES,
                 MsgClass::BLOCKTXHASHES(block_tx_hashes),
             );
             self.ctx_pub

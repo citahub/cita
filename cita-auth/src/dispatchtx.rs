@@ -19,7 +19,7 @@ extern crate tx_pool;
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{communication, factory, submodules, topics, BatchRequest, MsgClass, Request, Response};
+use libproto::{factory, submodules, topics, BatchRequest, MsgClass, Request, Response};
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use protobuf::{Message, RepeatedField};
 use serde_json;
@@ -169,7 +169,6 @@ impl Dispatchtx {
             let msg = factory::create_msg(
                 submodules::AUTH,
                 topics::RESPONSE,
-                communication::MsgType::RESPONSE,
                 MsgClass::RESPONSE(response),
             );
             mq_pub
@@ -229,7 +228,6 @@ impl Dispatchtx {
         let msg = factory::create_msg(
             submodules::AUTH,
             topics::BLOCK_TXS,
-            communication::MsgType::BLOCK_TXS,
             MsgClass::BLOCKTXS(block_txs),
         );
         mq_pub
@@ -341,7 +339,6 @@ impl Dispatchtx {
         let msg = factory::create_msg(
             submodules::AUTH,
             topics::REQUEST,
-            communication::MsgType::REQUEST,
             MsgClass::REQUEST(request),
         );
         mq_pub

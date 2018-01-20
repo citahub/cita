@@ -518,7 +518,6 @@ impl Executor {
         let msg = factory::create_msg(
             submodules::EXECUTER,
             topics::EXECUTED_RESULT,
-            communication::MsgType::EXECUTED_RESULT,
             MsgClass::EXECUTED(executed_result),
         );
         ctx_pub
