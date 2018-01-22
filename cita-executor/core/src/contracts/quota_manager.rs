@@ -39,7 +39,7 @@ lazy_static! {
     static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a3").unwrap();
 }
 
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct AccountGasLimit {
     pub common_gas_limit: u64,
     pub specific_gas_limit: HashMap<Address, u64>,

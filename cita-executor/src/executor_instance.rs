@@ -555,7 +555,8 @@ impl ExecutorInstance {
         } else {
             proof.height as u64
         };
-        let authorities = self.ext.nodes.read().clone();
+        let conf = self.ext.get_current_sys_conf(number);
+        let authorities = conf.nodes.clone();
         if self.ext.validate_height(number) && self.ext.validate_hash(block.parent_hash())
             && proof.check(proof_height as usize, &authorities)
         {
