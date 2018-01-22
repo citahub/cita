@@ -323,6 +323,9 @@ impl Chain {
                 block_receipts,
                 CacheUpdatePolicy::Overwrite,
             );
+            self.cache_man
+                .lock()
+                .note_used(CacheId::BlockReceipts(hash));
         }
         if info.get_transactions().len() > 0 {
             let transactions: HashMap<H256, TransactionAddress> = info.get_transactions()
@@ -345,6 +348,11 @@ impl Chain {
                 transactions.clone(),
                 CacheUpdatePolicy::Overwrite,
             );
+            for (key, _) in transactions.clone() {
+                self.cache_man
+                    .lock()
+                    .note_used(CacheId::TransactionAddresses(key));
+            }
         }
 
         let mut write_headers = self.block_headers.write();
@@ -383,6 +391,20 @@ impl Chain {
             blocks_blooms.clone(),
             CacheUpdatePolicy::Overwrite,
         );
+
+        //note used
+        self.cache_man.lock().note_used(CacheId::BlockHashes(hash));
+        self.cache_man
+            .lock()
+            .note_used(CacheId::BlockHeaders(number as BlockNumber));
+        self.cache_man
+            .lock()
+            .note_used(CacheId::BlockBodies(number as BlockNumber));
+
+        for (key, _) in blocks_blooms {
+            self.cache_man.lock().note_used(CacheId::BlocksBlooms(key));
+        }
+
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
         self.db.write(batch).expect("DB write failed.");
         {
@@ -1035,6 +1057,9 @@ impl Chain {
                 block.body().clone(),
                 CacheUpdatePolicy::Overwrite,
             );
+            self.cache_man
+                .lock()
+                .note_used(CacheId::BlockBodies(height as BlockNumber));
         }
         let _ = self.db.write(batch);
     }
