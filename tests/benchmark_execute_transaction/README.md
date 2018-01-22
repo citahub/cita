@@ -1,4 +1,4 @@
-# 创建共识完成的block, executer执行交易，计算时间；计算stat root，统计时间；写db，统计时间
+# 创建共识完成的block, executor执行交易，计算时间；计算stat root，统计时间；写db，统计时间
 
 
 ## 主要功能

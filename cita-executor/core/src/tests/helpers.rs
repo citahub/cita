@@ -23,10 +23,10 @@ use self::rustc_serialize::hex::FromHex;
 use cita_crypto::KeyPair;
 use db;
 use journaldb;
-use libexecuter::block::{Block, BlockBody};
-use libexecuter::executor::Executor;
-use libexecuter::genesis::Genesis;
-use libexecuter::genesis::Spec;
+use libexecutor::block::{Block, BlockBody};
+use libexecutor::executor::Executor;
+use libexecutor::genesis::Genesis;
+use libexecutor::genesis::Spec;
 use libproto::blockchain;
 use serde_json;
 use state::State;
@@ -43,7 +43,7 @@ use util::KeyValueDB;
 use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
 
-const CHAIN_CONFIG: &str = include_str!("../../executer.json");
+const CHAIN_CONFIG: &str = include_str!("../../executor.json");
 const GENESIS_CONFIG: &str = include_str!("../../genesis.json");
 pub fn get_temp_state() -> State<StateDB> {
     let journal_db = get_temp_state_db();

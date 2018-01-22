@@ -20,7 +20,7 @@ log = "0.4.0"
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../../cita-chain/types" }
-core-executer = { path = "../../cita-executer/core/" }
+core-executor = { path = "../../cita-executor/core/" }
 core = { path = "../../cita-chain/core" }
 bincode = "0.8.0"
 cpuprofiler = "0.0.3"

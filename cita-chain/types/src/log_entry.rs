@@ -22,7 +22,7 @@ use bloomable::Bloomable;
 use rlp::*;
 use std::ops::Deref;
 use util::{Address, Bytes, H256, Hashable, HeapSizeOf};
-use libproto::executer::LogEntry as ProtoLogEntry;
+use libproto::executor::LogEntry as ProtoLogEntry;
 // use ethjson;
 
 pub type LogBloom = ::util::H2048;

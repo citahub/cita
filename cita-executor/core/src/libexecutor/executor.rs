@@ -28,11 +28,11 @@ use evm::Factory as EvmFactory;
 use executive::{Executed, Executive, TransactOptions};
 use factory::*;
 use header::*;
-pub use libexecuter::block::*;
-use libexecuter::call_request::CallRequest;
-use libexecuter::extras::*;
-use libexecuter::genesis::Genesis;
-pub use libexecuter::transaction::*;
+pub use libexecutor::block::*;
+use libexecutor::call_request::CallRequest;
+use libexecutor::extras::*;
+use libexecutor::genesis::Genesis;
+pub use libexecutor::transaction::*;
 
 use libproto::*;
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
@@ -89,17 +89,17 @@ pub enum BlockInQueue {
 }
 
 /// Rules
-/// 1. When executer receives proposal from consensus, pre-execute it firstly, set stage to `ExecutingProposal`.
+/// 1. When executor receives proposal from consensus, pre-execute it firstly, set stage to `ExecutingProposal`.
 /// 2. When it receives another proposal,
 /// 2.1 and the new proposal is different from the current one(the same transaction root),
 ///     interrupt the current executing and redo the new proposal;
 /// 2.2 otherwise ignore it.
-/// 3. When executer receives a consensus block, compares to the current excuting proposal,
+/// 3. When executor receives a consensus block, compares to the current excuting proposal,
 /// 3.1 if they are the same, replace the proposal to consensus block, change the stage to `ExecutingBlock`.
 /// 3.2 Otherwise check whether the propposal is executing,
 /// 3.2.1 if yes, interrupt the current proposal and execute the consensus block,
 /// 3.2.2 otherwise execute the consensus block.
-/// 4. When executer finishes executing proposal, check the stage,
+/// 4. When executor finishes executing proposal, check the stage,
 /// 4.1 if `ExecutingBlock`, continue;
 /// 4.2 if `ExecutingProposal`, go to `WaitFinalized`,
 /// 4.3 if `is_interrupt`, ignore.
@@ -227,7 +227,7 @@ impl Executor {
             check_prooftype: sc.check_prooftype,
         };
 
-        // Build executer config
+        // Build executor config
         executor.build_last_hashes(Some(header.hash()), header.number());
         executor.reload_config();
         {
@@ -516,7 +516,7 @@ impl Executor {
     pub fn send_executed_info_to_chain(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let executed_result = { self.executed_result.read().clone() };
         let msg = factory::create_msg(
-            submodules::EXECUTER,
+            submodules::EXECUTOR,
             topics::EXECUTED_RESULT,
             MsgClass::EXECUTED(executed_result),
         );

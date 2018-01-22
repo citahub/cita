@@ -17,9 +17,9 @@
 
 use common_types::receipt::LocalizedReceipt;
 use core::libchain::chain::Chain;
-use core_executer::libexecuter::Genesis;
-use core_executer::libexecuter::executor::Block;
-use core_executer::libexecuter::executor::Executor;
+use core_executor::libexecutor::Genesis;
+use core_executor::libexecutor::executor::Block;
+use core_executor::libexecutor::executor::Executor;
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::Arc;

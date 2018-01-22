@@ -22,12 +22,12 @@ use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
-use libexecuter::executor::Executor;
-use libexecuter::extras::TransactionAddress;
+use libexecutor::executor::Executor;
+use libexecutor::extras::TransactionAddress;
 
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
-use libproto::executer::{ExecutedInfo, ReceiptWithOption, TransAddr};
+use libproto::executor::{ExecutedInfo, ReceiptWithOption, TransAddr};
 use protobuf::RepeatedField;
 use receipt::{Receipt, ReceiptError};
 use rlp::*;

@@ -17,8 +17,8 @@
 
 use db::{self as db, Writable};
 use factory::Factories;
-use libexecuter::block::Block;
-use libexecuter::extras::*;
+use libexecutor::block::Block;
+use libexecutor::extras::*;
 use rustc_hex::FromHex;
 use serde_json;
 use state::State;

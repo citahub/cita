@@ -20,7 +20,7 @@ cp -rf target/${type}/cita-tendermint      target/install/bin/
 cp -rf target/${type}/cita-jsonrpc         target/install/bin/
 cp -rf target/${type}/cita-auth            target/install/bin/
 cp -rf target/${type}/cita-network         target/install/bin/
-cp -rf target/${type}/cita-executer        target/install/bin/
+cp -rf target/${type}/cita-executor        target/install/bin/
 cp -rf target/${type}/trans_evm            target/install/bin/
 cp -rf target/${type}/create_key_addr      target/install/bin/
 cp -rf target/${type}/chain_performance    target/install/bin/

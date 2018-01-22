@@ -39,8 +39,8 @@ pidfile = ".cita-chain.pid"
 respawn = 3
 
 [[process]]
-name = "cita-executer"
-command = "cita-executer"
-args = ["-g","genesis.json","-c","executer.json"]
-pidfile = ".cita-executer.pid"
+name = "cita-executor"
+command = "cita-executor"
+args = ["-g","genesis.json","-c","executor.json"]
+pidfile = ".cita-executor.pid"
 respawn = 3
