@@ -49,7 +49,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
-use std::thread;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
@@ -169,6 +168,10 @@ pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
     }
 }
 
+pub fn get_chain_body_height(db: &KeyValueDB) -> Option<BlockNumber> {
+    db.read(db::COL_EXTRA, &CurrentHeight)
+}
+
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
     use rlp::RlpStream;
 
@@ -199,11 +202,15 @@ impl Chain {
         //        let mut is_genesis_ok = false;
         let header = get_chain(&*db).unwrap_or(Header::default());
         info!("get chain head is : {:?}", header);
-        let max_height = AtomicUsize::new(0);
-        max_height.store(header.number() as usize, Ordering::SeqCst);
+        let max_height = AtomicUsize::new(header.number() as usize);
         let max_store_height = AtomicUsize::new(0);
-        //        max_store_height.store(header.number() as usize, Ordering::SeqCst);
-        max_store_height.store(::std::u64::MAX as usize, Ordering::SeqCst);
+        if let Some(height) = get_chain_body_height(&*db) {
+            max_store_height.store(height as usize, Ordering::SeqCst);
+        }
+        info!(
+            "get chain max_store_height : {:?}  max_height: {:?}",
+            max_store_height, max_height
+        );
 
         let chain = Chain {
             blooms_config: blooms_config,
@@ -368,7 +375,7 @@ impl Chain {
             CacheUpdatePolicy::Overwrite,
         );
         let mheight = self.max_store_height.load(Ordering::SeqCst) as u64;
-        if mheight != ::std::u64::MAX && mheight < number {
+        if mheight < number {
             batch.write_with_cache(
                 db::COL_BODIES,
                 &mut *write_bodies,
@@ -414,30 +421,26 @@ impl Chain {
 
     pub fn broadcast_current_block(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let mheight = self.max_store_height.load(Ordering::SeqCst) as u64;
-        let height = self.max_height.load(Ordering::SeqCst) as u64;
+        let body = self.db
+            .read_with_cache(db::COL_BODIES, &self.block_bodies, &mheight);
+        if let Some(blockbody) = body {
+            let mut block = Block::new();
+            block.set_body(blockbody);
 
-        if mheight > height {
-            let body = self.db
-                .read_with_cache(db::COL_BODIES, &self.block_bodies, &mheight);
-            if let Some(blockbody) = body {
-                let mut block = Block::new();
-                block.set_body(blockbody);
+            let mut blocks = vec![];
+            blocks.push(block.protobuf());
 
-                let mut blocks = vec![];
-                blocks.push(block.protobuf());
-
-                let mut sync_res = SyncResponse::new();
-                sync_res.set_blocks(RepeatedField::from_vec(blocks));
-                let msg = factory::create_msg(
-                    submodules::CHAIN,
-                    topics::NEW_BLK,
-                    MsgClass::SYNCRESPONSE(sync_res),
-                );
-                ctx_pub
-                    .clone()
-                    .send(("net.blk".to_string(), msg.write_to_bytes().unwrap()))
-                    .unwrap();
-            }
+            let mut sync_res = SyncResponse::new();
+            sync_res.set_blocks(RepeatedField::from_vec(blocks));
+            let msg = factory::create_msg(
+                submodules::CHAIN,
+                topics::NEW_BLK,
+                MsgClass::SYNCRESPONSE(sync_res),
+            );
+            ctx_pub
+                .clone()
+                .send(("net.blk".to_string(), msg.write_to_bytes().unwrap()))
+                .unwrap();
         }
     }
 
@@ -452,13 +455,10 @@ impl Chain {
         let info = ret.get_executed_info();
         let number = info.get_header().get_height();
         if number == 0 {
-            if self.max_store_height.load(Ordering::SeqCst) as u64 == ::std::u64::MAX {
-                self.set_excuted_result_genesis(ret);
-            }
+            self.set_excuted_result_genesis(ret);
             let block_tx_hashes = Vec::new();
             self.delivery_block_tx_hashes(number, block_tx_hashes, &ctx_pub);
             self.broadcast_current_status(&ctx_pub);
-            return;
         }
 
         if number == self.get_current_height() {
@@ -882,10 +882,6 @@ impl Chain {
         tx_hashes: Vec<H256>,
         ctx_pub: &Sender<(String, Vec<u8>)>,
     ) {
-        if block_height == ::std::u64::MAX {
-            return;
-        }
-
         let ctx_pub_clone = ctx_pub.clone();
         let mut block_tx_hashes = BlockTxHashes::new();
         block_tx_hashes.set_height(block_height);
@@ -894,30 +890,26 @@ impl Chain {
             block_tx_hashes.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
             block_tx_hashes.set_account_gas_limit(self.account_gas_limit.read().clone().into());
         }
-        thread::spawn(move || {
-            let mut tx_hashes_in_u8 = Vec::new();
-            for tx_hash_in_h256 in &tx_hashes {
-                tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
-            }
-            block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
-            let msg = factory::create_msg(
-                submodules::CHAIN,
-                topics::BLOCK_TXHASHES,
-                MsgClass::BLOCKTXHASHES(block_tx_hashes),
-            );
 
-            ctx_pub_clone
-                .send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap()))
-                .unwrap();
-            trace!("delivery block's tx hashes for height: {}", block_height);
-        });
+        let mut tx_hashes_in_u8 = Vec::new();
+        for tx_hash_in_h256 in &tx_hashes {
+            tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
+        }
+        block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
+        let msg = factory::create_msg(
+            submodules::CHAIN,
+            topics::BLOCK_TXHASHES,
+            MsgClass::BLOCKTXHASHES(block_tx_hashes),
+        );
+
+        ctx_pub_clone
+            .send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap()))
+            .unwrap();
+        trace!("delivery block's tx hashes for height: {}", block_height);
     }
 
     /// Delivery current rich status
     pub fn delivery_current_rich_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        if self.max_height.load(Ordering::SeqCst) as u64 == ::std::u64::MAX {
-            return;
-        }
         let header = &*self.current_header.read();
         self.delivery_rich_status(header, ctx_pub);
     }
@@ -1024,7 +1016,7 @@ impl Chain {
 
     /// Broadcast new status
     pub fn broadcast_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        if self.max_height.load(Ordering::SeqCst) as u64 == ::std::u64::MAX {
+        if self.max_store_height.load(Ordering::SeqCst) == 0 {
             return;
         }
         let status = self.current_status().protobuf();
@@ -1046,14 +1038,14 @@ impl Chain {
             .unwrap();
     }
 
-    pub fn set_block_body(&self, height: u64, block: &Block) {
+    pub fn set_block_body(&self, height: BlockNumber, block: &Block) {
         let mut batch = DBTransaction::new();
         {
             let mut write_bodies = self.block_bodies.write();
             batch.write_with_cache(
                 db::COL_BODIES,
                 &mut *write_bodies,
-                height as BlockNumber,
+                height,
                 block.body().clone(),
                 CacheUpdatePolicy::Overwrite,
             );
@@ -1061,18 +1053,8 @@ impl Chain {
                 .lock()
                 .note_used(CacheId::BlockBodies(height as BlockNumber));
         }
+        batch.write(db::COL_EXTRA, &CurrentHeight, &height);
         let _ = self.db.write(batch);
-    }
-
-    pub fn set_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        // Delivery block tx hashes to auth
-        let height = block.number();
-        let tx_hashes = block.body().transaction_hashes();
-        self.delivery_block_tx_hashes(height, tx_hashes, ctx_pub);
-
-        //Need to send block to
-        //let closed_block = self.execute_block(block);
-        //self.finalize_block(closed_block, ctx_pub);
     }
 
     pub fn compare_status(&self, st: Status) -> (u64, u64) {

@@ -261,11 +261,11 @@ impl Forward {
 
     // Consensus block enqueue
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
-        let current_height = self.chain.get_current_height();
+        let current_height = self.chain.get_max_store_height() as usize;
         let mut proof_blk = proof_blk;
         let block = proof_blk.take_blk();
         let proof = proof_blk.take_proof();
-        let blk_height = block.get_header().get_height();
+        let blk_height = block.get_header().get_height() as usize;
         trace!(
             "Received consensus block: block_number:{:?} current_height: {:?}",
             blk_height,
@@ -275,19 +275,18 @@ impl Forward {
         if blk_height == (current_height + 1) {
             {
                 self.chain.block_map.write().insert(
-                    blk_height,
+                    blk_height as u64,
                     BlockInQueue::ConsensusBlock(rblock.clone(), proof.clone()),
                 );
             };
             self.chain.save_current_block_poof(proof);
+            self.chain.set_block_body(blk_height as u64, &rblock);
             self.chain
                 .max_store_height
-                .store(blk_height as usize, Ordering::SeqCst);
-            self.chain.set_block_body(blk_height, &rblock);
-
+                .store(blk_height, Ordering::SeqCst);
             let tx_hashes = rblock.body().transaction_hashes();
             self.chain
-                .delivery_block_tx_hashes(blk_height, tx_hashes, &self.ctx_pub);
+                .delivery_block_tx_hashes(blk_height as u64, tx_hashes, &self.ctx_pub);
         }
     }
 
@@ -363,14 +362,7 @@ impl Forward {
                 );
                 break;
             }
-
             self.add_sync_block(Block::from(block));
-        }
-
-        if !self.chain.is_sync.load(Ordering::SeqCst) {
-            let number = self.chain.get_current_height() + 1;
-            debug!("sync block number is {}", number);
-            //self.write_sender.send(number);
         }
     }
 
@@ -379,6 +371,9 @@ impl Forward {
     fn add_sync_block(&self, block: Block) {
         let block_proof_type = block.proof_type();
         let chain_proof_type = self.chain.get_chain_prooftype();
+        let blk_height = block.number() as usize;
+        let chain_max_height = self.chain.get_max_height();
+        let chain_max_store_height = self.chain.get_max_store_height();
         //check sync_block's proof type, it must be consistent with chain
         if chain_proof_type != block_proof_type {
             error!(
@@ -398,14 +393,13 @@ impl Forward {
 
                 debug!(
                     "sync: add_sync_block: proof_height = {}, block height = {} max_height = {}",
-                    proof_height,
-                    block.number(),
-                    self.chain.get_max_height()
+                    proof_height, blk_height, chain_max_height
                 );
 
+                let height = block.number();
                 let mut blocks = self.chain.block_map.write();
-                if (block.number() as usize) != ::std::usize::MAX {
-                    if proof_height == self.chain.get_max_height() {
+                if blk_height != ::std::usize::MAX {
+                    if proof_height == chain_max_height || proof_height == chain_max_store_height {
                         // Set proof of prev sync block
                         if let Some(prev_block_in_queue) = blocks.get_mut(&proof_height) {
                             if let &mut BlockInQueue::SyncBlock(ref mut value) = prev_block_in_queue {
@@ -415,12 +409,21 @@ impl Forward {
                                 }
                             }
                         }
-
+                        self.chain.set_block_body(height, &block);
                         self.chain
-                            .max_height
-                            .store(block.number() as usize, Ordering::SeqCst);
+                            .max_store_height
+                            .store(height as usize, Ordering::SeqCst);
+                        let tx_hashes = block.body().transaction_hashes();
+                        self.chain
+                            .delivery_block_tx_hashes(height, tx_hashes, &self.ctx_pub);
                         debug!("sync: insert block-{} in map", block.number());
-                        blocks.insert(block.number(), BlockInQueue::SyncBlock((block, None)));
+                        blocks.insert(height, BlockInQueue::SyncBlock((block, None)));
+                    } else {
+                        info!(
+                            "sync: insert block-{} is not continious proof height {}",
+                            block.number(),
+                            proof_height
+                        );
                     }
                 } else if proof_height > self.chain.get_current_height() {
                     if let Some(block_in_queue) = blocks.get_mut(&proof_height) {

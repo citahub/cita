@@ -159,13 +159,13 @@ impl Dispatchtx {
                     self.batch_forward_tx_to_peer(mq_pub);
                 }
             }
-
             self.response_jsonrpc_cnt += 1;
             trace!(
                 "response new tx {:?}, with response_jsonrpc_cnt = {}",
                 response,
                 self.response_jsonrpc_cnt
             );
+
             let msg = factory::create_msg(
                 submodules::AUTH,
                 topics::RESPONSE,

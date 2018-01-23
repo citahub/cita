@@ -324,7 +324,6 @@ impl ExecutorInstance {
             .unwrap();
     }
 
-    // Consensus block enqueue
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
         let current_height = self.ext.get_current_height();
         let mut proof_blk = proof_blk;
@@ -428,6 +427,7 @@ impl ExecutorInstance {
         }
 
         if !self.ext.is_sync.load(Ordering::SeqCst) {
+            self.closed_block.replace(None);
             let number = self.ext.get_current_height() + 1;
             debug!("sync block number is {}", number);
             self.write_sender.send(number);

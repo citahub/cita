@@ -23,7 +23,7 @@ use libproto::blockchain::{AccountGasLimit, SignedTransaction, UnverifiedTransac
 use protobuf::Message;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use std::sync::atomic::{ATOMIC_U64_INIT, AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::SystemTime;
 use std::vec::*;
@@ -75,8 +75,6 @@ pub enum VerifyType {
     SingleVerify,
     BlockVerify,
 }
-
-static mut MAX_HEIGHT: AtomicU64 = ATOMIC_U64_INIT;
 
 fn verfiy_tx(req: &VerifyTxReq, verifier: &Verifier) -> VerifyTxResp {
     let mut resp = VerifyTxResp::new();
@@ -245,39 +243,36 @@ pub fn handle_remote_msg(
                     tx_hashes_in_h256.insert(hash);
                 }
             }
-
             {
-                let mut flag = false;
-                unsafe {
-                    if height > MAX_HEIGHT.load(Ordering::SeqCst) {
-                        MAX_HEIGHT.store(height, Ordering::SeqCst);
-                        flag = true;
-                    }
-                }
-                if flag {
-                    info!(
-                        "BLOCKTXHASHES come height {}, tx_hashes count is: {:?}",
-                        height,
-                        tx_hashes_in_h256.len()
-                    );
-                    let block_gas_limit = block_tx_hashes.get_block_gas_limit();
-                    let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
-                    info!(
-                        "Auth rich status block gas limit: {:?}, account gas limit {:?}",
-                        block_gas_limit, account_gas_limit
-                    );
-
-                    let _ = txs_sender.send((
-                        height as usize,
-                        tx_hashes_in_h256.clone(),
-                        block_gas_limit,
-                        account_gas_limit,
-                    ));
+                verifier
+                    .write()
+                    .update_hashes(height, tx_hashes_in_h256.clone(), tx_pub);
+            }
+            let mut flag = true;
+            if let Some(h) = verifier.read().get_height_latest() {
+                if height != h {
+                    flag = false;
                 }
             }
-            verifier
-                .write()
-                .update_hashes(height, tx_hashes_in_h256, tx_pub);
+            if flag {
+                info!(
+                    "BLOCKTXHASHES come height {}, tx_hashes count is: {:?}",
+                    height,
+                    tx_hashes_in_h256.len()
+                );
+                let block_gas_limit = block_tx_hashes.get_block_gas_limit();
+                let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
+                info!(
+                    "Auth rich status block gas limit: {:?}, account gas limit {:?}",
+                    block_gas_limit, account_gas_limit
+                );
+                let _ = txs_sender.send((
+                    height as usize,
+                    tx_hashes_in_h256,
+                    block_gas_limit,
+                    account_gas_limit,
+                ));
+            }
         }
         // TODO: Add ProposalVerifier { status, request_id, threadpool }, Status: On, Failed, Successed, Experied
         // TODO: Make most of the logic asynchronous

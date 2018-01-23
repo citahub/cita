@@ -60,6 +60,24 @@ impl Verifier {
         self.height_low
     }
 
+    pub fn send_txhashs_req(low: u64, high: u64, tx_pub: &Sender<(String, Vec<u8>)>) {
+        for i in low..high {
+            let mut req = BlockTxHashesReq::new();
+            req.set_height(i);
+            let msg = factory::create_msg(
+                submodules::AUTH,
+                topics::BLOCK_TXHASHES_REQ,
+                MsgClass::BLOCKTXHASHESREQ(req),
+            );
+            tx_pub
+                .send((
+                    "auth.blk_tx_hashs_req".to_string(),
+                    msg.write_to_bytes().unwrap(),
+                ))
+                .unwrap();
+        }
+    }
+
     pub fn update_hashes(&mut self, h: u64, hashes: HashSet<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
@@ -68,25 +86,11 @@ impl Verifier {
             } else {
                 Some(h - BLOCKLIMIT + 1)
             };
-            for i in self.height_low.unwrap()..h {
-                let mut req = BlockTxHashesReq::new();
-                req.set_height(i as u64);
-                let msg = factory::create_msg(
-                    submodules::AUTH,
-                    topics::BLOCK_TXHASHES_REQ,
-                    MsgClass::BLOCKTXHASHESREQ(req),
-                );
-                tx_pub
-                    .send((
-                        "auth.blk_tx_hashs_req".to_string(),
-                        msg.write_to_bytes().unwrap(),
-                    ))
-                    .unwrap();
-            }
+            Verifier::send_txhashs_req(self.height_low.unwrap(), h, tx_pub);
         } else {
             let current_height = self.height_latest.unwrap();
             let current_height_low = self.height_low.unwrap();
-            if h > current_height {
+            if h == current_height + 1 {
                 self.height_latest = Some(h);
                 self.height_low = if h < BLOCKLIMIT {
                     Some(0)
@@ -96,6 +100,11 @@ impl Verifier {
                 for i in current_height_low..self.height_low.unwrap() {
                     self.hashes.remove(&i);
                 }
+            } else if h > current_height + 1 {
+                /*if we lost some height blockhashs
+                 we notify chain to re-trans txs*/
+                Verifier::send_txhashs_req(current_height + 1, h + 1, tx_pub);
+                return;
             }
             if h < self.height_low.unwrap() {
                 return;
