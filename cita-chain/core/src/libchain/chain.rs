@@ -45,7 +45,6 @@ use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Read;
-use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
@@ -199,7 +198,6 @@ impl Chain {
         let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
         info!("config check: {:?}", sc);
 
-        //        let mut is_genesis_ok = false;
         let header = get_chain(&*db).unwrap_or(Header::default());
         info!("get chain head is : {:?}", header);
         let max_height = AtomicUsize::new(header.number() as usize);
@@ -217,7 +215,7 @@ impl Chain {
             current_header: RwLock::new(header.clone()),
             is_sync: AtomicBool::new(false),
             max_height: max_height,
-            //TODO need to get saved body
+            // TODO need to get saved body
             max_store_height: max_store_height,
             block_map: RwLock::new(BTreeMap::new()),
             block_headers: RwLock::new(HashMap::new()),
@@ -287,7 +285,7 @@ impl Chain {
         hdr.set_gas_limit(U256::from(info.get_header().get_gas_limit()));
         hdr.set_gas_used(U256::from(info.get_header().get_gas_used()));
         hdr.set_number(number);
-        //        hdr.set_parent_hash(*block.parent_hash());
+        // hdr.set_parent_hash(*block.parent_hash());
         hdr.set_parent_hash(H256::from_slice(info.get_header().get_prevhash()));
         hdr.set_receipts_root(H256::from(info.get_header().get_receipts_root()));
         hdr.set_state_root(H256::from(info.get_header().get_state_root()));
@@ -297,6 +295,7 @@ impl Chain {
         hdr.set_proof(block.proof().clone());
 
         let hash = hdr.hash();
+        let block_transaction_addresses = block.transaction_addresses(hash);
         let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = if log_bloom.is_zero() {
             HashMap::new()
         } else {
@@ -334,28 +333,15 @@ impl Chain {
                 .lock()
                 .note_used(CacheId::BlockReceipts(hash));
         }
-        if info.get_transactions().len() > 0 {
-            let transactions: HashMap<H256, TransactionAddress> = info.get_transactions()
-                .into_iter()
-                .map(|(k, v)| {
-                    let block_hash = H256::from_slice(v.get_block_hash());
-                    let address = TransactionAddress {
-                        block_hash: block_hash,
-                        index: v.index as usize,
-                    };
-                    let k = H256::from_str(k).unwrap();
-                    (k, address)
-                })
-                .collect();
-
+        if block_transaction_addresses.len() > 0 {
             let mut write_txs = self.transaction_addresses.write();
             batch.extend_with_cache(
                 db::COL_EXTRA,
                 &mut *write_txs,
-                transactions.clone(),
+                block_transaction_addresses,
                 CacheUpdatePolicy::Overwrite,
             );
-            for (key, _) in transactions.clone() {
+            for key in block.body().transaction_hashes() {
                 self.cache_man
                     .lock()
                     .note_used(CacheId::TransactionAddresses(key));

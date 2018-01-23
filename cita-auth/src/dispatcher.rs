@@ -32,6 +32,7 @@ use std::time::SystemTime;
 use tx_pool;
 use txwal::TxWal;
 use util::H256;
+use util::ToPretty;
 use uuid::Uuid;
 
 pub struct Dispatcher {
@@ -252,8 +253,9 @@ impl Dispatcher {
     }
 
     pub fn add_tx_to_pool(&self, tx: &SignedTransaction) -> bool {
-        //交易放入pool，
-        //放入pool完成后，持久化
+        // 交易放入pool，
+        // 放入pool完成后，持久化
+        trace!("add tx {} to pool", tx.get_tx_hash().pretty());
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let success = txs_pool.enqueue(tx.clone());
         if self.wal_enable {

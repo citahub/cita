@@ -332,7 +332,7 @@ impl ExecutorInstance {
         let blk_height = proto_block.get_header().get_height();
         let block = Block::from(proto_block);
 
-        trace!(
+        info!(
             "consensus block {} {:?} tx hash  {:?} len {}",
             block.number(),
             block.hash(),
@@ -501,7 +501,6 @@ impl ExecutorInstance {
     }
 
     fn proposal_enqueue(&self, content: &[u8]) {
-        info!("receive new proposal.");
         let mut signed_proposal = parse_from_bytes::<SignedProposal>(content).unwrap();
         let proposal = signed_proposal.take_proposal().take_block();
 
