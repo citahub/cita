@@ -34,15 +34,15 @@ use libexecutor::extras::*;
 use libexecutor::genesis::Genesis;
 pub use libexecutor::transaction::*;
 
-use libproto::*;
+use libproto::{submodules, topics, ConsensusConfig, ExecutedResult, Message, MsgClass};
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
 
 use native::Factory as NativeFactory;
-use protobuf::Message;
 use serde_json;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::convert::TryInto;
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -514,13 +514,13 @@ impl Executor {
 
     pub fn send_executed_info_to_chain(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let executed_result = { self.executed_result.read().clone() };
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::EXECUTOR,
             topics::EXECUTED_RESULT,
             MsgClass::EXECUTED(executed_result),
         );
         ctx_pub
-            .send(("executor.result".to_string(), msg.write_to_bytes().unwrap()))
+            .send(("executor.result".to_string(), msg.try_into().unwrap()))
             .unwrap();
     }
 

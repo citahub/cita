@@ -1,9 +1,9 @@
+#![feature(try_from)]
 #![allow(unused_extern_crates)]
 extern crate cita_crypto as crypto;
 extern crate hyper;
 extern crate jsonrpc_types;
 extern crate libproto;
-extern crate protobuf;
 extern crate rustc_hex;
 extern crate serde;
 extern crate serde_json;

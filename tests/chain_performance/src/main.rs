@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#![feature(try_from)]
 extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate clap;
@@ -25,7 +26,6 @@ extern crate cpuprofiler;
 extern crate dotenv;
 extern crate libproto;
 extern crate proof;
-extern crate protobuf;
 extern crate rustc_serialize;
 extern crate util;
 
@@ -47,13 +47,13 @@ use core_executor::libexecutor::Genesis;
 use cpuprofiler::PROFILER;
 use generate_block::Generateblock;
 use std::{thread, time};
+use std::convert::TryFrom;
+use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use util::H256;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
-//use common_types::receipt;
-use std::io::BufReader;
 
 //创建合约交易性能
 fn create_contract(
@@ -97,9 +97,9 @@ fn create_contract(
     let inchain = call.chain.clone();
     thread::spawn(move || {
         loop {
-            if let Ok((_, msg)) = recv.recv() {
-                let (_, _, content_ext) = parse_msg(msg.clone().as_slice());
-                match content_ext {
+            if let Ok((_, msg_vec)) = recv.recv() {
+                let mut msg = Message::try_from(&msg_vec).unwrap();
+                match msg.take_content() {
                     MsgClass::EXECUTED(info) => {
                         //info!("**** get excuted info {:?}", info);
                         let pro = inblock.protobuf();
@@ -157,9 +157,9 @@ fn send_contract_tx(block_tx_num: i32, call: Callexet, pre_hash: H256, flag_prof
     let inblock = block.clone();
     let inchain = call.chain.clone();
     thread::spawn(move || loop {
-        if let Ok((_, msg)) = recv.recv() {
-            let (_, _, content_ext) = parse_msg(msg.clone().as_slice());
-            match content_ext {
+        if let Ok((_, msg_vec)) = recv.recv() {
+            let mut msg = Message::try_from(&msg_vec).unwrap();
+            match msg.take_content() {
                 MsgClass::EXECUTED(info) => {
                     let pro = inblock.protobuf();
                     let chan_block = ChainBlock::from(pro);
