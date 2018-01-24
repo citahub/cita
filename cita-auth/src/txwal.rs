@@ -25,16 +25,16 @@ use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
 
 #[derive(Clone)]
-pub struct Txwal {
+pub struct TxWal {
     db: Arc<KeyValueDB>,
 }
 
-impl Txwal {
+impl TxWal {
     pub fn new(path: &str) -> Self {
         let nosql_path = DataPath::root_node_path() + path;
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let db = Database::open(&config, &nosql_path).unwrap();
-        Txwal { db: Arc::new(db) }
+        TxWal { db: Arc::new(db) }
     }
 
     pub fn write(&self, tx: &SignedTransaction) {
