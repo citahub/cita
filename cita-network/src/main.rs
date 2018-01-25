@@ -39,6 +39,10 @@ extern crate tokio_service;
 #[macro_use]
 extern crate util;
 
+#[macro_use]
+extern crate serde_derive;
+extern crate toml;
+
 pub mod config;
 pub mod netserver;
 pub mod connection;

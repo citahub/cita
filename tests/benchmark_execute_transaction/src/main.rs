@@ -37,10 +37,9 @@ use rustc_serialize::hex::FromHex;
 use core_executor::db;
 use core_executor::db::*;
 use core_executor::env_info::LastHashes;
-use core_executor::libexecutor::executor::Executor;
+use core_executor::libexecutor::executor::{Config, Executor};
 use core_executor::libexecutor::genesis::Genesis;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
@@ -151,13 +150,13 @@ pub fn init_executor(config_path: &str, genesis_path: &str) -> Arc<Executor> {
     let state_path = DataPath::state_path();
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &state_path).unwrap();
-    // Load from genesis json file
-    let config_file = File::open(config_path).unwrap();
+
+    let executor_config = Config::new(config_path);
     let genesis = Genesis::init(genesis_path);
     Arc::new(Executor::init_executor(
         Arc::new(db),
         genesis,
-        BufReader::new(config_file),
+        executor_config,
     ))
 }
 

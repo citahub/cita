@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-import json
+import toml
 import os
 import sys
 
@@ -39,9 +39,9 @@ def main():
     data["ws_config"] = ws_config
     data["new_tx_flow_config"] = new_tx_flow_config
     path = sys.argv[5]
-    dump_path = os.path.join(path, "jsonrpc.json")
+    dump_path = os.path.join(path, "jsonrpc.toml")
     f = open(dump_path, "w")
-    json.dump(data, f, indent=4)
+    toml.dump(data, f)
     f.close()
 
 

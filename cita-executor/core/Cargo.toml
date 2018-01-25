@@ -11,6 +11,7 @@ bincode = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+toml = "0.4"
 rustc-hex = "1.0"
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rustc-serialize = "0.3"

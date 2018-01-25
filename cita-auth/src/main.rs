@@ -38,6 +38,7 @@ extern crate rustc_serialize;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate threadpool;
+extern crate toml;
 extern crate tx_pool;
 #[macro_use]
 extern crate util;
@@ -1044,26 +1045,26 @@ mod tests {
     }
     #[test]
     fn read_configure_file() {
-        let json = r#"{
-          "count_per_batch": 30,
-          "buffer_duration": 3000000,
-          "tx_verify_thread_num": 10,
-          "tx_verify_num_per_thread": 300,
-          "proposal_tx_verify_num_per_thread": 30,
-          "tx_pool_limit": 50000,
-          "block_packet_tx_limit": 30000,
-          "prof_start": 0,
-          "prof_duration": 0
-        }"#;
+        let toml_str = r#"
+          count_per_batch = 30
+          buffer_duration = 3000000
+          tx_verify_thread_num = 4
+          tx_verify_num_per_thread = 300
+          proposal_tx_verify_num_per_thread = 30
+          tx_pool_limit = 0
+          block_packet_tx_limit = 30000
+          prof_start = 0
+          prof_duration = 0
+        "#;
 
-        let value: Config = serde_json::from_str(json).expect("read Error");
+        let value: Config = toml::from_str(toml_str).expect("read Error");
         println!("{:?}", value);
         assert_eq!(30, value.count_per_batch);
         assert_eq!(3000000, value.buffer_duration);
-        assert_eq!(10, value.tx_verify_thread_num);
+        assert_eq!(4, value.tx_verify_thread_num);
         assert_eq!(300, value.tx_verify_num_per_thread);
         assert_eq!(30, value.proposal_tx_verify_num_per_thread);
-        assert_eq!(50000, value.tx_pool_limit);
+        assert_eq!(0, value.tx_pool_limit);
         assert_eq!(30000, value.block_packet_tx_limit);
         assert_eq!(0, value.prof_start);
         assert_eq!(0, value.prof_duration);

@@ -24,6 +24,7 @@ extern crate threadpool;
 extern crate time;
 extern crate tokio_core;
 extern crate tokio_io;
+extern crate toml;
 #[macro_use]
 extern crate util;
 extern crate uuid;
@@ -67,16 +68,16 @@ fn main() {
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
         .get_matches();
 
-    let mut config_path = "./jsonrpc.json";
+    let mut config_path = "./jsonrpc.toml";
     if let Some(c) = matches.value_of("config") {
         info!("Value for config: {}", c);
         config_path = c;
     }
 
-    let config = config::read_user_from_file(config_path).expect("config error!");
+    let config = config::Config::new(config_path);
     info!(
         "CITA:jsonrpc config \n {:?}",
-        serde_json::to_string_pretty(&config).unwrap()
+        toml::to_string_pretty(&config).unwrap()
     );
 
     //enable HTTP or WebSocket server!

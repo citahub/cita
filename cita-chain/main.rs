@@ -45,11 +45,8 @@ use block_processor::BlockProcessor;
 use clap::App;
 use core::db;
 use core::libchain;
-//use core::libchain::Genesis;
 use forward::Forward;
 use pubsub::start_pubsub;
-use std::fs::File;
-use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
@@ -65,15 +62,8 @@ fn main() {
         .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .arg_from_usage("-g, --genesis=[FILE] 'Sets a genesis config file")
         .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
         .get_matches();
-
-    //let mut genesis_path = "genesis";
-    if let Some(ge) = matches.value_of("genesis") {
-        trace!("Value for genesis: {}", ge);
-        // genesis_path = ge;
-    }
 
     let mut config_path = "config";
     if let Some(c) = matches.value_of("config") {
@@ -101,11 +91,11 @@ fn main() {
     trace!("nosql_path is {:?}", nosql_path);
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &nosql_path).unwrap();
-    //let genesis = Genesis::init(genesis_path);
-    let config_file = File::open(config_path).unwrap();
+
+    let chain_config = libchain::chain::Config::new(config_path);
     let chain = Arc::new(libchain::chain::Chain::init_chain(
         Arc::new(db),
-        BufReader::new(config_file),
+        chain_config,
     ));
 
     if let Some(block_tx_hashes) = chain.block_tx_hashes(chain.get_current_height()) {

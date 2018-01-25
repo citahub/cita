@@ -5,7 +5,7 @@ pidfile = ".cita-forever.pid"
 [[process]]
 name = "cita-auth"
 command = "cita-auth"
-args = ["-c","auth.json"]
+args = ["-c","auth.toml"]
 pidfile = ".cita-auth.pid"
 respawn = 3
 
@@ -26,7 +26,7 @@ respawn = 3
 [[process]]
 name = "cita-jsonrpc"
 command = "cita-jsonrpc"
-args = ["-c","jsonrpc.json"]
+args = ["-c","jsonrpc.toml"]
 pidfile = ".cita-jsonrpc.pid"
 respawn = 3
 
@@ -34,13 +34,13 @@ respawn = 3
 [[process]]
 name = "cita-chain"
 command = "cita-chain"
-args = ["-g","genesis.json","-c","chain.json"]
+args = ["-c","chain.toml"]
 pidfile = ".cita-chain.pid"
 respawn = 3
 
 [[process]]
 name = "cita-executor"
 command = "cita-executor"
-args = ["-g","genesis.json","-c","executor.json"]
+args = ["-g","genesis.json","-c","executor.toml"]
 pidfile = ".cita-executor.pid"
 respawn = 3

@@ -24,7 +24,7 @@ use cita_crypto::KeyPair;
 use db;
 use journaldb;
 use libexecutor::block::{Block, BlockBody};
-use libexecutor::executor::Executor;
+use libexecutor::executor::{Config, Executor};
 use libexecutor::genesis::Genesis;
 use libexecutor::genesis::Spec;
 use libproto::blockchain;
@@ -43,7 +43,7 @@ use util::KeyValueDB;
 use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
 
-const CHAIN_CONFIG: &str = include_str!("../../executor.json");
+const EXECUTOR_CONFIG_PATH: &str = "executor.toml";
 const GENESIS_CONFIG: &str = include_str!("../../genesis.json");
 pub fn get_temp_state() -> State<StateDB> {
     let journal_db = get_temp_state_db();
@@ -111,10 +111,12 @@ pub fn init_executor() -> Arc<Executor> {
         spec: spec,
         block: Block::default(),
     };
-    Arc::new(Executor::init_executor::<&[u8]>(
+
+    let executor_config = Config::new(EXECUTOR_CONFIG_PATH);
+    Arc::new(Executor::init_executor(
         Arc::new(db),
         genesis,
-        CHAIN_CONFIG.as_ref(),
+        executor_config,
     ))
 }
 

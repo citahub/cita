@@ -359,6 +359,7 @@ dependencies = [
  "serde 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -438,6 +439,7 @@ dependencies = [
  "serde_derive 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "tx_pool 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -553,6 +555,7 @@ dependencies = [
  "time 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-core 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-io 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ws 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -577,10 +580,12 @@ dependencies = [
  "pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rand 0.3.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-io 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-proto 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-service 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "toml 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
 ]
 
@@ -786,6 +791,7 @@ dependencies = [
  "sha3 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "transient-hashmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
 ]
@@ -837,6 +843,7 @@ dependencies = [
  "sha3 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "transient-hashmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
 ]

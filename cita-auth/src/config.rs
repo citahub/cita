@@ -1,6 +1,6 @@
-use serde_json;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::Read;
+use toml;
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
@@ -17,9 +17,11 @@ pub struct Config {
 
 impl Config {
     pub fn new(path: &str) -> Self {
-        let config_file = File::open(path).unwrap();
-        let fconfig = BufReader::new(config_file);
-        let config: Config = serde_json::from_reader(fconfig).expect("Failed to load auth config.");
-        config
+        let mut config_file = File::open(path).unwrap();
+        let mut buffer = String::new();
+        config_file
+            .read_to_string(&mut buffer)
+            .expect("Failed to load auth config.");
+        toml::from_str(&buffer).unwrap()
     }
 }

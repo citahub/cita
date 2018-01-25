@@ -33,7 +33,7 @@ sudo mv solc-static-linux /usr/local/bin/solc
 
 # 4) install python package
 umask 022
-sudo pip install ethereum==2.2.0 pysodium
+sudo pip install ethereum==2.2.0 pysodium toml
 
 # 5) extra
 # 5.1) libgmssl

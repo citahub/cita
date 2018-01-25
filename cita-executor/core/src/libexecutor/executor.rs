@@ -39,15 +39,16 @@ use libproto::blockchain::{Proof as ProtoProof, ProofType};
 
 use native::Factory as NativeFactory;
 use protobuf::Message;
-use serde_json;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
+use toml;
 use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction, Transaction};
 use util::{journaldb, Address, Bytes, H256, U256};
@@ -70,6 +71,15 @@ impl Config {
             check_quota: false,
             check_prooftype: 2,
         }
+    }
+
+    pub fn new(path: &str) -> Self {
+        let mut config_file = File::open(path).unwrap();
+        let mut buffer = String::new();
+        config_file
+            .read_to_string(&mut buffer)
+            .expect("Failed to load executor config.");
+        toml::from_str(&buffer).unwrap()
     }
 }
 
@@ -161,10 +171,7 @@ pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
 }
 
 impl Executor {
-    pub fn init_executor<R>(db: Arc<KeyValueDB>, mut genesis: Genesis, sconfig: R) -> Executor
-    where
-        R: Read,
-    {
+    pub fn init_executor(db: Arc<KeyValueDB>, mut genesis: Genesis, executor_config: Config) -> Executor {
         let trie_factory = TrieFactory::new(TrieSpec::Generic);
         let factories = Factories {
             vm: EvmFactory::default(),
@@ -199,8 +206,7 @@ impl Executor {
             }
         };
 
-        let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
-        info!("config check: {:?}", sc);
+        info!("config check: {:?}", executor_config);
 
         let max_height = AtomicUsize::new(0);
         max_height.store(header.number() as usize, Ordering::SeqCst);
@@ -221,10 +227,10 @@ impl Executor {
             creators: RwLock::new(HashSet::new()),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(AccountGasLimit::new()),
-            check_permission: sc.check_permission,
-            check_quota: sc.check_quota,
+            check_permission: executor_config.check_permission,
+            check_quota: executor_config.check_quota,
             executed_result: RwLock::new(executed_ret),
-            check_prooftype: sc.check_prooftype,
+            check_prooftype: executor_config.check_prooftype,
         };
 
         // Build executor config
