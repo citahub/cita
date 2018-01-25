@@ -680,7 +680,7 @@ impl Chain {
             let number = self.block_height_by_hash(hash).unwrap_or(0);
 
             let contract_address = match *stx.action() {
-                Action::Create => Some(contract_address(stx.sender(), stx.account_nonce())),
+                Action::Create => Some(contract_address(stx.sender(), &last_receipt.account_nonce)),
                 _ => None,
             };
 
