@@ -65,6 +65,16 @@ impl Key<Proof> for CurrentProof {
     }
 }
 
+pub struct CurrentHeight;
+
+impl Key<BlockNumber> for CurrentHeight {
+    type Target = H256;
+
+    fn key(&self) -> H256 {
+        H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f68")
+    }
+}
+
 impl Key<Header> for H256 {
     type Target = H256;
 

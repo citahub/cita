@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate tx_pool;
-
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
 use libproto::{factory, submodules, topics, BatchRequest, MsgClass, Request, Response};
@@ -31,15 +29,17 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::SystemTime;
-use txwal::Txwal;
+use tx_pool;
+use txwal::TxWal;
 use util::H256;
+use util::ToPretty;
 use uuid::Uuid;
 
-pub struct Dispatchtx {
+pub struct Dispatcher {
     txs_pool: RefCell<tx_pool::Pool>,
     tx_pool_cap: Arc<AtomicUsize>,
-    wal: Txwal,
-    filter_wal: Txwal,
+    wal: TxWal,
+    filter_wal: TxWal,
     wal_enable: bool,
     pool_limit: usize,
     data_from_pool: AtomicBool,
@@ -56,7 +56,7 @@ pub struct BatchForwardInfo {
     new_tx_request_buffer: Vec<Request>,
 }
 
-impl Dispatchtx {
+impl Dispatcher {
     pub fn new(
         package_limit: usize,
         limit: usize,
@@ -71,11 +71,11 @@ impl Dispatchtx {
             new_tx_request_buffer: Vec::new(),
         };
 
-        let mut dispatch = Dispatchtx {
+        let mut dispatch = Dispatcher {
             txs_pool: RefCell::new(tx_pool::Pool::new(package_limit)),
             tx_pool_cap: Arc::new(AtomicUsize::new(limit)),
-            wal: Txwal::new("/txwal"),
-            filter_wal: Txwal::new("/filterwal"),
+            wal: TxWal::new("/txwal"),
+            filter_wal: TxWal::new("/filterwal"),
             wal_enable: wal_enable,
             pool_limit: limit,
             data_from_pool: AtomicBool::new(false),
@@ -159,13 +159,13 @@ impl Dispatchtx {
                     self.batch_forward_tx_to_peer(mq_pub);
                 }
             }
-
             self.response_jsonrpc_cnt += 1;
             trace!(
                 "response new tx {:?}, with response_jsonrpc_cnt = {}",
                 response,
                 self.response_jsonrpc_cnt
             );
+
             let msg = factory::create_msg(
                 submodules::AUTH,
                 topics::RESPONSE,
@@ -253,8 +253,9 @@ impl Dispatchtx {
     }
 
     pub fn add_tx_to_pool(&self, tx: &SignedTransaction) -> bool {
-        //交易放入pool，
-        //放入pool完成后，持久化
+        // 交易放入pool，
+        // 放入pool完成后，持久化
+        trace!("add tx {} to pool", tx.get_tx_hash().pretty());
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let success = txs_pool.enqueue(tx.clone());
         if self.wal_enable {

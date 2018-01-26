@@ -21,6 +21,8 @@
 //use env_info::LastHashes;
 use header::*;
 //use libchain::extras::TransactionAddress;
+use libchain::extras::TransactionAddress;
+use std::collections::HashMap;
 use util::H256;
 
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
@@ -128,6 +130,22 @@ impl Block {
         block.set_header(self.header.protobuf());
         block.set_body(self.body.protobuf());
         block
+    }
+
+    pub fn transaction_addresses(&self, hash: H256) -> HashMap<H256, TransactionAddress> {
+        let tx_hashs = self.body().transaction_hashes();
+        // Create TransactionAddress
+        let mut transactions = HashMap::new();
+        for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
+            let address = TransactionAddress {
+                block_hash: hash,
+                index: i,
+            };
+            transactions.insert(tx_hash, address);
+        }
+
+        trace!("closed block transactions {:?}", transactions);
+        transactions
     }
 }
 

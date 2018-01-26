@@ -23,11 +23,10 @@ use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
 use libexecutor::executor::Executor;
-use libexecutor::extras::TransactionAddress;
 
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
-use libproto::executor::{ExecutedInfo, ReceiptWithOption, TransAddr};
+use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use protobuf::RepeatedField;
 use receipt::{Receipt, ReceiptError};
 use rlp::*;
@@ -42,7 +41,7 @@ use trace::FlatTrace;
 use types::transaction::SignedTransaction;
 use util::{merklehash, Address, H256, HeapSizeOf, U256};
 
-//  Check the 256 transactions once
+/// Check the 256 transactions once
 const CHECK_NUM: usize = 0xff;
 
 /// Trait for a object that has a state database.
@@ -194,13 +193,12 @@ impl BlockBody {
 pub struct ClosedBlock {
     /// Protobuf Block
     pub block: OpenBlock,
-    pub transactions: HashMap<H256, TransactionAddress>,
 }
 
 impl ClosedBlock {
-    //todo
     pub fn protobuf(&self) -> ExecutedInfo {
         let mut executed_info = ExecutedInfo::new();
+
         executed_info
             .mut_header()
             .set_prevhash(self.parent_hash().to_vec());
@@ -224,17 +222,6 @@ impl ClosedBlock {
         executed_info
             .mut_header()
             .set_gas_limit(self.gas_limit().low_u64());
-
-        executed_info.transactions = self.transactions
-            .clone()
-            .into_iter()
-            .map(|(k, v)| {
-                let mut trans_addr = TransAddr::new();
-                trans_addr.set_block_hash(v.block_hash.to_vec());
-                trans_addr.set_index(v.index as u64);
-                (k.hex(), trans_addr)
-            })
-            .collect();
 
         executed_info.receipts = self.receipts
             .clone()
@@ -391,7 +378,7 @@ impl OpenBlock {
         }
     }
 
-    ///execute transactions
+    /// Execute transactions
     pub fn apply_transactions(&mut self, executor: &Executor, check_permission: bool, check_quota: bool) -> bool {
         let mut transactions = Vec::with_capacity(self.body.transactions.len());
         for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
@@ -496,8 +483,6 @@ impl OpenBlock {
 
     /// Turn this into a `ClosedBlock`.
     pub fn into_closed_block(mut self) -> ClosedBlock {
-        let tx_hashs = self.body().transaction_hashes();
-
         // Rebuild block
         let state_root = *self.state.root();
         let receipts_root = merklehash::complete_merkle_root(self.receipts.iter().map(|r| r.rlp_bytes().to_vec()));
@@ -516,21 +501,7 @@ impl OpenBlock {
 
         self.set_log_bloom(log_bloom);
 
-        // Create TransactionAddress
-        let hash = self.hash();
-        let mut transactions = HashMap::new();
-        for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
-            let address = TransactionAddress {
-                block_hash: hash,
-                index: i,
-            };
-            transactions.insert(tx_hash, address);
-        }
-
-        ClosedBlock {
-            block: self,
-            transactions: transactions,
-        }
+        ClosedBlock { block: self }
     }
 }
 

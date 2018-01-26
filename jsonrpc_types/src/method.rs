@@ -24,6 +24,7 @@ use rpctypes::{BlockNumber, BlockParamsByHash, BlockParamsByNumber, CallRequest,
 use rustc_serialize::hex::FromHex;
 use serde_json;
 use util::{H160, H256, U256};
+use util::ToPretty;
 use util::clean_0x;
 use uuid::Uuid;
 
@@ -145,12 +146,13 @@ impl MethodHandler {
                 })?;
             }
             trace!(
-                "SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {:?}, quota {:?}, to {:?}",
+                "SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {}, quota {:?}, to {:?}, hash {}",
                 tx.get_nonce(),
                 tx.get_valid_until_block(),
-                tx.get_data(),
+                tx.get_data().pretty(),
                 tx.get_quota(),
-                tx.get_to()
+                tx.get_to(),
+                un_tx.crypt_hash().pretty()
             );
         }
         request.set_un_tx(un_tx);

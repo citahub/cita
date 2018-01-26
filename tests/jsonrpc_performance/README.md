@@ -34,3 +34,18 @@ cd cita/tests/jsonrpc_performance
 * start_h: 开始高度
 * end_h: 结束高度
 * jsonrpc use time: 花费时间（ms）
+
+
+##脚本说明
+目的：创建合约、调用合约、查询recipts、调用eth_getLogs、检查发送的交易是否与block中的交易数一样
+1、创建合约，并调用一次合约
+```
+./create_contract.sh
+```
+
+2、调用合约，参数1：调用合约几次   参数2：发送几次调用合约的交易
+
+```
+./call_contract.sh
+```
+

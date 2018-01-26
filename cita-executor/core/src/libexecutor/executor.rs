@@ -197,7 +197,7 @@ impl Executor {
                     .lazy_execute(&state_db, &factories)
                     .expect("Failed to save genesis.");
                 info!("init genesis {:?}", genesis);
-                //ctx_pub 发送block到chain
+
                 let executed_header = genesis.block.header().clone().generate_executed_header();
                 executed_ret
                     .mut_executed_info()
@@ -243,7 +243,7 @@ impl Executor {
         executor
     }
 
-    // Get block hash by number
+    /// Get block hash by number
     pub fn block_hash(&self, index: BlockNumber) -> Option<H256> {
         let result = self.db.read(db::COL_EXTRA, &index);
         result
@@ -275,7 +275,7 @@ impl Executor {
             .map_or(None, |h| self.block_header_by_hash(h))
     }
 
-    // Get block header by hash
+    /// Get block header by hash
     fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
         {
             let header = self.current_header.read();
@@ -512,7 +512,6 @@ impl Executor {
         executed_result.set_config(config);
     }
 
-    ///
     fn set_executed_result(&self, block: &ClosedBlock) {
         self.set_gas_and_nodes();
         let mut executed_result = self.executed_result.write();

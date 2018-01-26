@@ -323,7 +323,6 @@ impl ExecutorInstance {
             .unwrap();
     }
 
-    // Consensus block enqueue
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
         let current_height = self.ext.get_current_height();
         let mut proof_blk = proof_blk;
@@ -332,7 +331,7 @@ impl ExecutorInstance {
         let blk_height = proto_block.get_header().get_height();
         let block = Block::from(proto_block);
 
-        trace!(
+        info!(
             "consensus block {} {:?} tx hash  {:?} len {}",
             block.number(),
             block.hash(),
@@ -427,6 +426,7 @@ impl ExecutorInstance {
         }
 
         if !self.ext.is_sync.load(Ordering::SeqCst) {
+            self.closed_block.replace(None);
             let number = self.ext.get_current_height() + 1;
             debug!("sync block number is {}", number);
             self.write_sender.send(number);
@@ -500,7 +500,6 @@ impl ExecutorInstance {
     }
 
     fn proposal_enqueue(&self, content: &[u8]) {
-        info!("receive new proposal.");
         let mut signed_proposal = parse_from_bytes::<SignedProposal>(content).unwrap();
         let proposal = signed_proposal.take_proposal().take_block();
 

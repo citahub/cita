@@ -22,7 +22,53 @@ use protobuf::Message;
 use std::collections::{HashMap, HashSet};
 use std::result::Result;
 use std::sync::mpsc::Sender;
+use std::time::SystemTime;
 use util::{H256, BLOCKLIMIT};
+
+#[derive(Debug, Clone)]
+pub enum VerifyRequestID {
+    SingleVerifyRequestID(Vec<u8>),
+    BlockVerifyRequestID(u64),
+}
+
+#[derive(Debug, Clone)]
+pub enum VerifyRequestResponse {
+    AuthRequest(VerifyTxReq),
+    AuthResponse(VerifyTxResp),
+}
+
+#[derive(Debug, Clone)]
+pub struct VerifyRequestResponseInfo {
+    pub sub_module: u32,
+    pub verify_type: VerifyType,
+    pub request_id: VerifyRequestID,
+    pub time_stamp: SystemTime,
+    pub req_resp: VerifyRequestResponse,
+    pub un_tx: Option<UnverifiedTransaction>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum VerifyResult {
+    VerifyNotBegin,
+    VerifyOngoing,
+    VerifyFailed,
+    VerifySucceeded,
+}
+
+#[derive(Debug)]
+pub struct BlockVerifyStatus {
+    pub request_id: u64,
+    pub block_verify_result: VerifyResult,
+    pub verify_success_cnt_required: usize,
+    pub verify_success_cnt_capture: usize,
+    pub cache_hit: usize,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum VerifyType {
+    SingleVerify,
+    BlockVerify,
+}
 
 #[derive(Debug, Clone)]
 pub struct Verifier {
@@ -60,6 +106,24 @@ impl Verifier {
         self.height_low
     }
 
+    pub fn send_txhashs_req(low: u64, high: u64, tx_pub: &Sender<(String, Vec<u8>)>) {
+        for i in low..high {
+            let mut req = BlockTxHashesReq::new();
+            req.set_height(i);
+            let msg = factory::create_msg(
+                submodules::AUTH,
+                topics::BLOCK_TXHASHES_REQ,
+                MsgClass::BLOCKTXHASHESREQ(req),
+            );
+            tx_pub
+                .send((
+                    "auth.blk_tx_hashs_req".to_string(),
+                    msg.write_to_bytes().unwrap(),
+                ))
+                .unwrap();
+        }
+    }
+
     pub fn update_hashes(&mut self, h: u64, hashes: HashSet<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
@@ -68,25 +132,11 @@ impl Verifier {
             } else {
                 Some(h - BLOCKLIMIT + 1)
             };
-            for i in self.height_low.unwrap()..h {
-                let mut req = BlockTxHashesReq::new();
-                req.set_height(i as u64);
-                let msg = factory::create_msg(
-                    submodules::AUTH,
-                    topics::BLOCK_TXHASHES_REQ,
-                    MsgClass::BLOCKTXHASHESREQ(req),
-                );
-                tx_pub
-                    .send((
-                        "auth.blk_tx_hashs_req".to_string(),
-                        msg.write_to_bytes().unwrap(),
-                    ))
-                    .unwrap();
-            }
+            Verifier::send_txhashs_req(self.height_low.unwrap(), h, tx_pub);
         } else {
             let current_height = self.height_latest.unwrap();
             let current_height_low = self.height_low.unwrap();
-            if h > current_height {
+            if h == current_height + 1 {
                 self.height_latest = Some(h);
                 self.height_low = if h < BLOCKLIMIT {
                     Some(0)
@@ -96,6 +146,11 @@ impl Verifier {
                 for i in current_height_low..self.height_low.unwrap() {
                     self.hashes.remove(&i);
                 }
+            } else if h > current_height + 1 {
+                /*if we lost some height blockhashs
+                 we notify chain to re-trans txs*/
+                Verifier::send_txhashs_req(current_height + 1, h + 1, tx_pub);
+                return;
             }
             if h < self.height_low.unwrap() {
                 return;
@@ -145,6 +200,47 @@ impl Verifier {
                 Err(())
             }
         }
+    }
+
+    pub fn verfiy_tx(&self, req: &VerifyTxReq) -> VerifyTxResp {
+        let mut resp = VerifyTxResp::new();
+        resp.set_tx_hash(req.get_tx_hash().to_vec());
+
+        if req.get_nonce().len() > 128 {
+            resp.set_ret(Ret::InvalidNonce);
+            return resp;
+        }
+
+        let tx_hash = H256::from_slice(req.get_tx_hash());
+        let ret = self.check_hash_exist(&tx_hash);
+        if ret {
+            if self.is_inited() {
+                resp.set_ret(Ret::Dup);
+            } else {
+                resp.set_ret(Ret::NotReady);
+            }
+            return resp;
+        }
+        let ret = self.verify_sig(req);
+        if ret.is_err() {
+            resp.set_ret(Ret::BadSig);
+            return resp;
+        }
+        //check signer if req have
+        let req_signer = req.get_signer();
+        if !req_signer.is_empty() && req_signer != ret.unwrap().to_vec().as_slice() {
+            resp.set_ret(Ret::BadSig);
+            return resp;
+        }
+        resp.set_signer(ret.unwrap().to_vec());
+        resp.set_ret(Ret::OK);
+        trace!(
+            "verfiy_tx's result:tx_hash={:?}, ret={:?}, signer={:?}",
+            resp.get_tx_hash(),
+            resp.get_ret(),
+            resp.get_signer()
+        );
+        resp
     }
 
     pub fn verify_valid_until_block(&self, valid_until_block: u64) -> bool {
