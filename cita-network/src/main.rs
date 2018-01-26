@@ -19,6 +19,7 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
 #![feature(iter_rfind)]
+#![feature(try_from)]
 extern crate byteorder;
 extern crate bytes;
 extern crate clap;

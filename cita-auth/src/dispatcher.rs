@@ -17,13 +17,14 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{factory, submodules, topics, BatchRequest, MsgClass, Request, Response};
+use libproto::{submodules, topics, BatchRequest, Message, MsgClass, Request, Response};
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
-use protobuf::{Message, RepeatedField};
+use protobuf::RepeatedField;
 use serde_json;
 
 use std::cell::RefCell;
 use std::collections::HashSet;
+use std::convert::TryInto;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
@@ -31,8 +32,7 @@ use std::thread;
 use std::time::SystemTime;
 use tx_pool;
 use txwal::TxWal;
-use util::H256;
-use util::ToPretty;
+use util::{H256, ToPretty};
 use uuid::Uuid;
 
 pub struct Dispatcher {
@@ -166,13 +166,13 @@ impl Dispatcher {
                 self.response_jsonrpc_cnt
             );
 
-            let msg = factory::create_msg(
+            let msg = Message::init_default(
                 submodules::AUTH,
                 topics::RESPONSE,
                 MsgClass::RESPONSE(response),
             );
             mq_pub
-                .send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap()))
+                .send(("auth.rpc".to_string(), msg.try_into().unwrap()))
                 .unwrap();
         }
         if 0 == self.add_to_pool_cnt {
@@ -225,13 +225,13 @@ impl Dispatcher {
         block_txs.set_height(height as u64);
         block_txs.set_body(body);
         trace!("deal_txs send height {}", height);
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::AUTH,
             topics::BLOCK_TXS,
             MsgClass::BLOCKTXS(block_txs),
         );
         mq_pub
-            .send(("auth.block_txs".to_string(), msg.write_to_bytes().unwrap()))
+            .send(("auth.block_txs".to_string(), msg.try_into().unwrap()))
             .unwrap();
     }
 
@@ -337,13 +337,13 @@ impl Dispatcher {
         request.set_batch_req(batch_request);
         request.set_request_id(request_id);
 
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::AUTH,
             topics::REQUEST,
             MsgClass::REQUEST(request),
         );
         mq_pub
-            .send(("auth.tx".to_string(), msg.write_to_bytes().unwrap()))
+            .send(("auth.tx".to_string(), msg.try_into().unwrap()))
             .unwrap();
 
         self.batch_forward_info.forward_stamp = SystemTime::now();

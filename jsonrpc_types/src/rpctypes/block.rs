@@ -18,9 +18,8 @@
 use super::{BlockTransaction, FullTransaction};
 use super::Proof;
 use super::RpcBlock;
-use libproto::blockchain::Block as ProtoBlock;
-use libproto::blockchain::BlockHeader as ProtoBlockHeader;
-use protobuf::core::parse_from_bytes;
+use libproto::{Block as ProtoBlock, BlockHeader as ProtoBlockHeader};
+use std::convert::TryFrom;
 use util::{H256, U256};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -75,7 +74,7 @@ impl From<ProtoBlockHeader> for BlockHeader {
 
 impl From<RpcBlock> for Block {
     fn from(block: RpcBlock) -> Self {
-        let mut blk = parse_from_bytes::<ProtoBlock>(block.block.as_slice()).unwrap();
+        let mut blk = ProtoBlock::try_from(&block.block).unwrap();
         let proto_header = blk.take_header();
         let mut proto_body = blk.take_body();
         let block_transactions = proto_body.take_transactions();

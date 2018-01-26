@@ -7,7 +7,6 @@ authors = ["Cryptape Technologies <arch@cryptape.com>"]
 bincode = "0.8"
 futures = "0.1"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-protobuf = { version = "^1.0.0" }
 uuid = { version = "0.5", features = ["v4"] }
 log = "0.4"
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

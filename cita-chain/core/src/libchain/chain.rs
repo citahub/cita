@@ -31,19 +31,19 @@ use libchain::extras::*;
 use libchain::status::Status;
 pub use libchain::transaction::*;
 
-use libproto::*;
 use libproto::blockchain::{AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
                            RichStatus as ProtoRichStatus};
 
+use libproto::{submodules, topics, BlockTxHashes, FullTransaction, Message, MsgClass, SyncResponse};
 use libproto::executor::ExecutedResult;
 use proof::TendermintProof;
-use protobuf::Message;
 use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
 use serde_json;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::convert::TryInto;
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -418,14 +418,14 @@ impl Chain {
 
             let mut sync_res = SyncResponse::new();
             sync_res.set_blocks(RepeatedField::from_vec(blocks));
-            let msg = factory::create_msg(
+            let msg = Message::init_default(
                 submodules::CHAIN,
                 topics::NEW_BLK,
                 MsgClass::SYNCRESPONSE(sync_res),
             );
             ctx_pub
                 .clone()
-                .send(("net.blk".to_string(), msg.write_to_bytes().unwrap()))
+                .send(("net.blk".to_string(), msg.try_into().unwrap()))
                 .unwrap();
         }
     }
@@ -882,14 +882,14 @@ impl Chain {
             tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
         }
         block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::CHAIN,
             topics::BLOCK_TXHASHES,
             MsgClass::BLOCKTXHASHES(block_tx_hashes),
         );
 
         ctx_pub_clone
-            .send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap()))
+            .send(("chain.txhashes".to_string(), msg.try_into().unwrap()))
             .unwrap();
         trace!("delivery block's tx hashes for height: {}", block_height);
     }
@@ -916,16 +916,13 @@ impl Chain {
         let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
         rich_status.set_nodes(RepeatedField::from_vec(node_list));
 
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::CHAIN,
             topics::RICH_STATUS,
             MsgClass::RICHSTATUS(rich_status),
         );
         ctx_pub
-            .send((
-                "chain.richstatus".to_string(),
-                msg.write_to_bytes().unwrap(),
-            ))
+            .send(("chain.richstatus".to_string(), msg.try_into().unwrap()))
             .unwrap();
     }
 
@@ -1011,16 +1008,13 @@ impl Chain {
             status.get_height(),
             status.get_hash()
         );
-        let sync_msg = factory::create_msg(
+        let sync_msg = Message::init_default(
             submodules::CHAIN,
             topics::NEW_STATUS,
             MsgClass::STATUS(status),
         );
         ctx_pub
-            .send((
-                "chain.status".to_string(),
-                sync_msg.write_to_bytes().unwrap(),
-            ))
+            .send(("chain.status".to_string(), sync_msg.try_into().unwrap()))
             .unwrap();
     }
 

@@ -19,12 +19,11 @@ use bincode::{serialize, Infinite};
 use core_executor::libexecutor::block::Block;
 use core_executor::transaction::SignedTransaction;
 use crypto::*;
-use libproto::{factory, submodules, topics, MsgClass};
-use libproto::blockchain::Transaction;
+use libproto::{submodules, topics, Message, MsgClass, Transaction};
 use proof::TendermintProof;
-use protobuf::core::Message;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::time::{Duration, UNIX_EPOCH};
 use util::H256;
 use util::Hashable;
@@ -114,12 +113,12 @@ impl Generateblock {
         proof.commits = commits;
         block.set_proof(proof.into());
 
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::CONSENSUS,
             topics::NEW_BLK,
             MsgClass::BLOCK(block.protobuf()),
         );
-        (msg.write_to_bytes().unwrap(), block)
+        (msg.try_into().unwrap(), block)
     }
 
     pub fn unix_now() -> Duration {

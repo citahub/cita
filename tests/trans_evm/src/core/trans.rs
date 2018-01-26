@@ -17,8 +17,8 @@
 
 use crypto::*;
 use libproto::blockchain::{Transaction, UnverifiedTransaction};
-use protobuf::core::Message;
 use rustc_hex::FromHex;
+use std::convert::TryInto;
 use util::*;
 
 #[allow(dead_code, unused_variables)]
@@ -61,12 +61,15 @@ impl Trans {
 
     pub fn generate_tx_data(method: Methods) -> String {
         let txdata = match method {
-            Methods::Sendtx(tx) => format!(
-                "{{\"jsonrpc\":\"2.0\",\
-                 \"method\":\"cita_sendTransaction\",\
-                 \"params\":[\"{}\"],\"id\":2}}",
-                tx.write_to_bytes().unwrap().to_hex()
-            ),
+            Methods::Sendtx(tx) => {
+                let tx_bytes: Vec<u8> = tx.try_into().unwrap();
+                format!(
+                    "{{\"jsonrpc\":\"2.0\",\
+                     \"method\":\"cita_sendTransaction\",\
+                     \"params\":[\"{}\"],\"id\":2}}",
+                    tx_bytes.to_hex()
+                )
+            }
             Methods::Height => format!(r#"{{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":2}}"#),
             Methods::Blockbyheiht(h) => format!(
                 r#"{{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":["{}",false],"id":2}}"#,

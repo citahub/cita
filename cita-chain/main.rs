@@ -20,6 +20,7 @@
 #![allow(unused_must_use)]
 #![feature(custom_attribute)]
 #![feature(refcell_replace_swap)]
+#![feature(try_from)]
 extern crate byteorder;
 extern crate clap;
 extern crate common_types as types;
