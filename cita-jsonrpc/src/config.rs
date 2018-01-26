@@ -125,4 +125,5 @@ pub struct HttpConfig {
     pub listen_ip: String,
     pub listen_port: String,
     pub timeout: u64,
+    pub allow_origin: Option<String>,
 }

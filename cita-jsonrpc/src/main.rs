@@ -24,6 +24,7 @@ extern crate threadpool;
 extern crate time;
 extern crate tokio_core;
 extern crate tokio_io;
+extern crate unicase;
 #[macro_use]
 extern crate util;
 extern crate uuid;
@@ -34,6 +35,7 @@ mod helper;
 mod ws_handler;
 mod mq_handler;
 mod http_server;
+mod response;
 
 use clap::App;
 use config::{NewTxFlowConfig, ProfileConfig};
@@ -157,6 +159,7 @@ fn main() {
             let tx = tx_relay.clone();
             let timeout = http_config.timeout;
             let http_responses = Arc::clone(&http_responses);
+            let allow_origin = http_config.allow_origin.clone();
             let _ = thread::Builder::new()
                 .name(format!("worker{}", i))
                 .spawn(move || {
@@ -164,7 +167,7 @@ fn main() {
                     let handle = core.handle();
                     let timeout = Duration::from_secs(timeout);
                     let listener = http_server::listener(&addr, &handle).unwrap();
-                    Server::start(core, listener, tx, http_responses, timeout);
+                    Server::start(core, listener, tx, http_responses, timeout, &allow_origin);
                 })
                 .unwrap();
         }

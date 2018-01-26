@@ -33,8 +33,8 @@ impl ReqInfo {
     }
 }
 
-pub fn encode_request(body: String) -> Result<Call, Error> {
-    let rpc: Result<Call, serde_json::Error> = serde_json::from_str(&body);
+pub fn encode_request(body: &str) -> Result<Call, Error> {
+    let rpc: Result<Call, serde_json::Error> = serde_json::from_str(body);
     match rpc {
         Err(_err_msg) => Err(Error::from(_err_msg)),
         Ok(rpc) => Ok(rpc),

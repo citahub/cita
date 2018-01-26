@@ -12,7 +12,7 @@ def main():
     ws_enable = sys.argv[3] == "true"
     profile_config = dict(enable=False, flag_prof_start=0, flag_prof_duration=0)
     http_config = dict(enable=http_enable, listen_ip="0.0.0.0", listen_port=sys.argv[2],
-                       timeout=3)
+                       timeout=3, allow_origin="*")
 
     ws_config = dict(
         enable=ws_enable, thread_number=2,

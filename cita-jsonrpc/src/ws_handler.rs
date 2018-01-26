@@ -73,7 +73,7 @@ impl Handler for WsHandler {
         self.thread_pool.execute(move || {
             let mut req_id = Id::Null;
             let mut jsonrpc_version = None;
-            let err = match encode_request(msg.into_text().unwrap()) {
+            let err = match encode_request(&msg.into_text().unwrap()) {
                 Err(err) => Err(err),
                 Ok(rpc) => {
                     req_id = rpc.id.clone();
