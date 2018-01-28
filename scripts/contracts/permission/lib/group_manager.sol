@@ -16,8 +16,7 @@ library GroupManager {
         address[] users;
         bytes32[] subGroups;
         bool subSwitch;
-        // Not a tree but a graph
-        bytes32[] parentGroups;
+        bytes32 parentGroup;
         // HTTP: url or IPFS: fingerprint
         string profile;
     }
@@ -28,7 +27,7 @@ library GroupManager {
     event ProfileModified(string _oldSubSwitch, string _newProfile);
     event UsersAdded(bytes32 indexed _group, address[] _users);
     event UsersDeleted(bytes32 indexed _group, address[] _users);
-    event GroupDeleted(bytes32 indexed _group, bytes32[] parentGroups);
+    event GroupDeleted(bytes32 indexed _group, bytes32 parentGroup);
     event GroupInited(bytes32 indexed _root, address[] _adamEve, bool indexed _subSwitch);
 
     /// @dev Init the root group
@@ -68,7 +67,7 @@ library GroupManager {
     {
         self.groups[_newName].name = _newName;
         self.groups[_newName].subSwitch = _newSubSwitch;
-        self.groups[_newName].parentGroups.push(_group);
+        self.groups[_newName].parentGroup = _group;
         self.groups[_newName].profile = _profile;
 
         if (Util.SetOp.None == _op) {
@@ -168,7 +167,7 @@ library GroupManager {
 
     /// @dev Delete group
     /// @notice Delete a tree's node. Only leaf node
-    ///         Also delete the subGroups of parentGroups
+    ///         Also delete the subGroups of parentGroup
     function deleteGroup(
         Groups storage self,
         bytes32 _group
@@ -176,12 +175,10 @@ library GroupManager {
         internal
         returns (bool)
     {
-        bytes32[] memory parents = self.groups[_group].parentGroups;
-        for (uint i = 0; i < parents.length; i++) 
-            Util.bytes32Delete(_group, self.groups[parents[i]].subGroups);
+        Util.bytes32Delete(_group, self.groups[self.groups[_group].parentGroup].subGroups);
 
         delete self.groups[_group];
-        GroupDeleted(_group, self.groups[_group].parentGroups);
+        GroupDeleted(_group, self.groups[_group].parentGroup);
         return true;
     }
 }
