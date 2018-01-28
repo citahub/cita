@@ -129,12 +129,22 @@ option:
   "check_prooftype": 2
 }
 ```
+也可在本目录下创建`executor.json`文件来自定义journaldb的类型等。格式参考`executor_example.json`文件，如下:
 
+```
+{
+  "check_permission": true,
+  "check_quota": true,
+  "check_prooftype": 2,
+  "journaldb_type": "archive"
+}
+```
 其中:
 
 * `check_permission`: 表示发送交易时，是否检查账户拥有相应的权限，其中true表示打开检查，false表示关闭检查，默认为true。
 * `check_quota`: 表示发送交易时，是否检查块的gas和Account的gas是否超过上限，其中true表示打开检查，false表示关闭检查，默认为true。
 * `check_prooftype`: 表示当前使用的共识算法，0表示采用的Poa算法、1表示采用的Raft算法、2表示采用的Tendermint算法，默认采用Tendermint算法。
+* `journaldb_type`: 表示当前使用的JournalDB算法，有"archive" "light" "fast" "basic"等4种类型，默认是archive。
 
 
 ### 节点管理系统合约

@@ -148,7 +148,7 @@ executor(){
     if [ -d "${CONFIG_DIR}/resource" ]; then
         cp -rf resource ${CONFIG_DIR}/node${1}/
     fi
-    cp -f ${BINARY_DIR}/scripts/admintool/chain_check_example.json      ${CONFIG_DIR}/node${1}/executor.json
+    cp -f ${BINARY_DIR}/scripts/admintool/executor_example.json      ${CONFIG_DIR}/node${1}/executor.json
 }
 
 jsonrpc(){
