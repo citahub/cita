@@ -568,7 +568,13 @@ impl<B: Backend> State<B> {
             EvmError::OutOfStack { .. } => Some(ReceiptError::OutOfStack),
             EvmError::Internal(_) => Some(ReceiptError::Internal),
         });
-        let receipt = Receipt::new(None, e.cumulative_gas_used, e.logs, receipt_error);
+        let receipt = Receipt::new(
+            None,
+            e.cumulative_gas_used,
+            e.logs,
+            receipt_error,
+            t.account_nonce().clone(),
+        );
         trace!(target: "state", "Transaction receipt: {:?}", receipt);
         Ok(ApplyOutcome {
             receipt: receipt,
