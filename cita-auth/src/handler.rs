@@ -626,8 +626,7 @@ mod tests {
                 .get_transaction()
                 .get_valid_until_block(),
         );
-        let mut signature = tx.get_transaction_with_sig().get_signature().to_vec();
-        signature[0] = signature[0] + 1;
+        let signature = tx.get_transaction_with_sig().get_signature().to_vec();
         req.set_signature(signature[0..16].to_vec());
         let bytes: Vec<u8> = tx.get_transaction_with_sig()
             .get_transaction()
