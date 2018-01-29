@@ -29,7 +29,7 @@ pragma solidity ^0.4.18;
  * f5ff3f20: queryBasicPermission()
  * 152db21e: queryGroupInfo(bytes32)
  * 95b771dc: queryGroups(address)
- * af7c5ed6: queryParentGroup(bytes32)
+ * 5257a658: queryParentGroup(bytes32)
  * 626b04a2: queryPermissions(bytes32)
  * 5ec62af2: queryProfile(bytes32)
  * 620bb3ca: queryRoles(bytes32)

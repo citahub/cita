@@ -376,7 +376,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     }
 
     /// @dev Query the parentGroup of the group
-    function queryParentGroups(bytes32 _group)
+    function queryParentGroup(bytes32 _group)
         view
         public
         returns (bytes32)
