@@ -1,0 +1,33 @@
+# Refer to https://github.com/mkdocs/mkdocs/blob/master/mkdocs.yml for a working example
+site_name: CITA
+site_url: https://github.com/cryptape/cita
+site_description: 
+site_author: Cryptape
+repo_url: https://github.com/cryptape/cita
+
+pages:
+  - Home: index.md
+
+theme: material
+extra_css:
+  - 'stylesheets/extra.css'
+
+markdown_extensions:
+  - markdown.extensions.admonition
+  - markdown.extensions.def_list
+  - markdown.extensions.footnotes
+  - markdown.extensions.meta
+  - markdown.extensions.toc(permalink=true)
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.arithmatex
+  - pymdownx.betterem(smart_enable=all)
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist(custom_checkbox=true)
+  - pymdownx.tilde
