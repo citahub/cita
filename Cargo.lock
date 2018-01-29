@@ -669,11 +669,11 @@ dependencies = [
 
 [[package]]
 name = "clippy"
-version = "0.0.182"
+version = "0.0.183"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cargo_metadata 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "clippy_lints 0.0.182 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clippy_lints 0.0.183 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -699,7 +699,7 @@ dependencies = [
 
 [[package]]
 name = "clippy_lints"
-version = "0.0.182"
+version = "0.0.183"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "if_chain 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -805,8 +805,9 @@ dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clippy 0.0.182 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clippy 0.0.183 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
+ "core 0.1.0",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2801,9 +2802,9 @@ dependencies = [
 "checksum cita-sm2 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum clap 2.29.2 (registry+https://github.com/rust-lang/crates.io-index)" = "4151c5790817c7d21bbdc6c3530811f798172915f93258244948b93ba19604a6"
 "checksum clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)" = "2dae056aaec8acd5fc26722234cc9fa03b969a860d9aef0da6c5e5c996ce66ae"
-"checksum clippy 0.0.182 (registry+https://github.com/rust-lang/crates.io-index)" = "fa5d02da768264b4faa1494aad322c4537f3f9855349ef704077064a246248e3"
+"checksum clippy 0.0.183 (registry+https://github.com/rust-lang/crates.io-index)" = "a5e81310a5a578c454fb713d381b332d67be11d0e108e5846eaadd7044003026"
 "checksum clippy_lints 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)" = "d04f24bc10870e19880865d8f206168993bfc6df9cc7335c0692cad98378a4b6"
-"checksum clippy_lints 0.0.182 (registry+https://github.com/rust-lang/crates.io-index)" = "e60c2e0439117abddf18407165aeb46b0e9a59d3a441b323ac176d2894f2adde"
+"checksum clippy_lints 0.0.183 (registry+https://github.com/rust-lang/crates.io-index)" = "0f7b3f5649a03ab72703d07bc53f0d6935e3a9f24f31c84003f801752e4d2692"
 "checksum coco 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "c06169f5beb7e31c7c67ebf5540b8b472d23e3eade3b2ec7d1f5b504a85f91bd"
 "checksum cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "33f07976bb6821459632d7a18d97ccca005cb5c552f251f822c7c1781c1d7035"
 "checksum crossbeam 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)" = "bd66663db5a988098a89599d4857919b3acf7f61402e61365acfd3919857b9be"

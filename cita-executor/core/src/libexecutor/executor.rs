@@ -685,3 +685,91 @@ impl Executor {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate logger;
+    extern crate mktemp;
+
+    //use super::*;
+    use core::libchain::block::Block as ChainBlock;
+    use libproto::{Message, MsgClass};
+    use std::convert::TryFrom;
+    use std::sync::mpsc::channel;
+    use tests::helpers::{create_block, init_chain, init_executor, solc};
+    use util::Address;
+
+    fn generate_contract() -> Vec<u8> {
+        let source = r#"
+            pragma solidity ^0.4.8;
+            contract ConstructSol {
+                uint a;
+                event LogCreate(address contractAddr);
+                event A(uint);
+                function ConstructSol(){
+                    LogCreate(this);
+                }
+
+                function set(uint _a) {
+                    a = _a;
+                    A(a);
+                }
+
+                function get() returns (uint) {
+                    return a;
+                }
+            }
+        "#;
+        let (data, _) = solc("ConstructSol", source);
+        data
+    }
+
+    #[test]
+    fn test_contract_address_from_same_pv() {
+        let executor = init_executor();
+        let chain = init_chain();
+
+        let data = generate_contract();
+        let block = create_block(&executor, Address::from(0), &data, (0, 2));
+
+        let (send, recv) = channel::<(String, Vec<u8>)>();
+        let inchain = chain.clone();
+
+        let txs = block.body().transactions().clone();
+        let hash1 = txs[0].hash();
+        let hash2 = txs[1].hash();
+
+        let h = executor.get_current_height() + 1;
+
+        executor.execute_block(block.clone(), &send);
+
+        if let Ok((_, msg_vec)) = recv.recv() {
+            let mut msg = Message::try_from(&msg_vec).unwrap();
+            match msg.take_content() {
+                MsgClass::EXECUTED(info) => {
+                    let pro = block.protobuf();
+                    let chain_block = ChainBlock::from(pro);
+                    inchain.set_block_body(h, &chain_block);
+                    inchain.set_db_result(&info, &chain_block);
+                }
+
+                _ => {}
+            }
+        }
+
+        let receipt1 = chain.localized_receipt(hash1).unwrap();
+        let receipt2 = chain.localized_receipt(hash2).unwrap();
+        println!(
+            "receipt1.contract_address = {:?}",
+            receipt1.contract_address.unwrap()
+        );
+        println!(
+            "receipt2.contract_address = {:?}",
+            receipt2.contract_address.unwrap()
+        );
+        assert_ne!(
+            receipt1.contract_address.unwrap(),
+            receipt2.contract_address.unwrap()
+        );
+    }
+}
