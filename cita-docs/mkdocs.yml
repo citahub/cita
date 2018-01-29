@@ -7,6 +7,9 @@ repo_url: https://github.com/cryptape/cita
 
 pages:
   - Home: index.md
+  - Blockchain: blockchain.md
+  - CITA Features: cita.md
+  - Components: components.md
   - System Management: system_manager.md
 
 theme: material
