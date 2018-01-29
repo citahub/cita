@@ -7,6 +7,7 @@ repo_url: https://github.com/cryptape/cita
 
 pages:
   - Home: index.md
+  - System Management: system_manager.md
 
 theme: material
 extra_css:
