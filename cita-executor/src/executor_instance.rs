@@ -5,16 +5,14 @@ use core::libexecutor::call_request::CallRequest;
 use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, CountOrCode};
-use libproto;
-use libproto::{communication, parse_msg, request, response, submodules, topics, MsgClass, SyncResponse};
+use libproto::{cmd_id, request, response, submodules, topics, Message, MsgClass, SyncResponse};
 use libproto::blockchain::{BlockWithProof, Proof, ProofType};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use proof::TendermintProof;
-use protobuf::Message;
-use protobuf::core::parse_from_bytes;
 use serde_json;
 use std::cell::RefCell;
+use std::convert::{TryFrom, TryInto};
 use std::mem;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -60,12 +58,15 @@ impl ExecutorInstance {
         }
     }
 
-    pub fn distribute_msg(&self, key: String, msg: Vec<u8>) {
-        let (cmd_id, origin, content_ext) = parse_msg(msg.as_slice());
+    pub fn distribute_msg(&self, key: String, msg_vec: Vec<u8>) {
+        let mut msg = Message::try_from(&msg_vec).unwrap();
+        let cid = msg.get_cmd_id();
+        let origin = msg.get_origin();
+        let content_ext = msg.take_content();
         trace!(
             "distribute_msg call key = {}, cmd_id = {}, origin = {}",
             key,
-            cmd_id,
+            cid,
             origin
         );
         match content_ext {
@@ -82,7 +83,7 @@ impl ExecutorInstance {
             }
 
             MsgClass::MSG(content) => {
-                if libproto::cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) == cmd_id {
+                if cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) == cid {
                     if !self.ext.is_sync.load(Ordering::SeqCst) {
                         self.proposal_enqueue(&content[..]);
                     } else {
@@ -317,10 +318,8 @@ impl ExecutorInstance {
                 error!("mtach error Request_oneof_req msg!!!!");
             }
         };
-        let msg: communication::Message = response.into();
-        self.ctx_pub
-            .send((topic, msg.write_to_bytes().unwrap()))
-            .unwrap();
+        let msg: Message = response.into();
+        self.ctx_pub.send((topic, msg.try_into().unwrap())).unwrap();
     }
 
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
@@ -500,7 +499,7 @@ impl ExecutorInstance {
     }
 
     fn proposal_enqueue(&self, content: &[u8]) {
-        let mut signed_proposal = parse_from_bytes::<SignedProposal>(content).unwrap();
+        let mut signed_proposal = SignedProposal::try_from(content).unwrap();
         let proposal = signed_proposal.take_proposal().take_block();
 
         let current_height = self.ext.get_current_height();

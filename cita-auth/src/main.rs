@@ -19,6 +19,7 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![feature(custom_attribute)]
 #![feature(integer_atomics)]
+#![feature(try_from)]
 
 extern crate cita_crypto as crypto;
 extern crate clap;

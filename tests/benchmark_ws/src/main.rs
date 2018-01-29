@@ -17,6 +17,7 @@
 
 #![allow(dead_code, unused_variables, unused_must_use, unused_mut, unused_imports, unused_extern_crates)]
 #![feature(test)]
+#![feature(try_from)]
 extern crate cita_crypto as crypto;
 extern crate clap;
 #[macro_use]
@@ -25,7 +26,6 @@ extern crate jsonrpc_types;
 extern crate libproto;
 #[macro_use]
 extern crate log;
-extern crate protobuf;
 extern crate pubsub;
 extern crate rand;
 extern crate rustc_hex;

@@ -3,6 +3,7 @@
 #![feature(custom_attribute)]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
 #![feature(refcell_replace_swap)]
+#![feature(try_from)]
 extern crate bincode;
 extern crate clap;
 extern crate core_executor as core;
@@ -14,7 +15,6 @@ extern crate libproto;
 extern crate log;
 extern crate logger;
 extern crate proof;
-extern crate protobuf;
 extern crate pubsub;
 extern crate serde_json;
 #[macro_use]

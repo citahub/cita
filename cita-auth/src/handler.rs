@@ -17,10 +17,10 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{factory, parse_msg, submodules, topics, MsgClass, Response, Ret, VerifyBlockResp, VerifyTxResp};
+use libproto::{submodules, topics, Message, MsgClass, Response, Ret, VerifyBlockResp, VerifyTxResp};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
-use protobuf::Message;
 use std::collections::{HashMap, HashSet};
+use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
@@ -141,9 +141,9 @@ pub fn handle_remote_msg(
     txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>,
     resp_sender: &Sender<VerifyRequestResponseInfo>,
 ) {
-    let (cmdid, _origin, content) = parse_msg(payload.as_slice());
-    let submodule: u32 = cmdid >> 16;
-    match content {
+    let mut msg = Message::try_from(&payload).unwrap();
+    let submodule: u32 = msg.get_cmd_id() >> 16;
+    match msg.take_content() {
         MsgClass::BLOCKTXHASHES(block_tx_hashes) => {
             let height = block_tx_hashes.get_height();
             info!("get block tx hashs for height {:?}", height);
@@ -427,13 +427,13 @@ pub fn handle_verificaton_result(
                                         response.set_error_msg(tx_response.status);
 
                                         trace!("response new tx {:?}", response);
-                                        let msg = factory::create_msg(
+                                        let msg = Message::init_default(
                                             submodules::AUTH,
                                             topics::RESPONSE,
                                             MsgClass::RESPONSE(response),
                                         );
                                         tx_pub
-                                            .send(("auth.rpc".to_string(), msg.write_to_bytes().unwrap()))
+                                            .send(("auth.rpc".to_string(), msg.try_into().unwrap()))
                                             .unwrap();
                                     }
                                 }
@@ -520,16 +520,13 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
     blkresp.set_id(request_id);
     blkresp.set_ret(ret);
 
-    let msg = factory::create_msg(
+    let msg = Message::init_default(
         submodules::AUTH,
         topics::VERIFY_BLK_RESP,
         MsgClass::VERIFYBLKRESP(blkresp),
     );
     tx_pub
-        .send((
-            String::from("auth.verify_blk_res"),
-            msg.write_to_bytes().unwrap(),
-        ))
+        .send((String::from("auth.verify_blk_res"), msg.try_into().unwrap()))
         .unwrap();
 }
 
@@ -537,9 +534,9 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
 mod tests {
     use super::*;
     use crypto::*;
-    use libproto::*;
-    use libproto::blockchain::*;
-    use protobuf::{Message, RepeatedField};
+    use libproto::{submodules, topics, BlockTxHashes, Message, MsgClass, Request, Ret, SignedTransaction, Transaction,
+                   VerifyBlockReq, VerifyTxReq};
+    use protobuf::RepeatedField;
     use std::sync::mpsc::channel;
     use std::thread;
     use std::time::Duration;
@@ -569,12 +566,12 @@ mod tests {
     }
 
     fn generate_msg_from_request(request: Request) -> Vec<u8> {
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::JSON_RPC,
             topics::REQUEST,
             MsgClass::REQUEST(request),
         );
-        msg.write_to_bytes().unwrap()
+        msg.try_into().unwrap()
     }
 
     fn generate_msg(tx: SignedTransaction) -> Vec<u8> {
@@ -583,12 +580,12 @@ mod tests {
         request.set_un_tx(tx.get_transaction_with_sig().clone());
         request.set_request_id(request_id);
 
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::JSON_RPC,
             topics::REQUEST,
             MsgClass::REQUEST(request),
         );
-        msg.write_to_bytes().unwrap()
+        msg.try_into().unwrap()
     }
 
     fn generate_blk_msg(tx: SignedTransaction) -> Vec<u8> {
@@ -601,9 +598,9 @@ mod tests {
         );
         let signature = tx.get_transaction_with_sig().get_signature().to_vec();
         req.set_signature(signature);
-        let bytes = tx.get_transaction_with_sig()
+        let bytes: Vec<u8> = tx.get_transaction_with_sig()
             .get_transaction()
-            .write_to_bytes()
+            .try_into()
             .unwrap();
         let hash = bytes.crypt_hash().to_vec();
         req.set_hash(hash);
@@ -613,12 +610,12 @@ mod tests {
         blkreq.set_id(BLOCK_REQUEST_ID);
         blkreq.set_reqs(RepeatedField::from_slice(&[req]));
 
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::CONSENSUS,
             topics::VERIFY_BLK_REQ,
             MsgClass::VERIFYBLKREQ(blkreq),
         );
-        msg.write_to_bytes().unwrap()
+        msg.try_into().unwrap()
     }
 
     fn generate_blk_msg_with_fake_signature(tx: SignedTransaction, pubkey: PubKey) -> Vec<u8> {
@@ -632,9 +629,9 @@ mod tests {
         let mut signature = tx.get_transaction_with_sig().get_signature().to_vec();
         signature[0] = signature[0] + 1;
         req.set_signature(signature[0..16].to_vec());
-        let bytes = tx.get_transaction_with_sig()
+        let bytes: Vec<u8> = tx.get_transaction_with_sig()
             .get_transaction()
-            .write_to_bytes()
+            .try_into()
             .unwrap();
         let hash = bytes.crypt_hash().to_vec();
         req.set_hash(hash);
@@ -645,12 +642,12 @@ mod tests {
         blkreq.set_id(BLOCK_REQUEST_ID);
         blkreq.set_reqs(RepeatedField::from_slice(&[req]));
 
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::CONSENSUS,
             topics::VERIFY_BLK_REQ,
             MsgClass::VERIFYBLKREQ(blkreq),
         );
-        msg.write_to_bytes().unwrap()
+        msg.try_into().unwrap()
     }
 
     fn generate_sync_blk_hash_msg(height: u64) -> Vec<u8> {
@@ -669,12 +666,12 @@ mod tests {
 
         block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
 
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::CHAIN,
             topics::BLOCK_TXHASHES,
             MsgClass::BLOCKTXHASHES(block_tx_hashes),
         );
-        msg.write_to_bytes().unwrap()
+        msg.try_into().unwrap()
     }
 
     #[test]
@@ -788,8 +785,8 @@ mod tests {
 
         let (key, sync_request) = rx_pub.recv().unwrap();
         assert_eq!(key, "auth.blk_tx_hashs_req".to_owned());
-        let (_, _, content) = parse_msg(sync_request.as_slice());
-        match content {
+        let mut msg = Message::try_from(&sync_request).unwrap();
+        match msg.take_content() {
             MsgClass::BLOCKTXHASHESREQ(req) => {
                 assert_eq!(req.get_height(), 0);
             }
@@ -1073,8 +1070,8 @@ mod tests {
         );
 
         let (_, resp_msg) = rx_pub.recv().unwrap();
-        let (_, _, content) = parse_msg(resp_msg.as_slice());
-        match content {
+        let mut msg = Message::try_from(&resp_msg).unwrap();
+        match msg.take_content() {
             MsgClass::VERIFYBLKRESP(resp) => {
                 assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
@@ -1153,8 +1150,8 @@ mod tests {
         );
 
         let (_, resp_msg) = rx_pub.recv().unwrap();
-        let (_, _, content) = parse_msg(resp_msg.as_slice());
-        match content {
+        let mut msg = Message::try_from(&resp_msg).unwrap();
+        match msg.take_content() {
             MsgClass::VERIFYBLKRESP(resp) => {
                 assert_eq!(resp.get_ret(), Ret::BadSig);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
@@ -1230,8 +1227,8 @@ mod tests {
             &pool_tx_sender,
         );
         let (_, resp_msg) = rx_pub.recv().unwrap();
-        let (_, _, content) = parse_msg(resp_msg.as_slice());
-        match content {
+        let mut msg = Message::try_from(&resp_msg).unwrap();
+        match msg.take_content() {
             MsgClass::VERIFYBLKRESP(resp) => {
                 assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
@@ -1255,8 +1252,8 @@ mod tests {
             &resp_sender,
         );
         let (_, resp_msg) = rx_pub.recv().unwrap();
-        let (_, _, content) = parse_msg(resp_msg.as_slice());
-        match content {
+        let mut msg = Message::try_from(&resp_msg).unwrap();
+        match msg.take_content() {
             MsgClass::VERIFYBLKRESP(resp) => {
                 assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);

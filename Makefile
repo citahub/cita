@@ -20,7 +20,7 @@ release:
 	scripts/release.sh release
 
 test:
-	$(CARGO) test --all 2>&1 |tee target/test.log
+	$(CARGO) test --all 2>&1
 
 bench:
 	-rm target/bench.log

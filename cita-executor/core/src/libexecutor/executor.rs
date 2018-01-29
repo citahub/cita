@@ -34,14 +34,14 @@ use libexecutor::extras::*;
 use libexecutor::genesis::Genesis;
 pub use libexecutor::transaction::*;
 
-use libproto::*;
+use libproto::{submodules, topics, ConsensusConfig, ExecutedResult, Message, MsgClass};
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
 
 use native::Factory as NativeFactory;
-use protobuf::Message;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
@@ -62,6 +62,7 @@ pub struct Config {
     pub check_permission: bool,
     pub check_quota: bool,
     pub check_prooftype: u8,
+    pub journaldb_type: String,
 }
 
 impl Config {
@@ -70,6 +71,7 @@ impl Config {
             check_permission: false,
             check_quota: false,
             check_prooftype: 2,
+            journaldb_type: String::from("archive"),
         }
     }
 
@@ -172,6 +174,8 @@ pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
 
 impl Executor {
     pub fn init_executor(db: Arc<KeyValueDB>, mut genesis: Genesis, executor_config: Config) -> Executor {
+        info!("config check: {:?}", executor_config);
+
         let trie_factory = TrieFactory::new(TrieSpec::Generic);
         let factories = Factories {
             vm: EvmFactory::default(),
@@ -180,16 +184,18 @@ impl Executor {
             accountdb: Default::default(),
         };
 
-        let journal_db = journaldb::new(Arc::clone(&db), journaldb::Algorithm::Archive, COL_STATE);
+        let journaldb_type = executor_config
+            .journaldb_type
+            .parse()
+            .unwrap_or(journaldb::Algorithm::Archive);
+        let journal_db = journaldb::new(Arc::clone(&db), journaldb_type, COL_STATE);
         let state_db = StateDB::new(journal_db);
 
         let mut executed_ret = ExecutedResult::new();
         let header = match get_current_header(&*db) {
             Some(header) => {
                 let executed_header = header.clone().generate_executed_header();
-                executed_ret
-                    .mut_executed_info()
-                    .set_header(executed_header.clone());
+                executed_ret.mut_executed_info().set_header(executed_header);
                 header
             }
             _ => {
@@ -199,14 +205,10 @@ impl Executor {
                 info!("init genesis {:?}", genesis);
 
                 let executed_header = genesis.block.header().clone().generate_executed_header();
-                executed_ret
-                    .mut_executed_info()
-                    .set_header(executed_header.clone());
+                executed_ret.mut_executed_info().set_header(executed_header);
                 genesis.block.header().clone()
             }
         };
-
-        info!("config check: {:?}", executor_config);
 
         let max_height = AtomicUsize::new(0);
         max_height.store(header.number() as usize, Ordering::SeqCst);
@@ -520,13 +522,13 @@ impl Executor {
 
     pub fn send_executed_info_to_chain(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let executed_result = { self.executed_result.read().clone() };
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::EXECUTOR,
             topics::EXECUTED_RESULT,
             MsgClass::EXECUTED(executed_result),
         );
         ctx_pub
-            .send(("executor.result".to_string(), msg.write_to_bytes().unwrap()))
+            .send(("executor.result".to_string(), msg.try_into().unwrap()))
             .unwrap();
     }
 
@@ -534,7 +536,8 @@ impl Executor {
     ///1、header
     ///2、currenthash
     ///3、state
-    pub fn write_batch(&self, batch: &mut DBTransaction, block: ClosedBlock) {
+    pub fn write_batch(&self, block: ClosedBlock) {
+        let mut batch = self.db.transaction();
         let height = block.number();
         let hash = block.hash();
         trace!("commit block in db {:?}, {:?}", hash, height);
@@ -546,9 +549,17 @@ impl Executor {
         let mut state = block.drain();
         // Store triedb changes in journal db
         state
-            .journal_under(batch, height, &hash)
+            .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
+        self.db.write_buffered(batch);
+
         self.prune_ancient(state).expect("mark_canonical failed");
+
+        // Saving in db
+        let now = Instant::now();
+        self.db.flush().expect("DB write failed.");
+        let new_now = Instant::now();
+        info!("db write use {:?}", new_now.duration_since(now));
     }
 
     /// Finalize block
@@ -556,7 +567,6 @@ impl Executor {
     /// 2. Update cache
     /// 3. Commited data to db
     pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        let mut batch = self.db.transaction();
         // Reload config
         self.reload_config();
 
@@ -566,13 +576,8 @@ impl Executor {
         }
         self.set_executed_result(&closed_block);
         self.send_executed_info_to_chain(ctx_pub);
-        self.write_batch(&mut batch, closed_block);
+        self.write_batch(closed_block);
 
-        // Saving in db
-        let now = Instant::now();
-        self.db.write(batch).expect("DB write failed.");
-        let new_now = Instant::now();
-        info!("db write use {:?}", new_now.duration_since(now));
         self.update_last_hashes(&self.get_current_hash());
     }
 

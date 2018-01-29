@@ -1,12 +1,12 @@
 use Source;
 use connection::Connection;
-use libproto::{cmd_id, communication, factory, parse_msg, submodules, topics, MsgClass, SyncRequest, SyncResponse};
+use libproto::{cmd_id, communication, submodules, topics, Message, MsgClass, SyncRequest, SyncResponse};
 use libproto::blockchain::{Block, Status};
-use protobuf::{Message, RepeatedField};
+use protobuf::RepeatedField;
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, VecDeque};
+use std::convert::{TryFrom, TryInto};
 use std::sync::{mpsc, Arc};
-//use time::now;
 use std::time::{Duration, Instant};
 
 const SYNC_STEP: u64 = 20;
@@ -155,7 +155,10 @@ impl Synchronizer {
     }
 
     pub fn receive(&mut self, from: Source, data: Vec<u8>) {
-        let (cid, origin, content) = parse_msg(&data);
+        let mut msg = Message::try_from(&data).unwrap();
+        let cid = msg.get_cmd_id();
+        let origin = msg.get_origin();
+        let content = msg.take_content();
         match content {
             MsgClass::STATUS(status) => {
                 if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) {
@@ -269,7 +272,7 @@ impl Synchronizer {
             );
             let mut sync_req = SyncRequest::new();
             sync_req.set_heights(heights);
-            let msg = factory::create_msg_ex(
+            let msg = Message::init(
                 submodules::CHAIN,
                 topics::SYNC_BLK,
                 communication::OperateType::SINGLE,
@@ -286,7 +289,7 @@ impl Synchronizer {
             self.current_status.get_height(),
             self.current_status.get_hash()
         );
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::CHAIN,
             topics::NEW_STATUS,
             MsgClass::STATUS(self.current_status.clone()),
@@ -348,13 +351,13 @@ impl Synchronizer {
             );
             let mut sync_res = SyncResponse::new();
             sync_res.set_blocks(RepeatedField::from_vec(blocks));
-            let msg = factory::create_msg(
+            let msg = Message::init_default(
                 submodules::CHAIN,
                 topics::NEW_BLK,
                 MsgClass::SYNCRESPONSE(sync_res),
             );
             self.tx_pub
-                .send(("net.blk".to_string(), msg.write_to_bytes().unwrap()));
+                .send(("net.blk".to_string(), msg.try_into().unwrap()));
         }
     }
 

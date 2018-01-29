@@ -17,8 +17,8 @@
 
 use crypto::{pubkey_to_address, KeyPair, PrivKey};
 use libproto::blockchain::{Transaction, UnverifiedTransaction};
-use protobuf::Message;
 use rustc_hex::FromHex;
+use std::convert::TryInto;
 use test::Bencher;
 use util::*;
 use util::crypto::CreateKey;
@@ -69,10 +69,13 @@ impl Client {
 
     pub fn get_data_by_method(&self, method: RpcMethod) -> String {
         let tx_data = match method {
-            RpcMethod::SendTransaction(tx) => format!(
-                "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}",
-                tx.write_to_bytes().unwrap().to_hex()
-            ),
+            RpcMethod::SendTransaction(tx) => {
+                let tx_bytes: Vec<u8> = tx.try_into().unwrap();
+                format!(
+                    "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}",
+                    tx_bytes.to_hex()
+                )
+            }
             RpcMethod::Height => {
                 format!("{{\"jsonrpc\":\"2.0\",\"method\":\"cita_blockNumber\",\"params\":[],\"id\":2}}")
             }

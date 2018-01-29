@@ -1,3 +1,4 @@
+#![feature(try_from)]
 extern crate bytes;
 extern crate clap;
 extern crate cpuprofiler;
@@ -40,11 +41,12 @@ use clap::App;
 use config::{NewTxFlowConfig, ProfileConfig};
 use cpuprofiler::PROFILER;
 use http_server::Server;
-use libproto::communication::Message as CommMsg;
+use libproto::Message;
 use libproto::request::{self as reqlib, BatchRequest};
-use protobuf::{Message, RepeatedField};
+use protobuf::RepeatedField;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::sync::Arc;
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
@@ -195,12 +197,9 @@ fn batch_forward_new_tx(
     request.set_batch_req(batch_request);
     request.set_request_id(request_id);
 
-    let data: CommMsg = request.into();
+    let data: Message = request.into();
     tx_pub
-        .send((
-            String::from(TOPIC_NEW_TX_BATCH),
-            data.write_to_bytes().unwrap(),
-        ))
+        .send((String::from(TOPIC_NEW_TX_BATCH), data.try_into().unwrap()))
         .unwrap();
     *time_stamp = SystemTime::now();
     new_tx_request_buffer.clear();
@@ -215,10 +214,8 @@ fn forward_service(
     config: &NewTxFlowConfig,
 ) {
     if topic.as_str() != TOPIC_NEW_TX {
-        let data: CommMsg = req.into();
-        tx_pub
-            .send((topic, data.write_to_bytes().unwrap()))
-            .unwrap();
+        let data: Message = req.into();
+        tx_pub.send((topic, data.try_into().unwrap())).unwrap();
     } else {
         new_tx_request_buffer.push(req);
         trace!(

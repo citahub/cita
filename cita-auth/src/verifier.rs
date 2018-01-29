@@ -16,10 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::{PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
-use libproto::*;
-use libproto::blockchain::*;
-use protobuf::Message;
+use libproto::{submodules, topics, BlockTxHashesReq, Crypto, Message, MsgClass, Ret, UnverifiedTransaction,
+               VerifyTxReq, VerifyTxResp};
 use std::collections::{HashMap, HashSet};
+use std::convert::TryInto;
 use std::result::Result;
 use std::sync::mpsc::Sender;
 use std::time::SystemTime;
@@ -110,16 +110,13 @@ impl Verifier {
         for i in low..high {
             let mut req = BlockTxHashesReq::new();
             req.set_height(i);
-            let msg = factory::create_msg(
+            let msg = Message::init_default(
                 submodules::AUTH,
                 topics::BLOCK_TXHASHES_REQ,
                 MsgClass::BLOCKTXHASHESREQ(req),
             );
             tx_pub
-                .send((
-                    "auth.blk_tx_hashs_req".to_string(),
-                    msg.write_to_bytes().unwrap(),
-                ))
+                .send(("auth.blk_tx_hashs_req".to_string(), msg.try_into().unwrap()))
                 .unwrap();
         }
     }
@@ -260,7 +257,8 @@ impl Verifier {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::Verifier;
+    use std::collections::HashSet;
     use std::sync::mpsc::channel;
 
     #[test]

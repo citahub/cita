@@ -147,7 +147,7 @@ executor(){
     if [ -d "${CONFIG_DIR}/resource" ]; then
         cp -rf resource ${CONFIG_DIR}/node${1}/
     fi
-    cp -f ${BINARY_DIR}/scripts/admintool/chain_check_example.toml     ${CONFIG_DIR}/node${1}/executor.toml
+    cp -f ${BINARY_DIR}/scripts/admintool/executor_example.toml      ${CONFIG_DIR}/node${1}/executor.toml
 }
 
 jsonrpc(){

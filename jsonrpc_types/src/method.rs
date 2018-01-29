@@ -17,12 +17,11 @@
 
 use super::{Call, Error, Params};
 //#[warn(non_snake_case)]
-use libproto::blockchain;
-use libproto::request as reqlib;
-use protobuf::core::parse_from_bytes;
+use libproto::{request as reqlib, UnverifiedTransaction};
 use rpctypes::{BlockNumber, BlockParamsByHash, BlockParamsByNumber, CallRequest, CountOrCode, Filter};
 use rustc_serialize::hex::FromHex;
 use serde_json;
+use std::convert::TryFrom;
 use util::{H160, H256, U256};
 use util::ToPretty;
 use util::clean_0x;
@@ -123,7 +122,7 @@ impl MethodHandler {
                 Error::parse_error_with_message(err_msg)
             })
             .and_then(|content| {
-                parse_from_bytes::<blockchain::UnverifiedTransaction>(&content[..]).map_err(|_err| {
+                UnverifiedTransaction::try_from(&content[..]).map_err(|_err| {
                     let err_msg = format!(
                         "parse protobuf UnverifiedTransaction data error : {:?}",
                         _err
@@ -386,10 +385,10 @@ mod tests {
     use libproto::request;
     use method::MethodHandler;
     use params::Params;
-    use protobuf::Message;
     use request::Version;
     use serde_json;
     use serde_json::Value;
+    use std::convert::TryInto;
     use util::H160 as Hash160;
     use util::ToPretty;
 
@@ -489,7 +488,7 @@ mod tests {
         tx.set_valid_until_block(99999);
         let mut utx = UnverifiedTransaction::new();
         utx.set_transaction(tx);
-        let utx_string = utx.write_to_bytes().unwrap();
+        let utx_string: Vec<u8> = utx.try_into().unwrap();
 
         let rpc1 = Call {
             jsonrpc: Some(Version::V2),

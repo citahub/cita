@@ -18,6 +18,7 @@
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![feature(custom_attribute)]
+#![feature(try_from)]
 #![allow(unused_attributes)]
 #![allow(unused_extern_crates)]
 extern crate bincode;
@@ -27,7 +28,6 @@ extern crate libproto;
 #[macro_use]
 extern crate log;
 extern crate proof;
-extern crate protobuf;
 extern crate rustc_serialize;
 extern crate serde;
 #[macro_use]
