@@ -18,9 +18,9 @@
 use byteorder::{BigEndian, ByteOrder};
 use config;
 use config::NetConfig;
-use libproto::communication;
+use libproto::{Message, OperateType};
 use notify::DebouncedEvent;
-use protobuf::{parse_from_bytes, Message};
+use std::convert::{TryFrom, TryInto};
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
@@ -56,10 +56,9 @@ impl Connection {
         }
     }
 
-    pub fn is_send(id_card: u32, origin: u32, operate: communication::OperateType) -> bool {
-        operate == communication::OperateType::BROADCAST
-            || (operate == communication::OperateType::SINGLE && id_card == origin)
-            || (operate == communication::OperateType::SUBTRACT && origin != id_card)
+    pub fn is_send(id_card: u32, origin: u32, operate: OperateType) -> bool {
+        operate == OperateType::BROADCAST || (operate == OperateType::SINGLE && id_card == origin)
+            || (operate == OperateType::SUBTRACT && origin != id_card)
     }
 
     pub fn update(&self, config: &config::NetConfig) {
@@ -102,19 +101,19 @@ impl Connection {
         }
     }
 
-    pub fn broadcast(&self, mut msg: communication::Message) {
+    pub fn broadcast(&self, mut msg: Message) {
         let origin = msg.get_origin();
         let operate = msg.get_operate();
         msg.set_origin(self.id_card);
 
         trace!("broadcast msg {:?} ", msg);
-        let msg = msg.write_to_bytes().unwrap();
-        let request_id = 0xDEAD_BEEF_0000_0000 + msg.len();
+        let msg_bytes: Vec<u8> = msg.try_into().unwrap();
+        let request_id = 0xDEAD_BEEF_0000_0000 + msg_bytes.len();
         let mut encoded_request_id = [0; 8];
         BigEndian::write_u64(&mut encoded_request_id, request_id as u64);
         let mut buf = Vec::new();
         buf.extend(&encoded_request_id);
-        buf.extend(msg);
+        buf.extend(msg_bytes);
 
         let mut peers = vec![];
         for peer in self.peers_pair.write().iter_mut() {
@@ -135,7 +134,7 @@ impl Connection {
     }
 
     pub fn broadcast_rawbytes(&self, data: &[u8]) {
-        let mut msg = parse_from_bytes::<communication::Message>(data.as_ref()).unwrap();
+        let mut msg = Message::try_from(data).unwrap();
         self.broadcast(msg);
     }
 }
@@ -191,40 +190,16 @@ pub fn manage_connect(con: &Arc<Connection>, config_path: &str, rx: Receiver<Deb
 #[cfg(test)]
 mod test {
     use super::Connection;
-    use libproto::communication;
+    use libproto::OperateType;
     #[test]
     fn is_send_mag() {
-        assert!(Connection::is_send(
-            0,
-            0,
-            communication::OperateType::BROADCAST
-        ));
-        assert!(Connection::is_send(
-            0,
-            1,
-            communication::OperateType::BROADCAST
-        ));
+        assert!(Connection::is_send(0, 0, OperateType::BROADCAST));
+        assert!(Connection::is_send(0, 1, OperateType::BROADCAST));
 
-        assert!(Connection::is_send(
-            0,
-            0,
-            communication::OperateType::SINGLE
-        ));
-        assert!(!Connection::is_send(
-            0,
-            1,
-            communication::OperateType::SINGLE
-        ));
+        assert!(Connection::is_send(0, 0, OperateType::SINGLE));
+        assert!(!Connection::is_send(0, 1, OperateType::SINGLE));
 
-        assert!(!Connection::is_send(
-            0,
-            0,
-            communication::OperateType::SUBTRACT
-        ));
-        assert!(Connection::is_send(
-            0,
-            1,
-            communication::OperateType::SUBTRACT
-        ));
+        assert!(!Connection::is_send(0, 0, OperateType::SUBTRACT));
+        assert!(Connection::is_send(0, 1, OperateType::SUBTRACT));
     }
 }

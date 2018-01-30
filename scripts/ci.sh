@@ -168,7 +168,7 @@ function main () {
     test_if_has_docker
     has_docker=$?
     replace_algorithm
-    set -e
+    set -e -o pipefail
     if [ ${has_docker} -eq 0 ]; then
         run_in_docker
     else

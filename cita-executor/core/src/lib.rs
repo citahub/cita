@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #![feature(custom_attribute)]
+#![feature(try_from)]
 #![allow(unused_attributes)]
 #![cfg_attr(test, feature(test))]
 extern crate bincode;
@@ -29,6 +30,7 @@ extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate toml;
 extern crate util;
 
 extern crate bloomable;
@@ -53,6 +55,8 @@ extern crate transient_hashmap;
 
 #[cfg(test)]
 extern crate cita_crypto;
+#[cfg(test)]
+extern crate core;
 extern crate ethabi;
 #[cfg(test)]
 extern crate test;

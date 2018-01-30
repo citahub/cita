@@ -19,6 +19,7 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![feature(custom_attribute)]
 #![feature(integer_atomics)]
+#![feature(try_from)]
 
 extern crate cita_crypto as crypto;
 extern crate clap;
@@ -38,6 +39,7 @@ extern crate rustc_serialize;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate threadpool;
+extern crate toml;
 extern crate tx_pool;
 #[macro_use]
 extern crate util;

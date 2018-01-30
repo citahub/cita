@@ -11,7 +11,7 @@ import "./permission_check.sol";
 ///             : Check the adding permissions is valid
 ///             : Add owner field in the group, role and authorization
 ///             : Make the scope be a separate structure
-///             : Use uuid as the key of the map(TBD)
+///        DOING: Use id as the key of the map(TBD)
 /// @title Permission system of CITA
 contract PermissionSystem is PermissionSysInterface, PermissionCheck {
 
@@ -322,15 +322,32 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     function queryGroupInfo(bytes32 _group)
         view
         public
-        returns (address[], bytes32[], bool, bytes32[], string)
+        returns (address[], bytes32[], bool, bytes32, string)
     {
         return (groups.groups[_group].users,
                 groups.groups[_group].subGroups,
                 groups.groups[_group].subSwitch,
-                groups.groups[_group].parentGroups,
+                groups.groups[_group].parentGroup,
                 groups.groups[_group].profile
                );
     }
+    
+    /// @dev Query the ancestors of the group
+    function queryAncestors(bytes32 _group)
+        view
+        public
+        returns (bytes32[])
+    {
+        bytes32[] memory ancestors;
+
+        for (uint i=0; _group != bytes32(0x0); i++) {
+            _group = groups.groups[_group].parentGroup;
+            ancestors[i] = _group;
+        }
+        
+        return ancestors;
+    }
+
     /// @dev Query the users of the group
     function queryUsers(bytes32 _group)
         view
@@ -358,13 +375,13 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         return groups.groups[_group].subSwitch;
     }
 
-    /// @dev Query the parentGroups of the group
-    function queryParentGroups(bytes32 _group)
+    /// @dev Query the parentGroup of the group
+    function queryParentGroup(bytes32 _group)
         view
         public
-        returns (bytes32[])
+        returns (bytes32)
     {
-        return groups.groups[_group].parentGroups;
+        return groups.groups[_group].parentGroup;
     }
 
     /// @dev Query the profie of group

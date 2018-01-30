@@ -19,6 +19,7 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
 #![feature(iter_rfind)]
+#![feature(try_from)]
 extern crate byteorder;
 extern crate bytes;
 extern crate clap;
@@ -38,6 +39,10 @@ extern crate tokio_proto;
 extern crate tokio_service;
 #[macro_use]
 extern crate util;
+
+#[macro_use]
+extern crate serde_derive;
+extern crate toml;
 
 pub mod config;
 pub mod netserver;

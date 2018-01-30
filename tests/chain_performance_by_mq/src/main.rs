@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#![feature(try_from)]
 extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate clap;
@@ -40,8 +41,9 @@ mod generate_block;
 use clap::App;
 use crypto::*;
 use generate_block::Generateblock;
-use libproto::{parse_msg, MsgClass};
+use libproto::{Message, MsgClass};
 use pubsub::start_pubsub;
+use std::convert::TryFrom;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
 use std::time;
@@ -147,8 +149,8 @@ fn main() {
 
     loop {
         let (_, body) = rx_sub.recv().unwrap();
-        let (_, _, content) = parse_msg(body.as_slice());
-        match content {
+        let mut msg = Message::try_from(&body).unwrap();
+        match msg.take_content() {
             //接受chain发送的 authorities_list
             MsgClass::RICHSTATUS(rich_status) => {
                 info!("get new local status {:?}", rich_status.height);

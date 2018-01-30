@@ -4,6 +4,7 @@
 from __future__ import print_function
 from jsonrpcclient.http_client import HTTPClient
 from url_util import endpoint
+import argparse
 import simplejson
 
 
@@ -13,20 +14,29 @@ def get_topics():
         return topics
 
 
-def get_logs(topics):
+def get_logs(topics, from_block, to_block):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("eth_getLogs", topics=topics, fromBlock=0)
+        response = HTTPClient(url).request("eth_getLogs", [{"topics":topics, "fromBlock":from_block, "toBlock":to_block}])
     except:
         return None
 
     return response
 
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fromBlock", default="0")
+    parser.add_argument("--toBlock", default="latest")
+    opts = parser.parse_args()
+
+    return opts.fromBlock, opts.toBlock
 
 def main():
+    from_block, to_block = parse_arguments()
     topics = get_topics()
     print(topics)
-    resp = get_logs(topics)
+    resp = get_logs(topics, from_block, to_block)
+    print(resp)
 
 
 if __name__ == "__main__":

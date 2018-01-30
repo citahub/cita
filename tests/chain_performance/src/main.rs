@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#![feature(try_from)]
 extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate clap;
@@ -25,7 +26,6 @@ extern crate cpuprofiler;
 extern crate dotenv;
 extern crate libproto;
 extern crate proof;
-extern crate protobuf;
 extern crate rustc_serialize;
 extern crate util;
 
@@ -34,6 +34,7 @@ extern crate log;
 extern crate logger;
 #[macro_use]
 extern crate serde_derive;
+extern crate toml;
 
 mod generate_block;
 mod call_exet;
@@ -47,13 +48,12 @@ use core_executor::libexecutor::Genesis;
 use cpuprofiler::PROFILER;
 use generate_block::Generateblock;
 use std::{thread, time};
+use std::convert::TryFrom;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use util::H256;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
-//use common_types::receipt;
-use std::io::BufReader;
 
 //创建合约交易性能
 fn create_contract(
@@ -97,9 +97,9 @@ fn create_contract(
     let inchain = call.chain.clone();
     thread::spawn(move || {
         loop {
-            if let Ok((_, msg)) = recv.recv() {
-                let (_, _, content_ext) = parse_msg(msg.clone().as_slice());
-                match content_ext {
+            if let Ok((_, msg_vec)) = recv.recv() {
+                let mut msg = Message::try_from(&msg_vec).unwrap();
+                match msg.take_content() {
                     MsgClass::EXECUTED(info) => {
                         //info!("**** get excuted info {:?}", info);
                         let pro = inblock.protobuf();
@@ -157,9 +157,9 @@ fn send_contract_tx(block_tx_num: i32, call: Callexet, pre_hash: H256, flag_prof
     let inblock = block.clone();
     let inchain = call.chain.clone();
     thread::spawn(move || loop {
-        if let Ok((_, msg)) = recv.recv() {
-            let (_, _, content_ext) = parse_msg(msg.clone().as_slice());
-            match content_ext {
+        if let Ok((_, msg_vec)) = recv.recv() {
+            let mut msg = Message::try_from(&msg_vec).unwrap();
+            match msg.take_content() {
                 MsgClass::EXECUTED(info) => {
                     let pro = inblock.protobuf();
                     let chan_block = ChainBlock::from(pro);
@@ -250,7 +250,7 @@ fn main() {
         .parse::<i32>()
         .unwrap();
     let genesis_path = matches.value_of("genesis").unwrap_or("genesis.json");
-    let config_path = matches.value_of("config").unwrap_or("chain.json");
+    let config_path = matches.value_of("config").unwrap_or("chain.toml");
     let method = matches.value_of("method").unwrap_or("create");
     let flag_prof_start = matches
         .value_of("flag_prof_start")
@@ -271,11 +271,8 @@ fn main() {
     let chain_db = Database::open(&config, &nosql_path).unwrap();
     let genesis = Genesis::init(genesis_path);
 
-    let config_file = std::fs::File::open(config_path).unwrap();
-    let chain = Arc::new(chain::Chain::init_chain(
-        Arc::new(chain_db),
-        BufReader::new(config_file),
-    ));
+    let chain_config = chain::Config::new(config_path);
+    let chain = Arc::new(chain::Chain::init_chain(Arc::new(chain_db), chain_config));
 
     //chain初始化
     let call = Callexet::new(Arc::new(db), chain, genesis, config_path);

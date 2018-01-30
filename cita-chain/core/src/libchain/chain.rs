@@ -31,23 +31,24 @@ use libchain::extras::*;
 use libchain::status::Status;
 pub use libchain::transaction::*;
 
-use libproto::*;
 use libproto::blockchain::{AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
                            RichStatus as ProtoRichStatus};
 
+use libproto::{submodules, topics, BlockTxHashes, FullTransaction, Message, MsgClass, SyncResponse};
 use libproto::executor::ExecutedResult;
 use proof::TendermintProof;
-use protobuf::Message;
 use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
-use serde_json;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::convert::TryInto;
+use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
+use toml;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
@@ -92,6 +93,15 @@ impl Config {
             check_quota: false,
             check_prooftype: 2,
         }
+    }
+
+    pub fn new(path: &str) -> Self {
+        let mut config_file = File::open(path).unwrap();
+        let mut buffer = String::new();
+        config_file
+            .read_to_string(&mut buffer)
+            .expect("Failed to load chain config.");
+        toml::from_str(&buffer).unwrap()
     }
 }
 
@@ -181,10 +191,7 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
 }
 
 impl Chain {
-    pub fn init_chain<R>(db: Arc<KeyValueDB>, sconfig: R) -> Chain
-    where
-        R: Read,
-    {
+    pub fn init_chain(db: Arc<KeyValueDB>, chain_config: Config) -> Chain {
         // 400 is the avarage size of the key
         let cache_man = CacheManager::new(1 << 14, 1 << 20, 400);
 
@@ -195,8 +202,7 @@ impl Chain {
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
         };
 
-        let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
-        info!("config check: {:?}", sc);
+        info!("config check: {:?}", chain_config);
 
         let header = get_chain(&*db).unwrap_or(Header::default());
         info!("get chain head is : {:?}", header);
@@ -231,7 +237,7 @@ impl Chain {
             nodes: RwLock::new(Vec::new()),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
-            check_prooftype: sc.check_prooftype,
+            check_prooftype: chain_config.check_prooftype,
         };
 
         chain
@@ -418,14 +424,14 @@ impl Chain {
 
             let mut sync_res = SyncResponse::new();
             sync_res.set_blocks(RepeatedField::from_vec(blocks));
-            let msg = factory::create_msg(
+            let msg = Message::init_default(
                 submodules::CHAIN,
                 topics::NEW_BLK,
                 MsgClass::SYNCRESPONSE(sync_res),
             );
             ctx_pub
                 .clone()
-                .send(("net.blk".to_string(), msg.write_to_bytes().unwrap()))
+                .send(("net.blk".to_string(), msg.try_into().unwrap()))
                 .unwrap();
         }
     }
@@ -680,7 +686,7 @@ impl Chain {
             let number = self.block_height_by_hash(hash).unwrap_or(0);
 
             let contract_address = match *stx.action() {
-                Action::Create => Some(contract_address(stx.sender(), stx.account_nonce())),
+                Action::Create => Some(contract_address(stx.sender(), &last_receipt.account_nonce)),
                 _ => None,
             };
 
@@ -882,14 +888,14 @@ impl Chain {
             tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
         }
         block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::CHAIN,
             topics::BLOCK_TXHASHES,
             MsgClass::BLOCKTXHASHES(block_tx_hashes),
         );
 
         ctx_pub_clone
-            .send(("chain.txhashes".to_string(), msg.write_to_bytes().unwrap()))
+            .send(("chain.txhashes".to_string(), msg.try_into().unwrap()))
             .unwrap();
         trace!("delivery block's tx hashes for height: {}", block_height);
     }
@@ -916,16 +922,13 @@ impl Chain {
         let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
         rich_status.set_nodes(RepeatedField::from_vec(node_list));
 
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::CHAIN,
             topics::RICH_STATUS,
             MsgClass::RICHSTATUS(rich_status),
         );
         ctx_pub
-            .send((
-                "chain.richstatus".to_string(),
-                msg.write_to_bytes().unwrap(),
-            ))
+            .send(("chain.richstatus".to_string(), msg.try_into().unwrap()))
             .unwrap();
     }
 
@@ -1011,16 +1014,13 @@ impl Chain {
             status.get_height(),
             status.get_hash()
         );
-        let sync_msg = factory::create_msg(
+        let sync_msg = Message::init_default(
             submodules::CHAIN,
             topics::NEW_STATUS,
             MsgClass::STATUS(status),
         );
         ctx_pub
-            .send((
-                "chain.status".to_string(),
-                sync_msg.write_to_bytes().unwrap(),
-            ))
+            .send(("chain.status".to_string(), sync_msg.try_into().unwrap()))
             .unwrap();
     }
 

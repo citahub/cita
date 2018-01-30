@@ -25,10 +25,11 @@ pragma solidity ^0.4.18;
  * dddb6902: newRole(bytes32,bytes32,bytes32,bytes32[],uint8)
  * b45b9543: queryAllGroups()
  * deb9c0d3: queryAllRoles()
+ * f861d87d: queryAncestors(bytes32)
  * f5ff3f20: queryBasicPermission()
  * 152db21e: queryGroupInfo(bytes32)
  * 95b771dc: queryGroups(address)
- * af7c5ed6: queryParentGroups(bytes32)
+ * 5257a658: queryParentGroup(bytes32)
  * 626b04a2: queryPermissions(bytes32)
  * 5ec62af2: queryProfile(bytes32)
  * 620bb3ca: queryRoles(bytes32)
@@ -211,7 +212,11 @@ interface PermissionSysInterface {
 
     function queryGroupInfo(
         bytes32 _group
-    ) view public returns(address[], bytes32[], bool, bytes32[], string);
+    ) view public returns (address[], bytes32[], bool, bytes32, string);
+
+    function queryAncestors(
+            bytes32 _group
+    ) view public returns (bytes32[]);
 
     function queryUsers(
         bytes32 _group
@@ -225,9 +230,9 @@ interface PermissionSysInterface {
         bytes32 _group
     ) view public returns (bool);
 
-    function queryParentGroups(
+    function queryParentGroup(
         bytes32 _group
-    ) view public returns (bytes32[]);
+    ) view public returns (bytes32);
 
     function queryProfile(
         bytes32 _group

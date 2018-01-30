@@ -436,6 +436,7 @@ impl OpenBlock {
                     0.into(),
                     Vec::new(),
                     Some(ReceiptError::NoTransactionPermission),
+                    0.into(),
                 );
                 self.receipts.push(Some(receipt));
             }
@@ -445,6 +446,7 @@ impl OpenBlock {
                     0.into(),
                     Vec::new(),
                     Some(ReceiptError::NoContractPermission),
+                    0.into(),
                 );
                 self.receipts.push(Some(receipt));
             }
@@ -454,6 +456,7 @@ impl OpenBlock {
                     0.into(),
                     Vec::new(),
                     Some(ReceiptError::NotEnoughBaseGas),
+                    0.into(),
                 );
                 self.receipts.push(Some(receipt));
             }
@@ -463,6 +466,7 @@ impl OpenBlock {
                     0.into(),
                     Vec::new(),
                     Some(ReceiptError::BlockGasLimitReached),
+                    0.into(),
                 );
                 self.receipts.push(Some(receipt));
             }
@@ -472,6 +476,7 @@ impl OpenBlock {
                     0.into(),
                     Vec::new(),
                     Some(ReceiptError::AccountGasLimitReached),
+                    0.into(),
                 );
                 self.receipts.push(Some(receipt));
             }

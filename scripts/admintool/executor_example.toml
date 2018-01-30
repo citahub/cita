@@ -1,0 +1,4 @@
+check_permission = true
+check_quota = true
+check_prooftype = 2
+journaldb_type = "archive"

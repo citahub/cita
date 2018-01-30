@@ -1,7 +1,7 @@
 use Source;
 use connection::Connection;
-use libproto::{cmd_id, communication, parse_msg, submodules, topics, MsgClass, Response};
-use protobuf::Message;
+use libproto::{cmd_id, submodules, topics, Message, MsgClass, Response};
+use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
@@ -76,9 +76,9 @@ impl NetWork {
                         .filter(|x| x.2.is_some())
                         .count();
                     response.set_peercount(peercount as u32);
-                    let ms: communication::Message = response.into();
+                    let ms: Message = response.into();
                     self.tx_pub
-                        .send(("chain.rpc".to_string(), ms.write_to_bytes().unwrap()))
+                        .send(("chain.rpc".to_string(), ms.try_into().unwrap()))
                         .unwrap();
                 }
             }
@@ -89,7 +89,9 @@ impl NetWork {
     }
 
     pub fn parse_topic(data: &[u8]) -> (String, MsgClass) {
-        let (cid, _, content) = parse_msg(data);
+        let mut msg = Message::try_from(data).unwrap();
+        let cid = msg.get_cmd_id();
+        let content = msg.take_content();
         let topic = match content {
             MsgClass::REQUEST(_) => {
                 if cid == cmd_id(submodules::JSON_RPC, topics::REQUEST) {

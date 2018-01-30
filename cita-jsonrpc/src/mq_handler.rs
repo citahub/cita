@@ -17,8 +17,9 @@
 
 use helper::{RpcMap, TransferType};
 use jsonrpc_types::response::Output;
-use libproto::{parse_msg, MsgClass};
+use libproto::{Message, MsgClass};
 use serde_json;
+use std::convert::TryFrom;
 
 #[derive(Default)]
 pub struct MqHandler {
@@ -33,7 +34,9 @@ impl MqHandler {
     }
 
     pub fn handle(&mut self, key: &str, body: &[u8]) {
-        let (id, _, content_ext) = parse_msg(body);
+        let mut msg = Message::try_from(body).unwrap();
+        let id = msg.get_cmd_id();
+        let content_ext = msg.take_content();
         trace!("routint_key {:?}, get msg cmd {}", key, id);
 
         match content_ext {

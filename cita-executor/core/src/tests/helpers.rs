@@ -21,10 +21,11 @@ extern crate rustc_serialize;
 use self::mktemp::Temp;
 use self::rustc_serialize::hex::FromHex;
 use cita_crypto::KeyPair;
+use core::libchain::chain;
 use db;
 use journaldb;
 use libexecutor::block::{Block, BlockBody};
-use libexecutor::executor::Executor;
+use libexecutor::executor::{Config, Executor};
 use libexecutor::genesis::Genesis;
 use libexecutor::genesis::Spec;
 use libproto::blockchain;
@@ -43,7 +44,8 @@ use util::KeyValueDB;
 use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
 
-const CHAIN_CONFIG: &str = include_str!("../../executor.json");
+const EXECUTOR_CONFIG: &str = "executor.toml";
+const CHAIN_CONFIG: &str = "chain.toml";
 const GENESIS_CONFIG: &str = include_str!("../../genesis.json");
 pub fn get_temp_state() -> State<StateDB> {
     let journal_db = get_temp_state_db();
@@ -111,11 +113,21 @@ pub fn init_executor() -> Arc<Executor> {
         spec: spec,
         block: Block::default(),
     };
-    Arc::new(Executor::init_executor::<&[u8]>(
+
+    let executor_config = Config::new(EXECUTOR_CONFIG);
+    Arc::new(Executor::init_executor(
         Arc::new(db),
         genesis,
-        CHAIN_CONFIG.as_ref(),
+        executor_config,
     ))
+}
+
+pub fn init_chain() -> Arc<chain::Chain> {
+    let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
+    let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
+    let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
+    let chain_config = chain::Config::new(CHAIN_CONFIG);
+    Arc::new(chain::Chain::init_chain(Arc::new(db), chain_config))
 }
 
 pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u32, u32)) -> Block {

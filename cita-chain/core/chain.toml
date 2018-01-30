@@ -1,0 +1,3 @@
+check_permission = false
+check_quota = false
+check_prooftype = 2

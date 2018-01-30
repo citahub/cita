@@ -10,7 +10,6 @@ clap = "2"
 serde_json = "1.0"
 bincode = "0.8.0"
 clippy = {version = "0.0.175", optional = true}
-protobuf = { version = "^1.0.0"}
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

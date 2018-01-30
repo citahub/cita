@@ -18,9 +18,8 @@
 use bytes::Bytes;
 use libproto::FullTransaction as PTransaction;
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
-use protobuf::Message;
-use util::H256;
-use util::U256;
+use std::convert::TryInto;
+use util::{H256, U256};
 
 // TODO: No need Deserialize. Just because test in trans.rs
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -64,7 +63,7 @@ impl From<PTransaction> for RpcTransaction {
 
         RpcTransaction {
             hash: H256::from_slice(stx.get_tx_hash()),
-            content: Bytes(unverified_tx.write_to_bytes().unwrap()),
+            content: Bytes(unverified_tx.try_into().unwrap()),
             block_number: U256::from(ptransaction.block_number),
             block_hash: bhash,
             index: U256::from(ptransaction.index),
@@ -76,7 +75,7 @@ impl From<ProtoSignedTransaction> for FullTransaction {
     fn from(stx: ProtoSignedTransaction) -> Self {
         FullTransaction {
             hash: H256::from_slice(stx.get_tx_hash()),
-            content: Bytes(stx.get_transaction_with_sig().write_to_bytes().unwrap()),
+            content: Bytes(stx.get_transaction_with_sig().try_into().unwrap()),
         }
     }
 }

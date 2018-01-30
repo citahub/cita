@@ -8,6 +8,7 @@ import time
 from os import path
 import binascii
 import hashlib
+import sys
 
 from ethereum.tools.tester import (Chain, get_env)
 from ethereum.tools._solidity import (
@@ -49,6 +50,10 @@ def init_contracts(nodes):
             extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
         else:
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
+
+        if ('' == simple_data['bin']):
+            sys.exit()
+
         print(binascii.hexlify(simple_data['bin'] + extra))
         abi_address = tester_state.contract(simple_data['bin'] + extra, language='evm', startgas=30000000)
         tester_state.mine()

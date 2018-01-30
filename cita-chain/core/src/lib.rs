@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #![feature(custom_attribute)]
+#![feature(try_from)]
 #![allow(unused_attributes)]
 #![cfg_attr(test, feature(test))]
 extern crate byteorder;
@@ -27,7 +28,7 @@ extern crate protobuf;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
+extern crate toml;
 extern crate util;
 
 extern crate bloomable;

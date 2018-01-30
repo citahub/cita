@@ -34,20 +34,21 @@ use libexecutor::extras::*;
 use libexecutor::genesis::Genesis;
 pub use libexecutor::transaction::*;
 
-use libproto::*;
+use libproto::{submodules, topics, ConsensusConfig, ExecutedResult, Message, MsgClass};
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
 
 use native::Factory as NativeFactory;
-use protobuf::Message;
-use serde_json;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::convert::TryInto;
+use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
+use toml;
 use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction, Transaction};
 use util::{journaldb, Address, Bytes, H256, U256};
@@ -61,6 +62,7 @@ pub struct Config {
     pub check_permission: bool,
     pub check_quota: bool,
     pub check_prooftype: u8,
+    pub journaldb_type: String,
 }
 
 impl Config {
@@ -69,7 +71,17 @@ impl Config {
             check_permission: false,
             check_quota: false,
             check_prooftype: 2,
+            journaldb_type: String::from("archive"),
         }
+    }
+
+    pub fn new(path: &str) -> Self {
+        let mut config_file = File::open(path).unwrap();
+        let mut buffer = String::new();
+        config_file
+            .read_to_string(&mut buffer)
+            .expect("Failed to load executor config.");
+        toml::from_str(&buffer).unwrap()
     }
 }
 
@@ -161,10 +173,9 @@ pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
 }
 
 impl Executor {
-    pub fn init_executor<R>(db: Arc<KeyValueDB>, mut genesis: Genesis, sconfig: R) -> Executor
-    where
-        R: Read,
-    {
+    pub fn init_executor(db: Arc<KeyValueDB>, mut genesis: Genesis, executor_config: Config) -> Executor {
+        info!("config check: {:?}", executor_config);
+
         let trie_factory = TrieFactory::new(TrieSpec::Generic);
         let factories = Factories {
             vm: EvmFactory::default(),
@@ -173,16 +184,18 @@ impl Executor {
             accountdb: Default::default(),
         };
 
-        let journal_db = journaldb::new(Arc::clone(&db), journaldb::Algorithm::Archive, COL_STATE);
+        let journaldb_type = executor_config
+            .journaldb_type
+            .parse()
+            .unwrap_or(journaldb::Algorithm::Archive);
+        let journal_db = journaldb::new(Arc::clone(&db), journaldb_type, COL_STATE);
         let state_db = StateDB::new(journal_db);
 
         let mut executed_ret = ExecutedResult::new();
         let header = match get_current_header(&*db) {
             Some(header) => {
                 let executed_header = header.clone().generate_executed_header();
-                executed_ret
-                    .mut_executed_info()
-                    .set_header(executed_header.clone());
+                executed_ret.mut_executed_info().set_header(executed_header);
                 header
             }
             _ => {
@@ -192,15 +205,10 @@ impl Executor {
                 info!("init genesis {:?}", genesis);
 
                 let executed_header = genesis.block.header().clone().generate_executed_header();
-                executed_ret
-                    .mut_executed_info()
-                    .set_header(executed_header.clone());
+                executed_ret.mut_executed_info().set_header(executed_header);
                 genesis.block.header().clone()
             }
         };
-
-        let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
-        info!("config check: {:?}", sc);
 
         let max_height = AtomicUsize::new(0);
         max_height.store(header.number() as usize, Ordering::SeqCst);
@@ -221,10 +229,10 @@ impl Executor {
             creators: RwLock::new(HashSet::new()),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(AccountGasLimit::new()),
-            check_permission: sc.check_permission,
-            check_quota: sc.check_quota,
+            check_permission: executor_config.check_permission,
+            check_quota: executor_config.check_quota,
             executed_result: RwLock::new(executed_ret),
-            check_prooftype: sc.check_prooftype,
+            check_prooftype: executor_config.check_prooftype,
         };
 
         // Build executor config
@@ -514,13 +522,13 @@ impl Executor {
 
     pub fn send_executed_info_to_chain(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let executed_result = { self.executed_result.read().clone() };
-        let msg = factory::create_msg(
+        let msg = Message::init_default(
             submodules::EXECUTOR,
             topics::EXECUTED_RESULT,
             MsgClass::EXECUTED(executed_result),
         );
         ctx_pub
-            .send(("executor.result".to_string(), msg.write_to_bytes().unwrap()))
+            .send(("executor.result".to_string(), msg.try_into().unwrap()))
             .unwrap();
     }
 
@@ -528,7 +536,8 @@ impl Executor {
     ///1、header
     ///2、currenthash
     ///3、state
-    pub fn write_batch(&self, batch: &mut DBTransaction, block: ClosedBlock) {
+    pub fn write_batch(&self, block: ClosedBlock) {
+        let mut batch = self.db.transaction();
         let height = block.number();
         let hash = block.hash();
         trace!("commit block in db {:?}, {:?}", hash, height);
@@ -540,9 +549,17 @@ impl Executor {
         let mut state = block.drain();
         // Store triedb changes in journal db
         state
-            .journal_under(batch, height, &hash)
+            .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
+        self.db.write_buffered(batch);
+
         self.prune_ancient(state).expect("mark_canonical failed");
+
+        // Saving in db
+        let now = Instant::now();
+        self.db.flush().expect("DB write failed.");
+        let new_now = Instant::now();
+        info!("db write use {:?}", new_now.duration_since(now));
     }
 
     /// Finalize block
@@ -550,7 +567,6 @@ impl Executor {
     /// 2. Update cache
     /// 3. Commited data to db
     pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        let mut batch = self.db.transaction();
         // Reload config
         self.reload_config();
 
@@ -560,13 +576,8 @@ impl Executor {
         }
         self.set_executed_result(&closed_block);
         self.send_executed_info_to_chain(ctx_pub);
-        self.write_batch(&mut batch, closed_block);
+        self.write_batch(closed_block);
 
-        // Saving in db
-        let now = Instant::now();
-        self.db.write(batch).expect("DB write failed.");
-        let new_now = Instant::now();
-        info!("db write use {:?}", new_now.duration_since(now));
         self.update_last_hashes(&self.get_current_hash());
     }
 
@@ -672,5 +683,93 @@ impl Executor {
             warn!("executing block is interrupted.");
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate logger;
+    extern crate mktemp;
+
+    //use super::*;
+    use core::libchain::block::Block as ChainBlock;
+    use libproto::{Message, MsgClass};
+    use std::convert::TryFrom;
+    use std::sync::mpsc::channel;
+    use tests::helpers::{create_block, init_chain, init_executor, solc};
+    use util::Address;
+
+    fn generate_contract() -> Vec<u8> {
+        let source = r#"
+            pragma solidity ^0.4.8;
+            contract ConstructSol {
+                uint a;
+                event LogCreate(address contractAddr);
+                event A(uint);
+                function ConstructSol(){
+                    LogCreate(this);
+                }
+
+                function set(uint _a) {
+                    a = _a;
+                    A(a);
+                }
+
+                function get() returns (uint) {
+                    return a;
+                }
+            }
+        "#;
+        let (data, _) = solc("ConstructSol", source);
+        data
+    }
+
+    #[test]
+    fn test_contract_address_from_same_pv() {
+        let executor = init_executor();
+        let chain = init_chain();
+
+        let data = generate_contract();
+        let block = create_block(&executor, Address::from(0), &data, (0, 2));
+
+        let (send, recv) = channel::<(String, Vec<u8>)>();
+        let inchain = chain.clone();
+
+        let txs = block.body().transactions().clone();
+        let hash1 = txs[0].hash();
+        let hash2 = txs[1].hash();
+
+        let h = executor.get_current_height() + 1;
+
+        executor.execute_block(block.clone(), &send);
+
+        if let Ok((_, msg_vec)) = recv.recv() {
+            let mut msg = Message::try_from(&msg_vec).unwrap();
+            match msg.take_content() {
+                MsgClass::EXECUTED(info) => {
+                    let pro = block.protobuf();
+                    let chain_block = ChainBlock::from(pro);
+                    inchain.set_block_body(h, &chain_block);
+                    inchain.set_db_result(&info, &chain_block);
+                }
+
+                _ => {}
+            }
+        }
+
+        let receipt1 = chain.localized_receipt(hash1).unwrap();
+        let receipt2 = chain.localized_receipt(hash2).unwrap();
+        println!(
+            "receipt1.contract_address = {:?}",
+            receipt1.contract_address.unwrap()
+        );
+        println!(
+            "receipt2.contract_address = {:?}",
+            receipt2.contract_address.unwrap()
+        );
+        assert_ne!(
+            receipt1.contract_address.unwrap(),
+            receipt2.contract_address.unwrap()
+        );
     }
 }
