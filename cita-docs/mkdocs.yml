@@ -11,6 +11,8 @@ pages:
   - CITA Features: cita.md
   - Components: components.md
   - System Management: system_manager.md
+  - Appendix:
+    - Glossary: 'appendix/glossary.md'
 
 theme: material
 extra_css:
