@@ -33,3 +33,4 @@ tokio-io = "0.1"
 ws = "0.7"
 hyper = { git = "https://github.com/cryptape/hyper.git", branch = "reuse_port" }
 net2 = "0.2"
+unicase = "2.1.0"
