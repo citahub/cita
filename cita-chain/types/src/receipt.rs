@@ -174,7 +174,7 @@ impl Receipt {
             .into_iter()
             .map(|log_entry| log_entry.protobuf())
             .collect();
-        receipt_proto.set_account_nonce(self.gas_used.as_u64());
+        receipt_proto.set_account_nonce(self.account_nonce.as_u64());
         receipt_proto
     }
 }
