@@ -10,7 +10,7 @@ pages:
   - Blockchain: blockchain.md
   - CITA Features: cita.md
   - Components: components.md
-  - System Management: system_manager.md
+  - System Management: system_management.md
   - Appendix:
     - Glossary: 'appendix/glossary.md'
 
