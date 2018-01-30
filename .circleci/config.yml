@@ -13,10 +13,13 @@ jobs:
       - run:
           name: format
           command: 'cargo fmt --all  -- --write-mode diff'
-      - run: 
+      - run:
           name: build
           command: 'cargo build --all'
           no_output_timeout: 20m
+      - run:
+          name: check_cargolock
+          command: '[ $(git status --short Cargo.lock | wc -l) -ne 0 ] && echo "[Error] Please update Cargo.lock BEFORE commit." && exit 1 || true'
       - save_cache:
           key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -50,7 +53,7 @@ jobs:
           key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: config
-          command: './scripts/release.sh debug'      
+          command: './scripts/release.sh debug'
       - run:
           name: basic
           command: './tests/integrate_test/cita_basic.sh'
