@@ -39,6 +39,7 @@ extern crate rustc_serialize;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate threadpool;
+extern crate toml;
 extern crate tx_pool;
 #[macro_use]
 extern crate util;

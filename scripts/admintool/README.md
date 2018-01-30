@@ -67,7 +67,7 @@ option:
 - 生成网络配置文件，存放在`node*/network.toml`，文件内容主要为总节点数、本地节点端口以及其它节点的ip和端口号；
 - 生成genesis块文件，存放`在node*/genesis.json`， 其中timestamp为时间戳，秒为单位；prevhash指前一个块哈希，这里是默认值；而alloc指部署到创世块的合约内容；
 - 生成节点配置文件，存放在`node*/consensus.json`，主要包含共识算法的相关参数；
-- 生成jsonrpc配置文件，存放在`node*/jsonrpc.json`，主要包含jsonrpc模块的相关参数。
+- 生成jsonrpc配置文件，存放在`node*/jsonrpc.toml`，主要包含jsonrpc模块的相关参数。
   backup文件下存放是用于增加单节点的备份信息，里面有authorities，genesis.json两个文件，其作用见下文［单独增加节点］
 
 ## 系统合约
@@ -120,24 +120,20 @@ option:
 
 #### 用户自定义检查配置文件
 
-用户可在本目录下创建`chain.json`文件来自定义发送交易时是否检查账户的permission等，默认是需要检查的。格式参考`chain_check_example.json`文件，如下:
+用户可在本目录下创建`chain.toml`文件来自定义发送交易时是否检查账户的permission等，默认是需要检查的。格式参考`chain_check_example.toml`文件，如下:
 
 ```
-{
-  "check_permission": true,
-  "check_quota": true,
-  "check_prooftype": 2
-}
+check_permission = true
+check_quota = true
+check_prooftype = 2
 ```
-也可在本目录下创建`executor.json`文件来自定义journaldb的类型等。格式参考`executor_example.json`文件，如下:
+也可在本目录下创建`executor.toml`文件来自定义journaldb的类型等。格式参考`executor_example.toml`文件，如下:
 
 ```
-{
-  "check_permission": true,
-  "check_quota": true,
-  "check_prooftype": 2,
-  "journaldb_type": "archive"
-}
+check_permission = true
+check_quota = true
+check_prooftype = 2
+journaldb_type = "archive"
 ```
 其中:
 

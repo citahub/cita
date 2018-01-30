@@ -39,15 +39,16 @@ use libproto::executor::ExecutedResult;
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
-use serde_json;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::TryInto;
+use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
+use toml;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
@@ -92,6 +93,15 @@ impl Config {
             check_quota: false,
             check_prooftype: 2,
         }
+    }
+
+    pub fn new(path: &str) -> Self {
+        let mut config_file = File::open(path).unwrap();
+        let mut buffer = String::new();
+        config_file
+            .read_to_string(&mut buffer)
+            .expect("Failed to load chain config.");
+        toml::from_str(&buffer).unwrap()
     }
 }
 
@@ -181,10 +191,7 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
 }
 
 impl Chain {
-    pub fn init_chain<R>(db: Arc<KeyValueDB>, sconfig: R) -> Chain
-    where
-        R: Read,
-    {
+    pub fn init_chain(db: Arc<KeyValueDB>, chain_config: Config) -> Chain {
         // 400 is the avarage size of the key
         let cache_man = CacheManager::new(1 << 14, 1 << 20, 400);
 
@@ -195,8 +202,7 @@ impl Chain {
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
         };
 
-        let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
-        info!("config check: {:?}", sc);
+        info!("config check: {:?}", chain_config);
 
         let header = get_chain(&*db).unwrap_or(Header::default());
         info!("get chain head is : {:?}", header);
@@ -231,7 +237,7 @@ impl Chain {
             nodes: RwLock::new(Vec::new()),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
-            check_prooftype: sc.check_prooftype,
+            check_prooftype: chain_config.check_prooftype,
         };
 
         chain

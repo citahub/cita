@@ -18,10 +18,7 @@
 use common_types::receipt::LocalizedReceipt;
 use core::libchain::chain::Chain;
 use core_executor::libexecutor::Genesis;
-use core_executor::libexecutor::executor::Block;
-use core_executor::libexecutor::executor::Executor;
-use std::fs::File;
-use std::io::BufReader;
+use core_executor::libexecutor::executor::{Block, Config, Executor};
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use util::{H160, H256};
@@ -37,13 +34,9 @@ pub struct Callexet {
 #[allow(unused_variables, dead_code)]
 impl Callexet {
     pub fn new(db: Arc<KeyValueDB>, chain: Arc<Chain>, genesis: Genesis, path: &str) -> Self {
-        let config_file = File::open(path).unwrap();
+        let executor_config = Config::new(path);
         Callexet {
-            exet: Arc::new(Executor::init_executor(
-                db,
-                genesis,
-                BufReader::new(config_file),
-            )),
+            exet: Arc::new(Executor::init_executor(db, genesis, executor_config)),
             chain: chain,
         }
     }

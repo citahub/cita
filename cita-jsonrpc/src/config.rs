@@ -15,22 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use serde_json::from_reader;
 use std::convert::Into;
-use std::error::Error;
 use std::fs::File;
-use std::path::Path;
+use std::io::Read;
+use toml;
 use ws::Settings;
-
-pub fn read_user_from_file<P: AsRef<Path>>(path: P) -> Result<Config, Box<Error>> {
-    // Open the file in read-only mode.
-    let file = File::open(path)?;
-    // Read the JSON contents of the file as an instance of `User`.
-    let u = from_reader(file)?;
-
-    // Return the `User`.
-    Ok(u)
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
@@ -39,6 +28,17 @@ pub struct Config {
     pub http_config: HttpConfig,
     pub ws_config: WsConfig,
     pub new_tx_flow_config: NewTxFlowConfig,
+}
+
+impl Config {
+    pub fn new(path: &str) -> Self {
+        let mut config_file = File::open(path).unwrap();
+        let mut buffer = String::new();
+        config_file
+            .read_to_string(&mut buffer)
+            .expect("Failed to load jsonrpc config.");
+        toml::from_str(&buffer).unwrap()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]

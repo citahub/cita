@@ -2,7 +2,7 @@ use core::db;
 use core::libexecutor::Genesis;
 use core::libexecutor::block::{Block, ClosedBlock};
 use core::libexecutor::call_request::CallRequest;
-use core::libexecutor::executor::{BlockInQueue, Executor, Stage};
+use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, CountOrCode};
 use libproto::{cmd_id, request, response, submodules, topics, Message, MsgClass, SyncResponse};
@@ -13,8 +13,6 @@ use proof::TendermintProof;
 use serde_json;
 use std::cell::RefCell;
 use std::convert::{TryFrom, TryInto};
-use std::fs::File;
-use std::io::BufReader;
 use std::mem;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -43,11 +41,12 @@ impl ExecutorInstance {
         let nosql_path = DataPath::root_node_path() + "/statedb";
         let db = Database::open(&config, &nosql_path).unwrap();
         let mut genesis = Genesis::init(genesis_path);
-        let config_file = File::open(config_path).unwrap();
+
+        let executor_config = Config::new(config_path);
         let executor = Arc::new(Executor::init_executor(
             Arc::new(db),
             genesis,
-            BufReader::new(config_file),
+            executor_config,
         ));
         executor.set_gas_and_nodes();
         executor.send_executed_info_to_chain(&ctx_pub);

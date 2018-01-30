@@ -1,6 +1,6 @@
-use serde_json;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::Read;
+use toml;
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
@@ -17,10 +17,12 @@ pub struct Config {
 
 impl Config {
     pub fn new(path: &str) -> Self {
-        let config_file = File::open(path).unwrap();
-        let fconfig = BufReader::new(config_file);
-        let config: Config = serde_json::from_reader(fconfig).expect("Failed to load auth config.");
-        config
+        let mut config_file = File::open(path).unwrap();
+        let mut buffer = String::new();
+        config_file
+            .read_to_string(&mut buffer)
+            .expect("Failed to load auth config.");
+        toml::from_str(&buffer).unwrap()
     }
 }
 
@@ -29,19 +31,19 @@ mod tests {
     use super::*;
     #[test]
     fn read_configure_file() {
-        let json = r#"{
-          "count_per_batch": 30,
-          "buffer_duration": 3000000,
-          "tx_verify_thread_num": 10,
-          "tx_verify_num_per_thread": 300,
-          "proposal_tx_verify_num_per_thread": 30,
-          "tx_pool_limit": 50000,
-          "block_packet_tx_limit": 30000,
-          "prof_start": 0,
-          "prof_duration": 0
-        }"#;
+        let toml_str = r#"
+           count_per_batch = 30
+           buffer_duration = 3000000
+           tx_verify_thread_num = 10
+           tx_verify_num_per_thread = 300
+           proposal_tx_verify_num_per_thread = 30
+           tx_pool_limit = 50000
+           block_packet_tx_limit = 30000
+           prof_start = 0
+           prof_duration = 0
+        "#;
 
-        let value: Config = serde_json::from_str(json).expect("read Error");
+        let value: Config = toml::from_str(toml_str).expect("read Error");
         println!("{:?}", value);
         assert_eq!(30, value.count_per_batch);
         assert_eq!(3000000, value.buffer_duration);

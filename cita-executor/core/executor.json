@@ -1,6 +1,0 @@
-{
-  "check_permission": false,
-  "check_quota": false,
-  "check_prooftype": 2,
-  "journaldb_type": "archive"
-}

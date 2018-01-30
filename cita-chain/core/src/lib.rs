@@ -28,7 +28,7 @@ extern crate protobuf;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
+extern crate toml;
 extern crate util;
 
 extern crate bloomable;

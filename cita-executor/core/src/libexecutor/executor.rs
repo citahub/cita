@@ -38,16 +38,17 @@ use libproto::{submodules, topics, ConsensusConfig, ExecutedResult, Message, Msg
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
 
 use native::Factory as NativeFactory;
-use serde_json;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::convert::TryInto;
+use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
+use toml;
 use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction, Transaction};
 use util::{journaldb, Address, Bytes, H256, U256};
@@ -72,6 +73,15 @@ impl Config {
             check_prooftype: 2,
             journaldb_type: String::from("archive"),
         }
+    }
+
+    pub fn new(path: &str) -> Self {
+        let mut config_file = File::open(path).unwrap();
+        let mut buffer = String::new();
+        config_file
+            .read_to_string(&mut buffer)
+            .expect("Failed to load executor config.");
+        toml::from_str(&buffer).unwrap()
     }
 }
 
@@ -163,12 +173,8 @@ pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
 }
 
 impl Executor {
-    pub fn init_executor<R>(db: Arc<KeyValueDB>, mut genesis: Genesis, sconfig: R) -> Executor
-    where
-        R: Read,
-    {
-        let sc: Config = serde_json::from_reader(sconfig).expect("Failed to load json file.");
-        info!("config check: {:?}", sc);
+    pub fn init_executor(db: Arc<KeyValueDB>, mut genesis: Genesis, executor_config: Config) -> Executor {
+        info!("config check: {:?}", executor_config);
 
         let trie_factory = TrieFactory::new(TrieSpec::Generic);
         let factories = Factories {
@@ -178,7 +184,8 @@ impl Executor {
             accountdb: Default::default(),
         };
 
-        let journaldb_type = sc.journaldb_type
+        let journaldb_type = executor_config
+            .journaldb_type
             .parse()
             .unwrap_or(journaldb::Algorithm::Archive);
         let journal_db = journaldb::new(Arc::clone(&db), journaldb_type, COL_STATE);
@@ -222,10 +229,10 @@ impl Executor {
             creators: RwLock::new(HashSet::new()),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(AccountGasLimit::new()),
-            check_permission: sc.check_permission,
-            check_quota: sc.check_quota,
+            check_permission: executor_config.check_permission,
+            check_quota: executor_config.check_quota,
             executed_result: RwLock::new(executed_ret),
-            check_prooftype: sc.check_prooftype,
+            check_prooftype: executor_config.check_prooftype,
         };
 
         // Build executor config

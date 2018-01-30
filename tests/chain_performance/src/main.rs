@@ -34,6 +34,7 @@ extern crate log;
 extern crate logger;
 #[macro_use]
 extern crate serde_derive;
+extern crate toml;
 
 mod generate_block;
 mod call_exet;
@@ -48,7 +49,6 @@ use cpuprofiler::PROFILER;
 use generate_block::Generateblock;
 use std::{thread, time};
 use std::convert::TryFrom;
-use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use util::H256;
@@ -250,7 +250,7 @@ fn main() {
         .parse::<i32>()
         .unwrap();
     let genesis_path = matches.value_of("genesis").unwrap_or("genesis.json");
-    let config_path = matches.value_of("config").unwrap_or("chain.json");
+    let config_path = matches.value_of("config").unwrap_or("chain.toml");
     let method = matches.value_of("method").unwrap_or("create");
     let flag_prof_start = matches
         .value_of("flag_prof_start")
@@ -271,11 +271,8 @@ fn main() {
     let chain_db = Database::open(&config, &nosql_path).unwrap();
     let genesis = Genesis::init(genesis_path);
 
-    let config_file = std::fs::File::open(config_path).unwrap();
-    let chain = Arc::new(chain::Chain::init_chain(
-        Arc::new(chain_db),
-        BufReader::new(config_file),
-    ));
+    let chain_config = chain::Config::new(config_path);
+    let chain = Arc::new(chain::Chain::init_chain(Arc::new(chain_db), chain_config));
 
     //chain初始化
     let call = Callexet::new(Arc::new(db), chain, genesis, config_path);

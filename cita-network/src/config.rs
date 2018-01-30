@@ -15,13 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate toml;
-
 use std::fs::File;
-use std::io::BufReader;
-use std::io::prelude::*;
+use std::io::Read;
+use toml;
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, Deserialize)]
 pub struct NetConfig {
     pub id_card: Option<u32>,
     pub port: Option<u64>,
@@ -29,7 +27,7 @@ pub struct NetConfig {
     pub peers: Option<Vec<PeerConfig>>,
 }
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, Deserialize)]
 pub struct PeerConfig {
     pub id_card: Option<u32>,
     pub ip: Option<String>,
@@ -38,11 +36,12 @@ pub struct PeerConfig {
 
 impl NetConfig {
     pub fn new(path: &str) -> Self {
-        let config_file = File::open(path).unwrap();
-        let mut fconfig = BufReader::new(config_file);
-        let mut content = String::new();
-        fconfig.read_to_string(&mut content).unwrap();
-        toml::decode_str(&content).unwrap()
+        let mut config_file = File::open(path).unwrap();
+        let mut buffer = String::new();
+        config_file
+            .read_to_string(&mut buffer)
+            .expect("Failed to load network config.");
+        toml::from_str(&buffer).unwrap()
     }
 
     pub fn test_config() -> Self {
@@ -56,7 +55,7 @@ impl NetConfig {
             port = 40000
         "#;
 
-        toml::decode_str(toml).unwrap()
+        toml::from_str(toml).unwrap()
     }
 }
 
@@ -77,7 +76,7 @@ mod test {
             port = 40002
         "#;
 
-        let value: NetConfig = toml::decode_str(toml).unwrap();
+        let value: NetConfig = toml::from_str(toml).unwrap();
         println!("{:?}", value);
         assert_eq!(value.port, Some(40000));
     }
