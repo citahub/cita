@@ -28,7 +28,9 @@ CONTRACTS = {
     '0x00000000000000000000000000000000013241a4': {'file': 'system/permission_manager.sol',
                                                    'name': 'PermissionManager'},
     '0x00000000000000000000000000000000013241a5': {'file': 'permission/permission_system.sol',
-                                                   'name': 'PermissionSystem'}
+                                                   'name': 'PermissionSystem'},
+    '0x0000000000000000000000000000000031415926': {'file': 'system/param_constant.sol',
+                                                   'name': 'ParamConstant'}
 }
 
 def init_contracts(nodes):
@@ -46,8 +48,10 @@ def init_contracts(nodes):
         )
 
         ct = ContractTranslator(simple_data['abi'])
-        if (address == '0x00000000000000000000000000000000013241a3'):
+        if address == '0x00000000000000000000000000000000013241a3':
             extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
+        elif address == '0x0000000000000000000000000000000031415926':
+            extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1], nodes[address][2]]) if nodes[address] else b'')
         else:
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
 
