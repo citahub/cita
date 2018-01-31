@@ -205,12 +205,11 @@ fn bench_execute_trans(config_path: &str, genesis_path: &str, trans_num: u32, is
         let mut block = create_block(&ext, Address::from(0), &data, (0, trans_num), is_change_pv);
         let current_height = ext.get_current_height();
         info!("current height: {}", current_height);
-        let check_permission = ext.check_permission;
-        let check_quota = ext.check_quota;
+        let conf = ext.get_current_sys_conf(current_height);
+        let check_permission = conf.check_permission;
+        let check_quota = conf.check_quota;
         let current_state_root = ext.current_state_root();
         let last_hashes = LastHashes::from(ext.last_hashes.read().clone());
-
-        let conf = ext.get_current_sys_conf(ext.get_max_height());
 
         let mut open_block = OpenBlock::new(
             ext.factories.clone(),
