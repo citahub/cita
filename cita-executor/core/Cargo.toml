@@ -50,6 +50,7 @@ core = { path = "../../cita-chain/core" }
 jsonrpc_types = { path = "../../jsonrpc_types"}
 clippy = {version = "*", optional = true}
 ethabi = "4.2.0"
+zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
 
 [dev-dependencies]
 rand = "0.3"
@@ -68,5 +69,6 @@ sm3hash = ["util/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
 rabbitmq = ["pubsub/rabbitmq"]
 zeromq = ["pubsub/zeromq"]
 kafka = ["pubsub/kafka"]
+privatetx = ["zktx"]
 evm-debug= []
 dev = ["clippy"]

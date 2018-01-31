@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crypto::digest::Digest;
+use crypto::md5::Md5;
 use db::{self as db, Writable};
 use factory::Factories;
 use libexecutor::block::Block;
@@ -26,9 +28,14 @@ use state_db::StateDB;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::Read;
+use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
 use util::{Address, H256, U256, clean_0x};
 use util::kvdb::KeyValueDB;
+#[cfg(feature = "privatetx")]
+use zktx::set_param_path;
 
 #[derive(Debug, PartialEq, Deserialize, Clone)]
 pub struct Contract {
@@ -55,6 +62,41 @@ impl Genesis {
         let config_file = File::open(path).unwrap();
         let fconfig = BufReader::new(config_file);
         let spec: Spec = serde_json::from_reader(fconfig).expect("Failed to load genesis.");
+
+        // check resource with pre hash in genesis
+        // default pre hash is zero
+        let mut pre_hash = H256::zero();
+        // resource folder at the same place with genesis file
+        let resource_path = Path::new(path).parent().unwrap().join("resource");
+        #[cfg(feature = "privatetx")]
+        {
+            set_param_path(resource_path.join("PARAMS").to_str().unwrap());
+        }
+        if resource_path.exists() {
+            let file_list_path = resource_path.join("file_list");
+            if file_list_path.exists() {
+                let file_list = File::open(file_list_path).unwrap();
+                let mut buf_reader = BufReader::new(file_list);
+                let mut contents = String::new();
+                buf_reader.read_to_string(&mut contents).unwrap();
+                let mut hasher = Md5::new();
+                for p in contents.lines() {
+                    let path = resource_path.join(p);
+                    let file = File::open(path).unwrap();
+                    let mut buf_reader = BufReader::new(file);
+                    let mut buf = Vec::new();
+                    buf_reader.read_to_end(&mut buf).unwrap();
+                    hasher.input(&buf);
+                }
+                let mut hash_str = "0x00000000000000000000000000000000".to_string();
+                hash_str += &hasher.result_str();
+                info!("resource hash {}", hash_str);
+                pre_hash = H256::from_str(hash_str.as_str()).unwrap();
+            }
+        }
+
+        assert_eq!(pre_hash, spec.prevhash);
+
         Genesis {
             spec: spec,
             block: Block::default(),

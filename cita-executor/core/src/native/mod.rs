@@ -19,6 +19,8 @@
 pub mod storage;
 #[cfg(test)]
 mod tests;
+#[cfg(feature = "privatetx")]
+mod zk_privacy;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -76,7 +78,8 @@ impl Factory {
         self.contracts.remove(&address);
     }
 }
-#[cfg(not(test))]
+
+#[cfg(all(not(test), not(feature = "privatetx")))]
 impl Default for Factory {
     fn default() -> Self {
         Factory {
@@ -95,6 +98,19 @@ impl Default for Factory {
         };
         // here we register contracts with addresses defined in genesis.json.
         factory.register(Address::from(0x400), Box::new(SimpleStorage::default()));
+        factory
+    }
+}
+
+#[cfg(feature = "privatetx")]
+impl Default for Factory {
+    fn default() -> Self {
+        use self::zk_privacy::ZkPrivacy;
+        let mut factory = Factory {
+            contracts: HashMap::new(),
+        };
+        // here we register contracts with addresses defined in genesis.json.
+        factory.register(Address::from(0x12345678), Box::new(ZkPrivacy::default()));
         factory
     }
 }
