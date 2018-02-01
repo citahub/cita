@@ -57,7 +57,6 @@ use util::RwLock;
 use util::UtilError;
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
-use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
@@ -856,6 +855,10 @@ mod tests {
             receipt2.contract_address.unwrap()
         );
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0076d7b... fmt
     #[test]
     fn test_global_sys_config_equal() {
         let mut lhs = GlobalSysConfig::new();
