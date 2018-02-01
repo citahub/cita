@@ -57,6 +57,7 @@ use util::RwLock;
 use util::UtilError;
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
+use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
