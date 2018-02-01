@@ -855,10 +855,6 @@ mod tests {
             receipt2.contract_address.unwrap()
         );
     }
-<<<<<<< HEAD
-=======
-
->>>>>>> 0076d7b... fmt
     #[test]
     fn test_global_sys_config_equal() {
         let mut lhs = GlobalSysConfig::new();
