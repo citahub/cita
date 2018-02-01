@@ -7,12 +7,20 @@ repo_url: https://github.com/cryptape/cita
 
 pages:
   - Home: index.md
-  - Blockchain: blockchain.md
-  - CITA Features: cita.md
+  - Getting Started: getting_started.md
+  - Key Concepts:
+    - Blockchain: blockchain.md
+    - CITA Features: cita.md
   - Components: components.md
+  - Usage Guide:
+      - Smart Contract Guide: 'usage-guide/smart-contract-guide.md'
   - System Management: system_management.md
+  - Bootstrap: bootstrap.md
   - Appendix:
+    - Faq: 'appendix/faq.md'
     - Glossary: 'appendix/glossary.md'
+    - Release: 'appendix/release.md'
+    - Contributing: 'appendix/contributing.md'
 
 theme: material
 extra_css:
