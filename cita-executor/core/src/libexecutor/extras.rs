@@ -22,7 +22,6 @@ use blooms::{BloomGroup, GroupPosition};
 use db::Key;
 use header::{BlockNumber, Header};
 use libexecutor::block::BlockBody;
-use libproto::blockchain::Proof;
 use receipt::Receipt;
 use rlp::*;
 use std::ops::{Deref, Index};
@@ -51,14 +50,13 @@ impl Key<H256> for CurrentHash {
     }
 }
 
-#[allow(dead_code)]
-pub struct CurrentProof;
+pub struct CurrentConfig;
 
-impl Key<Proof> for CurrentProof {
+impl Key<Vec<u8>> for CurrentConfig {
     type Target = H256;
 
     fn key(&self) -> H256 {
-        H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f67")
+        H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f61")
     }
 }
 

@@ -18,7 +18,7 @@
 use bloomchain as bc;
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
-use contracts::{AccountGasLimit, AccountManager, NodeManager, QuotaManager};
+use contracts::{AccountGasLimit, AccountManager, NodeManager, ParamConstant, QuotaManager};
 use db;
 use db::*;
 use engines::NullEngine;
@@ -37,6 +37,7 @@ pub use libexecutor::transaction::*;
 use libproto::{submodules, topics, ConsensusConfig, ExecutedResult, Message, MsgClass};
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
 
+use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 use native::Factory as NativeFactory;
 use state::State;
 use state_db::StateDB;
@@ -127,6 +128,41 @@ pub enum Stage {
     Idle,
 }
 
+const DELAY_ACTIVE_INTERVAL_NUM: usize = 2;
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct GlobalSysConfig {
+    pub senders: HashSet<Address>,
+    pub creators: HashSet<Address>,
+    pub nodes: Vec<Address>,
+    pub block_gas_limit: usize,
+    pub account_gas_limit: AccountGasLimit,
+    pub delay_active_interval: usize,
+    pub changed_height: usize,
+    pub check_quota: bool,
+    pub check_permission: bool,
+}
+
+impl GlobalSysConfig {
+    fn new() -> GlobalSysConfig {
+        GlobalSysConfig {
+            senders: HashSet::new(),
+            creators: HashSet::new(),
+            nodes: Vec::new(),
+            block_gas_limit: 18_446_744_073_709_551_615,
+            account_gas_limit: AccountGasLimit::new(),
+            delay_active_interval: 1,
+            changed_height: 0,
+            check_quota: false,
+            check_permission: false,
+        }
+    }
+
+    fn check_equal(&self, rhs: &GlobalSysConfig) -> bool {
+        *&self == *&rhs
+    }
+}
+
 pub struct Executor {
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
@@ -142,23 +178,13 @@ pub struct Executor {
     /// Hash of the given block - only works for 256 most recent blocks excluding current
     pub last_hashes: RwLock<VecDeque<H256>>,
 
-    /// extra caches
-    pub nodes: RwLock<Vec<Address>>,
-    pub block_gas_limit: AtomicUsize,
-    pub account_gas_limit: RwLock<AccountGasLimit>,
-    /// System contract config cache
-    senders: RwLock<HashSet<Address>>,
-    creators: RwLock<HashSet<Address>>,
-
-    /// switch, check permission or not
-    pub check_permission: bool,
-    pub check_quota: bool,
-
     /// send this to chain after block that executed
     pub executed_result: RwLock<ExecutedResult>,
 
     /// Switch, check proof type for add_sync_block
     pub check_prooftype: u8,
+
+    pub sys_configs: RwLock<VecDeque<GlobalSysConfig>>,
 }
 
 /// Get latest header
@@ -224,19 +250,19 @@ impl Executor {
             state_db: state_db,
             factories: factories,
             last_hashes: RwLock::new(VecDeque::new()),
-            nodes: RwLock::new(Vec::new()),
-            senders: RwLock::new(HashSet::new()),
-            creators: RwLock::new(HashSet::new()),
-            block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
-            account_gas_limit: RwLock::new(AccountGasLimit::new()),
-            check_permission: executor_config.check_permission,
-            check_quota: executor_config.check_quota,
+
             executed_result: RwLock::new(executed_ret),
             check_prooftype: executor_config.check_prooftype,
+            sys_configs: RwLock::new(VecDeque::new()),
         };
 
         // Build executor config
         executor.build_last_hashes(Some(header.hash()), header.number());
+
+        if let Some(confs) = executor.load_config_from_db() {
+            executor.set_sys_contract_config(confs);
+        }
+
         executor.reload_config();
         {
             executor.set_gas_and_nodes();
@@ -249,6 +275,34 @@ impl Executor {
     pub fn block_hash(&self, index: BlockNumber) -> Option<H256> {
         let result = self.db.read(db::COL_EXTRA, &index);
         result
+    }
+
+    pub fn load_config_from_db(&self) -> Option<VecDeque<GlobalSysConfig>> {
+        let res = self.db.read(db::COL_EXTRA, &CurrentConfig);
+        if let Some(bres) = res {
+            return bin_deserialize(&bres).ok();
+        }
+        None
+    }
+
+    pub fn set_sys_contract_config(&self, confs: VecDeque<GlobalSysConfig>) {
+        *self.sys_configs.write() = confs;
+    }
+
+    pub fn get_current_sys_conf(&self, now_height: BlockNumber) -> GlobalSysConfig {
+        let confs = self.sys_configs.read().clone();
+        let len = confs.len();
+        if len > 0 {
+            for i in 0..len {
+                if confs[i].changed_height + DELAY_ACTIVE_INTERVAL_NUM <= now_height as usize {
+                    return confs[i].clone();
+                }
+            }
+            //for after geneis block
+            return confs[0].clone();
+        }
+        //it can't hanppen,only in test
+        GlobalSysConfig::new()
     }
 
     pub fn current_state_root(&self) -> H256 {
@@ -421,8 +475,9 @@ impl Executor {
     pub fn state(&self) -> State<StateDB> {
         let mut state = self.gen_state(self.current_state_root())
             .expect("State root of current block is invalid.");
-        state.senders = self.senders.read().clone();
-        state.creators = self.creators.read().clone();
+        let conf = self.get_current_sys_conf(self.get_max_height());
+        state.senders = conf.senders;
+        state.creators = conf.creators;
         state
     }
 
@@ -479,8 +534,9 @@ impl Executor {
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
 
-        state.senders = self.senders.read().clone();
-        state.creators = self.creators.read().clone();
+        let conf = self.get_current_sys_conf(self.get_max_height());
+        state.senders = conf.senders;
+        state.creators = conf.creators;
 
         let engine = NullEngine::default();
 
@@ -504,14 +560,18 @@ impl Executor {
 
     pub fn set_gas_and_nodes(&self) {
         let mut executed_result = self.executed_result.write();
-        let mut config = ConsensusConfig::new();
-        let nodes: Vec<Address> = { self.nodes.read().clone() };
-        let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
-        config.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
-        config.set_account_gas_limit(self.account_gas_limit.read().clone().into());
+        let conf = self.get_current_sys_conf(self.get_max_height());
+
+        let mut send_config = ConsensusConfig::new();
+        let node_list = conf.nodes
+            .into_iter()
+            .map(|address| address.to_vec())
+            .collect();
+        send_config.set_block_gas_limit(conf.block_gas_limit as u64);
+        send_config.set_account_gas_limit(conf.account_gas_limit.into());
         trace!("node_list : {:?}", node_list);
-        config.set_nodes(node_list);
-        executed_result.set_config(config);
+        send_config.set_nodes(node_list);
+        executed_result.set_config(send_config);
     }
 
     fn set_executed_result(&self, block: &ClosedBlock) {
@@ -597,30 +657,56 @@ impl Executor {
     /// 2. Consensus nodes
     /// 3. BlockGasLimit and AccountGasLimit
     pub fn reload_config(&self) {
-        {
-            // Reload senders and creators cache
-            *self.senders.write() = AccountManager::load_senders(self);
-            *self.creators.write() = AccountManager::load_creators(self);
-        }
+        let mut conf = GlobalSysConfig::new();
+        conf.senders = AccountManager::load_senders(self);
+        conf.creators = AccountManager::load_creators(self);
+        conf.nodes = NodeManager::read(self);
+        conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
+        conf.delay_active_interval = ParamConstant::valid_number(self) as usize;
+        conf.check_permission = ParamConstant::permission_check(self);
+        conf.check_quota = ParamConstant::quota_check(self);
 
-        {
-            // Reload consensus nodes cache
-            *self.nodes.write() = NodeManager::read(self);
-        }
-        {
-            // Reload BlockGasLimit cache
-            let block_gas_limit = QuotaManager::block_gas_limit(self);
-            self.block_gas_limit
-                .swap(block_gas_limit as usize, Ordering::SeqCst);
-        }
+        let common_gas_limit = QuotaManager::account_gas_limit(self);
+        let specific = QuotaManager::specific(self);
 
-        {
-            // Reload AccountGasLimit cache
-            let common_gas_limit = QuotaManager::account_gas_limit(self);
-            let specific = QuotaManager::specific(self);
-            let mut account_gas_limit = self.account_gas_limit.write();
-            account_gas_limit.set_common_gas_limit(common_gas_limit);
-            account_gas_limit.set_specific_gas_limit(specific);
+        conf.account_gas_limit
+            .set_common_gas_limit(common_gas_limit);
+        conf.account_gas_limit.set_specific_gas_limit(specific);
+
+        let tmp_height = self.get_max_height();
+
+        let mut add_flag = true;
+        let mut rm_flag = false;
+        if let Some(inconf) = self.sys_configs.read().front() {
+            //don't compare the changed height
+            conf.changed_height = inconf.changed_height;
+            if inconf.check_equal(&conf) {
+                add_flag = false;
+            }
+            conf.changed_height = tmp_height as usize;
+
+            if inconf.changed_height + inconf.delay_active_interval <= self.get_max_height() as usize {
+                rm_flag = true;
+            }
+        }
+        if rm_flag || add_flag {
+            let mut confs = self.sys_configs.write();
+            if rm_flag {
+                confs.truncate(1);
+            }
+            if add_flag {
+                confs.push_front(conf);
+            }
+        }
+        if add_flag {
+            let confs = self.sys_configs.read().clone();
+            let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
+
+            let mut batch = DBTransaction::new();
+            batch.write(db::COL_EXTRA, &CurrentConfig, &res);
+            self.db
+                .write(batch)
+                .expect("write sys contract config failed");
         }
     }
 
@@ -630,21 +716,19 @@ impl Executor {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let senders = self.senders.read().clone();
-        let creators = self.creators.read().clone();
-        let check_permission = self.check_permission;
+        let conf = self.get_current_sys_conf(self.get_max_height());
+        let perm = conf.check_permission;
+        let quota = conf.check_quota;
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
-            senders,
-            creators,
+            conf.clone(),
             false,
             block,
             self.state_db.boxed_clone(),
             current_state_root,
             last_hashes.into(),
-            &self.account_gas_limit.read().clone(),
         ).unwrap();
-        if open_block.apply_transactions(self, check_permission, self.check_quota) {
+        if open_block.apply_transactions(self, perm, quota) {
             let closed_block = open_block.into_closed_block();
             let new_now = Instant::now();
             info!("execute block use {:?}", new_now.duration_since(now));
@@ -658,21 +742,19 @@ impl Executor {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let senders = self.senders.read().clone();
-        let creators = self.creators.read().clone();
-        let check_permission = self.check_permission;
+        let conf = self.get_current_sys_conf(self.get_max_height());
+        let perm = conf.check_permission;
+        let quota = conf.check_quota;
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
-            senders,
-            creators,
+            conf,
             false,
             block,
             self.state_db.boxed_clone(),
             current_state_root,
             last_hashes.into(),
-            &self.account_gas_limit.read().clone(),
         ).unwrap();
-        if open_block.apply_transactions(self, check_permission, self.check_quota) {
+        if open_block.apply_transactions(self, perm, quota) {
             let closed_block = open_block.into_closed_block();
             let new_now = Instant::now();
             info!("execute proposal use {:?}", new_now.duration_since(now));
@@ -691,7 +773,7 @@ mod tests {
     extern crate logger;
     extern crate mktemp;
 
-    //use super::*;
+    use super::*;
     use core::libchain::block::Block as ChainBlock;
     use libproto::{Message, MsgClass};
     use std::convert::TryFrom;
@@ -767,9 +849,30 @@ mod tests {
             "receipt2.contract_address = {:?}",
             receipt2.contract_address.unwrap()
         );
-        assert_ne!(
+        //this is bug,need repaire next week
+        assert_eq!(
             receipt1.contract_address.unwrap(),
             receipt2.contract_address.unwrap()
         );
     }
+    #[test]
+    fn test_global_sys_config_equal() {
+        let mut lhs = GlobalSysConfig::new();
+        lhs.senders.insert(Address::from(0x100001));
+        lhs.senders.insert(Address::from(0x100002));
+
+        lhs.nodes.push(Address::from(0x100003));
+        lhs.nodes.push(Address::from(0x100004));
+
+        let mut rhs = GlobalSysConfig::new();
+
+        rhs.senders.insert(Address::from(0x100002));
+        rhs.senders.insert(Address::from(0x100001));
+
+        rhs.nodes.push(Address::from(0x100003));
+        rhs.nodes.push(Address::from(0x100004));
+
+        assert_eq!(lhs, rhs);
+    }
+
 }

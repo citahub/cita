@@ -16,14 +16,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::LogBloom;
-use contracts::quota_manager::AccountGasLimit;
 use env_info::EnvInfo;
 use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
 use libexecutor::executor::Executor;
-
+use libexecutor::executor::GlobalSysConfig;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
@@ -32,7 +31,7 @@ use receipt::{Receipt, ReceiptError};
 use rlp::*;
 use state::State;
 use state_db::StateDB;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -335,30 +334,28 @@ impl DerefMut for OpenBlock {
 impl OpenBlock {
     pub fn new(
         factories: Factories,
-        senders: HashSet<Address>,
-        creators: HashSet<Address>,
+        conf: GlobalSysConfig,
         tracing: bool,
         block: Block,
         db: StateDB,
         state_root: H256,
         last_hashes: Arc<LastHashes>,
-        account_gas_limit: &AccountGasLimit,
     ) -> Result<Self, Error> {
         let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
-        state.senders = senders;
-        state.creators = creators;
+        state.senders = conf.senders;
+        state.creators = conf.creators;
 
         let r = OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes: last_hashes,
-            account_gas_limit: account_gas_limit.common_gas_limit.into(),
-            account_gas: account_gas_limit
-                .specific_gas_limit
-                .iter()
-                .fold(HashMap::new(), |mut acc, (key, value)| {
+            account_gas_limit: conf.account_gas_limit.common_gas_limit.into(),
+            account_gas: conf.account_gas_limit.specific_gas_limit.iter().fold(
+                HashMap::new(),
+                |mut acc, (key, value)| {
                     acc.insert(*key, (*value).into());
                     acc
-                }),
+                },
+            ),
         };
 
         Ok(r)
