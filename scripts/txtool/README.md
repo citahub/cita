@@ -1,58 +1,59 @@
 # 帮助使用CITA的新用户了解操作的流程
 
-### 安装需要的依赖
+## 安装需要的依赖
 
-```
-$ sudo add-apt-repository ppa:ethereum/ethereum
-$ sudo add-apt-repository ppa:ethereum/ethereum-dev
-$ sudo apt-get update
-$ sudo apt-get install solc
-```
-
-```
-$ pip install -r requirements.txt
-$ bash requirements_sudo.sh
+```shell
+sudo add-apt-repository ppa:ethereum/ethereum
+sudo add-apt-repository ppa:ethereum/ethereum-dev
+sudo apt-get update
+sudo apt-get install solc
 ```
 
-### 检查CITA是否正常启动
-```
-$ python check.py
-```
-
-### net_peerCount
-
-```
-$ python peer_count.py
+```shell
+pip install -r requirements.txt
+bash requirements_sudo.sh
 ```
 
-### cita_blockNumber
+## 检查CITA是否正常启动
 
-```
-$ python block_number.py
+```shell
+python check.py
 ```
 
-### 生成账户信息(账户信息保存在output/accounts目录)
+## net_peerCount
+
+```shell
+python peer_count.py
+```
+
+## cita_blockNumber
+
+```shell
+python block_number.py
+```
+
+## 生成账户信息
 
 使用secp256k1签名算法和sha3 hash
 
-```
-$ python generate_account.py
+```shell
+python generate_account.py
 ```
 
 使用ed25519签名算法和blake2b hash
 
-```
-$ python generate_account.py --newcrypto
+```shell
+python generate_account.py --newcrypto
 ```
 
-### 编译合约
+## 编译合约
 
-```
-传入文件的绝对路径
-$ python compile.py -f /home/jerry/rustproj/cita/admintool/txtool/txtool/tests/test.sol
+```shell
+// 传入文件的绝对路径
+python compile.py -f /home/jerry/rustproj/cita/admintool/txtool/txtool/tests/test.sol
 
-或者传入源码
-$ python compile.py -s "pragma solidity ^0.4.0;
+// 或者传入源码
+python compile.py -s "pragma solidity ^0.4.0;
 
 contract SimpleStorage {
     uint storedData;
@@ -77,96 +78,103 @@ contract SimpleStorage {
     }
 }"
 
-合约编译的结果保存在output/compiled目录
+// 合约编译的结果保存在output/compiled目录
 ```
 
 获取编译合约的函数地址
-```
+
+```shell
 $ python compile.py -p "get()"
 0x6d4ce63c
 ```
 
-### 构造交易
+## 构造交易
 
 使用secp256k1签名算法和sha3 hash
-```
-$ python make_tx.py
 
-$ python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to`
+```shell
+python make_tx.py
+
+python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to`
 ```
+
 使用ed25519签名算法和blake2b hash
 
+```shell
+python make_tx.py --newcrypto
+
+python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to` --newcrypto
 ```
-$ python make_tx.py --newcrypto
 
-$ python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to` --newcrypto
-```
+## 发送交易
 
-
-### 发送交易
 交易相关的信息保存在output/transaction目录
 
+```shell
+python send_tx.py
+
+python send_tx.py `deploycode`
+
+python send_tx.py --codes `deploycode1` `deploycode2` `deploycode3` ...
 ```
-$ python send_tx.py
 
-$ python send_tx.py `deploycode`
+## 获取交易
 
-$ python send_tx.py --codes `deploycode1` `deploycode2` `deploycode3` ...
-```
-
-### 获取交易
 交易的hash使用output/transaction/hash文件中的值
 
-```
-$ python get_tx.py
+```shell
+python get_tx.py
 
-$python get_tx.py --tx `transaction_hash`
-```
-
-### cita_getBlockByHash
-
-```
-$ python block_by_hash.py hash --detail
-$ python block_by_hash.py hash --no-detail
+python get_tx.py --tx `transaction_hash`
 ```
 
-### cita_getBlockByNumber
+## cita_getBlockByHash
 
-```
-$ python block_by_number.py number --detail
-$ python block_by_number.py number --no-detail
-```
-
-### 获取receipt
-
-```
-$ python get_receipt.py
-$ python get_receipt.py --tx `transaction_hash`
+```shell
+python block_by_hash.py hash --detail
+python block_by_hash.py hash --no-detail
 ```
 
-### eth_getTransactionCount
+## cita_getBlockByNumber
 
-```
-$ python tx_count.py `block_number` -a `address`
-```
-
-### eth_getCode
-```
-$ python get_code.py `address` `number`
-```
-### 获取Logs
-
-```
-$ python get_logs.py
+```shell
+python block_by_number.py number --detail
+python block_by_number.py number --no-detail
 ```
 
-### 调用合约
-```
-$ python call.py `to` `data`
+## 获取receipt
 
-$ python call.py `to` `data` `block_number` --sender `option sender`
+```shell
+python get_receipt.py
+python get_receipt.py --tx `transaction_hash`
+```
+
+## eth_getTransactionCount
+
+```shell
+python tx_count.py `block_number` -a `address`
+```
+
+## eth_getCode
+
+```shell
+python get_code.py `address` `number`
+```
+
+## 获取Logs
+
+```shell
+python get_logs.py
+```
+
+## 调用合约
+
+```shell
+python call.py `to` `data`
+
+python call.py `to` `data` `block_number` --sender `option sender`
 
 to --- contract address
 data --- contract method, params encoded data.
-data构造参考contract ABI
+// data构造参考contract ABI
 ```

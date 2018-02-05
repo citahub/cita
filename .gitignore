@@ -55,4 +55,4 @@ scripts/txtool/output
 **/package-lock.json
 
 # docs
-cita-docs/site
+docs/site

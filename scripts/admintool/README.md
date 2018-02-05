@@ -2,19 +2,22 @@
 
 ## install requirements
 
-```
-$ pip install -r requirements.txt
+```shell
+pip install -r requirements.txt
 ```
 
 ## 主要功能
+
 可通过运行如下命令查看：
-```
+
+```shell
 cd target/install
 ./bin/admintool.sh --help
 ```
 
 结果如下：
-```
+
+```shell
 usage: ./admintool.sh -a admin_id -l ip_list -n consensus_name -m crypto_method -d block_duration -t
 option:
 -a admin_id    admin identifier
@@ -46,18 +49,17 @@ option:
 -k start with kafka
 
 -Q singel node id
-
-
 ```
 
 当前默认初始配置为四个节点，如果需要在admintool.sh脚本里**初始配置N个节点**，可通过如下命令，比如配置五个节点：
-```
+
+```shell
 ./bin/admintool.sh -l "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003,127.0.0.1:4004"
 ```
 
 ## setup
 
-```
+```shell
 ./bin/admintool.sh
 ```
 
@@ -78,7 +80,7 @@ option:
 
 用户可选择自定义初始化系统合约数据及使用系统默认数据，其中release文件下的`init_data.json`为初始化系统合约数据文件。
 
-#### 用户自定义初始化系统合约数据
+### 用户自定义初始化系统合约数据
 
 用户可在本目录下创建`init_data.json`文件来自定义系统合约的初始化数据。格式参考`init_data_example.json`文件，如下:
 
@@ -93,19 +95,16 @@ option:
 
 其中:
 
-* `0x00000000000000000000000000000000013241a2`: 代表共识节点管理系统合约地址，二维数组内`[]`内为节点地址列表，由系统生成，忽略此选项，用户可修改`["0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"]`值为自己生成的地址，
+- `0x00000000000000000000000000000000013241a2`: 代表共识节点管理系统合约地址，二维数组内`[]`内为节点地址列表，由系统生成，忽略此选项，用户可修改`["0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"]`值为自己生成的地址，
                                                 其为管理员地址，由此地址进行共识节点的增删。 ***须保存好对应的私钥***
-
-* `0x00000000000000000000000000000000013241a3`: 代表配额管理系统合约地址，用户可修改`0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888`值为自己生成的地址，其为配额管理的管理员地址，
+- `0x00000000000000000000000000000000013241a3`: 代表配额管理系统合约地址，用户可修改`0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888`值为自己生成的地址，其为配额管理的管理员地址，
                                                 可由此地址进行配额的管理。 ***须保存好对应的私钥***
-
-* `0x00000000000000000000000000000000013241a4`: 代表权限管理系统合约地址，第一个数组为拥有发送交易权限的地址列表，第二个数组为拥有创建合约权限的地址列表。
+- `0x00000000000000000000000000000000013241a4`: 代表权限管理系统合约地址，第一个数组为拥有发送交易权限的地址列表，第二个数组为拥有创建合约权限的地址列表。
                                                 用户可分别填入多个地址。 ***须保存好对应的私钥***
-
-* `0x00000000000000000000000000000000013241a5`: 代表CITA权限系统合约地址，用户可修改`0x33434ebd8799bc93f3623c7eb619350e41fb08d1`值为自己生成的地址，其为超级管理员地址，
+- `0x00000000000000000000000000000000013241a5`: 代表CITA权限系统合约地址，用户可修改`0x33434ebd8799bc93f3623c7eb619350e41fb08d1`值为自己生成的地址，其为超级管理员地址，
                                                 可由此地址进行系统初始化管理等所有操作。如果此地址为空，则用户必须填写`["0xb3b5da596b4ba5caa603afd98c08c294a68ff34d"]`值进行系统的初始化。 ***须保存好对应的私钥***
 
-#### 使用默认的初始化数据
+### 使用默认的初始化数据
 
 用户可使用系统默认的初始化数据，即`init_data_example.json`文件，地址及其对应的私钥如下表所示:
 
@@ -118,36 +117,38 @@ option:
 | b7eb833f2ac19d3dabf4375146a7ce0e983b9997a02557be05f224e22797419e | 0x33434ebd8799bc93f3623c7eb619350e41fb08d1 |
 | 33b471ddd9f4f524fa6015306acfaefbe8a054a26afde92480fd31c987dad3ce | 0xb3b5da596b4ba5caa603afd98c08c294a68ff34d |
 
-#### 用户自定义检查配置文件
+### 用户自定义检查配置文件
 
 用户可在本目录下创建`chain.toml`文件来自定义发送交易时是否检查账户的permission等，默认是需要检查的。格式参考`chain_check_example.toml`文件，如下:
 
-```
+```shell
 check_permission = true
 check_quota = true
 check_prooftype = 2
 ```
+
 也可在本目录下创建`executor.toml`文件来自定义journaldb的类型等。格式参考`executor_example.toml`文件，如下:
 
-```
+```shell
 check_permission = true
 check_quota = true
 check_prooftype = 2
 journaldb_type = "archive"
 ```
+
 其中:
 
-* `check_permission`: 表示发送交易时，是否检查账户拥有相应的权限，其中true表示打开检查，false表示关闭检查，默认为true。
-* `check_quota`: 表示发送交易时，是否检查块的gas和Account的gas是否超过上限，其中true表示打开检查，false表示关闭检查，默认为true。
-* `check_prooftype`: 表示当前使用的共识算法，0表示采用的Poa算法、1表示采用的Raft算法、2表示采用的Tendermint算法，默认采用Tendermint算法。
-* `journaldb_type`: 表示当前使用的JournalDB算法，有"archive" "light" "fast" "basic"等4种类型，默认是archive。
-
+- `check_permission`: 表示发送交易时，是否检查账户拥有相应的权限，其中true表示打开检查，false表示关闭检查，默认为true。
+- `check_quota`: 表示发送交易时，是否检查块的gas和Account的gas是否超过上限，其中true表示打开检查，false表示关闭检查，默认为true。
+- `check_prooftype`: 表示当前使用的共识算法，0表示采用的Poa算法、1表示采用的Raft算法、2表示采用的Tendermint算法，默认采用Tendermint算法。
+- `journaldb_type`: 表示当前使用的JournalDB算法，有"archive" "light" "fast" "basic"等4种类型，默认是archive。
 
 ### 节点管理系统合约
 
 节点管理合约存放在`install/scripts/contracts/node_manager.sol`，函数签名可通过`solc node_manager.sol --hashes`编译得到，也可以在[remix](https://remix.ethereum.org)上查看.
 node_manager.sol合约详情如下所示：
-```
+
+```shell
 contract address: 0x00000000000000000000000000000000013241a2
 Function signatures:
     dd4c97a0: approveNode(address)
@@ -157,24 +158,22 @@ Function signatures:
     ddad2ffe: newNode(address)
     645b8b1b: status(address)
 ```
+
 节点管理合约的目的是为了能够动态增删节点，即在已经运行的一些节点中增加或删除节点，这可以通过调用合约中的方法实现。
 合约中节点有三种状态：Close，Ready，Start，初始默认为Close，可以通过调用合约里的函数来改变节点状态。
 比如，增加节点，申请者首先调用newNode()方法，审批者(共识节点)调用approveNode来同意该节点成为共识节点。下面介绍下合约中主要的几种方法：
 
 - `newNode(address)`，该方法功能是申请成为共识节点，其中参数address表示申请节点的地址，申请者通过cita_sendTransaction调用合约上的该方法，此时节点状态变更为Ready；
 
-- `approveNode(address)`，该方法功能是同意其成为共识节点，其中参数address表示状态为Ready的节点地址，审批者(共识节点)通过cita_sendTransaction
-调用该方法来同意节点状态为Ready的节点加入共识，此时节点状态变更为Start；
+- `approveNode(address)`，该方法功能是同意其成为共识节点，其中参数address表示状态为Ready的节点地址，审批者(共识节点)通过cita_sendTransaction。调用该方法来同意节点状态为Ready的节点加入共识，此时节点状态变更为Start；
 
-- `deleteNode(address)`， 该方法功能是删除共识节点，其中参数address表示状态Start的节点地址，状态为Start的节点可通过cita_sendTransaction调用合约上的该方法来退出共识，
-此时节点状态变更为Close。
-
+- `deleteNode(address)`， 该方法功能是删除共识节点，其中参数address表示状态Start的节点地址，状态为Start的节点可通过cita_sendTransaction。调用合约上该方法来退出共识，此时节点状态变更为Close。
 
 ### 配额管理系统合约
 
 配额管理合约存放在`install/scripts/contracts/system/quota_manager.sol`，合约详情如下所示：
 
-```
+```shell
 contract address: 0x00000000000000000000000000000000013241a3
     Function signatures: 
     70480275: addAdmin(address)
@@ -219,7 +218,8 @@ contract address: 0x00000000000000000000000000000000013241a3
 ### 权限管理系统合约
 
 权限管理合约存放在`install/scripts/contracts/permission_manager.sol`，该合约将权限管理引进系统，有效控制用户交易的权限，合约详情如下所示：
-```
+
+```shell
 contract address: 0x00000000000000000000000000000000013241a4
 Function signatures:
     301da870: grantPermission(address,uint8)
@@ -232,24 +232,23 @@ Function signatures:
 比如，授予Create权限，已经拥有Create权限的地址可调用合约中的grantPermission()方法，来给其他地址授予Create权限。
 合约中的方法介绍如下：
 
-- `grantPermission(address,uint8)`，该方法是授予某种权限，其中参数中的address表示授予权限的地址，uint8表示权限名称，拥有该权限的地址可
-通过cita_sendTransaction调用该方法来授予其他地址该权限。
+- `grantPermission(address,uint8)`，该方法是授予某种权限，其中参数中的address表示授予权限的地址，uint8表示权限名称，拥有该权限的地址可通过cita_sendTransaction调用该方法来授予其他地址该权限。
 
-- `revokePermission(address,uint8)`，该方法是取消某种权限，其中参数address表示取消权限的地址，uint8表示权限名称，拥有该权限的地址可
-通过cita_sendTransaction调用该方法来取消其他地址该权限。
+- `revokePermission(address,uint8)`，该方法是取消某种权限，其中参数address表示取消权限的地址，uint8表示权限名称，拥有该权限的地址可通过cita_sendTransaction调用该方法来取消其他地址该权限。
 
 - `queryPermission(address)`，该方法是查询指定地址的权限，可通过eth_call调用该方法来查询。
 
 - `queryUsersOfPermission(uint8)`， 该方法是查询拥有指定权限的所有用户，可通过eth_call调用该方法来查询。
 
-
 ### 单独增加节点
+
 主要原理:新增节点先以只读节点的身份介入，然后，通过发送身份验证（交易）控制新节点权限. 并且，单独增加节点需要依赖已有的节点信息如:authorities，genesis.json
 
-步骤：　　
+步骤
+
 1. 确保已有数据不被破坏，请复制install/backup,install/bin, install/scripts三个文件及其内容到另外的目录．
 2. 运行命令：
-    ```
+    ```shell
     ./bin/admintool.sh -Q [nodeId]
 
      如./bin/admintool.sh -Q 8

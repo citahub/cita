@@ -13,15 +13,21 @@ pages:
     - CITA Features: 'key-concepts/cita.md'
   - Components: components.md
   - Usage Guide:
+      - Bootstrap: 'usage-guide/bootstrap.md'
       - Smart Contract Guide: 'usage-guide/smart-contract-guide.md'
+      - JSON-RPC: 'usage-guide/rpc.md'
+      - JSON-RPC Error Code: 'usage-guide/rpc_error_code.md'
+      - System Contract: 'usage-guide/admintool.md'
+      - Transaction Tool: 'usage-guide/txtool.md'
   - System Management: system_management.md
-  - Architecture: architecture.md
-  - Bootstrap: bootstrap.md
+  - Architecture: 
+      - Micro Service: 'architecture/architecture.md'
+      - Consensus: 'architecture/consensus.md'
+      - Transaction Process: 'architecture/transaction_process.md'
+      - View: 'architecture/view.md'
   - Appendix:
-    - Faq: 'appendix/faq.md'
-    - Glossary: 'appendix/glossary.md'
-    - Release: 'appendix/release.md'
     - Contributing: 'appendix/contributing.md'
+    - Glossary: 'appendix/glossary.md'
 
 theme: material
 extra_css:

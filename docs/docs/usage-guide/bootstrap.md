@@ -95,7 +95,7 @@ docker-compose down
 
 CITA完全兼容以太坊的智能合约，`solidity`是智能合约最为推荐的语言，因此我们也采用`solidity`语言来编写和测试智能合约。
 
-### 编译 solidity 文件，返回文件字节码
+### 编译
 
 要想编译`solidity`文件，你需要先安装编译器，`solidity`智能合约可以通过多种方式进行编译
 
@@ -125,7 +125,7 @@ solc test_example.sol --bin
 
 如果文件没有错误，返回结果中将会包括`test_example.sol`的字节码，这个数值就是`CITA`链上该智能合约的唯一标示值。
 
-### 部署合约，发送者需要构建合约权限
+### 部署合约
 
 得到`solidity`文件字节码后，就可以将其部署到`CITA`链上了，部署的方法已经用`python`脚本封装，只需要传入私钥和字节码即可。
 
@@ -139,7 +139,7 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 
 参数解释：`code`为第一步中获得的字节码, `privkey`可随意获取
 
-### 通过 python 脚本发送交易命令
+### 发送交易
 
 在`Terminal`中执行：`python send_tx.py`
 
@@ -159,7 +159,7 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 
 `status`为`OK`，表示合约已经发送到`CITA`链上。
 
-### 获得来自 CITA 区块链网络的回执
+### 获得回执
 
 在`Terminal`中执行：`python get_receipt.py`
 
@@ -183,7 +183,7 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 
 这里需要重点关注`contractAddress`和`blockNumber`，下文调用合约方法会用到。
 
-### 获得合约文件方法的hash值
+### 方法Hash
 
 合约的调用是通过发送交易命令完成，调用具体的方法则是通过方法`hash`值完成
 
@@ -200,7 +200,7 @@ Function signatures:
 
 这里的`get`和`set`方法`hash`值是`CITA`链上的唯一标示值，下文调用合约方法会用到。
 
-### 调用合约文件中的 set 方法
+### 调用合约方法
 
 假定我们调用`set`方法，参数为1，也就是说将数值1存储到区块链内存中
 
@@ -212,7 +212,7 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 
 `privkey`是你的私钥，`to`参数是合约的目标地址，`code`参数是`set`方法和参数`hash`值的拼接，`set`方法的`hash`值为60fe47b1，将参数1转换为uint256，转换成16进制就是64位。
 
-### 通过 python 脚本发送交易命令
+### 发送交易命令
 
 在`Terminal`中执行：`python send_tx.py`
 
@@ -228,7 +228,7 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 }
 ```
 
-### 获得来自 CITA 区块链网络的回执
+### 获得调用回执
 
 在`Terminal`中执行：`python get_receipt.py`
 
@@ -250,7 +250,7 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 }
 ```
 
-### 发送 eth_call Post 请求，验证合约执行效果
+### 验证效果
 
 调用合约中的`get`方法，验证之前`set`方法的执行效果
 

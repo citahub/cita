@@ -1,8 +1,6 @@
-视图
-===============
+# 视图
 
-账号
----------------------------
+## 账号
 
 视图状态是执行器执行过程中读写的对象，常见的视图状态模型有UTXO及账户两种。在UTXO模型中，由UTXO构成账本视图，每个交易在销毁旧有UTXO的同时创造新的UTXO；在账户模型中，由账户构成世界状态视图，交易在处理过程中可以读写多个账户。
 账户模型相对更加简单，实现通用任务更有效率。在企业级应用中往往存在身份验证与授权的需要，这些服务所依赖的数据可以自然的与账户模型关联。CITA默认支持账户模型。用户可以自定义包括UTXO在内的其他状态模型。
@@ -36,16 +34,14 @@
 
 * CITA内置系统合约模块，在创始块中生成，方便用户对系统进行管理。
 
-存储
----------------------------
+## 存储
 
 区块链本质上去中心化的分布式复制状态机，每个节点通过持久化的方式来保存自身的状态。CITA使用KV持久化数据存储，支持RocksDB、LevelDB。节点将Block结构，交易以及合约状态等持久化保存到KV数据库中。
 
 为了更高效的检索和更新数据，区块链一般会在内存中维护某种数据结构的视图模型。对于传统的区块链，如Bitcoin采用了Merkle Tree来保存交易；Ethereum采用了Merkle Patricia Tree，一种改进的Merkle Tree来保存状态和交易。
 CITA采用了一种更高效的AVL来保存账户状态，并且采用了Simple Merkle Tree来保存交易列表和交易回执。下面我们将分别介绍这几种模型。
 
-Merkle Tree
-^^^^^^^^^^^^^^
+### Merkle Tree
 
 在Bitcoin中的每个区块都包含了产生于该区块的所有交易，且以Merkle树表示。Merkle树是一种哈希二叉树，它是一种用作快速归纳和校验大规模数据完整性的数据结构。这种二叉树包含加密哈希值。
 
@@ -53,39 +49,32 @@ Merkle Tree
 
 当N个数据元素经过加密后插入Merkle树时，你至多计算2*log2(N)次就能检查出任意某数据元素是否在该树中，这使得该数据结构非常高效。同时Merkle树可以很好的支持轻节点。
 
-.. image:: ../images/merkle-tree.png
+![Merkle Tree](/img/merkle-tree.png)
 
-Merkle Patricia Trie
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+### Merkle Patricia Trie
 
 在Ethereum中，使用Trie来构建Merkle tree，即Merkle Patricia Trie。它是Ethereum中主要的数据结构，用来存储所有账号的状态以及交易和交易回执。MPT支持高效的检索及动态的插入、删除、修改，Ethereum将其命名为Merkle Patricia Tree（MPT），其示意图如下：
 
-.. image:: ../images/merkle-patricia-trie.png
+![Merkle Patricia Trie](/img/merkle-patricia-trie.png)
 
-更多关于MPT的介绍可以参考Ethereum Patricia-Tree_ 。
+更多关于MPT的介绍可以参考Ethereum [Patricia-Tree](https://github.com/ethereum/wiki/wiki/Patricia-Tree)。
 
-.. _Patricia-Tree: https://github.com/ethereum/wiki/wiki/Patricia-Tree
-
-Merkle AVL Tree
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+### Merkle AVL Tree
 
 对于Ethereum中的MPT，由于Sha3运算的开销并不低。随着账户地址的增多，以及合约存储数据量的增多，Sha3计算的数据量也会增多。对于常见金融领域来讲，千万级数据将会导致MPT性能下降，Sha3的计算将有可能成为瓶颈。
 为了提高效率，我们希望在每次更新树时能够计算Sha3的数据量最少。对于树形结构，更新一个节点所需要重新计算的Sha3数据量约为O(mlog\ :sub:`m`\ n)，其中 m 为分支数，故当 m=2 时，Sha3的计算量最小。
 又因为AVL Tree的平衡性更好（尽管这意味着更多的旋转操作，幸运的是旋转操作并不增加Sha3计算），同时又能很好地保持MPT动态插入、删除、修改的特点。因此选用AVL Tree来构建Merkle Tree似乎是一个不错的选择，我们简称之为MAT。
 
-更多关于AVL的介绍可以参考Wiki AVL_tree_ 。
+更多关于AVL的介绍可以参考Wiki [AVL_tree](https://en.wikipedia.org/wiki/AVL_tree)。
 
-.. _AVL_tree: https://en.wikipedia.org/wiki/AVL_tree
 
-Simple Merkle Tree
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+### Simple Merkle Tree
 
 在Ethreum中，交易和交易回执同样采用MPT树来进行保存。而CITA中，区块中的交易在共识完成后就已经确认了。所以在Chain处理交易时，交易的顺序和交易结果的顺序都是确定不变的。
 而MPT树优点是便于保存历史快照可维持可变性，对于静态数据可以采用Merkle树，而不必采用MPT和AVL这样的数据结构。而比特币的Merkle树在处理奇数节点时，需要拷贝节点，额外做一次Sha3计算。
 CITA采用了简单的Merkle树来保存，对于奇数个节点情况，计算Sha3的次数会减少。
 
-.. code-block:: python
-
+```
                         *
                        / \
                      /     \
@@ -98,4 +87,4 @@ CITA采用了简单的Merkle树来保存，对于奇数个节点情况，计算S
             *       *       *       h6
            / \     / \     / \
           h0  h1  h2  h3  h4  h5
-
+```

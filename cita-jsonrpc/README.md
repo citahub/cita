@@ -1,4 +1,4 @@
-#CITA说明
+# CITA JSON-RPC
 
 ## JSON-RPC
 
@@ -18,20 +18,23 @@
 * eth_uninstallFilter
 * eth_getFilterChanges
 * eth_getFilterLogs
-* RPC Errors
 
 ***
-#### net_peerCount
+
+### net_peerCount
 
 当前的节点连接数。
 
-##### Parameters
+* Parameters
+
 None
 
-##### Returns
+* Returns
+
 QUANTITY - integer of the number of connected peers.
 
-##### Example
+* Example
+
 ```js
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}'
@@ -43,20 +46,23 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":
     "result": "0x3"
 }
 ```
+
 ***
 
-#### cita_blockNumber
+### cita_blockNumber
 
 返回当前块高度。
 
-##### Parameters
+* Parameters
+
 None
 
-##### Returns
+* Returns
 
 `QUANTITY` - integer of current block height of CITA.
 
-##### Example
+* Example
+
 ```js
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}'
@@ -70,20 +76,24 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"i
 ```
 
 ***
-#### cita_sendTransaction
+
+### cita_sendTransaction
 
 通过序列化交易调用区块链接口。
 
-##### Parameters
+* Parameters
 
 1. `DATA`, The signed transaction data.
+
 ```js
 const signed_data = "0a9b0412013018fface20420f73b2a8d046060604052341561000f57600080fd5b5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b5b610178806100956000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100495780636d4ce63c1461006c575b600080fd5b341561005457600080fd5b61006a6004808035906020019091905050610095565b005b341561007757600080fd5b61007f610142565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b50565b6000805490505b905600a165627a7a72305820631927ec00e7a86b68950c2304ba2614a8dcb84780b339fc2bfe442bba418ce800291241884bfdfd8e417ab286fd761d42b71a9544071d91084c56f9063471ce82e266122a8f9a24614e1cf75070eea301bf1e7a65857def86093b6892e09ae7d0bcdff901"
 params: [signed_data]
 ```
 
-### 生成签名数据的过程
+#### 生成签名数据的过程
+
 #### 构造protobuf数据结构
+
 ```js
 // Transaction
 syntax = "proto3";
@@ -158,7 +168,8 @@ message UnverifiedTransaction {
 以下代码片段为示例代码，具体获取contract bytecode的方法参考[文档](https://ethereum.stackexchange.com/questions/8115/how-to-get-the-bytecode-of-a-transaction-using-the-solidity-browser)
 
 [solidity](https://solidity.readthedocs.io/en/develop/)相关文档
-```
+
+```solidity
 pragma solidity ^0.4.15;
 
 contract SimpleStorage {
@@ -185,7 +196,8 @@ contract SimpleStorage {
 }
 
 ```
-#### 构造签名
+
+#### 构造签名
 
 1. 构造Transaction对象tx，填充to, nonce, valid_until_block, data 4个字段。
 2. tx对象protobuf序列化后 sha3 -> hash
@@ -195,7 +207,7 @@ contract SimpleStorage {
 
 伪代码描述:
 
-```
+```shell
 let tx = Transaction::new();
 // contract bytecode
 let data = "6060604052341561000f57600080fd5b5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b5b610178806100956000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100495780636d4ce63c1461006c575b600080fd5b341561005457600080fd5b61006a6004808035906020019091905050610095565b005b341561007757600080fd5b61007f610142565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b50565b6000805490505b905600a165627a7a723058207fbd8b51e2ecdeb2425f642d6602a4ff030351102fd7afbed80318e61fa462670029".from_hex();
@@ -220,14 +232,16 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 #### 签名后的交易
 
-```
+```shell
 0a9b0412013018fface20420f73b2a8d046060604052341561000f57600080fd5b5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b5b610178806100956000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100495780636d4ce63c1461006c575b600080fd5b341561005457600080fd5b61006a6004808035906020019091905050610095565b005b341561007757600080fd5b61007f610142565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b50565b6000805490505b905600a165627a7a72305820631927ec00e7a86b68950c2304ba2614a8dcb84780b339fc2bfe442bba418ce800291241884bfdfd8e417ab286fd761d42b71a9544071d91084c56f9063471ce82e266122a8f9a24614e1cf75070eea301bf1e7a65857def86093b6892e09ae7d0bcdff901
 ```
-##### Returns
+
+* Returns
 
 `DATA`, 32 Bytes - 交易hash
 
-##### Example
+* Example
+
 ```js
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["0a9b0412013018fface20420f73b2a8d046060604052341561000f57600080fd5b5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b5b610178806100956000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100495780636d4ce63c1461006c575b600080fd5b341561005457600080fd5b61006a6004808035906020019091905050610095565b005b341561007757600080fd5b61007f610142565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b50565b6000805490505b905600a165627a7a72305820631927ec00e7a86b68950c2304ba2614a8dcb84780b339fc2bfe442bba418ce800291241884bfdfd8e417ab286fd761d42b71a9544071d91084c56f9063471ce82e266122a8f9a24614e1cf75070eea301bf1e7a65857def86093b6892e09ae7d0bcdff901"],"id":1}'
@@ -255,30 +269,32 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":[
 
 
 ```
+
 ***
 
-
-#### cita_getBlockByHash
+### cita_getBlockByHash
 
 根据块hash查询块的信息。
 
-##### Parameters
+* Parameters
 
 1. DATA, 32 Bytes - Hash of a block.
 2. Boolean - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
-```
+
+```shell
 params: [
    '0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329',
    true
 ]
 ```
-##### Returns
+
+* Returns
 
 Object - A block object, or null when no block was found:
 
-##### Example
+* Example
 
-```
+```shell
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByHash","params":["0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329", true],"id":1}'
 
@@ -323,11 +339,12 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByHash","params":["
 ```
 
 ***
-#### cita_getBlockByNumber
+
+### cita_getBlockByNumber
 
 根据块高度查询块信息。
 
-##### Parameters
+* Parameters
 
 1. `QUANTITY` - integer of a block height.
 2. `Boolean` - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
@@ -339,35 +356,36 @@ params: [
 ]
 ```
 
-##### Returns
+* Returns
 
 See [cita_getBlockByHash](#cita_getblockbyhash)
 
-##### Example
+* Example
 
 ```js
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":["0xF9", true],"id":1}'
 ```
-##### Invalid Params
 
-```
+* Invalid Params
+
+```shell
 curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":["0XF9", true],"id":1}'
-或者
+#或者
 curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":[249, true],"id":1}'
 ```
+
 高度参数可以用0x开头的十六进制。0X开头或者十进制整数都是错误的参数格式。
 
 同 [cita_getBlockByHash](#cita_getblockbyhash)
 
 ***
 
-#### eth_getTransactionReceipt
+### eth_getTransactionReceipt
 
 根据交易hash获取交易回执。
 
-
-##### Parameters
+* Parameters
 
 1. `DATA`, 32 Bytes - hash of a transaction
 
@@ -377,7 +395,8 @@ params: [
 ]
 ```
 
-##### Returns
+* Returns
+
 Object - A receipt object:
 
 * transactionHash: DATA, 32 Bytes - hash of the transaction.
@@ -391,7 +410,8 @@ Object - A receipt object:
 * root : DATA 32 bytes of post-transaction stateroot 
 * errorMessage: String, execution error message.
 
-##### receipt error messages
+Receipt error messages:
+
 * No transaction permission.
 * No contract permission.
 * Not enough base gas.
@@ -404,7 +424,8 @@ Object - A receipt object:
 * Execution would exceed defined Stack Limit.
 * EVM internal error.
 
-##### Example
+* Example
+
 ```js
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"],"id":1}'
@@ -456,34 +477,39 @@ error：
   "gasUsed": "0x0"
 }
 ```
+
 如果出现**Timeout，errorcode 99**,请查看可能的解决方法[Can't assign requested Address](https://vincent.bernat.im/en/blog/2014-tcp-time-wait-state-linux)
 
 ***
 
-#### eth_getLogs
+### eth_getLogs
 
 根据Topic查询logs。
 
-##### A note on specifying topic filters:
+A note on specifying topic filters:
+
 Topics are order-dependent. A transaction with a log with topics [A, B] will be matched by the following topic filters:
+
 * `[]` "anything"
 * `[A]` "A in first position (and anything after)"
 * `[null, B]` "anything in first position AND B in second position (and anything after)"
 * `[A, B]` "A in first position AND B in second position (and anything after)"
 * `[[A, B], [A, B]]` "(A OR B) in first position AND (A OR B) in second position (and anything after)"
 
-##### Parameters
+* Parameters
 
 1. `Object` - The filter object:
-  - `fromBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
-  - `toBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
-  - `address`: `DATA|Array`, 20 Bytes - (optional) Contract address or a list of addresses from which logs should originate.
-  - `topics`: `Array of DATA`,  - (optional) Array of 32 Bytes `DATA` topics. Topics are order-dependent. Each topic can also be an array of DATA with "or" options.
+* `fromBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
+* `toBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
+* `address`: `DATA|Array`, 20 Bytes - (optional) Contract address or a list of addresses from which logs should originate.
+* `topics`: `Array of DATA`,  - (optional) Array of 32 Bytes `DATA` topics. Topics are order-dependent. Each topic can also be an array of DATA with "or" options.
 
-##### Returns
+* Returns
+
 `Array` - Array of log objects, or an empty array if no logs
 
-##### Example
+* Example
+
 ```js
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"],"fromBlock": "0x0"}],"id":74}'
@@ -512,37 +538,40 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"topics"
 ```
 
 ***
-#### eth_call
+
+### eth_call
 
 合约接口调用。
 
-##### Parameters
+* Parameters
 
 1. Object - The transaction call object
- * from: DATA, 20 Bytes - (optional) The address the transaction is sent from.
- * to:   DATA, 20 Bytes - The address the transaction is directed to.
- * data: DATA - (optional) Hash of the method signature and encoded parameters. For details see [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)
+    * from: DATA, 20 Bytes - (optional) The address the transaction is sent from.
+    * to:   DATA, 20 Bytes - The address the transaction is directed to.
+    * data: DATA - (optional) Hash of the method signature and encoded parameters. For details see [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)
 2. QUANTITY - block parameter
- * HEX String - an integer block number
- * String "earliest" for the earliest/genesis block
- * String "latest" - for the latest mined block
-
+    * HEX String - an integer block number
+    * String "earliest" for the earliest/genesis block
+    * String "latest" - for the latest mined block
 
 ```js
 params: [{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5","data":"0x6d4ce63c"}, "0x1d23"]
 ```
 
-##### Returns
+* Returns
 
 `DATA`, 32 Bytes - the transaction hash.
 
-##### Example
+* Example
+
 contract中get方法Hash和编码后的数据
-```
+
+```shell
 0x6d4ce63c
 ```
 
 发送和获取数据
+
 ```js
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call",
@@ -557,14 +586,14 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call",
 }
 
 ```
+
 ***
 
-#### cita_getTransaction
+### cita_getTransaction
 
 根据交易hash查询交易。
 
-
-##### Parameters
+* Parameters
 
 1. `DATA`, 32 Bytes - hash of a transaction
 
@@ -574,7 +603,8 @@ params: [
 ]
 ```
 
-##### Returns
+* Returns
+
 Object - A transaction object, or null when no transaction was found:
 
 * hash: DATA, 32 Bytes - hash of the transaction.
@@ -582,7 +612,8 @@ Object - A transaction object, or null when no transaction was found:
 * blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its not in block.
 * blockNumber: QUANTITY - block number where this transaction was in. null when its not in block.
 * index: QUANTITY - integer of the transactions index position in the block. null when its not in block.
-##### Example
+
+* Example
 
 ```js
 // Request
@@ -601,23 +632,25 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getTransaction","params":["
   }
 }
 ```
+
 ***
 
-#### eth_getTransactionCount
+### eth_getTransactionCount
 
 获取账户发送交易的数量。
 
-##### Parameters
+* Parameters
 
 1. `DATA`, 20 Bytes - address.
 2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
 
-##### Returns
+* Returns
+
 `QUANTITY` - integer of the number of transactions send from this address.
 
-##### Example
+* Example
 
-```
+```shell
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionCount","params":["5b073e9233944b5e729e46d618f0d8edf3d9c34a","0x1F"],"id":1}'
 
 // Result:
@@ -628,22 +661,25 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionCount","params
 }
 
 ```
+
 ***
 
-#### eth_getCode
+### eth_getCode
 
 获取合约代码。
 
-##### Parameters
+* Parameters
 
 1. `DATA`, 20 Bytes - address.
 2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
 
-##### Returns
+* Returns
+
 `DATA` - the code from the given address.
 
-##### Example
-```
+* Example
+
+```shell
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["ea4f6bc98b456ef085da5c424db710489848cab5", "0x1F"],"id":1}'
 
 // Result:
@@ -656,20 +692,21 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["ea4f6bc9
 
 ***
 
-#### eth_newFilter
+### eth_newFilter
 
 Creates a filter object, based on filter options, to notify when the state changes (logs). To check if the state has changed, call eth_getFilterChanges.
 
-##### Parameters
+* Parameters
 
 1. `Object` - The filter object, see [eth_getLogs](#eth_getLogs)
 
-##### Returns
+* Returns
 
 `QUANTITY` - A filter id.
 
-##### Example
-```
+* Example
+
+```shell
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_newFilter","params":[{"topics":["0x12341234"]}],"id":73}'
 
 // Result
@@ -679,20 +716,24 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_newFilter","params":[{"topic
   "result": "0x1"
 }
 ```
+
 ***
 
-#### eth_newBlockFilter
+### eth_newBlockFilter
 
 Creates a filter in the node, to notify when a new block arrives. To check if the state has changed, call eth_getFilterChanges.
 
-##### Parameters
+* Parameters
+
 None
 
-##### Returns
+* Returns
+
 `QUANTITY` - A filter id.
 
-##### Example
-```
+* Example
+
+```shell
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_newBlockFilter","params":[],"id":73}'
 
 // Result
@@ -702,21 +743,25 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_newBlockFilter","params":[],
   "result": "0x1"
 }
 ```
+
 ***
 
-#### eth_uninstallFilter
+### eth_uninstallFilter
 
 Uninstalls a filter with given id. Should always be called when watch is no longer needed.
 Additonally Filters timeout when they aren't requested with eth_getFilterChanges for a period of time.
 
-##### Parameters
+* Parameters
+
 1. `QUANTITY` - The filter id.
 
-##### Returns
+* Returns
+
 `Boolean` - true if the filter was successfully uninstalled, otherwise false.
 
-##### Example
-```
+* Example
+
+```shell
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_uninstallFilter","params":["0xb"],"id":73}'
 
 // Result
@@ -726,20 +771,24 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_uninstallFilter","params":["
   "result": true
 }
 ```
+
 ***
 
-#### eth_getFilterChanges
+### eth_getFilterChanges
 
 Polling method for a filter, which returns an array of logs which occurred since last poll.
 
-##### Parameters
+* Parameters
+
 1. `QUANTITY` - The filter id.
 
-##### Returns
+* Returns
+
 `Array` - Array of log objects, or an empty array if nothing has changed since last poll.
 
-##### Example
-```
+* Example
+
+```shell
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getFilterChanges","params":["0x16"],"id":74}'
 
 // Result
@@ -763,66 +812,69 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getFilterChanges","params":[
     ]
 }
 ```
+
 ***
 
-#### eth_getFilterLogs
+### eth_getFilterLogs
 
 Returns an array of all logs matching filter with given id.
 
-##### Parameters
+* Parameters
+
 1. `QUANTITY` - The filter id.
 
-##### Returns
+* Returns
+
 `Array` - Array of log objects, or an empty array if nothing has changed since last poll.
 
-##### Example
+* Example
+
 see [eth_getFilterChanges](#eth_getFilterChanges)
 
 ***
 
-# RPC Errors
+## RPC Errors
 
-1 Invalid Request
+### Invalid Request
 
-```
+```shell
 // 正确方式：POST 方法
 curl -X GET -d '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[]}' 127.0.0.1:1337
 ```
 
-```
+```shell
 {"jsonrpc":"2.0","error":{"code":-32600,"message":"Invalid Request"},"id":null}
 ```
 
-2 Method not found
+### Method not found
 
-```
+```shell
 // 正确方式： method应该是cita_getBlockByNumber
 curl -X POST -d '{"jsonrpc":"2.0","method":"cita_blockByHeight","params":[true],"id":3}' 127.0.0.1:1337
 ```
 
-```
+```shell
 {"jsonrpc":"2.0", "error":{"code":-32601,"message":"Method not found"},"id":3 }
 ```
 
-3 Invalid params
+### Invalid params
 
-```
+```shell
 // 正确方式：params 应该是 ["0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"]
 curl -X POST -d '{"jsonrpc":"2.0","method":"cita_getTransaction","params":[0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236],"id":2}' 127.0.0.1:1337
 ```
 
-```
+```shell
 {"jsonrpc":"2.0", "error":{"code":-32602,"message":"Invalid params"},"id":2}
 ```
 
-4 Null
+### Null
 
-```
+```shell
 // 原因：块高度未达到99999
 curl -X POST -d '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":["0x1869F",true],"id":2}' 127.0.0.1:1337
 ```
 
-```
+```shell
 {"jsonrpc":"2.0","id":2,"result":null}
 ```
-

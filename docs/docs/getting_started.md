@@ -182,4 +182,4 @@ Result:
 
 返回块高度，表示节点已经开始正常出块。
 
-更多API（如合约调用、交易查询）请参见[RPC调用](https://cryptape.github.io/rpc.html)。
+更多API（如合约调用、交易查询）请参见[RPC调用](https://cryptape.github.io/cita/usage-guide/rpc)。
