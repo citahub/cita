@@ -17,14 +17,14 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{submodules, topics, BatchRequest, Message, MsgClass, Request, Response};
+use libproto::{BatchRequest, Message, Request, Response, SubModules};
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use protobuf::RepeatedField;
 use serde_json;
 
 use std::cell::RefCell;
 use std::collections::HashSet;
-use std::convert::TryInto;
+use std::convert::{Into, TryInto};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
@@ -109,7 +109,7 @@ impl Dispatcher {
 
     pub fn deal_tx(
         &mut self,
-        modid: u32,
+        submodule: SubModules,
         req_id: Vec<u8>,
         tx_response: TxResponse,
         tx: &SignedTransaction,
@@ -122,7 +122,7 @@ impl Dispatcher {
             error_msg = Some(String::from("Dup"));
         }
 
-        if modid == submodules::JSON_RPC {
+        if submodule == SubModules::Jsonrpc {
             let mut response = Response::new();
             response.set_request_id(req_id);
 
@@ -166,11 +166,7 @@ impl Dispatcher {
                 self.response_jsonrpc_cnt
             );
 
-            let msg = Message::init_default(
-                submodules::AUTH,
-                topics::RESPONSE,
-                MsgClass::RESPONSE(response),
-            );
+            let msg: Message = response.into();
             mq_pub
                 .send(("auth.rpc".to_string(), msg.try_into().unwrap()))
                 .unwrap();
@@ -225,11 +221,7 @@ impl Dispatcher {
         block_txs.set_height(height as u64);
         block_txs.set_body(body);
         trace!("deal_txs send height {}", height);
-        let msg = Message::init_default(
-            submodules::AUTH,
-            topics::BLOCK_TXS,
-            MsgClass::BLOCKTXS(block_txs),
-        );
+        let msg: Message = block_txs.into();
         mq_pub
             .send(("auth.block_txs".to_string(), msg.try_into().unwrap()))
             .unwrap();
@@ -337,11 +329,7 @@ impl Dispatcher {
         request.set_batch_req(batch_request);
         request.set_request_id(request_id);
 
-        let msg = Message::init_default(
-            submodules::AUTH,
-            topics::REQUEST,
-            MsgClass::REQUEST(request),
-        );
+        let msg: Message = request.into();
         mq_pub
             .send(("auth.tx".to_string(), msg.try_into().unwrap()))
             .unwrap();

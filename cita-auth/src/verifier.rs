@@ -16,10 +16,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::{PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
-use libproto::{submodules, topics, BlockTxHashesReq, Crypto, Message, MsgClass, Ret, UnverifiedTransaction,
-               VerifyTxReq, VerifyTxResp};
+use libproto::{BlockTxHashesReq, Crypto, Message, Ret, SubModules, UnverifiedTransaction, VerifyTxReq, VerifyTxResp};
 use std::collections::{HashMap, HashSet};
-use std::convert::TryInto;
+use std::convert::{Into, TryInto};
 use std::result::Result;
 use std::sync::mpsc::Sender;
 use std::time::SystemTime;
@@ -39,7 +38,7 @@ pub enum VerifyRequestResponse {
 
 #[derive(Debug, Clone)]
 pub struct VerifyRequestResponseInfo {
-    pub sub_module: u32,
+    pub sub_module: SubModules,
     pub verify_type: VerifyType,
     pub request_id: VerifyRequestID,
     pub time_stamp: SystemTime,
@@ -110,11 +109,7 @@ impl Verifier {
         for i in low..high {
             let mut req = BlockTxHashesReq::new();
             req.set_height(i);
-            let msg = Message::init_default(
-                submodules::AUTH,
-                topics::BLOCK_TXHASHES_REQ,
-                MsgClass::BLOCKTXHASHESREQ(req),
-            );
+            let msg: Message = req.into();
             tx_pub
                 .send(("auth.blk_tx_hashs_req".to_string(), msg.try_into().unwrap()))
                 .unwrap();

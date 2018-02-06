@@ -17,16 +17,17 @@
 
 //! A multiplexed cita protocol
 
-use byteorder::{BigEndian, ByteOrder};
+use byteorder::{ByteOrder, NetworkEndian};
 use bytes::BufMut;
 use bytes::BytesMut;
 use std::io;
+use std::str;
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Decoder, Encoder, Framed};
 use tokio_proto::pipeline::ServerProto;
 
-pub type CitaRequest = Vec<u8>;
-pub type CitaResponse = Vec<u8>;
+pub type CitaRequest = (String, Vec<u8>);
+pub type CitaResponse = Option<(String, Vec<u8>)>;
 
 /// Our multiplexed line-based codec
 pub struct CitaCodec;
@@ -42,12 +43,21 @@ pub struct CitaProto;
 ///
 /// # An example frame:
 ///
-/// +-- request id --+------- frame payload --------+
-/// |                |                              |
-/// | \xDEADBEEF+len | This is the frame payload    |
-/// |                |                              |
-/// +----------------+------------------------------+
+/// +------------------------+--------------------------+
+/// | Type                   | Content                  |
+/// +------------------------+--------------------------+
+/// | Symbol for Start       | \xDEADBEEF               |
+/// | Length of Full Payload | u32                      |
+/// +------------------------+--------------------------+
+/// | Length of Key          | u8                       |
+/// | Key                    | bytes of a str           |
+/// +------------------------+--------------------------+
+/// | Message                | a serialize data         |
+/// +------------------------+--------------------------+
 ///
+
+// Start of network messages.
+const NETMSG_START: u64 = 0xDEAD_BEEF_0000_0000;
 
 fn opt_bytes_extend(buf: &mut BytesMut, data: &[u8]) {
     buf.reserve(data.len());
@@ -62,31 +72,7 @@ impl Decoder for CitaCodec {
     type Error = io::Error;
 
     fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Self::Item>, io::Error> {
-        let buf_len = buf.len();
-        if buf_len < 8 {
-            return Ok(None);
-        }
-
-        // check flag and msglen
-        let request_id = BigEndian::read_u64(buf.as_ref());
-        if request_id & 0xffff_ffff_0000_0000 != 0xDEAD_BEEF_0000_0000 {
-            return Ok(None);
-        }
-        let msg_len = request_id & 0x0000_0000_ffff_ffff;
-        if (msg_len + 8) > buf_len as u64 {
-            return Ok(None);
-        }
-        // ok skip the flag
-        buf.split_to(8);
-        // get msg
-        let payload = buf.split_to(msg_len as usize).to_vec();
-        if payload.len() == 0 {
-            return Ok(None);
-        }
-
-        trace!("decode msg {:?} {:?}", request_id, payload);
-
-        Ok(Some(payload))
+        Ok(network_message_to_pubsub_message(buf))
     }
 }
 
@@ -95,15 +81,7 @@ impl Encoder for CitaCodec {
     type Error = io::Error;
 
     fn encode(&mut self, msg: Self::Item, buf: &mut BytesMut) -> io::Result<()> {
-        let request_id = 0xDEAD_BEEF_0000_0000 + msg.len();
-        trace!("encode msg {:?} {:?}", request_id, msg);
-
-        let mut encoded_request_id = [0; 8];
-        BigEndian::write_u64(&mut encoded_request_id, request_id as u64);
-
-        opt_bytes_extend(buf, &encoded_request_id);
-        opt_bytes_extend(buf, &msg);
-
+        pubsub_message_to_network_message(buf, msg);
         Ok(())
     }
 }
@@ -118,5 +96,112 @@ impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for CitaProto {
 
     fn bind_transport(&self, io: T) -> Self::BindTransport {
         Ok(io.framed(CitaCodec))
+    }
+}
+
+pub fn pubsub_message_to_network_message(buf: &mut BytesMut, msg: Option<(String, Vec<u8>)>) {
+    let mut request_id_bytes = [0; 8];
+    if let Some((key, body)) = msg {
+        let length_key = key.len();
+        // Use 1 byte to store key length.
+        if length_key > u8::max_value() as usize {
+            error!("The key is too long {}.", key);
+        }
+        // Use 1 bytes to store the length for key, then store key, the last part is body.
+        let length_full = 1 + length_key + body.len();
+        if length_full > u32::max_value() as usize {
+            error!("The message for key {} is too long {}.", key, body.len());
+        }
+        let request_id = NETMSG_START + length_full as u64;
+        NetworkEndian::write_u64(&mut request_id_bytes, request_id);
+        opt_bytes_extend(buf, &request_id_bytes);
+        buf.put_u8(length_key as u8);
+        opt_bytes_extend(buf, key.as_bytes());
+        opt_bytes_extend(buf, &body);
+    } else {
+        let request_id = NETMSG_START;
+        NetworkEndian::write_u64(&mut request_id_bytes, request_id);
+        opt_bytes_extend(buf, &request_id_bytes);
+    }
+}
+
+pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<(String, Vec<u8>)> {
+    if buf.len() < 8 {
+        return None;
+    }
+
+    let request_id = NetworkEndian::read_u64(buf.as_ref());
+    let netmsg_start = request_id & 0xffff_ffff_0000_0000;
+    let length_full = (request_id & 0x0000_0000_ffff_ffff) as usize;
+    if netmsg_start != NETMSG_START {
+        error!("Buffer is malformed {} != {}.", netmsg_start, NETMSG_START);
+        return None;
+    }
+    if length_full + 8 > buf.len() {
+        warn!(
+            "Buffer is not enough for payload {} > {}.",
+            length_full,
+            buf.len()
+        );
+        return None;
+    }
+    let _request_id_buf = buf.split_to(8);
+
+    if length_full == 0 {
+        return None;
+    }
+    let mut payload_buf = buf.split_to(length_full);
+
+    let length_key = payload_buf[0] as usize;
+    let _length_key_buf = payload_buf.split_to(1);
+    if length_key == 0 {
+        error!("Key is empty.");
+        return None;
+    }
+    if length_key > payload_buf.len() {
+        error!(
+            "Buffer is not enough for key {} > {}.",
+            length_key,
+            buf.len()
+        );
+        return None;
+    }
+    let key_buf = payload_buf.split_to(length_key);
+    let key_str_result = str::from_utf8(&key_buf);
+    if key_str_result.is_err() {
+        error!("Parse key error {:?}.", key_buf);
+        return None;
+    }
+    let key = key_str_result.unwrap().to_string();
+    if length_full == 1 + length_key {
+        warn!("Message is empty.");
+    }
+    return Some((key, payload_buf.to_vec()));
+}
+
+#[cfg(test)]
+mod test {
+    use super::{network_message_to_pubsub_message, pubsub_message_to_network_message};
+    use bytes::BytesMut;
+
+    #[test]
+    fn convert_empty_message() {
+        let mut buf = BytesMut::with_capacity(4 + 4);
+        pubsub_message_to_network_message(&mut buf, None);
+        let pub_msg_opt = network_message_to_pubsub_message(&mut buf);
+        assert!(pub_msg_opt.is_none());
+    }
+
+    #[test]
+    fn convert_messages() {
+        let key = "this-is-the-key".to_string();
+        let msg: Vec<u8> = vec![1, 3, 5, 7, 9];
+        let mut buf = BytesMut::with_capacity(4 + 4 + 1 + key.len() + msg.len());
+        pubsub_message_to_network_message(&mut buf, Some((key.clone(), msg.clone())));
+        let pub_msg_opt = network_message_to_pubsub_message(&mut buf);
+        assert!(pub_msg_opt.is_some());
+        let (key_new, msg_new) = pub_msg_opt.unwrap();
+        assert_eq!(key, key_new);
+        assert_eq!(msg, msg_new);
     }
 }

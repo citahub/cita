@@ -55,6 +55,7 @@ use config::Config;
 use cpuprofiler::PROFILER;
 use dispatcher::Dispatcher;
 use handler::*;
+use libproto::SubModules;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -242,10 +243,10 @@ fn main() {
         let mut flag = false;
         loop {
             if let Ok(txinfo) = pool_tx_receiver.try_recv() {
-                let (modid, reqid, tx_res, tx) = txinfo;
+                let (submodule, reqid, tx_res, tx) = txinfo;
                 dispatch
                     .lock()
-                    .deal_tx(modid, reqid, tx_res, &tx, &txs_pub_clone);
+                    .deal_tx(submodule, reqid, tx_res, &tx, &txs_pub_clone);
                 flag = true;
             } else {
                 if flag {
@@ -281,9 +282,11 @@ fn main() {
     let resp_sender = resp_sender_clone.clone();
     thread::spawn(move || loop {
         match rx_sub.recv() {
-            Ok((_key, msg)) => {
+            Ok((key, msg)) => {
                 let verifier = verifier.clone();
+                let submodule = SubModules::from(&key[..]);
                 handle_remote_msg(
+                    submodule,
                     msg,
                     on_proposal.clone(),
                     &threadpool,

@@ -1,11 +1,11 @@
 use Source;
 use connection::Connection;
-use libproto::{cmd_id, communication, submodules, topics, Message, MsgClass, SyncRequest, SyncResponse};
+use libproto::{Message, MsgClass, OperateType, SyncRequest, SyncResponse};
 use libproto::blockchain::{Block, Status};
 use protobuf::RepeatedField;
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, VecDeque};
-use std::convert::{TryFrom, TryInto};
+use std::convert::{Into, TryFrom, TryInto};
 use std::sync::{mpsc, Arc};
 use std::time::{Duration, Instant};
 
@@ -154,40 +154,31 @@ impl Synchronizer {
         self.submit_blocks();
     }
 
-    pub fn receive(&mut self, from: Source, data: Vec<u8>) {
-        let mut msg = Message::try_from(&data).unwrap();
-        let cid = msg.get_cmd_id();
+    pub fn receive(&mut self, from: Source, body: Vec<u8>) {
+        let mut msg = Message::try_from(&body).unwrap();
         let origin = msg.get_origin();
         let content = msg.take_content();
         match content {
-            MsgClass::STATUS(status) => {
-                if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) {
-                    match from {
-                        Source::LOCAL => {
-                            self.update_current_status(status);
-                        }
-                        Source::REMOTE => {
-                            self.update_global_status(&status, origin);
-                        }
-                    }
-                };
-            }
-            MsgClass::SYNCRESPONSE(blocks) => {
-                if cid == cmd_id(submodules::CHAIN, topics::NEW_BLK) {
-                    match from {
-                        Source::LOCAL => {
-                            error!("sync: msg not parse!");
-                        }
-                        Source::REMOTE => {
-                            self.process_sync(blocks);
-                        }
-                    }
+            MsgClass::Status(status) => match from {
+                Source::LOCAL => {
+                    self.update_current_status(status);
                 }
-            }
+                Source::REMOTE => {
+                    self.update_global_status(&status, origin);
+                }
+            },
+            MsgClass::SyncResponse(blocks) => match from {
+                Source::LOCAL => {
+                    error!("sync: msg not parse!");
+                }
+                Source::REMOTE => {
+                    self.process_sync(blocks);
+                }
+            },
             _ => {
                 warn!("receive: unexpected data type = {:?}", content);
             }
-        };
+        }
     }
 
     // 发起同步请求
@@ -268,18 +259,12 @@ impl Synchronizer {
                 self.current_status.get_height(),
                 heights,
                 origin,
-                communication::OperateType::SINGLE
+                OperateType::SINGLE
             );
             let mut sync_req = SyncRequest::new();
             sync_req.set_heights(heights);
-            let msg = Message::init(
-                submodules::CHAIN,
-                topics::SYNC_BLK,
-                communication::OperateType::SINGLE,
-                origin,
-                MsgClass::SYNCREQUEST(sync_req),
-            );
-            self.con.broadcast(msg);
+            let msg = Message::init(OperateType::SINGLE, origin, MsgClass::SyncRequest(sync_req));
+            self.con.broadcast("net.sync_req".to_string(), msg);
         }
     }
 
@@ -289,12 +274,8 @@ impl Synchronizer {
             self.current_status.get_height(),
             self.current_status.get_hash()
         );
-        let msg = Message::init_default(
-            submodules::CHAIN,
-            topics::NEW_STATUS,
-            MsgClass::STATUS(self.current_status.clone()),
-        );
-        self.con.broadcast(msg);
+        let msg: Message = self.current_status.clone().into();
+        self.con.broadcast("net.sync_status".to_string(), msg);
     }
 
     //提交连续的块
@@ -351,11 +332,7 @@ impl Synchronizer {
             );
             let mut sync_res = SyncResponse::new();
             sync_res.set_blocks(RepeatedField::from_vec(blocks));
-            let msg = Message::init_default(
-                submodules::CHAIN,
-                topics::NEW_BLK,
-                MsgClass::SYNCRESPONSE(sync_res),
-            );
+            let msg: Message = sync_res.into();
             self.tx_pub
                 .send(("net.blk".to_string(), msg.try_into().unwrap()));
         }

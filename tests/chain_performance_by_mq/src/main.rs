@@ -152,7 +152,7 @@ fn main() {
         let mut msg = Message::try_from(&body).unwrap();
         match msg.take_content() {
             //接受chain发送的 authorities_list
-            MsgClass::RICHSTATUS(rich_status) => {
+            MsgClass::RichStatus(rich_status) => {
                 info!("get new local status {:?}", rich_status.height);
                 if !send_flag && rich_status.height == height {
                     let start_time = sys_time.lock().unwrap();

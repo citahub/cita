@@ -100,7 +100,7 @@ fn create_contract(
             if let Ok((_, msg_vec)) = recv.recv() {
                 let mut msg = Message::try_from(&msg_vec).unwrap();
                 match msg.take_content() {
-                    MsgClass::EXECUTED(info) => {
+                    MsgClass::ExecutedResult(info) => {
                         //info!("**** get excuted info {:?}", info);
                         let pro = inblock.protobuf();
                         let chan_block = ChainBlock::from(pro);
@@ -160,7 +160,7 @@ fn send_contract_tx(block_tx_num: i32, call: Callexet, pre_hash: H256, flag_prof
         if let Ok((_, msg_vec)) = recv.recv() {
             let mut msg = Message::try_from(&msg_vec).unwrap();
             match msg.take_content() {
-                MsgClass::EXECUTED(info) => {
+                MsgClass::ExecutedResult(info) => {
                     let pro = inblock.protobuf();
                     let chan_block = ChainBlock::from(pro);
                     inchain.set_block_body(h, &chan_block);

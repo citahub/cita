@@ -17,10 +17,10 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{submodules, topics, Message, MsgClass, Response, Ret, VerifyBlockResp, VerifyTxResp};
+use libproto::{Message, MsgClass, Response, Ret, SubModules, VerifyBlockResp, VerifyTxResp};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use std::collections::{HashMap, HashSet};
-use std::convert::{TryFrom, TryInto};
+use std::convert::{Into, TryFrom, TryInto};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
@@ -129,6 +129,7 @@ fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxR
 // the function has a cyclomatic complexity of 29
 // consider changing the type to: `&[u8]`
 pub fn handle_remote_msg(
+    submodule: SubModules,
     payload: Vec<u8>,
     on_proposal: Arc<AtomicBool>,
     pool: &ThreadPool,
@@ -142,9 +143,8 @@ pub fn handle_remote_msg(
     resp_sender: &Sender<VerifyRequestResponseInfo>,
 ) {
     let mut msg = Message::try_from(&payload).unwrap();
-    let submodule: u32 = msg.get_cmd_id() >> 16;
     match msg.take_content() {
-        MsgClass::BLOCKTXHASHES(block_tx_hashes) => {
+        MsgClass::BlockTxHashes(block_tx_hashes) => {
             let height = block_tx_hashes.get_height();
             info!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
@@ -192,7 +192,7 @@ pub fn handle_remote_msg(
         // TODO: Add ProposalVerifier { status, request_id, threadpool }, Status: On, Failed, Successed, Experied
         // TODO: Make most of the logic asynchronous
         // Verify Proposal from consensus
-        MsgClass::VERIFYBLKREQ(blkreq) => {
+        MsgClass::VerifyBlockReq(blkreq) => {
             info!(
                 "get block verify request with {:?} request",
                 blkreq.get_reqs().len()
@@ -327,7 +327,7 @@ pub fn handle_remote_msg(
                 );
             }
         }
-        MsgClass::REQUEST(newtx_req) => {
+        MsgClass::Request(newtx_req) => {
             if newtx_req.has_batch_req() {
                 let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
                 let now = SystemTime::now();
@@ -377,7 +377,7 @@ pub fn handle_verificaton_result(
     result_receiver: &Receiver<VerifyRequestResponseInfo>,
     tx_pub: &Sender<(String, Vec<u8>)>,
     block_verify_status: Arc<RwLock<BlockVerifyStatus>>,
-    tx_sender: &Sender<(u32, Vec<u8>, TxResponse, SignedTransaction)>,
+    tx_sender: &Sender<(SubModules, Vec<u8>, TxResponse, SignedTransaction)>,
 ) {
     match result_receiver.recv() {
         Ok(verify_response_info) => {
@@ -418,7 +418,7 @@ pub fn handle_verificaton_result(
                                     trace!("Send singed tx to txpool");
                                 }
                                 _ => {
-                                    if verify_response_info.sub_module == submodules::JSON_RPC {
+                                    if verify_response_info.sub_module == SubModules::Jsonrpc {
                                         let tx_response = TxResponse::new(tx_hash, result);
 
                                         let mut response = Response::new();
@@ -427,11 +427,7 @@ pub fn handle_verificaton_result(
                                         response.set_error_msg(tx_response.status);
 
                                         trace!("response new tx {:?}", response);
-                                        let msg = Message::init_default(
-                                            submodules::AUTH,
-                                            topics::RESPONSE,
-                                            MsgClass::RESPONSE(response),
-                                        );
+                                        let msg: Message = response.into();
                                         tx_pub
                                             .send(("auth.rpc".to_string(), msg.try_into().unwrap()))
                                             .unwrap();
@@ -520,11 +516,7 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
     blkresp.set_id(request_id);
     blkresp.set_ret(ret);
 
-    let msg = Message::init_default(
-        submodules::AUTH,
-        topics::VERIFY_BLK_RESP,
-        MsgClass::VERIFYBLKRESP(blkresp),
-    );
+    let msg: Message = blkresp.into();
     tx_pub
         .send((String::from("auth.verify_blk_res"), msg.try_into().unwrap()))
         .unwrap();
@@ -534,7 +526,7 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
 mod tests {
     use super::*;
     use crypto::*;
-    use libproto::{submodules, topics, BlockTxHashes, Message, MsgClass, Request, Ret, SignedTransaction, Transaction,
+    use libproto::{BlockTxHashes, Message, MsgClass, Request, Ret, SignedTransaction, SubModules, Transaction,
                    VerifyBlockReq, VerifyTxReq};
     use protobuf::RepeatedField;
     use std::sync::mpsc::channel;
@@ -566,11 +558,7 @@ mod tests {
     }
 
     fn generate_msg_from_request(request: Request) -> Vec<u8> {
-        let msg = Message::init_default(
-            submodules::JSON_RPC,
-            topics::REQUEST,
-            MsgClass::REQUEST(request),
-        );
+        let msg: Message = request.into();
         msg.try_into().unwrap()
     }
 
@@ -579,12 +567,7 @@ mod tests {
         let mut request = Request::new();
         request.set_un_tx(tx.get_transaction_with_sig().clone());
         request.set_request_id(request_id);
-
-        let msg = Message::init_default(
-            submodules::JSON_RPC,
-            topics::REQUEST,
-            MsgClass::REQUEST(request),
-        );
+        let msg: Message = request.into();
         msg.try_into().unwrap()
     }
 
@@ -610,11 +593,7 @@ mod tests {
         blkreq.set_id(BLOCK_REQUEST_ID);
         blkreq.set_reqs(RepeatedField::from_slice(&[req]));
 
-        let msg = Message::init_default(
-            submodules::CONSENSUS,
-            topics::VERIFY_BLK_REQ,
-            MsgClass::VERIFYBLKREQ(blkreq),
-        );
+        let msg: Message = blkreq.into();
         msg.try_into().unwrap()
     }
 
@@ -641,11 +620,7 @@ mod tests {
         blkreq.set_id(BLOCK_REQUEST_ID);
         blkreq.set_reqs(RepeatedField::from_slice(&[req]));
 
-        let msg = Message::init_default(
-            submodules::CONSENSUS,
-            topics::VERIFY_BLK_REQ,
-            MsgClass::VERIFYBLKREQ(blkreq),
-        );
+        let msg: Message = blkreq.into();
         msg.try_into().unwrap()
     }
 
@@ -665,11 +640,7 @@ mod tests {
 
         block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
 
-        let msg = Message::init_default(
-            submodules::CHAIN,
-            topics::BLOCK_TXHASHES,
-            MsgClass::BLOCKTXHASHES(block_tx_hashes),
-        );
+        let msg: Message = block_tx_hashes.into();
         msg.try_into().unwrap()
     }
 
@@ -697,6 +668,7 @@ mod tests {
 
         let height = 0;
         handle_remote_msg(
+            SubModules::Chain,
             generate_sync_blk_hash_msg(height),
             on_proposal,
             &pool,
@@ -756,6 +728,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
 
         handle_remote_msg(
+            SubModules::Chain,
             generate_sync_blk_hash_msg(height),
             on_proposal,
             &pool,
@@ -786,7 +759,7 @@ mod tests {
         assert_eq!(key, "auth.blk_tx_hashs_req".to_owned());
         let mut msg = Message::try_from(&sync_request).unwrap();
         match msg.take_content() {
-            MsgClass::BLOCKTXHASHESREQ(req) => {
+            MsgClass::BlockTxHashesReq(req) => {
                 assert_eq!(req.get_height(), 0);
             }
             _ => panic!("test failed"),
@@ -829,6 +802,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
+            SubModules::Jsonrpc,
             generate_msg_from_request(req),
             on_proposal,
             &pool,
@@ -847,7 +821,7 @@ mod tests {
             assert_eq!(request_id, single_request_id);
         }
 
-        assert_eq!(submodules::JSON_RPC, verify_req_info.sub_module);
+        assert_eq!(SubModules::Jsonrpc, verify_req_info.sub_module);
         if let VerifyRequestResponse::AuthRequest(req) = verify_req_info.req_resp {
             assert_eq!(req.get_tx_hash().to_vec().clone(), tx_hash);
         }
@@ -883,6 +857,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
+            SubModules::Chain,
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -900,6 +875,7 @@ mod tests {
         let privkey = keypair.privkey();
         let tx = generate_tx(vec![1], 99, privkey);
         handle_remote_msg(
+            SubModules::Consensus,
             generate_blk_msg(tx),
             on_proposal.clone(),
             &pool,
@@ -954,6 +930,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
+            SubModules::Chain,
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -972,6 +949,7 @@ mod tests {
         let tx = generate_tx(vec![1], 99, privkey);
         let tx_hash = tx.get_tx_hash().to_vec().clone();
         handle_remote_msg(
+            SubModules::Jsonrpc,
             generate_msg(tx),
             on_proposal,
             &pool,
@@ -1032,6 +1010,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
+            SubModules::Chain,
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -1049,6 +1028,7 @@ mod tests {
         let privkey = keypair.privkey();
         let tx = generate_tx(vec![1], 99, privkey);
         handle_remote_msg(
+            SubModules::Consensus,
             generate_blk_msg(tx),
             on_proposal,
             &pool,
@@ -1071,7 +1051,7 @@ mod tests {
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
         match msg.take_content() {
-            MsgClass::VERIFYBLKRESP(resp) => {
+            MsgClass::VerifyBlockResp(resp) => {
                 assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
@@ -1109,6 +1089,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
+            SubModules::Chain,
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -1128,6 +1109,7 @@ mod tests {
         let tx = generate_tx(vec![1], 99, privkey);
 
         handle_remote_msg(
+            SubModules::Consensus,
             generate_blk_msg_with_fake_signature(tx, pubkey),
             on_proposal,
             &pool,
@@ -1151,7 +1133,7 @@ mod tests {
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
         match msg.take_content() {
-            MsgClass::VERIFYBLKRESP(resp) => {
+            MsgClass::VerifyBlockResp(resp) => {
                 assert_eq!(resp.get_ret(), Ret::BadSig);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
@@ -1189,6 +1171,7 @@ mod tests {
 
         let height = 0;
         handle_remote_msg(
+            SubModules::Chain,
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -1207,6 +1190,7 @@ mod tests {
         let tx = generate_tx(vec![1], 99, privkey);
 
         handle_remote_msg(
+            SubModules::Consensus,
             generate_blk_msg(tx.clone()),
             on_proposal.clone(),
             &pool,
@@ -1228,7 +1212,7 @@ mod tests {
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
         match msg.take_content() {
-            MsgClass::VERIFYBLKRESP(resp) => {
+            MsgClass::VerifyBlockResp(resp) => {
                 assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
@@ -1238,6 +1222,7 @@ mod tests {
         thread::sleep(Duration::new(0, 9000000));
         // Begin to construct the same tx's verification request
         handle_remote_msg(
+            SubModules::Consensus,
             generate_blk_msg(tx.clone()),
             on_proposal.clone(),
             &pool,
@@ -1253,7 +1238,7 @@ mod tests {
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
         match msg.take_content() {
-            MsgClass::VERIFYBLKRESP(resp) => {
+            MsgClass::VerifyBlockResp(resp) => {
                 assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
