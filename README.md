@@ -33,6 +33,10 @@ For more details please check the white paper.
 
 Please follow the [Installation Guide](https://github.com/cryptape/cita/wiki/Installation)
 
+## Documentation
+
+Visit the documentation site: [https://cryptape.github.io/cita/](https://cryptape.github.io/cita/)
+
 ## Contributing
 
 CITA is still in active development. Building a blockchain platform is a huge task, we need your help. Any contribution is welcome.

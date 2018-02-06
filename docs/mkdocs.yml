@@ -1,0 +1,54 @@
+# Refer to https://github.com/mkdocs/mkdocs/blob/master/mkdocs.yml for a working example
+site_name: CITA
+site_url: https://github.com/cryptape/cita
+site_description: 
+site_author: Cryptape
+repo_url: https://github.com/cryptape/cita
+
+pages:
+  - Home: index.md
+  - Getting Started: getting_started.md
+  - Key Concepts:
+    - Blockchain: 'key-concepts/blockchain.md'
+    - CITA Features: 'key-concepts/cita.md'
+  - Components: components.md
+  - Usage Guide:
+      - Bootstrap: 'usage-guide/bootstrap.md'
+      - Smart Contract Guide: 'usage-guide/smart-contract-guide.md'
+      - JSON-RPC: 'usage-guide/rpc.md'
+      - JSON-RPC Error Code: 'usage-guide/rpc_error_code.md'
+      - System Contract: 'usage-guide/admintool.md'
+      - Transaction Tool: 'usage-guide/txtool.md'
+  - System Management: system_management.md
+  - Architecture: 
+      - Micro Service: 'architecture/architecture.md'
+      - Consensus: 'architecture/consensus.md'
+      - Transaction Process: 'architecture/transaction_process.md'
+      - View: 'architecture/view.md'
+  - Appendix:
+    - Contributing: 'appendix/contributing.md'
+    - Glossary: 'appendix/glossary.md'
+
+theme: material
+extra_css:
+  - 'stylesheets/extra.css'
+
+markdown_extensions:
+  - markdown.extensions.admonition
+  - markdown.extensions.def_list
+  - markdown.extensions.footnotes
+  - markdown.extensions.meta
+  - markdown.extensions.toc(permalink=true)
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.arithmatex
+  - pymdownx.betterem(smart_enable=all)
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist(custom_checkbox=true)
+  - pymdownx.tilde

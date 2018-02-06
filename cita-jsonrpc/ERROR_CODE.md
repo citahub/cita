@@ -1,6 +1,7 @@
 # JSON RPC 错误码
 
-#### JSON RPC标准错误码
+## JSON RPC标准错误码
+
  | 错误码              | 错误消息        | 描述              |
  | ---------------- |:------------ | :---------------|
  | -32700             | 解析错误        | 非Json格式数据     |
@@ -12,10 +13,10 @@
  | -32006             | 交易认证类错误   | 见示例(InvalidNonce,Dup,InvalidUntilBlock,BadSig,Buy)             |
  | -32099             | 请求超时        | 见示例(system time out,please resend)             |
 
+## 错误示例
 
-##### 错误示例
+### 交易错误
 
-* 交易错误
 ``` json
     //request 发送交易
     curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
@@ -98,7 +99,8 @@
 
 ```
 
-* 请求超时
+### 请求超时
+
 ``` json
     //request 发送交易
     curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
@@ -113,7 +115,8 @@
        }
 ```
 
-* 请求错误
+### 请求错误
+
 ``` json
     //request 应发送POST请求，而不是GET请求
     curl -X GET -d '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":"1"}' 127.0.0.1:1337 | jq
@@ -129,7 +132,8 @@
     }
 ```
 
-* 调用方法错误
+### 调用方法错误
+
 ``` json
     //request
     curl -X POST --data '{"jsonrpc":"2.0","method":"peerCount","params":[],"id":74}' 127.0.0.1:1337 | jq
@@ -145,7 +149,8 @@
     }
 ```
 
-* 非法参数
+### 非法参数
+
 ``` json
     //request 参数不能是十进制整数,需要是十六进制
     curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":[249, true],"id":1}' 127.0.0.1:1337 | jq
@@ -176,7 +181,8 @@
 
 ```
 
-* 其他错误信息
+### 其他错误信息
+
 ``` json
     //request 交易个数为０或者地址不正确
     curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionCount","params":["5b073e9233944b5e729e46d618f0d8edf3d9c342",2],"id":1}' 127.0.0.1:1337 | jq
@@ -209,9 +215,8 @@
     }
 ```
 
-
 参考文档:
+
 1. [JSON RPC specification](http://www.jsonrpc.org/specification)
 
 2. [Ethereum wiki/JSON RPC Error Codes Improvement Proposal](https://github.com/ethereum/wiki/wiki/JSON-RPC-Error-Codes-Improvement-Proposal)
-
