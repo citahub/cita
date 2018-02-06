@@ -35,12 +35,11 @@ impl MqHandler {
 
     pub fn handle(&mut self, key: &str, body: &[u8]) {
         let mut msg = Message::try_from(body).unwrap();
-        let id = msg.get_cmd_id();
         let content_ext = msg.take_content();
-        trace!("routint_key {:?}, get msg cmd {}", key, id);
+        trace!("get msg from routint_key {}", key);
 
         match content_ext {
-            MsgClass::RESPONSE(content) => {
+            MsgClass::Response(content) => {
                 trace!("from response request_id {:?}", content.request_id);
                 let value = { self.responses.lock().remove(&content.request_id) };
                 if let Some(val) = value {

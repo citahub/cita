@@ -1,6 +1,6 @@
 use Source;
 use connection::Connection;
-use libproto::{cmd_id, submodules, topics, Message, MsgClass, Response};
+use libproto::{Message, MsgClass, Response};
 use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
@@ -30,42 +30,52 @@ impl NetWork {
         }
     }
 
-    pub fn receiver(&self, source: Source, data: Vec<u8>) {
-        trace!("receiver: from {:?}", source);
-        let (topic, content) = NetWork::parse_topic(&data);
+    pub fn receiver(&self, source: Source, payload: (String, Vec<u8>)) {
+        let (key, data) = payload;
+        trace!("Network receive Msg from {:?}/{}", source, key);
         match source {
-            Source::LOCAL => {
-                //send other node
-                if topic == "net.status" {
-                    //sync
+            // Come from MQ
+            Source::LOCAL => match &key[..] {
+                "chain.status" => {
                     self.tx_sync.send((source, data));
-                } else if topic == "chain.rpc" {
-                    //reply rpc
-                    self.reply_rpc(content);
-                } else if topic != "" {
-                    self.con.broadcast_rawbytes(&data);
                 }
-            }
-
-            Source::REMOTE => {
-                //send mq
-                if topic == "net.status" || topic == "net.blk" {
-                    //sync
+                "chain.blk" => {
+                    self.con
+                        .broadcast_rawbytes("net.sync_resp".to_string(), &data);
+                }
+                "jsonrpc.net" => {
+                    self.reply_rpc(&data);
+                }
+                _ => {
+                    error!("Unexpected key {} from {:?}", key, source);
+                }
+            },
+            // Come from Netserver
+            Source::REMOTE => match &key[..] {
+                "net.sync_status" | "net.sync_resp" => {
                     self.tx_sync.send((source, data));
-                } else if topic == "net.tx" {
-                    self.tx_new_tx.send((topic, data));
-                } else if topic == "net.msg" {
-                    self.tx_consensus.send((topic, data));
-                } else if topic != "" {
-                    self.tx_pub.send((topic, data));
                 }
-            }
+                "net.sync_req" => {
+                    self.tx_pub.send(("net.sync".to_string(), data));
+                }
+                "auth.tx" => {
+                    self.tx_new_tx.send(("net.tx".to_string(), data));
+                }
+                "consensus.msg" => {
+                    self.tx_consensus.send(("net.msg".to_string(), data));
+                }
+                _ => {
+                    error!("Unexpected key {} from {:?}", key, source);
+                }
+            },
         }
     }
 
-    pub fn reply_rpc(&self, msg_class: MsgClass) {
-        match msg_class {
-            MsgClass::REQUEST(mut ts) => {
+    pub fn reply_rpc(&self, data: &[u8]) {
+        let mut msg = Message::try_from(data).unwrap();
+        let content = msg.take_content();
+        match content {
+            MsgClass::Request(mut ts) => {
                 let mut response = Response::new();
                 response.set_request_id(ts.take_request_id());
                 if ts.has_peercount() {
@@ -83,57 +93,8 @@ impl NetWork {
                 }
             }
             _ => {
-                warn!("receive: unexpected data type = {:?}", msg_class);
+                warn!("receive: unexpected data type = {:?}", content);
             }
         }
-    }
-
-    pub fn parse_topic(data: &[u8]) -> (String, MsgClass) {
-        let mut msg = Message::try_from(data).unwrap();
-        let cid = msg.get_cmd_id();
-        let content = msg.take_content();
-        let topic = match content {
-            MsgClass::REQUEST(_) => {
-                if cid == cmd_id(submodules::JSON_RPC, topics::REQUEST) {
-                    "chain.rpc"
-                } else if cid == cmd_id(submodules::AUTH, topics::REQUEST) {
-                    "net.tx"
-                } else {
-                    ""
-                }
-            }
-            MsgClass::STATUS(_) => {
-                if cid == cmd_id(submodules::CHAIN, topics::NEW_STATUS) {
-                    "net.status"
-                } else {
-                    ""
-                }
-            }
-            MsgClass::SYNCREQUEST(_) => {
-                if cid == cmd_id(submodules::CHAIN, topics::SYNC_BLK) {
-                    "net.sync"
-                } else {
-                    ""
-                }
-            }
-            MsgClass::SYNCRESPONSE(_) => {
-                if cid == cmd_id(submodules::CHAIN, topics::NEW_BLK) {
-                    "net.blk"
-                } else {
-                    ""
-                }
-            }
-            MsgClass::MSG(_) => {
-                if cid == cmd_id(submodules::CONSENSUS, topics::CONSENSUS_MSG)
-                    || cid == cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL)
-                {
-                    "net.msg"
-                } else {
-                    ""
-                }
-            }
-            _ => "",
-        }.to_string();
-        (topic, content)
     }
 }

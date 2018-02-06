@@ -39,7 +39,7 @@ impl Service for NetServer {
     fn call(&self, payload: Self::Request) -> Self::Future {
         trace!("SERVER get msg: {:?}", payload);
         self.net_sender.send((Source::REMOTE, payload));
-        result(Ok(vec![])).boxed()
+        result(Ok(None)).boxed()
     }
 }
 

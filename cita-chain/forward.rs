@@ -24,13 +24,13 @@ use error::ErrorCode;
 //CountOrCode
 use jsonrpc_types::rpctypes::{self as rpctypes, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
                               Log as RpcLog, Receipt as RpcReceipt, RpcBlock};
-use libproto::{cmd_id, request, response, submodules, topics, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq,
-               BlockWithProof, ExecutedResult, Message, MsgClass, OperateType, ProofType,
-               Request_oneof_req as Request, SyncRequest, SyncResponse};
+use libproto::{request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
+               ExecutedResult, Message, MsgClass, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
+               SyncResponse};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use serde_json;
-use std::convert::{TryFrom, TryInto};
+use std::convert::{Into, TryFrom, TryInto};
 use std::mem;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -59,32 +59,29 @@ impl Forward {
     // 注意: 划分函数处理流程
     pub fn dispatch_msg(&self, _key: &str, msg_bytes: &[u8]) {
         let mut msg = Message::try_from(msg_bytes).unwrap();
-        let cid = msg.get_cmd_id();
         let origin = msg.get_origin();
         let content_ext = msg.take_content();
         match content_ext {
-            MsgClass::REQUEST(req) => {
+            MsgClass::Request(req) => {
                 self.reply_request(req, msg_bytes.to_vec());
             }
 
             //send to block_processor to operate
-            MsgClass::EXECUTED(info) => {
+            MsgClass::ExecutedResult(info) => {
                 self.write_sender.send(info).unwrap();
             }
 
-            MsgClass::BLOCKWITHPROOF(proof_blk) => {
+            MsgClass::BlockWithProof(proof_blk) => {
                 self.consensus_block_enqueue(proof_blk);
             }
 
-            MsgClass::SYNCREQUEST(sync_req) => {
-                if cmd_id(submodules::CHAIN, topics::SYNC_BLK) == cid {
-                    self.reply_syn_req(sync_req, origin);
-                }
+            MsgClass::SyncRequest(sync_req) => {
+                self.reply_syn_req(sync_req, origin);
             }
 
-            MsgClass::SYNCRESPONSE(sync_res) => self.deal_sync_blocks(sync_res),
+            MsgClass::SyncResponse(sync_res) => self.deal_sync_blocks(sync_res),
 
-            MsgClass::BLOCKTXHASHESREQ(block_tx_hashes_req) => {
+            MsgClass::BlockTxHashesReq(block_tx_hashes_req) => {
                 self.deal_block_tx_req(&block_tx_hashes_req);
             }
 
@@ -322,13 +319,7 @@ impl Forward {
             res_vec.get_blocks().len()
         );
         if res_vec.mut_blocks().len() > 0 {
-            let msg = Message::init(
-                submodules::CHAIN,
-                topics::NEW_BLK,
-                OperateType::SINGLE,
-                origin,
-                MsgClass::SYNCRESPONSE(res_vec),
-            );
+            let msg = Message::init(OperateType::SINGLE, origin, MsgClass::SyncResponse(res_vec));
             trace!(
                 "sync: origin {:?}, chain.blk: OperateType {:?}",
                 origin,
@@ -452,11 +443,7 @@ impl Forward {
             block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
             block_tx_hashes.set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
             block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
-            let msg = Message::init_default(
-                submodules::CHAIN,
-                topics::BLOCK_TXHASHES,
-                MsgClass::BLOCKTXHASHES(block_tx_hashes),
-            );
+            let msg: Message = block_tx_hashes.into();
             self.ctx_pub
                 .send(("chain.txhashes".to_string(), msg.try_into().unwrap()))
                 .unwrap();

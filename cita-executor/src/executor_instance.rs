@@ -5,14 +5,14 @@ use core::libexecutor::call_request::CallRequest;
 use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, CountOrCode};
-use libproto::{cmd_id, request, response, submodules, topics, Message, MsgClass, SyncResponse};
+use libproto::{request, response, Message, MsgClass, SyncResponse};
 use libproto::blockchain::{BlockWithProof, Proof, ProofType};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use proof::TendermintProof;
 use serde_json;
 use std::cell::RefCell;
-use std::convert::{TryFrom, TryInto};
+use std::convert::{Into, TryFrom, TryInto};
 use std::mem;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -60,38 +60,32 @@ impl ExecutorInstance {
 
     pub fn distribute_msg(&self, key: String, msg_vec: Vec<u8>) {
         let mut msg = Message::try_from(&msg_vec).unwrap();
-        let cid = msg.get_cmd_id();
         let origin = msg.get_origin();
         let content_ext = msg.take_content();
-        trace!(
-            "distribute_msg call key = {}, cmd_id = {}, origin = {}",
-            key,
-            cid,
-            origin
-        );
+        trace!("distribute_msg call key = {}, origin = {}", key, origin);
         match content_ext {
-            MsgClass::REQUEST(req) => {
+            MsgClass::Request(req) => {
                 self.reply_request(req);
             }
 
-            MsgClass::BLOCKWITHPROOF(proof_blk) => {
+            MsgClass::BlockWithProof(proof_blk) => {
                 self.consensus_block_enqueue(proof_blk);
             }
 
-            MsgClass::SYNCRESPONSE(sync_res) => {
+            MsgClass::SyncResponse(sync_res) => {
                 self.deal_sync_blocks(sync_res);
             }
 
-            MsgClass::MSG(content) => {
-                if cmd_id(submodules::CONSENSUS, topics::NEW_PROPOSAL) == cid {
-                    if !self.ext.is_sync.load(Ordering::SeqCst) {
-                        self.proposal_enqueue(&content[..]);
-                    } else {
-                        debug!("receive proposal while sync");
-                    }
+            MsgClass::SignedProposal(signed_proposal) => {
+                if !self.ext.is_sync.load(Ordering::SeqCst) {
+                    self.proposal_enqueue(signed_proposal);
                 } else {
-                    trace!("Receive other message content.");
+                    debug!("receive proposal while sync");
                 }
+            }
+
+            MsgClass::RawBytes(_) => {
+                trace!("Receive other message content.");
             }
 
             _ => {
@@ -498,8 +492,7 @@ impl ExecutorInstance {
         }
     }
 
-    fn proposal_enqueue(&self, content: &[u8]) {
-        let mut signed_proposal = SignedProposal::try_from(content).unwrap();
+    fn proposal_enqueue(&self, mut signed_proposal: SignedProposal) {
         let proposal = signed_proposal.take_proposal().take_block();
 
         let current_height = self.ext.get_current_height();

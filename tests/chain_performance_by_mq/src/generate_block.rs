@@ -17,12 +17,12 @@
 
 use bincode::{serialize, Infinite};
 use crypto::*;
-use libproto::{submodules, topics, Block, BlockWithProof, Message, MsgClass, SignedTransaction, Transaction};
+use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
-use std::convert::TryInto;
+use std::convert::{Into, TryInto};
 use std::time::{Duration, UNIX_EPOCH};
 use util::H256;
 use util::Hashable;
@@ -130,11 +130,7 @@ impl Generateblock {
         proof_blk.set_blk(block);
         proof_blk.set_proof(proof.into());
 
-        let msg = Message::init_default(
-            submodules::CONSENSUS,
-            topics::NEW_PROOF_BLOCK,
-            MsgClass::BLOCKWITHPROOF(proof_blk.clone()),
-        );
+        let msg: Message = proof_blk.clone().into();
         (msg.try_into().unwrap(), proof_blk)
     }
 

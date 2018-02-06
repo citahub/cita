@@ -34,7 +34,7 @@ use libexecutor::extras::*;
 use libexecutor::genesis::Genesis;
 pub use libexecutor::transaction::*;
 
-use libproto::{submodules, topics, ConsensusConfig, ExecutedResult, Message, MsgClass};
+use libproto::{ConsensusConfig, ExecutedResult, Message};
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
 
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
@@ -42,7 +42,7 @@ use native::Factory as NativeFactory;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashSet, VecDeque};
-use std::convert::TryInto;
+use std::convert::{Into, TryInto};
 use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
@@ -582,11 +582,7 @@ impl Executor {
 
     pub fn send_executed_info_to_chain(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let executed_result = { self.executed_result.read().clone() };
-        let msg = Message::init_default(
-            submodules::EXECUTOR,
-            topics::EXECUTED_RESULT,
-            MsgClass::EXECUTED(executed_result),
-        );
+        let msg: Message = executed_result.into();
         ctx_pub
             .send(("executor.result".to_string(), msg.try_into().unwrap()))
             .unwrap();
@@ -828,7 +824,7 @@ mod tests {
         if let Ok((_, msg_vec)) = recv.recv() {
             let mut msg = Message::try_from(&msg_vec).unwrap();
             match msg.take_content() {
-                MsgClass::EXECUTED(info) => {
+                MsgClass::ExecutedResult(info) => {
                     let pro = block.protobuf();
                     let chain_block = ChainBlock::from(pro);
                     inchain.set_block_body(h, &chain_block);

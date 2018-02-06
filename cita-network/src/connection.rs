@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use byteorder::{BigEndian, ByteOrder};
+use bytes::BytesMut;
+use citaprotocol::pubsub_message_to_network_message;
 use config;
 use config::NetConfig;
 use libproto::{Message, OperateType};
@@ -101,19 +102,16 @@ impl Connection {
         }
     }
 
-    pub fn broadcast(&self, mut msg: Message) {
+    pub fn broadcast(&self, key: String, mut msg: Message) {
         let origin = msg.get_origin();
         let operate = msg.get_operate();
         msg.set_origin(self.id_card);
 
-        trace!("broadcast msg {:?} ", msg);
+        trace!("broadcast msg {:?} from key {}", msg, key);
         let msg_bytes: Vec<u8> = msg.try_into().unwrap();
-        let request_id = 0xDEAD_BEEF_0000_0000 + msg_bytes.len();
-        let mut encoded_request_id = [0; 8];
-        BigEndian::write_u64(&mut encoded_request_id, request_id as u64);
-        let mut buf = Vec::new();
-        buf.extend(&encoded_request_id);
-        buf.extend(msg_bytes);
+
+        let mut buf = BytesMut::with_capacity(4 + 4 + 1 + key.len() + msg_bytes.len());
+        pubsub_message_to_network_message(&mut buf, Some((key, msg_bytes)));
 
         let mut peers = vec![];
         for peer in self.peers_pair.write().iter_mut() {
@@ -133,9 +131,9 @@ impl Connection {
         );
     }
 
-    pub fn broadcast_rawbytes(&self, data: &[u8]) {
+    pub fn broadcast_rawbytes(&self, key: String, data: &[u8]) {
         let mut msg = Message::try_from(data).unwrap();
-        self.broadcast(msg);
+        self.broadcast(key, msg);
     }
 }
 
@@ -143,10 +141,10 @@ fn connect(con: Arc<Connection>) {
     thread::spawn(move || loop {
         for peer in con.peers_pair.write().iter_mut() {
             let mut need_reconnect = true;
-            let mut header = [0; 8];
-            BigEndian::write_u64(&mut header, 0xDEAD_BEEF_0000_0000 as u64);
+            let mut buf = BytesMut::with_capacity(4 + 4);
+            pubsub_message_to_network_message(&mut buf, None);
             if let Some(ref mut stream) = peer.2 {
-                let res = stream.write(&header);
+                let res = stream.write(&buf);
                 if res.is_ok() {
                     need_reconnect = false;
                 }

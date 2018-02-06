@@ -55,10 +55,12 @@ pub mod network;
 use clap::{App, SubCommand};
 use config::NetConfig;
 use connection::{manage_connect, Connection};
+use libproto::Message;
 use netserver::NetServer;
 use network::NetWork;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use pubsub::start_pubsub;
+use std::convert::TryFrom;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
@@ -145,53 +147,43 @@ fn main() {
     );
     manage_connect(&Arc::clone(&con), config_path, rx);
 
-    //loop deal data
+    // loop deal data
     thread::spawn(move || loop {
-        if let Ok((source, data)) = net_work_rx.recv() {
-            net_work.receiver(source, data);
+        if let Ok((source, cita_req)) = net_work_rx.recv() {
+            net_work.receiver(source, cita_req);
         }
     });
 
-    //sync loop
+    // Sync loop
     let mut synchronizer = Synchronizer::new(ctx_pub, Arc::clone(&con));
     thread::spawn(move || loop {
-        if let Ok((source, msg)) = sync_rx.recv() {
-            synchronizer.receive(source, msg);
+        if let Ok((source, body)) = sync_rx.recv() {
+            synchronizer.receive(source, body);
         }
     });
 
-    //sub new tx
+    // Subscribe Auth Tx
     let con_tx = Arc::clone(&con);
-    thread::spawn(move || {
-        loop {
-            // msg from sub  new tx
-            let (key, body) = crx_sub_tx.recv().unwrap();
-            trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
-            let (topic, _) = NetWork::parse_topic(&body);
-            if topic == "net.tx" {
-                con_tx.broadcast_rawbytes(&body);
-            }
-        }
+    thread::spawn(move || loop {
+        let (key, body) = crx_sub_tx.recv().unwrap();
+        let msg = Message::try_from(&body).unwrap();
+        trace!("Auth Tx from Local");
+        con_tx.broadcast(key, msg);
     });
 
-    //sub consensus msg
-    thread::spawn(move || {
-        loop {
-            // msg from sub  new tx
-            let (key, body) = crx_sub_consensus.recv().unwrap();
-            trace!("from {:?}, topic = {:?}", Source::LOCAL, key);
-            let (topic, _) = NetWork::parse_topic(&body);
-            if topic == "net.msg" {
-                con.broadcast_rawbytes(&body);
-            }
-        }
+    // Subscribe Consensus Msg
+    thread::spawn(move || loop {
+        let (key, body) = crx_sub_consensus.recv().unwrap();
+        let msg = Message::try_from(&body).unwrap();
+        trace!("Consensus Msg from Local");
+        con.broadcast(key, msg);
     });
 
     loop {
-        // msg from mq need proc before broadcast
+        // Msg from MQ need proc before broadcast
         let (key, body) = crx_sub.recv().unwrap();
-        trace!("handle delivery id {:?} payload {:?}", key, body);
-        net_work_tx.send((Source::LOCAL, body)).unwrap();
+        trace!("handle delivery from {} payload {:?}", key, body);
+        net_work_tx.send((Source::LOCAL, (key, body))).unwrap();
     }
 }
 
