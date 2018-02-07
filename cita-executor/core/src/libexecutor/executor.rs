@@ -626,14 +626,13 @@ impl Executor {
         // Reload config
         self.reload_config();
 
+        self.set_executed_result(&closed_block);
+        self.send_executed_info_to_chain(ctx_pub);
+        self.write_batch(closed_block.clone());
         let header = closed_block.header().clone();
         {
             *self.current_header.write() = header;
         }
-        self.set_executed_result(&closed_block);
-        self.send_executed_info_to_chain(ctx_pub);
-        self.write_batch(closed_block);
-
         self.update_last_hashes(&self.get_current_hash());
     }
 
