@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=master)](https://travis-ci.org/cryptape/cita)
 
-**[中文文档](http://cita.readthedocs.io/zh_CN/latest/)**
+**[中文文档](https://cryptape.github.io/cita/)**
 
 ## What is CITA
 
@@ -29,13 +29,9 @@ For more details please check the white paper.
 
 ## Installation
 
-[中文安装文档](http://cita.readthedocs.io/zh_CN/latest/getting_started.html)
+[中文安装文档](https://cryptape.github.io/cita/getting_started/)
 
 Please follow the [Installation Guide](https://github.com/cryptape/cita/wiki/Installation)
-
-## Documentation
-
-Visit the documentation site: [https://cryptape.github.io/cita/](https://cryptape.github.io/cita/)
 
 ## Contributing
 
