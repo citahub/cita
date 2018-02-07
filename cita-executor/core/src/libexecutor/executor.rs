@@ -128,8 +128,6 @@ pub enum Stage {
     Idle,
 }
 
-const DELAY_ACTIVE_INTERVAL_NUM: usize = 2;
-
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct GlobalSysConfig {
     pub senders: HashSet<Address>,
@@ -294,7 +292,7 @@ impl Executor {
         let len = confs.len();
         if len > 0 {
             for i in 0..len {
-                if confs[i].changed_height + DELAY_ACTIVE_INTERVAL_NUM <= now_height as usize {
+                if confs[i].changed_height + confs[0].delay_active_interval <= now_height as usize {
                     return confs[i].clone();
                 }
             }

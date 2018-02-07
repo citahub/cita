@@ -745,7 +745,7 @@ dependencies = [
 [[package]]
 name = "common-types"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita.git?branch=develop#0ce8305b40547649969a7c9505e3b4ba57989d85"
+source = "git+https://github.com/cryptape/cita.git?branch=develop#32b8dcbd191608d8f9b7806bd1c8d47446d5260c"
 dependencies = [
  "bloomable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -1383,7 +1383,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc_types"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita.git?branch=develop#0ce8305b40547649969a7c9505e3b4ba57989d85"
+source = "git+https://github.com/cryptape/cita.git?branch=develop#32b8dcbd191608d8f9b7806bd1c8d47446d5260c"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
