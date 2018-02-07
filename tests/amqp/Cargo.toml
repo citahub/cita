@@ -4,9 +4,6 @@ name = "amqp_test"
 version = "0.1.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 
-[[bin]]
-path = "amqp_test.rs"
-name = "amqp_test"
 
 [dependencies]
 dotenv = "0.10.0"
