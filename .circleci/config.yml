@@ -43,6 +43,34 @@ jobs:
           name: test
           command: 'cargo test --tests'
 
+  basic_test_coverage:
+    docker:
+      - image: cita/cita-build:latest
+    working_directory: ~/cita-build
+    resource_class: large
+    steps:
+      - restore_cache:
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+      - restore_cache:
+          key: deps-{{ checksum "Cargo.lock" }}
+      - run:
+          name: test-coverage
+          command: |
+            bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
+            cargo tarpaulin \
+              --packages cita-auth \
+              --packages cita-jsonrpc \
+              --packages cita-chain \
+              --packages core \
+              --packages common-types \
+              --packages cita-tendermint \
+              --packages cita-network \
+              --packages cita-executor \
+              --packages core-executor \
+              --packages cita-forever \
+              --packages jsonrpc_types \
+              --skip-clean --coveralls ${COVERALLS_TOKEN}
+
   integrate_test:
     docker:
       - image: cita/cita-build:latest
@@ -67,6 +95,9 @@ workflows:
     jobs:
       - build
       - basic_test:
+          requires:
+            - build
+      - basic_test_coverage:
           requires:
             - build
       - integrate_test:
