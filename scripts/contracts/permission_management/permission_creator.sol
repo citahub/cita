@@ -1,9 +1,9 @@
 pragma solidity ^0.4.18;
 
-import "permission.sol";
+import "./permission.sol";
 
 
-/*
+/**
  * ======= permission_management.sol:PermissionManagement =======
  * Function signatures: 
  * fc4a089c: newPermission(bytes32,address[],bytes4[])
@@ -20,7 +20,8 @@ import "permission.sol";
  */
 contract PermissionCreator {
 
-    address permissionManagerAddr = 0x619F9ab1672eeD2628bFeC65AA392FD48994A433;
+    address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
+
     bytes4[8] funcs = [
         bytes4(0xf036ed56),
         bytes4(0x3482e0c9),
@@ -37,8 +38,8 @@ contract PermissionCreator {
 
     event PermissionCreated(address indexed _id, bytes32 indexed _name, address[] _conts, bytes4[] _funcs);
 
-    modifier onlyPermissionManager {
-        require(permissionManagerAddr == msg.sender);
+    modifier onlyPermissionManagement {
+        require(permissionManagementAddr == msg.sender);
         _;
     }
 
@@ -56,8 +57,8 @@ contract PermissionCreator {
         updatePermission[1] = funcs[3];
         updatePermission[2] = funcs[4];
 
-        for (uint i=0; i<3; i++)
-            contAddr[i] = permissionManagerAddr;
+        for (uint i = 0; i < 3; i++)
+            contAddr[i] = permissionManagementAddr;
 
         bytes4[] memory setAuth = new bytes4[](1);
         setAuth[0] = funcs[5];
@@ -69,31 +70,29 @@ contract PermissionCreator {
         clearAuth[0] = funcs[7];
 
         address[] memory contCommon = new address[](1);
-        contCommon[0] = permissionManagerAddr;
+        contCommon[0] = permissionManagementAddr;
 
         ids[bytes32('NewPermission')] =
-            createPermission(bytes32('NewPermission'), contCommon, newPermission);
+            _createPermission(bytes32('NewPermission'), contCommon, newPermission);
         ids[bytes32('DeletePermission')] =
-            createPermission(bytes32('DeletePermission'), contCommon, deletePermission);
+            _createPermission(bytes32('DeletePermission'), contCommon, deletePermission);
         ids[bytes32('UpdatePermission')] =
-            createPermission(bytes32('UpdatePermission'), contAddr, updatePermission);
+            _createPermission(bytes32('UpdatePermission'), contAddr, updatePermission);
         ids[bytes32('SetAuth')] =
-            createPermission(bytes32('SetAuth'), contAddr, setAuth);
+            _createPermission(bytes32('SetAuth'), contCommon, setAuth);
         ids[bytes32('CancelAuth')] =
-            createPermission(bytes32('CancelAuth'), contAddr, cancelAuth);
+            _createPermission(bytes32('CancelAuth'), contCommon, cancelAuth);
         ids[bytes32('ClearAuth')] =
-            createPermission(bytes32('ClearAuth'), contAddr, clearAuth);
+            _createPermission(bytes32('ClearAuth'), contCommon, clearAuth);
     }
 
     /// @dev Create a new permission contract
     function createPermission(bytes32 _name, address[] _conts, bytes4[] _funcs) 
         public 
-        onlyPermissionManager
+        onlyPermissionManagement
         returns (Permission permissionAddress)
     {
-        Permission perm = new Permission(_name, _conts, _funcs); 
-        PermissionCreated(perm, _name, _conts, _funcs);
-        return perm;
+        return _createPermission(_name, _conts, _funcs);
     }
 
     /// @dev Query the permission_name's id
@@ -103,5 +102,15 @@ contract PermissionCreator {
         returns (address)
     {
         return ids[_name];
+    }
+
+    /// @dev Create a new permission contract
+    function _createPermission(bytes32 _name, address[] _conts, bytes4[] _funcs) 
+        private 
+        returns (Permission permissionAddress)
+    {
+        Permission perm = new Permission(_name, _conts, _funcs); 
+        PermissionCreated(perm, _name, _conts, _funcs);
+        return perm;
     }
 }

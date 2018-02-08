@@ -2,15 +2,17 @@ pragma solidity ^0.4.18;
 
 
 /// @title Permission contract
-/// @notice Only permission_management contract can call except query function
+/// @notice Only be called by permission_management contract except query interface 
 contract Permission {
 
     struct Resource {
+        // Contract address
         address cont;
+        // Function hash
         bytes4 func;
     }
 
-    address permissionManagerAddr = 0x619F9ab1672eeD2628bFeC65AA392FD48994A433;
+    address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
     Resource[] resources;
     bytes32 name;
 
@@ -18,8 +20,8 @@ contract Permission {
     event ResourcesDeleted(address[] _conts, bytes4[] _funcs);
     event NameUpdated(bytes32 indexed _oldName, bytes32 indexed _name);
     
-    modifier onlyPermissionManager {
-        require(permissionManagerAddr == msg.sender);
+    modifier onlyPermissionManagement {
+        require(permissionManagementAddr == msg.sender);
         _;
     }
 
@@ -33,31 +35,25 @@ contract Permission {
         public
     {
         name = _name;
-        addResources(_conts, _funcs);
+        _addResources(_conts, _funcs);
     }
 
     /// @dev Add the resources
     function addResources(address[] _conts, bytes4[] _funcs)
         public
-        onlyPermissionManager
+        onlyPermissionManagement
         returns (bool)
     {
-        for (uint i = 1; i < _conts.length; i++) {
-            Resource memory res = Resource(_conts[i], _funcs[i]);
-            resources.push(res);
-        }
-
-        ResourcesAdded(_conts, _funcs);
-        return true;
+        return _addResources(_conts, _funcs);
     }
 
     /// @dev Delete the resources
     function deleteResources(address[] _conts, bytes4[] _funcs)
         public
-        onlyPermissionManager
+        onlyPermissionManagement
         returns (bool)
     {
-        for (uint i = 1; i < _conts.length; i++)
+        for (uint i = 0; i < _conts.length; i++)
             resourceDelete(_conts[i], _funcs[i]);
 
         ResourcesDeleted(_conts, _funcs);
@@ -67,7 +63,7 @@ contract Permission {
     /// @dev Update permission's name
     function updateName(bytes32 _name)
         public
-        onlyPermissionManager
+        onlyPermissionManagement
         notSame(_name)
         returns (bool)
     {
@@ -77,7 +73,7 @@ contract Permission {
     }
 
     /// @dev Destruct self
-    function close() public onlyPermissionManager {
+    function close() public onlyPermissionManagement {
         selfdestruct(msg.sender); 
     }
 
@@ -87,7 +83,7 @@ contract Permission {
         view
         returns (bool)
     {
-        for (uint i = 1; i < resources.length; i++) {
+        for (uint i = 0; i < resources.length; i++) {
             if (cont == resources[i].cont && func == resources[i].func)
                 return true;
         }
@@ -103,7 +99,7 @@ contract Permission {
     {
         _name = name;
 
-        for (uint i = 1; i < resources.length; i++) {
+        for (uint i = 0; i < resources.length; i++) {
             conts[i] = resources[i].cont;
             funcs[i] = resources[i].func;
         }
@@ -140,5 +136,18 @@ contract Permission {
             if (_cont == resources[i].cont && _func == resources[i].func)
                 return i;
         }
+    }
+
+    function _addResources(address[] _conts, bytes4[] _funcs)
+        private 
+        returns (bool)
+    {
+        for (uint i = 0; i < _conts.length; i++) {
+            Resource memory res = Resource(_conts[i], _funcs[i]);
+            resources.push(res);
+        }
+
+        ResourcesAdded(_conts, _funcs);
+        return true;
     }
 }
