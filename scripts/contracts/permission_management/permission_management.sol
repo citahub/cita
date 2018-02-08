@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
-import "permission_creator.sol";
-import "authorization.sol";
+import "./permission_creator.sol";
+import "./authorization.sol";
 
 
 /// @title Permission Management
@@ -9,26 +9,16 @@ import "authorization.sol";
 ///         TODO: Refactor the initialized data
 contract PermissionManagement {
     
-    address permissionCreatorAddr = 0x619f9Ab1672EED2628BFec65AA392fD48994A430;
+    address permissionCreatorAddr = 0x00000000000000000000000000000000013241b3;
     PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
 
-    address authorizationAddr = 0x619F9AB1672EED2628BFEC65aA392FD48994A431;
-    AuthorizationManager auth = AuthorizationManager(authorizationAddr);
+    address authorizationAddr = 0x00000000000000000000000000000000013241b4;
+    Authorization auth = Authorization(authorizationAddr);
 
     modifier sameLength(address[] _one, bytes4[] _other) {
         require(_one.length > 0);
         require(_one.length == _other.length); 
         _;
-    }
-
-    /// @dev Initialize the superAdmin
-    function PermissionManagement(address _superAdmin) public {
-        auth.setAuth(_superAdmin, permissionCreator.queryId(bytes32('NewPermission')));
-        auth.setAuth(_superAdmin, permissionCreator.queryId(bytes32('DeletePermission')));
-        auth.setAuth(_superAdmin, permissionCreator.queryId(bytes32('UpdatePermission')));
-        auth.setAuth(_superAdmin, permissionCreator.queryId(bytes32('SetAuth')));
-        auth.setAuth(_superAdmin, permissionCreator.queryId(bytes32('CancelAuth')));
-        auth.setAuth(_superAdmin, permissionCreator.queryId(bytes32('ClearAuth')));
     }
 
     /// @dev Create a new permission

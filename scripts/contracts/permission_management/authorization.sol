@@ -1,13 +1,16 @@
 pragma solidity ^0.4.18;
 
-import "permission.sol";
+import "./permission_creator.sol";
 
 
-/// @title Manage the authorization
-/// @notice Only permission_management contract can call except query function
-contract AuthorizationManager {
+/// @title Authorization about the permission and account
+/// @notice Only be called by permission_management contract except query interface 
+contract Authorization {
 
-    address permissionManagerAddr = 0x619F9ab1672eeD2628bFeC65AA392FD48994A433;
+    address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
+
+    address permissionCreatorAddr = 0x00000000000000000000000000000000013241b3;
+    PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
@@ -16,15 +19,25 @@ contract AuthorizationManager {
     event AuthCanceled(address indexed _account, address indexed _permission);
     event AuthCleared(address indexed _account);
 
-    modifier onlyPermissionManager {
-        require(permissionManagerAddr == msg.sender);
+    modifier onlyPermissionManagement {
+        require(permissionManagementAddr == msg.sender);
         _;
+    }
+
+    /// @dev Initialize the superAdmin's auth
+    function Authorization(address _superAdmin) public {
+        setAuth(_superAdmin, permissionCreator.queryId(bytes32('NewPermission')));
+        setAuth(_superAdmin, permissionCreator.queryId(bytes32('DeletePermission')));
+        setAuth(_superAdmin, permissionCreator.queryId(bytes32('UpdatePermission')));
+        setAuth(_superAdmin, permissionCreator.queryId(bytes32('SetAuth')));
+        setAuth(_superAdmin, permissionCreator.queryId(bytes32('CancelAuth')));
+        setAuth(_superAdmin, permissionCreator.queryId(bytes32('ClearAuth')));
     }
 
     /// @dev Set authorization
     function setAuth(address _account, address _permission)
         public 
-        onlyPermissionManager
+        onlyPermissionManagement
         returns (bool)
     {
         permissions[_account].push(_permission);
@@ -36,7 +49,7 @@ contract AuthorizationManager {
     /// @dev Cancel authorization
     function cancelAuth(address _account, address _permission)
         public 
-        onlyPermissionManager
+        onlyPermissionManagement
         returns (bool)
     {
         addressDelete(_account, accounts[_permission]);
@@ -48,7 +61,7 @@ contract AuthorizationManager {
     /// @dev Clear the account's permissions
     function clearAuth(address _account)
         public 
-        onlyPermissionManager
+        onlyPermissionManagement
         returns (bool)
     {
         // Delete the account of all the account's permissions
