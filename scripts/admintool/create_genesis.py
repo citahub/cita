@@ -9,6 +9,7 @@ from os import path
 import binascii
 import hashlib
 import sys
+import collections
 
 from ethereum.tools.tester import (Chain, get_env)
 from ethereum.tools._solidity import (
@@ -20,29 +21,36 @@ from ethereum.abi import ContractTranslator
 
 SOLIDITY_AVAILABLE = get_solidity() is not None
 CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
-CONTRACTS = {
-    '0x00000000000000000000000000000000013241a2': {'file': 'system/node_manager.sol',
-                                                   'name': 'NodeManager'},
-    '0x00000000000000000000000000000000013241a3': {'file': 'system/quota_manager.sol',
-                                                   'name': 'QuotaManager'},
-    '0x00000000000000000000000000000000013241a4': {'file': 'system/permission_manager.sol',
-                                                   'name': 'PermissionManager'},
-    '0x00000000000000000000000000000000013241a5': {'file': 'permission/permission_system.sol',
-                                                   'name': 'PermissionSystem'},
-    '0x0000000000000000000000000000000031415926': {'file': 'system/param_constant.sol',
-                                                   'name': 'ParamConstant'},
-    '0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380': {'file': 'permission_management/role_creator.sol',
-                                                   'name': 'RoleCreator'},
-    '0xe3b5ddb80addb513b5c981e27bb030a86a8821ee': {'file': 'permission_management/role_management.sol',
-                                                   'name': 'RoleManagement'}
-    
-}
 
+# Notice: PermissionCreator should be depolyed before Authorization
+# TODO Get the permission contract address created by permission_creator
+CONTRACTS = collections.OrderedDict()
+CONTRACTS['0x00000000000000000000000000000000013241a2'] = {'file': 'system/node_manager.sol',
+                                                           'name': 'NodeManager'}
+CONTRACTS['0x00000000000000000000000000000000013241a3'] = {'file': 'system/quota_manager.sol',
+                                                           'name': 'QuotaManager'}
+CONTRACTS['0x00000000000000000000000000000000013241a4'] = {'file': 'system/permission_manager.sol',
+                                                           'name': 'PermissionManager'}
+CONTRACTS['0x00000000000000000000000000000000013241a5'] = {'file': 'permission/permission_system.sol',
+                                                           'name': 'PermissionSystem'}
+CONTRACTS['0x0000000000000000000000000000000031415926'] = {'file': 'system/param_constant.sol',
+                                                           'name': 'ParamConstant'}
+CONTRACTS['0x00000000000000000000000000000000013241b3'] = {'file': 'permission_management/permission_creator.sol',
+                                                           'name': 'PermissionCreator'}
+CONTRACTS['0x00000000000000000000000000000000013241b4'] = {'file': 'permission_management/authorization.sol',
+                                                           'name': 'Authorization'}
+CONTRACTS['0x00000000000000000000000000000000013241b2'] = {'file': 'permission_management/permission_management.sol',
+                                                           'name': 'PermissionManagement'}
+CONTRACTS['0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380'] = {'file': 'permission_management/role_creator.sol',
+                                                           'name': 'RoleCreator'}
+CONTRACTS['0xe3b5ddb80addb513b5c981e27bb030a86a8821ee'] = {'file': 'permission_management/role_management.sol',
+                                                           'name': 'RoleManagement'}
 def init_contracts(nodes):
     result = dict()
     env = get_env(None);
     env.config['BLOCK_GAS_LIMIT'] = 471238800
     tester_state = Chain(env=env)
+
     for address, contract in CONTRACTS.iteritems():
         contract_path = path.join(CONTRACTS_DIR, contract['file'])
         simple_compiled = compile_file(contract_path)
@@ -52,24 +60,28 @@ def init_contracts(nodes):
             contract['name'],
         )
 
+        if '' == simple_data['bin']:
+            sys.exit()
+
         ct = ContractTranslator(simple_data['abi'])
-        if address == '0x00000000000000000000000000000000013241a3':
+
+        if address == '0x00000000000000000000000000000000013241a3' or address == '0x00000000000000000000000000000000013241b4':
             extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
         elif address == '0x0000000000000000000000000000000031415926':
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1], nodes[address][2]]) if nodes[address] else b'')
-        elif address == "0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380" or address == "0xe3b5ddb80addb513b5c981e27bb030a86a8821ee":
-            extra = ''
-        else:
+        elif address == '0x00000000000000000000000000000000013241a2' or address == '0x00000000000000000000000000000000013241a4' or address == '0x00000000000000000000000000000000013241a5':
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
+        else:
+            extra = ''
 
-        if ('' == simple_data['bin']):
-            sys.exit()
-
-        print(binascii.hexlify(simple_data['bin'] + extra))
+        # print(binascii.hexlify(simple_data['bin'] + extra))
+        print "contract:\n", contract['name']
+        print "extra:\n", binascii.hexlify(extra)
         abi_address = tester_state.contract(simple_data['bin'] + extra, language='evm', startgas=30000000)
         tester_state.mine()
         account = tester_state.chain.state.account_to_dict(abi_address)
         result[address] = {'code': account['code'], 'storage': account['storage'], 'nonce': account['nonce']}
+
     return result
 
 
@@ -81,7 +93,7 @@ def main():
     parser.add_argument(
         "--init_data", help="init with constructor_arguments.")
     parser.add_argument(
-            "--resource", help="chain resource folder.")
+        "--resource", help="chain resource folder.")
 
     args = parser.parse_args()
     init_path = os.path.join(args.init_data)
