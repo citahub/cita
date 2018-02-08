@@ -30,7 +30,11 @@ pages:
     - Contributing: 'appendix/contributing.md'
     - Glossary: 'appendix/glossary.md'
 
-theme: material
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
 extra_css:
   - 'stylesheets/extra.css'
 
