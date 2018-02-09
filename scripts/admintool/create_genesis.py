@@ -30,7 +30,12 @@ CONTRACTS = {
     '0x00000000000000000000000000000000013241a5': {'file': 'permission/permission_system.sol',
                                                    'name': 'PermissionSystem'},
     '0x0000000000000000000000000000000031415926': {'file': 'system/param_constant.sol',
-                                                   'name': 'ParamConstant'}
+                                                   'name': 'ParamConstant'},
+    '0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380': {'file': 'permission_management/role_creator.sol',
+                                                   'name': 'RoleCreator'},
+    '0xe3b5ddb80addb513b5c981e27bb030a86a8821ee': {'file': 'permission_management/role_management.sol',
+                                                   'name': 'RoleManagement'}
+    
 }
 
 def init_contracts(nodes):
@@ -52,6 +57,8 @@ def init_contracts(nodes):
             extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
         elif address == '0x0000000000000000000000000000000031415926':
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1], nodes[address][2]]) if nodes[address] else b'')
+        elif address == "0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380" or address == "0xe3b5ddb80addb513b5c981e27bb030a86a8821ee":
+            extra = ''
         else:
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
 
