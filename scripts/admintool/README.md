@@ -17,7 +17,7 @@ cd target/install
 
 结果如下：
 
-```shell
+``` 
 usage: ./admintool.sh -a admin_id -l ip_list -n consensus_name -m crypto_method -d block_duration -t
 option:
 -a admin_id    admin identifier
@@ -51,7 +51,7 @@ option:
 -Q singel node id
 ```
 
-当前默认初始配置为四个节点，如果需要在admintool.sh脚本里**初始配置N个节点**，可通过如下命令，比如配置五个节点：
+当前默认初始配置为四个节点，如果需要在admintool.sh脚本里 **初始配置N个节点** ，可通过如下命令，比如配置五个节点：
 
 ```shell
 ./bin/admintool.sh -l "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003,127.0.0.1:4004"
@@ -63,11 +63,11 @@ option:
 ./bin/admintool.sh
 ```
 
-  运行之后会生成`node*`以及backup备份文件夹．
-  node* 里面包含节点文件以及相关的配置文件，具体如下：
+运行之后会生成`node*`以及backup备份文件夹．`node*` 里面包含节点文件以及相关的配置文件，具体如下：
+
 - 生成私钥和地址，私钥存放在`node*/privkey`，其中nodeID为节点号；而所有节点地址都存放在`backup/authorities`；
 - 生成网络配置文件，存放在`node*/network.toml`，文件内容主要为总节点数、本地节点端口以及其它节点的ip和端口号；
-- 生成genesis块文件，存放`在node*/genesis.json`， 其中timestamp为时间戳，秒为单位；prevhash指前一个块哈希，这里是默认值；而alloc指部署到创世块的合约内容；
+- 生成genesis块文件，存放在`node*/genesis.json`， 其中timestamp为时间戳，秒为单位；prevhash指前一个块哈希，这里是默认值；而alloc指部署到创世块的合约内容；
 - 生成节点配置文件，存放在`node*/consensus.json`，主要包含共识算法的相关参数；
 - 生成jsonrpc配置文件，存放在`node*/jsonrpc.toml`，主要包含jsonrpc模块的相关参数。
   backup文件下存放是用于增加单节点的备份信息，里面有authorities，genesis.json两个文件，其作用见下文［单独增加节点］
@@ -242,7 +242,7 @@ Function signatures:
 
 ### 单独增加节点
 
-主要原理:新增节点先以只读节点的身份介入，然后，通过发送身份验证（交易）控制新节点权限. 并且，单独增加节点需要依赖已有的节点信息如:authorities，genesis.json
+主要原理:新增节点先以只读节点的身份介入，然后通过发送身份验证（交易）控制新节点权限. 并且，单独增加节点需要依赖已有的节点信息如:authorities，genesis.json
 
 步骤
 
