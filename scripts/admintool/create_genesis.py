@@ -9,7 +9,6 @@ from os import path
 import binascii
 import hashlib
 import sys
-import collections
 
 from ethereum.tools.tester import (Chain, get_env)
 from ethereum.tools._solidity import (
@@ -22,32 +21,34 @@ from ethereum.abi import ContractTranslator
 SOLIDITY_AVAILABLE = get_solidity() is not None
 CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
 
-# Notice: PermissionCreator should be depolyed before Authorization
-# TODO Get the permission contract address created by permission_creator
-CONTRACTS = collections.OrderedDict()
-CONTRACTS['0x00000000000000000000000000000000013241a2'] = {'file': 'system/node_manager.sol',
-                                                           'name': 'NodeManager'}
-CONTRACTS['0x00000000000000000000000000000000013241a3'] = {'file': 'system/quota_manager.sol',
-                                                           'name': 'QuotaManager'}
-CONTRACTS['0x00000000000000000000000000000000013241a4'] = {'file': 'system/permission_manager.sol',
-                                                           'name': 'PermissionManager'}
-CONTRACTS['0x00000000000000000000000000000000013241a5'] = {'file': 'permission/permission_system.sol',
-                                                           'name': 'PermissionSystem'}
-CONTRACTS['0x0000000000000000000000000000000031415926'] = {'file': 'system/param_constant.sol',
-                                                           'name': 'ParamConstant'}
-CONTRACTS['0x00000000000000000000000000000000013241b3'] = {'file': 'permission_management/permission_creator.sol',
-                                                           'name': 'PermissionCreator'}
-CONTRACTS['0x00000000000000000000000000000000013241b4'] = {'file': 'permission_management/authorization.sol',
-                                                           'name': 'Authorization'}
-CONTRACTS['0x00000000000000000000000000000000013241b2'] = {'file': 'permission_management/permission_management.sol',
-                                                           'name': 'PermissionManagement'}
-CONTRACTS['0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380'] = {'file': 'permission_management/role_creator.sol',
-                                                           'name': 'RoleCreator'}
-CONTRACTS['0xe3b5ddb80addb513b5c981e27bb030a86a8821ee'] = {'file': 'permission_management/role_management.sol',
-                                                           'name': 'RoleManagement'}
+CONTRACTS = {
+    '0x00000000000000000000000000000000013241a2': {'file': 'system/node_manager.sol',
+                                                   'name': 'NodeManager'},
+    '0x00000000000000000000000000000000013241a3': {'file': 'system/quota_manager.sol',
+                                                   'name': 'QuotaManager'},
+    '0x00000000000000000000000000000000013241a4': {'file': 'system/permission_manager.sol',
+                                                   'name': 'PermissionManager'},
+    '0x00000000000000000000000000000000013241a5': {'file': 'permission/permission_system.sol',
+                                                   'name': 'PermissionSystem'},
+    '0x0000000000000000000000000000000031415926': {'file': 'system/param_constant.sol',
+                                                   'name': 'ParamConstant'},
+    '0x00000000000000000000000000000000013241b2': {'file': 'permission_management/permission_management.sol',
+                                                   'name': 'PermissionManagement'},
+    '0x00000000000000000000000000000000013241b3': {'file': 'permission_management/permission_creator.sol',
+                                                   'name': 'PermissionCreator'},
+    '0x00000000000000000000000000000000013241b4': {'file': 'permission_management/authorization.sol',
+                                                   'name': 'Authorization'},
+    '0x00000000000000000000000000000000013241b5': {'file': 'permission_management/permission.sol',
+                                                   'name': 'Permission'},
+    '0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380': {'file': 'permission_management/role_creator.sol',
+                                                   'name': 'RoleCreator'},
+    '0xe3b5ddb80addb513b5c981e27bb030a86a8821ee': {'file': 'permission_management/role_management.sol',
+                                                   'name': 'RoleManagement'}
+}
+
 def init_contracts(nodes):
     result = dict()
-    env = get_env(None);
+    env = get_env(None)
     env.config['BLOCK_GAS_LIMIT'] = 471238800
     tester_state = Chain(env=env)
 
@@ -71,6 +72,22 @@ def init_contracts(nodes):
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1], nodes[address][2]]) if nodes[address] else b'')
         elif address == '0x00000000000000000000000000000000013241a2' or address == '0x00000000000000000000000000000000013241a4' or address == '0x00000000000000000000000000000000013241a5':
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
+        elif address == '0x00000000000000000000000000000000013241b5':
+            for addr, permission in nodes[address].iteritems():
+                new_funcs = []
+                for func in permission[2]:
+                    new_func = ''
+                    for i in range(0, len(func), 2):
+                        new_func += chr((int(func[i:i+2], 16)))
+                    new_funcs.append(new_func)
+
+                extra = (ct.encode_constructor_arguments([permission[0], permission[1], new_funcs]))
+
+                if addr != '0x00000000000000000000000000000000013241b5':
+                    abi_address = tester_state.contract(simple_data['bin'] + extra, language='evm', startgas=30000000)
+                    tester_state.mine()
+                    account = tester_state.chain.state.account_to_dict(abi_address)
+                    result[addr] = {'code': account['code'], 'storage': account['storage'], 'nonce': account['nonce']}
         else:
             extra = ''
 
@@ -136,7 +153,7 @@ def main():
         data["prevhash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
     data["timestamp"] = timestamp
 
-    print "init data", init_data
+    print "init data\n", json.dumps(init_data, indent=4)
     alloc = init_contracts(init_data)
     data['alloc'] = alloc
     dump_path =  "genesis.json"

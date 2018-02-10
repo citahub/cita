@@ -116,6 +116,7 @@ contract Permission {
             return false;
 
         // Remove the gap
+        // TODO Start from the bottom
         for (uint i = index; i < resources.length-1; i++)
             resources[i] = resources[i+1];
 
