@@ -63,7 +63,7 @@ impl Connection {
     }
 
     pub fn update(&self, config: &config::NetConfig) {
-        //添加更新的配置到self
+        // Update to self
         match config.peers.as_ref() {
             Some(peers) => {
                 let mut peers_addr = Vec::new();

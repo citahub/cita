@@ -375,7 +375,7 @@ impl MethodHandler {
     }
 }
 
-//以后把这种测试，放到单独的测试文件。
+//TODO add mock?
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -555,7 +555,6 @@ mod tests {
     }
 
     #[test]
-    // 交易添加valid_until_block后，兼容测试以前的交易。
     fn test_blocklimit_backword_compatibility() {
         let rpc = "{\"jsonrpc\":\"2.0\",\
                    \"method\":\"cita_sendTransaction\",\

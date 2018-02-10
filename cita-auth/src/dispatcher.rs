@@ -245,8 +245,6 @@ impl Dispatcher {
     }
 
     pub fn add_tx_to_pool(&self, tx: &SignedTransaction) -> bool {
-        // 交易放入pool，
-        // 放入pool完成后，持久化
         trace!("add tx {} to pool", tx.get_tx_hash().pretty());
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let success = txs_pool.enqueue(tx.clone());
@@ -276,11 +274,10 @@ impl Dispatcher {
     }
 
     pub fn del_txs_from_pool_with_hash(&self, txs: &HashSet<H256>) {
-        //收到删除通知，从pool中删除vec中的交易
         {
             self.txs_pool.borrow_mut().update_with_hash(txs);
         }
-        //改成多线程删除数据
+        //TODO Refactor: use thread pool!
         if self.wal_enable {
             let mut wal = self.wal.clone();
             let txs = txs.clone();
@@ -293,11 +290,10 @@ impl Dispatcher {
     }
 
     pub fn del_txs_from_pool(&self, txs: Vec<SignedTransaction>) {
-        //收到删除通知，从pool中删除vec中的交易
         {
             self.txs_pool.borrow_mut().update(&txs);
         }
-        //改成多线程删除数据
+        //TODO Refactor: use thread pool!
         if self.wal_enable {
             let mut wal = self.wal.clone();
             thread::spawn(move || {

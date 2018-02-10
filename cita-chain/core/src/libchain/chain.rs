@@ -125,8 +125,6 @@ pub enum BlockInQueue {
     SyncBlock((Block, Option<ProtoProof>)),
 }
 
-// TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
-// 所有直接unwrap的地方都可能会报错！
 pub struct Chain {
     blooms_config: bc::Config,
     pub current_header: RwLock<Header>,
