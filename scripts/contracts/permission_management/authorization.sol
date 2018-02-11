@@ -1,16 +1,19 @@
 pragma solidity ^0.4.18;
 
-import "./permission_creator.sol";
+import "./permission.sol";
 
 
 /// @title Authorization about the permission and account
 /// @notice Only be called by permission_management contract except query interface 
+///         TODO Set multi auth interface
 contract Authorization {
 
     address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
-
-    address permissionCreatorAddr = 0x00000000000000000000000000000000013241b3;
-    PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
+    address newPermissionAddr = 0x00000000000000000000000000000000013241b5;
+    address deletePermissionAddr = 0x00000000000000000000000000000000023241b5;
+    address updatePermissionAddr = 0x00000000000000000000000000000000033241B5;
+    address setAuthAddr = 0x00000000000000000000000000000000043241b5;
+    address cancelAuthAddr = 0x00000000000000000000000000000000055241B5;
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
@@ -25,15 +28,13 @@ contract Authorization {
     }
 
     /// @dev Initialize the superAdmin's auth
-    /// @notice TODO 
     function Authorization(address _superAdmin) public {
-        _superAdmin;
-        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('NewPermission')));
-        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('DeletePermission')));
-        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('UpdatePermission')));
-        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('SetAuth')));
-        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('CancelAuth')));
-        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('ClearAuth')));
+        // TODO
+        _setAuth(_superAdmin, newPermissionAddr);
+        _setAuth(_superAdmin, deletePermissionAddr);
+        _setAuth(_superAdmin, updatePermissionAddr);
+        _setAuth(_superAdmin, setAuthAddr);
+        _setAuth(_superAdmin, cancelAuthAddr);
     }
 
     /// @dev Set authorization
@@ -42,10 +43,7 @@ contract Authorization {
         onlyPermissionManagement
         returns (bool)
     {
-        permissions[_account].push(_permission);
-        accounts[_permission].push(_account);
-        AuthSetted(_account, _permission);
-        return true;
+        return _setAuth(_account, _permission);
     }
 
     /// @dev Cancel authorization
@@ -143,5 +141,15 @@ contract Authorization {
             if (_value == _array[i])
                 return i;
         }
+    }
+    /// @dev Set authorization
+    function _setAuth(address _account, address _permission)
+        private 
+        returns (bool)
+    {
+        permissions[_account].push(_permission);
+        accounts[_permission].push(_account);
+        AuthSetted(_account, _permission);
+        return true;
     }
 }
