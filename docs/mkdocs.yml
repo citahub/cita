@@ -20,7 +20,9 @@ pages:
       - JSON-RPC 错误代码: 'usage-guide/rpc_error_code.md'
       - 系统合约 (System Contract): 'usage-guide/admintool.md'
       - 交易相关工具 (Transaction Tool): 'usage-guide/txtool.md'
-  - 系统管理: system_management.md
+  - 系统管理:
+      - 节点管理: 'system_management/node.md'
+      - 帐号管理 (Account): 'system_management/account.md'
   - 架构设计: 
       - 微服务 (Micro Service): 'architecture/architecture.md'
       - 共识 (Consensus): 'architecture/consensus.md'
