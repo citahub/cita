@@ -25,13 +25,15 @@ contract Authorization {
     }
 
     /// @dev Initialize the superAdmin's auth
+    /// @notice TODO 
     function Authorization(address _superAdmin) public {
-        setAuth(_superAdmin, permissionCreator.queryId(bytes32('NewPermission')));
-        setAuth(_superAdmin, permissionCreator.queryId(bytes32('DeletePermission')));
-        setAuth(_superAdmin, permissionCreator.queryId(bytes32('UpdatePermission')));
-        setAuth(_superAdmin, permissionCreator.queryId(bytes32('SetAuth')));
-        setAuth(_superAdmin, permissionCreator.queryId(bytes32('CancelAuth')));
-        setAuth(_superAdmin, permissionCreator.queryId(bytes32('ClearAuth')));
+        _superAdmin;
+        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('NewPermission')));
+        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('DeletePermission')));
+        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('UpdatePermission')));
+        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('SetAuth')));
+        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('CancelAuth')));
+        // setAuth(_superAdmin, permissionCreator.queryId(bytes32('ClearAuth')));
     }
 
     /// @dev Set authorization
