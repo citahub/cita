@@ -11,94 +11,141 @@ CITA通过智能合约的方式来对账号进行管理。其中账号管理合�
 
 ### 账号管理合约接口
 
-- 创建角色-createRole 
-
-    * 账号调用，需拥有用户角色;
-    * 成功后创建一个新的角色，并拥有创建者指定权限，默认创建角色继承创建者角色权限，需调用权限管理合约接口;
-    * 传入参数:
-
-        - bytes32: 角色名称
-        - uint8[]: 权限列表
-
-    * 返回类型为bool，可通过其判断操作成功与否。
-
-- 添加管理员-addAdmin
-
-    * 账号调用，需拥有管理员角色;
-    * 成功后授予账号管理员角色，即添加了新的管理员;
-    * 传入参数: address，为账号地址;
-    * 返回类型为bool，可通过其判断操作成功与否。
-
-- 判断账号是否拥有角色-ownRole
-
-    * 只读方法，账号调用，需拥有用户角色;
-    * 判断账号是否拥有指定的角色;
-    * 传入参数:
-
-        - address: 账号地址;
-        - bytes32: 角色名称。
-
-    * 返回类型为bool，可通过其判断操作成功与否。
-
-- 查询账号拥有的角色-listRole
-
-    * 账号调用，需拥有用户角色;
-    * 读取账号所拥有的权限;
-    * 传入参数: address，为账号地址;
-    * 返回类型为bytes32[MAX_ROLE]，为账号拥有的角色列表。其中MAX_ROLE为角色拥有的最大角色数。
-
-- 授予指定账号角色-grandRole
-
-    * 用户账号调用，需拥有用户角色;
-    * 对给定账号授予已存在的角色，成功后该账号拥有此角色;
-    * 传入参数:
-
-        - address: 账号地址;
-        - bytes32: 角色名称。
-
-    * 返回类型为bool，可通过其判断操作成功与否。
-
-- 收回指定账号角色-revokeRole
-
-    * 用户账号调用。账号需为角色创建者或者拥有管理员角色;
-    * 撤销账号拥有的角色，成功后该账号失去此角色;
-    * 传入参数:
-
-        - address: 账号地址;
-        - bytes32: 角色名称。
-
-    * 返回类型为bool，可通过其判断操作成功与否。
+<table>
+  <tr>
+    <th>名称</th>
+    <th>需要权限</th>
+    <th>传入参数</th>
+    <th>返回值</th>
+    <th>详细描述</th>
+  </tr>
+  <tr>
+    <td>
+      createRole(name, permissions) <br/>
+      <strong>创建角色</strong>
+    </td>
+    <td>用户角色</td>
+    <td>
+      name bytes32: 角色名称
+      <br/>
+      permissions uint8[]: 权限列表
+    </td>
+    <td>操作是否成功 (bool)</td>
+    <td>成功后创建一个新的角色，并拥有创建者指定权限，默认创建角色继承创建者角色权限，需调用权限管理合约接口</td>
+  </tr>
+  <tr>
+    <td>
+      addAdmin(address) <br/>
+      <strong>添加管理员</strong>
+    </td>
+    <td>管理员角色</td>
+    <td>address: 为账号地址</td>
+    <td>操作是否成功 (bool)</td>
+    <td>成功后授予账号管理员角色，即添加了新的管理员</td>
+  </tr>
+  <tr>
+    <td>
+      ownRole(address, roleName) <br/>
+      <strong>判断账号是否拥有角色</strong>
+    </td>
+    <td>用户角色 (只读)</td>
+    <td>
+      address: 账号地址
+      <br/>
+      roleName bytes32: 角色名称
+    </td>
+    <td>操作是否成功 (bool)</td>
+    <td>判断账号是否拥有指定的角色</td>
+  </tr>
+  <tr>
+    <td>
+      listRole(address) <br/>
+      <strong>查询账号拥有的角色</strong>
+    </td>
+    <td>用户角色</td>
+    <td>address: 为账号地址</td>
+    <td>账号拥有的角色列表 (bytes32[MAX_ROLE]，其中 MAX_ROLE 为角色拥有的最大角色数)</td>
+    <td>读取账号所拥有的权限</td>
+  </tr>
+  <tr>
+    <td>
+      grandRole(address, roleName) <br/>
+      <strong>授予指定账号角色</strong>
+    </td>
+    <td>用户角色</td>
+    <td>
+      address: 账号地址
+      <br/>
+      roleName bytes32: 角色名称
+    </td>
+    <td>操作是否成功 (bool)</td>
+    <td>对给定账号授予已存在的角色，成功后该账号拥有此角色</td>
+  </tr>
+  <tr>
+    <td>
+      revokeRole(address, roleName) <br/>
+      <strong>收回指定账号角色</strong>
+    </td>
+    <td>角色创建者或管理员角色</td>
+    <td>
+      address: 账号地址
+      <br/>
+      roleName bytes32: 角色名称
+    </td>
+    <td>操作是否成功 (bool)</td>
+    <td>撤销账号拥有的角色，成功后该账号失去此角色</td>
+  </tr>
+</table>
 
 ### 权限管理合约接口
 
-- 设置角色权限-setRolePermission 
-
-    * 账号调用，需拥有管理员角色;
-    * 只能由管理员授予角色权限，成功后角色拥有指定权限;
-    * 传入参数: 
-
-        - bytes32: 角色名称;
-        - uint8[]: 权限列表。
-
-    * 返回类型为bool，可通过其判断操作成功与否。
-
-- 判断角色是否拥有权限-ownPermission
-
-    * 只读方法，账号调用，需拥有用户角色;
-    * 判断角色是否拥有指定的权限;
-    * 传入参数:
-
-        - bytes32: 角色名称。
-        - uint8: 权限名称;
-
-    * 返回类型为bool，可通过其判断操作成功与否。
-
-- 查询角色拥有的权限-listPermission
-
-    * 账号调用，需拥有用户角色;
-    * 读取角色所拥有的权限;
-    * 传入参数: bytes32，为角色名称;
-    * 返回类型为bytes32[MAX_PERMISSION]，为角色拥有的权限列表。其中MAX_PERMISSION为角色拥有的最大权限数。
+<table>
+  <tr>
+    <th>名称</th>
+    <th>需要权限</th>
+    <th>传入参数</th>
+    <th>返回值</th>
+    <th>详细描述</th>
+  </tr>
+  <tr>
+    <td>
+      setRolePermission(roleName, permissions)<br/>
+      <strong>设置角色权限</strong>
+    </td>
+    <td>管理员角色</td>
+    <td>
+      roleName bytes32: 角色名称
+      <br/>
+      permissions uint8[]: 权限列表
+    </td>
+    <td>操作是否成功 (bool)</td>
+    <td>只能由管理员授予角色权限，成功后角色拥有指定权限</td>
+  </tr>
+  <tr>
+    <td>
+      ownPermission(roleName, permission) <br/>
+      <strong>判断角色是否拥有权限</strong>
+    </td>
+    <td>用户角色 (只读)</td>
+    <td>
+      roleName bytes32: 角色名称
+      <br/>
+      permission uint8: 权限名称
+    </td>
+    <td>角色是否拥有该权限 (bool)</td>
+    <td>判断角色是否拥有指定的权限</td>
+  </tr>
+  <tr>
+    <td>
+      listPermission(roleName) <br/>
+      <strong>查询角色拥有的权限</strong>
+    </td>
+    <td>用户角色</td>
+    <td>bytes32: 为角色名称</td>
+    <td>为角色拥有的权限列表 (bytes32[MAX_PERMISSION]，其中MAX_PERMISSION为角色拥有的最大权限数)</td>
+    <td>读取角色所拥有的权限</td>
+  </tr>
+</table>
 
 ## 配额管理
 
@@ -112,46 +159,81 @@ CITA通过智能合约的方式来对账号进行管理。其中账号管理合�
 
 ### 配额管理合约接口
 
-- 设置区块配额上限-setBQL(BQL为BlockQuotaLimit缩写，下同)
+说明:
 
-    * 需要管理员角色;
-    * 设置每个块的配额上限;
-    * 传入参数uint，为设置的配额值;
-    * 返回类型为bool，可通过其判断成功与否。
+* BQL: BlockQuotaLimit 缩写
+* AQL: AccountQuotaLimit 缩写
 
-- 设置默认账号配额上限-setDefaultAQL(AQL为BlockQuotaLimit缩写，下同)
-
-    * 需要管理员角色;
-    * 设置默认的账号配额上限;
-    * 传入参数为uint，为设置的配额值;
-    * 返回类型为bool，可通过其判断成功与否。
-
-- 设置指定账号配额上限-setAQL
-
-    * 需要管理员角色;
-    * 设置指定账号的配额上限;
-    * 传入参数:
-
-      - address: 指定的账号的地址;
-      - uint: 设置的配额值。
-
-    * 返回类型为bool，可通过其判断成功与否。
-
-- 查询区块配额上限-getBQL
-
-    * 普通角色即可;
-    * 查询设置的区块配额上限;
-    * 返回类型uint，为查询到的配额上限。
-
-- 查询默认账号配额上限-getDefaultAQL
-
-    * 普通角色即可;
-    * 查询设置的默认账号配额上限;
-    * 返回类型uint，为查询到的配额上限。
-
-- 查询指定账号配额上限-getAQL
-
-    * 普通角色即可;
-    * 查询设置的指定账号配额上限;
-    * 传入参数为address，为指定的账号地址;
-    * 返回类型uint，为查询到的配额上限。
+<table>
+  <tr>
+    <th>名称</th>
+    <th>需要权限</th>
+    <th>传入参数</th>
+    <th>返回值</th>
+    <th>详细描述</th>
+  </tr>
+  <tr>
+    <td>
+      setBQL(quotaLimit)<br/>
+      <strong>设置区块配额上限</strong>
+    </td>
+    <td>管理员角色</td>
+    <td>quotaLimit uint: 配额值</td>
+    <td>操作是否成功 (bool)</td>
+    <td>设置每个块的配额上限</td>
+  </tr>
+  <tr>
+    <td>
+      setDefaultAQL(quotaLimit)<br/>
+      <strong>设置默认账号配额上限</strong>
+    </td>
+    <td>管理员角色</td>
+    <td>quotaLimit uint: 配额值</td>
+    <td>操作是否成功 (bool)</td>
+    <td>设置默认的账号配额上限</td>
+  </tr>
+  <tr>
+    <td>
+      setAQL(address, quotaLimit) <br/>
+      <strong>设置指定账号配额上限</strong>
+    </td>
+    <td>管理员角色</td>
+    <td>
+      address: 指定的账号的地址
+      <br/>
+      quotaLimit uint: 设置的配额值
+    </td>
+    <td>操作是否成功 (bool)</td>
+    <td>设置指定账号的配额上限</td>
+  </tr>
+  <tr>
+    <td>
+      getBQL() <br/>
+      <strong>查询区块配额上限</strong>
+    </td>
+    <td>普通角色</td>
+    <td>空</td>
+    <td>查询到的配额上限 (uint)</td>
+    <td>查询设置的区块配额上限</td>
+  </tr>
+  <tr>
+    <td>
+      getDefaultAQL() <br/>
+      <strong>查询默认账号配额上限</strong>
+    </td>
+    <td>普通角色</td>
+    <td>空</td>
+    <td>查询到的配额上限 (unit)</td>
+    <td>查询设置的默认账号配额上限</td>
+  </tr>
+  <tr>
+    <td>
+      getAQL <br/>
+      <strong>查询指定账号配额上限</strong>
+    </td>
+    <td>普通角色</td>
+    <td>address: 为指定的账号地址</td>
+    <td>查询到的配额上限 (uint)</td>
+    <td>查询设置的指定账号配额上限</td>
+  </tr>
+</table>
