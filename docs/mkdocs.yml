@@ -7,28 +7,30 @@ repo_url: https://github.com/cryptape/cita
 edit_uri: docs/docs/
 
 pages:
-  - Home: index.md
-  - Getting Started: getting_started.md
-  - Key Concepts:
-    - Blockchain: 'key-concepts/blockchain.md'
-    - CITA Features: 'key-concepts/cita.md'
-  - Components: components.md
-  - Usage Guide:
+  - 首页: index.md
+  - 快速入门: getting_started.md
+  - 主要概念:
+    - 区块链 (Blockchain): 'key-concepts/blockchain.md'
+    - CITA: 'key-concepts/cita.md'
+  - 系统组件: components.md
+  - 使用指南:
       - Bootstrap: 'usage-guide/bootstrap.md'
-      - Smart Contract Guide: 'usage-guide/smart-contract-guide.md'
+      - 智能合约指南: 'usage-guide/smart-contract-guide.md'
       - JSON-RPC: 'usage-guide/rpc.md'
-      - JSON-RPC Error Code: 'usage-guide/rpc_error_code.md'
-      - System Contract: 'usage-guide/admintool.md'
-      - Transaction Tool: 'usage-guide/txtool.md'
-  - System Management: system_management.md
-  - Architecture: 
-      - Micro Service: 'architecture/architecture.md'
-      - Consensus: 'architecture/consensus.md'
-      - Transaction Process: 'architecture/transaction_process.md'
-      - View: 'architecture/view.md'
-  - Appendix:
-    - Contributing: 'appendix/contributing.md'
-    - Glossary: 'appendix/glossary.md'
+      - JSON-RPC 错误代码: 'usage-guide/rpc_error_code.md'
+      - 系统合约 (System Contract): 'usage-guide/admintool.md'
+      - 交易相关工具 (Transaction Tool): 'usage-guide/txtool.md'
+  - 系统管理:
+      - 节点管理: 'system_management/node.md'
+      - 帐号管理 (Account): 'system_management/account.md'
+  - 架构设计: 
+      - 微服务 (Micro Service): 'architecture/architecture.md'
+      - 共识 (Consensus): 'architecture/consensus.md'
+      - 交易处理 (Transaction Process): 'architecture/transaction_process.md'
+      - 视图 (View): 'architecture/view.md'
+  - 附录:
+    - 贡献代码: 'appendix/contributing.md'
+    - 词汇表: 'appendix/glossary.md'
 
 theme:
   name: material
