@@ -81,10 +81,12 @@ def init_contracts(nodes):
                         new_func += chr((int(func[i:i+2], 16)))
                     new_funcs.append(new_func)
 
-                extra = (ct.encode_constructor_arguments([permission[0], permission[1], new_funcs]))
+                extra_common = (ct.encode_constructor_arguments([permission[0], permission[1], new_funcs]))
 
-                if addr != '0x00000000000000000000000000000000013241b5':
-                    abi_address = tester_state.contract(simple_data['bin'] + extra, language='evm', startgas=30000000)
+                if addr == '0x00000000000000000000000000000000013241b5':
+                    extra = extra_common;
+                else:
+                    abi_address = tester_state.contract(simple_data['bin'] + extra_common, language='evm', startgas=30000000)
                     tester_state.mine()
                     account = tester_state.chain.state.account_to_dict(abi_address)
                     result[addr] = {'code': account['code'], 'storage': account['storage'], 'nonce': account['nonce']}
