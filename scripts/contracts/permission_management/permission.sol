@@ -2,7 +2,7 @@ pragma solidity ^0.4.18;
 
 
 /// @title Permission contract
-/// @notice Only be called by permission_management contract except query interface 
+/// @notice Only be called by permission_management contract except query interface
 ///         TODO Add the modifier: Do not close the build-in permission
 contract Permission {
 
@@ -20,14 +20,14 @@ contract Permission {
     event ResourcesAdded(address[] _conts, bytes4[] _funcs);
     event ResourcesDeleted(address[] _conts, bytes4[] _funcs);
     event NameUpdated(bytes32 indexed _oldName, bytes32 indexed _name);
-    
+
     modifier onlyPermissionManagement {
         require(permissionManagementAddr == msg.sender);
         _;
     }
 
     modifier notSame(bytes32 _name) {
-        require(name != _name); 
+        require(name != _name);
         _;
     }
 
@@ -66,15 +66,16 @@ contract Permission {
         public
         onlyPermissionManagement
         notSame(_name)
-        returns (bool) {
+        returns (bool)
+    {
         NameUpdated(name, _name);
-        name = _name; 
+        name = _name;
         return true;
     }
 
     /// @dev Destruct self
     function close() public onlyPermissionManagement {
-        selfdestruct(msg.sender); 
+        selfdestruct(msg.sender);
     }
 
     /// @dev Check resource in the permission
@@ -101,12 +102,12 @@ contract Permission {
         uint l = resources.length;
         address[] memory conts = new address[](l);
         bytes4[] memory funcs = new bytes4[](l);
-        
+
         for (uint i = 0; i < resources.length; i++) {
             conts[i] = resources[i].cont;
             funcs[i] = resources[i].func;
         }
-        
+
         return (name, conts, funcs);
     }
 
@@ -116,7 +117,7 @@ contract Permission {
         view
         returns (bytes32)
     {
-        return name; 
+        return name;
     }
 
     /// @dev Query the resource of the permission
@@ -128,18 +129,18 @@ contract Permission {
         uint l = resources.length;
         address[] memory conts = new address[](l);
         bytes4[] memory funcs = new bytes4[](l);
-        
+
         for (uint i = 0; i < resources.length; i++) {
             conts[i] = resources[i].cont;
             funcs[i] = resources[i].func;
         }
-        
+
         return (conts, funcs);
     }
 
     /// @dev Delete the value of the resources
     function resourceDelete(address _cont, bytes4 _func)
-        private 
+        private
         returns (bool)
     {
         var index = resourceIndex(_cont,  _func);
@@ -161,7 +162,7 @@ contract Permission {
     /// @dev Get the index of the value in the resources
     /// @return The index. If i == length, means not find
     function resourceIndex(address _cont, bytes4 _func)
-        private 
+        private
         view
         returns (uint i)
     {
@@ -172,7 +173,7 @@ contract Permission {
     }
 
     function _addResources(address[] _conts, bytes4[] _funcs)
-        private 
+        private
         returns (bool)
     {
         for (uint i = 0; i < _conts.length; i++) {
