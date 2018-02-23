@@ -3,6 +3,7 @@ pragma solidity ^0.4.18;
 
 /// @title Permission contract
 /// @notice Only be called by permission_management contract except query interface 
+///         TODO Add the modifier: Do not close the build-in permission
 contract Permission {
 
     struct Resource {
@@ -65,8 +66,7 @@ contract Permission {
         public
         onlyPermissionManagement
         notSame(_name)
-        returns (bool)
-    {
+        returns (bool) {
         NameUpdated(name, _name);
         name = _name; 
         return true;
@@ -95,14 +95,46 @@ contract Permission {
     function queryInfo()
         public
         view
-        returns (bytes32 _name, address[] conts, bytes4[] funcs)
+        returns (bytes32, address[], bytes4[])
     {
-        _name = name;
 
+        uint l = resources.length;
+        address[] memory conts = new address[](l);
+        bytes4[] memory funcs = new bytes4[](l);
+        
         for (uint i = 0; i < resources.length; i++) {
             conts[i] = resources[i].cont;
             funcs[i] = resources[i].func;
         }
+        
+        return (name, conts, funcs);
+    }
+
+    /// @dev Query the name of the permission
+    function queryName()
+        public
+        view
+        returns (bytes32)
+    {
+        return name; 
+    }
+
+    /// @dev Query the resource of the permission
+    function queryResource()
+        public
+        view
+        returns (address[], bytes4[])
+    {
+        uint l = resources.length;
+        address[] memory conts = new address[](l);
+        bytes4[] memory funcs = new bytes4[](l);
+        
+        for (uint i = 0; i < resources.length; i++) {
+            conts[i] = resources[i].cont;
+            funcs[i] = resources[i].func;
+        }
+        
+        return (conts, funcs);
     }
 
     /// @dev Delete the value of the resources
