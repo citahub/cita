@@ -4,7 +4,7 @@ import "./permission.sol";
 
 
 /// @title Authorization about the permission and account
-/// @notice Only be called by permission_management contract except query interface 
+/// @notice Only be called by permission_management contract except query interface
 ///         TODO Set multi auth interface
 contract Authorization {
 
@@ -13,7 +13,7 @@ contract Authorization {
     address deletePermissionAddr = 0x00000000000000000000000000000000023241b5;
     address updatePermissionAddr = 0x00000000000000000000000000000000033241B5;
     address setAuthAddr = 0x00000000000000000000000000000000043241b5;
-    address cancelAuthAddr = 0x00000000000000000000000000000000055241B5;
+    address cancelAuthAddr = 0x00000000000000000000000000000000053241B5;
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
@@ -39,7 +39,7 @@ contract Authorization {
 
     /// @dev Set authorization
     function setAuth(address _account, address _permission)
-        public 
+        public
         onlyPermissionManagement
         returns (bool)
     {
@@ -48,7 +48,7 @@ contract Authorization {
 
     /// @dev Cancel authorization
     function cancelAuth(address _account, address _permission)
-        public 
+        public
         onlyPermissionManagement
         returns (bool)
     {
@@ -60,7 +60,7 @@ contract Authorization {
 
     /// @dev Clear the account's permissions
     function clearAuth(address _account)
-        public 
+        public
         onlyPermissionManagement
         returns (bool)
     {
@@ -111,7 +111,7 @@ contract Authorization {
 
     /// @dev Delete the value of the address array
     function addressDelete(address _value, address[] storage _array)
-        private 
+        private
         returns (bool)
     {
         var index = addressIndex(_value,  _array);
@@ -133,7 +133,7 @@ contract Authorization {
     /// @return The index. If i == length, means not find
     function addressIndex(address _value, address[] _array)
         pure
-        private 
+        private
         returns (uint i)
     {
         // Find the index of the value in the array
@@ -144,7 +144,7 @@ contract Authorization {
     }
     /// @dev Set authorization
     function _setAuth(address _account, address _permission)
-        private 
+        private
         returns (bool)
     {
         permissions[_account].push(_permission);
