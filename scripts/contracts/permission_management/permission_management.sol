@@ -6,9 +6,8 @@ import "./authorization.sol";
 
 /// @title Permission Management
 /// @notice Not include the query interface
-///         TODO: Refactor the initialized data
 contract PermissionManagement {
-    
+
     address permissionCreatorAddr = 0x00000000000000000000000000000000013241b3;
     PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
 
@@ -17,7 +16,7 @@ contract PermissionManagement {
 
     modifier sameLength(address[] _one, bytes4[] _other) {
         require(_one.length > 0);
-        require(_one.length == _other.length); 
+        require(_one.length == _other.length);
         _;
     }
 
@@ -39,7 +38,7 @@ contract PermissionManagement {
         perm.close();
         return true;
     }
-    
+
     /// @dev Update the permission name
     function updatePermissionName(address _permission, bytes32 _name)
         public
@@ -69,7 +68,7 @@ contract PermissionManagement {
 
     /// @dev Set authorization
     function setAuthorization(address _account, address _permission)
-        public 
+        public
         returns (bool)
     {
         return auth.setAuth(_account, _permission);
@@ -77,7 +76,7 @@ contract PermissionManagement {
 
     /// @dev Cancel authorization
     function cancelAuthorization(address _account, address _permission)
-        public 
+        public
         returns (bool)
     {
         return auth.cancelAuth(_account, _permission);
@@ -85,7 +84,7 @@ contract PermissionManagement {
 
     /// @dev Clear the account's permissions
     function clearAuthorization(address _account)
-        public 
+        public
         returns (bool)
     {
         return auth.clearAuth(_account);
