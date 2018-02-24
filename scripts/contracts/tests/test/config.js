@@ -32,9 +32,14 @@ module.exports = {
                 '0x00000000000000000000000000000000053241b5' 
             ],
             resources: ['0xf036ed56', '0x3482e0c9', '0xf036ed56', '0x6446ebd8', '0x537bf9a3', '0x0f5aa9f3', '0x3482e0c9', '0xa5925b5b'] 
+        },
+        permission_management: {
+            pManagementABI: [{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_permission","type":"address"}],"name":"setAuthorization","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_permission","type":"address"}],"name":"cancelAuthorization","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_permission","type":"address"},{"name":"_name","type":"bytes32"}],"name":"updatePermissionName","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_permission","type":"address"},{"name":"_conts","type":"address[]"},{"name":"_funcs","type":"bytes4[]"}],"name":"deleteResources","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_permission","type":"address"}],"name":"deletePermission","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"}],"name":"clearAuthorization","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_permission","type":"address"},{"name":"_conts","type":"address[]"},{"name":"_funcs","type":"bytes4[]"}],"name":"addResources","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_conts","type":"address[]"},{"name":"_funcs","type":"bytes4[]"}],"name":"newPermission","outputs":[{"name":"id","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"function"}],
+            pManagementAddr: '0x00000000000000000000000000000000013241b2'
         }
     },
     localServer: 'http://127.0.0.1:1337',
     remoteServer: 'http://47.94.105.230:1337',
-    testAddr: ['0x1a702a25c6bca72b67987968f0bfb3a3213c5600','0x1a702a25c6bca72b67987968f0bfb3a3213c5601','0x1a702a25c6bca72b67987968f0bfb3a3213c5602']
+    testAddr: ['0x1a702a25c6bca72b67987968f0bfb3a3213c5600','0x1a702a25c6bca72b67987968f0bfb3a3213c5601','0x1a702a25c6bca72b67987968f0bfb3a3213c5602'],
+    testFunc: ['0xf036ed56', '0x3482e0c9', '0xf036ed56']
 };
