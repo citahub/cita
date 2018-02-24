@@ -11,53 +11,13 @@ const web3 = new Web3(new Web3.providers.HttpProvider(config.localServer));
 // Use remote server
 // const web3 = new Web3(new Web3.providers.HttpProvider(config.remoteServer));
 
-const { pmABI, pmAddr, sender } = config.contract.permission_manager;
 const { aABI, aAddr, superAdmin, permissions, resources } = config.contract.authorization;
-
-const permManager = web3.eth.contract(pmABI);
-const pmContractInstance = permManager.at(pmAddr);
 
 const auth = web3.eth.contract(aABI);
 const aContractInstance = auth.at(aAddr);
 
 const quota = 9999999;
 const blockLimit = 100;
-
-// =======================
-
-// TODO Move to helper
-function randomInt() {
-    return Math.floor(Math.random() * 100).toString();
-}
-
-function getTxReceipt(res) {
-    return new Promise((resolve, reject) => { 
-        let count = 0;
-        const filter = web3.eth.filter('latest', err => {
-
-            if (err) reject(err);
-            
-            count++;
-
-            if (count > 20) {
-                filter.stopWatching(function() {});
-                reject(err);
-            }
-
-            web3.eth.getTransactionReceipt(res.hash, function(err, receipt) {
-
-                if (err) reject(err);
-
-                if (receipt) {
-                    filter.stopWatching(function() {});
-                    resolve(receipt);
-                }
-            });
-        });
-    });
-}
-
-// =======================
 
 describe('test authorization contract', function() { 
 

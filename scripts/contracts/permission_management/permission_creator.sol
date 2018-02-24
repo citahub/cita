@@ -17,8 +17,8 @@ contract PermissionCreator {
     }
 
     /// @dev Create a new permission contract
-    function createPermission(bytes32 _name, address[] _conts, bytes4[] _funcs) 
-        public 
+    function createPermission(bytes32 _name, address[] _conts, bytes4[] _funcs)
+        public
         onlyPermissionManagement
         returns (Permission permissionAddress)
     {
@@ -26,11 +26,11 @@ contract PermissionCreator {
     }
 
     /// @dev Private: Create a new permission contract
-    function _createPermission(bytes32 _name, address[] _conts, bytes4[] _funcs) 
-        private 
+    function _createPermission(bytes32 _name, address[] _conts, bytes4[] _funcs)
+        private
         returns (Permission permissionAddress)
     {
-        Permission perm = new Permission(_name, _conts, _funcs); 
+        Permission perm = new Permission(_name, _conts, _funcs);
         PermissionCreated(perm, _name, _conts, _funcs);
         return perm;
     }
