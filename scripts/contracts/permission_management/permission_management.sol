@@ -14,6 +14,8 @@ contract PermissionManagement {
     address authorizationAddr = 0x00000000000000000000000000000000013241b4;
     Authorization auth = Authorization(authorizationAddr);
 
+    event PermissionDeleted(address _permission);
+
     modifier sameLength(address[] _one, bytes4[] _other) {
         require(_one.length > 0);
         require(_one.length == _other.length);
@@ -36,6 +38,7 @@ contract PermissionManagement {
     {
         Permission perm = Permission(_permission);
         perm.close();
+        PermissionDeleted(_permission);
         return true;
     }
 

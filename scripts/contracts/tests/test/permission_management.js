@@ -341,8 +341,8 @@ describe('\n\ntest permission management contract\n\n', function() {
             getTxReceipt(res)
                 .then((receipt) => {
                     console.log('\nSend ok and get receipt:\n', receipt);
-                    // TODO Why still have the event
                     assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    assert.equal(receipt.logs[0].data.substr(26), newPermissionAddr.substr(2));
                     done();
                 })
                 .catch(err => {
