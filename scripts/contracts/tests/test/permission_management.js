@@ -11,21 +11,14 @@ const web3 = new Web3(new Web3.providers.HttpProvider(config.localServer));
 // Use remote server
 // const web3 = new Web3(new Web3.providers.HttpProvider(config.remoteServer));
 
-const { pmABI, pmAddr, sender } = config.contract.permission_manager;
+const sender = config.contract.permission_manager.sender;
 const { pManagementABI, pManagementAddr } = config.contract.permission_management;
 const { pABI, pAddr} = config.contract.permission;
 const { aABI, aAddr, superAdmin, permissions, resources } = config.contract.authorization;
 
-// permission manager
-const permManager = web3.eth.contract(pmABI);
-const pmContractInstance = permManager.at(pmAddr);
-
 // permission management
 const pManagement = web3.eth.contract(pManagementABI);
 const pManagementContractIns = pManagement.at(pManagementAddr);
-
-const quota = 9999999;
-const blockLimit = 100;
 
 // authorization
 const auth = web3.eth.contract(aABI);
@@ -34,6 +27,9 @@ const aContractInstance = auth.at(aAddr);
 // permission
 const perm = web3.eth.contract(pABI);
 var newPermissionAddr;
+
+const quota = 9999999;
+const blockLimit = 100;
 
 // =======================
 

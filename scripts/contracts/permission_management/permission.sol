@@ -98,7 +98,6 @@ contract Permission {
         view
         returns (bytes32, address[], bytes4[])
     {
-
         uint l = resources.length;
         address[] memory conts = new address[](l);
         bytes4[] memory funcs = new bytes4[](l);
