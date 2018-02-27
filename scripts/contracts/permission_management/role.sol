@@ -1,4 +1,5 @@
 pragma solidity ^0.4.18;
+
 import "./permission_management.sol";
 
 
@@ -7,15 +8,15 @@ contract Role {
     event NameUpdated(bytes32 indexed _oldName, bytes32 indexed _newName);
     event PermissionsAdded(address[] _permissions);
     event PermissionsDeleted(address[] _permissions);
+    event RoleCreated(bytes32 indexed _name, address[] _permissions);
 
-    bytes32 internal name;
-    address[] internal permissions;
+    bytes32 name;
+    address[] permissions;
+    address internal permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
+    address internal roleManagementAddr = 0xe3b5DDB80AdDb513b5c981e27Bb030A86A8821eE;
 
-    // TODO: repalce test address with deployed address.
-    address internal permissionManagementAddr = 0x619F9ab1672eeD2628bFeC65AA392FD48994A433;
-
-    modifier onlyPermissionManagement {
-        require(permissionManagementAddr == msg.sender);
+    modifier onlyRoleManagement {
+        require(roleManagementAddr == msg.sender);
         _;
     }
 
@@ -25,10 +26,11 @@ contract Role {
     }
 
     function Role(bytes32 _name, address[] _permissions)
-        public 
+        public
     {
         name = _name;
         permissions = _permissions;
+        RoleCreated(_name, _permissions);
     }
 
     function deleteRole()
@@ -73,17 +75,9 @@ contract Role {
         return true;
     }
 
-    function queryRole()
-        public
-        view
-        returns (bytes32, address[]) 
-    {
-        return (name, permissions);
-    } 
-
     function applyRolePermissionsOf(address _account)
         public
-        onlyPermissionManagement
+        onlyRoleManagement
         returns(bool)
     {
         PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
@@ -96,7 +90,7 @@ contract Role {
 
     function cancelRolePermissionsOf(address _account)
         public
-        onlyPermissionManagement
+        onlyRoleManagement
         returns(bool)
     {
         PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
@@ -109,19 +103,39 @@ contract Role {
 
     function clearRolePermissionsOf(address _account)
         public
-        onlyPermissionManagement
+        onlyRoleManagement
         returns (bool)
     {
         PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
-        for (uint i = 0; i < permissions.length; i++) {
-            pmContract.clearAuthorization(_account);
-        }
+        return pmContract.clearAuthorization(_account);
+    }
+    
+    function queryRole()
+        public
+        view
+        returns (bytes32, address[])
+    {
+        return (name, permissions);
+    }
 
-        return true;
+    function queryName()
+        public
+        view
+        returns(bytes32)
+    {
+        return name;
+    }
+
+    function queryPermissions()
+        public
+        view
+        returns(address[])
+    {
+        return permissions;
     }
 
     /// private
-    function close() private onlyPermissionManagement
+    function close() private onlyRoleManagement
     {
         selfdestruct(msg.sender);
     }
