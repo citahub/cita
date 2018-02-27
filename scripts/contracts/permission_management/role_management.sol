@@ -1,33 +1,31 @@
 pragma solidity ^0.4.18;
 
-import "./role.sol";
 import "./role_creator.sol";
-
+import "./role.sol";
 
 contract RoleManagement {
     event RoleSetted(address indexed _account, address indexed _role);
     event RoleCanceled(address indexed _account, address indexed _role);
     event RoleCleared(address indexed _account);
 
-    // TODO: replace role creator address with deployed address.
-    address internal roleCreatorAddress = 0x619f9Ab1672EED2628BFec65AA392fD48994A430;
+    address roleCreatorAddress = 0xe9E2593C7D1Db5EE843c143E9cB52b8d996b2380;
+    RoleCreator roleCreator = RoleCreator(roleCreatorAddress);
 
-    mapping(address => address[]) internal roleAssignedToAccounts;
-    mapping(address => address[]) internal accountHadRoles;
+    address internal permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
 
-    function newRole(bytes32 _name, address[] _permissions) 
+    mapping(address => address[]) internal accounts;
+    mapping(address => address[]) internal roles;
+
+    function newRole(bytes32 _name, address[] _permissions)
         public
-        returns (address roleid) 
+        returns (address roleid)
     {
-        RoleCreator roleCreator = RoleCreator(roleCreatorAddress);
-        address role = roleCreator.createRole(_name, _permissions);
-
-        return role;
+        return roleCreator.createRole(_name, _permissions);
     }
 
     function deleteRole(address _roleid)
         public
-        returns (bool) 
+        returns (bool)
     {
         Role roleContract = Role(_roleid);
         roleContract.deleteRole();
@@ -37,7 +35,7 @@ contract RoleManagement {
 
     function updateRoleName(address _roleid, bytes32 _name)
         public
-        returns(bool)
+        returns (bool)
     {
         Role roleContract = Role(_roleid);
         return roleContract.updateName(_name);
@@ -45,7 +43,7 @@ contract RoleManagement {
 
     function addPermissions(address _roleid, address[] _permissions)
         public
-        returns(bool)
+        returns (bool)
     {
         Role roleContract = Role(_roleid);
         return roleContract.addPermissions(_permissions);
@@ -53,7 +51,7 @@ contract RoleManagement {
 
     function deletePermissions(address _roleid, address[] _permissions)
         public
-        returns(bool)
+        returns (bool)
     {
         Role roleContract = Role(_roleid);
         return roleContract.deletePermissions(_permissions);
@@ -61,10 +59,10 @@ contract RoleManagement {
 
     function setRole(address _account, address _role)
         public
-        returns(bool)
+        returns (bool)
     {
-        roleAssignedToAccounts[_role].push(_account);
-        accountHadRoles[_account].push(_role);
+        accounts[_role].push(_account);
+        roles[_account].push(_role);
 
         // Apply role permissions to account.
         Role roleContract = Role(_role);
@@ -76,14 +74,14 @@ contract RoleManagement {
 
     function cancelRole(address _account, address _role)
         public
-        returns(bool)
+        returns (bool)
     {
         // Cancel role permissions of account.
         Role roleContract = Role(_role);
         roleContract.cancelRolePermissionsOf(_account);
 
-        removeAddressInArray(_account, roleAssignedToAccounts[_role]);
-        removeAddressInArray(_role, accountHadRoles[_account]);
+        addressDelete(_account, accounts[_role]);
+        addressDelete(_role, roles[_account]);
 
         RoleCanceled(_account, _role);
         return true;
@@ -91,31 +89,47 @@ contract RoleManagement {
 
     function clearRole(address _account)
         public
-        returns(bool)
+        returns (bool)
     {
         // clear account and roles
-        var roles = accountHadRoles[_account];
-        for (uint i = 0; i < roles.length; i++) {
+        var _roles = roles[_account];
+        for (uint i = 0; i < _roles.length; i++) {
             // Clear account auth
-            Role roleContract = Role(roles[i]);
+            Role roleContract = Role(_roles[i]);
             roleContract.cancelRolePermissionsOf(_account);
             // clear _account in all roles array.
-            var accounts = roleAssignedToAccounts[roles[i]];
-            removeAddressInArray(_account, accounts);
+            var _accounts = accounts[_roles[i]];
+            addressDelete(_account, _accounts);
         }
- 
+
         // clear all roles associate with _account
-        delete accountHadRoles[_account];
+        delete roles[_account];
         RoleCleared(_account);
 
         return true;
+    }
+
+    function queryRoles(address _account)
+        public
+        view
+        returns (address[])
+    {
+        return roles[_account];
+    }
+
+    function queryAccounts(address _roleId)
+        public
+        view
+        returns (address[])
+    {
+        return accounts[_roleId];
     }
 
     /// private functions
     function itemIndexOf(address item, address[] storage items)
         private
         view
-        returns(uint i)
+        returns (uint i)
     {
         for (i = 0; i < items.length; i++) {
             if (item == items[i]) {
@@ -124,9 +138,9 @@ contract RoleManagement {
         }
     }
 
-    function removeAddressInArray(address item, address[] storage items)
+    function addressDelete(address item, address[] storage items)
         private
-        returns(bool)
+        returns (bool)
     {
         var index = itemIndexOf(item, items);
 
