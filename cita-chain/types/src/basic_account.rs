@@ -29,11 +29,16 @@ pub struct BasicAccount {
     pub storage_root: H256,
     /// Code hash of the account.
     pub code_hash: H256,
+    /// ABI hash of the account.
+    pub abi_hash: H256,
 }
 
 impl Encodable for BasicAccount {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(3).append(&self.nonce).append(&self.storage_root).append(&self.code_hash);
+        s.begin_list(4).append(&self.nonce)
+                       .append(&self.storage_root)
+                       .append(&self.code_hash)
+                       .append(&self.abi_hash);
     }
 }
 
@@ -43,6 +48,7 @@ impl Decodable for BasicAccount {
                nonce: rlp.val_at(0)?,
                storage_root: rlp.val_at(1)?,
                code_hash: rlp.val_at(2)?,
+               abi_hash: rlp.val_at(3)?,               
            })
     }
 }

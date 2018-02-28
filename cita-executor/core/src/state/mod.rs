@@ -66,7 +66,7 @@ enum AccountState {
     // CleanCached,
     /// Account has been modified and is not committed to the trie yet.
     /// This is set if any of the account data is changed, including
-    /// storage and code.
+    /// storage, code and ABI.
     Dirty,
     /// Account was modified and committed to the trie.
     Committed,
@@ -211,6 +211,8 @@ enum RequireCache {
     None,
     CodeSize,
     Code,
+    AbiSize,
+    Abi,
 }
 
 /// Mode of dealing with null accounts.
@@ -497,15 +499,36 @@ impl<B: Backend> State<B> {
         })
     }
 
+    /// Get accounts' ABI.
+    pub fn abi(&self, a: &Address) -> trie::Result<Option<Arc<Bytes>>> {
+        self.ensure_cached(a, RequireCache::Abi, true, |a| {
+            a.as_ref().map_or(None, |a| a.abi().clone())
+        })
+    }
+
+    /// Get an account's ABI hash.
+    pub fn abi_hash(&self, a: &Address) -> trie::Result<H256> {
+        self.ensure_cached(a, RequireCache::None, true, |a| {
+            a.as_ref().map_or(HASH_EMPTY, |a| a.abi_hash())
+        })
+    }
+
+    /// Get accounts' ABI size.
+    pub fn abi_size(&self, a: &Address) -> trie::Result<Option<usize>> {
+        self.ensure_cached(a, RequireCache::AbiSize, true, |a| {
+            a.as_ref().and_then(|a| a.abi_size())
+        })
+    }
+
     /// Increment the nonce of account `a` by 1.
     pub fn inc_nonce(&mut self, a: &Address) -> trie::Result<()> {
-        self.require(a, false).map(|mut x| x.inc_nonce())
+        self.require(a, false, false).map(|mut x| x.inc_nonce())
     }
 
     /// Mutate storage of account `a` so that it is `value` for `key`.
     pub fn set_storage(&mut self, a: &Address, key: H256, value: H256) -> trie::Result<()> {
         if self.storage_at(a, &key)? != value {
-            self.require(a, false)?.set_storage(key, value)
+            self.require(a, false, false)?.set_storage(key, value)
         }
 
         Ok(())
@@ -517,6 +540,7 @@ impl<B: Backend> State<B> {
         self.require_or_from(
             a,
             true,
+            false,
             || Account::new_contract(self.account_start_nonce),
             |_| {},
         )?
@@ -529,10 +553,38 @@ impl<B: Backend> State<B> {
         self.require_or_from(
             a,
             true,
+            false,
             || Account::new_contract(self.account_start_nonce),
             |_| {},
         )?
             .reset_code(code);
+        Ok(())
+    }
+
+    /// Initialise the ABI of account `a` so that it is `abi`.
+    /// NOTE: Account should have been created with `new_contract`.
+    pub fn init_abi(&mut self, a: &Address, abi: Bytes) -> trie::Result<()> {
+        self.require_or_from(
+            a,
+            false,
+            true,
+            || Account::new_contract(self.account_start_nonce),
+            |_| {},
+        )?
+            .init_abi(abi);
+        Ok(())
+    }
+
+    /// Reset the abi of account `a` so that it is `abi`.
+    pub fn reset_abi(&mut self, a: &Address, abi: Bytes) -> trie::Result<()> {
+        self.require_or_from(
+            a,
+            false,
+            true,
+            || Account::new_contract(self.account_start_nonce),
+            |_| {},
+        )?
+            .reset_abi(abi);
         Ok(())
     }
 
@@ -601,6 +653,7 @@ impl<B: Backend> State<B> {
                     account.commit_storage(&factories.trie, account_db.as_hashdb_mut())?;
 
                     account.commit_code(account_db.as_hashdb_mut());
+                    account.commit_abi(account_db.as_hashdb_mut())
                 }
             }
         }
@@ -648,8 +701,7 @@ impl<B: Backend> State<B> {
         db: &HashDB,
     ) {
         match (account.is_cached(), require) {
-            (true, _) | (false, RequireCache::None) => {}
-            (false, _) => {
+            (false, RequireCache::Code) | (false, RequireCache::CodeSize) => {
                 // if there's already code in the global cache, always cache it
                 // locally.
                 // let hash = account.code_hash();
@@ -673,6 +725,14 @@ impl<B: Backend> State<B> {
                 // }
                 account.cache_code(db);
             }
+            _ => {}
+        };
+
+        match (account.is_abi_cached(), require) {
+            (false, RequireCache::Abi) | (false, RequireCache::AbiSize) => {
+                account.cache_abi(db);
+            }
+            _ => {}
         }
     }
 
@@ -714,22 +774,28 @@ impl<B: Backend> State<B> {
         Ok(r)
     }
 
-    /// Pull account `a` in our cache from the trie DB. `require_code` requires that the code be cached, too.
-    fn require<'a>(&'a self, a: &Address, require_code: bool) -> trie::Result<RefMut<'a, Account>> {
+    /// Pull account `a` in our cache from the trie DB.
+    /// `require_code` requires that the code be cached, too.
+    /// `require_abi` requires that the abi be cached, too.
+    fn require<'a>(&'a self, a: &Address, require_code: bool, require_abi: bool) -> trie::Result<RefMut<'a, Account>> {
         self.require_or_from(
             a,
             require_code,
+            require_abi,
             || Account::new_basic(self.account_start_nonce),
             |_| {},
         )
     }
 
-    /// Pull account `a` in our cache from the trie DB. `require_code` requires that the code be cached, too.
+    /// Pull account `a` in our cache from the trie DB.
+    /// `require_code` requires that the code be cached, too.
+    /// `require_abi` requires that the abi be cached, too.
     /// If it doesn't exist, make account equal the evaluation of `default`.
     fn require_or_from<'a, F, G>(
         &'a self,
         a: &Address,
         require_code: bool,
+        require_abi: bool,
         default: F,
         not_default: G,
     ) -> trie::Result<RefMut<'a, Account>>
@@ -761,18 +827,31 @@ impl<B: Backend> State<B> {
             entry.state = AccountState::Dirty;
             match entry.account {
                 Some(ref mut account) => {
-                    if require_code {
+                    if require_code || require_abi {
                         let addr_hash = account.address_hash(a);
                         let accountdb = self.factories
                             .accountdb
                             .readonly(self.db.as_hashdb(), addr_hash);
-                        Self::update_account_cache(
-                            RequireCache::Code,
-                            account,
-                            /* &self.db, */
-                            accountdb.as_hashdb(),
-                        );
+
+                        if require_code {
+                            Self::update_account_cache(
+                                RequireCache::Code,
+                                account,
+                                /* &self.db, */
+                                accountdb.as_hashdb(),
+                            );
+                        }
+
+                        if require_abi {
+                            Self::update_account_cache(
+                                RequireCache::Abi,
+                                account,
+                                /* &self.db, */
+                                accountdb.as_hashdb(),
+                            );
+                        }
                     }
+
                     account
                 }
                 _ => panic!("Required account must always exist; qed"),
@@ -937,6 +1016,10 @@ mod tests {
                     .from_hex()
                     .unwrap()
             )
+        );
+        assert_eq!(
+            state.abi(&contract_address).unwrap().unwrap(),
+            Arc::new(vec![])
         );
     }
 
@@ -1824,7 +1907,7 @@ mod tests {
         let (root, db) = {
             let mut state = get_temp_state();
             state
-                .require_or_from(&a, false, || Account::new_contract(0.into()), |_| {})
+                .require_or_from(&a, false, false, || Account::new_contract(0.into()), |_| {})
                 .unwrap();
             state.init_code(&a, vec![1, 2, 3]).unwrap();
             assert_eq!(
@@ -1846,6 +1929,26 @@ mod tests {
             state.code(&a).unwrap(),
             Some(Arc::new([1u8, 2, 3].to_vec()))
         );
+    }
+
+    #[test]
+    fn abi_from_database() {
+        let a = Address::zero();
+        let (root, db) = {
+            let mut state = get_temp_state();
+            state
+                .require_or_from(&a, false, false, || Account::new_contract(0.into()), |_| {})
+                .unwrap();
+            state.init_abi(&a, vec![1, 2, 3]).unwrap();
+            assert_eq!(state.abi(&a).unwrap(), Some(Arc::new([1u8, 2, 3].to_vec())));
+
+            state.commit().unwrap();
+            assert_eq!(state.abi(&a).unwrap(), Some(Arc::new([1u8, 2, 3].to_vec())));
+            state.drop()
+        };
+        let state = State::from_existing(db, root, U256::from(0u8), Default::default()).unwrap();
+
+        assert_eq!(state.abi(&a).unwrap(), Some(Arc::new([1u8, 2, 3].to_vec())));
     }
 
     #[test]
@@ -1918,7 +2021,7 @@ mod tests {
         let db = get_temp_state_db();
         let (root, db) = {
             let mut state = State::new(db, U256::from(0u8), Default::default());
-            state.require(&a, false).unwrap();
+            state.require(&a, false, false).unwrap();
             state.commit().unwrap();
             state.drop()
         };
@@ -1984,17 +2087,17 @@ mod tests {
     fn ensure_cached() {
         let mut state = get_temp_state();
         let a = Address::zero();
-        state.require(&a, false).unwrap();
+        state.require(&a, false, false).unwrap();
         state.commit().unwrap();
         if HASH_NAME == "sha3" {
             assert_eq!(
                 state.root().hex(),
-                "42d8434e6d43bbdfa67dee7c7ef5c17159056e7727ac1ad5ba9928aeb9eb0112"
+                "98560ba094af6f0874e6a965207d24e049b76fcb8b94bee33d219a21d1636f83"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
                 state.root().hex(),
-                "a989e73cbcbb961ac9777ca453449c42a0c008c70ef16326b7d4c96681f5d90d"
+                "1d20d29c3bef1ce4b24e171b3d94371176ccf6a5a624e184bc48f3c3be98e083"
             );
         }
     }
