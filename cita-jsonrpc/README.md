@@ -262,8 +262,8 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":[
   "jsonrpc": "2.0",
   "id": 1,
   "error": {
-    "code": 6,
-    "message": "TxResponse {hash: 019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236, status: \"Dup\" }"
+    "code": -32006,
+    "message": "Dup"//重复交易
   }
 }
 
@@ -323,7 +323,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByHash","params":["
       "transactionsRoot": "0xf31e32611322f410f430ef8141c2237c19dd1034eddef8dedba692ec9851799b",
       "receiptsRoot": "0x9646cf2572734b4b13fe1616446ab2658e208cfdbaf25e47ebea9b6327e10c5b",
       "gasUsed": "0x0"
-      "height": "0x387"
+      "number": "0x387"
     },
     "body": {
       "transactions": [
@@ -407,7 +407,7 @@ Object - A receipt object:
 * gasUsed: QUANTITY - The amount of gas used by this specific transaction alone.
 * contractAddress: DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
 * logs: Array - Array of log objects, which this transaction generated.
-* root : DATA 32 bytes of post-transaction stateroot 
+* root: DATA 32 bytes of post-transaction stateroot.
 * errorMessage: String, execution error message.
 
 Receipt error messages:
@@ -417,7 +417,7 @@ Receipt error messages:
 * Not enough base gas.
 * Block gas limit reached.
 * Account gas limit reached.
-* Out of gas
+* Out of gas.
 * Jump position wasn't marked with JUMPDEST instruction.
 * Instruction is not supported.
 * Not enough stack elements to execute instruction.
