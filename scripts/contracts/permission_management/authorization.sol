@@ -13,7 +13,7 @@ contract Authorization {
     address deletePermissionAddr = 0x00000000000000000000000000000000023241b5;
     address updatePermissionAddr = 0x00000000000000000000000000000000033241B5;
     address setAuthAddr = 0x00000000000000000000000000000000043241b5;
-    address cancelAuthAddr = 0x00000000000000000000000000000000053241B5;
+    address cancelAuthAddr = 0x00000000000000000000000000000000053241b5;
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;

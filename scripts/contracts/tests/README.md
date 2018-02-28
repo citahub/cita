@@ -1,4 +1,4 @@
-# Test permission system
+# Test contract using web3js
 
 ## 0. Setup
 
@@ -16,12 +16,23 @@ Then install the latest version:
 ```
 nvm install --latest-npm
 ```
+
 ### 0.1. Install node modules
 
-cd the `tests` dir, then run:
+* [Install yarn](https://yarnpkg.com/lang/en/docs/install/)
+    - configure the repository:
+        ```
+        curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+        echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+        ```
+    - run:
+        ```
+        sudo apt-get update && sudo apt-get install yarn
+        ```
+* cd the `tests` dir, then run:
 
 ```
-npm install
+yarn install
 ```
 
 ## 1. Test
@@ -43,6 +54,16 @@ Some options of mocha usage:
 
 * `-t 60s`: set test-case timeout
 * `-g <pattern>`: only run tests matching <pattern>
+
+## 2. Which contracs?
+
+Include:
+
+* Permission management (path: `cd ../permission_management`):
+    - authorization
+    - permission
+    - permission_management
+    - role_management
 
 # Other directory
 

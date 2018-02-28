@@ -1,7 +1,6 @@
 pragma solidity ^0.4.18;
 
 import "./role_creator.sol";
-import "./role.sol";
 
 contract RoleManagement {
     event RoleSetted(address indexed _account, address indexed _role);
