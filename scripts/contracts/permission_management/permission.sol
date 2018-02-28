@@ -26,11 +26,6 @@ contract Permission {
         _;
     }
 
-    modifier notSame(bytes32 _name) {
-        require(name != _name);
-        _;
-    }
-
     /// @dev Constructor
     function Permission(bytes32 _name, address[] _conts, bytes4[] _funcs)
         public
@@ -65,7 +60,6 @@ contract Permission {
     function updateName(bytes32 _name)
         public
         onlyPermissionManagement
-        notSame(_name)
         returns (bool)
     {
         NameUpdated(name, _name);
