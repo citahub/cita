@@ -38,6 +38,8 @@ contract PermissionManagement {
     {
         Permission perm = Permission(_permission);
         perm.close();
+        // Cancel the auth of the accounts who have the permission
+        auth.clearAuthOfPermission(_permission);
         PermissionDeleted(_permission);
         return true;
     }
@@ -69,12 +71,38 @@ contract PermissionManagement {
         return perm.deleteResources(_conts, _funcs);
     }
 
+    /// @dev Set authorizations
+    function setAuthorizations(address _account, address[] _permissions)
+        public
+        returns (bool)
+    {
+        for (uint i = 0; i < _permissions.length; i++) {
+            if (!auth.setAuth(_account, _permissions[i]))
+                return false;
+        }
+
+        return true;
+    }
+
     /// @dev Set authorization
     function setAuthorization(address _account, address _permission)
         public
         returns (bool)
     {
         return auth.setAuth(_account, _permission);
+    }
+
+    /// @dev Cancel authorizations
+    function cancelAuthorizations(address _account, address[] _permissions)
+        public
+        returns (bool)
+    {
+        for (uint i = 0; i < _permissions.length; i++) {
+            if (!auth.cancelAuth(_account, _permissions[i]))
+                return false;
+        }
+
+        return true;
     }
 
     /// @dev Cancel authorization

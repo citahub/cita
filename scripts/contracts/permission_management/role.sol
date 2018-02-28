@@ -3,6 +3,7 @@ pragma solidity ^0.4.18;
 import "./permission_management.sol";
 
 
+/// @notice Move the interface about calling the permission management to the role management
 contract Role {
 
     event NameUpdated(bytes32 indexed _oldName, bytes32 indexed _newName);
@@ -14,14 +15,10 @@ contract Role {
     address[] permissions;
     address internal permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
     address internal roleManagementAddr = 0xe3b5DDB80AdDb513b5c981e27Bb030A86A8821eE;
+    PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
 
     modifier onlyRoleManagement {
         require(roleManagementAddr == msg.sender);
-        _;
-    }
-
-    modifier notSame(bytes32 _name) {
-        require(name != _name);
         _;
     }
 
@@ -43,7 +40,6 @@ contract Role {
 
     function updateName(bytes32 _name)
         public
-        notSame(_name)
         returns (bool)
     {
         NameUpdated(name, _name);
@@ -80,7 +76,6 @@ contract Role {
         onlyRoleManagement
         returns (bool)
     {
-        PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
         for (uint i = 0; i < permissions.length; i++) {
             pmContract.setAuthorization(_account, permissions[i]);
         }
@@ -93,7 +88,6 @@ contract Role {
         onlyRoleManagement
         returns (bool)
     {
-        PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
         for (uint i = 0; i < permissions.length; i++) {
             pmContract.cancelAuthorization(_account, permissions[i]);
         }
@@ -106,7 +100,6 @@ contract Role {
         onlyRoleManagement
         returns (bool)
     {
-        PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
         return pmContract.clearAuthorization(_account);
     }
     

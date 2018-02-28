@@ -49,7 +49,7 @@ describe('test authorization contract', function() {
         }
     });
 
-    it("should check the account doen not have the resource", function() {
+    it("should check the account does not have the resource", function() {
         var res = aContractInstance.checkPermission.call(
                 superAdmin,
                 "0x00000000000000000000000000000000013241b2",
@@ -59,7 +59,7 @@ describe('test authorization contract', function() {
             assert.equal(res, false);
     });
 
-    it("should check the account doen not have the resource", function() {
+    it("should check the account does not have the resource", function() {
         var res = aContractInstance.checkPermission.call(
                 superAdmin,
                 "0x00000000000000000000000000000000013241b3",

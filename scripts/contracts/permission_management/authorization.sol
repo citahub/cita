@@ -5,7 +5,6 @@ import "./permission.sol";
 
 /// @title Authorization about the permission and account
 /// @notice Only be called by permission_management contract except query interface
-///         TODO Set multi auth interface
 contract Authorization {
 
     address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
@@ -58,7 +57,7 @@ contract Authorization {
         return true;
     }
 
-    /// @dev Clear the account's permissions
+    /// @dev Clear the account's auth
     function clearAuth(address _account)
         public
         onlyPermissionManagement
@@ -71,6 +70,22 @@ contract Authorization {
         delete permissions[_account];
 
         AuthCleared(_account);
+        return true;
+    }
+
+    /// @dev Clear the auth of the accounts who have the permission
+    function clearAuthOfPermission(address _permission)
+        public
+        onlyPermissionManagement
+        returns (bool)
+    {
+        address[] memory _accounts = queryAccounts(_permission);
+
+        for (uint i = 0; i < _accounts.length; i++) {
+            if (!cancelAuth(_accounts[i], _permission))
+                return false;
+        }
+
         return true;
     }
 
