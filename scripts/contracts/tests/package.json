@@ -7,7 +7,7 @@
     "jshint": ">=2.5.0",
     "chai": "^3.0.0",
     "mocha": ">=2.3.3",
-    "web3": "https://github.com/cryptape/web3.js#cita_support"
+    "web3": "https://github.com/cryptape/web3.js#develop"
   },
   "scripts": {
     "test": "mocha -t 60s; jshint test"
