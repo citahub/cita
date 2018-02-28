@@ -44,7 +44,7 @@ contract Role {
     function updateName(bytes32 _name)
         public
         notSame(_name)
-        returns(bool)
+        returns (bool)
     {
         NameUpdated(name, _name);
         name = _name;
@@ -53,7 +53,7 @@ contract Role {
 
     function addPermissions(address[] _permissions)
         public
-        returns(bool)
+        returns (bool)
     {
         for (uint index = 0; index < _permissions.length; index++) {
             permissions.push(_permissions[index]);
@@ -65,7 +65,7 @@ contract Role {
 
     function deletePermissions(address[] _permissions)
         public
-        returns(bool)
+        returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++) {
             removePermission(_permissions[i]);
@@ -78,7 +78,7 @@ contract Role {
     function applyRolePermissionsOf(address _account)
         public
         onlyRoleManagement
-        returns(bool)
+        returns (bool)
     {
         PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
         for (uint i = 0; i < permissions.length; i++) {
@@ -91,7 +91,7 @@ contract Role {
     function cancelRolePermissionsOf(address _account)
         public
         onlyRoleManagement
-        returns(bool)
+        returns (bool)
     {
         PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
         for (uint i = 0; i < permissions.length; i++) {
@@ -121,7 +121,7 @@ contract Role {
     function queryName()
         public
         view
-        returns(bytes32)
+        returns (bytes32)
     {
         return name;
     }
@@ -129,12 +129,12 @@ contract Role {
     function queryPermissions()
         public
         view
-        returns(address[])
+        returns (address[])
     {
         return permissions;
     }
 
-    /// private
+    /// @notice private
     function close() private onlyRoleManagement
     {
         selfdestruct(msg.sender);
@@ -143,7 +143,7 @@ contract Role {
     function indexOf(address permission)
         private
         view
-        returns(uint i)
+        returns (uint i)
     {
         for (i = 0; i < permissions.length; i++) {
             if (permission == permissions[i]) {
@@ -154,7 +154,7 @@ contract Role {
 
     function removePermission(address permission)
         private
-        returns(bool)
+        returns (bool)
     {
         var index = indexOf(permission);
 
