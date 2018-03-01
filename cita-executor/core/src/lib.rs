@@ -20,6 +20,7 @@
 #![cfg_attr(test, feature(test))]
 extern crate bincode;
 extern crate byteorder;
+#[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate log;

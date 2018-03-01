@@ -25,6 +25,7 @@ extern crate bytes;
 extern crate clap;
 extern crate dotenv;
 extern crate futures;
+#[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate log;
@@ -56,6 +57,7 @@ use clap::{App, SubCommand};
 use config::NetConfig;
 use connection::{manage_connect, Connection};
 use libproto::Message;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use netserver::NetServer;
 use network::NetWork;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
@@ -100,13 +102,18 @@ fn main() {
     // split new_tx with other msg
     let (ctx_sub_tx, crx_sub_tx) = channel();
     let (ctx_pub_tx, crx_pub_tx) = channel();
-    start_pubsub("network_tx", vec!["auth.tx"], ctx_sub_tx, crx_pub_tx);
+    start_pubsub(
+        "network_tx",
+        routing_key!([Auth >> Request]),
+        ctx_sub_tx,
+        crx_pub_tx,
+    );
 
     let (ctx_sub_consensus, crx_sub_consensus) = channel();
     let (ctx_pub_consensus, crx_pub_consensus) = channel();
     start_pubsub(
         "network_consensus",
-        vec!["consensus.msg"],
+        routing_key!([Consensus >> SignedProposal, Consensus >> RawBytes]),
         ctx_sub_consensus,
         crx_pub_consensus,
     );
@@ -115,7 +122,11 @@ fn main() {
     let (ctx_pub, crx_pub) = channel();
     start_pubsub(
         "network",
-        vec!["chain.status", "chain.blk", "jsonrpc.net"],
+        routing_key!([
+            Chain >> Status,
+            Chain >> SyncResponse,
+            Jsonrpc >> RequestNet,
+        ]),
         ctx_sub,
         crx_pub,
     );
@@ -157,8 +168,8 @@ fn main() {
     // Sync loop
     let mut synchronizer = Synchronizer::new(ctx_pub, Arc::clone(&con));
     thread::spawn(move || loop {
-        if let Ok((source, body)) = sync_rx.recv() {
-            synchronizer.receive(source, body);
+        if let Ok((source, payload)) = sync_rx.recv() {
+            synchronizer.receive(source, payload);
         }
     });
 

@@ -19,6 +19,7 @@
 #![allow(unused_attributes)]
 #![cfg_attr(test, feature(test))]
 extern crate byteorder;
+#[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate log;

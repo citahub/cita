@@ -28,6 +28,7 @@ extern crate core;
 extern crate dotenv;
 extern crate error;
 extern crate jsonrpc_types;
+#[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate log;
@@ -47,6 +48,7 @@ use clap::App;
 use core::db;
 use core::libchain;
 use forward::Forward;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
@@ -76,14 +78,15 @@ fn main() {
     let (ctx_pub, crx_pub) = channel();
     start_pubsub(
         "chain",
-        vec![
-            "net.blk",
-            "net.sync",
-            "consensus.blk",
-            "jsonrpc.request",
-            "auth.blk_tx_hashs_req",
-            "executor.result",
-        ],
+        routing_key!([
+            Chain >> SyncResponse,
+            Net >> SyncResponse,
+            Net >> SyncRequest,
+            Consensus >> BlockWithProof,
+            Jsonrpc >> Request,
+            Auth >> BlockTxHashesReq,
+            Executor >> ExecutedResult,
+        ]),
         tx,
         crx_pub,
     );

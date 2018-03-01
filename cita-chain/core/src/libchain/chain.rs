@@ -36,6 +36,7 @@ use libproto::blockchain::{AccountGasLimit as ProtoAccountGasLimit, Proof as Pro
 
 use libproto::{BlockTxHashes, FullTransaction, Message, SyncResponse};
 use libproto::executor::ExecutedResult;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
@@ -427,7 +428,10 @@ impl Chain {
             let msg: Message = sync_res.into();
             ctx_pub
                 .clone()
-                .send(("net.blk".to_string(), msg.try_into().unwrap()))
+                .send((
+                    routing_key!(Chain >> SyncResponse).into(),
+                    msg.try_into().unwrap(),
+                ))
                 .unwrap();
         }
     }
@@ -889,7 +893,10 @@ impl Chain {
         let msg: Message = block_tx_hashes.into();
 
         ctx_pub_clone
-            .send(("chain.txhashes".to_string(), msg.try_into().unwrap()))
+            .send((
+                routing_key!(Chain >> BlockTxHashes).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
         trace!("delivery block's tx hashes for height: {}", block_height);
     }
@@ -918,7 +925,10 @@ impl Chain {
 
         let msg: Message = rich_status.into();
         ctx_pub
-            .send(("chain.richstatus".to_string(), msg.try_into().unwrap()))
+            .send((
+                routing_key!(Chain >> RichStatus).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
     }
 
@@ -1000,13 +1010,16 @@ impl Chain {
         }
         let status = self.current_status().protobuf();
         info!(
-            "chain.status {:?}, {:?}",
+            "chain status {:?}, {:?}",
             status.get_height(),
             status.get_hash()
         );
         let sync_msg: Message = status.into();
         ctx_pub
-            .send(("chain.status".to_string(), sync_msg.try_into().unwrap()))
+            .send((
+                routing_key!(Chain >> Status).into(),
+                sync_msg.try_into().unwrap(),
+            ))
             .unwrap();
     }
 

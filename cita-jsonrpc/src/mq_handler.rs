@@ -17,7 +17,8 @@
 
 use helper::{RpcMap, TransferType};
 use jsonrpc_types::response::Output;
-use libproto::{Message, MsgClass};
+use libproto::Message;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use serde_json;
 use std::convert::TryFrom;
 
@@ -35,11 +36,14 @@ impl MqHandler {
 
     pub fn handle(&mut self, key: &str, body: &[u8]) {
         let mut msg = Message::try_from(body).unwrap();
-        let content_ext = msg.take_content();
         trace!("get msg from routint_key {}", key);
 
-        match content_ext {
-            MsgClass::Response(content) => {
+        match RoutingKey::from(key) {
+            routing_key!(Auth >> Response)
+            | routing_key!(Chain >> Response)
+            | routing_key!(Executor >> Response)
+            | routing_key!(Net >> Response) => {
+                let content = msg.take_response().unwrap();
                 trace!("from response request_id {:?}", content.request_id);
                 let value = { self.responses.lock().remove(&content.request_id) };
                 if let Some(val) = value {
@@ -58,7 +62,7 @@ impl MqHandler {
                 }
             }
             _ => {
-                warn!("receive unexpect msg format {:?}", content_ext);
+                warn!("receive unexpect key {}", key);
             }
         }
     }

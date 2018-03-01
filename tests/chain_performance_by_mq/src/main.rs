@@ -23,6 +23,7 @@ extern crate common_types;
 extern crate core;
 extern crate cpuprofiler;
 extern crate dotenv;
+#[macro_use]
 extern crate libproto;
 extern crate proof;
 extern crate protobuf;
@@ -41,7 +42,8 @@ mod generate_block;
 use clap::App;
 use crypto::*;
 use generate_block::Generateblock;
-use libproto::{Message, MsgClass};
+use libproto::Message;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
 use std::convert::TryFrom;
 use std::sync::{Arc, Mutex};
@@ -98,7 +100,10 @@ fn create_contract(
     let mut sys_time_lock = sys_time.lock().unwrap();
     *sys_time_lock = time::SystemTime::now();
     pub_sender
-        .send(("consensus.blk".to_string(), send_data.clone()))
+        .send((
+            routing_key!(Consensus >> BlockWithProof).into(),
+            send_data.clone(),
+        ))
         .unwrap();
 }
 
@@ -144,15 +149,21 @@ fn main() {
     let keypair = KeyPair::gen_keypair();
     let pk = keypair.privkey();
 
-    start_pubsub("consensus", vec!["chain.richstatus"], tx_sub, rx_pub);
+    start_pubsub(
+        "consensus",
+        routing_key!([Chain >> RichStatus]),
+        tx_sub,
+        rx_pub,
+    );
     let sys_time = Arc::new(Mutex::new(time::SystemTime::now()));
 
     loop {
-        let (_, body) = rx_sub.recv().unwrap();
+        let (key, body) = rx_sub.recv().unwrap();
         let mut msg = Message::try_from(&body).unwrap();
-        match msg.take_content() {
+        match RoutingKey::from(&key) {
             //接受chain发送的 authorities_list
-            MsgClass::RichStatus(rich_status) => {
+            routing_key!(Chain >> RichStatus) => {
+                let rich_status = msg.take_rich_status().unwrap();
                 info!("get new local status {:?}", rich_status.height);
                 if !send_flag && rich_status.height == height {
                     let start_time = sys_time.lock().unwrap();

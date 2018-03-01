@@ -1,7 +1,8 @@
 use Source;
 use connection::Connection;
-use libproto::{Message, MsgClass, OperateType, SyncRequest, SyncResponse};
+use libproto::{Message, OperateType, SyncRequest, SyncResponse};
 use libproto::blockchain::{Block, Status};
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use protobuf::RepeatedField;
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, VecDeque};
@@ -154,29 +155,28 @@ impl Synchronizer {
         self.submit_blocks();
     }
 
-    pub fn receive(&mut self, from: Source, body: Vec<u8>) {
+    pub fn receive(&mut self, _from: Source, payload: (String, Vec<u8>)) {
+        let (key, body) = payload;
         let mut msg = Message::try_from(&body).unwrap();
         let origin = msg.get_origin();
-        let content = msg.take_content();
-        match content {
-            MsgClass::Status(status) => match from {
-                Source::LOCAL => {
+        match RoutingKey::from(&key) {
+            routing_key!(Chain >> Status) => {
+                if let Some(status) = msg.take_status() {
                     self.update_current_status(status);
-                }
-                Source::REMOTE => {
+                };
+            }
+            routing_key!(Synchronizer >> Status) => {
+                if let Some(status) = msg.take_status() {
                     self.update_global_status(&status, origin);
-                }
-            },
-            MsgClass::SyncResponse(blocks) => match from {
-                Source::LOCAL => {
-                    error!("sync: msg not parse!");
-                }
-                Source::REMOTE => {
+                };
+            }
+            routing_key!(Synchronizer >> SyncResponse) => {
+                if let Some(blocks) = msg.take_sync_response() {
                     self.process_sync(blocks);
-                }
-            },
+                };
+            }
             _ => {
-                warn!("receive: unexpected data type = {:?}", content);
+                warn!("receive: unexpected data type = {:?}", key);
             }
         }
     }
@@ -259,12 +259,13 @@ impl Synchronizer {
                 self.current_status.get_height(),
                 heights,
                 origin,
-                OperateType::SINGLE
+                OperateType::Single
             );
             let mut sync_req = SyncRequest::new();
             sync_req.set_heights(heights);
-            let msg = Message::init(OperateType::SINGLE, origin, MsgClass::SyncRequest(sync_req));
-            self.con.broadcast("net.sync_req".to_string(), msg);
+            let msg = Message::init(OperateType::Single, origin, sync_req.into());
+            self.con
+                .broadcast(routing_key!(Synchronizer >> SyncRequest).into(), msg);
         }
     }
 
@@ -275,7 +276,8 @@ impl Synchronizer {
             self.current_status.get_hash()
         );
         let msg: Message = self.current_status.clone().into();
-        self.con.broadcast("net.sync_status".to_string(), msg);
+        self.con
+            .broadcast(routing_key!(Synchronizer >> Status).into(), msg);
     }
 
     //提交连续的块
@@ -333,8 +335,10 @@ impl Synchronizer {
             let mut sync_res = SyncResponse::new();
             sync_res.set_blocks(RepeatedField::from_vec(blocks));
             let msg: Message = sync_res.into();
-            self.tx_pub
-                .send(("net.blk".to_string(), msg.try_into().unwrap()));
+            self.tx_pub.send((
+                routing_key!(Net >> SyncResponse).into(),
+                msg.try_into().unwrap(),
+            ));
         }
     }
 

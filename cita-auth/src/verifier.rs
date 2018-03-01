@@ -16,7 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::{PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
-use libproto::{BlockTxHashesReq, Crypto, Message, Ret, SubModules, UnverifiedTransaction, VerifyTxReq, VerifyTxResp};
+use libproto::{BlockTxHashesReq, Crypto, Message, Ret, UnverifiedTransaction, VerifyTxReq, VerifyTxResp};
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryInto};
 use std::result::Result;
@@ -38,7 +39,7 @@ pub enum VerifyRequestResponse {
 
 #[derive(Debug, Clone)]
 pub struct VerifyRequestResponseInfo {
-    pub sub_module: SubModules,
+    pub key: String,
     pub verify_type: VerifyType,
     pub request_id: VerifyRequestID,
     pub time_stamp: SystemTime,
@@ -111,7 +112,10 @@ impl Verifier {
             req.set_height(i);
             let msg: Message = req.into();
             tx_pub
-                .send(("auth.blk_tx_hashs_req".to_string(), msg.try_into().unwrap()))
+                .send((
+                    routing_key!(Auth >> BlockTxHashesReq).into(),
+                    msg.try_into().unwrap(),
+                ))
                 .unwrap();
         }
     }

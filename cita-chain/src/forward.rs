@@ -25,8 +25,9 @@ use error::ErrorCode;
 use jsonrpc_types::rpctypes::{self as rpctypes, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
                               Log as RpcLog, Receipt as RpcReceipt, RpcBlock};
 use libproto::{request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
-               ExecutedResult, Message, MsgClass, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
+               ExecutedResult, Message, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
                SyncResponse};
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use serde_json;
@@ -57,36 +58,43 @@ impl Forward {
     }
 
     // 注意: 划分函数处理流程
-    pub fn dispatch_msg(&self, _key: &str, msg_bytes: &[u8]) {
+    pub fn dispatch_msg(&self, key: &str, msg_bytes: &[u8]) {
         let mut msg = Message::try_from(msg_bytes).unwrap();
         let origin = msg.get_origin();
-        let content_ext = msg.take_content();
-        match content_ext {
-            MsgClass::Request(req) => {
+        match RoutingKey::from(key) {
+            routing_key!(Jsonrpc >> Request) => {
+                let req = msg.take_request().unwrap();
                 self.reply_request(req, msg_bytes.to_vec());
             }
 
             //send to block_processor to operate
-            MsgClass::ExecutedResult(info) => {
+            routing_key!(Executor >> ExecutedResult) => {
+                let info = msg.take_executed_result().unwrap();
                 self.write_sender.send(info).unwrap();
             }
 
-            MsgClass::BlockWithProof(proof_blk) => {
+            routing_key!(Consensus >> BlockWithProof) => {
+                let proof_blk = msg.take_block_with_proof().unwrap();
                 self.consensus_block_enqueue(proof_blk);
             }
 
-            MsgClass::SyncRequest(sync_req) => {
+            routing_key!(Net >> SyncRequest) => {
+                let sync_req = msg.take_sync_request().unwrap();
                 self.reply_syn_req(sync_req, origin);
             }
 
-            MsgClass::SyncResponse(sync_res) => self.deal_sync_blocks(sync_res),
+            routing_key!(Net >> SyncResponse) | routing_key!(Chain >> SyncResponse) => {
+                let sync_res = msg.take_sync_response().unwrap();
+                self.deal_sync_blocks(sync_res);
+            }
 
-            MsgClass::BlockTxHashesReq(block_tx_hashes_req) => {
+            routing_key!(Auth >> BlockTxHashesReq) => {
+                let block_tx_hashes_req = msg.take_block_tx_hashes_req().unwrap();
                 self.deal_block_tx_req(&block_tx_hashes_req);
             }
 
             _ => {
-                error!("error MsgClass!!!!");
+                error!("error key {}!!!!", key);
             }
         }
     }
@@ -94,8 +102,6 @@ impl Forward {
     fn reply_request(&self, mut req: request::Request, imsg: Vec<u8>) {
         let mut response = response::Response::new();
         response.set_request_id(req.take_request_id());
-        let topic = "chain.rpc".to_string();
-        let retrans_topic = "executor.rpc".to_string();
         match req.req.unwrap() {
             // TODO: should check the result, parse it first!
             Request::block_number(_) => {
@@ -194,19 +200,25 @@ impl Forward {
 
             Request::call(call) => {
                 trace!("Chainvm Call {:?}", call);
-                self.ctx_pub.send((retrans_topic, imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::transaction_count(tx_count) => {
                 trace!("transaction count request from jsonrpc {:?}", tx_count);
-                self.ctx_pub.send((retrans_topic, imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::code(code_content) => {
                 trace!("code request from josnrpc  {:?}", code_content);
-                self.ctx_pub.send((retrans_topic, imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
@@ -249,7 +261,12 @@ impl Forward {
             }
         };
         let msg: Message = response.into();
-        self.ctx_pub.send((topic, msg.try_into().unwrap())).unwrap();
+        self.ctx_pub
+            .send((
+                routing_key!(Chain >> Response).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
     }
 
     // Consensus block enqueue
@@ -306,7 +323,7 @@ impl Forward {
                         trace!(
                             "sync: max height {:?}, chain.blk: OperateType {:?}",
                             height,
-                            OperateType::SINGLE
+                            OperateType::Single
                         );
                     }
                 }
@@ -319,14 +336,17 @@ impl Forward {
             res_vec.get_blocks().len()
         );
         if res_vec.mut_blocks().len() > 0 {
-            let msg = Message::init(OperateType::SINGLE, origin, MsgClass::SyncResponse(res_vec));
+            let msg = Message::init(OperateType::Single, origin, res_vec.into());
             trace!(
                 "sync: origin {:?}, chain.blk: OperateType {:?}",
                 origin,
-                OperateType::SINGLE
+                OperateType::Single
             );
             self.ctx_pub
-                .send(("chain.blk".to_string(), msg.try_into().unwrap()))
+                .send((
+                    routing_key!(Chain >> SyncResponse).into(),
+                    msg.try_into().unwrap(),
+                ))
                 .unwrap();
         }
     }
@@ -445,7 +465,10 @@ impl Forward {
             block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
             let msg: Message = block_tx_hashes.into();
             self.ctx_pub
-                .send(("chain.txhashes".to_string(), msg.try_into().unwrap()))
+                .send((
+                    routing_key!(Chain >> BlockTxHashes).into(),
+                    msg.try_into().unwrap(),
+                ))
                 .unwrap();
             trace!("response block's tx hashes for height:{}", block_height);
         } else {
