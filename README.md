@@ -8,7 +8,7 @@
 
 CITA is a fast and scalable blockchain for enterprises. CITA supports both native contract and EVM contract, by which enterprise users can build their own blockchain applications. CITA has an unique architecture which enables enterprise users to unlease all their computing resources.
 
-- **Horizontal scalability**: CITA adopts a microservices architecture to boost each (logical) node’s performance.With the microservice architecture, a logical node can be easily scaled to a cluster of servers. Outside one node's bounday, nodes communicate with each other using P2P network; Inside each node, microservices communicate with each other by messaging queue. (Note this is completely different from Fabric which use a messaging queue only as consensus process)
+- **Horizontal scalability**: CITA adopts a microservice architecture to boost each (logical) node’s performance. With the microservice architecture, a logical node can be easily scaled to a cluster of servers. Outside one node's bounday, nodes communicate with each other using P2P network; Inside each node, microservices communicate with each other by messaging queue. (Note this is completely different from Fabric which use a messaging queue only as consensus process)
 
 ![](https://github.com/cryptape/cita-whitepaper/blob/master/en/cita-network.png?raw=true)
 
