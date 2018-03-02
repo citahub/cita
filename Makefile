@@ -1,7 +1,7 @@
 # 1) prerequirement
 # ./scripts/install_develop.sh
 # 2) development
-# ./scripts/config_rabbitms.sh
+# ./scripts/config_rabbitmq.sh
 # ./scripts/speedup.sh
 # make fmt
 # make debug
