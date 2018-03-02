@@ -23,7 +23,7 @@ use engines::Engine;
 use env_info::EnvInfo;
 use error::ExecutionError;
 use ethcore_io as io;
-use evm::{self, Ext, Factory, Finalize, Schedule};
+use evm::{self, Ext, Factory, Finalize, Schedule, FinalizationResult};
 pub use executed::{Executed, ExecutionResult};
 use executed::CallType;
 use externalities::*;
@@ -226,7 +226,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         Ok(self.finalize(t, substate, gas_left, output, tracer.traces(), vm_tracer.drain())?)
     }
 
-    fn exec_vm<T, V>(&mut self, params: ActionParams, unconfirmed_substate: &mut Substate, output_policy: OutputPolicy, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<U256>
+    fn exec_vm<T, V>(&mut self, params: ActionParams, unconfirmed_substate: &mut Substate, output_policy: OutputPolicy, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<FinalizationResult>
     where
         T: Tracer,
         V: VMTracer,
@@ -279,7 +279,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     contract.exec(params, &mut ext).finalize(ext)
                 };
                 self.enact_result(&res, substate, unconfirmed_substate);
-                return res;
+                trace!(target: "executive", "enacted: substate={:?}\n", substate);
+                return res.map(|r| r.gas_left);
             }
         }
         if self.engine.is_builtin(&params.code_address) {
@@ -338,8 +339,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
                 let traces = subtracer.traces();
                 match res {
-                    Ok(ref gas_left) => {
-                        tracer.trace_call(trace_info, gas - *gas_left, trace_output, traces)
+                    Ok(ref res) => {
+                        tracer.trace_call(trace_info, gas - res.gas_left, trace_output, traces)
                     }
                     Err(ref e) => tracer.trace_failed_call(trace_info, traces, e.into()),
                 };
@@ -348,7 +349,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
                 self.enact_result(&res, substate, unconfirmed_substate);
                 trace!(target: "executive", "enacted: substate={:?}\n", substate);
-                res
+                res.map(|r| r.gas_left)
             } else {
                 // otherwise it's just a basic transaction, only do tracing, if necessary.
                 self.state.discard_checkpoint();
@@ -406,14 +407,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         vm_tracer.done_subtrace(subvmtracer);
 
         match res {
-            Ok(ref gas_left) => {
-                tracer.trace_create(trace_info, gas - *gas_left, trace_output, created, subtracer.traces())
+            Ok(ref res) => {
+                tracer.trace_create(trace_info, gas - res.gas_left, trace_output, created, subtracer.traces())
             }
             Err(ref e) => tracer.trace_failed_create(trace_info, subtracer.traces(), e.into()),
         };
 
         self.enact_result(&res, substate, unconfirmed_substate);
-        res
+        res.map(|r| r.gas_left)
     }
 
     /// Finalizes the transaction (does refunds and suicides).
@@ -499,13 +500,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
     }
 
-    fn enact_result(&mut self, result: &evm::Result<U256>, substate: &mut Substate, un_substate: Substate) {
+    fn enact_result(&mut self, result: &evm::Result<FinalizationResult>, substate: &mut Substate, un_substate: Substate) {
         match *result {
             Err(evm::Error::OutOfGas) |
             Err(evm::Error::BadJumpDestination { .. }) |
             Err(evm::Error::BadInstruction { .. }) |
             Err(evm::Error::StackUnderflow { .. }) |
-            Err(evm::Error::OutOfStack { .. }) => {
+            Err(evm::Error::OutOfStack { .. }) |
+            Ok(FinalizationResult { apply_state: false, .. }) => {
                 self.state.revert_to_checkpoint();
             }
             Ok(_) |
@@ -622,6 +624,132 @@ contract AbiTest {
             let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
             let mut out = vec![];
             let _ = ex.call(params, &mut substate, BytesRef::Fixed(&mut out), &mut tracer, &mut vm_tracer);
+        };
+
+        assert_eq!(
+            state
+                .storage_at(&contract_addr, &H256::from(&U256::from(0)))  // it was supposed that value's address is balance.
+                .unwrap(),
+            H256::from(&U256::from(0x12345678))
+        );
+    }
+
+    #[test]
+    fn test_revert_instruction() {
+        logger::silent();
+        let source = r#"
+pragma solidity ^0.4.8;
+contract AbiTest {
+  uint balance;
+
+  modifier Never {
+    require(false);
+      _;
+  }
+
+  function AbiTest() {}
+  function setValue(uint value) Never {
+    balance = value;
+  }
+}
+"#;
+        let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
+        let gas_required = U256::from(100_000);
+        let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+        let (_, runtime_code) = solc("AbiTest", source);
+        // big endian: value=0x12345678
+        let data = "552410770000000000000000000000000000000000000000000000000000000012345678".from_hex().unwrap();
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
+        let mut tracer = ExecutiveTracer::default();
+        let mut vm_tracer = ExecutiveVMTracer::toplevel();
+
+        let mut state = get_temp_state();
+        state.init_code(&contract_addr, runtime_code.clone()).unwrap();
+        let mut params = ActionParams::default();
+        params.address = contract_addr.clone();
+        params.sender = sender.clone();
+        params.gas = gas_required;
+        params.code = state.code(&contract_addr).unwrap();
+        params.code_hash = state.code_hash(&contract_addr).unwrap();
+        params.value = ActionValue::Transfer(U256::from(0));
+        params.data = Some(data);
+
+        let info = EnvInfo::default();
+        let engine = NullEngine::default();
+        let mut substate = Substate::new();
+        {
+            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let mut out = vec![];
+            let res = ex.call(params, &mut substate, BytesRef::Fixed(&mut out), &mut tracer, &mut vm_tracer);
+            assert!(res.is_ok());
+            match res {
+                Ok(gas_used) => println!("gas used: {:?}", gas_used),
+                Err(e) => println!("e: {:?}", e) 
+            }
+        };
+
+        assert_eq!(
+            state
+                .storage_at(&contract_addr, &H256::from(&U256::from(0)))  // it was supposed that value's address is balance.
+                .unwrap(),
+            H256::from(&U256::from(0x0))
+        );
+    }
+
+    #[test]
+    fn test_require_instruction() {
+        logger::silent();
+        let source = r#"
+pragma solidity ^0.4.8;
+contract AbiTest {
+  uint balance;
+
+  modifier Never {
+    require(true);
+      _;
+  }
+
+  function AbiTest() {}
+  function setValue(uint value) Never {
+    balance = value;
+  }
+}
+"#;
+        let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
+        let gas_required = U256::from(100_000);
+        let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+        let (_, runtime_code) = solc("AbiTest", source);
+        // big endian: value=0x12345678
+        let data = "552410770000000000000000000000000000000000000000000000000000000012345678".from_hex().unwrap();
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
+        let mut tracer = ExecutiveTracer::default();
+        let mut vm_tracer = ExecutiveVMTracer::toplevel();
+
+        let mut state = get_temp_state();
+        state.init_code(&contract_addr, runtime_code.clone()).unwrap();
+        let mut params = ActionParams::default();
+        params.address = contract_addr.clone();
+        params.sender = sender.clone();
+        params.gas = gas_required;
+        params.code = state.code(&contract_addr).unwrap();
+        params.code_hash = state.code_hash(&contract_addr).unwrap();
+        params.value = ActionValue::Transfer(U256::from(0));
+        params.data = Some(data);
+
+        let info = EnvInfo::default();
+        let engine = NullEngine::default();
+        let mut substate = Substate::new();
+        {
+            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let mut out = vec![];
+            let res = ex.call(params, &mut substate, BytesRef::Fixed(&mut out), &mut tracer, &mut vm_tracer);
+            assert!(res.is_ok());
+            match res {
+                Ok(gas_used) => println!("gas used: {:?}", gas_used),
+                Err(e) => println!("e: {:?}", e) 
+            }
         };
 
         assert_eq!(
