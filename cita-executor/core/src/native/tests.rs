@@ -66,10 +66,11 @@ impl SimpleStorage {
         self.uint_value
             .get(ext)?
             .to_big_endian(self.output.as_mut_slice());
-        Ok(GasLeft::NeedsReturn(
-            U256::from(100),
-            self.output.as_slice(),
-        ))
+        Ok(GasLeft::NeedsReturn {
+            gas_left: U256::from(100),
+            data: self.output.as_slice(),
+            apply_state: true,
+        })
     }
 
     // 2) string
@@ -101,10 +102,11 @@ impl SimpleStorage {
         self.output
             .write(&vec![0u8; 32 - str.len() % 32])
             .expect("failed to write [u8]");
-        Ok(GasLeft::NeedsReturn(
-            U256::from(100),
-            self.output.as_slice(),
-        ))
+        Ok(GasLeft::NeedsReturn {
+            gas_left: U256::from(100),
+            data: self.output.as_slice(),
+            apply_state: true,
+        })
     }
 
     // 3) array
@@ -123,10 +125,11 @@ impl SimpleStorage {
         for i in self.array_value.get(ext, index)?.0.iter().rev() {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite).expect("failed to serialize u64");
         }
-        Ok(GasLeft::NeedsReturn(
-            U256::from(100),
-            self.output.as_slice(),
-        ))
+        Ok(GasLeft::NeedsReturn {
+            gas_left: U256::from(100),
+            data: self.output.as_slice(),
+            apply_state: true,
+        })
     }
 
     // 4) map
@@ -145,10 +148,11 @@ impl SimpleStorage {
         for i in self.map_value.get(ext, key)?.0.iter().rev() {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite).expect("failed to serialize u64");
         }
-        Ok(GasLeft::NeedsReturn(
-            U256::from(100),
-            self.output.as_slice(),
-        ))
+        Ok(GasLeft::NeedsReturn {
+            gas_left: U256::from(100),
+            data: self.output.as_slice(),
+            apply_state: true,
+        })
     }
 }
 //use byteorder::{};
@@ -188,7 +192,11 @@ fn test_native_contract() {
 
         let mut contract = factory.new_contract(native_addr).unwrap();
         match contract.exec(params, &mut ext) {
-            Ok(GasLeft::NeedsReturn(_, mut data)) => {
+            Ok(GasLeft::NeedsReturn {
+                gas_left: _,
+                mut data,
+                apply_state: true,
+            }) => {
                 let mut real = U256::zero();
                 for i in real.0.iter_mut().rev() {
                     // *i = deserialize_from::<&[u8], _, Infinite, BigEndian>(

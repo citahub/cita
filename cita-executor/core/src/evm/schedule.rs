@@ -23,6 +23,8 @@ pub struct Schedule {
     pub exceptional_failed_code_deposit: bool,
     /// Does it have a delegate cal
     pub have_delegate_call: bool,
+    /// Does it have a REVERT instruction
+    pub have_revert: bool,
     /// VM stack limit
     pub stack_limit: usize,
     /// Max number of nested calls/creates
@@ -114,10 +116,11 @@ impl Schedule {
     }
 
     /// Schedule for the post-EIP-150-era of the Ethereum main net.
-    pub fn new_post_eip150(max_code_size: usize, fix_exp: bool, no_empty: bool, kill_empty: bool) -> Schedule {
+    pub fn new_post_eip150(max_code_size: usize, fix_exp: bool, no_empty: bool, kill_empty: bool, have_metropolis_instructions: bool) -> Schedule {
         Schedule {
             exceptional_failed_code_deposit: true,
             have_delegate_call: true,
+            have_revert: have_metropolis_instructions,
             stack_limit: 1024,
             max_depth: 1024,
             tier_step_gas: [0, 2, 3, 5, 8, 10, 20, 0],
@@ -163,6 +166,7 @@ impl Schedule {
         Schedule {
             exceptional_failed_code_deposit: efcd,
             have_delegate_call: hdc,
+            have_revert: false,
             stack_limit: 1024,
             max_depth: 1024,
             tier_step_gas: [0, 2, 3, 5, 8, 10, 20, 0],
