@@ -1,87 +1,50 @@
 /* jshint esversion: 6 */
 /* jshint expr: true */
 
-const Web3 = require('web3');
+const chai = require('chai');
+const assert = chai.assert;
+const util = require('./helpers/util');
+const roleManagement = require('./helpers/role_management');
+const authorization = require('./helpers/authorization');
 const config = require('./config');
 
-var chai = require('chai');
-var assert = chai.assert;
+// util
+const web3 = util.web3;
+const getTxReceipt = util.getTxReceipt;
 
-const web3 = new Web3(new Web3.providers.HttpProvider(config.localServer));
-// Use remote server
-// const web3 = new Web3(new Web3.providers.HttpProvider(config.remoteServer));
-
-const { rmABI, rmAddr, permissions } = config.contract.role_management;
+// config
+const permissions = config.contract.role_management.permissions;
 const rABI = config.contract.role.rABI;
-const { aABI, aAddr } = config.contract.authorization;
-
-const roleManagement = web3.eth.contract(rmABI);
-const rmContractInstance = roleManagement.at(rmAddr);
-
-const sender = config.contract.permission_manager.sender;
-
-const quota = 9999999;
-const blockLimit = 100;
 
 // role
 const role = web3.eth.contract(rABI);
-var newRoleAddr;
-var length;
 
-// auth
-const auth = web3.eth.contract(aABI);
-const aContractInstance = auth.at(aAddr);
+// role management
+const newRole = roleManagement.newRole;
+const updateRoleName = roleManagement.updateRoleName;
+const addPermissions = roleManagement.addPermissions;
+const deletePermissions = roleManagement.deletePermissions;
+const setRole = roleManagement.setRole;
+const cancelRole = roleManagement.cancelRole;
+const clearRole = roleManagement.clearRole;
+const deleteRole = roleManagement.deleteRole;
+const queryRoles = roleManagement.queryRoles;
+const queryAccounts = roleManagement.queryAccounts;
 
-// =======================
+// authorization
+const queryPermissions = authorization.queryPermissions;
+let roleInstance;
 
-// TODO Move to helper
-function randomInt() {
-    return Math.floor(Math.random() * 100).toString();
-}
-
-function getTxReceipt(res) {
-    return new Promise((resolve, reject) => {
-        let count = 0;
-        const filter = web3.eth.filter('latest', err => {
-
-            if (err) reject(err);
-
-            count++;
-
-            if (count > 20) {
-                filter.stopWatching(function () { });
-                reject(err);
-            }
-
-            web3.eth.getTransactionReceipt(res.hash, function (err, receipt) {
-
-                if (err) reject(err);
-
-                if (receipt) {
-                    filter.stopWatching(function () { });
-                    resolve(receipt);
-                }
-            });
-        });
-    });
-}
+// temp
+let newRoleAddr;
+let length;
 
 // =======================
 
 describe('\n\ntest role management contract\n\n', function () {
     describe('\ntest new role\n', function () {
         it('should send a newRole tx and get receipt', function (done) {
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.newRole.sendTransaction(
-                'testNewRole',
-                permissions,
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = newRole('testNewRole', permissions);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -98,12 +61,12 @@ describe('\n\ntest role management contract\n\n', function () {
         });
 
         it('should have info of new role', function () {
-            const roleInstance = role.at(newRoleAddr);
-            var res = roleInstance.queryRole.call();
+            roleInstance = role.at(newRoleAddr);
+            let res = roleInstance.queryRole.call();
             console.log('\nInfo:\n', res);
             assert.equal(res[0].substr(0, 24), web3.toHex('testNewRole'));
 
-            for (var i = 0; i < res[1].length; i++) {
+            for (let i = 0; i < res[1].length; i++) {
                 assert.equal(res[1][i], permissions[i]);
             }
         });
@@ -111,17 +74,7 @@ describe('\n\ntest role management contract\n\n', function () {
 
     describe('\ntest update role name\n', function () {
         it('should send a updateRoleName tx and get receipt', function (done) {
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.updateRoleName.sendTransaction(
-                newRoleAddr,
-                'testNewRoleName',
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = updateRoleName(newRoleAddr,'testNewRoleName');
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -136,8 +89,8 @@ describe('\n\ntest role management contract\n\n', function () {
         });
 
         it('should have the new role name', function () {
-            const roleInstance = role.at(newRoleAddr);
-            var res = roleInstance.queryName.call();
+            roleInstance = role.at(newRoleAddr);
+            let res = roleInstance.queryName.call();
             console.log('\nNew role name:\n', res);
             assert.equal(res.substr(0, 32), web3.toHex('testNewRoleName'));
         });
@@ -145,17 +98,10 @@ describe('\n\ntest role management contract\n\n', function () {
 
     describe('\ntest add permissions\n', function () {
         it('should send a addPermissions tx and get receipt', function (done) {
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.addPermissions.sendTransaction(
-                newRoleAddr,
-                ['0x00000000000000000000000000000000033241b5'],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = addPermissions(
+                    newRoleAddr,
+                    ['0x00000000000000000000000000000000033241b5']
+                );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -170,8 +116,8 @@ describe('\n\ntest role management contract\n\n', function () {
         });
 
         it('should have the added permissions: role', function () {
-            const roleInstance = role.at(newRoleAddr);
-            var res = roleInstance.queryPermissions.call();
+            roleInstance = role.at(newRoleAddr);
+            let res = roleInstance.queryPermissions.call();
             console.log('\nNew Added permissions:\n', res);
             let lastPermissionIndex = res.length - 1;
             assert.equal(res[lastPermissionIndex], '0x00000000000000000000000000000000033241b5');
@@ -180,17 +126,10 @@ describe('\n\ntest role management contract\n\n', function () {
 
     describe('\ntest delete permissions\n', function () {
         it('should send a deletePermissions tx and get receipt', function (done) {
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.deletePermissions.sendTransaction(
-                newRoleAddr,
-                ['0x00000000000000000000000000000000033241b5'],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = deletePermissions(
+                    newRoleAddr,
+                    ['0x00000000000000000000000000000000033241b5']
+                );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -205,10 +144,10 @@ describe('\n\ntest role management contract\n\n', function () {
         });
 
         it('should have deleted the permissions', function () {
-            const roleInstance = role.at(newRoleAddr);
-            var res = roleInstance.queryPermissions.call();
+            roleInstance = role.at(newRoleAddr);
+            let res = roleInstance.queryPermissions.call();
             console.log('\nResources lefted:\n', res);
-            for (var i = 0; i < res.length; i++) {
+            for (let i = 0; i < res.length; i++) {
                 assert.equal(res[i], permissions[i]);
             }
         });
@@ -216,17 +155,7 @@ describe('\n\ntest role management contract\n\n', function () {
 
     describe('\ntest set role\n', function () {
         it('should send a setRole tx and get receipt', function (done) {
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.setRole.sendTransaction(
-                config.testAddr[0],
-                newRoleAddr,
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = setRole(config.testAddr[0], newRoleAddr);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -241,11 +170,11 @@ describe('\n\ntest role management contract\n\n', function () {
         });
 
         it('should have the role of account', function () {
-            var res = rmContractInstance.queryRoles.call(config.testAddr[0]);
+            let res = queryRoles(config.testAddr[0]);
             console.log('\nroles of testAccount:\n', res);
             let l = res.length - 1;
             assert.equal(res[l], newRoleAddr);
-            var res2 = rmContractInstance.queryAccounts.call(newRoleAddr);
+            let res2 = queryAccounts(newRoleAddr);
             console.log('\nAccount of role:\n', res2);
             assert.equal(res2, config.testAddr[0]);
         });
@@ -254,17 +183,10 @@ describe('\n\ntest role management contract\n\n', function () {
     describe('\ntest role permissions of account after add_permission\n', function () {
 
         it('should send a addPermissions tx and get receipt', function (done) {
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.addPermissions.sendTransaction(
-                newRoleAddr,
-                ['0x00000000000000000000000000000000033241b0'],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = addPermissions(
+                    newRoleAddr,
+                    ['0x00000000000000000000000000000000033241b0']
+                );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -279,15 +201,15 @@ describe('\n\ntest role management contract\n\n', function () {
         });
 
         it('should have the added permissions: role', function () {
-            const roleInstance = role.at(newRoleAddr);
-            var res = roleInstance.queryPermissions.call();
+            roleInstance = role.at(newRoleAddr);
+            let res = roleInstance.queryPermissions.call();
             console.log('\nNew Added permissions:\n', res);
             length = res.length;
             assert.equal(res[length - 1], '0x00000000000000000000000000000000033241b0');
         });
 
-        it('should have the added permissions: role', function () {
-            var res = aContractInstance.queryPermissions.call(config.testAddr[0]);
+        it('should have the added permissions: auth', function () {
+            let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAddr:\n', res);
             length = res.length;
             assert.equal(res[length - 1], '0x00000000000000000000000000000000033241b0');
@@ -298,17 +220,10 @@ describe('\n\ntest role management contract\n\n', function () {
     describe('\ntest role permissions of account after delete_permission\n', function () {
 
         it('should send a deletePermissions tx and get receipt', function (done) {
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.deletePermissions.sendTransaction(
-                newRoleAddr,
-                ['0x00000000000000000000000000000000033241b0'],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = deletePermissions(
+                    newRoleAddr,
+                    ['0x00000000000000000000000000000000033241b0']
+                );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -323,7 +238,7 @@ describe('\n\ntest role management contract\n\n', function () {
         });
 
         it('should have deleted the test permissions: role', function () {
-            var res = aContractInstance.queryPermissions.call(config.testAddr[0]);
+            let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAddr:\n', res);
             assert.equal(res.length, length - 1);
         });
@@ -332,17 +247,7 @@ describe('\n\ntest role management contract\n\n', function () {
 
     describe('\ntest cancel role\n', function () {
         it('should send a cancelRole tx and get receipt', function (done) {
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.cancelRole.sendTransaction(
-                config.testAddr[0],
-                newRoleAddr,
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = cancelRole(config.testAddr[0], newRoleAddr);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -357,10 +262,10 @@ describe('\n\ntest role management contract\n\n', function () {
         });
 
         it('should not have the role of account', function () {
-            var res = rmContractInstance.queryRoles.call(config.testAddr[0]);
+            let res = queryRoles(config.testAddr[0]);
             console.log('\nroles of testAccount:\n', res);
             assert.equal(res.length, 0);
-            var res2 = rmContractInstance.queryAccounts.call(newRoleAddr);
+            let res2 = queryAccounts(newRoleAddr);
             console.log('\nAccount of roles:\n', res2);
             assert.equal(res2.length, 0);
         });
@@ -368,16 +273,7 @@ describe('\n\ntest role management contract\n\n', function () {
 
     describe('\ntest clear role\n', function () {
         it('should send a clearRole tx and get receipt', function (done) {
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.clearRole.sendTransaction(
-                config.testAddr[0],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = clearRole(config.testAddr[0]);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -392,7 +288,7 @@ describe('\n\ntest role management contract\n\n', function () {
         });
 
         it('should have no roles of testAccount', function () {
-            var res = rmContractInstance.queryRoles.call(config.testAddr[0]);
+            let res = queryRoles(config.testAddr[0]);
             console.log('\nRoles of testAccount:\n', res);
             assert.equal(res.length, 0);
         });
@@ -400,17 +296,7 @@ describe('\n\ntest role management contract\n\n', function () {
 
     describe('\ntest delete role\n', function () {
         it('should send a deleteRole tx and get receipt', function (done) {
-            console.log("\n newRoleAddr is:", newRoleAddr);
-            var num = web3.eth.blockNumber;
-            var res = rmContractInstance.deleteRole.sendTransaction(
-                newRoleAddr,
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = deleteRole(newRoleAddr);
 
             getTxReceipt(res)
                 .then((receipt) => {
