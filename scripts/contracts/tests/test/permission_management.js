@@ -27,6 +27,8 @@ const aContractInstance = auth.at(aAddr);
 // permission
 const perm = web3.eth.contract(pABI);
 var newPermissionAddr;
+var newPermissionAddrA;
+var newPermissionAddrB;
 
 const quota = 9999999;
 const blockLimit = 100;
@@ -64,6 +66,10 @@ function getTxReceipt(res) {
         });
     });
 }
+
+// =======================
+
+// TODO Define functions to call the contract interface
 
 // =======================
 
@@ -352,4 +358,132 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
     });
 
+    describe('\ntest delete permission: query the auth\n', function() { 
+        it('should send a newPermission tx and get receipt', function(done) {
+            var num = web3.eth.blockNumber;
+            var res = pManagementContractIns.newPermission.sendTransaction(
+                'testPermissionA',
+                config.testAddr,
+                config.testFunc,
+                {
+                    privkey: sender.privkey,
+                    nonce: randomInt(),
+                    quota,
+                    validUntilBlock: num + blockLimit,
+                    from: sender.address
+                });
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    newPermissionAddrA = receipt.logs[0].address;
+                    console.log('\nThe new permission contract address:\n', newPermissionAddr);
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get newPermission receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should send a newPermission tx and get receipt', function(done) {
+            var num = web3.eth.blockNumber;
+            var res = pManagementContractIns.newPermission.sendTransaction(
+                'testPermissionB',
+                config.testAddr,
+                config.testFunc,
+                {
+                    privkey: sender.privkey,
+                    nonce: randomInt(),
+                    quota,
+                    validUntilBlock: num + blockLimit,
+                    from: sender.address
+                });
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    newPermissionAddrB = receipt.logs[0].address;
+                    console.log('\nThe new permission contract address:\n', newPermissionAddr);
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get newPermission receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should send a setAuthorization tx and get receipt', function(done) {
+            var num = web3.eth.blockNumber;
+            var res = pManagementContractIns.setAuthorizations.sendTransaction(
+                config.testAddr[0],
+                [newPermissionAddrA, newPermissionAddrB],
+                {
+                    privkey: sender.privkey,
+                    nonce: randomInt(),
+                    quota,
+                    validUntilBlock: num + blockLimit,
+                    from: sender.address
+                });
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should have the permission of account', function() {
+            var res = aContractInstance.queryPermissions.call(config.testAddr[0]);
+            console.log('\nPermissions of testAccount:\n', res);
+            let l = res.length -1;
+            assert.equal(res[l], newPermissionAddrB);
+            assert.equal(res[l - 1], newPermissionAddrA);
+            var res1 = aContractInstance.queryAccounts.call(newPermissionAddrA);
+            console.log('\nAccount of permissionA:\n', res1);
+            var res2 = aContractInstance.queryAccounts.call(newPermissionAddrB);
+            console.log('\nAccount of permissionB:\n', res2);
+            assert.equal(res2, config.testAddr[0]);
+        });
+
+        it('should send a deletePermission tx and get receipt', function(done) {
+            var num = web3.eth.blockNumber;
+            var res = pManagementContractIns.deletePermission.sendTransaction(
+                newPermissionAddrA,
+                {
+                    privkey: sender.privkey,
+                    nonce: randomInt(),
+                    quota,
+                    validUntilBlock: num + blockLimit,
+                    from: sender.address
+                });
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get deletePermission receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it("should cancel the account's permission", function() {
+            var res = aContractInstance.queryPermissions.call(config.testAddr[0]);
+            console.log('\nPermissions of testAccount:\n', res);
+            assert.equal(res.length, 1);
+            assert.equal(res[0], newPermissionAddrB);
+        });
+
+
+    });
 });

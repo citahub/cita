@@ -31,7 +31,7 @@ contract Permission {
         public
     {
         name = _name;
-        _addResources(_conts, _funcs);
+        require(_addResources(_conts, _funcs));
     }
 
     /// @dev Add the resources
@@ -40,7 +40,8 @@ contract Permission {
         onlyPermissionManagement
         returns (bool)
     {
-        return _addResources(_conts, _funcs);
+        require(_addResources(_conts, _funcs));
+        return true;
     }
 
     /// @dev Delete the resources
@@ -50,7 +51,7 @@ contract Permission {
         returns (bool)
     {
         for (uint i = 0; i < _conts.length; i++)
-            resourceDelete(_conts[i], _funcs[i]);
+            require(resourceDelete(_conts[i], _funcs[i]));
 
         ResourcesDeleted(_conts, _funcs);
         return true;
@@ -68,8 +69,13 @@ contract Permission {
     }
 
     /// @dev Destruct self
-    function close() public onlyPermissionManagement {
+    function close()
+        public
+        onlyPermissionManagement
+        returns (bool)
+    {
         selfdestruct(msg.sender);
+        return true;
     }
 
     /// @dev Check resource in the permission
