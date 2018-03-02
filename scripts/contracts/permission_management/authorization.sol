@@ -81,10 +81,8 @@ contract Authorization {
     {
         address[] memory _accounts = queryAccounts(_permission);
 
-        for (uint i = 0; i < _accounts.length; i++) {
-            if (!cancelAuth(_accounts[i], _permission))
-                return false;
-        }
+        for (uint i = 0; i < _accounts.length; i++)
+            assert(cancelAuth(_accounts[i], _permission));
 
         return true;
     }

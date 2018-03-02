@@ -36,10 +36,10 @@ contract RoleManagement {
     {
         // Cancel the role of the account's which has the role
         for (uint i = 0; i < accounts[_roleid].length; i++)
-            cancelRole(accounts[_roleid][i], _roleid);
+            assert(cancelRole(accounts[_roleid][i], _roleid));
 
         Role roleContract = Role(_roleid);
-        roleContract.deleteRole();
+        require(roleContract.deleteRole());
 
         return true;
     }
@@ -59,11 +59,12 @@ contract RoleManagement {
         // Set the authorization of all the account's which has the role
         for (uint i = 0; i < accounts[_roleid].length; i++) {
             for (uint j = 0; j < _permissions.length; j++)
-                pmContract.setAuthorization(accounts[_roleid][i], _permissions[j]);
+                require(pmContract.setAuthorization(accounts[_roleid][i], _permissions[j]));
         }
 
         Role roleContract = Role(_roleid);
-        return roleContract.addPermissions(_permissions);
+        require(roleContract.addPermissions(_permissions));
+        return true;
     }
 
     function deletePermissions(address _roleid, address[] _permissions)
@@ -73,11 +74,12 @@ contract RoleManagement {
         // Cancel the authorization of all the account's which has the role
         for (uint i = 0; i < accounts[_roleid].length; i++) {
             for (uint j = 0; j < _permissions.length; j++)
-                pmContract.cancelAuthorization(accounts[_roleid][i], _permissions[j]);
+                require(pmContract.cancelAuthorization(accounts[_roleid][i], _permissions[j]));
         }
 
         Role roleContract = Role(_roleid);
-        return roleContract.deletePermissions(_permissions);
+        require(roleContract.deletePermissions(_permissions));
+        return true;
     }
 
     function setRole(address _account, address _role)
@@ -89,7 +91,7 @@ contract RoleManagement {
 
         // Apply role permissions to account.
         Role roleContract = Role(_role);
-        roleContract.applyRolePermissionsOf(_account);
+        require(roleContract.applyRolePermissionsOf(_account));
 
         RoleSetted(_account, _role);
         return true;
@@ -101,10 +103,10 @@ contract RoleManagement {
     {
         // Cancel role permissions of account.
         Role roleContract = Role(_role);
-        roleContract.cancelRolePermissionsOf(_account);
+        require(roleContract.cancelRolePermissionsOf(_account));
 
-        addressDelete(_account, accounts[_role]);
-        addressDelete(_role, roles[_account]);
+        assert(addressDelete(_account, accounts[_role]));
+        assert(addressDelete(_role, roles[_account]));
 
         RoleCanceled(_account, _role);
         return true;
@@ -119,10 +121,10 @@ contract RoleManagement {
         for (uint i = 0; i < _roles.length; i++) {
             // Clear account auth
             Role roleContract = Role(_roles[i]);
-            roleContract.cancelRolePermissionsOf(_account);
+            require(roleContract.cancelRolePermissionsOf(_account));
             // clear _account in all roles array.
             var _accounts = accounts[_roles[i]];
-            addressDelete(_account, _accounts);
+            assert(addressDelete(_account, _accounts));
         }
 
         // clear all roles associate with _account

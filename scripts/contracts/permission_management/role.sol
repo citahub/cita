@@ -64,7 +64,7 @@ contract Role {
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++) {
-            removePermission(_permissions[i]);
+            assert(removePermission(_permissions[i]));
         }
 
         PermissionsDeleted(_permissions);
@@ -77,7 +77,7 @@ contract Role {
         returns (bool)
     {
         for (uint i = 0; i < permissions.length; i++) {
-            pmContract.setAuthorization(_account, permissions[i]);
+            require(pmContract.setAuthorization(_account, permissions[i]));
         }
 
         return true;
@@ -89,7 +89,7 @@ contract Role {
         returns (bool)
     {
         for (uint i = 0; i < permissions.length; i++) {
-            pmContract.cancelAuthorization(_account, permissions[i]);
+            require(pmContract.cancelAuthorization(_account, permissions[i]));
         }
 
         return true;
@@ -100,7 +100,8 @@ contract Role {
         onlyRoleManagement
         returns (bool)
     {
-        return pmContract.clearAuthorization(_account);
+        require(pmContract.clearAuthorization(_account));
+        return true;
     }
     
     function queryRole()

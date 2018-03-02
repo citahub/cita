@@ -37,9 +37,9 @@ contract PermissionManagement {
         returns (bool)
     {
         Permission perm = Permission(_permission);
-        perm.close();
+        require(perm.close());
         // Cancel the auth of the accounts who have the permission
-        auth.clearAuthOfPermission(_permission);
+        require(auth.clearAuthOfPermission(_permission));
         PermissionDeleted(_permission);
         return true;
     }
@@ -50,7 +50,8 @@ contract PermissionManagement {
         returns (bool)
     {
         Permission perm = Permission(_permission);
-        return perm.updateName(_name);
+        require(perm.updateName(_name));
+        return true;
     }
 
     /// @dev Add the resources of permission
@@ -59,7 +60,8 @@ contract PermissionManagement {
         returns (bool)
     {
         Permission perm = Permission(_permission);
-        return perm.addResources(_conts, _funcs);
+        require(perm.addResources(_conts, _funcs));
+        return true;
     }
 
     /// @dev Delete the resources of permission
@@ -68,7 +70,8 @@ contract PermissionManagement {
         returns (bool)
     {
         Permission perm = Permission(_permission);
-        return perm.deleteResources(_conts, _funcs);
+        require(perm.deleteResources(_conts, _funcs));
+        return true;
     }
 
     /// @dev Set authorizations
@@ -76,10 +79,8 @@ contract PermissionManagement {
         public
         returns (bool)
     {
-        for (uint i = 0; i < _permissions.length; i++) {
-            if (!auth.setAuth(_account, _permissions[i]))
-                return false;
-        }
+        for (uint i = 0; i < _permissions.length; i++)
+            require(auth.setAuth(_account, _permissions[i]));
 
         return true;
     }
@@ -89,7 +90,8 @@ contract PermissionManagement {
         public
         returns (bool)
     {
-        return auth.setAuth(_account, _permission);
+        require(auth.setAuth(_account, _permission));
+        return true;
     }
 
     /// @dev Cancel authorizations
@@ -97,10 +99,8 @@ contract PermissionManagement {
         public
         returns (bool)
     {
-        for (uint i = 0; i < _permissions.length; i++) {
-            if (!auth.cancelAuth(_account, _permissions[i]))
-                return false;
-        }
+        for (uint i = 0; i < _permissions.length; i++)
+            require(auth.cancelAuth(_account, _permissions[i]));
 
         return true;
     }
@@ -110,7 +110,8 @@ contract PermissionManagement {
         public
         returns (bool)
     {
-        return auth.cancelAuth(_account, _permission);
+        require(auth.cancelAuth(_account, _permission));
+        return true;
     }
 
     /// @dev Clear the account's permissions
@@ -118,6 +119,7 @@ contract PermissionManagement {
         public
         returns (bool)
     {
-        return auth.clearAuth(_account);
+        require(auth.clearAuth(_account));
+        return true;
     }
  }
