@@ -49,3 +49,7 @@ ln -srf target/install/scripts/admintool/admintool.sh target/install/bin/
 
 # 6) txtool
 cp -rf scripts/txtool                      target/install/scripts/
+
+# 7) docker env
+cp -f scripts/env.sh                       target/install/
+cp -f scripts/daemon.sh                    target/install/

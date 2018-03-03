@@ -4,72 +4,92 @@
 
 ### 系统平台要求
 
-CITA的运行环境是Linux和OSX操作系统，目前不支持Windows系统。CITA是基于Ubuntu 16.04稳定版开发的，在该系统版本上运行将是正确无误的。如果在Linux系统的其他版本上运行出现问题，建议将系统版本切换到Ubuntu 16.04版本。
+CITA是基于Ubuntu 16.04稳定版开发的，在该系统版本上运行将是正确无误的。
 
-### 安装编译器及开发库
+推荐使用 `docker` 编译和部署 `CITA`，保证环境一致。
+
+### 安装docker
+
+参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/install/)
+
+### 获取Docker镜像
+
+CITA的Docker镜像托管在 [DockerHub](https://hub.docker.com/u/cita/dashboard/)
+
+可以使用 `docker pull` 命令直接从DockerHub获取， 参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/image/pull.html)。
+
+对于内网环境，也可以通过 `docker save` 和 `docker load` 传递镜像， 参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/image/other.html)。
+
+### 获取源码
 
 从Github仓库下载CITA的源代码，然后切换到CITA的源代码目录
 
 ```shell
+git pull https://github.com/cryptape/cita.git
 cd cita
 git submodule init
 git submodule update
 ```
 
-启动 `install_develop.sh` 脚本安装依赖，命令如下：
+### Docker env and daemon
+
+在源码根目录下，我们提供了`env.sh`脚本，封装了docker相关的操作。
+
+运行此脚本，以实际要运行的命令作为参数，即表示在docker环境中运行相关命令。
+
+例如：
 
 ```shell
-scripts/install_develop.sh
+./env.sh make debug
 ```
+即表示在docker环境中运行`make debug`。
 
-安装完成后，可以重新登录使Rust相关的环境变量生效，也可直接使用以下命令立即生效：
+不带任何参数运行`./env.sh`，将直接获取一个docker环境的shell。
 
+国内用户请使用 `env_cn.sh`，提供了编译时的国内镜像加速。
+
+还提供了`daemon.sh`,用法同`env.sh`，效果是后台运行。
+
+如果出现docker相关的报错，可以执行如下命令并重试：
 ```shell
-source ~/.cargo/env
+docker kill $(docker ps -a -q)
 ```
 
-经过如上设置，CITA的依赖便安装完成了。
-
-## 安装
-
-单元测试依赖rabbitmq, 如果没有启动，需要用以下脚本启动并配置
-
-```shell
-scripts/config_rabbitmq.sh
-```
+## 编译
 
 可以按照自己的需求自行选择相应的编译方式（Debug-调试模式 或 Release-发行模式）
 
 ```shell
-make debug
+./env.sh make debug
 ```
 
 或者
 
 ```shell
-make release
+./env.sh make release
 ```
 
-编译成功后，其生成的可执行文件将放在`target/install`目录下，生产环境下只能看到target/install里面的内容。
+编译生成的文件在发布件目录`target/install`下，生产环境下只需要这个目录即可。
 
-## 配置
+## 生成节点配置
 
-先切换到发布件目录，并将bin目录加入到PATH环境变量中：
+先切换到发布件目录：
 
 ```shell
 cd target/install
-export PATH=$PWD/bin:$PATH
 ```
 
-另外，脚本`admintool.sh`主要用来创建创世块配置、节点相关配置、网络连接配置、私钥配置等相关文件。
+发布件目录中的`admintool`工具用来生成节点配置文件，包括创世块配置、节点相关配置、网络连接配置、私钥配置等。
 
-设置节点的配置信息，该默认示例Demo中配置了4个节点，对Demo中的节点进行默认初始化的操作命令为：
+该工具默认生成的是本地4个节点的Demo示例配置：
 
 ```shell
-./bin/admintool.sh
+./env.sh ./bin/admintool.sh
 ```
 
-此外，用户可以根据需要更改其中的默认配置，使用命令`admintool.sh -h`来获得详细帮助，允许自定义配置包括：
+生产环境中，用户需要根据实际情况更改默认配置。
+
+使用命令`admintool.sh -h`来获得详细帮助信息，允许自定义的配置包括：
 
 * 系统管理员账户
 * 网络列表，按照`IP1:PORT1,IP2:PORT2,IP3:PORT3 ... IPn:PORTn`的格式
@@ -86,61 +106,73 @@ export PATH=$PWD/bin:$PATH
 * node2
 * node3
 
-可以使用`cita start node0`等命令对节点进行启动和停止等操作了。
+## 运行节点
 
-## 运行
+操作节点的命令都是相同的，以下以`node0`为例进行演示。
 
-启动节点的服务步骤都是相同的，以`node0`为例，其启动CITA节点的具体步骤为：
-
-1) 启动节点`node0`之前需进行初始化：
+0. 配置节点：
 
 ```shell
-cita setup node0
+./env.sh ./bin/cita setup node0
 ```
 
-2) 启动节点`node0`的服务：
+1. 启动节点：
+
+该命令正常情况下不会返回，因此需要后台运行。
+```shell
+./daemon.sh ./bin/cita start node0
+```
+
+2. 停止节点：
 
 ```shell
-cita start node0
+./env.sh ./bin/cita stop node0
 ```
 
-而停止节点`node0`服务只需执行以下操作：
+3. 其他操作
 
+具体使用查看命令的帮助信息：
 ```shell
-cita stop node0
+./env.sh ./bin/cita help
 ```
 
-此外，`cita`命令中还包括其他操作，具体使用可以查看相关说明：
-
-```shell
-cita
-```
-
+## 测试
 除了上述的基本操作命令，为了方便用户对Demo进行相关测试，我们在目录`cita/tests/integreate_test`下提供了一些测试脚本。
-例如，测试所有节点服务启动并成功出块，然后停止节点服务的操作为：
 
+以下命令在源码根目录下运行。
+
+1. 启动4个节点
 ```shell
-./cita_start.sh
+./env.sh tests/integrate_test/cita_start.sh
+```
+该命令正常情况下不会返回，需要保持shell不退出。或者用`daemon.sh`运行。
+
+2. 停止4个节点
+
+上一节中的命令中止，或者执行命令：
+```shell
+./env.sh ./tests/integrate_test/cita_stop.sh
 ```
 
-停止所有节点服务的命令为：
+3. 基本功能测试
 
+4个节点启动并成功出块，基本功能测试然后停止4个节点：
 ```shell
-./cita_stop.sh
+./env.sh ./tests/integrate_test/cita_basic.sh
 ```
 
-备注：以上示例Demo的节点启动都是位于同一台机器上，如果需要部署到不同的服务器上，只需删除其他节点的配置("target/install/nodeX")，并保留自己节点的配置，然后将整个目录（即`target/install`目录）拷贝到其他服务器上运行即可。
-
-3) 将不同节点部署到不同服务器
-
-节点的服务器需要安装依赖
+4. 发送交易测试
 
 ```shell
-bash ./scripts/install_runtime.sh
+./env.sh ./tests/integrate_test/cita_transactiontest.sh
 ```
 
-将节点拷贝到对应的服务器，并修改`network.toml`目录下的配置文件，修改为对应的IP地址。
-使用`cita start`启动各个节点。
+5. 拜占庭测试
+
+模拟网络异常情况下的功能测试。
+```shell
+./env.sh ./tests/integrate_test/cita_byzantinetest.sh
+```
 
 ## 验证
 
@@ -149,7 +181,7 @@ bash ./scripts/install_runtime.sh
 Request:
 
 ```shell
-curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}' 127.0.0.1:1337 | jq
+./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}' 127.0.0.1:1337
 ```
 
 Result:
@@ -167,7 +199,7 @@ Result:
 Request:
 
 ```shell
-curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}' 127.0.0.1:1337 | jq
+./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}' 127.0.0.1:1337
 ```
 
 Result:

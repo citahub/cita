@@ -26,7 +26,7 @@ for i in {0..3} ; do
     bin/cita setup node$i  > /dev/null
 done
 for i in {0..3} ; do
-    bin/cita start node$i debug > /dev/null
+    bin/cita start node$i debug > /dev/null &
 done
 echo "DONE"
 
