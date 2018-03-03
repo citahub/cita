@@ -33,6 +33,7 @@ pub mod method {
     pub const CITA_GET_BLOCK_BY_NUMBER: &str = "cita_getBlockByNumber";
     pub const CITA_GET_TRANSACTION: &str = "cita_getTransaction";
     pub const CITA_SEND_TRANSACTION: &str = "cita_sendTransaction";
+    pub const CITA_GET_TRANSACTION_PROOF: &str = "cita_getTransactionProof";
     pub const NET_PEER_COUNT: &str = "net_peerCount";
     /// Executes a new message call immediately without creating a transaction on the block chain.
     /// Parameters
@@ -88,6 +89,7 @@ impl MethodHandler {
             method::CITA_GET_BLOCK_BY_HASH => self.get_block_by_hash(rpc),
             method::CITA_GET_BLOCK_BY_NUMBER => self.get_block_by_number(rpc),
             method::CITA_GET_TRANSACTION => self.get_transaction(rpc),
+            method::CITA_GET_TRANSACTION_PROOF => self.get_transaction_proof(rpc),
             method::ETH_CALL => self.call(rpc),
             method::ETH_GET_LOGS => self.get_logs(rpc),
             method::ETH_GET_TRANSACTION_RECEIPT => self.get_transaction_receipt(rpc),
@@ -221,6 +223,18 @@ impl MethodHandler {
         let (hash,): (H256,) = params.parse()?;
         let mut request = self.create_request();
         request.set_transaction(hash.to_vec());
+        Ok(request)
+    }
+
+    pub fn get_transaction_proof(&self, req_rpc: &Call) -> Result<reqlib::Request, Error> {
+        if 1 != self.params_len(&req_rpc.params) {
+            return Err(Error::invalid_params_len());
+        }
+
+        let params = self.detach_requeired_params(req_rpc)?;
+        let (hash,): (H256,) = params.parse()?;
+        let mut request = self.create_request();
+        request.set_transaction_proof(hash.to_vec());
         Ok(request)
     }
 
