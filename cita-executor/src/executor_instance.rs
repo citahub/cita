@@ -102,7 +102,6 @@ impl ExecutorInstance {
         }
     }
 
-    ///执行block交易
     pub fn execute_block(&self, number: u64) {
         let block_in_queue = {
             let block_map = self.ext.block_map.read();

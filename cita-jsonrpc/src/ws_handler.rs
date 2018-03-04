@@ -26,7 +26,7 @@ use threadpool::ThreadPool;
 use ws::{self as ws, CloseCode, Factory, Handler};
 
 pub struct WsFactory {
-    //TODO 定时清理工作
+    //TODO timeout clear
     responses: RpcMap,
     thread_pool: ThreadPool,
     tx: mpsc::Sender<(String, reqlib::Request)>,
@@ -95,7 +95,6 @@ impl Handler for WsHandler {
                     })
                 }
             };
-            //TODO 错误返回
             if let Err(err) = err {
                 let _ = sender
                     .send(serde_json::to_string(&RpcFailure::from_options(req_id, jsonrpc_version, err)).unwrap());

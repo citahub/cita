@@ -65,7 +65,7 @@ impl Synchronizer {
             let start_height = self.current_status.get_height() + 1;
             self.start_sync_req(start_height, 0);
         } else if self.current_status.get_height() < self.sync_end_height {
-            //chain error.需要同步
+            //chain error.must sync
             let start_height = self.current_status.get_height() + 1;
             let end_height = self.sync_end_height;
             self.start_sync_req(start_height, end_height + 1);
@@ -89,7 +89,7 @@ impl Synchronizer {
             self.sync_time_out = Instant::now();
             self.is_synchronizing = true;
         } else {
-            //大于时,表示最新.
+            // Latest
             self.sync_end_height = self.current_status.get_height();
             self.is_synchronizing = false;
         }
@@ -109,10 +109,8 @@ impl Synchronizer {
         }
 
         if status.get_height() < current_height + 1 {
-            //不同步
             self.is_synchronizing = false;
         } else if status.get_height() == current_height + 1 {
-            //即将同步,保存
             self.add_latest_sync_lists(status.get_height(), origin);
 
             if self.global_status.get_height() > old_global_status.get_height() && self.is_synchronizing {
@@ -121,9 +119,7 @@ impl Synchronizer {
                 self.is_synchronizing = false;
             }
         } else {
-            //发起同步
             self.add_latest_sync_lists(status.get_height(), origin);
-
             if self.sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT || !self.is_synchronizing {
                 self.sync_time_out = Instant::now();
                 self.start_sync_req(current_height + 1, status.get_height());
@@ -181,7 +177,6 @@ impl Synchronizer {
         }
     }
 
-    // 发起同步请求
     fn start_sync_req(&mut self, start_height: u64, end_height: u64) {
         debug!(
             "sync: start_sync_req: start_height = {}, end_height = {},current height = {}",
@@ -218,7 +213,7 @@ impl Synchronizer {
     }
 
     fn sync_strategy(&self, start_height: u64, end_height: u64, origin: u32) {
-        //current height = 155,start_height = 156, end height = 160, to origin = 1
+        // Current height = 155,start_height = 156, end height = 160, to origin = 1
         debug!(
             "sync: sync_strategy: current height = {}, \
              start_height = {}, \
@@ -278,7 +273,6 @@ impl Synchronizer {
         self.con.broadcast("net.sync_status".to_string(), msg);
     }
 
-    //提交连续的块
     fn submit_blocks(&mut self) {
         let mut height = self.current_status.get_height() + 1;
         debug!(
