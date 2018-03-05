@@ -23,7 +23,7 @@ use engines::Engine;
 use env_info::EnvInfo;
 use error::ExecutionError;
 use ethcore_io as io;
-use evm::{self, Ext, Factory, Finalize, Schedule, FinalizationResult};
+use evm::{self, Factory, Finalize, Schedule, FinalizationResult};
 pub use executed::{Executed, ExecutionResult};
 use executed::CallType;
 use externalities::*;
@@ -72,6 +72,7 @@ pub struct Executive<'a, B: 'a + StateBackend> {
     engine: &'a Engine,
     vm_factory: &'a Factory,
     depth: usize,
+    static_flag: bool,
     native_factory: &'a NativeFactory,
 }
 
@@ -85,11 +86,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             vm_factory: vm_factory,
             native_factory: native_factory,
             depth: 0,
+            static_flag: false
         }
     }
 
     /// Populates executive from parent properties. Increments executive depth.
-    pub fn from_parent(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, parent_depth: usize) -> Self {
+    pub fn from_parent(state: &'a mut State<B>, info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, parent_depth: usize, static_flag: bool) -> Self {
         Executive {
             state: state,
             info: info,
@@ -97,16 +99,18 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             vm_factory: vm_factory,
             native_factory: native_factory,
             depth: parent_depth + 1,
+            static_flag: static_flag,
         }
     }
 
     /// Creates `Externalities` from `Executive`.
-    pub fn as_externalities<'any, T, V>(&'any mut self, origin_info: OriginInfo, substate: &'any mut Substate, output: OutputPolicy<'any, 'any>, tracer: &'any mut T, vm_tracer: &'any mut V) -> Externalities<'any, T, V, B>
+    pub fn as_externalities<'any, T, V>(&'any mut self, origin_info: OriginInfo, substate: &'any mut Substate, output: OutputPolicy<'any, 'any>, tracer: &'any mut T, vm_tracer: &'any mut V, static_call: bool) -> Externalities<'any, T, V, B>
     where
         T: Tracer,
         V: VMTracer,
     {
-        Externalities::new(self.state, self.info, self.engine, self.vm_factory, self.native_factory, self.depth, origin_info, substate, output, tracer, vm_tracer)
+        let is_static = self.static_flag || static_call;
+        Externalities::new(self.state, self.info, self.engine, self.vm_factory, self.native_factory, self.depth, origin_info, substate, output, tracer, vm_tracer, is_static)
     }
 
     /// This function should be used to execute transaction.
@@ -233,12 +237,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     {
 
         let depth_threshold = io::LOCAL_STACK_SIZE.with(|sz| sz.get() / STACK_SIZE_PER_DEPTH);
+        let static_call = params.call_type == CallType::StaticCall;
 
         // Ordinary execution - keep VM in same thread
         if (self.depth + 1) % depth_threshold != 0 {
             let vm_factory = self.vm_factory;
-            let mut ext = self.as_externalities(OriginInfo::from(&params), unconfirmed_substate, output_policy, tracer, vm_tracer);
-            trace!(target: "executive", "ext.schedule.have_delegate_call: {}", ext.schedule().have_delegate_call);
+            let mut ext = self.as_externalities(OriginInfo::from(&params), unconfirmed_substate, output_policy, tracer, vm_tracer, static_call);
             return vm_factory.create(params.gas).exec(params, &mut ext).finalize(ext);
         }
 
@@ -247,7 +251,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // https://github.com/aturon/crossbeam/issues/16
         crossbeam::scope(|scope| {
                              let vm_factory = self.vm_factory;
-                             let mut ext = self.as_externalities(OriginInfo::from(&params), unconfirmed_substate, output_policy, tracer, vm_tracer);
+                             let mut ext = self.as_externalities(OriginInfo::from(&params), unconfirmed_substate, output_policy, tracer, vm_tracer, static_call);
 
                              scope.spawn(move || vm_factory.create(params.gas).exec(params, &mut ext).finalize(ext))
                          })
@@ -263,8 +267,19 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         T: Tracer,
         V: VMTracer,
     {
+
+        trace!("Executive::call(params={:?}) self.env_info={:?}", params, self.info);
+        if (params.call_type == CallType::StaticCall ||
+                ((params.call_type == CallType::Call || params.call_type == CallType::DelegateCall) &&
+                    self.static_flag))
+            && params.value.value() > 0.into() {
+            return Err(evm::Error::MutableCallInStaticContext);
+        }
+
         // backup used in case of running out of gas
         self.state.checkpoint();
+
+        let static_call = params.call_type == CallType::StaticCall;
 
         if let Some(mut contract) = self.native_factory.new_contract(params.code_address) {
             let cost = U256::from(100);
@@ -275,7 +290,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 let res = {
                     let mut tracer = NoopTracer;
                     let mut vmtracer = NoopVMTracer;
-                    let mut ext = self.as_externalities(OriginInfo::from(&params), &mut unconfirmed_substate, output_policy, &mut tracer, &mut vmtracer);
+                    let mut ext = self.as_externalities(OriginInfo::from(&params), &mut unconfirmed_substate, output_policy, &mut tracer, &mut vmtracer, static_call);
                     contract.exec(params, &mut ext).finalize(ext)
                 };
                 self.enact_result(&res, substate, unconfirmed_substate);
@@ -368,6 +383,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         T: Tracer,
         V: VMTracer,
     {
+        if params.call_type == CallType::StaticCall || self.static_flag {
+            let trace_info = tracer.prepare_trace_create(&params);
+            tracer.trace_failed_create(trace_info, vec![], evm::Error::MutableCallInStaticContext.into());
+            return Err(evm::Error::MutableCallInStaticContext);
+        }
+
         // backup used in case of running out of gas
         self.state.checkpoint();
 
@@ -422,7 +443,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         /*
         let schedule = self.engine.schedule(self.info);
          */
-        let schedule = Schedule::new_frontier();
+        let schedule = Schedule::new_v1();
         // refunds from SSTORE nonzero -> zero
         let sstore_refunds = U256::from(schedule.sstore_refund_gas) * substate.sstore_clears_count;
         // refunds from contract suicides
@@ -507,6 +528,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             Err(evm::Error::BadInstruction { .. }) |
             Err(evm::Error::StackUnderflow { .. }) |
             Err(evm::Error::OutOfStack { .. }) |
+            Err(evm::Error::MutableCallInStaticContext) |
             Ok(FinalizationResult { apply_state: false, .. }) => {
                 self.state.revert_to_checkpoint();
             }
@@ -682,7 +704,7 @@ contract AbiTest {
             let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
             let mut out = vec![];
             let res = ex.call(params, &mut substate, BytesRef::Fixed(&mut out), &mut tracer, &mut vm_tracer);
-            assert!(res.is_ok());
+            assert!(res.is_ok());            
             match res {
                 Ok(gas_used) => println!("gas used: {:?}", gas_used),
                 Err(e) => println!("e: {:?}", e) 

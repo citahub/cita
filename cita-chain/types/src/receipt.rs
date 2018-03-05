@@ -15,15 +15,14 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Receipt
-#![rustfmt_skip]
 
 use BlockNumber;
+use libproto::executor::{Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot};
 use log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
 use rlp::*;
-use util::{Address, H256, U256, Bytes};
-use util::HeapSizeOf;
 use std::str::FromStr;
-use libproto::executor::{Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot};
+use util::{Address, Bytes, H256, U256};
+use util::HeapSizeOf;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
@@ -40,6 +39,7 @@ pub enum ReceiptError {
     StackUnderflow,
     OutOfStack,
     Internal,
+    MutableCallInStaticContext,
 }
 
 impl ReceiptError {
@@ -57,6 +57,7 @@ impl ReceiptError {
             ReceiptError::StackUnderflow => "Not enough stack elements to execute instruction.",
             ReceiptError::OutOfStack => "Execution would exceed defined Stack Limit.",
             ReceiptError::Internal => "EVM internal error.",
+            ReceiptError::MutableCallInStaticContext => "Mutable call in static context.",
         };
         desc.to_string()
     }
@@ -74,9 +75,10 @@ impl ReceiptError {
             ReceiptError::StackUnderflow => ProtoReceiptError::StackUnderflow,
             ReceiptError::OutOfStack => ProtoReceiptError::OutOfStack,
             ReceiptError::Internal => ProtoReceiptError::Internal,
+            ReceiptError::MutableCallInStaticContext => ProtoReceiptError::MutableCallInStaticContext,
         }
     }
-    
+
     fn from_proto(receipt_error: ProtoReceiptError) -> Self {
         match receipt_error {
             ProtoReceiptError::NoTransactionPermission => ReceiptError::NoTransactionPermission,
@@ -90,9 +92,9 @@ impl ReceiptError {
             ProtoReceiptError::StackUnderflow => ReceiptError::StackUnderflow,
             ProtoReceiptError::OutOfStack => ReceiptError::OutOfStack,
             ProtoReceiptError::Internal => ReceiptError::Internal,
+            ProtoReceiptError::MutableCallInStaticContext => ReceiptError::MutableCallInStaticContext,
         }
     }
-
 }
 
 impl Decodable for ReceiptError {
@@ -103,11 +105,13 @@ impl Decodable for ReceiptError {
             2 => Ok(ReceiptError::NotEnoughBaseGas),
             3 => Ok(ReceiptError::BlockGasLimitReached),
             4 => Ok(ReceiptError::AccountGasLimitReached),
-            5 => Ok(ReceiptError::BadJumpDestination),
-            6 => Ok(ReceiptError::BadInstruction),
-            7 => Ok(ReceiptError::StackUnderflow),
-            8 => Ok(ReceiptError::OutOfStack),
-            9 => Ok(ReceiptError::Internal),
+            5 => Ok(ReceiptError::OutOfGas),
+            6 => Ok(ReceiptError::BadJumpDestination),
+            7 => Ok(ReceiptError::BadInstruction),
+            8 => Ok(ReceiptError::StackUnderflow),
+            9 => Ok(ReceiptError::OutOfStack),
+            10 => Ok(ReceiptError::Internal),
+            11 => Ok(ReceiptError::MutableCallInStaticContext),
             _ => Err(DecoderError::Custom("Unknown Receipt error.")),
         }
     }
@@ -137,7 +141,13 @@ pub struct Receipt {
 
 impl Receipt {
     /// Create a new receipt.
-    pub fn new(state_root: Option<H256>, gas_used: U256, logs: Vec<LogEntry>, error: Option<ReceiptError>, account_nonce: U256) -> Receipt {
+    pub fn new(
+        state_root: Option<H256>,
+        gas_used: U256,
+        logs: Vec<LogEntry>,
+        error: Option<ReceiptError>,
+        account_nonce: U256,
+    ) -> Receipt {
         Receipt {
             state_root: state_root,
             gas_used: gas_used,
@@ -147,7 +157,7 @@ impl Receipt {
             }), //TODO: use |= operator
             logs: logs,
             error: error,
-            account_nonce: account_nonce
+            account_nonce: account_nonce,
         }
     }
 
@@ -155,7 +165,6 @@ impl Receipt {
         let mut receipt_proto = ProtoReceipt::new();
         let mut state_root_option = StateRoot::new();
         let mut receipt_error_with_option = ReceiptErrorWithOption::new();
-
 
         if let Some(state_root) = self.state_root {
             state_root_option.set_state_root(state_root.to_vec());
@@ -192,19 +201,29 @@ impl From<ProtoReceipt> for Receipt {
         let account_nonce: U256 = U256::from(receipt.get_account_nonce());
         let mut error = None;
 
-        let logs = receipt.get_logs().into_iter().map(|log_entry|{
-            let address: Address = Address::from_slice(log_entry.get_address());
-            let topics: Vec<H256> = log_entry.get_topics().into_iter().map(|topic|{H256::from_slice(topic)}).collect();
-            let data: Bytes = Bytes::from(log_entry.get_data());
-            LogEntry {
-                address: address,
-                topics: topics,
-                data: data,
-            }
-        }).collect();
+        let logs = receipt
+            .get_logs()
+            .into_iter()
+            .map(|log_entry| {
+                let address: Address = Address::from_slice(log_entry.get_address());
+                let topics: Vec<H256> = log_entry
+                    .get_topics()
+                    .into_iter()
+                    .map(|topic| H256::from_slice(topic))
+                    .collect();
+                let data: Bytes = Bytes::from(log_entry.get_data());
+                LogEntry {
+                    address: address,
+                    topics: topics,
+                    data: data,
+                }
+            })
+            .collect();
 
         if receipt.error.is_some() {
-            error = Some(ReceiptError::from_proto(receipt.clone().take_error().get_error()));
+            error = Some(ReceiptError::from_proto(
+                receipt.clone().take_error().get_error(),
+            ));
         }
 
         Receipt::new(state_root, gas_used, logs, error, account_nonce)
@@ -231,22 +250,22 @@ impl Decodable for Receipt {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         if rlp.item_count()? == 5 {
             Ok(Receipt {
-                   state_root: None,
-                   gas_used: rlp.val_at(0)?,
-                   log_bloom: rlp.val_at(1)?,
-                   logs: rlp.list_at(2)?,
-                   error: rlp.val_at(3)?,
-                   account_nonce: rlp.val_at(4)?,
-               })
+                state_root: None,
+                gas_used: rlp.val_at(0)?,
+                log_bloom: rlp.val_at(1)?,
+                logs: rlp.list_at(2)?,
+                error: rlp.val_at(3)?,
+                account_nonce: rlp.val_at(4)?,
+            })
         } else {
             Ok(Receipt {
-                   state_root: Some(rlp.val_at(0)?),
-                   gas_used: rlp.val_at(1)?,
-                   log_bloom: rlp.val_at(2)?,
-                   logs: rlp.list_at(3)?,
-                   error: rlp.val_at(4)?,
-                   account_nonce: rlp.val_at(5)?,
-               })
+                state_root: Some(rlp.val_at(0)?),
+                gas_used: rlp.val_at(1)?,
+                log_bloom: rlp.val_at(2)?,
+                logs: rlp.list_at(3)?,
+                error: rlp.val_at(4)?,
+                account_nonce: rlp.val_at(5)?,
+            })
         }
     }
 }
@@ -332,7 +351,6 @@ mod tests {
         let decoded: Receipt = ::rlp::decode(&encoded);
         println!("decoded: {:?}", decoded);
         assert_eq!(decoded, r);
-
     }
 
     #[test]

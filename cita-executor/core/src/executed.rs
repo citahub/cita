@@ -37,6 +37,8 @@ pub enum CallType {
     CallCode,
     /// DELEGATECALL.
     DelegateCall,
+    /// STATICCALL
+    StaticCall,
 }
 
 impl Encodable for CallType {
@@ -46,6 +48,7 @@ impl Encodable for CallType {
             CallType::Call => 1,
             CallType::CallCode => 2,
             CallType::DelegateCall => 3,
+            CallType::StaticCall => 4,
         };
         s.append_internal(&value);
     }
@@ -59,6 +62,7 @@ impl Decodable for CallType {
             1 => Ok(CallType::Call),
             2 => Ok(CallType::CallCode),
             3 => Ok(CallType::DelegateCall),
+            4 => Ok(CallType::StaticCall),
             _ => Err(DecoderError::Custom("Invalid value of CallType item")),
         }
     }
@@ -155,6 +159,8 @@ pub enum ExecutionError {
     },
     NoTransactionPermission,
     NoContractPermission,
+    /// When execution tries to modify the state in static context
+    MutableCallInStaticContext,
     /// Returned when internal evm error occurs.
     Internal(String),
     /// Returned when generic transaction occurs
@@ -181,6 +187,7 @@ impl fmt::Display for ExecutionError {
             AccountGasLimitReached { ref gas_limit, ref gas } => format!("Account gas limit reached. The limit is {}, {} more is required", gas_limit, gas),
             InvalidNonce { ref expected, ref got } => format!("Invalid transaction nonce: expected {}, found {}", expected, got),
             NotEnoughCash { ref required, ref got } => format!("Cost of transaction exceeds sender balance. {} is required but the sender only has {}", required, got),
+            MutableCallInStaticContext => "Mutable Call in static context".to_owned(),
             Internal(ref msg) => msg.clone(),
             TransactionMalformed(ref err) => format!("Malformed transaction: {}", err),
             NoTransactionPermission => "No transaction permission".to_owned(),

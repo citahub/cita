@@ -84,6 +84,7 @@ where
     output: OutputPolicy<'a, 'a>,
     tracer: &'a mut T,
     vm_tracer: &'a mut V,
+    static_flag: bool,
 }
 
 
@@ -95,7 +96,7 @@ where
 {
     /// Basic `Externalities` constructor.
     #[cfg_attr(feature = "dev", allow(too_many_arguments))]
-    pub fn new(state: &'a mut State<B>, env_info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, depth: usize, origin_info: OriginInfo, substate: &'a mut Substate, output: OutputPolicy<'a, 'a>, tracer: &'a mut T, vm_tracer: &'a mut V) -> Self {
+    pub fn new(state: &'a mut State<B>, env_info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, depth: usize, origin_info: OriginInfo, substate: &'a mut Substate, output: OutputPolicy<'a, 'a>, tracer: &'a mut T, vm_tracer: &'a mut V, static_flag: bool) -> Self {
         Externalities {
             state: state,
             env_info: env_info,
@@ -105,10 +106,11 @@ where
             depth: depth,
             origin_info: origin_info,
             substate: substate,
-            schedule: Schedule::new_frontier(),
+            schedule: Schedule::new_v1(),
             output: output,
             tracer: tracer,
             vm_tracer: vm_tracer,
+            static_flag: static_flag,
         }
     }
 }
@@ -119,28 +121,32 @@ where
     V: VMTracer,
     B: StateBackend,
 {
-    fn storage_at(&self, key: &H256) -> trie::Result<H256> {
-        self.state.storage_at(&self.origin_info.address, key)
+    fn storage_at(&self, key: &H256) -> evm::Result<H256> {
+        self.state.storage_at(&self.origin_info.address, key).map_err(Into::into)
     }
 
-    fn set_storage(&mut self, key: H256, value: H256) -> trie::Result<()> {
-        self.state.set_storage(&self.origin_info.address, key, value)
+    fn set_storage(&mut self, key: H256, value: H256) -> evm::Result<()> {
+        if self.static_flag {
+            Err(evm::Error::MutableCallInStaticContext)
+        } else {
+            self.state.set_storage(&self.origin_info.address, key, value).map_err(Into::into)
+        }
     }
 
-    fn exists(&self, address: &Address) -> trie::Result<bool> {
-        self.state.exists(address)
+    fn exists(&self, address: &Address) -> evm::Result<bool> {
+        self.state.exists(address).map_err(Into::into)
     }
 
-    fn exists_and_not_null(&self, address: &Address) -> trie::Result<bool> {
-        self.state.exists_and_not_null(address)
+    fn exists_and_not_null(&self, address: &Address) -> evm::Result<bool> {
+        self.state.exists_and_not_null(address).map_err(Into::into)
     }
 
-    fn origin_balance(&self) -> trie::Result<U256> {
-        self.balance(&self.origin_info.address)
+    fn origin_balance(&self) -> evm::Result<U256> {
+        self.balance(&self.origin_info.address).map_err(Into::into)
     }
 
     #[allow(unused_variables)]
-    fn balance(&self, address: &Address) -> trie::Result<U256> {
+    fn balance(&self, address: &Address) -> evm::Result<U256> {
         Ok(U256::zero())
         //self.state.balance(address)
     }
@@ -188,7 +194,7 @@ where
             debug!(target: "ext", "Database corruption encountered: {:?}", e);
             return evm::ContractCreateResult::Failed;
         }
-        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth);
+        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag);
 
         // TODO: handle internal error separately
         match ex.create(params, self.substate, self.tracer, self.vm_tracer) {
@@ -230,7 +236,7 @@ where
             params.value = ActionValue::Transfer(value);
         }
 
-        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth);
+        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag);
 
         match ex.call(params, self.substate, BytesRef::Fixed(output), self.tracer, self.vm_tracer) {
             Ok(gas_left) => MessageCallResult::Success(gas_left),
@@ -238,11 +244,11 @@ where
         }
     }
 
-    fn extcode(&self, address: &Address) -> trie::Result<Arc<Bytes>> {
+    fn extcode(&self, address: &Address) -> evm::Result<Arc<Bytes>> {
         Ok(self.state.code(address)?.unwrap_or_else(|| Arc::new(vec![])))
     }
 
-    fn extcodesize(&self, address: &Address) -> trie::Result<usize> {
+    fn extcodesize(&self, address: &Address) -> evm::Result<usize> {
         Ok(self.state.code_size(address)?.unwrap_or(0))
     }
 
@@ -282,8 +288,12 @@ where
         }
     }
 
-    fn log(&mut self, topics: Vec<H256>, data: &[u8]) {
+    fn log(&mut self, topics: Vec<H256>, data: &[u8]) -> evm::Result<()> {
         use log_entry::LogEntry;
+
+        if self.static_flag {
+             return Err(evm::Error::MutableCallInStaticContext);
+         }
 
         let address = self.origin_info.address;
         self.substate.logs.push(LogEntry {
@@ -291,9 +301,15 @@ where
                                     topics: topics,
                                     data: data.to_vec(),
                                 });
+        Ok(())
     }
 
-    fn suicide(&mut self, refund_address: &Address) -> trie::Result<()> {
+    fn suicide(&mut self, refund_address: &Address) -> evm::Result<()> {
+
+        if self.static_flag {
+             return Err(evm::Error::MutableCallInStaticContext);
+         }
+
         let address = self.origin_info.address;
         let balance = self.balance(&address)?;
         // if &address == refund_address {
