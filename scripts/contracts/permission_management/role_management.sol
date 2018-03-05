@@ -3,7 +3,7 @@ pragma solidity ^0.4.18;
 import "./role_creator.sol";
 
 
-/// @notice Split to a new file: role_auth.sol
+/// @notice TODO Split to a new file: role_auth.sol
 contract RoleManagement {
 
     address roleCreatorAddress = 0xe9E2593C7D1Db5EE843c143E9cB52b8d996b2380;
@@ -86,8 +86,11 @@ contract RoleManagement {
         public
         returns (bool)
     {
-        accounts[_role].push(_account);
-        roles[_account].push(_role);
+
+        if (!inAddressArray(_role, roles[_account]))
+            roles[_account].push(_role);
+        if (!inAddressArray(_account, accounts[_role]))
+            accounts[_role].push(_account);
 
         // Apply role permissions to account.
         Role roleContract = Role(_role);
@@ -181,5 +184,20 @@ contract RoleManagement {
         items.length--;
 
         return true;
+    }
+
+    /// @dev Check the duplicate address
+    function inAddressArray(address _value, address[] storage _array)
+        private
+        view
+        returns (bool)
+    {
+        // Have found the value in array
+        for (uint i = 0; i < _array.length; i++) {
+            if (_value == _array[i])
+                return true;
+        }
+        // Not in
+        return false;
     }
 }

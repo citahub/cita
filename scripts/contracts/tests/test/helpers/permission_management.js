@@ -25,6 +25,8 @@ const tx_params = {
 
 // newPermission
 const newPermission = function (name, addrs, funcs) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return pManagementContractIns.newPermission.sendTransaction(
             name,
             addrs,
@@ -35,6 +37,8 @@ const newPermission = function (name, addrs, funcs) {
 
 // updatePermissionName
 const updatePermissionName = function (perm, name) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return pManagementContractIns.updatePermissionName.sendTransaction(
             perm,
             name,
@@ -44,6 +48,8 @@ const updatePermissionName = function (perm, name) {
 
 // addResources
 const addResources = function (perm, addrs, funcs) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return pManagementContractIns.addResources.sendTransaction(
             perm,
             addrs,
@@ -54,6 +60,8 @@ const addResources = function (perm, addrs, funcs) {
 
 // deleteResources
 const deleteResources = function (perm, addrs, funcs) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return pManagementContractIns.deleteResources.sendTransaction(
             perm,
             addrs,
@@ -64,6 +72,8 @@ const deleteResources = function (perm, addrs, funcs) {
 
 // clearAuthorization
 const clearAuthorization = function (account) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return pManagementContractIns.clearAuthorization.sendTransaction(
             account,
             tx_params
@@ -72,6 +82,8 @@ const clearAuthorization = function (account) {
 
 // setAuthorization
 const setAuthorization = function (account, perm) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return pManagementContractIns.setAuthorization.sendTransaction(
             account,
             perm,
@@ -81,6 +93,8 @@ const setAuthorization = function (account, perm) {
 
 // cancelAuthorization
 const cancelAuthorization = function (account, perm) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return pManagementContractIns.cancelAuthorization.sendTransaction(
             account,
             perm,
@@ -90,6 +104,8 @@ const cancelAuthorization = function (account, perm) {
 
 // deletePermission
 const deletePermission = function (name) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return pManagementContractIns.deletePermission.sendTransaction(
             name,
             tx_params
@@ -98,6 +114,8 @@ const deletePermission = function (name) {
 
 // setAuthorizations
 const setAuthorizations = function (account, perms) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return pManagementContractIns.setAuthorizations.sendTransaction(
             account,
             perms,
