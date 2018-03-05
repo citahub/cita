@@ -333,7 +333,6 @@ impl evm::Evm for JitEvm {
         data.apparent_value = data.transfer_value;
 
         let mut schedule = evmjit::ScheduleHandle::new();
-        schedule.have_delegate_call = ext.schedule().have_delegate_call;
 
         data.author = ext.env_info().author.clone().into_jit();
         data.difficulty = ext.env_info().difficulty.into_jit();

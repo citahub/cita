@@ -21,10 +21,6 @@
 pub struct Schedule {
     /// Does it support exceptional failed code deposit
     pub exceptional_failed_code_deposit: bool,
-    /// Does it have a delegate cal
-    pub have_delegate_call: bool,
-    /// Does it have a REVERT instruction
-    pub have_revert: bool,
     /// VM stack limit
     pub stack_limit: usize,
     /// Max number of nested calls/creates
@@ -105,68 +101,14 @@ pub struct Schedule {
 }
 
 impl Schedule {
-    /// Schedule for the Frontier-era of the Ethereum main net.
-    pub fn new_frontier() -> Schedule {
-        Self::new(false, false, 21_000)
+    /// Schedule for the v1 of the cita main net.
+    pub fn new_v1() -> Schedule {
+        Self::new(false, 21_000)
     }
 
-    /// Schedule for the Homestead-era of the Ethereum main net.
-    pub fn new_homestead() -> Schedule {
-        Self::new(true, true, 53_000)
-    }
-
-    /// Schedule for the post-EIP-150-era of the Ethereum main net.
-    pub fn new_post_eip150(max_code_size: usize, fix_exp: bool, no_empty: bool, kill_empty: bool, have_metropolis_instructions: bool) -> Schedule {
-        Schedule {
-            exceptional_failed_code_deposit: true,
-            have_delegate_call: true,
-            have_revert: have_metropolis_instructions,
-            stack_limit: 1024,
-            max_depth: 1024,
-            tier_step_gas: [0, 2, 3, 5, 8, 10, 20, 0],
-            exp_gas: 10,
-            exp_byte_gas: if fix_exp { 50 } else { 10 },
-            sha3_gas: 30,
-            sha3_word_gas: 6,
-            sload_gas: 200,
-            sstore_set_gas: 20_000,
-            sstore_reset_gas: 5000,
-            sstore_refund_gas: 15_000,
-            jumpdest_gas: 1,
-            log_gas: 375,
-            log_data_gas: 8,
-            log_topic_gas: 375,
-            create_gas: 32_000,
-            call_gas: 700,
-            call_stipend: 2300,
-            call_value_transfer_gas: 9000,
-            call_new_account_gas: 25_000,
-            suicide_refund_gas: 24_000,
-            memory_gas: 3,
-            quad_coeff_div: 512,
-            create_data_gas: 200,
-            create_data_limit: max_code_size,
-            tx_gas: 21_000,
-            tx_create_gas: 53_000,
-            tx_data_zero_gas: 4,
-            tx_data_non_zero_gas: 68,
-            copy_gas: 3,
-            extcodesize_gas: 700,
-            extcodecopy_base_gas: 700,
-            balance_gas: 400,
-            suicide_gas: 5000,
-            suicide_to_new_account_cost: 25_000,
-            sub_gas_cap_divisor: Some(64),
-            no_empty: no_empty,
-            kill_empty: kill_empty,
-        }
-    }
-
-    fn new(efcd: bool, hdc: bool, tcg: usize) -> Schedule {
+    fn new(efcd: bool, tcg: usize) -> Schedule {
         Schedule {
             exceptional_failed_code_deposit: efcd,
-            have_delegate_call: hdc,
-            have_revert: false,
             stack_limit: 1024,
             max_depth: 1024,
             tier_step_gas: [0, 2, 3, 5, 8, 10, 20, 0],
@@ -212,10 +154,8 @@ impl Schedule {
 #[test]
 #[cfg(test)]
 fn schedule_evm_assumptions() {
-    let s1 = Schedule::new_frontier();
-    let s2 = Schedule::new_homestead();
+    let s1 = Schedule::new_v1();
 
     // To optimize division we assume 2**9 for quad_coeff_div
     assert_eq!(s1.quad_coeff_div, 512);
-    assert_eq!(s2.quad_coeff_div, 512);
 }

@@ -39,6 +39,8 @@ pub enum Error {
     /// Returned on evm internal error. Should never be ignored during development.
     /// Likely to cause consensus issues.
     Internal,
+     /// When execution tries to modify the state in static context
+     MutableCallInStaticContext,
 }
 
 impl<'a> From<&'a EvmError> for Error {
@@ -50,6 +52,7 @@ impl<'a> From<&'a EvmError> for Error {
             EvmError::StackUnderflow { .. } => Error::StackUnderflow,
             EvmError::OutOfStack { .. } => Error::OutOfStack,
             EvmError::Internal(_) => Error::Internal,
+            EvmError::MutableCallInStaticContext => Error::MutableCallInStaticContext,
         }
     }
 }
@@ -70,6 +73,7 @@ impl fmt::Display for Error {
             StackUnderflow => "Stack underflow",
             OutOfStack => "Out of stack",
             Internal => "Internal error",
+            MutableCallInStaticContext => "Mutable Call In Static Context",
         };
         message.fmt(f)
     }
@@ -85,6 +89,7 @@ impl Encodable for Error {
             StackUnderflow => 3,
             OutOfStack => 4,
             Internal => 5,
+            MutableCallInStaticContext => 6,
         };
 
         s.append_internal(&value);
@@ -102,6 +107,7 @@ impl Decodable for Error {
             3 => Ok(StackUnderflow),
             4 => Ok(OutOfStack),
             5 => Ok(Internal),
+            6 => Ok(MutableCallInStaticContext),
             _ => Err(DecoderError::Custom("Invalid error type")),
         }
     }

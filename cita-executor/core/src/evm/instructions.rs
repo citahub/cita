@@ -273,12 +273,13 @@ lazy_static! {
         arr[LOG2 as usize] =            InstructionInfo::new("LOG2",            0, 4, 0, true, GasPriceTier::Special);
         arr[LOG3 as usize] =            InstructionInfo::new("LOG3",            0, 5, 0, true, GasPriceTier::Special);
         arr[LOG4 as usize] =            InstructionInfo::new("LOG4",            0, 6, 0, true, GasPriceTier::Special);
-        arr[CREATE as usize] =            InstructionInfo::new("CREATE",            0, 3, 1, true, GasPriceTier::Special);
+        arr[CREATE as usize] =          InstructionInfo::new("CREATE",            0, 3, 1, true, GasPriceTier::Special);
         arr[CALL as usize] =            InstructionInfo::new("CALL",            0, 7, 1, true, GasPriceTier::Special);
         arr[CALLCODE as usize] =        InstructionInfo::new("CALLCODE",        0, 7, 1, true, GasPriceTier::Special);
-        arr[RETURN as usize] =            InstructionInfo::new("RETURN",            0, 2, 0, true, GasPriceTier::Zero);
+        arr[RETURN as usize] =          InstructionInfo::new("RETURN",        0, 2, 0, true, GasPriceTier::Zero);
         arr[DELEGATECALL as usize] =    InstructionInfo::new("DELEGATECALL",    0, 6, 1, true, GasPriceTier::Special);
-        arr[SUICIDE as usize] =         InstructionInfo::new("SUICIDE",            0, 1, 0, true, GasPriceTier::Special);
+        arr[STATICCALL as usize] =		InstructionInfo::new("STATICCALL",		0, 6, 1, true, GasPriceTier::Special);
+        arr[SUICIDE as usize] =         InstructionInfo::new("SUICIDE",         0, 1, 0, true, GasPriceTier::Special);
         arr[REVERT as usize] =			InstructionInfo::new("REVERT",			0, 2, 0, true, GasPriceTier::Zero);
         arr
     };
@@ -557,5 +558,7 @@ pub const RETURN: Instruction = 0xf3;
 pub const DELEGATECALL: Instruction = 0xf4;
 /// stop execution and revert state changes. Return output data.
 pub const REVERT: Instruction = 0xfd;
+/// like CALL but it does not take value, nor modify the state
+pub const STATICCALL: Instruction = 0xfa;
 /// halt execution and register account for later deletion
 pub const SUICIDE: Instruction = 0xff;

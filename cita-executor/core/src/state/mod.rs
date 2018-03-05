@@ -611,7 +611,7 @@ impl<B: Backend> State<B> {
         let e = Executive::new(self, env_info, engine, &vm_factory, &native_factory).transact(t, options)?;
 
         // TODO uncomment once to_pod() works correctly.
-        //        trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
+        // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
         let receipt_error = e.exception.and_then(|evm_error| match evm_error {
             EvmError::OutOfGas => Some(ReceiptError::OutOfGas),
             EvmError::BadJumpDestination { .. } => Some(ReceiptError::BadJumpDestination),
@@ -619,6 +619,7 @@ impl<B: Backend> State<B> {
             EvmError::StackUnderflow { .. } => Some(ReceiptError::StackUnderflow),
             EvmError::OutOfStack { .. } => Some(ReceiptError::OutOfStack),
             EvmError::Internal(_) => Some(ReceiptError::Internal),
+            EvmError::MutableCallInStaticContext => Some(ReceiptError::MutableCallInStaticContext),
         });
         let receipt = Receipt::new(
             None,
@@ -1333,9 +1334,6 @@ mod tests {
     //     info.gas_limit = 1_000_000.into();
     //     info.number = 0x789b0;
     //     let engine = &*Spec::new_test().engine;
-
-    //     println!("schedule.have_delegate_call: {:?}",
-    //              engine.schedule(&info).have_delegate_call);
 
     //     let t = Transaction {
     //             nonce: 0.into(),

@@ -60,7 +60,8 @@ pub enum Error {
         /// What was the stack limit
         limit: usize,
     },
-    /// Returned on evm internal error. Should never be ignored during development.
+    /// When execution tries to modify the state in static context
+    MutableCallInStaticContext,
     /// Likely to cause consensus issues.
     Internal(String),
 }
@@ -74,15 +75,15 @@ impl From<Box<trie::TrieError>> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Error::*;
-        let message = match *self {
-            OutOfGas => "Out of gas",
-            BadJumpDestination { .. } => "Bad jump destination",
-            BadInstruction { .. } => "Bad instruction",
-            StackUnderflow { .. } => "Stack underflow",
-            OutOfStack { .. } => "Out of stack",
-            Internal(ref msg) => msg,
-        };
-        message.fmt(f)
+        match *self {
+            OutOfGas => write!(f, "Out of gas"),
+            BadJumpDestination { destination } => write!(f, "Bad jump destination {:x}", destination),
+            BadInstruction { instruction } => write!(f, "Bad instruction {:x}",  instruction),
+            StackUnderflow { instruction, wanted, on_stack } => write!(f, "Stack underflow {} {}/{}", instruction, wanted, on_stack),
+            OutOfStack { instruction, wanted, limit } => write!(f, "Out of stack {} {}/{}", instruction, wanted, limit),
+            Internal(ref msg) => write!(f, "Internal error: {}", msg),
+            MutableCallInStaticContext => write!(f, "Mutable call in static context"),
+        }
     }
 }
 
