@@ -17,8 +17,9 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{BatchRequest, Message, Request, Response, SubModules};
+use libproto::{BatchRequest, Message, Request, Response};
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use protobuf::RepeatedField;
 use serde_json;
 
@@ -109,7 +110,7 @@ impl Dispatcher {
 
     pub fn deal_tx(
         &mut self,
-        submodule: SubModules,
+        key: String,
         req_id: Vec<u8>,
         tx_response: TxResponse,
         tx: &SignedTransaction,
@@ -122,7 +123,7 @@ impl Dispatcher {
             error_msg = Some(String::from("Dup"));
         }
 
-        if submodule == SubModules::Jsonrpc {
+        if RoutingKey::from(&key).is_sub_module(SubModules::Jsonrpc) {
             let mut response = Response::new();
             response.set_request_id(req_id);
 
@@ -168,7 +169,10 @@ impl Dispatcher {
 
             let msg: Message = response.into();
             mq_pub
-                .send(("auth.rpc".to_string(), msg.try_into().unwrap()))
+                .send((
+                    routing_key!(Auth >> Response).into(),
+                    msg.try_into().unwrap(),
+                ))
                 .unwrap();
         }
         if 0 == self.add_to_pool_cnt {
@@ -223,7 +227,10 @@ impl Dispatcher {
         trace!("deal_txs send height {}", height);
         let msg: Message = block_txs.into();
         mq_pub
-            .send(("auth.block_txs".to_string(), msg.try_into().unwrap()))
+            .send((
+                routing_key!(Auth >> BlockTxs).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
     }
 
@@ -331,7 +338,10 @@ impl Dispatcher {
 
         let msg: Message = request.into();
         mq_pub
-            .send(("auth.tx".to_string(), msg.try_into().unwrap()))
+            .send((
+                routing_key!(Auth >> Request).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
 
         self.batch_forward_info.forward_stamp = SystemTime::now();

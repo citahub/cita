@@ -10,6 +10,7 @@ extern crate core_executor as core;
 extern crate dotenv;
 extern crate error;
 extern crate jsonrpc_types;
+#[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate log;
@@ -24,6 +25,7 @@ mod executor_instance;
 
 use clap::App;
 use executor_instance::ExecutorInstance;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
@@ -58,13 +60,16 @@ fn main() {
     let (ctx_pub, crx_pub) = channel();
     start_pubsub(
         "executor",
-        vec![
-            "net.blk",
-            "consensus.blk",
-            "executor.rpc",
-            "consensus.msg",
-            "net.msg",
-        ],
+        routing_key!([
+            Chain >> SyncResponse,
+            Net >> SyncResponse,
+            Consensus >> BlockWithProof,
+            Chain >> Request,
+            Consensus >> SignedProposal,
+            Consensus >> RawBytes,
+            Net >> SignedProposal,
+            Net >> RawBytes,
+        ]),
         tx,
         crx_pub,
     );

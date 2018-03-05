@@ -9,6 +9,7 @@ extern crate http;
 extern crate httparse;
 extern crate hyper;
 extern crate jsonrpc_types;
+#[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate log;
@@ -49,6 +50,7 @@ use cpuprofiler::PROFILER;
 use http_server::Server;
 use libproto::Message;
 use libproto::request::{self as reqlib, BatchRequest};
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use protobuf::RepeatedField;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
@@ -61,9 +63,6 @@ use tokio_core::reactor::Core;
 use util::{set_panic_handler, Mutex};
 use uuid::Uuid;
 use ws_handler::WsFactory;
-
-pub const TOPIC_NEW_TX: &str = "jsonrpc.new_tx";
-pub const TOPIC_NEW_TX_BATCH: &str = "jsonrpc.new_tx_batch";
 
 fn main() {
     micro_service_init!("cita-jsonrpc", "CITA:jsonrpc");
@@ -101,7 +100,17 @@ fn main() {
     let (tx_pub, rx_pub) = channel();
     //used for buffer message
     let (tx_relay, rx_relay) = channel();
-    start_pubsub("jsonrpc", vec!["auth.rpc", "chain.rpc"], tx_sub, rx_pub);
+    start_pubsub(
+        "jsonrpc",
+        routing_key!([
+            Auth >> Response,
+            Chain >> Response,
+            Executor >> Response,
+            Net >> Response,
+        ]),
+        tx_sub,
+        rx_pub,
+    );
 
     let backlog_capacity = config.backlog_capacity;
 
@@ -206,7 +215,10 @@ fn batch_forward_new_tx(
 
     let data: Message = request.into();
     tx_pub
-        .send((String::from(TOPIC_NEW_TX_BATCH), data.try_into().unwrap()))
+        .send((
+            routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
+            data.try_into().unwrap(),
+        ))
         .unwrap();
     *time_stamp = SystemTime::now();
     new_tx_request_buffer.clear();
@@ -220,7 +232,7 @@ fn forward_service(
     tx_pub: &Sender<(String, Vec<u8>)>,
     config: &NewTxFlowConfig,
 ) {
-    if topic.as_str() != TOPIC_NEW_TX {
+    if RoutingKey::from(&topic) != routing_key!(Jsonrpc >> RequestNewTx) {
         let data: Message = req.into();
         tx_pub.send((topic, data.try_into().unwrap())).unwrap();
     } else {

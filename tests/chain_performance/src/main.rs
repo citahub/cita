@@ -24,6 +24,7 @@ extern crate core;
 extern crate core_executor;
 extern crate cpuprofiler;
 extern crate dotenv;
+#[macro_use]
 extern crate libproto;
 extern crate proof;
 extern crate rustc_serialize;
@@ -47,6 +48,7 @@ use core_executor::db;
 use core_executor::libexecutor::Genesis;
 use cpuprofiler::PROFILER;
 use generate_block::Generateblock;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use std::{thread, time};
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -97,10 +99,11 @@ fn create_contract(
     let inchain = call.chain.clone();
     thread::spawn(move || {
         loop {
-            if let Ok((_, msg_vec)) = recv.recv() {
+            if let Ok((key, msg_vec)) = recv.recv() {
                 let mut msg = Message::try_from(&msg_vec).unwrap();
-                match msg.take_content() {
-                    MsgClass::ExecutedResult(info) => {
+                match RoutingKey::from(&key) {
+                    routing_key!(Executor >> ExecutedResult) => {
+                        let info = msg.take_executed_result().unwrap();
                         //info!("**** get excuted info {:?}", info);
                         let pro = inblock.protobuf();
                         let chan_block = ChainBlock::from(pro);
@@ -157,10 +160,11 @@ fn send_contract_tx(block_tx_num: i32, call: Callexet, pre_hash: H256, flag_prof
     let inblock = block.clone();
     let inchain = call.chain.clone();
     thread::spawn(move || loop {
-        if let Ok((_, msg_vec)) = recv.recv() {
+        if let Ok((key, msg_vec)) = recv.recv() {
             let mut msg = Message::try_from(&msg_vec).unwrap();
-            match msg.take_content() {
-                MsgClass::ExecutedResult(info) => {
+            match RoutingKey::from(&key) {
+                routing_key!(Executor >> ExecutedResult) => {
+                    let info = msg.take_executed_result().unwrap();
                     let pro = inblock.protobuf();
                     let chan_block = ChainBlock::from(pro);
                     inchain.set_block_body(h, &chan_block);

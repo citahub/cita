@@ -5,10 +5,11 @@ use core::libexecutor::call_request::CallRequest;
 use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, CountOrCode};
-use libproto::{request, response, Message, MsgClass, SyncResponse};
+use libproto::{request, response, Message, SyncResponse};
 use libproto::blockchain::{BlockWithProof, Proof, ProofType};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use proof::TendermintProof;
 use serde_json;
 use std::cell::RefCell;
@@ -61,35 +62,38 @@ impl ExecutorInstance {
     pub fn distribute_msg(&self, key: String, msg_vec: Vec<u8>) {
         let mut msg = Message::try_from(&msg_vec).unwrap();
         let origin = msg.get_origin();
-        let content_ext = msg.take_content();
         trace!("distribute_msg call key = {}, origin = {}", key, origin);
-        match content_ext {
-            MsgClass::Request(req) => {
+        match RoutingKey::from(&key) {
+            routing_key!(Chain >> Request) => {
+                let req = msg.take_request().unwrap();
                 self.reply_request(req);
             }
 
-            MsgClass::BlockWithProof(proof_blk) => {
+            routing_key!(Consensus >> BlockWithProof) => {
+                let proof_blk = msg.take_block_with_proof().unwrap();
                 self.consensus_block_enqueue(proof_blk);
             }
 
-            MsgClass::SyncResponse(sync_res) => {
+            routing_key!(Chain >> SyncResponse) | routing_key!(Net >> SyncResponse) => {
+                let sync_res = msg.take_sync_response().unwrap();
                 self.deal_sync_blocks(sync_res);
             }
 
-            MsgClass::SignedProposal(signed_proposal) => {
+            routing_key!(Consensus >> SignedProposal) | routing_key!(Net >> SignedProposal) => {
                 if !self.ext.is_sync.load(Ordering::SeqCst) {
+                    let signed_proposal = msg.take_signed_proposal().unwrap();
                     self.proposal_enqueue(signed_proposal);
                 } else {
                     debug!("receive proposal while sync");
                 }
             }
 
-            MsgClass::RawBytes(_) => {
+            routing_key!(Consensus >> RawBytes) | routing_key!(Net >> RawBytes) => {
                 trace!("Receive other message content.");
             }
 
             _ => {
-                error!("error MsgClass!!!!");
+                error!("error key {}!!!!", key);
             }
         }
     }
@@ -239,7 +243,6 @@ impl ExecutorInstance {
     fn reply_request(&self, mut req: request::Request) {
         let mut response = response::Response::new();
         response.set_request_id(req.take_request_id());
-        let topic = "chain.rpc".to_string();
 
         match req.req.unwrap() {
             Request::call(call) => {
@@ -313,7 +316,12 @@ impl ExecutorInstance {
             }
         };
         let msg: Message = response.into();
-        self.ctx_pub.send((topic, msg.try_into().unwrap())).unwrap();
+        self.ctx_pub
+            .send((
+                routing_key!(Executor >> Response).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
     }
 
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {

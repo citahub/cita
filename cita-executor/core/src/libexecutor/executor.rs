@@ -36,6 +36,7 @@ pub use libexecutor::transaction::*;
 
 use libproto::{ConsensusConfig, ExecutedResult, Message};
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
+use libproto::router::{MsgType, RoutingKey, SubModules};
 
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 use native::Factory as NativeFactory;
@@ -582,7 +583,10 @@ impl Executor {
         let executed_result = { self.executed_result.read().clone() };
         let msg: Message = executed_result.into();
         ctx_pub
-            .send(("executor.result".to_string(), msg.try_into().unwrap()))
+            .send((
+                routing_key!(Executor >> ExecutedResult).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
     }
 
@@ -769,7 +773,8 @@ mod tests {
     use super::*;
     use core::libchain::block::Block as ChainBlock;
     use core::receipt::ReceiptError;
-    use libproto::{Message, MsgClass};
+    use libproto::Message;
+    use libproto::router::{MsgType, RoutingKey, SubModules};
     use std::convert::TryFrom;
     use std::sync::mpsc::channel;
     use tests::helpers::{create_block, init_chain, init_executor, solc};
@@ -819,10 +824,11 @@ mod tests {
 
         executor.execute_block(block.clone(), &send);
 
-        if let Ok((_, msg_vec)) = recv.recv() {
+        if let Ok((key, msg_vec)) = recv.recv() {
             let mut msg = Message::try_from(&msg_vec).unwrap();
-            match msg.take_content() {
-                MsgClass::ExecutedResult(info) => {
+            match RoutingKey::from(&key) {
+                routing_key!(Executor >> ExecutedResult) => {
+                    let info = msg.take_executed_result().unwrap();
                     let pro = block.protobuf();
                     let chain_block = ChainBlock::from(pro);
                     inchain.set_block_body(h, &chain_block);
@@ -865,10 +871,11 @@ mod tests {
 
         executor.execute_block(block.clone(), &send);
 
-        if let Ok((_, msg_vec)) = recv.recv() {
+        if let Ok((key, msg_vec)) = recv.recv() {
             let mut msg = Message::try_from(&msg_vec).unwrap();
-            match msg.take_content() {
-                MsgClass::ExecutedResult(info) => {
+            match RoutingKey::from(&key) {
+                routing_key!(Executor >> ExecutedResult) => {
+                    let info = msg.take_executed_result().unwrap();
                     let pro = block.protobuf();
                     let chain_block = ChainBlock::from(pro);
                     inchain.set_block_body(h, &chain_block);

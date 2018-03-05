@@ -17,8 +17,9 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{Message, MsgClass, Response, Ret, SubModules, VerifyBlockResp, VerifyTxResp};
+use libproto::{Message, Response, Ret, VerifyBlockResp, VerifyTxResp};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryFrom, TryInto};
 use std::sync::Arc;
@@ -129,7 +130,7 @@ fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxR
 // the function has a cyclomatic complexity of 29
 // consider changing the type to: `&[u8]`
 pub fn handle_remote_msg(
-    submodule: SubModules,
+    key: String,
     payload: Vec<u8>,
     on_proposal: Arc<AtomicBool>,
     pool: &ThreadPool,
@@ -143,8 +144,9 @@ pub fn handle_remote_msg(
     resp_sender: &Sender<VerifyRequestResponseInfo>,
 ) {
     let mut msg = Message::try_from(&payload).unwrap();
-    match msg.take_content() {
-        MsgClass::BlockTxHashes(block_tx_hashes) => {
+    match RoutingKey::from(&key) {
+        routing_key!(Chain >> BlockTxHashes) => {
+            let block_tx_hashes = msg.take_block_tx_hashes().unwrap();
             let height = block_tx_hashes.get_height();
             info!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
@@ -192,7 +194,8 @@ pub fn handle_remote_msg(
         // TODO: Add ProposalVerifier { status, request_id, threadpool }, Status: On, Failed, Successed, Experied
         // TODO: Make most of the logic asynchronous
         // Verify Proposal from consensus
-        MsgClass::VerifyBlockReq(blkreq) => {
+        routing_key!(Consensus >> VerifyBlockReq) => {
+            let blkreq = msg.take_verify_block_req().unwrap();
             info!(
                 "get block verify request with {:?} request",
                 blkreq.get_reqs().len()
@@ -228,7 +231,7 @@ pub fn handle_remote_msg(
                     let now = SystemTime::now();
                     for req in blkreq.get_reqs() {
                         let verify_request_info = VerifyRequestResponseInfo {
-                            sub_module: submodule,
+                            key: key.clone(),
                             verify_type: VerifyType::BlockVerify,
                             request_id: VerifyRequestID::BlockVerifyRequestID(request_id),
                             time_stamp: now,
@@ -271,7 +274,7 @@ pub fn handle_remote_msg(
                             }
                             _ => {
                                 let verify_request_info = VerifyRequestResponseInfo {
-                                    sub_module: submodule,
+                                    key: key.clone(),
                                     verify_type: VerifyType::BlockVerify,
                                     request_id: VerifyRequestID::BlockVerifyRequestID(request_id),
                                     time_stamp: now,
@@ -321,19 +324,20 @@ pub fn handle_remote_msg(
                 }
             } else {
                 error!(
-                    "Wrong block verification request with 0 tx for block verify request_id: {} from sub_module: {}",
+                    "Wrong block verification request with 0 tx for block verify request_id: {} from key: {}",
                     blkreq.get_id(),
-                    submodule
+                    key
                 );
             }
         }
-        MsgClass::Request(newtx_req) => {
+        routing_key!(Net >> Request) | routing_key!(Jsonrpc >> RequestNewTxBatch) => {
+            let newtx_req = msg.take_request().unwrap();
             if newtx_req.has_batch_req() {
                 let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
                 let now = SystemTime::now();
                 trace!(
-                    "get batch new tx request from module:{} in system time :{:?}, and has got {} new tx ",
-                    submodule,
+                    "get batch new tx request from key:{} in system time :{:?}, and has got {} new tx ",
+                    key,
                     now,
                     batch_new_tx.len()
                 );
@@ -341,7 +345,7 @@ pub fn handle_remote_msg(
                 for tx_req in batch_new_tx.iter() {
                     let verify_tx_req = tx_req.get_un_tx().tx_verify_req_msg();
                     let verify_request_info = VerifyRequestResponseInfo {
-                        sub_module: submodule,
+                        key: key.clone(),
                         verify_type: VerifyType::SingleVerify,
                         request_id: VerifyRequestID::SingleVerifyRequestID(tx_req.get_request_id().to_vec()),
                         time_stamp: now,
@@ -358,7 +362,7 @@ pub fn handle_remote_msg(
                 );
                 let verify_tx_req = newtx_req.get_un_tx().tx_verify_req_msg();
                 let verify_request_info = VerifyRequestResponseInfo {
-                    sub_module: submodule,
+                    key: key.clone(),
                     verify_type: VerifyType::SingleVerify,
                     request_id: VerifyRequestID::SingleVerifyRequestID(newtx_req.get_request_id().to_vec()),
                     time_stamp: now,
@@ -377,7 +381,7 @@ pub fn handle_verificaton_result(
     result_receiver: &Receiver<VerifyRequestResponseInfo>,
     tx_pub: &Sender<(String, Vec<u8>)>,
     block_verify_status: Arc<RwLock<BlockVerifyStatus>>,
-    tx_sender: &Sender<(SubModules, Vec<u8>, TxResponse, SignedTransaction)>,
+    tx_sender: &Sender<(String, Vec<u8>, TxResponse, SignedTransaction)>,
 ) {
     match result_receiver.recv() {
         Ok(verify_response_info) => {
@@ -410,7 +414,7 @@ pub fn handle_verificaton_result(
                                     signed_tx.set_tx_hash(tx_hash.to_vec());
                                     let tx_response = TxResponse::new(tx_hash, result.clone());
                                     let _ = tx_sender.send((
-                                        verify_response_info.sub_module,
+                                        verify_response_info.key,
                                         request_id.clone(),
                                         tx_response,
                                         signed_tx.clone(),
@@ -418,7 +422,7 @@ pub fn handle_verificaton_result(
                                     trace!("Send singed tx to txpool");
                                 }
                                 _ => {
-                                    if verify_response_info.sub_module == SubModules::Jsonrpc {
+                                    if RoutingKey::from(&verify_response_info.key).is_sub_module(SubModules::Jsonrpc) {
                                         let tx_response = TxResponse::new(tx_hash, result);
 
                                         let mut response = Response::new();
@@ -429,7 +433,10 @@ pub fn handle_verificaton_result(
                                         trace!("response new tx {:?}", response);
                                         let msg: Message = response.into();
                                         tx_pub
-                                            .send(("auth.rpc".to_string(), msg.try_into().unwrap()))
+                                            .send((
+                                                routing_key!(Auth >> Response).into(),
+                                                msg.try_into().unwrap(),
+                                            ))
                                             .unwrap();
                                     }
                                 }
@@ -446,8 +453,8 @@ pub fn handle_verificaton_result(
                                 {
                                     block_verify_status_guard.block_verify_result = VerifyResult::VerifyFailed;
                                     warn!(
-                                        "Failed to do verify blk req for request_id: {}, ret: {:?}, from submodule: {}",
-                                        request_id, result, verify_response_info.sub_module
+                                        "Failed to do verify blk req for request_id: {}, ret: {:?}, from key: {}",
+                                        request_id, result, verify_response_info.key
                                     );
                                     publish_block_verification_result(request_id, result, tx_pub);
                                 }
@@ -518,7 +525,10 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
 
     let msg: Message = blkresp.into();
     tx_pub
-        .send((String::from("auth.verify_blk_res"), msg.try_into().unwrap()))
+        .send((
+            routing_key!(Auth >> VerifyBlockResp).into(),
+            msg.try_into().unwrap(),
+        ))
         .unwrap();
 }
 
@@ -526,8 +536,8 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
 mod tests {
     use super::*;
     use crypto::*;
-    use libproto::{BlockTxHashes, Message, MsgClass, Request, Ret, SignedTransaction, SubModules, Transaction,
-                   VerifyBlockReq, VerifyTxReq};
+    use libproto::{BlockTxHashes, Message, Request, Ret, SignedTransaction, Transaction, VerifyBlockReq, VerifyTxReq};
+    use libproto::router::{MsgType, RoutingKey, SubModules};
     use protobuf::RepeatedField;
     use std::sync::mpsc::channel;
     use std::thread;
@@ -668,7 +678,7 @@ mod tests {
 
         let height = 0;
         handle_remote_msg(
-            SubModules::Chain,
+            routing_key!(Chain >> BlockTxHashes).into(),
             generate_sync_blk_hash_msg(height),
             on_proposal,
             &pool,
@@ -728,7 +738,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
 
         handle_remote_msg(
-            SubModules::Chain,
+            routing_key!(Chain >> BlockTxHashes).into(),
             generate_sync_blk_hash_msg(height),
             on_proposal,
             &pool,
@@ -756,13 +766,16 @@ mod tests {
         assert_eq!(v.read().is_inited(), false);
 
         let (key, sync_request) = rx_pub.recv().unwrap();
-        assert_eq!(key, "auth.blk_tx_hashs_req".to_owned());
+        assert_eq!(
+            routing_key!(Auth >> BlockTxHashesReq),
+            RoutingKey::from(&key)
+        );
         let mut msg = Message::try_from(&sync_request).unwrap();
-        match msg.take_content() {
-            MsgClass::BlockTxHashesReq(req) => {
+        match msg.take_block_tx_hashes_req() {
+            Some(req) => {
                 assert_eq!(req.get_height(), 0);
             }
-            _ => panic!("test failed"),
+            None => panic!("test failed"),
         }
         // keep the receiver live long enough
         thread::sleep(Duration::new(0, 9000000));
@@ -802,7 +815,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
-            SubModules::Jsonrpc,
+            routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
             generate_msg_from_request(req),
             on_proposal,
             &pool,
@@ -821,7 +834,7 @@ mod tests {
             assert_eq!(request_id, single_request_id);
         }
 
-        assert_eq!(SubModules::Jsonrpc, verify_req_info.sub_module);
+        assert!(RoutingKey::from(&verify_req_info.key).is_sub_module(SubModules::Jsonrpc));
         if let VerifyRequestResponse::AuthRequest(req) = verify_req_info.req_resp {
             assert_eq!(req.get_tx_hash().to_vec().clone(), tx_hash);
         }
@@ -857,7 +870,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
-            SubModules::Chain,
+            routing_key!(Chain >> BlockTxHashes).into(),
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -875,7 +888,7 @@ mod tests {
         let privkey = keypair.privkey();
         let tx = generate_tx(vec![1], 99, privkey);
         handle_remote_msg(
-            SubModules::Consensus,
+            routing_key!(Consensus >> VerifyBlockReq).into(),
             generate_blk_msg(tx),
             on_proposal.clone(),
             &pool,
@@ -930,7 +943,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
-            SubModules::Chain,
+            routing_key!(Chain >> BlockTxHashes).into(),
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -949,7 +962,7 @@ mod tests {
         let tx = generate_tx(vec![1], 99, privkey);
         let tx_hash = tx.get_tx_hash().to_vec().clone();
         handle_remote_msg(
-            SubModules::Jsonrpc,
+            routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
             generate_msg(tx),
             on_proposal,
             &pool,
@@ -1010,7 +1023,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
-            SubModules::Chain,
+            routing_key!(Chain >> BlockTxHashes).into(),
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -1028,7 +1041,7 @@ mod tests {
         let privkey = keypair.privkey();
         let tx = generate_tx(vec![1], 99, privkey);
         handle_remote_msg(
-            SubModules::Consensus,
+            routing_key!(Consensus >> VerifyBlockReq).into(),
             generate_blk_msg(tx),
             on_proposal,
             &pool,
@@ -1050,8 +1063,8 @@ mod tests {
 
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
-        match msg.take_content() {
-            MsgClass::VerifyBlockResp(resp) => {
+        match msg.take_verify_block_resp() {
+            Some(resp) => {
                 assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
@@ -1089,7 +1102,7 @@ mod tests {
         let on_proposal = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
-            SubModules::Chain,
+            routing_key!(Chain >> BlockTxHashes).into(),
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -1109,7 +1122,7 @@ mod tests {
         let tx = generate_tx(vec![1], 99, privkey);
 
         handle_remote_msg(
-            SubModules::Consensus,
+            routing_key!(Consensus >> VerifyBlockReq).into(),
             generate_blk_msg_with_fake_signature(tx, pubkey),
             on_proposal,
             &pool,
@@ -1132,8 +1145,8 @@ mod tests {
 
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
-        match msg.take_content() {
-            MsgClass::VerifyBlockResp(resp) => {
+        match msg.take_verify_block_resp() {
+            Some(resp) => {
                 assert_eq!(resp.get_ret(), Ret::BadSig);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
@@ -1171,7 +1184,7 @@ mod tests {
 
         let height = 0;
         handle_remote_msg(
-            SubModules::Chain,
+            routing_key!(Chain >> BlockTxHashes).into(),
             generate_sync_blk_hash_msg(height),
             on_proposal.clone(),
             &pool,
@@ -1190,7 +1203,7 @@ mod tests {
         let tx = generate_tx(vec![1], 99, privkey);
 
         handle_remote_msg(
-            SubModules::Consensus,
+            routing_key!(Consensus >> VerifyBlockReq).into(),
             generate_blk_msg(tx.clone()),
             on_proposal.clone(),
             &pool,
@@ -1211,8 +1224,8 @@ mod tests {
         );
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
-        match msg.take_content() {
-            MsgClass::VerifyBlockResp(resp) => {
+        match msg.take_verify_block_resp() {
+            Some(resp) => {
                 assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }
@@ -1222,7 +1235,7 @@ mod tests {
         thread::sleep(Duration::new(0, 9000000));
         // Begin to construct the same tx's verification request
         handle_remote_msg(
-            SubModules::Consensus,
+            routing_key!(Consensus >> VerifyBlockReq).into(),
             generate_blk_msg(tx.clone()),
             on_proposal.clone(),
             &pool,
@@ -1237,8 +1250,8 @@ mod tests {
         );
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
-        match msg.take_content() {
-            MsgClass::VerifyBlockResp(resp) => {
+        match msg.take_verify_block_resp() {
+            Some(resp) => {
                 assert_eq!(resp.get_ret(), Ret::OK);
                 assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
             }

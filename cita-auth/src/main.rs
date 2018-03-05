@@ -28,6 +28,7 @@ extern crate cpuprofiler;
 extern crate dotenv;
 extern crate error;
 extern crate jsonrpc_types;
+#[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate log;
@@ -55,7 +56,7 @@ use config::Config;
 use cpuprofiler::PROFILER;
 use dispatcher::Dispatcher;
 use handler::*;
-use libproto::SubModules;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -140,12 +141,12 @@ fn main() {
     let (tx_pub, rx_pub) = channel();
     start_pubsub(
         "auth",
-        vec![
-            "consensus.verify_blk_req",
-            "chain.txhashes",
-            "jsonrpc.new_tx_batch",
-            "net.tx",
-        ],
+        routing_key!([
+            Consensus >> VerifyBlockReq,
+            Chain >> BlockTxHashes,
+            Jsonrpc >> RequestNewTxBatch,
+            Net >> Request,
+        ]),
         tx_sub,
         rx_pub,
     );
@@ -243,10 +244,10 @@ fn main() {
         let mut flag = false;
         loop {
             if let Ok(txinfo) = pool_tx_receiver.try_recv() {
-                let (submodule, reqid, tx_res, tx) = txinfo;
+                let (key, reqid, tx_res, tx) = txinfo;
                 dispatch
                     .lock()
-                    .deal_tx(submodule, reqid, tx_res, &tx, &txs_pub_clone);
+                    .deal_tx(key, reqid, tx_res, &tx, &txs_pub_clone);
                 flag = true;
             } else {
                 if flag {
@@ -284,9 +285,8 @@ fn main() {
         match rx_sub.recv() {
             Ok((key, msg)) => {
                 let verifier = verifier.clone();
-                let submodule = SubModules::from(&key[..]);
                 handle_remote_msg(
-                    submodule,
+                    key,
                     msg,
                     on_proposal.clone(),
                     &threadpool,

@@ -3,6 +3,7 @@ use jsonrpc_types::{Call, Error, Id};
 use jsonrpc_types::request::Version;
 use jsonrpc_types::response::Output;
 use libproto::request as reqlib;
+use libproto::router::{MsgType, RoutingKey, SubModules};
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -43,14 +44,14 @@ pub fn encode_request(body: &str) -> Result<Call, Error> {
 
 pub fn select_topic(method: &str) -> String {
     if method.starts_with("cita_send") {
-        "jsonrpc.new_tx"
+        routing_key!(Jsonrpc >> RequestNewTx).into()
     } else if method.starts_with("cita") || method.starts_with("eth") {
-        "jsonrpc.request"
+        routing_key!(Jsonrpc >> Request).into()
     } else if method.starts_with("net_") {
-        "jsonrpc.net"
+        routing_key!(Jsonrpc >> RequestNet).into()
     } else {
-        "jsonrpc"
-    }.to_string()
+        "jsonrpc".to_string()
+    }
 }
 
 #[cfg(test)]
@@ -59,8 +60,11 @@ mod test {
 
     #[test]
     fn test_get_topic() {
-        assert_eq!(select_topic("net_work"), "jsonrpc.net".to_string());
-        assert_eq!(select_topic("cita_send"), "jsonrpc.new_tx".to_string());
+        assert_eq!(select_topic("net_work"), "jsonrpc.request_net".to_string());
+        assert_eq!(
+            select_topic("cita_send"),
+            "jsonrpc.request_new_tx".to_string()
+        );
         assert_eq!(select_topic("cita"), "jsonrpc.request".to_string());
         assert_eq!(select_topic("eth"), "jsonrpc.request".to_string());
         assert_eq!(select_topic("123"), "jsonrpc".to_string());

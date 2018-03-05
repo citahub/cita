@@ -58,8 +58,8 @@ impl Connection {
     }
 
     pub fn is_send(id_card: u32, origin: u32, operate: OperateType) -> bool {
-        operate == OperateType::BROADCAST || (operate == OperateType::SINGLE && id_card == origin)
-            || (operate == OperateType::SUBTRACT && origin != id_card)
+        operate == OperateType::Broadcast || (operate == OperateType::Single && id_card == origin)
+            || (operate == OperateType::Subtract && origin != id_card)
     }
 
     pub fn update(&self, config: &config::NetConfig) {
@@ -190,14 +190,14 @@ mod test {
     use super::Connection;
     use libproto::OperateType;
     #[test]
-    fn is_send_mag() {
-        assert!(Connection::is_send(0, 0, OperateType::BROADCAST));
-        assert!(Connection::is_send(0, 1, OperateType::BROADCAST));
+    fn is_send_msg() {
+        assert!(Connection::is_send(0, 0, OperateType::Broadcast));
+        assert!(Connection::is_send(0, 1, OperateType::Broadcast));
 
-        assert!(Connection::is_send(0, 0, OperateType::SINGLE));
-        assert!(!Connection::is_send(0, 1, OperateType::SINGLE));
+        assert!(Connection::is_send(0, 0, OperateType::Single));
+        assert!(!Connection::is_send(0, 1, OperateType::Single));
 
-        assert!(!Connection::is_send(0, 0, OperateType::SUBTRACT));
-        assert!(Connection::is_send(0, 1, OperateType::SUBTRACT));
+        assert!(!Connection::is_send(0, 0, OperateType::Subtract));
+        assert!(Connection::is_send(0, 1, OperateType::Subtract));
     }
 }
