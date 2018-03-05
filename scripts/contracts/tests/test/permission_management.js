@@ -1,75 +1,41 @@
 /* jshint esversion: 6 */
 /* jshint expr: true */
 
-const Web3 = require('web3');
+const chai = require('chai');
+const assert = chai.assert;
+const util = require('./helpers/util');
+const permissionManagement = require('./helpers/permission_management');
+const authorization = require('./helpers/authorization');
+const permission = require('./helpers/permission');
 const config = require('./config');
 
-var chai = require('chai');
-var assert = chai.assert;
-
-const web3 = new Web3(new Web3.providers.HttpProvider(config.localServer));
-// Use remote server
-// const web3 = new Web3(new Web3.providers.HttpProvider(config.remoteServer));
-
-const sender = config.contract.permission_manager.sender;
-const { pManagementABI, pManagementAddr } = config.contract.permission_management;
-const { pABI, pAddr} = config.contract.permission;
-const { aABI, aAddr, superAdmin, permissions, resources } = config.contract.authorization;
+// util
+const web3 = util.web3;
+const getTxReceipt = util.getTxReceipt;
 
 // permission management
-const pManagement = web3.eth.contract(pManagementABI);
-const pManagementContractIns = pManagement.at(pManagementAddr);
+const newPermission = permissionManagement.newPermission;
+const updatePermissionName = permissionManagement.updatePermissionName;
+const addResources = permissionManagement.addResources;
+const deleteResources = permissionManagement.deleteResources;
+const clearAuthorization = permissionManagement.clearAuthorization;
+const setAuthorization = permissionManagement.setAuthorization;
+const cancelAuthorization = permissionManagement.cancelAuthorization;
+const deletePermission = permissionManagement.deletePermission;
+const setAuthorizations = permissionManagement.setAuthorizations;
 
 // authorization
-const auth = web3.eth.contract(aABI);
-const aContractInstance = auth.at(aAddr);
+const queryPermissions = authorization.queryPermissions;
+const queryAccounts = authorization.queryAccounts;
 
-// permission
-const perm = web3.eth.contract(pABI);
-var newPermissionAddr;
-var newPermissionAddrA;
-var newPermissionAddrB;
+// perm
+const perm = permission.perm;
+let pContractInstance;
 
-const quota = 9999999;
-const blockLimit = 100;
-
-// =======================
-
-// TODO Move to helper
-function randomInt() {
-    return Math.floor(Math.random() * 100).toString();
-}
-
-function getTxReceipt(res) {
-    return new Promise((resolve, reject) => { 
-        let count = 0;
-        const filter = web3.eth.filter('latest', err => {
-
-            if (err) reject(err);
-            
-            count++;
-
-            if (count > 20) {
-                filter.stopWatching(function() {});
-                reject(err);
-            }
-
-            web3.eth.getTransactionReceipt(res.hash, function(err, receipt) {
-
-                if (err) reject(err);
-
-                if (receipt) {
-                    filter.stopWatching(function() {});
-                    resolve(receipt);
-                }
-            });
-        });
-    });
-}
-
-// =======================
-
-// TODO Define functions to call the contract interface
+// temp
+let newPermissionAddr;
+let newPermissionAddrA;
+let newPermissionAddrB;
 
 // =======================
 
@@ -77,19 +43,9 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     describe('\ntest add permission\n', function() { 
         it('should send a newPermission tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.newPermission.sendTransaction(
-                'testPermission',
-                config.testAddr,
-                config.testFunc,
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
-
+            let name = 'testPermission';
+            let res = newPermission(name, config.testAddr, config.testFunc);
+            
             getTxReceipt(res)
                 .then((receipt) => {
                     console.log('\nSend ok and get receipt:\n', receipt);
@@ -105,12 +61,12 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should have info of new permission', function() {
-            const pContractInstance = perm.at(newPermissionAddr);
-            var res = pContractInstance.queryInfo.call();
+            pContractInstance = perm.at(newPermissionAddr);
+            let res = pContractInstance.queryInfo.call();
             console.log('\nInfo:\n', res);
             assert.equal(res[0].substr(0, 30), web3.toHex('testPermission'));
 
-            for (var i=0; i<res[1].length; i++) {
+            for (let i=0; i<res[1].length; i++) {
                 assert.equal(res[1][i], config.testAddr[i]);
                 assert.equal(res[2][i], config.testFunc[i]);
             }
@@ -119,17 +75,8 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     describe('\ntest update permission name\n', function() { 
         it('should send a updatePermissionName tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.updatePermissionName.sendTransaction(
-                newPermissionAddr,
-                'testPermissionNewName',
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let num = web3.eth.blockNumber;
+            let res = updatePermissionName(newPermissionAddr, 'testPermissionNewName');
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -144,8 +91,8 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should have the new permission name', function() {
-            const pContractInstance = perm.at(newPermissionAddr);
-            var res = pContractInstance.queryName.call();
+            pContractInstance = perm.at(newPermissionAddr);
+            let res = pContractInstance.queryName.call();
             console.log('\nNew permission name:\n', res);
             assert.equal(res.substr(0, 44), web3.toHex('testPermissionNewName'));
         });
@@ -153,18 +100,11 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     describe('\ntest add resources\n', function() { 
         it('should send a addResources tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.addResources.sendTransaction(
-                newPermissionAddr,
-                ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
-                ['0xf036ed59'],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = addResources(
+                    newPermissionAddr,
+                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
+                    ['0xf036ed59']
+                );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -179,8 +119,8 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should have the added resources', function() {
-            const pContractInstance = perm.at(newPermissionAddr);
-            var res = pContractInstance.queryResource.call();
+            pContractInstance = perm.at(newPermissionAddr);
+            let res = pContractInstance.queryResource.call();
             console.log('\nNew Added resources:\n', res);
             let l = res[0].length - 1;
             assert.equal(res[0][l], '0x1a702a25c6bca72b67987968f0bfb3a3213c5603');
@@ -190,18 +130,11 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     describe('\ntest delete resources\n', function() { 
         it('should send a deleteResources tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.deleteResources.sendTransaction(
-                newPermissionAddr,
-                ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
-                ['0xf036ed59'],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = deleteResources(
+                    newPermissionAddr,
+                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
+                    ['0xf036ed59']
+                );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -216,10 +149,10 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should have deleted the resources', function() {
-            const pContractInstance = perm.at(newPermissionAddr);
-            var res = pContractInstance.queryResource.call();
+            pContractInstance = perm.at(newPermissionAddr);
+            let res = pContractInstance.queryResource.call();
             console.log('\nResources lefted:\n', res);
-            for (var i=0; i<res[1].length; i++) {
+            for (let i=0; i<res[1].length; i++) {
                 assert.equal(res[0][i], config.testAddr[i]);
                 assert.equal(res[1][i], config.testFunc[i]);
             }
@@ -228,16 +161,7 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     describe('\ntest clear authorization\n', function() { 
         it('should send a clearAuthorization tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.clearAuthorization.sendTransaction(
-                config.testAddr[0],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = clearAuthorization(config.testAddr[0]);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -252,7 +176,7 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should have no permissions of testAccount', function() {
-            var res = aContractInstance.queryPermissions.call(config.testAddr[0]);
+            let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
             assert.equal(res.length, 0);
         });
@@ -260,17 +184,7 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     describe('\ntest set authorization\n', function() { 
         it('should send a setAuthorization tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.setAuthorization.sendTransaction(
-                config.testAddr[0],
-                config.testAddr[1],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = setAuthorization(config.testAddr[0], config.testAddr[1]);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -285,11 +199,11 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should have the permission of account', function() {
-            var res = aContractInstance.queryPermissions.call(config.testAddr[0]);
+            let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
             let l = res.length -1;
             assert.equal(res[l], config.testAddr[1]);
-            var res2 = aContractInstance.queryAccounts.call(config.testAddr[1]);
+            let res2 = queryAccounts(config.testAddr[1]);
             console.log('\nAccount of permissions:\n', res2);
             assert.equal(res2, config.testAddr[0]);
         });
@@ -297,17 +211,7 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     describe('\ntest cancel authorization\n', function() { 
         it('should send a cancelAuthorization tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.cancelAuthorization.sendTransaction(
-                config.testAddr[0],
-                config.testAddr[1],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = cancelAuthorization(config.testAddr[0], config.testAddr[1]);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -322,10 +226,10 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should not have the permission of account', function() {
-            var res = aContractInstance.queryPermissions.call(config.testAddr[0]);
+            let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
             assert.equal(res.length, 0);
-            var res2 = aContractInstance.queryAccounts.call(config.testAddr[1]);
+            let res2 = queryAccounts(config.testAddr[1]);
             console.log('\nAccount of permissions:\n', res2);
             assert.equal(res2.length, 0);
         });
@@ -333,16 +237,7 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     describe('\ntest delete permission\n', function() { 
         it('should send a deletePermission tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.deletePermission.sendTransaction(
-                newPermissionAddr,
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = deletePermission(newPermissionAddr);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -360,18 +255,7 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     describe('\ntest delete permission: query the auth\n', function() { 
         it('should send a newPermission tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.newPermission.sendTransaction(
-                'testPermissionA',
-                config.testAddr,
-                config.testFunc,
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = newPermission('testPermissionA', config.testAddr, config.testFunc);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -388,19 +272,8 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should send a newPermission tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.newPermission.sendTransaction(
-                'testPermissionB',
-                config.testAddr,
-                config.testFunc,
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
-
+            let res = newPermission('testPermissionB', config.testAddr, config.testFunc);
+            
             getTxReceipt(res)
                 .then((receipt) => {
                     console.log('\nSend ok and get receipt:\n', receipt);
@@ -416,17 +289,10 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should send a setAuthorization tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.setAuthorizations.sendTransaction(
-                config.testAddr[0],
-                [newPermissionAddrA, newPermissionAddrB],
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = setAuthorizations(
+                    config.testAddr[0],
+                    [newPermissionAddrA, newPermissionAddrB]
+                );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -441,29 +307,20 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it('should have the permission of account', function() {
-            var res = aContractInstance.queryPermissions.call(config.testAddr[0]);
+            let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
             let l = res.length -1;
             assert.equal(res[l], newPermissionAddrB);
             assert.equal(res[l - 1], newPermissionAddrA);
-            var res1 = aContractInstance.queryAccounts.call(newPermissionAddrA);
+            let res1 = queryAccounts(newPermissionAddrA);
             console.log('\nAccount of permissionA:\n', res1);
-            var res2 = aContractInstance.queryAccounts.call(newPermissionAddrB);
+            let res2 = queryAccounts(newPermissionAddrB);
             console.log('\nAccount of permissionB:\n', res2);
             assert.equal(res2, config.testAddr[0]);
         });
 
         it('should send a deletePermission tx and get receipt', function(done) {
-            var num = web3.eth.blockNumber;
-            var res = pManagementContractIns.deletePermission.sendTransaction(
-                newPermissionAddrA,
-                {
-                    privkey: sender.privkey,
-                    nonce: randomInt(),
-                    quota,
-                    validUntilBlock: num + blockLimit,
-                    from: sender.address
-                });
+            let res = deletePermission(newPermissionAddrA);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -478,12 +335,10 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
 
         it("should cancel the account's permission", function() {
-            var res = aContractInstance.queryPermissions.call(config.testAddr[0]);
+            let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
             assert.equal(res.length, 1);
             assert.equal(res[0], newPermissionAddrB);
         });
-
-
     });
 });
