@@ -11,6 +11,7 @@ const { superAdmin, permissions, resources } = config.contract.authorization;
 const queryPermissions = authorization.queryPermissions;
 const queryAccounts = authorization.queryAccounts;
 const checkPermission = authorization.checkPermission;
+const queryAllAccounts = authorization.queryAllAccounts;
 
 // =======================
 
@@ -62,5 +63,11 @@ describe('test authorization contract', function() {
             );
         console.log('\nResult of check:\n', res);
         assert.equal(res, false);
+    });
+
+    it("should have all the accounts", function() {
+        let res = queryAllAccounts();
+        console.log('\nAll accounts:\n', res);
+        assert.equal(res[0], superAdmin);
     });
 });

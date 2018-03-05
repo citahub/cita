@@ -13,25 +13,31 @@ const aContractInstance = auth.at(aAddr);
 
 // queryPermissions
 const queryPermissions = function (account) {
-        return aContractInstance.queryPermissions.call(account);
+    return aContractInstance.queryPermissions.call(account);
 };
 
 // queryAccounts
 const queryAccounts = function (perm) {
-        return aContractInstance.queryAccounts.call(perm);
+    return aContractInstance.queryAccounts.call(perm);
 };
 
 // checkPermission
 const checkPermission = function (account, addr, func) {
-        return aContractInstance.checkPermission.call(
-                account,
-                addr,
-                func
-            );
+    return aContractInstance.checkPermission.call(
+            account,
+            addr,
+            func
+        );
+};
+
+// queryAllAccounts
+const queryAllAccounts = function () {
+    return aContractInstance.queryAllAccounts.call();
 };
 
 module.exports = {
     queryPermissions,
     queryAccounts,
-    checkPermission
+    checkPermission,
+    queryAllAccounts
 };
