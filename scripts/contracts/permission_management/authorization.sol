@@ -13,6 +13,8 @@ contract Authorization {
     address updatePermissionAddr = 0x00000000000000000000000000000000033241B5;
     address setAuthAddr = 0x00000000000000000000000000000000043241b5;
     address cancelAuthAddr = 0x00000000000000000000000000000000053241b5;
+    address sendTxAddr = 0x0000000000000000000000000000000000000001;
+    address createContractAddr = 0x0000000000000000000000000000000000000002;
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
@@ -30,12 +32,13 @@ contract Authorization {
 
     /// @dev Initialize the superAdmin's auth
     function Authorization(address _superAdmin) public {
-        // TODO
         _setAuth(_superAdmin, newPermissionAddr);
         _setAuth(_superAdmin, deletePermissionAddr);
         _setAuth(_superAdmin, updatePermissionAddr);
         _setAuth(_superAdmin, setAuthAddr);
         _setAuth(_superAdmin, cancelAuthAddr);
+        _setAuth(_superAdmin, sendTxAddr);
+        _setAuth(_superAdmin, createContractAddr);
     }
 
     /// @dev Set authorization
