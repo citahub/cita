@@ -18,7 +18,8 @@
 use bloomchain as bc;
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
-use contracts::{AccountGasLimit, AccountManager, ConstantConfig, NodeManager, QuotaManager};
+use contracts::{AccountGasLimit, AccountManager, ConstantConfig, NodeManager, PermissionManagement, QuotaManager,
+                Resource};
 use db;
 use db::*;
 use engines::NullEngine;
@@ -42,7 +43,7 @@ use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infini
 use native::Factory as NativeFactory;
 use state::State;
 use state_db::StateDB;
-use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::convert::{Into, TryInto};
 use std::fs::File;
 use std::io::Read;
@@ -136,6 +137,7 @@ pub struct GlobalSysConfig {
     pub changed_height: usize,
     pub check_quota: bool,
     pub check_permission: bool,
+    pub account_permissions: HashMap<Address, Vec<Resource>>,
 }
 
 impl GlobalSysConfig {
@@ -150,6 +152,7 @@ impl GlobalSysConfig {
             changed_height: 0,
             check_quota: false,
             check_permission: false,
+            account_permissions: HashMap::new(),
         }
     }
 
@@ -473,6 +476,7 @@ impl Executor {
         let conf = self.get_current_sys_conf(self.get_max_height());
         state.senders = conf.senders;
         state.creators = conf.creators;
+        state.account_permissions = conf.account_permissions;
         state
     }
 
@@ -539,6 +543,7 @@ impl Executor {
         let conf = self.get_current_sys_conf(self.get_max_height());
         state.senders = conf.senders;
         state.creators = conf.creators;
+        state.account_permissions = conf.account_permissions;
 
         let engine = NullEngine::default();
 
@@ -665,6 +670,7 @@ impl Executor {
         conf.delay_active_interval = ConstantConfig::valid_number(self) as usize;
         conf.check_permission = ConstantConfig::permission_check(self);
         conf.check_quota = ConstantConfig::quota_check(self);
+        conf.account_permissions = PermissionManagement::load_account_permissions(self);
 
         let common_gas_limit = QuotaManager::account_gas_limit(self);
         let specific = QuotaManager::specific(self);
