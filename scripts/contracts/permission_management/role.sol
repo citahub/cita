@@ -3,7 +3,8 @@ pragma solidity ^0.4.18;
 import "./permission_management.sol";
 
 
-/// @notice Move the interface about calling the permission management to the role management
+/// @notice TODO Move the interface about calling the permission management to the role management
+///         TODO Add util library of operation about address
 contract Role {
 
     event NameUpdated(bytes32 indexed _oldName, bytes32 indexed _newName);
@@ -52,7 +53,8 @@ contract Role {
         returns (bool)
     {
         for (uint index = 0; index < _permissions.length; index++) {
-            permissions.push(_permissions[index]);
+            if (!inPermissions(_permissions[index]))
+                permissions.push(_permissions[index]);
         }
 
         PermissionsAdded(_permissions);
@@ -164,5 +166,19 @@ contract Role {
         permissions.length--;
 
         return true;
+    }
+
+    /// @dev Check the duplicate permission
+    function inPermissions(address _permission)
+        private
+        view
+        returns (bool)
+    {
+        for (uint i = 0; i < permissions.length; i++) {
+            if (_permission == permissions[i])
+                return true;
+        }
+
+        return false;
     }
 }

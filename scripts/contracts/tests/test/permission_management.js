@@ -1,6 +1,8 @@
 /* jshint esversion: 6 */
 /* jshint expr: true */
 
+// TODO Refactor: every unit test should be independent
+
 const chai = require('chai');
 const assert = chai.assert;
 const util = require('./helpers/util');
@@ -37,6 +39,8 @@ let pContractInstance;
 let newPermissionAddr;
 let newPermissionAddrA;
 let newPermissionAddrB;
+let lengthOfAccounts;
+let lengthOfResources;
 
 // =======================
 
@@ -100,6 +104,14 @@ describe('\n\ntest permission management contract\n\n', function() {
     });
 
     describe('\ntest add resources\n', function() { 
+
+        before('Query the number of the resource', function() {
+            pContractInstance = perm.at(newPermissionAddr);
+            let res = pContractInstance.queryResource.call();
+            console.log('\nThe number of the resource:\n', res[0].length);
+            lengthOfResources = res[0].length;
+        });
+
         it('should send a addResources tx and get receipt', function(done) {
             let res = addResources(
                     newPermissionAddr,
@@ -124,8 +136,46 @@ describe('\n\ntest permission management contract\n\n', function() {
             let res = pContractInstance.queryResource.call();
             console.log('\nNew Added resources:\n', res);
             let l = res[0].length - 1;
+            assert.equal(res[0].length, res[1].length);
             assert.equal(res[0][l], '0x1a702a25c6bca72b67987968f0bfb3a3213c5603');
             assert.equal(res[1][l], '0xf036ed59');
+            assert.equal(l, lengthOfResources);
+        });
+    });
+
+    describe('\ntest add duplicate resources\n', function() { 
+
+        before('Query the number of the resource', function() {
+            pContractInstance = perm.at(newPermissionAddr);
+            let res = pContractInstance.queryResource.call();
+            console.log('\nThe number of the resource:\n', res[0].length);
+            lengthOfResources = res[0].length;
+        });
+
+        it('should send a addResources tx and get receipt', function(done) {
+            let res = addResources(
+                    newPermissionAddr,
+                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
+                    ['0xf036ed59']
+                );
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get addResources receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should not added into the resources', function() {
+            pContractInstance = perm.at(newPermissionAddr);
+            let res = pContractInstance.queryResource.call();
+            console.log('\nThe num of the resource:\n', res[0].length);
+            assert.equal(res[0].length, lengthOfResources);
         });
     });
 
@@ -184,6 +234,11 @@ describe('\n\ntest permission management contract\n\n', function() {
     });
 
     describe('\ntest set authorization\n', function() { 
+        before('Query the number of the account', function() {
+            let res = queryAllAccounts();
+            lengthOfAccounts = res.length;
+        });
+
         it('should send a setAuthorization tx and get receipt', function(done) {
             let res = setAuthorization(config.testAddr[0], config.testAddr[1]);
 
@@ -212,9 +267,36 @@ describe('\n\ntest permission management contract\n\n', function() {
         it('should have all accounts', function() {
             let res = queryAllAccounts();
             console.log('\nAll accounts:\n', res);
-            // TODO Should check the length
-            // TODO Fix the bug: Check the duplicate element before added to an array
             assert.equal(res[res.length-1], config.testAddr[0]);
+            assert.equal(res.length, lengthOfAccounts + 1);
+        });
+    });
+
+    describe('\ntest set duplicated authorization\n', function() { 
+        before('Query the number of the account', function() {
+            let res = queryAllAccounts();
+            lengthOfAccounts = res.length;
+        });
+
+        it('should send a setAuthorization tx and get receipt', function(done) {
+            let res = setAuthorization(config.testAddr[0], config.testAddr[1]);
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should not be setted', function() {
+            let res = queryAllAccounts();
+            console.log('\nAll accounts:\n', res);
+            assert.equal(res.length, lengthOfAccounts);
         });
     });
 

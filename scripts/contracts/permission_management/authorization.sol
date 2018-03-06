@@ -80,7 +80,7 @@ contract Authorization {
     }
 
     /// @dev Clear the auth of the accounts who have the permission
-    /// @notice TODO cancelAuthOfPermission
+    /// @notice TODO Rename cancelAuthOfPermission
     function clearAuthOfPermission(address _permission)
         public
         onlyPermissionManagement
@@ -177,10 +177,30 @@ contract Authorization {
         private
         returns (bool)
     {
-        permissions[_account].push(_permission);
-        accounts[_permission].push(_account);
-        all_accounts.push(_account);
+        if (!inAddressArray(_permission, permissions[_account]))
+            permissions[_account].push(_permission);
+        if (!inAddressArray(_account, accounts[_permission]))
+            accounts[_permission].push(_account);
+        if (!inAddressArray(_account, all_accounts))
+            all_accounts.push(_account);
+
         AuthSetted(_account, _permission);
         return true;
+    }
+
+
+    /// @dev Check the duplicate address
+    function inAddressArray(address _value, address[] storage _array)
+        private
+        view
+        returns (bool)
+    {
+        // Have found the value in array
+        for (uint i = 0; i < _array.length; i++) {
+            if (_value == _array[i])
+                return true;
+        }
+        // Not in
+        return false;
     }
 }

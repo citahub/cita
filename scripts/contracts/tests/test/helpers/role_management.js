@@ -14,7 +14,7 @@ const rmContractInstance = roleManagement.at(rmAddr);
 const quota = util.quota;
 const blockLimit = util.blockLimit;
 
-const tx_params = {
+let tx_params = {
     privkey: sender.privkey,
     nonce: util.randomInt(),
     quota,
@@ -24,6 +24,8 @@ const tx_params = {
 
 // newRole
 const newRole = function (name, permissions) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return rmContractInstance.newRole.sendTransaction(
                 name,
                 permissions,
@@ -33,6 +35,8 @@ const newRole = function (name, permissions) {
 
 // updateRoleName
 const updateRoleName = function (role, name) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return rmContractInstance.updateRoleName.sendTransaction(
                 role,
                 name,
@@ -42,6 +46,8 @@ const updateRoleName = function (role, name) {
 
 // addPermissions
 const addPermissions = function (role, permissions) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return rmContractInstance.addPermissions.sendTransaction(
                 role,
                 permissions,
@@ -51,6 +57,8 @@ const addPermissions = function (role, permissions) {
 
 // deletePermissions
 const deletePermissions = function (role, permissions) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return rmContractInstance.deletePermissions.sendTransaction(
                 role,
                 permissions,
@@ -60,6 +68,8 @@ const deletePermissions = function (role, permissions) {
 
 // setRole
 const setRole = function (account, role) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return rmContractInstance.setRole.sendTransaction(
                 account,
                 role,
@@ -69,6 +79,8 @@ const setRole = function (account, role) {
 
 // cancelRole
 const cancelRole = function (account, role) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return rmContractInstance.cancelRole.sendTransaction(
                 account,
                 role,
@@ -78,6 +90,8 @@ const cancelRole = function (account, role) {
 
 // clearRole
 const clearRole = function (account, role) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return rmContractInstance.clearRole.sendTransaction(
                 account,
                 tx_params
@@ -86,6 +100,8 @@ const clearRole = function (account, role) {
 
 // deleteRole
 const deleteRole = function (account, role) {
+    tx_params.nonce = util.randomInt();
+    tx_params.validUntilBlock = util.blockNumber + blockLimit;
     return rmContractInstance.deleteRole.sendTransaction(
                 account,
                 tx_params

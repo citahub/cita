@@ -171,16 +171,33 @@ contract Permission {
         }
     }
 
+    /// @dev Private: Add resources
     function _addResources(address[] _conts, bytes4[] _funcs)
         private
         returns (bool)
     {
         for (uint i = 0; i < _conts.length; i++) {
-            Resource memory res = Resource(_conts[i], _funcs[i]);
-            resources.push(res);
+            if (!inResources(_conts[i], _funcs[i])) {
+                Resource memory res = Resource(_conts[i], _funcs[i]);
+                resources.push(res);
+            }
         }
 
         ResourcesAdded(_conts, _funcs);
         return true;
+    }
+
+    /// @dev Check the duplicate resource
+    function inResources(address _cont, bytes4 _func)
+        private
+        view
+        returns (bool)
+    {
+        for (uint i = 0; i < resources.length; i++) {
+            if (_cont == resources[i].cont && _func == resources[i].func)
+                return true;
+        }
+
+        return false;
     }
 }
