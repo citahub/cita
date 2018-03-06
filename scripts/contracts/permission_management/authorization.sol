@@ -10,12 +10,14 @@ contract Authorization {
     address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
     address newPermissionAddr = 0x00000000000000000000000000000000013241b5;
     address deletePermissionAddr = 0x00000000000000000000000000000000023241b5;
-    address updatePermissionAddr = 0x00000000000000000000000000000000053241b5;
+    address updatePermissionAddr = 0x00000000000000000000000000000000033241B5;
     address setAuthAddr = 0x00000000000000000000000000000000043241b5;
     address cancelAuthAddr = 0x00000000000000000000000000000000053241b5;
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
+
+    address[] all_accounts;
 
     event AuthSetted(address indexed _account, address indexed _permission);
     event AuthCanceled(address indexed _account, address indexed _permission);
@@ -68,12 +70,14 @@ contract Authorization {
             addressDelete(_account, accounts[permissions[_account][i]]);
 
         delete permissions[_account];
+        addressDelete(_account, all_accounts);
 
         AuthCleared(_account);
         return true;
     }
 
     /// @dev Clear the auth of the accounts who have the permission
+    /// @notice TODO cancelAuthOfPermission
     function clearAuthOfPermission(address _permission)
         public
         onlyPermissionManagement
@@ -103,6 +107,15 @@ contract Authorization {
         returns (address[] _accounts)
     {
         return accounts[_permission];
+    }
+
+    /// @dev Query all accounts
+    function queryAllAccounts()
+        public
+        view
+        returns (address[])
+    {
+        return all_accounts; 
     }
 
     /// @dev Check Permission
@@ -155,6 +168,7 @@ contract Authorization {
                 return i;
         }
     }
+
     /// @dev Set authorization
     function _setAuth(address _account, address _permission)
         private
@@ -162,6 +176,7 @@ contract Authorization {
     {
         permissions[_account].push(_permission);
         accounts[_permission].push(_account);
+        all_accounts.push(_account);
         AuthSetted(_account, _permission);
         return true;
     }

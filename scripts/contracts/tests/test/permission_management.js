@@ -27,6 +27,7 @@ const setAuthorizations = permissionManagement.setAuthorizations;
 // authorization
 const queryPermissions = authorization.queryPermissions;
 const queryAccounts = authorization.queryAccounts;
+const queryAllAccounts = authorization.queryAllAccounts;
 
 // perm
 const perm = permission.perm;
@@ -206,6 +207,14 @@ describe('\n\ntest permission management contract\n\n', function() {
             let res2 = queryAccounts(config.testAddr[1]);
             console.log('\nAccount of permissions:\n', res2);
             assert.equal(res2, config.testAddr[0]);
+        });
+
+        it('should have all accounts', function() {
+            let res = queryAllAccounts();
+            console.log('\nAll accounts:\n', res);
+            // TODO Should check the length
+            // TODO Fix the bug: Check the duplicate element before added to an array
+            assert.equal(res[res.length-1], config.testAddr[0]);
         });
     });
 
