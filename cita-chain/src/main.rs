@@ -65,10 +65,10 @@ fn main() {
         .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
+        .arg_from_usage("-c, --config=[FILE] 'Sets a chain config file'")
         .get_matches();
 
-    let mut config_path = "config";
+    let mut config_path = "chain.toml";
     if let Some(c) = matches.value_of("config") {
         trace!("Value for config: {}", c);
         config_path = c;

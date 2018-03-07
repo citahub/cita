@@ -116,6 +116,7 @@ fn main() {
         .author("Cryptape")
         .about("CITA Chain Performance by MQ powered by Rust")
         .arg_from_usage("--totaltx=[20000] 'transation num in one block'")
+        .arg_from_usage("--times=[0] 'how many times to send block, i.e. block-height. 0 means limitless'")
         .arg_from_usage("--quota=[1000] 'transation quota'")
         .arg_from_usage("--flag_multi_sender=[0] 'Multi sender or not'")
         .arg_from_usage("--flag_tx_type=[1] 'tx type: 0 is store, 1 is creating contract'")
@@ -124,6 +125,11 @@ fn main() {
     let totaltx = matches
         .value_of("totaltx")
         .unwrap_or("40000")
+        .parse::<u64>()
+        .unwrap();
+    let times = matches
+        .value_of("times")
+        .unwrap_or("0")
         .parse::<u64>()
         .unwrap();
     let flag_multi_sender = matches
@@ -157,6 +163,8 @@ fn main() {
     );
     let sys_time = Arc::new(Mutex::new(time::SystemTime::now()));
 
+    let mut count_times: u64 = 0;
+
     loop {
         let (key, body) = rx_sub.recv().unwrap();
         let mut msg = Message::try_from(&body).unwrap();
@@ -184,6 +192,14 @@ fn main() {
                         "tx_num = {}, use time = {} ms, tps = {}",
                         totaltx, secs, tps
                     );
+
+                    if times != 0 {
+                        count_times += 1;
+                        if count_times >= times {
+                            break;
+                        }
+                    }
+
                     send_flag = true;
                 }
                 if send_flag {
