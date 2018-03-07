@@ -1,14 +1,3 @@
-# 1) prerequirement
-# ./scripts/install_develop.sh
-# 2) development
-# ./scripts/config_rabbitmq.sh
-# ./scripts/speedup.sh
-# make fmt
-# make debug
-# make test
-# make bench
-# make release
-################################################################################
 CARGO=RUSTFLAGS='-F warnings' cargo
 
 debug:

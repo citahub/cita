@@ -38,5 +38,11 @@ msg=$(check_height_growth 0 60)|| (echo "FAILED"
                                 echo "check height growth: ${msg}"
                                 exit 1)
 echo "###CITA start OK"
-exit 0
+
+cita_pid=`cat ${BINARY_DIR}/node0/.cita-forever.pid`
+pid_file="/proc/${cita_pid}/cmdline"
+
+while [ -e ${pid_file} ];do
+    sleep 3;
+done
 

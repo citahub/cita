@@ -6,7 +6,7 @@ SOURCE_DIR=$(readlink -f $(dirname $0)/../..)
 BINARY_DIR=${SOURCE_DIR}/target/install
 
 . ${SOURCE_DIR}/tests/integrate_test/util.sh
-${SOURCE_DIR}/tests/integrate_test/cita_start.sh
+${SOURCE_DIR}/tests/integrate_test/cita_start.sh &
 
 cd ${SOURCE_DIR}/tests/wrk_benchmark_test/
 ./benchmark.sh

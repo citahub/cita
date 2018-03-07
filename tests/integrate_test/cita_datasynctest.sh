@@ -7,7 +7,7 @@ stop_node3() {
 
 start_node3() {
     cd ${CUR_PATH}/../../admintool/release/node3
-    ./cita start 3
+    ./cita start 3 &
 }
 
 get_height(){

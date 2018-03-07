@@ -2,8 +2,6 @@
 
 [![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=master)](https://travis-ci.org/cryptape/cita)
 
-**[中文文档](https://cryptape.github.io/cita/)**
-
 ## What is CITA
 
 CITA is a fast and scalable blockchain for enterprises. CITA supports both native contract and EVM contract, by which enterprise users can build their own blockchain applications. CITA has an unique architecture which enables enterprise users to unlease all their computing resources.
@@ -27,11 +25,9 @@ For more details please check the white paper.
 - [English](https://github.com/cryptape/cita-whitepaper/blob/master/en/technical-whitepaper.md)
 - [Chinese](https://github.com/cryptape/cita-whitepaper/blob/master/zh/technical-whitepaper.md)
 
-## Installation
+## Document
 
-[中文安装文档](https://cryptape.github.io/cita/getting_started/)
-
-Please follow the [Installation Guide](https://github.com/cryptape/cita/wiki/Installation)
+[chinese](https://cryptape.github.io/cita)
 
 ## Contributing
 
