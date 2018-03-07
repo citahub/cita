@@ -20,7 +20,7 @@ extern crate rustc_hex;
 use self::rustc_hex::FromHex;
 use action_params::{ActionParams, ActionValue};
 use env_info::EnvInfo;
-use evm::{self, Ext, Schedule, Factory, GasLeft, VMType, ContractCreateResult, MessageCallResult};
+use evm::{self, Ext, Schedule, Factory, GasLeft, VMType, ContractCreateResult, MessageCallResult, ReturnData};
 use executed::CallType;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -144,7 +144,7 @@ impl Ext for FakeExt {
                               data: data.to_vec(),
                               code_address: Some(code_address.clone()),
                           });
-        MessageCallResult::Success(*gas)
+        MessageCallResult::Success(*gas, ReturnData::empty())
     }
 
     fn extcode(&self, address: &Address) -> evm::Result<Arc<Bytes>> {
@@ -162,7 +162,7 @@ impl Ext for FakeExt {
                        }))
     }
 
-    fn ret(self, _gas: &U256, _data: &[u8]) -> evm::Result<U256> {
+    fn ret(self, _gas: &U256, _data: &ReturnData) -> evm::Result<U256> {
         unimplemented!();
     }
 

@@ -18,7 +18,7 @@
 #![rustfmt_skip]
 
 use env_info::*;
-use evm::{self, Schedule};
+use evm::{self, Schedule, ReturnData};
 use executed::CallType;
 use std::sync::Arc;
 use util::*;
@@ -36,8 +36,8 @@ pub enum ContractCreateResult {
 /// Result of externalities call function.
 pub enum MessageCallResult {
     /// Returned when message call was successfull.
-    /// Contains gas left.
-    Success(U256),
+    /// Contains gas left and output data.
+    Success(U256, ReturnData),
     /// Returned when message call failed.
     /// VM doesn't have to know the reason.
     Failed,
@@ -90,9 +90,7 @@ pub trait Ext {
 
     /// Should be called when transaction calls `RETURN` opcode.
     /// Returns gas_left if cost of returning the data is not too high.
-    fn ret(self, gas: &U256, data: &[u8]) -> evm::Result<U256>
-    where
-        Self: Sized;
+    fn ret(self, gas: &U256, data: &ReturnData) -> evm::Result<U256>;
 
     /// Should be called when contract commits suicide.
     /// Address to which funds should be refunded.

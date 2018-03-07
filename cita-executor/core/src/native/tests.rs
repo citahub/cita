@@ -1,6 +1,7 @@
 use super::*;
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
+use evm::ReturnData;
 use native::storage::*;
 #[derive(Clone)]
 
@@ -68,7 +69,7 @@ impl SimpleStorage {
             .to_big_endian(self.output.as_mut_slice());
         Ok(GasLeft::NeedsReturn {
             gas_left: U256::from(100),
-            data: self.output.as_slice(),
+            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })
     }
@@ -104,7 +105,7 @@ impl SimpleStorage {
             .expect("failed to write [u8]");
         Ok(GasLeft::NeedsReturn {
             gas_left: U256::from(100),
-            data: self.output.as_slice(),
+            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })
     }
@@ -127,7 +128,7 @@ impl SimpleStorage {
         }
         Ok(GasLeft::NeedsReturn {
             gas_left: U256::from(100),
-            data: self.output.as_slice(),
+            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })
     }
@@ -150,7 +151,7 @@ impl SimpleStorage {
         }
         Ok(GasLeft::NeedsReturn {
             gas_left: U256::from(100),
-            data: self.output.as_slice(),
+            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })
     }
@@ -158,7 +159,6 @@ impl SimpleStorage {
 //use byteorder::{};
 extern crate bincode;
 use self::bincode::Infinite;
-use self::bincode::internal::deserialize_from;
 use self::bincode::internal::serialize_into;
 use evm::tests::FakeExt;
 use std::io::Write;
@@ -194,18 +194,10 @@ fn test_native_contract() {
         match contract.exec(params, &mut ext) {
             Ok(GasLeft::NeedsReturn {
                 gas_left: _,
-                mut data,
+                data: return_data,
                 apply_state: true,
             }) => {
-                let mut real = U256::zero();
-                for i in real.0.iter_mut().rev() {
-                    // *i = deserialize_from::<&[u8], _, Infinite, BigEndian>(
-                    //     &mut data.get(index..(index + 8)).unwrap(),
-                    //     Infinite,
-                    // ).expect("failed to serialize u64");
-                    *i = deserialize_from::<&[u8], _, Infinite, BigEndian>(&mut data, Infinite)
-                        .expect("failed to serialize u64");
-                }
+                let real = U256::from(&*return_data);
                 assert!(real == value);
             }
             _ => assert!(false, "no output data"),

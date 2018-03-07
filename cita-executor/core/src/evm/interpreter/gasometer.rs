@@ -157,7 +157,8 @@ impl<Gas: CostType> Gasometer<Gas> {
                 Request::GasMem(gas, mem_needed(stack.peek(0), stack.peek(1))?)
             }
             instructions::CALLDATACOPY |
-            instructions::CODECOPY => {
+            instructions::CODECOPY |
+            instructions::RETURNDATACOPY => {
                 Request::GasMemCopy(default_gas, mem_needed(stack.peek(0), stack.peek(2))?, Gas::from_u256(*stack.peek(2))?)
             }
             instructions::EXTCODECOPY => {

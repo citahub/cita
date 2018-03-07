@@ -30,10 +30,11 @@ pub use self::shared_cache::SharedCache;
 use self::stack::{Stack, VecStack};
 use action_params::{ActionParams, ActionValue};
 use bit_set::BitSet;
-use evm::{self, MessageCallResult, ContractCreateResult, GasLeft, CostType};
+use evm::{self, MessageCallResult, ContractCreateResult, GasLeft, CostType, ReturnData};
 use evm::instructions::{self, Instruction, InstructionInfo};
 use executed::CallType;
 use std::cmp;
+use std::mem;
 
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -101,6 +102,7 @@ enum InstructionResult<Gas> {
 pub struct Interpreter<Cost: CostType> {
     mem: Vec<u8>,
     cache: Arc<SharedCache>,
+    return_data: ReturnData,
     _type: PhantomData<Cost>,
 }
 
@@ -168,9 +170,10 @@ impl<Cost: CostType> evm::Evm for Interpreter<Cost> {
                 }
                 InstructionResult::StopExecutionNeedsReturn{gas, init_off, init_size, apply} => {
                     informant.done();
+                    let mem = mem::replace(&mut self.mem, Vec::new());
                     return Ok(GasLeft::NeedsReturn {
                         gas_left: gas.as_u256(),
-                        data: self.mem.read_slice(init_off, init_size),
+                        data: mem.into_return_data(init_off, init_size),
                         apply_state: apply
                     });
                 }
@@ -189,6 +192,7 @@ impl<Cost: CostType> Interpreter<Cost> {
         Interpreter {
             mem: Vec::new(),
             cache: cache,
+            return_data: ReturnData::empty(),
             _type: PhantomData::default(),
         }
     }
@@ -222,7 +226,8 @@ impl<Cost: CostType> Interpreter<Cost> {
             instructions::MSTORE | instructions::MLOAD => Some((stack.peek(0).low_u64() as usize, 32)),
             instructions::MSTORE8 => Some((stack.peek(0).low_u64() as usize, 1)),
             instructions::CALLDATACOPY |
-            instructions::CODECOPY => Some((stack.peek(0).low_u64() as usize, stack.peek(2).low_u64() as usize)),
+            instructions::CODECOPY |
+            instructions::RETURNDATACOPY => Some((stack.peek(0).low_u64() as usize, stack.peek(2).low_u64() as usize)),
             instructions::EXTCODECOPY => Some((stack.peek(1).low_u64() as usize, stack.peek(3).low_u64() as usize)),
             instructions::CALL | instructions::CALLCODE => Some((stack.peek(5).low_u64() as usize, stack.peek(6).low_u64() as usize)),
             instructions::DELEGATECALL => Some((stack.peek(4).low_u64() as usize, stack.peek(5).low_u64() as usize)),
@@ -334,8 +339,9 @@ impl<Cost: CostType> Interpreter<Cost> {
                 };
 
                 return match call_result {
-                    MessageCallResult::Success(gas_left) => {
+                    MessageCallResult::Success(gas_left, data) => {
                         stack.push(U256::one());
+                        self.return_data = data;
                         Ok(InstructionResult::UnusedGas(Cost::from_u256(gas_left).expect("Gas left cannot be greater then current one")))
                     }
                     MessageCallResult::Failed => {
@@ -465,21 +471,27 @@ impl<Cost: CostType> Interpreter<Cost> {
             instructions::CODESIZE => {
                 stack.push(U256::from(code.len()));
             }
+            instructions::RETURNDATASIZE => {
+                stack.push(U256::from(self.return_data.len()))
+            }
             instructions::EXTCODESIZE => {
                 let address = u256_to_address(&stack.pop_back());
                 let len = ext.extcodesize(&address)?;
                 stack.push(U256::from(len));
             }
             instructions::CALLDATACOPY => {
-                self.copy_data_to_memory(stack, params.data.as_ref().map_or_else(|| &[] as &[u8], |d| &*d as &[u8]));
+                Self::copy_data_to_memory(&mut self.mem, stack, params.data.as_ref().map_or_else(|| &[] as &[u8], |d| &*d as &[u8]));
             }
+            instructions::RETURNDATACOPY => {
+                Self::copy_data_to_memory(&mut self.mem, stack, &*self.return_data);
+              }
             instructions::CODECOPY => {
-                self.copy_data_to_memory(stack, params.code.as_ref().map_or_else(|| &[] as &[u8], |c| &**c as &[u8]));
+                Self::copy_data_to_memory(&mut self.mem, stack, params.code.as_ref().map_or_else(|| &[] as &[u8], |c| &**c as &[u8]));
             }
             instructions::EXTCODECOPY => {
                 let address = u256_to_address(&stack.pop_back());
                 let code = ext.extcode(&address)?;
-                self.copy_data_to_memory(stack, &code);
+                Self::copy_data_to_memory(&mut self.mem, stack, &code);
             }
             instructions::GASPRICE => {
                 stack.push(params.gas_price);
@@ -511,7 +523,7 @@ impl<Cost: CostType> Interpreter<Cost> {
         Ok(InstructionResult::Ok)
     }
 
-    fn copy_data_to_memory(&mut self, stack: &mut Stack<U256>, source: &[u8]) {
+    fn copy_data_to_memory(mem: &mut Vec<u8>, stack: &mut Stack<U256>, source: &[u8]) {
         let dest_offset = stack.pop_back();
         let source_offset = stack.pop_back();
         let size = stack.pop_back();
@@ -519,10 +531,9 @@ impl<Cost: CostType> Interpreter<Cost> {
 
         let output_end = if source_offset > source_size || size > source_size || source_offset + size > source_size {
             let zero_slice = if source_offset > source_size {
-                self.mem.writeable_slice(dest_offset, size)
+                mem.writeable_slice(dest_offset, size)
             } else {
-                self.mem
-                    .writeable_slice(dest_offset + source_size - source_offset, source_offset + size - source_size)
+                mem.writeable_slice(dest_offset + source_size - source_offset, source_offset + size - source_size)
             };
             for i in zero_slice.iter_mut() {
                 *i = 0;
@@ -534,7 +545,7 @@ impl<Cost: CostType> Interpreter<Cost> {
 
         if source_offset < source_size {
             let output_begin = source_offset.low_u64() as usize;
-            self.mem.write_slice(dest_offset, &source[output_begin..output_end]);
+            mem.write_slice(dest_offset, &source[output_begin..output_end]);
         }
     }
 

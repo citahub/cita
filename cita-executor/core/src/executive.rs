@@ -23,7 +23,7 @@ use engines::Engine;
 use env_info::EnvInfo;
 use error::ExecutionError;
 use ethcore_io as io;
-use evm::{self, Factory, Finalize, Schedule, FinalizationResult};
+use evm::{self, Factory, Finalize, Schedule, FinalizationResult, ReturnData};
 pub use executed::{Executed, ExecutionResult};
 use executed::CallType;
 use externalities::*;
@@ -185,9 +185,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let mut substate = Substate::new();
 
-        let (gas_left, output) = match t.action {
+        let (result, output) = match t.action {
             Action::Store => {
-                (Ok(t.gas), vec![])
+                (Ok((t.gas, ReturnData::empty())), vec![])
             }
             Action::Create => {
                 let new_address = contract_address(&sender, &nonce);
@@ -227,7 +227,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         };
 
         // finalize here!
-        Ok(self.finalize(t, substate, gas_left, output, tracer.traces(), vm_tracer.drain())?)
+        Ok(self.finalize(t, substate, result, output, tracer.traces(), vm_tracer.drain())?)
     }
 
     fn exec_vm<T, V>(&mut self, params: ActionParams, unconfirmed_substate: &mut Substate, output_policy: OutputPolicy, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<FinalizationResult>
@@ -262,7 +262,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// NOTE. It does not finalize the transaction (doesn't do refunds, nor suicides).
     /// Modifies the substate and the output.
     /// Returns either gas_left or `evm::Error`.
-    pub fn call<T, V>(&mut self, params: ActionParams, substate: &mut Substate, mut output: BytesRef, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<U256>
+    pub fn call<T, V>(&mut self, params: ActionParams, substate: &mut Substate, mut output: BytesRef, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<(U256, ReturnData)>
     where
         T: Tracer,
         V: VMTracer,
@@ -295,7 +295,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 };
                 self.enact_result(&res, substate, unconfirmed_substate);
                 trace!(target: "executive", "enacted: substate={:?}\n", substate);
-                return res.map(|r| r.gas_left);
+                return res.map(|r| (r.gas_left, r.return_data));
             }
         }
         if self.engine.is_builtin(&params.code_address) {
@@ -321,7 +321,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     tracer.trace_call(trace_info, cost, trace_output, vec![]);
                 }
 
-                Ok(params.gas - cost)
+                Ok((params.gas - cost, ReturnData::empty()))
             } else {
                 // just drain the whole gas
                 self.state.revert_to_checkpoint();
@@ -364,13 +364,13 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
                 self.enact_result(&res, substate, unconfirmed_substate);
                 trace!(target: "executive", "enacted: substate={:?}\n", substate);
-                res.map(|r| r.gas_left)
+                res.map(|r| (r.gas_left, r.return_data))
             } else {
                 // otherwise it's just a basic transaction, only do tracing, if necessary.
                 self.state.discard_checkpoint();
 
                 tracer.trace_call(trace_info, U256::zero(), trace_output, vec![]);
-                Ok(params.gas)
+                Ok((params.gas, ReturnData::empty()))
             }
         }
     }
@@ -378,7 +378,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Creates contract with given contract params.
     /// NOTE. It does not finalize the transaction (doesn't do refunds, nor suicides).
     /// Modifies the substate.
-    pub fn create<T, V>(&mut self, params: ActionParams, substate: &mut Substate, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<U256>
+    pub fn create<T, V>(&mut self, params: ActionParams, substate: &mut Substate, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<(U256, ReturnData)>
     where
         T: Tracer,
         V: VMTracer,
@@ -435,11 +435,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         };
 
         self.enact_result(&res, substate, unconfirmed_substate);
-        res.map(|r| r.gas_left)
+        res.map(|r| (r.gas_left, r.return_data))
     }
 
     /// Finalizes the transaction (does refunds and suicides).
-    fn finalize(&mut self, t: &SignedTransaction, substate: Substate, result: evm::Result<U256>, output: Bytes, trace: Vec<FlatTrace>, vm_trace: Option<VMTrace>) -> ExecutionResult {
+    fn finalize(&mut self, t: &SignedTransaction, substate: Substate, result: evm::Result<(U256, ReturnData)>, output: Bytes, trace: Vec<FlatTrace>, vm_trace: Option<VMTrace>) -> ExecutionResult {
         /*
         let schedule = self.engine.schedule(self.info);
          */
@@ -452,7 +452,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         // real ammount to refund
         let gas_left_prerefund = match result {
-            Ok(x) => x,
+            Ok((x, _)) => x,
             _ => 0.into(),
         };
         let refunded = cmp::min(refunds_bound, (t.gas - gas_left_prerefund) >> 1);

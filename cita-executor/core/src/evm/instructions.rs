@@ -173,6 +173,8 @@ lazy_static! {
         arr[MULMOD as usize] =            InstructionInfo::new("MULMOD",            0, 3, 1, false, GasPriceTier::Mid);
         arr[SIGNEXTEND as usize] =        InstructionInfo::new("SIGNEXTEND",        0, 2, 1, false, GasPriceTier::Low);
         arr[SHA3 as usize] =            InstructionInfo::new("SHA3",            0, 2, 1, false, GasPriceTier::Special);
+        arr[RETURNDATASIZE as usize] =	InstructionInfo::new("RETURNDATASIZE",	0, 0, 1, false, GasPriceTier::Base);
+        arr[RETURNDATACOPY as usize] =	InstructionInfo::new("RETURNDATACOPY",	0, 3, 0, true, GasPriceTier::VeryLow);
         arr[ADDRESS as usize] =         InstructionInfo::new("ADDRESS",            0, 0, 1, false, GasPriceTier::Base);
         arr[BALANCE as usize] =         InstructionInfo::new("BALANCE",            0, 1, 1, false, GasPriceTier::Special);
         arr[ORIGIN as usize] =            InstructionInfo::new("ORIGIN",            0, 0, 1, false, GasPriceTier::Base);
@@ -364,6 +366,10 @@ pub const EXTCODESIZE: Instruction = 0x3b;
 /// copy external code (from another contract)
 pub const EXTCODECOPY: Instruction = 0x3c;
 
+/// get the size of the return data buffer for the last call
+pub const RETURNDATASIZE: Instruction = 0x3d;
+/// copy return data buffer to memory
+pub const RETURNDATACOPY: Instruction = 0x3e;
 /// get hash of most recent complete block
 pub const BLOCKHASH: Instruction = 0x40;
 /// get the block's coinbase address
