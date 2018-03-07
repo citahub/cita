@@ -41,13 +41,13 @@ fn main() {
         .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
         .get_matches();
 
-    let mut genesis_path = "genesis";
+    let mut genesis_path = "genesis.json";
     if let Some(ge) = matches.value_of("genesis") {
         trace!("Value for genesis: {}", ge);
         genesis_path = ge;
     }
 
-    let mut config_path = "config";
+    let mut config_path = "executor.toml";
     if let Some(c) = matches.value_of("config") {
         trace!("Value for config: {}", c);
         config_path = c;
