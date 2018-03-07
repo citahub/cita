@@ -22,7 +22,7 @@
 use action_params::{ActionParams, ActionValue};
 use engines::Engine;
 use env_info::EnvInfo;
-use evm::{self, MessageCallResult, Schedule, Factory, ReturnData};
+use evm::{self, MessageCallResult, Schedule, Factory, ReturnData, ContractCreateResult, FinalizationResult};
 use executed::CallType;
 use executive::*;
 use native::Factory as NativeFactory;
@@ -133,6 +133,10 @@ where
         }
     }
 
+    fn is_static(&self) -> bool {
+         return self.static_flag
+     }
+
     fn exists(&self, address: &Address) -> evm::Result<bool> {
         self.state.exists(address).map_err(Into::into)
     }
@@ -190,19 +194,25 @@ where
             call_type: CallType::None,
         };
 
-        if let Err(e) = self.state.inc_nonce(&self.origin_info.address) {
-            debug!(target: "ext", "Database corruption encountered: {:?}", e);
-            return evm::ContractCreateResult::Failed;
+        if !self.static_flag {
+            if let Err(e) = self.state.inc_nonce(&self.origin_info.address) {
+                debug!(target: "ext", "Database corruption encountered: {:?}", e);
+                return evm::ContractCreateResult::Failed;
+            }
         }
         let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag);
 
         // TODO: handle internal error separately
         match ex.create(params, self.substate, self.tracer, self.vm_tracer) {
-            Ok((gas_left, _)) => {
+            Ok(FinalizationResult{ gas_left, apply_state: true, .. }) => {
                 self.substate.contracts_created.push(address);
                 evm::ContractCreateResult::Created(address, gas_left)
             }
-            _ => evm::ContractCreateResult::Failed,
+            Ok(FinalizationResult{ gas_left, apply_state: false, return_data }) => {
+                ContractCreateResult::Reverted(gas_left, return_data)
+            },
+            Err(evm::Error::MutableCallInStaticContext) => ContractCreateResult::FailedInStaticCall,
+            _ => ContractCreateResult::Failed,
         }
     }
 
@@ -239,7 +249,8 @@ where
         let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag);
 
         match ex.call(params, self.substate, BytesRef::Fixed(output), self.tracer, self.vm_tracer) {
-            Ok((gas_left, return_data)) => MessageCallResult::Success(gas_left, return_data),
+            Ok(FinalizationResult{ gas_left, return_data, apply_state: true }) => MessageCallResult::Success(gas_left, return_data),
+             Ok(FinalizationResult{ gas_left, return_data, apply_state: false }) => MessageCallResult::Reverted(gas_left, return_data),
             _ => MessageCallResult::Failed,
         }
     }
@@ -253,7 +264,7 @@ where
     }
 
     #[cfg_attr(feature = "dev", allow(match_ref_pats))]
-    fn ret(mut self, gas: &U256, data: &ReturnData) -> evm::Result<U256>
+    fn ret(mut self, gas: &U256, data: &ReturnData, apply_state: bool) -> evm::Result<U256>
     where
         Self: Sized,
     {
@@ -274,7 +285,7 @@ where
                 vec.extend_from_slice(&*data);
                 Ok(*gas)
             }
-            OutputPolicy::InitContract(ref mut copy) => {
+            OutputPolicy::InitContract(ref mut copy) if apply_state => {
                 let return_cost = U256::from(data.len()) * U256::from(self.schedule.create_data_gas);
                 if return_cost > *gas || data.len() > self.schedule.create_data_limit {
                     return if self.schedule.exceptional_failed_code_deposit { Err(evm::Error::OutOfGas) } else { Ok(*gas) };
@@ -284,6 +295,9 @@ where
 
                 self.state.init_code(&self.origin_info.address, data.to_vec())?;
                 Ok(*gas - return_cost)
+            }
+            OutputPolicy::InitContract(_) => {
+                Ok(*gas)
             }
         }
     }

@@ -39,8 +39,12 @@ pub enum Error {
     /// Returned on evm internal error. Should never be ignored during development.
     /// Likely to cause consensus issues.
     Internal,
-     /// When execution tries to modify the state in static context
-     MutableCallInStaticContext,
+    /// When execution tries to modify the state in static context
+    MutableCallInStaticContext,
+    /// Contract tried to access past the return data buffer.
+    OutOfBounds,
+    /// Execution has been reverted with REVERT instruction.
+    Reverted,
 }
 
 impl<'a> From<&'a EvmError> for Error {
@@ -53,6 +57,8 @@ impl<'a> From<&'a EvmError> for Error {
             EvmError::OutOfStack { .. } => Error::OutOfStack,
             EvmError::Internal(_) => Error::Internal,
             EvmError::MutableCallInStaticContext => Error::MutableCallInStaticContext,
+            EvmError::OutOfBounds => Error::OutOfBounds,
+            EvmError::Reverted => Error::Reverted,
         }
     }
 }
@@ -74,6 +80,8 @@ impl fmt::Display for Error {
             OutOfStack => "Out of stack",
             Internal => "Internal error",
             MutableCallInStaticContext => "Mutable Call In Static Context",
+            OutOfBounds => "Out of bounds",
+            Reverted => "Reverted",
         };
         message.fmt(f)
     }
@@ -90,6 +98,8 @@ impl Encodable for Error {
             OutOfStack => 4,
             Internal => 5,
             MutableCallInStaticContext => 6,
+            OutOfBounds => 7,
+            Reverted => 8,
         };
 
         s.append_internal(&value);
@@ -108,6 +118,8 @@ impl Decodable for Error {
             4 => Ok(OutOfStack),
             5 => Ok(Internal),
             6 => Ok(MutableCallInStaticContext),
+            7 => Ok(OutOfBounds),
+            8 => Ok(Reverted),
             _ => Err(DecoderError::Custom("Invalid error type")),
         }
     }
