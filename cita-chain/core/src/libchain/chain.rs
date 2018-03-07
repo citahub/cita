@@ -84,7 +84,7 @@ enum CacheId {
 pub struct Config {
     pub check_permission: bool,
     pub check_quota: bool,
-    pub check_prooftype: u8,
+    pub prooftype: u8,
 }
 
 impl Config {
@@ -92,7 +92,7 @@ impl Config {
         Config {
             check_permission: false,
             check_quota: false,
-            check_prooftype: 2,
+            prooftype: 2,
         }
     }
 
@@ -156,8 +156,8 @@ pub struct Chain {
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 
-    /// Switch, check proof type for add_sync_block
-    pub check_prooftype: u8,
+    /// Proof type
+    pub prooftype: u8,
 }
 
 /// Get latest status
@@ -238,7 +238,7 @@ impl Chain {
             nodes: RwLock::new(Vec::new()),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
-            check_prooftype: chain_config.check_prooftype,
+            prooftype: chain_config.prooftype,
         };
 
         chain
@@ -755,7 +755,7 @@ impl Chain {
     }
 
     pub fn get_chain_prooftype(&self) -> Option<ProofType> {
-        match self.check_prooftype {
+        match self.prooftype {
             0 => Some(ProofType::AuthorityRound),
             1 => Some(ProofType::Raft),
             2 => Some(ProofType::Tendermint),

@@ -63,7 +63,7 @@ use util::trie::{TrieFactory, TrieSpec};
 pub struct Config {
     pub check_permission: bool,
     pub check_quota: bool,
-    pub check_prooftype: u8,
+    pub prooftype: u8,
     pub journaldb_type: String,
 }
 
@@ -72,7 +72,7 @@ impl Config {
         Config {
             check_permission: false,
             check_quota: false,
-            check_prooftype: 2,
+            prooftype: 2,
             journaldb_type: String::from("archive"),
         }
     }
@@ -180,8 +180,8 @@ pub struct Executor {
     /// send this to chain after block that executed
     pub executed_result: RwLock<ExecutedResult>,
 
-    /// Switch, check proof type for add_sync_block
-    pub check_prooftype: u8,
+    /// Proof type
+    pub prooftype: u8,
 
     pub sys_configs: RwLock<VecDeque<GlobalSysConfig>>,
 }
@@ -251,7 +251,7 @@ impl Executor {
             last_hashes: RwLock::new(VecDeque::new()),
 
             executed_result: RwLock::new(executed_ret),
-            check_prooftype: executor_config.check_prooftype,
+            prooftype: executor_config.prooftype,
             sys_configs: RwLock::new(VecDeque::new()),
         };
 
@@ -359,7 +359,7 @@ impl Executor {
     }
 
     pub fn get_prooftype(&self) -> Option<ProofType> {
-        match self.check_prooftype {
+        match self.prooftype {
             0 => Some(ProofType::AuthorityRound),
             1 => Some(ProofType::Raft),
             2 => Some(ProofType::Tendermint),
