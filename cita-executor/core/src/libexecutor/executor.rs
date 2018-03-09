@@ -18,7 +18,7 @@
 use bloomchain as bc;
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
-use contracts::{AccountGasLimit, AccountManager, NodeManager, ParamConstant, QuotaManager};
+use contracts::{AccountGasLimit, AccountManager, ConstantConfig, NodeManager, QuotaManager};
 use db;
 use db::*;
 use engines::NullEngine;
@@ -61,8 +61,6 @@ use util::trie::{TrieFactory, TrieSpec};
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
-    pub check_permission: bool,
-    pub check_quota: bool,
     pub prooftype: u8,
     pub journaldb_type: String,
 }
@@ -70,8 +68,6 @@ pub struct Config {
 impl Config {
     pub fn default() -> Self {
         Config {
-            check_permission: false,
-            check_quota: false,
             prooftype: 2,
             journaldb_type: String::from("archive"),
         }
@@ -659,9 +655,9 @@ impl Executor {
         conf.creators = AccountManager::load_creators(self);
         conf.nodes = NodeManager::read(self);
         conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
-        conf.delay_active_interval = ParamConstant::valid_number(self) as usize;
-        conf.check_permission = ParamConstant::permission_check(self);
-        conf.check_quota = ParamConstant::quota_check(self);
+        conf.delay_active_interval = ConstantConfig::valid_number(self) as usize;
+        conf.check_permission = ConstantConfig::permission_check(self);
+        conf.check_quota = ConstantConfig::quota_check(self);
 
         let common_gas_limit = QuotaManager::account_gas_limit(self);
         let specific = QuotaManager::specific(self);

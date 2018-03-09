@@ -26,7 +26,6 @@ for i in {0..3} ; do
     bin/cita setup node$i  > /dev/null
 done
 for i in {0..3} ; do
-    sed -i 's/check_permission = true/check_permission = false/g' node$i/chain.toml
     bin/cita start node$i trace > /dev/null &
 done
 echo "DONE"

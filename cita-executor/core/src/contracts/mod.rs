@@ -20,11 +20,11 @@
 pub mod node_manager;
 pub mod account_manager;
 pub mod quota_manager;
-pub mod param_constant;
+pub mod constant_config;
 
 pub use self::account_manager::AccountManager;
+pub use self::constant_config::ConstantConfig;
 pub use self::node_manager::NodeManager;
-pub use self::param_constant::ParamConstant;
 pub use self::quota_manager::{AccountGasLimit, QuotaManager};
 
 use libexecutor::call_request::CallRequest;

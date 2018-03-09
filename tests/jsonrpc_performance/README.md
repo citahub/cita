@@ -1,14 +1,12 @@
 # 运行脚本
 
-1. 修改节点chain.json的配置，关闭权限管理，将check_permission设置为false。
-
-2. 切换目录，运行如下命令:
+1 切换到当前目录，运行如下命令:
 
 ```shell
 cd cita/tests/jsonrpc_performance
 ```
 
-3. 运行如下命令:
+2 运行如下命令:
 
 ```shell
 ../../target/install/bin/jsonrpc_performance --config config_err_format.json
@@ -39,13 +37,13 @@ cd cita/tests/jsonrpc_performance
 ## 脚本说明
 
 目的：创建合约、调用合约、查询recipts、调用eth_getLogs、检查发送的交易是否与block中的交易数一样
-1、创建合约，并调用一次合约
+1 创建合约，并调用一次合约
 
 ```shell
 ./create_contract.sh
 ```
 
-2、调用合约，参数1：调用合约几次   参数2：发送几次调用合约的交易
+2 调用合约，参数1：调用合约几次   参数2：发送几次调用合约的交易
 
 ```shell
 ./call_contract.sh

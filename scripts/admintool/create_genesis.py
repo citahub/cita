@@ -30,8 +30,8 @@ CONTRACTS = {
                                                    'name': 'PermissionManager'},
     '0x00000000000000000000000000000000013241a5': {'file': 'permission/permission_system.sol',
                                                    'name': 'PermissionSystem'},
-    '0x0000000000000000000000000000000031415926': {'file': 'system/param_constant.sol',
-                                                   'name': 'ParamConstant'},
+    '0x0000000000000000000000000000000031415926': {'file': 'system/constant_config.sol',
+                                                   'name': 'ConstantConfig'},
     '0x00000000000000000000000000000000013241b2': {'file': 'permission_management/permission_management.sol',
                                                    'name': 'PermissionManagement'},
     '0x00000000000000000000000000000000013241b3': {'file': 'permission_management/permission_creator.sol',
@@ -69,6 +69,7 @@ def init_contracts(nodes):
         if address == '0x00000000000000000000000000000000013241a3' or address == '0x00000000000000000000000000000000013241b4':
             extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
         elif address == '0x0000000000000000000000000000000031415926':
+            
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1], nodes[address][2]]) if nodes[address] else b'')
         elif address == '0x00000000000000000000000000000000013241a2' or address == '0x00000000000000000000000000000000013241a4' or address == '0x00000000000000000000000000000000013241a5':
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')

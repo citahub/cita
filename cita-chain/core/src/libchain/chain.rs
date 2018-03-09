@@ -82,18 +82,12 @@ enum CacheId {
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
-    pub check_permission: bool,
-    pub check_quota: bool,
     pub prooftype: u8,
 }
 
 impl Config {
     pub fn default() -> Self {
-        Config {
-            check_permission: false,
-            check_quota: false,
-            prooftype: 2,
-        }
+        Config { prooftype: 2 }
     }
 
     pub fn new(path: &str) -> Self {

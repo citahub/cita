@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Constant system contract parameters
+//! Constant Config
 
 use super::ContractCallExt;
 use super::encode_contract_name;
@@ -35,9 +35,9 @@ lazy_static! {
     static ref CONTRACT_ADDRESS: H160 = H160::from_str("0000000000000000000000000000000031415926").unwrap();
 }
 
-pub struct ParamConstant;
+pub struct ConstantConfig;
 
-impl ParamConstant {
+impl ConstantConfig {
     /// Delay block number before validate
     pub fn valid_number(executor: &Executor) -> u64 {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*VALID_NUMBER_ENCODED.as_slice());
@@ -92,7 +92,7 @@ mod tests {
     #[test]
     fn test_valid_number() {
         let executor = init_executor();
-        let number = ParamConstant::valid_number(&executor);
+        let number = ConstantConfig::valid_number(&executor);
 
         assert_eq!(number, 1);
     }
@@ -100,7 +100,7 @@ mod tests {
     #[test]
     fn test_permission_check() {
         let executor = init_executor();
-        let check_permission = ParamConstant::permission_check(&executor);
+        let check_permission = ConstantConfig::permission_check(&executor);
 
         assert_eq!(check_permission, true);
     }
@@ -108,7 +108,7 @@ mod tests {
     #[test]
     fn test_quota_check() {
         let executor = init_executor();
-        let check_quota = ParamConstant::quota_check(&executor);
+        let check_quota = ConstantConfig::quota_check(&executor);
 
         assert_eq!(check_quota, true);
     }

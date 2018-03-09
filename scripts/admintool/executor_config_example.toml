@@ -1,4 +1,2 @@
-check_permission = false
-check_quota = false
 prooftype = 2
 journaldb_type = "archive"
