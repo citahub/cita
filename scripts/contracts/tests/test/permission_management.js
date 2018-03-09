@@ -141,6 +141,25 @@ describe('\n\ntest permission management contract\n\n', function() {
             assert.equal(res[1][l], '0xf036ed59');
             assert.equal(l, lengthOfResources);
         });
+
+        it('should send a addResources to an address that does not exist and get receipt with error message', function(done) {
+            let res = addResources(
+                    0x1234567,
+                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
+                    ['0xf036ed59']
+                );
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt with error message:\n', receipt);
+                    assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get addResources receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
     });
 
     describe('\ntest add duplicate resources\n', function() { 
@@ -208,6 +227,26 @@ describe('\n\ntest permission management contract\n\n', function() {
                 assert.equal(res[1][i], config.testFunc[i]);
             }
         });
+
+        it('should send a deleteResources to an address that does not exist and get receipt with error message', function(done) {
+            let res = deleteResources(
+                    0x1234567,
+                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
+                    ['0xf036ed59']
+                );
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt with error message:\n', receipt);
+                    assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get deleteResources receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
     });
 
     describe('\ntest clear authorization\n', function() { 

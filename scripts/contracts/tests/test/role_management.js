@@ -132,6 +132,25 @@ describe('\n\ntest role management contract\n\n', function () {
             assert.equal(res[lastPermissionIndex], '0x00000000000000000000000000000000033241b5');
             assert.equal(res.length, lengthOfPermissions + 1);
         });
+
+        it('should send a addPermissions an address that does not exist and get receipt with error message', function (done) {
+            let res = addPermissions(
+                    0x123456,
+                    ['0x00000000000000000000000000000000033241b5']
+                );
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt with error message:\n', receipt);
+                    assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get addPermissions receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
     });
 
 
@@ -197,6 +216,25 @@ describe('\n\ntest role management contract\n\n', function () {
                 assert.equal(res[i], permissions[i]);
             }
         });
+
+        it('should send a deletePermissions to an address that does not exist and get receipt with error message', function (done) {
+            let res = deletePermissions(
+                    0x123456,
+                    ['0x00000000000000000000000000000000033241b5']
+                );
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt with error message:\n', receipt);
+                    assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get deletePermissions receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
     });
 
     describe('\ntest set role\n', function () {
