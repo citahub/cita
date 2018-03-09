@@ -4,25 +4,25 @@
 
 ### 系统平台要求
 
-CITA是基于Ubuntu 16.04稳定版开发的，在该系统版本上运行将是正确无误的。
+CITA 是基于 Ubuntu 16.04 稳定版开发的，在该系统版本上运行将是正确无误的。
 
 推荐使用 `docker` 编译和部署 `CITA`，保证环境一致。
 
-### 安装docker
+### 安装 docker
 
 参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/install/)
 
-### 获取Docker镜像
+### 获取 Docker 镜像
 
-CITA的Docker镜像托管在 [DockerHub](https://hub.docker.com/u/cita/dashboard/)
+CITA 的 Docker 镜像托管在 [DockerHub](https://hub.docker.com/r/cita/cita-build/)
 
-可以使用 `docker pull` 命令直接从DockerHub获取， 参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/image/pull.html)。
+可以使用 `docker pull` 命令直接从 DockerHub 获取， 参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/image/pull.html)。
 
 对于内网环境，也可以通过 `docker save` 和 `docker load` 传递镜像， 参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/image/other.html)。
 
 ### 获取源码
 
-从Github仓库下载CITA的源代码，然后切换到CITA的源代码目录
+从 Github 仓库下载 CITA 的源代码，然后切换到 CITA 的源代码目录
 
 ```shell
 git pull https://github.com/cryptape/cita.git
@@ -33,24 +33,26 @@ git submodule update
 
 ### Docker env and daemon
 
-在源码根目录下，我们提供了`env.sh`脚本，封装了docker相关的操作。
+在源码根目录下，我们提供了`env.sh`脚本，封装了 docker 相关的操作。
 
-运行此脚本，以实际要运行的命令作为参数，即表示在docker环境中运行相关命令。
+运行此脚本，以实际要运行的命令作为参数，即表示在 docker 环境中运行相关命令。
 
 例如：
 
 ```shell
 ./env.sh make debug
 ```
-即表示在docker环境中运行`make debug`。
 
-不带任何参数运行`./env.sh`，将直接获取一个docker环境的shell。
+即表示在 docker 环境中运行`make debug`。
+
+不带任何参数运行`./env.sh`，将直接获取一个 docker 环境的 shell。
 
 国内用户请使用 `env_cn.sh`，提供了编译时的国内镜像加速。
 
 还提供了`daemon.sh`,用法同`env.sh`，效果是后台运行。
 
-如果出现docker相关的报错，可以执行如下命令并重试：
+如果出现 docker 相关的报错，可以执行如下命令并重试：
+
 ```shell
 docker kill $(docker ps -a -q)
 ```
@@ -81,7 +83,7 @@ cd target/install
 
 发布件目录中的`admintool`工具用来生成节点配置文件，包括创世块配置、节点相关配置、网络连接配置、私钥配置等。
 
-该工具默认生成的是本地4个节点的Demo示例配置：
+该工具默认生成的是本地 4 个节点的 Demo 示例配置：
 
 ```shell
 ./env.sh ./bin/admintool.sh
@@ -110,73 +112,81 @@ cd target/install
 
 操作节点的命令都是相同的，以下以`node0`为例进行演示。
 
-0. 配置节点：
+1.  配置节点：
 
 ```shell
 ./env.sh ./bin/cita setup node0
 ```
 
-1. 启动节点：
+2.  启动节点：
 
 该命令正常情况下不会返回，因此需要后台运行。
+
 ```shell
 ./daemon.sh ./bin/cita start node0
 ```
 
-2. 停止节点：
+3.  停止节点：
 
 ```shell
 ./env.sh ./bin/cita stop node0
 ```
 
-3. 其他操作
+4.  其他操作
 
 具体使用查看命令的帮助信息：
+
 ```shell
 ./env.sh ./bin/cita help
 ```
 
 ## 测试
-除了上述的基本操作命令，为了方便用户对Demo进行相关测试，我们在目录`cita/tests/integreate_test`下提供了一些测试脚本。
+
+除了上述的基本操作命令，为了方便用户对 Demo 进行相关测试，我们在目录`cita/tests/integreate_test`下提供了一些测试脚本。
 
 以下命令在源码根目录下运行。
 
-1. 启动4个节点
+1.  启动 4 个节点
+
 ```shell
 ./env.sh tests/integrate_test/cita_start.sh
 ```
-该命令正常情况下不会返回，需要保持shell不退出。或者用`daemon.sh`运行。
 
-2. 停止4个节点
+该命令正常情况下不会返回，需要保持 shell 不退出。或者用`daemon.sh`运行。
+
+2.  停止 4 个节点
 
 上一节中的命令中止，或者执行命令：
+
 ```shell
 ./env.sh ./tests/integrate_test/cita_stop.sh
 ```
 
-3. 基本功能测试
+3.  基本功能测试
 
-4个节点启动并成功出块，基本功能测试然后停止4个节点：
+4 个节点启动并成功出块，基本功能测试然后停止 4 个节点：
+
 ```shell
 ./env.sh ./tests/integrate_test/cita_basic.sh
 ```
 
-4. 发送交易测试
+4.  发送交易测试
 
 ```shell
 ./env.sh ./tests/integrate_test/cita_transactiontest.sh
 ```
 
-5. 拜占庭测试
+5.  拜占庭测试
 
 模拟网络异常情况下的功能测试。
+
 ```shell
 ./env.sh ./tests/integrate_test/cita_byzantinetest.sh
 ```
 
 ## 验证
 
-- 查询节点个数
+* 查询节点个数
 
 Request:
 
@@ -194,7 +204,7 @@ Result:
 }
 ```
 
-- 查询当前块高度。
+* 查询当前块高度。
 
 Request:
 
@@ -214,4 +224,4 @@ Result:
 
 返回块高度，表示节点已经开始正常出块。
 
-更多API（如合约调用、交易查询）请参见[RPC调用](https://cryptape.github.io/cita/usage-guide/rpc)。
+更多 API（如合约调用、交易查询）请参见[RPC 调用](https://cryptape.github.io/cita/usage-guide/rpc)。
