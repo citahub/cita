@@ -487,7 +487,8 @@ impl OpenBlock {
     pub fn into_closed_block(mut self) -> ClosedBlock {
         // Rebuild block
         let state_root = *self.state.root();
-        let receipts_root = merklehash::complete_merkle_root(self.receipts.iter().map(|r| r.rlp_bytes().to_vec()));
+        let receipts_root =
+            merklehash::MerkleTree::from_bytes(self.receipts.iter().map(|r| r.rlp_bytes().to_vec())).get_root_hash();
         self.set_state_root(state_root);
         self.set_receipts_root(receipts_root);
 

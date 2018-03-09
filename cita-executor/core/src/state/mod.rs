@@ -406,6 +406,15 @@ impl<B: Backend> State<B> {
         })
     }
 
+    /// Determine whether an account exists and has code or non-zero nonce.
+    pub fn exists_and_has_code_or_nonce(&self, a: &Address) -> trie::Result<bool> {
+        self.ensure_cached(a, RequireCache::CodeSize, false, |a| {
+            a.map_or(false, |a| {
+                a.code_hash() != HASH_EMPTY || *a.nonce() != self.account_start_nonce
+            })
+        })
+    }
+
     /// Get the nonce of account `a`.
     pub fn nonce(&self, a: &Address) -> trie::Result<U256> {
         self.ensure_cached(a, RequireCache::None, true, |a| {
@@ -618,8 +627,10 @@ impl<B: Backend> State<B> {
             EvmError::BadInstruction { .. } => Some(ReceiptError::BadInstruction),
             EvmError::StackUnderflow { .. } => Some(ReceiptError::StackUnderflow),
             EvmError::OutOfStack { .. } => Some(ReceiptError::OutOfStack),
-            EvmError::Internal(_) => Some(ReceiptError::Internal),
             EvmError::MutableCallInStaticContext => Some(ReceiptError::MutableCallInStaticContext),
+            EvmError::Internal(_) => Some(ReceiptError::Internal),
+            EvmError::OutOfBounds => Some(ReceiptError::OutOfBounds),
+            EvmError::Reverted => Some(ReceiptError::Reverted),
         });
         let receipt = Receipt::new(
             None,

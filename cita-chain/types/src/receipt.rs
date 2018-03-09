@@ -40,6 +40,8 @@ pub enum ReceiptError {
     OutOfStack,
     Internal,
     MutableCallInStaticContext,
+    OutOfBounds,
+    Reverted,
 }
 
 impl ReceiptError {
@@ -58,6 +60,8 @@ impl ReceiptError {
             ReceiptError::OutOfStack => "Execution would exceed defined Stack Limit.",
             ReceiptError::Internal => "EVM internal error.",
             ReceiptError::MutableCallInStaticContext => "Mutable call in static context.",
+            ReceiptError::OutOfBounds => "Out of bounds.",
+            ReceiptError::Reverted => "Reverted",
         };
         desc.to_string()
     }
@@ -76,6 +80,8 @@ impl ReceiptError {
             ReceiptError::OutOfStack => ProtoReceiptError::OutOfStack,
             ReceiptError::Internal => ProtoReceiptError::Internal,
             ReceiptError::MutableCallInStaticContext => ProtoReceiptError::MutableCallInStaticContext,
+            ReceiptError::OutOfBounds => ProtoReceiptError::OutOfBounds,
+            ReceiptError::Reverted => ProtoReceiptError::Reverted,
         }
     }
 
@@ -93,6 +99,8 @@ impl ReceiptError {
             ProtoReceiptError::OutOfStack => ReceiptError::OutOfStack,
             ProtoReceiptError::Internal => ReceiptError::Internal,
             ProtoReceiptError::MutableCallInStaticContext => ReceiptError::MutableCallInStaticContext,
+            ProtoReceiptError::OutOfBounds => ReceiptError::OutOfBounds,
+            ProtoReceiptError::Reverted => ReceiptError::Reverted,
         }
     }
 }
@@ -112,6 +120,8 @@ impl Decodable for ReceiptError {
             9 => Ok(ReceiptError::OutOfStack),
             10 => Ok(ReceiptError::Internal),
             11 => Ok(ReceiptError::MutableCallInStaticContext),
+            12 => Ok(ReceiptError::OutOfBounds),
+            13 => Ok(ReceiptError::Reverted),
             _ => Err(DecoderError::Custom("Unknown Receipt error.")),
         }
     }

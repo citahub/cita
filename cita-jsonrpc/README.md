@@ -423,6 +423,9 @@ Receipt error messages:
 * Not enough stack elements to execute instruction.
 * Execution would exceed defined Stack Limit.
 * EVM internal error.
+* Mutable call in static context.
+* Out of bounds.
+* Reverted.
 
 * Example
 
