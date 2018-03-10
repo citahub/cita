@@ -16,7 +16,6 @@ def main():
     with open(dump_path, "w") as f:
         f.write("id_card = " + str(nid) + "\n")
         f.write("port = " + port + "\n")
-        f.write("max_peer = " + str(size - 1) + "\n")
         ids = range(size)
         ip_list = zip(ids, ip_list)
         del ip_list[nid]

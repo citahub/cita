@@ -23,7 +23,6 @@ use toml;
 pub struct NetConfig {
     pub id_card: Option<u32>,
     pub port: Option<u64>,
-    pub max_peer: Option<u64>,
     pub peers: Option<Vec<PeerConfig>>,
 }
 
@@ -48,7 +47,6 @@ impl NetConfig {
         let toml = r#"
             id_card=0
             port = 40000
-            max_peer = 1
             [[peers]]
             id_card=0
             ip = "127.0.0.1"
@@ -67,7 +65,6 @@ mod test {
     fn basics() {
         let toml = r#"
             port = 40000
-            max_peer = 2
             [[peers]]
             ip = "127.0.0.1"
             port = 40001
