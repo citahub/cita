@@ -261,9 +261,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             match self.state.exists(&account) {
                 Ok(true) => {
                     self.state.init_abi(&account, abi.to_vec())?;
-                },
+                }
                 _ => {
-                    return Err(From::from(ExecutionError::TransactionMalformed("Account doesn't exist".to_string())));
+                    return Err(From::from(ExecutionError::TransactionMalformed(
+                        "Account doesn't exist".to_string(),
+                    )));
                 }
             }
         }
@@ -272,8 +274,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let mut substate = Substate::new();
 
         let (result, output) = match t.action {
-            Action::Store | Action::AbiStore => {
-                (Ok(FinalizationResult {
+            Action::Store | Action::AbiStore => (
+                Ok(FinalizationResult {
                     gas_left: t.gas,
                     return_data: ReturnData::empty(),
                     apply_state: true,

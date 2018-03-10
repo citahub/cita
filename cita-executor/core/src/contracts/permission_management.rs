@@ -198,51 +198,36 @@ mod tests {
             },
         ];
         permission_resources.insert(addr, resources);
-        assert_eq!(
-            contains_resource(
-                &permission_resources,
-                &Address::from(0x1),
-                Address::from(0x13241b2),
-                vec![0xf0, 0x36, 0xed, 0x56]
-            ),
-            true
-        );
-        assert_eq!(
-            contains_resource(
-                &permission_resources,
-                &Address::from(0x1),
-                Address::from(0x13241b3),
-                vec![0xf0, 0x36, 0xed, 0x56]
-            ),
-            true
-        );
-        assert_eq!(
-            contains_resource(
-                &permission_resources,
-                &Address::from(0x2),
-                Address::from(0x13241b2),
-                vec![0xf0, 0x36, 0xed, 0x56]
-            ),
-            false
-        );
-        assert_eq!(
-            contains_resource(
-                &permission_resources,
-                &Address::from(0x1),
-                Address::from(0x13241b4),
-                vec![0xf0, 0x36, 0xed, 0x56]
-            ),
-            false
-        );
-        assert_eq!(
-            contains_resource(
-                &permission_resources,
-                &Address::from(0x1),
-                Address::from(0x13241b2),
-                vec![0xf0, 0x36, 0xed, 0x57]
-            ),
-            false
-        );
+        assert!(contains_resource(
+            &permission_resources,
+            &Address::from(0x1),
+            Address::from(0x13241b2),
+            vec![0xf0, 0x36, 0xed, 0x56]
+        ));
+        assert!(contains_resource(
+            &permission_resources,
+            &Address::from(0x1),
+            Address::from(0x13241b3),
+            vec![0xf0, 0x36, 0xed, 0x56]
+        ));
+        assert!(!contains_resource(
+            &permission_resources,
+            &Address::from(0x2),
+            Address::from(0x13241b2),
+            vec![0xf0, 0x36, 0xed, 0x56]
+        ));
+        assert!(!contains_resource(
+            &permission_resources,
+            &Address::from(0x1),
+            Address::from(0x13241b4),
+            vec![0xf0, 0x36, 0xed, 0x56]
+        ));
+        assert!(!contains_resource(
+            &permission_resources,
+            &Address::from(0x1),
+            Address::from(0x13241b2),
+            vec![0xf0, 0x36, 0xed, 0x57]
+        ));
     }
 
     #[test]
