@@ -20,6 +20,7 @@
 //! Unconfirmed sub-states are managed with `checkpoint`s which may be canonicalized
 //! or rolled back.
 
+use contracts::Resource;
 use engines::NullEngine;
 use env_info::EnvInfo;
 use error::Error;
@@ -204,6 +205,7 @@ pub struct State<B: Backend> {
     pub senders: HashSet<Address>,
     // contract permissions
     pub creators: HashSet<Address>,
+    pub account_permissions: HashMap<Address, Vec<Resource>>,
 }
 
 #[derive(Copy, Clone)]
@@ -249,6 +251,7 @@ impl<B: Backend> State<B> {
             factories: factories,
             senders: HashSet::new(),
             creators: HashSet::new(),
+            account_permissions: HashMap::new(),
         }
     }
 
@@ -272,6 +275,7 @@ impl<B: Backend> State<B> {
             factories: factories,
             senders: HashSet::new(),
             creators: HashSet::new(),
+            account_permissions: HashMap::new(),
         };
 
         Ok(state)
@@ -901,6 +905,7 @@ impl Clone for State<StateDB> {
             factories: self.factories.clone(),
             creators: self.creators.clone(),
             senders: self.senders.clone(),
+            account_permissions: self.account_permissions.clone(),
         }
     }
 }
