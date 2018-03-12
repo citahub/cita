@@ -257,7 +257,7 @@ impl Forward {
                 response.set_filter_logs(serde_json::to_string(&log).unwrap());
             }
             _ => {
-                error!("mtach error Request_oneof_req msg!!!!");
+                error!("match error Request_oneof_req msg!!!!");
             }
         };
         let msg: Message = response.into();
