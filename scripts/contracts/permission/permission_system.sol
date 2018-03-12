@@ -66,7 +66,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         returns (bool)
     {
         AuthorizationInited(_group, _role);
-        auth.role_groups[_role].push( _role);
+        auth.role_groups[_role].push(_role);
         auth.group_roles[_group].push(_group);
         return true;
     }
@@ -329,7 +329,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
                 groups.groups[_group].subSwitch,
                 groups.groups[_group].parentGroup,
                 groups.groups[_group].profile
-               );
+        );
     }
     
     /// @dev Query the ancestors of the group
@@ -340,10 +340,8 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
     {
         bytes32[] memory ancestors;
 
-        for (uint i=0; _group != bytes32(0x0); i++) {
-            _group = groups.groups[_group].parentGroup;
-            ancestors[i] = _group;
-        }
+        for (uint i = 0; _group != bytes32(0x0); i++)
+            ancestors[i] = groups.groups[_group].parentGroup;
         
         return ancestors;
     }
@@ -492,7 +490,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         private
         returns (bool)
     {
-        auth.role_groups[_role].push( _role);
+        auth.role_groups[_role].push(_role);
         auth.group_roles[_group].push(_group);
         return true;
     }
@@ -526,7 +524,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         returns (bool)
     {
         if (GroupManager.newGroup(groups, _group, _newName, _newUsers, _newSubSwitch, Util.SetOp(_op), _profile)) {
-            for (uint i = 0; i< _newUsers.length; i++)
+            for (uint i = 0; i<_newUsers.length; i++)
                 user_groups[_newUsers[i]].push(_newName);
 
             group_names.push(_newName);
@@ -539,7 +537,7 @@ contract PermissionSystem is PermissionSysInterface, PermissionCheck {
         returns (bool)
     {
         // Change the name in user_groups
-        for (uint i=0; i < groups.groups[_oldName].users.length; i++) {
+        for (uint i = 0; i<groups.groups[_oldName].users.length; i++) {
             Util.bytes32Replace(_oldName, _newName, user_groups[groups.groups[_oldName].users[i]]);
         }
             

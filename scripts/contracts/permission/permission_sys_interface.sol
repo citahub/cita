@@ -215,7 +215,7 @@ interface PermissionSysInterface {
     ) view public returns (address[], bytes32[], bool, bytes32, string);
 
     function queryAncestors(
-            bytes32 _group
+        bytes32 _group
     ) view public returns (bytes32[]);
 
     function queryUsers(

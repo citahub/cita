@@ -122,4 +122,4 @@ contract PermissionManagement {
         require(auth.clearAuth(_account));
         return true;
     }
- }
+}

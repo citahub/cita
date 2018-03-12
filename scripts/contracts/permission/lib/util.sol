@@ -308,7 +308,7 @@ library Util {
         // Find the value in array and repalce it
         for (uint i = 0; i < _array.length; i++) {
             if (_old == _array[i]) {
-                _array[i]  = _new;
+                _array[i] = _new;
                 return true;
             }
         }
