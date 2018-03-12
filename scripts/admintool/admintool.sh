@@ -181,7 +181,7 @@ node(){
     consensus $1
     chain $1
     executor  $1
-    python ${BINARY_DIR}/scripts/admintool/create_network_config.py ${CONFIG_DIR} 1 $SIZE $IP_LIST
+    python ${BINARY_DIR}/scripts/admintool/create_network_config.py ${CONFIG_DIR} ${1} $SIZE $IP_LIST
     mv ${CONFIG_DIR}/network.toml ${CONFIG_DIR}/node${1}/
     auth $1
     env $1
