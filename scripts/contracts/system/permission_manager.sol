@@ -30,19 +30,19 @@ contract PermissionManager is PermissionInterface {
     }
 
     modifier notSelf(address _user) {
-        require(_user!= msg.sender);
+        require(_user != msg.sender);
         _;
     }
 
     /// @dev Setup
     function PermissionManager(address[] _senders, address[] _creators) public {
         // Init the senders
-        for(uint i = 0; i < _senders.length; i++) {
+        for (uint i = 0; i < _senders.length; i++) {
             senders.push(_senders[i]);
             user_permission[_senders[i]] = UserPermission.Send;
         }
         // Init the creators
-        for(uint j = 0; j < _creators.length; j++) {
+        for (uint j = 0; j < _creators.length; j++) {
             creators.push(_creators[j]);
             user_permission[_creators[j]] = UserPermission.Create;
         }

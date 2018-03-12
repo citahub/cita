@@ -98,9 +98,9 @@ contract Permission {
         view
         returns (bytes32, address[], bytes4[])
     {
-        uint l = resources.length;
-        address[] memory conts = new address[](l);
-        bytes4[] memory funcs = new bytes4[](l);
+        uint len = resources.length;
+        address[] memory conts = new address[](len);
+        bytes4[] memory funcs = new bytes4[](len);
 
         for (uint i = 0; i < resources.length; i++) {
             conts[i] = resources[i].cont;
@@ -125,9 +125,9 @@ contract Permission {
         view
         returns (address[], bytes4[])
     {
-        uint l = resources.length;
-        address[] memory conts = new address[](l);
-        bytes4[] memory funcs = new bytes4[](l);
+        uint len = resources.length;
+        address[] memory conts = new address[](len);
+        bytes4[] memory funcs = new bytes4[](len);
 
         for (uint i = 0; i < resources.length; i++) {
             conts[i] = resources[i].cont;
