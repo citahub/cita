@@ -42,6 +42,7 @@ pub enum ResultBody {
     Logs(Vec<Log>),
     TranactionCount(U256),
     ContractCode(Bytes),
+    ContractAbi(Bytes),
     FilterId(U256),
     UninstallFliter(bool),
     FilterChanges(FilterChanges),
@@ -147,6 +148,9 @@ impl Output {
                     Response_oneof_data::contract_code(x) => success
                         .set_result(ResultBody::ContractCode(Bytes::from(x)))
                         .output(),
+                    Response_oneof_data::contract_abi(x) => success
+                        .set_result(ResultBody::ContractAbi(Bytes::from(x)))
+                        .output(),
                     Response_oneof_data::filter_id(id) => success
                         .set_result(ResultBody::FilterId(U256::from(id)))
                         .output(),
@@ -170,6 +174,9 @@ impl Output {
                         jsonrpc.clone(),
                         Error::server_error(code, err_msg),
                     )),
+                    Response_oneof_data::transaction_proof(x) => success
+                        .set_result(ResultBody::ContractAbi(Bytes::from(x)))
+                        .output(),
                 }
             }
             _ => match data.data.unwrap() {

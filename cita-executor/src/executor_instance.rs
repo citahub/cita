@@ -311,6 +311,31 @@ impl ExecutorInstance {
                     });
             }
 
+            Request::abi(abi_content) => {
+                trace!("abi request from josnrpc  {:?}", abi_content);
+                serde_json::from_str::<CountOrCode>(&abi_content)
+                    .map_err(|err| {
+                        response.set_code(ErrorCode::query_error());
+                        response.set_error_msg(format!("{:?}", err));
+                    })
+                    .map(|abi_content| {
+                        let address = Address::from_slice(abi_content.address.as_ref());
+                        match self.ext.abi_at(&address, abi_content.block_id.into()) {
+                            Some(abi) => match abi {
+                                Some(abi) => {
+                                    response.set_contract_abi(abi);
+                                }
+                                None => {
+                                    response.set_contract_abi(vec![]);
+                                }
+                            },
+                            None => {
+                                response.set_contract_abi(vec![]);
+                            }
+                        };
+                    });
+            }
+
             _ => {
                 error!("mtach error Request_oneof_req msg!!!!");
             }

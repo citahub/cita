@@ -181,12 +181,25 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             }
         }
 
+        if t.action == Action::AbiStore {
+            let account = H160::from(&t.data[0..20]);
+            let abi = &t.data[20..];
+            warn!("contract address: {:?}, abi: {:?}", account, abi);
+            match self.state.exists(&account) {
+                Ok(true) => {
+                    self.state.init_abi(&account, abi.to_vec())?;
+                },
+                _ => {
+                    return Err(From::from(ExecutionError::TransactionMalformed("Account doesn't exist".to_string())));
+                }
+            }
+        }
         // NOTE: there can be no invalid transactions from this point
 
         let mut substate = Substate::new();
 
         let (result, output) = match t.action {
-            Action::Store => {
+            Action::Store | Action::AbiStore => {
                 (Ok(FinalizationResult {
                     gas_left: t.gas,
                     return_data: ReturnData::empty(),

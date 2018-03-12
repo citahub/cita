@@ -483,6 +483,13 @@ impl Executor {
             .map(|c| c.map(|c| (&*c).clone()))
     }
 
+    /// Get abi by address
+    pub fn abi_at(&self, address: &Address, id: BlockId) -> Option<Option<Bytes>> {
+        self.state_at(id)
+            .and_then(|s| s.abi(address).ok())
+            .map(|c| c.map(|c| (&*c).clone()))
+    }
+
     pub fn nonce(&self, address: &Address, id: BlockId) -> Option<U256> {
         self.state_at(id).and_then(|s| s.nonce(address).ok())
     }

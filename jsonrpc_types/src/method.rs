@@ -43,6 +43,7 @@ pub mod method {
     /// 2. QUANTITY|TAG - integer block height, or the string "latest" or "earliest".
     pub const ETH_GET_TRANSACTION_COUNT: &str = "eth_getTransactionCount";
     pub const ETH_GET_CODE: &str = "eth_getCode";
+    pub const ETH_GET_ABI: &str = "eth_getAbi";
     pub const ETH_CALL: &str = "eth_call";
     pub const ETH_GET_LOGS: &str = "eth_getLogs";
     pub const ETH_GET_TRANSACTION_RECEIPT: &str = "eth_getTransactionReceipt";
@@ -92,6 +93,7 @@ impl MethodHandler {
             method::ETH_GET_TRANSACTION_RECEIPT => self.get_transaction_receipt(rpc),
             method::ETH_GET_TRANSACTION_COUNT => self.get_transaction_count(rpc),
             method::ETH_GET_CODE => self.get_code(rpc),
+            method::ETH_GET_ABI => self.get_abi(rpc),
             method::CITA_SEND_TRANSACTION => self.send_transaction(rpc),
 
             method::ETH_NEW_FILTER => self.new_filter(rpc),
@@ -306,10 +308,32 @@ impl MethodHandler {
         }
     }
 
+    fn abi_or_count(&self, req_rpc: &Call) -> Result<String, Error> {
+        if 2 != self.params_len(&req_rpc.params) {
+            return Err(Error::invalid_params_len());
+        }
+
+        let params = self.detach_requeired_params(req_rpc)?;
+        let (address, number): (H160, BlockNumber) = params.parse()?;
+
+        let count_abi = CountOrCode::new(address.to_vec(), number);
+        match serde_json::to_string(&count_abi) {
+            Ok(data) => Ok(data),
+            Err(err) => Err(Error::invalid_params(err.to_string())), // return error information
+        }
+    }
+
     pub fn get_code(&self, req_rpc: &Call) -> Result<reqlib::Request, Error> {
         let code = self.code_or_count(req_rpc)?;
         let mut request = self.create_request();
         request.set_code(code);
+        Ok(request)
+    }
+
+    pub fn get_abi(&self, req_rpc: &Call) -> Result<reqlib::Request, Error> {
+        let abi = self.abi_or_count(req_rpc)?;
+        let mut request = self.create_request();
+        request.set_abi(abi);
         Ok(request)
     }
 

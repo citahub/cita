@@ -26,6 +26,8 @@ use util::{Address, Bytes, H256, HeapSizeOf, U256};
 
 // pub const STORE_ADDRESS: H160 =  H160( [0xff; 20] );
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
+// pub const ABI_ADDRESS: H160 =  H160( [0xaa; 20] );
+pub const ABI_ADDRESS: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {
@@ -45,6 +47,8 @@ pub enum Action {
     /// Calls contract at given address.
     /// In the case of a transfer, this is the receiver's address.'
     Call(Address),
+    /// Store the contract ABI
+    AbiStore,
 }
 
 impl Default for Action {
@@ -59,9 +63,12 @@ impl Decodable for Action {
             Ok(Action::Create)
         } else {
             let store_addr: Address = STORE_ADDRESS.into();
+            let abi_addr: Address = ABI_ADDRESS.into();
             let addr: Address = rlp.as_val()?;
             if addr == store_addr {
                 Ok(Action::Store)
+            } else if addr == abi_addr {
+                Ok(Action::AbiStore)
             } else {
                 Ok(Action::Call(addr))
             }
@@ -72,10 +79,12 @@ impl Decodable for Action {
 impl Encodable for Action {
     fn rlp_append(&self, s: &mut RlpStream) {
         let store_addr: Address = STORE_ADDRESS.into();
+        let abi_addr: Address = ABI_ADDRESS.into();
         match *self {
             Action::Create => s.append_internal(&""),
             Action::Call(ref addr) => s.append_internal(addr),
             Action::Store => s.append_internal(&store_addr),
+            Action::AbiStore => s.append_internal(&abi_addr),
         };
     }
 }
@@ -185,6 +194,7 @@ impl Transaction {
                     true => Action::Create,
                     false => match to {
                         STORE_ADDRESS => Action::Store,
+                        ABI_ADDRESS => Action::AbiStore,
                         _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
                     },
                 }
@@ -242,6 +252,7 @@ impl Transaction {
             Action::Create => pt.clear_to(),
             Action::Call(ref to) => pt.set_to(to.hex()),
             Action::Store => pt.set_to(STORE_ADDRESS.into()),
+            Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
         }
         pt
     }
