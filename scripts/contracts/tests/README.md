@@ -69,3 +69,7 @@ Include:
 
 * `contracts` is some contracts using for test
 * `doc` is some docs about test using `txtool`
+
+# Notice
+
+**Should set the check_permission true when test test/integrate**

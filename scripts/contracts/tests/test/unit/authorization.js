@@ -18,7 +18,7 @@ const queryAllAccounts = authorization.queryAllAccounts;
 describe('test authorization contract', function() { 
 
     it('should be the build-in authorization: superAdmin has the permission', function() {
-        let res = queryPermissions(superAdmin);
+        let res = queryPermissions(superAdmin.address);
         console.log('\nPermissions of superAdmin:\n', res);
 
         for (let i=0; i<5; i++) 
@@ -29,14 +29,14 @@ describe('test authorization contract', function() {
         for (let i=0; i<permissions.length; i++) {
             let res = queryAccounts(permissions[i]);
             console.log('\nAccount of permissions:\n', res);
-            assert.equal(res, superAdmin);
+            assert.equal(res, superAdmin.address);
         }
     });
 
     it("should check the account has the resource", function() {
         for (let i=0; i<resources.length; i++) {
             let res = checkPermission(
-                superAdmin,
+                superAdmin.address,
                 "0x00000000000000000000000000000000013241b2",
                 resources[i]
             );
@@ -47,7 +47,7 @@ describe('test authorization contract', function() {
 
     it("should check the account does not have the resource", function() {
         let res = checkPermission(
-                superAdmin,
+                superAdmin.address,
                 "0x00000000000000000000000000000000013241b2",
                 "0xf036ed57"
             );
@@ -57,7 +57,7 @@ describe('test authorization contract', function() {
 
     it("should check the account does not have the resource", function() {
         let res = checkPermission(
-                superAdmin,
+                superAdmin.address,
                 "0x00000000000000000000000000000000013241b3",
                 "0xf036ed56"
             );
@@ -68,6 +68,6 @@ describe('test authorization contract', function() {
     it("should have all the accounts", function() {
         let res = queryAllAccounts();
         console.log('\nAll accounts:\n', res);
-        assert.equal(res[0], superAdmin);
+        assert.equal(res[0], superAdmin.address);
     });
 });
