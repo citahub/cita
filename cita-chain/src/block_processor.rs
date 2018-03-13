@@ -46,7 +46,7 @@ impl BlockProcessor {
         self.chain.broadcast_current_block(&self.ctx_pub);
     }
 
-    pub fn set_excuted_result(&self, ret: ExecutedResult) {
-        self.chain.set_excuted_result(&ret, &self.ctx_pub);
+    pub fn set_executed_result(&self, ret: ExecutedResult) {
+        self.chain.set_executed_result(&ret, &self.ctx_pub);
     }
 }

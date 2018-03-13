@@ -255,7 +255,7 @@ impl Chain {
         result
     }
 
-    pub fn set_excuted_result_genesis(&self, ret: &ExecutedResult) {
+    pub fn set_executed_result_genesis(&self, ret: &ExecutedResult) {
         let blk = Block::default();
         self.set_db_result(ret, &blk);
     }
@@ -268,7 +268,7 @@ impl Chain {
             .map(|vecaddr| Address::from_slice(&vecaddr[..]))
             .collect();
         info!("consensus nodes {:?}", nodes);
-        self.set_excuted_config(
+        self.set_executed_config(
             conf.get_block_gas_limit(),
             conf.get_account_gas_limit(),
             &nodes,
@@ -437,11 +437,11 @@ impl Chain {
         }
     }
 
-    pub fn set_excuted_result(&self, ret: &ExecutedResult, ctx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn set_executed_result(&self, ret: &ExecutedResult, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let info = ret.get_executed_info();
         let number = info.get_header().get_height();
         if number == 0 {
-            self.set_excuted_result_genesis(ret);
+            self.set_executed_result_genesis(ret);
             let block_tx_hashes = Vec::new();
             self.delivery_block_tx_hashes(number, block_tx_hashes, &ctx_pub);
             self.broadcast_current_status(&ctx_pub);
@@ -492,7 +492,7 @@ impl Chain {
         *guard = new_map;
     }
 
-    pub fn set_excuted_config(&self, bgas_limit: u64, agas_limit: &ProtoAccountGasLimit, nodes: &Vec<Address>) {
+    pub fn set_executed_config(&self, bgas_limit: u64, agas_limit: &ProtoAccountGasLimit, nodes: &Vec<Address>) {
         self.block_gas_limit
             .store(bgas_limit as usize, Ordering::SeqCst);
         *self.account_gas_limit.write() = agas_limit.clone();

@@ -124,7 +124,7 @@ fn main() {
     thread::spawn(move || {
         loop {
             if let Ok(einfo) = write_receiver.recv_timeout(Duration::new(18, 0)) {
-                block_processor.set_excuted_result(einfo);
+                block_processor.set_executed_result(einfo);
             } else {
                 //here maybe need send blockbody when max_store_height > max_height
                 block_processor.broadcast_current_block();
