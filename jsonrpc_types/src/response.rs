@@ -47,6 +47,7 @@ pub enum ResultBody {
     UninstallFliter(bool),
     FilterChanges(FilterChanges),
     FilterLog(Vec<Log>),
+    TxProof(Bytes),
 }
 
 impl Default for ResultBody {
@@ -169,14 +170,14 @@ impl Output {
                             serde_json::from_str::<Vec<Log>>(&log).unwrap(),
                         ))
                         .output(),
+                    Response_oneof_data::transaction_proof(proof) => success
+                        .set_result(ResultBody::TxProof(Bytes::from(proof)))
+                        .output(),
                     Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(
                         id.clone(),
                         jsonrpc.clone(),
                         Error::server_error(code, err_msg),
                     )),
-                    Response_oneof_data::transaction_proof(x) => success
-                        .set_result(ResultBody::ContractAbi(Bytes::from(x)))
-                        .output(),
                 }
             }
             _ => match data.data.unwrap() {

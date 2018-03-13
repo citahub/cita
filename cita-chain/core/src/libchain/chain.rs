@@ -34,12 +34,14 @@ pub use libchain::transaction::*;
 use libproto::blockchain::{AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
                            RichStatus as ProtoRichStatus};
 
+use header::Header;
 use libproto::{BlockTxHashes, FullTransaction, Message, SyncResponse};
 use libproto::executor::ExecutedResult;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
+use rlp::Encodable;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -59,10 +61,47 @@ use util::{Mutex, RwLock};
 use util::Hashable;
 use util::HeapSizeOf;
 use util::kvdb::*;
+use util::merklehash;
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
 const LOG_BLOOMS_ELEMENTS_PER_INDEX: usize = 16;
+
+#[derive(Debug, Clone, RlpEncodable, RlpDecodable)]
+pub struct TxProof {
+    pub block_header: Header,
+    pub receipt: Receipt,
+    pub receipt_proof: merklehash::MerkleProof,
+    pub tx: SignedTransaction,
+}
+
+impl TxProof {
+    pub fn verify_proof(&self) -> bool {
+        // todo check hash of self.tx == tx hash in receipt
+        let receipt_hash = self.receipt.rlp_bytes().crypt_hash();
+        merklehash::verify_proof(
+            self.block_header.receipts_root().clone(),
+            &self.receipt_proof,
+            receipt_hash,
+        )
+    }
+
+    // extract info which relayer needed
+    pub fn extract(&self) -> Option<(u64, u64, Address, String)> {
+        let data = &self.receipt.logs[0].data;
+        // data must be uint256 from_chain_id, uint256 to_chain_id, address dest_contract, uint256 hasher
+        if data.len() != 128 {
+            None
+        } else {
+            let mut iter = data.chunks(32);
+            let from_chain_id = U256::from(iter.next().unwrap()).low_u64();
+            let to_chain_id = U256::from(iter.next().unwrap()).low_u64();
+            let dest_contract = Address::from(H256::from(iter.next().unwrap()));
+            let hasher = U256::from(iter.next().unwrap()).to_hex().split_off(64 - 8);
+            Some((from_chain_id, to_chain_id, dest_contract, hasher))
+        }
+    }
+}
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum BlockSource {
@@ -641,6 +680,30 @@ impl Chain {
                 full_ts.set_block_hash(hash.to_vec());
                 full_ts.set_index(index as u32);
                 full_ts
+            })
+        })
+    }
+
+    pub fn get_transaction_proof(&self, hash: TransactionId) -> Option<(Vec<u8>)> {
+        self.transaction_address(hash).and_then(|addr| {
+            self.block_by_hash(addr.block_hash).and_then(|block| {
+                self.block_receipts(addr.block_hash).map(|receipts| {
+                    //(block, receipts, addr.index)
+                    let index = addr.index;
+                    let receipt_proof: merklehash::MerkleProof = merklehash::MerkleTree::from_bytes(
+                        receipts.receipts.iter().map(|r| r.rlp_bytes().to_vec()),
+                    ).get_proof_by_input_index(index);
+                    let receipt = receipts.receipts[index].clone().unwrap();
+                    let tx = block.body().transactions()[index].clone();
+                    let block_header = block.header().clone();
+                    let tx_proof = TxProof {
+                        block_header,
+                        receipt,
+                        receipt_proof,
+                        tx,
+                    };
+                    tx_proof.rlp_bytes().to_vec()
+                })
             })
         })
     }

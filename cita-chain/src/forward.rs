@@ -171,6 +171,17 @@ impl Forward {
                 }
             },
 
+            Request::transaction_proof(hash) => {
+                match self.chain.get_transaction_proof(H256::from_slice(&hash)) {
+                    Some(proof) => {
+                        response.set_transaction_proof(proof);
+                    }
+                    None => {
+                        response.set_none(true);
+                    }
+                };
+            }
+
             Request::transaction_receipt(hash) => {
                 let tx_hash = H256::from_slice(&hash);
                 let receipt = self.chain.localized_receipt(tx_hash);
