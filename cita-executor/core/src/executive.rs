@@ -201,27 +201,48 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         trace!("permission should be check: {}", options.check_permission);
         // CITA-776: Add check account owns resources
         trace!("account permissions: {:?}", self.state.account_permissions);
+
         if options.check_permission {
+            let has_send_permission = contains_resource(
+                &self.state.account_permissions,
+                &sender,
+                send_tx_cont,
+                send_tx_func,
+            );
+            let has_create_permission = contains_resource(
+                &self.state.account_permissions,
+                &sender,
+                create_contract_cont,
+                create_contract_func,
+            );
             match t.action {
-                Action::Create => if sender != Address::zero() && !self.state.creators.contains(&sender)
-                    && !contains_resource(
+                Action::Create => {
+                    if sender != Address::zero() && !self.state.creators.contains(&sender) && !has_create_permission {
+                        return Err(From::from(ExecutionError::NoContractPermission));
+                    }
+                }
+                Action::Call(address) => {
+                    if sender != Address::zero() && !self.state.senders.contains(&sender)
+                        && !self.state.creators.contains(&sender) && !has_send_permission
+                    {
+                        return Err(From::from(ExecutionError::NoTransactionPermission));
+                    }
+                    if !contains_resource(
                         &self.state.account_permissions,
                         &sender,
-                        send_tx_cont,
-                        send_tx_func,
+                        address,
+                        t.data[0..4].to_vec(),
                     ) {
-                    return Err(From::from(ExecutionError::NoContractPermission));
-                },
-                _ => if sender != Address::zero() && !self.state.senders.contains(&sender)
-                    && !self.state.creators.contains(&sender)
-                    && !contains_resource(
-                        &self.state.account_permissions,
-                        &sender,
-                        create_contract_cont,
-                        create_contract_func,
-                    ) {
-                    return Err(From::from(ExecutionError::NoTransactionPermission));
-                },
+                        return Err(From::from(ExecutionError::NoCallPermission));
+                    }
+                }
+                _ => {
+                    if sender != Address::zero() && !self.state.senders.contains(&sender)
+                        && !self.state.creators.contains(&sender) && !has_send_permission
+                    {
+                        return Err(From::from(ExecutionError::NoTransactionPermission));
+                    }
+                }
             }
         }
 

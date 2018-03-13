@@ -159,6 +159,7 @@ pub enum ExecutionError {
     },
     NoTransactionPermission,
     NoContractPermission,
+    NoCallPermission,
     /// When execution tries to modify the state in static context
     MutableCallInStaticContext,
     /// Returned when internal evm error occurs.
@@ -192,6 +193,7 @@ impl fmt::Display for ExecutionError {
             TransactionMalformed(ref err) => format!("Malformed transaction: {}", err),
             NoTransactionPermission => "No transaction permission".to_owned(),
             NoContractPermission => "No contract permission".to_owned(),
+            NoCallPermission => "No call contract permission".to_owned(),
         };
 
         f.write_fmt(format_args!("Transaction execution error ({}).", msg))

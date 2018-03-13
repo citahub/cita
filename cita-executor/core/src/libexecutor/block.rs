@@ -448,6 +448,16 @@ impl OpenBlock {
                 );
                 self.receipts.push(Some(receipt));
             }
+            Err(Error::Execution(ExecutionError::NoCallPermission)) => {
+                let receipt = Receipt::new(
+                    None,
+                    0.into(),
+                    Vec::new(),
+                    Some(ReceiptError::NoCallPermission),
+                    0.into(),
+                );
+                self.receipts.push(Some(receipt));
+            }
             Err(Error::Execution(ExecutionError::NotEnoughBaseGas { .. })) => {
                 let receipt = Receipt::new(
                     None,

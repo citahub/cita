@@ -29,6 +29,7 @@ pub enum ReceiptError {
     //ExecutionError
     NoTransactionPermission,
     NoContractPermission,
+    NoCallPermission,
     NotEnoughBaseGas,
     BlockGasLimitReached,
     AccountGasLimitReached,
@@ -50,6 +51,7 @@ impl ReceiptError {
         let desc = match *self {
             ReceiptError::NoTransactionPermission => "No transaction permission.",
             ReceiptError::NoContractPermission => "No contract permission.",
+            ReceiptError::NoCallPermission => "No Call contract permission.",
             ReceiptError::NotEnoughBaseGas => "Not enough base gas.",
             ReceiptError::BlockGasLimitReached => "Block gas limit reached.",
             ReceiptError::AccountGasLimitReached => "Account gas limit reached.",
@@ -70,6 +72,7 @@ impl ReceiptError {
         match *self {
             ReceiptError::NoTransactionPermission => ProtoReceiptError::NoTransactionPermission,
             ReceiptError::NoContractPermission => ProtoReceiptError::NoContractPermission,
+            ReceiptError::NoCallPermission => ProtoReceiptError::NoCallPermission,
             ReceiptError::NotEnoughBaseGas => ProtoReceiptError::NotEnoughBaseGas,
             ReceiptError::BlockGasLimitReached => ProtoReceiptError::BlockGasLimitReached,
             ReceiptError::AccountGasLimitReached => ProtoReceiptError::AccountGasLimitReached,
@@ -89,6 +92,7 @@ impl ReceiptError {
         match receipt_error {
             ProtoReceiptError::NoTransactionPermission => ReceiptError::NoTransactionPermission,
             ProtoReceiptError::NoContractPermission => ReceiptError::NoContractPermission,
+            ProtoReceiptError::NoCallPermission => ReceiptError::NoCallPermission,
             ProtoReceiptError::NotEnoughBaseGas => ReceiptError::NotEnoughBaseGas,
             ProtoReceiptError::BlockGasLimitReached => ReceiptError::BlockGasLimitReached,
             ProtoReceiptError::AccountGasLimitReached => ReceiptError::AccountGasLimitReached,
@@ -110,18 +114,19 @@ impl Decodable for ReceiptError {
         match rlp.as_val::<u8>()? {
             0 => Ok(ReceiptError::NoTransactionPermission),
             1 => Ok(ReceiptError::NoContractPermission),
-            2 => Ok(ReceiptError::NotEnoughBaseGas),
-            3 => Ok(ReceiptError::BlockGasLimitReached),
-            4 => Ok(ReceiptError::AccountGasLimitReached),
-            5 => Ok(ReceiptError::OutOfGas),
-            6 => Ok(ReceiptError::BadJumpDestination),
-            7 => Ok(ReceiptError::BadInstruction),
-            8 => Ok(ReceiptError::StackUnderflow),
-            9 => Ok(ReceiptError::OutOfStack),
-            10 => Ok(ReceiptError::Internal),
-            11 => Ok(ReceiptError::MutableCallInStaticContext),
-            12 => Ok(ReceiptError::OutOfBounds),
-            13 => Ok(ReceiptError::Reverted),
+            2 => Ok(ReceiptError::NoCallPermission),
+            3 => Ok(ReceiptError::NotEnoughBaseGas),
+            4 => Ok(ReceiptError::BlockGasLimitReached),
+            5 => Ok(ReceiptError::AccountGasLimitReached),
+            6 => Ok(ReceiptError::OutOfGas),
+            7 => Ok(ReceiptError::BadJumpDestination),
+            8 => Ok(ReceiptError::BadInstruction),
+            9 => Ok(ReceiptError::StackUnderflow),
+            10 => Ok(ReceiptError::OutOfStack),
+            11 => Ok(ReceiptError::Internal),
+            12 => Ok(ReceiptError::MutableCallInStaticContext),
+            13 => Ok(ReceiptError::OutOfBounds),
+            14 => Ok(ReceiptError::Reverted),
             _ => Err(DecoderError::Custom("Unknown Receipt error.")),
         }
     }
