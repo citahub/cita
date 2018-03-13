@@ -3,10 +3,10 @@
 
 const chai = require('chai');
 const assert = chai.assert;
-const util = require('./helpers/util');
-const roleManagement = require('./helpers/role_management');
-const authorization = require('./helpers/authorization');
-const config = require('./config');
+const util = require('../helpers/util');
+const roleManagement = require('../helpers/role_management');
+const authorization = require('../helpers/authorization');
+const config = require('../config');
 
 // util
 const web3 = util.web3;

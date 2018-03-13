@@ -3,8 +3,8 @@
 
 const chai = require('chai');
 const assert = chai.assert;
-const authorization = require('./helpers/authorization');
-const config = require('./config');
+const authorization = require('../helpers/authorization');
+const config = require('../config');
 
 const { superAdmin, permissions, resources } = config.contract.authorization;
 
