@@ -3,8 +3,8 @@
 
 const chai = require('chai');
 const assert = chai.assert;
-const util = require('./helpers/util');
-const permission = require('./helpers/permission');
+const util = require('../helpers/util');
+const permission = require('../helpers/permission');
 
 const web3 = util.web3;
 

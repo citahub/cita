@@ -5,11 +5,11 @@
 
 const chai = require('chai');
 const assert = chai.assert;
-const util = require('./helpers/util');
-const permissionManagement = require('./helpers/permission_management');
-const authorization = require('./helpers/authorization');
-const permission = require('./helpers/permission');
-const config = require('./config');
+const util = require('../helpers/util');
+const permissionManagement = require('../helpers/permission_management');
+const authorization = require('../helpers/authorization');
+const permission = require('../helpers/permission');
+const config = require('../config');
 
 // util
 const web3 = util.web3;
