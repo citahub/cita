@@ -183,9 +183,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let sender = *t.sender();
         let nonce = self.state.nonce(&sender)?;
         let send_tx_cont = Address::from(0x1);
-        let send_tx_func = vec![0];
+        let send_tx_func = vec![0; 4];
         let create_contract_cont = Address::from(0x2);
-        let create_contract_func = vec![0];
+        let create_contract_func = vec![0; 4];
 
         // check contract create/call permission
         trace!(
@@ -214,6 +214,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 &sender,
                 create_contract_cont,
                 create_contract_func,
+            );
+            trace!(
+                "has send permission: {:?}, has create permission: {:?}",
+                has_send_permission,
+                has_create_permission
             );
             match t.action {
                 Action::Create => {
@@ -278,7 +283,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         if t.action == Action::AbiStore {
             let account = H160::from(&t.data[0..20]);
             let abi = &t.data[20..];
-            warn!("contract address: {:?}, abi: {:?}", account, abi);
+            info!("contract address: {:?}, abi: {:?}", account, abi);
             match self.state.exists(&account) {
                 Ok(true) => {
                     self.state.init_abi(&account, abi.to_vec())?;
