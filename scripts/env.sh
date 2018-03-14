@@ -24,6 +24,8 @@ else
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm ${CONTAINER_NAME} > /dev/null 2>&1
     docker run -d --net=host --volume ${RELEASE_DIR}:${RELEASE_DIR} \
+        --volume /etc/localtime:/etc/localtime \
+        --volume /etc/timezone:/etc/timezone \
         --workdir "${RELEASE_DIR}" --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
         /bin/bash -c "while true;do sleep 100;done"
     sleep 20
