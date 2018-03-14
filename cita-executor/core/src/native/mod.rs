@@ -21,11 +21,12 @@ pub mod storage;
 mod tests;
 #[cfg(feature = "privatetx")]
 mod zk_privacy;
+mod crosschain_verify;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 use action_params::ActionParams;
-use evm::{self, Ext, GasLeft};
+use evm::{self, Ext, GasLeft, ReturnData};
 use std::collections::HashMap;
 use util::Address;
 
@@ -79,38 +80,26 @@ impl Factory {
     }
 }
 
-#[cfg(all(not(test), not(feature = "privatetx")))]
 impl Default for Factory {
     fn default() -> Self {
-        Factory {
+        let mut factory = Factory {
             contracts: HashMap::new(),
+        };
+        // here we register contracts with addresses defined in genesis.json.
+        {
+            use self::crosschain_verify::CrossChainVerify;
+            factory.register(Address::from(0x1301), Box::new(CrossChainVerify::default()));
         }
-        // here we register contracts with addresses defined in genesis.json.
-    }
-}
-
-#[cfg(test)]
-impl Default for Factory {
-    fn default() -> Self {
-        use self::tests::SimpleStorage;
-        let mut factory = Factory {
-            contracts: HashMap::new(),
-        };
-        // here we register contracts with addresses defined in genesis.json.
-        factory.register(Address::from(0x400), Box::new(SimpleStorage::default()));
-        factory
-    }
-}
-
-#[cfg(feature = "privatetx")]
-impl Default for Factory {
-    fn default() -> Self {
-        use self::zk_privacy::ZkPrivacy;
-        let mut factory = Factory {
-            contracts: HashMap::new(),
-        };
-        // here we register contracts with addresses defined in genesis.json.
-        factory.register(Address::from(0x12345678), Box::new(ZkPrivacy::default()));
+        #[cfg(test)]
+        {
+            use self::tests::SimpleStorage;
+            factory.register(Address::from(0x400), Box::new(SimpleStorage::default()));
+        }
+        #[cfg(feature = "privatetx")]
+        {
+            use self::zk_privacy::ZkPrivacy;
+            factory.register(Address::from(0x12345678), Box::new(ZkPrivacy::default()));
+        }
         factory
     }
 }
