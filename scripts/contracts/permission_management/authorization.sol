@@ -13,6 +13,11 @@ contract Authorization {
     address updatePermissionAddr = 0x00000000000000000000000000000000033241B5;
     address setAuthAddr = 0x00000000000000000000000000000000043241b5;
     address cancelAuthAddr = 0x00000000000000000000000000000000053241b5;
+    address newRoleAddr = 0x00000000000000000000000000000000063241b5;
+    address deleteRoleAddr = 0x00000000000000000000000000000000073241b5;
+    address updateRoleAddr = 0x00000000000000000000000000000000083241B5;
+    address setRoleAddr = 0x00000000000000000000000000000000093241B5;
+    address cancelRoleAddr = 0x000000000000000000000000000000000A3241b5;
     address sendTxAddr = 0x0000000000000000000000000000000000000001;
     address createContractAddr = 0x0000000000000000000000000000000000000002;
 
@@ -37,6 +42,11 @@ contract Authorization {
         _setAuth(_superAdmin, updatePermissionAddr);
         _setAuth(_superAdmin, setAuthAddr);
         _setAuth(_superAdmin, cancelAuthAddr);
+        _setAuth(_superAdmin, newRoleAddr);
+        _setAuth(_superAdmin, deleteRoleAddr);
+        _setAuth(_superAdmin, updateRoleAddr);
+        _setAuth(_superAdmin, setRoleAddr);
+        _setAuth(_superAdmin, cancelRoleAddr);
         _setAuth(_superAdmin, sendTxAddr);
         _setAuth(_superAdmin, createContractAddr);
     }
