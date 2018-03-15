@@ -55,6 +55,11 @@ Some options of mocha usage:
 * `-t 60s`: set test-case timeout
 * `-g <pattern>`: only run tests matching <pattern>
 
+Change the `test` in the `package.json` to specify the directory of test:
+
+* "test": "mocha test/unit --recursive -t 60s; jshint test"
+* "test": "mocha test/integrate --recursive -t 60s; jshint test"
+
 ## 2. Which contracs?
 
 Include:

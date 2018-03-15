@@ -38,8 +38,6 @@ const getTxReceipt = function (res) {
     });
 };
 
-const blockNumber = web3.eth.blockNumber;
-
 const quota = 9999999;
 const blockLimit = 100;
 
@@ -47,7 +45,6 @@ module.exports = {
     web3,
     randomInt,
     getTxReceipt,
-    blockNumber,
     quota,
     blockLimit
 };

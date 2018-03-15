@@ -18,14 +18,14 @@ let tx_params = {
     privkey: sender.privkey,
     nonce: util.randomInt(),
     quota,
-    validUntilBlock: util.blockNumber + blockLimit,
+    validUntilBlock: web3.eth.blockNumber + blockLimit,
     from: sender.address
 };
 
 // newRole
 const newRole = function (name, permissions, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return rmContractInstance.newRole.sendTransaction(
@@ -38,7 +38,7 @@ const newRole = function (name, permissions, _sender = sender) {
 // updateRoleName
 const updateRoleName = function (role, name, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return rmContractInstance.updateRoleName.sendTransaction(
@@ -51,7 +51,7 @@ const updateRoleName = function (role, name, _sender = sender) {
 // addPermissions
 const addPermissions = function (role, permissions, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return rmContractInstance.addPermissions.sendTransaction(
@@ -64,7 +64,7 @@ const addPermissions = function (role, permissions, _sender = sender) {
 // deletePermissions
 const deletePermissions = function (role, permissions, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return rmContractInstance.deletePermissions.sendTransaction(
@@ -77,7 +77,7 @@ const deletePermissions = function (role, permissions, _sender = sender) {
 // setRole
 const setRole = function (account, role, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return rmContractInstance.setRole.sendTransaction(
@@ -90,7 +90,7 @@ const setRole = function (account, role, _sender = sender) {
 // cancelRole
 const cancelRole = function (account, role, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return rmContractInstance.cancelRole.sendTransaction(
@@ -103,7 +103,7 @@ const cancelRole = function (account, role, _sender = sender) {
 // clearRole
 const clearRole = function (account, role, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return rmContractInstance.clearRole.sendTransaction(
@@ -115,7 +115,7 @@ const clearRole = function (account, role, _sender = sender) {
 // deleteRole
 const deleteRole = function (account, role, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return rmContractInstance.deleteRole.sendTransaction(
