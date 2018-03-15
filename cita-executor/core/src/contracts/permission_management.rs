@@ -105,7 +105,6 @@ impl PermissionManagement {
     }
 
     /// Resources array
-    /// TODO Result. Check []
     pub fn resources(executor: &Executor, address: &Address) -> Vec<Resource> {
         let output = executor.call_contract_method(address, &*RESOURCES_HASH.as_slice());
         trace!("Resources output: {:?}", output);
@@ -114,44 +113,52 @@ impl PermissionManagement {
     }
 
     fn to_address_vec(output: &[u8]) -> Vec<Address> {
-        let mut decoded = decode(&[ParamType::Array(Box::new(ParamType::Address))], &output).unwrap();
-        let addresses: Vec<Token> = decoded.remove(0).to_array().unwrap();
-        let addresses: Vec<Address> = addresses
-            .into_iter()
-            .map(|de| Address::from(de.to_address().expect("decode address")))
-            .collect();
-        debug!("Decoded addresses: {:?}", addresses);
-        addresses
+        match decode(&[ParamType::Array(Box::new(ParamType::Address))], &output) {
+            Ok(mut decoded) => {
+                let addresses: Vec<Token> = decoded.remove(0).to_array().unwrap();
+                let addresses: Vec<Address> = addresses
+                    .into_iter()
+                    .map(|de| Address::from(de.to_address().expect("decode address")))
+                    .collect();
+                debug!("Decoded addresses: {:?}", addresses);
+                addresses
+            }
+            Err(_) => Vec::new(),
+        }
     }
 
     fn to_resource_vec(output: &[u8]) -> Vec<Resource> {
         // Decode the address[] and bytes4[]
-        let mut decoded = decode(
+        match decode(
             &[
                 ParamType::Array(Box::new(ParamType::Address)),
                 ParamType::Array(Box::new(ParamType::FixedBytes(4))),
             ],
             &output,
-        ).unwrap();
-        trace!("Resource decode: {:?}", decoded);
-        let cont_mapiter = decoded
-            .remove(0)
-            .to_array()
-            .unwrap()
-            .into_iter()
-            .map(|de| Address::from(de.to_address().expect("decode address")));
+        ) {
+            Ok(mut decoded) => {
+                trace!("Resource decode: {:?}", decoded);
+                let cont_mapiter = decoded
+                    .remove(0)
+                    .to_array()
+                    .unwrap()
+                    .into_iter()
+                    .map(|de| Address::from(de.to_address().expect("decode address")));
 
-        let func_mapiter = decoded
-            .remove(0)
-            .to_array()
-            .unwrap()
-            .into_iter()
-            .map(|func| func.to_fixed_bytes().expect("decode fixed bytes"));
+                let func_mapiter = decoded
+                    .remove(0)
+                    .to_array()
+                    .unwrap()
+                    .into_iter()
+                    .map(|func| func.to_fixed_bytes().expect("decode fixed bytes"));
 
-        cont_mapiter
-            .zip(func_mapiter)
-            .map(|(cont, func)| Resource::new(cont, func))
-            .collect()
+                cont_mapiter
+                    .zip(func_mapiter)
+                    .map(|(cont, func)| Resource::new(cont, func))
+                    .collect()
+            }
+            Err(_) => Vec::new(),
+        }
     }
 }
 
@@ -276,6 +283,14 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn test_resources_from_not_exist_permission() {
+        let executor = init_executor();
+        let permission = Address::from(0x13);
+        let resources: Vec<Resource> = PermissionManagement::resources(&executor, &permission);
+        assert_eq!(resources, vec![]);
     }
 
     #[test]
