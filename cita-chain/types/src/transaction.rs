@@ -28,6 +28,8 @@ use util::{Address, Bytes, H256, HeapSizeOf, U256};
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
 // pub const ABI_ADDRESS: H160 =  H160( [0xaa; 20] );
 pub const ABI_ADDRESS: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+// pub const GO_CONTRACT: H160 =   H160( [0xbb; 20] );
+pub const GO_CONTRACT: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {
@@ -49,6 +51,8 @@ pub enum Action {
     Call(Address),
     /// Store the contract ABI
     AbiStore,
+    /// Create creates new contract for grpc.
+    GoCreate,
 }
 
 impl Default for Action {
@@ -64,11 +68,14 @@ impl Decodable for Action {
         } else {
             let store_addr: Address = STORE_ADDRESS.into();
             let abi_addr: Address = ABI_ADDRESS.into();
+            let go_addr: Address = GO_CONTRACT.into();
             let addr: Address = rlp.as_val()?;
             if addr == store_addr {
                 Ok(Action::Store)
             } else if addr == abi_addr {
                 Ok(Action::AbiStore)
+            } else if addr == go_addr {
+                Ok(Action::GoCreate)
             } else {
                 Ok(Action::Call(addr))
             }
@@ -80,11 +87,13 @@ impl Encodable for Action {
     fn rlp_append(&self, s: &mut RlpStream) {
         let store_addr: Address = STORE_ADDRESS.into();
         let abi_addr: Address = ABI_ADDRESS.into();
+        let go_addr: Address = GO_CONTRACT.into();
         match *self {
             Action::Create => s.append_internal(&""),
             Action::Call(ref addr) => s.append_internal(addr),
             Action::Store => s.append_internal(&store_addr),
             Action::AbiStore => s.append_internal(&abi_addr),
+            Action::GoCreate => s.append_internal(&go_addr),
         };
     }
 }
@@ -198,6 +207,7 @@ impl Transaction {
                     false => match to {
                         STORE_ADDRESS => Action::Store,
                         ABI_ADDRESS => Action::AbiStore,
+                        GO_CONTRACT => Action::GoCreate,
                         _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
                     },
                 }
@@ -257,6 +267,7 @@ impl Transaction {
             Action::Call(ref to) => pt.set_to(to.hex()),
             Action::Store => pt.set_to(STORE_ADDRESS.into()),
             Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
+            Action::GoCreate => pt.set_to(GO_CONTRACT.into()),
         }
         pt
     }

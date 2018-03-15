@@ -16,15 +16,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::LogBloom;
+use db::{self as db, Readable};
 use env_info::EnvInfo;
 use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
+use libexecutor::{CallEvmImpl, ConnectInfo};
 use libexecutor::executor::Executor;
 use libexecutor::executor::GlobalSysConfig;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
+use libproto::citacode::{ActionParams, EnvInfo as ProtoEnvInfo};
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use protobuf::RepeatedField;
 use receipt::{Receipt, ReceiptError};
@@ -37,7 +40,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 use trace::FlatTrace;
-use types::transaction::SignedTransaction;
+use types::transaction::{Action, SignedTransaction};
 use util::{merklehash, Address, H256, HeapSizeOf, U256};
 
 /// Check the 256 transactions once
@@ -377,14 +380,63 @@ impl OpenBlock {
 
     /// Execute transactions
     pub fn apply_transactions(&mut self, executor: &Executor, check_permission: bool, check_quota: bool) -> bool {
-        for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
+        let mut transactions = Vec::with_capacity(self.body.transactions.len());
+
+        for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 {
                 if executor.is_interrupted.load(Ordering::SeqCst) {
                     return false;
                 }
             }
-            // Apply transaction and set account nonce
-            self.apply_transaction(&t, check_permission, check_quota);
+            let mut go_contract = false;
+            // Judging the contract address
+            let connect_info = match t.action {
+                Action::Call(ref address) => {
+                    let str_addr = address.hex();
+                    if let Some(value) = executor.service_map.get(str_addr.clone(), true) {
+                        go_contract = true;
+                        let ip = value.conn_info.get_ip().to_string();
+                        let port = value.conn_info.get_port();
+                        (ip, port, str_addr)
+                    } else if let Some(value) = executor.db.read(db::COL_EXTRA, address) {
+                        go_contract = true;
+                        let ip = value.conn_info.get_ip().to_string();
+                        let port = value.conn_info.get_port();
+                        (ip, port, str_addr)
+                    } else {
+                        ("".to_string(), 0, "".to_string())
+                    }
+                }
+                Action::GoCreate => {
+                    let address = Address::from_slice(&t.data);
+                    let str_addr = address.hex();
+                    if let Some(ref value) = executor.service_map.get(str_addr.clone(), false) {
+                        go_contract = true;
+                        let ip = value.conn_info.get_ip().to_string();
+                        let port = value.conn_info.get_port();
+                        (ip, port, str_addr)
+                    } else {
+                        ("".to_string(), 0, "".to_string())
+                    }
+                }
+                _ => ("".to_string(), 0, "".to_string()),
+            };
+
+            if go_contract {
+                let connect_info = ConnectInfo::new(connect_info.0, connect_info.1, connect_info.2);
+                self.apply_grpc_vm(
+                    executor,
+                    &mut t,
+                    check_permission,
+                    check_quota,
+                    connect_info,
+                );
+            } else {
+                // Apply transaction and set account nonce
+                self.apply_transaction(&mut t, check_permission, check_quota);
+            }
+
+            transactions.push(t);
         }
 
         let now = Instant::now();
@@ -397,7 +449,28 @@ impl OpenBlock {
         true
     }
 
-    pub fn apply_transaction(&mut self, t: &SignedTransaction, check_permission: bool, check_quota: bool) {
+    pub fn generate_err_receipt(hash: H256, err: ExecutionError) -> Option<Receipt> {
+        match err {
+            ExecutionError::NoTransactionPermission => Some(ReceiptError::NoTransactionPermission),
+            ExecutionError::NoContractPermission => Some(ReceiptError::NoContractPermission),
+            ExecutionError::NoCallPermission => Some(ReceiptError::NoCallPermission),
+            ExecutionError::NotEnoughBaseGas { .. } => Some(ReceiptError::NotEnoughBaseGas),
+            ExecutionError::BlockGasLimitReached { .. } => Some(ReceiptError::BlockGasLimitReached),
+            ExecutionError::AccountGasLimitReached { .. } => Some(ReceiptError::AccountGasLimitReached),
+            _ => None,
+        }.map(|receipt_error| {
+            Receipt::new(
+                None,
+                0.into(),
+                Vec::new(),
+                Some(receipt_error),
+                0.into(),
+                hash,
+            )
+        })
+    }
+
+    pub fn apply_transaction(&mut self, t: &mut SignedTransaction, check_permission: bool, check_quota: bool) {
         let mut env_info = self.env_info();
         if !self.account_gas.contains_key(t.sender()) {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);
@@ -425,29 +498,101 @@ impl OpenBlock {
                 self.receipts.push(Some(outcome.receipt));
             }
             Err(Error::Execution(execution_error)) => {
-                self.receipts.push(
-                    match execution_error {
-                        ExecutionError::NoTransactionPermission => Some(ReceiptError::NoTransactionPermission),
-                        ExecutionError::NoContractPermission => Some(ReceiptError::NoContractPermission),
-                        ExecutionError::NoCallPermission => Some(ReceiptError::NoCallPermission),
-                        ExecutionError::NotEnoughBaseGas { .. } => Some(ReceiptError::NotEnoughBaseGas),
-                        ExecutionError::BlockGasLimitReached { .. } => Some(ReceiptError::BlockGasLimitReached),
-                        ExecutionError::AccountGasLimitReached { .. } => Some(ReceiptError::AccountGasLimitReached),
-                        _ => None,
-                    }.map(|receipt_error| {
-                        Receipt::new(
-                            None,
-                            0.into(),
-                            Vec::new(),
-                            Some(receipt_error),
-                            0.into(),
-                            t.get_transaction_hash(),
-                        )
-                    }),
-                );
+                self.receipts.push(Self::generate_err_receipt(
+                    t.get_transaction_hash(),
+                    execution_error,
+                ));
             }
             Err(_) => {
                 self.receipts.push(None);
+            }
+        }
+    }
+
+    fn apply_grpc_vm(
+        &mut self,
+        executor: &Executor,
+        t: &mut SignedTransaction,
+        check_permission: bool,
+        check_quota: bool,
+        connect_info: ConnectInfo,
+    ) {
+        let mut env_info = ProtoEnvInfo::new();
+        env_info.set_number(format!("{}", self.number()));
+        env_info.set_author(Address::default().hex());
+        let timestamp = self.env_info().timestamp;
+        env_info.set_timestamp(format!("{}", timestamp));
+
+        let mut action_params = ActionParams::new();
+        action_params.set_code_address(connect_info.get_addr().to_string());
+        action_params.set_data(t.data.clone());
+        action_params.set_sender(t.sender().hex());
+        //to be discussed
+        //action_params.set_gas("1000".to_string());
+        let ret = {
+            let mut evm_impl = CallEvmImpl::new(&mut self.state, check_permission, check_quota);
+            evm_impl.transact(executor, t, env_info, action_params, connect_info)
+        };
+
+        match ret {
+            Ok(receipt) => {
+                let transaction_gas_used = receipt.gas_used - self.current_gas_used;
+                self.current_gas_used = receipt.gas_used;
+                if check_quota {
+                    if let Some(value) = self.account_gas.get_mut(t.sender()) {
+                        *value = *value - transaction_gas_used;
+                    }
+                }
+                self.receipts.push(Some(receipt));
+            }
+            Err(Error::Execution(execution_error)) => {
+                self.receipts.push(Self::generate_err_receipt(
+                    t.get_transaction_hash(),
+                    execution_error,
+                ));
+            }
+        }
+    }
+
+    fn apply_grpc_vm(
+        &mut self,
+        executor: &Executor,
+        t: &mut SignedTransaction,
+        check_permission: bool,
+        check_quota: bool,
+        connect_info: ConnectInfo,
+    ) {
+        let mut env_info = ProtoEnvInfo::new();
+        env_info.set_number(format!("{}", self.number()));
+        env_info.set_author(Address::default().hex());
+        let timestamp = self.env_info().timestamp;
+        env_info.set_timestamp(format!("{}", timestamp));
+
+        let mut action_params = ActionParams::new();
+        action_params.set_code_address(connect_info.get_addr().to_string());
+        action_params.set_data(t.data.clone());
+        action_params.set_sender(t.sender().hex());
+        //to be discussed
+        //action_params.set_gas("1000".to_string());
+        let ret = {
+            let mut evm_impl = CallEvmImpl::new(&mut self.state, check_permission, check_quota);
+            evm_impl.transact(executor, t, env_info, action_params, connect_info)
+        };
+
+        match ret {
+            Ok(receipt) => {
+                let transaction_gas_used = receipt.gas_used - self.current_gas_used;
+                self.current_gas_used = receipt.gas_used;
+                if check_quota {
+                    if let Some(value) = self.account_gas.get_mut(t.sender()) {
+                        *value = *value - transaction_gas_used;
+                    }
+                }
+                self.receipts.push(Some(receipt));
+            }
+            Err(err) => {
+                let receipt = Self::generate_err_receipt(err);
+                self.receipts.push(receipt);
             }
         }
     }

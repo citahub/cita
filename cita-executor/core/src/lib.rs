@@ -61,6 +61,7 @@ extern crate ethabi;
 #[cfg(test)]
 extern crate test;
 
+extern crate grpc;
 #[cfg(feature = "privatetx")]
 extern crate zktx;
 

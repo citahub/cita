@@ -226,7 +226,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // TODO: we might need sub_balance in future. The relationship between BALANCE & GAS needs discussing.
 
         let (result, output) = match t.action {
-            Action::Store | Action::AbiStore => (
+            Action::Store | Action::AbiStore | Action::GoCreate => (
                 Ok(FinalizationResult {
                     gas_left: t.gas,
                     return_data: ReturnData::empty(),

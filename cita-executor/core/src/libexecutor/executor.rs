@@ -29,6 +29,7 @@ use evm::Factory as EvmFactory;
 use executive::{Executed, Executive, TransactOptions};
 use factory::*;
 use header::*;
+use libexecutor::ServiceMap;
 pub use libexecutor::block::*;
 use libexecutor::call_request::CallRequest;
 use libexecutor::extras::*;
@@ -62,6 +63,7 @@ use util::trie::{TrieFactory, TrieSpec};
 pub struct Config {
     pub prooftype: u8,
     pub journaldb_type: String,
+    pub grpc_port: u16,
 }
 
 impl Config {
@@ -69,6 +71,7 @@ impl Config {
         Config {
             prooftype: 2,
             journaldb_type: String::from("archive"),
+            grpc_port: 5000,
         }
     }
 
@@ -174,6 +177,8 @@ pub struct Executor {
     pub prooftype: u8,
 
     pub sys_configs: RwLock<VecDeque<GlobalSysConfig>>,
+
+    pub service_map: Arc<ServiceMap>,
 }
 
 /// Get latest header
@@ -239,6 +244,7 @@ impl Executor {
             executed_result: RwLock::new(executed_ret),
             prooftype: executor_config.prooftype,
             sys_configs: RwLock::new(VecDeque::new()),
+            service_map: Arc::new(ServiceMap::new()),
         };
 
         // Build executor config
@@ -255,6 +261,10 @@ impl Executor {
         }
 
         executor
+    }
+
+    pub fn set_service_map(&mut self, service_map: Arc<ServiceMap>) {
+        self.service_map = service_map;
     }
 
     /// Get block hash by number

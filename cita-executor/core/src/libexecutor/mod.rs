@@ -22,8 +22,10 @@ pub mod block;
 pub mod genesis;
 mod extras;
 pub mod call_request;
+pub mod govm_adapter;
 
 pub use self::genesis::Genesis;
+pub use self::govm_adapter::{vm_grpc_server, CallEvmImpl, ConnectInfo, ServiceMap};
 pub use libproto::*;
 pub use log::*;
 pub use util::journaldb;
