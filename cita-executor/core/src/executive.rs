@@ -182,73 +182,13 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     {
         let sender = *t.sender();
         let nonce = self.state.nonce(&sender)?;
-        let send_tx_cont = Address::from(0x1);
-        let send_tx_func = vec![0; 4];
-        let create_contract_cont = Address::from(0x2);
-        let create_contract_func = vec![0; 4];
-
-        // check contract create/call permission
-        trace!(
-            "executive creators: {:?}, senders: {:?}",
-            self.state.creators,
-            self.state.senders
-        );
 
         // NOTE: there can be no invalid transactions from this point
         self.state.inc_nonce(&sender)?;
 
-        // check account permission or not
         trace!("permission should be check: {}", options.check_permission);
-        // CITA-776: Add check account owns resources
-        trace!("account permissions: {:?}", self.state.account_permissions);
-
         if options.check_permission {
-            let has_send_permission = contains_resource(
-                &self.state.account_permissions,
-                &sender,
-                send_tx_cont,
-                send_tx_func,
-            );
-            let has_create_permission = contains_resource(
-                &self.state.account_permissions,
-                &sender,
-                create_contract_cont,
-                create_contract_func,
-            );
-            trace!(
-                "has send permission: {:?}, has create permission: {:?}",
-                has_send_permission,
-                has_create_permission
-            );
-            match t.action {
-                Action::Create => {
-                    if sender != Address::zero() && !self.state.creators.contains(&sender) && !has_create_permission {
-                        return Err(From::from(ExecutionError::NoContractPermission));
-                    }
-                }
-                Action::Call(address) => {
-                    if sender != Address::zero() && !self.state.senders.contains(&sender)
-                        && !self.state.creators.contains(&sender) && !has_send_permission
-                    {
-                        return Err(From::from(ExecutionError::NoTransactionPermission));
-                    }
-                    if !contains_resource(
-                        &self.state.account_permissions,
-                        &sender,
-                        address,
-                        t.data[0..4].to_vec(),
-                    ) {
-                        return Err(From::from(ExecutionError::NoCallPermission));
-                    }
-                }
-                _ => {
-                    if sender != Address::zero() && !self.state.senders.contains(&sender)
-                        && !self.state.creators.contains(&sender) && !has_send_permission
-                    {
-                        return Err(From::from(ExecutionError::NoTransactionPermission));
-                    }
-                }
-            }
+            self.check_permission(t)?;
         }
 
         let base_gas_required = U256::from(100); // `CREATE` transaction cost
@@ -264,20 +204,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         trace!("quota should be checked: {}", options.check_quota);
         if options.check_quota {
-            // validate if transaction fits into given block
-            if sender != Address::zero() && self.info.gas_used + t.gas > self.info.gas_limit {
-                return Err(From::from(ExecutionError::BlockGasLimitReached {
-                    gas_limit: self.info.gas_limit,
-                    gas_used: self.info.gas_used,
-                    gas: t.gas,
-                }));
-            }
-            if sender != Address::zero() && t.gas > self.info.account_gas_limit {
-                return Err(From::from(ExecutionError::AccountGasLimitReached {
-                    gas_limit: self.info.account_gas_limit,
-                    gas: t.gas,
-                }));
-            }
+            self.check_quota(t)?;
         }
 
         if t.action == Action::AbiStore {
@@ -366,6 +293,98 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             tracer.traces(),
             vm_tracer.drain(),
         )?)
+    }
+
+    /// Check the sender's permission
+    fn check_permission(&self, t: &SignedTransaction) -> Result<(), ExecutionError> {
+        let sender = *t.sender();
+        let send_tx_cont = Address::from(0x1);
+        let send_tx_func = vec![0; 4];
+        let create_contract_cont = Address::from(0x2);
+        let create_contract_func = vec![0; 4];
+        // check contract create/call permission
+        trace!(
+            "executive creators: {:?}, senders: {:?}",
+            self.state.creators,
+            self.state.senders
+        );
+
+        let has_send_permission = contains_resource(
+            &self.state.account_permissions,
+            &sender,
+            send_tx_cont,
+            send_tx_func,
+        );
+        let has_create_permission = contains_resource(
+            &self.state.account_permissions,
+            &sender,
+            create_contract_cont,
+            create_contract_func,
+        );
+        trace!(
+            "has send permission: {:?}, has create permission: {:?}",
+            has_send_permission,
+            has_create_permission
+        );
+        match t.action {
+            Action::Create => {
+                if sender != Address::zero() && !self.state.creators.contains(&sender) && !has_create_permission {
+                    return Err(From::from(ExecutionError::NoContractPermission));
+                }
+            }
+            Action::Call(address) => {
+                if sender != Address::zero() && !self.state.senders.contains(&sender)
+                    && !self.state.creators.contains(&sender) && !has_send_permission
+                {
+                    return Err(From::from(ExecutionError::NoTransactionPermission));
+                }
+                trace!("t.data {:?}", t.data);
+                if t.data.len() < 4 {
+                    return Err(From::from(ExecutionError::TransactionMalformed(
+                        "The length of transation data is less than four bytes".to_string(),
+                    )));
+                }
+                if !contains_resource(
+                    &self.state.account_permissions,
+                    &sender,
+                    address,
+                    t.data[0..4].to_vec(),
+                ) {
+                    return Err(From::from(ExecutionError::NoCallPermission));
+                }
+            }
+            _ => {
+                if sender != Address::zero() && !self.state.senders.contains(&sender)
+                    && !self.state.creators.contains(&sender) && !has_send_permission
+                {
+                    return Err(From::from(ExecutionError::NoTransactionPermission));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Check the quota while processing the transaction
+    fn check_quota(&self, t: &SignedTransaction) -> Result<(), ExecutionError> {
+        let sender = *t.sender();
+
+        // validate if transaction fits into given block
+        if sender != Address::zero() && self.info.gas_used + t.gas > self.info.gas_limit {
+            return Err(From::from(ExecutionError::BlockGasLimitReached {
+                gas_limit: self.info.gas_limit,
+                gas_used: self.info.gas_used,
+                gas: t.gas,
+            }));
+        }
+        if sender != Address::zero() && t.gas > self.info.account_gas_limit {
+            return Err(From::from(ExecutionError::AccountGasLimitReached {
+                gas_limit: self.info.account_gas_limit,
+                gas: t.gas,
+            }));
+        }
+
+        Ok(())
     }
 
     fn exec_vm<T, V>(
