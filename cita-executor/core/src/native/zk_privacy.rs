@@ -1,6 +1,7 @@
 use super::*;
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
+use evm::ReturnData;
 use native::storage::*;
 use std::collections::VecDeque;
 use std::str::FromStr;
@@ -33,8 +34,8 @@ impl Contract for ZkPrivacy {
         let signature = BigEndian::read_u32(params.clone().data.unwrap().get(0..4).unwrap());
         match signature {
             0 => self.init(params, ext),
-            0x05e3cb61 => self.set_banlance(params, ext),
-            0xd0b07e52 => self.get_banlance(params, ext),
+            0x05e3cb61 => self.set_balance(params, ext),
+            0xd0b07e52 => self.get_balance(params, ext),
             0xc73b5a8f => self.send_verify(params, ext),
             0x882b30d2 => self.receive_verify(params, ext),
             _ => Err(evm::Error::OutOfGas),
@@ -72,7 +73,7 @@ impl ZkPrivacy {
         Ok(GasLeft::Known(params.gas - gas_cost))
     }
 
-    fn set_banlance(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn set_balance(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
             return Err(evm::Error::OutOfGas);
@@ -97,7 +98,7 @@ impl ZkPrivacy {
         Ok(GasLeft::Known(params.gas - gas_cost))
     }
 
-    fn get_banlance(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn get_balance(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
             return Err(evm::Error::OutOfGas);
@@ -117,10 +118,11 @@ impl ZkPrivacy {
         }
         info!("get_banlance {} {}", addr, balance);
 
-        Ok(GasLeft::NeedsReturn(
-            U256::from(params.gas - gas_cost),
-            self.output.as_slice(),
-        ))
+        Ok(GasLeft::NeedsReturn {
+            gas_left: U256::from(params.gas - gas_cost),
+            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
+            apply_state: true,
+        })
     }
 
     fn send_verify(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
@@ -295,7 +297,7 @@ impl ZkPrivacy {
                 data.push(0u8);
             }
         }
-        ext.log(
+        let _ = ext.log(
             vec![
                 H256::from_str("0xc73b5a8f31a1a078a14123cc93687f4a59389c76caf88d5d2154d3f3ce25ff49").unwrap(),
             ],
