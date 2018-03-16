@@ -1,6 +1,7 @@
 use super::*;
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
+use evm::ReturnData;
 use native::storage::*;
 use std::collections::VecDeque;
 use std::str::FromStr;
@@ -11,7 +12,6 @@ use zktx::convert::*;
 use zktx::incrementalmerkletree::*;
 use zktx::p2c::*;
 use zktx::pedersen::PedersenDigest;
-use evm::ReturnData;
 
 static TREE_DEPTH: usize = 60;
 #[derive(Clone)]
