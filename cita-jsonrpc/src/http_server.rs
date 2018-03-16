@@ -312,6 +312,7 @@ impl Server {
             }),
         };
         let server = Http::new()
+            .sleep_on_errors(Some(Duration::from_millis(50)))
             .keep_alive(true)
             .bind_listener(core, listener, new_service)
             .unwrap();
@@ -437,6 +438,7 @@ mod integration_test {
                 };
                 let server = Http::new()
                     .keep_alive(true)
+                    .sleep_on_errors(Some(Duration::from_millis(10)))
                     .bind_listener(core, listener, new_service)
                     .unwrap();
                 server.run_until(shutdown_rx.then(|_| Ok(()))).unwrap();
