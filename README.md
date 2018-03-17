@@ -29,6 +29,16 @@ For more details please check the white paper.
 
 [chinese](https://cryptape.github.io/cita)
 
+## API/SDK
+
+CITA provides jsonrpc and websocket (experimental) API. Interfaces with `cita_` prefix can be used to interact with both native and EVM contracts, and those with `eth_` prefix are EVM contract only.
+
+To use CITA API v1, You can use any HTTP client, or following SDKs:
+
+* [Java](https://github.com/cryptape/web3j)
+* [Rust](https://github.com/cryptape/rust-web3)
+* [Javascript](https://github.com/cryptape/web3.js)
+
 ## Contributing
 
 CITA is still in active development. Building a blockchain platform is a huge task, we need your help. Any contribution is welcome.
