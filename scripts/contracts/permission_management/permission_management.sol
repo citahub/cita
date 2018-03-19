@@ -14,11 +14,32 @@ contract PermissionManagement {
     address authorizationAddr = 0x00000000000000000000000000000000013241b4;
     Authorization auth = Authorization(authorizationAddr);
 
+    address[12] builtInPermissions = [
+        0x00000000000000000000000000000000013241b5,
+        0x00000000000000000000000000000000023241b5,
+        0x00000000000000000000000000000000033241B5,
+        0x00000000000000000000000000000000043241b5,
+        0x00000000000000000000000000000000053241b5,
+        0x00000000000000000000000000000000063241b5,
+        0x00000000000000000000000000000000073241b5,
+        0x00000000000000000000000000000000083241B5,
+        0x00000000000000000000000000000000093241B5,
+        0x000000000000000000000000000000000A3241b5,
+        0x0000000000000000000000000000000000000001,
+        0x0000000000000000000000000000000000000002
+    ];
+
     event PermissionDeleted(address _permission);
 
     modifier sameLength(address[] _one, bytes4[] _other) {
         require(_one.length > 0);
         require(_one.length == _other.length);
+        _;
+    }
+
+    modifier notBuiltInPermission(address _permission) {
+        for (uint i = 0; i<builtInPermissions.length; i++)
+            require(_permission != builtInPermissions[i]); 
         _;
     }
 
@@ -34,6 +55,7 @@ contract PermissionManagement {
     /// @dev Delete the permission
     function deletePermission(address _permission)
         public
+        notBuiltInPermission(_permission)
         returns (bool)
     {
         Permission perm = Permission(_permission);
