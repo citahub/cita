@@ -25,7 +25,7 @@ CITA 的 Docker 镜像托管在 [DockerHub](https://hub.docker.com/r/cita/cita-b
 从 Github 仓库下载 CITA 的源代码，然后切换到 CITA 的源代码目录
 
 ```shell
-git pull https://github.com/cryptape/cita.git
+git clone https://github.com/cryptape/cita.git
 cd cita
 git submodule init
 git submodule update

@@ -56,21 +56,21 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
   <tr>
     <td>newNode(address)<br/><strong>准备共识节点</strong> </td>
     <td>普通角色</td>
-    <td>新增节点地址 (string)</td>
+    <td>新增节点地址</td>
     <td>操作是否成功 (bool)</td>
     <td>成功后新节点准备成为共识节点，并将其记录在合约共识节点列表中，同时节点将处于 new 状态</td>
   </tr>
   <tr>
     <td>approveNode(address) <br/> <strong>确认共识节点</strong></td>
     <td>管理员角色</td>
-    <td>新增共识节点地址 (string)</td>
+    <td>新增共识节点地址</td>
     <td>操作是否成功 (bool)</td>
     <td>新节点成功准备后，可调用此方法确认节点成为共识节点，同时节点将处于 consensus 状态</td>
   </tr>
   <tr>
     <td>deleteNode(address) <br/> <strong>删除共识节点</strong></td>
     <td>管理员角色</td>
-    <td>节点地址 (string)</td>
+    <td>节点地址</td>
     <td>操作是否成功 (bool)</td>
     <td>成功后节点将从节点列表中删除，同时节点将处于 close 状态</td>
   </tr>
@@ -78,13 +78,13 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
     <td>listNode() <br/> <strong>获取共识节点列表</strong></td>
     <td>普通角色(只读)</td>
     <td>空</td>
-    <td>节点列表中的多个节点会拼接成一个字符串, 之后可通过解析会获得节点列表 (string)</td>
-    <td>态获取共识节点列表，即状态为 consensus 的节点</td>
+    <td>地址列表(address[])</td>
+    <td>获取共识节点列表，即状态为 consensus 的节点</td>
   </tr>
   <tr>
     <td>getStatus(address) <br/> <strong>获得节点状态</strong></td>
     <td>普通角色(只读)</td>
-    <td>节点公钥 (string)</td>
+    <td>节点地址</td>
     <td>
       节点的状态 (uint8):
       <ul>
