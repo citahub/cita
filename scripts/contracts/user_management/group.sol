@@ -135,6 +135,34 @@ contract Group {
         return accounts;
     }
 
+    /// @dev Query the child of the group
+    function queryChild()
+        public
+        view
+        returns (address[])
+    {
+        return childs;
+    }
+
+    /// @dev Query the length of children of the group
+    function queryChildLength()
+        public
+        view
+        returns (uint)
+    {
+        return childs.length;
+    }
+
+
+    /// @dev Query the parent of the group
+    function queryParent()
+        public
+        view
+        returns (address)
+    {
+        return parent;
+    }
+
     /// @dev Check if the value in the array of address
     function addressInArray(address _value, address[] _array)
         private
