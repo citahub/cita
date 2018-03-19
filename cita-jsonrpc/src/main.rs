@@ -9,6 +9,7 @@ extern crate http;
 extern crate httparse;
 extern crate hyper;
 extern crate jsonrpc_types;
+extern crate libc;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
@@ -42,10 +43,12 @@ mod ws_handler;
 mod mq_handler;
 mod http_server;
 mod response;
+mod fdlimit;
 
 use clap::App;
 use config::{NewTxFlowConfig, ProfileConfig};
 use cpuprofiler::PROFILER;
+use fdlimit::set_fd_limit;
 use http_server::Server;
 use libproto::Message;
 use libproto::request::{self as reqlib, BatchRequest};
@@ -90,6 +93,9 @@ fn main() {
     }
 
     start_profile(&config.profile_config);
+
+    // set fd
+    set_fd_limit();
 
     // init pubsub
     let (tx_sub, rx_sub) = channel();
