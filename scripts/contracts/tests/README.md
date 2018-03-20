@@ -39,26 +39,58 @@ yarn install
 
 ### 1.0 Run the cita
 
+Use the script:
+
+```
+tests/integrate_test/cita_start.sh
+```
+
+Or other ways. 
+Check the doc of CITA [getting_started](https://cryptape.github.io/cita/getting_started/).
+
 ### 1.1 Run the test
 
 Use mocha framework:
 [usage of mochajs](https://mochajs.org/#usage)
-
-Run:
-
-```
-npm test
-```
 
 Some options of mocha usage: 
 
 * `-t 60s`: set test-case timeout
 * `-g <pattern>`: only run tests matching <pattern>
 
-Change the `test` in the `package.json` to specify the directory of test:
+* To run all tests:
 
-* "test": "mocha test/unit --recursive -t 60s; jshint test"
-* "test": "mocha test/integrate --recursive -t 60s; jshint test"
+```
+npm test
+```
+
+* To run uint test:
+
+```
+npm run-script unit_test
+```
+* To run integrate test:
+    - Should set the check_permission be true(scripts/admintool/init_data)example.json):
+
+    ```
+    "0x0000000000000000000000000000000031415926": [
+        1,
+        true,
+        false
+    ],
+    ```
+
+    - Run:
+
+    ```
+    npm run-script integrate_test
+    ```
+
+* To lint test directory:
+
+```
+npm run-script lint
+```
 
 ## 2. Which contracs?
 
@@ -74,7 +106,3 @@ Include:
 
 * `contracts` is some contracts using for test
 * `doc` is some docs about test using `txtool`
-
-# Notice
-
-**Should set the check_permission true when test test/integrate**

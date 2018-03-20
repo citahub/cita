@@ -11,6 +11,8 @@
   },
   "scripts": {
     "test": "mocha test --recursive -t 60s; jshint test",
+    "unit_test": "mocha test/unit --recursive -t 60s; jshint test",
+    "integrate_test": "mocha test/integrate --recursive -t 60s; jshint test",
     "lint": "jshint test"
   },
   "repository": {},
