@@ -23,6 +23,8 @@ pages:
   - 系统管理:
       - 节点管理: 'system_management/node.md'
       - 帐号管理 (Account): 'system_management/account.md'
+  - 跨链:
+      - 跨链合约编写及操作示例: 'crosschain/crosschain_contract_example.md'
   - 架构设计: 
       - 微服务 (Micro Service): 'architecture/architecture.md'
       - 共识 (Consensus): 'architecture/consensus.md'
