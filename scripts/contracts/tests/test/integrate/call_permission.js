@@ -77,7 +77,7 @@ describe('\n\nintegrate test permission: \n\n', function() {
     });
 
     describe('\n\ntest update permission name after setted auth:\n\n', function() {
-        before('should send a setAuthorization tx and get receipt: grant the send_tx permissiont to sender', function(done) {
+        before('should send a setAuthorization tx and get receipt: grant the update_permission permissiont to sender', function(done) {
             let res = setAuthorization(sender.address, update_permission);
 
             getTxReceipt(res)
@@ -126,7 +126,7 @@ describe('\n\nintegrate test permission: \n\n', function() {
     });
 
     describe('\n\ntest update permission name after cancel auth:\n\n', function() {
-        before('should send a setAuthorization tx and get receipt: grant the send_tx permissiont to sender', function(done) {
+        before('should send a cancelAuthorization tx and get receipt: cancel the update_permission permissiont of sender', function(done) {
             let res = cancelAuthorization(sender.address, update_permission);
 
             getTxReceipt(res)
@@ -167,7 +167,7 @@ describe('\n\nintegrate test permission: \n\n', function() {
         });
     });
 
-    after('should send a setAuthorization tx and get receipt: grant the send_tx permissiont to sender', function(done) {
+    after('should send a cancelAuthorization tx and get receipt: cancel the send_tx permissiont of sender', function(done) {
         let res = cancelAuthorization(sender.address, send_tx);
 
         getTxReceipt(res)
@@ -182,7 +182,7 @@ describe('\n\nintegrate test permission: \n\n', function() {
                 done();
             })
             .catch(err => {
-                console.log('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
+                console.log('\n!!!!Get cancelAuthorization receipt err:!!!!\n', err);
                 this.skip();
                 done();
             });
