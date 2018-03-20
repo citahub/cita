@@ -46,7 +46,6 @@ impl Connection {
             for peer in peers.iter() {
                 let id_card: u32 = peer.id_card.unwrap();
                 let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
-                let addr = addr.parse::<String>().unwrap();
                 peers_pair.push((id_card, addr, None));
             }
         }
