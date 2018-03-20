@@ -28,6 +28,7 @@ pages:
       - 共识 (Consensus): 'architecture/consensus.md'
       - 交易处理 (Transaction Process): 'architecture/transaction_process.md'
       - 视图 (View): 'architecture/view.md'
+  - 常见问题: 'faq.md'
   - 附录:
     - 贡献代码: 'appendix/contributing.md'
     - 词汇表: 'appendix/glossary.md'
