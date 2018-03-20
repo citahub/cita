@@ -16,9 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::convert::Into;
-use std::fs::File;
-use std::io::Read;
-use toml;
 use ws::Settings;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -32,12 +29,7 @@ pub struct Config {
 
 impl Config {
     pub fn new(path: &str) -> Self {
-        let mut config_file = File::open(path).unwrap();
-        let mut buffer = String::new();
-        config_file
-            .read_to_string(&mut buffer)
-            .expect("Failed to load jsonrpc config.");
-        toml::from_str(&buffer).unwrap()
+        parse_config!(Config, path)
     }
 }
 

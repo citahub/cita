@@ -46,12 +46,9 @@ use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::{Into, TryInto};
-use std::fs::File;
-use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
-use toml;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
@@ -130,12 +127,7 @@ impl Config {
     }
 
     pub fn new(path: &str) -> Self {
-        let mut config_file = File::open(path).unwrap();
-        let mut buffer = String::new();
-        config_file
-            .read_to_string(&mut buffer)
-            .expect("Failed to load chain config.");
-        toml::from_str(&buffer).unwrap()
+        parse_config!(Config, path)
     }
 }
 

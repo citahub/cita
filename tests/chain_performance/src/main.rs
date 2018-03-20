@@ -35,7 +35,6 @@ extern crate log;
 extern crate logger;
 #[macro_use]
 extern crate serde_derive;
-extern crate toml;
 
 mod generate_block;
 mod call_exet;

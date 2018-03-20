@@ -35,6 +35,8 @@ extern crate protobuf;
 extern crate pubsub;
 extern crate rand;
 extern crate rustc_serialize;
+#[cfg(test)]
+extern crate tempfile;
 extern crate tokio_io;
 extern crate tokio_proto;
 extern crate tokio_service;
@@ -43,7 +45,6 @@ extern crate util;
 
 #[macro_use]
 extern crate serde_derive;
-extern crate toml;
 
 pub mod config;
 pub mod netserver;
@@ -53,7 +54,7 @@ pub mod synchronizer;
 //pub mod sync_vec;
 pub mod network;
 
-use clap::{App, SubCommand};
+use clap::App;
 use config::NetConfig;
 use connection::{manage_connect, Connection};
 use libproto::Message;
@@ -80,7 +81,6 @@ fn main() {
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
-        .subcommand(SubCommand::with_name("test").about("does testing things"))
         .get_matches();
 
     let mut config_path = "config";
@@ -89,13 +89,7 @@ fn main() {
         config_path = c;
     }
 
-    // check for the existence of subcommands
-    let is_test = matches.is_present("test");
-    let config = if is_test {
-        NetConfig::test_config()
-    } else {
-        NetConfig::new(config_path)
-    };
+    let config = NetConfig::new(config_path);
 
     // init pubsub
 

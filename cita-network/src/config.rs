@@ -15,10 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::fs::File;
-use std::io::Read;
-use toml;
-
 #[derive(Debug, Deserialize)]
 pub struct NetConfig {
     pub id_card: Option<u32>,
@@ -35,46 +31,32 @@ pub struct PeerConfig {
 
 impl NetConfig {
     pub fn new(path: &str) -> Self {
-        let mut config_file = File::open(path).unwrap();
-        let mut buffer = String::new();
-        config_file
-            .read_to_string(&mut buffer)
-            .expect("Failed to load network config.");
-        toml::from_str(&buffer).unwrap()
-    }
-
-    pub fn test_config() -> Self {
-        let toml = r#"
-            id_card=0
-            port = 40000
-            [[peers]]
-            id_card=0
-            ip = "127.0.0.1"
-            port = 40000
-        "#;
-
-        toml::from_str(toml).unwrap()
+        parse_config!(NetConfig, path)
     }
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::NetConfig;
-    extern crate toml;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
     #[test]
     fn basics() {
-        let toml = r#"
-            port = 40000
-            [[peers]]
-            ip = "127.0.0.1"
-            port = 40001
-            [[peers]]
-            ip = "127.0.0.1"
-            port = 40002
+        let toml_str = r#"
+        port = 40000
+        [[peers]]
+        ip = "127.0.0.1"
+        port = 40001
+        [[peers]]
+        ip = "127.0.0.1"
+        port = 40002
         "#;
 
-        let value: NetConfig = toml::from_str(toml).unwrap();
-        println!("{:?}", value);
+        let mut tmpfile: NamedTempFile = NamedTempFile::new().unwrap();
+        tmpfile.write_all(toml_str.as_bytes()).unwrap();
+        let path = tmpfile.path().to_str().unwrap();
+        let value = parse_config!(NetConfig, path);
+
         assert_eq!(value.port, Some(40000));
     }
 }

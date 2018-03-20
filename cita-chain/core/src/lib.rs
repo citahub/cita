@@ -29,7 +29,7 @@ extern crate protobuf;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
-extern crate toml;
+#[macro_use]
 extern crate util;
 
 extern crate bloomable;

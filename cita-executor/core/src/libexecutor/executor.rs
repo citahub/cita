@@ -45,13 +45,10 @@ use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::convert::{Into, TryInto};
-use std::fs::File;
-use std::io::Read;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
-use toml;
 use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction, Transaction};
 use util::{journaldb, Address, Bytes, H256, U256};
@@ -75,12 +72,7 @@ impl Config {
     }
 
     pub fn new(path: &str) -> Self {
-        let mut config_file = File::open(path).unwrap();
-        let mut buffer = String::new();
-        config_file
-            .read_to_string(&mut buffer)
-            .expect("Failed to load executor config.");
-        toml::from_str(&buffer).unwrap()
+        parse_config!(Config, path)
     }
 }
 

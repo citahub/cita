@@ -30,7 +30,6 @@ extern crate threadpool;
 extern crate time;
 extern crate tokio_core;
 extern crate tokio_io;
-extern crate toml;
 extern crate unicase;
 #[macro_use]
 extern crate util;
@@ -82,10 +81,7 @@ fn main() {
     }
 
     let config = config::Config::new(config_path);
-    info!(
-        "CITA:jsonrpc config \n {:?}",
-        toml::to_string_pretty(&config).unwrap()
-    );
+    info!("CITA:jsonrpc config \n {:?}", config);
 
     //enable HTTP or WebSocket server!
     if !config.ws_config.enable && !config.http_config.enable {

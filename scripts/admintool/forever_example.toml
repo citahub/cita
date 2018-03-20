@@ -19,7 +19,7 @@ respawn = 3
 [[process]]
 name = "cita-tendermint"
 command = "cita-tendermint"
-args = ["-c","consensus.json"]
+args = ["-c","consensus.toml"]
 pidfile = ".cita-tendermint.pid"
 respawn = 3
 

@@ -1,7 +1,3 @@
-use std::fs::File;
-use std::io::Read;
-use toml;
-
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
     pub count_per_batch: usize,
@@ -17,34 +13,34 @@ pub struct Config {
 
 impl Config {
     pub fn new(path: &str) -> Self {
-        let mut config_file = File::open(path).unwrap();
-        let mut buffer = String::new();
-        config_file
-            .read_to_string(&mut buffer)
-            .expect("Failed to load auth config.");
-        toml::from_str(&buffer).unwrap()
+        parse_config!(Config, path)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
     #[test]
     fn read_configure_file() {
         let toml_str = r#"
-           count_per_batch = 30
-           buffer_duration = 3000000
-           tx_verify_thread_num = 10
-           tx_verify_num_per_thread = 300
-           proposal_tx_verify_num_per_thread = 30
-           tx_pool_limit = 50000
-           block_packet_tx_limit = 30000
-           prof_start = 0
-           prof_duration = 0
+        count_per_batch = 30
+        buffer_duration = 3000000
+        tx_verify_thread_num = 10
+        tx_verify_num_per_thread = 300
+        proposal_tx_verify_num_per_thread = 30
+        tx_pool_limit = 50000
+        block_packet_tx_limit = 30000
+        prof_start = 0
+        prof_duration = 0
         "#;
 
-        let value: Config = toml::from_str(toml_str).expect("read Error");
-        println!("{:?}", value);
+        let mut tmpfile: NamedTempFile = NamedTempFile::new().unwrap();
+        tmpfile.write_all(toml_str.as_bytes()).unwrap();
+        let path = tmpfile.path().to_str().unwrap();
+        let value: Config = parse_config!(Config, path);
+
         assert_eq!(30, value.count_per_batch);
         assert_eq!(3000000, value.buffer_duration);
         assert_eq!(10, value.tx_verify_thread_num);
