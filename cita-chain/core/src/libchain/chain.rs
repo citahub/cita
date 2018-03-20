@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -24,6 +24,7 @@ use db::*;
 
 use filters::{PollFilter, PollManager};
 use header::*;
+use jsonrpc_types::rpctypes::RelayInfo;
 pub use libchain::block::*;
 use libchain::cache::CacheSize;
 
@@ -41,7 +42,8 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
-use rlp::Encodable;
+use rlp::{self, Encodable};
+use rustc_hex::FromHex;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -73,6 +75,14 @@ pub struct TxProof {
 }
 
 impl TxProof {
+    pub fn from_hexstr(hexstr: &str) -> Option<Self> {
+        FromHex::from_hex(hexstr).map(Self::from_bytes).ok()
+    }
+
+    pub fn from_bytes(bytes: Vec<u8>) -> Self {
+        rlp::decode(&bytes)
+    }
+
     pub fn verify_proof(&self) -> bool {
         // todo check hash of self.tx == tx hash in receipt
         let receipt_hash = Some(self.receipt.clone()).rlp_bytes().to_vec().crypt_hash();
@@ -96,7 +106,7 @@ impl TxProof {
     }
 
     // extract info which relayer needed
-    pub fn extract_relay_info(&self) -> Option<(u64, u64, Address, String, u64)> {
+    pub fn extract_relay_info(&self) -> Option<RelayInfo> {
         if self.receipt.logs.len() == 0 {
             return None;
         }
@@ -123,13 +133,13 @@ impl TxProof {
                 dest_hasher = format!("{:08}", dest_hasher);
             }
             let cross_chain_nonce = U256::from(iter.next().unwrap()).low_u64();
-            Some((
+            Some(RelayInfo {
                 from_chain_id,
                 to_chain_id,
                 dest_contract,
                 dest_hasher,
                 cross_chain_nonce,
-            ))
+            })
         }
     }
 
@@ -147,7 +157,13 @@ impl TxProof {
             None
         } else {
             self.extract_relay_info().and_then(
-                |(from_chain_id, to_chain_id, dest_contract, dest_hasher, cross_chain_nonce)| {
+                |RelayInfo {
+                     from_chain_id,
+                     to_chain_id,
+                     dest_contract,
+                     dest_hasher,
+                     cross_chain_nonce,
+                 }| {
                     // check from_chain_id and to_chain_id one of them is 0
                     // cross chain only between main chain and one sidechain
                     // check to_chain_id == my chain_id
