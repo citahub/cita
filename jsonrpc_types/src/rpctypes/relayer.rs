@@ -15,28 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod receipt;
-pub mod log;
-pub mod block_number;
-pub mod call_request;
-pub mod filter;
-pub mod transaction;
-pub mod block;
-pub mod middle_modle;
-pub mod index;
-pub mod proof;
-pub mod tx_response;
-pub mod relayer;
+use util::Address;
 
-pub use self::block::*;
-pub use self::block_number::*;
-pub use self::call_request::*;
-pub use self::filter::*;
-pub use self::index::Index;
-pub use self::log::*;
-pub use self::middle_modle::*;
-pub use self::proof::*;
-pub use self::receipt::*;
-pub use self::relayer::*;
-pub use self::transaction::*;
-pub use self::tx_response::*;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelayInfo {
+    pub from_chain_id: u64,
+    pub to_chain_id: u64,
+    pub dest_contract: Address,
+    pub dest_hasher: String,
+    pub cross_chain_nonce: u64,
+}

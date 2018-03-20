@@ -36,3 +36,11 @@ rabbitmq = ["pubsub/rabbitmq"]
 zeromq = ["pubsub/zeromq"]
 kafka = ["pubsub/kafka"]
 dev = ["clippy"]
+
+[[bin]]
+name = "cita-chain"
+path = "src/main.rs"
+
+[[bin]]
+name = "cita-relayer-parser"
+path = "src/bin/relayer-parser.rs"
