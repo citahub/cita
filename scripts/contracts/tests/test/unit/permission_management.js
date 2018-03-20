@@ -44,13 +44,13 @@ let lengthOfResources;
 
 // =======================
 
-describe('\n\ntest permission management contract\n\n', function() { 
+describe('\n\ntest permission management contract\n\n', function () {
 
-    describe('\ntest add permission\n', function() { 
-        it('should send a newPermission tx and get receipt', function(done) {
+    describe('\ntest add permission\n', function () {
+        it('should send a newPermission tx and get receipt', function (done) {
             let name = 'testPermission';
             let res = newPermission(name, config.testAddr, config.testFunc);
-            
+
             getTxReceipt(res)
                 .then((receipt) => {
                     console.log('\nSend ok and get receipt:\n', receipt);
@@ -65,21 +65,21 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should have info of new permission', function() {
+        it('should have info of new permission', function () {
             pContractInstance = perm.at(newPermissionAddr);
             let res = pContractInstance.queryInfo.call();
             console.log('\nInfo:\n', res);
             assert.equal(res[0].substr(0, 30), web3.toHex('testPermission'));
 
-            for (let i=0; i<res[1].length; i++) {
+            for (let i = 0; i < res[1].length; i++) {
                 assert.equal(res[1][i], config.testAddr[i]);
                 assert.equal(res[2][i], config.testFunc[i]);
             }
         });
     });
 
-    describe('\ntest update permission name\n', function() { 
-        it('should send a updatePermissionName tx and get receipt', function(done) {
+    describe('\ntest update permission name\n', function () {
+        it('should send a updatePermissionName tx and get receipt', function (done) {
             let num = web3.eth.blockNumber;
             let res = updatePermissionName(newPermissionAddr, 'testPermissionNewName');
 
@@ -95,7 +95,7 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should have the new permission name', function() {
+        it('should have the new permission name', function () {
             pContractInstance = perm.at(newPermissionAddr);
             let res = pContractInstance.queryName.call();
             console.log('\nNew permission name:\n', res);
@@ -103,21 +103,19 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
     });
 
-    describe('\ntest add resources\n', function() { 
+    describe('\ntest add resources\n', function () {
 
-        before('Query the number of the resource', function() {
+        before('Query the number of the resource', function () {
             pContractInstance = perm.at(newPermissionAddr);
             let res = pContractInstance.queryResource.call();
             console.log('\nThe number of the resource:\n', res[0].length);
             lengthOfResources = res[0].length;
         });
 
-        it('should send a addResources tx and get receipt', function(done) {
+        it('should send a addResources tx and get receipt', function (done) {
             let res = addResources(
-                    newPermissionAddr,
-                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
-                    ['0xf036ed59']
-                );
+                newPermissionAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
+            );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -131,7 +129,7 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should have the added resources', function() {
+        it('should have the added resources', function () {
             pContractInstance = perm.at(newPermissionAddr);
             let res = pContractInstance.queryResource.call();
             console.log('\nNew Added resources:\n', res);
@@ -142,12 +140,10 @@ describe('\n\ntest permission management contract\n\n', function() {
             assert.equal(l, lengthOfResources);
         });
 
-        it('should send a addResources to an address that does not exist and get receipt with error message', function(done) {
+        it('should send a addResources to an address that does not exist and get receipt with error message', function (done) {
             let res = addResources(
-                    0x1234567,
-                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
-                    ['0xf036ed59']
-                );
+                0x1234567, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
+            );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -162,21 +158,19 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
     });
 
-    describe('\ntest add duplicate resources\n', function() { 
+    describe('\ntest add duplicate resources\n', function () {
 
-        before('Query the number of the resource', function() {
+        before('Query the number of the resource', function () {
             pContractInstance = perm.at(newPermissionAddr);
             let res = pContractInstance.queryResource.call();
             console.log('\nThe number of the resource:\n', res[0].length);
             lengthOfResources = res[0].length;
         });
 
-        it('should send a addResources tx and get receipt', function(done) {
+        it('should send a addResources tx and get receipt', function (done) {
             let res = addResources(
-                    newPermissionAddr,
-                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
-                    ['0xf036ed59']
-                );
+                newPermissionAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
+            );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -190,7 +184,7 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should not added into the resources', function() {
+        it('should not added into the resources', function () {
             pContractInstance = perm.at(newPermissionAddr);
             let res = pContractInstance.queryResource.call();
             console.log('\nThe num of the resource:\n', res[0].length);
@@ -198,13 +192,11 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
     });
 
-    describe('\ntest delete resources\n', function() { 
-        it('should send a deleteResources tx and get receipt', function(done) {
+    describe('\ntest delete resources\n', function () {
+        it('should send a deleteResources tx and get receipt', function (done) {
             let res = deleteResources(
-                    newPermissionAddr,
-                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
-                    ['0xf036ed59']
-                );
+                newPermissionAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
+            );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -218,22 +210,20 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should have deleted the resources', function() {
+        it('should have deleted the resources', function () {
             pContractInstance = perm.at(newPermissionAddr);
             let res = pContractInstance.queryResource.call();
             console.log('\nResources lefted:\n', res);
-            for (let i=0; i<res[1].length; i++) {
+            for (let i = 0; i < res[1].length; i++) {
                 assert.equal(res[0][i], config.testAddr[i]);
                 assert.equal(res[1][i], config.testFunc[i]);
             }
         });
 
-        it('should send a deleteResources to an address that does not exist and get receipt with error message', function(done) {
+        it('should send a deleteResources to an address that does not exist and get receipt with error message', function (done) {
             let res = deleteResources(
-                    0x1234567,
-                    ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
-                    ['0xf036ed59']
-                );
+                0x1234567, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
+            );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -249,8 +239,8 @@ describe('\n\ntest permission management contract\n\n', function() {
 
     });
 
-    describe('\ntest clear authorization\n', function() { 
-        it('should send a clearAuthorization tx and get receipt', function(done) {
+    describe('\ntest clear authorization\n', function () {
+        it('should send a clearAuthorization tx and get receipt', function (done) {
             let res = clearAuthorization(config.testAddr[0]);
 
             getTxReceipt(res)
@@ -265,20 +255,20 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should have no permissions of testAccount', function() {
+        it('should have no permissions of testAccount', function () {
             let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
             assert.equal(res.length, 0);
         });
     });
 
-    describe('\ntest set authorization\n', function() { 
-        before('Query the number of the account', function() {
+    describe('\ntest set authorization\n', function () {
+        before('Query the number of the account', function () {
             let res = queryAllAccounts();
             lengthOfAccounts = res.length;
         });
 
-        it('should send a setAuthorization tx and get receipt', function(done) {
+        it('should send a setAuthorization tx and get receipt', function (done) {
             let res = setAuthorization(config.testAddr[0], config.testAddr[1]);
 
             getTxReceipt(res)
@@ -293,31 +283,31 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should have the permission of account', function() {
+        it('should have the permission of account', function () {
             let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
-            let l = res.length -1;
+            let l = res.length - 1;
             assert.equal(res[l], config.testAddr[1]);
             let res2 = queryAccounts(config.testAddr[1]);
             console.log('\nAccount of permissions:\n', res2);
             assert.equal(res2, config.testAddr[0]);
         });
 
-        it('should have all accounts', function() {
+        it('should have all accounts', function () {
             let res = queryAllAccounts();
             console.log('\nAll accounts:\n', res);
-            assert.equal(res[res.length-1], config.testAddr[0]);
+            assert.equal(res[res.length - 1], config.testAddr[0]);
             assert.equal(res.length, lengthOfAccounts + 1);
         });
     });
 
-    describe('\ntest set duplicated authorization\n', function() { 
-        before('Query the number of the account', function() {
+    describe('\ntest set duplicated authorization\n', function () {
+        before('Query the number of the account', function () {
             let res = queryAllAccounts();
             lengthOfAccounts = res.length;
         });
 
-        it('should send a setAuthorization tx and get receipt', function(done) {
+        it('should send a setAuthorization tx and get receipt', function (done) {
             let res = setAuthorization(config.testAddr[0], config.testAddr[1]);
 
             getTxReceipt(res)
@@ -332,15 +322,15 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should not be setted', function() {
+        it('should not be setted', function () {
             let res = queryAllAccounts();
             console.log('\nAll accounts:\n', res);
             assert.equal(res.length, lengthOfAccounts);
         });
     });
 
-    describe('\ntest cancel authorization\n', function() { 
-        it('should send a cancelAuthorization tx and get receipt', function(done) {
+    describe('\ntest cancel authorization\n', function () {
+        it('should send a cancelAuthorization tx and get receipt', function (done) {
             let res = cancelAuthorization(config.testAddr[0], config.testAddr[1]);
 
             getTxReceipt(res)
@@ -355,7 +345,7 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should not have the permission of account', function() {
+        it('should not have the permission of account', function () {
             let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
             assert.equal(res.length, 0);
@@ -365,8 +355,53 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
     });
 
-    describe('\ntest delete permission\n', function() { 
-        it('should send a deletePermission tx and get receipt', function(done) {
+    describe('\ntest delete built-in permission\n', function () {
+        it('should send a deletePermission tx and get receipt with error message', function () {
+
+            let builtInPermissions = [
+                0x00000000000000000000000000000000013241b5,
+                0x00000000000000000000000000000000023241b5,
+                0x00000000000000000000000000000000033241B5,
+                0x00000000000000000000000000000000043241b5,
+                0x00000000000000000000000000000000053241b5,
+                0x00000000000000000000000000000000063241b5,
+                0x00000000000000000000000000000000073241b5,
+                0x00000000000000000000000000000000083241B5,
+                0x00000000000000000000000000000000093241B5,
+                0x000000000000000000000000000000000A3241b5,
+                0x0000000000000000000000000000000000000001,
+                0x0000000000000000000000000000000000000002
+            ];
+
+            builtInPermissions.map(perm => getTxReceipt(deletePermission(perm)).then(receipt => {
+                console.log(`
+                Send ok and get receipt:
+                ${receipt}`);
+                assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
+            })).catch(err => {
+                console.log(`
+                !!!!Get deletePermission receipt err:!!!
+                ${err}`);
+                this.skip();
+            });
+
+            // for (let i = 0; i<builtInPermissions.length; i++) {
+            //     let res = deletePermission(builtInPermissions[i]);
+            //     getTxReceipt(res)
+            //         .then((receipt) => {
+            //             console.log('\nSend ok and get receipt:\n', receipt);
+            //             assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
+            //         })
+            //         .catch(err => {
+            //             console.log('\n!!!!Get deletePermission receipt err:!!!!\n', err);
+            //             this.skip();
+            //         });
+            // }
+        });
+    });
+
+    describe('\ntest delete permission\n', function () {
+        it('should send a deletePermission tx and get receipt', function (done) {
             let res = deletePermission(newPermissionAddr);
 
             getTxReceipt(res)
@@ -383,8 +418,8 @@ describe('\n\ntest permission management contract\n\n', function() {
         });
     });
 
-    describe('\ntest delete permission: query the auth\n', function() { 
-        it('should send a newPermission tx and get receipt', function(done) {
+    describe('\ntest delete permission: query the auth\n', function () {
+        it('should send a newPermission tx and get receipt', function (done) {
             let res = newPermission('testPermissionA', config.testAddr, config.testFunc);
 
             getTxReceipt(res)
@@ -401,9 +436,9 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should send a newPermission tx and get receipt', function(done) {
+        it('should send a newPermission tx and get receipt', function (done) {
             let res = newPermission('testPermissionB', config.testAddr, config.testFunc);
-            
+
             getTxReceipt(res)
                 .then((receipt) => {
                     console.log('\nSend ok and get receipt:\n', receipt);
@@ -418,11 +453,10 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should send a setAuthorization tx and get receipt', function(done) {
+        it('should send a setAuthorization tx and get receipt', function (done) {
             let res = setAuthorizations(
-                    config.testAddr[0],
-                    [newPermissionAddrA, newPermissionAddrB]
-                );
+                config.testAddr[0], [newPermissionAddrA, newPermissionAddrB]
+            );
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -436,10 +470,10 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it('should have the permission of account', function() {
+        it('should have the permission of account', function () {
             let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
-            let l = res.length -1;
+            let l = res.length - 1;
             assert.equal(res[l], newPermissionAddrB);
             assert.equal(res[l - 1], newPermissionAddrA);
             let res1 = queryAccounts(newPermissionAddrA);
@@ -449,7 +483,7 @@ describe('\n\ntest permission management contract\n\n', function() {
             assert.equal(res2, config.testAddr[0]);
         });
 
-        it('should send a deletePermission tx and get receipt', function(done) {
+        it('should send a deletePermission tx and get receipt', function (done) {
             let res = deletePermission(newPermissionAddrA);
 
             getTxReceipt(res)
@@ -464,7 +498,7 @@ describe('\n\ntest permission management contract\n\n', function() {
                 });
         });
 
-        it("should cancel the account's permission", function() {
+        it("should cancel the account's permission", function () {
             let res = queryPermissions(config.testAddr[0]);
             console.log('\nPermissions of testAccount:\n', res);
             assert.equal(res.length, 1);
