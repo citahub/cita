@@ -45,7 +45,7 @@ contract PermissionManagement {
 
     /// @dev Create a new permission
     function newPermission(bytes32 _name, address[] _conts, bytes4[] _funcs)
-        public
+        external 
         sameLength(_conts, _funcs)
         returns (address id)
     {
@@ -54,7 +54,7 @@ contract PermissionManagement {
 
     /// @dev Delete the permission
     function deletePermission(address _permission)
-        public
+        external 
         notBuiltInPermission(_permission)
         returns (bool)
     {
@@ -68,7 +68,7 @@ contract PermissionManagement {
 
     /// @dev Update the permission name
     function updatePermissionName(address _permission, bytes32 _name)
-        public
+        external 
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -78,7 +78,7 @@ contract PermissionManagement {
 
     /// @dev Add the resources of permission
     function addResources(address _permission, address[] _conts, bytes4[] _funcs)
-        public
+        external 
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -88,7 +88,7 @@ contract PermissionManagement {
 
     /// @dev Delete the resources of permission
     function deleteResources(address _permission, address[] _conts, bytes4[] _funcs)
-        public
+        external 
         returns (bool)
     {
         Permission perm = Permission(_permission);

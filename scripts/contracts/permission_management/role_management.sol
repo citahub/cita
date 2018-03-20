@@ -24,19 +24,19 @@ contract RoleManagement {
     event RoleCleared(address indexed _account);
 
     function newRole(bytes32 _name, address[] _permissions)
-        public
+        external 
         returns (address roleid)
     {
         return roleCreator.createRole(_name, _permissions);
     }
 
     function deleteRole(address _roleid)
-        public
+        external 
         returns (bool)
     {
         // Cancel the role of the account's which has the role
         for (uint i = 0; i < accounts[_roleid].length; i++)
-            assert(cancelRole(accounts[_roleid][i], _roleid));
+            assert(_cancelRole(accounts[_roleid][i], _roleid));
 
         Role roleContract = Role(_roleid);
         require(roleContract.deleteRole());
@@ -45,7 +45,7 @@ contract RoleManagement {
     }
 
     function updateRoleName(address _roleid, bytes32 _name)
-        public
+        external 
         returns (bool)
     {
         Role roleContract = Role(_roleid);
@@ -53,7 +53,7 @@ contract RoleManagement {
     }
 
     function addPermissions(address _roleid, address[] _permissions)
-        public
+        external 
         returns (bool)
     {
         // Set the authorization of all the account's which has the role
@@ -68,7 +68,7 @@ contract RoleManagement {
     }
 
     function deletePermissions(address _roleid, address[] _permissions)
-        public
+        external 
         returns (bool)
     {
         // Cancel the authorization of all the account's which has the role
@@ -83,7 +83,7 @@ contract RoleManagement {
     }
 
     function setRole(address _account, address _role)
-        public
+        external 
         returns (bool)
     {
 
@@ -101,22 +101,14 @@ contract RoleManagement {
     }
 
     function cancelRole(address _account, address _role)
-        public
+        external 
         returns (bool)
     {
-        // Cancel role permissions of account.
-        Role roleContract = Role(_role);
-        require(roleContract.cancelRolePermissionsOf(_account));
-
-        assert(addressDelete(_account, accounts[_role]));
-        assert(addressDelete(_role, roles[_account]));
-
-        RoleCanceled(_account, _role);
-        return true;
+        return _cancelRole(_account, _role);
     }
 
     function clearRole(address _account)
-        public
+        external 
         returns (bool)
     {
         // clear account and roles
@@ -200,4 +192,21 @@ contract RoleManagement {
         // Not in
         return false;
     }
+
+    /// @dev Private: cancelRole
+    function _cancelRole(address _account, address _role)
+        private 
+        returns (bool)
+    {
+        // Cancel role permissions of account.
+        Role roleContract = Role(_role);
+        require(roleContract.cancelRolePermissionsOf(_account));
+
+        assert(addressDelete(_account, accounts[_role]));
+        assert(addressDelete(_role, roles[_account]));
+
+        RoleCanceled(_account, _role);
+        return true;
+    }
+
 }
