@@ -10,7 +10,7 @@
     "web3": "https://github.com/cryptape/web3.js#develop"
   },
   "scripts": {
-    "test": "mocha --recursive -t 60s; jshint test"
+    "test": "mocha test --recursive -t 60s; jshint test"
   },
   "repository": {},
   "author": "Cryptape Technologies <arch@cryptape.com>",

@@ -5,7 +5,7 @@ const util = require('./util');
 const config = require('../config');
 const web3 = util.web3;
 
-const sender = config.contract.permission_manager.sender;
+const sender = config.contract.authorization.superAdmin;
 const { rmABI, rmAddr, permissions } = config.contract.role_management;
 
 const roleManagement = web3.eth.contract(rmABI);
@@ -18,14 +18,16 @@ let tx_params = {
     privkey: sender.privkey,
     nonce: util.randomInt(),
     quota,
-    validUntilBlock: util.blockNumber + blockLimit,
+    validUntilBlock: web3.eth.blockNumber + blockLimit,
     from: sender.address
 };
 
 // newRole
-const newRole = function (name, permissions) {
+const newRole = function (name, permissions, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return rmContractInstance.newRole.sendTransaction(
                 name,
                 permissions,
@@ -34,9 +36,11 @@ const newRole = function (name, permissions) {
 };
 
 // updateRoleName
-const updateRoleName = function (role, name) {
+const updateRoleName = function (role, name, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return rmContractInstance.updateRoleName.sendTransaction(
                 role,
                 name,
@@ -45,9 +49,11 @@ const updateRoleName = function (role, name) {
 };
 
 // addPermissions
-const addPermissions = function (role, permissions) {
+const addPermissions = function (role, permissions, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return rmContractInstance.addPermissions.sendTransaction(
                 role,
                 permissions,
@@ -56,9 +62,11 @@ const addPermissions = function (role, permissions) {
 };
 
 // deletePermissions
-const deletePermissions = function (role, permissions) {
+const deletePermissions = function (role, permissions, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return rmContractInstance.deletePermissions.sendTransaction(
                 role,
                 permissions,
@@ -67,9 +75,11 @@ const deletePermissions = function (role, permissions) {
 };
 
 // setRole
-const setRole = function (account, role) {
+const setRole = function (account, role, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return rmContractInstance.setRole.sendTransaction(
                 account,
                 role,
@@ -78,9 +88,11 @@ const setRole = function (account, role) {
 };
 
 // cancelRole
-const cancelRole = function (account, role) {
+const cancelRole = function (account, role, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return rmContractInstance.cancelRole.sendTransaction(
                 account,
                 role,
@@ -89,9 +101,11 @@ const cancelRole = function (account, role) {
 };
 
 // clearRole
-const clearRole = function (account, role) {
+const clearRole = function (account, role, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return rmContractInstance.clearRole.sendTransaction(
                 account,
                 tx_params
@@ -99,9 +113,11 @@ const clearRole = function (account, role) {
 };
 
 // deleteRole
-const deleteRole = function (account, role) {
+const deleteRole = function (account, role, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return rmContractInstance.deleteRole.sendTransaction(
                 account,
                 tx_params
@@ -109,12 +125,12 @@ const deleteRole = function (account, role) {
 };
 
 // queryRoles
-const queryRoles = function (account) {
+const queryRoles = function (account, _sender = sender) {
     return rmContractInstance.queryRoles.call(account);
 };
 
 // queryAccounts
-const queryAccounts = function (account) {
+const queryAccounts = function (account, _sender = sender) {
     return rmContractInstance.queryAccounts.call(account);
 };
 

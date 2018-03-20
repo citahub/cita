@@ -5,7 +5,7 @@ const util = require('./util');
 const config = require('../config');
 const web3 = util.web3;
 
-const sender = config.contract.permission_manager.sender;
+const sender = config.contract.authorization.superAdmin;
 const { pManagementABI, pManagementAddr } = config.contract.permission_management;
 
 // permission management
@@ -19,14 +19,16 @@ const tx_params = {
     privkey: sender.privkey,
     nonce: util.randomInt(),
     quota,
-    validUntilBlock: util.blockNumber + blockLimit,
+    validUntilBlock: web3.eth.blockNumber + blockLimit,
     from: sender.address
 };
 
 // newPermission
-const newPermission = function (name, addrs, funcs) {
+const newPermission = function (name, addrs, funcs, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return pManagementContractIns.newPermission.sendTransaction(
             name,
             addrs,
@@ -36,9 +38,11 @@ const newPermission = function (name, addrs, funcs) {
 };
 
 // updatePermissionName
-const updatePermissionName = function (perm, name) {
+const updatePermissionName = function (perm, name, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return pManagementContractIns.updatePermissionName.sendTransaction(
             perm,
             name,
@@ -47,9 +51,11 @@ const updatePermissionName = function (perm, name) {
 };
 
 // addResources
-const addResources = function (perm, addrs, funcs) {
+const addResources = function (perm, addrs, funcs, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return pManagementContractIns.addResources.sendTransaction(
             perm,
             addrs,
@@ -59,9 +65,11 @@ const addResources = function (perm, addrs, funcs) {
 };
 
 // deleteResources
-const deleteResources = function (perm, addrs, funcs) {
+const deleteResources = function (perm, addrs, funcs, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return pManagementContractIns.deleteResources.sendTransaction(
             perm,
             addrs,
@@ -71,9 +79,11 @@ const deleteResources = function (perm, addrs, funcs) {
 };
 
 // clearAuthorization
-const clearAuthorization = function (account) {
+const clearAuthorization = function (account, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return pManagementContractIns.clearAuthorization.sendTransaction(
             account,
             tx_params
@@ -81,9 +91,11 @@ const clearAuthorization = function (account) {
 };
 
 // setAuthorization
-const setAuthorization = function (account, perm) {
+const setAuthorization = function (account, perm, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return pManagementContractIns.setAuthorization.sendTransaction(
             account,
             perm,
@@ -92,9 +104,11 @@ const setAuthorization = function (account, perm) {
 };
 
 // cancelAuthorization
-const cancelAuthorization = function (account, perm) {
+const cancelAuthorization = function (account, perm, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return pManagementContractIns.cancelAuthorization.sendTransaction(
             account,
             perm,
@@ -103,9 +117,11 @@ const cancelAuthorization = function (account, perm) {
 };
 
 // deletePermission
-const deletePermission = function (name) {
+const deletePermission = function (name, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return pManagementContractIns.deletePermission.sendTransaction(
             name,
             tx_params
@@ -113,9 +129,11 @@ const deletePermission = function (name) {
 };
 
 // setAuthorizations
-const setAuthorizations = function (account, perms) {
+const setAuthorizations = function (account, perms, _sender = sender) {
     tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = util.blockNumber + blockLimit;
+    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
+    tx_params.privkey = _sender.privkey;
+    tx_params.from = _sender.address;
     return pManagementContractIns.setAuthorizations.sendTransaction(
             account,
             perms,

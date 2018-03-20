@@ -15,7 +15,10 @@ module.exports = {
         authorization: {
             aABI: [{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_permission","type":"address"}],"name":"cancelAuth","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_permission","type":"address"}],"name":"queryAccounts","outputs":[{"name":"_accounts","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_permission","type":"address"}],"name":"clearAuthOfPermission","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_account","type":"address"},{"name":"_cont","type":"address"},{"name":"_func","type":"bytes4"}],"name":"checkPermission","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_account","type":"address"}],"name":"queryPermissions","outputs":[{"name":"_permissions","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"}],"name":"clearAuth","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"queryAllAccounts","outputs":[{"name":"","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_permission","type":"address"}],"name":"setAuth","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"_superAdmin","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_account","type":"address"},{"indexed":true,"name":"_permission","type":"address"}],"name":"AuthSetted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_account","type":"address"},{"indexed":true,"name":"_permission","type":"address"}],"name":"AuthCanceled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_account","type":"address"}],"name":"AuthCleared","type":"event"}],
             aAddr: '0x00000000000000000000000000000000013241b4',
-            superAdmin: '0x9dcd6b234e2772c5451fd4ccf7582f4283140697',
+            superAdmin: {
+                address: '0x9dcd6b234e2772c5451fd4ccf7582f4283140697',
+                privkey: '993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9'
+            },
             permissions: [
                 '0x00000000000000000000000000000000013241b5',
                 '0x00000000000000000000000000000000023241b5',
@@ -47,5 +50,10 @@ module.exports = {
     localServer: 'http://127.0.0.1:1337',
     remoteServer: 'http://47.94.105.230:1337',
     testAddr: ['0x1a702a25c6bca72b67987968f0bfb3a3213c5600','0x1a702a25c6bca72b67987968f0bfb3a3213c5601','0x1a702a25c6bca72b67987968f0bfb3a3213c5602'],
-    testFunc: ['0xf036ed56', '0x3482e0c9', '0xf036ed56']
+    testFunc: ['0xf036ed56', '0x3482e0c9', '0xf036ed56'],
+    testBin: "6060604052341561000f57600080fd5b60d38061001d6000396000f3006060604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604e5780636d4ce63c14606e575b600080fd5b3415605857600080fd5b606c60048080359060200190919050506094565b005b3415607857600080fd5b607e609e565b6040518082815260200191505060405180910390f35b8060008190555050565b600080549050905600a165627a7a7230582020642d4bfc8bb29cfd3390d1aafea86ec7219a70889a640325d7fabb0b0534960029",
+    testSender: {
+        address: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523',
+        privkey: '5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6'
+    }
 };
