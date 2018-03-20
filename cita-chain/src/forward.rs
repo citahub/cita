@@ -28,6 +28,7 @@ use libproto::{request, response, Block as ProtobufBlock, BlockTxHashes, BlockTx
                ExecutedResult, Message, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
                SyncResponse};
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use serde_json;
@@ -39,6 +40,11 @@ use std::sync::mpsc::Sender;
 use types::filter::Filter;
 use types::ids::BlockId;
 use util::H256;
+
+use core::snapshot;
+use core::snapshot::Progress;
+use core::snapshot::io::PackedWriter;
+use std::fs::File;
 
 #[derive(Clone)]
 pub struct Forward {
@@ -91,6 +97,33 @@ impl Forward {
             routing_key!(Auth >> BlockTxHashesReq) => {
                 let block_tx_hashes_req = msg.take_block_tx_hashes_req().unwrap();
                 self.deal_block_tx_req(&block_tx_hashes_req);
+            }
+
+            routing_key!(Snapshot >> SnapshotReq) => {
+                let req = msg.take_snapshot_req().unwrap();
+                let mut resp = SnapshotResp::new();
+                match req.cmd {
+                    Cmd::Snapshot => {
+                        info!("chain receive snapshot cmd: {:?}", req);
+                        self.take_snapshot(req);
+                        info!("chain snapshot creation complete");
+
+                        //resp SnapshotAck to snapshot_tool
+                        //let mut resp = SnapshotResp::new();
+                        resp.set_resp(Resp::SnapshotAck);
+                        let msg: Message = resp.into();
+                        self.ctx_pub
+                            .send((
+                                routing_key!(Chain >> SnapshotResp).into(),
+                                msg.try_into().unwrap(),
+                            ))
+                            .unwrap();
+                    }
+
+                    _ => {
+                        trace!("chain receive other snapshot message");
+                    }
+                }
             }
 
             _ => {
@@ -493,5 +526,26 @@ impl Forward {
         } else {
             warn!("get block's tx hashes for height:{} error", block_height);
         }
+    }
+
+    fn take_snapshot(&self, _snap_shot: SnapshotReq) {
+        // chain snapshot entry
+        let writer = PackedWriter {
+            file: File::create("snap-chain.rlp").unwrap(), //TODO:use given path
+            block_hashes: Vec::new(),
+            cur_len: 0,
+        };
+
+        let progress = Arc::new(Progress::default());
+        //let block_at = snap_shot.get_start_height();  //ancient block,latest?
+        //let start_hash = self.chain.block_hash_by_height(block_at).unwrap();
+
+        info!(
+            "snapshot: current height = {}",
+            self.chain.get_current_height()
+        );
+        let start_hash = self.chain.get_current_hash();
+        info!("take_snapshot start_hash: {:?}", start_hash);
+        snapshot::take_snapshot(&self.chain, start_hash, writer, &*progress).unwrap();
     }
 }

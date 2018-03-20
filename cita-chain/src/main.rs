@@ -86,6 +86,7 @@ fn main() {
             Jsonrpc >> Request,
             Auth >> BlockTxHashesReq,
             Executor >> ExecutedResult,
+            Snapshot >> SnapshotReq,
         ]),
         tx,
         crx_pub,

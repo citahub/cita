@@ -10,10 +10,12 @@ use libproto::blockchain::{BlockWithProof, Proof, ProofType};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use proof::TendermintProof;
 use serde_json;
 use std::cell::RefCell;
 use std::convert::{Into, TryFrom, TryInto};
+use std::fs::File;
 use std::mem;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -21,6 +23,13 @@ use std::sync::mpsc::Sender;
 use util::Address;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
+
+use core::snapshot;
+use core::snapshot::Progress;
+use core::snapshot::io::{PackedReader, PackedWriter};
+use core::snapshot::service::{Service as SnapshotService, ServiceParams as SnapServiceParams};
+use core::state::backend::Backend;
+use std::path::Path;
 
 #[derive(Clone)]
 pub struct ExecutorInstance {
@@ -90,6 +99,48 @@ impl ExecutorInstance {
 
             routing_key!(Consensus >> RawBytes) | routing_key!(Net >> RawBytes) => {
                 trace!("Receive other message content.");
+            }
+
+            routing_key!(Snapshot >> SnapshotReq) => {
+                let req = msg.take_snapshot_req().unwrap();
+                let mut resp = SnapshotResp::new();
+                match req.cmd {
+                    Cmd::Snapshot => {
+                        info!("executor receive snapshot cmd: {:?}", req);
+                        self.take_snapshot(req);
+                        info!("executor snapshot creation complete");
+
+                        //resp SnapshotAck to snapshot_tool
+                        //let mut resp = SnapshotResp::new();
+                        resp.set_resp(Resp::SnapshotAck);
+                        let msg: Message = resp.into();
+                        self.ctx_pub
+                            .send((
+                                routing_key!(Executor >> SnapshotResp).into(),
+                                msg.try_into().unwrap(),
+                            ))
+                            .unwrap();
+                    }
+                    Cmd::Restore => {
+                        info!("executor receive restore cmd: {:?}", req);
+                        self.restore(req);
+                        info!("executor snapshot restore complete");
+
+                        //resp RestoreAck to snapshot_tool
+                        //let mut resp = SnapshotResp::new();
+                        resp.set_resp(Resp::RestoreAck);
+                        let msg: Message = resp.into();
+                        self.ctx_pub
+                            .send((
+                                routing_key!(Executor >> SnapshotResp).into(),
+                                msg.try_into().unwrap(),
+                            ))
+                            .unwrap();
+                    }
+                    _ => {
+                        trace!("executor receive other snapshot message");
+                    }
+                }
             }
 
             _ => {
@@ -652,5 +703,51 @@ impl ExecutorInstance {
                 .insert(blk_height, BlockInQueue::Proposal(block));
         };
         self.write_sender.send(blk_height);
+    }
+
+    fn take_snapshot(&self, _snap_shot: SnapshotReq) {
+        // executor snapshot entry
+        let writer = PackedWriter {
+            file: File::create("snap.rlp").unwrap(), //TODO:use given path
+            state_hashes: Vec::new(),
+            cur_len: 0,
+        };
+
+        let progress = Arc::new(Progress::default());
+        //let block_at = snap_shot.get_start_height(); //ancient block,latest?
+        //let start_hash = self.ext.block_hash(block_at).unwrap();
+
+        info!(
+            "snapshot: current height = {}",
+            self.ext.get_current_height()
+        );
+        let start_hash = self.ext.get_current_hash();
+        //let db = self.ext.state_db.journal_db().boxed_clone();
+        let db = self.ext.state_db.boxed_clone();
+        info!("take_snapshot start_hash: {:?}", start_hash);
+        snapshot::take_snapshot(&self.ext, start_hash, db.as_hashdb(), writer, &*progress).unwrap();
+    }
+
+    fn restore(&self, _snap_shot: SnapshotReq) -> Result<(), String> {
+        let file = "snap-executor.rlp";
+        let reader = PackedReader::new(Path::new(&file))
+            .map_err(|e| format!("Couldn't open snapshot file: {}", e))
+            .and_then(|x| x.ok_or("Snapshot file has invalid format.".into()));
+        let reader = reader?;
+
+        let mut db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
+        let snap_path = DataPath::root_node_path() + "/snapshot";
+        let snapshot_params = SnapServiceParams {
+            db_config: db_config.clone(),
+            //pruning: pruning,
+            //snapshot_root: DataPath::root_node_path().into(),
+            snapshot_root: snap_path.into(),
+            db_restore: self.ext.clone(),
+        };
+        //TODO:get manifest from snap_shot for restore
+        let snapshot = SnapshotService::new(snapshot_params).unwrap();
+        let snapshot = Arc::new(snapshot);
+        snapshot::restore_using(snapshot.clone(), &reader, true);
+        Ok(())
     }
 }

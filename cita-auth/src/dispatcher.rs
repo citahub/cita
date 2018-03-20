@@ -94,6 +94,12 @@ impl Dispatcher {
         dispatch
     }
 
+    pub fn clear_txs_pool(&mut self, package_limit: usize) {
+        self.txs_pool = RefCell::new(tx_pool::Pool::new(package_limit));
+        self.wal.regenerate("/txwal");
+        self.filter_wal.regenerate("/filterwal");
+    }
+
     pub fn tx_pool_capacity(&self) -> Arc<AtomicUsize> {
         self.tx_pool_cap.clone()
     }

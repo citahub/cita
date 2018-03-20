@@ -20,6 +20,7 @@ use jsonrpc_types::rpctypes::TxResponse;
 use libproto::{Message, Response, Ret, VerifyBlockResp, VerifyTxResp};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryFrom, TryInto};
 use std::sync::Arc;
@@ -142,6 +143,7 @@ pub fn handle_remote_msg(
     cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
     txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>,
     resp_sender: &Sender<VerifyRequestResponseInfo>,
+    clear_txs_pool: Arc<AtomicBool>,
 ) {
     let mut msg = Message::try_from(&payload).unwrap();
     match RoutingKey::from(&key) {
@@ -371,6 +373,53 @@ pub fn handle_remote_msg(
                 };
 
                 tx_req_single.send(verify_request_info).unwrap();
+            }
+        }
+        routing_key!(Snapshot >> SnapshotReq) => {
+            let req = msg.take_snapshot_req().unwrap();
+            let mut resp = SnapshotResp::new();
+            match req.cmd {
+                Cmd::Begin => {
+                    resp.set_resp(Resp::BeginAck);
+                    let msg: Message = resp.into();
+                    info!("auth resp BeginAck");
+                    tx_pub
+                        .send((
+                            routing_key!(Auth >> SnapshotResp).into(),
+                            (&msg).try_into().unwrap(),
+                        ))
+                        .unwrap();
+                }
+                Cmd::Clear => {
+                    resp.set_resp(Resp::ClearAck);
+                    clear_txs_pool.store(true, Ordering::SeqCst);
+                    let msg: Message = resp.into();
+                    info!("auth resp ClearAck");
+                    tx_pub
+                        .send((
+                            routing_key!(Auth >> SnapshotResp).into(),
+                            (&msg).try_into().unwrap(),
+                        ))
+                        .unwrap();
+                }
+                Cmd::End => {
+                    resp.set_resp(Resp::EndAck);
+                    clear_txs_pool.store(false, Ordering::SeqCst);
+                    let msg: Message = resp.into();
+                    info!("auth resp EndAck");
+                    tx_pub
+                        .send((
+                            routing_key!(Auth >> SnapshotResp).into(),
+                            (&msg).try_into().unwrap(),
+                        ))
+                        .unwrap();
+                }
+                _ => {
+                    warn!(
+                        "[snapshot_req]receive: unexpected snapshot cmd = {:?}",
+                        req.cmd
+                    );
+                }
             }
         }
         _ => {}
@@ -675,6 +724,7 @@ mod tests {
         let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
+        let clear_txs_pool = Arc::new(AtomicBool::new(false));
 
         let height = 0;
         handle_remote_msg(
@@ -690,6 +740,7 @@ mod tests {
             cache,
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
         assert_eq!(rx_pub.try_recv().is_err(), true);
 
@@ -732,6 +783,7 @@ mod tests {
         let verify_cache = HashMap::new();
         let cache = Arc::new(RwLock::new(verify_cache));
         let on_proposal = Arc::new(AtomicBool::new(false));
+        let clear_txs_pool = Arc::new(AtomicBool::new(false));
 
         let height = 1;
         let pool = threadpool::ThreadPool::new(10);
@@ -750,6 +802,7 @@ mod tests {
             cache,
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
 
         let u: U256 = 0x123456789abcdef0u64.into();
@@ -813,6 +866,7 @@ mod tests {
         let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
+        let clear_txs_pool = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
             routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
@@ -827,6 +881,7 @@ mod tests {
             cache,
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
         let verify_req_info: VerifyRequestResponseInfo = req_receiver.recv().unwrap();
         assert_eq!(verify_req_info.verify_type, VerifyType::SingleVerify);
@@ -868,6 +923,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
+        let clear_txs_pool = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -882,6 +938,7 @@ mod tests {
             cache.clone(),
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
 
         let keypair = KeyPair::gen_keypair();
@@ -900,6 +957,7 @@ mod tests {
             cache,
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
 
         let block_verify_status = c.read();
@@ -941,6 +999,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
+        let clear_txs_pool = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -955,6 +1014,7 @@ mod tests {
             cache.clone(),
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
 
         let keypair = KeyPair::gen_keypair();
@@ -974,6 +1034,7 @@ mod tests {
             cache.clone(),
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
 
         let verify_req_info: VerifyRequestResponseInfo = req_receiver.recv().unwrap();
@@ -1021,6 +1082,7 @@ mod tests {
         let height = 0;
         let verifier = Arc::new(RwLock::new(Verifier::new()));
         let on_proposal = Arc::new(AtomicBool::new(false));
+        let clear_txs_pool = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -1035,6 +1097,7 @@ mod tests {
             cache.clone(),
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
 
         let keypair = KeyPair::gen_keypair();
@@ -1053,6 +1116,7 @@ mod tests {
             cache,
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
         handle_verificaton_result(
             &resp_receiver,
@@ -1100,6 +1164,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
+        let clear_txs_pool = Arc::new(AtomicBool::new(false));
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -1114,6 +1179,7 @@ mod tests {
             cache.clone(),
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
 
         let keypair = KeyPair::gen_keypair();
@@ -1134,6 +1200,7 @@ mod tests {
             cache,
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool,
         );
 
         handle_verificaton_result(
@@ -1181,6 +1248,7 @@ mod tests {
         let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
+        let clear_txs_pool = Arc::new(AtomicBool::new(false));
 
         let height = 0;
         handle_remote_msg(
@@ -1196,6 +1264,7 @@ mod tests {
             verify_cache.clone(),
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
 
         let keypair = KeyPair::gen_keypair();
@@ -1215,6 +1284,7 @@ mod tests {
             verify_cache.clone(),
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
         handle_verificaton_result(
             &resp_receiver,
@@ -1247,6 +1317,7 @@ mod tests {
             verify_cache.clone(),
             &pool_txs_sender,
             &resp_sender,
+            clear_txs_pool.clone(),
         );
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();

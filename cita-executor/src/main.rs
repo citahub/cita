@@ -69,6 +69,7 @@ fn main() {
             Consensus >> RawBytes,
             Net >> SignedProposal,
             Net >> RawBytes,
+            Snapshot >> SnapshotReq,
         ]),
         tx,
         crx_pub,

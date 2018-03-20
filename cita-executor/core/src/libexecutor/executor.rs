@@ -41,6 +41,7 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 use native::Factory as NativeFactory;
+use snapshot;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
@@ -322,7 +323,7 @@ impl Executor {
     }
 
     /// Get block header by hash
-    fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
+    pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
         {
             let header = self.current_header.read();
             if header.hash() == hash {
@@ -763,6 +764,14 @@ impl Executor {
             warn!("executing block is interrupted.");
             None
         }
+    }
+}
+
+impl snapshot::service::DatabaseRestore for Executor {
+    /// Restart the client with a new backend
+    fn restore_db(&self, new_db: &str) -> Result<(), ::error::Error> {
+        info!("new_db :{:?}", new_db);
+        Ok(())
     }
 }
 

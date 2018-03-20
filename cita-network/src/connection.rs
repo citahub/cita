@@ -23,8 +23,9 @@ use libproto::{Message, OperateType};
 use notify::DebouncedEvent;
 use std::convert::{TryFrom, TryInto};
 use std::io::Write;
-use std::net::TcpStream;
+use std::net::{Shutdown, TcpStream};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
@@ -36,6 +37,7 @@ type PeerPairs = Arc<RwLock<Vec<(u32, String, Option<TcpStream>)>>>;
 pub struct Connection {
     pub id_card: u32,
     pub peers_pair: PeerPairs,
+    pub is_disconnect: Arc<AtomicBool>,
 }
 
 impl Connection {
@@ -54,6 +56,7 @@ impl Connection {
         Connection {
             id_card,
             peers_pair: Arc::new(RwLock::new(peers_pair)),
+            is_disconnect: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -140,6 +143,17 @@ impl Connection {
 fn connect(con: Arc<Connection>) {
     thread::spawn(move || loop {
         for peer in con.peers_pair.write().iter_mut() {
+            if con.is_disconnect.load(Ordering::SeqCst) {
+                if let Some(ref mut stream) = peer.2 {
+                    stream
+                        .shutdown(Shutdown::Both)
+                        .expect("shutdown call failed");
+                }
+                peer.2 = None;
+                thread::sleep(Duration::from_millis(TIMEOUT * 1000));
+                continue;
+            }
+
             let mut need_reconnect = true;
             let mut buf = BytesMut::with_capacity(4 + 4);
             pubsub_message_to_network_message(&mut buf, None);

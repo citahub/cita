@@ -37,6 +37,11 @@ impl TxWal {
         TxWal { db: Arc::new(db) }
     }
 
+    pub fn regenerate(&mut self, path: &str) {
+        let nosql_path = DataPath::root_node_path() + path;
+        let _ = self.db.restore(&nosql_path);
+    }
+
     pub fn write(&self, tx: &SignedTransaction) {
         let mut batch = self.db.transaction();
         let block_binary: Vec<u8> = tx.try_into().unwrap();
