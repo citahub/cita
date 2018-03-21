@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, Infinite};
-use crypto::*;
+use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
@@ -64,40 +64,39 @@ impl Generateblock {
     }
 
     pub fn generate_tx(
-        address: String,
+        to_address: &str,
         code: &str,
         quota: u64,
         nonce: u32,
-        is_multi_sender: bool,
-        kp: PrivKey,
+        valid_until_block: u64,
+        privkey: &PrivKey,
     ) -> SignedTransaction {
-        let pv: PrivKey = if is_multi_sender {
-            let keypair = KeyPair::gen_keypair();
-            *keypair.privkey()
-        } else {
-            kp
-        };
+        /*
+        message Transaction {
+          string to = 1;
+          string nonce = 2;
+          uint64 quota = 3;
+          uint64 valid_until_block = 4;
+          bytes data = 5;
+        } */
         let data = code.from_hex().unwrap();
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_nonce(format!("{}", nonce));
         tx.set_quota(quota);
         // 设置空，则创建合约
-        tx.set_to(address);
-        tx.set_valid_until_block(99999);
-        tx.sign(pv)
+        tx.set_to(to_address.to_string());
+        tx.set_valid_until_block(valid_until_block);
+        tx.sign(*privkey)
     }
 
     pub fn build_block_with_proof(
-        txs: Vec<SignedTransaction>,
+        txs: &Vec<SignedTransaction>,
         pre_hash: H256,
         height: u64,
+        privkey: &PrivKey,
     ) -> (Vec<u8>, BlockWithProof) {
-        let keypair = KeyPair::gen_keypair();
-        let pv = keypair.privkey();
-        let pk = keypair.pubkey();
-        let sender = keypair.address().clone();
-
+        let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
         let mut block = Block::new();
         let block_time = Self::unix_now();
         block.mut_header().set_timestamp(block_time.as_millis());
@@ -105,7 +104,7 @@ impl Generateblock {
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
         block
             .mut_body()
-            .set_transactions(RepeatedField::from_vec(txs));
+            .set_transactions(RepeatedField::from_vec(txs.clone()));
         let mut proof = TendermintProof::default();
         proof.height = (height - 1) as usize;
         proof.round = 0;
@@ -121,7 +120,7 @@ impl Generateblock {
             ),
             Infinite,
         ).unwrap();
-        let signature = Signature::sign(pv, &msg.crypt_hash().into()).unwrap();
+        let signature = Signature::sign(privkey, &msg.crypt_hash().into()).unwrap();
         commits.insert((*sender).into(), signature.into());
         proof.commits = commits;
         block.mut_header().set_proof(proof.clone().into());

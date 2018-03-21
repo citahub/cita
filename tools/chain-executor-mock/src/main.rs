@@ -40,7 +40,8 @@ extern crate serde_json;
 
 mod generate_block;
 
-use std::convert::TryFrom;
+use std::collections::HashMap;
+use std::convert::{From, TryFrom};
 use std::fs;
 use std::io::Read;
 use std::sync::{Arc, Mutex};
@@ -49,7 +50,7 @@ use std::time;
 
 use clap::App;
 
-use crypto::*;
+use crypto::PrivKey;
 use generate_block::Generateblock;
 use libproto::Message;
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -63,41 +64,44 @@ fn create_contracts(
     height: u64,
     pub_sender: Sender<PubType>,
     sys_time: Arc<Mutex<time::SystemTime>>,
-    pk: PrivKey,
-    mock_data: serde_json::Value,
+    mock_block: &serde_json::Value,
+    privkey: &PrivKey,
 ) {
     use libproto::SignedTransaction;
 
-    let is_multi_sender = false;
-    let txs: Vec<SignedTransaction> = mock_data["addresses"]
-        .as_object()
+    let txs: Vec<SignedTransaction> = mock_block["transactions"]
+        .as_array()
         .unwrap()
         .iter()
-        .map(|(address, obj)| {
-            obj["transactions"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|tx_data| {
-                    let code = tx_data["code"].as_str().unwrap();
-                    let quota = tx_data["quota"].as_u64().unwrap();
-                    let nonce = tx_data["nonce"].as_u64().unwrap() as u32;
-                    info!(
-                        "address={}, code={}, quota={}, nonce={}",
-                        address, code, quota, nonce
-                    );
-                    Generateblock::generate_tx(address.to_owned(), code, quota, nonce, is_multi_sender, pk)
-                })
-                .collect()
+        .map(|tx| {
+            let contract_address = tx["contract_address"].as_str().unwrap();
+            let tx_privkey_str = tx["privkey"].as_str().unwrap();
+            let tx_privkey: PrivKey = H256::from_any_str(tx_privkey_str).unwrap().into();
+            let code = tx["code"].as_str().unwrap();
+            let quota = tx["quota"].as_u64().unwrap();
+            let nonce = tx["nonce"].as_u64().unwrap() as u32;
+            let valid_until_block = tx["valid_until_block"].as_u64().unwrap();
+            info!(
+                "address={}, code={}, quota={}, nonce={}",
+                contract_address, code, quota, nonce
+            );
+            Generateblock::generate_tx(
+                contract_address,
+                code,
+                quota,
+                nonce,
+                valid_until_block,
+                &tx_privkey,
+            )
         })
-        .fold(vec![], |mut acc, txs: Vec<_>| {
-            acc.extend(txs);
-            acc
-        });
+        .collect();
 
     // 构造block
-    let (send_data, _block) = Generateblock::build_block_with_proof(txs, pre_hash, height);
-    info!("===============send block===============");
+    let (send_data, _block) = Generateblock::build_block_with_proof(&txs, pre_hash, height, privkey);
+    info!(
+        "===============send block ({} transactions)===============",
+        txs.len()
+    );
     (*sys_time.lock().unwrap()) = time::SystemTime::now();
     pub_sender
         .send((
@@ -130,13 +134,12 @@ fn main() {
         .expect("Open mock data file error")
         .read_to_string(&mut mock_data_string)
         .expect("Read mock data file error");
-    let mock_data: serde_json::Value = serde_json::from_str(mock_data_string.as_str()).expect("Parse mock data error");
+    let mut mock_data: serde_json::Value =
+        serde_json::from_str(mock_data_string.as_str()).expect("Parse mock data error");
 
     info!("mock-data-path={}", mock_data_path);
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
-    let keypair = KeyPair::gen_keypair();
-    let pk = keypair.privkey();
 
     start_pubsub(
         "consensus",
@@ -146,25 +149,51 @@ fn main() {
     );
     let sys_time = Arc::new(Mutex::new(time::SystemTime::now()));
 
+    let privkey: PrivKey = {
+        let privkey_str = mock_data["privkey"].as_str().unwrap();
+        H256::from_any_str(privkey_str).unwrap().into()
+    };
+    let mut mock_blocks: HashMap<u64, serde_json::Value> = HashMap::new();
+    for block in mock_data["blocks"].as_array_mut().unwrap().into_iter() {
+        let block_number = block["number"].as_u64().unwrap();
+        mock_blocks.insert(block_number, block.take());
+    }
+    info!(">> numbers: {:?}", mock_blocks.keys());
+    for number in 1..(mock_blocks.len() as u64 + 1) {
+        if !mock_blocks.contains_key(&number) {
+            error!("Block missing, number={}", number);
+            return;
+        }
+    }
+
     loop {
         let (key, body) = rx_sub.recv().unwrap();
         info!("received: key={}", key);
         let mut msg = Message::try_from(&body).unwrap();
         match RoutingKey::from(&key) {
-            // 接受chain发送的 authorities_list
+            // 接受 chain 发送的 authorities_list
             routing_key!(Chain >> RichStatus) => {
                 let rich_status = msg.take_rich_status().unwrap();
                 let height = rich_status.height + 1;
-                info!("send consensus blk . h = {:?}", height);
-                create_contracts(
-                    H256::from_slice(&rich_status.hash),
-                    height,
-                    tx_pub.clone(),
-                    sys_time.clone(),
-                    pk.clone(),
-                    mock_data,
-                );
-                break;
+                if let Some(mock_block) = mock_blocks.remove(&height) {
+                    info!(
+                        "send consensus block rich_status.height={} height = {:?}",
+                        rich_status.height, height
+                    );
+                    create_contracts(
+                        H256::from_slice(&rich_status.hash),
+                        height,
+                        tx_pub.clone(),
+                        sys_time.clone(),
+                        &mock_block,
+                        &privkey,
+                    );
+                } else {
+                    warn!("No data for this block height = {:?}", height);
+                };
+                if mock_blocks.is_empty() {
+                    break;
+                }
             }
             _ => (),
         }
