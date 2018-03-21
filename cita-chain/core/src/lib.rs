@@ -70,6 +70,7 @@ pub mod error;
 
 pub mod libchain;
 pub mod filters;
+pub mod snapshot;
 
 pub use types::*;
 pub use util::journaldb;

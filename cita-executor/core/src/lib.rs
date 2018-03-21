@@ -93,6 +93,7 @@ pub mod native;
 
 pub mod libexecutor;
 pub mod contracts;
+pub mod snapshot;
 
 pub use factory::*;
 pub use types::*;

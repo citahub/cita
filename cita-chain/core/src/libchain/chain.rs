@@ -656,7 +656,7 @@ impl Chain {
     }
 
     // Get block header by hash
-    fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
+    pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
         {
             let header = self.current_header.read();
             if header.hash() == hash {

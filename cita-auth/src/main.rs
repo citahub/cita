@@ -147,6 +147,7 @@ fn main() {
             Chain >> BlockTxHashes,
             Jsonrpc >> RequestNewTxBatch,
             Net >> Request,
+            Snapshot >> SnapshotReq,
         ]),
         tx_sub,
         rx_pub,
@@ -239,7 +240,10 @@ fn main() {
 
     let dispatch = Arc::new(Mutex::new(dispatch_origin));
     let dispatch_clone = dispatch.clone();
+    let clear = dispatch_clone.clone();
     let txs_pub_clone = txs_pub.clone();
+    let clear_txs_pool = Arc::new(AtomicBool::new(false));
+
     thread::spawn(move || {
         let dispatch = dispatch_clone.clone();
         let mut flag = false;
@@ -276,6 +280,16 @@ fn main() {
             }
         }
     });
+    let clear_txs_pool_clone = clear_txs_pool.clone();
+    thread::spawn(move || {
+        let clear_clone = clear.clone();
+        loop {
+            if clear_txs_pool_clone.load(Ordering::SeqCst) {
+                clear_clone.lock().clear_txs_pool(tx_packet_limit);
+            }
+            thread::sleep(Duration::new(0, buffer_duration));
+        }
+    });
 
     let block_verify_status_hdl_remote = block_verify_status.clone();
     let resp_sender_clone = resp_sender.clone();
@@ -299,6 +313,7 @@ fn main() {
                     cache.clone(),
                     &pool_txs_sender,
                     &resp_sender.clone(),
+                    clear_txs_pool.clone(),
                 );
             }
             Err(err_info) => {

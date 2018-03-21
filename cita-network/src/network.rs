@@ -2,8 +2,10 @@ use Source;
 use connection::Connection;
 use libproto::{Message, Response};
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use std::convert::{Into, TryFrom, TryInto};
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 
 /// Message forwarding, include p2p and local
@@ -36,6 +38,9 @@ impl NetWork {
         let (key, data) = payload;
         let rtkey = RoutingKey::from(&key);
         trace!("Network receive Msg from {:?}/{}", source, key);
+        if self.con.is_disconnect.load(Ordering::SeqCst) {
+            return;
+        }
         match source {
             // Come from MQ
             Source::LOCAL => match rtkey {
@@ -48,6 +53,10 @@ impl NetWork {
                 }
                 routing_key!(Jsonrpc >> RequestNet) => {
                     self.reply_rpc(&data);
+                }
+                routing_key!(Snapshot >> SnapshotReq) => {
+                    info!("set disconnect and respone");
+                    self.snapshot_req(&data);
                 }
                 _ => {
                     error!("Unexpected key {} from {:?}", key, source);
@@ -78,6 +87,48 @@ impl NetWork {
                     error!("Unexpected key {} from {:?}", key, source);
                 }
             },
+        }
+    }
+
+    fn snapshot_req(&self, data: &[u8]) {
+        let mut msg = Message::try_from(data).unwrap();
+        let req = msg.take_snapshot_req().unwrap();
+        let mut resp = SnapshotResp::new();
+        let mut send = false;
+        match req.cmd {
+            Cmd::Begin => {
+                resp.set_resp(Resp::BeginAck);
+                info!("network resp BeginAck");
+                send = true;
+            }
+            Cmd::Clear => {
+                self.con.is_disconnect.store(true, Ordering::SeqCst);
+                resp.set_resp(Resp::ClearAck);
+                info!("network resp ClearAck");
+                send = true;
+            }
+            Cmd::End => {
+                self.con.is_disconnect.store(false, Ordering::SeqCst);
+                resp.set_resp(Resp::EndAck);
+                info!("network resp ClearAck");
+                send = true;
+            }
+            _ => {
+                warn!(
+                    "[snapshot_req]receive: unexpected snapshot cmd = {:?}",
+                    req.cmd
+                );
+            }
+        }
+
+        if send {
+            let msg: Message = resp.into();
+            self.tx_pub
+                .send((
+                    routing_key!(Net >> SnapshotResp).into(),
+                    (&msg).try_into().unwrap(),
+                ))
+                .unwrap();
         }
     }
 

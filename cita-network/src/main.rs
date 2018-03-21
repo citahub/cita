@@ -166,6 +166,7 @@ fn main() {
             Chain >> Status,
             Chain >> SyncResponse,
             Jsonrpc >> RequestNet,
+            Snapshot >> SnapshotReq,
         ]),
         ctx_sub,
         crx_pub,
