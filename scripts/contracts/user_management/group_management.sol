@@ -4,7 +4,7 @@ import "./group_creator.sol";
 
 contract GroupManagement {
 
-    address groupCreatorAddr = 0x00000000000000000000000000000000013241C3;
+    address groupCreatorAddr = 0x00000000000000000000000000000000013241c3;
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
 
     modifier onlyLeafNode(address _group) {

@@ -56,7 +56,6 @@ extern crate transient_hashmap;
 
 #[cfg(test)]
 extern crate cita_crypto;
-#[cfg(test)]
 extern crate core;
 extern crate ethabi;
 #[cfg(test)]

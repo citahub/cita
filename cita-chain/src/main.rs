@@ -15,6 +15,39 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+//! ## Summary
+//! One of CITA's core components that processing blocks and transaction storage,
+//! provides queries, caches query records, and more.
+//!
+//! ### Message queuing situation
+//!
+//! | Queue   | SubModule   | Message Type     |
+//! | ------- | ----------- | ---------------- |
+//! | chain   | Chain       | SyncResponse     |
+//! | chain   | Net         | SyncResponse     |
+//! | chain   | Net         | SyncRequest      |
+//! | chain   | Consensus   | BlockWithProof   |
+//! | chain   | Jsonrpc     | Request          |
+//! | chain   | Auth        | BlockTxHashesReq |
+//! | chain   | Executor    | ExecutedResult   |
+//!
+//! ### Key behavior
+//!
+//! the key struct:
+//!
+//! - [`Chain`]
+//! - `Forward`: `forward::Forward`
+//! - `BlockProcessor`: `block_processor::BlockProcessor`
+//!
+//! Construct a caching mechanism with `RowLock<Vec<.. >>` or `RowLock<HashMap<.. >>` and clean it regularly.
+//!
+//! `Forward` listen to the message bus, handle read commands or forward write commands according to message key.
+//!
+//! `BlockProcessor` processing according to the forwarded information.
+//!
+//! [`Chain`]: ../core/libchain/chain/struct.Chain.html
+//!
+
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![allow(unused_must_use)]

@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -24,6 +24,7 @@ use db::*;
 
 use filters::{PollFilter, PollManager};
 use header::*;
+use jsonrpc_types::rpctypes::RelayInfo;
 pub use libchain::block::*;
 use libchain::cache::CacheSize;
 
@@ -41,7 +42,8 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
-use rlp::Encodable;
+use rlp::{self, Encodable};
+use rustc_hex::FromHex;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -66,16 +68,24 @@ const LOG_BLOOMS_ELEMENTS_PER_INDEX: usize = 16;
 
 #[derive(Debug, Clone, RlpEncodable, RlpDecodable)]
 pub struct TxProof {
-    pub block_header: Header,
-    pub receipt: Receipt,
-    pub receipt_proof: merklehash::MerkleProof,
-    pub tx: SignedTransaction,
+    block_header: Header,
+    receipt: Receipt,
+    receipt_proof: merklehash::MerkleProof,
+    tx: SignedTransaction,
 }
 
 impl TxProof {
+    pub fn from_hexstr(hexstr: &str) -> Option<Self> {
+        FromHex::from_hex(hexstr).map(Self::from_bytes).ok()
+    }
+
+    pub fn from_bytes(bytes: Vec<u8>) -> Self {
+        rlp::decode(&bytes)
+    }
+
     pub fn verify_proof(&self) -> bool {
         // todo check hash of self.tx == tx hash in receipt
-        let receipt_hash = self.receipt.rlp_bytes().crypt_hash();
+        let receipt_hash = Some(self.receipt.clone()).rlp_bytes().to_vec().crypt_hash();
         merklehash::verify_proof(
             self.block_header.receipts_root().clone(),
             &self.receipt_proof,
@@ -83,19 +93,96 @@ impl TxProof {
         )
     }
 
+    pub fn tx(&self) -> &SignedTransaction {
+        &self.tx
+    }
+
+    pub fn receipt(&self) -> &Receipt {
+        &self.receipt
+    }
+
+    pub fn block_header(&self) -> &Header {
+        &self.block_header
+    }
+
     // extract info which relayer needed
-    pub fn extract(&self) -> Option<(u64, u64, Address, String)> {
+    pub fn extract_relay_info(&self) -> Option<RelayInfo> {
+        if self.receipt.logs.len() == 0 {
+            return None;
+        }
         let data = &self.receipt.logs[0].data;
-        // data must be uint256 from_chain_id, uint256 to_chain_id, address dest_contract, uint256 hasher
-        if data.len() != 128 {
+        // data must be:
+        // uint256 from_chain_id,
+        // uint256 to_chain_id,
+        // address dest_contract,
+        // uint256 dest_hasher,
+        // uint256 cross_chain_nonce
+        if data.len() != 160 {
             None
         } else {
             let mut iter = data.chunks(32);
             let from_chain_id = U256::from(iter.next().unwrap()).low_u64();
             let to_chain_id = U256::from(iter.next().unwrap()).low_u64();
             let dest_contract = Address::from(H256::from(iter.next().unwrap()));
-            let hasher = U256::from(iter.next().unwrap()).to_hex().split_off(64 - 8);
-            Some((from_chain_id, to_chain_id, dest_contract, hasher))
+            let mut dest_hasher = U256::from(iter.next().unwrap()).to_hex();
+            // U256 to hex no leading zero
+            if dest_hasher.len() > 8 {
+                return None;
+            }
+            if dest_hasher.len() < 8 {
+                dest_hasher = format!("{:08}", dest_hasher);
+            }
+            let cross_chain_nonce = U256::from(iter.next().unwrap()).low_u64();
+            Some(RelayInfo {
+                from_chain_id,
+                to_chain_id,
+                dest_contract,
+                dest_hasher,
+                cross_chain_nonce,
+            })
+        }
+    }
+
+    // verify proof
+    // check as crosschain protocol
+    // extract sender and tx data
+    pub fn extract_crosschain_data(
+        &self,
+        my_contrac_addr: Address,
+        my_hasher: String,
+        my_cross_chain_nonce: u64,
+        my_chain_id: u64,
+    ) -> Option<(Address, Vec<u8>)> {
+        if !self.verify_proof() {
+            None
+        } else {
+            self.extract_relay_info().and_then(
+                |RelayInfo {
+                     from_chain_id,
+                     to_chain_id,
+                     dest_contract,
+                     dest_hasher,
+                     cross_chain_nonce,
+                 }| {
+                    // check from_chain_id and to_chain_id one of them is 0
+                    // cross chain only between main chain and one sidechain
+                    // check to_chain_id == my chain_id
+                    // check dest_contract == this
+                    // check hasher == RECV_FUNC_HASHER
+                    // check cross_chain_nonce == cross_chain_nonce
+                    // extract origin tx sender and origin tx data
+                    if from_chain_id * to_chain_id == 0 && to_chain_id == my_chain_id
+                        && dest_contract == my_contrac_addr && dest_hasher == my_hasher
+                        && cross_chain_nonce == my_cross_chain_nonce
+                    {
+                        // skip hasher(4 bytes) and 2 args each 32 bytes
+                        let (_, origin_tx_data) = self.tx.data.split_at(4 + 32 * 2);
+                        Some((self.tx.sender().clone(), origin_tx_data.to_owned()))
+                    } else {
+                        None
+                    }
+                },
+            )
         }
     }
 }
@@ -151,6 +238,7 @@ pub enum BlockInQueue {
     SyncBlock((Block, Option<ProtoProof>)),
 }
 
+/// Database read and write and cache
 // TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
 // 所有直接unwrap的地方都可能会报错！
 pub struct Chain {
@@ -679,13 +767,17 @@ impl Chain {
     pub fn get_transaction_proof(&self, hash: TransactionId) -> Option<(Vec<u8>)> {
         self.transaction_address(hash).and_then(|addr| {
             self.block_by_hash(addr.block_hash).and_then(|block| {
-                self.block_receipts(addr.block_hash).map(|receipts| {
+                self.block_receipts(addr.block_hash).and_then(|receipts| {
                     //(block, receipts, addr.index)
                     let index = addr.index;
-                    let receipt_proof: merklehash::MerkleProof = merklehash::MerkleTree::from_bytes(
-                        receipts.receipts.iter().map(|r| r.rlp_bytes().to_vec()),
-                    ).get_proof_by_input_index(index);
-                    let receipt = receipts.receipts[index].clone().unwrap();
+                    let receipt = receipts.receipts[index].clone();
+                    if receipt.is_none() {
+                        return None;
+                    }
+                    let receipt = receipt.unwrap();
+                    let receipt_tree =
+                        merklehash::MerkleTree::from_bytes(receipts.receipts.iter().map(|r| r.rlp_bytes().to_vec()));
+                    let receipt_proof: merklehash::MerkleProof = receipt_tree.get_proof_by_input_index(index);
                     let tx = block.body().transactions()[index].clone();
                     let block_header = block.header().clone();
                     let tx_proof = TxProof {
@@ -694,7 +786,7 @@ impl Chain {
                         receipt_proof,
                         tx,
                     };
-                    tx_proof.rlp_bytes().to_vec()
+                    Some(tx_proof.rlp_bytes().to_vec())
                 })
             })
         })

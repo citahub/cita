@@ -41,7 +41,13 @@ CONTRACTS = {
     '0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380': {'file': 'permission_management/role_creator.sol',
                                                    'name': 'RoleCreator'},
     '0xe3b5ddb80addb513b5c981e27bb030a86a8821ee': {'file': 'permission_management/role_management.sol',
-                                                   'name': 'RoleManagement'}
+                                                   'name': 'RoleManagement'},
+    '0x00000000000000000000000000000000013241b6': {'file': 'user_management/group.sol',
+                                                   'name': 'Group'},
+    '0x00000000000000000000000000000000013241c2': {'file': 'user_management/group_management.sol',
+                                                   'name': 'GroupManagement'},
+    '0x00000000000000000000000000000000013241c3': {'file': 'user_management/group_creator.sol',
+                                                   'name': 'GroupCreator'}
 }
 
 def init_contracts(nodes):
@@ -66,7 +72,7 @@ def init_contracts(nodes):
 
         if address == '0x00000000000000000000000000000000013241a3' or address == '0x00000000000000000000000000000000013241b4':
             extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
-        elif address == '0x0000000000000000000000000000000031415926':
+        elif address == '0x0000000000000000000000000000000031415926' or address == '0x00000000000000000000000000000000013241b6':
             
             extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1], nodes[address][2]]) if nodes[address] else b'')
         elif address == '0x00000000000000000000000000000000013241a2' or address == '0x00000000000000000000000000000000013241a4':

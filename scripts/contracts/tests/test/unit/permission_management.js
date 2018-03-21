@@ -359,18 +359,18 @@ describe('\n\ntest permission management contract\n\n', function () {
         it('should send a deletePermission tx and get receipt with error message', function () {
 
             let builtInPermissions = [
-                0x00000000000000000000000000000000013241b5,
-                0x00000000000000000000000000000000023241b5,
-                0x00000000000000000000000000000000033241B5,
-                0x00000000000000000000000000000000043241b5,
-                0x00000000000000000000000000000000053241b5,
-                0x00000000000000000000000000000000063241b5,
-                0x00000000000000000000000000000000073241b5,
-                0x00000000000000000000000000000000083241B5,
-                0x00000000000000000000000000000000093241B5,
-                0x000000000000000000000000000000000A3241b5,
-                0x0000000000000000000000000000000000000001,
-                0x0000000000000000000000000000000000000002
+                "0x00000000000000000000000000000000013241b5",
+                "0x00000000000000000000000000000000023241b5",
+                "0x00000000000000000000000000000000033241B5",
+                "0x00000000000000000000000000000000043241b5",
+                "0x00000000000000000000000000000000053241b5",
+                "0x00000000000000000000000000000000063241b5",
+                "0x00000000000000000000000000000000073241b5",
+                "0x00000000000000000000000000000000083241B5",
+                "0x00000000000000000000000000000000093241B5",
+                "0x000000000000000000000000000000000A3241b5",
+                "0x0000000000000000000000000000000000000001",
+                "0x0000000000000000000000000000000000000002"
             ];
 
             builtInPermissions.map(perm => getTxReceipt(deletePermission(perm)).then(receipt => {
@@ -378,25 +378,12 @@ describe('\n\ntest permission management contract\n\n', function () {
                 Send ok and get receipt:
                 ${receipt}`);
                 assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
-            })).catch(err => {
+            }).catch(err => {
                 console.log(`
                 !!!!Get deletePermission receipt err:!!!
                 ${err}`);
                 this.skip();
-            });
-
-            // for (let i = 0; i<builtInPermissions.length; i++) {
-            //     let res = deletePermission(builtInPermissions[i]);
-            //     getTxReceipt(res)
-            //         .then((receipt) => {
-            //             console.log('\nSend ok and get receipt:\n', receipt);
-            //             assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
-            //         })
-            //         .catch(err => {
-            //             console.log('\n!!!!Get deletePermission receipt err:!!!!\n', err);
-            //             this.skip();
-            //         });
-            // }
+            }));
         });
     });
 

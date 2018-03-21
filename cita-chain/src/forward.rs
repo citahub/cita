@@ -46,6 +46,7 @@ use core::snapshot::Progress;
 use core::snapshot::io::PackedWriter;
 use std::fs::File;
 
+/// Message forwarding and query data
 #[derive(Clone)]
 pub struct Forward {
     write_sender: Sender<ExecutedResult>,
