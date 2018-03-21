@@ -11,8 +11,15 @@
   },
   "scripts": {
     "test": "mocha test --recursive -t 60s; jshint test",
-    "unit_test": "mocha test/unit --recursive -t 60s; jshint test",
-    "integrate_test": "mocha test/integrate --recursive -t 60s; jshint test",
+    "unit_test": "mocha test/unit --recursive -t 60s; jshint test/unit",
+    "unit_group": "mocha test/unit/group.js -t 60s; jshint test/group.js",
+    "unit_permission": "mocha test/unit/permission.js  -t 60s; jshint test/unit/permission.js",
+    "unit_role": "mocha test/unit/role.js  -t 60s; jshint test/unit/role.js",
+    "unit_gm": "mocha test/unit/group_management.js -t 60s; jshint test/unit/group_management.js",
+    "unit_pm": "mocha test/unit/permission_management.js -t 60s; jshint test/unit/permission_management.js",
+    "unit_rm": "mocha test/unit/role_management.js -t 60s; jshint test/role_management.js",
+    "unit_auth": "mocha test/unit/authorization.js -t 60s; jshint test/unit/authorization.js",
+    "integrate_test": "mocha test/integrate --recursive -t 60s; jshint test/integrate",
     "lint": "jshint test"
   },
   "repository": {},

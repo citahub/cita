@@ -33,9 +33,9 @@ contract GroupManagement {
         returns (bool)
     {
         Group group = Group(_group);
-        require(group.close());
         // Delete the parent group's child
         require(deleteChildGroup(group.queryParent(), _group));
+        require(group.close());
         GroupDeleted(_group);
         return true;
     }

@@ -12,7 +12,7 @@ contract Group {
     bytes32 name;
     address parent;
     address[] accounts;
-    address[] childs;
+    address[] children;
 
     event GroupNewed(address indexed _parent, bytes32 indexed _name, address[] _accounts);
     event AccountsAdded(address[] _accounts);
@@ -81,8 +81,9 @@ contract Group {
         onlyUserManagement
         returns (bool)
     {
-        assert(addressDelete(_child, childs));
+        assert(addressDelete(_child, children));
         ChildDeleted(_child);
+        return true;
     }
 
     /// @dev Add a child group
@@ -91,8 +92,8 @@ contract Group {
         onlyUserManagement
         returns (bool)
     {
-        if (!addressInArray(_child, childs))
-            childs.push(_child);
+        if (!addressInArray(_child, children))
+            children.push(_child);
 
         ChildAdded(_child);
         return true;
@@ -141,7 +142,7 @@ contract Group {
         view
         returns (address[])
     {
-        return childs;
+        return children;
     }
 
     /// @dev Query the length of children of the group
@@ -150,7 +151,7 @@ contract Group {
         view
         returns (uint)
     {
-        return childs.length;
+        return children.length;
     }
 
 

@@ -69,6 +69,42 @@ npm test
 ```
 npm run-script unit_test
 ```
+
+* To test permission contract:
+```
+npm run-script unit_permission
+```
+
+* To test permission management contract:
+```
+npm run-script unit_pm
+```
+
+* To test group contract
+```
+npm run-script unit_group
+```
+
+* To test group management contract
+```
+npm run-script unit_gm
+```
+
+* To test role contract
+```
+npm run-script unit_role
+```
+
+* To test role management contract
+```
+npm run-script unit_rm
+```
+
+* To test authorization contract
+```
+npm run-script auth
+```
+
 * To run integrate test:
     - Should set the check_permission be true(scripts/admintool/init_data)example.json):
 
