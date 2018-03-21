@@ -111,7 +111,7 @@ impl ZkPrivacy {
             data.get(index..index + len).expect("no enough data"),
         )).unwrap();
 
-        self.output.resize(128, 0);
+        self.output.clear();
         let balance: String = self.balances.get_bytes(ext, addr.clone())?;
         for v in balance.as_bytes() {
             self.output.push(*v);
