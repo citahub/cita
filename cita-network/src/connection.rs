@@ -31,10 +31,13 @@ use std::time::Duration;
 use util::RwLock;
 
 const TIMEOUT: u64 = 15;
+// list of peer: id, addr, tcp_connect
 type PeerPairs = Arc<RwLock<Vec<(u32, String, Option<TcpStream>)>>>;
 
+/// Manage p2p networks
 pub struct Connection {
     pub id_card: u32,
+    /// list of peer: id, addr, tcp_connect
     pub peers_pair: PeerPairs,
 }
 

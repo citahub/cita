@@ -6,6 +6,7 @@ use std::convert::{Into, TryFrom, TryInto};
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
+/// Message forwarding, include p2p and local
 pub struct NetWork {
     con: Arc<Connection>,
     tx_pub: Sender<(String, Vec<u8>)>,

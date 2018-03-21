@@ -5,33 +5,20 @@
 //!
 //! ### Message queuing situation
 //!
-//! 订阅频道(Queue) | Rounting_key | 消息类型(Message Type) | topic
-//! ----- | ----- | ----- | -----
-//! jsonrpc | Auth | Response | "cita"
-//! jsonrpc | Chain | Response | "cita"
-//! jsonrpc | Executor | Response | "cita"
-//! jsonrpc | Net | Response | "cita"
+//! |  Queue  | SubModule | Message Type |
+//! | ------- | --------- | ------------ |
+//! | jsonrpc | Auth      | Response     |
+//! | jsonrpc | Chain     | Response     |
+//! | jsonrpc | Executor  | Response     |
+//! | jsonrpc | Net       | Response     |
 //!
 //! ### Key behavior
 //!
 //! the key Struct:
 //!
-//! ```rust
-//! /// type Arc<Mutex<HashMap<Uuid, TransferType>>>
-//! let responses = Arc::new(Mutex::new(HashMap::with_capacity(backlog_capacity)))
+//! - `TransferType`: `helper::TransferType`
+//! - `ReqInfo`: `helper::ReqInfo`
 //!
-//! pub enum TransferType {
-//!    /// http output sender
-//!    HTTP((ReqInfo, oneshot::Sender<Output>)),
-//!    /// websocket output sender
-//!    WEBSOCKET((ReqInfo, ws::Sender)),
-//! }
-//!
-//! pub struct ReqInfo {
-//!    pub jsonrpc: Option<Version>,
-//!    pub id: Id,
-//! }
-//! ```
 //! The return message of the jsonrpc service is performed through this structure `responses`,
 //! whether it is a Websocket or an Http interface.
 //! Websocket and Http only write to this structure and write the internal transaction
@@ -150,6 +137,7 @@ fn main() {
 
     let backlog_capacity = config.backlog_capacity;
 
+    // type Arc<Mutex<HashMap<Uuid, TransferType>>>
     let responses = Arc::new(Mutex::new(HashMap::with_capacity(backlog_capacity)));
     let http_responses = Arc::clone(&responses);
     let ws_responses = Arc::clone(&responses);

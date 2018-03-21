@@ -40,6 +40,7 @@ use types::filter::Filter;
 use types::ids::BlockId;
 use util::H256;
 
+/// Message forwarding and query data
 #[derive(Clone)]
 pub struct Forward {
     write_sender: Sender<ExecutedResult>,

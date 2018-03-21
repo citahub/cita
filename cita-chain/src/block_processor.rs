@@ -21,6 +21,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 
+/// Processing blocks and transaction storage
 #[derive(Clone)]
 pub struct BlockProcessor {
     chain: Arc<Chain>,

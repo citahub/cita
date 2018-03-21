@@ -21,73 +21,31 @@
 //!
 //! ### Message queuing situation
 //!
-//! 订阅频道(Queue) | Rounting_key | 消息类型(Message Type) | topic
-//! ----- | ----- | ----- | -----
-//! chain | Chain | SyncResponse | "cita"
-//! chain | Net | SyncResponse | "cita"
-//! chain | Net | SyncRequest | "cita"
-//! chain | Consensus | BlockWithProof | "cita"
-//! chain | Jsonrpc | Request | "cita"
-//! chain | Auth | BlockTxHashesReq | "cita"
-//! chain | Executor | ExecutedResult | "cita"
+//! | Queue   | SubModule   | Message Type     |
+//! | ------- | ----------- | ---------------- |
+//! | chain   | Chain       | SyncResponse     |
+//! | chain   | Net         | SyncResponse     |
+//! | chain   | Net         | SyncRequest      |
+//! | chain   | Consensus   | BlockWithProof   |
+//! | chain   | Jsonrpc     | Request          |
+//! | chain   | Auth        | BlockTxHashesReq |
+//! | chain   | Executor    | ExecutedResult   |
 //!
 //! ### Key behavior
 //!
-//! the key struct
+//! the key struct:
 //!
-//! ```rust
-//! // Database read and write and cache
-//! pub struct Chain {
-//!    blooms_config: bc::Config,
-//!    pub current_header: RwLock<Header>,
-//!    pub is_sync: AtomicBool,
-//!    // Max height in block map
-//!    pub max_height: AtomicUsize,
-//!    pub max_store_height: AtomicUsize,
-//!    pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
-//!    pub db: Arc<KeyValueDB>,
-//!    pub state_db: StateDB,
-//!
-//!    // block cache
-//!    pub block_headers: RwLock<HashMap<BlockNumber, Header>>,
-//!    pub block_bodies: RwLock<HashMap<BlockNumber, BlockBody>>,
-//!
-//!    // extra caches
-//!    pub block_hashes: RwLock<HashMap<H256, BlockNumber>>,
-//!    pub transaction_addresses: RwLock<HashMap<TransactionId, TransactionAddress>>,
-//!    pub blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
-//!    pub block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
-//!    pub nodes: RwLock<Vec<Address>>,
-//!
-//!    pub block_gas_limit: AtomicUsize,
-//!    pub account_gas_limit: RwLock<ProtoAccountGasLimit>,
-//!
-//!    cache_man: Mutex<CacheManager<CacheId>>,
-//!    polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
-//!
-//!    /// Proof type
-//!    pub prooftype: u8,
-//! }
-//!
-//! // Message forwarding and query data
-//! pub struct Forward {
-//!    write_sender: Sender<ExecutedResult>,
-//!    chain: Arc<Chain>,
-//!    ctx_pub: Sender<(String, Vec<u8>)>,
-//! }
-//!
-//! // Processing blocks and transaction storage
-//! pub struct BlockProcessor {
-//!    chain: Arc<Chain>,
-//!    ctx_pub: Sender<(String, Vec<u8>)>,
-//! }
-//! ```
+//! - [`Chain`]
+//! - `Forward`: `forward::Forward`
+//! - `BlockProcessor`: `block_processor::BlockProcessor`
 //!
 //! Construct a caching mechanism with `RowLock<Vec<.. >>` or `RowLock<HashMap<.. >>` and clean it regularly.
 //!
-//! `forward` listen to the message bus, handle read commands or forward write commands according to message key.
+//! `Forward` listen to the message bus, handle read commands or forward write commands according to message key.
 //!
-//! `blockprocessor` processing according to the forwarded information.
+//! `BlockProcessor` processing according to the forwarded information.
+//!
+//! [`Chain`]: ../core/libchain/chain/struct.Chain.html
 //!
 
 #![cfg_attr(feature = "clippy", feature(plugin))]

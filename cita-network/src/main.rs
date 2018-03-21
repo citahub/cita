@@ -22,59 +22,29 @@
 //!
 //! ### Message queuing situation
 //!
-//! 订阅频道(Queue) | Rounting_key | 消息类型(Message Type) | topic
-//! ----- | ----- | ----- | -----
-//! network_tx | Auth | Request | "cita"
-//! network_consensus | Consensus | SignedProposal | "cita"
-//! network_consensus | Consensus | RawBytes | "cita"
-//! network | Chain | Status | "cita"
-//! network | Chain | syncResponse | "cita"
-//! network | Jonsonrpc | RequestNet | "cita"
+//! |       Queue       | SubModule | Message Type   |
+//! | ----------------- | --------- | -------------- |
+//! | network_tx        | Auth      | Request        |
+//! | network_consensus | Consensus | SignedProposal |
+//! | network_consensus | Consensus | RawBytes       |
+//! | network           | Chain     | Status         |
+//! | network           | Chain     | syncResponse   |
+//! | network           | Jonsonrpc | RequestNet     |
 //!
 //! ### p2p binary protocol
-//! Start | Full length | Key length | Key value | Message value
-//! --- | --- | --- | --- | ---
-//! \xDEADBEEF | u32 | u8(byte) | bytes of a str | a serialize data
+//! | Start      | Full length | Key length | Key value      | Message value    |
+//! | ---------- | ----------- | ---------- | -------------- | ---------------- |
+//! | \xDEADBEEF | u32         | u8(byte)   | bytes of a str | a serialize data |
 //!
-//! full_len = u8 + key_len + body_len
+//! full_len = 1 + key_len + body_len
 //!
 //! ### Key behavoir
 //!
 //! the key struct:
 //!
-//! ```rust
-//! // list of peer: id, addr, tcp_connect
-//! type PeerPairs = Arc<RwLock<Vec<(u32, String, Option<TcpStream>)>>>;
-//!
-//! // Manage p2p networks
-//! pub struct Connection {
-//!    pub id_card: u32,
-//!    pub peers_pair: PeerPairs,
-//! }
-//!
-//! // Message forwarding, include p2p and local
-//! pub struct NetWork {
-//!    con: Arc<Connection>,
-//!    tx_pub: Sender<(String, Vec<u8>)>,
-//!    tx_sync: Sender<(Source, (String, Vec<u8>))>,
-//!    tx_new_tx: Sender<(String, Vec<u8>)>,
-//!    tx_consensus: Sender<(String, Vec<u8>)>,
-//! }
-//!
-//! // Get messages and determine if you need to synchronize or broadcast the current node status
-//! pub struct Synchronizer {
-//!    tx_pub: mpsc::Sender<(String, Vec<u8>)>,
-//!    con: Arc<Connection>,
-//!    current_status: Status,
-//!    global_status: Status,
-//!    sync_end_height: u64, //current_status <= sync_end_status
-//!    is_synchronizing: bool,
-//!    latest_status_lists: BTreeMap<u64, VecDeque<u32>>,
-//!    block_lists: BTreeMap<u64, Block>,
-//!    rand: ThreadRng,
-//!    sync_time_out: Instant,
-//! }
-//! ```
+//! - [`Connection`]
+//! - [`NetWork`]
+//! - [`Synchronizer`]
 //!
 //! In addition to the `tokio_server`, there is an `Arc<Connection>` for
 //! this structure in almost all the threads of this module to confirm that the node is alive,
@@ -82,8 +52,14 @@
 //! node status broadcasts, synchronization node blocks Height and so on.
 //!
 //! About binary protocol encoding and decoding, please look at module `citaprotocol`, the fuction
-//! `pubsub_message_to_network_message` and `network_message_to_pubsub_message`.
-//! 
+//! [`pubsub_message_to_network_message`] and [`network_message_to_pubsub_message`].
+//!
+//! [`Connection`]: ./connection/struct.Connection.html
+//! [`NetWork`]: ./network/struct.NetWork.html
+//! [`Synchronizer`]: ./synchronizer/struct.Synchronizer.html
+//! [`pubsub_message_to_network_message`]: ./citaprotocol/fn.pubsub_message_to_network_message.html
+//! [`network_message_to_pubsub_message`]: ./citaprotocol/fn.network_message_to_pubsub_message.html
+//!
 
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]

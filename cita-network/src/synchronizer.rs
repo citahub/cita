@@ -13,6 +13,7 @@ use std::time::{Duration, Instant};
 const SYNC_STEP: u64 = 20;
 const SYNC_TIME_OUT: u64 = 60;
 
+/// Get messages and determine if need to synchronize or broadcast the current node status
 pub struct Synchronizer {
     tx_pub: mpsc::Sender<(String, Vec<u8>)>,
     con: Arc<Connection>,
