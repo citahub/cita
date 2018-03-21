@@ -1,3 +1,43 @@
+//! ## Summary
+//!
+//! One of CITA's core components, the only external module that provides jsonrpc,
+//! is used to facilitate user interaction with the chain and forward requests.
+//!
+//! ### Message queuing situation
+//!
+//! 订阅频道(Queue) | Rounting_key | 消息类型(Message Type) | topic
+//! ----- | ----- | ----- | -----
+//! jsonrpc | Auth | Response | "cita"
+//! jsonrpc | Chain | Response | "cita"
+//! jsonrpc | Executor | Response | "cita"
+//! jsonrpc | Net | Response | "cita"
+//!
+//! ### Key behavior
+//!
+//! the key Struct:
+//!
+//! ```rust
+//! /// type Arc<Mutex<HashMap<Uuid, TransferType>>>
+//! let responses = Arc::new(Mutex::new(HashMap::with_capacity(backlog_capacity)))
+//!
+//! pub enum TransferType {
+//!    /// http output sender
+//!    HTTP((ReqInfo, oneshot::Sender<Output>)),
+//!    /// websocket output sender
+//!    WEBSOCKET((ReqInfo, ws::Sender)),
+//! }
+//!
+//! pub struct ReqInfo {
+//!    pub jsonrpc: Option<Version>,
+//!    pub id: Id,
+//! }
+//! ```
+//! The return message of the jsonrpc service is performed through this structure `responses`,
+//! whether it is a Websocket or an Http interface.
+//! Websocket and Http only write to this structure and write the internal transaction
+//! uuid number and `TransferType`.
+//!
+
 #![feature(try_from)]
 extern crate bytes;
 extern crate clap;

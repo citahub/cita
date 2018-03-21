@@ -15,6 +15,76 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+//! ## Summary
+//!
+//! One of the CITA's core components is used to implement the peer-to-peer network
+//! and provide point-to-point connection interaction.
+//!
+//! ### Message queuing situation
+//!
+//! 订阅频道(Queue) | Rounting_key | 消息类型(Message Type) | topic
+//! ----- | ----- | ----- | -----
+//! network_tx | Auth | Request | "cita"
+//! network_consensus | Consensus | SignedProposal | "cita"
+//! network_consensus | Consensus | RawBytes | "cita"
+//! network | Chain | Status | "cita"
+//! network | Chain | syncResponse | "cita"
+//! network | Jonsonrpc | RequestNet | "cita"
+//!
+//! ### p2p binary protocol
+//! Start | Full length | Key length | Key value | Message value
+//! --- | --- | --- | --- | ---
+//! \xDEADBEEF | u32 | u8(byte) | bytes of a str | a serialize data
+//!
+//! full_len = u8 + key_len + body_len
+//!
+//! ### Key behavoir
+//!
+//! the key struct:
+//!
+//! ```rust
+//! // list of peer: id, addr, tcp_connect
+//! type PeerPairs = Arc<RwLock<Vec<(u32, String, Option<TcpStream>)>>>;
+//!
+//! // Manage p2p networks
+//! pub struct Connection {
+//!    pub id_card: u32,
+//!    pub peers_pair: PeerPairs,
+//! }
+//!
+//! // Message forwarding, include p2p and local
+//! pub struct NetWork {
+//!    con: Arc<Connection>,
+//!    tx_pub: Sender<(String, Vec<u8>)>,
+//!    tx_sync: Sender<(Source, (String, Vec<u8>))>,
+//!    tx_new_tx: Sender<(String, Vec<u8>)>,
+//!    tx_consensus: Sender<(String, Vec<u8>)>,
+//! }
+//!
+//! // Get messages and determine if you need to synchronize or broadcast the current node status
+//! pub struct Synchronizer {
+//!    tx_pub: mpsc::Sender<(String, Vec<u8>)>,
+//!    con: Arc<Connection>,
+//!    current_status: Status,
+//!    global_status: Status,
+//!    sync_end_height: u64, //current_status <= sync_end_status
+//!    is_synchronizing: bool,
+//!    latest_status_lists: BTreeMap<u64, VecDeque<u32>>,
+//!    block_lists: BTreeMap<u64, Block>,
+//!    rand: ThreadRng,
+//!    sync_time_out: Instant,
+//! }
+//! ```
+//!
+//! In addition to the `tokio_server`, there is an `Arc<Connection>` for
+//! this structure in almost all the threads of this module to confirm that the node is alive,
+//! increase or decrease nodes, consensus message broadcasts, authentication message broadcasts,
+//! node status broadcasts, synchronization node blocks Height and so on.
+//!
+//! About binary protocol encoding and decoding, please look at module `citaprotocol`, the fuction
+//! `pubsub_message_to_network_message` and `network_message_to_pubsub_message`.
+//! 
+
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
