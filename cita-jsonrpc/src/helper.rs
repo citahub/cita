@@ -12,7 +12,9 @@ use util::Mutex;
 use ws;
 
 pub enum TransferType {
+    /// http output sender
     HTTP((ReqInfo, oneshot::Sender<Output>)),
+    /// websocket output sender
     WEBSOCKET((ReqInfo, ws::Sender)),
 }
 

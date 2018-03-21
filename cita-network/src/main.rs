@@ -15,6 +15,52 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+//! ## Summary
+//!
+//! One of the CITA's core components is used to implement the peer-to-peer network
+//! and provide point-to-point connection interaction.
+//!
+//! ### Message queuing situation
+//!
+//! |       Queue       | SubModule | Message Type   |
+//! | ----------------- | --------- | -------------- |
+//! | network_tx        | Auth      | Request        |
+//! | network_consensus | Consensus | SignedProposal |
+//! | network_consensus | Consensus | RawBytes       |
+//! | network           | Chain     | Status         |
+//! | network           | Chain     | syncResponse   |
+//! | network           | Jonsonrpc | RequestNet     |
+//!
+//! ### p2p binary protocol
+//! | Start      | Full length | Key length | Key value      | Message value    |
+//! | ---------- | ----------- | ---------- | -------------- | ---------------- |
+//! | \xDEADBEEF | u32         | u8(byte)   | bytes of a str | a serialize data |
+//!
+//! full_len = 1 + key_len + body_len
+//!
+//! ### Key behavoir
+//!
+//! the key struct:
+//!
+//! - [`Connection`]
+//! - [`NetWork`]
+//! - [`Synchronizer`]
+//!
+//! In addition to the `tokio_server`, there is an `Arc<Connection>` for
+//! this structure in almost all the threads of this module to confirm that the node is alive,
+//! increase or decrease nodes, consensus message broadcasts, authentication message broadcasts,
+//! node status broadcasts, synchronization node blocks Height and so on.
+//!
+//! About binary protocol encoding and decoding, please look at module `citaprotocol`, the fuction
+//! [`pubsub_message_to_network_message`] and [`network_message_to_pubsub_message`].
+//!
+//! [`Connection`]: ./connection/struct.Connection.html
+//! [`NetWork`]: ./network/struct.NetWork.html
+//! [`Synchronizer`]: ./synchronizer/struct.Synchronizer.html
+//! [`pubsub_message_to_network_message`]: ./citaprotocol/fn.pubsub_message_to_network_message.html
+//! [`network_message_to_pubsub_message`]: ./citaprotocol/fn.network_message_to_pubsub_message.html
+//!
+
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
