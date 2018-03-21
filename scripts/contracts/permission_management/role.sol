@@ -33,6 +33,7 @@ contract Role {
 
     function deleteRole()
         public
+        onlyRoleManagement
         returns (bool)
     {
         close();
@@ -41,6 +42,7 @@ contract Role {
 
     function updateName(bytes32 _name)
         public
+        onlyRoleManagement
         returns (bool)
     {
         NameUpdated(name, _name);
@@ -50,6 +52,7 @@ contract Role {
 
     function addPermissions(address[] _permissions)
         public
+        onlyRoleManagement
         returns (bool)
     {
         for (uint index = 0; index < _permissions.length; index++) {
@@ -63,6 +66,7 @@ contract Role {
 
     function deletePermissions(address[] _permissions)
         public
+        onlyRoleManagement
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++) {
