@@ -59,7 +59,8 @@ use util::H256;
 
 pub type PubType = (String, Vec<u8>);
 
-fn create_contracts(
+// Build the block from transactions, then send it to MQ
+fn send_block(
     pre_hash: H256,
     height: u64,
     pub_sender: Sender<PubType>,
@@ -77,17 +78,17 @@ fn create_contracts(
             let contract_address = tx["contract_address"].as_str().unwrap();
             let tx_privkey_str = tx["privkey"].as_str().unwrap();
             let tx_privkey: PrivKey = H256::from_any_str(tx_privkey_str).unwrap().into();
-            let code = tx["code"].as_str().unwrap();
+            let data = tx["data"].as_str().unwrap();
             let quota = tx["quota"].as_u64().unwrap();
             let nonce = tx["nonce"].as_u64().unwrap() as u32;
             let valid_until_block = tx["valid_until_block"].as_u64().unwrap();
             info!(
-                "address={}, code={}, quota={}, nonce={}",
-                contract_address, code, quota, nonce
+                "address={}, data={}, quota={}, nonce={}",
+                contract_address, data, quota, nonce
             );
-            Generateblock::generate_tx(
+            Generateblock::build_tx(
                 contract_address,
-                code,
+                data,
                 quota,
                 nonce,
                 valid_until_block,
@@ -180,7 +181,7 @@ fn main() {
                         "send consensus block rich_status.height={} height = {:?}",
                         rich_status.height, height
                     );
-                    create_contracts(
+                    send_block(
                         H256::from_slice(&rich_status.hash),
                         height,
                         tx_pub.clone(),

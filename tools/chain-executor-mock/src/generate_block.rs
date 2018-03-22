@@ -63,23 +63,26 @@ impl Generateblock {
         println!("{:?}", self.pre_hash);
     }
 
-    pub fn generate_tx(
+    /// Generate a signed transaction
+    ///
+    /// ```no_run
+    /// message Transaction {
+    ///     string to = 1;
+    ///     string nonce = 2;
+    ///     uint64 quota = 3;
+    ///     uint64 valid_until_block = 4;
+    ///     bytes data = 5;
+    /// }
+    /// ```
+    pub fn build_tx(
         to_address: &str,
-        code: &str,
+        data: &str,
         quota: u64,
         nonce: u32,
         valid_until_block: u64,
         privkey: &PrivKey,
     ) -> SignedTransaction {
-        /*
-        message Transaction {
-          string to = 1;
-          string nonce = 2;
-          uint64 quota = 3;
-          uint64 valid_until_block = 4;
-          bytes data = 5;
-        } */
-        let data = code.from_hex().unwrap();
+        let data = data.from_hex().unwrap();
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_nonce(format!("{}", nonce));
@@ -90,6 +93,7 @@ impl Generateblock {
         tx.sign(*privkey)
     }
 
+    /// Build a signed block with given transactions
     pub fn build_block_with_proof(
         txs: &Vec<SignedTransaction>,
         pre_hash: H256,
