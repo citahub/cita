@@ -53,7 +53,6 @@ struct Restoration {
     state_chunks_left: HashSet<H256>,
     state: StateRebuilder,
     writer: Option<LooseWriter>,
-    snappy_buffer: Bytes,
     //final_state_root: H256,
     //guard: Guard,
     db: Arc<Database>,
@@ -87,7 +86,6 @@ impl Restoration {
             state_chunks_left: state_chunks,
             state: StateRebuilder::new(raw_db.clone(), params.pruning),
             writer: params.writer,
-            snappy_buffer: Vec::new(),
             //final_state_root: root,
             //guard: params.guard,
             db: raw_db,
@@ -97,12 +95,12 @@ impl Restoration {
     // feeds a state chunk, aborts early if `flag` becomes false.
     fn feed_state(&mut self, hash: H256, chunk: &[u8] /*, flag: &AtomicBool*/) -> Result<(), Error> {
         if self.state_chunks_left.contains(&hash) {
-            let len = snappy::decompress_into(chunk, &mut self.snappy_buffer)?;
+            let mut decompressed_data = Vec::new();
+            snappy::decompress_to(chunk, &mut decompressed_data)?;
 
             let restoring_snapshot: AtomicBool = AtomicBool::new(false);
             restoring_snapshot.store(true, Ordering::SeqCst);
-            self.state
-                .feed(&self.snappy_buffer[..len], &restoring_snapshot)?;
+            self.state.feed(&decompressed_data, &restoring_snapshot)?;
 
             if let Some(ref mut writer) = self.writer.as_mut() {
                 writer.write_state_chunk(hash, chunk)?;

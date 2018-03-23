@@ -52,7 +52,7 @@ use types::ids::BlockId;
 //mod tests;
 
 /// A sink for produced chunks.
-pub type ChunkSink<'a> = FnMut(&[u8]) -> ::std::io::Result<()> + 'a;
+pub type ChunkSink<'a> = FnMut(&[u8]) -> Result<(), Error> + 'a;
 
 /// A progress indicator for snapshots.
 #[derive(Debug, Default)]
@@ -181,20 +181,21 @@ pub fn chunk_block<'a>(
     progress: &'a Progress,
 ) -> Result<Vec<H256>, Error> {
     let mut chunk_hashes = Vec::new();
-    let mut snappy_buffer = vec![0; snappy::max_compressed_len(PREFERRED_CHUNK_SIZE)];
+    let mut compressed_data = Vec::new();
 
     {
         let mut chunk_sink = |raw_data: &[u8]| {
-            let compressed_size = snappy::compress_into(raw_data, &mut snappy_buffer);
-            let compressed = &snappy_buffer[..compressed_size];
-            let hash = sha3(&compressed);
-            let size = compressed.len();
+            compressed_data.clear();
+            snappy::compress_to(raw_data, &mut compressed_data)?;
+            let hash = sha3(&compressed_data);
 
-            writer.lock().write_block_chunk(hash, compressed)?;
+            writer.lock().write_block_chunk(hash, &compressed_data)?;
             trace!(target: "snapshot", "wrote block chunk. hash: {:?}, size: {}, uncompressed size: {}",
-				hash, size, raw_data.len());
+                   hash, compressed_data.len(), raw_data.len());
 
-            progress.size.fetch_add(size, Ordering::SeqCst);
+            progress
+                .size
+                .fetch_add(compressed_data.len(), Ordering::SeqCst);
             chunk_hashes.push(hash);
             Ok(())
         };

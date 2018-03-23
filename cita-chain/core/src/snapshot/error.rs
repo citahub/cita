@@ -22,6 +22,7 @@ use types::ids::BlockId;
 
 use rlp::DecoderError;
 use util::H256;
+use util::snappy::SnappyError;
 use util::trie::TrieError;
 
 /// Snapshot-related errors.
@@ -63,6 +64,8 @@ pub enum Error {
     BadEpochProof(u64),
     /// Wrong chunk format.
     WrongChunkFormat(String),
+    /// Snappy error.
+    Snappy(SnappyError),
 }
 
 impl fmt::Display for Error {
@@ -106,6 +109,7 @@ impl fmt::Display for Error {
             Error::SnapshotsUnsupported => write!(f, "Snapshots unsupported by consensus engine."),
             Error::BadEpochProof(i) => write!(f, "Bad epoch proof for transition to epoch {}", i),
             Error::WrongChunkFormat(ref msg) => write!(f, "Wrong chunk format: {}", msg),
+            Error::Snappy(ref err) => write!(f, "Snappy error: {}", err),
         }
     }
 }
@@ -125,6 +129,12 @@ impl From<TrieError> for Error {
 impl From<DecoderError> for Error {
     fn from(err: DecoderError) -> Self {
         Error::Decoder(err)
+    }
+}
+
+impl From<SnappyError> for Error {
+    fn from(err: SnappyError) -> Self {
+        Error::Snappy(err)
     }
 }
 
