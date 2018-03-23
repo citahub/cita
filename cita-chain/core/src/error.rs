@@ -320,7 +320,7 @@ pub enum Error {
     /// Standard io error.
     StdIo(::std::io::Error),
     /// Snappy error.
-    Snappy(::util::snappy::InvalidInput),
+    Snappy(::util::snappy::SnappyError),
     /// Ethkey error.
     Ethkey(EthkeyError),
 }
@@ -404,8 +404,8 @@ impl From<::std::io::Error> for Error {
     }
 }
 
-impl From<snappy::InvalidInput> for Error {
-    fn from(err: snappy::InvalidInput) -> Error {
+impl From<snappy::SnappyError> for Error {
+    fn from(err: snappy::SnappyError) -> Error {
         Error::Snappy(err)
     }
 }

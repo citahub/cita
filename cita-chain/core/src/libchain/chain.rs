@@ -775,18 +775,19 @@ impl Chain {
                         return None;
                     }
                     let receipt = receipt.unwrap();
-                    let receipt_tree =
-                        merklehash::MerkleTree::from_bytes(receipts.receipts.iter().map(|r| r.rlp_bytes().to_vec()));
-                    let receipt_proof: merklehash::MerkleProof = receipt_tree.get_proof_by_input_index(index);
-                    let tx = block.body().transactions()[index].clone();
-                    let block_header = block.header().clone();
-                    let tx_proof = TxProof {
-                        block_header,
-                        receipt,
-                        receipt_proof,
-                        tx,
-                    };
-                    Some(tx_proof.rlp_bytes().to_vec())
+                    merklehash::MerkleTree::from_bytes(receipts.receipts.iter().map(|r| r.rlp_bytes().to_vec()))
+                        .get_proof_by_input_index(index)
+                        .and_then(|receipt_proof| {
+                            let tx = block.body().transactions()[index].clone();
+                            let block_header = block.header().clone();
+                            let tx_proof = TxProof {
+                                block_header,
+                                receipt,
+                                receipt_proof,
+                                tx,
+                            };
+                            Some(tx_proof.rlp_bytes().to_vec())
+                        })
                 })
             })
         })

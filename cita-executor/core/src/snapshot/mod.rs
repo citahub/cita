@@ -287,7 +287,6 @@ struct StateChunker<'a> {
     hashes: Vec<H256>,
     rlps: Vec<Bytes>,
     cur_size: usize,
-    snappy_buffer: Vec<u8>,
     writer: &'a Mutex<SnapshotWriter + 'a>,
     progress: &'a Progress,
 }
@@ -314,20 +313,22 @@ impl<'a> StateChunker<'a> {
 
         let raw_data = stream.out();
 
-        let compressed_size = snappy::compress_into(&raw_data, &mut self.snappy_buffer);
-        let compressed = &self.snappy_buffer[..compressed_size];
-        let hash = sha3(&compressed);
+        let mut compressed_data = Vec::new();
+        snappy::compress_to(&raw_data, &mut compressed_data)?;
+        let hash = sha3(&compressed_data);
 
-        self.writer.lock().write_state_chunk(hash, compressed)?;
-        info!(target: "snapshot", "wrote state chunk.compressed size: {},
-            uncompressed size: {}",compressed_size, raw_data.len());
+        self.writer
+            .lock()
+            .write_state_chunk(hash, &compressed_data)?;
+        info!(target: "snapshot", "wrote state chunk.compressed size: {}, uncompressed size: {}",
+              compressed_data.len(), raw_data.len());
 
         self.progress
             .accounts
             .fetch_add(num_entries, Ordering::SeqCst);
         self.progress
             .size
-            .fetch_add(compressed_size, Ordering::SeqCst);
+            .fetch_add(compressed_data.len(), Ordering::SeqCst);
 
         self.hashes.push(hash);
         self.cur_size = 0;
@@ -356,7 +357,6 @@ pub fn chunk_state<'a>(
         hashes: Vec::new(),
         rlps: Vec::new(),
         cur_size: 0,
-        snappy_buffer: vec![0; snappy::max_compressed_len(PREFERRED_CHUNK_SIZE)],
         writer: writer,
         progress: progress,
     };
