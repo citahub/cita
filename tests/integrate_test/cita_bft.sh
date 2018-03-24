@@ -39,8 +39,8 @@ delete_pid_file()
 {
     id=$1
     cd ${CUR_PATH}/../../admintool/release/node${id}
-    if [ -f "consensus_tendermint.pid" ]; then
-        rm -rf consensus_tendermint.pid
+    if [ -f "consensus_cita_bft.pid" ]; then
+        rm -rf consensus_cita_bft.pid
     fi
 }
 
@@ -48,25 +48,25 @@ stop_consensus_cmd()
 {
     id=$1
     cd ${CUR_PATH}/../../admintool/release/node${id}
-    
-    if [ ! -f "consensus_tendermint.pid" ]; then
-        consensus_tendermint_pid=$(tail -3 .pid | head -1)
-#        kill -9 $consensus_tendermint_pid
+
+    if [ ! -f "consensus_cita_bft.pid" ]; then
+        consensus_cita_bft_pid=$(tail -3 .pid | head -1)
+#        kill -9 $consensus_cita_bft_pid
     else
-        consensus_tendermint_pid=$(cat consensus_tendermint.pid)
-#        kill -9 $consensus_tendermint_pid
-        rm -rf consensus_tendermint.pid
+        consensus_cita_bft_pid=$(cat consensus_cita_bft.pid)
+#        kill -9 $consensus_cita_bft_pid
+        rm -rf consensus_cita_bft.pid
     fi
-    
-    flag=$(ps -ef | grep $consensus_tendermint_pid | grep -v grep | wc -l)
+
+    flag=$(ps -ef | grep $consensus_cita_bft_pid | grep -v grep | wc -l)
     if [ $flag -gt 0 ]; then
-        kill -9 $consensus_tendermint_pid
+        kill -9 $consensus_cita_bft_pid
     fi
 }
 
 stop_consensus()
 {
-#    killall consensus_tendermint
+#    killall consensus_cita_bft
     for((i=0; i<=$1;i++))
     do
         stop_consensus_cmd $i
@@ -77,15 +77,15 @@ start_consensus_cmd()
 {
     id=$1
     cd ${CUR_PATH}/../../admintool/release/node${id}
-    RUST_LOG=consensus_tendermint bin/consensus_tendermint -c consensus.json     >log/node${id}.consensus  2>&1 &
-    echo $! > consensus_tendermint.pid
+    RUST_LOG=consensus_cita_bft bin/consensus_cita_bft -c consensus.json     >log/node${id}.consensus  2>&1 &
+    echo $! > consensus_cita_bft.pid
 }
 
 start_consensus()
 {
     while :
     do
-        process=$(ps -ef | grep "bin/consensus_tendermint" | grep -v grep | wc -l)
+        process=$(ps -ef | grep "bin/consensus_cita_bft" | grep -v grep | wc -l)
         if [ $process -lt 4 ]; then
             break
         fi
@@ -107,7 +107,7 @@ start_all () {
 get_height(){
     h=`${CUR_PATH}/cita_blockNumber.sh`
     h=$(echo $h | sed 's/\"//g')
-    echo $((h))    
+    echo $((h))
 }
 
 check_height_change () {
@@ -128,7 +128,7 @@ delete_log()
     cd ${CUR_PATH}/../wrk_benchmark_test/
     if [ -f "result.log" ]; then
         rm -rf result.log
-    fi   
+    fi
 }
 
 delete_tc()
@@ -170,13 +170,13 @@ start_send_tx()
     fi
 
     sleep 10
-    
+
     #./setPortDelay.sh 4000 1000 10 > /dev/null &
     pid=$!
     ./benchmark.sh config_call.json 2 > result.log &
     while :
     do
-           
+
             if [ ! -f "result.log" ]; then
                 continue
             fi
@@ -238,7 +238,7 @@ check_height_change
 
 stop_num=0
 
-echo "###start_test_consensus_tendermint"
+echo "###start_test_consensus_cita_bft"
 delete_pid_file 0
 delete_pid_file 1
 delete_pid_file 2
@@ -250,13 +250,13 @@ do
         break
     fi
     sleep 30
-    echo "###start consensus_tendermint process $stop_num"
+    echo "###start consensus_cita_bft process $stop_num"
     delete_log
     start_send_tx $run $stop_num &
     start_consensus $stop_num &
     send_tx_over
     run=1
-    echo "###end consensus_tendermint process $stop_num"
+    echo "###end consensus_cita_bft process $stop_num"
     stop_num=$[$stop_num+1]
 done
 

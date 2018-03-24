@@ -1,6 +1,6 @@
 #!/bin/bash
 #usage: start demo nodes
-#       ./cita_start_with_kafka.sh 
+#       ./cita_start_with_kafka.sh
 #       ./cita_start_with_kafka.sh [error,info, warn, debug, trace]
 
 set +e
@@ -13,7 +13,7 @@ BINARY_DIR=${SOURCE_DIR}/target/install
 . ${SOURCE_DIR}/tests/integrate_test/util.sh
 
 if [ ! -n "$consensus" ]; then
-    consensus="tendermint"
+    consensus="cita-bft"
 fi
 
 echo "###cleanup"

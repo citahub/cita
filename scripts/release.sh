@@ -16,7 +16,7 @@ mkdir -p                                   target/install/resource/
 
 # 1) binary
 cp -rf target/${type}/cita-chain           target/install/bin/
-cp -rf target/${type}/cita-tendermint      target/install/bin/
+cp -rf target/${type}/cita-bft             target/install/bin/
 cp -rf target/${type}/cita-jsonrpc         target/install/bin/
 cp -rf target/${type}/cita-auth            target/install/bin/
 cp -rf target/${type}/cita-network         target/install/bin/

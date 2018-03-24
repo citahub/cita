@@ -1,7 +1,7 @@
 #!/bin/bash
 #usage: start demo nodes
-#       ./cita_start.sh 
-#       ./cita_start.sh [error,info, warn, debug, trace] [tendermint]
+#       ./cita_start.sh
+#       ./cita_start.sh [error,info, warn, debug, trace] [cita-bft]
 
 set +e
 
@@ -13,7 +13,7 @@ BINARY_DIR=${SOURCE_DIR}/target/install
 . ${SOURCE_DIR}/tests/integrate_test/util.sh
 
 if [ ! -n "$consensus" ]; then
-    consensus="tendermint"
+    consensus="cita-bft"
 fi
 
 echo "###cleanup"
