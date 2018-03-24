@@ -13,7 +13,7 @@ display_help()
     echo "    default value is '127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003'"
     echo
     echo "-n consensus_name  name of consensus algorithm"
-    echo "    default value is 'tendermint', other is 'raft' and 'poa'"
+    echo "    default value is 'cita-bft', other is 'raft' and 'poa'"
     echo
     echo "-m crypto_method    name of crypto algorithm"
     echo "    default value is 'SECP'"
@@ -21,7 +21,7 @@ display_help()
     echo "-d block_duration    block generating duration(millisecond)"
     echo "    default value is '3000'"
     echo
-    echo "-t consensus test flag, only valid for tendermint"
+    echo "-t consensus test flag, only valid for cita-bft"
     echo
     echo "-h enable jsonrpc http"
     echo "   default enable 'true'"
@@ -88,7 +88,7 @@ done
 TMP=${IP_LIST//[^\:]}
 SIZE=${#TMP}
 
-: ${CONSENSUS_NAME:="tendermint"}
+: ${CONSENSUS_NAME:="cita-bft"}
 
 : ${CRYPTO_METHOD:="SECP"}
 
@@ -96,7 +96,7 @@ SIZE=${#TMP}
 
 : ${IS_TEST:=false}
 
-sed -i "s/tendermint/$CONSENSUS_NAME/g" ${BINARY_DIR}/bin/cita
+sed -i "s/cita-bft/$CONSENSUS_NAME/g" ${BINARY_DIR}/bin/cita
 
 create_genesis(){
     if [ ! -e "${BINARY_DIR}/scripts/admintool/init_data.json" ]; then

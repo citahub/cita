@@ -496,6 +496,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "cita-bft"
+version = "0.1.0"
+dependencies = [
+ "authority_manage 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "clap 2.31.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "engine 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "protobuf 1.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)",
+ "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+]
+
+[[package]]
 name = "cita-chain"
 version = "0.6.0"
 dependencies = [
@@ -665,34 +693,6 @@ dependencies = [
  "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
-]
-
-[[package]]
-name = "cita-tendermint"
-version = "0.1.0"
-dependencies = [
- "authority_manage 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "clap 2.31.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
- "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "engine 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "protobuf 1.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)",
- "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "time 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
 ]
 

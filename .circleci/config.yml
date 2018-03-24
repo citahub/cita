@@ -63,7 +63,7 @@ jobs:
               --packages cita-chain \
               --packages core \
               --packages common-types \
-              --packages cita-tendermint \
+              --packages cita-bft \
               --packages cita-network \
               --packages cita-executor \
               --packages core-executor \

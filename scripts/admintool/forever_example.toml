@@ -17,10 +17,10 @@ pidfile = ".cita-network.pid"
 respawn = 3
 
 [[process]]
-name = "cita-tendermint"
-command = "cita-tendermint"
+name = "cita-bft"
+command = "cita-bft"
 args = ["-c","consensus.toml"]
-pidfile = ".cita-tendermint.pid"
+pidfile = ".cita-bft.pid"
 respawn = 3
 
 [[process]]

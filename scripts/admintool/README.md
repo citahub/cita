@@ -27,7 +27,7 @@ option:
     default value is '127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003'
 
 -n consensus_name  name of consensus algorithm
-    default value is 'tendermint', other is 'raft' and 'poa'
+    default value is 'cita-bft', other is 'raft' and 'poa'
 
 -m crypto_method    name of crypto algorithm
     default value is 'SECP'
@@ -35,7 +35,7 @@ option:
 -d block_duration    block generating duration(millisecond)
     default value is '3000'
 
--t            consensus test flag, only valid for tendermint
+-t            consensus test flag, only valid for cita-bft
 
 -h enable jsonrpc http
    default enable 'true'
@@ -323,7 +323,7 @@ Function signatures:
 
 ```shell
 contract address: 0x00000000000000000000000000000000013241a3
-    Function signatures: 
+    Function signatures:
     70480275: addAdmin(address)
     dae99b3a: getAccountGasLimit()
     776dd3b6: getAccountQuota(address)

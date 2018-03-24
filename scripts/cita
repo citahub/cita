@@ -47,7 +47,7 @@ start() {
     if [ -z ${debug} ]; then
         cita-forever start > /dev/null 2>&1
     else
-        RUST_LOG=cita_auth=${debug},cita_chain=${debug},cita_executor=${debug},cita_jsonrpc=${debug},cita_network=${debug},cita_tendermint=${debug},\
+        RUST_LOG=cita_auth=${debug},cita_chain=${debug},cita_executor=${debug},cita_jsonrpc=${debug},cita_network=${debug},cita_bft=${debug},\
 core=${debug},engine=${debug},jsonrpc_types=${debug},libproto=${debug},proof=${debug},txpool=${debug} \
         cita-forever start > /dev/null 2>&1
     fi
@@ -87,9 +87,9 @@ rotate() {
 status() {
     for pid_file in `find . -name "*.pid"`; do
         pid=$(cat ${pid_file})
-        ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep" || true        
+        ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep" || true
     done
-        
+
 }
 
 logs() {
@@ -120,7 +120,7 @@ usage(){
     echo "      restart          restart cita"
     echo "      logrotate        logrotate cita"
     echo "      status           display cita process status"
-    echo "      logs             display cita's service(jsonrpc/chain/tendermint/network/auth) logs"
+    echo "      logs             display cita's service(jsonrpc/chain/bft/network/auth) logs"
     echo "      clean            backup and clean cita data&log file"
     echo "      stat             display cita's cpu/ram/io/disk information"
     echo "      usage            display help information"

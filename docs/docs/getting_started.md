@@ -95,7 +95,7 @@ cd target/install
 
 * 系统管理员账户
 * 网络列表，按照`IP1:PORT1,IP2:PORT2,IP3:PORT3 ... IPn:PORTn`的格式
-* 共识算法选择，可供选择的有`tendermint`、`raft` 和`poa`
+* 共识算法选择，可供选择的有`cita-bft`、`raft` 和`poa`
 * 加密方法选择
 * 出块时间间隔
 * 单数据块中交易数量限制
