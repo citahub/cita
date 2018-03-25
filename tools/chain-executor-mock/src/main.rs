@@ -77,7 +77,7 @@ fn send_block(
         .map(|tx| {
             let contract_address = tx["contract_address"].as_str().unwrap();
             let tx_privkey_str = tx["privkey"].as_str().unwrap();
-            let tx_privkey: PrivKey = H256::from_any_str(tx_privkey_str).unwrap().into();
+            let tx_privkey: PrivKey = PrivKey::from_any_str(tx_privkey_str).unwrap();
             let data = tx["data"].as_str().unwrap();
             let quota = tx["quota"].as_u64().unwrap();
             let nonce = tx["nonce"].as_u64().unwrap() as u32;
@@ -152,7 +152,7 @@ fn main() {
 
     let privkey: PrivKey = {
         let privkey_str = mock_data["privkey"].as_str().unwrap();
-        H256::from_any_str(privkey_str).unwrap().into()
+        PrivKey::from_any_str(privkey_str).unwrap()
     };
     let mut mock_blocks: HashMap<u64, serde_json::Value> = HashMap::new();
     for block in mock_data["blocks"].as_array_mut().unwrap().into_iter() {
