@@ -30,6 +30,7 @@ const clearRole = roleManagement.clearRole;
 const deleteRole = roleManagement.deleteRole;
 const queryRoles = roleManagement.queryRoles;
 const queryAccounts = roleManagement.queryAccounts;
+const queryPermissionsFromRoleMana = roleManagement.queryPermissions;
 
 // authorization
 const queryPermissions = authorization.queryPermissions;
@@ -37,6 +38,7 @@ let roleInstance;
 
 // temp
 let newRoleAddr;
+let newRoleAddr2;
 let lengthOfPermissions;
 let lengthOfRoles;
 
@@ -127,6 +129,14 @@ describe('\n\ntest role management contract\n\n', function () {
         it('should have the added permissions: role', function () {
             roleInstance = role.at(newRoleAddr);
             let res = roleInstance.queryPermissions.call();
+            console.log('\nNew Added permissions:\n', res);
+            let lastPermissionIndex = res.length - 1;
+            assert.equal(res[lastPermissionIndex], '0x00000000000000000000000000000000033241b5');
+            assert.equal(res.length, lengthOfPermissions + 1);
+        });
+
+        it('should have the added permissions: from role_management', function () {
+            let res = queryPermissionsFromRoleMana(newRoleAddr);
             console.log('\nNew Added permissions:\n', res);
             let lastPermissionIndex = res.length - 1;
             assert.equal(res[lastPermissionIndex], '0x00000000000000000000000000000000033241b5');
@@ -426,4 +436,109 @@ describe('\n\ntest role management contract\n\n', function () {
         });
     });
 
+    describe('\ntest cancel role should check other roles of account\n', function () {
+        it('should send a newRole tx and get receipt', function (done) {
+            let res = newRole('testNewRole', permissions);
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    newRoleAddr = receipt.logs[0].address;
+                    console.log('\nThe new role contract address:\n', newRoleAddr);
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get newRole receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should send a newRole tx and get receipt', function (done) {
+            let res = newRole('testNewRole2', permissions);
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    newRoleAddr2 = receipt.logs[0].address;
+                    console.log('\nThe new role contract address:\n', newRoleAddr2);
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get newRole receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should send a setRole tx and get receipt', function (done) {
+            let res = setRole(config.testAddr[1], newRoleAddr);
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get setRole receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should send a setRole tx and get receipt', function (done) {
+            let res = setRole(config.testAddr[1], newRoleAddr2);
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get setRole receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should cancel newRole', function (done) {
+            let res = cancelRole(config.testAddr[1], newRoleAddr2);
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get cancelRole receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+                
+        it('should have the newRole\'s permission after cancel the newRole2', function () {
+            let res2 = queryPermissions(config.testAddr[1]);
+            console.log('\nPermissions of testAddr:\n', res2);
+            // lengthOfPermissions = res.length;
+            assert.equal(res2.length, permissions.length);
+            for (let i = 0; i < permissions.length; i++) {
+                assert.equal(res2[i], permissions[i]);
+            }
+        });
+
+        after('cancel role', function (done) {
+            let res = cancelRole(config.testAddr[1], newRoleAddr);
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get cancelRole receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+    });
 });

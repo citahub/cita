@@ -125,13 +125,18 @@ const deleteRole = function (account, role, _sender = sender) {
 };
 
 // queryRoles
-const queryRoles = function (account, _sender = sender) {
+const queryRoles = function (account) {
     return rmContractInstance.queryRoles.call(account);
 };
 
 // queryAccounts
-const queryAccounts = function (account, _sender = sender) {
+const queryAccounts = function (account) {
     return rmContractInstance.queryAccounts.call(account);
+};
+
+// queryPermissions
+const queryPermissions = function (role) {
+    return rmContractInstance.queryPermissions.call(role);
 };
 
 module.exports = {
@@ -144,5 +149,6 @@ module.exports = {
     clearRole,
     deleteRole,
     queryRoles,
-    queryAccounts
+    queryAccounts,
+    queryPermissions
 };
