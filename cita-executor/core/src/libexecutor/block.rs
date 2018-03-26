@@ -378,18 +378,15 @@ impl OpenBlock {
 
     /// Execute transactions
     pub fn apply_transactions(&mut self, executor: &Executor, check_permission: bool, check_quota: bool) -> bool {
-        let mut transactions = Vec::with_capacity(self.body.transactions.len());
-        for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
+        for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 {
                 if executor.is_interrupted.load(Ordering::SeqCst) {
                     return false;
                 }
             }
             // Apply transaction and set account nonce
-            self.apply_transaction(&mut t, check_permission, check_quota);
-            transactions.push(t);
+            self.apply_transaction(&t, check_permission, check_quota);
         }
-        self.body.set_transactions(transactions);
 
         let now = Instant::now();
         self.state.commit().expect("commit trie error");
@@ -401,7 +398,7 @@ impl OpenBlock {
         true
     }
 
-    pub fn apply_transaction(&mut self, t: &mut SignedTransaction, check_permission: bool, check_quota: bool) {
+    pub fn apply_transaction(&mut self, t: &SignedTransaction, check_permission: bool, check_quota: bool) {
         let mut env_info = self.env_info();
         if !self.account_gas.contains_key(t.sender()) {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);

@@ -150,11 +150,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// This function should be used to execute transaction.
-    pub fn transact(
-        &'a mut self,
-        t: &mut SignedTransaction,
-        options: TransactOptions,
-    ) -> Result<Executed, ExecutionError> {
+    pub fn transact(&'a mut self, t: &SignedTransaction, options: TransactOptions) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(
                 t,
@@ -171,7 +167,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Execute transaction/call with tracing enabled
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
-        t: &mut SignedTransaction,
+        t: &SignedTransaction,
         options: TransactOptions,
         mut tracer: T,
         mut vm_tracer: V,
@@ -199,8 +195,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 got: t.gas,
             }));
         }
-
-        t.set_account_nonce(nonce);
 
         trace!("quota should be checked: {}", options.check_quota);
         if options.check_quota {
@@ -287,6 +281,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // finalize here!
         Ok(self.finalize(
             t,
+            nonce,
             substate,
             result,
             output,
@@ -695,6 +690,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     fn finalize(
         &mut self,
         t: &SignedTransaction,
+        account_nonce: U256,
         substate: Substate,
         result: evm::Result<FinalizationResult>,
         output: Bytes,
@@ -782,6 +778,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 trace: trace,
                 vm_trace: vm_trace,
                 state_diff: None,
+                account_nonce: account_nonce,
             }),
             Ok(r) => Ok(Executed {
                 exception: if r.apply_state {
@@ -799,6 +796,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 trace: trace,
                 vm_trace: vm_trace,
                 state_diff: None,
+                account_nonce: account_nonce,
             }),
         }
     }

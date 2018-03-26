@@ -1022,7 +1022,6 @@ impl Chain {
         let mut block_tx_hashes = BlockTxHashes::new();
         block_tx_hashes.set_height(block_height);
         {
-            //Need
             block_tx_hashes.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
             block_tx_hashes.set_account_gas_limit(self.account_gas_limit.read().clone().into());
         }
@@ -1098,6 +1097,7 @@ impl Chain {
         status
     }
 
+    // TODO: Need remove. Later the state may be moved back to chain, so keep it here.
     /// Attempt to get a copy of a specific block's final state.
     pub fn state_at(&self, id: BlockId) -> Option<State<StateDB>> {
         self.block_header(id)
