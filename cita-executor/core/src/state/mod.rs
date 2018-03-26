@@ -641,6 +641,7 @@ impl<B: Backend> State<B> {
             e.logs,
             receipt_error,
             e.account_nonce,
+            t.get_transaction_hash(),
         );
         trace!(target: "state", "Transaction receipt: {:?}", receipt);
         Ok(ApplyOutcome {

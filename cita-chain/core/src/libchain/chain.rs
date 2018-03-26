@@ -84,13 +84,15 @@ impl TxProof {
     }
 
     pub fn verify_proof(&self) -> bool {
-        // todo check hash of self.tx == tx hash in receipt
-        let receipt_hash = Some(self.receipt.clone()).rlp_bytes().to_vec().crypt_hash();
-        merklehash::verify_proof(
-            self.block_header.receipts_root().clone(),
-            &self.receipt_proof,
-            receipt_hash,
-        )
+        self.receipt.transaction_hash == self.tx.calc_transaction_hash()
+            && merklehash::verify_proof(
+                self.block_header.receipts_root().clone(),
+                &self.receipt_proof,
+                Some(self.receipt.clone())
+                    .rlp_bytes()
+                    .into_vec()
+                    .crypt_hash(),
+            )
     }
 
     pub fn tx(&self) -> &SignedTransaction {
@@ -765,32 +767,42 @@ impl Chain {
     }
 
     pub fn get_transaction_proof(&self, hash: TransactionId) -> Option<(Vec<u8>)> {
-        self.transaction_address(hash).and_then(|addr| {
-            self.block_by_hash(addr.block_hash).and_then(|block| {
-                self.block_receipts(addr.block_hash).and_then(|receipts| {
-                    //(block, receipts, addr.index)
-                    let index = addr.index;
-                    let receipt = receipts.receipts[index].clone();
-                    if receipt.is_none() {
-                        return None;
-                    }
-                    let receipt = receipt.unwrap();
-                    merklehash::MerkleTree::from_bytes(receipts.receipts.iter().map(|r| r.rlp_bytes().to_vec()))
-                        .get_proof_by_input_index(index)
-                        .and_then(|receipt_proof| {
-                            let tx = block.body().transactions()[index].clone();
-                            let block_header = block.header().clone();
-                            let tx_proof = TxProof {
-                                block_header,
-                                receipt,
-                                receipt_proof,
-                                tx,
-                            };
-                            Some(tx_proof.rlp_bytes().to_vec())
-                        })
-                })
+        self.transaction_address(hash)
+            .and_then(|addr| {
+                self.block_by_hash(addr.block_hash)
+                    .map(|block| (addr, block))
             })
-        })
+            .and_then(|(addr, block)| {
+                self.block_receipts(addr.block_hash)
+                    .map(|receipts| (addr.index, block, receipts))
+            })
+            .and_then(|(index, block, receipts)| {
+                receipts
+                    .receipts
+                    .get(index)
+                    .and_then(|receipt_opt| match *receipt_opt {
+                        Some(ref receipt) if receipt.transaction_hash == hash => Some(receipt),
+                        _ => None,
+                    })
+                    .and_then(|receipt| {
+                        merklehash::MerkleTree::from_bytes(receipts.receipts.iter().map(|r| r.rlp_bytes().into_vec()))
+                            .get_proof_by_input_index(index)
+                            .and_then(|receipt_proof| {
+                                block.body().transactions().get(index).map(|tx| {
+                                    let tx = tx.clone();
+                                    let receipt = receipt.clone();
+                                    let block_header = block.header().clone();
+                                    TxProof {
+                                        block_header,
+                                        receipt,
+                                        receipt_proof,
+                                        tx,
+                                    }.rlp_bytes()
+                                        .into_vec()
+                                })
+                            })
+                    })
+            })
     }
 
     pub fn localized_receipt(&self, id: TransactionId) -> Option<LocalizedReceipt> {
@@ -823,44 +835,49 @@ impl Chain {
             .fold(0, |acc, r| acc + r.as_ref().unwrap().logs.len());
 
         last_receipt.and_then(|last_receipt| {
-            // Get sender
-            let stx = self.transaction_by_address(hash, index).unwrap();
-            let number = self.block_height_by_hash(hash).unwrap_or(0);
+            if last_receipt.transaction_hash == id {
+                // Get sender
+                let stx = self.transaction_by_address(hash, index).unwrap();
+                let number = self.block_height_by_hash(hash).unwrap_or(0);
 
-            let contract_address = match *stx.action() {
-                Action::Create if last_receipt.error.is_none() => {
-                    Some(contract_address(stx.sender(), &last_receipt.account_nonce))
-                }
-                _ => None,
-            };
+                let contract_address = match *stx.action() {
+                    Action::Create if last_receipt.error.is_none() => {
+                        Some(contract_address(stx.sender(), &last_receipt.account_nonce))
+                    }
+                    _ => None,
+                };
 
-            let receipt = LocalizedReceipt {
-                transaction_hash: id,
-                transaction_index: index,
-                block_hash: hash,
-                block_number: number,
-                cumulative_gas_used: last_receipt.gas_used,
-                gas_used: last_receipt.gas_used - prior_gas_used,
-                contract_address: contract_address,
-                logs: last_receipt
-                    .logs
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, log)| LocalizedLogEntry {
-                        entry: log,
-                        block_hash: hash,
-                        block_number: number,
-                        transaction_hash: id,
-                        transaction_index: index,
-                        transaction_log_index: i,
-                        log_index: no_of_logs + i,
-                    })
-                    .collect(),
-                log_bloom: last_receipt.log_bloom,
-                state_root: last_receipt.state_root,
-                error: last_receipt.error,
-            };
-            Some(receipt)
+                let receipt = LocalizedReceipt {
+                    transaction_hash: id,
+                    transaction_index: index,
+                    block_hash: hash,
+                    block_number: number,
+                    cumulative_gas_used: last_receipt.gas_used,
+                    gas_used: last_receipt.gas_used - prior_gas_used,
+                    contract_address: contract_address,
+                    logs: last_receipt
+                        .logs
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, log)| LocalizedLogEntry {
+                            entry: log,
+                            block_hash: hash,
+                            block_number: number,
+                            transaction_hash: id,
+                            transaction_index: index,
+                            transaction_log_index: i,
+                            log_index: no_of_logs + i,
+                        })
+                        .collect(),
+                    log_bloom: last_receipt.log_bloom,
+                    state_root: last_receipt.state_root,
+                    error: last_receipt.error,
+                };
+                Some(receipt)
+            } else {
+                error!("The transaction_hash in receipt is not equal to transaction hash from input.");
+                None
+            }
         })
     }
 

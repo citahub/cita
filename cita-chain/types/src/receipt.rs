@@ -153,6 +153,8 @@ pub struct Receipt {
     pub error: Option<ReceiptError>,
     /// For calculating contract address
     pub account_nonce: U256,
+    /// Transaction hash.
+    pub transaction_hash: H256,
 }
 
 impl Receipt {
@@ -163,6 +165,7 @@ impl Receipt {
         logs: Vec<LogEntry>,
         error: Option<ReceiptError>,
         account_nonce: U256,
+        transaction_hash: H256,
     ) -> Receipt {
         Receipt {
             state_root: state_root,
@@ -174,6 +177,7 @@ impl Receipt {
             logs: logs,
             error: error,
             account_nonce: account_nonce,
+            transaction_hash: transaction_hash,
         }
     }
 
@@ -200,6 +204,7 @@ impl Receipt {
             .map(|log_entry| log_entry.protobuf())
             .collect();
         receipt_proto.set_account_nonce(self.account_nonce.as_u64());
+        receipt_proto.set_transaction_hash(self.transaction_hash.to_vec());
         receipt_proto
     }
 }
@@ -215,6 +220,7 @@ impl From<ProtoReceipt> for Receipt {
 
         let gas_used: U256 = U256::from_str(receipt.get_gas_used()).unwrap();
         let account_nonce: U256 = U256::from(receipt.get_account_nonce());
+        let transaction_hash: H256 = H256::from_slice(receipt.get_transaction_hash());
         let mut error = None;
 
         let logs = receipt
@@ -242,29 +248,37 @@ impl From<ProtoReceipt> for Receipt {
             ));
         }
 
-        Receipt::new(state_root, gas_used, logs, error, account_nonce)
+        Receipt::new(
+            state_root,
+            gas_used,
+            logs,
+            error,
+            account_nonce,
+            transaction_hash,
+        )
     }
 }
 
 impl Encodable for Receipt {
     fn rlp_append(&self, s: &mut RlpStream) {
         if let Some(ref root) = self.state_root {
-            s.begin_list(6);
+            s.begin_list(7);
             s.append(root);
         } else {
-            s.begin_list(5);
+            s.begin_list(6);
         }
         s.append(&self.gas_used);
         s.append(&self.log_bloom);
         s.append_list(&self.logs);
         s.append(&self.error);
         s.append(&self.account_nonce);
+        s.append(&self.transaction_hash);
     }
 }
 
 impl Decodable for Receipt {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if rlp.item_count()? == 5 {
+        if rlp.item_count()? == 6 {
             Ok(Receipt {
                 state_root: None,
                 gas_used: rlp.val_at(0)?,
@@ -272,6 +286,7 @@ impl Decodable for Receipt {
                 logs: rlp.list_at(2)?,
                 error: rlp.val_at(3)?,
                 account_nonce: rlp.val_at(4)?,
+                transaction_hash: rlp.val_at(5)?,
             })
         } else {
             Ok(Receipt {
@@ -281,6 +296,7 @@ impl Decodable for Receipt {
                 logs: rlp.list_at(3)?,
                 error: rlp.val_at(4)?,
                 account_nonce: rlp.val_at(5)?,
+                transaction_hash: rlp.val_at(6)?,
             })
         }
     }
@@ -338,6 +354,7 @@ mod tests {
             ],
             None,
             1.into(),
+            "2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into(),
         );
         let encoded = ::rlp::encode(&r);
         println!("encode ok");
@@ -360,6 +377,7 @@ mod tests {
             ],
             None,
             1.into(),
+            "2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into(),
         );
         let encoded = ::rlp::encode(&r);
         let decoded: Receipt = ::rlp::decode(&encoded);
@@ -381,6 +399,7 @@ mod tests {
             ],
             Some(ReceiptError::NoTransactionPermission),
             1.into(),
+            "2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into(),
         );
         let encoded = ::rlp::encode(&r);
         let decoded: Receipt = ::rlp::decode(&encoded);

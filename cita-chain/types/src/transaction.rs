@@ -458,6 +458,16 @@ impl SignedTransaction {
         })
     }
 
+    /// Returns the cached tx_hash.
+    pub fn get_transaction_hash(&self) -> H256 {
+        self.transaction.hash()
+    }
+
+    /// Calculate tx_hash from tx data and return it.
+    pub fn calc_transaction_hash(&self) -> H256 {
+        self.transaction.proto_unverified().crypt_hash()
+    }
+
     /// Returns transaction sender.
     pub fn sender(&self) -> &Address {
         &self.sender
