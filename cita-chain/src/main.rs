@@ -30,6 +30,7 @@
 //! | chain   | Jsonrpc     | Request          |
 //! | chain   | Auth        | BlockTxHashesReq |
 //! | chain   | Executor    | ExecutedResult   |
+//! | chain   | Snapshot    | SnapshotReq      |
 //!
 //! ### Key behavior
 //!

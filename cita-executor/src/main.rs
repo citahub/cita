@@ -1,3 +1,55 @@
+//! ## Summary
+//! One of cita's main core components is to execute transaction,
+//! create contracts, maintain world state trees, and send executed
+//! result block to chain.
+//!
+//! ### Message queuing situation
+//!
+//! | Queue    | SubModule | Message Type   |
+//! | -------- | --------- | -------------- |
+//! | executor | Chain     | SyncResponse   |
+//! | executor | Chain     | Request        |
+//! | executor | Consensus | BlockWithProof |
+//! | executor | Consensus | SignedProposal |
+//! | executor | Consensus | RawBytes       |
+//! | executor | Net       | SyncResponse   |
+//! | executor | Net       | SignedProposal |
+//! | executor | Net       | RawBytes       |
+//! | executor | Snapshot  | SnapshotReq    |
+//!
+//! ### Key behavior
+//!
+//! key struct:
+//!
+//! - `ExecutorInstance`: `executor_instance::ExecutorInstance`
+//! - [`Executor`]
+//! - [`GlobalSysConfig`]
+//! - [`Genesis`]
+//! - [`Contract`]
+//! - [`Account`]
+//! - `AccountEntry`: `core_executor::state::AccountEntry`
+//! - [`State`]
+//! - [`StateDB`]
+//!
+//! This is currently the most complex module that maintains the current state of
+//! the entire chain and caches some data, keeps the hash values of the last 256
+//! blocks and the information of each block (gas_limit/quota, etc.) in memory,
+//! holds the current block map(heigh, block).
+//!
+//! Of course there is an evm interface in this module.
+//!
+//! The contract/transaction submission is first cached in memory before being committed
+//! to the stateDB (disk).
+//!
+//! [`Executor`]: ../core_executor/libexecutor/executor/struct.Executor.html
+//! [`GlobalSysConfig`]: ../core_executor/libexecutor/executor/struct.GlobalSysConfig.html
+//! [`Genesis`]: ../core_executor/libexecutor/genesis/struct.Genesis.html
+//! [`Contract`]: ../core_executor/libexecutor/genesis/struct.Contract.html
+//! [`Account`]: ../core_executor/state/account/struct.Account.html
+//! [`State`]: ../core_executor/state/struct.State.html
+//! [`StateDB`]: ../core_executor/state_db/struct.StateDB.html
+//!
+
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![feature(custom_attribute)]

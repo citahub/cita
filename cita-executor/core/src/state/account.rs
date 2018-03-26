@@ -33,33 +33,33 @@ const STORAGE_CACHE_ITEMS: usize = 8192;
 /// Keeps track of changes to the code and storage.
 /// The changes are applied in `commit_storage` and `commit_code`
 pub struct Account {
-    // Nonce of the account.
+    /// Nonce of the account.
     nonce: U256,
-    // Trie-backed storage.
+    /// Trie-backed storage.
     storage_root: H256,
-    // LRU Cache of the trie-backed storage.
-    // This is limited to `STORAGE_CACHE_ITEMS` recent queries
+    /// LRU Cache of the trie-backed storage.
+    /// This is limited to `STORAGE_CACHE_ITEMS` recent queries
     storage_cache: RefCell<LruCache<H256, H256>>,
-    // Modified storage. Accumulates changes to storage made in `set_storage`
-    // Takes precedence over `storage_cache`.
+    /// Modified storage. Accumulates changes to storage made in `set_storage`
+    /// Takes precedence over `storage_cache`.
     storage_changes: HashMap<H256, H256>,
-    // Code hash of the account.
+    /// Code hash of the account.
     code_hash: H256,
-    // Size of the account code.
+    /// Size of the account code.
     code_size: Option<usize>,
-    // Code cache of the account.
+    /// Code cache of the account.
     code_cache: Arc<Bytes>,
-    // Account code new or has been modified.
+    /// Account code new or has been modified.
     code_filth: Filth,
-    // ABI hash of the account.
+    /// ABI hash of the account.
     abi_hash: H256,
-    // Size of the account ABI.
+    /// Size of the account ABI.
     abi_size: Option<usize>,
-    // ABI cache of the account.
+    /// ABI cache of the account.
     abi_cache: Arc<Bytes>,
-    // Account ABI new or has been modified.
+    /// Account ABI new or has been modified.
     abi_filth: Filth,
-    // Cached address hash.
+    /// Cached address hash.
     address_hash: Cell<Option<H256>>,
 }
 
