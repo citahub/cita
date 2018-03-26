@@ -58,43 +58,57 @@ fn create_contract(
     pre_hash: H256,
     flag: i32,
     h: u64,
-    pub_sender: Sender<PubType>,
-    sys_time: Arc<Mutex<time::SystemTime>>,
+    pub_sender: &Sender<PubType>,
+    sys_time: &Arc<Mutex<time::SystemTime>>,
     quota: u64,
     flag_multi_sender: i32,
     pk: PrivKey,
 ) {
-    let code = "60606040523415600e57600080fd5b\
-                5b5b5b60948061001f6000396000f3\
-                0060606040526000357c0100000000\
-                000000000000000000000000000000\
-                000000000000000000900463ffffff\
-                ff1680635524107714603d575b6000\
-                80fd5b3415604757600080fd5b605b\
-                600480803590602001909190505060\
-                5d565b005b806000819055505b5056\
-                00a165627a7a72305820c471b43766\
-                26da2540b2374e8b4110501051c426\
-                ff46814a6170ce9e219e49a80029";
-    let mut contract_address = "".to_string();
-    if flag != 0 {
-        contract_address = "ffffffffffffffffffffffffffffffffffffffff".to_string();
-    }
+    let code = match flag {
+        1 => {
+            "60606040523415600e57600080fd5b\
+             5b5b5b60948061001f6000396000f3\
+             0060606040526000357c0100000000\
+             000000000000000000000000000000\
+             000000000000000000900463ffffff\
+             ff1680635524107714603d575b6000\
+             80fd5b3415604757600080fd5b605b\
+             600480803590602001909190505060\
+             5d565b005b806000819055505b5056\
+             00a165627a7a72305820c471b43766\
+             26da2540b2374e8b4110501051c426\
+             ff46814a6170ce9e219e49a80029"
+        }
+        0 => "0000000000000000000000000000000000000000",
+        _ => "4f2be91f",
+    };
+
+    let contract_address = match flag {
+        1 => "",
+        0 => "ffffffffffffffffffffffffffffffffffffffff",
+        _ => "0000000000000000000000000000000082720029",
+    };
     let mut txs = Vec::new();
     for _ in 0..block_tx_num - 1 {
         let tx = Generateblock::generate_tx(
-            code.clone(),
-            contract_address.clone(),
+            code,
+            contract_address.to_string().clone(),
             quota,
             flag_multi_sender,
             pk,
         );
         txs.push(tx);
     }
-    let tx = Generateblock::generate_tx(code, contract_address.clone(), quota, flag_multi_sender, pk);
+    let tx = Generateblock::generate_tx(
+        code,
+        contract_address.to_string().clone(),
+        quota,
+        flag_multi_sender,
+        pk,
+    );
     txs.push(tx);
 
-    //构造block
+    // 构造block
     let (send_data, _block) = Generateblock::build_block_with_proof(txs, pre_hash, h);
     info!("===============send block===============");
     let mut sys_time_lock = sys_time.lock().unwrap();
@@ -119,7 +133,7 @@ fn main() {
         .arg_from_usage("--times=[0] 'how many times to send block, i.e. block-height. 0 means limitless'")
         .arg_from_usage("--quota=[1000] 'transation quota'")
         .arg_from_usage("--flag_multi_sender=[0] 'Multi sender or not'")
-        .arg_from_usage("--flag_tx_type=[1] 'tx type: 0 is store, 1 is creating contract'")
+        .arg_from_usage("--flag_tx_type=[1] 'tx type: 0 is store, 1 is creating contract, 2 is call contract'")
         .get_matches();
 
     let totaltx = matches
@@ -168,58 +182,55 @@ fn main() {
     loop {
         let (key, body) = rx_sub.recv().unwrap();
         let mut msg = Message::try_from(&body).unwrap();
-        match RoutingKey::from(&key) {
+        if let routing_key!(Chain >> RichStatus) = RoutingKey::from(&key) {
             //接受chain发送的 authorities_list
-            routing_key!(Chain >> RichStatus) => {
-                let rich_status = msg.take_rich_status().unwrap();
-                info!("get new local status {:?}", rich_status.height);
-                if !send_flag && rich_status.height == height {
-                    let start_time = sys_time.lock().unwrap();
-                    let end_time = time::SystemTime::now();
-                    let diff = end_time
-                        .duration_since(*start_time)
-                        .expect("SystemTime::duration_since failed");
-                    let mut secs = diff.as_secs();
-                    let nanos = diff.subsec_nanos();
-                    secs = secs * 1000 + (nanos / 1000000) as u64;
-                    let tps = if secs > 0 {
-                        totaltx * 1000 / secs
-                    } else {
-                        totaltx
-                    };
+            let rich_status = msg.take_rich_status().unwrap();
+            info!("get new local status {:?}", rich_status.height);
+            if !send_flag && rich_status.height == height {
+                let start_time = sys_time.lock().unwrap();
+                let end_time = time::SystemTime::now();
+                let diff = end_time
+                    .duration_since(*start_time)
+                    .expect("SystemTime::duration_since failed");
+                let mut secs = diff.as_secs();
+                let nanos = diff.subsec_nanos();
+                secs = secs * 1000 + u64::from(nanos / 1_000_000);
+                let tps = if secs > 0 {
+                    totaltx * 1000 / secs
+                } else {
+                    totaltx
+                };
 
-                    info!(
-                        "tx_num = {}, use time = {} ms, tps = {}",
-                        totaltx, secs, tps
-                    );
+                info!(
+                    "tx_num = {}, use time = {} ms, tps = {}",
+                    totaltx, secs, tps
+                );
 
-                    if times != 0 {
-                        count_times += 1;
-                        if count_times >= times {
-                            break;
-                        }
+                if times != 0 {
+                    count_times += 1;
+                    if count_times >= times {
+                        break;
                     }
+                }
 
-                    send_flag = true;
-                }
-                if send_flag {
-                    height = rich_status.height + 1;
-                    info!("send consensus blk . h = {:?}", height);
-                    create_contract(
-                        totaltx,
-                        H256::from_slice(&rich_status.hash),
-                        flag_tx_type,
-                        height,
-                        tx_pub.clone(),
-                        sys_time.clone(),
-                        quota,
-                        flag_multi_sender,
-                        pk.clone(),
-                    );
-                    send_flag = false;
-                }
+                send_flag = true;
             }
-            _ => (),
+            if send_flag {
+                height = rich_status.height + 1;
+                info!("send consensus blk . h = {:?}", height);
+                create_contract(
+                    totaltx,
+                    H256::from_slice(&rich_status.hash),
+                    flag_tx_type,
+                    height,
+                    &tx_pub,
+                    &Arc::clone(&sys_time),
+                    quota,
+                    flag_multi_sender,
+                    *pk,
+                );
+                send_flag = false;
+            }
         }
     }
 }

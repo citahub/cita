@@ -41,7 +41,7 @@ pub trait AsMillis {
 
 impl AsMillis for Duration {
     fn as_millis(&self) -> u64 {
-        self.as_secs() * 1_000 + (self.subsec_nanos() / 1_000_000) as u64
+        self.as_secs() * 1_000 + u64::from(self.subsec_nanos() / 1_000_000)
     }
 }
 
@@ -85,7 +85,7 @@ impl Generateblock {
         tx.set_quota(quota);
         //设置空，则创建合约
         tx.set_to(address);
-        tx.set_valid_until_block(99999);
+        tx.set_valid_until_block(99_999);
         tx.sign(pv)
     }
 
@@ -93,7 +93,7 @@ impl Generateblock {
         let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
         let pk = keypair.pubkey();
-        let sender = keypair.address().clone();
+        let sender = keypair.address();
 
         let mut block = Block::new();
         let block_time = Self::unix_now();
@@ -113,13 +113,13 @@ impl Generateblock {
                 proof.height,
                 proof.round,
                 Step::Precommit,
-                sender.clone(),
-                Some(proof.proposal.clone()),
+                sender,
+                Some(proof.proposal),
             ),
             Infinite,
         ).unwrap();
-        let signature = Signature::sign(pv, &msg.crypt_hash().into()).unwrap();
-        commits.insert((*sender).into(), signature.into());
+        let signature = Signature::sign(pv, &msg.crypt_hash()).unwrap();
+        commits.insert((*sender).into(), signature);
         proof.commits = commits;
         block.mut_header().set_proof(proof.clone().into());
         let transactions_root = block.get_body().transactions_root();
