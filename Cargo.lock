@@ -382,10 +382,11 @@ dependencies = [
  "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "protobuf 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.36 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_yaml 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

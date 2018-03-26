@@ -24,8 +24,9 @@ use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::convert::{Into, TryInto};
 use std::time::{Duration, UNIX_EPOCH};
-use util::H256;
 use util::Hashable;
+use util::{Address, H256, U256};
+
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Step {
@@ -45,22 +46,19 @@ impl AsMillis for Duration {
     }
 }
 
-#[allow(unused_variables, dead_code)]
-pub struct Generateblock {
-    pre_hash: H256,
-}
 
-#[allow(unused_variables, dead_code)]
-impl Generateblock {
-    pub fn new() -> Self {
-        Generateblock {
-            pre_hash: H256::default(),
-        }
-    }
 
-    pub fn set_pre_hash(&mut self, pre_hash: H256) {
-        self.pre_hash = pre_hash;
-        println!("{:?}", self.pre_hash);
+pub struct BuildBlock {}
+
+impl BuildBlock {
+
+    pub fn build_contract_address(address: &Address, nonce: &U256) -> Address {
+        use rlp::RlpStream;
+
+        let mut stream = RlpStream::new_list(2);
+        stream.append(address);
+        stream.append(nonce);
+        From::from(stream.out().crypt_hash())
     }
 
     /// Generate a signed transaction
