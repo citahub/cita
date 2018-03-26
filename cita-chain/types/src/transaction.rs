@@ -148,6 +148,8 @@ pub struct Transaction {
     pub data: Bytes,
     /// valid before this block number
     pub block_limit: BlockNumber,
+    /// transaction version
+    pub version: u32,
 }
 
 impl HeapSizeOf for Transaction {
@@ -158,7 +160,7 @@ impl HeapSizeOf for Transaction {
 
 impl Decodable for Transaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 7 {
+        if d.item_count()? != 8 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
         Ok(Transaction {
@@ -169,6 +171,7 @@ impl Decodable for Transaction {
             value: d.val_at(4)?,
             data: d.val_at(5)?,
             block_limit: d.val_at(6)?,
+            version: d.val_at(7)?,
         })
     }
 }
@@ -202,6 +205,7 @@ impl Transaction {
             value: U256::default(),
             data: plain_transaction.get_data().into(),
             block_limit: plain_transaction.get_valid_until_block(),
+            version: plain_transaction.get_version(),
         })
     }
 
@@ -230,7 +234,7 @@ impl Transaction {
 
     /// Append object with a without signature into RLP stream
     pub fn rlp_append_unsigned_transaction(&self, s: &mut RlpStream) {
-        s.begin_list(7);
+        s.begin_list(8);
         s.append(&self.nonce);
         s.append(&self.gas_price);
         s.append(&self.gas);
@@ -238,6 +242,7 @@ impl Transaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
+        s.append(&self.version);
     }
 
     /// get the protobuf transaction
@@ -363,11 +368,11 @@ pub struct SignedTransaction {
 /// RLP dose not support struct nesting well
 impl Decodable for SignedTransaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 11 {
+        if d.item_count()? != 12 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
 
-        let public: PubKey = d.val_at(10)?;
+        let public: PubKey = d.val_at(11)?;
 
         Ok(SignedTransaction {
             transaction: UnverifiedTransaction {
@@ -379,10 +384,11 @@ impl Decodable for SignedTransaction {
                     value: d.val_at(4)?,
                     data: d.val_at(5)?,
                     block_limit: d.val_at(6)?,
+                    version: d.val_at(7)?,
                 },
-                signature: d.val_at(7)?,
-                crypto_type: d.val_at(8)?,
-                hash: d.val_at(9)?,
+                signature: d.val_at(8)?,
+                crypto_type: d.val_at(9)?,
+                hash: d.val_at(10)?,
             },
             sender: pubkey_to_address(&public),
             public: public,
@@ -393,7 +399,7 @@ impl Decodable for SignedTransaction {
 /// RLP dose not support struct nesting well
 impl Encodable for SignedTransaction {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(11);
+        s.begin_list(12);
 
         s.append(&self.nonce);
         s.append(&self.gas_price);
@@ -402,6 +408,7 @@ impl Encodable for SignedTransaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
+        s.append(&self.version);
 
         s.append(&self.signature);
         s.append(&self.crypto_type);
