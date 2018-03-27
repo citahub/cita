@@ -5,6 +5,7 @@ site_description:
 site_author: Cryptape
 repo_url: https://github.com/cryptape/cita
 edit_uri: docs/docs/
+remote_name: upstream
 
 pages:
   - 首页: index.md
