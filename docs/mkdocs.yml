@@ -43,6 +43,7 @@ theme:
     accent: indigo
 extra_css:
   - 'stylesheets/extra.css'
+use_directory_urls: false
 
 markdown_extensions:
   - markdown.extensions.admonition
