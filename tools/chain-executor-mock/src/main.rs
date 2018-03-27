@@ -51,7 +51,7 @@ use std::time;
 
 use clap::App;
 
-use crypto::{PrivKey, KeyPair, CreateKey};
+use crypto::{CreateKey, KeyPair, PrivKey};
 use generate_block::BuildBlock;
 use libproto::Message;
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -85,7 +85,11 @@ fn send_block(
             let valid_until_block = tx["valid_until_block"].as_u64().unwrap();
 
             let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
-            info!("sender={}, contract_address={}", sender.hex(), BuildBlock::build_contract_address(&sender, &U256::from(nonce)).hex());
+            info!(
+                "sender={}, contract_address={}",
+                sender.hex(),
+                BuildBlock::build_contract_address(&sender, &U256::from(nonce)).hex()
+            );
             info!(
                 "address={}, data={}, quota={}, nonce={}",
                 contract_address, data, quota, nonce
