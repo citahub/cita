@@ -36,4 +36,4 @@ else
     sleep 20
 fi
 
-docker exec -it ${CONTAINER_NAME} "$@"
+docker exec -d ${CONTAINER_NAME} "$@"

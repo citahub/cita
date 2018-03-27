@@ -35,4 +35,6 @@ CMD="$@"
 if [ "${CMD}" = "" ]; then
     CMD="bash"
 fi
-docker exec -it ${CONTAINER_NAME} ${CMD}
+
+test -t 1 && USE_TTY="-t"
+docker exec -i ${USE_TTY} ${CONTAINER_NAME} ${CMD}
