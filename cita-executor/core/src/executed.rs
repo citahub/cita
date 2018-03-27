@@ -110,6 +110,8 @@ pub struct Executed {
     pub vm_trace: Option<VMTrace>,
     /// The state diff, if we traced it.
     pub state_diff: Option<StateDiff>,
+    /// Transaction sender account nonce
+    pub account_nonce: U256
 }
 
 /// Result of executing the transaction.

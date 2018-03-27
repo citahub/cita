@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use rpctypes::log::Log;
-use types::receipt::{LocalizedReceipt, Receipt as EthReceipt, RichReceipt};
+use types::receipt::LocalizedReceipt;
 use util::{Bloom, H160, H256, U256};
 
 /// Receipt
@@ -66,42 +66,6 @@ impl From<LocalizedReceipt> for Receipt {
             cumulative_gas_used: r.cumulative_gas_used,
             gas_used: Some(r.gas_used),
             contract_address: r.contract_address.map(Into::into),
-            logs: r.logs.into_iter().map(Into::into).collect(),
-            state_root: r.state_root.map(Into::into),
-            logs_bloom: r.log_bloom,
-            error_message: r.error.map(|error| error.description()),
-        }
-    }
-}
-
-impl From<RichReceipt> for Receipt {
-    fn from(r: RichReceipt) -> Self {
-        Receipt {
-            transaction_hash: Some(r.transaction_hash),
-            transaction_index: Some(r.transaction_index.into()),
-            block_hash: None,
-            block_number: None,
-            cumulative_gas_used: r.cumulative_gas_used,
-            gas_used: Some(r.gas_used),
-            contract_address: r.contract_address.map(Into::into),
-            logs: r.logs.into_iter().map(Into::into).collect(),
-            state_root: r.state_root.map(Into::into),
-            logs_bloom: r.log_bloom,
-            error_message: r.error.map(|error| error.description()),
-        }
-    }
-}
-
-impl From<EthReceipt> for Receipt {
-    fn from(r: EthReceipt) -> Self {
-        Receipt {
-            transaction_hash: None,
-            transaction_index: None,
-            block_hash: None,
-            block_number: None,
-            cumulative_gas_used: r.gas_used,
-            gas_used: None,
-            contract_address: None,
             logs: r.logs.into_iter().map(Into::into).collect(),
             state_root: r.state_root.map(Into::into),
             logs_bloom: r.log_bloom,

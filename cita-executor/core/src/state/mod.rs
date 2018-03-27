@@ -606,12 +606,11 @@ impl<B: Backend> State<B> {
     pub fn apply(
         &mut self,
         env_info: &EnvInfo,
-        t: &mut SignedTransaction,
+        t: &SignedTransaction,
         tracing: bool,
         check_permission: bool,
         check_quota: bool,
     ) -> ApplyResult {
-        //        let old = self.to_pod();
         let engine = &NullEngine::default();
         let options = TransactOptions {
             tracing: tracing,
@@ -641,7 +640,7 @@ impl<B: Backend> State<B> {
             e.cumulative_gas_used,
             e.logs,
             receipt_error,
-            t.account_nonce().clone(),
+            e.account_nonce,
         );
         trace!(target: "state", "Transaction receipt: {:?}", receipt);
         Ok(ApplyOutcome {
@@ -997,7 +996,7 @@ mod tests {
         let stx = tx.sign(*privkey);
 
         // 4) signed
-        let mut signed = SignedTransaction::new(&stx).unwrap();
+        let signed = SignedTransaction::new(&stx).unwrap();
 
         // 5)
         let mut state = get_temp_state();
@@ -1013,7 +1012,7 @@ mod tests {
         };
         let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(1));
         println!("contract_address {:?}", contract_address);
-        let result = state.apply(&info, &mut signed, true, false, false).unwrap();
+        let result = state.apply(&info, &signed, true, false, false).unwrap();
         println!(
             "{:?}",
             state

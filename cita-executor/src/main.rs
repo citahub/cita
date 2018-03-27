@@ -132,7 +132,7 @@ fn main() {
 
     thread::spawn(move || loop {
         if let Ok((key, msg)) = rx.recv() {
-            distribute_ext.distribute_msg(key, msg);
+            distribute_ext.distribute_msg(&key, &msg);
         }
     });
 

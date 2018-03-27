@@ -512,12 +512,7 @@ impl Executor {
         }.fake_sign(from)
     }
 
-    fn call(
-        &self,
-        t: &mut SignedTransaction,
-        block_id: BlockId,
-        analytics: CallAnalytics,
-    ) -> Result<Executed, CallError> {
+    fn call(&self, t: &SignedTransaction, block_id: BlockId, analytics: CallAnalytics) -> Result<Executed, CallError> {
         let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
         let last_hashes = self.build_last_hashes(None, header.number());
         let env_info = EnvInfo {

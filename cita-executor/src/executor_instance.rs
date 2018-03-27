@@ -68,11 +68,11 @@ impl ExecutorInstance {
         }
     }
 
-    pub fn distribute_msg(&self, key: String, msg_vec: Vec<u8>) {
-        let mut msg = Message::try_from(&msg_vec).unwrap();
+    pub fn distribute_msg(&self, key: &str, msg_vec: &[u8]) {
+        let mut msg = Message::try_from(msg_vec).unwrap();
         let origin = msg.get_origin();
         trace!("distribute_msg call key = {}, origin = {}", key, origin);
-        match RoutingKey::from(&key) {
+        match RoutingKey::from(key) {
             routing_key!(Chain >> Request) => {
                 let req = msg.take_request().unwrap();
                 self.reply_request(req);
@@ -107,7 +107,7 @@ impl ExecutorInstance {
                 match req.cmd {
                     Cmd::Snapshot => {
                         info!("executor receive snapshot cmd: {:?}", req);
-                        self.take_snapshot(req);
+                        self.take_snapshot(&req);
                         info!("executor snapshot creation complete");
 
                         //resp SnapshotAck to snapshot_tool
@@ -123,7 +123,7 @@ impl ExecutorInstance {
                     }
                     Cmd::Restore => {
                         info!("executor receive restore cmd: {:?}", req);
-                        self.restore(req);
+                        self.restore(&req);
                         info!("executor snapshot restore complete");
 
                         //resp RestoreAck to snapshot_tool
@@ -150,11 +150,7 @@ impl ExecutorInstance {
     }
 
     pub fn is_dup_block(&self, inum: u64) -> bool {
-        if inum <= self.ext.get_current_height() {
-            true
-        } else {
-            false
-        }
+        inum <= self.ext.get_current_height()
     }
 
     ///执行block交易
@@ -705,7 +701,7 @@ impl ExecutorInstance {
         self.write_sender.send(blk_height);
     }
 
-    fn take_snapshot(&self, _snap_shot: SnapshotReq) {
+    fn take_snapshot(&self, _snap_shot: &SnapshotReq) {
         // executor snapshot entry
         let writer = PackedWriter {
             file: File::create("snap.rlp").unwrap(), //TODO:use given path
@@ -728,11 +724,11 @@ impl ExecutorInstance {
         snapshot::take_snapshot(&self.ext, start_hash, db.as_hashdb(), writer, &*progress).unwrap();
     }
 
-    fn restore(&self, _snap_shot: SnapshotReq) -> Result<(), String> {
+    fn restore(&self, _snap_shot: &SnapshotReq) -> Result<(), String> {
         let file = "snap-executor.rlp";
         let reader = PackedReader::new(Path::new(&file))
             .map_err(|e| format!("Couldn't open snapshot file: {}", e))
-            .and_then(|x| x.ok_or("Snapshot file has invalid format.".into()));
+            .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
         let reader = reader?;
 
         let mut db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
@@ -747,7 +743,7 @@ impl ExecutorInstance {
         //TODO:get manifest from snap_shot for restore
         let snapshot = SnapshotService::new(snapshot_params).unwrap();
         let snapshot = Arc::new(snapshot);
-        snapshot::restore_using(snapshot.clone(), &reader, true);
+        snapshot::restore_using(Arc::clone(&snapshot), &reader, true);
         Ok(())
     }
 }
