@@ -93,9 +93,8 @@ contract RoleManagement {
         if (!inAddressArray(_account, accounts[_role]))
             accounts[_role].push(_account);
 
-        // Apply role permissions to account.
-        Role roleContract = Role(_role);
-        require(roleContract.applyRolePermissionsOf(_account));
+        // Set role permissions to account.
+        require(_setPermissions(_account, _role));
 
         RoleSetted(_account, _role);
         return true;
@@ -268,6 +267,20 @@ contract RoleManagement {
             if (roleContract.inPermissions(_permission))
                 return true;
         }
+    }
+
+    /// @dev Private: set role permissions of account
+    function _setPermissions(address _account, address _role)
+        private
+        returns (bool)
+    {
+        address[] memory permissions = queryPermissions(_role);
+
+        for (uint i = 0; i<permissions.length; i++) {
+            require(pmContract.setAuthorization(_account, permissions[i]));
+        }
+
+        return true;
     }
 
     /// @dev Check an address is contract address

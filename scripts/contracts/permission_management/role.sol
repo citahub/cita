@@ -77,18 +77,6 @@ contract Role {
         return true;
     }
 
-    function applyRolePermissionsOf(address _account)
-        public
-        onlyRoleManagement
-        returns (bool)
-    {
-        for (uint i = 0; i < permissions.length; i++) {
-            require(pmContract.setAuthorization(_account, permissions[i]));
-        }
-
-        return true;
-    }
-
     function clearRolePermissionsOf(address _account)
         public
         onlyRoleManagement
