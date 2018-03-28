@@ -1,6 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "./role_creator.sol";
+import "./permission_management.sol";
 
 
 /// @notice TODO Split to a new file: role_auth.sol
@@ -260,6 +261,7 @@ contract RoleManagement {
     /// @dev Private: account has permission in one of his roles
     function hasPermission(address _account, address _permission)
         private
+        view
         returns (bool)
     {
         for (uint i = 0; i < roles[_account].length; i++) {
