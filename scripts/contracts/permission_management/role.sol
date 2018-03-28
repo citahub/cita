@@ -89,18 +89,6 @@ contract Role {
         return true;
     }
 
-    function cancelRolePermissionsOf(address _account)
-        public
-        onlyRoleManagement
-        returns (bool)
-    {
-        for (uint i = 0; i < permissions.length; i++) {
-            require(pmContract.cancelAuthorization(_account, permissions[i]));
-        }
-
-        return true;
-    }
-
     function clearRolePermissionsOf(address _account)
         public
         onlyRoleManagement
@@ -132,6 +120,29 @@ contract Role {
         returns (address[])
     {
         return permissions;
+    }
+
+    /// @dev Query the length of the permissions
+    function lengthOfPermissions()
+        public
+        view
+        returns (uint)
+    {
+        return permissions.length; 
+    }
+
+    /// @dev Check the duplicate permission
+    function inPermissions(address _permission)
+        public 
+        view
+        returns (bool)
+    {
+        for (uint i = 0; i < permissions.length; i++) {
+            if (_permission == permissions[i])
+                return true;
+        }
+
+        return false;
     }
 
     /// @notice private
@@ -170,19 +181,5 @@ contract Role {
         permissions.length--;
 
         return true;
-    }
-
-    /// @dev Check the duplicate permission
-    function inPermissions(address _permission)
-        private
-        view
-        returns (bool)
-    {
-        for (uint i = 0; i < permissions.length; i++) {
-            if (_permission == permissions[i])
-                return true;
-        }
-
-        return false;
     }
 }
