@@ -425,65 +425,27 @@ impl OpenBlock {
                 }
                 self.receipts.push(Some(outcome.receipt));
             }
-            Err(Error::Execution(ExecutionError::NoTransactionPermission)) => {
-                let receipt = Receipt::new(
-                    None,
-                    0.into(),
-                    Vec::new(),
-                    Some(ReceiptError::NoTransactionPermission),
-                    0.into(),
+            Err(Error::Execution(execution_error)) => {
+                self.receipts.push(
+                    match execution_error {
+                        ExecutionError::NoTransactionPermission => Some(ReceiptError::NoTransactionPermission),
+                        ExecutionError::NoContractPermission => Some(ReceiptError::NoContractPermission),
+                        ExecutionError::NoCallPermission => Some(ReceiptError::NoCallPermission),
+                        ExecutionError::NotEnoughBaseGas { .. } => Some(ReceiptError::NotEnoughBaseGas),
+                        ExecutionError::BlockGasLimitReached { .. } => Some(ReceiptError::BlockGasLimitReached),
+                        ExecutionError::AccountGasLimitReached { .. } => Some(ReceiptError::AccountGasLimitReached),
+                        _ => None,
+                    }.map(|receipt_error| {
+                        Receipt::new(
+                            None,
+                            0.into(),
+                            Vec::new(),
+                            Some(receipt_error),
+                            0.into(),
+                            t.get_transaction_hash(),
+                        )
+                    }),
                 );
-                self.receipts.push(Some(receipt));
-            }
-            Err(Error::Execution(ExecutionError::NoContractPermission)) => {
-                let receipt = Receipt::new(
-                    None,
-                    0.into(),
-                    Vec::new(),
-                    Some(ReceiptError::NoContractPermission),
-                    0.into(),
-                );
-                self.receipts.push(Some(receipt));
-            }
-            Err(Error::Execution(ExecutionError::NoCallPermission)) => {
-                let receipt = Receipt::new(
-                    None,
-                    0.into(),
-                    Vec::new(),
-                    Some(ReceiptError::NoCallPermission),
-                    0.into(),
-                );
-                self.receipts.push(Some(receipt));
-            }
-            Err(Error::Execution(ExecutionError::NotEnoughBaseGas { .. })) => {
-                let receipt = Receipt::new(
-                    None,
-                    0.into(),
-                    Vec::new(),
-                    Some(ReceiptError::NotEnoughBaseGas),
-                    0.into(),
-                );
-                self.receipts.push(Some(receipt));
-            }
-            Err(Error::Execution(ExecutionError::BlockGasLimitReached { .. })) => {
-                let receipt = Receipt::new(
-                    None,
-                    0.into(),
-                    Vec::new(),
-                    Some(ReceiptError::BlockGasLimitReached),
-                    0.into(),
-                );
-                self.receipts.push(Some(receipt));
-            }
-            Err(Error::Execution(ExecutionError::AccountGasLimitReached { .. })) => {
-                let receipt = Receipt::new(
-                    None,
-                    0.into(),
-                    Vec::new(),
-                    Some(ReceiptError::AccountGasLimitReached),
-                    0.into(),
-                );
-                self.receipts.push(Some(receipt));
             }
             Err(_) => {
                 self.receipts.push(None);
