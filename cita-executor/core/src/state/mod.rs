@@ -203,10 +203,6 @@ pub struct State<B: Backend> {
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
     account_start_nonce: U256,
     factories: Factories,
-    // transaction permissions
-    pub senders: HashSet<Address>,
-    // contract permissions
-    pub creators: HashSet<Address>,
     pub account_permissions: HashMap<Address, Vec<Resource>>,
 }
 
@@ -251,8 +247,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: account_start_nonce,
             factories: factories,
-            senders: HashSet::new(),
-            creators: HashSet::new(),
             account_permissions: HashMap::new(),
         }
     }
@@ -275,8 +269,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: account_start_nonce,
             factories: factories,
-            senders: HashSet::new(),
-            creators: HashSet::new(),
             account_permissions: HashMap::new(),
         };
 
@@ -929,8 +921,6 @@ impl Clone for State<StateDB> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: self.account_start_nonce,
             factories: self.factories.clone(),
-            creators: self.creators.clone(),
-            senders: self.senders.clone(),
             account_permissions: self.account_permissions.clone(),
         }
     }

@@ -263,6 +263,11 @@ mod tests {
                 Address::from(0x33241b5),
                 Address::from(0x43241b5),
                 Address::from(0x53241b5),
+                Address::from(0x63241b5),
+                Address::from(0x73241b5),
+                Address::from(0x83241b5),
+                Address::from(0x93241b5),
+                Address::from(0xa3241b5),
                 Address::from(0x1),
                 Address::from(0x2),
             ]
@@ -279,7 +284,7 @@ mod tests {
             vec![
                 Resource {
                     cont: Address::from(0x13241b2),
-                    func: vec![0xf0, 0x36, 0xed, 0x56],
+                    func: vec![0xfc, 0x4a, 0x08, 0x9c],
                 },
             ]
         );
@@ -303,14 +308,17 @@ mod tests {
         assert_eq!(
             *account_permissions.get(&super_admin).unwrap(),
             vec![
+                // newPermission
                 Resource {
                     cont: Address::from(0x13241b2),
-                    func: vec![0xf0, 0x36, 0xed, 0x56],
+                    func: vec![0xfc, 0x4a, 0x08, 0x9c],
                 },
+                // deletePermission
                 Resource {
                     cont: Address::from(0x13241b2),
-                    func: vec![0x34, 0x82, 0xe0, 0xc9],
+                    func: vec![0x98, 0xa0, 0x5b, 0xb1],
                 },
+                // updatePermission
                 Resource {
                     cont: Address::from(0x13241b2),
                     func: vec![0xf0, 0x36, 0xed, 0x56],
@@ -323,10 +331,16 @@ mod tests {
                     cont: Address::from(0x13241b2),
                     func: vec![0x53, 0x7b, 0xf9, 0xa3],
                 },
+                // setAuth
                 Resource {
                     cont: Address::from(0x13241b2),
                     func: vec![0x0f, 0x5a, 0xa9, 0xf3],
                 },
+                Resource {
+                    cont: Address::from(0x13241b2),
+                    func: vec![0x52, 0xc5, 0xb4, 0xcc],
+                },
+                // cancelAuth
                 Resource {
                     cont: Address::from(0x13241b2),
                     func: vec![0x34, 0x82, 0xe0, 0xc9],
@@ -336,9 +350,52 @@ mod tests {
                     func: vec![0xa5, 0x92, 0x5b, 0x5b],
                 },
                 Resource {
+                    cont: Address::from(0x13241b2),
+                    func: vec![0xba, 0x00, 0xab, 0x60],
+                },
+                // newRole
+                Resource {
+                    cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                    func: vec![0x55, 0x1e, 0xf8, 0x60],
+                },
+                // deleteRole
+                Resource {
+                    cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                    func: vec![0x54, 0xb0, 0x25, 0xc5],
+                },
+                // updateRole
+                Resource {
+                    cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                    func: vec![0x07, 0x73, 0xe6, 0xba],
+                },
+                Resource {
+                    cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                    func: vec![0x17, 0xb2, 0xe3, 0x50],
+                },
+                Resource {
+                    cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                    func: vec![0xd9, 0xc0, 0x90, 0xa0],
+                },
+                // setRole
+                Resource {
+                    cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                    func: vec![0xa3, 0x27, 0x10, 0xeb],
+                },
+                // cancelRole
+                Resource {
+                    cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                    func: vec![0xa8, 0x31, 0x94, 0x81],
+                },
+                Resource {
+                    cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                    func: vec![0xc6, 0x31, 0xe7, 0x58],
+                },
+                // senTx
+                Resource {
                     cont: Address::from(0x1),
                     func: vec![0, 0, 0, 0],
                 },
+                // createContract
                 Resource {
                     cont: Address::from(0x2),
                     func: vec![0, 0, 0, 0],

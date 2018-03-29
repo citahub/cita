@@ -18,12 +18,10 @@
 //! System contracts.
 
 pub mod node_manager;
-pub mod account_manager;
 pub mod quota_manager;
 pub mod constant_config;
 pub mod permission_management;
 
-pub use self::account_manager::AccountManager;
 pub use self::constant_config::ConstantConfig;
 pub use self::node_manager::NodeManager;
 pub use self::permission_management::{PermissionManagement, Resource};

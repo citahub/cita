@@ -18,8 +18,7 @@
 use bloomchain as bc;
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
-use contracts::{AccountGasLimit, AccountManager, ConstantConfig, NodeManager, PermissionManagement, QuotaManager,
-                Resource};
+use contracts::{AccountGasLimit, ConstantConfig, NodeManager, PermissionManagement, QuotaManager, Resource};
 use db;
 use db::*;
 use engines::NullEngine;
@@ -44,7 +43,7 @@ use native::Factory as NativeFactory;
 use snapshot;
 use state::State;
 use state_db::StateDB;
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::convert::{Into, TryInto};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -121,8 +120,6 @@ pub enum Stage {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct GlobalSysConfig {
-    pub senders: HashSet<Address>,
-    pub creators: HashSet<Address>,
     pub nodes: Vec<Address>,
     pub block_gas_limit: usize,
     pub account_gas_limit: AccountGasLimit,
@@ -136,8 +133,6 @@ pub struct GlobalSysConfig {
 impl GlobalSysConfig {
     fn new() -> GlobalSysConfig {
         GlobalSysConfig {
-            senders: HashSet::new(),
-            creators: HashSet::new(),
             nodes: Vec::new(),
             block_gas_limit: 18_446_744_073_709_551_615,
             account_gas_limit: AccountGasLimit::new(),
@@ -515,8 +510,6 @@ impl Executor {
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
 
         let conf = self.get_current_sys_conf(self.get_max_height());
-        state.senders = conf.senders;
-        state.creators = conf.creators;
         state.account_permissions = conf.account_permissions;
 
         let engine = NullEngine::default();
@@ -633,13 +626,11 @@ impl Executor {
     }
 
     /// Reload system config from system contract
-    /// 1. Senders and creators
-    /// 2. Consensus nodes
-    /// 3. BlockGasLimit and AccountGasLimit
+    /// 1. Consensus nodes
+    /// 2. BlockGasLimit and AccountGasLimit
+    /// 3. Account permissions
     pub fn reload_config(&self) {
         let mut conf = GlobalSysConfig::new();
-        conf.senders = AccountManager::load_senders(self);
-        conf.creators = AccountManager::load_creators(self);
         conf.nodes = NodeManager::read(self);
         conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
         conf.delay_active_interval = ConstantConfig::valid_number(self) as usize;
@@ -887,16 +878,11 @@ mod tests {
     #[test]
     fn test_global_sys_config_equal() {
         let mut lhs = GlobalSysConfig::new();
-        lhs.senders.insert(Address::from(0x100001));
-        lhs.senders.insert(Address::from(0x100002));
 
         lhs.nodes.push(Address::from(0x100003));
         lhs.nodes.push(Address::from(0x100004));
 
         let mut rhs = GlobalSysConfig::new();
-
-        rhs.senders.insert(Address::from(0x100002));
-        rhs.senders.insert(Address::from(0x100001));
 
         rhs.nodes.push(Address::from(0x100003));
         rhs.nodes.push(Address::from(0x100004));

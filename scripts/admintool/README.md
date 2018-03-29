@@ -93,14 +93,6 @@ option:
         ]
     ],
     "0x00000000000000000000000000000000013241a3": "0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888",
-    "0x00000000000000000000000000000000013241a4": [
-        [
-            "0x1a702a25c6bca72b67987968f0bfb3a3213c5688"
-        ],
-        [
-            "0x0dbd369a741319fa5107733e2c9db9929093e3c7"
-        ]
-    ],
     "0x0000000000000000000000000000000031415926": [
         1,
         false,
@@ -250,8 +242,6 @@ option:
                                                 可由此地址进行共识节点的增删。 ***须保存好对应的私钥***
 - `0x00000000000000000000000000000000013241a3`: 代表配额管理系统合约地址，用户可修改`0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888`值为自己生成的地址，其为配额管理的管理员地址，
                                                 可由此地址进行配额的管理。 ***须保存好对应的私钥***
-- `0x00000000000000000000000000000000013241a4`: 代表权限管理系统合约地址，第一个数组为拥有发送交易权限的地址列表，第二个数组为拥有创建合约权限的地址列表。
-                                                用户可分别填入多个地址。 ***须保存好对应的私钥***
 - `0x0000000000000000000000000000000031415926`: 代表只读配置合约，三个参数分别代表系统合约生效需要的块数，默认为1代表下一个块生效；权限检查的开关，默认关闭；配额检查开关，默认为关闭。
 - `0x00000000000000000000000000000000013241b4`: 代表新CITA权限管理合约地址，用户可修改`0x9dcd6b234e2772c5451fd4ccf7582f4283140697`值为自己生成的地址，其为超级管理员地址，
                                                 此地址拥有权限管理本身的所有权限。 ***须保存好对应的私钥***
@@ -267,8 +257,6 @@ option:
 |:----------------------------------------------------------------:|:------------------------------------------:|
 | 5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 | 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523 |
 | 61b760173f6d6b87726a28b93d7fcb4b4f842224921de8fa8e49b983a3388c03 | 0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888 |
-| 866c936ff332228948bdefc15b1877c88e0effce703ee6de898cffcafe9bbe25 | 0x1a702a25c6bca72b67987968f0bfb3a3213c5688 |
-| 352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214 | 0x0dbd369a741319fa5107733e2c9db9929093e3c7 |
 | 993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9 | 0x9dcd6b234e2772c5451fd4ccf7582f4283140697 |
 
 ### 用户自定义检查配置文件
@@ -363,31 +351,6 @@ contract address: 0x00000000000000000000000000000000013241a3
 
 - `getblockGasLimit()`，该方法为查询blockGasLimit，即配额，所有地址都可以通过eth_call成功调用此方法。
 
-### 权限管理系统合约
-
-权限管理合约存放在`install/scripts/contracts/permission_manager.sol`，该合约将权限管理引进系统，有效控制用户交易的权限，合约详情如下所示：
-
-```shell
-contract address: 0x00000000000000000000000000000000013241a4
-Function signatures:
-    301da870: grantPermission(address,uint8)
-    54ad6352: queryPermission(address)
-    6f4eaf7a: queryUsersOfPermission(uint8)
-    dd8a8a05: revokePermission(address,uint8)
-```
-
-目前该合约的权限管理功能比较简单，权限共有两种：发送交易和创建合约（Send, Create）。每个地址默认没有这两种权限，可通过有权限的地址授权获得其中一种或两种权限。
-比如，授予Create权限，已经拥有Create权限的地址可调用合约中的grantPermission()方法，来给其他地址授予Create权限。
-合约中的方法介绍如下：
-
-- `grantPermission(address,uint8)`，该方法是授予某种权限，其中参数中的address表示授予权限的地址，uint8表示权限名称，拥有该权限的地址可通过cita_sendTransaction调用该方法来授予其他地址该权限。
-
-- `revokePermission(address,uint8)`，该方法是取消某种权限，其中参数address表示取消权限的地址，uint8表示权限名称，拥有该权限的地址可通过cita_sendTransaction调用该方法来取消其他地址该权限。
-
-- `queryPermission(address)`，该方法是查询指定地址的权限，可通过eth_call调用该方法来查询。
-
-- `queryUsersOfPermission(uint8)`， 该方法是查询拥有指定权限的所有用户，可通过eth_call调用该方法来查询。
-
 ### 单独增加节点
 
 主要原理:新增节点先以只读节点的身份介入，然后通过发送身份验证（交易）控制新节点权限. 并且，单独增加节点需要依赖已有的节点信息如:authorities，genesis.json
@@ -405,6 +368,6 @@ Function signatures:
 3. 配置节点信息，如network.toml,jsonrpc.json等．
 4. 确保无误，程序运行正确，备份最新的authorities文件.
 
-#### 新权限管理系统合约
+#### 权限管理系统合约
 
 新权限系统合约存放在`install/scripts/contracts/permission_management`文件夹下，相关说明在`install/scripts/contracts/permission_management/README.md`

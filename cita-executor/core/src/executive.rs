@@ -298,12 +298,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let create_contract_cont = Address::from(0x2);
         let create_contract_func = vec![0; 4];
         // check contract create/call permission
-        trace!(
-            "executive creators: {:?}, senders: {:?}",
-            self.state.creators,
-            self.state.senders
-        );
-
         let has_send_permission = contains_resource(
             &self.state.account_permissions,
             &sender,
@@ -323,14 +317,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         );
         match t.action {
             Action::Create => {
-                if sender != Address::zero() && !self.state.creators.contains(&sender) && !has_create_permission {
+                if sender != Address::zero() && !has_create_permission {
                     return Err(From::from(ExecutionError::NoContractPermission));
                 }
             }
             Action::Call(address) => {
-                if sender != Address::zero() && !self.state.senders.contains(&sender)
-                    && !self.state.creators.contains(&sender) && !has_send_permission
-                {
+                if sender != Address::zero() && !has_send_permission {
                     return Err(From::from(ExecutionError::NoTransactionPermission));
                 }
                 trace!("t.data {:?}", t.data);
@@ -349,9 +341,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 }
             }
             _ => {
-                if sender != Address::zero() && !self.state.senders.contains(&sender)
-                    && !self.state.creators.contains(&sender) && !has_send_permission
-                {
+                if sender != Address::zero() && !has_send_permission {
                     return Err(From::from(ExecutionError::NoTransactionPermission));
                 }
             }

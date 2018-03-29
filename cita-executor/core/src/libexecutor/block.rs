@@ -342,8 +342,6 @@ impl OpenBlock {
         last_hashes: Arc<LastHashes>,
     ) -> Result<Self, Error> {
         let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
-        state.senders = conf.senders;
-        state.creators = conf.creators;
         state.account_permissions = conf.account_permissions;
 
         let r = OpenBlock {

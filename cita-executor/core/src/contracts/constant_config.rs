@@ -102,6 +102,7 @@ mod tests {
         let executor = init_executor();
         let check_permission = ConstantConfig::permission_check(&executor);
 
+        // Is true in the test module.
         assert_eq!(check_permission, true);
     }
 
@@ -110,6 +111,7 @@ mod tests {
         let executor = init_executor();
         let check_quota = ConstantConfig::quota_check(&executor);
 
+        // Is true in the test module.
         assert_eq!(check_quota, true);
     }
 }
