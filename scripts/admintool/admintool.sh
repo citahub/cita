@@ -37,12 +37,14 @@ display_help()
     echo
     echo "-k start with kafka"
     echo
-    echo "-Q node id"
+    echo "-Q node id, use to create a new node, usually use with -l, -l must list all node ip"
     echo
     exit 0
 }
 
+# usually is `cita/targte/install`
 CONFIG_DIR=${PWD}
+# usually is `cita/targte/install`
 BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
 export PATH=${PATH}:${BINARY_DIR}/bin
 
@@ -81,10 +83,11 @@ done
 #set default value
 : ${ADMIN_ID:="admin"}
 
+# if ip_list is not exist, dev_mod = 1
 [ -z "$IP_LIST" ] && DEV_MOD=1
 : ${IP_LIST:="127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"}
 
-#calc size of nodes
+#calc number of nodes
 TMP=${IP_LIST//[^\:]}
 SIZE=${#TMP}
 
@@ -130,7 +133,8 @@ auth(){
 }
 
 network(){
-    python ${BINARY_DIR}/scripts/admintool/create_network_config.py ${CONFIG_DIR} ${1} $SIZE $IP_LIST
+    # if has ${2}, it means append new node, not initialize the entire chain
+    python ${BINARY_DIR}/scripts/admintool/create_network_config.py ${CONFIG_DIR} ${1} $SIZE $IP_LIST ${2}
     mv ${CONFIG_DIR}/network.toml ${CONFIG_DIR}/node${1}/
 }
 
@@ -151,9 +155,10 @@ executor(){
 }
 
 jsonrpc(){
+    # if has ${2}, it means append new node, not initialize the entire chain
     H_PORT=${HTTP_PORT:-1337}
     W_PORT=${WS_PORT:-4337}
-    if [ -n "$DEV_MOD" ]; then
+    if [ -n "$DEV_MOD" ] || ${2}; then
         ((H_PORT=${H_PORT}+${1}))
         ((W_PORT=${W_PORT}+${1}))
     fi
@@ -174,19 +179,23 @@ forever(){
 }
 
 node(){
-    mkdir -p ${CONFIG_DIR}/node${1}
+     mkdir -p ${CONFIG_DIR}/node${1}
     cp -rf $CONFIG_DIR/backup/*  ${CONFIG_DIR}/
     create_key $1
-    jsonrpc $1
+    jsonrpc $1 true
     consensus $1
     chain $1
     executor  $1
-    python ${BINARY_DIR}/scripts/admintool/create_network_config.py ${CONFIG_DIR} ${1} $SIZE $IP_LIST
-    mv ${CONFIG_DIR}/network.toml ${CONFIG_DIR}/node${1}/
+    network $1 true
     auth $1
     env $1
     kafka $1
     forever $1
+    rm -rf $CONFIG_DIR/backup/*
+    mv ${CONFIG_DIR}/*.json ${CONFIG_DIR}/authorities $CONFIG_DIR/backup/
+    if [ -d "${CONFIG_DIR}/resource" ]; then
+        mv ${CONFIG_DIR}/resource $CONFIG_DIR/backup/
+    fi
 }
 
 default(){
@@ -219,8 +228,10 @@ default(){
 
 echo "************************begin create node config******************************"
 if [ -z $NODE ]; then
+    # initialize the entire chain
     default
 else
+    # append new node
     node $NODE
 fi
 echo "************************end create node config********************************"
