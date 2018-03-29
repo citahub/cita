@@ -18,6 +18,8 @@
     "unit_pm": "mocha test/unit/permission_management.js -t 60s; jshint test/unit/permission_management.js",
     "unit_rm": "mocha test/unit/role_management.js -t 60s; jshint test/unit/role_management.js",
     "unit_auth": "mocha test/unit/authorization.js -t 60s; jshint test/unit/authorization.js",
+    "unit_quota": "mocha test/unit/quota.js -t 60s; jshint test/unit/quota.js",
+    "unit_qm": "mocha test/unit/quota_manager.js -t 60s; jshint test/unit/quota_manager.js",
     "integrate_test": "mocha test/integrate --recursive -t 60s; jshint test/integrate",
     "lint": "jshint test"
   },
