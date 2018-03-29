@@ -1,7 +1,5 @@
 pragma solidity ^0.4.18;
 
-import "./permission_management.sol";
-
 
 /// @notice TODO Move the interface about calling the permission management to the role management
 ///         TODO Add util library of operation about address
@@ -14,9 +12,7 @@ contract Role {
 
     bytes32 name;
     address[] permissions;
-    address internal permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
     address internal roleManagementAddr = 0xe3b5DDB80AdDb513b5c981e27Bb030A86A8821eE;
-    PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);
 
     modifier onlyRoleManagement {
         require(roleManagementAddr == msg.sender);
@@ -77,27 +73,6 @@ contract Role {
         return true;
     }
 
-    function applyRolePermissionsOf(address _account)
-        public
-        onlyRoleManagement
-        returns (bool)
-    {
-        for (uint i = 0; i < permissions.length; i++) {
-            require(pmContract.setAuthorization(_account, permissions[i]));
-        }
-
-        return true;
-    }
-
-    function clearRolePermissionsOf(address _account)
-        public
-        onlyRoleManagement
-        returns (bool)
-    {
-        require(pmContract.clearAuthorization(_account));
-        return true;
-    }
-    
     function queryRole()
         public
         view

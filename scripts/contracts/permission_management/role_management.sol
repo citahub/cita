@@ -1,6 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "./role_creator.sol";
+import "./permission_management.sol";
 
 
 /// @notice TODO Split to a new file: role_auth.sol
@@ -93,9 +94,8 @@ contract RoleManagement {
         if (!inAddressArray(_account, accounts[_role]))
             accounts[_role].push(_account);
 
-        // Apply role permissions to account.
-        Role roleContract = Role(_role);
-        require(roleContract.applyRolePermissionsOf(_account));
+        // Set role permissions to account.
+        require(_setPermissions(_account, _role));
 
         RoleSetted(_account, _role);
         return true;
@@ -261,6 +261,7 @@ contract RoleManagement {
     /// @dev Private: account has permission in one of his roles
     function hasPermission(address _account, address _permission)
         private
+        view
         returns (bool)
     {
         for (uint i = 0; i < roles[_account].length; i++) {
@@ -268,6 +269,20 @@ contract RoleManagement {
             if (roleContract.inPermissions(_permission))
                 return true;
         }
+    }
+
+    /// @dev Private: set role permissions of account
+    function _setPermissions(address _account, address _role)
+        private
+        returns (bool)
+    {
+        address[] memory permissions = queryPermissions(_role);
+
+        for (uint i = 0; i<permissions.length; i++) {
+            require(pmContract.setAuthorization(_account, permissions[i]));
+        }
+
+        return true;
     }
 
     /// @dev Check an address is contract address
