@@ -31,13 +31,14 @@ echo "DONE"
 echo -n "4) generate mock data  ...  "
 AMQP_URL=amqp://guest:guest@localhost/node0 \
         ${SOURCE_DIR}/target/debug/chain-executor-mock \
-        -m ${SOURCE_DIR}/tools/chain-executor-mock/mock-data/mock-data.yaml
+        -m ${SOURCE_DIR}/tests/interfaces/rpc/config/blockchain.yaml
 echo "DONE"
 
 ################################################################################
-echo -n "5) check mock data  ...  "
-python2 ${SOURCE_DIR}/tools/chain-executor-mock/mock-data/check-mock-data.py \
-        -m ${SOURCE_DIR}/tools/chain-executor-mock/mock-data/mock-data.yaml
+echo "5) check mock data  ...  "
+python2 ${SOURCE_DIR}/tests/interfaces/rpc/test_runner.py \
+        --rpc-url http://127.0.0.1:1337 \
+        --tests ${SOURCE_DIR}/tests/interfaces/rpc/tests/cita_blockNumber.json
 echo "DONE"
 
 ################################################################################
