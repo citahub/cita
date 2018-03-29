@@ -61,6 +61,14 @@ module.exports = {
                 address: '0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888',
                 privkey: '61b760173f6d6b87726a28b93d7fcb4b4f842224921de8fa8e49b983a3388c03'
             }
+        },
+        node_manager: {
+            abi: [{"constant":true,"inputs":[{"name":"_node","type":"address"}],"name":"isAdmin","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_node","type":"address"}],"name":"deleteNode","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_node","type":"address"}],"name":"getStatus","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"listNode","outputs":[{"name":"","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"status","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_node","type":"address"}],"name":"addAdmin","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_node","type":"address"}],"name":"approveNode","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_node","type":"address"}],"name":"newNode","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"_nodes","type":"address[]"},{"name":"_admins","type":"address[]"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_node","type":"address"}],"name":"NewNode","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_node","type":"address"}],"name":"ApproveNode","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_node","type":"address"}],"name":"DeleteNode","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_node","type":"address"},{"indexed":true,"name":"_sender","type":"address"}],"name":"AddAdmin","type":"event"}],
+            addr: '0x00000000000000000000000000000000013241a2',
+            admin: {
+                address: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523',
+                privkey: '5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6'
+            }
         }
     },
     localServer: 'http://127.0.0.1:1337',

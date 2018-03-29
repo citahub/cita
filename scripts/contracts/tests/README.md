@@ -71,38 +71,57 @@ npm run-script unit_test
 ```
 
 * To test permission contract:
+
 ```
 npm run-script unit_permission
 ```
 
 * To test permission management contract:
+
 ```
 npm run-script unit_pm
 ```
 
 * To test group contract
+
 ```
 npm run-script unit_group
 ```
 
 * To test group management contract
+
 ```
 npm run-script unit_gm
 ```
 
 * To test role contract
+
 ```
 npm run-script unit_role
 ```
 
 * To test role management contract
+
 ```
 npm run-script unit_rm
 ```
 
 * To test authorization contract
+
 ```
-npm run-script auth
+npm run-script unit_auth
+```
+
+* To test node manager contract
+
+```
+npm run-script unit_node
+```
+
+* To test quota manager contract
+
+```
+npm run-script unit_quota
 ```
 
 * To run integrate test:
