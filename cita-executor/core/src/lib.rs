@@ -64,6 +64,8 @@ extern crate test;
 #[cfg(feature = "privatetx")]
 extern crate zktx;
 
+extern crate ethcore_bloom_journal;
+
 pub mod state;
 pub mod account_db;
 pub mod executed;

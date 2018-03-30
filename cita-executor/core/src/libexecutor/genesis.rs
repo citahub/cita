@@ -105,7 +105,7 @@ impl Genesis {
 
     pub fn lazy_execute(&mut self, state_db: &StateDB, factories: &Factories) -> Result<(), String> {
         let mut state = State::from_existing(
-            state_db.boxed_clone(),
+            state_db.boxed_clone_canon(&self.spec.prevhash),
             *self.block.state_root(),
             U256::from(0),
             factories.clone(),
@@ -116,10 +116,9 @@ impl Genesis {
         self.block.set_number(0);
 
         info!("**** begin **** \n");
-        info!("chain first init, to do init contracts on height eq zero");
+        info!("This is the first time to init executor, and it will init contracts on height 0");
         for (address, contract) in self.spec.alloc.clone() {
             let address = Address::from_any_str(address.as_str()).unwrap();
-
             state.new_contract(&address, U256::from(0));
             {
                 state
@@ -158,9 +157,7 @@ impl Genesis {
         trace!("root {:?}", root);
         self.block.set_state_root(root);
 
-        let db = state.clone().db();
-        let journal_db = db.journal_db();
-        self.save(state, journal_db.backing())
+        self.save(state, state_db.journal_db().backing())
     }
 
     fn save(&mut self, state: State<StateDB>, db: &Arc<KeyValueDB>) -> Result<(), String> {
@@ -171,10 +168,11 @@ impl Genesis {
         batch.write(db::COL_HEADERS, &hash, self.block.header());
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
         batch.write(db::COL_EXTRA, &height, &hash);
-        state
-            .db()
+        let mut state_db = state.drop().1;
+        state_db
             .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
+        state_db.sync_cache(&[], &[], true);
         db.write(batch)
     }
 }

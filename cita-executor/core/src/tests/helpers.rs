@@ -59,7 +59,7 @@ fn new_db() -> Arc<KeyValueDB> {
 pub fn get_temp_state_db() -> StateDB {
     let db = new_db();
     let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, ::db::COL_STATE);
-    StateDB::new(journal_db)
+    StateDB::new(journal_db, 5 * 1024 * 1024)
 }
 
 pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {

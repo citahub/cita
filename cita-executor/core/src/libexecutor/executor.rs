@@ -184,7 +184,7 @@ pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
     if let Some(hash) = h {
         db.read(db::COL_HEADERS, &hash)
     } else {
-        warn!("not expected get_current_header.");
+        warn!("Failed to get current_header from DB.");
         None
     }
 }
@@ -206,26 +206,22 @@ impl Executor {
             .parse()
             .unwrap_or(journaldb::Algorithm::Archive);
         let journal_db = journaldb::new(Arc::clone(&db), journaldb_type, COL_STATE);
-        let state_db = StateDB::new(journal_db);
+        let state_db = StateDB::new(journal_db, 5 * 1024 * 1024); // todo : cache_size would be set in config file.
 
         let mut executed_ret = ExecutedResult::new();
         let header = match get_current_header(&*db) {
-            Some(header) => {
-                let executed_header = header.clone().generate_executed_header();
-                executed_ret.mut_executed_info().set_header(executed_header);
-                header
-            }
+            Some(header) => header,
             _ => {
                 genesis
                     .lazy_execute(&state_db, &factories)
                     .expect("Failed to save genesis.");
                 info!("init genesis {:?}", genesis);
 
-                let executed_header = genesis.block.header().clone().generate_executed_header();
-                executed_ret.mut_executed_info().set_header(executed_header);
                 genesis.block.header().clone()
             }
         };
+        let executed_header = header.clone().generate_executed_header();
+        executed_ret.mut_executed_info().set_header(executed_header);
 
         let max_height = AtomicUsize::new(0);
         max_height.store(header.number() as usize, Ordering::SeqCst);
@@ -453,24 +449,13 @@ impl Executor {
     /// Attempt to get a copy of a specific block's final state.
     pub fn state_at(&self, id: BlockId) -> Option<State<StateDB>> {
         self.block_header(id)
-            .map_or(None, |h| self.gen_state(*h.state_root()))
+            .map_or(None, |h| self.gen_state(*h.state_root(), *h.parent_hash()))
     }
 
     /// generate block's final state.
-    pub fn gen_state(&self, root: H256) -> Option<State<StateDB>> {
-        let db = self.state_db.boxed_clone();
+    pub fn gen_state(&self, root: H256, parent_hash: H256) -> Option<State<StateDB>> {
+        let db = self.state_db.boxed_clone_canon(&parent_hash);
         State::from_existing(db, root, U256::from(0), self.factories.clone()).ok()
-    }
-
-    /// Get a copy of the best block's state.
-    pub fn state(&self) -> State<StateDB> {
-        let mut state = self.gen_state(self.current_state_root())
-            .expect("State root of current block is invalid.");
-        let conf = self.get_current_sys_conf(self.get_max_height());
-        state.senders = conf.senders;
-        state.creators = conf.creators;
-        state.account_permissions = conf.account_permissions;
-        state
     }
 
     /// Get code by address
@@ -606,6 +591,7 @@ impl Executor {
         state
             .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
+        state.sync_cache(&[], &[], true);
         self.db.write_buffered(batch);
 
         self.prune_ancient(state).expect("mark_canonical failed");
@@ -714,12 +700,13 @@ impl Executor {
         let conf = self.get_current_sys_conf(self.get_max_height());
         let perm = conf.check_permission;
         let quota = conf.check_quota;
+        let parent_hash = block.parent_hash().clone();
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
             conf.clone(),
             false,
             block,
-            self.state_db.boxed_clone(),
+            self.state_db.boxed_clone_canon(&parent_hash),
             current_state_root,
             last_hashes.into(),
         ).unwrap();
@@ -740,12 +727,13 @@ impl Executor {
         let conf = self.get_current_sys_conf(self.get_max_height());
         let perm = conf.check_permission;
         let quota = conf.check_quota;
+        let parent_hash = block.parent_hash().clone();
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
             conf,
             false,
             block,
-            self.state_db.boxed_clone(),
+            self.state_db.boxed_clone_canon(&parent_hash),
             current_state_root,
             last_hashes.into(),
         ).unwrap();

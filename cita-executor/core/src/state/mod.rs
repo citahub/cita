@@ -64,7 +64,7 @@ enum AccountState {
     /// Account was loaded from disk and never modified in this state object.
     CleanFresh,
     /// Account was loaded from the global cache and never modified.
-    // CleanCached,
+    CleanCached,
     /// Account has been modified and is not committed to the trie yet.
     /// This is set if any of the account data is changed, including
     /// storage, code and ABI.
@@ -79,7 +79,9 @@ enum AccountState {
 /// Account entry can contain existing (`Some`) or non-existing
 /// account (`None`)
 struct AccountEntry {
+    /// Account entry. `None` if account known to be non-existant.
     account: Option<Account>,
+    /// Entry state.
     state: AccountState,
 }
 
@@ -127,12 +129,12 @@ impl AccountEntry {
     }
 
     // Create a new account entry and mark it as clean and cached.
-    // fn new_clean_cached(account: Option<Account>) -> AccountEntry {
-    //     AccountEntry {
-    //         account: account,
-    //         state: AccountState::CleanCached,
-    //     }
-    // }
+    fn new_clean_cached(account: Option<Account>) -> AccountEntry {
+        AccountEntry {
+            account: account,
+            state: AccountState::CleanCached,
+        }
+    }
 
     // Replace data with another entry but preserve storage cache.
     fn overwrite_with(&mut self, other: AccountEntry) {
@@ -338,33 +340,29 @@ impl<B: Backend> State<B> {
         //
         // In all other cases account is read as clean first, and after that made
         // dirty in and added to the checkpoint with `note_cache`.
-        if account.is_dirty() {
+        let is_dirty = account.is_dirty();
+        let old_value = self.cache.borrow_mut().insert(*address, account);
+        if is_dirty {
             if let Some(ref mut checkpoint) = self.checkpoints.borrow_mut().last_mut() {
-                if !checkpoint.contains_key(address) {
-                    checkpoint.insert(*address, self.cache.borrow_mut().insert(*address, account));
-                    return;
-                }
+                checkpoint.entry(*address).or_insert(old_value);
             }
         }
-        self.cache.borrow_mut().insert(*address, account);
     }
 
     fn note_cache(&self, address: &Address) {
         if let Some(ref mut checkpoint) = self.checkpoints.borrow_mut().last_mut() {
-            if !checkpoint.contains_key(address) {
-                checkpoint.insert(
-                    *address,
-                    self.cache
-                        .borrow()
-                        .get(address)
-                        .map(AccountEntry::clone_dirty),
-                );
-            }
+            checkpoint.entry(*address).or_insert_with(|| {
+                self.cache
+                    .borrow()
+                    .get(address)
+                    .map(AccountEntry::clone_dirty)
+            });
         }
     }
 
     /// Destroy the current object and return root and database.
-    pub fn drop(self) -> (H256, B) {
+    pub fn drop(mut self) -> (H256, B) {
+        self.propagate_to_global_cache();
         (self.root, self.db)
     }
 
@@ -393,7 +391,6 @@ impl<B: Backend> State<B> {
         self.insert_cache(account, AccountEntry::new_dirty(None));
     }
 
-    // TODO: Check it later.
     /// Determine whether an account exists.
     pub fn exists(&self, a: &Address) -> trie::Result<bool> {
         // Bloom filter does not contain empty accounts, so it is important here to
@@ -435,7 +432,6 @@ impl<B: Backend> State<B> {
         })
     }
 
-    // TODO: Add global cache.
     /// Mutate storage of account `address` so that it is `value` for `key`.
     pub fn storage_at(&self, address: &Address, key: &H256) -> trie::Result<H256> {
         // Storage key search and update works like this:
@@ -443,8 +439,8 @@ impl<B: Backend> State<B> {
         // 2. If there's an entry for the account in the global cache check for the key or load it into that account.
         // 3. If account is missing in the global cache load it into the local cache and cache the key there.
 
-        // check local cache first without updating
         {
+            // check local cache first without updating
             let local_cache = self.cache.borrow_mut();
             let mut local_account = None;
             if let Some(maybe_acc) = local_cache.get(address) {
@@ -460,6 +456,21 @@ impl<B: Backend> State<B> {
                 }
             }
 
+            // check the global cache and and cache storage key there if found,
+            let trie_res = self.db.get_cached(address, |acc| match acc {
+                None => Ok(H256::new()),
+                Some(a) => {
+                    let account_db = self.factories
+                        .accountdb
+                        .readonly(self.db.as_hashdb(), a.address_hash(address));
+                    a.storage_at(&self.factories.trie, account_db.as_hashdb(), key)
+                }
+            });
+
+            if let Some(res) = trie_res {
+                return res;
+            }
+
             // otherwise cache the account localy and cache storage key there.
             if let Some(ref mut acc) = local_account {
                 if let Some(ref account) = acc.account {
@@ -473,7 +484,10 @@ impl<B: Backend> State<B> {
             }
         }
 
-        // TODO: add account bloom. check if the account could exist before any requests to trie
+        // check if the account could exist before any requests to trie
+        if self.db.is_known_null(address) {
+            return Ok(H256::zero());
+        }
 
         // account is not found in the global cache, get from the DB and insert into local
         let db = self.factories
@@ -650,32 +664,34 @@ impl<B: Backend> State<B> {
         })
     }
 
-    /// Commit accounts to SecTrieDBMut. This is similar to cpp-ethereum's dev::eth::commit.
-    /// `accounts` is mutable because we may need to commit the code or storage and record that.
-    #[cfg_attr(feature = "dev", allow(match_ref_pats))]
-    #[cfg_attr(feature = "dev", allow(needless_borrow))]
-    fn commit_into(
-        factories: &Factories,
-        db: &mut B,
-        root: &mut H256,
-        accounts: &mut HashMap<Address, AccountEntry>,
-    ) -> Result<(), Error> {
+    /// Commits our cached account changes into the trie.
+    pub fn commit(&mut self) -> Result<(), Error> {
+        assert!(self.checkpoints.borrow().is_empty());
+
         // first, commit the sub trees.
+        let mut accounts = self.cache.borrow_mut();
         for (address, ref mut a) in accounts.iter_mut().filter(|&(_, ref a)| a.is_dirty()) {
             if let Some(ref mut account) = a.account {
                 let addr_hash = account.address_hash(address);
                 {
-                    let mut account_db = factories.accountdb.create(db.as_hashdb_mut(), addr_hash);
-                    account.commit_storage(&factories.trie, account_db.as_hashdb_mut())?;
+                    let mut account_db = self.factories
+                        .accountdb
+                        .create(self.db.as_hashdb_mut(), addr_hash);
+                    account.commit_storage(&self.factories.trie, account_db.as_hashdb_mut())?;
 
                     account.commit_code(account_db.as_hashdb_mut());
                     account.commit_abi(account_db.as_hashdb_mut())
+                }
+                if !account.is_empty() {
+                    self.db.note_non_null_account(address);
                 }
             }
         }
 
         {
-            let mut trie = factories.trie.from_existing(db.as_hashdb_mut(), root)?;
+            let mut trie = self.factories
+                .trie
+                .from_existing(self.db.as_hashdb_mut(), &mut self.root)?;
             for (address, ref mut a) in accounts.iter_mut().filter(|&(_, ref a)| a.is_dirty()) {
                 a.state = AccountState::Committed;
                 match a.account {
@@ -692,15 +708,17 @@ impl<B: Backend> State<B> {
         Ok(())
     }
 
-    /// Commits our cached account changes into the trie.
-    pub fn commit(&mut self) -> Result<(), Error> {
-        assert!(self.checkpoints.borrow().is_empty());
-        Self::commit_into(
-            &self.factories,
-            &mut self.db,
-            &mut self.root,
-            &mut *self.cache.borrow_mut(),
-        )
+    /// Propagate local cache into shared canonical state cache.
+    fn propagate_to_global_cache(&mut self) {
+        let mut addresses = self.cache.borrow_mut();
+        trace!("Committing cache {:?} entries", addresses.len());
+        for (address, a) in addresses
+            .drain()
+            .filter(|&(_, ref a)| a.state == AccountState::Committed || a.state == AccountState::CleanFresh)
+        {
+            self.db
+                .add_to_account_cache(address, a.account, a.state == AccountState::Committed);
+        }
     }
 
     /// Clear state cache
@@ -708,38 +726,31 @@ impl<B: Backend> State<B> {
         self.cache.borrow_mut().clear();
     }
 
-    // TODO
     // load required account data from the databases.
-    fn update_account_cache(
-        require: RequireCache,
-        account: &mut Account,
-        //state_db: &B,
-        db: &HashDB,
-    ) {
+    fn update_account_cache(require: RequireCache, account: &mut Account, state_db: &B, db: &HashDB) {
         match (account.is_cached(), require) {
             (false, RequireCache::Code) | (false, RequireCache::CodeSize) => {
-                // if there's already code in the global cache, always cache it
-                // locally.
-                // let hash = account.code_hash();
-                // match state_db.get_cached_code(&hash) {
-                //     Some(code) => account.cache_given_code(code),
-                //     None => {
-                //         match require {
-                //             RequireCache::None => {}
-                //             RequireCache::Code => {
-                //                 if let Some(code) = account.cache_code(db) {
-                //                     // propagate code loaded from the database to
-                //                     // the global code cache.
-                //                     state_db.cache_code(hash, code)
-                //                 }
-                //             }
-                //             RequireCache::CodeSize => {
-                //                 account.cache_code_size(db);
-                //             }
-                //         }
-                //     }
-                // }
-                account.cache_code(db);
+                // if there's already code in the global cache, always cache it locally.
+                let hash = account.code_hash();
+                match state_db.get_cached_code(&hash) {
+                    Some(code) => account.cache_given_code(code),
+                    None => {
+                        match require {
+                            RequireCache::None => {}
+                            RequireCache::Code => {
+                                if let Some(code) = account.cache_code(db) {
+                                    // propagate code loaded from the database to
+                                    // the global code cache.
+                                    state_db.cache_code(hash, code)
+                                }
+                            }
+                            RequireCache::CodeSize => {
+                                account.cache_code_size(db);
+                            }
+                            _ => {}
+                        }
+                    }
+                }
             }
             _ => {}
         };
@@ -755,7 +766,7 @@ impl<B: Backend> State<B> {
     /// Check caches for required data
     /// First searches for account in the local, then the shared cache.
     /// Populates local cache if nothing found.
-    fn ensure_cached<F, U>(&self, a: &Address, require: RequireCache, _: bool, f: F) -> trie::Result<U>
+    fn ensure_cached<F, U>(&self, a: &Address, require: RequireCache, check_null: bool, f: F) -> trie::Result<U>
     where
         F: Fn(Option<&Account>) -> U,
     {
@@ -765,29 +776,45 @@ impl<B: Backend> State<B> {
                 let accountdb = self.factories
                     .accountdb
                     .readonly(self.db.as_hashdb(), account.address_hash(a));
-                Self::update_account_cache(require, account, /* &self.db, */ accountdb.as_hashdb());
+                Self::update_account_cache(require, account, &self.db, accountdb.as_hashdb());
                 return Ok(f(Some(account)));
             }
             return Ok(f(None));
         }
-        // TODO: check global cache
+        // check global cache
+        let result = self.db.get_cached(a, |mut acc| {
+            if let Some(ref mut account) = acc {
+                let accountdb = self.factories
+                    .accountdb
+                    .readonly(self.db.as_hashdb(), account.address_hash(a));
+                Self::update_account_cache(require, account, &self.db, accountdb.as_hashdb());
+            }
+            f(acc.map(|a| &*a))
+        });
+        match result {
+            Some(r) => Ok(r),
+            None => {
+                // first check if it is not in database for sure
+                if check_null && self.db.is_known_null(a) {
+                    return Ok(f(None));
+                }
 
-        // first check if it is not in database for sure
-
-        // not found in the global cache, get from the DB and insert into local
-        let db = self.factories
-            .trie
-            .readonly(self.db.as_hashdb(), &self.root)?;
-        let mut maybe_acc = db.get_with(a, Account::from_rlp)?;
-        if let Some(ref mut account) = maybe_acc.as_mut() {
-            let accountdb = self.factories
-                .accountdb
-                .readonly(self.db.as_hashdb(), account.address_hash(a));
-            Self::update_account_cache(require, account, /* &self.db, */ accountdb.as_hashdb());
+                // not found in the global cache, get from the DB and insert into local
+                let db = self.factories
+                    .trie
+                    .readonly(self.db.as_hashdb(), &self.root)?;
+                let mut maybe_acc = db.get_with(a, Account::from_rlp)?;
+                if let Some(ref mut account) = maybe_acc.as_mut() {
+                    let accountdb = self.factories
+                        .accountdb
+                        .readonly(self.db.as_hashdb(), account.address_hash(a));
+                    Self::update_account_cache(require, account, &self.db, accountdb.as_hashdb());
+                }
+                let r = f(maybe_acc.as_ref());
+                self.insert_cache(a, AccountEntry::new_clean(maybe_acc));
+                Ok(r)
+            }
         }
-        let r = f(maybe_acc.as_ref());
-        self.insert_cache(a, AccountEntry::new_clean(maybe_acc));
-        Ok(r)
     }
 
     /// Pull account `a` in our cache from the trie DB.
@@ -821,11 +848,20 @@ impl<B: Backend> State<B> {
     {
         let contains_key = self.cache.borrow().contains_key(a);
         if !contains_key {
-            let db = self.factories
-                .trie
-                .readonly(self.db.as_hashdb(), &self.root)?;
-            let maybe_acc = AccountEntry::new_clean(db.get_with(a, Account::from_rlp)?);
-            self.insert_cache(a, maybe_acc);
+            match self.db.get_cached_account(a) {
+                Some(acc) => self.insert_cache(a, AccountEntry::new_clean_cached(acc)),
+                None => {
+                    let maybe_acc = if !self.db.is_known_null(a) {
+                        let db = self.factories
+                            .trie
+                            .readonly(self.db.as_hashdb(), &self.root)?;
+                        AccountEntry::new_clean(db.get_with(a, Account::from_rlp)?)
+                    } else {
+                        AccountEntry::new_clean(None)
+                    };
+                    self.insert_cache(a, maybe_acc);
+                }
+            }
         }
         self.note_cache(a);
 
@@ -850,21 +886,11 @@ impl<B: Backend> State<B> {
                             .readonly(self.db.as_hashdb(), addr_hash);
 
                         if require_code {
-                            Self::update_account_cache(
-                                RequireCache::Code,
-                                account,
-                                /* &self.db, */
-                                accountdb.as_hashdb(),
-                            );
+                            Self::update_account_cache(RequireCache::Code, account, &self.db, accountdb.as_hashdb());
                         }
 
                         if require_abi {
-                            Self::update_account_cache(
-                                RequireCache::Abi,
-                                account,
-                                /* &self.db, */
-                                accountdb.as_hashdb(),
-                            );
+                            Self::update_account_cache(RequireCache::Abi, account, &self.db, accountdb.as_hashdb());
                         }
                     }
 

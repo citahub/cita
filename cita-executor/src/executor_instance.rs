@@ -50,9 +50,11 @@ impl ExecutorInstance {
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let nosql_path = DataPath::root_node_path() + "/statedb";
         let db = Database::open(&config, &nosql_path).unwrap();
+
         let mut genesis = Genesis::init(genesis_path);
 
         let executor_config = Config::new(config_path);
+
         let executor = Arc::new(Executor::init_executor(
             Arc::new(db),
             genesis,
