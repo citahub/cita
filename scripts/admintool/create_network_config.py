@@ -6,12 +6,15 @@ import sys
 import toml
 
 
-# Argv1: usually is the work path `cita/targte/install`
-# Argv2: node number, such as 0, 1, 2...
-# Argv3: ip length, it means the total number of nodes
-# Argv4: ip list, such as "127.0.0.1:1000,127.0.0.1:1000"
-# Argv5: if append new node, it will be true
 def main():
+    """
+    Argv1: usually is the work path `cita/targte/install`
+    Argv2: node number, such as 0, 1, 2...
+    Argv3: ip length, it means the total number of nodes
+    Argv4: ip list, such as "127.0.0.1:1000,127.0.0.1:1000"
+    Argv5: if append new node, it will be true
+    """
+
     nid = int(sys.argv[2])
     path = os.path.join(sys.argv[1])
     ip_list = (sys.argv[4]).split(',')
@@ -39,14 +42,17 @@ def main():
             f.write("port = " + port + "\n")
 
 
-# insert new node ip, port, id to network configuration of existing nodes
-# new_id: new node id
-# ip: new node ip
-# port: new node port
-# path: work path, usually is `cita/targte/install`
 def insert_peer_config(new_id, ip, port, path):
+    """
+    insert new node ip, port, id to network configuration of existing nodes
+    new_id: new node id
+    ip: new node ip
+    port: new node port
+    path: work path, usually is `cita/targte/install`
+    """
+
     for n in range(new_id):
-        network_file =  os.path.join(path, "node"+ str(n) + "/network.toml")
+        network_file = os.path.join(path, "node" + str(n) + "/network.toml")
         if os.path.exists(network_file):
             with open(network_file, "rwa") as f:
                 old_network = toml.loads(f.read())
@@ -55,6 +61,7 @@ def insert_peer_config(new_id, ip, port, path):
                     f.write("id_card = " + str(new_id) + "\n")
                     f.write("ip = \"" + ip + "\"\n")
                     f.write("port = " + port + "\n")
+
 
 if __name__ == '__main__':
     main()

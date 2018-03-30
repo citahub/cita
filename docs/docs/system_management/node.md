@@ -41,11 +41,11 @@ backup  bin  node0  node1  node2  node3  node4  scripts
 
 对于原来的节点，如果正在运行，那么 network.toml 修改后，将自动重新加载 p2p 网络配置，并开始尝试寻找新节点。
 
-新节点只需要按照正常流程启动，就可以连接入网络，并开始同步链上的块数据，**注意，此时的新节点为普通节点，不参与共识选举，即只能同步数据和接收jsonrpc 请求**。
+新节点只需要按照正常流程启动，就可以连接入网络，并开始同步链上的块数据，**注意，此时的新节点为普通节点，不参与共识选举，即只能同步数据和接收 jsonrpc 请求**。
 
 ```bash
-$ ./bin/admintool.sh setup node4
-$ ./bin/admintool.sh start node4
+$ ./bin/cita setup node4
+$ ./bin/cita start node4
 ```
 
 #### 删除普通节点
@@ -157,7 +157,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 
 #### 构造交易格式并发送
 
-EVM 交易的 jsonrpc 格式相对比较复杂，需要借助工具帮助构造，我期待这里的再次改进，目前还是不够人性化：
+调用合约遵循 [abi](https://solidity.readthedocs.io/en/develop/abi-spec.html), 提供工具 `make_tx.py`：
 
 - 构造 newNode 交易信息
 
