@@ -305,7 +305,7 @@ CITA通过智能合约的方式来对权限进行管理。
       newRole(name, permissions)<br/>
       <strong>新建角色</strong>
     </td>
-    <td>None</td>
+    <td>newRole</td>
     <td>
       name: 角色名称
       <br/>
@@ -319,7 +319,7 @@ CITA通过智能合约的方式来对权限进行管理。
       deleteRole(role) <br/>
       <strong>删除角色</strong>
     </td>
-    <td>Node/cancelAuthorization</td>
+    <td>deleteRole</td>
     <td>
       role: 角色地址
     </td>
@@ -331,7 +331,7 @@ CITA通过智能合约的方式来对权限进行管理。
       updateRoleName(role, name) <br/>
       <strong>更新角色名称</strong>
     </td>
-    <td>None</td>
+    <td>updateRole</td>
     <td>
       role: 更新的角色
       <br/>
@@ -345,35 +345,35 @@ CITA通过智能合约的方式来对权限进行管理。
       addPermissions(role, permissions) <br/>
       <strong>添加角色权限</strong>
     </td>
-    <td>setAuthorization/None</td>
+    <td>updateRole</td>
     <td>
       role: 角色
       <br/>
       permissions: 添加的权限集合
     </td>
     <td>添加是否成功 (bool)</td>
-    <td>如果角色已经被授予帐号则需要setAuthorization，否则则不需要权限</td>
+    <td>如果角色已经被授予帐号则需要调用setAuthorization</td>
   </tr>
   <tr>
     <td>
       deletePermissions(role, permissions) <br/>
-      <strong>添加角色权限</strong>
+      <strong>删除角色权限</strong>
     </td>
-    <td>cancelAuthorization/None</td>
+    <td>updateRole</td>
     <td>
       role: 角色
       <br/>
       permissions: 删除的权限集合
     </td>
     <td>删除是否成功 (bool)</td>
-    <td>如果角色已经被授予帐号则需要cancelAuthorization，否则则不需要权限</td>
+    <td>如果角色已经被授予帐号则需要调用cancelAuthorization</td>
   </tr>
   <tr>
     <td>
       setRole(account, role) <br/>
       <strong>设置角色</strong>
     </td>
-    <td>setAuthorization</td>
+    <td>setRole</td>
     <td>
       account: 设置角色的帐号对象
       <br/>
@@ -387,7 +387,7 @@ CITA通过智能合约的方式来对权限进行管理。
       cancelRole(account, role) <br/>
       <strong>取消设置角色</strong>
     </td>
-    <td>cancelAuthorization</td>
+    <td>cancelRole</td>
     <td>
       account: 取消设置角色的帐号对象
       <br/>
@@ -401,7 +401,7 @@ CITA通过智能合约的方式来对权限进行管理。
       clearRole(account) <br/>
       <strong>取消帐号所有的角色</strong>
     </td>
-    <td>cancelAuthorization</td>
+    <td>cancelRole</td>
     <td>
       account: 取消设置角色的帐号对象
     </td>
@@ -421,12 +421,23 @@ CITA通过智能合约的方式来对权限进行管理。
   </tr>
   <tr>
     <td>
+      queryPermissions(role)<br/>
+      <strong>查询角色权限</strong>
+    </td>
+    <td>
+      role: 查询的角色
+    </td>
+    <td>角色的权限集合</td>
+    <td>调用role_management合约</td>
+  </tr>
+  <tr>
+    <td>
       queryRoles(account)<br/>
       <strong>查询帐号所有的角色</strong>
     </td>
     <td>account: 查询的帐号</td>
     <td>所有账号拥有的角色集合</td>
-    <td>None</td>
+    <td>调用role_management合约</td>
   </tr>
   <tr>
     <td>
@@ -437,16 +448,7 @@ CITA通过智能合约的方式来对权限进行管理。
       role: 查询的角色
     </td>
     <td>帐号集合</td>
-    <td>None</td>
-  </tr>
-  <tr>
-    <td>
-      queryAccounts(permission) <br/>
-      <strong>查询拥有权限的账号</strong>
-    </td>
-    <td>permission: 权限地址</td>
-    <td>拥有此权限的所有帐号集合</td>
-    <td>None</td>
+    <td>调用role_management合约</td>
   </tr>
   <tr>
     <td>
@@ -455,7 +457,7 @@ CITA通过智能合约的方式来对权限进行管理。
     </td>
     <td>None</td>
     <td>角色的信息集合</td>
-    <td>信息包括角色名称和权限列表</td>
+    <td>调用相应role合约，信息包括角色名称和权限列表</td>
   </tr>
   <tr>
     <td>
@@ -464,7 +466,7 @@ CITA通过智能合约的方式来对权限进行管理。
     </td>
     <td>None</td>
     <td>角色的名称</td>
-    <td>None</td>
+    <td>调用相应role合约</td>
   </tr>
   <tr>
     <td>
@@ -473,6 +475,6 @@ CITA通过智能合约的方式来对权限进行管理。
     </td>
     <td>None</td>
     <td>角色的权限集合</td>
-    <td>None</td>
+    <td>调用相应role合约</td>
   </tr>
 </table>
