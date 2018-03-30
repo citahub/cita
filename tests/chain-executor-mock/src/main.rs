@@ -34,9 +34,10 @@ extern crate util;
 extern crate log;
 extern crate logger;
 extern crate pubsub;
+extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
+extern crate serde_yaml;
 
 mod generate_block;
 
@@ -50,12 +51,12 @@ use std::time;
 
 use clap::App;
 
-use crypto::PrivKey;
-use generate_block::Generateblock;
+use crypto::{CreateKey, KeyPair, PrivKey};
+use generate_block::BuildBlock;
 use libproto::Message;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
-use util::H256;
+use util::{H256, U256};
 
 pub type PubType = (String, Vec<u8>);
 
@@ -65,28 +66,35 @@ fn send_block(
     height: u64,
     pub_sender: Sender<PubType>,
     sys_time: Arc<Mutex<time::SystemTime>>,
-    mock_block: &serde_json::Value,
+    mock_block: &serde_yaml::Value,
     privkey: &PrivKey,
 ) {
     use libproto::SignedTransaction;
 
     let txs: Vec<SignedTransaction> = mock_block["transactions"]
-        .as_array()
+        .as_sequence()
         .unwrap()
         .iter()
         .map(|tx| {
-            let contract_address = tx["contract_address"].as_str().unwrap();
+            let contract_address = tx["to"].as_str().unwrap();
             let tx_privkey_str = tx["privkey"].as_str().unwrap();
             let tx_privkey: PrivKey = PrivKey::from_any_str(tx_privkey_str).unwrap();
             let data = tx["data"].as_str().unwrap();
             let quota = tx["quota"].as_u64().unwrap();
             let nonce = tx["nonce"].as_u64().unwrap() as u32;
             let valid_until_block = tx["valid_until_block"].as_u64().unwrap();
+
+            let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
+            info!(
+                "sender={}, contract_address={}",
+                sender.hex(),
+                BuildBlock::build_contract_address(&sender, &U256::from(nonce)).hex()
+            );
             info!(
                 "address={}, data={}, quota={}, nonce={}",
                 contract_address, data, quota, nonce
             );
-            Generateblock::build_tx(
+            BuildBlock::build_tx(
                 contract_address,
                 data,
                 quota,
@@ -98,7 +106,7 @@ fn send_block(
         .collect();
 
     // 构造block
-    let (send_data, _block) = Generateblock::build_block_with_proof(&txs, pre_hash, height, privkey);
+    let (send_data, _block) = BuildBlock::build_block_with_proof(&txs, pre_hash, height, privkey);
     info!(
         "===============send block ({} transactions)===============",
         txs.len()
@@ -125,7 +133,7 @@ fn main() {
                 .long("mock-data")
                 .required(true)
                 .takes_value(true)
-                .help("JSON format mock data"),
+                .help("YAML format mock data"),
         )
         .get_matches();
 
@@ -135,8 +143,8 @@ fn main() {
         .expect("Open mock data file error")
         .read_to_string(&mut mock_data_string)
         .expect("Read mock data file error");
-    let mut mock_data: serde_json::Value =
-        serde_json::from_str(mock_data_string.as_str()).expect("Parse mock data error");
+    let mut mock_data: serde_yaml::Value =
+        serde_yaml::from_str(mock_data_string.as_str()).expect("Parse mock data error");
 
     info!("mock-data-path={}", mock_data_path);
     let (tx_sub, rx_sub) = channel();
@@ -154,10 +162,10 @@ fn main() {
         let privkey_str = mock_data["privkey"].as_str().unwrap();
         PrivKey::from_any_str(privkey_str).unwrap()
     };
-    let mut mock_blocks: HashMap<u64, serde_json::Value> = HashMap::new();
-    for block in mock_data["blocks"].as_array_mut().unwrap().into_iter() {
+    let mut mock_blocks: HashMap<u64, &serde_yaml::Value> = HashMap::new();
+    for block in mock_data["blocks"].as_sequence_mut().unwrap().into_iter() {
         let block_number = block["number"].as_u64().unwrap();
-        mock_blocks.insert(block_number, block.take());
+        mock_blocks.insert(block_number, block);
     }
     info!(">> numbers: {:?}", mock_blocks.keys());
     for number in 1..(mock_blocks.len() as u64 + 1) {

@@ -1,0 +1,178 @@
+{
+  "title": "cita_getBlockByHash",
+  "schema": {
+    "$ref": "../schemas/cita_getBlockByHash.json"
+  },
+  "chainConfig": {
+    "$ref": "../configs/blockchain.json"
+  },
+  "tests": [
+    {
+      "title": "cita_getBlockByHash without full transactions",
+      "request": {
+        "method": "cita_getBlockByHash",
+        "params": [
+          "0xfb804253f5c4c24584863d83ae01f763b7380f2be04a4e87aaea9e378a10d402",
+          false
+        ]
+      },
+      "expectedResponse": {
+        "result": {
+          "version": 0,
+          "hash": "0xfb804253f5c4c24584863d83ae01f763b7380f2be04a4e87aaea9e378a10d402",
+          "header": {
+            "timestamp": 1517997795529,
+            "prevHash": "0x9b2fe24940dd09f1c602e106ac75c13dd8695dc3a50bfd1b5ea90d3c3b5a922f",
+            "number": "0xd3",
+            "stateRoot": "0xbaaca6a870daad1c577d47f3c672693323888547b39171b555330e5ccbb0dd6c",
+            "transactionsRoot": "0xe95187441e868260d5b61d5b85c8a0e89d5b65324aa8f1b33f3cad8117845629",
+            "receiptsRoot": "0xc666f7c847149ec2df27bc0466334f33a5a3544e315b8276d99ea85ea3c0ee9c",
+            "gasUsed": "0x189cb",
+            "proof": {
+              "Tendermint": {
+                "proposal": "0xafce51f16cc5050b013b900d84a80ff623fdd6e7d749dcf7e2ae39373539e37d",
+                "height": 210,
+                "round": 0,
+                "commits": {
+                  "0x4ef5c8e00ec829e124067d17075e6e488bc98d96": "0x83a9cc79fa4b1425cd110a20a2f3d07f2f56447ff69903064f6dd5eed18b21414ec70c12bf7782e20b0cfed88d4e18e5d74f33d2a80d6e384f3a89d72fef3aab00",
+                  "0x81df4b6de0f83c811c083ede75b9502151781a06": "0x64102ae9c84ec28ae582234090e3de8c3e5e7ccf0a32d2612937638104c894b01f0e36623715c4343bdbcf5521a89c24c21d825668e086cc8fddbb30510738ac00",
+                  "0xcbed19d8760366dde4a57961e713dc03160785dc": "0xd2134cdc3dadfe35535832da0523e27d5dff0e08204eb7b5701cc3d9d4b7b8832becdb9235db430c91131eb44671d438e1cb82027c7c0fdb7118ebde3d84a95a01",
+                  "0xe04cdd3dcd7097f70b33d088f4f715209ea5fd91": "0x4cd828a02e5fc7892cb4df8c4df9b48fd060f43578abf914ad483cc4c30921bf68b8f8a4a31e6a022c3d7eedfd005a75242223bddff894ed3f3619dc546a6eed00"
+                }
+              }
+            }
+          },
+          "body": {
+            "transactions": [
+              "0xe95187441e868260d5b61d5b85c8a0e89d5b65324aa8f1b33f3cad8117845629"
+            ]
+          }
+        }
+      },
+      "asserts": [
+        {
+          "description": "response has blockHeader hash",
+          "program": ".receivedResponse.result.hash != null"
+        },
+        {
+          "description": "headers should be equal",
+          "program": ".receivedResponse.result.hash == .expectedResponse.result.hash"
+        },
+        {
+          "description": "transactions should be hashes",
+          "program": ".receivedResponse.result.transactions != null and (.receivedResponse.result.transactions[] | type == \"string\")"
+        }
+      ]
+    },
+    {
+      "title": "cita_getBlockByHash with full transactions",
+      "request": {
+        "method": "cita_getBlockByHash",
+        "params": [
+          "0x0e29f455b8db7b15042efe9eabe0beb0ce2c7901919bba1107b1352191e09942",
+          true
+        ]
+      },
+      "expectedResponse": {
+        "result": {
+          "version": 0,
+          "hash": "0xfb804253f5c4c24584863d83ae01f763b7380f2be04a4e87aaea9e378a10d402",
+          "header": {
+            "timestamp": 1517997795529,
+            "prevHash": "0x9b2fe24940dd09f1c602e106ac75c13dd8695dc3a50bfd1b5ea90d3c3b5a922f",
+            "number": "0xd3",
+            "stateRoot": "0xbaaca6a870daad1c577d47f3c672693323888547b39171b555330e5ccbb0dd6c",
+            "transactionsRoot": "0xe95187441e868260d5b61d5b85c8a0e89d5b65324aa8f1b33f3cad8117845629",
+            "receiptsRoot": "0xc666f7c847149ec2df27bc0466334f33a5a3544e315b8276d99ea85ea3c0ee9c",
+            "gasUsed": "0x189cb",
+            "proof": {
+              "Tendermint": {
+                "proposal": "0xafce51f16cc5050b013b900d84a80ff623fdd6e7d749dcf7e2ae39373539e37d",
+                "height": 210,
+                "round": 0,
+                "commits": {
+                  "0x4ef5c8e00ec829e124067d17075e6e488bc98d96": "0x83a9cc79fa4b1425cd110a20a2f3d07f2f56447ff69903064f6dd5eed18b21414ec70c12bf7782e20b0cfed88d4e18e5d74f33d2a80d6e384f3a89d72fef3aab00",
+                  "0xcbed19d8760366dde4a57961e713dc03160785dc": "0xd2134cdc3dadfe35535832da0523e27d5dff0e08204eb7b5701cc3d9d4b7b8832becdb9235db430c91131eb44671d438e1cb82027c7c0fdb7118ebde3d84a95a01",
+                  "0x81df4b6de0f83c811c083ede75b9502151781a06": "0x64102ae9c84ec28ae582234090e3de8c3e5e7ccf0a32d2612937638104c894b01f0e36623715c4343bdbcf5521a89c24c21d825668e086cc8fddbb30510738ac00",
+                  "0xe04cdd3dcd7097f70b33d088f4f715209ea5fd91": "0x4cd828a02e5fc7892cb4df8c4df9b48fd060f43578abf914ad483cc4c30921bf68b8f8a4a31e6a022c3d7eedfd005a75242223bddff894ed3f3619dc546a6eed00"
+                }
+              }
+            }
+          },
+          "body": {
+            "transactions": [
+              {
+                "hash": "0xe95187441e868260d5b61d5b85c8a0e89d5b65324aa8f1b33f3cad8117845629",
+                "content": "0x0ab90412013018fface20420a7022aab04606060405234156100105760006000fd5b5b606460006000508190909055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b610090565b61018c8061009f6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11461004e5780636d4ce63c1461007257610048565b60006000fd5b341561005a5760006000fd5b610070600480803590602001909190505061009c565b005b341561007e5760006000fd5b61008661014e565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a18060006000508190909055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b50565b6000600060005054905061015d565b905600a165627a7a7230582000ac76fd3fcca3fccfdf841b55bbad8f0765da1e3638f4efd5e3aaf5d87e697a002912411343f558578b65a108d40e74c2d90d7c02395897d9b448a6a65656720521befc0abafc8cda49d199ecce09aa1b792ad110e31cdba27dcb4c9ff06d211c4cb5c201"
+              }
+            ]
+          }
+        }
+      },
+      "asserts": [
+        {
+          "description": "response has blockHeader hash",
+          "program": ".receivedResponse.result.hash != null"
+        },
+        {
+          "description": "headers should be equal",
+          "program": ".receivedResponse.result.hash == .expectedResponse.result.hash"
+        },
+        {
+          "description": "transactions should be objects",
+          "program": ".receivedResponse.result.transactions != null and (.receivedResponse.result.transactions[] | type == \"object\")"
+        }
+      ]
+    },
+    {
+      "title": "cita_getBlockByHash with no parameters",
+      "request": {
+        "method": "cita_getBlockByHash",
+        "params": [],
+        "shouldFailSchema": true
+      },
+      "expectedResponse": {
+        "error": {
+          "message": "missing value for required argument 0",
+          "code": -32602
+        }
+      },
+      "asserts": [
+        {
+          "description": "response should be an error",
+          "program": ".receivedResponse.error != null"
+        },
+        {
+          "description": "error code should be -32602",
+          "program": ".receivedResponse.error.code == .expectedResponse.error.code"
+        }
+      ]
+    },
+    {
+      "title": "cita_getBlockByHash with one parameter",
+      "request": {
+        "method": "cita_getBlockByHash",
+        "params": [
+          "0x0e29f455b8db7b15042efe9eabe0beb0ce2c7901919bba1107b1352191e09942"
+        ],
+        "shouldFailSchema": true
+      },
+      "expectedResponse": {
+        "error": {
+          "message": "missing value for required argument 1",
+          "code": -32602
+        }
+      },
+      "asserts": [
+        {
+          "description": "response should be an error",
+          "program": ".receivedResponse.error != null"
+        },
+        {
+          "description": "error code should be -32602",
+          "program": ".receivedResponse.error.code == .expectedResponse.error.code"
+        }
+      ]
+    }
+  ]
+}

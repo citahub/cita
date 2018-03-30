@@ -89,6 +89,8 @@ function run_in_machine () {
     time ./tests/integrate_test/cita_basic.sh
     draw_title "        5.2) Byzantine Test"
     time ./tests/integrate_test/cita_byzantinetest.sh
+    draw_title "        5.3) JSONRPC schema mock test"
+    time ./tests/integrate_test/cita_jsonrpc_schema_mock.sh
 }
 
 function replace_default_feature () {

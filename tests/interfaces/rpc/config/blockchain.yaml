@@ -1,0 +1,34 @@
+# [Goals]：
+#   - Should create some contracts, then send some transactions call them later.
+#   - Include some token contracts (See: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md)
+#   - Include instructions like: revert, returndatasize, returndatacopy
+
+privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
+
+blocks:
+
+- number: 1
+  transactions: []
+
+- number: 2
+  transactions:
+  # Sender's private key
+  - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
+    # Contract address, empty means create a contract
+    to: ''
+    # Create a contract from HelloWorld.sol
+    data: '60606040523415600e57600080fd5b5b5b5b60948061001f6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603d575b600080fd5b3415604757600080fd5b605b6004808035906020019091905050605d565b005b806000819055505b505600a165627a7a72305820c471b4376626da2540b2374e8b4110501051c426ff46814a6170ce9e219e49a80029'
+    nonce: 0
+    quota: 1000
+    valid_until_block: 100
+
+- number: 3
+  transactions:
+  - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
+    # The contract created in block 2
+    to: 'fdde938c6f71b066eb34c1c92e5814186dbdcb5e'
+    # Call a contract by params:
+    data: '82ab890a0000000000000000000000000000000000000000000000000000000012345678'
+    nonce: 1
+    quota: 1000
+    valid_until_block: 100
