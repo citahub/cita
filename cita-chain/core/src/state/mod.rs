@@ -35,10 +35,6 @@ pub struct State<B: Backend> {
 
     account_start_nonce: U256,
     factories: Factories,
-    // transaction permissions
-    pub senders: HashSet<Address>,
-    // contract permissions
-    pub creators: HashSet<Address>,
     */
 }
 
