@@ -44,23 +44,27 @@ def main():
 
 def insert_peer_config(new_id, ip, port, path):
     """
-    insert new node ip, port, id to network configuration of existing nodes
-    new_id: new node id
-    ip: new node ip
-    port: new node port
-    path: work path, usually is `cita/targte/install`
+    Insert new node ip, port, id to network configuration of existing nodes
+
+    :param new_id: new node id
+    :param ip: new node ip
+    :param port: new node port
+    :param path: work path, usually is `cita/targte/install`
     """
 
     for n in range(new_id):
-        network_file = os.path.join(path, "node" + str(n) + "/network.toml")
+        network_file = os.path.join(path, 'node{}'.format(n), 'network.toml')
         if os.path.exists(network_file):
-            with open(network_file, "rwa") as f:
-                old_network = toml.loads(f.read())
-                if len(old_network["peers"]) < new_id:
-                    f.write("[[peers]]" + "\n")
-                    f.write("id_card = " + str(new_id) + "\n")
-                    f.write("ip = \"" + ip + "\"\n")
-                    f.write("port = " + port + "\n")
+            with open(network_file) as f:
+                data = toml.load(f)
+            if len(data["peers"]) < new_id:
+                with open(network_file, 'w') as f:
+                    data['peers'].append({
+                        'id_card': new_id,
+                        'ip': ip,
+                        'port': int(port)
+                    })
+                    toml.dump(data, f)
 
 
 if __name__ == '__main__':
