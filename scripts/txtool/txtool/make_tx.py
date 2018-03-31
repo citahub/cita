@@ -61,16 +61,16 @@ def get_nonce(sender):
     return str(nonce)
 
 
-def generate_deploy_data(current_height, bytecode, privatekey, receiver=None, newcrypto=False): 
+def generate_deploy_data(current_height, bytecode, privatekey, receiver=None, newcrypto=False, version=0): 
     if newcrypto:
-        data = _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver) 
+        data = _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, version, receiver) 
     else:
-        data = _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver) 
+        data = _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, version, receiver) 
 
     return data
 
 
-def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver=None): 
+def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, version=0, receiver=None): 
     sender = get_sender(private_key, True)
     print(sender)
     nonce = get_nonce(sender)
@@ -79,6 +79,7 @@ def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver=
     tx = Transaction()
     tx.valid_until_block = current_height + 88 
     tx.nonce = nonce
+    tx.version = version
     if receiver is not None:
         tx.to = receiver
     tx.data = hex2bytes(bytecode)
@@ -103,7 +104,7 @@ def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, receiver=
     return binascii.hexlify(unverify_tx.SerializeToString())
 
 
-def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver=None): 
+def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, version=0, receiver=None): 
     sender = get_sender(privatekey, False)
     if privatekey is None:
         temp = private_key()
@@ -119,6 +120,7 @@ def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, receiver=N
     tx.valid_until_block = current_height + 88 
     tx.nonce = nonce
     tx.quota = 9999999
+    tx.version = version
     if receiver is not None:
         tx.to = receiver
     tx.data = hex2bytes(bytecode)
@@ -151,6 +153,7 @@ def parse_arguments():
                         action='store_true', help="Use ed25519 and blake2b.")
     parser.add_argument('--no-newcrypto', dest='newcrypto',
                         action='store_false', help="Use ecdsa and sha3.")
+    parser.add_argument("--version", help="Tansaction version.", default=0, type=int)
     parser.set_defaults(newcrypto=False)
 
     opts = parser.parse_args()
@@ -162,11 +165,12 @@ def _params_or_default():
     bytecode = opts.code
     privkey = opts.privkey
     receiver = opts.to
+    version = opts.version
 
     if bytecode is None:
         bytecode = bin_code()
 
-    return (bytecode, privkey, receiver)
+    return (bytecode, privkey, receiver, version)
 
 
 def _blake2b(seed):
@@ -176,10 +180,10 @@ def _blake2b(seed):
 def main():
     blake2b_ed25519 = parse_arguments().newcrypto
     print(blake2b_ed25519)
-    bytecode, privkey, receiver = _params_or_default()
+    bytecode, privkey, receiver, version = _params_or_default()
     current_height = int(block_number(), 16) 
     data = generate_deploy_data(
-        current_height, remove_hex_0x(bytecode), privkey, remove_hex_0x(receiver), blake2b_ed25519) 
+        current_height, remove_hex_0x(bytecode), privkey, remove_hex_0x(receiver), blake2b_ed25519, version) 
     print("deploy code保存到../output/transaction/deploycode")
     save_deploy(data)
 

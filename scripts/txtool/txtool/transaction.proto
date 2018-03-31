@@ -10,6 +10,7 @@ message Transaction {
     uint64 quota = 3;
     uint64 valid_until_block = 4;
     bytes data = 5;
+    uint32 version = 6;
 }
 
 message UnverifiedTransaction {
