@@ -5,18 +5,20 @@ import "./quota_interface.sol";
 contract QuotaManager is QuotaInterface {
 
     mapping (address => bool) admins;
-    mapping (bytes32 => bool) is_global;
-    mapping (bytes32 => uint) global;
-    mapping (address => mapping(bytes32 => uint)) special;
-    address[] special_users;
-    uint[] users_quota;
+    mapping (address => uint) quota;
+    // Block quota limit
+    uint BQL = 1073741824;
+    // Default account quota limit
+    uint defaultAQL = 268435456;
+    address[] accounts;
+    uint[] quotas;
 
     modifier onlyAdmin {
         require(admins[msg.sender]);
         _;
     }
 
-    modifier checkLimit(uint _v) {
+    modifier checkBaseLimit(uint _v) {
         uint maxLimit = 2 ** 63 - 1;
         uint baseLimit = 2 ** 22 - 1;
         require(_v <= maxLimit && _v >= baseLimit);
@@ -31,12 +33,9 @@ contract QuotaManager is QuotaInterface {
 
     function QuotaManager(address _account) public {
         admins[_account] = true;
-        is_global["blockGasLimit"] = true;
-        global["blockGasLimit"] = 1073741824;
-        global["accountGasLimit"] = 268435456;
-        special[_account]["accountGasLimit"] = 1073741824;
-        special_users.push(_account);
-        users_quota.push(1073741824);
+        quota[_account] = 1073741824;
+        accounts.push(_account);
+        quotas.push(1073741824);
     }
 
     function addAdmin(address _account)
@@ -45,95 +44,48 @@ contract QuotaManager is QuotaInterface {
         returns (bool)
     {
         admins[_account] = true;
-        AddAdminEvent(_account, msg.sender);
-    }
-
-    function setIsGlobal(bytes32 key, bool value)
-        public
-        onlyAdmin
-        returns (bool)
-    {
-        is_global[key] = value;
-        SetIsGlobalEvent(key, value, msg.sender);
+        AdminAdded(_account, msg.sender);
         return true;
     }
 
-    function setGlobal(bytes32 key, uint value)
+    function setBQL(uint _value)
         public
         onlyAdmin
-        returns (bool)
-    {
-        global[key] = value;
-        SetGlobalEvent(key, value, msg.sender);
-        return true;
-    }
-
-    function setSpecial(address _account, bytes32 key, uint value)
-        public
-        onlyAdmin
-        returns (bool)
-    {
-        special[_account][key] = value;
-        SetSpecialEvent(
-            _account,
-            key,
-            value,
-            msg.sender
-        );
-        return true;
-    }
-
-    function setBlockGasLimit(uint _value)
-        public
-        onlyAdmin
-        checkLimit(_value)
+        checkBaseLimit(_value)
         checkBlockLimit(_value)
         returns (bool)
     {
-        global["blockGasLimit"] = _value;
-        SetGlobalEvent(bytes32("blockGasLimit"), _value, msg.sender);
+        BQL = _value;
+        BqlSetted(_value, msg.sender);
         return true;
     }
 
-    function setGlobalAccountGasLimit(uint _value)
+    function setDefaultAQL(uint _value)
         public
         onlyAdmin
-        checkLimit(_value)
+        checkBaseLimit(_value)
         returns (bool)
     {
-        global["accountGasLimit"] = _value;
-        SetGlobalEvent(bytes32("accountGasLimit"), _value, msg.sender);
+        defaultAQL = _value;
+        DefaultAqlSetted(_value, msg.sender);
         return true;
     }
 
-    function setAccountGasLimit(address _account, uint _value)
+    function setAQL(address _account, uint _value)
         public
         onlyAdmin
-        checkLimit(_value)
+        checkBaseLimit(_value)
         returns (bool)
     {
-        bytes32 key = bytes32("accountGasLimit");
-        special[_account]["accountGasLimit"] = _value;
-        special_users.push(_account);
-        users_quota.push(_value);
-        SetSpecialEvent(
+        quota[_account] = _value;
+        accounts.push(_account);
+        quotas.push(_value);
+        AqlSetted(
             _account,
-            key,
             _value,
             msg.sender
         );
         return true;
-    }
-
-    function _getData(bytes32 key)
-        view
-        internal
-        returns (uint)
-    {
-        if (special[msg.sender][key] != 0)
-            return special[msg.sender][key];
-        else
-            return global[key];
     }
 
     function isAdmin(address _account)
@@ -144,58 +96,45 @@ contract QuotaManager is QuotaInterface {
         return admins[_account];
     }
 
-    function getData(bytes32 key)
-        view
-        public
-        returns (uint)
-    {
-        if (is_global[key])
-            return global[key];
-        else
-            return _getData(key);
-    }
-
-    function getSpecialUsers()
+    function getAccounts()
         view
         public
         returns (address[])
     {
-        return special_users;
+        return accounts;
     }
 
-    function getUsersQuota()
+    function getQuotas()
         view
         public
         returns (uint[])
     {
-        return users_quota;
+        return quotas;
     }
 
-    function getblockGasLimit()
+    function getBQL()
         view
         public
         returns (uint)
     {
-        return global["blockGasLimit"];
+        return BQL;
     }
 
-    function getAccountGasLimit()
+    function getDefaultAQL()
         view
         public
         returns (uint)
     {
-        return global["accountGasLimit"];
+        return defaultAQL;
     }
 
-    function getAccountQuota(address _user)
+    function getAQL(address _account)
         view
         public
         returns (uint)
     {
-        // Not special users, then return accountGasLimit
-        // or query the special users array
-        if (special[_user]["accountGasLimit"] == 0)
-            return global["accountGasLimit"];
-        return special[_user]["accountGasLimit"];
+        if (quota[_account] == 0)
+            return defaultAQL;
+        return quota[_account];
     }
 }

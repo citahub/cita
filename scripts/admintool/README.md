@@ -281,93 +281,52 @@ journaldb_type = "archive"
 
 ### 节点管理系统合约
 
-节点管理合约存放在`install/scripts/contracts/node_manager.sol`，函数签名可通过`solc node_manager.sol --hashes`编译得到，也可以在[remix](https://remix.ethereum.org)上查看.
+节点管理合约存放在`install/scripts/contracts/node_manager.sol`，函数签名可通过`solc node_manager.sol --hashes`编译得到，也可以在[remix](https://remix.ethereum.org)上查看。
+
 node_manager.sol合约详情如下所示：
 
 ```shell
 contract address: 0x00000000000000000000000000000000013241a2
-Function signatures:
-    dd4c97a0: approveNode(address)
-    2d4ede93: deleteNode(address)
-    30ccebb5: getStatus(address)
-    609df32f: listNode()
-    ddad2ffe: newNode(address)
-    645b8b1b: status(address)
+======= node_manager.sol:NodeManager =======
+Function signatures: 
+70480275: addAdmin(address)
+dd4c97a0: approveNode(address)
+2d4ede93: deleteNode(address)
+30ccebb5: getStatus(address)
+24d7806c: isAdmin(address)
+609df32f: listNode()
+ddad2ffe: newNode(address)
+645b8b1b: status(address)
 ```
 
-节点管理合约的目的是为了能够动态增删节点，即在已经运行的一些节点中增加或删除节点，这可以通过调用合约中的方法实现。
-合约中节点有三种状态：Close，Ready，Start，初始默认为Close，可以通过调用合约里的函数来改变节点状态。
-比如，增加节点，申请者首先调用newNode()方法，审批者(共识节点)调用approveNode来同意该节点成为共识节点。下面介绍下合约中主要的几种方法：
-
-- `newNode(address)`，该方法功能是申请成为共识节点，其中参数address表示申请节点的地址，申请者通过cita_sendTransaction调用合约上的该方法，此时节点状态变更为Ready；
-
-- `approveNode(address)`，该方法功能是同意其成为共识节点，其中参数address表示状态为Ready的节点地址，审批者(共识节点)通过cita_sendTransaction。调用该方法来同意节点状态为Ready的节点加入共识，此时节点状态变更为Start；
-
-- `deleteNode(address)`， 该方法功能是删除共识节点，其中参数address表示状态Start的节点地址，状态为Start的节点可通过cita_sendTransaction。调用合约上该方法来退出共识，此时节点状态变更为Close。
+共识节点管理的相关描述及方法介绍见[node_manager](https://cryptape.github.io/cita/system_management/node/index.html#_6)
 
 ### 配额管理系统合约
 
-配额管理合约存放在`install/scripts/contracts/system/quota_manager.sol`，合约详情如下所示：
+配额管理合约存放在`install/scripts/contracts/system/quota_manager.sol`，合约函数hash详情如下所示：
 
 ```shell
 contract address: 0x00000000000000000000000000000000013241a3
-    Function signatures:
-    70480275: addAdmin(address)
-    dae99b3a: getAccountGasLimit()
-    776dd3b6: getAccountQuota(address)
-    54f6127f: getData(bytes32)
-    6cf72948: getSpecialUsers()
-    7a490f7e: getUsersQuota()
-    3a5b5cf3: getblockGasLimit()
-    24d7806c: isAdmin(address)
-    dfa87425: setAccountGasLimit(address,uint256)
-    a69257f3: setBlockGasLimit(uint256)
-    e64eca2b: setGlobal(bytes32,uint256)
-    c9bcec77: setGlobalAccountGasLimit(uint256)
-    748ba8dd: setIsGlobal(bytes32,bool)
-    be0266cd: setSpecial(address,bytes32,uint256)
+======= quota_manager.sol:QuotaManager =======
+Function signatures: 
+70480275: addAdmin(address)
+942a8ad3: getAQL(address)
+8a48ac03: getAccounts()
+0bc8982f: getBQL()
+bd9fbe7b: getDefaultAQL()
+cdbcff6d: getQuotas()
+24d7806c: isAdmin(address)
+499a1bcd: setAQL(address,uint256)
+931cd0cc: setBQL(uint256)
+b107ea12: setDefaultAQL(uint256)
 ```
 
-配额管理合约为每个block和account设置gasLimit，其中block中的gasLimit有效地控制该区块中的交易数量，account中的gasLimit有效地控制该用户在当前区块中发送的交易数量，
-显然，account中的gasLimit是小于等于block中的gasLimit。用户分为specialUser和globalUser，其中specialUser的gasLimit默认值等于block的gasLimit，即只要不达到区块的gasLimit，
-可以任意发送交易。而globalUser的gasLimit默认值要远小于block的gasLimit。另外，还有一类管理员账户，可设置block和account的gasLimit。
-合约的主要方法如下：
-
-- `addAdmin(address)`，该方法为添加管理账户，只有发送交易的用户为管理员才能成功添加其他用户为管理员，通过cita_sendTransaction调用。
-
-- `setAccountGasLimit(address,uint256)`，该方法为设置其他用户的gasLimit，只有身份为管理员的地址才可以通过cita_sendTransaction成功调用。
-
-- `setBlockGasLimit(uint256)`，该方法为设置区块的gasLimit，只有身份为管理员的地址才可以通过cita_sendTransaction成功调用。
-
-- `getData(bytes32)`，该方法为查询用户或区块的gasLimit，所有地址都可以通过eth_call成功调用此方法。
-
-- `getSpecialUsers()`，该方法为查询所有specical用户，所有地址都可以通过eth_call成功调用此方法。
-
-- `getUsersQuota()`，该方法为查询special用户对应的gasLimit，即配额，所有地址都可以通过eth_call成功调用此方法。
-
-- `getAccountQuota(address)`，该方法为查询指定用户对应的gasLimit，即配额，所有地址都可以通过eth_call成功调用此方法。
-
-- `getAccountGasLimit()`，该方法为查询AccountGasLimit，即配额，所有地址都可以通过eth_call成功调用此方法。
-
-- `getblockGasLimit()`，该方法为查询blockGasLimit，即配额，所有地址都可以通过eth_call成功调用此方法。
+配额管理的相关描述及方法介绍见[quota_manager](https://cryptape.github.io/cita/system_management/quota/index.html)
 
 ### 单独增加节点
 
-主要原理:新增节点先以只读节点的身份介入，然后通过发送身份验证（交易）控制新节点权限. 并且，单独增加节点需要依赖已有的节点信息如:authorities，genesis.json
-
-步骤
-
-1. 确保已有数据不被破坏，请复制install/backup,install/bin, install/scripts三个文件及其内容到另外的目录．
-2. 运行命令：
-    ```shell
-    ./bin/admintool.sh -Q [nodeId]
-
-     如./bin/admintool.sh -Q 8
-    ```
-   在当前目录会生成指定节点的目录以及相关信息，随之生成最新的authorities文件.
-3. 配置节点信息，如network.toml,jsonrpc.json等．
-4. 确保无误，程序运行正确，备份最新的authorities文件.
+相关描述及操作见[普通节点管理](https://cryptape.github.io/cita/system_management/node/index.html#_2)
 
 #### 权限管理系统合约
 
-新权限系统合约存放在`install/scripts/contracts/permission_management`文件夹下，相关说明在`install/scripts/contracts/permission_management/README.md`
+新权限系统合约存放在`install/scripts/contracts/permission_management`文件夹下，相关接口说明在`install/scripts/contracts/permission_management/README.md`，详细的接口说明见[permission_management](https://cryptape.github.io/cita/system_management/permission/index.html)

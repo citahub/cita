@@ -89,4 +89,24 @@
     <td>查询到的配额上限 (uint)</td>
     <td>查询设置的指定账号配额上限</td>
   </tr>
+  <tr>
+    <td>
+      getAccounts <br/>
+      <strong>查询所有指定账号</strong>
+    </td>
+    <td>None</td>
+    <td>None</td>
+    <td>查询到的指定账户的列表</td>
+    <td>None</td>
+  </tr>
+  <tr>
+    <td>
+      getQuotas <br/>
+      <strong>查询所有指定账号的配额上限</strong>
+    </td>
+    <td>None</td>
+    <td>None</td>
+    <td>查询到的配额上限列表</td>
+    <td>None</td>
+  </tr>
 </table>

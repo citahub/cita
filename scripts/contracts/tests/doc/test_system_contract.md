@@ -178,14 +178,14 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00
 
 ### 配额管理
 
-#### 测试功能1: call setGlobalAccountGasLimit function
+#### 测试功能1: call setDefaultAQL function
 
 过程及数据构造:
 
 0. 由具有设置配额的地址进行设置配额的操作，测试设置的quota为`0x2b0ce58`
 
 ```
-python make_tx.py --to "00000000000000000000000000000000013241a3" --code "c9bcec770000000000000000000000000000000000000000000000000000000002b0ce58" --privkey "61b760173f6d6b87726a28b93d7fcb4b4f842224921de8fa8e49b983a3388c03"
+python make_tx.py --to "00000000000000000000000000000000013241a3" --code "b107ea120000000000000000000000000000000000000000000000000000000002b0ce58" --privkey "61b760173f6d6b87726a28b93d7fcb4b4f842224921de8fa8e49b983a3388c03"
 ```
 
 *详见步骤1*

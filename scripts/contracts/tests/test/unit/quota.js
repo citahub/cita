@@ -9,10 +9,11 @@ const quota = require('../helpers/quota');
 const web3 = util.web3;
 
 const isAdmin = quota.isAdmin;
-const getSpecialUsers = quota.getSpecialUsers;
-const getUsersQuota = quota.getUsersQuota;
-const getBlockGasLimit = quota.getBlockGasLimit;
-const getAccountGasLimit = quota.getAccountGasLimit;
+const getAccounts = quota.getAccounts;
+const getQuotas = quota.getQuotas;
+const getBQL = quota.getBQL;
+const getDefaultAQL = quota.getDefaultAQL;
+const getAQL = quota.getAQL;
 
 // =======================
 
@@ -25,31 +26,31 @@ describe('test quota manager constructor', function() {
     });
 
     it('should have build-in special account', function() {
-        let res = getSpecialUsers();
+        let res = getAccounts();
         console.log('\nthe special accounts:\n', res);
         assert.equal(res[0], quota.admin.address);
     });
 
     it('should have build-in quotas of special accounts', function() {
-        let res = quota.getUsersQuota();
+        let res = quota.getQuotas();
         console.log('\nthe quotas of the special accounts:\n', res);
         assert.equal(res[0], 1073741824);
     });
 
     it('should have build-in block quota limit', function() {
-        let res = quota.getBlockGasLimit();
+        let res = quota.getBQL();
         console.log('\nthe block quota limit:\n', res);
         assert.equal(res, 1073741824);
     });
 
     it('should have build-in default quota limit of account', function() {
-        let res = quota.getAccountGasLimit();
+        let res = quota.getDefaultAQL();
         console.log('\nthe default quota limit of account:\n', res);
         assert.equal(res, 268435456);
     });
 
     it('should have build-in quota of admin', function() {
-        let res = quota.getAccountQuota(quota.admin.address);
+        let res = quota.getAQL(quota.admin.address);
         console.log('\nthe quota of admin:\n', res);
         assert.equal(res, 1073741824);
     });
