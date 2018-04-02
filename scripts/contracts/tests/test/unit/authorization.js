@@ -6,7 +6,8 @@ const assert = chai.assert;
 const authorization = require('../helpers/authorization');
 const config = require('../config');
 
-const { superAdmin, permissions, resources } = config.contract.authorization;
+const { superAdmin, resources } = config.contract.authorization;
+const permissions = config.permissions;
 
 const queryPermissions = authorization.queryPermissions;
 const queryAccounts = authorization.queryAccounts;

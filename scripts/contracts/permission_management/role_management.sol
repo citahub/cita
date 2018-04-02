@@ -26,14 +26,14 @@ contract RoleManagement {
     event RoleCleared(address indexed _account);
 
     function newRole(bytes32 _name, address[] _permissions)
-        external 
+        external
         returns (address roleid)
     {
         return roleCreator.createRole(_name, _permissions);
     }
 
     function deleteRole(address _roleid)
-        external 
+        external
         returns (bool)
     {
         // Cancel the role of the account's which has the role
@@ -47,7 +47,7 @@ contract RoleManagement {
     }
 
     function updateRoleName(address _roleid, bytes32 _name)
-        external 
+        external
         returns (bool)
     {
         Role roleContract = Role(_roleid);
@@ -55,67 +55,65 @@ contract RoleManagement {
     }
 
     function addPermissions(address _roleid, address[] _permissions)
-        external 
+        external
         returns (bool)
     {
         // Set the authorization of all the account's which has the role
-        for (uint i = 0; i < accounts[_roleid].length; i++) {
-            for (uint j = 0; j < _permissions.length; j++)
-                require(pmContract.setAuthorization(accounts[_roleid][i], _permissions[j]));
-        }
+        for (uint i = 0; i < accounts[_roleid].length; i++)
+            require(_setPermissions(accounts[_roleid][i], _permissions));
 
         Role roleContract = Role(_roleid);
         require(roleContract.addPermissions(_permissions));
         return true;
     }
 
+    // TODO Check permissions in role
     function deletePermissions(address _roleid, address[] _permissions)
-        external 
+        external
         returns (bool)
     {
-        // Cancel the authorization of all the account's which has the role
-        for (uint i = 0; i < accounts[_roleid].length; i++) {
-            for (uint j = 0; j < _permissions.length; j++)
-                require(pmContract.cancelAuthorization(accounts[_roleid][i], _permissions[j]));
-        }
-
         Role roleContract = Role(_roleid);
         require(roleContract.deletePermissions(_permissions));
+
+        // Cancel the authorization of all the account's which has the role
+        for (uint i = 0; i < accounts[_roleid].length; i++)
+            require(_cancelPermissions(accounts[_roleid][i], _permissions));
+
         return true;
     }
 
     function setRole(address _account, address _role)
-        external 
+        external
         returns (bool)
     {
 
-        if (!inAddressArray(_role, roles[_account]))
+        if (!inAddressArray(_role, roles[_account])) {
             roles[_account].push(_role);
+            // Set role permissions to account.
+            require(_setRolePermissions(_account, _role));
+        }
         if (!inAddressArray(_account, accounts[_role]))
             accounts[_role].push(_account);
-
-        // Set role permissions to account.
-        require(_setPermissions(_account, _role));
 
         RoleSetted(_account, _role);
         return true;
     }
 
     function cancelRole(address _account, address _role)
-        external 
+        external
         returns (bool)
     {
         return _cancelRole(_account, _role);
     }
 
     function clearRole(address _account)
-        external 
+        external
         returns (bool)
     {
         // clear account and roles
         for (uint i = 0; i < roles[_account].length; i++) {
             // Clear account auth
-            require(_cancelPermissions(_account, roles[_account][i]));
+            require(_cancelRolePermissions(_account, roles[_account][i]));
             // clear _account in all roles array.
             assert(addressDelete(_account, accounts[roles[_account][i]]));
         }
@@ -129,7 +127,7 @@ contract RoleManagement {
 
     /// @dev Query the permissions of the role
     function queryPermissions(address _role)
-        public 
+        public
         returns (address[])
     {
         require(isContract(_role));
@@ -140,19 +138,19 @@ contract RoleManagement {
         uint tmp;
         uint result;
         bytes4 queryPermissionsHash = 0x46f02832;
-        
+
         // permissions = roleContract.querypermissions();
         assembly {
             // free memory pointer
             let ptr := mload(0x40)
-            // function signature 
+            // function signature
             mstore(ptr, queryPermissionsHash)
             result := call(sub(gas, 10000), _role, 0, ptr, 0x4, ptr, mul(add(len, 0x2), 0x20))
             // TODO why not work: remix not support returndatacopy
             // returndatacopy(permissions, 0, returndatasize)
             if eq(result, 0) { revert(ptr, 0) }
         }
-        
+
         for (uint i = 0; i<len; i++) {
             assembly {
                 let ptr := mload(0x40)
@@ -161,9 +159,9 @@ contract RoleManagement {
             }
             permissions[i] = address(tmp);
         }
-       
+
         return permissions;
-    } 
+    }
 
     function queryRoles(address _account)
         public
@@ -231,30 +229,40 @@ contract RoleManagement {
 
     /// @dev Private: cancelRole
     function _cancelRole(address _account, address _role)
-        private 
+        private
         returns (bool)
     {
         assert(addressDelete(_account, accounts[_role]));
         assert(addressDelete(_role, roles[_account]));
 
         // Cancel role permissions of account.
-        require(_cancelPermissions(_account, _role));
+        require(_cancelRolePermissions(_account, _role));
 
         RoleCanceled(_account, _role);
         return true;
     }
 
-    /// @dev Private: cancel permissions of role
-    function _cancelPermissions(address _account, address _role)
+    /// @dev Private: cancel role of account
+    function _cancelRolePermissions(address _account, address _role)
         private
         returns (bool)
     {
         address[] memory permissions = queryPermissions(_role);
-        for (uint i = 0; i<permissions.length; i++) {
+        require(_cancelPermissions(_account, permissions));
+        return true;
+    }
+
+    /// @dev Private: cancel permissions of account
+    function _cancelPermissions(address _account, address[] _permissions)
+        private
+        returns (bool)
+    {
+        for (uint i = 0; i<_permissions.length; i++) {
             // Cancel this permission when account has not it in any of his other roles
-            if (!hasPermission(_account, permissions[i]))
-                require(pmContract.cancelAuthorization(_account, permissions[i]));
+            if (!hasPermission(_account, _permissions[i]))
+                require(pmContract.cancelAuthorization(_account, _permissions[i]));
         }
+        
         return true;
     }
 
@@ -271,15 +279,23 @@ contract RoleManagement {
         }
     }
 
-    /// @dev Private: set role permissions of account
-    function _setPermissions(address _account, address _role)
+    /// @dev Private: set all role permissions of account
+    function _setRolePermissions(address _account, address _role)
         private
         returns (bool)
     {
         address[] memory permissions = queryPermissions(_role);
+        require(_setPermissions(_account, permissions));
+        return true;
+    }
 
-        for (uint i = 0; i<permissions.length; i++) {
-            require(pmContract.setAuthorization(_account, permissions[i]));
+    /// @dev Private: set permissions of account
+    function _setPermissions(address _account, address[] _permissions)
+        private
+        returns (bool)
+    {
+        for (uint i = 0; i<_permissions.length; i++) {
+            require(pmContract.setAuthorization(_account, _permissions[i]));
         }
 
         return true;

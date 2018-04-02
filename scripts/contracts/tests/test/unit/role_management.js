@@ -5,6 +5,7 @@ const chai = require('chai');
 const assert = chai.assert;
 const util = require('../helpers/util');
 const roleManagement = require('../helpers/role_management');
+const permissionManagement = require('../helpers/permission_management');
 const authorization = require('../helpers/authorization');
 const config = require('../config');
 
@@ -13,7 +14,7 @@ const web3 = util.web3;
 const getTxReceipt = util.getTxReceipt;
 
 // config
-const permissions = config.contract.role_management.permissions;
+const permissions = config.permissions;
 const rABI = config.contract.role.rABI;
 
 // role
@@ -36,11 +37,15 @@ const queryPermissionsFromRoleMana = roleManagement.queryPermissions;
 const queryPermissions = authorization.queryPermissions;
 let roleInstance;
 
+// permission management
+const newPermission = permissionManagement.newPermission;
+
 // temp
 let newRoleAddr;
 let newRoleAddr2;
 let lengthOfPermissions;
 let lengthOfRoles;
+let newPermissionAddr;
 
 // =======================
 
@@ -108,10 +113,28 @@ describe('\n\ntest role management contract\n\n', function () {
             lengthOfPermissions = res.length;
         });
 
-        it('should send a addPermissions tx and get receipt', function (done) {
+        it('should send a newPermission tx and get receipt', function (done) {
+            let name = 'testPermission';
+            let res = newPermission(name, config.testAddr, config.testFunc);
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    newPermissionAddr = receipt.logs[0].address;
+                    console.log('\nThe new permission contract address:\n', newPermissionAddr);
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get newPermission receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should send an addPermissions tx and get receipt', function (done) {
             let res = addPermissions(
                     newRoleAddr,
-                    ['0x00000000000000000000000000000000033241b5']
+                    [newPermissionAddr]
                 );
 
             getTxReceipt(res)
@@ -130,23 +153,21 @@ describe('\n\ntest role management contract\n\n', function () {
             roleInstance = role.at(newRoleAddr);
             let res = roleInstance.queryPermissions.call();
             console.log('\nNew Added permissions:\n', res);
-            let lastPermissionIndex = res.length - 1;
-            assert.equal(res[lastPermissionIndex], '0x00000000000000000000000000000000033241b5');
+            assert.equal(res[res.length - 1], newPermissionAddr);
             assert.equal(res.length, lengthOfPermissions + 1);
         });
 
         it('should have the added permissions: from role_management', function () {
             let res = queryPermissionsFromRoleMana(newRoleAddr);
             console.log('\nNew Added permissions:\n', res);
-            let lastPermissionIndex = res.length - 1;
-            assert.equal(res[lastPermissionIndex], '0x00000000000000000000000000000000033241b5');
+            assert.equal(res[res.length - 1], newPermissionAddr);
             assert.equal(res.length, lengthOfPermissions + 1);
         });
 
-        it('should send a addPermissions an address that does not exist and get receipt with error message', function (done) {
+        it('should send an addPermissions which role does not exist and get receipt with error message', function (done) {
             let res = addPermissions(
                     0x123456,
-                    ['0x00000000000000000000000000000000033241b5']
+                    [newPermissionAddr]
                 );
 
             getTxReceipt(res)
@@ -176,7 +197,7 @@ describe('\n\ntest role management contract\n\n', function () {
         it('should send a addPermissions tx and get receipt', function (done) {
             let res = addPermissions(
                     newRoleAddr,
-                    ['0x00000000000000000000000000000000033241b5']
+                    [newPermissionAddr]
                 );
 
             getTxReceipt(res)
@@ -203,7 +224,7 @@ describe('\n\ntest role management contract\n\n', function () {
         it('should send a deletePermissions tx and get receipt', function (done) {
             let res = deletePermissions(
                     newRoleAddr,
-                    ['0x00000000000000000000000000000000033241b5']
+                    [newPermissionAddr]
                 );
 
             getTxReceipt(res)
@@ -221,7 +242,7 @@ describe('\n\ntest role management contract\n\n', function () {
         it('should have deleted the permissions', function () {
             roleInstance = role.at(newRoleAddr);
             let res = roleInstance.queryPermissions.call();
-            console.log('\nResources lefted:\n', res);
+            console.log('\nPermissions lefted:\n', res);
             for (let i = 0; i < res.length; i++) {
                 assert.equal(res[i], permissions[i]);
             }
@@ -230,7 +251,7 @@ describe('\n\ntest role management contract\n\n', function () {
         it('should send a deletePermissions to an address that does not exist and get receipt with error message', function (done) {
             let res = deletePermissions(
                     0x123456,
-                    ['0x00000000000000000000000000000000033241b5']
+                    [newPermissionAddr]
                 );
 
             getTxReceipt(res)
@@ -501,6 +522,30 @@ describe('\n\ntest role management contract\n\n', function () {
                 });
         });
 
+        it('should send a deletePermissions tx and get receipt', function (done) {
+            let res = deletePermissions(newRoleAddr2, permissions);
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get deletePermissions receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should have the newRole\'s permission after delete the permissions', function () {
+            let res = queryPermissions(config.testAddr[1]);
+            console.log('\nPermissions of testAddr:\n', res);
+            assert.equal(res.length, permissions.length);
+            for (let i = 0; i < permissions.length; i++) {
+                assert.equal(res[i], permissions[i]);
+            }
+        });
+
         it('should cancel newRole', function (done) {
             let res = cancelRole(config.testAddr[1], newRoleAddr2);
 
@@ -517,12 +562,11 @@ describe('\n\ntest role management contract\n\n', function () {
         });
                 
         it('should have the newRole\'s permission after cancel the newRole2', function () {
-            let res2 = queryPermissions(config.testAddr[1]);
-            console.log('\nPermissions of testAddr:\n', res2);
-            // lengthOfPermissions = res.length;
-            assert.equal(res2.length, permissions.length);
+            let res = queryPermissions(config.testAddr[1]);
+            console.log('\nPermissions of testAddr:\n', res);
+            assert.equal(res.length, permissions.length);
             for (let i = 0; i < permissions.length; i++) {
-                assert.equal(res2[i], permissions[i]);
+                assert.equal(res[i], permissions[i]);
             }
         });
 

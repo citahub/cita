@@ -11,13 +11,6 @@ module.exports = {
                 address: '0x9dcd6b234e2772c5451fd4ccf7582f4283140697',
                 privkey: '993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9'
             },
-            permissions: [
-                '0x00000000000000000000000000000000013241b5',
-                '0x00000000000000000000000000000000023241b5',
-                '0x00000000000000000000000000000000033241b5',
-                '0x00000000000000000000000000000000043241b5',
-                '0x00000000000000000000000000000000053241b5' 
-            ],
             resources: ['0xf036ed56', '0x3482e0c9', '0xf036ed56', '0x6446ebd8', '0x537bf9a3', '0x0f5aa9f3', '0x3482e0c9', '0xa5925b5b'] 
         },
         permission_management: {
@@ -26,14 +19,7 @@ module.exports = {
         },
         role_management: {
             rmABI: [{"constant":false,"inputs":[{"name":"_roleid","type":"address"},{"name":"_permissions","type":"address[]"}],"name":"addPermissions","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_roleid","type":"address"},{"name":"_permissions","type":"address[]"}],"name":"deletePermissions","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_roleId","type":"address"}],"name":"queryAccounts","outputs":[{"name":"","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_roleid","type":"address"}],"name":"deleteRole","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_permissions","type":"address[]"}],"name":"newRole","outputs":[{"name":"roleid","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_role","type":"address"}],"name":"queryPermissions","outputs":[{"name":"","type":"address[]"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_role","type":"address"}],"name":"setRole","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_role","type":"address"}],"name":"cancelRole","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"}],"name":"clearRole","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_roleid","type":"address"},{"name":"_name","type":"bytes32"}],"name":"updateRoleName","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_account","type":"address"}],"name":"queryRoles","outputs":[{"name":"","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_account","type":"address"},{"indexed":true,"name":"_role","type":"address"}],"name":"RoleSetted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_account","type":"address"},{"indexed":true,"name":"_role","type":"address"}],"name":"RoleCanceled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_account","type":"address"}],"name":"RoleCleared","type":"event"}],
-            rmAddr: '0xe3b5ddb80addb513b5c981e27bb030a86a8821ee',
-            permissions: [
-                '0x00000000000000000000000000000000013241b5',
-                '0x00000000000000000000000000000000023241b5'
-                // '0x00000000000000000000000000000000033241b5',
-                // '0x00000000000000000000000000000000043241b5',
-                // '0x00000000000000000000000000000000053241b5' 
-            ]
+            rmAddr: '0xe3b5ddb80addb513b5c981e27bb030a86a8821ee'
         },
         role: {
             rABI: [{"constant":false,"inputs":[{"name":"_permissions","type":"address[]"}],"name":"addPermissions","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"deleteRole","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_permission","type":"address"}],"name":"inPermissions","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"}],"name":"updateName","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"queryName","outputs":[{"name":"","type":"bytes32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"queryPermissions","outputs":[{"name":"","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"queryRole","outputs":[{"name":"","type":"bytes32"},{"name":"","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"lengthOfPermissions","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_permissions","type":"address[]"}],"name":"deletePermissions","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"_name","type":"bytes32"},{"name":"_permissions","type":"address[]"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_oldName","type":"bytes32"},{"indexed":true,"name":"_newName","type":"bytes32"}],"name":"NameUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"_permissions","type":"address[]"}],"name":"PermissionsAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"_permissions","type":"address[]"}],"name":"PermissionsDeleted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_name","type":"bytes32"},{"indexed":false,"name":"_permissions","type":"address[]"}],"name":"RoleCreated","type":"event"}]
@@ -71,5 +57,19 @@ module.exports = {
     testSender: {
         address: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523',
         privkey: '5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6'
-    }
+    },
+    permissions: [
+        '0x00000000000000000000000000000000013241b5',
+        '0x00000000000000000000000000000000023241b5',
+        '0x00000000000000000000000000000000033241b5',
+        '0x00000000000000000000000000000000043241b5',
+        '0x00000000000000000000000000000000053241b5',
+        '0x00000000000000000000000000000000063241b5',
+        '0x00000000000000000000000000000000073241b5',
+        '0x00000000000000000000000000000000083241b5',
+        '0x00000000000000000000000000000000093241b5',
+        '0x000000000000000000000000000000000a3241b5',
+        '0x0000000000000000000000000000000000000001',
+        '0x0000000000000000000000000000000000000002'
+    ]
 };
