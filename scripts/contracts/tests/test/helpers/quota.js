@@ -34,37 +34,37 @@ const addAdmin = function (account, _sender = sender) {
         );
 };
 
-// setBlockGasLimit
-const setBlockGasLimit = function (value, _sender = sender) {
+// setBQL
+const setBQL = function (value, _sender = sender) {
     tx_params.nonce = util.randomInt();
     tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
-    return quotaContractIns.setBlockGasLimit.sendTransaction(
+    return quotaContractIns.setBQL.sendTransaction(
             value,
             tx_params
         );
 };
 
-// setGlobalAccountGasLimit
-const setGlobalAccountGasLimit = function (value, _sender = sender) {
+// setDefaultAQL
+const setDefaultAQL = function (value, _sender = sender) {
     tx_params.nonce = util.randomInt();
     tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
-    return quotaContractIns.setGlobalAccountGasLimit.sendTransaction(
+    return quotaContractIns.setDefaultAQL.sendTransaction(
             value,
             tx_params
         );
 };
 
-// setAccountGasLimit
-const setAccountGasLimit = function (account, value, _sender = sender) {
+// setAQL
+const setAQL = function (account, value, _sender = sender) {
     tx_params.nonce = util.randomInt();
     tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
-    return quotaContractIns.setAccountGasLimit.sendTransaction(
+    return quotaContractIns.setAQL.sendTransaction(
             account,
             value,
             tx_params
@@ -76,41 +76,41 @@ const isAdmin = function (account) {
     return quotaContractIns.isAdmin.call(account);
 };
 
-// getSpecialUsers
-const getSpecialUsers = function () {
-    return quotaContractIns.getSpecialUsers.call();
+// getAccounts
+const getAccounts = function () {
+    return quotaContractIns.getAccounts.call();
 };
 
-// getUsersQuota
-const getUsersQuota = function () {
-    return quotaContractIns.getUsersQuota.call();
+// getQuotas
+const getQuotas = function () {
+    return quotaContractIns.getQuotas.call();
 };
 
-// getBlockGasLimit
-const getBlockGasLimit = function () {
-    return quotaContractIns.getblockGasLimit.call();
+// getBQL
+const getBQL = function () {
+    return quotaContractIns.getBQL.call();
 };
 
-// getAccountGasLimit
-const getAccountGasLimit = function () {
-    return quotaContractIns.getAccountGasLimit.call();
+// getDefaultAQL
+const getDefaultAQL = function () {
+    return quotaContractIns.getDefaultAQL.call();
 };
 
-// getAccountQuota
-const getAccountQuota = function (account) {
-    return quotaContractIns.getAccountQuota.call(account);
+// getAQL
+const getAQL = function (account) {
+    return quotaContractIns.getAQL.call(account);
 };
 
 module.exports = {
     admin,
     addAdmin,
-    setBlockGasLimit,
-    setGlobalAccountGasLimit,
-    setAccountGasLimit,
+    setBQL,
+    setDefaultAQL,
+    setAQL,
     isAdmin,
-    getSpecialUsers,
-    getUsersQuota,
-    getBlockGasLimit,
-    getAccountGasLimit,
-    getAccountQuota
+    getAccounts,
+    getQuotas,
+    getBQL,
+    getDefaultAQL,
+    getAQL
 };

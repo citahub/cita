@@ -13,14 +13,15 @@ const getTxReceipt = util.getTxReceipt;
 const admin = config.contract.quota.admin;
 
 const addAdmin = quota.addAdmin;
-const setBlockGasLimit = quota.setBlockGasLimit;
-const setGlobalAccountGasLimit = quota.setGlobalAccountGasLimit;
-const setAccountGasLimit = quota.setAccountGasLimit;
+const setBQL = quota.setBQL;
+const setDefaultAQL = quota.setDefaultAQL;
+const setAQL = quota.setAQL;
 const isAdmin = quota.isAdmin;
-const getSpecialUsers = quota.getSpecialUsers;
-const getUsersQuota = quota.getUsersQuota;
-const getBlockGasLimit = quota.getBlockGasLimit;
-const getAccountGasLimit = quota.getAccountGasLimit;
+const getAccounts = quota.getAccounts;
+const getQuotas = quota.getQuotas;
+const getBQL = quota.getBQL;
+const getAQL = quota.getAQL;
+const getDefaultAQL = quota.getDefaultAQL;
 
 const value = Math.pow(2, 29);
 
@@ -54,8 +55,8 @@ describe('test quota manager', function() {
 
     describe('\ntest set block quota limit\n', function () {
 
-        it('should send setBlockGasLimit tx', function(done) {
-            let res = setBlockGasLimit(value, admin);
+        it('should send setBQL tx', function(done) {
+            let res = setBQL(value, admin);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -64,13 +65,13 @@ describe('test quota manager', function() {
                     done();
                 })
                 .catch(err => {
-                    console.log('\n!!!!Get setBlockGasLimit receipt err:!!!!\n', err);
+                    console.log('\n!!!!Get setBQL receipt err:!!!!\n', err);
                     this.skip();
                 });
         });
 
         it('should have new block quota limit', function() {
-            let res = quota.getBlockGasLimit();
+            let res = quota.getBQL();
             console.log('\nthe block quota limit:\n', res);
             assert.equal(res, value);
         });
@@ -78,8 +79,8 @@ describe('test quota manager', function() {
 
     describe('\ntest set default account quota limit\n', function () {
 
-        it('should send setGlobalAccountGasLimit tx', function(done) {
-            let res = setGlobalAccountGasLimit(value, admin);
+        it('should send setDefaultAQL tx', function(done) {
+            let res = setDefaultAQL(value, admin);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -88,13 +89,13 @@ describe('test quota manager', function() {
                     done();
                 })
                 .catch(err => {
-                    console.log('\n!!!!Get setGlobalAccountGasLimit receipt err:!!!!\n', err);
+                    console.log('\n!!!!Get setDefaultAQL receipt err:!!!!\n', err);
                     this.skip();
                 });
         });
 
         it('should have new default account quota limit', function() {
-            let res = quota.getAccountGasLimit();
+            let res = quota.getDefaultAQL();
             console.log('\nthe default account quota limit:\n', res);
             assert.equal(res, value);
         });
@@ -102,8 +103,8 @@ describe('test quota manager', function() {
 
     describe('\ntest set account\'s quota limit\n', function () {
 
-        it('should send setAccountGasLimit tx', function(done) {
-            let res = setAccountGasLimit(config.testAddr[0], value-1, admin);
+        it('should send setAQL tx', function(done) {
+            let res = setAQL(config.testAddr[0], value-1, admin);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -112,25 +113,25 @@ describe('test quota manager', function() {
                     done();
                 })
                 .catch(err => {
-                    console.log('\n!!!!Get setGlobalAccountGasLimit receipt err:!!!!\n', err);
+                    console.log('\n!!!!Get setDefaultAQL receipt err:!!!!\n', err);
                     this.skip();
                 });
         });
 
-        it('should have new default account quota limit', function() {
-            let res = quota.getAccountQuota(config.testAddr[0]);
+        it('should have new account quota limit', function() {
+            let res = quota.getAQL(config.testAddr[0]);
             console.log('\nthe default account quota limit:\n', res);
             assert.equal(res, value-1);
         });
 
         it('should have new special account', function() {
-            let res = getSpecialUsers();
+            let res = getAccounts();
             console.log('\nthe special accounts:\n', res);
             assert.equal(res[res.length-1], config.testAddr[0]);
         });
 
         it('should have new quotas of special accounts', function() {
-            let res = quota.getUsersQuota();
+            let res = quota.getQuotas();
             console.log('\nthe quotas of the special accounts:\n', res);
             assert.equal(res[res.length-1], value-1);
         });

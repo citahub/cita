@@ -26,16 +26,16 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use util::*;
 
-const QUOTA: &'static [u8] = &*b"getUsersQuota()";
-const USERS_METHOD_NAME: &'static [u8] = &*b"getSpecialUsers()";
-const BLOCK_GAS_LIMIT: &'static [u8] = &*b"getblockGasLimit()";
-const ACCOUNT_GAS_LIMIT: &'static [u8] = &*b"getAccountGasLimit()";
+const QUOTAS: &'static [u8] = &*b"getQuotas()";
+const ACCOUNTS: &'static [u8] = &*b"getAccounts()";
+const BQL: &'static [u8] = &*b"getBQL()";
+const DEFAULT_AQL: &'static [u8] = &*b"getDefaultAQL()";
 
 lazy_static! {
-    static ref QUOTA_ENCODED: Vec<u8> = encode_contract_name(QUOTA);
-    static ref USERS_METHOD_HASH: Vec<u8> = encode_contract_name(USERS_METHOD_NAME);
-    static ref BLOCK_GAS_LIMIT_HASH: Vec<u8> = encode_contract_name(BLOCK_GAS_LIMIT);
-    static ref ACCOUNT_GAS_LIMIT_HASH: Vec<u8> = encode_contract_name(ACCOUNT_GAS_LIMIT);
+    static ref QUOTAS_HASH: Vec<u8> = encode_contract_name(QUOTAS);
+    static ref ACCOUNTS_HASH: Vec<u8> = encode_contract_name(ACCOUNTS);
+    static ref BQL_HASH: Vec<u8> = encode_contract_name(BQL);
+    static ref DEFAULT_AQL_HASH: Vec<u8> = encode_contract_name(DEFAULT_AQL);
     static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a3").unwrap();
 }
 
@@ -99,7 +99,7 @@ impl QuotaManager {
 
     /// Quota array
     pub fn quota(executor: &Executor) -> Vec<u64> {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*QUOTA_ENCODED.as_slice());
+        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice());
         trace!("quota output: {:?}", output);
 
         let mut decoded = decode(&[ParamType::Array(Box::new(ParamType::Uint(256)))], &output).unwrap();
@@ -118,7 +118,7 @@ impl QuotaManager {
 
     /// Account array
     pub fn users(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*USERS_METHOD_HASH.as_slice());
+        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice());
         trace!("users output: {:?}", output);
 
         let mut decoded = decode(&[ParamType::Array(Box::new(ParamType::Address))], &output).unwrap();
@@ -133,7 +133,7 @@ impl QuotaManager {
 
     /// Global gas limit
     pub fn block_gas_limit(executor: &Executor) -> u64 {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*BLOCK_GAS_LIMIT_HASH.as_slice());
+        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice());
         trace!("block_gas_limit output: {:?}", output);
 
         let mut decoded = decode(&[ParamType::Uint(256)], &output).expect("decode quota");
@@ -147,7 +147,7 @@ impl QuotaManager {
 
     /// Global account gas limit
     pub fn account_gas_limit(executor: &Executor) -> u64 {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNT_GAS_LIMIT_HASH.as_slice());
+        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*DEFAULT_AQL_HASH.as_slice());
         trace!("account_gas_limit output: {:?}", output);
 
         let mut decoded = decode(&[ParamType::Uint(256)], &output).expect("decode quota");
