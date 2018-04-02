@@ -136,10 +136,6 @@
 
   Practical Byzantine Fault Tolerance，实用拜占庭容错算法。
 
-* Tendermint 算法
-
-  PBFT 算法的变种，针对区块链场景进行了特殊优化。
-
 * Raft 算法
 
   一种非拜占庭容错的共识算法，比 Paxos 更容易理解。

@@ -1,7 +1,7 @@
 # 共识
 
 CITA的共识模块主要是保证多个节点对于交易的顺序和Block的内容达成一致。在众多的分布式算法中，
-我们选择实现了非拜占庭容错的Raft算法和拜占庭容错的的Tendermint算法。
+我们选择实现了非拜占庭容错的Raft算法和拜占庭容错的的CITA-BFT算法。
 
 ## 共识的架构
 
@@ -29,7 +29,7 @@ CITA的共识模块主要是保证多个节点对于交易的顺序和Block的�
 **WAL**： WAL提供预写日志(write ahead log)的服务，持久化各个节点的投票。用来进行节点崩溃后恢复。
 
 **算法逻辑模块**： 分布式算法逻辑的实现模块，接受共识其它模块发送过来的信息，根据自身的算法要求，进行算法逻辑相应的处理。
-例如对于Tendermint就需要进行一系列的状态转换。
+例如对于CITA-BFT就需要进行一系列的状态转换。
 
 ## 基本前提
 
@@ -66,15 +66,15 @@ Raft作为非拜占庭容错的算法，主要是主节点出块。主节点有�
 3. 主节点收到1/2+确认后，发送确认信息给从节点。
 4. 主节点持久化和发送Block到Chain进行计算。
 
-## Tendermint算法
+## CITA-BFT算法
 
-Tendermint是一种专为区块链设计的高性能共识算法，基于半同步网络假设，Tendermint在保证活性和安全性（Liveness & Safety）的前提下能够容忍1/3的拜占庭节点。
+CITA-BFT是一种专为区块链设计的高性能共识算法，基于半同步网络假设，CITA-BFT在保证活性和安全性（Liveness & Safety）的前提下能够容忍1/3的拜占庭节点。
 CITA共识节点通过点对点共识消息交换协议对每一个区块交换投票信息，迅速形成多数共识。投票结果最后会被记录在区块里。CITA支持独有的低延迟技术，能够实现
 毫秒级交易确认延迟。
 
-### Tendermint状态转换
+### CITA-BFT状态转换
 
-Tendermint是一种状态机副本复制算法(State Machine Replication)，在实现上包括以下几个状态：
+CITA-BFT是一种状态机副本复制算法(State Machine Replication)，在实现上包括以下几个状态：
 
 ```
     NewHeight -> (Propose -> Prevote -> Precommit)+ -> Commit -> NewHeight -> ...
@@ -101,8 +101,8 @@ Tendermint是一种状态机副本复制算法(State Machine Replication)，在�
    +--------------------------------------------------------------------+
 ```
 
-Tendermint是随着块的高度增长，多种状态的依次循环的过程。在决定某个高度的块的过程中，可能需要一轮或者多轮的投票。
-下面介绍Tendermint在块高度H和第R轮上，进行块的共识的主要流程:
+CITA-BFT是随着块的高度增长，多种状态的依次循环的过程。在决定某个高度的块的过程中，可能需要一轮或者多轮的投票。
+下面介绍CITA-BFT在块高度H和第R轮上，进行块的共识的主要流程:
 
 1. proposal阶段：proposal节点打包交易池中的交易，WAL记录后，通过MQ通讯模块，发送proposal消息给共识的其它节点，然后进入prevote阶段。而非proposal节点在进行一段时间的超时后，进入prevote投票阶段。
 2. prevote阶段：每个共识节点根据收到的proposal信息，进行prevote投票。校验成功则prevote block.hash，校验失败或者没有收到proposal信息则prevote空票。
@@ -111,7 +111,7 @@ Tendermint是随着块的高度增长，多种状态的依次循环的过程。�
 5. precommit等待阶段：等待收到的precommit投票数超过节点数的2/3。如果收到precommit相同block.hash投票超过2/3时，进入commit阶段。否则进入新一轮的proposal的阶段。
 6. commit阶段：共识模块把共识完成的block发送给chain模块后，等待chain模块的计算完成后发送的状态信息，然后进入下一个高度 NewHeight。
 
-### Tendermint交易池操作流程
+### CITA-BFT交易池操作流程
 
 1. 交易池启动时，尝试从KV数据库恢复数据
 2. 交易池订阅MQ的交易信息
@@ -119,14 +119,8 @@ Tendermint是随着块的高度增长，多种状态的依次循环的过程。�
 4. 交易池收到打包请求，检查交易的有效性，输出有效交易列表
 5. 交易池根据出块的交易列表，删除已经上链的交易
 
-### Tendermint故障重启流程
+### CITA-BFT故障重启流程
 
 1. 从WAL模块中，恢复某个块高度的投票信息
 2. 根据恢复后的状态信息，重复投票信息
 3. 进程根据当前状态，继续运行
-
-### CITA对Tendermint的优化
-
-Tendermint算法实践上比较优秀，CITA结合联盟链和本身的特定，对其进行了优化。
-比如CITA优化了commit阶段的Block广播，使用Chain模块计算交易后的状态消息作为出块成功的标志。
-避免了一次的全网的广播，减少对下个高度Block同步的影响。
