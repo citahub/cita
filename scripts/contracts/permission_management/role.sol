@@ -1,5 +1,7 @@
 pragma solidity ^0.4.18;
 
+import "./address_array.sol";
+
 
 /// @notice TODO Move the interface about calling the permission management to the role management
 ///         TODO Add util library of operation about address
@@ -66,7 +68,7 @@ contract Role {
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++) {
-            assert(removePermission(_permissions[i]));
+            assert(AddressArray.remove(_permissions[i], permissions));
         }
 
         PermissionsDeleted(_permissions);
@@ -112,49 +114,12 @@ contract Role {
         view
         returns (bool)
     {
-        for (uint i = 0; i < permissions.length; i++) {
-            if (_permission == permissions[i])
-                return true;
-        }
-
-        return false;
+        return AddressArray.exist(_permission, permissions);
     }
 
     /// @notice private
     function close() private onlyRoleManagement
     {
         selfdestruct(msg.sender);
-    }
-
-    function indexOf(address permission)
-        private
-        view
-        returns (uint i)
-    {
-        for (i = 0; i < permissions.length; i++) {
-            if (permission == permissions[i]) {
-                return i;
-            }
-        }
-    }
-
-    function removePermission(address permission)
-        private
-        returns (bool)
-    {
-        var index = indexOf(permission);
-
-        if (index >= permissions.length)
-            return false;
-
-        // Remove the gap
-        for (uint i = index; i < permissions.length - 1; i++)
-            permissions[i] = permissions[i + 1];
-
-        // Also delete the last element
-        delete permissions[permissions.length - 1];
-        permissions.length--;
-
-        return true;
     }
 }

@@ -2,6 +2,8 @@ pragma solidity ^0.4.18;
 
 import "./role_creator.sol";
 import "./permission_management.sol";
+import "./contract_check.sol";
+import "./address_array.sol";
 
 
 /// @notice TODO Split to a new file: role_auth.sol
@@ -87,12 +89,12 @@ contract RoleManagement {
         returns (bool)
     {
 
-        if (!inAddressArray(_role, roles[_account])) {
+        if (!AddressArray.exist(_role, roles[_account])) {
             roles[_account].push(_role);
             // Set role permissions to account.
             require(_setRolePermissions(_account, _role));
         }
-        if (!inAddressArray(_account, accounts[_role]))
+        if (!AddressArray.exist(_account, accounts[_role]))
             accounts[_role].push(_account);
 
         RoleSetted(_account, _role);
@@ -115,7 +117,7 @@ contract RoleManagement {
             // Clear account auth
             require(_cancelRolePermissions(_account, roles[_account][i]));
             // clear _account in all roles array.
-            assert(addressDelete(_account, accounts[roles[_account][i]]));
+            assert(AddressArray.remove(_account, accounts[roles[_account][i]]));
         }
 
         // clear all roles associate with _account
@@ -130,7 +132,7 @@ contract RoleManagement {
         public
         returns (address[])
     {
-        require(isContract(_role));
+        require(ContractCheck.isContract(_role));
         Role roleContract = Role(_role);
         uint len = roleContract.lengthOfPermissions();
         address[] memory permissions = new address[](len);
@@ -179,61 +181,13 @@ contract RoleManagement {
         return accounts[_roleId];
     }
 
-    /// private functions
-    function itemIndexOf(address item, address[] storage items)
-        private
-        view
-        returns (uint i)
-    {
-        for (i = 0; i < items.length; i++) {
-            if (item == items[i]) {
-                return i;
-            }
-        }
-    }
-
-    function addressDelete(address item, address[] storage items)
-        private
-        returns (bool)
-    {
-        var index = itemIndexOf(item, items);
-
-        if (index >= items.length)
-            return false;
-
-        // Remove the gap
-        for (uint i = index; i < items.length - 1; i++)
-            items[i] = items[i + 1];
-
-        // Also delete the last element
-        delete items[items.length - 1];
-        items.length--;
-
-        return true;
-    }
-
-    /// @dev Check the duplicate address
-    function inAddressArray(address _value, address[] storage _array)
-        private
-        view
-        returns (bool)
-    {
-        // Have found the value in array
-        for (uint i = 0; i < _array.length; i++) {
-            if (_value == _array[i])
-                return true;
-        }
-        // Not in
-        return false;
-    }
-
     /// @dev Private: cancelRole
     function _cancelRole(address _account, address _role)
         private
         returns (bool)
     {
-        assert(addressDelete(_account, accounts[_role]));
-        assert(addressDelete(_role, roles[_account]));
+        assert(AddressArray.remove(_account, accounts[_role]));
+        assert(AddressArray.remove(_role, roles[_account]));
 
         // Cancel role permissions of account.
         require(_cancelRolePermissions(_account, _role));
@@ -294,22 +248,9 @@ contract RoleManagement {
         private
         returns (bool)
     {
-        for (uint i = 0; i<_permissions.length; i++) {
+        for (uint i = 0; i<_permissions.length; i++)
             require(pmContract.setAuthorization(_account, _permissions[i]));
-        }
 
         return true;
-    }
-
-    /// @dev Check an address is contract address
-    /// @notice TODO be a library and used by other contract
-    function isContract(address _target)
-        private
-        view
-        returns (bool)
-    {
-        uint size;
-        assembly { size := extcodesize(_target) }
-        return size > 0;
     }
 }

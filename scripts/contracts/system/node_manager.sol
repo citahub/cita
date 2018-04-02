@@ -1,6 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "./node_interface.sol";
+import "./address_array.sol";
 
 contract NodeManager is NodeInterface {
 
@@ -94,38 +95,11 @@ contract NodeManager is NodeInterface {
         onlyStart(_node)
         returns (bool)
     {
-        var index = nodeIndex(_node);
-        // Not found
-        // @dev TODO: Make if a modifier
-        if (index >= nodes.length)
-            return false;
-
-        status[_node] = NodeStatus.Close;
-        // Remove the gap
-        for (uint i = index; i < nodes.length - 1; i++)
-            nodes[i] = nodes[i + 1];
-
-        // Also delete the last element
-        delete nodes[nodes.length - 1];
-        nodes.length--;
+        require(AddressArray.remove(_node, nodes));
         block_op[block.number] = false;
+        status[_node] = NodeStatus.Close;
         DeleteNode(_node);
         return true;
-    }
-
-    /// Get the index in the nodes_of_start array
-    function nodeIndex(address _node)
-        view 
-        internal
-        returns (uint)
-    {
-        // Find the index of the member
-        for (uint i = 0; i < nodes.length; i++) {
-            if (_node == nodes[i])
-                return i;
-        }
-        // If i == length, means not find
-        return i;
     }
 
     function listNode() view public returns (address[]) {

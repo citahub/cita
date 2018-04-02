@@ -141,7 +141,7 @@ describe('\n\ntest node manager\n\n', function () {
                 });
         });
 
-        it('should be start status', function() {
+        it('should be close status', function() {
             let res = getStatus(config.testAddr[1]);
             console.log('\nthe status of the node:\n', res);
             assert.equal(res, 0);
