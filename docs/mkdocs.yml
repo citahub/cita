@@ -26,6 +26,7 @@ pages:
       - 权限管理: 'system_management/permission.md'
       - 配额管理: 'system_management/quota.md'
       - 日志管理: 'system_management/log.md'
+      - 快照: 'system_management/snapshot.md'
   - 跨链:
       - 跨链合约编写及操作示例: 'crosschain/crosschain_contract_example.md'
   - 架构设计: 
