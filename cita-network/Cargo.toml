@@ -29,6 +29,10 @@ clippy = {version = "0.0.175", optional = true}
 [dev-dependencies]
 tempfile = "2"
 
+[build-dependencies]
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+
+
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
 secp256k1 = ["libproto/secp256k1"]

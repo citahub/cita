@@ -68,6 +68,8 @@ use std::time::{Duration, SystemTime};
 use util::{set_panic_handler, Mutex, RwLock};
 use verifier::*;
 
+include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
+
 fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
     let start = flag_prof_start;
@@ -88,7 +90,8 @@ fn main() {
     micro_service_init!("cita-auth", "CITA:auth");
     // init app
     let matches = App::new("auth")
-        .version("0.1")
+        .version(get_build_info_str(true))
+        .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")

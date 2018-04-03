@@ -93,10 +93,14 @@ use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 use util::set_panic_handler;
 
+include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
+
 fn main() {
     micro_service_init!("cita-chain", "CITA:chain");
+
     let matches = App::new("chain")
-        .version("0.1")
+        .version(get_build_info_str(true))
+        .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .arg_from_usage("-c, --config=[FILE] 'Sets a chain config file'")
