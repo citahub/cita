@@ -23,6 +23,7 @@ cp -rf target/${type}/cita-network         target/install/bin/
 cp -rf target/${type}/cita-executor        target/install/bin/
 cp -rf target/${type}/trans_evm            target/install/bin/
 cp -rf target/${type}/create_key_addr      target/install/bin/
+cp -rf target/${type}/snapshot_tool        target/install/bin/
 cp -rf target/${type}/chain_performance    target/install/bin/
 cp -rf target/${type}/amqp_test            target/install/bin/
 cp -rf target/${type}/jsonrpc_performance  target/install/bin/
