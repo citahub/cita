@@ -124,6 +124,12 @@ npm run-script unit_node
 npm run-script unit_quota
 ```
 
+* To test sidechain manager contract
+
+```
+npm run-script unit_side
+```
+
 * To run integrate test:
     - Should set the check_permission be true(scripts/admintool/init_data)example.json):
 

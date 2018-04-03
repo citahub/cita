@@ -47,6 +47,10 @@ module.exports = {
                 address: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523',
                 privkey: '5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6'
             }
+        },
+        sidechain: {
+            abi: [{"constant":false,"inputs":[{"name":"nodes","type":"address[]"}],"name":"newChain","outputs":[{"name":"chainId","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"id","type":"uint256"}],"name":"disableChain","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"id","type":"uint256"}],"name":"getNodes","outputs":[{"name":"","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"id","type":"uint256"}],"name":"enableChain","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"id","type":"uint256"}],"name":"getStatus","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getId","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"sidechains","outputs":[{"name":"status","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"}],
+            addr: '0x00000000000000000000000000000000000000ce'
         }
     },
     localServer: 'http://127.0.0.1:1337',

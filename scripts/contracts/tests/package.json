@@ -21,6 +21,7 @@
     "unit_quota": "mocha test/unit/quota.js -t 60s; jshint test/unit/quota.js",
     "unit_qm": "mocha test/unit/quota_manager.js -t 60s; jshint test/unit/quota_manager.js",
     "unit_node": "mocha test/unit/node_manager.js -t 60s; jshint test/unit/node_manager.js",
+    "unit_side": "mocha test/unit/sidechain.js -t 60s; jshint test/unit/sidechain.js",
     "integrate_test": "mocha test/integrate --recursive -t 60s; jshint test/integrate",
     "lint": "jshint test"
   },

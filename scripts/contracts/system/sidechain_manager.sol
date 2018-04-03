@@ -17,7 +17,7 @@ contract SidechainManager {
         bool status;
     }
 
-
+    // Register a new side chain
     function newChain(address[] nodes) public returns (uint chainId) {
         numChainId++;
         sidechains[numChainId] = Sidechain(nodes, false);
@@ -42,5 +42,9 @@ contract SidechainManager {
     function getNodes(uint id) public view returns (address[]) {
         Sidechain storage sc = sidechains[id];
         return sc.nodes;
+    }
+
+    function getId() public view returns (uint) {
+        return numChainId;
     }
 }
