@@ -1,6 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "./group.sol";
+import "./address_array.sol";
 
 
 /// @title Group contract
@@ -43,7 +44,7 @@ contract Group {
         returns (bool)
     {
         for (uint i = 0; i<_accounts.length; i++) {
-            if (!addressInArray(_accounts[i], accounts))
+            if (!AddressArray.exist(_accounts[i], accounts))
                 accounts.push(_accounts[i]);
         }
 
@@ -58,7 +59,7 @@ contract Group {
         returns (bool)
     {
         for (uint i = 0; i < _accounts.length; i++)
-            assert(addressDelete(_accounts[i], accounts));
+            assert(AddressArray.remove(_accounts[i], accounts));
 
         AccountsDeleted(_accounts);
         return true;
@@ -81,7 +82,7 @@ contract Group {
         onlyUserManagement
         returns (bool)
     {
-        assert(addressDelete(_child, children));
+        assert(AddressArray.remove(_child, children));
         ChildDeleted(_child);
         return true;
     }
@@ -92,7 +93,7 @@ contract Group {
         onlyUserManagement
         returns (bool)
     {
-        if (!addressInArray(_child, children))
+        if (!AddressArray.exist(_child, children))
             children.push(_child);
 
         ChildAdded(_child);
@@ -154,7 +155,6 @@ contract Group {
         return children.length;
     }
 
-
     /// @dev Query the parent of the group
     function queryParent()
         public
@@ -162,55 +162,5 @@ contract Group {
         returns (address)
     {
         return parent;
-    }
-
-    /// @dev Check if the value in the array of address
-    function addressInArray(address _value, address[] _array)
-        private
-        pure
-        returns (bool)
-    {
-        // Have found the value in array
-        for (uint i = 0; i < _array.length; i++) {
-            if (_value == _array[i])
-                return true;
-        }
-        // Not in
-        return false;
-    }
-
-    /// @dev Delete the value of the address array
-    function addressDelete(address _value, address[] storage _array)
-        internal
-        returns (bool)
-    {
-        var index = addressIndex(_value,  _array);
-        // Not found
-        if (index >= _array.length)
-            return false;
-
-        // Remove the gap
-        for (uint i = index; i < _array.length - 1; i++) {
-            _array[i] = _array[i + 1];
-        }
-
-        // Also delete the last element
-        delete _array[_array.length - 1];
-        _array.length--;
-        return true;
-    }
-
-    /// @dev Get the index of the value in the bytes32 array
-    /// @return The index. If i == length, means not find
-    function addressIndex(address _value, address[] _array)
-        private
-        pure
-        returns (uint i)
-    {
-        // Find the index of the value in the array
-        for (i = 0; i < _array.length; i++) {
-            if (_value == _array[i])
-                return i;
-        }
     }
 }

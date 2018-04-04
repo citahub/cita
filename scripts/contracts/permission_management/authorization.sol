@@ -1,6 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "./permission.sol";
+import "./address_array.sol";
 
 
 /// @title Authorization about the permission and account
@@ -66,8 +67,8 @@ contract Authorization {
         onlyPermissionManagement
         returns (bool)
     {
-        addressDelete(_account, accounts[_permission]);
-        addressDelete(_permission, permissions[_account]);
+        AddressArray.remove(_account, accounts[_permission]);
+        AddressArray.remove(_permission, permissions[_account]);
         AuthCanceled(_account, _permission);
         return true;
     }
@@ -80,10 +81,10 @@ contract Authorization {
     {
         // Delete the account of all the account's permissions
         for (uint i = 0; i < permissions[_account].length; i++)
-            addressDelete(_account, accounts[permissions[_account][i]]);
+            AddressArray.remove(_account, accounts[permissions[_account][i]]);
 
         delete permissions[_account];
-        addressDelete(_account, all_accounts);
+        AddressArray.remove(_account, all_accounts);
 
         AuthCleared(_account);
         return true;
@@ -148,69 +149,19 @@ contract Authorization {
         return false;
     }
 
-    /// @dev Delete the value of the address array
-    function addressDelete(address _value, address[] storage _array)
-        private
-        returns (bool)
-    {
-        var index = addressIndex(_value,  _array);
-        // Not found
-        if (index >= _array.length)
-            return false;
-
-        // Remove the gap
-        for (uint i = index; i < _array.length-1; i++)
-            _array[i] = _array[i+1];
-
-        // Also delete the last element
-        delete _array[_array.length-1];
-        _array.length--;
-        return true;
-    }
-
-    /// @dev Get the index of the value in the bytes32 array
-    /// @return The index. If i == length, means not find
-    function addressIndex(address _value, address[] _array)
-        pure
-        private
-        returns (uint i)
-    {
-        // Find the index of the value in the array
-        for (i = 0; i < _array.length; i++) {
-            if (_value == _array[i])
-                return i;
-        }
-    }
-
     /// @dev Set authorization
     function _setAuth(address _account, address _permission)
         private
         returns (bool)
     {
-        if (!inAddressArray(_permission, permissions[_account]))
+        if (!AddressArray.exist(_permission, permissions[_account]))
             permissions[_account].push(_permission);
-        if (!inAddressArray(_account, accounts[_permission]))
+        if (!AddressArray.exist(_account, accounts[_permission]))
             accounts[_permission].push(_account);
-        if (!inAddressArray(_account, all_accounts))
+        if (!AddressArray.exist(_account, all_accounts))
             all_accounts.push(_account);
 
         AuthSetted(_account, _permission);
         return true;
-    }
-
-
-    /// @dev Check the duplicate address
-    function inAddressArray(address _value, address[] storage _array)
-        private
-        view
-        returns (bool)
-    {
-        // Have found the value in array
-        for (uint i = 0; i < _array.length; i++) {
-            if (_value == _array[i])
-                return true;
-        }
-        // Not in
-        return false;
     }
 }
