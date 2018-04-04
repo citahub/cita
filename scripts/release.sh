@@ -15,21 +15,28 @@ mkdir -p                                   target/install/bin/
 mkdir -p                                   target/install/resource/
 
 # 1) binary
-cp -rf target/${type}/cita-chain           target/install/bin/
-cp -rf target/${type}/cita-bft             target/install/bin/
-cp -rf target/${type}/cita-jsonrpc         target/install/bin/
-cp -rf target/${type}/cita-auth            target/install/bin/
-cp -rf target/${type}/cita-network         target/install/bin/
-cp -rf target/${type}/cita-executor        target/install/bin/
-cp -rf target/${type}/trans_evm            target/install/bin/
-cp -rf target/${type}/create_key_addr      target/install/bin/
-cp -rf target/${type}/snapshot_tool        target/install/bin/
-cp -rf target/${type}/chain_performance    target/install/bin/
-cp -rf target/${type}/amqp_test            target/install/bin/
-cp -rf target/${type}/jsonrpc_performance  target/install/bin/
-cp -rf target/${type}/latency              target/install/bin/
-cp -rf target/${type}/benchmark_ws         target/install/bin/
-cp -rf target/${type}/cita-forever         target/install/bin/
+for binary in \
+        cita-auth \
+        cita-bft \
+        cita-chain \
+        cita-executor \
+        cita-forever \
+        cita-jsonrpc \
+        cita-network \
+        \
+        amqp_test \
+        benchmark_ws \
+        chain_performance \
+        jsonrpc_performance \
+        latency \
+        trans_evm \
+        \
+        create_key_addr \
+        cita-relayer-parser \
+        snapshot_tool \
+        ; do
+    cp -rf "target/${type}/${binary}" target/install/bin/
+done
 #strip                                     target/install/bin/*
 
 # 2) cita
