@@ -26,14 +26,14 @@ use util::HeapSizeOf;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
-    //ExecutionError
+    // ExecutionError
     NoTransactionPermission,
     NoContractPermission,
     NoCallPermission,
     NotEnoughBaseGas,
     BlockGasLimitReached,
     AccountGasLimitReached,
-    //EVM error(chain/core/src/evm/evm.rs)
+    // EVM error(chain/core/src/evm/evm.rs)
     OutOfGas,
     BadJumpDestination,
     BadInstruction,

@@ -11,7 +11,7 @@
         "params": []
       },
       "expectedResponse": {
-        "result": "0x6"
+        "result": "0xb"
       },
       "asserts": [
         {
