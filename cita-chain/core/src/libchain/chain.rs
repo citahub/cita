@@ -483,7 +483,7 @@ impl Chain {
             CacheUpdatePolicy::Overwrite,
         );
         let mheight = self.max_store_height.load(Ordering::SeqCst) as u64;
-        if mheight < number {
+        if mheight < number || (number == 0 && mheight == 0) {
             batch.write_with_cache(
                 db::COL_BODIES,
                 &mut *write_bodies,
