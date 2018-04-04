@@ -23,6 +23,9 @@ common-types = { path = "./types" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 clippy = {version = "0.0.175", optional = true}
 
+[build-dependencies]
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

@@ -34,3 +34,7 @@ hyper = { git = "https://github.com/cryptape/hyper.git", branch = "reuse_port" }
 net2 = "0.2"
 unicase = "2.1.0"
 libc = "0.2"
+
+[build-dependencies]
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+

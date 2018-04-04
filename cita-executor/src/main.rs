@@ -84,11 +84,14 @@ use std::thread;
 use std::time::Duration;
 use util::set_panic_handler;
 
+include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
+
 fn main() {
     micro_service_init!("cita-executor", "CITA:executor");
 
     let matches = App::new("executor")
-        .version("0.1")
+        .version(get_build_info_str(true))
+        .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .arg_from_usage("-g, --genesis=[FILE] 'Sets a genesis config file")
