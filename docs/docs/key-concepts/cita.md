@@ -4,7 +4,7 @@ CITA(Cryptape Inter-enterprise Trust Automation)是一个面向企业级应用�
 
 ## 共识
 
-CITA的共识模块实现了两种共识算法，非拜占庭容错的Raft算法和拜占庭容错的Tendermint算法。
+CITA的共识模块实现了两种共识算法，非拜占庭容错的Raft算法和拜占庭容错的CITA-BFT算法。
 
 * Raft算法
 
@@ -12,11 +12,11 @@ CITA的共识模块实现了两种共识算法，非拜占庭容错的Raft算法
   follower的append成功响应时，将此交易提交，并保存到交易池。当leader接收到chain发送的status信息时，准备打包交易出块。如果leader所在的节点chain异常，
   则会触发新的选举流程。
 
-* Tendermint算法
+* CITA-BFT算法
 
-  Tendermint是PBFT算法的变种。每个节点轮流打包交易并出块，在每个高度上，只有一个块可以被提交。
+  CITA-BFT是一种经过了区块链适应性改造和调优的BFT算法。每个节点轮流打包交易并出块，在每个高度上，只有一个块可以被提交。
   当块无法在该轮被提交时，协议会移动到下一轮，由新的节点负责提议一个该高度的块。当超过2/3的验证节点对同一个块precommit，该块才能够被提交。
-  Tendermint算法可以容忍网络中少于总节点1/3的拜占庭节点。
+  CITA-BFT算法可以容忍网络中少于总节点1/3的拜占庭节点。
 
 ## 智能合约
 
