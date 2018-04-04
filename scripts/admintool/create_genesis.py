@@ -28,6 +28,8 @@ CONTRACTS = {
                                                    'name': 'QuotaManager'},
     '0x0000000000000000000000000000000031415926': {'file': 'system/constant_config.sol',
                                                    'name': 'ConstantConfig'},
+    '0x00000000000000000000000000000000000000ce': {'file': 'system/sidechain_manager.sol',
+                                                   'name': 'SidechainManager'},
     '0x00000000000000000000000000000000013241b2': {'file': 'permission_management/permission_management.sol',
                                                    'name': 'PermissionManagement'},
     '0x00000000000000000000000000000000013241b3': {'file': 'permission_management/permission_creator.sol',
