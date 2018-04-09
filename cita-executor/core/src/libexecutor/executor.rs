@@ -645,41 +645,27 @@ impl Executor {
             .set_common_gas_limit(common_gas_limit);
         conf.account_gas_limit.set_specific_gas_limit(specific);
 
-        let tmp_height = self.get_max_height();
-
-        let mut add_flag = true;
-        let mut rm_flag = false;
+        //fixbug when max_height is not equal to current_height such as sync
+        let tmp_height = self.get_current_height();
         if let Some(inconf) = self.sys_configs.read().front() {
             //don't compare the changed height
             conf.changed_height = inconf.changed_height;
             if inconf.check_equal(&conf) {
-                add_flag = false;
+                return;
             }
             conf.changed_height = tmp_height as usize;
+        }
 
-            if inconf.changed_height + inconf.delay_active_interval <= self.get_max_height() as usize {
-                rm_flag = true;
-            }
-        }
-        if rm_flag || add_flag {
-            let mut confs = self.sys_configs.write();
-            if rm_flag {
-                confs.truncate(1);
-            }
-            if add_flag {
-                confs.push_front(conf);
-            }
-        }
-        if add_flag {
-            let confs = self.sys_configs.read().clone();
-            let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
+        self.sys_configs.write().push_front(conf);
 
-            let mut batch = DBTransaction::new();
-            batch.write(db::COL_EXTRA, &CurrentConfig, &res);
-            self.db
-                .write(batch)
-                .expect("write sys contract config failed");
-        }
+        let confs = self.sys_configs.read().clone();
+
+        let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
+        let mut batch = DBTransaction::new();
+        batch.write(db::COL_EXTRA, &CurrentConfig, &res);
+        self.db
+            .write(batch)
+            .expect("write sys contract config failed");
     }
 
     /// Execute Block

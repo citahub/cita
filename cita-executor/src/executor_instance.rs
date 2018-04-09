@@ -632,8 +632,13 @@ impl ExecutorInstance {
         };
         let conf = self.ext.get_current_sys_conf(number);
         let authorities = conf.nodes.clone();
+
+        //fixbug when conf have changed such as adding consensus node
+        let prev_conf = self.ext.get_current_sys_conf(number - 1);
+        let prev_authorities = prev_conf.nodes.clone();
         if self.ext.validate_height(number) && self.ext.validate_hash(block.parent_hash())
-            && proof.check(proof_height as usize, &authorities)
+            && (proof.check(proof_height as usize, &authorities)
+                || proof.check(proof_height as usize, &prev_authorities))
         {
             self.ext.execute_block(block, &self.ctx_pub);
             info!("set sync block-{} is finished", number);
