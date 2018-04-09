@@ -391,7 +391,7 @@ impl Chain {
             .into_iter()
             .map(|vecaddr| Address::from_slice(&vecaddr[..]))
             .collect();
-        info!("consensus nodes {:?}", nodes);
+        debug!("consensus nodes {:?}", nodes);
         self.set_executed_config(
             conf.get_block_gas_limit(),
             conf.get_account_gas_limit(),
@@ -1171,7 +1171,7 @@ impl Chain {
             return;
         }
         let status = self.current_status().protobuf();
-        info!(
+        debug!(
             "chain status {:?}, {:?}",
             status.get_height(),
             status.get_hash()

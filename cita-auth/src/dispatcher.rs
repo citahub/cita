@@ -206,7 +206,7 @@ impl Dispatcher {
         }
 
         let out_txs = self.get_txs_from_pool(height as u64, block_gas_limit, account_gas_limit);
-        info!(
+        debug!(
             "public block txs height {} with {:?} txs on timestamp: {:?}",
             height,
             out_txs.len(),
@@ -216,7 +216,7 @@ impl Dispatcher {
             let duration = self.start_verify_time.elapsed().unwrap();
             let time_duration_in_usec = duration.as_secs() * 1_000_000 + (duration.subsec_nanos() / 1_000) as u64;
             if 0 != time_duration_in_usec {
-                info!(
+                debug!(
                     "{} txs have been added into tx_pool, and time cost is {:?}, tps: {:?}",
                     self.add_to_pool_cnt,
                     duration,

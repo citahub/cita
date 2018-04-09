@@ -213,7 +213,7 @@ impl ExecutorInstance {
                     {
                         *self.ext.stage.write() = Stage::Idle;
                     }
-                    info!("execute consensus block [height {}] finish !", number);
+                    debug!("execute consensus block [height {}] finish !", number);
                     need_clean_map = true;
                 }
             }
@@ -266,7 +266,7 @@ impl ExecutorInstance {
                             let mut cb = self.closed_block.borrow_mut();
                             *cb = Some(closed_block);
                             *self.ext.stage.write() = Stage::WaitFinalized;
-                            info!("wait finalized");
+                            debug!("wait finalized");
                         }
                         _ => {
                             // Maybe never reach
@@ -406,7 +406,7 @@ impl ExecutorInstance {
         let blk_height = proto_block.get_header().get_height();
         let block = Block::from(proto_block);
 
-        info!(
+        debug!(
             "consensus block {} {:?} tx hash  {:?} len {}",
             block.number(),
             block.hash(),
@@ -587,7 +587,7 @@ impl ExecutorInstance {
         };
 
         let stage = { self.ext.stage.read().clone() };
-        info!(
+        debug!(
             "received proposal, block_number: {:?} current_height: {:?}, stage: {:?}",
             blk_height, current_height, stage
         );

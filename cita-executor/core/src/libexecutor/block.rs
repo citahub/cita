@@ -389,7 +389,7 @@ impl OpenBlock {
         let now = Instant::now();
         self.state.commit().expect("commit trie error");
         let new_now = Instant::now();
-        info!("state root use {:?}", new_now.duration_since(now));
+        debug!("state root use {:?}", new_now.duration_since(now));
 
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
