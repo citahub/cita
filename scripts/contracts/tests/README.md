@@ -11,6 +11,7 @@ Use nvm to manage the node version:
 ```
 wget -qO- https://raw.github.com/creationix/nvm/v0.4.0/install.sh | sh
 ```
+
 Then install the latest version:
 
 ```
@@ -64,7 +65,7 @@ Some options of mocha usage:
 npm test
 ```
 
-* To run uint test:
+* To run all uint test:
 
 ```
 npm run-script unit_test
@@ -130,7 +131,7 @@ npm run-script unit_quota
 npm run-script unit_side
 ```
 
-* To run integrate test:
+* To run all integrate test:
     - Should set the check_permission be true(scripts/admintool/init_data)example.json):
 
     ```
@@ -153,17 +154,27 @@ npm run-script unit_side
 npm run-script lint
 ```
 
-## 2. Which contracs?
+## 2. Which contracts?
 
 Include:
 
-* Permission management (path: `cd ../permission_management`):
+* Permission management (path: `../permission_management`):
     - authorization
     - permission
     - permission_management
     - role_management
 
+* User management (path: `../user_management`):
+    - group
+    - group_management
+
+* Quota manager (path: `../system/quota_manager.sol`):
+
+* Node manager (path: `../system/node_manager.sol`):
+
+* Sidechain manager (path: `../system/sidechain_manager.sol`):
+
 # Other directory
 
-* `contracts` is some contracts using for test
+* `contracts` is some contracts used for test
 * `doc` is some docs about test using `txtool`
