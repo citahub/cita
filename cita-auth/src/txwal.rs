@@ -24,6 +24,8 @@ use util::H256;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
 
+/// Wal means write ahead log
+/// used to persist transaction pools message
 #[derive(Clone)]
 pub struct TxWal {
     db: Arc<KeyValueDB>,

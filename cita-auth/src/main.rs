@@ -15,6 +15,51 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+//! # Summary
+//!
+//!   One of CITA's core components, transaction pool management,
+//!   packaging transactions to consensus modules, verifying the validity of transactions,
+//!   verifying the validity of synchronized blocks, remote proposals.
+//!
+//! ### Message queuing situation
+//!
+//! 1. Subscribe channel
+//!
+//!     | Queue | SubModule | Message Type      |
+//!     | ----- | --------- | ----------------- |
+//!     | auth  | Consensus | VerifyBlockReq    |
+//!     | auth  | Chain     | BlockTxHashes     |
+//!     | auth  | Jsonrpc   | RequestNewTxBatch |
+//!     | auth  | Net       | Request           |
+//!     | auth  | Snapshot  | SnapshotReq       |
+//!
+//! 2. Publish channel
+//!
+//!     | Queue | SubModule | Message Type      |
+//!     | ----- | --------- | ----------------- |
+//!     | auth  | Auth      | BlockTxHashesReq  |
+//!     | auth  | Auth      | VerifyBlockResp   |
+//!     | auth  | Auth      | Response          |
+//!     | auth  | Auth      | VerifyBlockResp   |
+//!     | auth  | Auth      | Request           |
+//!
+//! ### Key behavior
+//!
+//! the key struct:
+//!
+//! - [`Dispatcher`]
+//! - [`Pool`]
+//! - [`TxWal`]
+//! - [`Verifier`]
+//! - [`handle module`]
+//!
+//! [`Dispatcher`]: ./dispatcher/struct.Dispatcher.html
+//! [`Pool`]: ../tx_pool/pool/struct.Pool.html
+//! [`TxWal`]: ./txwal/struct.TxWal.html
+//! [`Verifier`]: ./verifier/struct.Verifier.html
+//! [`handle module`]: ./handler/index.html
+//!
+
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![feature(custom_attribute)]
@@ -66,7 +111,7 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time::{Duration, SystemTime};
 use util::{set_panic_handler, Mutex, RwLock};
-use verifier::*;
+use verifier::{BlockVerifyStatus, Verifier, VerifyRequestResponseInfo, VerifyResult};
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
@@ -96,11 +141,13 @@ fn main() {
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
         .get_matches();
-    let mut config_path = "config";
-    if let Some(c) = matches.value_of("config") {
-        info!("Value for config: {}", c);
-        config_path = c;
-    }
+    let config_path = match matches.value_of("config") {
+        Some(c) => {
+            info!("Value for config: {}", c);
+            c
+        }
+        None => "config",
+    };
 
     let config = Config::new(config_path);
 
@@ -329,7 +376,7 @@ fn main() {
     });
 
     loop {
-        handle_verificaton_result(
+        handle_verification_result(
             &resp_receiver,
             &tx_pub,
             block_verify_status.clone(),

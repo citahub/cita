@@ -426,7 +426,7 @@ pub fn handle_remote_msg(
     }
 }
 
-pub fn handle_verificaton_result(
+pub fn handle_verification_result(
     result_receiver: &Receiver<VerifyRequestResponseInfo>,
     tx_pub: &Sender<(String, Vec<u8>)>,
     block_verify_status: Arc<RwLock<BlockVerifyStatus>>,
@@ -976,7 +976,7 @@ mod tests {
     }
 
     #[test]
-    fn handle_verificaton_result_single_tx() {
+    fn handle_verification_result_single_tx() {
         let (tx_pub, rx_pub) = channel();
         let (req_sender, req_receiver) = channel();
         let (resp_sender, resp_receiver) = channel();
@@ -1042,7 +1042,7 @@ mod tests {
         req_grp.push(verify_req_info);
         verify_tx_group_service(req_grp, verifier, verify_cache, resp_sender);
 
-        handle_verificaton_result(
+        handle_verification_result(
             &resp_receiver,
             &tx_pub,
             block_verify_status,
@@ -1061,7 +1061,7 @@ mod tests {
     }
 
     #[test]
-    fn handle_verificaton_result_block_tx() {
+    fn handle_verification_result_block_tx() {
         let (tx_pub, rx_pub) = channel();
         let (req_sender, req_receiver) = channel();
         let (resp_sender, resp_receiver) = channel();
@@ -1118,7 +1118,7 @@ mod tests {
             &resp_sender,
             clear_txs_pool.clone(),
         );
-        handle_verificaton_result(
+        handle_verification_result(
             &resp_receiver,
             &tx_pub,
             block_verify_status,
@@ -1203,7 +1203,7 @@ mod tests {
             clear_txs_pool,
         );
 
-        handle_verificaton_result(
+        handle_verification_result(
             &resp_receiver,
             &tx_pub,
             block_verify_status,
@@ -1286,7 +1286,7 @@ mod tests {
             &resp_sender,
             clear_txs_pool.clone(),
         );
-        handle_verificaton_result(
+        handle_verification_result(
             &resp_receiver,
             &tx_pub,
             block_verify_status.clone(),
