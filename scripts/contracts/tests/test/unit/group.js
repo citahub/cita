@@ -11,6 +11,7 @@ const web3 = util.web3;
 const queryInfo = group.queryInfo;
 const queryAccounts = group.queryAccounts;
 const queryParent = group.queryParent;
+const inGroup = group.inGroup;
 
 // =======================
 
@@ -37,5 +38,11 @@ describe('test group contract', function() {
         let res = queryParent();
         console.log('\nParent group:\n', res);
         assert.equal(res, '0x0000000000000000000000000000000000000000');
+    });
+
+    it('should in the rootGroup', function() {
+        let res = inGroup('0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523');
+        console.log('\nIs in the group:\n', res);
+        assert.equal(res, true);
     });
 });

@@ -25,9 +25,15 @@ const queryParent = function () {
     return gContractInstance.queryParent.call();
 };
 
+// inGroup
+const inGroup = function (account) {
+    return gContractInstance.inGroup.call(account);
+};
+
 module.exports = {
     group,
     queryInfo,
     queryAccounts,
-    queryParent
+    queryParent,
+    inGroup
 };
