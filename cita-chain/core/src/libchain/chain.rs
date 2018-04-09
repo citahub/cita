@@ -24,7 +24,6 @@ use db::*;
 
 use filters::{PollFilter, PollManager};
 use header::*;
-use jsonrpc_types::rpctypes::RelayInfo;
 pub use libchain::block::*;
 use libchain::cache::CacheSize;
 
@@ -43,7 +42,6 @@ use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
-use rustc_hex::FromHex;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -66,6 +64,15 @@ pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
 const LOG_BLOOMS_ELEMENTS_PER_INDEX: usize = 16;
 
+#[derive(Debug, Clone)]
+pub struct RelayInfo {
+    pub from_chain_id: u64,
+    pub to_chain_id: u64,
+    pub dest_contract: Address,
+    pub dest_hasher: String,
+    pub cross_chain_nonce: u64,
+}
+
 #[derive(Debug, Clone, RlpEncodable, RlpDecodable)]
 pub struct TxProof {
     block_header: Header,
@@ -75,10 +82,6 @@ pub struct TxProof {
 }
 
 impl TxProof {
-    pub fn from_hexstr(hexstr: &str) -> Option<Self> {
-        FromHex::from_hex(hexstr).map(Self::from_bytes).ok()
-    }
-
     pub fn from_bytes(bytes: Vec<u8>) -> Self {
         rlp::decode(&bytes)
     }

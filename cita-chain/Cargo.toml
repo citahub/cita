@@ -7,7 +7,7 @@ authors = ["Cryptape Technologies <arch@cryptape.com>"]
 [dependencies]
 dotenv = "0.10.0"
 threadpool = "1.7.0"
-protobuf = { version = "^1.0.0"}
+protobuf = { version = "^1.0.0" }
 log = "0.4.0"
 clap = "2"
 byteorder = { version = "1", default-features = false }
@@ -21,11 +21,10 @@ jsonrpc_types = { path = "../jsonrpc_types"}
 core = { path = "./core" }
 common-types = { path = "./types" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-clippy = {version = "0.0.175", optional = true}
+clippy = { version = "0.0.175", optional = true }
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
@@ -39,11 +38,3 @@ rabbitmq = ["pubsub/rabbitmq"]
 zeromq = ["pubsub/zeromq"]
 kafka = ["pubsub/kafka"]
 dev = ["clippy"]
-
-[[bin]]
-name = "cita-chain"
-path = "src/main.rs"
-
-[[bin]]
-name = "cita-relayer-parser"
-path = "src/bin/relayer-parser.rs"

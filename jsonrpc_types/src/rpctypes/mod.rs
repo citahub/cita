@@ -26,7 +26,6 @@ pub mod middle_modle;
 pub mod index;
 pub mod proof;
 pub mod tx_response;
-pub mod relayer;
 
 pub use self::block::*;
 pub use self::block_number::*;
@@ -37,6 +36,5 @@ pub use self::log::*;
 pub use self::middle_modle::*;
 pub use self::proof::*;
 pub use self::receipt::*;
-pub use self::relayer::*;
 pub use self::transaction::*;
 pub use self::tx_response::*;

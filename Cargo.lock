@@ -658,6 +658,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "cita-relayer-parser"
+version = "0.1.0"
+dependencies = [
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "clap 2.31.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "core 0.1.0",
+ "ethabi 4.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper 0.11.22 (git+https://github.com/cryptape/hyper.git?branch=reuse_port)",
+ "jsonrpc_types 0.1.0",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "parking_lot 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tokio-core 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+]
+
+[[package]]
 name = "cita-secp256k1"
 version = "0.6.0"
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#ae5f33b9ab8f535d446ee780e8ad4381c9f66705"
@@ -800,7 +823,6 @@ dependencies = [
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "ethabi 4.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethcore-bloom-journal 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "ethcore-io 1.8.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "ethkey 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",

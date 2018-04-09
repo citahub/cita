@@ -1,0 +1,19 @@
+{
+    "private_key": "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214",
+    "chains": [
+        {
+            "id": 0,
+            "servers": [
+                { "url": "http://127.0.0.1:1337", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:1338", "timeout": { "secs": 30, "nanos": 0 } }
+            ]
+        },
+        {
+            "id": 1,
+            "servers": [
+                { "url": "http://127.0.0.1:1339", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:1340", "timeout": { "secs": 30, "nanos": 0 } }
+            ]
+        }
+    ]
+}
