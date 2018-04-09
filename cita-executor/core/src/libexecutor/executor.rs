@@ -242,10 +242,11 @@ impl Executor {
         executor.build_last_hashes(Some(header.hash()), header.number());
 
         if let Some(confs) = executor.load_config_from_db() {
-            executor.set_sys_contract_config(confs);
+            executor.set_sys_configs(confs);
         }
 
-        executor.reload_config();
+        executor.reorg_config();
+
         {
             executor.set_gas_and_nodes();
         }
@@ -260,18 +261,18 @@ impl Executor {
     }
 
     pub fn load_config_from_db(&self) -> Option<VecDeque<GlobalSysConfig>> {
-        let res = self.db.read(db::COL_EXTRA, &CurrentConfig);
+        let res = self.db.read(db::COL_EXTRA, &ConfigHistory);
         if let Some(bres) = res {
             return bin_deserialize(&bres).ok();
         }
         None
     }
 
-    pub fn set_sys_contract_config(&self, confs: VecDeque<GlobalSysConfig>) {
+    pub fn set_sys_configs(&self, confs: VecDeque<GlobalSysConfig>) {
         *self.sys_configs.write() = confs;
     }
 
-    pub fn get_current_sys_conf(&self, now_height: BlockNumber) -> GlobalSysConfig {
+    pub fn get_sys_config(&self, now_height: BlockNumber) -> GlobalSysConfig {
         let confs = self.sys_configs.read().clone();
         let len = confs.len();
         if len > 0 {
@@ -509,11 +510,9 @@ impl Executor {
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
 
-        let conf = self.get_current_sys_conf(self.get_max_height());
-        state.account_permissions = conf.account_permissions;
-
         let engine = NullEngine::default();
 
+        // Never check permission and quota
         let options = TransactOptions {
             tracing: analytics.transaction_tracing,
             vm_tracing: analytics.vm_tracing,
@@ -534,7 +533,7 @@ impl Executor {
 
     pub fn set_gas_and_nodes(&self) {
         let mut executed_result = self.executed_result.write();
-        let conf = self.get_current_sys_conf(self.get_max_height());
+        let conf = self.get_sys_config(self.get_max_height());
 
         let mut send_config = ConsensusConfig::new();
         let node_list = conf.nodes
@@ -575,6 +574,10 @@ impl Executor {
         let hash = block.hash();
         trace!("commit block in db {:?}, {:?}", hash, height);
 
+        let confs = self.sys_configs.read().clone();
+        let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
+        batch.write(db::COL_EXTRA, &ConfigHistory, &res);
+
         batch.write(db::COL_HEADERS, &hash, block.header());
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
         batch.write(db::COL_EXTRA, &height, &hash);
@@ -600,10 +603,9 @@ impl Executor {
     /// 1. Delivery rich status
     /// 2. Update cache
     /// 3. Commited data to db
+    /// Notice: Write db if and only if finalize block.
     pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        // Reload config
-        self.reload_config();
-
+        self.reorg_config();
         self.set_executed_result(&closed_block);
         self.send_executed_info_to_chain(ctx_pub);
         self.write_batch(closed_block.clone());
@@ -625,11 +627,12 @@ impl Executor {
         self.finalize_block(closed_block, ctx_pub);
     }
 
-    /// Reload system config from system contract
+    /// Reorg system config from system contract
     /// 1. Consensus nodes
     /// 2. BlockGasLimit and AccountGasLimit
     /// 3. Account permissions
-    pub fn reload_config(&self) {
+    /// 4. Prune history
+    pub fn reorg_config(&self) {
         let mut conf = GlobalSysConfig::new();
         conf.nodes = NodeManager::read(self);
         conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
@@ -656,16 +659,13 @@ impl Executor {
             conf.changed_height = tmp_height as usize;
         }
 
-        self.sys_configs.write().push_front(conf);
-
-        let confs = self.sys_configs.read().clone();
-
-        let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
-        let mut batch = DBTransaction::new();
-        batch.write(db::COL_EXTRA, &CurrentConfig, &res);
-        self.db
-            .write(batch)
-            .expect("write sys contract config failed");
+        {
+            let mut confs = self.sys_configs.write();
+            confs.push_front(conf);
+            // Prune history config
+            // TODO: shoud be delay_active_interval + 1? 10 should be enough.
+            confs.truncate(10);
+        }
     }
 
     /// Execute Block
@@ -674,7 +674,7 @@ impl Executor {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let conf = self.get_current_sys_conf(self.get_max_height());
+        let conf = self.get_sys_config(self.get_max_height());
         let perm = conf.check_permission;
         let quota = conf.check_quota;
         let parent_hash = block.parent_hash().clone();
@@ -701,7 +701,7 @@ impl Executor {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let conf = self.get_current_sys_conf(self.get_max_height());
+        let conf = self.get_sys_config(self.get_max_height());
         let perm = conf.check_permission;
         let quota = conf.check_quota;
         let parent_hash = block.parent_hash().clone();
