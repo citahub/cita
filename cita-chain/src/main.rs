@@ -23,7 +23,6 @@
 //!
 //! | Queue   | SubModule   | Message Type     |
 //! | ------- | ----------- | ---------------- |
-//! | chain   | Chain       | SyncResponse     |
 //! | chain   | Net         | SyncResponse     |
 //! | chain   | Net         | SyncRequest      |
 //! | chain   | Consensus   | BlockWithProof   |
@@ -106,18 +105,19 @@ fn main() {
         .arg_from_usage("-c, --config=[FILE] 'Sets a chain config file'")
         .get_matches();
 
-    let mut config_path = "chain.toml";
-    if let Some(c) = matches.value_of("config") {
-        trace!("Value for config: {}", c);
-        config_path = c;
-    }
+    let config_path = match matches.value_of("config") {
+        Some(c) => {
+            trace!("Value for config: {}", c);
+            c
+        }
+        None => "chain.toml",
+    };
 
     let (tx, rx) = channel();
     let (ctx_pub, crx_pub) = channel();
     start_pubsub(
         "chain",
         routing_key!([
-            Chain >> SyncResponse,
             Net >> SyncResponse,
             Net >> SyncRequest,
             Consensus >> BlockWithProof,
