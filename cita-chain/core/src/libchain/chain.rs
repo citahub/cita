@@ -75,39 +75,59 @@ pub struct RelayInfo {
 
 #[derive(Debug, Clone, RlpEncodable, RlpDecodable)]
 pub struct TxProof {
-    block_header: Header,
+    tx: SignedTransaction,
     receipt: Receipt,
     receipt_proof: merklehash::MerkleProof,
-    tx: SignedTransaction,
+    block_header: Header,
+    next_proposal_header: Header,
+    proposal_proof: ProtoProof,
 }
 
 impl TxProof {
-    pub fn from_bytes(bytes: Vec<u8>) -> Self {
-        rlp::decode(&bytes)
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        rlp::decode(bytes)
     }
 
-    pub fn verify_proof(&self) -> bool {
-        self.receipt.transaction_hash == self.tx.calc_transaction_hash()
-            && merklehash::verify_proof(
-                self.block_header.receipts_root().clone(),
-                &self.receipt_proof,
-                Some(self.receipt.clone())
-                    .rlp_bytes()
-                    .into_vec()
-                    .crypt_hash(),
-            )
-    }
-
-    pub fn tx(&self) -> &SignedTransaction {
-        &self.tx
-    }
-
-    pub fn receipt(&self) -> &Receipt {
-        &self.receipt
-    }
-
-    pub fn block_header(&self) -> &Header {
-        &self.block_header
+    pub fn verify(&self, authorities: &[Address]) -> bool {
+        // Calculate transaction hash, and it should be same as the transaction hash in receipt.
+        if self.receipt.transaction_hash == self.tx.calc_transaction_hash() {
+        } else {
+            error!("txproof verify transaction_hash failed");
+            return false;
+        };
+        // Use receipt_proof and receipt_root to prove the receipt in the block.
+        if merklehash::verify_proof(
+            self.block_header.receipts_root().clone(),
+            &self.receipt_proof,
+            Some(self.receipt.clone())
+                .rlp_bytes()
+                .into_vec()
+                .crypt_hash(),
+        ) {
+        } else {
+            error!("txproof verify receipt root merklehash failed");
+            return false;
+        };
+        // Calculate block header hash, and is should be same as the parent_hash in next header
+        if self.block_header.note_dirty().hash() == *self.next_proposal_header.parent_hash() {
+        } else {
+            error!("txproof verify block header hash failed");
+            return false;
+        };
+        let proof = TendermintProof::from(self.proposal_proof.clone());
+        // Verify next block header, use proof.proposal
+        if self.next_proposal_header.proposal_protobuf().crypt_hash() == proof.proposal {
+        } else {
+            error!("txproof verify next block header failed");
+            return false;
+        };
+        // Verify signatures in proposal proof.
+        if proof.check(self.block_header.number() as usize + 1, authorities) {
+        } else {
+            error!("txproof verify signatures for next block header failed");
+            return false;
+        };
+        true
     }
 
     // extract info which relayer needed
@@ -157,27 +177,25 @@ impl TxProof {
         my_hasher: String,
         my_cross_chain_nonce: u64,
         my_chain_id: u64,
+        authorities: &[Address],
     ) -> Option<(Address, Vec<u8>)> {
-        if !self.verify_proof() {
-            None
-        } else {
+        if self.verify(authorities) {
             self.extract_relay_info().and_then(
                 |RelayInfo {
-                     from_chain_id,
+                     from_chain_id: _,
                      to_chain_id,
                      dest_contract,
                      dest_hasher,
                      cross_chain_nonce,
                  }| {
-                    // check from_chain_id and to_chain_id one of them is 0
+                    // from_chain_id: if we can got authorities, the from_chain_id must be right
                     // cross chain only between main chain and one sidechain
                     // check to_chain_id == my chain_id
                     // check dest_contract == this
                     // check hasher == RECV_FUNC_HASHER
                     // check cross_chain_nonce == cross_chain_nonce
                     // extract origin tx sender and origin tx data
-                    if from_chain_id * to_chain_id == 0 && to_chain_id == my_chain_id
-                        && dest_contract == my_contrac_addr && dest_hasher == my_hasher
+                    if to_chain_id == my_chain_id && dest_contract == my_contrac_addr && dest_hasher == my_hasher
                         && cross_chain_nonce == my_cross_chain_nonce
                     {
                         // skip hasher(4 bytes) and 2 args each 32 bytes
@@ -188,6 +206,8 @@ impl TxProof {
                     }
                 },
             )
+        } else {
+            None
         }
     }
 }
@@ -805,22 +825,56 @@ impl Chain {
                     .and_then(|receipt| {
                         merklehash::MerkleTree::from_bytes(receipts.receipts.iter().map(|r| r.rlp_bytes().into_vec()))
                             .get_proof_by_input_index(index)
-                            .and_then(|receipt_proof| {
-                                block.body().transactions().get(index).map(|tx| {
-                                    let tx = tx.clone();
-                                    let receipt = receipt.clone();
-                                    let block_header = block.header().clone();
-                                    TxProof {
-                                        block_header,
-                                        receipt,
-                                        receipt_proof,
-                                        tx,
-                                    }.rlp_bytes()
-                                        .into_vec()
-                                })
-                            })
+                            .map(|receipt_proof| (index, block, receipt.clone(), receipt_proof))
                     })
             })
+            .and_then(|(index, block, receipt, receipt_proof)| {
+                block
+                    .body()
+                    .transactions()
+                    .get(index)
+                    .map(|tx| (tx.clone(), receipt, receipt_proof, block.header().clone()))
+            })
+            .and_then(|(tx, receipt, receipt_proof, block_header)| {
+                self.block_by_height(block_header.number() + 1)
+                    .map(|next_block| {
+                        (
+                            tx,
+                            receipt,
+                            receipt_proof,
+                            block_header,
+                            next_block.header().proposal(),
+                        )
+                    })
+            })
+            .and_then(
+                |(tx, receipt, receipt_proof, block_header, next_proposal_header)| {
+                    self.block_by_height(next_proposal_header.number() + 1)
+                        .map(|third_block| {
+                            (
+                                tx,
+                                receipt,
+                                receipt_proof,
+                                block_header,
+                                next_proposal_header,
+                                third_block.header().proof().clone(),
+                            )
+                        })
+                },
+            )
+            .map(
+                |(tx, receipt, receipt_proof, block_header, next_proposal_header, proposal_proof)| {
+                    TxProof {
+                        tx,
+                        receipt,
+                        receipt_proof,
+                        block_header,
+                        next_proposal_header,
+                        proposal_proof,
+                    }.rlp_bytes()
+                        .into_vec()
+                },
+            )
     }
 
     pub fn localized_receipt(&self, id: TransactionId) -> Option<LocalizedReceipt> {

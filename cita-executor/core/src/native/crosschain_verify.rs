@@ -1,8 +1,8 @@
 use super::*;
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
+use contracts::ChainManagement;
 use core::libchain::chain::TxProof;
-use rlp;
 use util::{Address, H256, U256};
 
 #[derive(Clone)]
@@ -30,11 +30,12 @@ impl Default for CrossChainVerify {
 }
 
 impl CrossChainVerify {
-    fn verify(&mut self, params: ActionParams, _ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn verify(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
             return Err(evm::Error::OutOfGas);
         }
+        let gas_left = params.gas - gas_cost;
 
         if params.data.is_none() {
             return Err(evm::Error::Internal("no data".to_string()));
@@ -83,6 +84,7 @@ impl CrossChainVerify {
             return Err(evm::Error::Internal("no proof len".to_string()));
         }
         let proof_len = U256::from(proof_len_data.unwrap()).low_u64() as usize;
+        trace!("proof_len {:?}", proof_len);
         index = index + len;
 
         if index + proof_len > data_len {
@@ -96,6 +98,7 @@ impl CrossChainVerify {
             return Err(evm::Error::Internal("no proof data".to_string()));
         }
         let proof_data = proof_data.unwrap();
+        trace!("proof_data {:?}", proof_data);
 
         let proof = TxProof::from_bytes(&proof_data);
 
@@ -140,7 +143,7 @@ impl CrossChainVerify {
         }
 
         Ok(GasLeft::NeedsReturn {
-            gas_left: U256::from(params.gas - gas_cost),
+            gas_left: gas_left,
             data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })
