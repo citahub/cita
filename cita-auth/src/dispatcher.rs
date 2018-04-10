@@ -40,7 +40,6 @@ pub struct Dispatcher {
     txs_pool: RefCell<tx_pool::Pool>,
     tx_pool_cap: Arc<AtomicUsize>,
     wal: TxWal,
-    filter_wal: TxWal,
     wal_enable: bool,
     pool_limit: usize,
     data_from_pool: AtomicBool,
@@ -76,7 +75,6 @@ impl Dispatcher {
             txs_pool: RefCell::new(tx_pool::Pool::new(package_limit)),
             tx_pool_cap: Arc::new(AtomicUsize::new(limit)),
             wal: TxWal::new("/txwal"),
-            filter_wal: TxWal::new("/filterwal"),
             wal_enable: wal_enable,
             pool_limit: limit,
             data_from_pool: AtomicBool::new(false),
@@ -94,10 +92,10 @@ impl Dispatcher {
         dispatch
     }
 
+    /// Clean transaction pool and regenerate an pool cache db
     pub fn clear_txs_pool(&mut self, package_limit: usize) {
         self.txs_pool = RefCell::new(tx_pool::Pool::new(package_limit));
         self.wal.regenerate("/txwal");
-        self.filter_wal.regenerate("/filterwal");
     }
 
     pub fn tx_pool_capacity(&self) -> Arc<AtomicUsize> {
@@ -114,6 +112,8 @@ impl Dispatcher {
         }
     }
 
+    /// Add new transaction to pool, response jsonrpc request
+    /// package buffer request forward to peer
     pub fn deal_tx(
         &mut self,
         key: String,
@@ -187,6 +187,8 @@ impl Dispatcher {
         self.add_to_pool_cnt += 1;
     }
 
+    /// Delete transactions from pool, and then package a block with new transactions,
+    /// send to cita-bft
     pub fn deal_txs(
         &mut self,
         height: usize,
@@ -267,7 +269,10 @@ impl Dispatcher {
             if success {
                 self.wal.write(tx);
             } else {
-                self.filter_wal.write(tx);
+                warn!(
+                    "the transaction {} is already exist",
+                    tx.get_tx_hash().pretty()
+                );
             }
         }
         success
