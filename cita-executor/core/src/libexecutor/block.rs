@@ -551,48 +551,8 @@ impl OpenBlock {
                     execution_error,
                 ));
             }
-        }
-    }
-
-    fn apply_grpc_vm(
-        &mut self,
-        executor: &Executor,
-        t: &mut SignedTransaction,
-        check_permission: bool,
-        check_quota: bool,
-        connect_info: ConnectInfo,
-    ) {
-        let mut env_info = ProtoEnvInfo::new();
-        env_info.set_number(format!("{}", self.number()));
-        env_info.set_author(Address::default().hex());
-        let timestamp = self.env_info().timestamp;
-        env_info.set_timestamp(format!("{}", timestamp));
-
-        let mut action_params = ActionParams::new();
-        action_params.set_code_address(connect_info.get_addr().to_string());
-        action_params.set_data(t.data.clone());
-        action_params.set_sender(t.sender().hex());
-        //to be discussed
-        //action_params.set_gas("1000".to_string());
-        let ret = {
-            let mut evm_impl = CallEvmImpl::new(&mut self.state, check_permission, check_quota);
-            evm_impl.transact(executor, t, env_info, action_params, connect_info)
-        };
-
-        match ret {
-            Ok(receipt) => {
-                let transaction_gas_used = receipt.gas_used - self.current_gas_used;
-                self.current_gas_used = receipt.gas_used;
-                if check_quota {
-                    if let Some(value) = self.account_gas.get_mut(t.sender()) {
-                        *value = *value - transaction_gas_used;
-                    }
-                }
-                self.receipts.push(Some(receipt));
-            }
-            Err(err) => {
-                let receipt = Self::generate_err_receipt(err);
-                self.receipts.push(receipt);
+            Err(_) => {
+                self.receipts.push(None);
             }
         }
     }
