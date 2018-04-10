@@ -18,6 +18,7 @@ const quota = util.quota;
 const blockLimit = util.blockLimit;
 
 const create_contract = "0x0000000000000000000000000000000000000002";
+const send_tx = "0x0000000000000000000000000000000000000001";
 const setAuthorization = permissionManagement.setAuthorization;
 const cancelAuthorization = permissionManagement.cancelAuthorization;
 
@@ -25,6 +26,39 @@ const cancelAuthorization = permissionManagement.cancelAuthorization;
 
 describe('\n\ntest create contract permission\n\n', function() { 
 
+    before('should send a setAuthorization tx and get receipt', function(done) {
+        let res = setAuthorization(sender.address, send_tx);
+
+        getTxReceipt(res)
+            .then((receipt) => {
+                console.log('\nSend ok and get receipt:\n', receipt);
+                assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                done();
+            })
+            .catch(err => {
+                console.log('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
+                this.skip();
+                done();
+            });
+    });
+
+    after('should send a cancelAuthorization tx and get receipt', function(done) {
+        let res = cancelAuthorization(sender.address, send_tx);
+
+        getTxReceipt(res)
+            .then((receipt) => {
+                console.log('\nSend ok and get receipt:\n', receipt);
+                assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                done();
+            })
+            .catch(err => {
+                console.log('\n!!!!Get cancelAuthorization receipt err:!!!!\n', err);
+                this.skip();
+                done();
+            });
+    });
+ 
+ 
     it('should send a deploy_contract tx and get receipt: superAdmin', function(done) {
         let res = web3.eth.sendTransaction({
                 privkey: superAdmin.privkey,

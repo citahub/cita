@@ -23,6 +23,7 @@ const addAccounts = groupManagement.addAccounts;
 const deleteAccounts = groupManagement.deleteAccounts;
 const deleteGroup = groupManagement.deleteGroup;
 const checkScope = groupManagement.checkScope;
+const queryGroups = groupManagement.queryGroups;
 
 // group
 const gr = group.group;
@@ -33,12 +34,19 @@ let gContractInstance;
 let newGroupAddr;
 let lengthOfAccounts;
 let lengthOfChild;
+let lengthOfGroups;
 
 // =======================
 
 describe('\n\ntest group management contract\n\n', function () {
 
     describe('\ntest add new group\n', function () {
+        before('Query the number of the groups', function () {
+            let res = queryGroups.call();
+            console.log('\nThe groups:\n', res);
+            lengthOfGroups = res.length;
+        });
+
         it('should send a newGroup tx and get receipt', function (done) {
             let name = 'testGroup';
             let res = newGroup(rootGroupAddr, name, [sender.address]);
@@ -64,6 +72,13 @@ describe('\n\ntest group management contract\n\n', function () {
             assert.equal(res[0].substr(0, 20), web3.toHex('testGroup'));
 
             assert.equal(res[1][0], sender.address);
+        });
+
+        it('should have more groups', function () {
+            let res = queryGroups.call();
+            console.log('\nThe groups:\n', res);
+            assert.equal(res.length, lengthOfGroups + 1);
+            assert.equal(res[res.length-1], newGroupAddr);
         });
 
         it('should in the scope of root', function () {

@@ -93,8 +93,13 @@ const deleteAccounts = function (origin, target, accounts, _sender = sender) {
 };
 
 // checkScope
-const checkScope = function (origin, target, _sender = sender) {
+const checkScope = function (origin, target) {
     return gManagementContractIns.checkScope.call(origin, target);
+}
+
+// checkScope
+const queryGroups = function () {
+    return gManagementContractIns.queryGroups.call();
 }
 
 module.exports = {
@@ -103,5 +108,6 @@ module.exports = {
     addAccounts,
     deleteAccounts,
     deleteGroup,
-    checkScope
+    checkScope,
+    queryGroups
 };

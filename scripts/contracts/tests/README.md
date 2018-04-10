@@ -148,6 +148,30 @@ npm run-script unit_side
     npm run-script integrate_test
     ```
 
+* To run integrate call_permission test:
+
+```
+npm run-script integrate_call-permission
+```
+
+* To run integrate call_role test:
+
+```
+npm run-script integrate_call-role
+```
+
+* To run integrate deploy_contract test:
+
+```
+npm run-script integrate_deploy-contract
+```
+
+* To run integrate send_tx test:
+
+```
+npm run-script integrate_send-tx
+```
+
 * To lint test directory:
 
 ```

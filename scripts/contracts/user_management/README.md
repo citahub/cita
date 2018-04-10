@@ -5,7 +5,7 @@
 
 ```
 ======= group.sol:Group =======
-Function signatures: 
+Function signatures:
 ac71abde: addAccounts(address[])
 1eee993a: addChild(address)
 43d726d6: close()
@@ -20,16 +20,17 @@ c065ecc2: queryChildLength()
 1ae97bd9: updateName(bytes32)
 
 ======= group_creator.sol:GroupCreator =======
-Function signatures: 
+Function signatures:
 3c673470: createGroup(address,bytes32,address[])
 
 ======= group_management.sol:GroupManagement =======
-Function signatures: 
+Function signatures:
 2c84e31f: addAccounts(address,address,address[])
 eadf4672: checkScope(address,address)
 d86df333: deleteAccounts(address,address,address[])
 baeb8cad: deleteGroup(address,address)
 d7cd7209: newGroup(address,bytes32,address[])
+7321cc97: queryGroups()
 7eafcdb1: updateGroupName(address,address,bytes32)
 ```
 

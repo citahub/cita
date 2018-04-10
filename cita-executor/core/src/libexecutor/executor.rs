@@ -18,7 +18,8 @@
 use bloomchain as bc;
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
-use contracts::{AccountGasLimit, ConstantConfig, NodeManager, PermissionManagement, QuotaManager, Resource};
+use contracts::{AccountGasLimit, ConstantConfig, NodeManager, PermissionManagement, QuotaManager, Resource,
+                UserManagement};
 use db;
 use db::*;
 use engines::NullEngine;
@@ -128,6 +129,7 @@ pub struct GlobalSysConfig {
     pub check_quota: bool,
     pub check_permission: bool,
     pub account_permissions: HashMap<Address, Vec<Resource>>,
+    pub group_accounts: HashMap<Address, Vec<Address>>,
 }
 
 impl GlobalSysConfig {
@@ -141,6 +143,7 @@ impl GlobalSysConfig {
             check_quota: false,
             check_permission: false,
             account_permissions: HashMap::new(),
+            group_accounts: HashMap::new(),
         }
     }
 
@@ -640,6 +643,7 @@ impl Executor {
         conf.check_permission = ConstantConfig::permission_check(self);
         conf.check_quota = ConstantConfig::quota_check(self);
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
+        conf.group_accounts = UserManagement::load_group_accounts(self);
 
         let common_gas_limit = QuotaManager::account_gas_limit(self);
         let specific = QuotaManager::specific(self);
@@ -858,7 +862,7 @@ mod tests {
 
         let receipt = chain.localized_receipt(hash).unwrap();
         assert_eq!(receipt.contract_address, None);
-        assert_eq!(receipt.error, Some(ReceiptError::NoContractPermission));
+        assert_eq!(receipt.error, Some(ReceiptError::NoTransactionPermission));
     }
 
     #[test]

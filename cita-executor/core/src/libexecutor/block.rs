@@ -343,6 +343,7 @@ impl OpenBlock {
     ) -> Result<Self, Error> {
         let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
         state.account_permissions = conf.account_permissions;
+        state.group_accounts = conf.group_accounts;
 
         let r = OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),

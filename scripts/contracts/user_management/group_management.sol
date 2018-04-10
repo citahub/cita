@@ -9,8 +9,11 @@ import "./address_array.sol";
 /// @notice _target: The target group that will be operated
 contract GroupManagement {
 
+    address rootGroupAddr = 0x00000000000000000000000000000000013241b6;
     address groupCreatorAddr = 0x00000000000000000000000000000000013241c3;
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
+
+    address[] groups;
 
     event GroupDeleted(address _group);
 
@@ -26,6 +29,12 @@ contract GroupManagement {
         _;
     }
 
+    /// @dev Constructor
+    function GroupManagement() public {
+        // Root
+        groups.push(rootGroupAddr);
+    }
+
     /// @dev Create a new group
     function newGroup(address _parent, bytes32 _name, address[] _accounts)
         external
@@ -33,6 +42,7 @@ contract GroupManagement {
     {
         new_group = groupCreator.createGroup(_parent, _name, _accounts);
         require(addChild(_parent, new_group));
+        groups.push(new_group);
     }
 
     /// @dev Delete the group
@@ -46,7 +56,10 @@ contract GroupManagement {
         Group group = Group(_target);
         // Delete it from the parent group
         require(deleteChild(group.queryParent(), _target));
+        // Selfdestruct
         require(group.close());
+        // Remove it from the groups
+        AddressArray.remove(_target, groups);
         GroupDeleted(_target);
         return true;
     }
@@ -103,6 +116,15 @@ contract GroupManagement {
             Group group = Group(parent);
             parent = group.queryParent();
         }
+    }
+
+    /// @dev Query all groups
+    function queryGroups()
+        public
+        view
+        returns (address[])
+    {
+        return groups;
     }
 
     /// @dev Delete the child group

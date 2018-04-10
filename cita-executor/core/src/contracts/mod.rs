@@ -21,11 +21,13 @@ pub mod node_manager;
 pub mod quota_manager;
 pub mod constant_config;
 pub mod permission_management;
+pub mod user_management;
 
 pub use self::constant_config::ConstantConfig;
 pub use self::node_manager::NodeManager;
 pub use self::permission_management::{PermissionManagement, Resource};
 pub use self::quota_manager::{AccountGasLimit, QuotaManager};
+pub use self::user_management::UserManagement;
 
 use libexecutor::call_request::CallRequest;
 use libexecutor::executor::Executor;
