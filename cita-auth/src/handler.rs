@@ -150,7 +150,7 @@ pub fn handle_remote_msg(
         routing_key!(Chain >> BlockTxHashes) => {
             let block_tx_hashes = msg.take_block_tx_hashes().unwrap();
             let height = block_tx_hashes.get_height();
-            info!("get block tx hashs for height {:?}", height);
+            debug!("get block tx hashs for height {:?}", height);
             let tx_hashes = block_tx_hashes.get_tx_hashes();
             let mut tx_hashes_in_h256 = HashSet::with_capacity(tx_hashes.len());
             {
@@ -174,14 +174,14 @@ pub fn handle_remote_msg(
                 }
             }
             if flag {
-                info!(
+                debug!(
                     "BLOCKTXHASHES come height {}, tx_hashes count is: {:?}",
                     height,
                     tx_hashes_in_h256.len()
                 );
                 let block_gas_limit = block_tx_hashes.get_block_gas_limit();
                 let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
-                info!(
+                debug!(
                     "Auth rich status block gas limit: {:?}, account gas limit {:?}",
                     block_gas_limit, account_gas_limit
                 );

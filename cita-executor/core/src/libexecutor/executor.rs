@@ -593,7 +593,7 @@ impl Executor {
         let now = Instant::now();
         self.db.flush().expect("DB write failed.");
         let new_now = Instant::now();
-        info!("db write use {:?}", new_now.duration_since(now));
+        debug!("db write use {:?}", new_now.duration_since(now));
     }
 
     /// Finalize block
@@ -717,9 +717,9 @@ impl Executor {
         if open_block.apply_transactions(self, perm, quota) {
             let closed_block = open_block.into_closed_block();
             let new_now = Instant::now();
-            info!("execute proposal use {:?}", new_now.duration_since(now));
+            debug!("execute proposal use {:?}", new_now.duration_since(now));
             let h = closed_block.number();
-            info!("execute height {} proposal finish !", h);
+            debug!("execute height {} proposal finish !", h);
             Some(closed_block)
         } else {
             warn!("executing block is interrupted.");

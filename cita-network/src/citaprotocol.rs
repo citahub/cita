@@ -134,15 +134,9 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<(String, 
     let netmsg_start = request_id & 0xffff_ffff_0000_0000;
     let length_full = (request_id & 0x0000_0000_ffff_ffff) as usize;
     if netmsg_start != NETMSG_START {
-        error!("Buffer is malformed {} != {}.", netmsg_start, NETMSG_START);
         return None;
     }
     if length_full + 8 > buf.len() {
-        warn!(
-            "Buffer is not enough for payload {} > {}.",
-            length_full,
-            buf.len()
-        );
         return None;
     }
     let _request_id_buf = buf.split_to(8);
