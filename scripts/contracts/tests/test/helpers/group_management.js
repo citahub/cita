@@ -38,74 +38,70 @@ const newGroup = function (parent, addrs, accounts, _sender = sender) {
 };
 
 // deleteGroup
-const deleteGroup = function (group, _sender = sender) {
+const deleteGroup = function (origin, target, _sender = sender) {
     tx_params.nonce = util.randomInt();
     tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return gManagementContractIns.deleteGroup.sendTransaction(
-            group,
+            origin,
+            target,
             tx_params
         );
 };
 
 // updateGroupName
-const updateGroupName = function (group, name, _sender = sender) {
+const updateGroupName = function (origin, target, name, _sender = sender) {
     tx_params.nonce = util.randomInt();
     tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return gManagementContractIns.updateGroupName.sendTransaction(
-            group,
+            origin,
+            target,
             name,
             tx_params
         );
 };
 
 // addAccounts
-const addAccounts = function (group, accounts, _sender = sender) {
+const addAccounts = function (origin, target, accounts, _sender = sender) {
     tx_params.nonce = util.randomInt();
     tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return gManagementContractIns.addAccounts.sendTransaction(
-            group,
+            origin,
+            target,
             accounts,
             tx_params
         );
 };
 
 // deleteAccounts
-const deleteAccounts = function (group, accounts, _sender = sender) {
+const deleteAccounts = function (origin, target, accounts, _sender = sender) {
     tx_params.nonce = util.randomInt();
     tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return gManagementContractIns.deleteAccounts.sendTransaction(
-            group,
+            origin,
+            target,
             accounts,
             tx_params
         );
 };
 
-// addChildGroup
-const addChildGroup = function (group, child, _sender = sender) {
-    tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
-    tx_params.privkey = _sender.privkey;
-    tx_params.from = _sender.address;
-    return gManagementContractIns.addChildGroup.sendTransaction(
-            group,
-            child,
-            tx_params
-        );
-};
+// checkScope
+const checkScope = function (origin, target, _sender = sender) {
+    return gManagementContractIns.checkScope.call(origin, target);
+}
 
 module.exports = {
     newGroup,
     updateGroupName,
     addAccounts,
     deleteAccounts,
-    addChildGroup,
-    deleteGroup
+    deleteGroup,
+    checkScope
 };

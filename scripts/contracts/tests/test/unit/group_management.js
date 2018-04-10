@@ -13,12 +13,16 @@ const config = require('../config');
 const web3 = util.web3;
 const getTxReceipt = util.getTxReceipt;
 
+// config
+const sender = config.testSender;
+
 // group management
 const newGroup = groupManagement.newGroup;
 const updateGroupName = groupManagement.updateGroupName;
 const addAccounts = groupManagement.addAccounts;
 const deleteAccounts = groupManagement.deleteAccounts;
 const deleteGroup = groupManagement.deleteGroup;
+const checkScope = groupManagement.checkScope;
 
 // group
 const gr = group.group;
@@ -37,7 +41,7 @@ describe('\n\ntest group management contract\n\n', function () {
     describe('\ntest add new group\n', function () {
         it('should send a newGroup tx and get receipt', function (done) {
             let name = 'testGroup';
-            let res = newGroup(rootGroupAddr, name, config.testAddr);
+            let res = newGroup(rootGroupAddr, name, [sender.address]);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -59,16 +63,26 @@ describe('\n\ntest group management contract\n\n', function () {
             console.log('\nInfo:\n', res);
             assert.equal(res[0].substr(0, 20), web3.toHex('testGroup'));
 
-            for (let i = 0; i < res[1].length; i++) {
-                assert.equal(res[1][i], config.testAddr[i]);
-            }
+            assert.equal(res[1][0], sender.address);
+        });
+
+        it('should in the scope of root', function () {
+            let res = checkScope(rootGroupAddr, newGroupAddr);
+            console.log('\nIs in the scope of root:\n', res);
+            assert.equal(res, true);
+        });
+
+        it('should in the scope of self', function () {
+            let res = checkScope(newGroupAddr, newGroupAddr, sender);
+            console.log('\nIs in the scope of self:\n', res);
+            assert.equal(res, true);
         });
     });
 
-    describe('\ntest update group name\n', function () {
+    describe('\ntest update group name by self\n', function () {
         it('should send a updateGroupName tx and get receipt', function (done) {
             let num = web3.eth.blockNumber;
-            let res = updateGroupName(newGroupAddr, 'testGroupNewName');
+            let res = updateGroupName(newGroupAddr, newGroupAddr, 'testGroupNewName', sender);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -90,6 +104,31 @@ describe('\n\ntest group management contract\n\n', function () {
         });
     });
 
+    describe('\ntest update group name by root\n', function () {
+        it('should send a updateGroupName tx and get receipt', function (done) {
+            let num = web3.eth.blockNumber;
+            let res = updateGroupName(rootGroupAddr, newGroupAddr, 'testGroupNewName2');
+
+            getTxReceipt(res)
+                .then((receipt) => {
+                    console.log('\nSend ok and get receipt:\n', receipt);
+                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+                    done();
+                })
+                .catch(err => {
+                    console.log('\n!!!!Get updateGroupName receipt err:!!!!\n', err);
+                    this.skip();
+                });
+        });
+
+        it('should have the new group name', function () {
+            gContractInstance = gr.at(newGroupAddr);
+            let res = gContractInstance.queryName.call();
+            console.log('\nNew Group name:\n', res);
+            assert.equal(res.substr(0, 36), web3.toHex('testGroupNewName2'));
+        });
+    });
+
     describe('\ntest add accounts\n', function () {
 
         before('Query the number of the accounts', function () {
@@ -101,9 +140,10 @@ describe('\n\ntest group management contract\n\n', function () {
 
         it('should send a addAccounts tx and get receipt', function (done) {
             let res = addAccounts(
-
-
-                newGroupAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603']
+                newGroupAddr,
+                newGroupAddr,
+                ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
+                sender
             );
 
             getTxReceipt(res)
@@ -129,7 +169,10 @@ describe('\n\ntest group management contract\n\n', function () {
 
         it('should send a addAccounts to a group address that does not exist and get receipt with error message', function (done) {
             let res = addAccounts(
-                0x1234567, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5604']
+                0x1234567,
+                0x1234567,
+                ['0x1a702a25c6bca72b67987968f0bfb3a3213c5604'],
+                sender
             );
 
             getTxReceipt(res)
@@ -157,7 +200,10 @@ describe('\n\ntest group management contract\n\n', function () {
 
         it('should send a addAccounts tx and get receipt', function (done) {
             let res = addAccounts(
-                newGroupAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603']
+                newGroupAddr,
+                newGroupAddr,
+                ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
+                sender
             );
 
             getTxReceipt(res)
@@ -183,7 +229,10 @@ describe('\n\ntest group management contract\n\n', function () {
     describe('\ntest delete accounts\n', function () {
         it('should send a deleteAccounts tx and get receipt', function (done) {
             let res = deleteAccounts(
-                newGroupAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603']
+                newGroupAddr,
+                newGroupAddr,
+                ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
+                sender
             );
 
             getTxReceipt(res)
@@ -202,14 +251,15 @@ describe('\n\ntest group management contract\n\n', function () {
             gContractInstance = gr.at(newGroupAddr);
             let res = gContractInstance.queryAccounts.call();
             console.log('\nAccounts deleted:\n', res);
-            for (let i = 0; i < res.length; i++) {
-                assert.equal(res[i], config.testAddr[i]);
-            }
+            assert.equal(res[0], sender.address);
         });
 
         it('should send a deleteAccounts to a group address that does not exist and get receipt with error message', function (done) {
             let res = deleteAccounts(
-                0x1234567, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603']
+                0x1234567,
+                0x1234567,
+                ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'],
+                sender
             );
 
             getTxReceipt(res)
@@ -235,7 +285,7 @@ describe('\n\ntest group management contract\n\n', function () {
         });
 
         it('should send a deleteGroup tx and get receipt', function (done) {
-            let res = deleteGroup(newGroupAddr);
+            let res = deleteGroup(newGroupAddr, newGroupAddr, sender);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -257,7 +307,7 @@ describe('\n\ntest group management contract\n\n', function () {
         });
 
         it('should send a deleteGroup that does not exist and get receipt with error message', function (done) {
-            let res = deleteGroup(newGroupAddr);
+            let res = deleteGroup(newGroupAddr, newGroupAddr, sender);
 
             getTxReceipt(res)
                 .then((receipt) => {
@@ -271,5 +321,4 @@ describe('\n\ntest group management contract\n\n', function () {
                 });
         });
     });
-
 });

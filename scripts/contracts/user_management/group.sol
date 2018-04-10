@@ -7,7 +7,7 @@ import "./address_array.sol";
 /// @title Group contract
 /// @notice Can not operate the parent. TBD
 contract Group {
-    
+
     address userManagementAddr = 0x00000000000000000000000000000000013241C2;
 
     bytes32 name;
@@ -58,6 +58,8 @@ contract Group {
         onlyUserManagement
         returns (bool)
     {
+        require(_accounts.length < accounts.length);
+
         for (uint i = 0; i < _accounts.length; i++)
             assert(AddressArray.remove(_accounts[i], accounts));
 
@@ -162,5 +164,14 @@ contract Group {
         returns (address)
     {
         return parent;
+    }
+
+    /// @dev Check the account in the group
+    function inGroup(address _account)
+        public
+        view
+        returns (bool)
+    {
+        return AddressArray.exist(_account, accounts);
     }
 }
