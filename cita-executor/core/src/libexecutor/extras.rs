@@ -50,9 +50,9 @@ impl Key<H256> for CurrentHash {
     }
 }
 
-pub struct CurrentConfig;
+pub struct ConfigHistory;
 
-impl Key<Vec<u8>> for CurrentConfig {
+impl Key<Vec<u8>> for ConfigHistory {
     type Target = H256;
 
     fn key(&self) -> H256 {
