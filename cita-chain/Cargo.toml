@@ -2,7 +2,7 @@
 description = "CITA node."
 name = "cita-chain"
 version = "0.6.0"
-authors = ["Cryptape Technologies <arch@cryptape.com>"]
+authors = ["Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
 dotenv = "0.10.0"

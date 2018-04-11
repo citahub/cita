@@ -26,6 +26,6 @@
     "lint": "jshint test"
   },
   "repository": {},
-  "author": "Cryptape Technologies <arch@cryptape.com>",
+  "author": "Cryptape Technologies <contact@cryptape.com>",
   "license": "GPL-3.0+"
 }
