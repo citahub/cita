@@ -119,7 +119,7 @@ impl Genesis {
         info!("This is the first time to init executor, and it will init contracts on height 0");
         for (address, contract) in self.spec.alloc.clone() {
             let address = Address::from_any_str(address.as_str()).unwrap();
-            state.new_contract(&address, U256::from(0));
+            state.new_contract(&address, U256::from(0), U256::from(0));
             {
                 state
                     .init_code(&address, clean_0x(&contract.code).from_hex().unwrap())

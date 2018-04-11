@@ -33,6 +33,8 @@ const STORAGE_CACHE_ITEMS: usize = 8192;
 /// Keeps track of changes to the code and storage.
 /// The changes are applied in `commit_storage` and `commit_code`
 pub struct Account {
+    // Balance of the account.
+    balance: U256,
     /// Nonce of the account.
     nonce: U256,
     /// Trie-backed storage.
@@ -66,6 +68,7 @@ pub struct Account {
 impl From<BasicAccount> for Account {
     fn from(basic: BasicAccount) -> Self {
         Account {
+            balance: basic.balance,
             nonce: basic.nonce,
             storage_root: basic.storage_root,
             storage_cache: Self::empty_storage_cache(),
@@ -86,8 +89,9 @@ impl From<BasicAccount> for Account {
 impl Account {
     #[cfg(test)]
     /// General constructor.
-    pub fn new(nonce: U256, storage: HashMap<H256, H256>, code: Bytes, abi: Bytes) -> Account {
+    pub fn new(balance: U256, nonce: U256, storage: HashMap<H256, H256>, code: Bytes, abi: Bytes) -> Account {
         Account {
+            balance: balance,
             nonce: nonce,
             storage_root: HASH_NULL_RLP,
             storage_cache: Self::empty_storage_cache(),
@@ -111,6 +115,7 @@ impl Account {
     /// General constructor.
     pub fn from_pod(pod: PodAccount) -> Account {
         Account {
+            balance: pod.balance,
             nonce: pod.nonce,
             storage_root: HASH_NULL_RLP,
             storage_cache: Self::empty_storage_cache(),
@@ -140,8 +145,9 @@ impl Account {
     }
 
     /// Create a new account.
-    pub fn new_basic(nonce: U256) -> Account {
+    pub fn new_basic(balance: U256, nonce: U256) -> Account {
         Account {
+            balance: balance,
             nonce: nonce,
             storage_root: HASH_NULL_RLP,
             storage_cache: Self::empty_storage_cache(),
@@ -166,8 +172,9 @@ impl Account {
 
     /// Create a new contract account.
     /// NOTE: make sure you use `init_code` on this before `commit`ing.
-    pub fn new_contract(nonce: U256) -> Account {
+    pub fn new_contract(balance: U256, nonce: U256) -> Account {
         Account {
+            balance: balance,
             nonce: nonce,
             storage_root: HASH_NULL_RLP,
             storage_cache: Self::empty_storage_cache(),
@@ -241,6 +248,11 @@ impl Account {
             return Some(*value);
         }
         None
+    }
+
+    /// return the balance associated with this account.
+    pub fn balance(&self) -> &U256 {
+        &self.balance
     }
 
     /// return the nonce associated with this account.
@@ -471,7 +483,7 @@ impl Account {
         self.storage_changes.is_empty()
     }
 
-    /// Check if account has zero nonce, no code and no storage.
+    /// Check if account has zero nonce, balance, no code and no storage.
     ///
     /// NOTE: Will panic if `!self.storage_is_clean()`
     pub fn is_empty(&self) -> bool {
@@ -482,9 +494,14 @@ impl Account {
         self.is_null() && self.storage_root == HASH_NULL_RLP
     }
 
-    /// Check if account has zero nonce, no code, no abi.
+    /// Check if account has zero nonce, balance, no code, no abi.
     pub fn is_null(&self) -> bool {
-        self.nonce.is_zero() && self.code_hash == HASH_EMPTY && self.abi_hash == HASH_EMPTY
+        self.balance.is_zero() && self.nonce.is_zero() && self.code_hash == HASH_EMPTY && self.abi_hash == HASH_EMPTY
+    }
+
+    /// Check if account is basic (Has no code).
+    pub fn is_basic(&self) -> bool {
+        self.code_hash == HASH_EMPTY
     }
 
     /// Return the storage root associated with this account or None if it has been altered via the overlay.
@@ -504,6 +521,18 @@ impl Account {
     /// Increment the nonce of the account by one.
     pub fn inc_nonce(&mut self) {
         self.nonce = self.nonce + U256::from(1u8);
+    }
+
+    /// Increase account balance.
+    pub fn add_balance(&mut self, x: &U256) {
+        self.balance = self.balance + *x;
+    }
+
+    /// Decrease account balance.
+    /// Panics if balance is less than `x`
+    pub fn sub_balance(&mut self, x: &U256) {
+        assert!(self.balance >= *x);
+        self.balance = self.balance - *x;
     }
 
     /// Commit the `storage_changes` to the backing DB and update `storage_root`.
@@ -569,8 +598,9 @@ impl Account {
 
     /// Export to RLP.
     pub fn rlp(&self) -> Bytes {
-        let mut stream = RlpStream::new_list(4);
+        let mut stream = RlpStream::new_list(5);
         stream.append(&self.nonce);
+        stream.append(&self.balance);
         stream.append(&self.storage_root);
         stream.append(&self.code_hash);
         stream.append(&self.abi_hash);
@@ -580,6 +610,7 @@ impl Account {
     /// Clone basic account data
     pub fn clone_basic(&self) -> Account {
         Account {
+            balance: self.balance.clone(),
             nonce: self.nonce,
             storage_root: self.storage_root,
             storage_cache: Self::empty_storage_cache(),
@@ -616,6 +647,7 @@ impl Account {
     /// Basic account data and all modifications are overwritten
     /// with new values.
     pub fn overwrite_with(&mut self, other: Account) {
+        self.balance = other.balance;
         self.nonce = other.nonce;
         self.storage_root = other.storage_root;
         self.code_hash = other.code_hash;
@@ -650,7 +682,7 @@ mod tests {
 
     #[test]
     fn account_compress() {
-        let raw = Account::new_basic(4.into()).rlp();
+        let raw = Account::new_basic(0.into(), 4.into()).rlp();
         let rlp = UntrustedRlp::new(&raw);
         let compact_vec = rlp.compress(RlpType::Snapshot).to_vec();
         //assert!(raw.len() > compact_vec.len());
@@ -663,7 +695,7 @@ mod tests {
         let mut db = MemoryDB::new();
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         let rlp = {
-            let mut a = Account::new_contract(0.into());
+            let mut a = Account::new_contract(0.into(), 0.into());
             a.set_storage(
                 H256::from(&U256::from(0x00u64)),
                 H256::from(&U256::from(0x1234u64)),
@@ -712,7 +744,7 @@ mod tests {
         let mut db = AccountDBMut::new(&mut db, &Address::new());
 
         let rlp = {
-            let mut a = Account::new_contract(0.into());
+            let mut a = Account::new_contract(0.into(), 0.into());
             a.init_code(vec![0x55, 0x44, 0xffu8]);
             a.commit_code(&mut db);
             a.rlp()
@@ -731,7 +763,7 @@ mod tests {
         let mut db = AccountDBMut::new(&mut db, &Address::new());
 
         let rlp = {
-            let mut a = Account::new_contract(0.into());
+            let mut a = Account::new_contract(0.into(), 0.into());
             a.init_abi(vec![0x55, 0x44, 0xffu8]);
             a.commit_abi(&mut db);
             a.rlp()
@@ -746,7 +778,7 @@ mod tests {
 
     #[test]
     fn commit_storage() {
-        let mut a = Account::new_contract(0.into());
+        let mut a = Account::new_contract(0.into(), 0.into());
         let mut db = MemoryDB::new();
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         a.set_storage(0.into(), 0x1234.into());
@@ -768,7 +800,7 @@ mod tests {
 
     #[test]
     fn commit_remove_commit_storage() {
-        let mut a = Account::new_contract(0.into());
+        let mut a = Account::new_contract(0.into(), 0.into());
         let mut db = MemoryDB::new();
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         a.set_storage(0.into(), 0x1234.into());
@@ -793,7 +825,7 @@ mod tests {
 
     #[test]
     fn commit_code() {
-        let mut a = Account::new_contract(0.into());
+        let mut a = Account::new_contract(0.into(), 0.into());
         let mut db = MemoryDB::new();
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         a.init_code(vec![0x55, 0x44, 0xffu8]);
@@ -815,7 +847,7 @@ mod tests {
 
     #[test]
     fn commit_abi() {
-        let mut a = Account::new_contract(0.into());
+        let mut a = Account::new_contract(0.into(), 0.into());
         let mut db = MemoryDB::new();
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         a.init_abi(vec![0x55, 0x44, 0xffu8]);
@@ -837,7 +869,7 @@ mod tests {
 
     #[test]
     fn reset_code() {
-        let mut a = Account::new_contract(0.into());
+        let mut a = Account::new_contract(0.into(), 0.into());
         let mut db = MemoryDB::new();
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         a.init_code(vec![0x55, 0x44, 0xffu8]);
@@ -873,7 +905,7 @@ mod tests {
 
     #[test]
     fn reset_abi() {
-        let mut a = Account::new_contract(0.into());
+        let mut a = Account::new_contract(0.into(), 0.into());
         let mut db = MemoryDB::new();
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         a.init_abi(vec![0x55, 0x44, 0xffu8]);
@@ -909,7 +941,13 @@ mod tests {
 
     #[test]
     fn rlpio() {
-        let a = Account::new(U256::from(0u8), HashMap::new(), Bytes::new(), Bytes::new());
+        let a = Account::new(
+            U256::from(0u8),
+            U256::from(0u8),
+            HashMap::new(),
+            Bytes::new(),
+            Bytes::new(),
+        );
         let b = Account::from_rlp(&a.rlp());
         assert_eq!(a.nonce(), b.nonce());
         assert_eq!(a.code_hash(), b.code_hash());
@@ -919,15 +957,19 @@ mod tests {
 
     #[test]
     fn new_account() {
-        let a = Account::new(U256::from(0u8), HashMap::new(), Bytes::new(), Bytes::new());
+        let a = Account::new(
+            U256::from(0u8),
+            U256::from(0u8),
+            HashMap::new(),
+            Bytes::new(),
+            Bytes::new(),
+        );
         if HASH_NAME == "sha3" {
             assert_eq!(
                 a.rlp().to_hex(),
-                "f86480a056e81f171bcc55a6ff8345e692c0f8\
-                 6e5b48e01b996cadc001622fb5e363b421a0c5d\
-                 2460186f7233c927e7db2dcc703c0e500b653ca\
-                 82273b7bfad8045d85a470a0c5d2460186f7233\
-                 c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+                "f8658080a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2\
+                 460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470a0c5d2460186f7233c92\
+                 7e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
@@ -947,14 +989,19 @@ mod tests {
 
     #[test]
     fn create_account() {
-        let a = Account::new(U256::from(0u8), HashMap::new(), Bytes::new(), Bytes::new());
+        let a = Account::new(
+            U256::from(0u8),
+            U256::from(0u8),
+            HashMap::new(),
+            Bytes::new(),
+            Bytes::new(),
+        );
         if HASH_NAME == "sha3" {
             assert_eq!(
                 a.rlp().to_hex(),
-                "f86480a056e81f171bcc55a6ff8345e692c0f86e5b4\
-                 8e01b996cadc001622fb5e363b421a0c5d2460186f72\
-                 33c927e7db2dcc703c0e500b653ca82273b7bfad8045\
-                 d85a470a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+                "f8658080a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d\
+                 2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470a0c5d2460186f7233c\
+                 927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(

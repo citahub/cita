@@ -439,7 +439,7 @@ impl StateRebuilder {
     /// Feed an uncompressed state chunk into the rebuilder.
     pub fn feed(&mut self, chunk: &[u8], flag: &AtomicBool) -> Result<(), ::error::Error> {
         let rlp = UntrustedRlp::new(chunk);
-        let empty_rlp = StateAccount::new_basic(U256::zero()).rlp();
+        let empty_rlp = StateAccount::new_basic(U256::zero(), U256::zero()).rlp();
         let mut pairs = Vec::with_capacity(rlp.item_count()?);
 
         // initialize the pairs vector with empty values so we have slots to write into.

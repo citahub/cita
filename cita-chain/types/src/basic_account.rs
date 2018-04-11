@@ -25,6 +25,8 @@ use util::{U256, H256};
 pub struct BasicAccount {
     /// Nonce of the account.
     pub nonce: U256,
+    /// Balance of the account.
+    pub balance: U256,
     /// Storage root of the account.
     pub storage_root: H256,
     /// Code hash of the account.
@@ -35,7 +37,8 @@ pub struct BasicAccount {
 
 impl Encodable for BasicAccount {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(4).append(&self.nonce)
+        s.begin_list(5).append(&self.nonce)
+                       .append(&self.balance)
                        .append(&self.storage_root)
                        .append(&self.code_hash)
                        .append(&self.abi_hash);
@@ -46,9 +49,10 @@ impl Decodable for BasicAccount {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         Ok(BasicAccount {
                nonce: rlp.val_at(0)?,
-               storage_root: rlp.val_at(1)?,
-               code_hash: rlp.val_at(2)?,
-               abi_hash: rlp.val_at(3)?,               
+               balance: rlp.val_at(1)?,
+               storage_root: rlp.val_at(2)?,
+               code_hash: rlp.val_at(3)?,
+               abi_hash: rlp.val_at(4)?,
            })
     }
 }

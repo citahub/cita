@@ -81,6 +81,8 @@ enum AccountState {
 struct AccountEntry {
     /// Account entry. `None` if account known to be non-existant.
     account: Option<Account>,
+    /// Unmodified account balance.
+    old_balance: Option<U256>,
     /// Entry state.
     state: AccountState,
 }
@@ -90,6 +92,10 @@ struct AccountEntry {
 impl AccountEntry {
     fn is_dirty(&self) -> bool {
         self.state == AccountState::Dirty
+    }
+
+    fn exists_and_is_null(&self) -> bool {
+        self.account.as_ref().map_or(false, |a| a.is_null())
     }
 
     /// Clone dirty data into new `AccountEntry`. This includes
@@ -107,6 +113,7 @@ impl AccountEntry {
     /// basic account data and modified storage keys.
     fn clone_dirty(&self) -> AccountEntry {
         AccountEntry {
+            old_balance: self.old_balance,
             account: self.account.as_ref().map(Account::clone_dirty),
             state: self.state,
         }
@@ -115,6 +122,7 @@ impl AccountEntry {
     // Create a new account entry and mark it as dirty.
     fn new_dirty(account: Option<Account>) -> AccountEntry {
         AccountEntry {
+            old_balance: account.as_ref().map(|a| a.balance().clone()),
             account: account,
             state: AccountState::Dirty,
         }
@@ -123,6 +131,7 @@ impl AccountEntry {
     // Create a new account entry and mark it as clean.
     fn new_clean(account: Option<Account>) -> AccountEntry {
         AccountEntry {
+            old_balance: account.as_ref().map(|a| a.balance().clone()),
             account: account,
             state: AccountState::CleanFresh,
         }
@@ -131,6 +140,7 @@ impl AccountEntry {
     // Create a new account entry and mark it as clean and cached.
     fn new_clean_cached(account: Option<Account>) -> AccountEntry {
         AccountEntry {
+            old_balance: account.as_ref().map(|a| a.balance().clone()),
             account: account,
             state: AccountState::CleanCached,
         }
@@ -192,7 +202,7 @@ impl AccountEntry {
 /// Reverting a checkpoint with `revert_to_checkpoint` involves copying
 /// original values from the latest checkpoint back into `cache`. The code
 /// takes care not to overwrite cached storage while doing that.
-/// checkpoint can be discateded with `discard_checkpoint`. All of the orignal
+/// checkpoint can be discarded with `discard_checkpoint`. All of the orignal
 /// backed-up values are moved into a parent checkpoint (if any).
 ///
 pub struct State<B: Backend> {
@@ -369,10 +379,11 @@ impl<B: Backend> State<B> {
 
     /// Create a new contract at address `contract`. If there is already an account at the address
     /// it will have its code reset, ready for `init_code()`.
-    pub fn new_contract(&mut self, contract: &Address, nonce_offset: U256) {
+    pub fn new_contract(&mut self, contract: &Address, balance: U256, nonce_offset: U256) {
         self.insert_cache(
             contract,
             AccountEntry::new_dirty(Some(Account::new_contract(
+                balance,
                 self.account_start_nonce + nonce_offset,
             ))),
         );
@@ -405,6 +416,14 @@ impl<B: Backend> State<B> {
             a.map_or(false, |a| {
                 a.code_hash() != HASH_EMPTY || *a.nonce() != self.account_start_nonce
             })
+        })
+    }
+
+    /// Get the balance of account `a`.
+    pub fn balance(&self, a: &Address) -> trie::Result<U256> {
+        self.ensure_cached(a, RequireCache::None, true, |a| {
+            a.as_ref()
+                .map_or(U256::zero(), |account| *account.balance())
         })
     }
 
@@ -539,6 +558,37 @@ impl<B: Backend> State<B> {
         })
     }
 
+    /// Add `incr` to the balance of account `a`.
+    pub fn add_balance(&mut self, a: &Address, incr: &U256) -> trie::Result<()> {
+        trace!(target: "state", "add_balance({}, {}): {}", a, incr, self.balance(a)?);
+        let is_value_transfer = !incr.is_zero();
+        if is_value_transfer {
+            self.require(a, false, false)?.add_balance(incr);
+        } else {
+            if self.exists(a)? {
+                self.touch(a)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Subtract `decr` from the balance of account `a`.
+    pub fn sub_balance(&mut self, a: &Address, decr: &U256) -> trie::Result<()> {
+        trace!(target: "state", "sub_balance({}, {}): {}", a, decr, self.balance(a)?);
+        if !decr.is_zero() || !self.exists(a)? {
+            self.require(a, false, false)?.sub_balance(decr);
+        }
+
+        Ok(())
+    }
+
+    /// Subtracts `by` from the balance of `from` and adds it to that of `to`.
+    pub fn transfer_balance(&mut self, from: &Address, to: &Address, by: &U256) -> trie::Result<()> {
+        self.sub_balance(from, by)?;
+        self.add_balance(to, by)?;
+        Ok(())
+    }
+
     /// Increment the nonce of account `a` by 1.
     pub fn inc_nonce(&mut self, a: &Address) -> trie::Result<()> {
         self.require(a, false, false).map(|mut x| x.inc_nonce())
@@ -560,7 +610,7 @@ impl<B: Backend> State<B> {
             a,
             true,
             false,
-            || Account::new_contract(self.account_start_nonce),
+            || Account::new_contract(0.into(), self.account_start_nonce),
             |_| {},
         )?
             .init_code(code);
@@ -573,7 +623,7 @@ impl<B: Backend> State<B> {
             a,
             true,
             false,
-            || Account::new_contract(self.account_start_nonce),
+            || Account::new_contract(0.into(), self.account_start_nonce),
             |_| {},
         )?
             .reset_code(code);
@@ -587,7 +637,7 @@ impl<B: Backend> State<B> {
             a,
             false,
             true,
-            || Account::new_contract(self.account_start_nonce),
+            || Account::new_contract(0.into(), self.account_start_nonce),
             |_| {},
         )?
             .init_abi(abi);
@@ -600,7 +650,7 @@ impl<B: Backend> State<B> {
             a,
             false,
             true,
-            || Account::new_contract(self.account_start_nonce),
+            || Account::new_contract(0.into(), self.account_start_nonce),
             |_| {},
         )?
             .reset_abi(abi);
@@ -654,6 +704,11 @@ impl<B: Backend> State<B> {
             receipt: receipt,
             trace: e.trace,
         })
+    }
+
+    fn touch(&mut self, a: &Address) -> trie::Result<()> {
+        self.require(a, false, false)?;
+        Ok(())
     }
 
     /// Commits our cached account changes into the trie.
@@ -716,6 +771,43 @@ impl<B: Backend> State<B> {
     /// Clear state cache
     pub fn clear(&mut self) {
         self.cache.borrow_mut().clear();
+    }
+
+    /// Remove any touched empty or dust accounts.
+    pub fn kill_garbage(
+        &mut self,
+        touched: &HashSet<Address>,
+        remove_empty_touched: bool,
+        min_balance: &Option<U256>,
+        kill_contracts: bool,
+    ) -> trie::Result<()> {
+        let to_kill: HashSet<_> = {
+            self.cache
+                .borrow()
+                .iter()
+                .filter_map(|(address, ref entry)| {
+                    if touched.contains(address)  // Check all touched accounts
+                        && ((remove_empty_touched && entry.exists_and_is_null()) // Remove all empty touched accounts.
+                            || min_balance.map_or(false, |ref balance| {
+                                entry.account.as_ref().map_or(false, |account| {
+                                    // Remove all basic and optionally contract accounts
+                                    // where balance has been decreased.
+                                    (account.is_basic() || kill_contracts)
+                                        && account.balance() < balance
+                                        && entry.old_balance.as_ref().map_or(false, |b| account.balance() < b)
+                                })
+                            })) {
+                        Some(address.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        };
+        for address in to_kill {
+            self.kill_account(&address);
+        }
+        Ok(())
     }
 
     // load required account data from the databases.
@@ -817,7 +909,7 @@ impl<B: Backend> State<B> {
             a,
             require_code,
             require_abi,
-            || Account::new_basic(self.account_start_nonce),
+            || Account::new_basic(0u8.into(), self.account_start_nonce),
             |_| {},
         )
     }
@@ -1937,7 +2029,13 @@ mod tests {
         let (root, db) = {
             let mut state = get_temp_state();
             state
-                .require_or_from(&a, false, false, || Account::new_contract(0.into()), |_| {})
+                .require_or_from(
+                    &a,
+                    false,
+                    false,
+                    || Account::new_contract(42.into(), 0.into()),
+                    |_| {},
+                )
                 .unwrap();
             state.init_code(&a, vec![1, 2, 3]).unwrap();
             assert_eq!(
@@ -1967,7 +2065,13 @@ mod tests {
         let (root, db) = {
             let mut state = get_temp_state();
             state
-                .require_or_from(&a, false, false, || Account::new_contract(0.into()), |_| {})
+                .require_or_from(
+                    &a,
+                    false,
+                    false,
+                    || Account::new_contract(42.into(), 0.into()),
+                    |_| {},
+                )
                 .unwrap();
             state.init_abi(&a, vec![1, 2, 3]).unwrap();
             assert_eq!(state.abi(&a).unwrap(), Some(Arc::new([1u8, 2, 3].to_vec())));
@@ -2122,7 +2226,7 @@ mod tests {
         if HASH_NAME == "sha3" {
             assert_eq!(
                 state.root().hex(),
-                "98560ba094af6f0874e6a965207d24e049b76fcb8b94bee33d219a21d1636f83"
+                "a54656ec37549bd2d5cca77d4a5b32c8d6109727ccd910a54d61634a0f62b694"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(

@@ -216,9 +216,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 }
             }
         }
+
+        // TODO: we might need checking balance here in future. The relationship between BALANCE & GAS needs discussing.
+
         // NOTE: there can be no invalid transactions from this point
 
         let mut substate = Substate::new();
+
+        // TODO: we might need sub_balance in future. The relationship between BALANCE & GAS needs discussing.
 
         let (result, output) = match t.action {
             Action::Store | Action::AbiStore => (
@@ -460,6 +465,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let static_call = params.call_type == CallType::StaticCall;
 
+        // at first, transfer value to destination
+        if let ActionValue::Transfer(val) = params.value {
+            self.state
+                .transfer_balance(&params.sender, &params.address, &val)?;
+        }
+
         if let Some(mut contract) = self.native_factory.new_contract(params.code_address) {
             let cost = U256::from(100);
             if cost <= params.gas {
@@ -623,21 +634,20 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let mut unconfirmed_substate = Substate::new();
 
         // create contract and transfer value to it if necessary
-        /*
-        let schedule = self.engine.schedule(self.info);
-        let nonce_offset = if schedule.no_empty {1} else {0}.into();
-        let prev_bal = self.state.balance(&params.address)?;
-        let prev_bal = 0;
-
-        if let ActionValue::Transfer(val) = params.value {
-        self.state.sub_balance(&params.sender, &val)?;
-        self.state.new_contract(&params.address, val + prev_bal, nonce_offset);
-    } else {
-        self.state.new_contract(&params.address, prev_bal, nonce_offset);
-    }
-         */
+        /*let schedule = self.engine.schedule(self.info);
+        let nonce_offset = if schedule.no_empty {1} else {0}.into();*/
         let nonce_offset = U256::from(0);
-        self.state.new_contract(&params.address, nonce_offset);
+        let prev_bal = self.state.balance(&params.address)?;
+        if let ActionValue::Transfer(val) = params.value {
+            self.state.sub_balance(&params.sender, &val)?;
+            self.state
+                .new_contract(&params.address, val + prev_bal, nonce_offset);
+        } else {
+            self.state
+                .new_contract(&params.address, prev_bal, nonce_offset);
+        }
+        //self.state.new_contract(&params.address, 0.into(), nonce_offset);
+
         let trace_info = tracer.prepare_trace_create(&params);
         let mut trace_output = tracer.prepare_trace_output();
         let mut subtracer = tracer.subtracer();
@@ -730,23 +740,23 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             refund_value,
             sender
         );
-        // Below: NoEmpty is safe since the sender must already be non-null to have sent this transaction
-        /*
-        self.state.add_balance(&sender, &refund_value, CleanupMode::NoEmpty)?;
-         */
+
+        //TODO: we might need to add_balance here in future. The relationship between BALANCE & GAS needs discussing.
+
         trace!(
             "exec::finalize: Compensating author: fees_value={}, author={}\n",
             fees_value,
             &self.info.author
         );
-        /*
-        self.state.add_balance(&self.info.author, &fees_value, substate.to_cleanup_mode(&schedule))?;
-         */
+
+        //TODO: we might need to add_balance here in future. The relationship between BALANCE & GAS needs discussing.
+
         // perform suicides
         for address in &substate.suicides {
             self.state.kill_account(address);
         }
 
+        // TODO: kill_garbage might be used here in future.
         // perform garbage-collection
         for address in &substate.garbage {
             if self.state.exists(address)? && !self.state.exists_and_not_null(address)? {
