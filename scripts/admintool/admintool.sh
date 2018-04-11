@@ -107,7 +107,7 @@ create_genesis(){
     else
         cp ${BINARY_DIR}/scripts/admintool/init_data.json ${CONFIG_DIR}/init_data.json
     fi
-    python ${BINARY_DIR}/scripts/admintool/create_genesis.py --authorities "${CONFIG_DIR}/authorities" --init_data "${CONFIG_DIR}/init_data.json" --resource "${CONFIG_DIR}/resource/"
+    python ${BINARY_DIR}/scripts/admintool/create_genesis.py --authorities "${CONFIG_DIR}/authorities" --init_data "${CONFIG_DIR}/init_data.json" --resource "${CONFIG_DIR}/resource/" --permission "${BINARY_DIR}/scripts/admintool/permission_init.json"
     rm -rf ${CONFIG_DIR}/init_data.json
 }
 

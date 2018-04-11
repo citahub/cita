@@ -117,11 +117,14 @@ def main():
         "--init_data", help="init with constructor_arguments.")
     parser.add_argument(
         "--resource", help="chain resource folder.")
+    parser.add_argument(
+        "--permission", help="init the permission.")
 
     args = parser.parse_args()
     init_path = os.path.join(args.init_data)
     auth_path = os.path.join(args.authorities)
     res_path = os.path.join(args.resource)
+    per_path = os.path.join(args.permission)
 
     authorities = []
     with open(auth_path, "r") as f:
@@ -129,9 +132,15 @@ def main():
             authorities.append(line.strip('\n'))
 
     init_data = dict()
+    permission_data = dict()
 
     with open(init_path, "r") as f:
         init_data = json.load(f)
+
+    with open(per_path, "r") as f:
+        permission_data = json.load(f)
+
+    init_data.update(permission_data)
 
     for auth in authorities:
         init_data["0x00000000000000000000000000000000013241a2"][0].append(auth)
