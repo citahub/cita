@@ -7,7 +7,7 @@
 //!
 //! | Queue    | SubModule | Message Type   |
 //! | -------- | --------- | -------------- |
-//! | executor | Chain     | SyncResponse   |
+//! | executor | Chain     | LocalSync      |
 //! | executor | Chain     | Request        |
 //! | executor | Consensus | BlockWithProof |
 //! | executor | Consensus | SignedProposal |
@@ -107,11 +107,13 @@ fn main() {
         genesis_path = ge;
     }
 
-    let mut config_path = "executor.toml";
-    if let Some(c) = matches.value_of("config") {
-        trace!("Value for config: {}", c);
-        config_path = c;
-    }
+    let config_path = match matches.value_of("config") {
+        Some(c) => {
+            trace!("Value for config: {}", c);
+            c
+        }
+        None => "executor.toml",
+    };
 
     let (tx, rx) = channel();
     let (write_sender, write_receiver) = channel();
@@ -119,7 +121,7 @@ fn main() {
     start_pubsub(
         "executor",
         routing_key!([
-            Chain >> SyncResponse,
+            Chain >> LocalSync,
             Net >> SyncResponse,
             Consensus >> BlockWithProof,
             Chain >> Request,

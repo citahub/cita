@@ -86,7 +86,7 @@ impl ExecutorInstance {
                 self.consensus_block_enqueue(proof_blk);
             }
 
-            routing_key!(Chain >> SyncResponse) | routing_key!(Net >> SyncResponse) => {
+            routing_key!(Chain >> LocalSync) | routing_key!(Net >> SyncResponse) => {
                 let sync_res = msg.take_sync_response().unwrap();
                 self.deal_sync_blocks(sync_res);
             }
