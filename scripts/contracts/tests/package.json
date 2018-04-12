@@ -23,6 +23,10 @@
     "unit_node": "mocha test/unit/node_manager.js -t 60s; jshint test/unit/node_manager.js",
     "unit_side": "mocha test/unit/sidechain.js -t 60s; jshint test/unit/sidechain.js",
     "integrate_test": "mocha test/integrate --recursive -t 60s; jshint test/integrate",
+    "integrate_call-permission": "mocha test/integrate/call_permission  -t 60s; jshint test/integrate/call_permission.js",
+    "integrate_call-role": "mocha test/integrate/call_role -t 60s; jshint test/integrate/call_role.js",
+    "integrate_deploy_contract": "mocha test/integrate/deploy_contract -t 60s; jshint test/integrate/deploy_contract.js",
+    "integrate_send-tx": "mocha test/integrate/send_tx -t 60s; jshint test/integrate/send_tx.js",
     "lint": "jshint test"
   },
   "repository": {},
