@@ -111,6 +111,152 @@
       ]
     },
     {
+      "title": "eth_getTransactionReceipt with transaction hash and return errorMessage(Not enough base gas.)",
+      "request": {
+        "method": "eth_getTransactionReceipt",
+        "params": [
+          "0x3d1980cd96546485de23be4aeaeadb7ccf8381e64d2bc660450a2a5ec64cb816"
+        ]
+      },
+      "expectedResponse": {
+        "result": {
+          "transactionHash": "0x3d1980cd96546485de23be4aeaeadb7ccf8381e64d2bc660450a2a5ec64cb816",
+          "transactionIndex": "0x0",
+          "blockHash": "0xe7a297d36b360d5d68ca77928706f3ea7033f3f32d29421c91c4ff8051c8f337",
+          "blockNumber": "0x7",
+          "cumulativeGasUsed": "0x0",
+          "gasUsed": "0x0",
+          "contractAddress": null,
+          "logs": [],
+          "root": null,
+          "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "errorMessage": "Not enough base gas."
+        }
+      },
+      "asserts": [
+        {
+          "description": "eth_getTransactionReceipt result.transactionHash should be equal",
+          "program": ".receivedResponse.result.transactionHash == .expectedResponse.result.transactionHash"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.contractAddress should be equal",
+          "program": ".receivedResponse.result.contractAddress == .expectedResponse.result.contractAddress"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.logsBloom should be equal",
+          "program": ".receivedResponse.result.logsBloom == .expectedResponse.result.logsBloom"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.errorMessage should be equal",
+          "program": ".receivedResponse.result.errorMessage == .expectedResponse.result.errorMessage"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.logs should be equal",
+          "program": ".receivedResponse.result.logs == .expectedResponse.result.logs"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.gasUsed should be equal",
+          "program": ".receivedResponse.result.gasUsed == .expectedResponse.result.gasUsed"
+        }
+      ]
+    },
+    {
+      "title": "eth_getTransactionReceipt with transaction hash and return errorMessage(Out of gas.)",
+      "request": {
+        "method": "eth_getTransactionReceipt",
+        "params": [
+          "0x85de5454b57c8bfc7b46522a08f5344a75c29389f39b6ee37fbcd45d8faa7788"
+        ]
+      },
+      "expectedResponse": {
+        "result": {
+          "transactionHash": "0x85de5454b57c8bfc7b46522a08f5344a75c29389f39b6ee37fbcd45d8faa7788",
+          "transactionIndex": "0x0",
+          "blockHash": "0x32af6337e69d8bbf2ec9a95ae0933738b39a3c61ce53be035c566c87d37ba0ce",
+          "blockNumber": "0x8",
+          "cumulativeGasUsed": "0x40000001",
+          "gasUsed": "0x40000001",
+          "contractAddress": null,
+          "logs": [],
+          "root": null,
+          "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "errorMessage": "Out of gas."
+        }
+      },
+      "asserts": [
+        {
+          "description": "eth_getTransactionReceipt result.transactionHash should be equal",
+          "program": ".receivedResponse.result.transactionHash == .expectedResponse.result.transactionHash"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.contractAddress should be equal",
+          "program": ".receivedResponse.result.contractAddress == .expectedResponse.result.contractAddress"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.logsBloom should be equal",
+          "program": ".receivedResponse.result.logsBloom == .expectedResponse.result.logsBloom"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.errorMessage should be equal",
+          "program": ".receivedResponse.result.errorMessage == .expectedResponse.result.errorMessage"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.logs should be equal",
+          "program": ".receivedResponse.result.logs == .expectedResponse.result.logs"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.gasUsed should be equal",
+          "program": ".receivedResponse.result.gasUsed == .expectedResponse.result.gasUsed"
+        }
+      ]
+    },
+    {
+      "title": "eth_getTransactionReceipt with transaction hash and return EVM Error.",
+      "request": {
+        "method": "eth_getTransactionReceipt",
+        "params": [
+          "0x6b8f5a4ce53c529de93329b9cacf17cc62b866fb07fdaf5a829e0698602568c5"
+        ]
+      },
+      "expectedResponse": {
+        "result": {
+          "transactionHash": "0x6b8f5a4ce53c529de93329b9cacf17cc62b866fb07fdaf5a829e0698602568c5",
+          "transactionIndex": "0x0",
+          "blockHash": "0xe79c4c899afe6afd5917687f42a43a65e6a8f4826b13888f8837e381b417c93e",
+          "blockNumber": "0xa",
+          "cumulativeGasUsed": "0x2710",
+          "gasUsed": "0x2710",
+          "contractAddress": null,
+          "logs": [],
+          "root": null,
+          "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "errorMessage": "Not enough stack elements to execute instruction."
+        }
+      },
+      "asserts": [
+        {
+          "description": "eth_getTransactionReceipt result.transactionHash should be equal",
+          "program": ".receivedResponse.result.transactionHash == .expectedResponse.result.transactionHash"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.contractAddress should be equal",
+          "program": ".receivedResponse.result.contractAddress == .expectedResponse.result.contractAddress"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.logsBloom should be equal",
+          "program": ".receivedResponse.result.logsBloom == .expectedResponse.result.logsBloom"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.errorMessage should be equal",
+          "program": ".receivedResponse.result.errorMessage == .expectedResponse.result.errorMessage"
+        },
+        {
+          "description": "eth_getTransactionReceipt result.logs should be equal",
+          "program": ".receivedResponse.result.logs == .expectedResponse.result.logs"
+        }
+      ]
+    },
+    {
       "title": "eth_getTransactionReceipt with wrong transaction hash and get empty result",
       "request": {
         "method": "eth_getTransactionReceipt",
