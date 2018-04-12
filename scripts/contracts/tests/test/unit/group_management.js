@@ -5,7 +5,6 @@ const chai = require('chai');
 const assert = chai.assert;
 const util = require('../helpers/util');
 const groupManagement = require('../helpers/group_management');
-const authorization = require('../helpers/authorization');
 const group = require('../helpers/group');
 const config = require('../config');
 

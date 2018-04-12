@@ -36,12 +36,12 @@ contract GroupManagement {
     }
 
     /// @dev Create a new group
-    function newGroup(address _parent, bytes32 _name, address[] _accounts)
+    function newGroup(address _origin, bytes32 _name, address[] _accounts)
         external
         returns (address new_group)
     {
-        new_group = groupCreator.createGroup(_parent, _name, _accounts);
-        require(addChild(_parent, new_group));
+        new_group = groupCreator.createGroup(_origin, _name, _accounts);
+        require(addChild(_origin, new_group));
         groups.push(new_group);
     }
 

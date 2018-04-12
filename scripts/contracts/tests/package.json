@@ -25,6 +25,7 @@
     "integrate_test": "mocha test/integrate --recursive -t 60s; jshint test/integrate",
     "integrate_call-permission": "mocha test/integrate/call_permission  -t 60s; jshint test/integrate/call_permission.js",
     "integrate_call-role": "mocha test/integrate/call_role -t 60s; jshint test/integrate/call_role.js",
+    "integrate_call-group": "mocha test/integrate/call_group -t 60s; jshint test/integrate/call_group.js",
     "integrate_deploy_contract": "mocha test/integrate/deploy_contract -t 60s; jshint test/integrate/deploy_contract.js",
     "integrate_send-tx": "mocha test/integrate/send_tx -t 60s; jshint test/integrate/send_tx.js",
     "lint": "jshint test"
