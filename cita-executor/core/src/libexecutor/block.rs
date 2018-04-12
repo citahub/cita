@@ -36,6 +36,7 @@ use state::State;
 use state_db::StateDB;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
@@ -45,6 +46,14 @@ use util::{merklehash, Address, H256, HeapSizeOf, U256};
 
 /// Check the 256 transactions once
 const CHECK_NUM: usize = 0xff;
+
+lazy_static! {
+   static ref LOW_CONTRACT_ADDRESS: Address = Address::from_str("0000000000000000000000000000000002000000").unwrap();
+   static ref HIGH_CONTRACT_ADDRESS: Address = Address::from_str("0000000000000000000000000000000003000000").unwrap();
+}
+pub fn is_go_contract(caddr: Address) -> bool {
+    caddr > *LOW_CONTRACT_ADDRESS && caddr < *HIGH_CONTRACT_ADDRESS
+}
 
 /// Trait for a object that has a state database.
 pub trait Drain {
@@ -389,37 +398,39 @@ impl OpenBlock {
                 }
             }
             let mut go_contract = false;
+            let mut str_addr = "".to_string();
+            let mut ip = "".to_string();
+            let mut port = 0;
+
             // Judging the contract address
             let connect_info = match t.action {
                 Action::Call(ref address) => {
-                    let str_addr = address.hex();
-                    if let Some(value) = executor.service_map.get(str_addr.clone(), true) {
+                    if is_go_contract(*address) {
                         go_contract = true;
-                        let ip = value.conn_info.get_ip().to_string();
-                        let port = value.conn_info.get_port();
-                        (ip, port, str_addr)
-                    } else if let Some(value) = executor.db.read(db::COL_EXTRA, address) {
-                        go_contract = true;
-                        let ip = value.conn_info.get_ip().to_string();
-                        let port = value.conn_info.get_port();
-                        (ip, port, str_addr)
-                    } else {
-                        ("".to_string(), 0, "".to_string())
+                        str_addr = address.hex();
+                        if let Some(value) = executor.service_map.get(str_addr.clone(), true) {
+                            ip = value.conn_info.get_ip().to_string();
+                            port = value.conn_info.get_port();
+                        } else if let Some(value) = executor.db.read(db::COL_EXTRA, address) {
+                            ip = value.conn_info.get_ip().to_string();
+                            port = value.conn_info.get_port();
+                        }
                     }
+                    (ip, port, str_addr)
                 }
                 Action::GoCreate => {
                     let address = Address::from_slice(&t.data);
-                    let str_addr = address.hex();
-                    if let Some(ref value) = executor.service_map.get(str_addr.clone(), false) {
+                    if is_go_contract(address) {
                         go_contract = true;
-                        let ip = value.conn_info.get_ip().to_string();
-                        let port = value.conn_info.get_port();
-                        (ip, port, str_addr)
-                    } else {
-                        ("".to_string(), 0, "".to_string())
+                        str_addr = address.hex();
+                        if let Some(ref value) = executor.service_map.get(str_addr.clone(), false) {
+                            ip = value.conn_info.get_ip().to_string();
+                            port = value.conn_info.get_port();
+                        }
                     }
+                    (ip, port, str_addr)
                 }
-                _ => ("".to_string(), 0, "".to_string()),
+                _ => (ip, port, str_addr),
             };
 
             if go_contract {
