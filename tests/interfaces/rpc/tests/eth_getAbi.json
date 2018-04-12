@@ -1,0 +1,70 @@
+{
+  "title": "eth_getAbi",
+  "schema": {
+    "$ref": "../schemas/eth_getAbi.json"
+  },
+  "tests": [
+    {
+      "title": "eth_getAbi with params and success",
+      "request": {
+        "method": "eth_getAbi",
+        "params": [
+          "0xeffb1dab2e6ed61aa213eacaefbd1a9a41e047ea",
+          "latest"
+        ]
+      },
+      "expectedResponse": {
+        "result": "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000030f5b7b22636f6e7374616e74223a66616c73652c22696e70757473223a5b7b226e616d65223a2278222c2274797065223a2275696e74323536227d5d2c226e616d65223a22736574222c226f757470757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a2266756e6374696f6e227d2c7b22636f6e7374616e74223a747275652c22696e70757473223a5b5d2c226e616d65223a22676574222c226f757470757473223a5b7b226e616d65223a22222c2274797065223a2275696e74323536227d5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d2c7b22696e70757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a22636f6e7374727563746f72227d2c7b22616e6f6e796d6f7573223a66616c73652c22696e70757473223a5b7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2261646472657373227d2c7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2275696e74323536227d5d2c226e616d65223a22496e6974222c2274797065223a226576656e74227d2c7b22616e6f6e796d6f7573223a66616c73652c22696e70757473223a5b7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2261646472657373227d2c7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2275696e74323536227d5d2c226e616d65223a22536574222c2274797065223a226576656e74227d2c7b22616e6f6e796d6f7573223a66616c73652c22696e70757473223a5b7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2275696e74323536227d5d2c226e616d65223a2253746f726564222c2274797065223a226576656e74227d5d0000000000000000000000000000000000"
+      },
+      "asserts": [
+        {
+          "description": "eth_getAbi result should be equal",
+          "program": ".receivedResponse.result == .expectedResponse.result"
+        }
+      ]
+    },
+    {
+      "title": "eth_getAbi with wrong param `contract address`",
+      "request": {
+        "method": "eth_getAbi",
+        "params": [
+          "0xeffb1dab2e6ed61aa213eacaefbd1a9a41000000",
+          "latest"
+        ]
+      },
+      "expectedResponse": {
+        "result": "0x"
+      },
+      "asserts": [
+        {
+          "description": "eth_getAbi with nonexistent address should return empty result(0x)",
+          "program": ".receivedResponse.result == .expectedResponse.result"
+        }
+      ]
+    },
+    {
+      "title": "eth_getAbi with no parameters",
+      "request": {
+        "method": "eth_getAbi",
+        "params": [],
+        "shouldFailSchema": true
+      },
+      "expectedResponse": {
+        "error": {
+          "message": "missing value for required argument 0",
+          "code": -32602
+        }
+      },
+      "asserts": [
+        {
+          "description": "response should be an error",
+          "program": ".receivedResponse.error != null"
+        },
+        {
+          "description": "error code should be -32602",
+          "program": ".receivedResponse.error.code == .expectedResponse.error.code"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "title": "cita_getTransaction",
+  "schema": {
+    "$ref": "../schemas/cita_getTransaction.json"
+  },
+  "tests": [
+    {
+      "title": "cita_getTransaction by hash (create contract HelloWorld.sol)",
+      "request": {
+        "method": "cita_getTransaction",
+        "params": [
+          "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17"
+        ]
+      },
+      "expectedResponse": {
+        "result": {
+          "hash": "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17",
+          "content": "0x0abf0112013018a08d0620642ab30160606040523415600e57600080fd5b5b5b5b60948061001f6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603d575b600080fd5b3415604757600080fd5b605b6004808035906020019091905050605d565b005b806000819055505b505600a165627a7a72305820c471b4376626da2540b2374e8b4110501051c426ff46814a6170ce9e219e49a800291241e343da8c68990846042b1739afb5c003ad8de2cab68810a48b912d50a567567c08319160cdb0247ab8bca3b04706bc64877a8331ead63bc67196d00d15451cb500",
+          "blockNumber": "0x2",
+          "blockHash": "0x32afe0ee7c085f9b6e15273d0a5d78e84ca8b55b0612fea6730ced730d1d4994",
+          "index": "0x0"
+        }
+      },
+      "asserts": [
+        {
+          "description": "Transaction response hash",
+          "program": ".receivedResponse.result.hash == .expectedResponse.result.hash"
+        },
+        {
+          "description": "Transaction response content",
+          "program": ".receivedResponse.result.content == .expectedResponse.result.content"
+        }
+      ]
+    },
+    {
+      "title": "cita_getTransaction with no parameters",
+      "request": {
+        "method": "cita_getTransaction",
+        "params": [],
+        "shouldFailSchema": true
+      },
+      "expectedResponse": {
+        "error": {
+          "message": "missing value for required argument 0",
+          "code": -32602
+        }
+      },
+      "asserts": [
+        {
+          "description": "response should be an error",
+          "program": ".receivedResponse.error != null"
+        },
+        {
+          "description": "error code should be -32602",
+          "program": ".receivedResponse.error.code == .expectedResponse.error.code"
+        }
+      ]
+    }
+  ]
+}

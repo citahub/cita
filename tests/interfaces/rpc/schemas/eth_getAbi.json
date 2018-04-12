@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "eth_getCode",
-  "description": "eth_getCode JSON-RPC method request and response schema.",
+  "title": "eth_getAbi",
+  "description": "eth_getAbi JSON-RPC method request and response schema.",
   "request": {
     "id": "#request",
     "allOf": [
@@ -9,7 +9,7 @@
         "$ref": "jsonrpc-request.json"
       },
       {
-        "$ref": "eth_getCode.json#/request/definitions/request-obj"
+        "$ref": "eth_getAbi.json#/request/definitions/request-obj"
       }
     ],
     "definitions": {
@@ -19,7 +19,7 @@
           "method": {
             "type": "string",
             "enum": [
-              "eth_getCode"
+              "eth_getAbi"
             ]
           },
           "params": {
@@ -48,7 +48,7 @@
         "$ref": "jsonrpc-response.json"
       },
       {
-        "$ref": "eth_getCode.json#/response/definitions/response-obj"
+        "$ref": "eth_getAbi.json#/response/definitions/response-obj"
       }
     ],
     "definitions": {

@@ -156,6 +156,8 @@ fn main() {
         tx_sub,
         rx_pub,
     );
+    let amqp_url = std::env::var("AMQP_URL").expect("AMQP_URL empty");
+    info!("AMQP_URL={}", amqp_url);
     let sys_time = Arc::new(Mutex::new(time::SystemTime::now()));
 
     let privkey: PrivKey = {
@@ -167,7 +169,11 @@ fn main() {
         let block_number = block["number"].as_u64().unwrap();
         mock_blocks.insert(block_number, block);
     }
-    info!(">> numbers: {:?}", mock_blocks.keys());
+    {
+        let mut numbers = mock_blocks.keys().collect::<Vec<&u64>>();
+        numbers.sort();
+        info!(">> numbers: {:?}", numbers);
+    }
     for number in 1..(mock_blocks.len() as u64 + 1) {
         if !mock_blocks.contains_key(&number) {
             error!("Block missing, number={}", number);

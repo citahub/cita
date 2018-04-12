@@ -88,6 +88,9 @@ jobs:
       - run:
           name: byzantine
           command: './tests/integrate_test/cita_byzantinetest.sh'
+      - run:
+          name: jsonrpc-mock-tests
+          command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh'
 
 workflows:
   version: 2

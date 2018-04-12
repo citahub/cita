@@ -57,25 +57,33 @@
               "description": "QUANTITY - the total used gas by all transactions in this block."
             },
             "proof": {
-              "type": "object",
-              "properties": {
-                "proposal": {
-                  "type": "string",
-                  "description": "DATA, 32 Bytes - the hash of proposal."
+              "oneOf": [
+                {
+                  "type": "null",
+                  "description": "DATA - proof can be null. (only the genesis block)"
                 },
-                "height": {
-                  "type": "integer",
-                  "description": "QUANTITY - the block number of proposal."
-                },
-                "round": {
-                  "type": "integer",
-                  "description": "QUANTITY - the round number of proposal."
-                },
-                "commits": {
+                {
                   "type": "object",
-                  "description": "OBJECT - the keys are signers address, the values are the signatures."
+                  "properties": {
+                    "proposal": {
+                      "type": "string",
+                      "description": "DATA, 32 Bytes - the hash of proposal."
+                    },
+                    "height": {
+                      "type": "integer",
+                      "description": "QUANTITY - the block number of proposal."
+                    },
+                    "round": {
+                      "type": "integer",
+                      "description": "QUANTITY - the round number of proposal."
+                    },
+                    "commits": {
+                      "type": "object",
+                      "description": "OBJECT - the keys are signers address, the values are the signatures."
+                    }
+                  }
                 }
-              }
+              ]
             }
           }
         },
