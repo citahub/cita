@@ -85,8 +85,15 @@
                     "description": "QUANTITY - The amount of gas used by this specific transaction alone."
                   },
                   "contractAddress": {
-                    "type": "string",
-                    "description": "DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null."
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "logs": {
                     "type": "array",
@@ -171,7 +178,8 @@
                   "gasUsed",
                   "contractAddress",
                   "logs",
-                  "root"
+                  "root",
+                  "errorMessage"
                 ]
               }
             ]
