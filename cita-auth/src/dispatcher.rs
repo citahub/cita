@@ -129,43 +129,46 @@ impl Dispatcher {
             error_msg = Some(String::from("Dup"));
         }
 
+        if error_msg.is_none() {
+            let request_id = Uuid::new_v4().as_bytes().to_vec();
+            trace!("send auth.tx with request_id {:?}", request_id);
+            let mut request = Request::new();
+            request.set_un_tx(tx.get_transaction_with_sig().clone());
+            request.set_request_id(request_id);
+            self.batch_forward_info.new_tx_request_buffer.push(request);
+
+            let count_buffered = self.batch_forward_info.new_tx_request_buffer.len();
+            let time_elapsed = self.batch_forward_info
+                .forward_stamp
+                .elapsed()
+                .unwrap()
+                .subsec_nanos();
+
+            if count_buffered > self.batch_forward_info.count_per_batch
+                || time_elapsed > self.batch_forward_info.buffer_duration
+            {
+                trace!(
+                    "Going to send new tx batch to peer auth with {} new tx and buffer {} ns",
+                    count_buffered,
+                    time_elapsed
+                );
+
+                self.batch_forward_tx_to_peer(mq_pub);
+            }
+        }
+
+        // RPC response
         if RoutingKey::from(&key).is_sub_module(SubModules::Jsonrpc) {
             let mut response = Response::new();
             response.set_request_id(req_id);
-
             if error_msg.is_some() {
                 response.set_code(ErrorCode::tx_auth_error());
                 response.set_error_msg(error_msg.unwrap());
             } else {
                 let tx_state = serde_json::to_string(&tx_response).unwrap();
                 response.set_tx_state(tx_state);
-
-                let request_id = Uuid::new_v4().as_bytes().to_vec();
-                trace!("send auth.tx with request_id {:?}", request_id);
-                let mut request = Request::new();
-                request.set_un_tx(tx.get_transaction_with_sig().clone());
-                request.set_request_id(request_id);
-                self.batch_forward_info.new_tx_request_buffer.push(request);
-
-                let count_buffered = self.batch_forward_info.new_tx_request_buffer.len();
-                let time_elapsed = self.batch_forward_info
-                    .forward_stamp
-                    .elapsed()
-                    .unwrap()
-                    .subsec_nanos();
-
-                if count_buffered > self.batch_forward_info.count_per_batch
-                    || time_elapsed > self.batch_forward_info.buffer_duration
-                {
-                    trace!(
-                        "Going to send new tx batch to peer auth with {} new tx and buffer {} ns",
-                        count_buffered,
-                        time_elapsed
-                    );
-
-                    self.batch_forward_tx_to_peer(mq_pub);
-                }
             }
+
             self.response_jsonrpc_cnt += 1;
             trace!(
                 "response new tx {:?}, with response_jsonrpc_cnt = {}",
@@ -181,6 +184,7 @@ impl Dispatcher {
                 ))
                 .unwrap();
         }
+
         if 0 == self.add_to_pool_cnt {
             self.start_verify_time = SystemTime::now();
         }
