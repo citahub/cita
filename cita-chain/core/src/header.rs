@@ -70,6 +70,8 @@ pub struct Header {
     hash: HashWrap,
     /// The version of the header.
     version: u32,
+    /// the selected proposer address
+    proposer: Address,
 }
 
 impl PartialEq for Header {
@@ -96,6 +98,7 @@ impl Default for Header {
             proof: Proof::new(),
             hash: HashWrap(Cell::new(None)),
             version: 0,
+            proposer: Address::default(),
         }
     }
 }
@@ -115,6 +118,7 @@ impl From<BlockHeader> for Header {
             proof: bh.get_proof().clone(),
             version: 0,
             hash: HashWrap(Cell::new(None)),
+            proposer: Address::from(bh.get_proposer()),
         }
     }
 }
@@ -177,6 +181,10 @@ impl Header {
             Some(self.proof.get_field_type())
         }
     }
+    /// Get the selected proposer address of the header
+    pub fn proposer(&self) -> &Address {
+        &self.proposer
+    }
 
     /// Set the number field of the header.
     pub fn set_parent_hash(&mut self, a: H256) {
@@ -238,6 +246,11 @@ impl Header {
         self.proof = a;
         self.note_dirty();
     }
+    /// set the selected proposer address of the header
+    pub fn set_proposer(&mut self, a: Address) {
+        self.proposer = a;
+        self.note_dirty();
+    }
 
     /// Get the hash of this header (sha3 of the RLP).
     pub fn hash(&self) -> H256 {
@@ -260,7 +273,7 @@ impl Header {
     // TODO: make these functions traity
     /// Place this header into an RLP stream `s`.
     pub fn stream_rlp(&self, s: &mut RlpStream) {
-        s.begin_list(11);
+        s.begin_list(12);
         s.append(&self.parent_hash);
         s.append(&self.state_root);
         s.append(&self.transactions_root);
@@ -272,6 +285,7 @@ impl Header {
         s.append(&self.timestamp);
         s.append(&self.version);
         s.append(&self.proof);
+        s.append(&self.proposer);
     }
 
     /// Get the RLP of this header.
@@ -298,6 +312,7 @@ impl Header {
         bh.set_gas_used(u64::from(self.gas_used));
         bh.set_gas_limit(self.gas_limit.low_u64());
         bh.set_proof(self.proof.clone());
+        bh.set_proposer(self.proposer.to_vec());
         bh
     }
 }
@@ -316,6 +331,7 @@ impl Decodable for Header {
             timestamp: cmp::min(r.val_at::<U256>(8)?, u64::max_value().into()).as_u64(),
             version: r.val_at(9)?,
             proof: r.val_at(10)?,
+            proposer: r.val_at(11)?,
             hash: HashWrap(Cell::new(Some(r.as_raw().crypt_hash()))),
         };
 

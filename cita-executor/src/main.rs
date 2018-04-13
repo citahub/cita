@@ -7,7 +7,7 @@
 //!
 //! | Queue    | SubModule | Message Type   |
 //! | -------- | --------- | -------------- |
-//! | executor | Chain     | SyncResponse   |
+//! | executor | Chain     | LocalSync      |
 //! | executor | Chain     | Request        |
 //! | executor | Consensus | BlockWithProof |
 //! | executor | Consensus | SignedProposal |
@@ -101,17 +101,9 @@ fn main() {
         .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
         .get_matches();
 
-    let mut genesis_path = "genesis.json";
-    if let Some(ge) = matches.value_of("genesis") {
-        trace!("Value for genesis: {}", ge);
-        genesis_path = ge;
-    }
+    let genesis_path = matches.value_of("genesis").unwrap_or("genesis.json");
 
-    let mut config_path = "executor.toml";
-    if let Some(c) = matches.value_of("config") {
-        trace!("Value for config: {}", c);
-        config_path = c;
-    }
+    let config_path = matches.value_of("config").unwrap_or("executor.toml");
 
     let (tx, rx) = channel();
     let (write_sender, write_receiver) = channel();
@@ -119,7 +111,7 @@ fn main() {
     start_pubsub(
         "executor",
         routing_key!([
-            Chain >> SyncResponse,
+            Chain >> LocalSync,
             Net >> SyncResponse,
             Consensus >> BlockWithProof,
             Chain >> Request,

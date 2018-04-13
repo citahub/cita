@@ -547,7 +547,7 @@ impl Chain {
             ctx_pub
                 .clone()
                 .send((
-                    routing_key!(Chain >> SyncResponse).into(),
+                    routing_key!(Chain >> LocalSync).into(),
                     msg.try_into().unwrap(),
                 ))
                 .unwrap();
