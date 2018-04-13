@@ -49,7 +49,7 @@ BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
 export PATH=${PATH}:${BINARY_DIR}/bin
 
 # parse options
-while getopts 'a:l:n:m:d:t:h:w:H:W:Q:k' OPT; do
+while getopts 'a:l:n:m:d:t:h:w:g:H:W:G:Q:k' OPT; do
     case $OPT in
         a)
             ADMIN_ID="$OPTARG";;
@@ -73,6 +73,8 @@ while getopts 'a:l:n:m:d:t:h:w:H:W:Q:k' OPT; do
             HTTP_PORT="$OPTARG";;
         W)
             WS_PORT="$OPTARG";;
+        G)
+            GRPC_PORT="$OPTARG";;
         Q)
             NODE="$OPTARG";;
         ?)
@@ -151,7 +153,14 @@ executor(){
     if [ -d "${CONFIG_DIR}/resource" ]; then
         cp -rf resource ${CONFIG_DIR}/node${1}/
     fi
-    cp -f ${BINARY_DIR}/scripts/admintool/executor_config_example.toml      ${CONFIG_DIR}/node${1}/executor.toml
+
+    G_PORT=${GRPC_PORT:-5000}
+    if [ -n "$DEV_MOD" ]; then
+        ((G_PORT=${G_PORT}+${1}))
+    fi
+    python ${BINARY_DIR}/scripts/admintool/create_executor_config.py $G_PORT ${CONFIG_DIR}
+    mv ${CONFIG_DIR}/executor.toml ${CONFIG_DIR}/node${1}/
+
 }
 
 jsonrpc(){

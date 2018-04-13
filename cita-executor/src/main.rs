@@ -61,6 +61,7 @@ extern crate clap;
 extern crate core_executor as core;
 extern crate dotenv;
 extern crate error;
+extern crate grpc;
 extern crate jsonrpc_types;
 #[macro_use]
 extern crate libproto;
@@ -76,9 +77,11 @@ extern crate util;
 mod executor_instance;
 
 use clap::App;
+use core::libexecutor::{vm_grpc_server, ServiceMap};
 use executor_instance::ExecutorInstance;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
+use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
@@ -130,12 +133,32 @@ fn main() {
         crx_pub,
     );
 
-    let mut ext_instance = ExecutorInstance::new(ctx_pub.clone(), write_sender, config_path, genesis_path);
+    let service_map = Arc::new(ServiceMap::new());
+    let mut ext_instance = ExecutorInstance::new(
+        ctx_pub.clone(),
+        write_sender,
+        config_path,
+        genesis_path,
+        Arc::clone(&service_map),
+    );
     let distribute_ext = ext_instance.clone();
 
     thread::spawn(move || loop {
         if let Ok((key, msg)) = rx.recv() {
             distribute_ext.distribute_msg(&key, &msg);
+        }
+    });
+    let mut server: Option<::grpc::Server> = None;
+    let grpc_ext = ext_instance.clone();
+    thread::spawn(move || loop {
+        if server.is_none() {
+            server = vm_grpc_server(
+                grpc_ext.grpc_port,
+                Arc::clone(&service_map),
+                Arc::clone(&grpc_ext.ext),
+            );
+        } else {
+            thread::sleep(Duration::new(8, 0));
         }
     });
 

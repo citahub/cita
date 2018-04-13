@@ -17,6 +17,7 @@
 //! Transaction Execution environment.
 
 use action_params::{ActionParams, ActionValue};
+use contracts::Resource;
 use contracts::permission_management::contains_resource;
 use crossbeam;
 use engines::Engine;
@@ -31,6 +32,7 @@ use native::Factory as NativeFactory;
 use state::{State, Substate};
 use state::backend::Backend as StateBackend;
 use std::cmp;
+use std::collections::HashMap;
 use std::sync::Arc;
 use trace::{ExecutiveTracer, ExecutiveVMTracer, FlatTrace, NoopTracer, NoopVMTracer, Tracer, VMTrace, VMTracer};
 use types::transaction::{Action, SignedTransaction};
@@ -51,6 +53,199 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
     stream.append(address);
     stream.append(nonce);
     From::from(stream.out().crypt_hash())
+}
+
+/// Check the sender's permission
+pub fn check_permission(
+    group_accounts: &HashMap<Address, Vec<Address>>,
+    account_permissions: &HashMap<Address, Vec<Resource>>,
+    t: &SignedTransaction,
+) -> Result<(), ExecutionError> {
+    let sender = *t.sender();
+    check_send_tx(group_accounts, account_permissions, &sender)?;
+
+    match t.action {
+        Action::Create => {
+            check_create_contract(group_accounts, account_permissions, &sender)?;
+        }
+        Action::Call(address) => {
+            let group_management_addr = Address::from(0x13241c2);
+            trace!("t.data {:?}", t.data);
+
+            if t.data.len() < 4 {
+                return Err(From::from(ExecutionError::TransactionMalformed(
+                    "The length of transation data is less than four bytes".to_string(),
+                )));
+            }
+
+            if address == group_management_addr {
+                if t.data.len() < 36 {
+                    return Err(From::from(ExecutionError::TransactionMalformed(
+                        "Data should have at least one parameter".to_string(),
+                    )));
+                }
+                check_origin_group(
+                    account_permissions,
+                    &sender,
+                    &address,
+                    t.data[0..4].to_vec(),
+                    &H160::from(&t.data[16..36]),
+                )?;
+            }
+
+            check_call_contract(
+                group_accounts,
+                account_permissions,
+                &sender,
+                &address,
+                t.data[0..4].to_vec(),
+            )?;
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+
+/// Check permission: send transaction
+fn check_send_tx(
+    group_accounts: &HashMap<Address, Vec<Address>>,
+    account_permissions: &HashMap<Address, Vec<Resource>>,
+    account: &Address,
+) -> Result<(), ExecutionError> {
+    let cont = Address::from(0x1);
+    let func = vec![0; 4];
+    let has_permission = has_resource(group_accounts, account_permissions, account, &cont, func);
+
+    trace!("has send tx permission: {:?}", has_permission);
+
+    if *account != Address::zero() && !has_permission {
+        return Err(From::from(ExecutionError::NoTransactionPermission));
+    }
+
+    Ok(())
+}
+
+/// Check permission: create contract
+fn check_create_contract(
+    group_accounts: &HashMap<Address, Vec<Address>>,
+    account_permissions: &HashMap<Address, Vec<Resource>>,
+    account: &Address,
+) -> Result<(), ExecutionError> {
+    let cont = Address::from(0x2);
+    let func = vec![0; 4];
+    let has_permission = has_resource(group_accounts, account_permissions, account, &cont, func);
+
+    trace!("has create contract permission: {:?}", has_permission);
+
+    if *account != Address::zero() && !has_permission {
+        return Err(From::from(ExecutionError::NoContractPermission));
+    }
+
+    Ok(())
+}
+
+/// Check permission: call contract
+fn check_call_contract(
+    group_accounts: &HashMap<Address, Vec<Address>>,
+    account_permissions: &HashMap<Address, Vec<Resource>>,
+    account: &Address,
+    cont: &Address,
+    func: Vec<u8>,
+) -> Result<(), ExecutionError> {
+    let has_permission = has_resource(group_accounts, account_permissions, account, cont, func);
+
+    trace!("has call contract permission: {:?}", has_permission);
+
+    if !has_permission {
+        return Err(From::from(ExecutionError::NoCallPermission));
+    }
+
+    Ok(())
+}
+
+/// Check permission with parameter: origin group
+fn check_origin_group(
+    account_permissions: &HashMap<Address, Vec<Resource>>,
+    account: &Address,
+    cont: &Address,
+    func: Vec<u8>,
+    param: &Address,
+) -> Result<(), ExecutionError> {
+    let has_permission = !contains_resource(account_permissions, account, *cont, func.clone());
+
+    trace!("Sender has call contract permission: {:?}", has_permission);
+
+    if !has_permission && !contains_resource(account_permissions, param, *cont, func.clone()) {
+        return Err(From::from(ExecutionError::NoCallPermission));
+    }
+
+    Ok(())
+}
+
+/// Check the account has resource
+/// 1. Check the account has resource
+/// 2. Check all account's groups has resource
+fn has_resource(
+    group_accounts: &HashMap<Address, Vec<Address>>,
+    account_permissions: &HashMap<Address, Vec<Resource>>,
+    account: &Address,
+    cont: &Address,
+    func: Vec<u8>,
+) -> bool {
+    let groups = get_groups(group_accounts, account);
+
+    if !contains_resource(account_permissions, account, *cont, func.clone()) {
+        for group in groups {
+            if contains_resource(account_permissions, &group, *cont, func.clone()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    true
+}
+
+/// Get all sender's groups
+fn get_groups(group_accounts: &HashMap<Address, Vec<Address>>, account: &Address) -> Vec<Address> {
+    let mut groups: Vec<Address> = vec![];
+
+    for (group, accounts) in group_accounts {
+        if accounts.contains(account) {
+            groups.push(*group);
+        }
+    }
+
+    groups
+}
+
+/// Check the quota while processing the transaction
+pub fn check_quota(
+    gas_used: U256,
+    gas_limit: U256,
+    account_gas_limit: U256,
+    t: &SignedTransaction,
+) -> Result<(), ExecutionError> {
+    let sender = *t.sender();
+
+    // validate if transaction fits into given block
+    if sender != Address::zero() && gas_used + t.gas > gas_limit {
+        return Err(From::from(ExecutionError::BlockGasLimitReached {
+            gas_limit: gas_limit,
+            gas_used: gas_used,
+            gas: t.gas,
+        }));
+    }
+    if sender != Address::zero() && t.gas > account_gas_limit {
+        return Err(From::from(ExecutionError::AccountGasLimitReached {
+            gas_limit: account_gas_limit,
+            gas: t.gas,
+        }));
+    }
+
+    Ok(())
 }
 
 /// Transaction execution options.
@@ -164,7 +359,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
     }
 
-    /// Execute transaction/call with tracing enabled
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
         t: &SignedTransaction,
@@ -184,7 +378,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         trace!("permission should be check: {}", options.check_permission);
         if options.check_permission {
-            self.check_permission(t)?;
+            check_permission(
+                &self.state.group_accounts,
+                &self.state.account_permissions,
+                t,
+            )?;
         }
 
         let base_gas_required = U256::from(100); // `CREATE` transaction cost
@@ -198,7 +396,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         trace!("quota should be checked: {}", options.check_quota);
         if options.check_quota {
-            self.check_quota(t)?;
+            check_quota(
+                self.info.gas_used,
+                self.info.gas_limit,
+                self.info.account_gas_limit,
+                t,
+            )?;
         }
 
         if t.action == Action::AbiStore {
@@ -226,7 +429,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // TODO: we might need sub_balance in future. The relationship between BALANCE & GAS needs discussing.
 
         let (result, output) = match t.action {
-            Action::Store | Action::AbiStore => (
+            Action::Store | Action::AbiStore | Action::GoCreate => (
                 Ok(FinalizationResult {
                     gas_left: t.gas,
                     return_data: ReturnData::empty(),
@@ -293,173 +496,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             tracer.traces(),
             vm_tracer.drain(),
         )?)
-    }
-
-    /// Check the sender's permission
-    fn check_permission(&self, t: &SignedTransaction) -> Result<(), ExecutionError> {
-        let sender = *t.sender();
-        self.check_send_tx(&sender)?;
-
-        match t.action {
-            Action::Create => {
-                self.check_create_contract(&sender)?;
-            }
-            Action::Call(address) => {
-                let group_management_addr = Address::from(0x13241c2);
-                trace!("t.data {:?}", t.data);
-
-                if t.data.len() < 4 {
-                    return Err(From::from(ExecutionError::TransactionMalformed(
-                        "The length of transation data is less than four bytes".to_string(),
-                    )));
-                }
-
-                if address == group_management_addr {
-                    if t.data.len() < 36 {
-                        return Err(From::from(ExecutionError::TransactionMalformed(
-                            "Data should have at least one parameter".to_string(),
-                        )));
-                    }
-                    self.check_origin_group(
-                        &sender,
-                        &address,
-                        t.data[0..4].to_vec(),
-                        &H160::from(&t.data[16..36]),
-                    )?;
-                }
-
-                self.check_call_contract(&sender, &address, t.data[0..4].to_vec())?;
-            }
-            _ => {}
-        }
-
-        Ok(())
-    }
-
-    /// Check permission: send transaction
-    fn check_send_tx(&self, account: &Address) -> Result<(), ExecutionError> {
-        let cont = Address::from(0x1);
-        let func = vec![0; 4];
-        let has_permission = self.has_resource(account, &cont, func);
-
-        trace!("has send tx permission: {:?}", has_permission);
-
-        if *account != Address::zero() && !has_permission {
-            return Err(From::from(ExecutionError::NoTransactionPermission));
-        }
-
-        Ok(())
-    }
-
-    /// Check permission: create contract
-    fn check_create_contract(&self, account: &Address) -> Result<(), ExecutionError> {
-        let cont = Address::from(0x2);
-        let func = vec![0; 4];
-        let has_permission = self.has_resource(account, &cont, func);
-
-        trace!("has create contract permission: {:?}", has_permission);
-
-        if *account != Address::zero() && !has_permission {
-            return Err(From::from(ExecutionError::NoContractPermission));
-        }
-
-        Ok(())
-    }
-
-    /// Check permission: call contract
-    fn check_call_contract(&self, account: &Address, cont: &Address, func: Vec<u8>) -> Result<(), ExecutionError> {
-        let has_permission = self.has_resource(account, cont, func);
-
-        trace!("has call contract permission: {:?}", has_permission);
-
-        if !has_permission {
-            return Err(From::from(ExecutionError::NoCallPermission));
-        }
-
-        Ok(())
-    }
-
-    /// Check permission with parameter: origin group
-    fn check_origin_group(
-        &self,
-        account: &Address,
-        cont: &Address,
-        func: Vec<u8>,
-        param: &Address,
-    ) -> Result<(), ExecutionError> {
-        let has_permission = !contains_resource(
-            &self.state.account_permissions,
-            account,
-            *cont,
-            func.clone(),
-        );
-
-        trace!("Sender has call contract permission: {:?}", has_permission);
-
-        if !has_permission && !contains_resource(&self.state.account_permissions, param, *cont, func.clone()) {
-            return Err(From::from(ExecutionError::NoCallPermission));
-        }
-
-        Ok(())
-    }
-
-    /// Check the account has resource
-    /// 1. Check the account has resource
-    /// 2. Check all account's groups has resource
-    fn has_resource(&self, account: &Address, cont: &Address, func: Vec<u8>) -> bool {
-        let groups = self.get_groups(account);
-
-        if !contains_resource(
-            &self.state.account_permissions,
-            account,
-            *cont,
-            func.clone(),
-        ) {
-            for group in groups {
-                if contains_resource(&self.state.account_permissions, &group, *cont, func.clone()) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        true
-    }
-
-    /// Get all sender's groups
-    fn get_groups(&self, account: &Address) -> Vec<Address> {
-        let mut groups: Vec<Address> = vec![];
-
-        for (group, accounts) in &self.state.group_accounts {
-            if accounts.contains(account) {
-                groups.push(*group);
-            }
-        }
-
-        groups
-    }
-
-    /// Check the quota while processing the transaction
-    fn check_quota(&self, t: &SignedTransaction) -> Result<(), ExecutionError> {
-        let sender = *t.sender();
-
-        // validate if transaction fits into given block
-        if sender != Address::zero() && self.info.gas_used + t.gas > self.info.gas_limit {
-            return Err(From::from(ExecutionError::BlockGasLimitReached {
-                gas_limit: self.info.gas_limit,
-                gas_used: self.info.gas_used,
-                gas: t.gas,
-            }));
-        }
-        if sender != Address::zero() && t.gas > self.info.account_gas_limit {
-            return Err(From::from(ExecutionError::AccountGasLimitReached {
-                gas_limit: self.info.account_gas_limit,
-                gas: t.gas,
-            }));
-        }
-
-        Ok(())
     }
 
     fn exec_vm<T, V>(

@@ -1,5 +1,6 @@
 use core::db;
 use core::libexecutor::Genesis;
+use core::libexecutor::ServiceMap;
 use core::libexecutor::block::{Block, ClosedBlock};
 use core::libexecutor::call_request::CallRequest;
 use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
@@ -34,9 +35,9 @@ use std::path::Path;
 #[derive(Clone)]
 pub struct ExecutorInstance {
     ctx_pub: Sender<(String, Vec<u8>)>,
-    //tx: Sender<Vec<u8>>,
     write_sender: Sender<u64>,
     pub ext: Arc<Executor>,
+    pub grpc_port: u16,
     closed_block: RefCell<Option<ClosedBlock>>,
 }
 
@@ -46,6 +47,7 @@ impl ExecutorInstance {
         write_sender: Sender<u64>,
         config_path: &str,
         genesis_path: &str,
+        service_map: Arc<ServiceMap>,
     ) -> Self {
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let nosql_path = DataPath::root_node_path() + "/statedb";
@@ -54,18 +56,17 @@ impl ExecutorInstance {
         let mut genesis = Genesis::init(genesis_path);
 
         let executor_config = Config::new(config_path);
-
-        let executor = Arc::new(Executor::init_executor(
-            Arc::new(db),
-            genesis,
-            executor_config,
-        ));
+        let grpc_port = executor_config.grpc_port;
+        let mut executor = Executor::init_executor(Arc::new(db), genesis, executor_config);
+        executor.set_service_map(service_map);
+        let executor = Arc::new(executor);
         executor.set_gas_and_nodes();
         executor.send_executed_info_to_chain(&ctx_pub);
         ExecutorInstance {
             ctx_pub: ctx_pub,
             write_sender: write_sender,
             ext: executor,
+            grpc_port: grpc_port,
             closed_block: RefCell::new(None),
         }
     }
