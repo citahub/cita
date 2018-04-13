@@ -105,13 +105,7 @@ fn main() {
         .arg_from_usage("-c, --config=[FILE] 'Sets a chain config file'")
         .get_matches();
 
-    let config_path = match matches.value_of("config") {
-        Some(c) => {
-            trace!("Value for config: {}", c);
-            c
-        }
-        None => "chain.toml",
-    };
+    let config_path = matches.value_of("config").unwrap_or("chain.toml");
 
     let (tx, rx) = channel();
     let (ctx_pub, crx_pub) = channel();

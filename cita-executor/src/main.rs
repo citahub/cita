@@ -101,19 +101,9 @@ fn main() {
         .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
         .get_matches();
 
-    let mut genesis_path = "genesis.json";
-    if let Some(ge) = matches.value_of("genesis") {
-        trace!("Value for genesis: {}", ge);
-        genesis_path = ge;
-    }
+    let genesis_path = matches.value_of("genesis").unwrap_or("genesis.json");
 
-    let config_path = match matches.value_of("config") {
-        Some(c) => {
-            trace!("Value for config: {}", c);
-            c
-        }
-        None => "executor.toml",
-    };
+    let config_path = matches.value_of("config").unwrap_or("executor.toml");
 
     let (tx, rx) = channel();
     let (write_sender, write_receiver) = channel();

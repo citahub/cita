@@ -132,11 +132,7 @@ fn main() {
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
         .get_matches();
 
-    let mut config_path = "config";
-    if let Some(c) = matches.value_of("config") {
-        info!("Value for config: {}", c);
-        config_path = c;
-    }
+    let config_path = matches.value_of("config").unwrap_or("config");
 
     let config = NetConfig::new(config_path);
 

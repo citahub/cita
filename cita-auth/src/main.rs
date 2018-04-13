@@ -141,13 +141,7 @@ fn main() {
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
         .get_matches();
-    let config_path = match matches.value_of("config") {
-        Some(c) => {
-            info!("Value for config: {}", c);
-            c
-        }
-        None => "config",
-    };
+    let config_path = matches.value_of("config").unwrap_or("config");
 
     let config = Config::new(config_path);
 
