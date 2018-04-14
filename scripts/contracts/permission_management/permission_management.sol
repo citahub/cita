@@ -14,7 +14,7 @@ contract PermissionManagement {
     address authorizationAddr = 0x00000000000000000000000000000000013241b4;
     Authorization auth = Authorization(authorizationAddr);
 
-    address[12] builtInPermissions = [
+    address[15] builtInPermissions = [
         0x00000000000000000000000000000000013241b5,
         0x00000000000000000000000000000000023241b5,
         0x00000000000000000000000000000000033241B5,
@@ -25,6 +25,9 @@ contract PermissionManagement {
         0x00000000000000000000000000000000083241B5,
         0x00000000000000000000000000000000093241B5,
         0x000000000000000000000000000000000A3241b5,
+        0x000000000000000000000000000000000b3241b5,
+        0x000000000000000000000000000000000C3241B5,
+        0x000000000000000000000000000000000D3241b5,
         0x0000000000000000000000000000000000000001,
         0x0000000000000000000000000000000000000002
     ];
@@ -39,13 +42,13 @@ contract PermissionManagement {
 
     modifier notBuiltInPermission(address _permission) {
         for (uint i = 0; i<builtInPermissions.length; i++)
-            require(_permission != builtInPermissions[i]); 
+            require(_permission != builtInPermissions[i]);
         _;
     }
 
     /// @dev Create a new permission
     function newPermission(bytes32 _name, address[] _conts, bytes4[] _funcs)
-        external 
+        external
         sameLength(_conts, _funcs)
         returns (address id)
     {
@@ -54,7 +57,7 @@ contract PermissionManagement {
 
     /// @dev Delete the permission
     function deletePermission(address _permission)
-        external 
+        external
         notBuiltInPermission(_permission)
         returns (bool)
     {
@@ -68,7 +71,7 @@ contract PermissionManagement {
 
     /// @dev Update the permission name
     function updatePermissionName(address _permission, bytes32 _name)
-        external 
+        external
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -78,7 +81,7 @@ contract PermissionManagement {
 
     /// @dev Add the resources of permission
     function addResources(address _permission, address[] _conts, bytes4[] _funcs)
-        external 
+        external
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -88,7 +91,7 @@ contract PermissionManagement {
 
     /// @dev Delete the resources of permission
     function deleteResources(address _permission, address[] _conts, bytes4[] _funcs)
-        external 
+        external
         returns (bool)
     {
         Permission perm = Permission(_permission);

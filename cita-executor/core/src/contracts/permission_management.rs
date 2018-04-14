@@ -246,6 +246,7 @@ mod tests {
             all_accounts,
             vec![
                 Address::from_str("9dcd6b234e2772c5451fd4ccf7582f4283140697").unwrap(),
+                Address::from(0x13241b6),
             ]
         );
     }
@@ -268,6 +269,9 @@ mod tests {
                 Address::from(0x83241b5),
                 Address::from(0x93241b5),
                 Address::from(0xa3241b5),
+                Address::from(0xb3241b5),
+                Address::from(0xc3241b5),
+                Address::from(0xd3241b5),
                 Address::from(0x1),
                 Address::from(0x2),
             ]
@@ -389,6 +393,29 @@ mod tests {
                 Resource {
                     cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
                     func: vec![0xc6, 0x31, 0xe7, 0x58],
+                },
+                // newGroup
+                Resource {
+                    cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                    func: vec![0xd7, 0xcd, 0x72, 0x09],
+                },
+                // deleteGroup
+                Resource {
+                    cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                    func: vec![0xba, 0xeb, 0x8c, 0xad],
+                },
+                // updateGroup
+                Resource {
+                    cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                    func: vec![0x2c, 0x84, 0xe3, 0x1f],
+                },
+                Resource {
+                    cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                    func: vec![0xd8, 0x6d, 0xf3, 0x33],
+                },
+                Resource {
+                    cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                    func: vec![0x7e, 0xaf, 0xcd, 0xb1],
                 },
                 // senTx
                 Resource {

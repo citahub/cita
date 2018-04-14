@@ -24,14 +24,14 @@ const tx_params = {
 };
 
 // newPermission
-const newGroup = function (parent, addrs, accounts, _sender = sender) {
+const newGroup = function (origin, name, accounts, _sender = sender) {
     tx_params.nonce = util.randomInt();
     tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
     tx_params.privkey = _sender.privkey;
     tx_params.from = _sender.address;
     return gManagementContractIns.newGroup.sendTransaction(
-            parent,
-            addrs,
+            origin,
+            name,
             accounts,
             tx_params
         );

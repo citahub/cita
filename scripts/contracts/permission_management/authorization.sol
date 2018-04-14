@@ -19,8 +19,13 @@ contract Authorization {
     address updateRoleAddr = 0x00000000000000000000000000000000083241B5;
     address setRoleAddr = 0x00000000000000000000000000000000093241B5;
     address cancelRoleAddr = 0x000000000000000000000000000000000A3241b5;
+    address newGroupAddr = 0x000000000000000000000000000000000b3241b5;
+    address deleteGroupAddr = 0x000000000000000000000000000000000C3241B5;
+    address updateGroupAddr = 0x000000000000000000000000000000000D3241b5;
     address sendTxAddr = 0x0000000000000000000000000000000000000001;
     address createContractAddr = 0x0000000000000000000000000000000000000002;
+
+    address rootGroup = 0x00000000000000000000000000000000013241b6;
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
@@ -38,6 +43,8 @@ contract Authorization {
 
     /// @dev Initialize the superAdmin's auth
     function Authorization(address _superAdmin) public {
+        _setAuth(_superAdmin, sendTxAddr);
+        _setAuth(_superAdmin, createContractAddr);
         _setAuth(_superAdmin, newPermissionAddr);
         _setAuth(_superAdmin, deletePermissionAddr);
         _setAuth(_superAdmin, updatePermissionAddr);
@@ -48,8 +55,12 @@ contract Authorization {
         _setAuth(_superAdmin, updateRoleAddr);
         _setAuth(_superAdmin, setRoleAddr);
         _setAuth(_superAdmin, cancelRoleAddr);
-        _setAuth(_superAdmin, sendTxAddr);
-        _setAuth(_superAdmin, createContractAddr);
+        _setAuth(_superAdmin, newGroupAddr);
+        _setAuth(_superAdmin, deleteGroupAddr);
+        _setAuth(_superAdmin, updateGroupAddr);
+        // rootGroup: basic permissions
+        _setAuth(rootGroup, sendTxAddr);
+        _setAuth(rootGroup, createContractAddr);
     }
 
     /// @dev Set authorization
@@ -129,7 +140,7 @@ contract Authorization {
         view
         returns (address[])
     {
-        return all_accounts; 
+        return all_accounts;
     }
 
     /// @dev Check Permission

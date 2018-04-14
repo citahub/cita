@@ -172,7 +172,7 @@ fn check_origin_group(
     func: Vec<u8>,
     param: &Address,
 ) -> Result<(), ExecutionError> {
-    let has_permission = !contains_resource(account_permissions, account, *cont, func.clone());
+    let has_permission = contains_resource(account_permissions, account, *cont, func.clone());
 
     trace!("Sender has call contract permission: {:?}", has_permission);
 

@@ -10,8 +10,7 @@ module.exports = {
             superAdmin: {
                 address: '0x9dcd6b234e2772c5451fd4ccf7582f4283140697',
                 privkey: '993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9'
-            },
-            resources: ['0xf036ed56', '0x3482e0c9', '0xf036ed56', '0x6446ebd8', '0x537bf9a3', '0x0f5aa9f3', '0x3482e0c9', '0xa5925b5b'] 
+            }
         },
         permission_management: {
             pManagementABI: [{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_permission","type":"address"}],"name":"setAuthorization","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_permission","type":"address"}],"name":"cancelAuthorization","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_permissions","type":"address[]"}],"name":"setAuthorizations","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_permission","type":"address"},{"name":"_name","type":"bytes32"}],"name":"updatePermissionName","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_permission","type":"address"},{"name":"_conts","type":"address[]"},{"name":"_funcs","type":"bytes4[]"}],"name":"deleteResources","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_permission","type":"address"}],"name":"deletePermission","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"}],"name":"clearAuthorization","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_account","type":"address"},{"name":"_permissions","type":"address[]"}],"name":"cancelAuthorizations","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_permission","type":"address"},{"name":"_conts","type":"address[]"},{"name":"_funcs","type":"bytes4[]"}],"name":"addResources","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_conts","type":"address[]"},{"name":"_funcs","type":"bytes4[]"}],"name":"newPermission","outputs":[{"name":"id","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"_permission","type":"address"}],"name":"PermissionDeleted","type":"event"}],
@@ -64,6 +63,8 @@ module.exports = {
         privkey: '5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6'
     },
     permissions: [
+        '0x0000000000000000000000000000000000000001',
+        '0x0000000000000000000000000000000000000002',
         '0x00000000000000000000000000000000013241b5',
         '0x00000000000000000000000000000000023241b5',
         '0x00000000000000000000000000000000033241b5',
@@ -74,7 +75,15 @@ module.exports = {
         '0x00000000000000000000000000000000083241b5',
         '0x00000000000000000000000000000000093241b5',
         '0x000000000000000000000000000000000a3241b5',
-        '0x0000000000000000000000000000000000000001',
-        '0x0000000000000000000000000000000000000002'
-    ]
+        '0x000000000000000000000000000000000b3241b5',
+        '0x000000000000000000000000000000000c3241b5',
+        '0x000000000000000000000000000000000d3241b5'
+    ],
+    resources: [
+        ["0x0000000000000000000000000000000000000001", '0x00000000'],
+        ["0x0000000000000000000000000000000000000002", '0x00000000'],
+        ["0x00000000000000000000000000000000013241b2", '0xfc4a089c', '0x98a05bb1', '0xf036ed56', '0x6446ebd8', '0x537bf9a3', '0x0f5aa9f3', '0x52c5b4cc', '0x3482e0c9', '0xa5925b5b', '0xba00ab60'],
+        ["0xe3b5ddb80addb513b5c981e27bb030a86a8821ee", '0x551ef860', '0x54b025c5', '0x0773e6ba', '0x17b2e350', '0xd9c090a0', '0xa32710eb', '0xa8319481', '0xc631e758'],
+        ["0x00000000000000000000000000000000013241c2", '0xd7cd7209', '0xbaeb8cad', '0x2c84e31f', '0xd86df333', '0x7eafcdb1']
+    ] 
 };
