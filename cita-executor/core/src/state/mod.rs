@@ -2234,7 +2234,7 @@ mod tests {
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
                 state.root().hex(),
-                "1d20d29c3bef1ce4b24e171b3d94371176ccf6a5a624e184bc48f3c3be98e083"
+                "7221afbf2f39fc39464a4acf9b8debc35bc657ad4454110e0a569d2b35047f3b"
             );
         }
     }
