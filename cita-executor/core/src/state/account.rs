@@ -976,11 +976,9 @@ mod tests {
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
                 a.rlp().to_hex(),
-                "f86480a0c14af59107ef14003e4697a40ea912\
-                 d865eb1463086a4649977c13ea69b0d9afa0d67\
-                 f729f8d19ed2e92f817cf5c31c7812dd39ed35b\
-                 0b1aae41c7665f46c36b9fa0d67f729f8d19ed2\
-                 e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
+                "f8658080a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67f\
+                 729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9fa0d67f729f8d19ed2e92\
+                 f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
             );
         }
         assert_eq!(a.nonce(), &U256::from(0u8));
@@ -1008,10 +1006,9 @@ mod tests {
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
                 a.rlp().to_hex(),
-                "f86480a0c14af59107ef14003e4697a40ea912d865eb146\
-                 3086a4649977c13ea69b0d9afa0d67f729f8d19ed2e92f81\
-                 7cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9fa0d67\
-                 f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
+                "f8658080a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67\
+                 f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9fa0d67f729f8d19ed2e\
+                 92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
             );
         }
     }
