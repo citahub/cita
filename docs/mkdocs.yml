@@ -24,6 +24,7 @@ pages:
   - 系统管理:
       - 节点管理: 'system_management/node.md'
       - 权限管理: 'system_management/permission.md'
+      - 用户管理: 'system_management/user.md'
       - 配额管理: 'system_management/quota.md'
       - 日志管理: 'system_management/log.md'
       - 快照: 'system_management/snapshot.md'
