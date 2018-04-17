@@ -17,12 +17,11 @@
 
 //! Constant Config
 
+use super::{encode_contract_name, to_bool, to_low_u64};
 use super::ContractCallExt;
-use super::encode_contract_name;
-use ethabi::{decode, ParamType};
 use libexecutor::executor::Executor;
 use std::str::FromStr;
-use util::*;
+use util::H160;
 
 const VALID_NUMBER: &'static [u8] = &*b"getNumber()";
 const PERMISSION_CHECK: &'static [u8] = &*b"getPermissionCheck()";
@@ -43,13 +42,7 @@ impl ConstantConfig {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*VALID_NUMBER_ENCODED.as_slice());
         trace!("delay block number output: {:?}", output);
 
-        let mut decoded = decode(&[ParamType::Uint(256)], &output).expect("decode delay number");
-        let delay_number = decoded.remove(0);
-        let delay_number = delay_number.to_uint();
-
-        let h256 = H256::from(delay_number.expect("decode delay number"));
-        debug!("delay block number: {:?}", h256.low_u64());
-        h256.low_u64()
+        to_low_u64(&output)
     }
 
     /// Whether check permission or not
@@ -57,13 +50,7 @@ impl ConstantConfig {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*PERMISSION_CHECK_ENCODED.as_slice());
         trace!("check permission output: {:?}", output);
 
-        let mut decoded = decode(&[ParamType::Bool], &output).expect("decode check permission");
-        let check_permission = decoded.remove(0);
-        let check_permission = check_permission.to_bool();
-
-        let check = check_permission.expect("decode check permission");
-        debug!("check permission: {:?}", check);
-        check
+        to_bool(&output)
     }
 
     /// Whether check quota or not
@@ -71,13 +58,7 @@ impl ConstantConfig {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*QUOTA_CHECK_ENCODED.as_slice());
         trace!("check quota output: {:?}", output);
 
-        let mut decoded = decode(&[ParamType::Bool], &output).expect("decode check quota");
-        let check_quota = decoded.remove(0);
-        let check_quota = check_quota.to_bool();
-
-        let check = check_quota.expect("decode check quota");
-        debug!("check quota: {:?}", check);
-        check
+        to_bool(&output)
     }
 }
 
@@ -86,7 +67,7 @@ mod tests {
     extern crate logger;
     extern crate mktemp;
 
-    use super::*;
+    use super::ConstantConfig;
     use tests::helpers::init_executor;
 
     #[test]

@@ -17,12 +17,12 @@
 
 //! Node manager.
 
-use super::{encode_contract_name, parse_output_to_addresses};
+use super::{encode_contract_name, to_address_vec};
 use super::ContractCallExt;
 use libexecutor::executor::Executor;
 use rustc_hex::ToHex;
 use std::str::FromStr;
-use util::*;
+use util::{Address, H160};
 
 const LIST_NODE: &'static [u8] = &*b"listNode()";
 
@@ -38,7 +38,7 @@ impl NodeManager {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
         trace!("nodemanager output: {:?}", ToHex::to_hex(output.as_slice()));
 
-        let nodes: Vec<Address> = parse_output_to_addresses(&output);
+        let nodes: Vec<Address> = to_address_vec(&output);
         trace!("nodemanager nodes: {:?}", nodes);
         nodes
     }
@@ -49,16 +49,15 @@ mod tests {
     extern crate logger;
     extern crate mktemp;
 
-    use super::*;
+    use super::NodeManager;
+    use std::str::FromStr;
     use tests::helpers::init_executor;
-    use util::Address;
+    use util::H160;
 
     #[test]
     fn test_node_manager_contract() {
         let executor = init_executor();
-        let contract_address = Address::from(0x13241a2);
-        let output = executor.call_contract_method(&contract_address, &*LIST_NODE_ENCODED.as_slice());
-        let nodes: Vec<Address> = parse_output_to_addresses(&output);
+        let nodes = NodeManager::read(&executor);
 
         assert_eq!(
             nodes,

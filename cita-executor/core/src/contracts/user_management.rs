@@ -15,11 +15,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //! User management.
-//! TODO Refactor: to_address_vec to mod
 
+use super::{encode_contract_name, to_address_vec};
 use super::ContractCallExt;
-use super::encode_contract_name;
-use ethabi::{decode, ParamType, Token};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use util::{Address, H160};
@@ -54,7 +52,7 @@ impl UserManagement {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice());
         trace!("All groups output: {:?}", output);
 
-        UserManagement::to_address_vec(&output)
+        to_address_vec(&output)
     }
 
     /// Accounts array
@@ -62,22 +60,7 @@ impl UserManagement {
         let output = executor.call_contract_method(address, &ACCOUNTS_HASH.as_slice());
         debug!("Accounts output: {:?}", output);
 
-        UserManagement::to_address_vec(&output)
-    }
-
-    fn to_address_vec(output: &[u8]) -> Vec<Address> {
-        match decode(&[ParamType::Array(Box::new(ParamType::Address))], &output) {
-            Ok(mut decoded) => {
-                let addresses: Vec<Token> = decoded.remove(0).to_array().unwrap();
-                let addresses: Vec<Address> = addresses
-                    .into_iter()
-                    .map(|de| Address::from(de.to_address().expect("decode address")))
-                    .collect();
-                debug!("Decoded addresses: {:?}", addresses);
-                addresses
-            }
-            Err(_) => Vec::new(),
-        }
+        to_address_vec(&output)
     }
 }
 

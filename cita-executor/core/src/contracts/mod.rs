@@ -29,30 +29,12 @@ pub use self::permission_management::{PermissionManagement, Resource};
 pub use self::quota_manager::{AccountGasLimit, QuotaManager};
 pub use self::user_management::UserManagement;
 
+use ethabi::{decode, ParamType, Token};
 use libexecutor::call_request::CallRequest;
 use libexecutor::executor::Executor;
 use sha3::sha3_256;
 use types::ids::BlockId;
-use util::{Address, H160, U256};
-
-/// Parse solidity return data `address[]` to rust `Vec<Address>`
-pub fn parse_output_to_addresses(data: &Vec<u8>) -> Vec<Address> {
-    let mut nodes = Vec::new();
-    trace!("data.len is {:?}", data.len());
-    if data.len() > 0 {
-        let num = U256::from(&data[32..64]).as_u64() as usize;
-        trace!("length of node list is {:?}", num);
-        let bytes_per_keys = 32;
-        for i in 0..num {
-            let start = 64 + i * bytes_per_keys;
-            let end = start + bytes_per_keys;
-            let key = H160::from(&data[(start + 12)..end]);
-            trace!("identity {:?}", key);
-            nodes.push(key);
-        }
-    }
-    nodes
-}
+use util::{Address, H256};
 
 // Should move to project top-level for code reuse.
 trait ContractCallExt {
@@ -81,4 +63,90 @@ pub fn encode_contract_name(method_name: &[u8]) -> Vec<u8> {
         sha3_256(outptr, 32, method_name.as_ptr(), method_name.len());
     }
     out[0..4].to_vec()
+}
+
+/// Parse solidity return data `address[]` to rust `Vec<Address>`
+pub fn to_address_vec(output: &[u8]) -> Vec<Address> {
+    match decode(&[ParamType::Array(Box::new(ParamType::Address))], &output) {
+        Ok(mut decoded) => {
+            let addresses: Vec<Token> = decoded.remove(0).to_array().unwrap();
+            let addresses: Vec<Address> = addresses
+                .into_iter()
+                .map(|de| Address::from(de.to_address().expect("decode address")))
+                .collect();
+            debug!("Decoded addresses: {:?}", addresses);
+            addresses
+        }
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Parse solidity return data `uint256[]` to rust `Vec<u64>`
+pub fn to_low_u64_vec(output: &[u8]) -> Vec<u64> {
+    let mut decoded = decode(&[ParamType::Array(Box::new(ParamType::Uint(256)))], &output).unwrap();
+    let results = decoded.remove(0).to_array().unwrap();
+    let results = results
+        .into_iter()
+        .map(|result| {
+            let result = result.to_uint();
+            let h256 = H256::from(result.expect("decode u256"));
+            h256.low_u64()
+        })
+        .collect();
+    debug!("decoded u64: {:?}", results);
+    results
+}
+
+/// Parse solidity return data `uint256` to rust `u64`
+pub fn to_low_u64(output: &[u8]) -> u64 {
+    let mut decoded = decode(&[ParamType::Uint(256)], &output).expect("decode quota");
+    let result = decoded.remove(0).to_uint();
+
+    let h256 = H256::from(result.expect("decode u256"));
+    debug!("decoded u64: {:?}", h256.low_u64());
+    h256.low_u64()
+}
+
+/// Parse solidity return data `Address[], bytes4[]` to rust `Vec<Resource>`
+fn to_resource_vec(output: &[u8]) -> Vec<Resource> {
+    // Decode the address[] and bytes4[]
+    match decode(
+        &[
+            ParamType::Array(Box::new(ParamType::Address)),
+            ParamType::Array(Box::new(ParamType::FixedBytes(4))),
+        ],
+        &output,
+    ) {
+        Ok(mut decoded) => {
+            trace!("Resource decode: {:?}", decoded);
+            let cont_mapiter = decoded
+                .remove(0)
+                .to_array()
+                .unwrap()
+                .into_iter()
+                .map(|de| Address::from(de.to_address().expect("decode address")));
+
+            let func_mapiter = decoded
+                .remove(0)
+                .to_array()
+                .unwrap()
+                .into_iter()
+                .map(|func| func.to_fixed_bytes().expect("decode fixed bytes"));
+
+            cont_mapiter
+                .zip(func_mapiter)
+                .map(|(cont, func)| Resource::new(cont, func))
+                .collect()
+        }
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Parse solidity return data `Address[], bytes4[]` to rust `Vec<Resource>`
+fn to_bool(output: &[u8]) -> bool {
+    let mut decoded = decode(&[ParamType::Bool], &output).expect("decode check permission");
+    let result = decoded.remove(0).to_bool().expect("decode bool");
+
+    debug!("decoded bool: {:?}", result);
+    result
 }

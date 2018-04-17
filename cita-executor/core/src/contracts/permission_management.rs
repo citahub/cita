@@ -16,9 +16,8 @@
 
 //! Permission management.
 
+use super::{encode_contract_name, to_address_vec, to_resource_vec};
 use super::ContractCallExt;
-use super::encode_contract_name;
-use ethabi::{decode, ParamType, Token};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use util::{Address, H160, H256};
@@ -90,7 +89,7 @@ impl PermissionManagement {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*ALLACCOUNTS_HASH.as_slice());
         trace!("All accounts output: {:?}", output);
 
-        PermissionManagement::to_address_vec(&output)
+        to_address_vec(&output)
     }
 
     /// Permission array
@@ -101,7 +100,7 @@ impl PermissionManagement {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &tx_data.as_slice());
         debug!("Permissions output: {:?}", output);
 
-        PermissionManagement::to_address_vec(&output)
+        to_address_vec(&output)
     }
 
     /// Resources array
@@ -109,56 +108,7 @@ impl PermissionManagement {
         let output = executor.call_contract_method(address, &*RESOURCES_HASH.as_slice());
         trace!("Resources output: {:?}", output);
 
-        PermissionManagement::to_resource_vec(&output)
-    }
-
-    fn to_address_vec(output: &[u8]) -> Vec<Address> {
-        match decode(&[ParamType::Array(Box::new(ParamType::Address))], &output) {
-            Ok(mut decoded) => {
-                let addresses: Vec<Token> = decoded.remove(0).to_array().unwrap();
-                let addresses: Vec<Address> = addresses
-                    .into_iter()
-                    .map(|de| Address::from(de.to_address().expect("decode address")))
-                    .collect();
-                debug!("Decoded addresses: {:?}", addresses);
-                addresses
-            }
-            Err(_) => Vec::new(),
-        }
-    }
-
-    fn to_resource_vec(output: &[u8]) -> Vec<Resource> {
-        // Decode the address[] and bytes4[]
-        match decode(
-            &[
-                ParamType::Array(Box::new(ParamType::Address)),
-                ParamType::Array(Box::new(ParamType::FixedBytes(4))),
-            ],
-            &output,
-        ) {
-            Ok(mut decoded) => {
-                trace!("Resource decode: {:?}", decoded);
-                let cont_mapiter = decoded
-                    .remove(0)
-                    .to_array()
-                    .unwrap()
-                    .into_iter()
-                    .map(|de| Address::from(de.to_address().expect("decode address")));
-
-                let func_mapiter = decoded
-                    .remove(0)
-                    .to_array()
-                    .unwrap()
-                    .into_iter()
-                    .map(|func| func.to_fixed_bytes().expect("decode fixed bytes"));
-
-                cont_mapiter
-                    .zip(func_mapiter)
-                    .map(|(cont, func)| Resource::new(cont, func))
-                    .collect()
-            }
-            Err(_) => Vec::new(),
-        }
+        to_resource_vec(&output)
     }
 }
 
@@ -185,10 +135,12 @@ pub fn contains_resource(
 mod tests {
     extern crate logger;
     extern crate mktemp;
-    use super::*;
+    use super::{PermissionManagement, Resource};
+    use super::contains_resource;
     use std::collections::HashMap;
     use std::str::FromStr;
     use tests::helpers::init_executor;
+    use util::{Address, H160, H256};
 
     #[test]
     fn test_contains_resource() {

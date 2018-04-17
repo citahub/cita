@@ -17,14 +17,13 @@
 
 //! Quota manager.
 
+use super::{encode_contract_name, to_address_vec, to_low_u64, to_low_u64_vec};
 use super::ContractCallExt;
-use super::encode_contract_name;
-use ethabi::{decode, ParamType};
 use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
-use util::*;
+use util::{Address, H160};
 
 const QUOTAS: &'static [u8] = &*b"getQuotas()";
 const ACCOUNTS: &'static [u8] = &*b"getAccounts()";
@@ -102,18 +101,7 @@ impl QuotaManager {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice());
         trace!("quota output: {:?}", output);
 
-        let mut decoded = decode(&[ParamType::Array(Box::new(ParamType::Uint(256)))], &output).unwrap();
-        let quotas = decoded.remove(0).to_array().unwrap();
-        let quotas = quotas
-            .into_iter()
-            .map(|quota| {
-                let quota = quota.to_uint();
-                let h256 = H256::from(quota.expect("decode quota"));
-                h256.low_u64()
-            })
-            .collect();
-        debug!("quotas: {:?}", quotas);
-        quotas
+        to_low_u64_vec(&output)
     }
 
     /// Account array
@@ -121,14 +109,7 @@ impl QuotaManager {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice());
         trace!("users output: {:?}", output);
 
-        let mut decoded = decode(&[ParamType::Array(Box::new(ParamType::Address))], &output).unwrap();
-        let users = decoded.remove(0).to_array().unwrap();
-        let users = users
-            .into_iter()
-            .map(|de| Address::from(de.to_address().expect("decode quota users")))
-            .collect();
-        debug!("quota users: {:?}", users);
-        users
+        to_address_vec(&output)
     }
 
     /// Global gas limit
@@ -136,13 +117,7 @@ impl QuotaManager {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice());
         trace!("block_gas_limit output: {:?}", output);
 
-        let mut decoded = decode(&[ParamType::Uint(256)], &output).expect("decode quota");
-        let block_gas_limit = decoded.remove(0);
-        let block_gas_limit = block_gas_limit.to_uint();
-
-        let h256 = H256::from(block_gas_limit.expect("decode block gas limit"));
-        debug!("block gas limit: {:?}", h256.low_u64());
-        h256.low_u64()
+        to_low_u64(&output)
     }
 
     /// Global account gas limit
@@ -150,13 +125,7 @@ impl QuotaManager {
         let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*DEFAULT_AQL_HASH.as_slice());
         trace!("account_gas_limit output: {:?}", output);
 
-        let mut decoded = decode(&[ParamType::Uint(256)], &output).expect("decode quota");
-        let account_gas_limit = decoded.remove(0);
-        let account_gas_limit = account_gas_limit.to_uint();
-
-        let h256 = H256::from(account_gas_limit.expect("decode block gas limit"));
-        debug!("account gas limit: {:?}", h256.low_u64());
-        h256.low_u64()
+        to_low_u64(&output)
     }
 }
 
@@ -164,9 +133,11 @@ impl QuotaManager {
 mod tests {
     extern crate logger;
     extern crate mktemp;
-    use super::*;
+    use super::QuotaManager;
     use cita_crypto::{PrivKey, SIGNATURE_NAME};
+    use std::str::FromStr;
     use tests::helpers::init_executor;
+    use util::H160;
 
     #[test]
     fn test_users() {
