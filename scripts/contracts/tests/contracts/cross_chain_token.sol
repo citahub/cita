@@ -3,14 +3,16 @@ pragma solidity ^0.4.18;
 contract MyToken {
     /* This creates an array with all balances */
     mapping (address => uint256) public balanceOf;
+    uint256 from_chain_id;
 
     /* Initializes contract */
-    function MyToken() {
-        balanceOf[msg.sender] = 100;
+    function MyToken(uint256 _balance, uint256 _from_chain_id) public {
+        balanceOf[msg.sender] = _balance;
+        from_chain_id = _from_chain_id;
     }
-    
+
     /* Send coins */
-    function transfer(address _to, uint256 _value) {
+    function transfer(address _to, uint256 _value) public {
         require(balanceOf[msg.sender] >= _value);
         // Check if the sender has enough
         require(balanceOf[_to] + _value >= balanceOf[_to]);
@@ -20,30 +22,33 @@ contract MyToken {
         balanceOf[_to] += _value;
         // Add the same to the recipient
     }
-    
-    function get_banlance(address _to) returns (uint256) {
+
+    function get_banlance(address _to) public view returns (uint256) {
         return balanceOf[_to];
     }
-    
+
     event cross_chain(uint256 from_chain_id, uint256 to_chain_id, address dest_contract, uint256 hasher, uint256 nonce);
     event recv_cross_chain(uint sender, bytes data);
 
     uint256 crosschain_send_nonce;
     uint256 crosschain_recv_nonce;
-    uint256 RECV_FUNC_HASHER = 0xec90a79a;
+    uint256 RECV_FUNC_HASHER = 0x9b8a78eb;
     // size as agrs[2..] of send_to_side_chain
     uint256 DATA_SIZE = 0x20;  // for this demo is _value
 
-    function get_cross_chain_nonce() returns (uint256) {
+    function get_cross_chain_nonce() public view returns (uint256) {
         return crosschain_recv_nonce;
     }
 
-    function send_to_side_chain(uint256 to_chain_id, address dest_contract, uint256 _value) {
+    function send_to_side_chain(uint256 to_chain_id, address dest_contract, uint256 _value) public {
         require(balanceOf[msg.sender] >= _value);
         balanceOf[msg.sender] -= _value;
-        // cross_chain(get_chain_id, msg.to, to_chain_id, dest_contract, RECV_FUNC_HASHER);
-        cross_chain(0, to_chain_id, dest_contract, RECV_FUNC_HASHER, crosschain_send_nonce);
+        cross_chain(from_chain_id, to_chain_id, dest_contract, RECV_FUNC_HASHER, crosschain_send_nonce);
         crosschain_send_nonce = crosschain_send_nonce + 1;
+    }
+
+    function get_from_chain_id() public view returns (uint256) {
+        return from_chain_id;
     }
 
     // verify_proof need:
@@ -53,10 +58,10 @@ contract MyToken {
     // check hasher == RECV_FUNC_HASHER
     // check cross_chain_nonce == cross_chain_nonce
     // extract origin tx sender and origin tx data
-    function recv_from_side_chain(uint256 proof_len, bytes tx_proof) {
+    function recv_from_side_chain(bytes tx_proof) public {
         uint hasher = RECV_FUNC_HASHER;
         uint nonce = crosschain_recv_nonce;
-        uint len = proof_len;
+        uint len = tx_proof.length;
         uint sender;
         uint data_size = DATA_SIZE;
         bytes memory data = new bytes(data_size);
@@ -69,14 +74,14 @@ contract MyToken {
             mstore(add(_calldata, 0x24), hasher)          //Place second argument next to first, padded to 32 bytes
             mstore(add(_calldata, 0x44), nonce)
             mstore(add(_calldata, 0x64), len)
-            calldatacopy(add(_calldata, 0x84), 0x24, sub(calldatasize, 0x24)) // skip hasher and first arg
+            calldatacopy(add(_calldata, 0x84), 0x44, sub(calldatasize, 0x44)) // skip hasher and first arg
 
             switch call(                     //This is the critical change (Pop the top stack value)
                     100000,                  //100k gas
                     0x1301,                  //To addr
                     0,                       //No value
                     _calldata,               //Inputs are stored at location _calldata
-                    add(calldatasize, 0x60), //Inputs are xx bytes long
+                    add(calldatasize, 0x40), //Inputs are xx bytes long
                     _calldata,               //Store output over input (saves space)
                     add(data_size, 0x20))    //Outputs less than calldatasize
             case 0 { revert(0, 0) }

@@ -97,10 +97,30 @@ impl CrossChainVerify {
         }
         let proof_data = proof_data.unwrap();
 
-        let proof: TxProof = rlp::decode(&proof_data);
-        // todo get chain id from readonly system contract
-        let chain_id: u64 = 0;
-        let ret = proof.extract_crosschain_data(addr, hasher, nonce, chain_id);
+        let proof = TxProof::from_bytes(&proof_data);
+
+        let relay_info = proof.extract_relay_info();
+        if relay_info.is_none() {
+            return Err(evm::Error::Internal(
+                "extract relay info failed".to_string(),
+            ));
+        }
+        let relay_info = relay_info.unwrap();
+        trace!("relay_info {:?}", proof_data);
+
+        let ret = ChainManagement::ext_chain_id(ext, &gas_left, &params.sender);
+        if ret.is_none() {
+            return Err(evm::Error::Internal("get chain id failed".to_owned()));
+        }
+        let (gas_left, chain_id) = ret.unwrap();
+
+        let ret = ChainManagement::ext_authorities(ext, &gas_left, &params.sender, relay_info.from_chain_id);
+        if ret.is_none() {
+            return Err(evm::Error::Internal("get authorities failed".to_owned()));
+        }
+        let (gas_left, authorities) = ret.unwrap();
+
+        let ret = proof.extract_crosschain_data(addr, hasher, nonce, chain_id, &authorities[..]);
         if ret.is_none() {
             return Err(evm::Error::Internal(
                 "extract_crosschain_data failed".to_string(),

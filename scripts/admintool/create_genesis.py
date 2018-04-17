@@ -30,8 +30,8 @@ CONTRACTS = {
                                                    'name': 'QuotaManager'},
     '0x0000000000000000000000000000000031415926': {'file': 'system/sys_config.sol',
                                                    'name': 'SysConfig'},
-    '0x00000000000000000000000000000000000000ce': {'file': 'system/sidechain_manager.sol',
-                                                   'name': 'SidechainManager'},
+    '0x00000000000000000000000000000000000000ce': {'file': 'system/chain_manager.sol',
+                                                   'name': 'ChainManager'},
     '0x00000000000000000000000000000000013241b2': {'file': 'permission_management/permission_management.sol',
                                                    'name': 'PermissionManagement'},
     '0x00000000000000000000000000000000013241b3': {'file': 'permission_management/permission_creator.sol',
@@ -52,7 +52,7 @@ CONTRACTS = {
                                                    'name': 'GroupCreator'}
 }
 
-def init_contracts(nodes, chain_id):
+def init_contracts(nodes, args):
     result = dict()
     env = get_env(None)
     env.config['BLOCK_GAS_LIMIT'] = 471238800
@@ -95,9 +95,9 @@ def init_contracts(nodes, chain_id):
                 # Current chain id:
                 #   - 3  bit prefix (0b000 means testnet)
                 #   - 29 bit id is a random number in range [0, 2**29]
-                params[4] = chain_id or random.randint(0, 2**(32-3))
+                params[4] = args.chain_id or random.randint(0, 2**(32-3))
                 print '[chain-id]: {}'.format(params[4])
-                with open('chain_id', 'w') as f:
+                with open(args.chain_id_file, 'w') as f:
                     f.write('{}\n'.format(params[4]))
                 extra = ct.encode_constructor_arguments(params)
             else:
@@ -118,18 +118,28 @@ def init_contracts(nodes, chain_id):
                 extra_common = (ct.encode_constructor_arguments([permission[0], permission[1], new_funcs]))
 
                 if addr == '0x00000000000000000000000000000000013241b5':
-                    extra = extra_common;
+                    extra = extra_common
                 else:
                     abi_address = tester_state.contract(simple_data['bin'] + extra_common, language='evm', startgas=30000000)
                     tester_state.mine()
                     account = tester_state.chain.state.account_to_dict(abi_address)
                     result[addr] = {'code': account['code'], 'storage': account['storage'], 'nonce': account['nonce']}
+        elif address == '0x00000000000000000000000000000000000000ce' and nodes[address]:
+            current_chain_id = args.current_chain_id if args.current_chain_id else nodes[address][0]
+            parent_chain_id = args.parent_chain_id \
+                if args.parent_chain_id else nodes[address][1]
+            parent_chain_nodes = args.parent_chain_nodes.split(',') \
+                if args.parent_chain_nodes else nodes[address][2]
+            extra = (ct.encode_constructor_arguments([
+                current_chain_id,
+                parent_chain_id,
+                parent_chain_nodes]))
+
         else:
             extra = ''
 
-        # print(binascii.hexlify(simple_data['bin'] + extra))
-        print "contract:\n", contract['name']
-        print "extra:\n", binascii.hexlify(extra)
+        print("contract:\n", contract['name'])
+        print("extra:\n", binascii.hexlify(extra))
         abi_address = tester_state.contract(simple_data['bin'] + extra, language='evm', startgas=30000000)
         tester_state.mine()
         account = tester_state.chain.state.account_to_dict(abi_address)
@@ -142,6 +152,10 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
+        "--genesis_file", help="The genesis.json file.")
+    parser.add_argument(
+        "--chain_id_file", help="The chain_id file.")
+    parser.add_argument(
         "--chain_id", type=int, default=0, help="Specify the chain_id to use.")
     parser.add_argument(
         "--timestamp", type=int, default=0, help="Specify the timestamp to use.")
@@ -153,6 +167,12 @@ def main():
         "--resource", help="chain resource folder.")
     parser.add_argument(
         "--permission", help="init the permission.")
+    parser.add_argument(
+        "--current_chain_id", type=int, default=0, help="current chain id for chain management, a unique id")
+    parser.add_argument(
+        "--parent_chain_id", type=int, default=0, help="the unique id of the parent chain")
+    parser.add_argument(
+        "--parent_chain_nodes", help="the parent chain's consensus nodes")
 
     args = parser.parse_args()
     init_path = os.path.join(args.init_data)
@@ -202,12 +222,11 @@ def main():
         data["prevhash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
     data["timestamp"] = timestamp
 
-    print "init data\n", json.dumps(init_data, indent=4)
-    alloc = init_contracts(init_data, args.chain_id)
+    print("init data\n", json.dumps(init_data, indent=4))
+    alloc = init_contracts(init_data, args)
     data['alloc'] = alloc
-    dump_path =  "genesis.json"
-    with open(dump_path, "w") as f:
-        json.dump(data, f, indent=4)
+    with open(args.genesis_file, "w") as fil:
+        json.dump(data, fil, indent=4)
 
 if __name__ == '__main__':
     main()
