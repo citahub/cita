@@ -19,14 +19,14 @@
 
 pub mod node_manager;
 pub mod quota_manager;
-pub mod constant_config;
+pub mod sys_config;
 pub mod permission_management;
 pub mod user_management;
 
-pub use self::constant_config::ConstantConfig;
 pub use self::node_manager::NodeManager;
 pub use self::permission_management::{PermissionManagement, Resource};
 pub use self::quota_manager::{AccountGasLimit, QuotaManager};
+pub use self::sys_config::SysConfig;
 pub use self::user_management::UserManagement;
 
 use ethabi::{decode, ParamType, Token};
@@ -140,13 +140,4 @@ fn to_resource_vec(output: &[u8]) -> Vec<Resource> {
         }
         Err(_) => Vec::new(),
     }
-}
-
-/// Parse solidity return data `Address[], bytes4[]` to rust `Vec<Resource>`
-fn to_bool(output: &[u8]) -> bool {
-    let mut decoded = decode(&[ParamType::Bool], &output).expect("decode check permission");
-    let result = decoded.remove(0).to_bool().expect("decode bool");
-
-    debug!("decoded bool: {:?}", result);
-    result
 }

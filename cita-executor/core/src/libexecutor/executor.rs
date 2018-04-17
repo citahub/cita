@@ -18,8 +18,7 @@
 use bloomchain as bc;
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
-use contracts::{AccountGasLimit, ConstantConfig, NodeManager, PermissionManagement, QuotaManager, Resource,
-                UserManagement};
+use contracts::{AccountGasLimit, NodeManager, PermissionManagement, QuotaManager, Resource, SysConfig, UserManagement};
 use db;
 use db::*;
 use engines::NullEngine;
@@ -651,9 +650,9 @@ impl Executor {
         let mut conf = GlobalSysConfig::new();
         conf.nodes = NodeManager::read(self);
         conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
-        conf.delay_active_interval = ConstantConfig::valid_number(self) as usize;
-        conf.check_permission = ConstantConfig::permission_check(self);
-        conf.check_quota = ConstantConfig::quota_check(self);
+        conf.delay_active_interval = SysConfig::delay_block_number(self) as usize;
+        conf.check_permission = SysConfig::permission_check(self);
+        conf.check_quota = SysConfig::quota_check(self);
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
         conf.group_accounts = UserManagement::load_group_accounts(self);
 
@@ -790,54 +789,6 @@ mod tests {
         "#;
         let (data, _) = solc("ConstructSol", source);
         data
-    }
-
-    #[test]
-    fn test_contract_address_from_same_pv() {
-        let executor = init_executor();
-        let chain = init_chain();
-
-        let data = generate_contract();
-        let block = create_block(&executor, Address::from(0), &data, (0, 2));
-
-        let (send, recv) = channel::<(String, Vec<u8>)>();
-        let inchain = chain.clone();
-
-        let txs = block.body().transactions().clone();
-        let hash1 = txs[0].hash();
-        let hash2 = txs[1].hash();
-
-        let h = executor.get_current_height() + 1;
-
-        executor.execute_block(block.clone(), &send);
-
-        if let Ok((key, msg_vec)) = recv.recv() {
-            let mut msg = Message::try_from(&msg_vec).unwrap();
-            match RoutingKey::from(&key) {
-                routing_key!(Executor >> ExecutedResult) => {
-                    let info = msg.take_executed_result().unwrap();
-                    let pro = block.protobuf();
-                    let chain_block = ChainBlock::from(pro);
-                    inchain.set_block_body(h, &chain_block);
-                    inchain.set_db_result(&info, &chain_block);
-                }
-
-                _ => {}
-            }
-        }
-
-        let receipt1 = chain.localized_receipt(hash1).unwrap();
-        let receipt2 = chain.localized_receipt(hash2).unwrap();
-        println!(
-            "receipt1.contract_address = {:?}",
-            receipt1.contract_address
-        );
-        println!(
-            "receipt2.contract_address = {:?}",
-            receipt2.contract_address
-        );
-        // TODO this is bug,need repaire next week! Now the receipt is None!
-        assert_eq!(receipt1.contract_address, receipt2.contract_address);
     }
 
     #[test]

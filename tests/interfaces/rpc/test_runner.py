@@ -124,6 +124,8 @@ class TestRunner(object):
                 assertion_result
             ))
             if assertion_result is False:
+                print(json.dumps(assert_data['receivedResponse']['result'], indent=2))
+                print(json.dumps(assert_data['expectedResponse']['result'], indent=2))
                 self.assertion_fail_count += 1
             self.assertion_fail()
 

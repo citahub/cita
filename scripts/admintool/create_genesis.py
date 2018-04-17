@@ -9,6 +9,7 @@ from os import path
 import binascii
 import hashlib
 import sys
+import random
 
 from ethereum.tools.tester import (Chain, get_env)
 from ethereum.tools._solidity import (
@@ -18,7 +19,8 @@ from ethereum.tools._solidity import (
 )
 from ethereum.abi import ContractTranslator
 
-SOLIDITY_AVAILABLE = get_solidity() is not None
+assert get_solidity() is not None, 'Solidity not found!'
+
 CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
 
 CONTRACTS = {
@@ -26,8 +28,8 @@ CONTRACTS = {
                                                    'name': 'NodeManager'},
     '0x00000000000000000000000000000000013241a3': {'file': 'system/quota_manager.sol',
                                                    'name': 'QuotaManager'},
-    '0x0000000000000000000000000000000031415926': {'file': 'system/constant_config.sol',
-                                                   'name': 'ConstantConfig'},
+    '0x0000000000000000000000000000000031415926': {'file': 'system/sys_config.sol',
+                                                   'name': 'SysConfig'},
     '0x00000000000000000000000000000000000000ce': {'file': 'system/sidechain_manager.sol',
                                                    'name': 'SidechainManager'},
     '0x00000000000000000000000000000000013241b2': {'file': 'permission_management/permission_management.sol',
@@ -72,10 +74,25 @@ def init_contracts(nodes):
 
         if address == '0x00000000000000000000000000000000013241a3' or address == '0x00000000000000000000000000000000013241b4':
             extra = (ct.encode_constructor_arguments([nodes[address]]) if nodes[address] else b'')
-        elif address == '0x0000000000000000000000000000000031415926' or address == '0x00000000000000000000000000000000013241b6':
-            extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1], nodes[address][2]]) if nodes[address] else b'')
+        elif address == '0x0000000000000000000000000000000031415926':
+            if address in nodes:
+                params = nodes[address][:8]
+                # Current chain id:
+                #   - 3  bit prefix (0b000 means testnet)
+                #   - 29 bit id is a random number in range [0, 2**29]
+                if params[4] <= 0:
+                    chain_id = random.randint(0, 2**(32-3))
+                    params[4] = chain_id
+                print '[chain-id]: {}'.format(params[4])
+                with open('chain_id', 'w') as f:
+                    f.write('{}\n'.format(params[4]))
+                extra = ct.encode_constructor_arguments(params)
+            else:
+                extra = b''
+        elif address == '0x00000000000000000000000000000000013241b6':
+            extra = (ct.encode_constructor_arguments(nodes[address][:3]) if nodes[address] else b'')
         elif address == '0x00000000000000000000000000000000013241a2':
-            extra = (ct.encode_constructor_arguments([nodes[address][0], nodes[address][1]]) if nodes[address] else b'')
+            extra = (ct.encode_constructor_arguments(nodes[address][:2]) if nodes[address] else b'')
         elif address == '0x00000000000000000000000000000000013241b5':
             for addr, permission in nodes[address].iteritems():
                 new_funcs = []

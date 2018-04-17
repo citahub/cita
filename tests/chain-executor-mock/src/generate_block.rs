@@ -48,11 +48,11 @@ impl AsMillis for Duration {
 pub struct BuildBlock {}
 
 impl BuildBlock {
-    pub fn build_contract_address(address: &Address, nonce: &U256) -> Address {
+    pub fn build_contract_address(sender: &Address, nonce: &U256) -> Address {
         use rlp::RlpStream;
 
         let mut stream = RlpStream::new_list(2);
-        stream.append(address);
+        stream.append(sender);
         stream.append(nonce);
         From::from(stream.out().crypt_hash())
     }

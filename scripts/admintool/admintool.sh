@@ -150,6 +150,7 @@ chain(){
 
 executor(){
     cp genesis.json ${CONFIG_DIR}/node${1}/genesis.json
+    cp chain_id ${CONFIG_DIR}/node${1}
     if [ -d "${CONFIG_DIR}/resource" ]; then
         cp -rf resource ${CONFIG_DIR}/node${1}/
     fi
@@ -229,7 +230,7 @@ default(){
     done
     mkdir -p $CONFIG_DIR/backup
     rm -rf $CONFIG_DIR/backup/*
-    mv ${CONFIG_DIR}/*.json ${CONFIG_DIR}/authorities $CONFIG_DIR/backup/
+    mv ${CONFIG_DIR}/chain_id ${CONFIG_DIR}/*.json ${CONFIG_DIR}/authorities $CONFIG_DIR/backup/
     if [ -d "${CONFIG_DIR}/resource" ]; then
         mv ${CONFIG_DIR}/resource $CONFIG_DIR/backup/
     fi
