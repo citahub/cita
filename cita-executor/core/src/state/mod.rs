@@ -22,7 +22,7 @@
 use contracts::Resource;
 use engines::NullEngine;
 use env_info::EnvInfo;
-use error::Error;
+use error::{Error, ExecutionError};
 use evm::Error as EvmError;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
@@ -678,34 +678,62 @@ impl<B: Backend> State<B> {
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
-        let e = Executive::new(self, env_info, engine, &vm_factory, &native_factory).transact(t, options)?;
 
-        // TODO uncomment once to_pod() works correctly.
-        // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
-        let receipt_error = e.exception.and_then(|evm_error| match evm_error {
-            EvmError::OutOfGas => Some(ReceiptError::OutOfGas),
-            EvmError::BadJumpDestination { .. } => Some(ReceiptError::BadJumpDestination),
-            EvmError::BadInstruction { .. } => Some(ReceiptError::BadInstruction),
-            EvmError::StackUnderflow { .. } => Some(ReceiptError::StackUnderflow),
-            EvmError::OutOfStack { .. } => Some(ReceiptError::OutOfStack),
-            EvmError::MutableCallInStaticContext => Some(ReceiptError::MutableCallInStaticContext),
-            EvmError::Internal(_) => Some(ReceiptError::Internal),
-            EvmError::OutOfBounds => Some(ReceiptError::OutOfBounds),
-            EvmError::Reverted => Some(ReceiptError::Reverted),
-        });
-        let receipt = Receipt::new(
-            None,
-            e.cumulative_gas_used,
-            e.logs,
-            receipt_error,
-            e.account_nonce,
-            t.get_transaction_hash(),
-        );
-        trace!(target: "state", "Transaction receipt: {:?}", receipt);
-        Ok(ApplyOutcome {
-            receipt: receipt,
-            trace: e.trace,
-        })
+        match Executive::new(self, env_info, engine, &vm_factory, &native_factory).transact(t, options) {
+            Ok(e) => {
+                // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
+                let receipt_error = e.exception.and_then(|evm_error| match evm_error {
+                    EvmError::OutOfGas => Some(ReceiptError::OutOfGas),
+                    EvmError::BadJumpDestination { .. } => Some(ReceiptError::BadJumpDestination),
+                    EvmError::BadInstruction { .. } => Some(ReceiptError::BadInstruction),
+                    EvmError::StackUnderflow { .. } => Some(ReceiptError::StackUnderflow),
+                    EvmError::OutOfStack { .. } => Some(ReceiptError::OutOfStack),
+                    EvmError::MutableCallInStaticContext => Some(ReceiptError::MutableCallInStaticContext),
+                    EvmError::Internal(_) => Some(ReceiptError::Internal),
+                    EvmError::OutOfBounds => Some(ReceiptError::OutOfBounds),
+                    EvmError::Reverted => Some(ReceiptError::Reverted),
+                });
+                let receipt = Receipt::new(
+                    None,
+                    e.cumulative_gas_used,
+                    e.logs,
+                    receipt_error,
+                    e.account_nonce,
+                    t.get_transaction_hash(),
+                );
+                trace!(target: "state", "Transaction receipt: {:?}", receipt);
+                Ok(ApplyOutcome {
+                    receipt: receipt,
+                    trace: e.trace,
+                })
+            }
+            Err(err) => {
+                let receipt_error = match err {
+                    ExecutionError::NotEnoughBaseGas { .. } => Some(ReceiptError::NotEnoughBaseGas),
+                    ExecutionError::BlockGasLimitReached { .. } => Some(ReceiptError::BlockGasLimitReached),
+                    ExecutionError::AccountGasLimitReached { .. } => Some(ReceiptError::AccountGasLimitReached),
+                    ExecutionError::InvalidNonce { .. } => Some(ReceiptError::InvalidNonce),
+                    ExecutionError::NotEnoughCash { .. } => Some(ReceiptError::NotEnoughCash),
+                    ExecutionError::NoTransactionPermission => Some(ReceiptError::NoTransactionPermission),
+                    ExecutionError::NoContractPermission => Some(ReceiptError::NoContractPermission),
+                    ExecutionError::NoCallPermission => Some(ReceiptError::NoCallPermission),
+                    ExecutionError::ExecutionInternal { .. } => Some(ReceiptError::ExecutionInternal),
+                    ExecutionError::TransactionMalformed { .. } => Some(ReceiptError::TransactionMalformed),
+                };
+                let receipt = Receipt::new(
+                    None,
+                    0.into(),
+                    Vec::new(),
+                    receipt_error,
+                    0.into(),
+                    t.get_transaction_hash(),
+                );
+                Ok(ApplyOutcome {
+                    receipt: receipt,
+                    trace: Vec::new(),
+                })
+            }
+        }
     }
 
     fn touch(&mut self, a: &Address) -> trie::Result<()> {

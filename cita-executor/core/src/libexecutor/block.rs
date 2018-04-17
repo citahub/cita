@@ -462,13 +462,16 @@ impl OpenBlock {
 
     pub fn generate_err_receipt(hash: H256, err: ExecutionError) -> Option<Receipt> {
         match err {
-            ExecutionError::NoTransactionPermission => Some(ReceiptError::NoTransactionPermission),
-            ExecutionError::NoContractPermission => Some(ReceiptError::NoContractPermission),
-            ExecutionError::NoCallPermission => Some(ReceiptError::NoCallPermission),
             ExecutionError::NotEnoughBaseGas { .. } => Some(ReceiptError::NotEnoughBaseGas),
             ExecutionError::BlockGasLimitReached { .. } => Some(ReceiptError::BlockGasLimitReached),
             ExecutionError::AccountGasLimitReached { .. } => Some(ReceiptError::AccountGasLimitReached),
-            _ => None,
+            ExecutionError::InvalidNonce { .. } => Some(ReceiptError::InvalidNonce),
+            ExecutionError::NotEnoughCash { .. } => Some(ReceiptError::NotEnoughCash),
+            ExecutionError::NoTransactionPermission => Some(ReceiptError::NoTransactionPermission),
+            ExecutionError::NoContractPermission => Some(ReceiptError::NoContractPermission),
+            ExecutionError::NoCallPermission => Some(ReceiptError::NoCallPermission),
+            ExecutionError::ExecutionInternal { .. } => Some(ReceiptError::ExecutionInternal),
+            ExecutionError::TransactionMalformed { .. } => Some(ReceiptError::TransactionMalformed),
         }.map(|receipt_error| {
             Receipt::new(
                 None,
@@ -508,15 +511,7 @@ impl OpenBlock {
                 }
                 self.receipts.push(Some(outcome.receipt));
             }
-            Err(Error::Execution(execution_error)) => {
-                self.receipts.push(Self::generate_err_receipt(
-                    t.get_transaction_hash(),
-                    execution_error,
-                ));
-            }
-            Err(_) => {
-                self.receipts.push(None);
-            }
+            Err(_) => info!("apply_transaction: There must be something wrong!"),
         }
     }
 
@@ -562,14 +557,12 @@ impl OpenBlock {
                     execution_error,
                 ));
             }
-            Err(_) => {
-                self.receipts.push(None);
-            }
+            Err(_) => info!("apply_grpc_vm: There must be something wrong!"),
         }
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn into_closed_block(mut self) -> ClosedBlock {
+    pub fn close(mut self) -> ClosedBlock {
         // Rebuild block
         let state_root = *self.state.root();
         let receipts_root =

@@ -703,7 +703,7 @@ impl Executor {
             last_hashes.into(),
         ).unwrap();
         if open_block.apply_transactions(self, perm, quota) {
-            let closed_block = open_block.into_closed_block();
+            let closed_block = open_block.close();
             let new_now = Instant::now();
             info!("execute block use {:?}", new_now.duration_since(now));
             self.finalize_block(closed_block, ctx_pub);
@@ -730,7 +730,7 @@ impl Executor {
             last_hashes.into(),
         ).unwrap();
         if open_block.apply_transactions(self, perm, quota) {
-            let closed_block = open_block.into_closed_block();
+            let closed_block = open_block.close();
             let new_now = Instant::now();
             debug!("execute proposal use {:?}", new_now.duration_since(now));
             let h = closed_block.number();
