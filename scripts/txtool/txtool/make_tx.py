@@ -12,7 +12,7 @@ from ethereum.utils import sha3
 from tx_count import get_transaction_count
 import pysodium
 from generate_account import generate
-from block_number import block_number 
+from block_number import block_number
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
@@ -61,23 +61,34 @@ def get_nonce(sender):
     return str(nonce)
 
 
-def generate_deploy_data(current_height, bytecode, privatekey, receiver=None, newcrypto=False, version=0): 
+def generate_deploy_data(current_height,
+                         bytecode,
+                         privatekey,
+                         receiver=None,
+                         newcrypto=False,
+                         version=0):
     if newcrypto:
-        data = _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, version, receiver) 
+        data = _blake2b_ed25519_deploy_data(current_height, bytecode,
+                                            privatekey, version, receiver)
     else:
-        data = _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, version, receiver) 
+        data = _sha3_secp256k1_deploy_data(current_height, bytecode,
+                                           privatekey, version, receiver)
 
     return data
 
 
-def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, version=0, receiver=None): 
+def _blake2b_ed25519_deploy_data(current_height,
+                                 bytecode,
+                                 privatekey,
+                                 version=0,
+                                 receiver=None):
     sender = get_sender(private_key, True)
     print(sender)
     nonce = get_nonce(sender)
     print("nonce is {}".format(nonce))
 
     tx = Transaction()
-    tx.valid_until_block = current_height + 88 
+    tx.valid_until_block = current_height + 88
     tx.nonce = nonce
     tx.version = version
     if receiver is not None:
@@ -88,11 +99,10 @@ def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, version=0
     print("msg is {}".format(message))
     sig = pysodium.crypto_sign_detached(message, hex2bytes(privatekey))
     print("sig {}".format(binascii.b2a_hex(sig)))
-    
+
     pubkey = pysodium.crypto_sign_sk_to_pk(hex2bytes(privatekey))
     print("pubkey is {}".format(binascii.b2a_hex(pubkey)))
-    signature = binascii.hexlify(
-        sig[:]) + binascii.hexlify(pubkey[:])
+    signature = binascii.hexlify(sig[:]) + binascii.hexlify(pubkey[:])
     print("signature is {}".format(signature))
 
     unverify_tx = UnverifiedTransaction()
@@ -100,11 +110,16 @@ def _blake2b_ed25519_deploy_data(current_height, bytecode, privatekey, version=0
     unverify_tx.signature = hex2bytes(signature)
     unverify_tx.crypto = Crypto.Value('SECP')
 
-    print("unverify_tx is {}".format(binascii.hexlify(unverify_tx.SerializeToString())))
+    print("unverify_tx is {}".format(
+        binascii.hexlify(unverify_tx.SerializeToString())))
     return binascii.hexlify(unverify_tx.SerializeToString())
 
 
-def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, version=0, receiver=None): 
+def _sha3_secp256k1_deploy_data(current_height,
+                                bytecode,
+                                privatekey,
+                                version=0,
+                                receiver=None):
     sender = get_sender(privatekey, False)
     if privatekey is None:
         temp = private_key()
@@ -117,7 +132,7 @@ def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, version=0,
     print("nonce is {}".format(nonce))
 
     tx = Transaction()
-    tx.valid_until_block = current_height + 88 
+    tx.valid_until_block = current_height + 88
     tx.nonce = nonce
     tx.quota = 9999999
     tx.version = version
@@ -131,15 +146,16 @@ def _sha3_secp256k1_deploy_data(current_height, bytecode, privatekey, version=0,
     sign_recover = privkey.ecdsa_sign_recoverable(message, raw=True)
     sig = privkey.ecdsa_recoverable_serialize(sign_recover)
 
-    signature = binascii.hexlify(
-        sig[0]) + binascii.hexlify(bytes(bytearray([sig[1]])))
+    signature = binascii.hexlify(sig[0]) + binascii.hexlify(
+        bytes(bytearray([sig[1]])))
 
     unverify_tx = UnverifiedTransaction()
     unverify_tx.transaction.CopyFrom(tx)
     unverify_tx.signature = hex2bytes(signature)
     unverify_tx.crypto = Crypto.Value('SECP')
 
-    print("unverify_tx is {}".format(binascii.hexlify(unverify_tx.SerializeToString())))
+    print("unverify_tx is {}".format(
+        binascii.hexlify(unverify_tx.SerializeToString())))
     return binascii.hexlify(unverify_tx.SerializeToString())
 
 
@@ -149,11 +165,19 @@ def parse_arguments():
     parser.add_argument(
         "--privkey", help="private key genearted by secp256k1 alogrithm.")
     parser.add_argument("--to", help="transaction to")
-    parser.add_argument('--newcrypto', dest='newcrypto',
-                        action='store_true', help="Use ed25519 and blake2b.")
-    parser.add_argument('--no-newcrypto', dest='newcrypto',
-                        action='store_false', help="Use ecdsa and sha3.")
-    parser.add_argument("--version", help="Tansaction version.", default=0, type=int)
+    parser.add_argument(
+        '--newcrypto',
+        dest='newcrypto',
+        action='store_true',
+        help="Use ed25519 and blake2b.")
+    parser.add_argument(
+        '--no-newcrypto',
+        dest='newcrypto',
+        action='store_false',
+        help="Use ecdsa and sha3.")
+    parser.add_argument(
+        "--version", help="Tansaction version.", default=0, type=int)
+    parser.add_argument("--chain_id", default=0, type=int)
     parser.set_defaults(newcrypto=False)
 
     opts = parser.parse_args()
@@ -174,16 +198,19 @@ def _params_or_default():
 
 
 def _blake2b(seed):
-    hashed = pysodium.crypto_generichash_blake2b_salt_personal(seed, key = "CryptapeCryptape")
+    hashed = pysodium.crypto_generichash_blake2b_salt_personal(
+        seed, key="CryptapeCryptape")
     return hashed
+
 
 def main():
     blake2b_ed25519 = parse_arguments().newcrypto
     print(blake2b_ed25519)
     bytecode, privkey, receiver, version = _params_or_default()
-    current_height = int(block_number(), 16) 
+    current_height = int(block_number(), 16)
     data = generate_deploy_data(
-        current_height, remove_hex_0x(bytecode), privkey, remove_hex_0x(receiver), blake2b_ed25519, version) 
+        current_height, remove_hex_0x(bytecode), privkey,
+        remove_hex_0x(receiver), blake2b_ed25519, version)
     print("deploy code保存到../output/transaction/deploycode")
     save_deploy(data)
 

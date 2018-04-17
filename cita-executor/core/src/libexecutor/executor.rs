@@ -503,6 +503,8 @@ impl Executor {
             value: U256::zero(),
             data: request.data.map_or_else(Vec::new, |d| d.to_vec()),
             block_limit: u64::max_value(),
+            // TODO: Should Fixed?
+            chain_id: u32::min_value(),
             version: 0u32,
         }.fake_sign(from)
     }

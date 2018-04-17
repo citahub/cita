@@ -157,6 +157,8 @@ pub struct Transaction {
     pub data: Bytes,
     /// valid before this block number
     pub block_limit: BlockNumber,
+    /// Unique chain_id
+    pub chain_id: u32,
     /// transaction version
     pub version: u32,
 }
@@ -169,7 +171,7 @@ impl HeapSizeOf for Transaction {
 
 impl Decodable for Transaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 8 {
+        if d.item_count()? != 9 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
         Ok(Transaction {
@@ -180,7 +182,8 @@ impl Decodable for Transaction {
             value: d.val_at(4)?,
             data: d.val_at(5)?,
             block_limit: d.val_at(6)?,
-            version: d.val_at(7)?,
+            chain_id: d.val_at(7)?,
+            version: d.val_at(8)?,
         })
     }
 }
@@ -212,9 +215,10 @@ impl Transaction {
                     },
                 }
             },
-            value: U256::default(),
+            value: plain_transaction.get_value().into(),
             data: plain_transaction.get_data().into(),
             block_limit: plain_transaction.get_valid_until_block(),
+            chain_id: plain_transaction.get_chain_id(),
             version: plain_transaction.get_version(),
         })
     }
@@ -252,6 +256,7 @@ impl Transaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
+        s.append(&self.chain_id);
         s.append(&self.version);
     }
 
@@ -262,6 +267,9 @@ impl Transaction {
         pt.set_valid_until_block(self.block_limit);
         pt.set_data(self.data.clone());
         pt.set_quota(self.gas.as_u64());
+        pt.set_value(self.value.as_u64());
+        pt.set_chain_id(self.value.as_u32());
+        pt.set_version(self.version);
         match self.action {
             Action::Create => pt.clear_to(),
             Action::Call(ref to) => pt.set_to(to.hex()),
@@ -379,11 +387,11 @@ pub struct SignedTransaction {
 /// RLP dose not support struct nesting well
 impl Decodable for SignedTransaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 12 {
+        if d.item_count()? != 13 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
 
-        let public: PubKey = d.val_at(11)?;
+        let public: PubKey = d.val_at(12)?;
 
         Ok(SignedTransaction {
             transaction: UnverifiedTransaction {
@@ -395,11 +403,12 @@ impl Decodable for SignedTransaction {
                     value: d.val_at(4)?,
                     data: d.val_at(5)?,
                     block_limit: d.val_at(6)?,
-                    version: d.val_at(7)?,
+                    chain_id: d.val_at(7)?,
+                    version: d.val_at(8)?,
                 },
-                signature: d.val_at(8)?,
-                crypto_type: d.val_at(9)?,
-                hash: d.val_at(10)?,
+                signature: d.val_at(9)?,
+                crypto_type: d.val_at(10)?,
+                hash: d.val_at(11)?,
             },
             sender: pubkey_to_address(&public),
             public: public,
@@ -410,7 +419,7 @@ impl Decodable for SignedTransaction {
 /// RLP dose not support struct nesting well
 impl Encodable for SignedTransaction {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(12);
+        s.begin_list(13);
 
         s.append(&self.nonce);
         s.append(&self.gas_price);
@@ -419,6 +428,7 @@ impl Encodable for SignedTransaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
+        s.append(&self.chain_id);
         s.append(&self.version);
 
         s.append(&self.signature);

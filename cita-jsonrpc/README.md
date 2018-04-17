@@ -110,6 +110,9 @@ message Transaction {
     uint64 quota = 3; // gas
     uint64 valid_until_block = 4;
     bytes data = 5;
+    uint64 value = 6;
+    uint32 chain_id = 7;
+    uint32 version = 8;
 }
 
 message UnverifiedTransaction {

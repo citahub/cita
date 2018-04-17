@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='transaction.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x11transaction.proto\"q\n\x0bTransaction\x12\n\n\x02to\x18\x01 \x01(\t\x12\r\n\x05nonce\x18\x02 \x01(\t\x12\r\n\x05quota\x18\x03 \x01(\x04\x12\x19\n\x11valid_until_block\x18\x04 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\x0c\x12\x0f\n\x07version\x18\x06 \x01(\r\"f\n\x15UnverifiedTransaction\x12!\n\x0btransaction\x18\x01 \x01(\x0b\x32\x0c.Transaction\x12\x11\n\tsignature\x18\x02 \x01(\x0c\x12\x17\n\x06\x63rypto\x18\x03 \x01(\x0e\x32\x07.Crypto\"j\n\x11SignedTransaction\x12\x34\n\x14transaction_with_sig\x18\x01 \x01(\x0b\x32\x16.UnverifiedTransaction\x12\x0f\n\x07tx_hash\x18\x02 \x01(\x0c\x12\x0e\n\x06signer\x18\x03 \x01(\x0c*\x1b\n\x06\x43rypto\x12\x08\n\x04SECP\x10\x00\x12\x07\n\x03SM2\x10\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x11transaction.proto\"\x92\x01\n\x0bTransaction\x12\n\n\x02to\x18\x01 \x01(\t\x12\r\n\x05nonce\x18\x02 \x01(\t\x12\r\n\x05quota\x18\x03 \x01(\x04\x12\x19\n\x11valid_until_block\x18\x04 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\x0c\x12\r\n\x05value\x18\x06 \x01(\x04\x12\x10\n\x08\x63hain_id\x18\x07 \x01(\r\x12\x0f\n\x07version\x18\x08 \x01(\r\"f\n\x15UnverifiedTransaction\x12!\n\x0btransaction\x18\x01 \x01(\x0b\x32\x0c.Transaction\x12\x11\n\tsignature\x18\x02 \x01(\x0c\x12\x17\n\x06\x63rypto\x18\x03 \x01(\x0e\x32\x07.Crypto\"j\n\x11SignedTransaction\x12\x34\n\x14transaction_with_sig\x18\x01 \x01(\x0b\x32\x16.UnverifiedTransaction\x12\x0f\n\x07tx_hash\x18\x02 \x01(\x0c\x12\x0e\n\x06signer\x18\x03 \x01(\x0c*\x1b\n\x06\x43rypto\x12\x08\n\x04SECP\x10\x00\x12\x07\n\x03SM2\x10\x01\x62\x06proto3')
 )
 
 _CRYPTO = _descriptor.EnumDescriptor(
@@ -40,8 +40,8 @@ _CRYPTO = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=348,
-  serialized_end=375,
+  serialized_start=382,
+  serialized_end=409,
 )
 _sym_db.RegisterEnumDescriptor(_CRYPTO)
 
@@ -94,8 +94,22 @@ _TRANSACTION = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='version', full_name='Transaction.version', index=5,
-      number=6, type=13, cpp_type=3, label=1,
+      name='value', full_name='Transaction.value', index=5,
+      number=6, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='chain_id', full_name='Transaction.chain_id', index=6,
+      number=7, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='version', full_name='Transaction.version', index=7,
+      number=8, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -112,8 +126,8 @@ _TRANSACTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=21,
-  serialized_end=134,
+  serialized_start=22,
+  serialized_end=168,
 )
 
 
@@ -157,8 +171,8 @@ _UNVERIFIEDTRANSACTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=136,
-  serialized_end=238,
+  serialized_start=170,
+  serialized_end=272,
 )
 
 
@@ -202,8 +216,8 @@ _SIGNEDTRANSACTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=240,
-  serialized_end=346,
+  serialized_start=274,
+  serialized_end=380,
 )
 
 _UNVERIFIEDTRANSACTION.fields_by_name['transaction'].message_type = _TRANSACTION
