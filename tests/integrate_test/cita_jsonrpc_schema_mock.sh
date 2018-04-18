@@ -19,6 +19,9 @@ echo "DONE"
 
 ################################################################################
 echo -n "2) generate config  ...  "
+if [ ! -d "resource" ]; then
+    mkdir resource
+fi
 ${BINARY_DIR}/bin/admintool.sh \
              -T 1524000000 \
              -C 123 \
