@@ -1,15 +1,15 @@
 {
-  "title": "cita_getBlockByNumber",
+  "title": "cita_getBlockByHash",
   "schema": {
-    "$ref": "../schemas/cita_getBlockByNumber.json"
+    "$ref": "../schemas/cita_getBlockByHash.json"
   },
   "tests": [
     {
-      "title": "cita_getBlockByNumber without full transactions",
+      "title": "cita_getBlockByHash without full transactions",
       "request": {
-        "method": "cita_getBlockByNumber",
+        "method": "cita_getBlockByHash",
         "params": [
-          "0x1",
+          "0x2d83384e1cec42fb19fb4b6545da9d214e03b9289053a67b5b0c8aab43b932f4",
           false
         ]
       },
@@ -56,11 +56,11 @@
       ]
     },
     {
-      "title": "cita_getBlockByNumber with full transactions",
+      "title": "cita_getBlockByHash with full transactions",
       "request": {
-        "method": "cita_getBlockByNumber",
+        "method": "cita_getBlockByHash",
         "params": [
-          "0x2",
+          "0x74fb1d0d11af9e913746c01a05a10156d5e454d7ed6669f4ff42056b914a7823",
           true
         ]
       },
@@ -129,9 +129,9 @@
       ]
     },
     {
-      "title": "cita_getBlockByNumber with no parameters",
+      "title": "cita_getBlockByHash with no parameters",
       "request": {
-        "method": "cita_getBlockByNumber",
+        "method": "cita_getBlockByHash",
         "params": [],
         "shouldFailSchema": true
       },
@@ -153,11 +153,11 @@
       ]
     },
     {
-      "title": "cita_getBlockByNumber with one parameter",
+      "title": "cita_getBlockByHash with one parameter",
       "request": {
-        "method": "cita_getBlockByNumber",
+        "method": "cita_getBlockByHash",
         "params": [
-          "0xa"
+          "0x9f921e01d6ca890e5b99f014473f5197905ce0259e1f4f7db32c700132db216d"
         ],
         "shouldFailSchema": true
       },
