@@ -23,7 +23,7 @@ use protobuf::RepeatedField;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::convert::{Into, TryInto};
-use std::time::{Duration, UNIX_EPOCH};
+use std::time::Duration;
 use util::{Address, H256, U256};
 use util::Hashable;
 
@@ -93,11 +93,11 @@ impl BuildBlock {
         pre_hash: H256,
         height: u64,
         privkey: &PrivKey,
+        timestamp: u64,
     ) -> (Vec<u8>, BlockWithProof) {
         let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
         let mut block = Block::new();
-        let block_time = Self::unix_now();
-        block.mut_header().set_timestamp(block_time.as_millis());
+        block.mut_header().set_timestamp(timestamp * 1000);
         block.mut_header().set_height(height);
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
         block
@@ -132,9 +132,5 @@ impl BuildBlock {
 
         let msg: Message = proof_blk.clone().into();
         (msg.try_into().unwrap(), proof_blk)
-    }
-
-    pub fn unix_now() -> Duration {
-        UNIX_EPOCH.elapsed().unwrap()
     }
 }

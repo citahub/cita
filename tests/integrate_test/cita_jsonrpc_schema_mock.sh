@@ -19,8 +19,10 @@ echo "DONE"
 
 ################################################################################
 echo -n "2) generate config  ...  "
-${BINARY_DIR}/bin/admintool.sh > /dev/null 2>&1
-cp ${SOURCE_DIR}/tests/interfaces/rpc/config/genesis.json ${BINARY_DIR}/node0
+${BINARY_DIR}/bin/admintool.sh \
+             -T 1524000000 \
+             -C 123 \
+             -A ${SOURCE_DIR}/tests/interfaces/rpc/config/authorities > /dev/null 2>&1
 echo "DONE"
 
 ################################################################################

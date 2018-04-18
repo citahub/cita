@@ -72,7 +72,7 @@
             "timestamp": 1523350456725,
             "prevHash": "0xca70569ef267a79bee721215f568d44de80189b644a7d91fab44b00396949baf",
             "number": "0x2",
-            "stateRoot": "0x683264cd959f34bd5f1d748bc8724d1c06778672546520248baf391f653295a4",
+            "stateRoot": "0xa055b8c56219791e831ff0a7c4501eb7af4aa2887171abf463925ac8c5dc5b36",
             "transactionsRoot": "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17",
             "receiptsRoot": "0x3eb24f895dfebd7a1e8230083d09027934285f4bc6c4a7ea7b48708a452a81a9",
             "gasUsed": "0x7453",
