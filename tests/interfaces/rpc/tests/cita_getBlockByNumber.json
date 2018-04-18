@@ -16,7 +16,7 @@
       "expectedResponse": {
         "result": {
           "version": 0,
-          "hash": "0x4ef8b6ed756fe8c5f741ed4a22654d71ef92283e9af02ba245712f4c937ad9ae",
+          "hash": "0x46e945f91b6f733ad85d6a365342a019886e3d84b629cbf65579094d98f11f4d",
           "header": {
             "timestamp": 1523254592507,
             "prevHash": "0x43cfe2f9abe3c057ecc0c7d52392aa513f9d3543716e365564a73c97305cf06d",
@@ -34,8 +34,8 @@
       },
       "asserts": [
         {
-          "description": "response has blockHeader hash",
-          "program": ".receivedResponse.result.hash != null"
+          "description": "response hash should be equal",
+          "program": ".receivedResponse.result.hash == .expectedResponse.result.hash"
         },
         {
           "description": "BlockNumber has blockHeader hash",
@@ -67,7 +67,7 @@
       "expectedResponse": {
         "result": {
           "version": 0,
-          "hash": "0x32afe0ee7c085f9b6e15273d0a5d78e84ca8b55b0612fea6730ced730d1d4994",
+          "hash": "0x9f921e01d6ca890e5b99f014473f5197905ce0259e1f4f7db32c700132db216d",
           "header": {
             "timestamp": 1523350456725,
             "prevHash": "0xca70569ef267a79bee721215f568d44de80189b644a7d91fab44b00396949baf",
@@ -99,8 +99,8 @@
       },
       "asserts": [
         {
-          "description": "response has blockHeader hash",
-          "program": ".receivedResponse.result.hash != null"
+          "description": "response hash should be equal",
+          "program": ".receivedResponse.result.hash == .expectedResponse.result.hash"
         },
         {
           "description": "BlockNumber has blockHeader hash",
