@@ -264,7 +264,7 @@ pub enum ExecutionError {
     NoContractPermission,
     NoCallPermission,
     /// Returned when internal evm error occurs.
-    Internal(String),
+    ExecutionInternal(String),
     /// Returned when generic transaction occurs
     TransactionMalformed(String),
 }
@@ -283,7 +283,7 @@ impl fmt::Display for ExecutionError {
             AccountGasLimitReached { ref gas_limit, ref gas } => format!("Account gas limit reached. The limit is {}, {} more is required", gas_limit, gas),
             InvalidNonce { ref expected, ref got } => format!("Invalid transaction nonce: expected {}, found {}", expected, got),
             NotEnoughCash { ref required, ref got } => format!("Cost of transaction exceeds sender balance. {} is required but the sender only has {}", required, got),
-            Internal(ref msg) => msg.clone(),
+            ExecutionInternal(ref msg) => msg.clone(),
             TransactionMalformed(ref err) => format!("Malformed transaction: {}", err),
             NoTransactionPermission => "No transaction permission".to_owned(),
             NoContractPermission => "No contract permission".to_owned(),

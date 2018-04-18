@@ -886,7 +886,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
 
         match result {
-            Err(evm::Error::Internal(msg)) => Err(ExecutionError::Internal(msg)),
+            Err(evm::Error::Internal(msg)) => Err(ExecutionError::ExecutionInternal(msg)),
             Err(exception) => Ok(Executed {
                 exception: Some(exception),
                 gas: t.gas,

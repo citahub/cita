@@ -27,12 +27,16 @@ use util::HeapSizeOf;
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
     // ExecutionError
-    NoTransactionPermission,
-    NoContractPermission,
-    NoCallPermission,
     NotEnoughBaseGas,
     BlockGasLimitReached,
     AccountGasLimitReached,
+    InvalidNonce,
+    NotEnoughCash,
+    NoTransactionPermission,
+    NoContractPermission,
+    NoCallPermission,
+    ExecutionInternal,
+    TransactionMalformed,
     // EVM error(chain/core/src/evm/evm.rs)
     OutOfGas,
     BadJumpDestination,
@@ -49,12 +53,16 @@ impl ReceiptError {
     /// Returns human-readable description
     pub fn description(&self) -> String {
         let desc = match *self {
-            ReceiptError::NoTransactionPermission => "No transaction permission.",
-            ReceiptError::NoContractPermission => "No contract permission.",
-            ReceiptError::NoCallPermission => "No Call contract permission.",
             ReceiptError::NotEnoughBaseGas => "Not enough base gas.",
             ReceiptError::BlockGasLimitReached => "Block gas limit reached.",
             ReceiptError::AccountGasLimitReached => "Account gas limit reached.",
+            ReceiptError::InvalidNonce => "Invalid transaction nonce.",
+            ReceiptError::NotEnoughCash => "Cost of transaction exceeds sender balance.",
+            ReceiptError::NoTransactionPermission => "No transaction permission.",
+            ReceiptError::NoContractPermission => "No contract permission.",
+            ReceiptError::NoCallPermission => "No Call contract permission.",
+            ReceiptError::ExecutionInternal => "Execution internal error.",
+            ReceiptError::TransactionMalformed => "Malformed transaction.",
             ReceiptError::OutOfGas => "Out of gas.",
             ReceiptError::BadJumpDestination => "Jump position wasn't marked with JUMPDEST instruction.",
             ReceiptError::BadInstruction => "Instruction is not supported.",
@@ -63,19 +71,23 @@ impl ReceiptError {
             ReceiptError::Internal => "EVM internal error.",
             ReceiptError::MutableCallInStaticContext => "Mutable call in static context.",
             ReceiptError::OutOfBounds => "Out of bounds.",
-            ReceiptError::Reverted => "Reverted",
+            ReceiptError::Reverted => "Reverted.",
         };
         desc.to_string()
     }
 
     pub fn protobuf(&self) -> ProtoReceiptError {
         match *self {
-            ReceiptError::NoTransactionPermission => ProtoReceiptError::NoTransactionPermission,
-            ReceiptError::NoContractPermission => ProtoReceiptError::NoContractPermission,
-            ReceiptError::NoCallPermission => ProtoReceiptError::NoCallPermission,
             ReceiptError::NotEnoughBaseGas => ProtoReceiptError::NotEnoughBaseGas,
             ReceiptError::BlockGasLimitReached => ProtoReceiptError::BlockGasLimitReached,
             ReceiptError::AccountGasLimitReached => ProtoReceiptError::AccountGasLimitReached,
+            ReceiptError::InvalidNonce => ProtoReceiptError::InvalidTransactionNonce,
+            ReceiptError::NotEnoughCash => ProtoReceiptError::NotEnoughCash,
+            ReceiptError::NoTransactionPermission => ProtoReceiptError::NoTransactionPermission,
+            ReceiptError::NoContractPermission => ProtoReceiptError::NoContractPermission,
+            ReceiptError::NoCallPermission => ProtoReceiptError::NoCallPermission,
+            ReceiptError::ExecutionInternal => ProtoReceiptError::ExecutionInternal,
+            ReceiptError::TransactionMalformed => ProtoReceiptError::TransactionMalformed,
             ReceiptError::OutOfGas => ProtoReceiptError::OutOfGas,
             ReceiptError::BadJumpDestination => ProtoReceiptError::BadJumpDestination,
             ReceiptError::BadInstruction => ProtoReceiptError::BadInstruction,
@@ -90,12 +102,16 @@ impl ReceiptError {
 
     fn from_proto(receipt_error: ProtoReceiptError) -> Self {
         match receipt_error {
-            ProtoReceiptError::NoTransactionPermission => ReceiptError::NoTransactionPermission,
-            ProtoReceiptError::NoContractPermission => ReceiptError::NoContractPermission,
-            ProtoReceiptError::NoCallPermission => ReceiptError::NoCallPermission,
             ProtoReceiptError::NotEnoughBaseGas => ReceiptError::NotEnoughBaseGas,
             ProtoReceiptError::BlockGasLimitReached => ReceiptError::BlockGasLimitReached,
             ProtoReceiptError::AccountGasLimitReached => ReceiptError::AccountGasLimitReached,
+            ProtoReceiptError::InvalidTransactionNonce => ReceiptError::InvalidNonce,
+            ProtoReceiptError::NotEnoughCash => ReceiptError::NotEnoughCash,
+            ProtoReceiptError::NoTransactionPermission => ReceiptError::NoTransactionPermission,
+            ProtoReceiptError::NoContractPermission => ReceiptError::NoContractPermission,
+            ProtoReceiptError::NoCallPermission => ReceiptError::NoCallPermission,
+            ProtoReceiptError::ExecutionInternal => ReceiptError::ExecutionInternal,
+            ProtoReceiptError::TransactionMalformed => ReceiptError::TransactionMalformed,
             ProtoReceiptError::OutOfGas => ReceiptError::OutOfGas,
             ProtoReceiptError::BadJumpDestination => ReceiptError::BadJumpDestination,
             ProtoReceiptError::BadInstruction => ReceiptError::BadInstruction,
@@ -112,21 +128,25 @@ impl ReceiptError {
 impl Decodable for ReceiptError {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         match rlp.as_val::<u8>()? {
-            0 => Ok(ReceiptError::NoTransactionPermission),
-            1 => Ok(ReceiptError::NoContractPermission),
-            2 => Ok(ReceiptError::NoCallPermission),
-            3 => Ok(ReceiptError::NotEnoughBaseGas),
-            4 => Ok(ReceiptError::BlockGasLimitReached),
-            5 => Ok(ReceiptError::AccountGasLimitReached),
-            6 => Ok(ReceiptError::OutOfGas),
-            7 => Ok(ReceiptError::BadJumpDestination),
-            8 => Ok(ReceiptError::BadInstruction),
-            9 => Ok(ReceiptError::StackUnderflow),
-            10 => Ok(ReceiptError::OutOfStack),
-            11 => Ok(ReceiptError::Internal),
-            12 => Ok(ReceiptError::MutableCallInStaticContext),
-            13 => Ok(ReceiptError::OutOfBounds),
-            14 => Ok(ReceiptError::Reverted),
+            0 => Ok(ReceiptError::NotEnoughBaseGas),
+            1 => Ok(ReceiptError::BlockGasLimitReached),
+            2 => Ok(ReceiptError::AccountGasLimitReached),
+            3 => Ok(ReceiptError::InvalidNonce),
+            4 => Ok(ReceiptError::NotEnoughCash),
+            5 => Ok(ReceiptError::NoTransactionPermission),
+            6 => Ok(ReceiptError::NoContractPermission),
+            7 => Ok(ReceiptError::NoCallPermission),
+            8 => Ok(ReceiptError::ExecutionInternal),
+            9 => Ok(ReceiptError::TransactionMalformed),
+            10 => Ok(ReceiptError::OutOfGas),
+            11 => Ok(ReceiptError::BadJumpDestination),
+            12 => Ok(ReceiptError::BadInstruction),
+            13 => Ok(ReceiptError::StackUnderflow),
+            14 => Ok(ReceiptError::OutOfStack),
+            15 => Ok(ReceiptError::Internal),
+            16 => Ok(ReceiptError::MutableCallInStaticContext),
+            17 => Ok(ReceiptError::OutOfBounds),
+            18 => Ok(ReceiptError::Reverted),
             _ => Err(DecoderError::Custom("Unknown Receipt error.")),
         }
     }
