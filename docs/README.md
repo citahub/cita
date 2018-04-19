@@ -1,6 +1,6 @@
 # CITA
 
-Visit the documentation site: <https://cryptape.github.io/cita/>
+Visit the documentation site: [中文](https://cryptape.github.io/cita/zh/), [English](https://cryptape.github.io/cita/en/)
 
 ## Adding a github remote
 
@@ -24,4 +24,7 @@ You can also use the `mkdocs serve` command to view the site on localhost, and l
 
 ## Redeploying the documentation site
 
+```shell
+git pull upstream gh-pages:ghpages
 mkdocs gh-deploy
+```
