@@ -110,118 +110,131 @@ cd target/install
 
 ## 运行节点
 
-操作节点的命令都是相同的，以下以`node0`为例进行演示。
+单个节点的操作，以下以`node0`为例进行演示。
 
-1.  配置节点：
+1. 配置节点：
 
-```shell
-./env.sh ./bin/cita setup node0
-```
+    ```shell
+    ./env.sh ./bin/cita setup node0
+    ```
 
-2.  启动节点：
+2. 启动节点：
 
-该命令正常情况下不会返回，因此需要后台运行。
+    该命令正常情况下不会返回，因此需要后台运行。
+	
+    ```shell
+    ./daemon.sh ./bin/cita start node0
+    ```	
 
-```shell
-./daemon.sh ./bin/cita start node0
-```
+3. 停止节点：
 
-3.  停止节点：
+    ```shell
+    ./env.sh ./bin/cita stop node0
+    ```
 
-```shell
-./env.sh ./bin/cita stop node0
-```
+4. 其他操作
 
-4.  其他操作
+    具体使用查看命令的帮助信息：
 
-具体使用查看命令的帮助信息：
+    ```shell
+    ./env.sh ./bin/cita help
+    ```
 
-```shell
-./env.sh ./bin/cita help
-```
+## 测试环境搭建
+
+有两种方法搭建测试环境
+
+- 可以通过上一个小节的方法依次启动 4 个节点，当不需要使用时，再依次关闭即可。
+- 也可以通过如下脚本批量启动和关闭节点。
+	
+    以下命令在源码根目录运行
+	
+	- 启动 4 个节点
+		
+        ```shell
+        ./env.sh tests/integrate_test/cita_start.sh
+        ```
+		
+        该命令正常情况下不会返回，需要保持 shell 不退出。或者用`daemon.sh`运行。
+
+	- 停止 4 个节点
+		
+        ```shell
+        ./env.sh ./tests/integrate_test/cita_stop.sh
+        ```
+
 
 ## 测试
+
+***需要在测试环境搭建完成后执行***
 
 除了上述的基本操作命令，为了方便用户对 Demo 进行相关测试，我们在目录`cita/tests/integreate_test`下提供了一些测试脚本。
 
 以下命令在源码根目录下运行。
 
-1.  启动 4 个节点
+1.  基本功能测试
 
-```shell
-./env.sh tests/integrate_test/cita_start.sh
-```
+    4 个节点启动并成功出块，基本功能测试然后停止 4 个节点：
 
-该命令正常情况下不会返回，需要保持 shell 不退出。或者用`daemon.sh`运行。
+    ```shell
+    ./env.sh ./tests/integrate_test/cita_basic.sh
+    ```
 
-2.  停止 4 个节点
+2.  发送交易测试
 
-上一节中的命令中止，或者执行命令：
+    ```shell
+    ./env.sh ./tests/integrate_test/cita_transactiontest.sh
+    ```
 
-```shell
-./env.sh ./tests/integrate_test/cita_stop.sh
-```
+3.  拜占庭测试
 
-3.  基本功能测试
+    模拟网络异常情况下的功能测试。
 
-4 个节点启动并成功出块，基本功能测试然后停止 4 个节点：
-
-```shell
-./env.sh ./tests/integrate_test/cita_basic.sh
-```
-
-4.  发送交易测试
-
-```shell
-./env.sh ./tests/integrate_test/cita_transactiontest.sh
-```
-
-5.  拜占庭测试
-
-模拟网络异常情况下的功能测试。
-
-```shell
-./env.sh ./tests/integrate_test/cita_byzantinetest.sh
-```
+    ```shell
+    ./env.sh ./tests/integrate_test/cita_byzantinetest.sh
+    ```
 
 ## 验证
 
-* 查询节点个数
+***需要在测试环境搭建完成后执行***
 
-Request:
 
-```shell
-./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}' 127.0.0.1:1337
-```
+- 查询节点个数
 
-Result:
+    Request:
 
-```shell
-{
-  "jsonrpc": "2.0",
-  "id": 74,
-  "result": "0x3"
-}
-```
+    ```shell
+    ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}' 127.0.0.1:1337
+    ```
 
-* 查询当前块高度。
+    Result:
 
-Request:
+    ```shell
+    {
+        "jsonrpc": "2.0",
+        "id": 74,
+        "result": "0x3"
+    }
+    ```
 
-```shell
-./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}' 127.0.0.1:1337
-```
+- 查询当前块高度。
 
-Result:
+    Request:
 
-```shell
-{
-  "jsonrpc": "2.0",
-  "id": 83,
-  "result": "0x8"
-}
-```
+    ```shell
+    ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}' 127.0.0.1:1337
+    ```
 
-返回块高度，表示节点已经开始正常出块。
+    Result:
+
+    ```shell
+    {
+        "jsonrpc": "2.0",
+        "id": 83,
+        "result": "0x8"
+    }
+    ```
+
+    返回块高度，表示节点已经开始正常出块。
 
 更多 API（如合约调用、交易查询）请参见[RPC 调用](https://cryptape.github.io/cita/usage-guide/rpc)。
