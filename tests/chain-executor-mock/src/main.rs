@@ -60,6 +60,8 @@ use util::{H256, U256};
 
 pub type PubType = (String, Vec<u8>);
 
+const GENESIS_TIMESTAMP: u64 = 1524000000;
+
 // Build the block from transactions, then send it to MQ
 fn send_block(
     pre_hash: H256,
@@ -106,7 +108,13 @@ fn send_block(
         .collect();
 
     // 构造block
-    let (send_data, _block) = BuildBlock::build_block_with_proof(&txs, pre_hash, height, privkey);
+    let (send_data, _block) = BuildBlock::build_block_with_proof(
+        &txs,
+        pre_hash,
+        height,
+        privkey,
+        GENESIS_TIMESTAMP + height * 3,
+    );
     info!(
         "===============send block ({} transactions)===============",
         txs.len()

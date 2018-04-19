@@ -52,7 +52,7 @@ CONTRACTS = {
                                                    'name': 'GroupCreator'}
 }
 
-def init_contracts(nodes):
+def init_contracts(nodes, chain_id):
     result = dict()
     env = get_env(None)
     env.config['BLOCK_GAS_LIMIT'] = 471238800
@@ -80,9 +80,7 @@ def init_contracts(nodes):
                 # Current chain id:
                 #   - 3  bit prefix (0b000 means testnet)
                 #   - 29 bit id is a random number in range [0, 2**29]
-                if params[4] <= 0:
-                    chain_id = random.randint(0, 2**(32-3))
-                    params[4] = chain_id
+                params[4] = chain_id or random.randint(0, 2**(32-3))
                 print '[chain-id]: {}'.format(params[4])
                 with open('chain_id', 'w') as f:
                     f.write('{}\n'.format(params[4]))
@@ -129,6 +127,10 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
+        "--chain_id", type=int, default=0, help="Specify the chain_id to use.")
+    parser.add_argument(
+        "--timestamp", type=int, default=0, help="Specify the timestamp to use.")
+    parser.add_argument(
         "--authorities", help="Authorities nodes list file.")
     parser.add_argument(
         "--init_data", help="init with constructor_arguments.")
@@ -163,7 +165,7 @@ def main():
         init_data["0x00000000000000000000000000000000013241a2"][0].append(auth)
 
     data = dict()
-    timestamp = int(time.time())
+    timestamp = int(time.time() if not args.timestamp else args.timestamp)
     if os.path.exists(res_path) and os.path.isdir(res_path):
         #file list make sure same order when calc hash
         file_list = ""
@@ -186,7 +188,7 @@ def main():
     data["timestamp"] = timestamp
 
     print "init data\n", json.dumps(init_data, indent=4)
-    alloc = init_contracts(init_data)
+    alloc = init_contracts(init_data, args.chain_id)
     data['alloc'] = alloc
     dump_path =  "genesis.json"
     with open(dump_path, "w") as f:
