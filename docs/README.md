@@ -1,6 +1,6 @@
 # CITA
 
-Visit the documentation site: <https://cryptape.github.io/cita/>
+Visit the documentation site: [中文](https://cryptape.github.io/cita/zh/), [English](https://cryptape.github.io/cita/en/)
 
 ## Adding a github remote
 
