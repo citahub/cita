@@ -16,12 +16,12 @@
       "expectedResponse": {
         "result": {
           "version": 0,
-          "hash": "0x2d83384e1cec42fb19fb4b6545da9d214e03b9289053a67b5b0c8aab43b932f4",
+          "hash": "0x70fa2a32c03f56aa144867358ac99876aaeccd2bf7474c6d2bc5ea99c1e0ca52",
           "header": {
             "timestamp": 1524000003000,
-            "prevHash": "0x7a7942597a8c8cb6387b29edcb17db195cd65f018438c429c063123df53d0e0c",
+            "prevHash": "0x1cb3a47e4c8f8523e9769b9bfdd8f627acdf8441633931befb639e21e27fd9a7",
             "number": "0x1",
-            "stateRoot": "0xe4be87c2faeb9029c7cf386abd465116baf3e797dbbb87ddf95f95290fd188a6",
+            "stateRoot": "0xb69bc34f4f4f3895f04e3f9aabf98900e2a06a77718d901bcd5cd0a5c08c2fe1",
             "transactionsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "receiptsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "gasUsed": "0x0",
@@ -72,12 +72,12 @@
       "expectedResponse": {
         "result": {
           "version": 0,
-          "hash": "0x74fb1d0d11af9e913746c01a05a10156d5e454d7ed6669f4ff42056b914a7823",
+          "hash": "0x76a1fa35d3f0b6b5fe48cef6122d64967f8ead28e2cd669331c629684a9272de",
           "header": {
             "timestamp": 1524000006000,
-            "prevHash": "0x2d83384e1cec42fb19fb4b6545da9d214e03b9289053a67b5b0c8aab43b932f4",
+            "prevHash": "0x70fa2a32c03f56aa144867358ac99876aaeccd2bf7474c6d2bc5ea99c1e0ca52",
             "number": "0x2",
-            "stateRoot": "0xa055b8c56219791e831ff0a7c4501eb7af4aa2887171abf463925ac8c5dc5b36",
+            "stateRoot": "0xbeb68977a1987aa1d2beff9089643bb957e7496cd2f7c5d8235dae2322b5f560",
             "transactionsRoot": "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17",
             "receiptsRoot": "0x3eb24f895dfebd7a1e8230083d09027934285f4bc6c4a7ea7b48708a452a81a9",
             "gasUsed": "0x7453",

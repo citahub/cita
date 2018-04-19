@@ -4,25 +4,26 @@ import "./group.sol";
 
 
 /// @title Group factory contract to create group contract
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @notice The address: 0x00000000000000000000000000000000013241c3
+///         The interface: None
 contract GroupCreator {
 
     address userManagementAddr = 0x00000000000000000000000000000000013241C2;
 
-    modifier onlyUserManagement {
-        require(userManagementAddr == msg.sender);
-        _;
-    }
-
     event GroupCreated(address indexed _id, address indexed _parent, bytes32 indexed _name, address[] accounts);
 
-    /// @dev Create a new group contract
+    /// @notice Create a new group contract
+    /// @param _parent The parent group
+    /// @param _name  The name of group
+    /// @return New group's accounts
     function createGroup(address _parent, bytes32 _name, address[] _accounts)
         public
-        onlyUserManagement
         returns (Group groupAddress)
     {
-        Group group = new Group(_parent, _name, _accounts);
-        GroupCreated(group, _parent, _name, _accounts);
-        return group;
+        require(userManagementAddr == msg.sender);
+
+        groupAddress = new Group(_parent, _name, _accounts);
+        GroupCreated(groupAddress, _parent, _name, _accounts);
     }
 }

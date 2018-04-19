@@ -2,6 +2,10 @@ pragma solidity ^0.4.18;
 
 import "./quota_interface.sol";
 
+
+/// @title Node manager contract
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @notice The address: 0x00000000000000000000000000000000013241a3
 contract QuotaManager is QuotaInterface {
 
     mapping (address => bool) admins;
@@ -31,6 +35,7 @@ contract QuotaManager is QuotaInterface {
         _;
     }
 
+    /// @notice Setup
     function QuotaManager(address _account) public {
         admins[_account] = true;
         quota[_account] = 1073741824;
@@ -38,6 +43,9 @@ contract QuotaManager is QuotaInterface {
         quotas.push(1073741824);
     }
 
+    /// @notice Add an admin
+    /// @param _account Address of the admin
+    /// @return true if successed, otherwise false
     function addAdmin(address _account)
         public
         onlyAdmin
@@ -48,6 +56,9 @@ contract QuotaManager is QuotaInterface {
         return true;
     }
 
+    /// @notice Set the block quota limit
+    /// @param _value The value to be setted
+    /// @return true if successed, otherwise false
     function setBQL(uint _value)
         public
         onlyAdmin
@@ -60,6 +71,9 @@ contract QuotaManager is QuotaInterface {
         return true;
     }
 
+    /// @notice Set the default account quota limit
+    /// @param _value The value to be setted
+    /// @return true if successed, otherwise false
     function setDefaultAQL(uint _value)
         public
         onlyAdmin
@@ -71,6 +85,10 @@ contract QuotaManager is QuotaInterface {
         return true;
     }
 
+    /// @notice Set the account quota limit
+    /// @param _account The account to be setted
+    /// @param _value The value to be setted
+    /// @return true if successed, otherwise false
     function setAQL(address _account, uint _value)
         public
         onlyAdmin
@@ -88,6 +106,9 @@ contract QuotaManager is QuotaInterface {
         return true;
     }
 
+    /// @notice Check the account is admin
+    /// @param _account The address to be checked
+    /// @return true if it is, otherwise false
     function isAdmin(address _account)
         view
         public
@@ -96,6 +117,8 @@ contract QuotaManager is QuotaInterface {
         return admins[_account];
     }
 
+    /// @notice Get all accounts that have account quota limit
+    /// @return The accounts that have AQL
     function getAccounts()
         view
         public
@@ -104,6 +127,8 @@ contract QuotaManager is QuotaInterface {
         return accounts;
     }
 
+    /// @notice Get all accounts' quotas
+    /// @return The accounts' quotas
     function getQuotas()
         view
         public
@@ -112,6 +137,8 @@ contract QuotaManager is QuotaInterface {
         return quotas;
     }
 
+    /// @notice Get block quota limit
+    /// @return The block quota limit
     function getBQL()
         view
         public
@@ -120,6 +147,8 @@ contract QuotaManager is QuotaInterface {
         return BQL;
     }
 
+    /// @notice Get default account quota limit
+    /// @return The default account quota limit
     function getDefaultAQL()
         view
         public
@@ -128,6 +157,8 @@ contract QuotaManager is QuotaInterface {
         return defaultAQL;
     }
 
+    /// @notice Get account quota limit
+    /// @return The account quota limit
     function getAQL(address _account)
         view
         public

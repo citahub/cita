@@ -3,8 +3,10 @@ pragma solidity ^0.4.18;
 import "./address_array.sol";
 
 
-/// @notice TODO Move the interface about calling the permission management to the role management
-///         TODO Add util library of operation about address
+/// @title Role contract
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @notice The address: Created by roleCreator
+///         The interface can be called: Only query type
 contract Role {
 
     event NameUpdated(bytes32 indexed _oldName, bytes32 indexed _newName);
@@ -21,6 +23,7 @@ contract Role {
         _;
     }
 
+    /// @notice Constructor
     function Role(bytes32 _name, address[] _permissions)
         public
     {
@@ -29,6 +32,8 @@ contract Role {
         RoleCreated(_name, _permissions);
     }
 
+    /// @notice Delete the role
+    /// @return true if successed, otherwise false
     function deleteRole()
         public
         onlyRoleManagement
@@ -38,6 +43,9 @@ contract Role {
         return true;
     }
 
+    /// @notice Update role's name
+    /// @param _name The new name of role
+    /// @return true if successed, otherwise false
     function updateName(bytes32 _name)
         public
         onlyRoleManagement
@@ -48,6 +56,9 @@ contract Role {
         return true;
     }
 
+    /// @notice Add permissions of role
+    /// @param _permissions The permissions of role
+    /// @return true if successed, otherwise false
     function addPermissions(address[] _permissions)
         public
         onlyRoleManagement
@@ -62,6 +73,10 @@ contract Role {
         return true;
     }
 
+    /// @notice Delete permissions of role
+    /// @dev TODO Check permissions in role
+    /// @param _permissions The permissions of role
+    /// @return true if successed, otherwise false
     function deletePermissions(address[] _permissions)
         public
         onlyRoleManagement
@@ -75,6 +90,8 @@ contract Role {
         return true;
     }
 
+    /// @notice Query the information of the role
+    /// @return The information of role: name and permissions
     function queryRole()
         public
         view
@@ -83,6 +100,8 @@ contract Role {
         return (name, permissions);
     }
 
+    /// @notice Query the name of the role
+    /// @return The name of role
     function queryName()
         public
         view
@@ -91,6 +110,8 @@ contract Role {
         return name;
     }
 
+    /// @notice Query the permissions of the role
+    /// @return The permissions of role
     function queryPermissions()
         public
         view
@@ -99,25 +120,27 @@ contract Role {
         return permissions;
     }
 
-    /// @dev Query the length of the permissions
+    /// @notice Query the length of the permissions
+    /// @return The number of permission
     function lengthOfPermissions()
         public
         view
         returns (uint)
     {
-        return permissions.length; 
+        return permissions.length;
     }
 
-    /// @dev Check the duplicate permission
+    /// @notice Check the duplicate permission
+    /// @return true if in permissions, otherwise false
     function inPermissions(address _permission)
-        public 
+        public
         view
         returns (bool)
     {
         return AddressArray.exist(_permission, permissions);
     }
 
-    /// @notice private
+    /// @notice Private selfdestruct
     function close() private onlyRoleManagement
     {
         selfdestruct(msg.sender);

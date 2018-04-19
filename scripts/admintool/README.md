@@ -116,7 +116,7 @@ option:
 - `0x00000000000000000000000000000000013241a3`: 代表配额管理系统合约地址，用户可修改`0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888`值为自己生成的地址，其为配额管理的管理员地址，
                                                 可由此地址进行配额的管理。 ***须保存好对应的私钥***
 - `0x0000000000000000000000000000000031415926`: 代表只读配置合约，三个参数分别代表系统合约生效需要的块数，默认为1代表下一个块生效；权限检查的开关，默认关闭；配额检查开关，默认为关闭。
-- `0x00000000000000000000000000000000013241b4`: 代表新CITA权限管理合约地址，用户可修改`0x9dcd6b234e2772c5451fd4ccf7582f4283140697`值为自己生成的地址，其为超级管理员地址，
+- `0x00000000000000000000000000000000013241b4`: 代表CITA权限管理合约地址，用户可修改`0x9dcd6b234e2772c5451fd4ccf7582f4283140697`值为自己生成的地址，其为超级管理员地址，
                                                 此地址拥有权限管理本身的所有权限。 ***须保存好对应的私钥***
 - `0x00000000000000000000000000000000013241b5`: 代表权限合约地址，其中的多个地址分别代表系统内置的权限类型。
 - `0x00000000000000000000000000000000013241b6`: 代表用户管理合约地址，三个参数分别代表rootGroup的父Group、rootGroup的名称以及组内初始的用户地址。
@@ -154,47 +154,19 @@ journaldb_type = "archive"
 
 ### 节点管理系统合约
 
-节点管理合约存放在`install/scripts/contracts/node_manager.sol`，函数签名可通过`solc node_manager.sol --hashes`编译得到，也可以在[remix](https://remix.ethereum.org)上查看。
+节点管理合约存放在`install/scripts/contracts/node_manager.sol`。
 
-node_manager.sol合约详情如下所示：
+在`install/scripts/contracts/docs`目录也提供了`NodeManager-hashes.json`可供查看，并提供了针对用户和开发者的文档，分别为`NodeManager-userdoc.json`及`NodeManager-devdoc.json`
 
-```shell
-contract address: 0x00000000000000000000000000000000013241a2
-======= node_manager.sol:NodeManager =======
-Function signatures: 
-70480275: addAdmin(address)
-dd4c97a0: approveNode(address)
-2d4ede93: deleteNode(address)
-30ccebb5: getStatus(address)
-24d7806c: isAdmin(address)
-609df32f: listNode()
-ddad2ffe: newNode(address)
-645b8b1b: status(address)
-```
-
-共识节点管理的相关描述及方法介绍见[node_manager](https://cryptape.github.io/cita/system_management/node/index.html#_6)
+共识节点管理的相关描述及方法介绍见[node_manager](https://cryptape.github.io/cita/zh/system_management/node/index.html#_6)
 
 ### 配额管理系统合约
 
-配额管理合约存放在`install/scripts/contracts/system/quota_manager.sol`，合约函数hash详情如下所示：
+配额管理合约存放在`install/scripts/contracts/system/quota_manager.sol`。
 
-```shell
-contract address: 0x00000000000000000000000000000000013241a3
-======= quota_manager.sol:QuotaManager =======
-Function signatures: 
-70480275: addAdmin(address)
-942a8ad3: getAQL(address)
-8a48ac03: getAccounts()
-0bc8982f: getBQL()
-bd9fbe7b: getDefaultAQL()
-cdbcff6d: getQuotas()
-24d7806c: isAdmin(address)
-499a1bcd: setAQL(address,uint256)
-931cd0cc: setBQL(uint256)
-b107ea12: setDefaultAQL(uint256)
-```
+在`install/scripts/contracts/docs`目录下也提供了`QuotaManager-hashes.json`可供查看，并提供了针对用户和开发者的文档，分别为`QuotaManager-userdoc.json`及`QuotaManager-devdoc.json`
 
-配额管理的相关描述及方法介绍见[quota_manager](https://cryptape.github.io/cita/system_management/quota/index.html)
+配额管理的相关描述及方法介绍见[quota_manager](https://cryptape.github.io/cita/zh/system_management/quota/index.html)
 
 ### 单独增加节点
 
@@ -202,4 +174,8 @@ b107ea12: setDefaultAQL(uint256)
 
 #### 权限管理系统合约
 
-新权限系统合约存放在`install/scripts/contracts/permission_management`文件夹下，相关接口说明在`install/scripts/contracts/permission_management/README.md`，详细的接口说明见[permission_management](https://cryptape.github.io/cita/system_management/permission/index.html)
+权限管理合约存放在`install/scripts/contracts/permission_management`文件夹下，
+
+在`install/scripts/contracts/docs`目录下也提供了`PermissionManagement-hashes.json`可供查看，并提供了针对用户和开发者的文档，分别为`PermissionManagement-userdoc.json`及`PermissionManagement-devdoc.json`
+
+详细的接口说明见[permission_management](https://cryptape.github.io/cita/zh/system_management/permission/index.html#_3)

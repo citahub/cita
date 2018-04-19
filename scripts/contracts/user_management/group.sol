@@ -5,7 +5,9 @@ import "./address_array.sol";
 
 
 /// @title Group contract
-/// @notice Can not operate the parent. TBD
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @notice The address: Created by permissionCreator
+///         The interface can be called: Only query type
 contract Group {
 
     address userManagementAddr = 0x00000000000000000000000000000000013241C2;
@@ -27,7 +29,7 @@ contract Group {
         _;
     }
 
-    /// @dev Constructor
+    /// @notice Constructor
     function Group(address _parent, bytes32 _name, address[] _accounts)
         public
     {
@@ -37,7 +39,9 @@ contract Group {
         GroupNewed(_parent, _name, _accounts);
     }
 
-    /// @dev Add accounts
+    /// @notice Add accounts
+    /// @param _accounts The accounts to be added
+    /// @return True if successed, otherwise false
     function addAccounts(address[] _accounts)
         public
         onlyUserManagement
@@ -52,7 +56,9 @@ contract Group {
         return true;
     }
 
-    /// @dev Delete accounts
+    /// @notice Delete accounts
+    /// @param _accounts The accounts to be deleted
+    /// @return True if successed, otherwise false
     function deleteAccounts(address[] _accounts)
         public
         onlyUserManagement
@@ -67,7 +73,9 @@ contract Group {
         return true;
     }
 
-    /// @dev Update group name
+    /// @notice Update group name
+    /// @param _name  The new name to be updated
+    /// @return True if successed, otherwise false
     function updateName(bytes32 _name)
         public
         onlyUserManagement
@@ -78,7 +86,9 @@ contract Group {
         return true;
     }
 
-    /// @dev Delete a child group
+    /// @notice Delete a child group
+    /// @param _child The child group to be deleted
+    /// @return True if successed, otherwise false
     function deleteChild(address _child)
         public
         onlyUserManagement
@@ -89,7 +99,9 @@ contract Group {
         return true;
     }
 
-    /// @dev Add a child group
+    /// @notice Add a child group
+    /// @param _child The child group to be added
+    /// @return True if successed, otherwise false
     function addChild(address _child)
         public
         onlyUserManagement
@@ -102,7 +114,8 @@ contract Group {
         return true;
     }
 
-    /// @dev Destruct self
+    /// @notice Destruct self
+    /// @return True if successed, otherwise false
     function close()
         public
         onlyUserManagement
@@ -112,7 +125,9 @@ contract Group {
         return true;
     }
 
-    /// @dev Query the information of the group
+    /// @notice Query the information of the group
+    /// @dev TODO Include the children group
+    /// @return Name and accounts of group
     function queryInfo()
         public
         view
@@ -121,7 +136,8 @@ contract Group {
         return (name, accounts);
     }
 
-    /// @dev Query the name of the group
+    /// @notice Query the name of the group
+    /// @return The name of group
     function queryName()
         public
         view
@@ -130,7 +146,8 @@ contract Group {
         return name;
     }
 
-    /// @dev Query the accounts of the group
+    /// @notice Query the accounts of the group
+    /// @return The accounts of group
     function queryAccounts()
         public
         view
@@ -139,7 +156,9 @@ contract Group {
         return accounts;
     }
 
-    /// @dev Query the child of the group
+    /// @notice Query the child of the group
+    /// @dev TODO Rename queryChildren
+    /// @return The children of group
     function queryChild()
         public
         view
@@ -148,7 +167,8 @@ contract Group {
         return children;
     }
 
-    /// @dev Query the length of children of the group
+    /// @notice Query the length of children of the group
+    /// @return The number of the children group
     function queryChildLength()
         public
         view
@@ -157,7 +177,8 @@ contract Group {
         return children.length;
     }
 
-    /// @dev Query the parent of the group
+    /// @notice Query the parent of the group
+    /// @return The parent of the group
     function queryParent()
         public
         view
@@ -166,7 +187,8 @@ contract Group {
         return parent;
     }
 
-    /// @dev Check the account in the group
+    /// @notice Check the account in the group
+    /// @return Ture if the account in the group, otherwise false
     function inGroup(address _account)
         public
         view

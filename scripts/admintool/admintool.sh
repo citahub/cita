@@ -118,6 +118,10 @@ create_genesis(){
         cp ${BINARY_DIR}/scripts/admintool/init_data.json ${CONFIG_DIR}/init_data.json
     fi
 
+    if [ ! -d "${BINARY_DIR}/scripts/contracts/docs" ]; then
+        mkdir "${BINARY_DIR}/scripts/contracts/docs"
+    fi
+
     CURRENT_AUTHORITIES="${CONFIG_DIR}/authorities"
     if [ -n "${AUTHORITIES}" ]; then
         CURRENT_AUTHORITIES=${AUTHORITIES}
@@ -130,6 +134,10 @@ create_genesis(){
            --resource "${CONFIG_DIR}/resource/" \
            --permission "${BINARY_DIR}/scripts/admintool/permission_init.json"
     rm -rf ${CONFIG_DIR}/init_data.json
+
+    mv *-userdoc.json ${BINARY_DIR}/scripts/contracts/docs
+    mv *-devdoc.json ${BINARY_DIR}/scripts/contracts/docs
+    mv *-hashes.json ${BINARY_DIR}/scripts/contracts/docs
 }
 
 create_key(){

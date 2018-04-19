@@ -4,8 +4,11 @@ import "./permission_creator.sol";
 import "./authorization.sol";
 
 
-/// @title Permission Management
-/// @notice Not include the query interface
+/// @title Permission management contract
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @notice The address: 0x00000000000000000000000000000000013241b2
+///         The interface the can be called: All
+/// @dev TODO check address is contract
 contract PermissionManagement {
 
     address permissionCreatorAddr = 0x00000000000000000000000000000000013241b3;
@@ -46,7 +49,12 @@ contract PermissionManagement {
         _;
     }
 
-    /// @dev Create a new permission
+    /// @notice Create a new permission
+    /// @dev TODO Check the funcs belong the conts
+    /// @param _name  The name of permission
+    /// @param _conts The contracts of resource
+    /// @param _funcs The function signature of the resource
+    /// @return New permission's address
     function newPermission(bytes32 _name, address[] _conts, bytes4[] _funcs)
         external
         sameLength(_conts, _funcs)
@@ -55,7 +63,9 @@ contract PermissionManagement {
         return permissionCreator.createPermission(_name, _conts, _funcs);
     }
 
-    /// @dev Delete the permission
+    /// @notice Delete the permission
+    /// @param _permission The address of permission
+    /// @return true if successed, otherwise false
     function deletePermission(address _permission)
         external
         notBuiltInPermission(_permission)
@@ -69,7 +79,10 @@ contract PermissionManagement {
         return true;
     }
 
-    /// @dev Update the permission name
+    /// @notice Update the permission name
+    /// @param _permission The address of permission
+    /// @param _name The new name
+    /// @return true if successed, otherwise false
     function updatePermissionName(address _permission, bytes32 _name)
         external
         returns (bool)
@@ -79,7 +92,11 @@ contract PermissionManagement {
         return true;
     }
 
-    /// @dev Add the resources of permission
+    /// @notice Add the resources of permission
+    /// @param _permission The address of permission
+    /// @param _conts The contracts of resource
+    /// @param _funcs The function signature of resource
+    /// @return true if successed, otherwise false
     function addResources(address _permission, address[] _conts, bytes4[] _funcs)
         external
         returns (bool)
@@ -89,7 +106,11 @@ contract PermissionManagement {
         return true;
     }
 
-    /// @dev Delete the resources of permission
+    /// @notice Delete the resources of permission
+    /// @param _permission The address of permission
+    /// @param _conts The contracts of resource
+    /// @param _funcs The function signature of resource
+    /// @return true if successed, otherwise false
     function deleteResources(address _permission, address[] _conts, bytes4[] _funcs)
         external
         returns (bool)
@@ -99,7 +120,10 @@ contract PermissionManagement {
         return true;
     }
 
-    /// @dev Set authorizations
+    /// @notice Set multiple permissions to the account
+    /// @param _account The account to be setted
+    /// @param _permissions The multiple permissions to be setted
+    /// @return true if successed, otherwise false
     function setAuthorizations(address _account, address[] _permissions)
         public
         returns (bool)
@@ -110,7 +134,10 @@ contract PermissionManagement {
         return true;
     }
 
-    /// @dev Set authorization
+    /// @notice Set permission to the account
+    /// @param _account The account to be setted
+    /// @param _permission The permission to be setted
+    /// @return true if successed, otherwise false
     function setAuthorization(address _account, address _permission)
         public
         returns (bool)
@@ -119,7 +146,10 @@ contract PermissionManagement {
         return true;
     }
 
-    /// @dev Cancel authorizations
+    /// @notice Cancel the account's muliple permissions
+    /// @param _account The account to be canceled
+    /// @param _permissions The multiple permissions to be canceled
+    /// @return true if successed, otherwise false
     function cancelAuthorizations(address _account, address[] _permissions)
         public
         returns (bool)
@@ -130,7 +160,10 @@ contract PermissionManagement {
         return true;
     }
 
-    /// @dev Cancel authorization
+    /// @notice Cancel the account's permission
+    /// @param _account The account to be canceled
+    /// @param _permission The permission to be canceled
+    /// @return true if successed, otherwise false
     function cancelAuthorization(address _account, address _permission)
         public
         returns (bool)
@@ -139,7 +172,9 @@ contract PermissionManagement {
         return true;
     }
 
-    /// @dev Clear the account's permissions
+    /// @notice Clear the account's permissions
+    /// @param _account The account to be cleared
+    /// @return true if successed, otherwise false
     function clearAuthorization(address _account)
         public
         returns (bool)

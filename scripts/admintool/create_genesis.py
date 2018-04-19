@@ -60,12 +60,27 @@ def init_contracts(nodes, chain_id):
 
     for address, contract in CONTRACTS.iteritems():
         contract_path = path.join(CONTRACTS_DIR, contract['file'])
-        simple_compiled = compile_file(contract_path)
+        simple_compiled = compile_file(contract_path, combined='bin,abi,userdoc,devdoc,hashes')
         simple_data = solidity_get_contract_data(
             simple_compiled,
             contract_path,
             contract['name'],
         )
+
+        # Save the userdoc of contract
+        userdoc_path =  contract['name'] + "-userdoc.json"
+        with open(userdoc_path, "w") as f:
+            json.dump(simple_data['userdoc'], f, indent=4)
+
+        # Save devdoc of contract
+        devdoc_path =  contract['name'] + "-devdoc.json"
+        with open(devdoc_path, "w") as f:
+            json.dump(simple_data['devdoc'], f, indent=4)
+
+        # Save hashes of contract function
+        hashes_path =  contract['name'] + "-hashes.json"
+        with open(hashes_path, "w") as f:
+            json.dump(simple_data['hashes'], f, indent=4)
 
         if '' == simple_data['bin']:
             sys.exit()
