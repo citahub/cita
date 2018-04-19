@@ -24,7 +24,17 @@ You can also use the `mkdocs serve` command to view the site on localhost, and l
 
 ## Redeploying the documentation site
 
-```shell
-git pull upstream gh-pages:ghpages
-mkdocs gh-deploy
-```
+1. Pull latest gh-deploy to local
+
+    ```shell
+    git fetch upstream gh-pages
+    git checkout gh-pages
+    git pull upstream gh-pages
+    git checkout develop
+    ```
+
+2. Redeploy
+
+    ```shell
+    mkdocs gh-deploy
+    ```
