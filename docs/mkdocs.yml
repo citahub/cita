@@ -8,43 +8,86 @@ edit_uri: docs/docs/
 remote_name: upstream
 
 pages:
-  - 首页: index.md
-  - 快速入门: getting_started.md
-  - 主要概念:
-    - 区块链 (Blockchain): 'key-concepts/blockchain.md'
-    - CITA: 'key-concepts/cita.md'
-  - 系统组件: components.md
-  - 使用指南:
-      - Bootstrap: 'usage-guide/bootstrap.md'
-      - 智能合约指南: 'usage-guide/smart-contract-guide.md'
-      - JSON-RPC: 'usage-guide/rpc.md'
-      - JSON-RPC 错误代码: 'usage-guide/rpc_error_code.md'
-      - 系统合约 (System Contract): 'usage-guide/admintool.md'
-      - 交易相关工具 (Transaction Tool): 'usage-guide/txtool.md'
-  - 系统管理:
-      - 节点管理: 'system_management/node.md'
-      - 权限管理: 'system_management/permission.md'
-      - 用户管理: 'system_management/user.md'
-      - 配额管理: 'system_management/quota.md'
-      - 日志管理: 'system_management/log.md'
-      - 快照: 'system_management/snapshot.md'
-  - 跨链:
-      - 跨链合约编写及操作示例: 'crosschain/crosschain_contract_example.md'
-  - 架构设计: 
-      - 微服务 (Micro Service): 'architecture/architecture.md'
-      - 共识 (Consensus): 'architecture/consensus.md'
-      - 交易处理 (Transaction Process): 'architecture/transaction_process.md'
-      - 视图 (View): 'architecture/view.md'
-  - 常见问题: 'faq.md'
-  - 附录:
-    - 贡献代码: 'appendix/contributing.md'
-    - 词汇表: 'appendix/glossary.md'
+  - 中文:
+    - 首页: 'zh/index.md'
+    - 快速入门: 'zh/getting_started.md'
+    - 主要概念:
+      - 区块链 (Blockchain): 'zh/key-concepts/blockchain.md'
+      - CITA: 'zh/key-concepts/cita.md'
+    - 系统组件: 'zh/components.md'
+    - 使用指南:
+        - Bootstrap: 'zh/usage-guide/bootstrap.md'
+        - 智能合约指南: 'zh/usage-guide/smart-contract-guide.md'
+        - JSON-RPC: 'zh/usage-guide/rpc.md'
+        - JSON-RPC 错误代码: 'zh/usage-guide/rpc_error_code.md'
+        - 系统合约 (System Contract): 'zh/usage-guide/admintool.md'
+        - 交易相关工具 (Transaction Tool): 'zh/usage-guide/txtool.md'
+    - 系统管理:
+        - 节点管理: 'zh/system_management/node.md'
+        - 权限管理: 'zh/system_management/permission.md'
+        - 用户管理: 'zh/system_management/user.md'
+        - 配额管理: 'zh/system_management/quota.md'
+        - 日志管理: 'zh/system_management/log.md'
+        - 快照: 'zh/system_management/snapshot.md'
+    - 跨链:
+        - 跨链合约编写及操作示例: 'zh/crosschain/crosschain_contract_example.md'
+    - 架构设计: 
+        - 微服务 (Micro Service): 'zh/architecture/architecture.md'
+        - 共识 (Consensus): 'zh/architecture/consensus.md'
+        - 交易处理 (Transaction Process): 'zh/architecture/transaction_process.md'
+        - 视图 (View): 'zh/architecture/view.md'
+    - 常见问题: 'zh/faq.md'
+    - 附录:
+      - 贡献代码: 'zh/appendix/contributing.md'
+      - 词汇表: 'zh/appendix/glossary.md'
+
+  # - EN: 
+  #   - Index: 'en/index.md'
+  #   - 'Getting Started': 'en/getting_started.md'
+  #   - Concepts:
+  #     - Blockchain: 'en/key-concepts/blockchain.md'
+  #     - CITA: 'en/key-concepts/cita.md'
+  #   - Components: 'en/components.md'
+  #   - 'Usage Guide':
+  #       - Bootstrap: 'en/usage-guide/bootstrap.md'
+  #       - 'Smart Contracts': 'en/usage-guide/smart-contract-guide.md'
+  #       - JSON-RPC: 'en/usage-guide/rpc.md'
+  #       - 'JSON-RPC Error Code': 'en/usage-guide/rpc_error_code.md'
+  #       - 'System Contract': 'en/usage-guide/admintool.md'
+  #       - 'Transaction Tool': 'en/usage-guide/txtool.md'
+  #   - 'System':
+  #       - Node: 'en/system_management/node.md'
+  #       - Permission: 'en/system_management/permission.md'
+  #       - User: 'en/system_management/user.md'
+  #       - Quota: 'en/system_management/quota.md'
+  #       - Log: 'en/system_management/log.md'
+  #       - Snapshot: 'en/system_management/snapshot.md'
+  #   - 'Cross Chain':
+  #       - 'Cross Chain Contract Examples': 'en/crosschain/crosschain_contract_example.md'
+  #   - Architecture: 
+  #       - 'Micro Service': 'en/architecture/architecture.md'
+  #       - 'Consensus': 'en/architecture/consensus.md'
+  #       - 'Transaction Process': 'en/architecture/transaction_process.md'
+  #       - 'View': 'en/architecture/view.md'
+  #   - FAQ: 'en/faq.md'
+  #   - Appendix:
+  #     - Contributing: 'en/appendix/contributing.md'
+  #     - Glossary: 'en/appendix/glossary.md'
 
 theme:
   name: material
+  language: zh
+  feature:
+    tabs: true
   palette:
     primary: indigo
     accent: indigo
+  font:
+    text: 'Roboto'
+    code: 'Roboto Mono'
+extra:
+  search:
+    language: 'en, zh'
 extra_css:
   - 'stylesheets/extra.css'
 use_directory_urls: false

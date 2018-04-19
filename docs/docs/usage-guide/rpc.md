@@ -1,1 +1,0 @@
-../../../cita-jsonrpc/README.md

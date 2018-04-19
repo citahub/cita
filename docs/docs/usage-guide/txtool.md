@@ -1,1 +1,0 @@
-../../../scripts/txtool/README.md
