@@ -513,7 +513,7 @@ impl Executor {
         let last_hashes = self.build_last_hashes(None, header.number());
         let env_info = EnvInfo {
             number: header.number(),
-            author: Address::default(),
+            author: header.proposer().clone(),
             timestamp: header.timestamp(),
             difficulty: U256::default(),
             last_hashes: last_hashes,
