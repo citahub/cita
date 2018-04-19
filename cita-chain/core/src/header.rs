@@ -80,6 +80,7 @@ impl PartialEq for Header {
             && self.transactions_root == c.transactions_root && self.state_root == c.state_root
             && self.receipts_root == c.receipts_root && self.log_bloom == c.log_bloom
             && self.gas_used == c.gas_used && self.gas_limit == c.gas_limit && self.proof == c.proof
+            && self.proposer == c.proposer
     }
 }
 

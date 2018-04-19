@@ -246,6 +246,9 @@ impl ClosedBlock {
             })
             .collect();
         executed_info
+            .mut_header()
+            .set_proposer(self.proposer().to_vec());
+        executed_info
     }
 }
 

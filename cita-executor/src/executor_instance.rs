@@ -437,10 +437,8 @@ impl ExecutorInstance {
                             if !self.ext.is_interrupted.load(Ordering::SeqCst) {
                                 self.ext.is_interrupted.store(true, Ordering::SeqCst);
                             }
-                            self.send_block(blk_height, block, proof);
-                        } else {
-                            self.send_block(blk_height, block, proof);
                         }
+                        self.send_block(blk_height, block, proof);
                     }
                 }
                 Stage::WaitFinalized => {

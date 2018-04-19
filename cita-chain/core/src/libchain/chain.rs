@@ -418,6 +418,7 @@ impl Chain {
         hdr.set_transactions_root(H256::from(info.get_header().get_transactions_root()));
         hdr.set_log_bloom(log_bloom.clone());
         hdr.set_proof(block.proof().clone());
+        hdr.set_proposer(Address::from(info.get_header().get_proposer()));
 
         let hash = hdr.hash();
         let block_transaction_addresses = block.transaction_addresses(hash);

@@ -326,8 +326,9 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByHash","params":["
       "stateRoot": "0xe29266e5574bc0c848b513d36403d4da71f99f328d3324e8d3134809c33d4fb4",
       "transactionsRoot": "0xf31e32611322f410f430ef8141c2237c19dd1034eddef8dedba692ec9851799b",
       "receiptsRoot": "0x9646cf2572734b4b13fe1616446ab2658e208cfdbaf25e47ebea9b6327e10c5b",
-      "gasUsed": "0x0"
-      "number": "0x387"
+      "gasUsed": "0x0",
+      "number": "0x387",
+      "proposer":"0xe6d430a2d830236d3774d148cbee72bbf26cd481",
     },
     "body": {
       "transactions": [

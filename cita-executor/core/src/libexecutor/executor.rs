@@ -638,6 +638,7 @@ impl Executor {
     ) {
         closed_block.header.set_timestamp(comming.timestamp());
         closed_block.header.set_proof(comming.proof().clone());
+        closed_block.header.set_proposer(*comming.proposer());
         self.finalize_block(closed_block, ctx_pub);
     }
 
