@@ -1,1 +1,0 @@
-../../../scripts/admintool/README.md

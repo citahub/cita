@@ -1,1 +1,0 @@
-../../../cita-jsonrpc/ERROR_CODE.md
