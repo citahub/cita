@@ -18,7 +18,7 @@ cd target/install
 结果如下：
 
 ```shell
-usage: ./admintool.sh -a admin_id -l ip_list -n consensus_name -m crypto_method -d block_duration -t
+usage: ./admintool.sh -a admin_id -l ip_list -n consensus_name -m crypto_method -t
 option:
 -a admin_id    admin identifier
     default value is 'admin'
@@ -32,10 +32,7 @@ option:
 -m crypto_method    name of crypto algorithm
     default value is 'SECP'
 
--d block_duration    block generating duration(millisecond)
-    default value is '3000'
-
--t            consensus test flag, only valid for cita-bft
+-t consensus test flag, only valid for cita-bft
 
 -h enable jsonrpc http
    default enable 'true'

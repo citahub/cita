@@ -267,6 +267,7 @@ pub struct Chain {
     pub blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
     pub block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
     pub nodes: RwLock<Vec<Address>>,
+    pub block_interval: RwLock<u64>,
 
     pub block_gas_limit: AtomicUsize,
     pub account_gas_limit: RwLock<ProtoAccountGasLimit>,
@@ -354,6 +355,7 @@ impl Chain {
             state_db: state_db,
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
+            block_interval: RwLock::new(3000),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
             prooftype: chain_config.prooftype,
@@ -384,18 +386,23 @@ impl Chain {
         self.set_db_result(ret, &blk);
     }
 
-    pub fn set_db_config(&self, ret: &ExecutedResult) {
+    fn set_db_config(&self, ret: &ExecutedResult) {
         let conf = ret.get_config();
         let nodes = conf.get_nodes();
         let nodes: Vec<Address> = nodes
             .into_iter()
             .map(|vecaddr| Address::from_slice(&vecaddr[..]))
             .collect();
-        debug!("consensus nodes {:?}", nodes);
+        let block_interval = conf.get_block_interval();
+        debug!(
+            "consensus nodes {:?}, block_interval {:?}",
+            nodes, block_interval
+        );
         self.set_executed_config(
             conf.get_block_gas_limit(),
             conf.get_account_gas_limit(),
             &nodes,
+            block_interval,
         );
     }
 
@@ -617,11 +624,18 @@ impl Chain {
         *guard = new_map;
     }
 
-    pub fn set_executed_config(&self, bgas_limit: u64, agas_limit: &ProtoAccountGasLimit, nodes: &Vec<Address>) {
+    fn set_executed_config(
+        &self,
+        bgas_limit: u64,
+        agas_limit: &ProtoAccountGasLimit,
+        nodes: &Vec<Address>,
+        block_interval: u64,
+    ) {
         self.block_gas_limit
             .store(bgas_limit as usize, Ordering::SeqCst);
         *self.account_gas_limit.write() = agas_limit.clone();
         *self.nodes.write() = nodes.clone();
+        *self.block_interval.write() = block_interval;
     }
 
     /// Get block by BlockId
@@ -1078,12 +1092,14 @@ impl Chain {
         let current_hash = header.hash();
         let current_height = header.number();
         let nodes: Vec<Address> = self.nodes.read().clone();
+        let block_interval = self.block_interval.read().clone();
 
         let mut rich_status = ProtoRichStatus::new();
         rich_status.set_hash(current_hash.0.to_vec());
         rich_status.set_height(current_height);
         let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
         rich_status.set_nodes(RepeatedField::from_vec(node_list));
+        rich_status.set_interval(block_interval);
 
         let msg: Message = rich_status.into();
         ctx_pub
