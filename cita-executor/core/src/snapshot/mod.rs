@@ -24,7 +24,7 @@ const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 use account_db::{AccountDB, AccountDBMut};
 use db;
 use libexecutor::executor::Executor;
-use rlp::{DecoderError, Rlp, RlpStream, UntrustedRlp};
+use rlp::{DecoderError, RlpStream, UntrustedRlp};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -47,6 +47,7 @@ use self::io::SnapshotReader;
 use self::io::SnapshotWriter;
 use self::service::Service;
 use snapshot::service::SnapshotService;
+pub use types::basic_account::BasicAccount as Account;
 use types::ids::BlockId;
 
 use super::state::Account as StateAccount;
@@ -76,114 +77,6 @@ impl Progress {
     /// Whether the snapshot is complete.
     pub fn done(&self) -> bool {
         self.done.load(Ordering::SeqCst)
-    }
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct Account {
-    nonce: U256,
-    storage_root: H256,
-    code_hash: H256,
-}
-
-impl Account {
-    // decode the account from rlp.
-    pub fn from_thin_rlp(rlp: &[u8]) -> Self {
-        let r: Rlp = Rlp::new(rlp);
-
-        Account {
-            nonce: r.val_at(0),
-            storage_root: r.val_at(1),
-            code_hash: r.val_at(2),
-        }
-    }
-
-    // encode the account to a standard rlp.
-    pub fn to_thin_rlp(&self) -> Bytes {
-        let mut stream = RlpStream::new_list(3);
-        stream
-            .append(&self.nonce)
-            .append(&self.storage_root)
-            .append(&self.code_hash);
-
-        stream.out()
-    }
-
-    // walk the account's storage trie, returning an RLP item containing the
-    // account properties and the storage.
-    pub fn to_fat_rlp(&self, acct_db: &AccountDB) -> Result<Bytes, Error> {
-        let db = TrieDB::new(acct_db, &self.storage_root)?;
-        let mut db_iter = db.iter()?;
-
-        let mut pairs = Vec::new();
-
-        for (k, v) in db_iter.next().unwrap() {
-            pairs.push((k, v));
-        }
-
-        let mut stream = RlpStream::new_list(pairs.len());
-
-        for (k, v) in pairs {
-            stream.begin_list(2).append(&k).append(&&*v);
-        }
-
-        let pairs_rlp = stream.out();
-
-        let mut account_stream = RlpStream::new_list(4);
-        account_stream.append(&self.nonce);
-
-        // [has_code, code_hash].
-        if self.code_hash == HASH_EMPTY {
-            account_stream.append(&false).append_empty_data();
-        } else {
-            match acct_db.get(&self.code_hash) {
-                Some(c) => {
-                    account_stream.append(&true).append(&&*c);
-                }
-                None => {
-                    warn!("code lookup failed during snapshot");
-                    account_stream.append(&false).append_empty_data();
-                }
-            }
-        }
-
-        account_stream.append_raw(&pairs_rlp, 1);
-
-        Ok(account_stream.out())
-    }
-
-    // decode a fat rlp, and rebuild the storage trie as we go.
-    pub fn from_fat_rlp(acct_db: &mut AccountDBMut, rlp: UntrustedRlp) -> Result<Self, Error> {
-        let nonce = rlp.val_at(0)?;
-        let code_hash = if rlp.val_at(1)? {
-            let code: Bytes = rlp.val_at(2)?;
-            acct_db.insert(&code)
-        } else {
-            HASH_EMPTY
-        };
-
-        let mut storage_root = H256::zero();
-
-        {
-            let mut storage_trie = TrieDBMut::new(acct_db, &mut storage_root);
-            let pairs = rlp.at(3)?;
-            for pair_rlp in pairs.iter() {
-                let k: Bytes = pair_rlp.val_at(0)?;
-                let v: Bytes = pair_rlp.val_at(1)?;
-
-                storage_trie.insert(&k, &v)?;
-            }
-        }
-        Ok(Account {
-            nonce: nonce,
-            storage_root: storage_root,
-            code_hash: code_hash,
-        })
-    }
-
-    #[cfg(test)]
-    pub fn storage_root_mut(&mut self) -> &mut H256 {
-        &mut self.storage_root
     }
 }
 
@@ -575,10 +468,10 @@ fn rebuild_accounts(
         *out = (hash, thin_rlp);
     }
     if let Some(&(ref hash, ref rlp)) = out_chunk.iter().last() {
-        known_storage_roots.insert(*hash, ::rlp::decode::<account::Account>(rlp).storage_root);
+        known_storage_roots.insert(*hash, ::rlp::decode::<Account>(rlp).storage_root);
     }
     if let Some(&(ref hash, ref rlp)) = out_chunk.iter().next() {
-        known_storage_roots.insert(*hash, ::rlp::decode::<account::Account>(rlp).storage_root);
+        known_storage_roots.insert(*hash, ::rlp::decode::<Account>(rlp).storage_root);
     }
     Ok(status)
 }
