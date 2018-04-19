@@ -377,7 +377,7 @@ impl OpenBlock {
     pub fn env_info(&self) -> EnvInfo {
         EnvInfo {
             number: self.number(),
-            author: Address::default(),
+            author: self.header.proposer().clone(),
             timestamp: self.timestamp(),
             difficulty: U256::default(),
             last_hashes: Arc::clone(&self.last_hashes),
