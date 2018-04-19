@@ -18,6 +18,7 @@ members = ["cita-auth"
 ,"tests/benchmark_ws"
 ,"tests/chain_performance_by_mq"
 ,"tests/benchmark_execute_transaction"
+,"tests/consensus-mock"
 ]
 
 [profile.bench]

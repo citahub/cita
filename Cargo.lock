@@ -449,7 +449,7 @@ dependencies = [
 
 [[package]]
 name = "chrono"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "num-integer 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -803,6 +803,36 @@ dependencies = [
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+]
+
+[[package]]
+name = "consensus-mock"
+version = "0.1.0"
+dependencies = [
+ "authority_manage 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chrono 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "clap 2.31.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "engine 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "protobuf 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_yaml 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
 ]
 
@@ -1703,7 +1733,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "antidote 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "chrono 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chrono 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1726,7 +1756,7 @@ version = "0.1.0"
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#cefde545d5d235541f2787720f41d5f8fc22187b"
 dependencies = [
  "chan-signal 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "chrono 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chrono 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log4rs 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -3387,7 +3417,7 @@ dependencies = [
 "checksum cfg-if 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d4c819a1287eb618df47cc647173c5c4c66ba19d888a6e50d605672aed3140de"
 "checksum chan 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)" = "9af7c487bb99c929ba2715b1a3a7bf45f5062bf5b6eae5d32b292a96c5865172"
 "checksum chan-signal 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f1f1e11f6e1c14c9e805a87c622cb8fcb636283b3119a2150af390cc6702d7fe"
-"checksum chrono 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ba5f60682a4c264e7f8d77b82e7788938a76befdf949d4a98026d19099c9d873"
+"checksum chrono 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1cce36c92cb605414e9b824f866f5babe0a0368e39ea07393b9b63cf3844c0e6"
 "checksum cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"

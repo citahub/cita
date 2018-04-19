@@ -42,7 +42,7 @@ AMQP_URL=amqp://guest:guest@localhost/node0 \
 echo "DONE"
 
 ################################################################################
-echo "5) check mock data  ...  "
+echo -n "5) check mock data  ...  "
 python2 ${SOURCE_DIR}/tests/interfaces/rpc/test_runner.py \
         --rpc-url http://127.0.0.1:1337 \
         --directory ${SOURCE_DIR}/tests/interfaces/rpc/
