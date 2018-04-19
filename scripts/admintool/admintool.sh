@@ -4,7 +4,7 @@ set -e -o pipefail
 display_help()
 {
     echo
-    echo "usage: $0 -a admin_id -l ip_list -n consensus_name -m crypto_method -d block_duration -t"
+    echo "usage: $0 -a admin_id -l ip_list -n consensus_name -m crypto_method -t"
     echo "option:"
     echo "-a admin_id    admin identifier"
     echo "    default value is 'admin'"
@@ -17,9 +17,6 @@ display_help()
     echo
     echo "-m crypto_method    name of crypto algorithm"
     echo "    default value is 'SECP'"
-    echo
-    echo "-d block_duration    block generating duration(millisecond)"
-    echo "    default value is '3000'"
     echo
     echo "-t consensus test flag, only valid for cita-bft"
     echo
@@ -58,7 +55,7 @@ BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
 export PATH=${PATH}:${BINARY_DIR}/bin
 
 # parse options
-while getopts 'a:l:n:m:d:t:h:w:g:H:W:G:Q:T:C:A:k' OPT; do
+while getopts 'a:l:n:m:t:h:w:g:H:W:G:Q:T:C:A:k' OPT; do
     case $OPT in
         a)
             ADMIN_ID="$OPTARG";;
@@ -68,8 +65,6 @@ while getopts 'a:l:n:m:d:t:h:w:g:H:W:G:Q:T:C:A:k' OPT; do
             CONSENSUS_NAME="$OPTARG";;
         m)
             CRYPTO_METHOD="$OPTARG";;
-        d)
-            DURATION="$OPTARG";;
         t)
             IS_TEST=true;;
         k)
@@ -112,8 +107,6 @@ SIZE=${#TMP}
 
 : ${CRYPTO_METHOD:="SECP"}
 
-: ${DURATION:=3000}
-
 : ${IS_TEST:=false}
 
 : ${TIMESTAMP:=0}
@@ -150,7 +143,7 @@ create_key(){
 }
 
 consensus(){
-    python ${BINARY_DIR}/scripts/admintool/create_node_config.py ${CONFIG_DIR} $CONSENSUS_NAME ${1} $DURATION $IS_TEST
+    python ${BINARY_DIR}/scripts/admintool/create_node_config.py ${CONFIG_DIR} $CONSENSUS_NAME ${1} $IS_TEST
 }
 
 # rabbitmq and kafka

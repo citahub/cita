@@ -132,6 +132,8 @@ pub struct GlobalSysConfig {
     pub check_permission: bool,
     pub account_permissions: HashMap<Address, Vec<Resource>>,
     pub group_accounts: HashMap<Address, Vec<Address>>,
+    /// Interval time for creating a block (milliseconds)
+    pub block_interval: u64,
 }
 
 impl GlobalSysConfig {
@@ -146,6 +148,7 @@ impl GlobalSysConfig {
             check_permission: false,
             account_permissions: HashMap::new(),
             group_accounts: HashMap::new(),
+            block_interval: 3000,
         }
     }
 
@@ -558,6 +561,7 @@ impl Executor {
         send_config.set_account_gas_limit(conf.account_gas_limit.into());
         trace!("node_list : {:?}", node_list);
         send_config.set_nodes(node_list);
+        send_config.set_block_interval(conf.block_interval);
         executed_result.set_config(send_config);
     }
 
@@ -654,6 +658,7 @@ impl Executor {
         conf.delay_active_interval = SysConfig::delay_block_number(self) as usize;
         conf.check_permission = SysConfig::permission_check(self);
         conf.check_quota = SysConfig::quota_check(self);
+        conf.block_interval = SysConfig::block_interval(self);
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
         conf.group_accounts = UserManagement::load_group_accounts(self);
 
