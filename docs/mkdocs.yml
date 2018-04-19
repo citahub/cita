@@ -41,38 +41,38 @@ pages:
       - 贡献代码: 'zh/appendix/contributing.md'
       - 词汇表: 'zh/appendix/glossary.md'
 
-  # - EN: 
-  #   - Index: 'en/index.md'
-  #   - 'Getting Started': 'en/getting_started.md'
-  #   - Concepts:
-  #     - Blockchain: 'en/key-concepts/blockchain.md'
-  #     - CITA: 'en/key-concepts/cita.md'
-  #   - Components: 'en/components.md'
-  #   - 'Usage Guide':
-  #       - Bootstrap: 'en/usage-guide/bootstrap.md'
-  #       - 'Smart Contracts': 'en/usage-guide/smart-contract-guide.md'
-  #       - JSON-RPC: 'en/usage-guide/rpc.md'
-  #       - 'JSON-RPC Error Code': 'en/usage-guide/rpc_error_code.md'
-  #       - 'System Contract': 'en/usage-guide/admintool.md'
-  #       - 'Transaction Tool': 'en/usage-guide/txtool.md'
-  #   - 'System':
-  #       - Node: 'en/system_management/node.md'
-  #       - Permission: 'en/system_management/permission.md'
-  #       - User: 'en/system_management/user.md'
-  #       - Quota: 'en/system_management/quota.md'
-  #       - Log: 'en/system_management/log.md'
-  #       - Snapshot: 'en/system_management/snapshot.md'
-  #   - 'Cross Chain':
-  #       - 'Cross Chain Contract Examples': 'en/crosschain/crosschain_contract_example.md'
-  #   - Architecture: 
-  #       - 'Micro Service': 'en/architecture/architecture.md'
-  #       - 'Consensus': 'en/architecture/consensus.md'
-  #       - 'Transaction Process': 'en/architecture/transaction_process.md'
-  #       - 'View': 'en/architecture/view.md'
-  #   - FAQ: 'en/faq.md'
-  #   - Appendix:
-  #     - Contributing: 'en/appendix/contributing.md'
-  #     - Glossary: 'en/appendix/glossary.md'
+  - EN: 
+    - Index: 'en/index.md'
+    - 'Getting Started': 'en/getting_started.md'
+    - Concepts:
+      - Blockchain: 'en/key-concepts/blockchain.md'
+      - CITA: 'en/key-concepts/cita.md'
+    - Components: 'en/components.md'
+    - 'Usage Guide':
+        - Bootstrap: 'en/usage-guide/bootstrap.md'
+        - 'Smart Contracts': 'en/usage-guide/smart-contract-guide.md'
+        - JSON-RPC: 'en/usage-guide/rpc.md'
+        - 'JSON-RPC Error Code': 'en/usage-guide/rpc_error_code.md'
+        - 'System Contract': 'en/usage-guide/admintool.md'
+        - 'Transaction Tool': 'en/usage-guide/txtool.md'
+    - 'System':
+        - Node: 'en/system_management/node.md'
+        - Permission: 'en/system_management/permission.md'
+        - User: 'en/system_management/user.md'
+        - Quota: 'en/system_management/quota.md'
+        - Log: 'en/system_management/log.md'
+        - Snapshot: 'en/system_management/snapshot.md'
+    - 'Cross Chain':
+        - 'Cross Chain Contract Examples': 'en/crosschain/crosschain_contract_example.md'
+    - Architecture: 
+        - 'Micro Service': 'en/architecture/architecture.md'
+        - 'Consensus': 'en/architecture/consensus.md'
+        - 'Transaction Process': 'en/architecture/transaction_process.md'
+        - 'View': 'en/architecture/view.md'
+    - FAQ: 'en/faq.md'
+    - Appendix:
+      - Contributing: 'en/appendix/contributing.md'
+      - Glossary: 'en/appendix/glossary.md'
 
 theme:
   name: material
