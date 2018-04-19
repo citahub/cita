@@ -20,23 +20,19 @@ use account_db::{AccountDB, AccountDBMut};
 use rlp::{RlpStream, UntrustedRlp};
 use snapshot::Error;
 use std::collections::HashSet;
+use types::basic_account::BasicAccount as Account;
 use util::{Bytes, Trie, TrieDB, TrieDBMut, TrieMut};
 use util::{H256, U256};
 use util::{HASH_EMPTY, HASH_NULL_RLP};
 use util::hashdb::HashDB;
 
-#[derive(Debug, Clone, PartialEq, Eq, RlpEncodable, RlpDecodable)]
-pub struct Account {
-    pub nonce: U256,
-    pub storage_root: H256,
-    pub code_hash: H256,
-}
-
 // An empty account -- these were replaced with RLP null data for a space optimization in v1.
 const ACC_EMPTY: Account = Account {
     nonce: U256([0, 0, 0, 0]),
+    balance: U256([0, 0, 0, 0]),
     storage_root: HASH_NULL_RLP,
     code_hash: HASH_EMPTY,
+    abi_hash: HASH_EMPTY,
 };
 
 // whether an encoded account has code and how it is referred to.
@@ -104,9 +100,9 @@ pub fn to_fat_rlps(
             account_hash, acc.nonce, acc.code_hash
         );
         account_stream.append(account_hash);
-        account_stream.begin_list(4);
+        account_stream.begin_list(6);
 
-        account_stream.append(&acc.nonce);
+        account_stream.append(&acc.nonce).append(&acc.balance);
 
         // [has_code, code_hash].
         if acc.code_hash == HASH_EMPTY {
@@ -129,6 +125,7 @@ pub fn to_fat_rlps(
                 }
             }
         }
+        account_stream.append(&acc.abi_hash);
 
         account_stream.begin_unbounded_list();
         if account_stream.len() > target_chunk_size {
@@ -200,8 +197,9 @@ pub fn from_fat_rlp(
     }
 
     let nonce = rlp.val_at(0)?;
+    let balance = rlp.val_at(1)?;
     let code_state: CodeState = {
-        let raw: u8 = rlp.val_at(1)?;
+        let raw: u8 = rlp.val_at(2)?;
         CodeState::from(raw)?
     };
 
@@ -209,25 +207,26 @@ pub fn from_fat_rlp(
     let (code_hash, new_code) = match code_state {
         CodeState::Empty => (HASH_EMPTY, None),
         CodeState::Inline => {
-            let code: Bytes = rlp.val_at(2)?;
+            let code: Bytes = rlp.val_at(3)?;
             let code_hash = acct_db.insert(&code);
 
             (code_hash, Some(code))
         }
         CodeState::Hash => {
-            let code_hash = rlp.val_at(2)?;
+            let code_hash = rlp.val_at(3)?;
 
             (code_hash, None)
         }
     };
 
+    let abi_hash = rlp.val_at(4)?;
     {
         let mut storage_trie = if storage_root.is_zero() {
             TrieDBMut::new(acct_db, &mut storage_root)
         } else {
             TrieDBMut::from_existing(acct_db, &mut storage_root)?
         };
-        let pairs = rlp.at(3)?;
+        let pairs = rlp.at(5)?;
         for pair_rlp in pairs.iter() {
             let k: Bytes = pair_rlp.val_at(0)?;
             let v: Bytes = pair_rlp.val_at(1)?;
@@ -240,6 +239,8 @@ pub fn from_fat_rlp(
         nonce: nonce,
         storage_root: storage_root,
         code_hash: code_hash,
+        balance: balance,
+        abi_hash: abi_hash,
     };
 
     Ok((acc, new_code))
