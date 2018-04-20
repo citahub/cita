@@ -58,7 +58,7 @@ pub fn verify_tx_group_service(
     while let Some(mut req_info) = req_grp.pop() {
         if let VerifyRequestResponse::AuthRequest(req) = req_info.req_resp {
             let tx_hash = H256::from_slice(req.get_tx_hash());
-            let response = { verifier.read().verfiy_tx(&req) };
+            let response = { verifier.read().verify_tx(&req) };
             {
                 cache.write().insert(tx_hash, response.clone());
             }
