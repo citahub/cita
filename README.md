@@ -27,7 +27,8 @@ For more details please check the white paper.
 
 ## Document
 
-[chinese](https://cryptape.github.io/cita)
+- [English](https://cryptape.github.io/cita/en/index.html)
+- [Chinese](https://cryptape.github.io/cita/zh/index.html)
 
 ## API/SDK
 
