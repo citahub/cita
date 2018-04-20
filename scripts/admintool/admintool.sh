@@ -18,8 +18,6 @@ display_help()
     echo "-m crypto_method    name of crypto algorithm"
     echo "    default value is 'SECP'"
     echo
-    echo "-t consensus test flag, only valid for cita-bft"
-    echo
     echo "-h enable jsonrpc http"
     echo "   default enable 'true'"
     echo
@@ -55,7 +53,7 @@ BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
 export PATH=${PATH}:${BINARY_DIR}/bin
 
 # parse options
-while getopts 'a:l:n:m:t:h:w:g:H:W:G:Q:T:C:A:k' OPT; do
+while getopts 'a:l:n:m:h:w:g:H:W:G:Q:T:C:A:k' OPT; do
     case $OPT in
         a)
             ADMIN_ID="$OPTARG";;
@@ -65,8 +63,6 @@ while getopts 'a:l:n:m:t:h:w:g:H:W:G:Q:T:C:A:k' OPT; do
             CONSENSUS_NAME="$OPTARG";;
         m)
             CRYPTO_METHOD="$OPTARG";;
-        t)
-            IS_TEST=true;;
         k)
             START_KAFKA=true;;
         h)
@@ -107,8 +103,6 @@ SIZE=${#TMP}
 
 : ${CRYPTO_METHOD:="SECP"}
 
-: ${IS_TEST:=false}
-
 : ${TIMESTAMP:=0}
 
 : ${CHAIN_ID:=0}
@@ -143,7 +137,7 @@ create_key(){
 }
 
 consensus(){
-    python ${BINARY_DIR}/scripts/admintool/create_node_config.py ${CONFIG_DIR} $CONSENSUS_NAME ${1} $IS_TEST
+    python ${BINARY_DIR}/scripts/admintool/create_node_config.py ${CONFIG_DIR} $CONSENSUS_NAME ${1}
 }
 
 # rabbitmq and kafka
