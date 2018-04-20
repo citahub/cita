@@ -31,6 +31,7 @@ echo "DONE"
 ################################################################################
 echo -n "3) just start node0  ...  "
 ${BINARY_DIR}/bin/cita setup node0 > /dev/null
+cp ${SOURCE_DIR}/tests/interfaces/rpc/config/genesis.json node0/genesis.json
 ${BINARY_DIR}/bin/cita start node0 trace > /dev/null &
 echo "DONE"
 
