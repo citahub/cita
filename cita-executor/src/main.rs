@@ -5,17 +5,27 @@
 //!
 //! ### Message queuing situation
 //!
-//! | Queue    | SubModule | Message Type   |
-//! | -------- | --------- | -------------- |
-//! | executor | Chain     | LocalSync      |
-//! | executor | Chain     | Request        |
-//! | executor | Consensus | BlockWithProof |
-//! | executor | Consensus | SignedProposal |
-//! | executor | Consensus | RawBytes       |
-//! | executor | Net       | SyncResponse   |
-//! | executor | Net       | SignedProposal |
-//! | executor | Net       | RawBytes       |
-//! | executor | Snapshot  | SnapshotReq    |
+//! 1. Subscribe channel
+//!
+//!     | Queue    | SubModule | Message Type   |
+//!     | -------- | --------- | -------------- |
+//!     | executor | Chain     | LocalSync      |
+//!     | executor | Chain     | Request        |
+//!     | executor | Consensus | BlockWithProof |
+//!     | executor | Consensus | SignedProposal |
+//!     | executor | Consensus | RawBytes       |
+//!     | executor | Net       | SyncResponse   |
+//!     | executor | Net       | SignedProposal |
+//!     | executor | Net       | RawBytes       |
+//!     | executor | Snapshot  | SnapshotReq    |
+//!
+//! 2. Publish channel
+//!
+//!     | Queue    | SubModule | Message Type   |
+//!     | -------- | --------- | -------------- |
+//!     | executor | Executor  | SnapshotResp   |
+//!     | executor | Executor  | Response       |
+//!     | executor | Executor  | ExecutedResult |
 //!
 //! ### Key behavior
 //!

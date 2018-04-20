@@ -22,14 +22,27 @@
 //!
 //! ### Message queuing situation
 //!
-//! |       Queue       | SubModule | Message Type   |
-//! | ----------------- | --------- | -------------- |
-//! | network_tx        | Auth      | Request        |
-//! | network_consensus | Consensus | SignedProposal |
-//! | network_consensus | Consensus | RawBytes       |
-//! | network           | Chain     | Status         |
-//! | network           | Chain     | syncResponse   |
-//! | network           | Jonsonrpc | RequestNet     |
+//! 1. Subscribe channel
+//!
+//!     |       Queue       | SubModule | Message Type   |
+//!     | ----------------- | --------- | -------------- |
+//!     | network_tx        | Auth      | Request        |
+//!     | network_consensus | Consensus | SignedProposal |
+//!     | network_consensus | Consensus | RawBytes       |
+//!     | network           | Chain     | Status         |
+//!     | network           | Chain     | syncResponse   |
+//!     | network           | Jonsonrpc | RequestNet     |
+//!
+//! 2. Publish channel
+//!
+//!     |       Queue       | SubModule | Message Type   |
+//!     | ----------------- | --------- | -------------- |
+//!     | network           | Net       | SyncResponse   |
+//!     | network           | Net       | SnapshotResp   |
+//!     | network           | Net       | Response       |
+//!     | network_tx        | Net       | Request        |
+//!     | network_consensus | Net       | SignedProposal |
+//!     | network_consensus | Net       | RawBytes       |
 //!
 //! ### p2p binary protocol
 //! | Start      | Full length | Key length | Key value      | Message value    |

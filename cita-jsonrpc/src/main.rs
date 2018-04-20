@@ -5,12 +5,22 @@
 //!
 //! ### Message queuing situation
 //!
-//! |  Queue  | SubModule | Message Type |
-//! | ------- | --------- | ------------ |
-//! | jsonrpc | Auth      | Response     |
-//! | jsonrpc | Chain     | Response     |
-//! | jsonrpc | Executor  | Response     |
-//! | jsonrpc | Net       | Response     |
+//! 1. Subscribe channel
+//!
+//!     |  Queue  | SubModule | Message Type |
+//!     | ------- | --------- | ------------ |
+//!     | jsonrpc | Auth      | Response     |
+//!     | jsonrpc | Chain     | Response     |
+//!     | jsonrpc | Executor  | Response     |
+//!     | jsonrpc | Net       | Response     |
+//!
+//! 2. Publish channel
+//!
+//!     |  Queue  | SubModule | Message Type      |
+//!     | ------- | --------- | ----------------- |
+//!     | jsonrpc | Jsonrpc   | RequestNewTxBatch |
+//!     | jsonrpc | Jsonrpc   | Request           |
+//!     | jsonrpc | Jsonrpc   | RequestNet        |
 //!
 //! ### Key behavior
 //!

@@ -20,7 +20,7 @@ use super::Proof;
 use super::RpcBlock;
 use libproto::{Block as ProtoBlock, BlockHeader as ProtoBlockHeader};
 use std::convert::TryFrom;
-use util::{H160, H256, U256};
+use util::{Address, H256, U256};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BlockBody {
@@ -37,7 +37,7 @@ pub struct BlockHeader {
     #[serde(rename = "receiptsRoot")] pub receipts_root: H256,
     #[serde(rename = "gasUsed")] pub gas_used: U256,
     pub proof: Option<Proof>,
-    pub proposer: H160,
+    pub proposer: Address,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -69,7 +69,7 @@ impl From<ProtoBlockHeader> for BlockHeader {
             receipts_root: H256::from(proto_header.get_receipts_root()),
             gas_used: U256::from(proto_header.get_gas_used()),
             proof: proof,
-            proposer: H160::from(proto_header.get_proposer()),
+            proposer: Address::from(proto_header.get_proposer()),
         }
     }
 }

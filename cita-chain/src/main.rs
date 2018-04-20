@@ -21,15 +21,30 @@
 //!
 //! ### Message queuing situation
 //!
-//! | Queue   | SubModule   | Message Type     |
-//! | ------- | ----------- | ---------------- |
-//! | chain   | Net         | SyncResponse     |
-//! | chain   | Net         | SyncRequest      |
-//! | chain   | Consensus   | BlockWithProof   |
-//! | chain   | Jsonrpc     | Request          |
-//! | chain   | Auth        | BlockTxHashesReq |
-//! | chain   | Executor    | ExecutedResult   |
-//! | chain   | Snapshot    | SnapshotReq      |
+//! 1. Subscribe channel
+//!
+//!     | Queue   | SubModule   | Message Type     |
+//!     | ------- | ----------- | ---------------- |
+//!     | chain   | Net         | SyncResponse     |
+//!     | chain   | Net         | SyncRequest      |
+//!     | chain   | Consensus   | BlockWithProof   |
+//!     | chain   | Jsonrpc     | Request          |
+//!     | chain   | Auth        | BlockTxHashesReq |
+//!     | chain   | Executor    | ExecutedResult   |
+//!     | chain   | Snapshot    | SnapshotReq      |
+//!
+//! 2. Publish channel
+//!
+//!     | Queue | SubModule | Message Type  |
+//!     | ----- | --------- | ------------- |
+//!     | chain | Chain     | BlockTxHashes |
+//!     | chain | Chain     | Status        |
+//!     | chain | Chain     | Request       |
+//!     | chain | Chain     | Response      |
+//!     | chain | Chain     | SyncResponse  |
+//!     | chain | Chain     | SnapshotResp  |
+//!     | chain | Chain     | LocalSync     |
+//!     | chain | Chain     | RichStatus    |
 //!
 //! ### Key behavior
 //!
