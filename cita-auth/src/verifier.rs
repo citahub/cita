@@ -106,7 +106,7 @@ impl Verifier {
         self.height_low
     }
 
-    pub fn send_txhashs_req(low: u64, high: u64, tx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn send_txhashes_req(low: u64, high: u64, tx_pub: &Sender<(String, Vec<u8>)>) {
         for i in low..high {
             let mut req = BlockTxHashesReq::new();
             req.set_height(i);
@@ -128,7 +128,7 @@ impl Verifier {
             } else {
                 Some(h - BLOCKLIMIT + 1)
             };
-            Verifier::send_txhashs_req(self.height_low.unwrap(), h, tx_pub);
+            Verifier::send_txhashes_req(self.height_low.unwrap(), h, tx_pub);
         } else {
             let current_height = self.height_latest.unwrap();
             let current_height_low = self.height_low.unwrap();
@@ -145,7 +145,7 @@ impl Verifier {
             } else if h > current_height + 1 {
                 /*if we lost some height blockhashs
                  we notify chain to re-trans txs*/
-                Verifier::send_txhashs_req(current_height + 1, h + 1, tx_pub);
+                Verifier::send_txhashes_req(current_height + 1, h + 1, tx_pub);
                 return;
             }
             if h < self.height_low.unwrap() {
@@ -198,7 +198,7 @@ impl Verifier {
         }
     }
 
-    pub fn verfiy_tx(&self, req: &VerifyTxReq) -> VerifyTxResp {
+    pub fn verify_tx(&self, req: &VerifyTxReq) -> VerifyTxResp {
         let mut resp = VerifyTxResp::new();
         resp.set_tx_hash(req.get_tx_hash().to_vec());
 
@@ -228,6 +228,7 @@ impl Verifier {
             resp.set_ret(Ret::BadSig);
             return resp;
         }
+
         resp.set_signer(ret.unwrap().to_vec());
         resp.set_ret(Ret::OK);
         trace!(
