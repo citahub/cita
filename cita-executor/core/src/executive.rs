@@ -73,16 +73,16 @@ pub fn check_permission(
             trace!("t.data {:?}", t.data);
 
             if t.data.len() < 4 {
-                return Err(From::from(ExecutionError::TransactionMalformed(
+                return Err(ExecutionError::TransactionMalformed(
                     "The length of transation data is less than four bytes".to_string(),
-                )));
+                ));
             }
 
             if address == group_management_addr {
                 if t.data.len() < 36 {
-                    return Err(From::from(ExecutionError::TransactionMalformed(
+                    return Err(ExecutionError::TransactionMalformed(
                         "Data should have at least one parameter".to_string(),
-                    )));
+                    ));
                 }
                 check_origin_group(
                     account_permissions,
@@ -120,7 +120,7 @@ fn check_send_tx(
     trace!("has send tx permission: {:?}", has_permission);
 
     if *account != Address::zero() && !has_permission {
-        return Err(From::from(ExecutionError::NoTransactionPermission));
+        return Err(ExecutionError::NoTransactionPermission);
     }
 
     Ok(())
@@ -139,7 +139,7 @@ fn check_create_contract(
     trace!("has create contract permission: {:?}", has_permission);
 
     if *account != Address::zero() && !has_permission {
-        return Err(From::from(ExecutionError::NoContractPermission));
+        return Err(ExecutionError::NoContractPermission);
     }
 
     Ok(())
@@ -158,7 +158,7 @@ fn check_call_contract(
     trace!("has call contract permission: {:?}", has_permission);
 
     if !has_permission {
-        return Err(From::from(ExecutionError::NoCallPermission));
+        return Err(ExecutionError::NoCallPermission);
     }
 
     Ok(())
@@ -177,7 +177,7 @@ fn check_origin_group(
     trace!("Sender has call contract permission: {:?}", has_permission);
 
     if !has_permission && !contains_resource(account_permissions, param, *cont, func.clone()) {
-        return Err(From::from(ExecutionError::NoCallPermission));
+        return Err(ExecutionError::NoCallPermission);
     }
 
     Ok(())
@@ -232,17 +232,17 @@ pub fn check_quota(
 
     // validate if transaction fits into given block
     if sender != Address::zero() && gas_used + t.gas > gas_limit {
-        return Err(From::from(ExecutionError::BlockGasLimitReached {
+        return Err(ExecutionError::BlockGasLimitReached {
             gas_limit: gas_limit,
             gas_used: gas_used,
             gas: t.gas,
-        }));
+        });
     }
     if sender != Address::zero() && t.gas > account_gas_limit {
-        return Err(From::from(ExecutionError::AccountGasLimitReached {
+        return Err(ExecutionError::AccountGasLimitReached {
             gas_limit: account_gas_limit,
             gas: t.gas,
-        }));
+        });
     }
 
     Ok(())
@@ -388,10 +388,10 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let base_gas_required = U256::from(100); // `CREATE` transaction cost
 
         if sender != Address::zero() && t.action != Action::Store && t.gas < base_gas_required {
-            return Err(From::from(ExecutionError::NotEnoughBaseGas {
+            return Err(ExecutionError::NotEnoughBaseGas {
                 required: base_gas_required,
                 got: t.gas,
-            }));
+            });
         }
 
         trace!("quota should be checked: {}", options.check_quota);
@@ -413,9 +413,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     self.state.init_abi(&account, abi.to_vec())?;
                 }
                 _ => {
-                    return Err(From::from(ExecutionError::TransactionMalformed(
+                    return Err(ExecutionError::TransactionMalformed(
                         "Account doesn't exist".to_string(),
-                    )));
+                    ));
                 }
             }
         }
