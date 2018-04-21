@@ -10,29 +10,23 @@ import commands
 import jsonschema
 import requests
 
-
 DEFAULT_RPC_URL = 'http://127.0.0.1:1337'
 
 
 class FixResolver(jsonschema.RefResolver):
     def __init__(self, schema_data, schema_base_uri):
         super(FixResolver, self).__init__(
-            base_uri=schema_base_uri,
-            referrer=None
-        )
+            base_uri=schema_base_uri, referrer=None)
         self.store[schema_base_uri] = schema_data
 
 
 def jq_check(assertion, data):
     output = commands.getoutput('echo \'{}\' | jq "{}"'.format(
-        json.dumps(data),
-        assertion
-    ))
+        json.dumps(data), assertion))
     return output.strip() == 'true'
 
 
 class TestRunner(object):
-
     def __init__(self, rpc_url, fast_fail):
         self.rpc_url = rpc_url
         self.fast_fail = fast_fail
@@ -43,9 +37,7 @@ class TestRunner(object):
         if self.assertion_fail_count and (force or self.fast_fail):
             print('>> Assertion Failed {}!!!'.format(
                 '' if self.fast_fail else '({} times)'.format(
-                    self.assertion_fail_count
-                )
-            ))
+                    self.assertion_fail_count)))
             sys.exit(-1)
 
     def run_all(self, directory):
@@ -74,17 +66,11 @@ class TestRunner(object):
             )
         print('=' * 60)
 
-    def run_test_case(
-            self,
-            test_case,
-            request_schema,
-            response_schema,
-            schema_path
-    ):
+    def run_test_case(self, test_case, request_schema, response_schema,
+                      schema_path):
         print('  * [Test Case]: {}'.format(test_case['title']))
         schema_base_uri = 'file://{}/'.format(
-            os.path.dirname(os.path.abspath(schema_path))
-        )
+            os.path.dirname(os.path.abspath(schema_path)))
         request_payload = {
             'jsonrpc': '2.0',
             'id': 1,
@@ -92,8 +78,7 @@ class TestRunner(object):
             'params': test_case['request']['params'],
         }
         request_should_fail_schema = test_case['request'].get(
-            'shouldFailSchema', False
-        )
+            'shouldFailSchema', False)
         if not request_should_fail_schema:
             request_resolver = FixResolver(request_schema, schema_base_uri)
             jsonschema.validate(
@@ -120,12 +105,12 @@ class TestRunner(object):
         for assertion in test_case['asserts']:
             assertion_result = jq_check(assertion['program'], assert_data)
             print("    - [Assertion]: {} => {}".format(
-                assertion['description'],
-                assertion_result
-            ))
+                assertion['description'], assertion_result))
             if assertion_result is False:
-                print(json.dumps(assert_data['receivedResponse']['result'], indent=2))
-                print(json.dumps(assert_data['expectedResponse']['result'], indent=2))
+                print(json.dumps(
+                    assert_data['receivedResponse']['result'], indent=2))
+                print(json.dumps(
+                    assert_data['expectedResponse']['result'], indent=2))
                 self.assertion_fail_count += 1
             self.assertion_fail()
 
@@ -136,23 +121,15 @@ def main():
         '--rpc-url',
         metavar='URL',
         default=DEFAULT_RPC_URL,
-        help=u'JSONRPC server URL [default: {}]'.format(DEFAULT_RPC_URL)
-    )
+        help=u'JSONRPC server URL [default: {}]'.format(DEFAULT_RPC_URL))
     parser.add_argument(
-        '--directory',
-        help='The tests/schemas directory (run all methods)'
-    )
+        '--directory', help='The tests/schemas directory (run all methods)')
     parser.add_argument(
-        '--tests',
-        metavar='PATH',
-        nargs='*',
-        help=u'The test file path list'
-    )
+        '--tests', metavar='PATH', nargs='*', help=u'The test file path list')
     parser.add_argument(
         '--fast-fail',
         action='store_true',
-        help=u'Shall we stop when an assertion failed [default: false]'
-    )
+        help=u'Shall we stop when an assertion failed [default: false]')
     args = parser.parse_args()
 
     runner = TestRunner(args.rpc_url, args.fast_fail)
