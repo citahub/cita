@@ -5,8 +5,11 @@ import "./address_array.sol";
 
 
 /// @title User management using group struct
-/// @notice _origin: One of sender's groups
-/// @notice _target: The target group that will be operated
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @notice The address: 0x00000000000000000000000000000000013241C2
+///         The interface the can be called: All
+///         Origin: One group choosed by sender from all his groups
+///         Target: The target group to be operated
 contract GroupManagement {
 
     address rootGroupAddr = 0x00000000000000000000000000000000013241b6;
@@ -29,13 +32,17 @@ contract GroupManagement {
         _;
     }
 
-    /// @dev Constructor
+    /// @notice Constructor
     function GroupManagement() public {
         // Root
         groups.push(rootGroupAddr);
     }
 
-    /// @dev Create a new group
+    /// @notice Create a new group
+    /// @param _origin The sender's orgin group
+    /// @param _name  The name of group 
+    /// @param _accounts The accounts of group 
+    /// @return New role's address
     function newGroup(address _origin, bytes32 _name, address[] _accounts)
         external
         returns (address new_group)
@@ -45,7 +52,10 @@ contract GroupManagement {
         groups.push(new_group);
     }
 
-    /// @dev Delete the group
+    /// @notice Delete the group
+    /// @param _origin The sender's orgin group
+    /// @param _target The target group to be deleted
+    /// @return True if successed, otherwise false
     function deleteGroup(address _origin, address _target)
         external
         inGroup(_origin)
@@ -64,7 +74,11 @@ contract GroupManagement {
         return true;
     }
 
-    /// @dev Update the group name
+    /// @notice Update the group name
+    /// @param _origin The sender's orgin group
+    /// @param _target The target group to be updated
+    /// @param _name  The new name to be updated
+    /// @return True if successed, otherwise false
     function updateGroupName(address _origin, address _target, bytes32 _name)
         external
         inGroup(_origin)
@@ -76,7 +90,11 @@ contract GroupManagement {
         return true;
     }
 
-    /// @dev Add accounts
+    /// @notice Add accounts
+    /// @param _origin The sender's orgin group
+    /// @param _target The target group to be added
+    /// @param _accounts The accounts to be added
+    /// @return True if successed, otherwise false
     function addAccounts(address _origin, address _target, address[] _accounts)
         external
         inGroup(_origin)
@@ -88,7 +106,11 @@ contract GroupManagement {
         return true;
     }
 
-    /// @dev Delete accounts
+    /// @notice Delete accounts
+    /// @param _origin The sender's orgin group
+    /// @param _target The target group to be deleted
+    /// @param _accounts The accounts to be deleted
+    /// @return True if successed, otherwise false
     function deleteAccounts(address _origin, address _target, address[] _accounts)
         external
         inGroup(_origin)
@@ -100,8 +122,11 @@ contract GroupManagement {
         return true;
     }
 
-    /// @dev Check the target group in the scope of the origin group
-    /// @notice Scope: the origin group is the ancestor of the target group
+    /// @notice Check the target group in the scope of the origin group
+    ///         Scope: the origin group is the ancestor of the target group
+    /// @param _origin The sender's orgin group
+    /// @param _target The target group to be checked
+    /// @return True if successed, otherwise false
     function checkScope(address _origin, address _target)
         public
         view
@@ -118,7 +143,8 @@ contract GroupManagement {
         }
     }
 
-    /// @dev Query all groups
+    /// @notice Query all groups
+    /// @return All groups
     function queryGroups()
         public
         view
@@ -127,7 +153,7 @@ contract GroupManagement {
         return groups;
     }
 
-    /// @dev Delete the child group
+    /// @notice Private: Delete the child group
     function deleteChild(address _group, address _child)
         private
         returns (bool)
@@ -137,7 +163,7 @@ contract GroupManagement {
         return true;
     }
 
-    /// @dev Add a child group
+    /// @notice Private: Add a child group
     function addChild(address _group, address _child)
         private
         returns (bool)

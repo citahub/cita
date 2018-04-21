@@ -5,7 +5,10 @@ import "./address_array.sol";
 
 
 /// @title Authorization about the permission and account
-/// @notice Only be called by permission_management contract except query interface
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @notice The address: 0x00000000000000000000000000000000013241b4
+///         The interface can be called: Only query type
+/// @dev TODO what about superAdmin
 contract Authorization {
 
     address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
@@ -41,7 +44,7 @@ contract Authorization {
         _;
     }
 
-    /// @dev Initialize the superAdmin's auth
+    /// @notice Initialize the superAdmin's auth
     function Authorization(address _superAdmin) public {
         _setAuth(_superAdmin, sendTxAddr);
         _setAuth(_superAdmin, createContractAddr);
@@ -63,7 +66,10 @@ contract Authorization {
         _setAuth(rootGroup, createContractAddr);
     }
 
-    /// @dev Set authorization
+    /// @notice Set permission to the account
+    /// @param _account The account to be setted
+    /// @param _permission The permission to be setted
+    /// @return true if successed, otherwise false
     function setAuth(address _account, address _permission)
         public
         onlyPermissionManagement
@@ -72,7 +78,10 @@ contract Authorization {
         return _setAuth(_account, _permission);
     }
 
-    /// @dev Cancel authorization
+    /// @notice Cancel the account's permission
+    /// @param _account The account to be canceled
+    /// @param _permission The permission to be canceled
+    /// @return true if successed, otherwise false
     function cancelAuth(address _account, address _permission)
         public
         onlyPermissionManagement
@@ -84,7 +93,9 @@ contract Authorization {
         return true;
     }
 
-    /// @dev Clear the account's auth
+    /// @notice Clear the account's permissions
+    /// @param _account The account to be cleared
+    /// @return true if successed, otherwise false
     function clearAuth(address _account)
         public
         onlyPermissionManagement
@@ -101,8 +112,9 @@ contract Authorization {
         return true;
     }
 
-    /// @dev Clear the auth of the accounts who have the permission
-    /// @notice TODO Rename cancelAuthOfPermission
+    /// @notice Clear the auth of the accounts who have the permission
+    /// @param _permission The permission to be cleared
+    /// @return true if successed, otherwise false
     function clearAuthOfPermission(address _permission)
         public
         onlyPermissionManagement
@@ -116,7 +128,9 @@ contract Authorization {
         return true;
     }
 
-    /// @dev Query the account's permissions
+    /// @notice Query the account's permissions
+    /// @param _account The account to be queried
+    /// @return The permissions of account
     function queryPermissions(address _account)
         public
         view
@@ -125,7 +139,9 @@ contract Authorization {
         return permissions[_account];
     }
 
-    /// @dev Query the permission's accounts
+    /// @notice Query the permission's accounts
+    /// @param _permission The permission to be queried
+    /// @return The accounts of permission
     function queryAccounts(address _permission)
         public
         view
@@ -134,7 +150,8 @@ contract Authorization {
         return accounts[_permission];
     }
 
-    /// @dev Query all accounts
+    /// @notice Query all accounts
+    /// @return All the accounts
     function queryAllAccounts()
         public
         view
@@ -143,7 +160,11 @@ contract Authorization {
         return all_accounts;
     }
 
-    /// @dev Check Permission
+    /// @notice Check Permission
+    /// @param _account The account to be checked
+    /// @param _cont The contract of resource
+    /// @param _func The function signature of resource
+    /// @return true if passed, otherwise false
     function checkPermission(address _account, address _cont, bytes4 _func)
         public
         view
@@ -160,7 +181,7 @@ contract Authorization {
         return false;
     }
 
-    /// @dev Set authorization
+    /// @notice Private: Set the permission to the account
     function _setAuth(address _account, address _permission)
         private
         returns (bool)

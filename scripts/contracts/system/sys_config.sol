@@ -1,37 +1,43 @@
 pragma solidity ^0.4.18;
 
+
+/// @title The interface of system config
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
 interface SysConfigInterface {
-    /// Get delay block number before validate
+    /// @notice Get delay block number before validate
     function getDelayBlockNumber() public view returns (uint);
 
-    /// Whether check permission in the system or not, true represents check and false represents don't check.
+    /// @notice Whether check permission in the system or not, true represents check and false represents don't check.
     function getPermissionCheck() public view returns (bool);
 
-    /// Whether check quota in the system or not, true represents check and false represents don't check.
+    /// @notice Whether check quota in the system or not, true represents check and false represents don't check.
     function getQuotaCheck() public view returns (bool);
 
-    /// The name of current chain
+    /// @notice The name of current chain
     function getChainName() public view returns (string);
-    /// Update current chain name
+    /// @notice Update current chain name
     function setChainName(string) public;
 
-    /// The id of current chain
+    /// @notice The id of current chain
     function getChainId() public view returns (uint32);
 
-    /// The operator of current chain
+    /// @notice The operator of current chain
     function getOperator() public view returns (string);
-    /// Update current operator
+    /// @notice Update current operator
     function setOperator(string) public;
 
-    /// Current operator's website URL
+    /// @notice Current operator's website URL
     function getWebsite() public view returns (string);
-    /// Update current operator's website URL
+    /// @notice Update current operator's website URL
     function setWebsite(string) public;
 
-    /// The interval time for creating a block (milliseconds)
+    /// @notice The interval time for creating a block (milliseconds)
     function getBlockInterval() public view returns (uint);
 }
 
+
+/// @title System config contract
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
 contract SysConfig is SysConfigInterface {
 
     uint delay_block_number;
@@ -43,7 +49,7 @@ contract SysConfig is SysConfigInterface {
     string website;
     uint block_interval;
 
-    /// Setup
+    /// @notice Setup
     function SysConfig(
         uint _delay_block_number,
         bool _check_permission,

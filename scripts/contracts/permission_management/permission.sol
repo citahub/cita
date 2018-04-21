@@ -2,8 +2,9 @@ pragma solidity ^0.4.18;
 
 
 /// @title Permission contract
-/// @notice Only be called by permission_management contract except query interface
-///         TODO Add the modifier: Do not close the build-in permission
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @notice The address: Created by permissionCreator
+///         The interface can be called: Only query type
 contract Permission {
 
     struct Resource {
@@ -26,7 +27,7 @@ contract Permission {
         _;
     }
 
-    /// @dev Constructor
+    /// @notice Constructor
     function Permission(bytes32 _name, address[] _conts, bytes4[] _funcs)
         public
     {
@@ -34,7 +35,10 @@ contract Permission {
         require(_addResources(_conts, _funcs));
     }
 
-    /// @dev Add the resources
+    /// @notice Add the resources
+    /// @param _conts The contracts of resource
+    /// @param _funcs The function signature of resource
+    /// @return true if successed, otherwise false
     function addResources(address[] _conts, bytes4[] _funcs)
         public
         onlyPermissionManagement
@@ -44,7 +48,10 @@ contract Permission {
         return true;
     }
 
-    /// @dev Delete the resources
+    /// @notice Delete the resources
+    /// @param _conts The contracts of resource
+    /// @param _funcs The function signature of resource
+    /// @return true if successed, otherwise false
     function deleteResources(address[] _conts, bytes4[] _funcs)
         public
         onlyPermissionManagement
@@ -57,7 +64,9 @@ contract Permission {
         return true;
     }
 
-    /// @dev Update permission's name
+    /// @notice Update permission's name
+    /// @param _name The new name
+    /// @return true if successed, otherwise false
     function updateName(bytes32 _name)
         public
         onlyPermissionManagement
@@ -68,7 +77,8 @@ contract Permission {
         return true;
     }
 
-    /// @dev Destruct self
+    /// @notice Destruct self
+    /// @return true if successed, otherwise false
     function close()
         public
         onlyPermissionManagement
@@ -78,7 +88,10 @@ contract Permission {
         return true;
     }
 
-    /// @dev Check resource in the permission
+    /// @notice Check resource in the permission
+    /// @param cont The contract address of the resource
+    /// @param func The function signature of the resource
+    /// @return true if in permission, otherwise false
     function inPermission(address cont, bytes4 func)
         public
         view
@@ -92,7 +105,8 @@ contract Permission {
         return false;
     }
 
-    /// @dev Query the information of the permission
+    /// @notice Query the information of the permission
+    /// @return The information of permission: name and resources
     function queryInfo()
         public
         view
@@ -110,7 +124,8 @@ contract Permission {
         return (name, conts, funcs);
     }
 
-    /// @dev Query the name of the permission
+    /// @notice Query the name of the permission
+    /// @return The name of permission
     function queryName()
         public
         view
@@ -119,7 +134,8 @@ contract Permission {
         return name;
     }
 
-    /// @dev Query the resource of the permission
+    /// @notice Query the resource of the permission
+    /// @return The resources of permission
     function queryResource()
         public
         view
@@ -137,20 +153,18 @@ contract Permission {
         return (conts, funcs);
     }
 
-    /// @dev Delete the value of the resources
+    /// @notice Private: Delete the value of the resources
     function resourceDelete(address _cont, bytes4 _func)
         private
         returns (bool)
     {
-        var index = resourceIndex(_cont,  _func);
+        uint index = resourceIndex(_cont,  _func);
         // Not found
         if (index >= resources.length)
             return false;
 
-        // Remove the gap
-        // TODO Start from the bottom
-        for (uint i = index; i < resources.length-1; i++)
-            resources[i] = resources[i+1];
+        // Move the last element to the index of array
+        resources[index] = resources[resources.length - 1];
 
         // Also delete the last element
         delete resources[resources.length-1];
@@ -158,8 +172,7 @@ contract Permission {
         return true;
     }
 
-    /// @dev Get the index of the value in the resources
-    /// @return The index. If i == length, means not find
+    /// @notice Private: Get the index of the value in the resources
     function resourceIndex(address _cont, bytes4 _func)
         private
         view
@@ -171,7 +184,7 @@ contract Permission {
         }
     }
 
-    /// @dev Private: Add resources
+    /// @notice Private: Add resources
     function _addResources(address[] _conts, bytes4[] _funcs)
         private
         returns (bool)
@@ -187,7 +200,7 @@ contract Permission {
         return true;
     }
 
-    /// @dev Check the duplicate resource
+    /// @notice Private: Check the duplicate resource
     function inResources(address _cont, bytes4 _func)
         private
         view

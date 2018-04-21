@@ -6,7 +6,11 @@ import "./contract_check.sol";
 import "./address_array.sol";
 
 
-/// @notice TODO Split to a new file: role_auth.sol
+/// @title Role management contract
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @notice The address: 0xe3b5ddb80addb513b5c981e27bb030a86a8821ee
+///         The interface the can be called: All
+/// @dev TODO Split to a new file: role_auth.sol
 contract RoleManagement {
 
     address roleCreatorAddress = 0xe9E2593C7D1Db5EE843c143E9cB52b8d996b2380;
@@ -27,6 +31,10 @@ contract RoleManagement {
     event RoleCanceled(address indexed _account, address indexed _role);
     event RoleCleared(address indexed _account);
 
+    /// @notice Create a new role
+    /// @param _name The name of role
+    /// @param _permissions The permissions of role
+    /// @return New role's address
     function newRole(bytes32 _name, address[] _permissions)
         external
         returns (address roleid)
@@ -34,6 +42,9 @@ contract RoleManagement {
         return roleCreator.createRole(_name, _permissions);
     }
 
+    /// @notice Delete the role
+    /// @param _roleid The address of role
+    /// @return true if successed, otherwise false
     function deleteRole(address _roleid)
         external
         returns (bool)
@@ -48,6 +59,10 @@ contract RoleManagement {
         return true;
     }
 
+    /// @notice Update role's name
+    /// @param _roleid The address of role
+    /// @param _name The new name of role
+    /// @return true if successed, otherwise false
     function updateRoleName(address _roleid, bytes32 _name)
         external
         returns (bool)
@@ -56,6 +71,10 @@ contract RoleManagement {
         return roleContract.updateName(_name);
     }
 
+    /// @notice Add permissions of role
+    /// @param _roleid The address of role
+    /// @param _permissions The permissions of role
+    /// @return true if successed, otherwise false
     function addPermissions(address _roleid, address[] _permissions)
         external
         returns (bool)
@@ -69,7 +88,10 @@ contract RoleManagement {
         return true;
     }
 
-    // TODO Check permissions in role
+    /// @notice Delete permissions of role
+    /// @param _roleid The address of role
+    /// @param _permissions The permissions of role
+    /// @return true if successed, otherwise false
     function deletePermissions(address _roleid, address[] _permissions)
         external
         returns (bool)
@@ -84,6 +106,10 @@ contract RoleManagement {
         return true;
     }
 
+    /// @notice Set the role to the account
+    /// @param _account The account to be setted
+    /// @param _role The role to be setted
+    /// @return true if successed, otherwise false
     function setRole(address _account, address _role)
         external
         returns (bool)
@@ -101,6 +127,10 @@ contract RoleManagement {
         return true;
     }
 
+    /// @notice Cancel the account's role
+    /// @param _account The account to be canceled
+    /// @param _role The role to be canceled
+    /// @return true if successed, otherwise false
     function cancelRole(address _account, address _role)
         external
         returns (bool)
@@ -108,26 +138,31 @@ contract RoleManagement {
         return _cancelRole(_account, _role);
     }
 
+    /// @notice Clear the account's role
+    /// @param _account The account to be cleared
+    /// @return true if successed, otherwise false
     function clearRole(address _account)
         external
         returns (bool)
     {
-        // clear account and roles
+        // Clear account and roles
         for (uint i = 0; i < roles[_account].length; i++) {
             // Clear account auth
             require(_cancelRolePermissions(_account, roles[_account][i]));
-            // clear _account in all roles array.
+            // Clear _account in all roles array.
             assert(AddressArray.remove(_account, accounts[roles[_account][i]]));
         }
 
-        // clear all roles associate with _account
+        // Clear all roles associate with _account
         delete roles[_account];
         RoleCleared(_account);
 
         return true;
     }
 
-    /// @dev Query the permissions of the role
+    /// @notice Query the permissions of the role
+    /// @param _role The role to be queried
+    /// @return The permissions of the role
     function queryPermissions(address _role)
         public
         returns (address[])
@@ -143,12 +178,12 @@ contract RoleManagement {
 
         // permissions = roleContract.querypermissions();
         assembly {
-            // free memory pointer
+            // Free memory pointer
             let ptr := mload(0x40)
-            // function signature
+            // Function signature
             mstore(ptr, queryPermissionsHash)
             result := call(sub(gas, 10000), _role, 0, ptr, 0x4, ptr, mul(add(len, 0x2), 0x20))
-            // TODO why not work: remix not support returndatacopy
+            // TODO Why not work: remix not support returndatacopy
             // returndatacopy(permissions, 0, returndatasize)
             if eq(result, 0) { revert(ptr, 0) }
         }
@@ -165,6 +200,9 @@ contract RoleManagement {
         return permissions;
     }
 
+    /// @notice Query the roles of the account
+    /// @param _account The account to be queried
+    /// @return The roles of the account
     function queryRoles(address _account)
         public
         view
@@ -173,6 +211,9 @@ contract RoleManagement {
         return roles[_account];
     }
 
+    /// @notice Query the accounts that have the role
+    /// @param _roleId The role to be queried
+    /// @return The accounts that have the role
     function queryAccounts(address _roleId)
         public
         view
@@ -181,7 +222,7 @@ contract RoleManagement {
         return accounts[_roleId];
     }
 
-    /// @dev Private: cancelRole
+    /// @notice Private: cancelRole
     function _cancelRole(address _account, address _role)
         private
         returns (bool)
@@ -196,7 +237,7 @@ contract RoleManagement {
         return true;
     }
 
-    /// @dev Private: cancel role of account
+    /// @notice Private: cancel role of account
     function _cancelRolePermissions(address _account, address _role)
         private
         returns (bool)
@@ -206,7 +247,7 @@ contract RoleManagement {
         return true;
     }
 
-    /// @dev Private: cancel permissions of account
+    /// @notice Private: cancel permissions of account
     function _cancelPermissions(address _account, address[] _permissions)
         private
         returns (bool)
@@ -216,11 +257,11 @@ contract RoleManagement {
             if (!hasPermission(_account, _permissions[i]))
                 require(pmContract.cancelAuthorization(_account, _permissions[i]));
         }
-        
+
         return true;
     }
 
-    /// @dev Private: account has permission in one of his roles
+    /// @notice Private: account has permission in one of his roles
     function hasPermission(address _account, address _permission)
         private
         view
@@ -233,7 +274,7 @@ contract RoleManagement {
         }
     }
 
-    /// @dev Private: set all role permissions of account
+    /// @notice Private: set all role permissions of account
     function _setRolePermissions(address _account, address _role)
         private
         returns (bool)
@@ -243,7 +284,7 @@ contract RoleManagement {
         return true;
     }
 
-    /// @dev Private: set permissions of account
+    /// @notice Private: set permissions of account
     function _setPermissions(address _account, address[] _permissions)
         private
         returns (bool)
