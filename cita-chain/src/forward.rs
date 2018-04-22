@@ -259,6 +259,14 @@ impl Forward {
                 return;
             }
 
+            Request::meta_data(number) => {
+                trace!("metadata request from jsonrpc {:?}", number);
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
+                return;
+            }
+
             Request::code(code_content) => {
                 trace!("code request from josnrpc  {:?}", code_content);
                 self.ctx_pub

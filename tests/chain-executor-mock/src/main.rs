@@ -93,8 +93,8 @@ fn send_block(
                 BuildBlock::build_contract_address(&sender, &U256::from(nonce)).hex()
             );
             info!(
-                "address={}, data={}, quota={}, nonce={}",
-                contract_address, data, quota, nonce
+                "address={}, quota={}, nonce={}",
+                contract_address, quota, nonce
             );
             BuildBlock::build_tx(
                 contract_address,

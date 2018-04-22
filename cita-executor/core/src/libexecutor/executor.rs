@@ -653,12 +653,13 @@ impl Executor {
     /// 4. Prune history
     pub fn reorg_config(&self) {
         let mut conf = GlobalSysConfig::new();
-        conf.nodes = NodeManager::read(self);
+        conf.nodes = NodeManager::nodes(self);
         conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
-        conf.delay_active_interval = SysConfig::delay_block_number(self) as usize;
-        conf.check_permission = SysConfig::permission_check(self);
-        conf.check_quota = SysConfig::quota_check(self);
-        conf.block_interval = SysConfig::block_interval(self);
+        let sys_config = SysConfig::new(self);
+        conf.delay_active_interval = sys_config.delay_block_number() as usize;
+        conf.check_permission = sys_config.permission_check();
+        conf.check_quota = sys_config.quota_check();
+        conf.block_interval = sys_config.block_interval();
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
         conf.group_accounts = UserManagement::load_group_accounts(self);
 

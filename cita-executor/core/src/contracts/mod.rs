@@ -36,21 +36,38 @@ use sha3::sha3_256;
 use types::ids::BlockId;
 use util::{Address, H256};
 
-// Should move to project top-level for code reuse.
+/// Extend `Executor` with some methods related to contract
 trait ContractCallExt {
-    fn call_contract_method(&self, address: &Address, encoded_method: &[u8]) -> Vec<u8>;
+    /// Call a contract method
+    fn call_method(
+        &self,
+        address: &Address,
+        encoded_method: &[u8],
+        from: Option<Address>,
+        block_id: BlockId,
+    ) -> Vec<u8>;
+    /// Call a contract method on latest block
+    fn call_method_latest(&self, address: &Address, encoded_method: &[u8]) -> Vec<u8> {
+        self.call_method(address, encoded_method, None, BlockId::Latest)
+    }
 }
 
 impl ContractCallExt for Executor {
-    fn call_contract_method(&self, address: &Address, encoded_method: &[u8]) -> Vec<u8> {
+    fn call_method(
+        &self,
+        address: &Address,
+        encoded_method: &[u8],
+        from: Option<Address>,
+        block_id: BlockId,
+    ) -> Vec<u8> {
         let call_request = CallRequest {
-            from: None,
+            from,
             to: *address,
             data: Some(encoded_method.to_vec()),
         };
 
         trace!("data: {:?}", call_request.data);
-        self.eth_call(call_request, BlockId::Latest)
+        self.eth_call(call_request, block_id)
             .expect(&format!("eth call address: {}", address))
     }
 }

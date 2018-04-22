@@ -107,8 +107,11 @@ class TestRunner(object):
             print("    - [Assertion]: {} => {}".format(
                 assertion['description'], assertion_result))
             if assertion_result is False:
+                print('[receivedResponse]:')
                 print(json.dumps(
                     assert_data['receivedResponse']['result'], indent=2))
+                print('-' * 10)
+                print('[expectedResponse]:')
                 print(json.dumps(
                     assert_data['expectedResponse']['result'], indent=2))
                 self.assertion_fail_count += 1

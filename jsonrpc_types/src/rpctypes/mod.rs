@@ -17,6 +17,7 @@
 
 pub mod receipt;
 pub mod log;
+pub mod meta_data;
 pub mod block_number;
 pub mod call_request;
 pub mod filter;
@@ -27,14 +28,15 @@ pub mod index;
 pub mod proof;
 pub mod tx_response;
 
-pub use self::block::*;
-pub use self::block_number::*;
-pub use self::call_request::*;
-pub use self::filter::*;
+pub use self::block::{Block, BlockBody, BlockHeader};
+pub use self::block_number::{BlockNumber, BlockTag};
+pub use self::call_request::CallRequest;
+pub use self::filter::{Filter, FilterAddress, FilterChanges, Topic, VariadicValue};
 pub use self::index::Index;
-pub use self::log::*;
-pub use self::middle_modle::*;
-pub use self::proof::*;
-pub use self::receipt::*;
-pub use self::transaction::*;
-pub use self::tx_response::*;
+pub use self::log::Log;
+pub use self::meta_data::MetaData;
+pub use self::middle_modle::{BlockParamsByHash, BlockParamsByNumber, CountOrCode, RpcBlock};
+pub use self::proof::{AuthorityRoundProof, Proof, TendermintProof};
+pub use self::receipt::Receipt;
+pub use self::transaction::{BlockTransaction, FullTransaction, RpcTransaction};
+pub use self::tx_response::TxResponse;

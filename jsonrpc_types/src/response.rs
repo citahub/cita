@@ -20,7 +20,7 @@ use bytes::Bytes;
 use error::Error;
 use libproto::response::{Response, Response_oneof_data};
 use request::Version;
-use rpctypes::{Block, FilterChanges, Log, Receipt, RpcBlock, RpcTransaction, TxResponse};
+use rpctypes::{Block, FilterChanges, Log, MetaData, Receipt, RpcBlock, RpcTransaction, TxResponse};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error as SError;
 use serde_json;
@@ -48,6 +48,7 @@ pub enum ResultBody {
     FilterChanges(FilterChanges),
     FilterLog(Vec<Log>),
     TxProof(Bytes),
+    MetaData(MetaData),
 }
 
 impl Default for ResultBody {
@@ -178,6 +179,11 @@ impl Output {
                         jsonrpc.clone(),
                         Error::server_error(code, err_msg),
                     )),
+                    Response_oneof_data::meta_data(data) => success
+                        .set_result(ResultBody::MetaData(
+                            serde_json::from_str::<MetaData>(&data).unwrap(),
+                        ))
+                        .output(),
                 }
             }
             _ => match data.data.unwrap() {

@@ -86,7 +86,7 @@ impl PermissionManagement {
 
     /// Account array
     pub fn all_accounts(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*ALLACCOUNTS_HASH.as_slice());
+        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*ALLACCOUNTS_HASH.as_slice());
         trace!("All accounts output: {:?}", output);
 
         to_address_vec(&output)
@@ -97,7 +97,7 @@ impl PermissionManagement {
         let mut tx_data = PERMISSIONS_HASH.to_vec();
         tx_data.extend(param.to_vec());
         debug!("tx_data: {:?}", tx_data);
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &tx_data.as_slice());
+        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &tx_data.as_slice());
         debug!("Permissions output: {:?}", output);
 
         to_address_vec(&output)
@@ -105,7 +105,7 @@ impl PermissionManagement {
 
     /// Resources array
     pub fn resources(executor: &Executor, address: &Address) -> Vec<Resource> {
-        let output = executor.call_contract_method(address, &*RESOURCES_HASH.as_slice());
+        let output = executor.call_method_latest(address, &*RESOURCES_HASH.as_slice());
         trace!("Resources output: {:?}", output);
 
         to_resource_vec(&output)

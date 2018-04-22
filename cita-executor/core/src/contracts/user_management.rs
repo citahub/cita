@@ -49,7 +49,7 @@ impl UserManagement {
 
     /// Group array
     pub fn all_groups(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice());
+        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice());
         trace!("All groups output: {:?}", output);
 
         to_address_vec(&output)
@@ -57,7 +57,7 @@ impl UserManagement {
 
     /// Accounts array
     pub fn accounts(executor: &Executor, address: &Address) -> Vec<Address> {
-        let output = executor.call_contract_method(address, &ACCOUNTS_HASH.as_slice());
+        let output = executor.call_method_latest(address, &ACCOUNTS_HASH.as_slice());
         debug!("Accounts output: {:?}", output);
 
         to_address_vec(&output)

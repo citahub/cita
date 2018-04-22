@@ -1,3 +1,5 @@
+use core::contracts::node_manager::NodeManager;
+use core::contracts::sys_config::SysConfig;
 use core::db;
 use core::libexecutor::Genesis;
 use core::libexecutor::ServiceMap;
@@ -5,7 +7,7 @@ use core::libexecutor::block::{Block, ClosedBlock};
 use core::libexecutor::call_request::CallRequest;
 use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use error::ErrorCode;
-use jsonrpc_types::rpctypes::{BlockNumber, CountOrCode};
+use jsonrpc_types::rpctypes::{BlockNumber, BlockTag, CountOrCode, MetaData};
 use libproto::{request, response, Message, SyncResponse};
 use libproto::blockchain::{BlockWithProof, Proof, ProofType};
 use libproto::consensus::SignedProposal;
@@ -21,6 +23,7 @@ use std::mem;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
+use types::ids::BlockId;
 use util::Address;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
@@ -384,6 +387,52 @@ impl ExecutorInstance {
                             }
                         };
                     });
+            }
+
+            Request::meta_data(data) => {
+                trace!("metadata request from josnrpc {:?}", data);
+                match serde_json::from_str::<BlockNumber>(&data)
+                    .map_err(|err| (ErrorCode::query_error(), format!("{:?}", err)))
+                    .and_then(|number: BlockNumber| {
+                        let current_height = self.ext.get_current_height();
+                        let number = match number {
+                            BlockNumber::Tag(BlockTag::Earliest) => 0,
+                            BlockNumber::Height(n) => n,
+                            BlockNumber::Tag(BlockTag::Latest) => current_height,
+                        };
+                        if number > current_height {
+                            Err((
+                                ErrorCode::query_error(),
+                                format!("Block number overflow: {} > {}", number, current_height),
+                            ))
+                        } else {
+                            Ok(number)
+                        }
+                    })
+                    .map(|number: u64| {
+                        // TODO: get chain_name by current block number
+                        let block_id = BlockId::Number(number);
+                        let sys_config = SysConfig::new(&self.ext);
+                        let genesis_timestamp = self.ext
+                            .block_header(BlockId::Earliest)
+                            .unwrap()
+                            .timestamp();
+                        MetaData {
+                            genesis_timestamp,
+                            chain_id: sys_config.chain_id(),
+                            chain_name: sys_config.chain_name(Some(block_id)),
+                            operator: sys_config.operator(Some(block_id)),
+                            website: sys_config.website(Some(block_id)),
+                            validators: NodeManager::nodes(&self.ext),
+                            block_interval: sys_config.block_interval(),
+                        }
+                    }) {
+                    Ok(metadata) => response.set_meta_data(serde_json::to_string(&metadata).unwrap()),
+                    Err((code, error_msg)) => {
+                        response.set_code(code);
+                        response.set_error_msg(error_msg);
+                    }
+                }
             }
 
             _ => {

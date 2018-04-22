@@ -13,7 +13,7 @@
         "test-chain",
         0,
         "test-operator",
-        "https://www.cryptape.com",
+        "https://www.example.com",
         3000
     ],
     "0x00000000000000000000000000000000013241b4": "0x9dcd6b234e2772c5451fd4ccf7582f4283140697",

@@ -15,22 +15,22 @@
       },
       "expectedResponse": {
         "result": {
-          "version": 0,
-          "hash": "0x70fa2a32c03f56aa144867358ac99876aaeccd2bf7474c6d2bc5ea99c1e0ca52",
-          "header": {
-            "timestamp": 1524000003000,
-            "prevHash": "0x1cb3a47e4c8f8523e9769b9bfdd8f627acdf8441633931befb639e21e27fd9a7",
-            "number": "0x1",
-            "stateRoot": "0xb69bc34f4f4f3895f04e3f9aabf98900e2a06a77718d901bcd5cd0a5c08c2fe1",
-            "transactionsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-            "receiptsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-            "gasUsed": "0x0",
-            "proof": null,
-            "proposer": "0x0000000000000000000000000000000000000000"
-          },
           "body": {
             "transactions": []
-          }
+          },
+          "header": {
+            "transactionsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+            "timestamp": 1524000003000,
+            "receiptsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+            "number": "0x1",
+            "stateRoot": "0xb69bc34f4f4f3895f04e3f9aabf98900e2a06a77718d901bcd5cd0a5c08c2fe1",
+            "proposer": "0x0000000000000000000000000000000000000000",
+            "proof": null,
+            "prevHash": "0x1cb3a47e4c8f8523e9769b9bfdd8f627acdf8441633931befb639e21e27fd9a7",
+            "gasUsed": "0x0"
+          },
+          "version": 0,
+          "hash": "0x70fa2a32c03f56aa144867358ac99876aaeccd2bf7474c6d2bc5ea99c1e0ca52"
         }
       },
       "asserts": [
@@ -71,36 +71,36 @@
       },
       "expectedResponse": {
         "result": {
-          "version": 0,
-          "hash": "0x76a1fa35d3f0b6b5fe48cef6122d64967f8ead28e2cd669331c629684a9272de",
-          "header": {
-            "timestamp": 1524000006000,
-            "prevHash": "0x70fa2a32c03f56aa144867358ac99876aaeccd2bf7474c6d2bc5ea99c1e0ca52",
-            "number": "0x2",
-            "stateRoot": "0xbeb68977a1987aa1d2beff9089643bb957e7496cd2f7c5d8235dae2322b5f560",
-            "transactionsRoot": "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17",
-            "receiptsRoot": "0x3eb24f895dfebd7a1e8230083d09027934285f4bc6c4a7ea7b48708a452a81a9",
-            "gasUsed": "0x7453",
-            "proposer": "0x0000000000000000000000000000000000000000",
-            "proof": {
-              "Tendermint": {
-                "proposal": "0x0000000000000000000000000000000000000000000000000000000000000000",
-                "height": 1,
-                "round": 0,
-                "commits": {
-                  "0x31d40cd88d6a884d2c95cf261c9f8ca495240af2": "0x34dcb4f04b5315365566422e2ec37ad78087a0338b4f99b45e56262069f69ad25323adff577862ddec9ac2ef5568440982cefd3c62783ff2ee1f4e7a3286073e00"
-                }
-              }
-            }
-          },
           "body": {
             "transactions": [
               {
-                "hash": "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17",
-                "content": "0x0abf0112013018a08d0620642ab30160606040523415600e57600080fd5b5b5b5b60948061001f6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603d575b600080fd5b3415604757600080fd5b605b6004808035906020019091905050605d565b005b806000819055505b505600a165627a7a72305820c471b4376626da2540b2374e8b4110501051c426ff46814a6170ce9e219e49a800291241e343da8c68990846042b1739afb5c003ad8de2cab68810a48b912d50a567567c08319160cdb0247ab8bca3b04706bc64877a8331ead63bc67196d00d15451cb500"
+                "content": "0x0abf0112013018a08d0620642ab30160606040523415600e57600080fd5b5b5b5b60948061001f6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680635524107714603d575b600080fd5b3415604757600080fd5b605b6004808035906020019091905050605d565b005b806000819055505b505600a165627a7a72305820c471b4376626da2540b2374e8b4110501051c426ff46814a6170ce9e219e49a800291241e343da8c68990846042b1739afb5c003ad8de2cab68810a48b912d50a567567c08319160cdb0247ab8bca3b04706bc64877a8331ead63bc67196d00d15451cb500",
+                "hash": "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17"
               }
             ]
-          }
+          },
+          "header": {
+            "transactionsRoot": "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17",
+            "timestamp": 1524000006000,
+            "receiptsRoot": "0x3eb24f895dfebd7a1e8230083d09027934285f4bc6c4a7ea7b48708a452a81a9",
+            "number": "0x2",
+            "stateRoot": "0xbeb68977a1987aa1d2beff9089643bb957e7496cd2f7c5d8235dae2322b5f560",
+            "proposer": "0x0000000000000000000000000000000000000000",
+            "proof": {
+              "Tendermint": {
+                "commits": {
+                  "0x31d40cd88d6a884d2c95cf261c9f8ca495240af2": "0x34dcb4f04b5315365566422e2ec37ad78087a0338b4f99b45e56262069f69ad25323adff577862ddec9ac2ef5568440982cefd3c62783ff2ee1f4e7a3286073e00"
+                },
+                "proposal": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "round": 0,
+                "height": 1
+              }
+            },
+            "prevHash": "0x70fa2a32c03f56aa144867358ac99876aaeccd2bf7474c6d2bc5ea99c1e0ca52",
+            "gasUsed": "0x7453"
+          },
+          "version": 0,
+          "hash": "0x76a1fa35d3f0b6b5fe48cef6122d64967f8ead28e2cd669331c629684a9272de"
         }
       },
       "asserts": [

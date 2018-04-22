@@ -34,8 +34,8 @@ lazy_static! {
 pub struct NodeManager;
 
 impl NodeManager {
-    pub fn read(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
+    pub fn nodes(executor: &Executor) -> Vec<Address> {
+        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
         trace!("nodemanager output: {:?}", ToHex::to_hex(output.as_slice()));
 
         let nodes: Vec<Address> = to_address_vec(&output);
@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn test_node_manager_contract() {
         let executor = init_executor();
-        let nodes = NodeManager::read(&executor);
+        let nodes = NodeManager::nodes(&executor);
 
         assert_eq!(
             nodes,

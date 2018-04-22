@@ -98,7 +98,7 @@ impl QuotaManager {
 
     /// Quota array
     pub fn quota(executor: &Executor) -> Vec<u64> {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice());
+        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice());
         trace!("quota output: {:?}", output);
 
         to_low_u64_vec(&output)
@@ -106,7 +106,7 @@ impl QuotaManager {
 
     /// Account array
     pub fn users(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice());
+        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice());
         trace!("users output: {:?}", output);
 
         to_address_vec(&output)
@@ -114,7 +114,7 @@ impl QuotaManager {
 
     /// Global gas limit
     pub fn block_gas_limit(executor: &Executor) -> u64 {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice());
+        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice());
         trace!("block_gas_limit output: {:?}", output);
 
         to_low_u64(&output)
@@ -122,7 +122,7 @@ impl QuotaManager {
 
     /// Global account gas limit
     pub fn account_gas_limit(executor: &Executor) -> u64 {
-        let output = executor.call_contract_method(&*CONTRACT_ADDRESS, &*DEFAULT_AQL_HASH.as_slice());
+        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*DEFAULT_AQL_HASH.as_slice());
         trace!("account_gas_limit output: {:?}", output);
 
         to_low_u64(&output)
