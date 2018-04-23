@@ -8,7 +8,6 @@ import "./address_array.sol";
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0x00000000000000000000000000000000013241b4
 ///         The interface can be called: Only query type
-/// @dev TODO what about superAdmin
 contract Authorization {
 
     address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
@@ -41,6 +40,11 @@ contract Authorization {
 
     modifier onlyPermissionManagement {
         require(permissionManagementAddr == msg.sender);
+        _;
+    }
+
+    modifier notSuperAdmin(address _account) {
+        require(_account != all_accounts[0]);
         _;
     }
 
@@ -85,6 +89,7 @@ contract Authorization {
     function cancelAuth(address _account, address _permission)
         public
         onlyPermissionManagement
+        notSuperAdmin(_account)
         returns (bool)
     {
         AddressArray.remove(_account, accounts[_permission]);
@@ -99,6 +104,7 @@ contract Authorization {
     function clearAuth(address _account)
         public
         onlyPermissionManagement
+        notSuperAdmin(_account)
         returns (bool)
     {
         // Delete the account of all the account's permissions
