@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "./node_interface.sol";
-import "./address_array.sol";
+import "../common/address_array.sol";
 
 
 /// @title Node manager contract

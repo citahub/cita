@@ -22,6 +22,8 @@ from ethereum.abi import ContractTranslator
 assert get_solidity() is not None, 'Solidity not found!'
 
 CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
+# Remove 'admintool'
+COMMON_DIR = path.join(path.dirname(__file__)[:-10], 'contracts/common')
 
 CONTRACTS = {
     '0x00000000000000000000000000000000013241a2': {'file': 'system/node_manager.sol',
@@ -60,7 +62,7 @@ def init_contracts(nodes, chain_id):
 
     for address, contract in CONTRACTS.iteritems():
         contract_path = path.join(CONTRACTS_DIR, contract['file'])
-        simple_compiled = compile_file(contract_path, combined='bin,abi,userdoc,devdoc,hashes')
+        simple_compiled = compile_file(contract_path, combined='bin,abi,userdoc,devdoc,hashes', extra_args='common=%s' % COMMON_DIR)
         simple_data = solidity_get_contract_data(
             simple_compiled,
             contract_path,

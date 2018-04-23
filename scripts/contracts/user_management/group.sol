@@ -1,7 +1,6 @@
 pragma solidity ^0.4.18;
 
-import "./group.sol";
-import "./address_array.sol";
+import "../common/address_array.sol";
 
 
 /// @title Group contract

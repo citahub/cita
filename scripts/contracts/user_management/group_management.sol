@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "./group_creator.sol";
-import "./address_array.sol";
+import "../common/address_array.sol";
 
 
 /// @title User management using group struct

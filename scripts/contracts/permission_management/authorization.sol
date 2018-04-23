@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "./permission.sol";
-import "./address_array.sol";
+import "../common/address_array.sol";
 
 
 /// @title Authorization about the permission and account
