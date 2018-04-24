@@ -2,8 +2,8 @@ pragma solidity ^0.4.18;
 
 import "./role_creator.sol";
 import "./permission_management.sol";
-import "./contract_check.sol";
-import "./address_array.sol";
+import "../common/contract_check.sol";
+import "../common/address_array.sol";
 
 
 /// @title Role management contract
