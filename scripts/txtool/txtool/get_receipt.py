@@ -9,6 +9,7 @@ from url_util import endpoint
 from util import findDict, remove_hex_0x
 from util import run_command
 import simplejson
+import time
 
 def save_topcis(topics):
     if topics is not None:
@@ -42,9 +43,12 @@ def get_receipt_by(tx_hash):
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--tx", help="Transaction hash with or without 0x prefix.")
+    parser.add_argument(
+        "--forever", type=bool,
+        help="Run get receipt again and again, until get return data.")
     opts = parser.parse_args()
 
-    return opts.tx
+    return opts
 
 def main():
     compile_path = Path("../output/transaction")
@@ -53,18 +57,24 @@ def main():
         for line in run_command(command):
             print(line)
 
-    tx_hash = parse_arguments()
-    if tx_hash is None:
-        tx_hash = get_transaction_hash()
+    opts = parse_arguments()
+    tx_hash = opts.tx if opts.tx else get_transaction_hash()
 
-    receipt = get_receipt_by(remove_hex_0x(tx_hash))
-    print(simplejson.dumps(receipt, indent=2))
-    print("保存topics到../output/transaction/topics")
-    topics = _log_topics(receipt)
-    save_topcis(topics)
+    while True:
+        receipt = get_receipt_by(remove_hex_0x(tx_hash))
+        if receipt is not None:
+            print(simplejson.dumps(receipt, indent=2))
+            topics = _log_topics(receipt)
+            save_topcis(topics)
 
-    contract_address = findDict(receipt, 'contractAddress')
-    save_contract_address(contract_address)
+            contract_address = findDict(receipt, 'contractAddress')
+            save_contract_address(contract_address)
+
+            break
+        elif not opts.forever:
+            break
+        else:
+            time.sleep(3)
 
 
 def _log_topics(receipt):

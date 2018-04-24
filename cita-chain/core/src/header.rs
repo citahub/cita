@@ -200,17 +200,17 @@ impl Header {
     /// Set the transactions root field of the header.
     pub fn set_transactions_root(&mut self, a: H256) {
         self.transactions_root = a;
-        self.note_dirty()
+        self.note_dirty();
     }
     /// Set the receipts root field of the header.
     pub fn set_receipts_root(&mut self, a: H256) {
         self.receipts_root = a;
-        self.note_dirty()
+        self.note_dirty();
     }
     /// Set the log bloom field of the header.
     pub fn set_log_bloom(&mut self, a: LogBloom) {
         self.log_bloom = a;
-        self.note_dirty()
+        self.note_dirty();
     }
     /// Set the timestamp field of the header.
     pub fn set_timestamp(&mut self, a: u64) {
@@ -267,8 +267,9 @@ impl Header {
     }
 
     /// Note that some fields have changed. Resets the memoised hash.
-    pub fn note_dirty(&self) {
+    pub fn note_dirty(&self) -> &Self {
         self.hash.set(None);
+        self
     }
 
     // TODO: make these functions traity
@@ -312,6 +313,30 @@ impl Header {
         bh.set_transactions_root(self.transactions_root.to_vec());
         bh.set_gas_used(u64::from(self.gas_used));
         bh.set_gas_limit(self.gas_limit.low_u64());
+        bh.set_proof(self.proof.clone());
+        bh.set_proposer(self.proposer.to_vec());
+        bh
+    }
+
+    /// Generate a header, only set the fields which has been set in new proposal.
+    pub fn proposal(&self) -> Header {
+        let mut h = Header::new();
+        h.set_parent_hash(self.parent_hash);
+        h.set_timestamp(self.timestamp);
+        h.set_number(self.number);
+        h.set_transactions_root(self.transactions_root);
+        h.set_proof(self.proof.clone());
+        h.set_proposer(self.proposer);
+        h
+    }
+
+    /// Generate the protobuf header, only set the fields which has been set in new proposal.
+    pub fn proposal_protobuf(&self) -> BlockHeader {
+        let mut bh = BlockHeader::new();
+        bh.set_prevhash(self.parent_hash.to_vec());
+        bh.set_timestamp(self.timestamp);
+        bh.set_height(self.number);
+        bh.set_transactions_root(self.transactions_root.to_vec());
         bh.set_proof(self.proof.clone());
         bh.set_proposer(self.proposer.to_vec());
         bh

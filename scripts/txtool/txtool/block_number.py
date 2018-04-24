@@ -17,7 +17,10 @@ def block_number():
 
 def main():
     number = block_number()
-    print int(number, 16)
+    if number:
+        print(int(number, 16))
+    else:
+        print("None")
 
 if __name__ == "__main__":
     main()

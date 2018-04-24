@@ -17,40 +17,32 @@
 
 use ethabi;
 use rustc_hex::FromHex;
-use std::convert::Into;
 
 use cita_crypto::PrivKey;
-use core::libchain::chain::TxProof;
 use libproto::blockchain::{Transaction, UnverifiedTransaction};
 use util::{H160, U256};
 
 pub fn construct_transaction(
     pkey: &PrivKey,
     tx_proof_rlp: Vec<u8>,
+    dest_hasher: &str,
+    dest_contract: H160,
     height: U256,
-) -> Option<(u64, UnverifiedTransaction)> {
-    let tx_proof = TxProof::from_bytes(tx_proof_rlp.clone());
-    trace!("The input tx_proof is {:?}.", tx_proof);
-    tx_proof.extract_relay_info().and_then(|relay_info| {
-        trace!("relay_info {:?}", relay_info);
-        encode(&relay_info.dest_hasher, tx_proof_rlp)
-            .map(|code| sign(pkey, relay_info.dest_contract, code, height))
-            .map(|utx| (relay_info.to_chain_id, utx))
-    })
+) -> Option<UnverifiedTransaction> {
+    encode(dest_hasher, tx_proof_rlp).map(|code| sign(pkey, dest_contract, code, height))
 }
 
 #[inline]
 fn encode(dest_hasher: &str, tx_proof_rlp: Vec<u8>) -> Option<Vec<u8>> {
     FromHex::from_hex(dest_hasher)
         .map(|hasher| {
-            let source: U256 = tx_proof_rlp.len().into();
-            let mut target = [0u8; 32];
-            source.to_big_endian(&mut target);
-            let encoded = ethabi::encode(&[
-                ethabi::Token::Uint(target),
-                ethabi::Token::Bytes(tx_proof_rlp),
-            ]);
-            hasher.into_iter().chain(encoded.into_iter()).collect()
+            trace!("encode dest_hasher {:?}", hasher);
+            trace!("encode proof_len {:?}", tx_proof_rlp.len());
+            trace!("encode proof_data {:?}", tx_proof_rlp);
+            let encoded = ethabi::encode(&[ethabi::Token::Bytes(tx_proof_rlp)]);
+            let ret = hasher.into_iter().chain(encoded.into_iter()).collect();
+            trace!("encode result {:?}", ret);
+            ret
         })
         .ok()
 }
@@ -61,5 +53,6 @@ fn sign(pkey: &PrivKey, addr: H160, code: Vec<u8>, height: U256) -> UnverifiedTr
     tx.set_data(code);
     tx.set_to(addr.hex());
     tx.set_valid_until_block(height.low_u64() + 100);
+    tx.set_quota(10000000000);
     tx.sign(*pkey).take_transaction_with_sig()
 }

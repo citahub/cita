@@ -1,18 +1,22 @@
 {
-    "private_key": "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f58007fa894214",
+    "private_key": "1111111111111111111111111111111111111111111111111111111111111111",
     "chains": [
-        {
-            "id": 0,
-            "servers": [
-                { "url": "http://127.0.0.1:1337", "timeout": { "secs": 30, "nanos": 0 } },
-                { "url": "http://127.0.0.1:1338", "timeout": { "secs": 30, "nanos": 0 } }
-            ]
-        },
         {
             "id": 1,
             "servers": [
-                { "url": "http://127.0.0.1:1339", "timeout": { "secs": 30, "nanos": 0 } },
-                { "url": "http://127.0.0.1:1340", "timeout": { "secs": 30, "nanos": 0 } }
+                { "url": "http://127.0.0.1:11337", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:11338", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:11339", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:11340", "timeout": { "secs": 30, "nanos": 0 } }
+            ]
+        },
+        {
+            "id": 2,
+            "servers": [
+                { "url": "http://127.0.0.1:21337", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:21338", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:21339", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:21340", "timeout": { "secs": 30, "nanos": 0 } }
             ]
         }
     ]

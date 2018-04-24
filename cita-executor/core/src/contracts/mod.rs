@@ -22,7 +22,9 @@ pub mod quota_manager;
 pub mod sys_config;
 pub mod permission_management;
 pub mod user_management;
+pub mod chain_manager;
 
+pub use self::chain_manager::ChainManagement;
 pub use self::node_manager::NodeManager;
 pub use self::permission_management::{PermissionManagement, Resource};
 pub use self::quota_manager::{AccountGasLimit, QuotaManager};

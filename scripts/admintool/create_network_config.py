@@ -7,64 +7,46 @@ import toml
 
 
 def main():
-    """
-    Argv1: usually is the work path `cita/targte/install`
-    Argv2: node number, such as 0, 1, 2...
-    Argv3: ip length, it means the total number of nodes
-    Argv4: ip list, such as "127.0.0.1:1000,127.0.0.1:1000"
-    Argv5: if append new node, it will be true
-    """
+    """Create a network configuration or update an existed one."""
 
-    nid = int(sys.argv[2])
-    path = os.path.join(sys.argv[1])
-    ip_list = (sys.argv[4]).split(',')
-    port = ip_list[nid].split(':')[1]
-    net_config_name = "network.toml"
+    config_path = sys.argv[1]
+    node_id = int(sys.argv[2])
+    ip_list = (sys.argv[3]).split(',')
+    update_existed = sys.argv[4] == 'true'
 
-    if len(sys.argv) == 6:
-        insert_peer_config(nid, ip_list[nid].split(":")[0], port, path)
+    size = len(ip_list)
+    node_ip = ip_list[node_id].split(':')[0]
+    node_port = int(ip_list[node_id].split(':')[1])
 
-    size = int(sys.argv[3])
-    dump_path = os.path.join(path, net_config_name)
-    with open(dump_path, "w") as f:
-        f.write("id_card = " + str(nid) + "\n")
-        f.write("port = " + port + "\n")
-        ids = range(size)
-        ip_list = zip(ids, ip_list)
-        del ip_list[nid]
-        for (id, addr) in ip_list:
-            addr_list = addr.split(':')
-            f.write("[[peers]]" + "\n")
-            f.write("id_card = " + str(id) + "\n")
-            ip = addr_list[0]
-            f.write("ip = \"" + ip + "\"\n")
-            port = addr_list[1]
-            f.write("port = " + port + "\n")
+    if update_existed:
+        update_existed_config(config_path, node_id, node_ip, node_port)
+    else:
+        # Create a new network configuration.
+        with open(config_path, 'w') as fil:
+            fil.write('id_card = {}\n'.format(node_id))
+            fil.write('port = {}\n'.format(node_port))
+            ip_list = filter(
+                lambda x: x[0] != node_id, zip(range(size), ip_list))
+            for (id_card, addr) in ip_list:
+                addr_list = addr.split(':')
+                fil.write('[[peers]]\n')
+                fil.write('id_card = {}\n'.format(id_card))
+                fil.write('ip = "{}"\n'.format(addr_list[0]))
+                fil.write('port = {}\n'.format(addr_list[1]))
 
 
-def insert_peer_config(new_id, ip, port, path):
-    """
-    Insert new node ip, port, id to network configuration of existing nodes
-
-    :param new_id: new node id
-    :param ip: new node ip
-    :param port: new node port
-    :param path: work path, usually is `cita/targte/install`
-    """
-
-    for n in range(new_id):
-        network_file = os.path.join(path, 'node{}'.format(n), 'network.toml')
-        if os.path.exists(network_file):
-            with open(network_file) as f:
-                data = toml.load(f)
-            if len(data["peers"]) < new_id:
-                with open(network_file, 'w') as f:
-                    data['peers'].append({
-                        'id_card': new_id,
-                        'ip': ip,
-                        'port': int(port)
-                    })
-                    toml.dump(data, f)
+def update_existed_config(network_file, node_id, node_ip, node_port):
+    """Update an existed network configuration."""
+    if os.path.exists(network_file):
+        with open(network_file, 'r') as fil:
+            data = toml.load(fil)
+        data['peers'].append({
+            'id_card': node_id,
+            'ip': node_ip,
+            'port': node_port
+        })
+        with open(network_file, 'w') as fil:
+            toml.dump(data, fil)
 
 
 if __name__ == '__main__':

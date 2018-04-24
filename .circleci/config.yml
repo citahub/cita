@@ -92,6 +92,21 @@ jobs:
           name: jsonrpc-mock-tests
           command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh'
 
+  integrate_test_crosschain:
+    docker:
+      - image: cita/cita-build:latest
+    working_directory: ~/cita-build
+    resource_class: large
+    steps:
+      - restore_cache:
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: config
+          command: './scripts/release.sh debug'
+      - run:
+          name: crosschain
+          command: './tests/integrate_test/cita_crosschain.sh'
+
 workflows:
   version: 2
   build-and-test:
@@ -104,5 +119,8 @@ workflows:
           requires:
             - build
       - integrate_test:
+          requires:
+            - build
+      - integrate_test_crosschain:
           requires:
             - build
