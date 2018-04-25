@@ -481,9 +481,13 @@ impl Forward {
                         self.chain
                             .max_store_height
                             .store(height as usize, Ordering::SeqCst);
+
+                        /*when syncing blocks,not deliver blockhashs when recieving block,
+                        just deliver blockhashs when executed block*/
+                        /*
                         let tx_hashes = block.body().transaction_hashes();
                         self.chain
-                            .delivery_block_tx_hashes(height, tx_hashes, &self.ctx_pub);
+                            .delivery_block_tx_hashes(height, tx_hashes, &self.ctx_pub);*/
                         debug!("sync: insert block-{} in map", block.number());
                         blocks.insert(height, BlockInQueue::SyncBlock((block, None)));
                     } else {

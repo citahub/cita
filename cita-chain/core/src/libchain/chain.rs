@@ -628,6 +628,8 @@ impl Chain {
                 }
                 if number == self.get_current_height() + 1 {
                     self.set_db_result(&ret, &block);
+                    let tx_hashes = block.body().transaction_hashes();
+                    self.delivery_block_tx_hashes(number, tx_hashes, &ctx_pub);
                     self.is_sync.store(true, Ordering::SeqCst);
                     self.broadcast_current_status(&ctx_pub);
                     self.is_sync.store(false, Ordering::SeqCst);
