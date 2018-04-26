@@ -288,7 +288,7 @@ where
             OutputPolicy::InitContract(ref mut copy) if apply_state => {
                 let return_cost = U256::from(data.len()) * U256::from(self.schedule.create_data_gas);
                 if return_cost > *gas || data.len() > self.schedule.create_data_limit {
-                    return if self.schedule.exceptional_failed_code_deposit { Err(evm::Error::OutOfGas) } else { Ok(*gas) };
+                    return Err(evm::Error::OutOfGas);
                 }
 
                 handle_copy(copy);

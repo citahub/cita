@@ -19,8 +19,6 @@
 
 /// Definition of the cost schedule and other parameterisations for the EVM.
 pub struct Schedule {
-    /// Does it support exceptional failed code deposit
-    pub exceptional_failed_code_deposit: bool,
     /// VM stack limit
     pub stack_limit: usize,
     /// Max number of nested calls/creates
@@ -103,12 +101,11 @@ pub struct Schedule {
 impl Schedule {
     /// Schedule for the v1 of the cita main net.
     pub fn new_v1() -> Schedule {
-        Self::new(false, 21_000)
+        Self::new(21_000)
     }
 
-    fn new(efcd: bool, tcg: usize) -> Schedule {
+    fn new(tcg: usize) -> Schedule {
         Schedule {
-            exceptional_failed_code_deposit: efcd,
             stack_limit: 1024,
             max_depth: 1024,
             tier_step_gas: [0, 2, 3, 5, 8, 10, 20, 0],
