@@ -969,6 +969,54 @@ mod tests {
     use tests::helpers::*;
     use trace::{ExecutiveTracer, ExecutiveVMTracer};
     use util::{Address, H256, U256};
+
+    #[test]
+    fn test_create_contract_out_of_gas() {
+        logger::silent();
+        let source = r#"
+pragma solidity ^0.4.19;
+
+contract HelloWorld {
+  uint balance;
+
+  function update(uint amount) public returns (address, uint) {
+    balance += amount;
+    return (msg.sender, balance);
+  }
+}
+"#;
+        let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
+        let nonce = U256::zero();
+        let gas_required = U256::from(1000);
+
+        let (deploy_code, _runtime_code) = solc("HelloWorld", source);
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
+        let contract_address = contract_address(&sender, &nonce);
+        let mut params = ActionParams::default();
+        params.address = contract_address.clone();
+        params.sender = sender.clone();
+        params.origin = sender.clone();
+        params.gas = gas_required;
+        params.code = Some(Arc::new(deploy_code));
+        params.value = ActionValue::Apparent(0.into());
+        let mut state = get_temp_state();
+
+        let info = EnvInfo::default();
+        let engine = NullEngine::default();
+        let mut substate = Substate::new();
+        let mut tracer = ExecutiveTracer::default();
+        let mut vm_tracer = ExecutiveVMTracer::toplevel();
+
+        let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+        let res = ex.create(params.clone(), &mut substate, &mut tracer, &mut vm_tracer);
+        assert!(res.is_err());
+        match res {
+            Err(e) => assert_eq!(e, evm::Error::OutOfGas),
+            _ => unreachable!(),
+        }
+    }
+
     #[test]
     fn test_create_contract() {
         logger::silent();
