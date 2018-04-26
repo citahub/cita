@@ -11,6 +11,7 @@
 //!     | -------- | --------- | -------------- |
 //!     | executor | Chain     | LocalSync      |
 //!     | executor | Chain     | Request        |
+//!     | executor | Chain     | Status         |
 //!     | executor | Consensus | BlockWithProof |
 //!     | executor | Consensus | SignedProposal |
 //!     | executor | Consensus | RawBytes       |
@@ -126,6 +127,7 @@ fn main() {
             Net >> SyncResponse,
             Consensus >> BlockWithProof,
             Chain >> Request,
+            Chain >> Status,
             Consensus >> SignedProposal,
             Consensus >> RawBytes,
             Net >> SignedProposal,
@@ -144,7 +146,7 @@ fn main() {
         genesis_path,
         Arc::clone(&service_map),
     );
-    let distribute_ext = ext_instance.clone();
+    let mut distribute_ext = ext_instance.clone();
 
     thread::spawn(move || loop {
         if let Ok((key, msg)) = rx.recv() {
@@ -169,7 +171,11 @@ fn main() {
         if let Ok(number) = write_receiver.recv_timeout(Duration::new(8, 0)) {
             ext_instance.execute_block(number);
         } else {
-            ext_instance.ext.send_executed_info_to_chain(&ctx_pub);
+            for height in ext_instance.ext.executed_result.read().keys() {
+                ext_instance
+                    .ext
+                    .send_executed_info_to_chain(*height, &ctx_pub);
+            }
         }
     }
 }

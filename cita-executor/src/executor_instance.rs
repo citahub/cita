@@ -9,7 +9,7 @@ use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, BlockTag, CountOrCode, MetaData};
 use libproto::{request, response, Message, SyncResponse};
-use libproto::blockchain::{BlockWithProof, Proof, ProofType};
+use libproto::blockchain::{BlockWithProof, Proof, ProofType, Status};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -42,6 +42,8 @@ pub struct ExecutorInstance {
     pub ext: Arc<Executor>,
     pub grpc_port: u16,
     closed_block: RefCell<Option<ClosedBlock>>,
+    chain_status: Status,
+    local_sync_count: u8,
 }
 
 impl ExecutorInstance {
@@ -63,18 +65,20 @@ impl ExecutorInstance {
         let mut executor = Executor::init_executor(Arc::new(db), genesis, executor_config);
         executor.set_service_map(service_map);
         let executor = Arc::new(executor);
-        executor.set_gas_and_nodes();
-        executor.send_executed_info_to_chain(&ctx_pub);
+        executor.set_gas_and_nodes(executor.get_max_height());
+        executor.send_executed_info_to_chain(executor.get_max_height(), &ctx_pub);
         ExecutorInstance {
             ctx_pub: ctx_pub,
             write_sender: write_sender,
             ext: executor,
             grpc_port: grpc_port,
             closed_block: RefCell::new(None),
+            chain_status: Status::new(),
+            local_sync_count: 0,
         }
     }
 
-    pub fn distribute_msg(&self, key: &str, msg_vec: &[u8]) {
+    pub fn distribute_msg(&mut self, key: &str, msg_vec: &[u8]) {
         let mut msg = Message::try_from(msg_vec).unwrap();
         let origin = msg.get_origin();
         trace!("distribute_msg call key = {}, origin = {}", key, origin);
@@ -82,6 +86,12 @@ impl ExecutorInstance {
             routing_key!(Chain >> Request) => {
                 let req = msg.take_request().unwrap();
                 self.reply_request(req);
+            }
+
+            routing_key!(Chain >> Status) => {
+                if let Some(status) = msg.take_status() {
+                    self.execute_chain_status(status);
+                };
             }
 
             routing_key!(Consensus >> BlockWithProof) => {
@@ -598,9 +608,8 @@ impl ExecutorInstance {
                             }
                         }
 
-                        self.ext
-                            .max_height
-                            .store(block.number() as usize, Ordering::SeqCst);
+                        self.ext.set_max_height(block.number() as usize);
+
                         debug!("sync: insert block-{} in map", block.number());
                         blocks.insert(block.number(), BlockInQueue::SyncBlock((block, None)));
                     }
@@ -740,9 +749,7 @@ impl ExecutorInstance {
                 .write()
                 .insert(blk_height, BlockInQueue::ConsensusBlock(block, proof));
         };
-        self.ext
-            .max_height
-            .store(blk_height as usize, Ordering::SeqCst);
+        self.ext.set_max_height(blk_height as usize);
         self.write_sender.send(blk_height);
     }
 
@@ -800,5 +807,26 @@ impl ExecutorInstance {
         let snapshot = Arc::new(snapshot);
         snapshot::restore_using(Arc::clone(&snapshot), &reader, true);
         Ok(())
+    }
+
+    /// The processing logic here is the same as the network pruned/re-transmitted information based on
+    /// the state of the chain, but here is pruned/re-transmitted `ExecutedResult`.
+    fn execute_chain_status(&mut self, status: Status) {
+        let old_chain_height = self.chain_status.get_height();
+        let new_chain_height = status.get_height();
+        self.ext.prune_execute_result_cache(&status);
+
+        self.chain_status = status;
+
+        if old_chain_height == new_chain_height {
+            // Chain height does not increase
+            self.local_sync_count += 1;
+        }
+
+        if self.local_sync_count >= 3 && new_chain_height < self.ext.get_current_height() {
+            self.ext
+                .send_executed_info_to_chain(new_chain_height + 1, &self.ctx_pub);
+            self.local_sync_count = 0;
+        }
     }
 }

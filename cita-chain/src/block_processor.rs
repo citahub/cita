@@ -18,7 +18,6 @@
 use core::libchain::chain::Chain;
 use libproto::executor::ExecutedResult;
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 
 /// Processing blocks and transaction storage
@@ -38,13 +37,7 @@ impl BlockProcessor {
 
     pub fn broadcast_current_status(&self) {
         self.chain.delivery_current_rich_status(&self.ctx_pub);
-        if !self.chain.is_sync.load(Ordering::SeqCst) {
-            self.chain.broadcast_status(&self.ctx_pub);
-        }
-    }
-
-    pub fn broadcast_current_block(&self) {
-        self.chain.broadcast_current_block(&self.ctx_pub);
+        self.chain.broadcast_status(&self.ctx_pub);
     }
 
     pub fn set_executed_result(&self, ret: ExecutedResult) {

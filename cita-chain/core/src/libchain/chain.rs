@@ -35,7 +35,7 @@ use libproto::blockchain::{AccountGasLimit as ProtoAccountGasLimit, Proof as Pro
                            RichStatus as ProtoRichStatus};
 
 use header::Header;
-use libproto::{BlockTxHashes, FullTransaction, Message, SyncResponse};
+use libproto::{BlockTxHashes, FullTransaction, Message};
 use libproto::executor::ExecutedResult;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use proof::TendermintProof;
@@ -47,7 +47,7 @@ use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::{Into, TryInto};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
@@ -269,7 +269,6 @@ pub enum BlockInQueue {
 pub struct Chain {
     blooms_config: bc::Config,
     pub current_header: RwLock<Header>,
-    pub is_sync: AtomicBool,
     // Max height in block map
     pub max_height: AtomicUsize,
     pub max_store_height: AtomicUsize,
@@ -359,7 +358,6 @@ impl Chain {
         let chain = Chain {
             blooms_config: blooms_config,
             current_header: RwLock::new(header.clone()),
-            is_sync: AtomicBool::new(false),
             max_height: max_height,
             // TODO need to get saved body
             max_store_height: max_store_height,
@@ -558,35 +556,9 @@ impl Chain {
         }
     }
 
-    pub fn broadcast_current_block(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        let mheight = self.max_store_height.load(Ordering::SeqCst) as u64;
-        let body = self.db
-            .read_with_cache(db::COL_BODIES, &self.block_bodies, &mheight);
-        if let Some(blockbody) = body {
-            let mut block = Block::new();
-            block.set_body(blockbody);
-
-            let mut blocks = vec![];
-            blocks.push(block.protobuf());
-
-            let mut sync_res = SyncResponse::new();
-            sync_res.set_blocks(RepeatedField::from_vec(blocks));
-            let msg: Message = sync_res.into();
-            ctx_pub
-                .clone()
-                .send((
-                    routing_key!(Chain >> LocalSync).into(),
-                    msg.try_into().unwrap(),
-                ))
-                .unwrap();
-        }
-    }
-
     pub fn broadcast_current_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         self.delivery_current_rich_status(&ctx_pub);
-        if !self.is_sync.load(Ordering::SeqCst) {
-            self.broadcast_status(&ctx_pub);
-        }
+        self.broadcast_status(&ctx_pub);
     }
 
     pub fn set_executed_result(&self, ret: &ExecutedResult, ctx_pub: &Sender<(String, Vec<u8>)>) {
@@ -630,9 +602,7 @@ impl Chain {
                     self.set_db_result(&ret, &block);
                     let tx_hashes = block.body().transaction_hashes();
                     self.delivery_block_tx_hashes(number, tx_hashes, &ctx_pub);
-                    self.is_sync.store(true, Ordering::SeqCst);
                     self.broadcast_current_status(&ctx_pub);
-                    self.is_sync.store(false, Ordering::SeqCst);
                     debug!("finish sync blocks to {}", number);
                 };
             }

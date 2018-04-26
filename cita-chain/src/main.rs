@@ -171,11 +171,18 @@ fn main() {
     //chain 写数据 => 添加块
     thread::spawn(move || {
         loop {
-            if let Ok(einfo) = write_receiver.recv_timeout(Duration::new(18, 0)) {
+            if let Ok(einfo) = write_receiver.recv_timeout(Duration::new(8, 0)) {
                 block_processor.set_executed_result(einfo);
             } else {
-                //here maybe need send blockbody when max_store_height > max_height
-                block_processor.broadcast_current_block();
+                // Here will be 2 status:
+                // 1. Executor process restarts, lost cached block information.
+                // 2. Bft restarted, lost chain status information, unable to consensus, unable to generate block
+                //
+                // This will trigger:
+                // 1. Network retransmits block information or initiates a synchronization request,
+                //    and then the executor will receive a block message
+                // 2. Bft will receive the latest status of chain
+                block_processor.broadcast_current_status();
             }
         }
     });
