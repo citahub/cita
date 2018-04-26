@@ -32,12 +32,14 @@ class TestRunner(object):
         self.fast_fail = fast_fail
         self.session = requests.Session()
         self.assertion_fail_count = 0
+        self.assertion_count = 0
 
     def assertion_fail(self, force=False):
         if self.assertion_fail_count and (force or self.fast_fail):
             print('>> Assertion Failed {}!!!'.format(
-                '' if self.fast_fail else '({} times)'.format(
-                    self.assertion_fail_count)))
+                '' if self.fast_fail else '({}/{} times)'.format(
+                    self.assertion_fail_count,
+                    self.assertion_count)))
             sys.exit(-1)
 
     def run_all(self, directory):
@@ -109,12 +111,13 @@ class TestRunner(object):
             if assertion_result is False:
                 print('[receivedResponse]:')
                 print(json.dumps(
-                    assert_data['receivedResponse']['result'], indent=2))
+                    assert_data['receivedResponse'].get('result'), indent=2))
                 print('-' * 10)
                 print('[expectedResponse]:')
                 print(json.dumps(
-                    assert_data['expectedResponse']['result'], indent=2))
+                    assert_data['expectedResponse'].get('result'), indent=2))
                 self.assertion_fail_count += 1
+            self.assertion_count += 1
             self.assertion_fail()
 
 

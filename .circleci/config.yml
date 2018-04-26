@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build:
+  build_sha3:
     docker:
       - image: cita/cita-build:latest
     working_directory: ~/cita-build
@@ -21,38 +21,81 @@ jobs:
           name: check_cargolock
           command: '[ $(git status --short Cargo.lock | wc -l) -ne 0 ] && echo "[Error] Please update Cargo.lock BEFORE commit." && git diff Cargo.lock && exit 1 || true'
       - save_cache:
-          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
           paths:
             - ~/cita-build
       - save_cache:
-          key: deps-{{ checksum "Cargo.lock" }}
+          key: deps-{{ checksum "Cargo.lock" }}-sha3
           paths:
             - ~/.cargo
 
-  basic_test:
+  basic_test_sha3:
     docker:
       - image: cita/cita-build:latest
     working_directory: ~/cita-build
     resource_class: large
     steps:
       - restore_cache:
-          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
       - restore_cache:
-          key: deps-{{ checksum "Cargo.lock" }}
+          key: deps-{{ checksum "Cargo.lock" }}-sha3
       - run:
           name: test
           command: 'RUSTFLAGS="-F warnings" cargo test --tests'
 
-  basic_test_coverage:
+  build_blake2b:
     docker:
       - image: cita/cita-build:latest
     working_directory: ~/cita-build
     resource_class: large
     steps:
       - restore_cache:
-          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
       - restore_cache:
-          key: deps-{{ checksum "Cargo.lock" }}
+          key: deps-{{ checksum "Cargo.lock" }}-sha3
+      - run:
+          name: replace_hash
+          command: ./scripts/replace_default_feature.sh ./ sha3hash blake2bhash
+      - run:
+          name: replace_crypt
+          command: ./scripts/replace_default_feature.sh ./ secp256k1 ed25519
+      - run:
+          name: build
+          command: 'RUSTFLAGS="-F warnings" cargo build --all'
+          no_output_timeout: 20m
+      - save_cache:
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-blake2b
+          paths:
+            - ~/cita-build
+      - save_cache:
+          key: deps-{{ checksum "Cargo.lock" }}-blake2b
+          paths:
+            - ~/.cargo
+
+  basic_test_blake2b:
+    docker:
+      - image: cita/cita-build:latest
+    working_directory: ~/cita-build
+    resource_class: large
+    steps:
+      - restore_cache:
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-blake2b
+      - restore_cache:
+          key: deps-{{ checksum "Cargo.lock" }}-blake2b
+      - run:
+          name: test
+          command: 'RUSTFLAGS="-F warnings" cargo test --tests'
+
+  basic_test_coverage_sha3:
+    docker:
+      - image: cita/cita-build:latest
+    working_directory: ~/cita-build
+    resource_class: large
+    steps:
+      - restore_cache:
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+      - restore_cache:
+          key: deps-{{ checksum "Cargo.lock" }}-sha3
       - run:
           name: test-coverage
           command: |
@@ -71,14 +114,14 @@ jobs:
               --packages jsonrpc_types \
               --skip-clean --coveralls ${COVERALLS_TOKEN}
 
-  integrate_test:
+  integrate_test_sha3:
     docker:
       - image: cita/cita-build:latest
     working_directory: ~/cita-build
     resource_class: large
     steps:
       - restore_cache:
-          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
       - run:
           name: config
           command: './scripts/release.sh debug'
@@ -92,14 +135,14 @@ jobs:
           name: jsonrpc-mock-tests
           command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh'
 
-  integrate_test_crosschain:
+  integrate_test_crosschain_sha3:
     docker:
       - image: cita/cita-build:latest
     working_directory: ~/cita-build
     resource_class: large
     steps:
       - restore_cache:
-          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}
+          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
       - run:
           name: config
           command: './scripts/release.sh debug'
@@ -111,16 +154,22 @@ workflows:
   version: 2
   build-and-test:
     jobs:
-      - build
-      - basic_test:
+      - build_sha3
+      - build_blake2b:
           requires:
-            - build
-      - basic_test_coverage:
+            - basic_test_sha3
+      - basic_test_sha3:
           requires:
-            - build
-      - integrate_test:
+            - build_sha3
+      - basic_test_coverage_sha3:
           requires:
-            - build
-      - integrate_test_crosschain:
+            - build_sha3
+      - integrate_test_sha3:
           requires:
-            - build
+            - build_sha3
+      - integrate_test_crosschain_sha3:
+          requires:
+            - build_sha3
+      - basic_test_blake2b:
+          requires:
+            - build_blake2b
