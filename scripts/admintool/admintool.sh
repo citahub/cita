@@ -219,6 +219,8 @@ function consensus () {
     local nodeid=${1}
     python "${TEMPLATE_DIR}/create_node_config.py" \
         "$(target_dir ${nodeid})/"
+
+    cp -f "${TEMPLATE_DIR}/ntp_config_example.toml" "$(target_dir ${nodeid})/ntp.toml"
 }
 
 # rabbitmq and kafka
