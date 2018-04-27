@@ -243,12 +243,12 @@ function network () {
     if [ "${append_mode}" = "true" ]; then
         for ((ID=0;ID<$SIZE;ID++)); do
             local update_existed=true
-            if [ "${i}" = "${nodeid}" ]; then
+            if [ "${ID}" = "${nodeid}" ]; then
                 update_existed=false
             fi
             python "${TEMPLATE_DIR}/create_network_config.py" \
-                "$(target_dir ${i})/network.toml" \
-                ${i} \
+                "$(target_dir ${ID})/network.toml" \
+                ${nodeid} \
                 $IP_LIST \
                 ${update_existed}
         done
@@ -329,7 +329,7 @@ function backup_files () {
 }
 
 function restore_backup_files () {
-    cp -rf "${TARGET_PUBDIR}" "${TARGET_BAKDIR}"
+    cp -rf "${TARGET_BAKDIR}" "${TARGET_PUBDIR}"
 }
 
 function node_init_key () {
