@@ -19,7 +19,7 @@ respawn = 3
 [[process]]
 name = "cita-bft"
 command = "cita-bft"
-args = ["-c","consensus.toml"]
+args = ["-c","consensus.toml","-n","ntp.toml"]
 pidfile = ".cita-bft.pid"
 respawn = 3
 

@@ -1,0 +1,3 @@
+enabled = true
+threshold = 1000
+address = "0.pool.ntp.org:123"
