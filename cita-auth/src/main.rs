@@ -106,10 +106,11 @@ use dispatcher::Dispatcher;
 use handler::*;
 use libproto::Message;
 use libproto::auth::MiscellaneousReq;
+use std::convert::{Into, TryInto};
+use libproto::VerifyBlockReq;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
-use std::collections::HashMap;
-use std::convert::{Into, TryInto};
+use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::channel;
@@ -375,31 +376,35 @@ fn main() {
     let single_req_sender = single_req_sender.clone();
     let txs_pub_clone = txs_pub.clone();
     let resp_sender = resp_sender_clone.clone();
-    thread::spawn(move || loop {
-        match rx_sub.recv() {
-            Ok((key, msg)) => {
-                let verifier = verifier.clone();
-                handle_remote_msg(
-                    key,
-                    msg,
-                    on_proposal.clone(),
-                    &threadpool,
-                    proposal_tx_verify_num_per_thread,
-                    verifier.clone(),
-                    &single_req_sender,
-                    &txs_pub_clone,
-                    block_verify_status_hdl_remote.clone(),
-                    cache.clone(),
-                    &pool_txs_sender,
-                    &resp_sender.clone(),
-                    clear_txs_pool.clone(),
-                );
-            }
-            Err(err_info) => {
-                error!(
-                    "Failed to receive message from rx_sub due to {:?}",
-                    err_info
-                );
+    thread::spawn(move || {
+        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        loop {
+            match rx_sub.recv() {
+                Ok((key, msg)) => {
+                    let verifier = verifier.clone();
+                    handle_remote_msg(
+                        key,
+                        msg,
+                        on_proposal.clone(),
+                        &threadpool,
+                        proposal_tx_verify_num_per_thread,
+                        verifier.clone(),
+                        &single_req_sender,
+                        &txs_pub_clone,
+                        block_verify_status_hdl_remote.clone(),
+                        cache.clone(),
+                        &pool_txs_sender,
+                        &resp_sender.clone(),
+                        clear_txs_pool.clone(),
+                        &mut block_reqs,
+                    );
+                }
+                Err(err_info) => {
+                    error!(
+                        "Failed to receive message from rx_sub due to {:?}",
+                        err_info
+                    );
+                }
             }
         }
     });

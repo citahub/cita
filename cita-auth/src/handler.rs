@@ -17,11 +17,11 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{Message, Response, Ret, VerifyBlockResp, VerifyTxResp};
+use libproto::{Message, Response, Ret, VerifyBlockReq, VerifyBlockResp, VerifyTxResp};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::convert::{Into, TryFrom, TryInto};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -127,6 +127,153 @@ fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxR
     }
 }
 
+fn verify_proposal_block(
+    key: String,
+    blkreq: &VerifyBlockReq,
+    on_proposal: Arc<AtomicBool>,
+    pool: &ThreadPool,
+    proposal_tx_verify_num_per_thread: usize,
+    verifier: Arc<RwLock<Verifier>>,
+    tx_pub: &Sender<(String, Vec<u8>)>,
+    block_verify_status: Arc<RwLock<BlockVerifyStatus>>,
+    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
+    resp_sender: &Sender<VerifyRequestResponseInfo>,
+) {
+    let tx_cnt = blkreq.get_reqs().len();
+    let mut tx_need_verify = Vec::new();
+    if tx_cnt > 0 {
+        let request_id = blkreq.get_id();
+        let new_block_verify_status = BlockVerifyStatus {
+            request_id: request_id,
+            block_verify_result: VerifyResult::VerifyOngoing,
+            verify_success_cnt_required: blkreq.get_reqs().len(),
+            verify_success_cnt_capture: 0,
+            cache_hit: 0,
+        };
+
+        info!(
+            "Coming new block verify request with request_id: {}, and the init block_verify_status: {:?}",
+            request_id, new_block_verify_status
+        );
+        //add big brace here to release write lock as soon as poobible
+        {
+            let mut block_verify_status_guard = block_verify_status.write();
+            if block_verify_status_guard.block_verify_result == VerifyResult::VerifyOngoing {
+                warn!(
+                    "block verification request with request_id: {:?} \
+                     has been expired, and the current info is: {:?}",
+                    block_verify_status_guard.request_id, *block_verify_status_guard
+                );
+            }
+            let block_verify_stamp = SystemTime::now();
+            *block_verify_status_guard = new_block_verify_status;
+            let now = SystemTime::now();
+            for req in blkreq.get_reqs() {
+                let verify_request_info = VerifyRequestResponseInfo {
+                    key: key.clone(),
+                    verify_type: VerifyType::BlockVerify,
+                    request_id: VerifyRequestID::BlockVerifyRequestID(request_id),
+                    time_stamp: now,
+                    req_resp: VerifyRequestResponse::AuthRequest(req.clone()),
+                    un_tx: None,
+                };
+                let result = check_verify_request_preprocess(
+                    verify_request_info,
+                    verifier.clone(),
+                    cache.clone(),
+                    resp_sender,
+                );
+                match result {
+                    VerifyResult::VerifySucceeded => {
+                        block_verify_status_guard.verify_success_cnt_capture += 1;
+                        block_verify_status_guard.cache_hit += 1;
+                        trace!(
+                            "The verification request： {:?} has been cached already",
+                            req
+                        );
+                    }
+                    VerifyResult::VerifyFailed => {
+                        // statement with no effect, bug here?
+                        block_verify_status_guard.block_verify_result == VerifyResult::VerifyFailed;
+
+                        let tx_hash = H256::from_slice(req.get_tx_hash());
+                        let resp_ret;
+                        if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
+                            resp_ret = resp.get_ret();
+                        } else {
+                            error!("Can't get response from cache but could get it just right now");
+                            resp_ret = Ret::BadSig;
+                        }
+                        warn!(
+                            "Failed to do verify blk req for request_id: {}, ret: {:?}",
+                            request_id, resp_ret
+                        );
+                        publish_block_verification_result(request_id, resp_ret, tx_pub);
+                        break;
+                    }
+                    _ => {
+                        let verify_request_info = VerifyRequestResponseInfo {
+                            key: key.clone(),
+                            verify_type: VerifyType::BlockVerify,
+                            request_id: VerifyRequestID::BlockVerifyRequestID(request_id),
+                            time_stamp: now,
+                            req_resp: VerifyRequestResponse::AuthRequest(req.clone()),
+                            un_tx: None,
+                        };
+                        tx_need_verify.push(verify_request_info);
+                    }
+                }
+            }
+            let tx_need_verify_len = tx_need_verify.len();
+            // Most of time nearly all the transactions hit the cache.
+            if tx_need_verify_len > 0 {
+                on_proposal.store(true, Ordering::SeqCst);
+                let iter = tx_need_verify.chunks(proposal_tx_verify_num_per_thread);
+                for group in iter {
+                    let verifier_clone = verifier.clone();
+                    let cache_clone = cache.clone();
+                    let resp_sender_clone = resp_sender.clone();
+                    let group_for_pool = group.to_vec().clone();
+                    pool.execute(move || {
+                        verify_tx_group_service(
+                            group_for_pool,
+                            verifier_clone,
+                            cache_clone,
+                            resp_sender_clone,
+                        );
+                    });
+                }
+                on_proposal.store(false, Ordering::SeqCst);
+            } else if block_verify_status_guard.verify_success_cnt_capture
+                == block_verify_status_guard.verify_success_cnt_required
+            {
+                block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
+                info!(
+                    "Succeed to do verify blk req for request_id: {}, \
+                     ret: {:?}, \
+                     time cost: {:?}, \
+                     and final status is: {:?}",
+                    request_id,
+                    Ret::OK,
+                    block_verify_stamp.elapsed().unwrap(),
+                    *block_verify_status_guard
+                );
+                publish_block_verification_result(request_id, Ret::OK, tx_pub);
+            }
+        }
+    } else {
+        error!(
+            "Wrong block verification request with 0 tx for block verify request_id: {} from key: {}",
+            blkreq.get_id(),
+            key
+        );
+    }
+}
+
+fn get_idx_from_reqid(reqid: u64) -> (u64, u64) {
+    (reqid >> 16, reqid & 0xffff)
+}
+
 // this function has too many arguments
 // the function has a cyclomatic complexity of 29
 // consider changing the type to: `&[u8]`
@@ -144,6 +291,7 @@ pub fn handle_remote_msg(
     txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>,
     resp_sender: &Sender<VerifyRequestResponseInfo>,
     clear_txs_pool: Arc<AtomicBool>,
+    block_reqs: &mut VecDeque<VerifyBlockReq>,
 ) {
     let mut msg = Message::try_from(&payload).unwrap();
     match RoutingKey::from(&key) {
@@ -173,6 +321,7 @@ pub fn handle_remote_msg(
                     flag = false;
                 }
             }
+            // this blockhashes is sequential
             if flag {
                 debug!(
                     "BLOCKTXHASHES come height {}, tx_hashes count is: {:?}",
@@ -191,143 +340,65 @@ pub fn handle_remote_msg(
                     block_gas_limit,
                     account_gas_limit,
                 ));
+
+                let mut clear_flag = false;
+                if !block_reqs.is_empty() {
+                    let mut req = block_reqs.back().unwrap();
+                    let (vheight, _) = get_idx_from_reqid(req.get_id());
+                    if vheight == height + 1 {
+                        verify_proposal_block(
+                            key,
+                            req,
+                            on_proposal,
+                            pool,
+                            proposal_tx_verify_num_per_thread,
+                            verifier,
+                            tx_pub,
+                            block_verify_status,
+                            cache,
+                            resp_sender,
+                        );
+                        clear_flag = true;
+                    }
+                }
+                if clear_flag {
+                    block_reqs.clear();
+                }
             }
         }
         // TODO: Add ProposalVerifier { status, request_id, threadpool }, Status: On, Failed, Successed, Experied
         // TODO: Make most of the logic asynchronous
         // Verify Proposal from consensus
         routing_key!(Consensus >> VerifyBlockReq) => {
+            let mut msg = Message::try_from(&payload).unwrap();
             let blkreq = msg.take_verify_block_req().unwrap();
-            let tx_cnt = blkreq.get_reqs().len();
-            info!("get block verify request with {:?} request", tx_cnt);
-            let mut tx_need_verify = Vec::new();
-            if tx_cnt > 0 {
-                let request_id = blkreq.get_id();
-                let new_block_verify_status = BlockVerifyStatus {
-                    request_id: request_id,
-                    block_verify_result: VerifyResult::VerifyOngoing,
-                    verify_success_cnt_required: tx_cnt,
-                    verify_success_cnt_capture: 0,
-                    cache_hit: 0,
-                };
+            info!(
+                "get block verify request with {:?} request",
+                blkreq.get_reqs().len()
+            );
 
-                info!(
-                    "Coming new block verify request with request_id: {}, \
-                     and the init block_verify_status: {:?}",
-                    request_id, new_block_verify_status
-                );
-                //add big brace here to release write lock as soon as possible
-                {
-                    let mut block_verify_status_guard = block_verify_status.write();
-                    if block_verify_status_guard.block_verify_result == VerifyResult::VerifyOngoing {
-                        warn!(
-                            "block verification request with request_id: {:?} \
-                             has been expired, and the current info is: {:?}",
-                            block_verify_status_guard.request_id, *block_verify_status_guard
-                        );
-                    }
-                    let block_verify_stamp = SystemTime::now();
-                    *block_verify_status_guard = new_block_verify_status;
-                    let now = SystemTime::now();
-                    for req in blkreq.get_reqs() {
-                        let verify_request_info = VerifyRequestResponseInfo {
-                            key: key.clone(),
-                            verify_type: VerifyType::BlockVerify,
-                            request_id: VerifyRequestID::BlockVerifyRequestID(request_id),
-                            time_stamp: now,
-                            req_resp: VerifyRequestResponse::AuthRequest(req.clone()),
-                            un_tx: None,
-                        };
-                        let result = check_verify_request_preprocess(
-                            verify_request_info,
-                            verifier.clone(),
-                            cache.clone(),
-                            resp_sender,
-                        );
-                        match result {
-                            VerifyResult::VerifySucceeded => {
-                                block_verify_status_guard.verify_success_cnt_capture += 1;
-                                block_verify_status_guard.cache_hit += 1;
-                                trace!(
-                                    "The verification request： {:?} has been cached already",
-                                    req
-                                );
-                            }
-                            VerifyResult::VerifyFailed => {
-                                // statement with no effect, bug here?
-                                block_verify_status_guard.block_verify_result == VerifyResult::VerifyFailed;
-
-                                let tx_hash = H256::from_slice(req.get_tx_hash());
-                                let resp_ret;
-                                if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
-                                    resp_ret = resp.get_ret();
-                                } else {
-                                    error!("Can't get response from cache but could get it just right now");
-                                    resp_ret = Ret::BadSig;
-                                }
-                                warn!(
-                                    "Failed to do verify blk req for request_id: {}, ret: {:?}",
-                                    request_id, resp_ret
-                                );
-                                publish_block_verification_result(request_id, resp_ret, tx_pub);
-                                break;
-                            }
-                            _ => {
-                                let verify_request_info = VerifyRequestResponseInfo {
-                                    key: key.clone(),
-                                    verify_type: VerifyType::BlockVerify,
-                                    request_id: VerifyRequestID::BlockVerifyRequestID(request_id),
-                                    time_stamp: now,
-                                    req_resp: VerifyRequestResponse::AuthRequest(req.clone()),
-                                    un_tx: None,
-                                };
-                                tx_need_verify.push(verify_request_info);
-                            }
-                        }
-                    }
-                    let tx_need_verify_len = tx_need_verify.len();
-                    // Most of time nearly all the transactions hit the cache.
-                    if tx_need_verify_len > 0 {
-                        on_proposal.store(true, Ordering::SeqCst);
-                        let iter = tx_need_verify.chunks(proposal_tx_verify_num_per_thread);
-                        for group in iter {
-                            let verifier_clone = verifier.clone();
-                            let cache_clone = cache.clone();
-                            let resp_sender_clone = resp_sender.clone();
-                            let group_for_pool = group.to_vec().clone();
-                            pool.execute(move || {
-                                verify_tx_group_service(
-                                    group_for_pool,
-                                    verifier_clone,
-                                    cache_clone,
-                                    resp_sender_clone,
-                                );
-                            });
-                        }
-                        on_proposal.store(false, Ordering::SeqCst);
-                    } else if block_verify_status_guard.verify_success_cnt_capture
-                        == block_verify_status_guard.verify_success_cnt_required
-                    {
-                        block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
-                        info!(
-                            "Succeed to do verify blk req for request_id: {}, \
-                             ret: {:?}, \
-                             time cost: {:?}, \
-                             and final status is: {:?}",
-                            request_id,
-                            Ret::OK,
-                            block_verify_stamp.elapsed().unwrap(),
-                            *block_verify_status_guard
-                        );
-                        publish_block_verification_result(request_id, Ret::OK, tx_pub);
+            let (height, _) = get_idx_from_reqid(blkreq.get_id());
+            if let Some(now_height) = verifier.read().get_height_latest() {
+                if now_height + 1 == height {
+                    verify_proposal_block(
+                        key,
+                        &blkreq,
+                        on_proposal,
+                        pool,
+                        proposal_tx_verify_num_per_thread,
+                        verifier.clone(),
+                        tx_pub,
+                        block_verify_status,
+                        cache,
+                        resp_sender,
+                    );
+                }
+                //the block verify request not so far from now height
+                else if now_height + 3 > height {
+                    if block_reqs.is_empty() || blkreq.get_id() > block_reqs.back().unwrap().get_id() {
+                        block_reqs.push_back(blkreq);
                     }
                 }
-            } else {
-                error!(
-                    "Wrong block verification request with 0 tx for block verify request_id: {} from key: {}",
-                    blkreq.get_id(),
-                    key
-                );
             }
         }
         routing_key!(Net >> Request) | routing_key!(Jsonrpc >> RequestNewTxBatch) => {
@@ -602,7 +673,7 @@ mod tests {
     use util::Hashable;
     use uuid::Uuid;
 
-    const BLOCK_REQUEST_ID: u64 = 0x0123456789abcdef;
+    const BLOCK_REQUEST_ID: u64 = 0x0000000000010000;
 
     fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey, chain_id: u32) -> SignedTransaction {
         let mut tx = Transaction::new();
@@ -744,6 +815,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
+        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
 
         let height = 0;
         handle_remote_msg(
@@ -760,6 +832,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
         assert_eq!(rx_pub.try_recv().is_err(), true);
 
@@ -803,6 +876,7 @@ mod tests {
         let cache = Arc::new(RwLock::new(verify_cache));
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
+        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
 
         let height = 1;
         let pool = threadpool::ThreadPool::new(10);
@@ -822,6 +896,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
 
         let u: U256 = 0x123456789abcdef0u64.into();
@@ -887,6 +962,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
+        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
 
         handle_remote_msg(
             routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
@@ -902,6 +978,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
         let verify_req_info: VerifyRequestResponseInfo = req_receiver.recv().unwrap();
         assert_eq!(verify_req_info.verify_type, VerifyType::SingleVerify);
@@ -944,6 +1021,7 @@ mod tests {
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
+        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -959,6 +1037,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
 
         let keypair = KeyPair::gen_keypair();
@@ -979,6 +1058,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
 
         let block_verify_status = c.read();
@@ -1021,6 +1101,7 @@ mod tests {
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
+        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -1036,6 +1117,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
 
         let keypair = KeyPair::gen_keypair();
@@ -1057,6 +1139,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
 
         let verify_req_info: VerifyRequestResponseInfo = req_receiver.recv().unwrap();
@@ -1105,6 +1188,7 @@ mod tests {
         let verifier = generate_verifier(7);
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
+        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -1120,6 +1204,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
 
         let keypair = KeyPair::gen_keypair();
@@ -1140,6 +1225,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
         handle_verification_result(
             &resp_receiver,
@@ -1188,6 +1274,7 @@ mod tests {
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
+        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -1203,6 +1290,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
 
         let keypair = KeyPair::gen_keypair();
@@ -1210,6 +1298,7 @@ mod tests {
         let pubkey = keypair.pubkey().clone();
         // we set chain_id is 7 without any preference
         let tx = generate_tx(vec![1], 99, privkey, 7);
+        block_reqs.clear();
 
         handle_remote_msg(
             routing_key!(Consensus >> VerifyBlockReq).into(),
@@ -1225,6 +1314,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool,
+            &mut block_reqs,
         );
 
         handle_verification_result(
@@ -1233,7 +1323,6 @@ mod tests {
             block_verify_status,
             &pool_tx_sender,
         );
-
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
         match msg.take_verify_block_resp() {
@@ -1273,6 +1362,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
+        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
 
         let height = 0;
         handle_remote_msg(
@@ -1289,12 +1379,14 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         // we set chain_id is 7 without any preference
         let tx = generate_tx(vec![1], 99, privkey, 7);
+        block_reqs.clear();
 
         handle_remote_msg(
             routing_key!(Consensus >> VerifyBlockReq).into(),
@@ -1310,6 +1402,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
         handle_verification_result(
             &resp_receiver,
@@ -1326,6 +1419,7 @@ mod tests {
             }
             _ => panic!("test failed"),
         }
+        block_reqs.clear();
 
         thread::sleep(Duration::new(0, 9000000));
         // Begin to construct the same tx's verification request
@@ -1343,6 +1437,7 @@ mod tests {
             &pool_txs_sender,
             &resp_sender,
             clear_txs_pool.clone(),
+            &mut block_reqs,
         );
         let (_, resp_msg) = rx_pub.recv().unwrap();
         let mut msg = Message::try_from(&resp_msg).unwrap();
