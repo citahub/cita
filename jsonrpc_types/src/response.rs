@@ -26,7 +26,7 @@ use serde::de::Error as SError;
 use serde_json;
 use serde_json::{from_value, Value};
 use std::vec::Vec;
-use util::U256;
+use util::{H256, U256};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -49,6 +49,7 @@ pub enum ResultBody {
     FilterLog(Vec<Log>),
     TxProof(Bytes),
     MetaData(MetaData),
+    Balance(U256),
 }
 
 impl Default for ResultBody {
@@ -152,6 +153,9 @@ impl Output {
                         .output(),
                     Response_oneof_data::contract_abi(x) => success
                         .set_result(ResultBody::ContractAbi(Bytes::from(x)))
+                        .output(),
+                    Response_oneof_data::balance(x) => success
+                        .set_result(ResultBody::Balance(U256::from(H256::from(x.as_slice()))))
                         .output(),
                     Response_oneof_data::filter_id(id) => success
                         .set_result(ResultBody::FilterId(U256::from(id)))

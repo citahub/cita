@@ -490,6 +490,13 @@ impl Executor {
             .map(|c| c.map(|c| (&*c).clone()))
     }
 
+    /// Get balance by address
+    pub fn balance_at(&self, address: &Address, id: BlockId) -> Option<Option<Bytes>> {
+        self.state_at(id)
+            .and_then(|s| s.balance(address).ok())
+            .map(|c| Some(H256::from(c).to_vec()))
+    }
+
     pub fn nonce(&self, address: &Address, id: BlockId) -> Option<U256> {
         self.state_at(id).and_then(|s| s.nonce(address).ok())
     }

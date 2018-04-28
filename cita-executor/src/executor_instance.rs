@@ -399,6 +399,33 @@ impl ExecutorInstance {
                     });
             }
 
+            Request::balance(balance_content) => {
+                trace!("balance request from josnrpc  {:?}", balance_content);
+                serde_json::from_str::<CountOrCode>(&balance_content)
+                    .map_err(|err| {
+                        response.set_code(ErrorCode::query_error());
+                        response.set_error_msg(format!("{:?}", err));
+                    })
+                    .map(|balance_content| {
+                        let address = Address::from_slice(balance_content.address.as_ref());
+                        match self.ext
+                            .balance_at(&address, balance_content.block_id.into())
+                        {
+                            Some(balance) => match balance {
+                                Some(balance) => {
+                                    response.set_balance(balance);
+                                }
+                                None => {
+                                    response.set_balance(vec![]);
+                                }
+                            },
+                            None => {
+                                response.set_balance(vec![]);
+                            }
+                        };
+                    });
+            }
+
             Request::meta_data(data) => {
                 trace!("metadata request from josnrpc {:?}", data);
                 match serde_json::from_str::<BlockNumber>(&data)

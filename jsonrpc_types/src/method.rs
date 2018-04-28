@@ -49,6 +49,7 @@ pub mod method {
     pub const ETH_CALL: &str = "eth_call";
     pub const ETH_GET_LOGS: &str = "eth_getLogs";
     pub const ETH_GET_TRANSACTION_RECEIPT: &str = "eth_getTransactionReceipt";
+    pub const ETH_GET_BALANCE: &str = "eth_getBalance";
 
     /// filter
     pub const ETH_NEW_FILTER: &str = "eth_newFilter";
@@ -98,6 +99,7 @@ impl MethodHandler {
             method::ETH_GET_TRANSACTION_COUNT => self.get_transaction_count(rpc),
             method::ETH_GET_CODE => self.get_code(rpc),
             method::ETH_GET_ABI => self.get_abi(rpc),
+            method::ETH_GET_BALANCE => self.get_balance(rpc),
             method::CITA_SEND_TRANSACTION => self.send_transaction(rpc),
 
             method::ETH_NEW_FILTER => self.new_filter(rpc),
@@ -364,6 +366,13 @@ impl MethodHandler {
         let abi = self.abi_or_count(req_rpc)?;
         let mut request = self.create_request();
         request.set_abi(abi);
+        Ok(request)
+    }
+
+    pub fn get_balance(&self, req_rpc: &Call) -> Result<reqlib::Request, Error> {
+        let balance = self.code_or_count(req_rpc)?;
+        let mut request = self.create_request();
+        request.set_balance(balance);
         Ok(request)
     }
 

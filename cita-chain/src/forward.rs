@@ -283,6 +283,14 @@ impl Forward {
                 return;
             }
 
+            Request::balance(balance_content) => {
+                trace!("balance request from josnrpc  {:?}", balance_content);
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
+                return;
+            }
+
             Request::new_filter(new_filter) => {
                 trace!("new_filter {:?}", new_filter);
                 let new_filter: RpcFilter = serde_json::from_str(&new_filter).expect("Invalid param");
