@@ -560,15 +560,6 @@ impl ExecutorInstance {
                 continue;
             };
 
-            // Check transaction root
-            if blk_height != ::std::u64::MAX && !block.check_hash() {
-                warn!(
-                    "sync: transactions root isn't correct, height is {}",
-                    blk_height
-                );
-                break;
-            }
-
             let rblock = Block::from(block);
 
             trace!(
@@ -764,6 +755,8 @@ impl ExecutorInstance {
         if invalid_block_in_queue {
             let mut guard = self.ext.block_map.write();
             guard.clear();
+            self.ext
+                .set_max_height(self.ext.get_current_height() as usize);
         }
 
         self.ext.is_sync.store(false, Ordering::SeqCst);

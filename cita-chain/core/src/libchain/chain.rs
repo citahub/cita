@@ -269,8 +269,9 @@ pub enum BlockInQueue {
 pub struct Chain {
     blooms_config: bc::Config,
     pub current_header: RwLock<Header>,
-    // Max height in block map
+    // Chain current height
     pub max_height: AtomicUsize,
+    // Max height in block map
     pub max_store_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
     pub db: Arc<KeyValueDB>,
@@ -599,11 +600,16 @@ impl Chain {
                     debug!("SyncBlock not has proof in  {}", block.number());
                 }
                 if number == self.get_current_height() + 1 {
-                    self.set_db_result(&ret, &block);
-                    let tx_hashes = block.body().transaction_hashes();
-                    self.delivery_block_tx_hashes(number, tx_hashes, &ctx_pub);
-                    self.broadcast_current_status(&ctx_pub);
-                    debug!("finish sync blocks to {}", number);
+                    if self.validate_hash(block.parent_hash()) {
+                        self.set_db_result(&ret, &block);
+                        let tx_hashes = block.body().transaction_hashes();
+                        self.delivery_block_tx_hashes(number, tx_hashes, &ctx_pub);
+                        self.broadcast_current_status(&ctx_pub);
+                        debug!("finish sync blocks to {}", number);
+                    } else {
+                        self.clear_block_map();
+                        self.broadcast_current_status(&ctx_pub);
+                    }
                 };
             }
             _ => {
@@ -1318,6 +1324,13 @@ impl Chain {
 
     pub fn poll_filter(&self) -> Arc<Mutex<PollManager<PollFilter>>> {
         Arc::clone(&self.polls_filter)
+    }
+
+    pub fn clear_block_map(&self) {
+        let mut guard = self.block_map.write();
+        guard.clear();
+        self.max_store_height
+            .store(self.get_max_height() as usize, Ordering::SeqCst);
     }
 }
 
