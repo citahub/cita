@@ -188,6 +188,8 @@ fn main() {
             return;
         }
     }
+    let mut repeat = 0u8;
+    let mut _current_height = 0u8;
 
     loop {
         let (key, body) = rx_sub.recv().unwrap();
@@ -198,7 +200,19 @@ fn main() {
             routing_key!(Chain >> RichStatus) => {
                 let rich_status = msg.take_rich_status().unwrap();
                 let height = rich_status.height + 1;
-                if let Some(mock_block) = mock_blocks.remove(&height) {
+
+                if let Some(_) = mock_blocks.remove(&rich_status.height) {
+                    _current_height = rich_status.height as u8;
+                    repeat = 0;
+                } else {
+                    repeat += 1;
+                }
+
+                if repeat >= 3 {
+                    warn!("the {} block can't generate", height);
+                }
+
+                if let Some(mock_block) = mock_blocks.get(&height) {
                     info!(
                         "send consensus block rich_status.height={} height = {:?}",
                         rich_status.height, height
