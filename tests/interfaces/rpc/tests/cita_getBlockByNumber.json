@@ -23,14 +23,14 @@
             "timestamp": 1524000003000,
             "receiptsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "number": "0x1",
-            "stateRoot": "0xb69bc34f4f4f3895f04e3f9aabf98900e2a06a77718d901bcd5cd0a5c08c2fe1",
+            "stateRoot": "0xa420c038e87b94f4ce35ec52f202a4273601fb7c4066a3bdd71e6a5051a27f9d",
             "proposer": "0x0000000000000000000000000000000000000000",
             "proof": null,
             "prevHash": "0x1cb3a47e4c8f8523e9769b9bfdd8f627acdf8441633931befb639e21e27fd9a7",
             "gasUsed": "0x0"
           },
           "version": 0,
-          "hash": "0x70fa2a32c03f56aa144867358ac99876aaeccd2bf7474c6d2bc5ea99c1e0ca52"
+          "hash": "0x19d6117ac0a8e2bff5798b64a3ab6e0f723103a62f6ef1f4cadcee90563b783a"
         }
       },
       "asserts": [
@@ -84,7 +84,7 @@
             "timestamp": 1524000006000,
             "receiptsRoot": "0x3eb24f895dfebd7a1e8230083d09027934285f4bc6c4a7ea7b48708a452a81a9",
             "number": "0x2",
-            "stateRoot": "0xbeb68977a1987aa1d2beff9089643bb957e7496cd2f7c5d8235dae2322b5f560",
+            "stateRoot": "0x8208c33c674596fce53d659cfdda32f67d44d45e5161feebe12be08ff3aa75fb",
             "proposer": "0x0000000000000000000000000000000000000000",
             "proof": {
               "Tendermint": {
@@ -100,7 +100,7 @@
             "gasUsed": "0x7453"
           },
           "version": 0,
-          "hash": "0x76a1fa35d3f0b6b5fe48cef6122d64967f8ead28e2cd669331c629684a9272de"
+          "hash": "0x27f26df0f03f42804ff829a321f4176efbb493c0d5890133bd50548ffbc84171"
         }
       },
       "asserts": [
