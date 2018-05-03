@@ -560,6 +560,15 @@ impl ExecutorInstance {
                 continue;
             };
 
+            // Check transaction root
+            if blk_height != ::std::u64::MAX && !block.check_hash() {
+                warn!(
+                    "sync: transactions root isn't correct, height is {}",
+                    blk_height
+                );
+                break;
+            }
+
             let rblock = Block::from(block);
 
             trace!(

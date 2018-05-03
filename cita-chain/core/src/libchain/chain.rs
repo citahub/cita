@@ -270,7 +270,7 @@ pub struct Chain {
     blooms_config: bc::Config,
     pub current_header: RwLock<Header>,
     // Chain current height
-    pub max_height: AtomicUsize,
+    pub current_height: AtomicUsize,
     // Max height in block map
     pub max_store_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
@@ -346,20 +346,20 @@ impl Chain {
 
         let header = get_chain(&*db).unwrap_or(Header::default());
         info!("get chain head is : {:?}", header);
-        let max_height = AtomicUsize::new(header.number() as usize);
+        let current_height = AtomicUsize::new(header.number() as usize);
         let max_store_height = AtomicUsize::new(0);
         if let Some(height) = get_chain_body_height(&*db) {
             max_store_height.store(height as usize, Ordering::SeqCst);
         }
         info!(
-            "get chain max_store_height : {:?}  max_height: {:?}",
-            max_store_height, max_height
+            "get chain max_store_height : {:?}  current_height: {:?}",
+            max_store_height, current_height
         );
 
         let chain = Chain {
             blooms_config: blooms_config,
             current_header: RwLock::new(header.clone()),
-            max_height: max_height,
+            current_height: current_height,
             // TODO need to get saved body
             max_store_height: max_store_height,
             block_map: RwLock::new(BTreeMap::new()),
@@ -522,7 +522,7 @@ impl Chain {
                 CacheUpdatePolicy::Overwrite,
             );
         }
-        self.max_height.store(number as usize, Ordering::SeqCst);
+        self.current_height.store(number as usize, Ordering::SeqCst);
         batch.write_with_cache(
             db::COL_EXTRA,
             &mut *write_hashes,
@@ -940,7 +940,7 @@ impl Chain {
     }
 
     pub fn get_max_height(&self) -> u64 {
-        self.max_height.load(Ordering::SeqCst) as u64
+        self.current_height.load(Ordering::SeqCst) as u64
     }
 
     pub fn get_max_store_height(&self) -> u64 {

@@ -430,6 +430,15 @@ impl Forward {
                 continue;
             };
 
+            // Check transaction root
+            if blk_height != ::std::u64::MAX && !block.check_hash() {
+                warn!(
+                    "sync: transactions root isn't correct, height is {}",
+                    blk_height
+                );
+                break;
+            }
+
             self.add_sync_block(Block::from(block));
         }
     }
