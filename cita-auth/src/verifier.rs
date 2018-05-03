@@ -76,6 +76,7 @@ pub struct Verifier {
     height_latest: Option<u64>,
     height_low: Option<u64>,
     hashes: HashMap<u64, HashSet<H256>>,
+    chain_id: Option<u32>,
 }
 
 impl Default for Verifier {
@@ -85,6 +86,7 @@ impl Default for Verifier {
             height_latest: None,
             height_low: None,
             hashes: HashMap::with_capacity(BLOCKLIMIT as usize),
+            chain_id: None,
         }
     }
 }
@@ -96,6 +98,15 @@ impl Verifier {
 
     pub fn is_inited(&self) -> bool {
         self.inited
+    }
+
+    pub fn set_chain_id(&mut self, chain_id: u32) {
+        info!("set the chain_id successfully");
+        self.chain_id = Some(chain_id)
+    }
+
+    pub fn get_chain_id(&self) -> Option<u32> {
+        self.chain_id
     }
 
     pub fn get_height_latest(&self) -> Option<u64> {
@@ -217,15 +228,26 @@ impl Verifier {
             }
             return resp;
         }
+        if !self.chain_id.is_some() {
+            resp.set_ret(Ret::NotReady);
+            return resp;
+        }
         let ret = self.verify_sig(req);
         if ret.is_err() {
             resp.set_ret(Ret::BadSig);
             return resp;
         }
+
         //check signer if req have
         let req_signer = req.get_signer();
         if !req_signer.is_empty() && req_signer != ret.unwrap().to_vec().as_slice() {
             resp.set_ret(Ret::BadSig);
+            return resp;
+        }
+
+        // check the correctness of chainID
+        if req.get_chain_id() != self.chain_id.unwrap() {
+            resp.set_ret(Ret::BadChainId);
             return resp;
         }
 

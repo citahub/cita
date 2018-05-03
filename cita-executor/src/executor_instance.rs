@@ -9,6 +9,7 @@ use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, BlockTag, CountOrCode, MetaData};
 use libproto::{request, response, Message, SyncResponse};
+use libproto::auth::Miscellaneous;
 use libproto::blockchain::{BlockWithProof, Proof, ProofType, Status};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
@@ -83,6 +84,10 @@ impl ExecutorInstance {
         let origin = msg.get_origin();
         trace!("distribute_msg call key = {}, origin = {}", key, origin);
         match RoutingKey::from(key) {
+            routing_key!(Auth >> MiscellaneousReq) => {
+                self.get_auth_miscellaneous();
+            }
+
             routing_key!(Chain >> Request) => {
                 let req = msg.take_request().unwrap();
                 self.reply_request(req);
@@ -169,7 +174,7 @@ impl ExecutorInstance {
         inum <= self.ext.get_current_height()
     }
 
-    ///执行block交易
+    /// execute block transaction
     pub fn execute_block(&self, number: u64) {
         let block_in_queue = {
             let block_map = self.ext.block_map.read();
@@ -301,6 +306,24 @@ impl ExecutorInstance {
             let new_map = guard.split_off(&self.ext.get_current_height());
             *guard = new_map;
         }
+    }
+
+    fn get_auth_miscellaneous(&self) {
+        let sys_config = SysConfig::new(&self.ext);
+        let mut miscellaneous = Miscellaneous::new();
+        miscellaneous.set_chain_id(sys_config.chain_id());
+        info!(
+            "the chain id captured in executor is {}",
+            sys_config.chain_id()
+        );
+        let msg: Message = miscellaneous.into();
+
+        self.ctx_pub
+            .send((
+                routing_key!(Executor >> Miscellaneous).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
     }
 
     fn reply_request(&self, mut req: request::Request) {

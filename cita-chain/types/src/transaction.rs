@@ -248,7 +248,7 @@ impl Transaction {
 
     /// Append object with a without signature into RLP stream
     pub fn rlp_append_unsigned_transaction(&self, s: &mut RlpStream) {
-        s.begin_list(8);
+        s.begin_list(9);
         s.append(&self.nonce);
         s.append(&self.gas_price);
         s.append(&self.gas);
@@ -268,7 +268,7 @@ impl Transaction {
         pt.set_data(self.data.clone());
         pt.set_quota(self.gas.as_u64());
         pt.set_value(self.value.as_u64());
-        pt.set_chain_id(self.value.as_u32());
+        pt.set_chain_id(self.chain_id);
         pt.set_version(self.version);
         match self.action {
             Action::Create => pt.clear_to(),

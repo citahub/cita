@@ -22,6 +22,7 @@ use hyper::Client;
 use hyper::client::Response;
 use hyper::status::StatusCode;
 use jsonrpc_types::response::*;
+use jsonrpc_types::rpctypes::MetaData;
 use serde_json;
 use std::fmt;
 use std::fs::File;
@@ -97,10 +98,12 @@ impl Sendtx {
     pub fn send_data(&self, url: String, method: Methods) -> Result<Response, i32> {
         let client = Client::new();
         let data = Trans::generate_tx_data(method);
-        if let Ok(res) = client.post(&url).body(&data).send() {
-            Ok(res)
-        } else {
-            Err(-1)
+        match client.post(&url).body(&data).send() {
+            Ok(res) => Ok(res),
+            Err(err) => {
+                println!("Error in send_data is = {:?}", err);
+                Err(-1)
+            }
         }
     }
 
@@ -145,6 +148,8 @@ impl Sendtx {
                         None => (String::new(), false),
                     },
 
+                    ResultBody::MetaData(Metadata) => (serde_json::to_string(&Metadata).unwrap(), false),
+
                     _ => (String::new(), false),
                 }
             } else {
@@ -173,13 +178,14 @@ impl Sendtx {
             let keypair = self.random_generation().unwrap();
             let frompv = keypair.privkey();
             let curh = self.get_height(url.clone());
+            let chainid = self.get_chainid(url.clone());
             let tx = match action {
-                Action::Create => Trans::generate_tx(&self.code, sender.clone(), frompv, curh),
+                Action::Create => Trans::generate_tx(&self.code, sender.clone(), frompv, curh, chainid),
                 Action::Call => {
                     //读取合约地址
-                    Trans::generate_tx(&self.code, sender.clone(), &frompv, curh)
+                    Trans::generate_tx(&self.code, sender.clone(), &frompv, curh, chainid)
                 }
-                Action::Store => Trans::generate_tx(&self.code, sender.clone(), frompv, curh),
+                Action::Store => Trans::generate_tx(&self.code, sender.clone(), frompv, curh, chainid),
             };
             {
                 let mut firsttx = self.first.lock().unwrap();
@@ -242,6 +248,21 @@ impl Sendtx {
             }
         }
         h
+    }
+
+    pub fn get_chainid(&self, url: String) -> u32 {
+        let mut chainid = 0;
+        if let Ok(mut res) = self.send_data(url.clone(), Methods::Metadata) {
+            match res.status {
+                StatusCode::Ok => {
+                    let parsed_response = Self::parse_response(&mut res);
+                    let metadata: MetaData = serde_json::from_str(&parsed_response.0).unwrap();
+                    chainid = metadata.chain_id;
+                }
+                _ => panic!("jsonrpc connect fail!"),
+            }
+        }
+        chainid
     }
 
     pub fn get_txnum_by_height(&self, url: String, h: u64) -> i32 {

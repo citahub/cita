@@ -114,16 +114,21 @@ fn construct_transaction(
     tx_proof_rlp: Vec<u8>,
     relay_info: RelayInfo,
 ) -> Option<UnverifiedTransaction> {
-    communication::cita_block_number(upstream)
+    communication::cita_get_metadata(upstream)
         .ok()
-        .and_then(|height| {
-            transaction::construct_transaction(
-                pkey,
-                tx_proof_rlp,
-                &relay_info.dest_hasher,
-                relay_info.dest_contract,
-                height,
-            )
+        .and_then(|metadata| {
+            communication::cita_block_number(upstream)
+                .ok()
+                .and_then(|height| {
+                    transaction::construct_transaction(
+                        pkey,
+                        tx_proof_rlp,
+                        &relay_info.dest_hasher,
+                        relay_info.dest_contract,
+                        metadata.chain_id,
+                        height,
+                    )
+                })
         })
 }
 

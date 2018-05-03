@@ -198,27 +198,25 @@ pub fn handle_remote_msg(
         // Verify Proposal from consensus
         routing_key!(Consensus >> VerifyBlockReq) => {
             let blkreq = msg.take_verify_block_req().unwrap();
-            info!(
-                "get block verify request with {:?} request",
-                blkreq.get_reqs().len()
-            );
             let tx_cnt = blkreq.get_reqs().len();
+            info!("get block verify request with {:?} request", tx_cnt);
             let mut tx_need_verify = Vec::new();
             if tx_cnt > 0 {
                 let request_id = blkreq.get_id();
                 let new_block_verify_status = BlockVerifyStatus {
                     request_id: request_id,
                     block_verify_result: VerifyResult::VerifyOngoing,
-                    verify_success_cnt_required: blkreq.get_reqs().len(),
+                    verify_success_cnt_required: tx_cnt,
                     verify_success_cnt_capture: 0,
                     cache_hit: 0,
                 };
 
                 info!(
-                    "Coming new block verify request with request_id: {}, and the init block_verify_status: {:?}",
+                    "Coming new block verify request with request_id: {}, \
+                     and the init block_verify_status: {:?}",
                     request_id, new_block_verify_status
                 );
-                //add big brace here to release write lock as soon as poobible
+                //add big brace here to release write lock as soon as possible
                 {
                     let mut block_verify_status_guard = block_verify_status.write();
                     if block_verify_status_guard.block_verify_result == VerifyResult::VerifyOngoing {
@@ -422,6 +420,14 @@ pub fn handle_remote_msg(
                 }
             }
         }
+        routing_key!(Executor >> Miscellaneous) => {
+            let miscellaneous = msg.take_miscellaneous().unwrap();
+            info!("The chain_id from executor is {}", miscellaneous.chain_id);
+            verifier
+                .try_write()
+                .unwrap()
+                .set_chain_id(miscellaneous.chain_id);
+        }
         _ => {}
     }
 }
@@ -598,12 +604,13 @@ mod tests {
 
     const BLOCK_REQUEST_ID: u64 = 0x0123456789abcdef;
 
-    fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey) -> SignedTransaction {
+    fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey, chain_id: u32) -> SignedTransaction {
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_to("1234567".to_string());
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(valid_until_block);
+        tx.set_chain_id(chain_id);
         let signed_tx = tx.sign(*privkey);
         signed_tx
     }
@@ -647,6 +654,11 @@ mod tests {
         let hash = bytes.crypt_hash().to_vec();
         req.set_hash(hash);
         req.set_tx_hash(tx.get_tx_hash().to_vec());
+        req.set_chain_id(
+            tx.get_transaction_with_sig()
+                .get_transaction()
+                .get_chain_id(),
+        );
 
         let mut blkreq = VerifyBlockReq::new();
         blkreq.set_id(BLOCK_REQUEST_ID);
@@ -703,13 +715,20 @@ mod tests {
         msg.try_into().unwrap()
     }
 
+    fn generate_verifier(chain_id: u32) -> Arc<RwLock<Verifier>> {
+        let v = Arc::new(RwLock::new(Verifier::new()));
+        v.write().set_chain_id(chain_id);
+        v
+    }
+
     #[test]
     fn verify_sync_block_hash() {
         let (tx_pub, rx_pub) = channel();
         let (req_sender, req_receiver) = channel();
         let (resp_sender, resp_receiver) = channel();
         //verify tx
-        let v = Arc::new(RwLock::new(Verifier::new()));
+        let v = generate_verifier(7);
+
         let block_verify_status = BlockVerifyStatus {
             request_id: 0,
             block_verify_result: VerifyResult::VerifyNotBegin,
@@ -770,7 +789,7 @@ mod tests {
         let (req_sender, req_receiver) = channel();
         let (resp_sender, resp_receiver) = channel();
         //verify tx
-        let v = Arc::new(RwLock::new(Verifier::new()));
+        let v = generate_verifier(7);
         let block_verify_status = BlockVerifyStatus {
             request_id: 0,
             block_verify_result: VerifyResult::VerifyNotBegin,
@@ -859,7 +878,8 @@ mod tests {
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let tx = generate_tx(vec![1], 99, privkey);
+        // we set chain_id is 7 without any preference
+        let tx = generate_tx(vec![1], 99, privkey, 7);
         let tx_hash = tx.get_tx_hash().to_vec().clone();
         let req = generate_request(tx);
         let request_id = req.get_request_id().to_vec();
@@ -907,7 +927,7 @@ mod tests {
         let (req_sender, req_receiver) = channel();
         let (resp_sender, resp_receiver) = channel();
         //verify tx
-        let v = Arc::new(RwLock::new(Verifier::new()));
+        let v = generate_verifier(7);
         let block_verify_status = BlockVerifyStatus {
             request_id: 0,
             block_verify_result: VerifyResult::VerifyNotBegin,
@@ -943,7 +963,8 @@ mod tests {
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let tx = generate_tx(vec![1], 99, privkey);
+        // we set chain_id is 7 without any preference
+        let tx = generate_tx(vec![1], 99, privkey, 7);
         handle_remote_msg(
             routing_key!(Consensus >> VerifyBlockReq).into(),
             generate_blk_msg(tx),
@@ -990,7 +1011,7 @@ mod tests {
         let block_verify_status = Arc::new(RwLock::new(block_verify_status));
         let verify_cache_hashmap = HashMap::new();
         let verify_cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let verifier = Arc::new(RwLock::new(Verifier::new()));
+        let verifier = generate_verifier(7);
         let (pool_txs_sender, _) = channel();
         let (pool_tx_sender, pool_tx_receiver) = channel();
         let verify_cache_hashmap = HashMap::new();
@@ -1019,7 +1040,8 @@ mod tests {
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let tx = generate_tx(vec![1], 99, privkey);
+        // we set chain_id is 7 without any preference
+        let tx = generate_tx(vec![1], 99, privkey, 7);
         let tx_hash = tx.get_tx_hash().to_vec().clone();
         handle_remote_msg(
             routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
@@ -1080,7 +1102,7 @@ mod tests {
         let pool = threadpool::ThreadPool::new(10);
         let tx_verify_num_per_thread = 30;
         let height = 0;
-        let verifier = Arc::new(RwLock::new(Verifier::new()));
+        let verifier = generate_verifier(7);
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
 
@@ -1102,7 +1124,8 @@ mod tests {
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let tx = generate_tx(vec![1], 99, privkey);
+        // we set chain_id is 7 without any preference
+        let tx = generate_tx(vec![1], 99, privkey, 7);
         handle_remote_msg(
             routing_key!(Consensus >> VerifyBlockReq).into(),
             generate_blk_msg(tx),
@@ -1155,7 +1178,7 @@ mod tests {
             cache_hit: 0,
         };
         let block_verify_status = Arc::new(RwLock::new(block_verify_status));
-        let verifier = Arc::new(RwLock::new(Verifier::new()));
+        let verifier = generate_verifier(7);
         let (pool_txs_sender, pool_txs_receiver) = channel();
         let (pool_tx_sender, pool_tx_receiver) = channel();
         let verify_cache_hashmap = HashMap::new();
@@ -1185,7 +1208,8 @@ mod tests {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
         let pubkey = keypair.pubkey().clone();
-        let tx = generate_tx(vec![1], 99, privkey);
+        // we set chain_id is 7 without any preference
+        let tx = generate_tx(vec![1], 99, privkey, 7);
 
         handle_remote_msg(
             routing_key!(Consensus >> VerifyBlockReq).into(),
@@ -1242,7 +1266,7 @@ mod tests {
         let block_verify_status = Arc::new(RwLock::new(block_verify_status));
         let verify_cache_hashmap = HashMap::new();
         let verify_cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let verifier = Arc::new(RwLock::new(Verifier::new()));
+        let verifier = generate_verifier(7);
         let (pool_txs_sender, _) = channel();
         let (pool_tx_sender, _) = channel();
         let pool = threadpool::ThreadPool::new(10);
@@ -1269,7 +1293,8 @@ mod tests {
 
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let tx = generate_tx(vec![1], 99, privkey);
+        // we set chain_id is 7 without any preference
+        let tx = generate_tx(vec![1], 99, privkey, 7);
 
         handle_remote_msg(
             routing_key!(Consensus >> VerifyBlockReq).into(),

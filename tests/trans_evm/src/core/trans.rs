@@ -29,6 +29,7 @@ pub enum Methods {
     Blockbyheiht(u64),
     Trans(String),
     Receipt(String),
+    Metadata,
 }
 
 #[allow(dead_code, unused_variables)]
@@ -45,7 +46,7 @@ impl Trans {
         }
     }
 
-    pub fn generate_tx(code: &str, address: String, pv: &PrivKey, curh: u64) -> UnverifiedTransaction {
+    pub fn generate_tx(code: &str, address: String, pv: &PrivKey, curh: u64, chainid: u32) -> UnverifiedTransaction {
         let data = code.from_hex().unwrap();
 
         let mut tx = Transaction::new();
@@ -55,7 +56,7 @@ impl Trans {
         tx.set_nonce("0".to_string());
         tx.set_valid_until_block(curh + 88);
         tx.set_quota(1000000);
-
+        tx.set_chain_id(chainid);
         tx.sign(*pv).take_transaction_with_sig()
     }
 
@@ -82,6 +83,10 @@ impl Trans {
             Methods::Receipt(hash) => format!(
                 r#"{{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["{}"],"id":2}}"#,
                 hash
+            ),
+            Methods::Metadata => format!(
+                r#"{{"jsonrpc":"2.0","method":"cita_getMetaData","params":["{}"],"id":2}}"#,
+                0
             ),
         };
         txdata

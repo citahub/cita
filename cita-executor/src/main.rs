@@ -7,18 +7,19 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     | Queue    | SubModule | Message Type   |
-//!     | -------- | --------- | -------------- |
-//!     | executor | Chain     | LocalSync      |
-//!     | executor | Chain     | Request        |
-//!     | executor | Chain     | Status         |
-//!     | executor | Consensus | BlockWithProof |
-//!     | executor | Consensus | SignedProposal |
-//!     | executor | Consensus | RawBytes       |
-//!     | executor | Net       | SyncResponse   |
-//!     | executor | Net       | SignedProposal |
-//!     | executor | Net       | RawBytes       |
-//!     | executor | Snapshot  | SnapshotReq    |
+//!     | Queue    | SubModule | Message Type       |
+//!     | -------- | --------- | ------------------ |
+//!     | executor | Chain     | LocalSync          |
+//!     | executor | Chain     | Request            |
+//!     | executor | Chain     | Status             |
+//!     | executor | Consensus | BlockWithProof     |
+//!     | executor | Consensus | SignedProposal     |
+//!     | executor | Consensus | RawBytes           |
+//!     | executor | Consensus | MiscellaneousReq   |
+//!     | executor | Net       | SyncResponse       |
+//!     | executor | Net       | SignedProposal     |
+//!     | executor | Net       | RawBytes           |
+//!     | executor | Snapshot  | SnapshotReq        |
 //!
 //! 2. Publish channel
 //!
@@ -27,6 +28,7 @@
 //!     | executor | Executor  | SnapshotResp   |
 //!     | executor | Executor  | Response       |
 //!     | executor | Executor  | ExecutedResult |
+//!     | executor | Executor  | Miscellaneous  |
 //!
 //! ### Key behavior
 //!
@@ -133,6 +135,7 @@ fn main() {
             Net >> SignedProposal,
             Net >> RawBytes,
             Snapshot >> SnapshotReq,
+            Auth >> MiscellaneousReq,
         ]),
         tx,
         crx_pub,

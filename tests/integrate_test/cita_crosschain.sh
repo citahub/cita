@@ -247,7 +247,7 @@ function test_demo_contract () {
 
     title "Check tokens for both chains."
     data=$(printf "%64s" "${PADDR}" | tr ' ' '0')
-    code="$(func_encode 'get_banlance(address)')${data}"
+    code="$(func_encode 'get_balance(address)')${data}"
     assert_equal ${main_tokens} \
         "$(hex2dec $(call_demo_for_main "${code}"))" \
         "The tokens is not right for main chain."
@@ -271,15 +271,15 @@ function test_demo_contract () {
         -f ../../tools/relayer-parser/res/relayer-parser-demo.json)
     txtool_run side get_receipt.py --tx=${sidetx} --forever true
 
-    title "Check banlance for both chains after crosschain transaction."
+    title "Check balance for both chains after crosschain transaction."
     data=$(printf "%64s" "${PADDR}" | tr ' ' '0')
-    code="$(func_encode 'get_banlance(address)')${data}"
+    code="$(func_encode 'get_balance(address)')${data}"
     assert_equal $((main_tokens-crosschain_tokens)) \
         "$(hex2dec $(call_demo_for_main "${code}"))" \
-        "The banlance is not right for main chain."
+        "The balance is not right for main chain."
     assert_equal $((side_tokens+crosschain_tokens)) \
         "$(hex2dec $(call_demo_for_side "${code}"))" \
-        "The banlance is not right for side chain."
+        "The balance is not right for side chain."
 }
 
 function main () {

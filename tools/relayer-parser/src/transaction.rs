@@ -27,9 +27,10 @@ pub fn construct_transaction(
     tx_proof_rlp: Vec<u8>,
     dest_hasher: &str,
     dest_contract: H160,
+    chain_id: u32,
     height: U256,
 ) -> Option<UnverifiedTransaction> {
-    encode(dest_hasher, tx_proof_rlp).map(|code| sign(pkey, dest_contract, code, height))
+    encode(dest_hasher, tx_proof_rlp).map(|code| sign(pkey, dest_contract, code, chain_id, height))
 }
 
 #[inline]
@@ -48,11 +49,12 @@ fn encode(dest_hasher: &str, tx_proof_rlp: Vec<u8>) -> Option<Vec<u8>> {
 }
 
 #[inline]
-fn sign(pkey: &PrivKey, addr: H160, code: Vec<u8>, height: U256) -> UnverifiedTransaction {
+fn sign(pkey: &PrivKey, addr: H160, code: Vec<u8>, chain_id: u32, height: U256) -> UnverifiedTransaction {
     let mut tx = Transaction::new();
     tx.set_data(code);
     tx.set_to(addr.hex());
     tx.set_valid_until_block(height.low_u64() + 100);
     tx.set_quota(10000000000);
+    tx.set_chain_id(chain_id);
     tx.sign(*pkey).take_transaction_with_sig()
 }

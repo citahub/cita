@@ -163,6 +163,16 @@ pub fn cita_block_number(upstream: &UpStream) -> Result<U256, Error> {
     Ok(result)
 }
 
+pub fn cita_get_metadata(upstream: &UpStream) -> Result<jsonrpc_types::rpctypes::MetaData, Error> {
+    let result = rpc_send_and_get_result_from_reply!(
+        upstream,
+        "cita_getMetaData",
+        ["latest"],
+        jsonrpc_types::rpctypes::MetaData
+    );
+    Ok(result)
+}
+
 pub fn cita_send_transaction(upstream: &UpStream, utx: &UnverifiedTransaction) -> Result<H256, Error> {
     let tx_bytes: Vec<u8> = utx.try_into().unwrap();
     let result = rpc_send_and_get_result_from_reply!(

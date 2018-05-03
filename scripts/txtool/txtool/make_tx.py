@@ -13,6 +13,8 @@ from tx_count import get_transaction_count
 import pysodium
 from generate_account import generate
 from block_number import block_number
+from url_util import endpoint
+from jsonrpcclient.http_client import HTTPClient
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
@@ -60,6 +62,21 @@ def get_nonce(sender):
     print(str(nonce))
     return str(nonce)
 
+def get_chainid():
+    params = ['latest']
+    chainid = 0
+
+    try:
+        url = endpoint()
+        print(url)
+        response = HTTPClient(url).request("cita_getMetaData", params)
+        chainid = response['chainId']
+        print(response)
+    except:
+        chainid = 0
+
+    print("final chainId is {}".format(chainid))
+    return chainid
 
 def generate_deploy_data(current_height,
                          bytecode,
@@ -86,10 +103,13 @@ def _blake2b_ed25519_deploy_data(current_height,
     print(sender)
     nonce = get_nonce(sender)
     print("nonce is {}".format(nonce))
+    chainid = get_chainid()
+    print("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
+    tx.chain_id = chainid
     tx.version = version
     if receiver is not None:
         tx.to = receiver
@@ -130,10 +150,13 @@ def _sha3_secp256k1_deploy_data(current_height,
     print(sender)
     nonce = get_nonce(sender)
     print("nonce is {}".format(nonce))
+    chainid = get_chainid()
+    print("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
+    tx.chain_id = chainid
     tx.quota = 9999999
     tx.version = version
     if receiver is not None:
@@ -211,7 +234,7 @@ def main():
     data = generate_deploy_data(
         current_height, remove_hex_0x(bytecode), privkey,
         remove_hex_0x(receiver), blake2b_ed25519, version)
-    print("deploy code保存到../output/transaction/deploycode")
+    print("save deploy code to ../output/transaction/deploycode")
     save_deploy(data)
 
 

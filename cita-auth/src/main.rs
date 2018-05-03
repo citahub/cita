@@ -32,6 +32,7 @@
 //!     | auth  | Jsonrpc   | RequestNewTxBatch |
 //!     | auth  | Net       | Request           |
 //!     | auth  | Snapshot  | SnapshotReq       |
+//!     | auth  | Executor  | Miscellaneous     |
 //!
 //! 2. Publish channel
 //!
@@ -42,6 +43,7 @@
 //!     | auth  | Auth      | Response          |
 //!     | auth  | Auth      | VerifyBlockResp   |
 //!     | auth  | Auth      | Request           |
+//!     | auth  | Auth      | MiscellaneousReq  |
 //!
 //! ### Key behavior
 //!
@@ -102,9 +104,12 @@ use config::Config;
 use cpuprofiler::PROFILER;
 use dispatcher::Dispatcher;
 use handler::*;
+use libproto::Message;
+use libproto::auth::MiscellaneousReq;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
 use std::collections::HashMap;
+use std::convert::{Into, TryInto};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::channel;
@@ -170,7 +175,11 @@ fn main() {
 
     profiler(flag_prof_start, flag_prof_duration);
 
+    let (tx_sub, rx_sub) = channel();
+    let (tx_pub, rx_pub) = channel();
+
     let verifier = Arc::new(RwLock::new(Verifier::new()));
+
     let verify_cache = HashMap::new();
     let cache = Arc::new(RwLock::new(verify_cache));
     let block_verify_status = BlockVerifyStatus {
@@ -182,8 +191,6 @@ fn main() {
     };
     let block_verify_status = Arc::new(RwLock::new(block_verify_status));
 
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
     start_pubsub(
         "auth",
         routing_key!([
@@ -192,6 +199,7 @@ fn main() {
             Jsonrpc >> RequestNewTxBatch,
             Net >> Request,
             Snapshot >> SnapshotReq,
+            Executor >> Miscellaneous,
         ]),
         tx_sub,
         rx_pub,
@@ -333,6 +341,33 @@ fn main() {
             }
             thread::sleep(Duration::new(0, buffer_duration));
         }
+    });
+
+    let verifier_clone = verifier.clone();
+    let txs_pub_clone = txs_pub.clone();
+    thread::spawn(move || {
+        let time_interval = Duration::from_secs(3);
+        loop {
+            let sig;
+            {
+                if verifier_clone.read().get_chain_id().is_some() {
+                    sig = true;
+                } else {
+                    sig = false;
+                }
+            }
+            if !sig {
+                let msg: Message = MiscellaneousReq::new().into();
+                txs_pub_clone
+                    .send((
+                        routing_key!(Auth >> MiscellaneousReq).into(),
+                        msg.try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
+            thread::sleep(time_interval);
+        }
+        // verifier_clone.read().ask_chain_id(&txs_pub_clone);
     });
 
     let block_verify_status_hdl_remote = block_verify_status.clone();

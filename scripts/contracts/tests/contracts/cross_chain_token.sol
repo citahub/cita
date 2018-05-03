@@ -23,7 +23,7 @@ contract MyToken {
         // Add the same to the recipient
     }
 
-    function get_banlance(address _to) public view returns (uint256) {
+    function get_balance(address _to) public view returns (uint256) {
         return balanceOf[_to];
     }
 
