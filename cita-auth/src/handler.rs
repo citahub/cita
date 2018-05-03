@@ -21,7 +21,7 @@ use libproto::{Message, Response, Ret, VerifyBlockReq, VerifyBlockResp, VerifyTx
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryFrom, TryInto};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -291,7 +291,7 @@ pub fn handle_remote_msg(
     txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>,
     resp_sender: &Sender<VerifyRequestResponseInfo>,
     clear_txs_pool: Arc<AtomicBool>,
-    block_reqs: &mut VecDeque<VerifyBlockReq>,
+    saved_req: &mut Option<VerifyBlockReq>,
 ) {
     let mut msg = Message::try_from(&payload).unwrap();
     match RoutingKey::from(&key) {
@@ -341,9 +341,8 @@ pub fn handle_remote_msg(
                     account_gas_limit,
                 ));
 
-                let mut clear_flag = false;
-                if !block_reqs.is_empty() {
-                    let mut req = block_reqs.back().unwrap();
+                let mut flag = false;
+                if let Some(ref req) = *saved_req {
                     let (vheight, _) = get_idx_from_reqid(req.get_id());
                     if vheight == height + 1 {
                         verify_proposal_block(
@@ -358,11 +357,12 @@ pub fn handle_remote_msg(
                             cache,
                             resp_sender,
                         );
-                        clear_flag = true;
+                        flag = true;
                     }
                 }
-                if clear_flag {
-                    block_reqs.clear();
+
+                if flag {
+                    *saved_req = None;
                 }
             }
         }
@@ -370,7 +370,6 @@ pub fn handle_remote_msg(
         // TODO: Make most of the logic asynchronous
         // Verify Proposal from consensus
         routing_key!(Consensus >> VerifyBlockReq) => {
-            let mut msg = Message::try_from(&payload).unwrap();
             let blkreq = msg.take_verify_block_req().unwrap();
             info!(
                 "get block verify request with {:?} request",
@@ -395,8 +394,16 @@ pub fn handle_remote_msg(
                 }
                 //the block verify request not so far from now height
                 else if now_height + 3 > height {
-                    if block_reqs.is_empty() || blkreq.get_id() > block_reqs.back().unwrap().get_id() {
-                        block_reqs.push_back(blkreq);
+                    let mut change_flag = false;
+                    if let Some(ref req) = *saved_req {
+                        if blkreq.get_id() > req.get_id() {
+                            change_flag = true;
+                        }
+                    } else {
+                        change_flag = true;
+                    }
+                    if change_flag {
+                        *saved_req = Some(blkreq);
                     }
                 }
             }
@@ -815,7 +822,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        let mut block_reqs: Option<VerifyBlockReq> = None;
 
         let height = 0;
         handle_remote_msg(
@@ -876,7 +883,7 @@ mod tests {
         let cache = Arc::new(RwLock::new(verify_cache));
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        let mut block_reqs: Option<VerifyBlockReq> = None;
 
         let height = 1;
         let pool = threadpool::ThreadPool::new(10);
@@ -962,7 +969,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        let mut block_reqs: Option<VerifyBlockReq> = None;
 
         handle_remote_msg(
             routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
@@ -1021,7 +1028,7 @@ mod tests {
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        let mut block_reqs: Option<VerifyBlockReq> = None;
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -1101,7 +1108,7 @@ mod tests {
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        let mut block_reqs: Option<VerifyBlockReq> = None;
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -1188,7 +1195,7 @@ mod tests {
         let verifier = generate_verifier(7);
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        let mut block_reqs: Option<VerifyBlockReq> = None;
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -1274,7 +1281,7 @@ mod tests {
         let height = 0;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        let mut block_reqs: Option<VerifyBlockReq> = None;
 
         handle_remote_msg(
             routing_key!(Chain >> BlockTxHashes).into(),
@@ -1298,7 +1305,7 @@ mod tests {
         let pubkey = keypair.pubkey().clone();
         // we set chain_id is 7 without any preference
         let tx = generate_tx(vec![1], 99, privkey, 7);
-        block_reqs.clear();
+        block_reqs = None;
 
         handle_remote_msg(
             routing_key!(Consensus >> VerifyBlockReq).into(),
@@ -1362,7 +1369,7 @@ mod tests {
         let tx_verify_num_per_thread = 30;
         let on_proposal = Arc::new(AtomicBool::new(false));
         let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        let mut block_reqs: Option<VerifyBlockReq> = None;
 
         let height = 0;
         handle_remote_msg(
@@ -1386,7 +1393,7 @@ mod tests {
         let privkey = keypair.privkey();
         // we set chain_id is 7 without any preference
         let tx = generate_tx(vec![1], 99, privkey, 7);
-        block_reqs.clear();
+        block_reqs = None;
 
         handle_remote_msg(
             routing_key!(Consensus >> VerifyBlockReq).into(),
@@ -1419,7 +1426,7 @@ mod tests {
             }
             _ => panic!("test failed"),
         }
-        block_reqs.clear();
+        block_reqs = None;
 
         thread::sleep(Duration::new(0, 9000000));
         // Begin to construct the same tx's verification request

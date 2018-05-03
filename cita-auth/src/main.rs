@@ -105,12 +105,12 @@ use cpuprofiler::PROFILER;
 use dispatcher::Dispatcher;
 use handler::*;
 use libproto::Message;
-use libproto::auth::MiscellaneousReq;
-use std::convert::{Into, TryInto};
 use libproto::VerifyBlockReq;
+use libproto::auth::MiscellaneousReq;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
+use std::convert::{Into, TryInto};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::channel;
@@ -377,7 +377,7 @@ fn main() {
     let txs_pub_clone = txs_pub.clone();
     let resp_sender = resp_sender_clone.clone();
     thread::spawn(move || {
-        let mut block_reqs: VecDeque<VerifyBlockReq> = VecDeque::new();
+        let mut block_reqs: Option<VerifyBlockReq> = None;
         loop {
             match rx_sub.recv() {
                 Ok((key, msg)) => {
