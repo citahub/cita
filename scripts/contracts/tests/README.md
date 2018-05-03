@@ -138,7 +138,13 @@ npm run-script unit_side
     "0x0000000000000000000000000000000031415926": [
         1,
         true,
-        false
+        false,
+        "test-chain",
+        0,
+        "test-operator",
+        "https://www.example.com",
+        3000,
+        0
     ],
     ```
 
