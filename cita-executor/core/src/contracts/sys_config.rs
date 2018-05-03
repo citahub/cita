@@ -38,6 +38,7 @@ lazy_static! {
     static ref WEBSITE: Vec<u8> = encode_contract_name(b"getWebsite()");
     static ref BLOCK_INTERVAL: Vec<u8> = encode_contract_name(b"getBlockInterval()");
     static ref CONTRACT_ADDRESS: Address = Address::from_str("0000000000000000000000000000000031415926").unwrap();
+    static ref TRANSACTION_ECONOMICAL_MODEL: Vec<u8> = encode_contract_name(b"getTransactionEconomicalModel()");
 }
 
 /// Configuration items from system contract
@@ -63,7 +64,7 @@ impl<'a> SysConfig<'a> {
         let value = self.get_value(
             &[ParamType::Uint(256)],
             DELAY_BLOCK_NUMBER.as_slice(),
-            Some(BlockId::Earliest),
+            Some(BlockId::Latest),
         ).remove(0)
             .to_uint()
             .expect("decode delay number");
@@ -77,7 +78,7 @@ impl<'a> SysConfig<'a> {
         let check = self.get_value(
             &[ParamType::Bool],
             PERMISSION_CHECK.as_slice(),
-            Some(BlockId::Earliest),
+            Some(BlockId::Latest),
         ).remove(0)
             .to_bool()
             .expect("decode check permission");
@@ -90,7 +91,7 @@ impl<'a> SysConfig<'a> {
         let check = self.get_value(
             &[ParamType::Bool],
             QUOTA_CHECK.as_slice(),
-            Some(BlockId::Earliest),
+            Some(BlockId::Latest),
         ).remove(0)
             .to_bool()
             .expect("decode check quota");
@@ -113,7 +114,7 @@ impl<'a> SysConfig<'a> {
         let value = self.get_value(
             &[ParamType::Uint(64)],
             CHAIN_ID.as_slice(),
-            Some(BlockId::Earliest),
+            Some(BlockId::Latest),
         ).remove(0)
             .to_uint()
             .expect("decode chain id");
@@ -147,13 +148,29 @@ impl<'a> SysConfig<'a> {
         let value = self.get_value(
             &[ParamType::Uint(64)],
             BLOCK_INTERVAL.as_slice(),
-            Some(BlockId::Earliest),
+            Some(BlockId::Latest),
         ).remove(0)
             .to_uint()
             .expect("decode block interval");
         let interval = H256::from(value).low_u64();
         debug!("block interval: {:?}", interval);
         interval
+    }
+
+    /// enum TransactionEconomicalModel { Quota, GasPrice }
+    /// Quota: Default config is quota
+    /// GasPrice: Paid by token
+    pub fn transaction_economical_model(&self) -> u8 {
+        let value = self.get_value(
+            &[ParamType::Uint(64)],
+            TRANSACTION_ECONOMICAL_MODEL.as_slice(),
+            Some(BlockId::Latest),
+        ).remove(0)
+            .to_uint()
+            .expect("decode transaction economical model");
+        let t = H256::from(value).low_u64() as u8;
+        debug!("transaction economical model: {:?}", t);
+        t
     }
 }
 
@@ -221,5 +238,12 @@ mod tests {
         let executor = init_executor();
         let value = SysConfig::new(&executor).block_interval();
         assert_eq!(value, 3000);
+    }
+
+    #[test]
+    fn test_transaction_economical_model() {
+        let executor = init_executor();
+        let value = SysConfig::new(&executor).transaction_economical_model();
+        assert_eq!(value, 0);
     }
 }

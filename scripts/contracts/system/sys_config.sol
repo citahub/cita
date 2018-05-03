@@ -40,6 +40,9 @@ interface SysConfigInterface {
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 contract SysConfig is SysConfigInterface {
 
+    enum TransactionEconomicalModel { Quota, GasPrice }
+    
+    /// @notice only chain_name, operator, website can be updated
     uint delay_block_number;
     bool check_permission;
     bool check_quota;
@@ -48,28 +51,31 @@ contract SysConfig is SysConfigInterface {
     string operator;
     string website;
     uint block_interval;
+    TransactionEconomicalModel transactionEconomicalModel;
 
     /// @notice Setup
     function SysConfig(
-        uint _delay_block_number,
-        bool _check_permission,
-        bool _check_quota,
-        string _chain_name,
-        uint32 _chain_id,
+        uint _delayBlockNumber,
+        bool _checkPermission,
+        bool _checkQuota,
+        string _chainName,
+        uint32 _chainId,
         string _operator,
-        string _website_url,
-        uint _block_interval
+        string _websiteUrl,
+        uint _blockInterval,
+        TransactionEconomicalModel _tx
     )
         public
     {
-        delay_block_number = _delay_block_number;
-        check_permission = _check_permission;
-        check_quota = _check_quota;
-        chain_name = _chain_name;
-        chain_id = _chain_id;
+        delay_block_number = _delayBlockNumber;
+        check_permission = _checkPermission;
+        check_quota = _checkQuota;
+        chain_name = _chainName;
+        chain_id = _chainId;
         operator = _operator;
-        website = _website_url;
-        block_interval = _block_interval;
+        website = _websiteUrl;
+        block_interval = _blockInterval;
+        transactionEconomicalModel = _tx;
     }
 
     function getDelayBlockNumber() public view returns (uint) {
@@ -87,9 +93,6 @@ contract SysConfig is SysConfigInterface {
     function getChainName() public view returns (string) {
         return chain_name;
     }
-    function setChainName(string _chain_name) public {
-        chain_name = _chain_name;
-    }
 
     function getChainId() public view returns (uint32) {
         return chain_id;
@@ -98,18 +101,28 @@ contract SysConfig is SysConfigInterface {
     function getOperator() public view returns (string) {
         return operator;
     }
-    function setOperator(string _operator) public {
-        operator = _operator;
-    }
 
     function getWebsite() public view returns (string) {
         return website;
     }
-    function setWebsite(string _website_url) public {
-        website = _website_url;
-    }
 
     function getBlockInterval() public view returns (uint) {
         return block_interval;
+    }
+
+    function getTransactionEconomicalModel() public view returns (TransactionEconomicalModel) {
+        return transactionEconomicalModel;
+    }
+
+    function setOperator(string _operator) public {
+        operator = _operator;
+    }
+
+    function setWebsite(string _websiteUrl) public {
+        website = _websiteUrl;
+    }
+
+    function setChainName(string _chainName) public {
+        chain_name = _chainName;
     }
 }
