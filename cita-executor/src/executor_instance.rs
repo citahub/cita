@@ -764,6 +764,8 @@ impl ExecutorInstance {
         if invalid_block_in_queue {
             let mut guard = self.ext.block_map.write();
             guard.clear();
+            self.ext
+                .set_max_height(self.ext.get_current_height() as usize);
         }
 
         self.ext.is_sync.store(false, Ordering::SeqCst);

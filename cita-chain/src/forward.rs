@@ -438,6 +438,7 @@ impl Forward {
                 );
                 break;
             }
+
             self.add_sync_block(Block::from(block));
         }
     }

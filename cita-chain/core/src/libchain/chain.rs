@@ -269,8 +269,9 @@ pub enum BlockInQueue {
 pub struct Chain {
     blooms_config: bc::Config,
     pub current_header: RwLock<Header>,
+    // Chain current height
+    pub current_height: AtomicUsize,
     // Max height in block map
-    pub max_height: AtomicUsize,
     pub max_store_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
     pub db: Arc<KeyValueDB>,
@@ -345,20 +346,20 @@ impl Chain {
 
         let header = get_chain(&*db).unwrap_or(Header::default());
         info!("get chain head is : {:?}", header);
-        let max_height = AtomicUsize::new(header.number() as usize);
+        let current_height = AtomicUsize::new(header.number() as usize);
         let max_store_height = AtomicUsize::new(0);
         if let Some(height) = get_chain_body_height(&*db) {
             max_store_height.store(height as usize, Ordering::SeqCst);
         }
         info!(
-            "get chain max_store_height : {:?}  max_height: {:?}",
-            max_store_height, max_height
+            "get chain max_store_height : {:?}  current_height: {:?}",
+            max_store_height, current_height
         );
 
         let chain = Chain {
             blooms_config: blooms_config,
             current_header: RwLock::new(header.clone()),
-            max_height: max_height,
+            current_height: current_height,
             // TODO need to get saved body
             max_store_height: max_store_height,
             block_map: RwLock::new(BTreeMap::new()),
@@ -521,7 +522,7 @@ impl Chain {
                 CacheUpdatePolicy::Overwrite,
             );
         }
-        self.max_height.store(number as usize, Ordering::SeqCst);
+        self.current_height.store(number as usize, Ordering::SeqCst);
         batch.write_with_cache(
             db::COL_EXTRA,
             &mut *write_hashes,
@@ -599,11 +600,16 @@ impl Chain {
                     debug!("SyncBlock not has proof in  {}", block.number());
                 }
                 if number == self.get_current_height() + 1 {
-                    self.set_db_result(&ret, &block);
-                    let tx_hashes = block.body().transaction_hashes();
-                    self.delivery_block_tx_hashes(number, tx_hashes, &ctx_pub);
-                    self.broadcast_current_status(&ctx_pub);
-                    debug!("finish sync blocks to {}", number);
+                    if self.validate_hash(block.parent_hash()) {
+                        self.set_db_result(&ret, &block);
+                        let tx_hashes = block.body().transaction_hashes();
+                        self.delivery_block_tx_hashes(number, tx_hashes, &ctx_pub);
+                        self.broadcast_current_status(&ctx_pub);
+                        debug!("finish sync blocks to {}", number);
+                    } else {
+                        self.clear_block_map();
+                        self.broadcast_current_status(&ctx_pub);
+                    }
                 };
             }
             _ => {
@@ -934,7 +940,7 @@ impl Chain {
     }
 
     pub fn get_max_height(&self) -> u64 {
-        self.max_height.load(Ordering::SeqCst) as u64
+        self.current_height.load(Ordering::SeqCst) as u64
     }
 
     pub fn get_max_store_height(&self) -> u64 {
@@ -1318,6 +1324,13 @@ impl Chain {
 
     pub fn poll_filter(&self) -> Arc<Mutex<PollManager<PollFilter>>> {
         Arc::clone(&self.polls_filter)
+    }
+
+    pub fn clear_block_map(&self) {
+        let mut guard = self.block_map.write();
+        guard.clear();
+        self.max_store_height
+            .store(self.get_max_height() as usize, Ordering::SeqCst);
     }
 }
 

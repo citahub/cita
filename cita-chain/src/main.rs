@@ -174,14 +174,16 @@ fn main() {
             if let Ok(einfo) = write_receiver.recv_timeout(Duration::new(8, 0)) {
                 block_processor.set_executed_result(einfo);
             } else {
-                // Here will be 2 status:
+                // Here will be these status:
                 // 1. Executor process restarts, lost cached block information.
-                // 2. Bft restarted, lost chain status information, unable to consensus, unable to generate block
+                // 2. Executor encountered an invalid block and cleared the block map.
+                // 3. Bft restarted, lost chain status information, unable to consensus, unable to generate block.
                 //
                 // This will trigger:
                 // 1. Network retransmits block information or initiates a synchronization request,
                 //    and then the executor will receive a block message
                 // 2. Bft will receive the latest status of chain
+                block_processor.clear_block_map();
                 block_processor.broadcast_current_status();
             }
         }

@@ -43,4 +43,8 @@ impl BlockProcessor {
     pub fn set_executed_result(&self, ret: ExecutedResult) {
         self.chain.set_executed_result(&ret, &self.ctx_pub);
     }
+
+    pub fn clear_block_map(&self) {
+        self.chain.clear_block_map();
+    }
 }
