@@ -48,6 +48,12 @@ use util::{merklehash, Address, H256, HeapSizeOf, U256};
 const CHECK_NUM: usize = 0xff;
 
 lazy_static! {
+    /// Block Reward
+    /// HardFork if need to change block reward
+    static ref BLOCK_REWARD: U256 = U256::from(5_000_000_000_000_000_000 as i64);
+}
+
+lazy_static! {
    static ref LOW_CONTRACT_ADDRESS: Address = Address::from_str("0000000000000000000000000000000002000000").unwrap();
    static ref HIGH_CONTRACT_ADDRESS: Address = Address::from_str("0000000000000000000000000000000003000000").unwrap();
 }
@@ -391,6 +397,7 @@ impl OpenBlock {
     }
 
     /// Execute transactions
+    /// Return false if be interrupted
     pub fn apply_transactions(&mut self, executor: &Executor, check_permission: bool, check_quota: bool) -> bool {
         let mut transactions = Vec::with_capacity(self.body.transactions.len());
 
@@ -452,6 +459,11 @@ impl OpenBlock {
 
             transactions.push(t);
         }
+
+        let proposer = self.header().proposer().clone();
+        self.state
+            .add_balance(&proposer, &BLOCK_REWARD)
+            .expect("Trie error while add proposer reward");
 
         let now = Instant::now();
         self.state.commit().expect("commit trie error");
