@@ -399,8 +399,6 @@ impl OpenBlock {
     /// Execute transactions
     /// Return false if be interrupted
     pub fn apply_transactions(&mut self, executor: &Executor, check_permission: bool, check_quota: bool) -> bool {
-        let mut transactions = Vec::with_capacity(self.body.transactions.len());
-
         for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 {
                 if executor.is_interrupted.load(Ordering::SeqCst) {
@@ -456,8 +454,6 @@ impl OpenBlock {
                 // Apply transaction and set account nonce
                 self.apply_transaction(&mut t, check_permission, check_quota);
             }
-
-            transactions.push(t);
         }
 
         let proposer = self.header().proposer().clone();
