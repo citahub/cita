@@ -31,17 +31,17 @@ contract NodeManager is NodeInterface {
     }
 
     modifier onlyClose(address _node) {
-        require(NodeStatus.Close == status[_node]); 
+        require(NodeStatus.Close == status[_node]);
         _;
     }
 
     modifier onlyStart(address _node) {
-        require(NodeStatus.Start == status[_node]); 
+        require(NodeStatus.Start == status[_node]);
         _;
     }
 
     modifier onlyReady(address _node) {
-        require(NodeStatus.Ready == status[_node]); 
+        require(NodeStatus.Ready == status[_node]);
         _;
     }
 
@@ -88,11 +88,11 @@ contract NodeManager is NodeInterface {
     /// @param _node The node to be approved
     /// @return true if successed, otherwise false
     function approveNode(address _node)
-        public 
+        public
         onlyAdmin
         oneOperate
         onlyReady(_node)
-        returns (bool) 
+        returns (bool)
     {
         status[_node] = NodeStatus.Start;
         block_op[block.number] = true;
@@ -105,7 +105,7 @@ contract NodeManager is NodeInterface {
     /// @param _node The node to be deleted
     /// @return true if successed, otherwise false
     function deleteNode(address _node)
-        public 
+        public
         onlyAdmin
         oneOperate
         onlyStart(_node)

@@ -55,6 +55,10 @@ cp -rf  scripts/admintool/*.json           target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.toml           target/install/scripts/admintool/
 ln -srf target/install/scripts/admintool/admintool.sh target/install/bin/
 
+# 5) config tool
+cp -rf  scripts/config_tool                target/install/scripts/
+cp -f   scripts/create_cita_config.py      target/install/scripts/
+
 # 6) txtool
 cp -rf scripts/txtool                      target/install/scripts/
 
