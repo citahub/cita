@@ -17,7 +17,7 @@
 
 //! Node manager.
 
-use super::{encode_contract_name, to_address_vec};
+use super::{encode_contract_name, to_address_vec, to_low_u64_vec};
 use super::ContractCallExt;
 use libexecutor::executor::Executor;
 use rand::{Rng, SeedableRng, StdRng};
@@ -26,9 +26,11 @@ use std::str::FromStr;
 use util::{Address, H160};
 
 const LIST_NODE: &'static [u8] = &*b"listNode()";
+const LIST_STAKE: &'static [u8] = *&b"listStake()";
 
 lazy_static! {
     static ref LIST_NODE_ENCODED: Vec<u8> = encode_contract_name(LIST_NODE);
+    static ref LIST_STAKE_ENCODED: Vec<u8> = encode_contract_name(LIST_STAKE);
     static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a2").unwrap();
 }
 
@@ -37,10 +39,13 @@ pub struct NodeManager;
 impl NodeManager {
     pub fn nodes(executor: &Executor) -> Vec<Address> {
         let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
-        trace!("nodemanager output: {:?}", ToHex::to_hex(output.as_slice()));
+        trace!(
+            "node manager output: {:?}",
+            ToHex::to_hex(output.as_slice())
+        );
 
         let nodes: Vec<Address> = to_address_vec(&output);
-        trace!("nodemanager nodes: {:?}", nodes);
+        trace!("node manager nodes: {:?}", nodes);
         nodes
     }
 
@@ -52,6 +57,15 @@ impl NodeManager {
             let j: usize = rng.gen::<usize>() % (i + 1);
             node_vec.swap(i, j);
         }
+    }
+
+    pub fn stakes(executor: &Executor) -> Vec<u64> {
+        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*LIST_STAKE_ENCODED.as_slice());
+        trace!("stakes output: {:?}", ToHex::to_hex(output.as_slice()));
+
+        let stakes: Vec<u64> = to_low_u64_vec(&output);
+        trace!("node manager stakes: {:?}", stakes);
+        stakes
     }
 }
 

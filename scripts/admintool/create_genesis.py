@@ -140,7 +140,7 @@ def init_contracts(nodes, args):
             extra = (ct.encode_constructor_arguments(nodes[address][:3])
                      if nodes[address] else b'')
         elif address == '0x00000000000000000000000000000000013241a2':
-            extra = (ct.encode_constructor_arguments(nodes[address][:2])
+            extra = (ct.encode_constructor_arguments(nodes[address][:3])
                      if nodes[address] else b'')
         elif address == '0x00000000000000000000000000000000013241b5':
             for addr, permission in nodes[address].iteritems():
@@ -248,8 +248,12 @@ def main():
 
     init_data.update(permission_data)
 
-    for auth in authorities:
-        init_data["0x00000000000000000000000000000000013241a2"][0].append(auth)
+    auth_list = init_data["0x00000000000000000000000000000000013241a2"][0]
+    stakes = init_data["0x00000000000000000000000000000000013241a2"][2]
+    for idx, auth in enumerate(authorities):
+        auth_list.append(auth)
+        if idx >= len(stakes):
+            stakes.append(0)
 
     data = dict()
     timestamp = int(time.time() * 1000

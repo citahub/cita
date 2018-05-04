@@ -1,8 +1,45 @@
 pragma solidity ^0.4.18;
 
-import "./node_interface.sol";
 import "../common/address_array.sol";
+import "../common/SafeMath.sol";
 
+/// @title The interface of node_manager
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+interface NodeInterface {
+
+    event NewNode(address indexed _node);
+    event ApproveNode(address indexed _node);
+    event DeleteNode(address indexed _node);
+    event AddAdmin(address indexed _account, address indexed _sender);
+    event SetStake(address indexed _node, uint stake);
+
+    /// @notice Add an admin
+    function addAdmin(address) public returns (bool);
+    /// @notice Apply to be consensus node. status will be ready
+    function newNode(address _node) public returns (bool);
+    /// @notice Approve to be consensus node. status will be start
+    function approveNode(address _node) public returns (bool);
+    /// @notice Delete the consensus node that has been approved. status will be close
+    function deleteNode(address _node) public returns (bool);
+    /// @notice List the consensus nodes that have been approved
+    /// which means list the node whose status is start
+    function listNode() view public returns (address[]);
+    /*
+     * @notice Get the status of the node:
+     * @return 0: Close
+     * @return 1: Ready
+     * @return 2: Start
+     */
+    function getStatus(address _node) view public returns (uint8);
+    /// @notice Check the account is admin
+    function isAdmin(address) view public returns (bool);
+    /// @notice Set node stake
+    function setStake(address _node, uint stake) public;
+    /// @notice Node stake list
+    function listStake() view public returns (uint[] _stakes);
+    /// @notice Stake permillage
+    function stakePermillage(address _node) view public returns (uint);
+}
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -10,11 +47,12 @@ import "../common/address_array.sol";
 contract NodeManager is NodeInterface {
 
     mapping(address => NodeStatus) public status;
-    mapping (address => bool) admins;
+    mapping(address => bool) admins;
     // Recode the operation of the block
     mapping(uint => bool) block_op;
     // Consensus node list
     address[] nodes;
+    mapping(address => uint) stakes;
 
     // Default: Close
     enum NodeStatus { Close, Ready, Start }
@@ -46,16 +84,19 @@ contract NodeManager is NodeInterface {
     }
 
     /// @notice Setup
-    function NodeManager(address[] _nodes, address[] _admins) public {
+    function NodeManager(address[] _nodes, address[] _admins, uint[] _stakes) public {
         // Initialize the address to Start
+        require(_nodes.length == _stakes.length);
         for (uint i = 0; i < _nodes.length; i++) {
             status[_nodes[i]] = NodeStatus.Start;
             nodes.push(_nodes[i]);
+            stakes[_nodes[i]] = _stakes[i];
         }
 
         // Initialize the address of admins
-        for (uint j = 0; j < _admins.length; j++)
+        for (uint j = 0; j < _admins.length; j++) {
             admins[_admins[j]] = true;
+        }
     }
 
     /// @notice Add an admin
@@ -114,6 +155,7 @@ contract NodeManager is NodeInterface {
         require(AddressArray.remove(_node, nodes));
         block_op[block.number] = false;
         status[_node] = NodeStatus.Close;
+        stakes[_node] = 0;
         DeleteNode(_node);
         return true;
     }
@@ -136,5 +178,33 @@ contract NodeManager is NodeInterface {
     /// @return true if it is, otherwise false
     function isAdmin(address _account) view public returns (bool) {
         return admins[_account];
+    }
+
+    /// @notice Set node stake
+    function setStake(address _node, uint stake)
+        public
+        onlyAdmin
+    {
+        SetStake(_node, stake);
+        stakes[_node] = stake;
+    }
+
+    /// @notice Node stake list
+    /// @return All the node stake list
+    function listStake() view public returns (uint[] memory _stakes) {
+        _stakes = new uint[](nodes.length);
+        for (uint j = 0; j < nodes.length; j++) {
+            _stakes[j] = stakes[nodes[j]];
+        }
+        return _stakes;
+    }
+
+    /// @notice Stake permillage
+    function stakePermillage(address _node) view public returns (uint) {
+        uint total;
+        for (uint j = 0; j < nodes.length; j++) {
+            total = SafeMath.add(total, stakes[nodes[j]]);
+        }
+        return SafeMath.div(SafeMath.mul(stakes[_node], 1000), total);
     }
 }
