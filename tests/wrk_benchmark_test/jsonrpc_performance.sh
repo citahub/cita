@@ -1,5 +1,5 @@
 #!/bin/bash
-SOURCE_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
+SOURCE_DIR=$(realpath $(dirname $(realpath $0))/../..)
 
 tests/wrk_benchmark_test/jsonrpc_performance.sh
 if [ $# == 0 ]; then
