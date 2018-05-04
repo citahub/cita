@@ -170,9 +170,11 @@ fn main() {
 
     //chain 写数据 => 添加块
     thread::spawn(move || {
+        let mut timeout_factor = 0u8;
         loop {
-            if let Ok(einfo) = write_receiver.recv_timeout(Duration::new(8, 0)) {
+            if let Ok(einfo) = write_receiver.recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0)) {
                 block_processor.set_executed_result(einfo);
+                timeout_factor = 0;
             } else {
                 // Here will be these status:
                 // 1. Executor process restarts, lost cached block information.
@@ -185,6 +187,9 @@ fn main() {
                 // 2. Bft will receive the latest status of chain
                 block_processor.clear_block_map();
                 block_processor.broadcast_current_status();
+                if timeout_factor < 6 {
+                    timeout_factor += 1
+                }
             }
         }
     });

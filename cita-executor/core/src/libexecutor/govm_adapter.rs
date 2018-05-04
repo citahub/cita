@@ -344,7 +344,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
     pub fn transact(
         &mut self,
         executor: &Executor,
-        t: &mut SignedTransaction,
+        t: &SignedTransaction,
         env_info: EnvInfo,
         action_params: ActionParams,
         connect_info: ConnectInfo,

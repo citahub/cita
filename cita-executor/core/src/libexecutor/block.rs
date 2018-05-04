@@ -399,9 +399,7 @@ impl OpenBlock {
     /// Execute transactions
     /// Return false if be interrupted
     pub fn apply_transactions(&mut self, executor: &Executor, check_permission: bool, check_quota: bool) -> bool {
-        let mut transactions = Vec::with_capacity(self.body.transactions.len());
-
-        for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
+        for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 {
                 if executor.is_interrupted.load(Ordering::SeqCst) {
                     return false;
@@ -445,19 +443,11 @@ impl OpenBlock {
 
             if go_contract {
                 let connect_info = ConnectInfo::new(connect_info.0, connect_info.1, connect_info.2);
-                self.apply_grpc_vm(
-                    executor,
-                    &mut t,
-                    check_permission,
-                    check_quota,
-                    connect_info,
-                );
+                self.apply_grpc_vm(executor, &t, check_permission, check_quota, connect_info);
             } else {
                 // Apply transaction and set account nonce
-                self.apply_transaction(&mut t, check_permission, check_quota);
+                self.apply_transaction(&t, check_permission, check_quota);
             }
-
-            transactions.push(t);
         }
 
         let proposer = self.header().proposer().clone();
@@ -499,7 +489,7 @@ impl OpenBlock {
         })
     }
 
-    pub fn apply_transaction(&mut self, t: &mut SignedTransaction, check_permission: bool, check_quota: bool) {
+    pub fn apply_transaction(&mut self, t: &SignedTransaction, check_permission: bool, check_quota: bool) {
         let mut env_info = self.env_info();
         if !self.account_gas.contains_key(t.sender()) {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);
@@ -533,7 +523,7 @@ impl OpenBlock {
     fn apply_grpc_vm(
         &mut self,
         executor: &Executor,
-        t: &mut SignedTransaction,
+        t: &SignedTransaction,
         check_permission: bool,
         check_quota: bool,
         connect_info: ConnectInfo,
