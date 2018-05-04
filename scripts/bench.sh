@@ -10,8 +10,8 @@ sudo() {
     set +o noglob
 }
 
-SCRIPT_PATH=`readlink -f $0`
-SOURCE_DIR=$(readlink -f $(dirname ${SCRIPT_PATH})/..)
+SCRIPT_PATH=`realpath $0`
+SOURCE_DIR=$(realpath $(dirname ${SCRIPT_PATH})/..)
 cd ${SOURCE_DIR}
 
 echo "################################################################################"

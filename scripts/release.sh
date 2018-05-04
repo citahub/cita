@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SOURCE_DIR=$(readlink -f $(dirname $(readlink -f $0))/..)
+SOURCE_DIR=$(realpath $(dirname $(realpath $0))/..)
 cd ${SOURCE_DIR}
 
 if [ $# -ne 1 ] ; then
@@ -53,7 +53,7 @@ cp -rf  scripts/admintool/*.sh             target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.txt            target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.json           target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.toml           target/install/scripts/admintool/
-ln -srf target/install/scripts/admintool/admintool.sh target/install/bin/
+cp -rf  target/install/scripts/admintool/admintool.sh target/install/bin/
 
 # 6) txtool
 cp -rf scripts/txtool                      target/install/scripts/

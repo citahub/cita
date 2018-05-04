@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SOURCE_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
+SOURCE_DIR=$(realpath $(dirname $(realpath $0))/../..)
 BINARY_DIR=${SOURCE_DIR}/target/install
 
 cd ${BINARY_DIR}/

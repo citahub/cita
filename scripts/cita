@@ -126,7 +126,7 @@ usage(){
     echo "      usage            display help information"
 }
 
-SCRIPT_DIR=$(dirname $(readlink -f $0))
+SCRIPT_DIR=$(dirname $(realpath $0))
 export PATH=$PATH:${SCRIPT_DIR}/../bin
 
 if [ $# -gt 3 ];
