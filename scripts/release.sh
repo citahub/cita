@@ -53,7 +53,7 @@ cp -rf  scripts/admintool/*.sh             target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.txt            target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.json           target/install/scripts/admintool/
 cp -rf  scripts/admintool/*.toml           target/install/scripts/admintool/
-cp -rf  target/install/scripts/admintool/admintool.sh target/install/bin/
+ln -s  target/install/scripts/admintool/admintool.sh target/install/bin/
 
 # 5) config tool
 cp -rf  scripts/config_tool                target/install/scripts/
