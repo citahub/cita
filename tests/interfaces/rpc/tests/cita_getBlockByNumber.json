@@ -35,10 +35,6 @@
       },
       "asserts": [
         {
-          "description": "response hash should be equal",
-          "program": ".receivedResponse.result.hash == .expectedResponse.result.hash"
-        },
-        {
           "description": "BlockNumber has blockHeader hash",
           "program": ".receivedResponse.result.header.number == .expectedResponse.result.header.number"
         },
@@ -84,7 +80,7 @@
             "timestamp": 1524000006000,
             "receiptsRoot": "0x3eb24f895dfebd7a1e8230083d09027934285f4bc6c4a7ea7b48708a452a81a9",
             "number": "0x2",
-            "stateRoot": "0x8208c33c674596fce53d659cfdda32f67d44d45e5161feebe12be08ff3aa75fb",
+            "stateRoot": "0xf43dcd61e89b8164168d16079939e33200c130cb69e95666d5e07c9612e2e667",
             "proposer": "0x0000000000000000000000000000000000000000",
             "proof": {
               "Tendermint": {
@@ -105,16 +101,8 @@
       },
       "asserts": [
         {
-          "description": "response hash should be equal",
-          "program": ".receivedResponse.result.hash == .expectedResponse.result.hash"
-        },
-        {
           "description": "BlockNumber has blockHeader hash",
           "program": ".receivedResponse.result.header.number == .expectedResponse.result.header.number"
-        },
-        {
-          "description": "StateRoot should be equal",
-          "program": ".receivedResponse.result.header.stateRoot == .expectedResponse.result.header.stateRoot"
         },
         {
           "description": "transactionsRoot should be equal",
