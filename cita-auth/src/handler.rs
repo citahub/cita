@@ -87,6 +87,9 @@ pub fn check_verify_request_preprocess(
         let mut result = VerifyResult::VerifyNotBegin;
         let is_single_verify = req_info.verify_type == VerifyType::SingleVerify;
 
+        // Verify valid until block.
+        // Each transations can set a value to "valid_until_block" to hint its timeout in
+        // blockchain system. But the "value" cannot be to large (<= self.height + BLOCKLIMIT).
         if is_single_verify
             && !verifier
                 .read()
@@ -334,6 +337,8 @@ pub fn handle_remote_msg(
                     "Auth rich status block gas limit: {:?}, account gas limit {:?}",
                     block_gas_limit, account_gas_limit
                 );
+
+                // Message will be handled in deal_txs thread.
                 let _ = txs_sender.send((
                     height as usize,
                     tx_hashes_in_h256,

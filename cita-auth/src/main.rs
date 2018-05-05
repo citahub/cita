@@ -41,8 +41,9 @@
 //!     | auth  | Auth      | BlockTxHashesReq  |
 //!     | auth  | Auth      | VerifyBlockResp   |
 //!     | auth  | Auth      | Response          |
-//!     | auth  | Auth      | VerifyBlockResp   |
 //!     | auth  | Auth      | Request           |
+//!     | auth  | Auth      | BlockTxs          |
+//!     | auth  | Auth      | SnapshotResp      |
 //!     | auth  | Auth      | MiscellaneousReq  |
 //!
 //! ### Key behavior
@@ -137,6 +138,42 @@ fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
     });
 }
 
+// Main entry for Auth micro-service, It runs as a stand-alone process in CITA system.
+// Auth is a multi-threads process, and using channel to communicate with each other.
+// So, understanding the main function of each thread and the channel net between
+// them, is very useful for you to understand the code of Auth.
+//
+// Threads:
+// thread-1: verify_tx_group_service
+// thread-2: deal_tx
+// thread-3: deal_txs
+// thread-4: clean_tx_pool
+// thread-5: handle_remote_msg
+// thread-6 (the main thread): handle_verification_result
+//
+// Channels (each channel is multi-producer, single consummer):
+// channel-1: tx_sub, rx_sub (tx_sub connect to producers, and rx_sub connect to consummer)
+//       tx_sub <--  MQ
+//       rx_sub --> handle_remote_msg
+// channel-2: tx_pub, rx_pub (tx_pub connect to producers, and rx_pub connect to consummer)
+//       tx_pub <-- handle_remote_msg
+//              <-- handle_verification_result
+//              <-- deal_txs (Auth >> BlockTxs)
+//              <-- deal_tx (Auth >> Response, Auth >> Request)
+//       rx_pub --> MQ
+// channel-3: single_req_sender, single_req_receiver
+//       single_req_sender <-- handle_remote_msg
+//       single_req_receiver --> verify_tx_group_service
+// channel-4: resp_sender, resp_receiver
+//       resp_sender <-- handle_remote_msg
+//                   <-- verify_tx_group_service
+//       resp_receiver --> handle_verification_result
+// channel-5: pool_tx_sender, pool_tx_receiver
+//       pool_tx_sender <-- handle_verification_result
+//       pool_tx_receiver --> deal_tx
+// channel-6: pool_txs_sender, pool_txs_receiver
+//       pool_txs_sender <-- handle_remote_msg
+//       pool_txs_receiver --> deal_txs
 fn main() {
     micro_service_init!("cita-auth", "CITA:auth");
     // init app
@@ -192,6 +229,11 @@ fn main() {
     };
     let block_verify_status = Arc::new(RwLock::new(block_verify_status));
 
+    // Start publish and subcribe message from MQ.
+    // The CITA system runs in a logic nodes, and it contains some components
+    // which we called micro-service at their running time.
+    // All micro-services connect to a MQ, as this design can keep them loose
+    // coupling with each other.
     start_pubsub(
         "auth",
         routing_key!([
@@ -228,6 +270,8 @@ fn main() {
             let mut req_grp: Vec<VerifyRequestResponseInfo> = Vec::new();
             loop {
                 loop {
+                    // Receive a message from single_req channel. All messages in this channel
+                    // are sent by handle_remote_msg.
                     let res_local = single_req_receiver.try_recv();
 
                     if res_local.is_ok() {
@@ -249,6 +293,10 @@ fn main() {
                             continue;
                         }
                         req_grp.push(verify_req_info);
+
+                        // Catch a group of req before starting to verify.
+                        // Set the value of "tx_verify_num_per_thread" in a logic node config file
+                        // (file likes node0/auth.toml). See node configs for more detail.
                         if req_grp.len() > tx_verify_num_per_thread {
                             break;
                         }
@@ -257,6 +305,8 @@ fn main() {
                     }
                 }
                 {
+                    // FIXME: has concurrency risk here? "on_proposal_clone" can be setted to
+                    // "ture" just after this conditional judgment in thread handle_remote_msg.
                     if !req_grp.is_empty() && !on_proposal_clone.load(Ordering::SeqCst) {
                         trace!(
                             "main processing: {} reqs are push into req_grp",
@@ -301,6 +351,8 @@ fn main() {
         let dispatch = dispatch_clone.clone();
         let mut flag = false;
         loop {
+            // Receive a message from pool_tx channel. All messages in this channel
+            // are sent by handle_verification_result.
             if let Ok(txinfo) = pool_tx_receiver.try_recv() {
                 let (key, reqid, tx_res, tx) = txinfo;
                 dispatch
@@ -321,6 +373,8 @@ fn main() {
     thread::spawn(move || {
         let dispatch = dispatch.clone();
         loop {
+            // Receive a message from pool_txs channel. All messages in this channel
+            // are sent by handle_remote_msg.
             if let Ok(txsinfo) = pool_txs_receiver.recv() {
                 let (height, txs, block_gas_limit, account_gas_limit) = txsinfo;
                 dispatch.lock().deal_txs(
@@ -335,6 +389,9 @@ fn main() {
     });
     let clear_txs_pool_clone = clear_txs_pool.clone();
     thread::spawn(move || {
+        // Thread wait for a command to clear txs pool and wal.
+        // Actually, when the system get a "snapshot" command, the value of
+        // "clear_txs_pool" is setted to true.
         let clear_clone = clear.clone();
         loop {
             if clear_txs_pool_clone.load(Ordering::SeqCst) {
@@ -376,9 +433,13 @@ fn main() {
     let single_req_sender = single_req_sender.clone();
     let txs_pub_clone = txs_pub.clone();
     let resp_sender = resp_sender_clone.clone();
+
     thread::spawn(move || {
         let mut block_reqs: Option<VerifyBlockReq> = None;
         loop {
+            // Receive a message from sub channel. All messages in this channel
+            // are sent by MQ. This thread runs as a message goalkeeper for Auth,
+            // and all messages from outside Auth come here first.
             match rx_sub.recv() {
                 Ok((key, msg)) => {
                     let verifier = verifier.clone();

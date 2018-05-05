@@ -83,6 +83,8 @@ impl Dispatcher {
             start_verify_time: SystemTime::now(),
             add_to_pool_cnt: 0,
         };
+
+        // restore tx data from wal to txs_pool
         if wal_enable {
             let num = dispatch.read_tx_from_wal();
             if num > 0 {
@@ -123,6 +125,8 @@ impl Dispatcher {
         mq_pub: &Sender<(String, Vec<u8>)>,
     ) {
         let mut error_msg: Option<String> = None;
+
+        // add tx to txs_pool and wal.
         if self.add_tx_to_pool(tx) {
             self.update_capacity();
         } else {
@@ -153,6 +157,10 @@ impl Dispatcher {
                     time_elapsed
                 );
 
+                // Forward tx to peer, regardless the tx is come from Jsonrpc or
+                // Other nodes in the network.
+                // Wow, it's so much duplicate packages in the network, maybe we can come up with
+                // a better way to deal with this kind of network propagation later.
                 self.batch_forward_tx_to_peer(mq_pub);
             }
         }
@@ -330,6 +338,8 @@ impl Dispatcher {
         }
     }
 
+    // Read tx information from wal, and restore to txs_pool.
+    // This function will be called in Dispatcher::new().
     pub fn read_tx_from_wal(&mut self) -> u64 {
         let size = self.wal.read(&mut self.txs_pool.borrow_mut());
         self.update_capacity();
