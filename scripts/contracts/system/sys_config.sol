@@ -41,7 +41,7 @@ interface SysConfigInterface {
 contract SysConfig is SysConfigInterface {
 
     enum TransactionEconomicalModel { Quota, GasPrice }
-    
+
     /// @notice only chain_name, operator, website can be updated
     uint delay_block_number;
     bool check_permission;
@@ -61,7 +61,7 @@ contract SysConfig is SysConfigInterface {
         string _chainName,
         uint32 _chainId,
         string _operator,
-        string _websiteUrl,
+        string _website,
         uint _blockInterval,
         TransactionEconomicalModel _tx
     )
@@ -73,7 +73,7 @@ contract SysConfig is SysConfigInterface {
         chain_name = _chainName;
         chain_id = _chainId;
         operator = _operator;
-        website = _websiteUrl;
+        website = _website;
         block_interval = _blockInterval;
         transactionEconomicalModel = _tx;
     }
@@ -118,8 +118,8 @@ contract SysConfig is SysConfigInterface {
         operator = _operator;
     }
 
-    function setWebsite(string _websiteUrl) public {
-        website = _websiteUrl;
+    function setWebsite(string _website) public {
+        website = _website;
     }
 
     function setChainName(string _chainName) public {

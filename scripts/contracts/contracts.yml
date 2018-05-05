@@ -1,0 +1,144 @@
+NormalContracts:
+- NodeManager:
+    address: '0x00000000000000000000000000000000013241a2'
+    file: system/node_manager.sol
+- QuotaManager:
+    address: '0x00000000000000000000000000000000013241a3'
+    file: system/quota_manager.sol
+- SysConfig:
+    address: '0x0000000000000000000000000000000031415926'
+    file: system/sys_config.sol
+- ChainManager:
+    address: '0x00000000000000000000000000000000000000ce'
+    file: system/chain_manager.sol
+- PermissionManagement:
+    address: '0x00000000000000000000000000000000013241b2'
+    file: permission_management/permission_management.sol
+- PermissionCreator:
+    address: '0x00000000000000000000000000000000013241b3'
+    file: permission_management/permission_creator.sol
+- Authorization:
+    address: '0x00000000000000000000000000000000013241b4'
+    file: permission_management/authorization.sol
+- RoleCreator:
+    address: '0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380'
+    file: permission_management/role_creator.sol
+- RoleManagement:
+    address: '0xe3b5ddb80addb513b5c981e27bb030a86a8821ee'
+    file: permission_management/role_management.sol
+- Group:
+    address: '0x00000000000000000000000000000000013241b6'
+    file: user_management/group.sol
+- GroupManagement:
+    address: '0x00000000000000000000000000000000013241c2'
+    file: user_management/group_management.sol
+- GroupCreator:
+    address: '0x00000000000000000000000000000000013241c3'
+    file: user_management/group_creator.sol
+
+PermissionContracts:
+  file: permission_management/permission.sol
+  basic:
+  - sendTx:
+      address: '0x0000000000000000000000000000000000000001'
+  - createContract:
+      address: '0x0000000000000000000000000000000000000002'
+  contracts:
+  - newPermission:
+      address: '0x00000000000000000000000000000000013241b5'
+      contracts:
+      - PermissionManagement
+      functions:
+      - 'newPermission(bytes32,address[],bytes4[])'
+  - deletePermission:
+      address: '0x00000000000000000000000000000000023241b5'
+      contracts:
+      - PermissionManagement
+      functions:
+      - 'deletePermission(address)'
+  - updatePermission:
+      address: '0x00000000000000000000000000000000033241b5'
+      contracts:
+      - PermissionManagement
+      - PermissionManagement
+      - PermissionManagement
+      functions:
+      - 'addResources(address,address[],bytes4[])'
+      - 'deleteResources(address,address[],bytes4[])'
+      - 'updatePermissionName(address,bytes32)'
+  - setAuth:
+      address: '0x00000000000000000000000000000000043241b5'
+      contracts:
+      - PermissionManagement
+      - PermissionManagement
+      functions:
+      - 'setAuthorization(address,address)'
+      - 'setAuthorizations(address,address[])'
+  - cancelAuth:
+      address: '0x00000000000000000000000000000000053241b5'
+      contracts:
+      - PermissionManagement
+      - PermissionManagement
+      - PermissionManagement
+      functions:
+      - 'cancelAuthorization(address,address)'
+      - 'clearAuthorization(address)'
+      - 'cancelAuthorizations(address,address[])'
+  - newRole:
+      address: '0x00000000000000000000000000000000063241b5'
+      contracts:
+      - RoleManagement
+      functions:
+      - 'newRole(bytes32,address[])'
+  - deleteRole:
+      address: '0x00000000000000000000000000000000073241b5'
+      contracts:
+      - RoleManagement
+      functions:
+      - 'deleteRole(address)'
+  - updateRole:
+      address: '0x00000000000000000000000000000000083241b5'
+      contracts:
+      - RoleManagement
+      - RoleManagement
+      - RoleManagement
+      functions:
+      - 'addPermissions(address,address[])'
+      - 'deletePermissions(address,address[])'
+      - 'updateRoleName(address,bytes32)'
+  - setRole:
+      address: '0x00000000000000000000000000000000093241b5'
+      contracts:
+      - RoleManagement
+      functions:
+      - 'setRole(address,address)'
+  - cancelRole:
+      address: '0x000000000000000000000000000000000a3241b5'
+      contracts:
+      - RoleManagement
+      - RoleManagement
+      functions:
+      - 'cancelRole(address,address)'
+      - 'clearRole(address)'
+  - newGroup:
+      address: '0x000000000000000000000000000000000b3241b5'
+      contracts:
+      - GroupManagement
+      functions:
+      - 'newGroup(address,bytes32,address[])'
+  - deleteGroup:
+      address: '0x000000000000000000000000000000000c3241b5'
+      contracts:
+      - GroupManagement
+      functions:
+      - 'deleteGroup(address,address)'
+  - updateGroup:
+      address: '0x000000000000000000000000000000000d3241b5'
+      contracts:
+      - GroupManagement
+      - GroupManagement
+      - GroupManagement
+      functions:
+      - 'addAccounts(address,address,address[])'
+      - 'deleteAccounts(address,address,address[])'
+      - 'updateGroupName(address,address,bytes32)'

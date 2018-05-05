@@ -36,10 +36,10 @@ contract QuotaManager is QuotaInterface {
     }
 
     /// @notice Setup
-    function QuotaManager(address _account) public {
-        admins[_account] = true;
-        quota[_account] = 1073741824;
-        accounts.push(_account);
+    function QuotaManager(address _admin) public {
+        admins[_admin] = true;
+        quota[_admin] = 1073741824;
+        accounts.push(_admin);
         quotas.push(1073741824);
     }
 

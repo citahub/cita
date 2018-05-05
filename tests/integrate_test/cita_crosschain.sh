@@ -80,10 +80,10 @@ function start_chain () {
     local size=$2
     title "Start chain [${chain}] ..."
     for ((id=0;id<${size};id++)); do
-        bin/cita setup ${chain}chain${id}
+        bin/cita setup ${chain}chain/${id}
     done
     for ((id=0;id<${size};id++)); do
-        bin/cita start ${chain}chain${id} >/dev/null 2>&1 &
+        bin/cita start ${chain}chain/${id} >/dev/null 2>&1 &
     done
 }
 
@@ -213,7 +213,7 @@ function test_demo_contract () {
         "$(parse_addresses \
             $(call_contract main "${CMNC_ADDR}" "${code}") \
                 | xargs -I {} printf {})" \
-        "$(cat backup/sidechain/authorities \
+        "$(cat sidechain/template/authorities.list \
             | sort | xargs -I {} printf {})" \
         "The authorities is not right for side chain."
     local data=$(printf "%064x" "${main_chain_id}")
@@ -222,7 +222,7 @@ function test_demo_contract () {
         "$(parse_addresses \
             $(call_contract side "${CMNC_ADDR}" "${code}") \
                 | xargs -I {} printf {})" \
-        "$(cat backup/mainchain/authorities \
+        "$(cat mainchain/template/authorities.list \
             | sort | xargs -I {} printf {})" \
         "The authorities is not right for main chain."
 
@@ -299,33 +299,43 @@ function main () {
     sed -i 's/port=1337/port=21337/g' sidetool/txtool/config/setting.cfg
 
     title "Create main chain configs ..."
-    ./bin/admintool.sh \
-        -l "127.0.0.1:14000,127.0.0.1:14001,127.0.0.1:14002,127.0.0.1:14003" \
-        -H 11337 -W 14337 -K 19092 -G 15000 -i 1 -f mainchain
+    ./scripts/create_cita_config.py create --chain_name mainchain \
+        --nodes "127.0.0.1:14000,127.0.0.1:14001,127.0.0.1:14002,127.0.0.1:14003" \
+        --jsonrpc_port 11337 --ws_port 14337 --grpc_port 15000 \
+        --contract_arguments "ChainManager.current_chain_id=1"
 
     start_chain main 4
 
     title "Create side chain keys ..."
-    local main_auths=$(cat backup/mainchain/authorities \
-        | xargs -I {} printf "%s,\n" "{}" | tr -d '\n' | rev | cut -c 2- | rev)
-    ./bin/admintool.sh \
-        -l "127.0.0.1:24000,127.0.0.1:24001,127.0.0.1:24002,127.0.0.1:24003" \
-        -H 21337 -W 24337 -K 29092 -G 25000 -i 2 -f sidechain \
-        -p 1 -P "${main_auths}" -S init-key
+    for ((id=0;id<4;id++)); do
+        bin/create_key_addr secret${id} address${id}
+    done
+    local side_auths=$(ls address[0-4] | sort | xargs -I {} cat {} \
+        | tr '\n' ',' | rev | cut -c 2- | rev)
+    rm address[0-4]
+    local main_auths=$(cat mainchain/template/authorities.list \
+        | xargs -I {} printf "%s," "{}" | rev | cut -c 2- | rev)
+    ./scripts/create_cita_config.py create --chain_name sidechain \
+        --authorities "${side_auths}" \
+        --jsonrpc_port 21337 --ws_port 24337 --grpc_port 25000 \
+        --contract_arguments "ChainManager.current_chain_id=2" \
+            "ChainManager.parent_chain_id=1" \
+            "ChainManager.parent_chain_authorities=${main_auths}"
 
     wait_chain_for_height main 5
 
     title "Register side chain ...."
-    local side_auths=$(cat sidechain/authorities \
-        | xargs -I {} printf "'%s'," "{}" | rev | cut -c 2- | rev)
     send_contract main "${CMNC_ADDR}" "${CMNC_ABI}" \
         "newSideChain" "[${side_auths}]"
 
     title "Create side chain configs ..."
-    ./bin/admintool.sh \
-        -l "127.0.0.1:24000,127.0.0.1:24001,127.0.0.1:24002,127.0.0.1:24003" \
-        -H 21337 -W 24337 -K 29092 -G 25000 -i 2 -f sidechain \
-        -p 1 -P "${main_auths}" -S init-config
+    for ((id=0;id<4;id++)); do
+        ./scripts/create_cita_config.py append \
+            --chain_name sidechain \
+            --node "127.0.0.1:$((24000+${id}))" \
+            --signer "$(cat secret${id})"
+        rm -f secret${id}
+    done
 
     start_chain side 4
 
