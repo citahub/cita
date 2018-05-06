@@ -65,7 +65,10 @@ extern crate grpc;
 #[cfg(feature = "privatetx")]
 extern crate zktx;
 
+#[macro_use]
+extern crate enum_primitive;
 extern crate ethcore_bloom_journal;
+extern crate num;
 
 pub mod state;
 pub mod account_db;

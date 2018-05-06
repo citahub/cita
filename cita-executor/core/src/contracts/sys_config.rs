@@ -26,7 +26,8 @@ use util::{Address, H256};
 
 use super::ContractCallExt;
 use super::encode_contract_name;
-use libexecutor::executor::Executor;
+use libexecutor::executor::{EconomicalModel, Executor};
+use num::FromPrimitive;
 
 lazy_static! {
     static ref DELAY_BLOCK_NUMBER: Vec<u8> = encode_contract_name(b"getDelayBlockNumber()");
@@ -38,7 +39,7 @@ lazy_static! {
     static ref WEBSITE: Vec<u8> = encode_contract_name(b"getWebsite()");
     static ref BLOCK_INTERVAL: Vec<u8> = encode_contract_name(b"getBlockInterval()");
     static ref CONTRACT_ADDRESS: Address = Address::from_str("0000000000000000000000000000000031415926").unwrap();
-    static ref TRANSACTION_ECONOMICAL_MODEL: Vec<u8> = encode_contract_name(b"getTransactionEconomicalModel()");
+    static ref ECONOMICAL_MODEL: Vec<u8> = encode_contract_name(b"getEconomicalModel()");
 }
 
 /// Configuration items from system contract
@@ -157,20 +158,20 @@ impl<'a> SysConfig<'a> {
         interval
     }
 
-    /// enum TransactionEconomicalModel { Quota, GasPrice }
+    /// enum EconomicalModel { Quota, Charge }
     /// Quota: Default config is quota
-    /// GasPrice: Paid by token
-    pub fn transaction_economical_model(&self) -> u8 {
+    /// Charge: Charging by gas * gasPrice and reward for proposer
+    pub fn economical_model(&self) -> EconomicalModel {
         let value = self.get_value(
             &[ParamType::Uint(64)],
-            TRANSACTION_ECONOMICAL_MODEL.as_slice(),
+            ECONOMICAL_MODEL.as_slice(),
             Some(BlockId::Latest),
         ).remove(0)
             .to_uint()
-            .expect("decode transaction economical model");
+            .expect("decode economical model");
         let t = H256::from(value).low_u64() as u8;
-        debug!("transaction economical model: {:?}", t);
-        t
+        debug!("economical model: {:?}", t);
+        EconomicalModel::from_u8(t).expect("unknown economical model")
     }
 }
 
@@ -179,7 +180,7 @@ mod tests {
     extern crate logger;
     extern crate mktemp;
 
-    use super::SysConfig;
+    use super::{EconomicalModel, SysConfig};
     use tests::helpers::init_executor;
 
     #[test]
@@ -241,9 +242,9 @@ mod tests {
     }
 
     #[test]
-    fn test_transaction_economical_model() {
+    fn test_economical_model() {
         let executor = init_executor();
-        let value = SysConfig::new(&executor).transaction_economical_model();
-        assert_eq!(value, 0);
+        let value = SysConfig::new(&executor).economical_model();
+        assert_eq!(value, EconomicalModel::Quota);
     }
 }

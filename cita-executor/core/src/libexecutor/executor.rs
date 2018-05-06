@@ -121,6 +121,16 @@ pub enum Stage {
     Idle,
 }
 
+enum_from_primitive! {
+#[derive(Debug, Clone, PartialEq)]
+pub enum EconomicalModel {
+    /// Default model. Sending Transaction is free, should work with authority together.
+    Quota,
+    /// Transaction charges for gas * gasPrice. BlockProposer get the block reward.
+    Charge,
+}
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct GlobalSysConfig {
     pub nodes: Vec<Address>,
@@ -181,6 +191,7 @@ pub struct Executor {
     pub sys_configs: RwLock<VecDeque<GlobalSysConfig>>,
 
     pub service_map: Arc<ServiceMap>,
+    pub economical_model: RwLock<EconomicalModel>,
 }
 
 /// Get latest header
@@ -250,6 +261,7 @@ impl Executor {
             prooftype: executor_config.prooftype,
             sys_configs: RwLock::new(VecDeque::new()),
             service_map: Arc::new(ServiceMap::new()),
+            economical_model: RwLock::new(EconomicalModel::Quota),
         };
 
         // Build executor config
@@ -683,7 +695,25 @@ impl Executor {
     ) {
         closed_block.header.set_timestamp(comming.timestamp());
         closed_block.header.set_proof(comming.proof().clone());
-        closed_block.header.set_proposer(*comming.proposer());
+        let old_proposer = closed_block.header.proposer().clone();
+        let new_proposer = comming.proposer().clone();
+        if old_proposer != new_proposer {
+            closed_block.header.set_proposer(new_proposer);
+
+            if let EconomicalModel::Charge = *self.economical_model.read() {
+                closed_block
+                    .state
+                    .sub_balance(&old_proposer, &BLOCK_REWARD)
+                    .expect("Trie error while add proposer reward");
+
+                closed_block
+                    .state
+                    .add_balance(&new_proposer, &BLOCK_REWARD)
+                    .expect("Trie error while add proposer reward");
+                closed_block.state.commit().expect("commit trie error");
+            }
+        }
+
         self.finalize_block(closed_block, ctx_pub);
     }
 
@@ -703,6 +733,9 @@ impl Executor {
         conf.block_interval = sys_config.block_interval();
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
         conf.group_accounts = UserManagement::load_group_accounts(self);
+        {
+            *self.economical_model.write() = sys_config.economical_model();
+        }
 
         let common_gas_limit = QuotaManager::account_gas_limit(self);
         let specific = QuotaManager::specific(self);
@@ -738,8 +771,6 @@ impl Executor {
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
         let conf = self.get_sys_config(self.get_max_height());
-        let perm = conf.check_permission;
-        let quota = conf.check_quota;
         let parent_hash = block.parent_hash().clone();
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
@@ -750,7 +781,12 @@ impl Executor {
             current_state_root,
             last_hashes.into(),
         ).unwrap();
-        if open_block.apply_transactions(self, perm, quota) {
+        if open_block.apply_transactions(
+            self,
+            conf.check_permission,
+            conf.check_quota,
+            self.economical_model.read().clone(),
+        ) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
             info!("execute block use {:?}", new_now.duration_since(now));
@@ -777,7 +813,7 @@ impl Executor {
             current_state_root,
             last_hashes.into(),
         ).unwrap();
-        if open_block.apply_transactions(self, perm, quota) {
+        if open_block.apply_transactions(self, perm, quota, self.economical_model.read().clone()) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
             debug!("execute proposal use {:?}", new_now.duration_since(now));

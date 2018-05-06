@@ -40,8 +40,8 @@ interface SysConfigInterface {
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 contract SysConfig is SysConfigInterface {
 
-    enum TransactionEconomicalModel { Quota, GasPrice }
-
+    enum EconomicalModel { Quota, Charge }
+    
     /// @notice only chain_name, operator, website can be updated
     uint delay_block_number;
     bool check_permission;
@@ -51,7 +51,7 @@ contract SysConfig is SysConfigInterface {
     string operator;
     string website;
     uint block_interval;
-    TransactionEconomicalModel transactionEconomicalModel;
+    EconomicalModel economicalModel;
 
     /// @notice Setup
     function SysConfig(
@@ -63,7 +63,7 @@ contract SysConfig is SysConfigInterface {
         string _operator,
         string _website,
         uint _blockInterval,
-        TransactionEconomicalModel _tx
+        EconomicalModel _economical
     )
         public
     {
@@ -75,7 +75,7 @@ contract SysConfig is SysConfigInterface {
         operator = _operator;
         website = _website;
         block_interval = _blockInterval;
-        transactionEconomicalModel = _tx;
+        economicalModel = _economical;
     }
 
     function getDelayBlockNumber() public view returns (uint) {
@@ -110,8 +110,8 @@ contract SysConfig is SysConfigInterface {
         return block_interval;
     }
 
-    function getTransactionEconomicalModel() public view returns (TransactionEconomicalModel) {
-        return transactionEconomicalModel;
+    function getEconomicalModel() public view returns (EconomicalModel) {
+        return economicalModel;
     }
 
     function setOperator(string _operator) public {

@@ -23,8 +23,7 @@ use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
 use libexecutor::{CallEvmImpl, ConnectInfo};
-use libexecutor::executor::Executor;
-use libexecutor::executor::GlobalSysConfig;
+use libexecutor::executor::{EconomicalModel, Executor, GlobalSysConfig};
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::citacode::{ActionParams, EnvInfo as ProtoEnvInfo};
@@ -50,7 +49,7 @@ const CHECK_NUM: usize = 0xff;
 lazy_static! {
     /// Block Reward
     /// HardFork if need to change block reward
-    static ref BLOCK_REWARD: U256 = U256::from(5_000_000_000_000_000_000 as i64);
+    pub static ref BLOCK_REWARD: U256 = U256::from(5_000_000_000_000_000_000 as i64);
 }
 
 lazy_static! {
@@ -398,7 +397,13 @@ impl OpenBlock {
 
     /// Execute transactions
     /// Return false if be interrupted
-    pub fn apply_transactions(&mut self, executor: &Executor, check_permission: bool, check_quota: bool) -> bool {
+    pub fn apply_transactions(
+        &mut self,
+        executor: &Executor,
+        check_permission: bool,
+        check_quota: bool,
+        economical_model: EconomicalModel,
+    ) -> bool {
         for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 {
                 if executor.is_interrupted.load(Ordering::SeqCst) {
@@ -450,10 +455,12 @@ impl OpenBlock {
             }
         }
 
-        let proposer = self.header().proposer().clone();
-        self.state
-            .add_balance(&proposer, &BLOCK_REWARD)
-            .expect("Trie error while add proposer reward");
+        if let EconomicalModel::Charge = economical_model {
+            let proposer = self.header().proposer().clone();
+            self.state
+                .add_balance(&proposer, &BLOCK_REWARD)
+                .expect("Trie error while add proposer reward");
+        }
 
         let now = Instant::now();
         self.state.commit().expect("commit trie error");
