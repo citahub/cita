@@ -2,7 +2,7 @@
 set +e
 
 
-SOURCE_DIR=$(readlink -f $(dirname $0)/../..)
+SOURCE_DIR=$(realpath $(dirname $0)/../..)
 BINARY_DIR=${SOURCE_DIR}/target/install
 
 . ${SOURCE_DIR}/tests/integrate_test/util.sh

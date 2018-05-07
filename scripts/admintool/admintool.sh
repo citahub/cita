@@ -70,7 +70,7 @@ display_help()
 # usually is `cita/targte/install`
 CONFIG_DIR=${PWD}
 # usually is `cita/targte/install`
-BINARY_DIR=$(readlink -f $(dirname $(readlink -f $0))/../..)
+BINARY_DIR=$(realpath $(dirname $(realpath $0))/../..)
 CONTRACTS_DOCS_DIR="${BINARY_DIR}/scripts/contracts/docs"
 TEMPLATE_DIR="${BINARY_DIR}/scripts/admintool"
 BACKUP_DIR="${CONFIG_DIR}/backup"
