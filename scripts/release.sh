@@ -60,7 +60,6 @@ else
     ln -srf target/install/scripts/admintool/admintool.sh target/install/bin/
 fi
 
-
 # 5) config tool
 cp -rf  scripts/config_tool                target/install/scripts/
 cp -f   scripts/create_cita_config.py      target/install/scripts/
