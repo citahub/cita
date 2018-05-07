@@ -87,7 +87,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"i
 
 * Parameters
 
-1. `DATA`, The signed transaction data.
+    1. `DATA`, The signed transaction data.
 
 ```js
 const signed_data = "0a9b0412013018fface20420f73b2a8d046060604052341561000f57600080fd5b5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b5b610178806100956000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100495780636d4ce63c1461006c575b600080fd5b341561005457600080fd5b61006a6004808035906020019091905050610095565b005b341561007757600080fd5b61007f610142565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b50565b6000805490505b905600a165627a7a72305820631927ec00e7a86b68950c2304ba2614a8dcb84780b339fc2bfe442bba418ce800291241884bfdfd8e417ab286fd761d42b71a9544071d91084c56f9063471ce82e266122a8f9a24614e1cf75070eea301bf1e7a65857def86093b6892e09ae7d0bcdff901"
@@ -284,19 +284,19 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":[
 
 * Parameters
 
-1. DATA, 32 Bytes - Hash of a block.
-2. Boolean - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
+    1. DATA, 32 Bytes - Hash of a block.
+    2. Boolean - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
 
-```shell
-params: [
-   '0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329',
-   true
-]
-```
+    ```shell
+    params: [
+        '0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329',
+        true
+    ]
+    ```
 
 * Returns
 
-Object - A block object, or null when no block was found:
+    1. Object - A block object, or null when no block was found:
 
 * Example
 
@@ -353,8 +353,8 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByHash","params":["
 
 * Parameters
 
-1. `QUANTITY` - integer of a block height.
-2. `Boolean` - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
+    1. `QUANTITY` - integer of a block height.
+    2. `Boolean` - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
 
 ```js
 params: [
@@ -394,45 +394,45 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":
 
 * Parameters
 
-1. `DATA`, 32 Bytes - hash of a transaction
+    1. `DATA`, 32 Bytes - hash of a transaction
 
-```js
-params: [
-   "b38e5b6572b2613cab8088f93e6835576209f2b796104779b4a43fa5adc737af"
-]
-```
+    ```js
+    params: [
+        "b38e5b6572b2613cab8088f93e6835576209f2b796104779b4a43fa5adc737af"
+    ]
+    ```
 
 * Returns
 
-Object - A receipt object:
+    Object - A receipt object:
 
-* transactionHash: DATA, 32 Bytes - hash of the transaction.
-* transactionIndex: QUANTITY - transaction index.
-* blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its not in block.
-* blockNumber: QUANTITY - block number where this transaction was in. null when its not in block.
-* cumulativeGasUsed: QUANTITY - The total amount of gas used when this transaction was executed in the block.
-* gasUsed: QUANTITY - The amount of gas used by this specific transaction alone.
-* contractAddress: DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
-* logs: Array - Array of log objects, which this transaction generated.
-* root: DATA 32 bytes of post-transaction stateroot.
-* errorMessage: String, execution error message.
+    * transactionHash: DATA, 32 Bytes - hash of the transaction.
+    * transactionIndex: QUANTITY - transaction index.
+    * blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its not in block.
+    * blockNumber: QUANTITY - block number where this transaction was in. null when its not in block.
+    * cumulativeGasUsed: QUANTITY - The total amount of gas used when this transaction was executed in the block.
+    * gasUsed: QUANTITY - The amount of gas used by this specific transaction alone.
+    * contractAddress: DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
+    * logs: Array - Array of log objects, which this transaction generated.
+    * root: DATA 32 bytes of post-transaction stateroot.
+    * errorMessage: String, execution error message.
 
-Receipt error messages:
+    Receipt error messages:
 
-* No transaction permission.
-* No contract permission.
-* Not enough base gas.
-* Block gas limit reached.
-* Account gas limit reached.
-* Out of gas.
-* Jump position wasn't marked with JUMPDEST instruction.
-* Instruction is not supported.
-* Not enough stack elements to execute instruction.
-* Execution would exceed defined Stack Limit.
-* EVM internal error.
-* Mutable call in static context.
-* Out of bounds.
-* Reverted.
+    * No transaction permission.
+    * No contract permission.
+    * Not enough base gas.
+    * Block gas limit reached.
+    * Account gas limit reached.
+    * Out of gas.
+    * Jump position wasn't marked with JUMPDEST instruction.
+    * Instruction is not supported.
+    * Not enough stack elements to execute instruction.
+    * Execution would exceed defined Stack Limit.
+    * EVM internal error.
+    * Mutable call in static context.
+    * Out of bounds.
+    * Reverted.
 
 * Example
 
@@ -508,11 +508,11 @@ Topics are order-dependent. A transaction with a log with topics [A, B] will be 
 
 * Parameters
 
-1. `Object` - The filter object:
-* `fromBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
-* `toBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
-* `address`: `DATA|Array`, 20 Bytes - (optional) Contract address or a list of addresses from which logs should originate.
-* `topics`: `Array of DATA`,  - (optional) Array of 32 Bytes `DATA` topics. Topics are order-dependent. Each topic can also be an array of DATA with "or" options.
+    1. `Object` - The filter object:
+        * `fromBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
+        * `toBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
+        * `address`: `DATA|Array`, 20 Bytes - (optional) Contract address or a list of addresses from which logs should originate.
+        * `topics`: `Array of DATA`,  - (optional) Array of 32 Bytes `DATA` topics. Topics are order-dependent. Each topic can also be an array of DATA with "or" options.
 
 * Returns
 
@@ -555,14 +555,14 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"topics"
 
 * Parameters
 
-1. Object - The transaction call object
-    * from: DATA, 20 Bytes - (optional) The address the transaction is sent from.
-    * to:   DATA, 20 Bytes - The address the transaction is directed to.
-    * data: DATA - (optional) Hash of the method signature and encoded parameters. For details see [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)
-2. QUANTITY - block parameter
-    * HEX String - an integer block number
-    * String "earliest" for the earliest/genesis block
-    * String "latest" - for the latest mined block
+    1. Object - The transaction call object
+        * from: DATA, 20 Bytes - (optional) The address the transaction is sent from.
+        * to:   DATA, 20 Bytes - The address the transaction is directed to.
+        * data: DATA - (optional) Hash of the method signature and encoded parameters. For details see [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)
+    2. QUANTITY - block parameter
+        * HEX String - an integer block number
+        * String "earliest" for the earliest/genesis block
+        * String "latest" - for the latest mined block
 
 ```js
 params: [{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5","data":"0x6d4ce63c"}, "0x1d23"]
@@ -605,23 +605,23 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call",
 
 * Parameters
 
-1. `DATA`, 32 Bytes - hash of a transaction
+    1. `DATA`, 32 Bytes - hash of a transaction
 
-```js
-params: [
-   "0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"
-]
-```
+    ```js
+    params: [
+        "0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"
+    ]
+    ```
 
 * Returns
 
-Object - A transaction object, or null when no transaction was found:
+    Object - A transaction object, or null when no transaction was found:
 
-* hash: DATA, 32 Bytes - hash of the transaction.
-* content: DATA, 交易内容.
-* blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its not in block.
-* blockNumber: QUANTITY - block number where this transaction was in. null when its not in block.
-* index: QUANTITY - integer of the transactions index position in the block. null when its not in block.
+    * hash: DATA, 32 Bytes - hash of the transaction.
+    * content: DATA, 交易内容.
+    * blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its not in block.
+    * blockNumber: QUANTITY - block number where this transaction was in. null when its not in block.
+    * index: QUANTITY - integer of the transactions index position in the block. null when its not in block.
 
 * Example
 
@@ -651,8 +651,8 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getTransaction","params":["
 
 * Parameters
 
-1. `DATA`, 20 Bytes - address.
-2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
+    1. `DATA`, 20 Bytes - address.
+    2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
 
 * Returns
 
@@ -680,8 +680,8 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionCount","params
 
 * Parameters
 
-1. `DATA`, 20 Bytes - address.
-2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
+    1. `DATA`, 20 Bytes - address.
+    2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
 
 * Returns
 
@@ -708,8 +708,8 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["ea4f6bc9
 
 * Parameters
 
-1. `DATA`, 20 Bytes - address.
-2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
+    1. `DATA`, 20 Bytes - address.
+    2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
 
 * Returns
 
@@ -737,8 +737,8 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getAbi","params":["73552bc4e
 
 * Parameters
 
-1. `DATA`, 20 Bytes - address.
-2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
+    1. `DATA`, 20 Bytes - address.
+    2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
 
 * Returns
 
@@ -765,7 +765,7 @@ Creates a filter object, based on filter options, to notify when the state chang
 
 * Parameters
 
-1. `Object` - The filter object, see [eth_getLogs](#eth_getLogs)
+    1. `Object` - The filter object, see [eth_getLogs](#eth_getLogs)
 
 * Returns
 
@@ -820,7 +820,7 @@ Additonally Filters timeout when they aren't requested with eth_getFilterChanges
 
 * Parameters
 
-1. `QUANTITY` - The filter id.
+    1. `QUANTITY` - The filter id.
 
 * Returns
 
@@ -847,7 +847,7 @@ Polling method for a filter, which returns an array of logs which occurred since
 
 * Parameters
 
-1. `QUANTITY` - The filter id.
+    1. `QUANTITY` - The filter id.
 
 * Returns
 
@@ -888,7 +888,7 @@ Returns an array of all logs matching filter with given id.
 
 * Parameters
 
-1. `QUANTITY` - The filter id.
+    1. `QUANTITY` - The filter id.
 
 * Returns
 
@@ -905,6 +905,7 @@ see [eth_getFilterChanges](#eth_getFilterChanges)
 默认将接收方地址为`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`的交易为保存合约ABI交易类型。
 
 ### 保存ABI
+
 保存合约ABI到Account，主要步骤为：
 1.需要先成功创建合约，得到合约地址；
 2.使用solc编译合约代码得到ABI，以String类型编码成相应参数，详情见[Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)；
@@ -979,13 +980,13 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getAbi","params":["73552bc4e
 
 * Parameters
 
-`DATA`, 32 Bytes - hash of a transaction
+    1. `DATA`, 32 Bytes - hash of a transaction
 
-```js
-params: [
-   "0x37f1261203d7b81a5a5cfc4a5c4abf15297555a47fd8686580d5a211876516c4"
-]
-```
+    ```js
+    params: [
+        "0x37f1261203d7b81a5a5cfc4a5c4abf15297555a47fd8686580d5a211876516c4"
+    ]
+    ```
 
 * Returns
 
@@ -1013,14 +1014,21 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getTransactionProof","param
 
 * Parameters
 
-`QUANTITY`, integer of a block height or "latest"
+    1. `QUANTITY`, integer of a block height or "latest"
 
-```py
-params: [
-   "0x1da3"
-]
-```
+    ```py
+    params: [
+        "0x1da3"
+    ]
+    ```
 
+* Returns
+    * `chainId`, u32 - Deal with transaction replay attack
+    * `chainName`, String - Chain Name
+    * `operator`, String - Chain operator
+    * `genesisTimestamp`, Timestamp - Genesis timestamp
+    * `validators`, [Address] - Validator array
+    * `blockInterval` u64 - block interval by millisecond
 * Example
 
 ```shell
@@ -1028,9 +1036,6 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getMetaData","params":["0
 
 {"jsonrpc":"2.0","id":1,"result":{"chainId":464896313,"chainName":"test-chain","operator":"test-operator","website":"https://www.example.com","genesisTimestamp":1525313122,"validators":["0x1c82af8ac82348748c14970296386cf466271bed","0xd3e9c874eb92663337db36f570bca4c0167312be","0x56075c47c33ebac18a8f8be0c3cbaf66328027ac","0xbd5e28047ac06f31fe27cc3ab6ce014cfa05ced3"],"blockInterval":3000}}
 
-$ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getMetaData","params":["latest"],"id":1}' 127.0.0.1:1337
-
-{"jsonrpc":"2.0","id":1,"result":{"chainId":464896313,"chainName":"test-chain","operator":"test-operator","website":"https://www.example.com","genesisTimestamp":1525313122,"validators":["0x1c82af8ac82348748c14970296386cf466271bed","0xd3e9c874eb92663337db36f570bca4c0167312be","0x56075c47c33ebac18a8f8be0c3cbaf66328027ac","0xbd5e28047ac06f31fe27cc3ab6ce014cfa05ced3","0xa5a73a76963b671e0d0044576c910aefdae5b6f0"],"blockInterval":3000}}
 ```
 
 ***
