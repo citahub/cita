@@ -252,7 +252,8 @@ def main():
         init_data["0x00000000000000000000000000000000013241a2"][0].append(auth)
 
     data = dict()
-    timestamp = int(time.time() if not args.timestamp else args.timestamp)
+    timestamp = int(time.time() * 1000
+                    if not args.timestamp else args.timestamp)
     if os.path.exists(res_path) and os.path.isdir(res_path):
         #file list make sure same order when calc hash
         file_list = ""
