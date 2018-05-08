@@ -20,10 +20,10 @@
 use super::{encode_contract_name, to_address_vec};
 use super::ContractCallExt;
 use libexecutor::executor::Executor;
+use rand::{Rng, SeedableRng, StdRng};
 use rustc_hex::ToHex;
 use std::str::FromStr;
 use util::{Address, H160};
-use rand::{Rng, SeedableRng, StdRng};
 
 const LIST_NODE: &'static [u8] = &*b"listNode()";
 
@@ -45,7 +45,7 @@ impl NodeManager {
     }
 
     pub fn shuffle_nodes(node_vec: &Vec<Address>, height: u64) -> Vec<Address> {
-        let mut ret: Vec<Address> = vec!();
+        let mut ret: Vec<Address> = vec![];
 
         let seed: &[_] = &[height as usize];
         let mut rng: StdRng = SeedableRng::from_seed(seed);
