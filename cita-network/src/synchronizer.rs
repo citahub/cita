@@ -204,7 +204,7 @@ impl Synchronizer {
                 };
             }
             _ => {
-                warn!("receive: unexpected data type = {:?}", key);
+                error!("receive: unexpected data key = {:?}", key);
             }
         }
     }

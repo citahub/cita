@@ -207,7 +207,7 @@ pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
 
 impl Executor {
     pub fn init_executor(db: Arc<KeyValueDB>, mut genesis: Genesis, executor_config: Config) -> Executor {
-        info!("config check: {:?}", executor_config);
+        info!("executor config: {:?}", executor_config);
 
         let trie_factory = TrieFactory::new(TrieSpec::Generic);
         let factories = Factories {
@@ -231,7 +231,7 @@ impl Executor {
                 genesis
                     .lazy_execute(&state_db, &factories)
                     .expect("Failed to save genesis.");
-                info!("init genesis {:?}", genesis);
+                trace!("init genesis {:?}", genesis);
 
                 genesis.block.header().clone()
             }
@@ -618,10 +618,7 @@ impl Executor {
                 // However, the current sysconfig only stores the latest ten data that have changed, which means that
                 // it may not be able to construct the desired result.
                 // And the probability of this error is minimal and it is currently processed as a log error log.
-                error!(
-                    "There is no such {} height execute result in the cache",
-                    height
-                );
+                error!("There is no block {} execute result in the cache", height);
                 return;
             }
         };

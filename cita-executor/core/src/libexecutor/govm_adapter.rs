@@ -22,6 +22,7 @@ use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction};
 use util::*;
 use util::RwLock;
+use util::ToPretty;
 use util::clean_0x;
 
 #[derive(Clone)]
@@ -158,7 +159,10 @@ impl ServiceMap {
                 self.enable.write().insert(contract_address, value);
             }
             None => {
-                info!("contract_address [{}] do not register !", contract_address);
+                warn!(
+                    "can't enable go contract address [{}] because it have not registed!",
+                    contract_address
+                );
             }
         }
     }
@@ -238,7 +242,7 @@ impl ExecutorService for ExecutorServiceImpl {
             }
         }
         if hi == 0 {
-            error!("contract address {} do not creater", caddr);
+            error!("contract address {} have not created", caddr);
             r.set_value("".to_string());
         } else {
             let out = self.get_bytes(BlockId::Number(hi), &address, key);
@@ -391,13 +395,18 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
                     (resp, Address::from_slice(&addr))
                 }
                 _ => {
-                    info!(" conn info that create contrace is {}:{}", ip, port);
                     let resp = self.create(ip, port, invoke_request);
                     // set enable
                     let contract_address = Address::from_slice(&t.data);
                     executor
                         .service_map
                         .set_enable(clean_0x(&contract_address.hex()).to_string());
+                    info!(
+                        "enable go contract {} at {}:{}",
+                        contract_address.pretty(),
+                        ip,
+                        port
+                    );
                     (resp, contract_address)
                 }
             }
@@ -457,7 +466,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
             );
             Ok(receipt)
         } else {
-            error!("{:?}", resp);
+            error!("go contract execute failed {:?}", resp);
             Err(Error::StdIo(::std::io::Error::new(
                 ::std::io::ErrorKind::Other,
                 resp.err().unwrap().description(),

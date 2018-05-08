@@ -165,7 +165,7 @@ impl ExecutorInstance {
             }
 
             _ => {
-                error!("error key {}!!!!", key);
+                error!("dipatch msg found error key {}!!!!", key);
             }
         }
     }
@@ -206,7 +206,7 @@ impl ExecutorInstance {
                                         .finalize_proposal(closed_block, block, &self.ctx_pub);
                                 } else {
                                     // Maybe never reach
-                                    warn!("at WaitFinalized, but no closed block found!");
+                                    debug!("at WaitFinalized, but no closed block found!");
                                     {
                                         *self.ext.stage.write() = Stage::ExecutingBlock;
                                     }
@@ -232,7 +232,7 @@ impl ExecutorInstance {
                     {
                         *self.ext.stage.write() = Stage::Idle;
                     }
-                    debug!("execute consensus block [height {}] finish !", number);
+                    info!("execute consensus block [height {}] finish !", number);
                     need_clean_map = true;
                 }
             }
@@ -278,7 +278,7 @@ impl ExecutorInstance {
                                 info!("execute proposal block [height {}] finish !", number);
                             } else {
                                 // Maybe never reach
-                                warn!("something is wrong, go into no-man's-land")
+                                warn!("something is wrong when execute proposal block")
                             }
                         }
                         Some(BlockInQueue::Proposal(_)) => {
@@ -297,7 +297,7 @@ impl ExecutorInstance {
                 }
             }
             _ => {
-                info!("block-{} in queue is without proof", number);
+                warn!("block-{} in queue is without proof", number);
             }
         }
 
@@ -312,7 +312,7 @@ impl ExecutorInstance {
         let sys_config = SysConfig::new(&self.ext);
         let mut miscellaneous = Miscellaneous::new();
         miscellaneous.set_chain_id(sys_config.chain_id());
-        info!(
+        trace!(
             "the chain id captured in executor is {}",
             sys_config.chain_id()
         );
@@ -496,7 +496,7 @@ impl ExecutorInstance {
             }
 
             _ => {
-                error!("mtach error Request_oneof_req msg!!!!");
+                error!("bad request msg!!!!");
             }
         };
         let msg: Message = response.into();
@@ -730,7 +730,7 @@ impl ExecutorInstance {
 
     fn set_sync_block(&self, block: Block, proto_proof: Proof) -> bool {
         let number = block.number();
-        info!("set sync block-{}", number);
+        trace!("set sync block-{}", number);
         let proof = TendermintProof::from(proto_proof);
         let proof_height = if proof.height == ::std::usize::MAX {
             0
@@ -748,10 +748,10 @@ impl ExecutorInstance {
                 || proof.check(proof_height as usize, &prev_authorities))
         {
             self.ext.execute_block(block, &self.ctx_pub);
-            info!("set sync block-{} is finished", number);
+            trace!("set sync block-{} is finished", number);
             true
         } else {
-            info!("sync block-{} is invalid", number);
+            trace!("sync block-{} is invalid", number);
             false
         }
     }
@@ -773,7 +773,7 @@ impl ExecutorInstance {
                     } else {
                         invalid_block_in_queue = true;
                         // Reach here only in byzantine condition
-                        info!("set sync block end to {} as invalid block", number - 1);
+                        warn!("set sync block end to {} as invalid block", number - 1);
                         break;
                     }
                 }

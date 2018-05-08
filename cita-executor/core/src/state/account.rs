@@ -369,7 +369,7 @@ impl Account {
                 Some(Arc::clone(&self.code_cache))
             }
             _ => {
-                warn!("Failed reverse get of {}", self.code_hash);
+                warn!("Failed get code of {}", self.code_hash);
                 None
             }
         }
@@ -396,7 +396,7 @@ impl Account {
                 Some(Arc::clone(&self.abi_cache))
             }
             _ => {
-                warn!("Failed reverse get of {}", self.abi_hash);
+                warn!("Failed get abi of {}", self.abi_hash);
                 None
             }
         }
@@ -446,7 +446,7 @@ impl Account {
                     true
                 }
                 _ => {
-                    warn!("Failed reverse get of {}", self.code_hash);
+                    warn!("Failed get code of {}", self.code_hash);
                     false
                 }
             }
@@ -471,7 +471,7 @@ impl Account {
                     true
                 }
                 _ => {
-                    warn!("Failed reverse get of {}", self.abi_hash);
+                    warn!("Failed get abi of {}", self.abi_hash);
                     false
                 }
             }

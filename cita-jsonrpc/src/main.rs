@@ -124,7 +124,7 @@ fn main() {
 
     //enable HTTP or WebSocket server!
     if !config.ws_config.enable && !config.http_config.enable {
-        error!("enable HTTP or WebSocket server!");
+        error!("Please at least enable one of HTTP and WebSocket server!");
         std::process::exit(-1);
     }
 

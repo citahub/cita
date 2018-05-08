@@ -197,7 +197,7 @@ impl Output {
                     Error::server_error(code, err_msg),
                 )),
                 _ => {
-                    error!("return error message!!!");
+                    error!("return system error!!!");
                     Output::Failure(RpcFailure::from(Error::server_error(code, "system error!")))
                 }
             },

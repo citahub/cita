@@ -106,7 +106,7 @@ impl Handler for WsHandler {
     }
 
     fn on_close(&mut self, code: CloseCode, reason: &str) {
-        info!(
+        error!(
             "WebSocket closing for ({:?}) {} token {}",
             code,
             reason,

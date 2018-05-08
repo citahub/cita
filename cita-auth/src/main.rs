@@ -461,10 +461,7 @@ fn main() {
                     );
                 }
                 Err(err_info) => {
-                    error!(
-                        "Failed to receive message from rx_sub due to {:?}",
-                        err_info
-                    );
+                    error!("Failed to receive message from MQ due to {:?}", err_info);
                 }
             }
         }

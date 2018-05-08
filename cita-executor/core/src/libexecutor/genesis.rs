@@ -115,8 +115,8 @@ impl Genesis {
         self.block.set_timestamp(self.spec.timestamp);
         self.block.set_number(0);
 
-        info!("**** begin **** \n");
         info!("This is the first time to init executor, and it will init contracts on height 0");
+        trace!("**** begin **** \n");
         for (address, contract) in self.spec.alloc.clone() {
             let address = Address::from_any_str(address.as_str()).unwrap();
             state.new_contract(&address, U256::from(0), U256::from(0));
@@ -141,9 +141,11 @@ impl Genesis {
             let address = Address::from_any_str(address.as_str()).unwrap();
             for (key, values) in &contract.storage {
                 let result = state.storage_at(&address, &H256::from_any_str(key.as_ref()).unwrap());
-                info!(
+                trace!(
                     "address = {:?}, key = {:?}, result = {:?}",
-                    address, key, result
+                    address,
+                    key,
+                    result
                 );
                 assert_eq!(
                     H256::from_any_str(values.as_ref()).unwrap(),
@@ -152,7 +154,7 @@ impl Genesis {
             }
         }
 
-        info!("**** end **** \n");
+        trace!("**** end **** \n");
         let root = *state.root();
         trace!("root {:?}", root);
         self.block.set_state_root(root);

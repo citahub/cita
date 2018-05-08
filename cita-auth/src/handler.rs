@@ -155,8 +155,8 @@ fn verify_proposal_block(
         };
 
         info!(
-            "Coming new block verify request with request_id: {}, and the init block_verify_status: {:?}",
-            request_id, new_block_verify_status
+            "Coming new block verify request with request_id: {}",
+            request_id
         );
         //add big brace here to release write lock as soon as poobible
         {
@@ -204,7 +204,7 @@ fn verify_proposal_block(
                         if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
                             resp_ret = resp.get_ret();
                         } else {
-                            error!("Can't get response from cache but could get it just right now");
+                            // Can't get response from cache, set bad sig as default
                             resp_ret = Ret::BadSig;
                         }
                         warn!(
@@ -463,7 +463,7 @@ pub fn handle_remote_msg(
                 Cmd::Begin => {
                     resp.set_resp(Resp::BeginAck);
                     let msg: Message = resp.into();
-                    info!("auth resp BeginAck");
+                    info!("[snapshot] auth send BeginAck");
                     tx_pub
                         .send((
                             routing_key!(Auth >> SnapshotResp).into(),
@@ -475,7 +475,7 @@ pub fn handle_remote_msg(
                     resp.set_resp(Resp::ClearAck);
                     clear_txs_pool.store(true, Ordering::SeqCst);
                     let msg: Message = resp.into();
-                    info!("auth resp ClearAck");
+                    info!("[snapshot] auth send ClearAck");
                     tx_pub
                         .send((
                             routing_key!(Auth >> SnapshotResp).into(),
@@ -487,7 +487,7 @@ pub fn handle_remote_msg(
                     resp.set_resp(Resp::EndAck);
                     clear_txs_pool.store(false, Ordering::SeqCst);
                     let msg: Message = resp.into();
-                    info!("auth resp EndAck");
+                    info!("[snapshot] auth send EndAck");
                     tx_pub
                         .send((
                             routing_key!(Auth >> SnapshotResp).into(),
@@ -505,7 +505,7 @@ pub fn handle_remote_msg(
         }
         routing_key!(Executor >> Miscellaneous) => {
             let miscellaneous = msg.take_miscellaneous().unwrap();
-            info!("The chain_id from executor is {}", miscellaneous.chain_id);
+            info!("Get chain_id({}) from executor", miscellaneous.chain_id);
             verifier
                 .try_write()
                 .unwrap()
@@ -629,31 +629,9 @@ pub fn handle_verification_result(
             }
         }
         Err(err_info) => {
-            error!(
-                "Failed to receive message from result_receiver due to {:?}",
-                err_info
-            );
+            error!("Failed to receive verify result due to {:?}", err_info);
         }
     }
-}
-
-pub fn publish_block_verification_fail_result(
-    request_id: u64,
-    hash: &H256,
-    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
-    tx_pub: &Sender<(String, Vec<u8>)>,
-) {
-    let ret: Ret;
-    if let Some(resp) = get_resp_from_cache(hash, cache) {
-        ret = resp.get_ret();
-    } else {
-        ret = Ret::BadSig;
-        error!(
-            "Failed to get response from cache for tx with hash: {:?}",
-            hash
-        );
-    }
-    publish_block_verification_result(request_id, ret, tx_pub);
 }
 
 fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<(String, Vec<u8>)>) {

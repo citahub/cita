@@ -57,6 +57,7 @@ use util::{journaldb, Address, H2048, H256, U256};
 use util::{Mutex, RwLock};
 use util::Hashable;
 use util::HeapSizeOf;
+use util::ToPretty;
 use util::kvdb::*;
 use util::merklehash;
 
@@ -92,7 +93,7 @@ impl TxProof {
         // Calculate transaction hash, and it should be same as the transaction hash in receipt.
         if self.receipt.transaction_hash == self.tx.calc_transaction_hash() {
         } else {
-            error!("txproof verify transaction_hash failed");
+            warn!("txproof verify transaction_hash failed");
             return false;
         };
         // Use receipt_proof and receipt_root to prove the receipt in the block.
@@ -105,26 +106,26 @@ impl TxProof {
                 .crypt_hash(),
         ) {
         } else {
-            error!("txproof verify receipt root merklehash failed");
+            warn!("txproof verify receipt root merklehash failed");
             return false;
         };
         // Calculate block header hash, and is should be same as the parent_hash in next header
         if self.block_header.note_dirty().hash() == *self.next_proposal_header.parent_hash() {
         } else {
-            error!("txproof verify block header hash failed");
+            warn!("txproof verify block header hash failed");
             return false;
         };
         let proof = TendermintProof::from(self.proposal_proof.clone());
         // Verify next block header, use proof.proposal
         if self.next_proposal_header.proposal_protobuf().crypt_hash() == proof.proposal {
         } else {
-            error!("txproof verify next block header failed");
+            warn!("txproof verify next block header failed");
             return false;
         };
         // Verify signatures in proposal proof.
         if proof.check(self.block_header.number() as usize + 1, authorities) {
         } else {
-            error!("txproof verify signatures for next block header failed");
+            warn!("txproof verify signatures for next block header failed");
             return false;
         };
         true
@@ -305,7 +306,7 @@ pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
     if let Some(hash) = h {
         let hi: Option<BlockNumber> = db.read(db::COL_EXTRA, &hash);
         if let Some(h) = hi {
-            warn!("get_chain hash {:?}  bn{:?}  CurrentHash", hash, h);
+            trace!("get_chain hash {:?}  bn{:?}  CurrentHash", hash, h);
             db.read(db::COL_HEADERS, &h)
         } else {
             warn!("not expected get_chain_current_head height");
@@ -342,10 +343,10 @@ impl Chain {
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
         };
 
-        info!("config check: {:?}", chain_config);
+        info!("chain config: {:?}", chain_config);
 
         let header = get_chain(&*db).unwrap_or(Header::default());
-        info!("get chain head is : {:?}", header);
+        debug!("get chain head is : {:?}", header);
         let current_height = AtomicUsize::new(header.number() as usize);
         let max_store_height = AtomicUsize::new(0);
         if let Some(height) = get_chain_body_height(&*db) {
@@ -613,7 +614,7 @@ impl Chain {
                 };
             }
             _ => {
-                debug!("block-{} in queue is invalid", number);
+                warn!("block-{} in queue is invalid", number);
             }
         }
 
@@ -1220,10 +1221,10 @@ impl Chain {
             return;
         }
         let status = self.current_status().protobuf();
-        debug!(
-            "chain status {:?}, {:?}",
+        info!(
+            "new chain status height {}, hash {}",
             status.get_height(),
-            status.get_hash()
+            status.get_hash().pretty()
         );
         let sync_msg: Message = status.into();
         ctx_pub

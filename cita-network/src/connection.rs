@@ -166,7 +166,7 @@ fn connect(con: Arc<Connection>) {
                 }
             }
             if need_reconnect {
-                warn!("connect {:?}!", peer.1);
+                info!("connect {:?}!", peer.1);
                 peer.2 = TcpStream::connect(peer.1.clone()).ok();
             }
         }
@@ -188,7 +188,7 @@ pub fn manage_connect(con: &Arc<Connection>, config_path: &str, rx: Receiver<Deb
                     if path_buf.is_file() {
                         let file_name = path_buf.file_name().unwrap().to_str().unwrap();
                         if file_name == config.as_str() {
-                            info!("file {} change", file_name);
+                            info!("file {} changed, will auto reload!", file_name);
                             let config = NetConfig::new(config.as_str());
                             con.update(&config);
                         }
