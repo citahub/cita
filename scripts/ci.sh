@@ -61,7 +61,6 @@ function run_in_docker () {
            --volume ${HOME}/.cargo/registry:/root/.cargo/registry  \
            --volume ${HOME}/.cargo/git:/root/.cargo/git \
            --volume /etc/localtime:/etc/localtime \
-           --volume /etc/timezone:/etc/timezone \
            --workdir "${SOURCE_DIR}" "${DOCKER_IMAGE}" "${SCRIPT_PATH}"
 }
 

@@ -34,7 +34,6 @@ if [ $? == 0 ]; then
            --volume ${HOME}/.cargo/registry:/root/.cargo/registry  \
            --volume ${HOME}/.cargo/git:/root/.cargo/git \
            --volume /etc/localtime:/etc/localtime \
-           --volume /etc/timezone:/etc/timezone \
            --workdir "$(pwd)" $IMAGE "${SCRIPT_PATH}"
     exit $?
 else

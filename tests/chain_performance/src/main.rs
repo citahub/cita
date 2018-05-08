@@ -217,18 +217,20 @@ fn send_contract_tx(block_tx_num: i32, call: Callexet, pre_hash: H256, flag_prof
 
 fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
-    let start = flag_prof_start;
-    let duration = flag_prof_duration;
-    thread::spawn(move || {
-        thread::sleep(time::Duration::new(start, 0));
-        PROFILER
-            .lock()
-            .unwrap()
-            .start("./chain_performance.profile")
-            .expect("Couldn't start");
-        thread::sleep(time::Duration::new(duration, 0));
-        PROFILER.lock().unwrap().stop().unwrap();
-    });
+    if flag_prof_duration != 0 {
+        let start = flag_prof_start;
+        let duration = flag_prof_duration;
+        thread::spawn(move || {
+            thread::sleep(time::Duration::new(start, 0));
+            PROFILER
+                .lock()
+                .unwrap()
+                .start("./chain_performance.profile")
+                .expect("Couldn't start");
+            thread::sleep(time::Duration::new(duration, 0));
+            PROFILER.lock().unwrap().stop().unwrap();
+        });
+    }
 }
 
 fn main() {

@@ -30,7 +30,6 @@ else
         --volume ${HOME}/.docker_cargo/registry:/root/.cargo/registry \
         --volume ${HOME}/.docker_cargo/git:/root/.cargo/git \
         --volume /etc/localtime:/etc/localtime \
-        --volume /etc/timezone:/etc/timezone \
         --workdir "${SOURCE_DIR}" --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
         /bin/bash -c "while true;do sleep 100;done"
     sleep 20

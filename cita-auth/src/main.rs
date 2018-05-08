@@ -124,18 +124,20 @@ include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
     //start profiling
-    let start = flag_prof_start;
-    let duration = flag_prof_duration;
-    thread::spawn(move || {
-        thread::sleep(std::time::Duration::new(start, 0));
-        PROFILER
-            .lock()
-            .unwrap()
-            .start("./auth.profiler")
-            .expect("Couldn't start");
-        thread::sleep(std::time::Duration::new(duration, 0));
-        PROFILER.lock().unwrap().stop().unwrap();
-    });
+    if flag_prof_duration != 0 {
+        let start = flag_prof_start;
+        let duration = flag_prof_duration;
+        thread::spawn(move || {
+            thread::sleep(std::time::Duration::new(start, 0));
+            PROFILER
+                .lock()
+                .unwrap()
+                .start("./auth.profiler")
+                .expect("Couldn't start");
+            thread::sleep(std::time::Duration::new(duration, 0));
+            PROFILER.lock().unwrap().stop().unwrap();
+        });
+    }
 }
 
 // Main entry for Auth micro-service, It runs as a stand-alone process in CITA system.
@@ -210,8 +212,6 @@ fn main() {
     );
     let threadpool = threadpool::ThreadPool::new(tx_verify_thread_num);
     let on_proposal = Arc::new(AtomicBool::new(false));
-
-    profiler(flag_prof_start, flag_prof_duration);
 
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
@@ -469,6 +469,8 @@ fn main() {
             }
         }
     });
+
+    profiler(flag_prof_start, flag_prof_duration);
 
     loop {
         handle_verification_result(

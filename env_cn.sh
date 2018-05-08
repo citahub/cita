@@ -30,7 +30,6 @@ else
         --volume ${HOME}/.docker_cargo/registry:/root/.cargo/registry \
         --volume ${HOME}/.docker_cargo/git:/root/.cargo/git \
         --volume /etc/localtime:/etc/localtime \
-        --volume /etc/timezone:/etc/timezone \
         --workdir "${SOURCE_DIR}" --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
         /bin/bash -c "echo -e '[source.crates-io]\nregistry = \"https://github.com/rust-lang/crates.io-index\"\nreplace-with = \"ustc\"\n[source.ustc]\nregistry = \"https://mirrors.ustc.edu.cn/crates.io-index\"'>~/.cargo/config;while true;do sleep 100;done"
     sleep 20
