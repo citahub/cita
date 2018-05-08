@@ -26,7 +26,6 @@ use std::cmp::Ordering;
 use std::iter;
 use std::str::FromStr;
 use util::{Address, H160};
-use rand::{Rng, SeedableRng, StdRng};
 
 const LIST_NODE: &'static [u8] = &*b"listNode()";
 const LIST_STAKE: &'static [u8] = *&b"listStake()";
@@ -106,7 +105,7 @@ impl NodeManager {
         trace!("node manager nodes: {:?}", nodes);
         nodes
     }
-
+    
     pub fn shuffle_node<T>(node_vec: &mut Vec<T>, rng_seed: u64) {
         let seed: &[_] = &[rng_seed as usize];
         let mut rng: StdRng = SeedableRng::from_seed(seed);
