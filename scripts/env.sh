@@ -30,10 +30,11 @@ else
     sleep 20
 fi
 
-CMD="$@"
-if [ "${CMD}" = "" ]; then
-    CMD="bash"
-fi
-
 test -t 1 && USE_TTY="-t"
-docker exec -i ${USE_TTY} ${CONTAINER_NAME} ${CMD}
+
+if [ $# -gt 0 ]; then
+    docker exec -i ${USE_TTY} ${CONTAINER_NAME} "$@"
+else
+    docker exec -i ${USE_TTY} ${CONTAINER_NAME} \
+        /bin/bash -c "stty cols $(tput cols) rows $(tput lines) && bash"
+fi
