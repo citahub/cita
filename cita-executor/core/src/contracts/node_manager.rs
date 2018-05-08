@@ -23,6 +23,7 @@ use libexecutor::executor::Executor;
 use rustc_hex::ToHex;
 use std::str::FromStr;
 use util::{Address, H160};
+use rand::{Rng, SeedableRng, StdRng};
 
 const LIST_NODE: &'static [u8] = &*b"listNode()";
 
@@ -41,6 +42,22 @@ impl NodeManager {
         let nodes: Vec<Address> = to_address_vec(&output);
         trace!("nodemanager nodes: {:?}", nodes);
         nodes
+    }
+
+    pub fn shuffle_nodes(node_vec: &Vec<Address>, height: u64) -> Vec<Address> {
+        let mut ret: Vec<Address> = vec!();
+
+        let seed: &[_] = &[height as usize];
+        let mut rng: StdRng = SeedableRng::from_seed(seed);
+
+        for i in 0..node_vec.len() {
+            let j: usize = rng.gen::<usize>() % (i + 1);
+            if j != i {
+                ret[i] = ret[j];
+            }
+            ret[j] = node_vec[i];
+        }
+        ret
     }
 }
 

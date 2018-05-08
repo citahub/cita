@@ -69,6 +69,7 @@ extern crate zktx;
 extern crate enum_primitive;
 extern crate ethcore_bloom_journal;
 extern crate num;
+extern crate rand;
 
 pub mod state;
 pub mod account_db;
