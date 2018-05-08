@@ -348,7 +348,8 @@ def parse_arguments():
     pcreate.add_argument(
         '--authorities',
         type=AuthorityList.from_str,
-        metavar='AUTHORITY[,AUTHORITY[,AUTHORITY[,AUTHORITY[, ...]]]]',
+        metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(
+            var='AUTHORITY'),
         help='Authorities (addresses) list.')
     pcreate.add_argument(
         '--chain_name', help='Name of the new chain.')
@@ -356,7 +357,8 @@ def parse_arguments():
     pcreate.add_argument(
         '--nodes',
         type=AddressList.from_str, default=AddressList(),
-        metavar='IP:PORT[,IP:PORT[,IP:PORT[,IP:PORT[, ...]]]]',
+        metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(
+            var='IP:PORT'),
         help='Node network addresses for new nodes.')
 
     # For create init data
@@ -369,8 +371,8 @@ def parse_arguments():
         action=KeyKeyValueAction,
         default=KeyKeyValueDict(),
         metavar='Contract.Argument=Value',
-        help='update arguments for contract, use comma as delimiter for'
-        ' list, for example, the list looks like var1,var2,var3')
+        help='Update constructor arguments for system contract.'
+        ' Can be specify more than once.')
 
     # For create genesis
     pcreate.add_argument(

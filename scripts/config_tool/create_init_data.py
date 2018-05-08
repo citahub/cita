@@ -190,8 +190,8 @@ def parse_arguments():
         type=KeyKeyValueDict.str2tuple,
         action=KeyKeyValueAction,
         metavar='Contract.Argument=Value',
-        help='update arguments for contract, use comma as delimiter for'
-        ' list, for example, the list looks like var1,var2,var3')
+        help='Update constructor arguments for system contract.'
+        ' Can be specify more than once.')
     args = parser.parse_args()
     return dict(
         contract_arguments=args.contract_arguments,
