@@ -1,28 +1,28 @@
-# 快速入门
+# Getting Started 
 
-## 依赖
+## Dependencies
 
-### 系统平台要求
+### System platform requirements
 
-CITA 是基于 Ubuntu 16.04 稳定版开发的，在该系统版本上运行将是正确无误的。
+CITA is developed based on the stable version of Ubuntu 16.04 and runs robustly on this version.
 
-推荐使用 `docker` 编译和部署 `CITA`，保证环境一致。
+It is recommended to use docker to compile and deploy CITA to ensure a consistent environment.
 
-### 安装 docker
+### Install docker
 
-参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/install/)
+see [online information](https://yeasy.gitbooks.io/docker_practice/content/install/)
 
-### 获取 Docker 镜像
+### Get Docker Image
 
-CITA 的 Docker 镜像托管在 [DockerHub](https://hub.docker.com/r/cita/cita-build/)
+CITA docker image is hosted on [DockerHub](https://hub.docker.com/r/cita/cita-build/)
 
-可以使用 `docker pull` 命令直接从 DockerHub 获取， 参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/image/pull.html)。
+This can be obtained directly from the DockerHub using the `docker pull` command. See [online information](https://yeasy.gitbooks.io/docker_practice/content/image/pull.html)。
 
-对于内网环境，也可以通过 `docker save` 和 `docker load` 传递镜像， 参见 [在线资料](https://yeasy.gitbooks.io/docker_practice/content/image/other.html)。
+For intranet environments, you can also use `docker save` and `docker load` command to deliver image. See [online information](https://yeasy.gitbooks.io/docker_practice/content/image/other.html)。
 
-### 获取源码
+### Get source code
 
-从 Github 仓库下载 CITA 的源代码，然后切换到 CITA 的源代码目录
+Download CITA source code from Github repository, and switch to CITA source directory.
 
 ```shell
 git clone https://github.com/cryptape/cita.git
@@ -33,173 +33,173 @@ git submodule update
 
 ### Docker env and daemon
 
-在源码根目录下，我们提供了`env.sh`脚本，封装了 docker 相关的操作。
+In the root directory of the source code, we provide `env.sh`script，which encapsulates docker-related operations.
 
-运行此脚本，以实际要运行的命令作为参数，即表示在 docker 环境中运行相关命令。
+Running this script with actual commands that you want to run inside docker environment as arguments.
 
-例如：
+For example：
 
 ```shell
 ./env.sh make debug
 ```
 
-即表示在 docker 环境中运行`make debug`。
+This means running`make debug`in docker.。
 
-不带任何参数运行`./env.sh`，将直接获取一个 docker 环境的 shell。
+Running`./env.sh`without any arguments will directly get a shell in docker.
 
-国内用户请使用 `env_cn.sh`，提供了编译时的国内镜像加速。
+For users in China, speed up by using `env_cn.sh`.
 
-还提供了`daemon.sh`,用法同`env.sh`，效果是后台运行。
+We also provided`daemon.sh`, same usage as`env.sh`，but run in background.
 
-如果出现 docker 相关的报错，可以执行如下命令并重试：
+If there are some docker-related errors, you can try again after executing the following command：
 
 ```shell
 docker kill $(docker ps -a -q)
 ```
 
-## 编译
+## Compile
 
-可以按照自己的需求自行选择相应的编译方式（Debug-调试模式 或 Release-发行模式）
+You can choose the compilation method according to your needs (Debug or Release)
 
 ```shell
 ./env.sh make debug
 ```
 
-或者
+or
 
 ```shell
 ./env.sh make release
 ```
 
-编译生成的文件在发布件目录`target/install`下，生产环境下只需要这个目录即可。
+The generated file is under the`target/install`. You only need to operate under this directory in production environment.。
 
-## 生成节点配置
+## Generate node configuration
 
-先切换到发布件目录：
+Switch to release directory at first:
 
 ```shell
 cd target/install
 ```
 
-发布件目录中的`admintool`工具用来生成节点配置文件，包括创世块配置、节点相关配置、网络连接配置、私钥配置等。
+The`admintool`in the release directory is used to generate the node configuration file, including the Genesis block configuration, node-related configuration, network connection configuration, and private key configuration.
 
-该工具默认生成的是本地 4 个节点的 Demo 示例配置：
+The tool defaults to generate a Demo with 4 local nodes:
 
 ```shell
 ./env.sh ./bin/admintool.sh
 ```
 
-生产环境中，用户需要根据实际情况更改默认配置。
+In the production environment, user needs to change the default configuration according to the actual situation.
 
-使用命令`admintool.sh -h`来获得详细帮助信息，允许自定义的配置包括：
+Use`admintool.sh -h`to get detailed help information, allowing custom configurations to include:
 
-* 系统管理员账户
-* 网络列表，按照`IP1:PORT1,IP2:PORT2,IP3:PORT3 ... IPn:PORTn`的格式
-* 共识算法选择，可供选择的有`cita-bft`、`raft` 和`poa`
-* 加密方法选择
-* 出块时间间隔
-* 单数据块中交易数量限制
-* 累积多少历史交易量后进行重复交易的检查
+* System administrator account
+* Network list, in the format of`IP1:PORT1,IP2:PORT2,IP3:PORT3 ... IPn:PORTn`
+* Consensus algorithm. There are three choices: `cita-bft`、`raft` 和`poa`
+* Encryption method
+* Blocking interval
+* Limit number of transactions in a single block
+* Check for repeated transactions after accumulating a certain amount of historical transactions
 
-节点初始化操作成功后，将在发布件目录下生成节点的配置文件，其生成的节点目录为：
+After the node initialization, the node configuration file will be generated in the release directory. The generated node directory is:
 
 * node0
 * node1
 * node2
 * node3
 
-## 运行节点
+## Run nodes
 
-单个节点的操作，以下以`node0`为例进行演示。
+The commands of operation the nodes are the same. Take`node0`as an example.
 
-1. 配置节点：
+1. Configure the node:
 
     ```shell
     ./env.sh ./bin/cita setup node0
     ```
 
-2. 启动节点：
+2. Start the node：
 
-    该命令正常情况下不会返回，因此需要后台运行。
+    This command does not return normally, so it needs to run in the background.
 	
     ```shell
     ./daemon.sh ./bin/cita start node0
     ```	
 
-3. 停止节点：
+3. Stop the node：
 
     ```shell
     ./env.sh ./bin/cita stop node0
     ```
 
-4. 其他操作
+4. Other operations
 
-    具体使用查看命令的帮助信息：
+    use help for detailed information：
 
     ```shell
     ./env.sh ./bin/cita help
     ```
 
-## 测试环境搭建
+## Build test environment
 
-有两种方法搭建测试环境
+There are two ways to set up test environment.
 
-- 可以通过上一个小节的方法依次启动 4 个节点，当不需要使用时，再依次关闭即可。
-- 也可以通过如下脚本批量启动和关闭节点。
+- You can start 4 nodes one by one as mentioned in previous section. When you do not need to use them, close them one by one.
+- You can also start and shut down nodes in batches by using the following script.
 	
-    以下命令在源码根目录运行
+    The following commands run in the source root directory.
 	
-	- 启动 4 个节点
+	- Start 4 nodes
 		
         ```shell
         ./env.sh tests/integrate_test/cita_start.sh
         ```
 		
-        该命令正常情况下不会返回，需要保持 shell 不退出。或者用`daemon.sh`运行。
+        This command does not return normally and you need to keep the shell from exiting. Or run with`daemon.sh`.
 
-	- 停止 4 个节点
+	- Stop 4 nodes
 		
         ```shell
         ./env.sh ./tests/integrate_test/cita_stop.sh
         ```
 
 
-## 测试
+## Test
 
-***需要在测试环境搭建完成后执行***
+***Need to be executed after the test environment is set up***
 
-除了上述的基本操作命令，为了方便用户对 Demo 进行相关测试，我们在目录`cita/tests/integreate_test`下提供了一些测试脚本。
+In addition to the above basic operation commands, in order to facilitate user to test Demo, we provide some test scripts under the`cita/tests/integreate_test`.
 
-以下命令在源码根目录下运行。
+The following command is run in the source root directory.
 
-1.  基本功能测试
+1.  Basic function test
 
-    4 个节点启动并成功出块，基本功能测试然后停止 4 个节点：
+    4 nodes runn and generate blocks successfully. After basic function tests, stop 4 nodes.
 
     ```shell
     ./env.sh ./tests/integrate_test/cita_basic.sh
     ```
 
-2.  发送交易测试
+2.  Transaction test
 
     ```shell
     ./env.sh ./tests/integrate_test/cita_transactiontest.sh
     ```
 
-3.  拜占庭测试
+3.  Byzantine test
 
-    模拟网络异常情况下的功能测试。
+    Functional tests under abnormal network conditions.
 
     ```shell
     ./env.sh ./tests/integrate_test/cita_byzantinetest.sh
     ```
 
-## 验证
+## Verification
 
-***需要在测试环境搭建完成后执行***
+***Need to be executed after the test environment is set up***
 
 
-- 查询节点个数
+- Query the number of nodes.
 
     Request:
 
@@ -217,7 +217,7 @@ cd target/install
     }
     ```
 
-- 查询当前块高度。
+- Query the current block height.
 
     Request:
 
@@ -235,6 +235,6 @@ cd target/install
     }
     ```
 
-    返回块高度，表示节点已经开始正常出块。
+    Return the block height, indicating that the node has started to block out normally.
 
-更多 API（如合约调用、交易查询）请参见[RPC 调用](https://cryptape.github.io/cita/usage-guide/rpc)。
+More APIs (such as contract calls, transaction queries),please check[RPC calls](https://cryptape.github.io/cita/usage-guide/rpc)。
