@@ -101,7 +101,6 @@ impl Verifier {
     }
 
     pub fn set_chain_id(&mut self, chain_id: u32) {
-        info!("set the chain_id successfully");
         self.chain_id = Some(chain_id)
     }
 

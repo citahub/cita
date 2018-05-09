@@ -72,7 +72,6 @@ impl TxWal {
             num += 1;
             pool.enqueue(tx);
         }
-        info!("read tx num [{}] from pool.", num);
         num
     }
 }

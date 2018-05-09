@@ -107,7 +107,7 @@ impl Forward {
                     Cmd::Snapshot => {
                         info!("chain receive snapshot cmd: {:?}", req);
                         self.take_snapshot(req);
-                        info!("chain snapshot creation complete");
+                        info!("chain snapshot complete");
 
                         //resp SnapshotAck to snapshot_tool
                         //let mut resp = SnapshotResp::new();
@@ -128,7 +128,7 @@ impl Forward {
             }
 
             _ => {
-                error!("error key {}!!!!", key);
+                error!("forward dispatch msg found error key {}!!!!", key);
             }
         }
     }
@@ -500,7 +500,7 @@ impl Forward {
                         debug!("sync: insert block-{} in map", block.number());
                         blocks.insert(height, BlockInQueue::SyncBlock((block, None)));
                     } else {
-                        info!(
+                        warn!(
                             "sync: insert block-{} is not continious proof height {}",
                             block.number(),
                             proof_height

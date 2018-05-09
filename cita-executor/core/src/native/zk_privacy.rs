@@ -92,7 +92,7 @@ impl ZkPrivacy {
             data.get(index..index + len).expect("no enough data"),
         )).unwrap();
 
-        info!("set_banlance {} {}", addr, balance);
+        trace!("set_banlance {} {}", addr, balance);
 
         self.balances.set_bytes(ext, addr, balance)?;
         Ok(GasLeft::Known(params.gas - gas_cost))
@@ -116,7 +116,7 @@ impl ZkPrivacy {
         for v in balance.as_bytes() {
             self.output.push(*v);
         }
-        info!("get_banlance {} {}", addr, balance);
+        trace!("get_banlance {} {}", addr, balance);
 
         Ok(GasLeft::NeedsReturn {
             gas_left: U256::from(params.gas - gas_cost),
@@ -170,9 +170,14 @@ impl ZkPrivacy {
         // get block_number
         let block_number = U256::from(ext.env_info().number);
 
-        info!(
+        trace!(
             "send_verify args: {} {} {} {} {} {}",
-            addr, proof, coin, delt_ba, enc, block_number
+            addr,
+            proof,
+            coin,
+            delt_ba,
+            enc,
+            block_number
         );
 
         // check coin is dup
@@ -194,7 +199,7 @@ impl ZkPrivacy {
 
         // get banlance
         let balance: String = self.balances.get_bytes(ext, addr.clone())?;
-        info!("balance {}", balance);
+        trace!("balance {}", balance);
 
         let ret = p2c_verify(
             balance.clone(),
@@ -304,7 +309,7 @@ impl ZkPrivacy {
             &data,
         );
 
-        info!("send_verify OK data len {}", data.len());
+        trace!("send_verify OK data len {}", data.len());
 
         Ok(GasLeft::Known(params.gas - gas_cost))
     }
@@ -351,9 +356,13 @@ impl ZkPrivacy {
             data.get(index..index + len).expect("no enough data"),
         )).unwrap();
 
-        info!(
+        trace!(
             "receive_verify args: {} {} {} {} {}",
-            addr, proof, nullifier, root, delt_ba
+            addr,
+            proof,
+            nullifier,
+            root,
+            delt_ba
         );
 
         // check nullifier is dup
@@ -414,11 +423,11 @@ impl ZkPrivacy {
         self.nullifier_set.set_len(ext, nullifier_set_len + 1)?;
         // add balance
         let balance: String = self.balances.get_bytes(ext, addr.clone())?;
-        info!("balance {}", balance);
+        trace!("balance {}", balance);
         let new_balance = ecc_add(balance, delt_ba);
         self.balances.set_bytes(ext, addr, new_balance)?;
 
-        info!("receive_verify OK");
+        trace!("receive_verify OK");
 
         Ok(GasLeft::Known(params.gas - gas_cost))
     }

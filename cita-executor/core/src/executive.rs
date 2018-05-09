@@ -407,7 +407,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         if t.action == Action::AbiStore {
             let account = H160::from(&t.data[0..20]);
             let abi = &t.data[20..];
-            info!("contract address: {:?}, abi: {:?}", account, abi);
+            info!("set abi of contract address: {:?}", account);
             match self.state.exists(&account) {
                 Ok(true) => {
                     self.state.init_abi(&account, abi.to_vec())?;

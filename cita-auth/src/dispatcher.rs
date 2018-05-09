@@ -87,6 +87,7 @@ impl Dispatcher {
         // restore tx data from wal to txs_pool
         if wal_enable {
             let num = dispatch.read_tx_from_wal();
+            info!("recovery [{}] transactions into pool.", num);
             if num > 0 {
                 dispatch.data_from_pool.store(true, Ordering::SeqCst);
             }
@@ -218,11 +219,10 @@ impl Dispatcher {
         }
 
         let out_txs = self.get_txs_from_pool(height as u64, block_gas_limit, account_gas_limit);
-        debug!(
-            "public block txs height {} with {:?} txs on timestamp: {:?}",
+        info!(
+            "public block height {} with {:?} transactions",
             height,
-            out_txs.len(),
-            SystemTime::now()
+            out_txs.len()
         );
         {
             let duration = self.start_verify_time.elapsed().unwrap();

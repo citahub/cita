@@ -105,12 +105,16 @@ pub fn pubsub_message_to_network_message(buf: &mut BytesMut, msg: Option<(String
         let length_key = key.len();
         // Use 1 byte to store key length.
         if length_key > u8::max_value() as usize {
-            error!("The key is too long {}.", key);
+            error!("The MQ message key is too long {}.", key);
         }
         // Use 1 bytes to store the length for key, then store key, the last part is body.
         let length_full = 1 + length_key + body.len();
         if length_full > u32::max_value() as usize {
-            error!("The message for key {} is too long {}.", key, body.len());
+            error!(
+                "The MQ message with key {} is too long {}.",
+                key,
+                body.len()
+            );
         }
         let request_id = NETMSG_START + length_full as u64;
         NetworkEndian::write_u64(&mut request_id_bytes, request_id);
@@ -149,7 +153,7 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<(String, 
     let length_key = payload_buf[0] as usize;
     let _length_key_buf = payload_buf.split_to(1);
     if length_key == 0 {
-        error!("Key is empty.");
+        error!("network message key is empty.");
         return None;
     }
     if length_key > payload_buf.len() {
@@ -163,12 +167,12 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<(String, 
     let key_buf = payload_buf.split_to(length_key);
     let key_str_result = str::from_utf8(&key_buf);
     if key_str_result.is_err() {
-        error!("Parse key error {:?}.", key_buf);
+        error!("network message parse key error {:?}.", key_buf);
         return None;
     }
     let key = key_str_result.unwrap().to_string();
     if length_full == 1 + length_key {
-        warn!("Message is empty.");
+        warn!("network message is empty.");
     }
     return Some((key, payload_buf.to_vec()));
 }

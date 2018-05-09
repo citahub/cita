@@ -153,7 +153,7 @@ impl NetWork {
                         .unwrap();
                 }
             } else {
-                warn!("receive: unexpected data");
+                warn!("receive unexpected rpc data");
             }
         }
     }
