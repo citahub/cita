@@ -1,65 +1,47 @@
-# 区块链
+# Blockchain
 
-## 什么是区块链
+## What is blockchain
 
-区块链是一种去中心化的分布式账本系统，用来维持一个由区块组成的不断增长的记录列表。每个区块含有一个时间戳和一个指向前面区块的链接。区块链由一个对等网络
-管理，它们共同遵守一个验证新块的协议。在设计上，区块链本身抵制数据的修改。数据一旦被记录进区块链，除非后续区块都被改变以及网络多数串通的情况下，否则
-数据不能被更改。功能上，区块链可以作为开放的分布式账本，它可以以一种可验证且永久的方式记录双方之间的交易。
+Blockchain is a decentralized distributed ledger system, used to maintain a record growing block by block. Each block contains a timestamp and a link to the previous block. The blockchain is managed by a peer to peer network and all of the network nodes comply with one protocol for verifying new blocks. In design, the blockchain itself resists the modification of data. Once the data is recorded in the blockchain, it cannot be changed unless the subsequent blocks are changed and most of network nodes are collusion. In function, blockchain can be used as an open distributed ledger, which can record transactions which can be verified and kept permanently between parties.
 
-区块链的概念是在2008年中本聪于《比特币白皮书》提出，并在2009年以区块链为核心组成部分实现了数字货币比特币。比特币是第一个在没有权威机构和中央服务器
-情况下，解决双花问题的数字货币。另外，区块链也可以用于登记和发行数字化资产、产权凭证、积分等，并以点对点的方式进行转账、支付和交易。区块链系统与传统
-的中心化账本系统相比，具有完全公开、不可篡改、防止多重支付等优点，并且不依赖于任何的可信第三方。
+The concept of blockchain was proposed in 2008 “bitcoin White Paper” by Nakamoto Satoshi. And in 2009, Bitcoin, a digital currency, was created based on blockchain concept. Bitcoin is the first digital currency that successfully solved the Double-Bill problem without an authority and a central server. In addition, blockchain can also be used to register and distribute digital assets, title certificates, points, etc., and transfer, pay, and trade in a peer to peer manner. Compared with the traditional centralized ledger system, the blockchain system has the advantage of full disclosure, non-discrimination, and prevention ofo Double-Bill. And it does not depend on any trusted third party.
 
-## 智能合约
+## Smart Contract
 
-智能合约是旨在促进、验证或强制执行合约的计算机协议，它是由Nick Szabo于1994年首次提出。
+Smart contract are computer protocols designed to promote, validate or enforce contract, first proposed by Mick Szabo in 1994.
 
-一个智能合约就是一个执行合约条款的计算机化交易协议。智能合约程序不只是一个可以自动执行的计算机程序，它自己就是一个系统参与者，它对接收到的信息进行
-回应，它可以接受和存储价值，也可以向外发送信息和价值。这个程序就像一个可以被信任的人，可以临时保管资产，总是按照事先的规则执行操作。
+A smart contract is a trading agreement that can enforces the terms of the contract by executing computer program. It is not only a computer program that can be executed automatically, but also a system participant that can respond to received information, accept and store value, and send out information and value. This smart program is just like a person who can be trusted to keep assets temporarily, and always follow the rules specified in advance.
 
-智能合约的模型：一段代码（智能合约），被部署在分享的、复制的账本上，它可以维持自己的状态，控制自己的资产和对接收到的外界信息或者资产进行回应。
+A smart contract model: A piece of code(smart contract), deployed on a shared, replicable ledger, can maintain its own state, controls its own assets, and respond to received external information or assets.
 
-智能合约最普遍的应用领域就是金融领域，每一类金融合约都可以程序代码的形式写成智能合约。如差价合约、代币系统、储蓄钱包、作物保险等。
+Smart contracts are common used in financial area. Each type of financial contract can be written by program code as a smart contract, such as CFDs, token system, digital wallet，insurance, etc.
 
-## 共识
+## Consensus:
 
-共识是指互相独立的多个系统参与方间对某个问题达成一致的结果。而在区块链中，共识则是在组成网络的分布式节点中达成。某个记账节点提议了一个区块应该包含
-哪些交易数据，然后把该区块广播给其他的参与节点，其他节点要就是否使用这个区块达成一致。也就是说，区块链中的共识是指如何将全网交易数据客观记录并且
-不可篡改的过程。
+Wikipedia defines consensus as a group decision-making process in which group members develop, and agree to support a decision in the best interest of the whole.
 
-实际上，要保障系统满足不同程度的一致性，往往需要通过共识算法来达成。常见共识算法可分为两大类：一是非拜占庭错误的算法，一般包括Paxos、Raft及其变种；
-二是能容忍拜占庭错误的情况，一般包括PBFT系列、PoW系列算法等。从概率角度，PBFT系列算法是确定的，一旦达成共识就不可逆转；而PoW系列算法则是不确定的，
-但是随着时间推移，被推翻的概率越来越小。
+In blockchain, consensus is reached by all the distributing nodes in the blockchain network. First, there is one nodes making a proposal that which transaction information should put into the block, then broadcasting to other nodes. And other nodes need to decide whether to record these information into the block. In other words, all nodes validate the information to be appended to the blockchain, moreover, once added into the blockchain, a record cannot be modified and it is very difficult to falsify entries.
 
-传统的分布式一致性算法，采用的是一个节点一票、少数服从多数的方式，这种方式在联盟链是可用的，因为其中节点需要通过验证才能加入网络。但是在像比特币、
-以太坊等公有链，任何人都可以加入网络，竞争记账权。如果采用一节点一票的方式，就很容易遭受女巫攻击：攻击者批量制造大量的节点加入系统，通过绝对多数的
-投票权发起攻击。而对于一个节点，是无法辨别其他节点是普通节点还是恶意节点。
+In this process, a consensus protocol ensures that the nodes agree on a unique order in which entries are appended. There are mainly two types of consensus protocol: the first type is Byzantine fault non-tolerant algorithm，including Paxos、Raft、etc.; the second type is Byzantine fault tolerant algorithm, including PBFT, POW, etc..From the probabilistic perspective, the PBFT-series algorithms are deterministic and cannot be reversible once the consensus is reached; while PoW-series algorithms are indefinite, but as time goes on, the probability of being overturned is getting smaller and smaller.
 
-为了避免女巫攻击，在公有链中，常用的共识机制为PoW以及PoS。在PoW算法中，要求记账节点花费一定的资源做一些计算，然后向网络其他节点提交计算的工作量证明，
-证明能够被快速验证，并且工作容易被度量。因为工作量证明无法伪造，有很高的成本，只有遵守协议约定，才能收回成本，获得收益。而PoS则是用户持有系统代币的
-数量决定打包出块的概率，PoS中的代币类似于公司的股权，大股东对系统有更大的发言权，有更多的责任，也有获得更多收益的权利。
+The traditional distributed consistency algorithm uses a node-by-vote method and a minority-subordination-majority method. This method can be used in the permissioned blockchain because nodes need to be authenticated to join the network and issue transactions. But in permissonless blockchains like Bitcoin and Ethereum, anyone can be a user or run a node, anyone can participate in the consensus process for determining the “valid” state. If one-node-one-vote is adopted in permissionless blockchains, the blockchains will be very vulnerable to sybil attacks: the attackers mass-produce a large number of nodes to join the network and initiate attacks through an absolute majority of voting rights. For a node, it is impossible to distinguish whether the other node is an normal node or a malicious node.
 
-## 公有链
+In order to avoid sybil attack, PoW and PoS are common used in permissionless blockchain. In the PoW algorithm, to add blocks to the blockchain, each node has to show the proof that it has performed some amount of work. The proof should be able to quickly verified and the work can be easily measured. This process, called mining, requires immense amount of energy and computational usage, so only if the node abide by the agreement, it can claim the mining reward. Proof-of-Stake algorithms are designed to overcome the disadvantages of PoW algorithms in terms of the high electricity consumption involved in mining operations. Instead of buying mining equipment to engage in PoW algorithm and winning a mining reward, with PoS a user can buy tokens and use it as stake to buy proportionate block creation chances in the blockchain system by becoming a validator. The tokens in the PoS are similar to the company's equity. Large shareholders have greater say in the system, have more responsibilities, and gain more.
 
-公有链是指世界上任何个体或者机构都可以发送交易，且交易能够获得该区块链的有效确认，任何人都可参与其共识过程，记账权完全由公开的共识算法决定，即整个
-网络是开放的。作为中心化或准中心化信任的替代物，公共区块链的安全由“加密数字经济”维护，“加密数字经济”采用工作量证明机制或权益证明机制等方式，将经济
-奖励和加密数字验证结合了起来，并遵循着一般原则：每个人从中可获得的经济奖励，与对共识过程做出的贡献成正比。
 
-公有链的特点可以归结于三点：一是保护用户免受开发者的影响，在公有链中程序开发者无权干涉用户，所以区块链可以保护使用他们开发的程序的用户；二是访问门槛低，
-任何拥有足够技术能力的人都可以访问，也就是说，只要有一台能够联网的计算机就能够满足访问的条件；三是所有数据默认公开，尽管所有关联的参与者都隐藏自己的
-真实身份，这种现象十分的普遍。他们通过他们的公共性来产生自己的安全性，在这里每个参与者都可以看到所有的账户余额和其所有的交易活动。
+## Permissionless blockchain
 
-## 许可链
+Permissionless blockchain network is completely open and anyone can participate in the network. The transactions are validated and processed by votes/consensus. A vote does not depend on having a prior identity of any kind within the ledger and no pre-existing trust is assumed between participants nodes.The security of the public blockchain is maintained by the “cryptocurrency economy”. In order to encourage more participants to join the network, the blockchain network typically has an incentivizing mechanism that combines workload proof and economic reward. It follows the general principle that the economic rewards are directly proportional to the contribution to the consensus process.
 
-只允许通过身份认证的用户加入网络的区块链称为许可链。依照其中节点的所有权又可划分为联盟链和私有链，其中联盟链节点由一个企业联盟维护，私有链节点由
-单个企业维护。许可链是共识过程受到预选节点控制的区块链；比如，有一个15个金融机构组成的联盟，每个机构都运行一个节点，为了使每个区块生效则需要获得
-其中10个机构的确认。许可链可能允许每个人都可读取，又或许只受限于参与者，或者走混合型路线，例如区块的根哈希及其API对外公开，API可允许外界用来作有限
-次数的查询和获取区块链状态的信息。
+Three characteristics of permissionless blockchain: First, to protect users from the influence of developers. In the permissionless blockchain, program developers do not have the right to interfere with users, so blockchains can protect users who use the programs; Second, the threshold is very low, which means anyone with sufficient technical ability can access it, that is, to meet the access conditions, as long as there is a computer that can be connected to network; Third, all data are published by default, although all associated participants hide their own real Identity. All the nodes gain their own security through the data publicity that each participant can see all account balances and all their trading activities.
 
-许可链的特点可以归结于四点：一是身份准入，在许可网络中，只有获得特定许可的节点才能加入节点；二是系统治理，公有链由于技术与治理的高度去中心化，在
-紧急状况出现时缺乏高效的协调及干预手段，而许可链中的企业用户具有更好的协调机制，在系统不可用时的干预方法相对高效；三是执行性能，许可链准入机制的存在
-杜绝了女巫攻击，使得传统共识算法有了用武之地，使交易处理的延迟和吞吐量获得质的飞跃；四是隐私，区块链上数据对所有共识节点公开，而企业应用对隐私方案的
-需求比较大，故需要一个可行的隐私技术方案。
+## Permission blockchain
+
+A permission blockchain network requires an invitation and must be validated by either the network starter or by a set of rules put in place by the network starter. Businesses who set up a private blockchain, will generally set up a permissioned network. This places restrictions on who is allowed to participate in the network, and only in certain transactions. Participants need to obtain an invitation or permission to join. The access control mechanism could vary: existing participants could decide future entrants; a regulatory authority could issue licenses for participation; or a consortium could make the decisions instead. Once an entity has joined the network, it will play a role in maintaining the blockchain in a decentralized manner. According to different ownership of the nodes, permission blockchain can be divided into consortium blockchain and private blockchain. 
+In consortium blockchains, where members of a consortium or stakeholders in a given business context operate a permissioned blockchain network, while private blockchain is operated by one entity, i.e., within one single trust domain.
+
+
+Four characteristics of the permission blockchain: First, participants need to obtain an invitation or permission to join; second, permissionless blockchain is high decentralized which lack of effective coordination and intervention measures. while in the permission blockchain, enterprise users can build a better coordination mechanism and efficiently conduct intervention measures. Third, the access mechanism of the permission blockchain avoid the sybil attacks, so traditional consensus algorithms can be used, which can make a qualitative leap in transaction processing latency and throughput. Fourth is about privacy. Enterprise applications can be provided with a feasible privacy technology solution in permission blockchain.
 
 ## 区块链的使用场景
 
