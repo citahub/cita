@@ -44,10 +44,10 @@ impl NodeManager {
         nodes
     }
 
-    pub fn shuffle_nodes(node_vec: &Vec<Address>, height: u64) -> Vec<Address> {
+    pub fn shuffle_nodes(node_vec: &Vec<Address>, rng_seed: u64) -> Vec<Address> {
         let mut ret: Vec<Address> = vec![];
 
-        let seed: &[_] = &[height as usize];
+        let seed: &[_] = &[rng_seed as usize];
         let mut rng: StdRng = SeedableRng::from_seed(seed);
 
         for i in 0..node_vec.len() {
