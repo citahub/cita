@@ -59,7 +59,8 @@ docker kill $(docker ps -a -q)
 
 ## 编译
 
-可以按照自己的需求自行选择相应的编译方式（Debug-调试模式 或 Release-发行模式）
+可以按照自己的需求自行选择相应的编译方式（Debug-调试模式 或 Release-发行模式），如果在macOS中使用请删除env.sh或者daemon.sh中的“--volume /etc/localtime:/etc/localtime \”和“--volume /etc/timezone:/etc/timezone \”
+
 
 ```shell
 ./env.sh make debug
@@ -91,7 +92,7 @@ cd target/install
 
 生产环境中，用户需要根据实际情况更改默认配置。
 
-使用命令`admintool.sh -h`来获得详细帮助信息，允许自定义的配置包括：
+使用命令`admintool.sh -h`来获得详细帮助信息（需安装/Users/huangzhiyong/Desktop/cita/scripts/txtool/requirements.txt中的依赖并运行节点），允许自定义的配置包括：
 
 * 系统管理员账户
 * 网络列表，按照`IP1:PORT1,IP2:PORT2,IP3:PORT3 ... IPn:PORTn`的格式
@@ -144,7 +145,7 @@ cd target/install
 
 除了上述的基本操作命令，为了方便用户对 Demo 进行相关测试，我们在目录`cita/tests/integreate_test`下提供了一些测试脚本。
 
-以下命令在源码根目录下运行。
+以下命令在源码根目录下运行，如果直接由./env.sh命令启动的话，所有的测试命令不需要./env.sh。
 
 1.  启动 4 个节点
 

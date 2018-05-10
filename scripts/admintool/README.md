@@ -160,7 +160,7 @@ journaldb_type = "archive"
 
 ### 节点管理系统合约
 
-节点管理合约存放在`install/scripts/contracts/node_manager.sol`。
+节点管理合约存放在`install/scripts/contracts/system/node_manager.sol`。
 
 在`install/scripts/contracts/docs`目录也提供了`NodeManager-hashes.json`可供查看，并提供了针对用户和开发者的文档，分别为`NodeManager-userdoc.json`及`NodeManager-devdoc.json`
 
