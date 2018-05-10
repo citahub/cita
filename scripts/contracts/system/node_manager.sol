@@ -200,6 +200,9 @@ contract NodeManager is NodeInterface {
     }
 
     /// @notice Stake permillage
+    /// This is the slot number which ignore the remainder, not exactly precise.
+    /// https://en.wikipedia.org/wiki/Largest_remainder_method
+    /// Hare quota
     function stakePermillage(address _node) view public returns (uint) {
         uint total;
         for (uint j = 0; j < nodes.length; j++) {
