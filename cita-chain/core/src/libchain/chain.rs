@@ -1327,9 +1327,20 @@ impl Chain {
         Arc::clone(&self.polls_filter)
     }
 
+    /// clear sync block
     pub fn clear_block_map(&self) {
         let mut guard = self.block_map.write();
-        guard.clear();
+        let old_block_map = guard.clone();
+        let mut new_block_map: BTreeMap<u64, BlockInQueue> = BTreeMap::new();
+        for (key, value) in old_block_map
+            .into_iter()
+            .filter_map(|(key, value)| match value {
+                BlockInQueue::SyncBlock(_) => None,
+                _ => Some((key, value)),
+            }) {
+            new_block_map.insert(key, value);
+        }
+        *guard = new_block_map;
         self.max_store_height
             .store(self.get_max_height() as usize, Ordering::SeqCst);
     }

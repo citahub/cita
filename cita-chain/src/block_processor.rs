@@ -18,6 +18,7 @@
 use core::libchain::chain::Chain;
 use libproto::executor::ExecutedResult;
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 
 /// Processing blocks and transaction storage
@@ -44,7 +45,9 @@ impl BlockProcessor {
         self.chain.set_executed_result(&ret, &self.ctx_pub);
     }
 
-    pub fn clear_block_map(&self) {
-        self.chain.clear_block_map();
+    pub fn reset_max_store_height(&self) {
+        self.chain
+            .max_store_height
+            .store(self.chain.get_max_height() as usize, Ordering::SeqCst);
     }
 }
