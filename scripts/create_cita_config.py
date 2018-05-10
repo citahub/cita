@@ -14,8 +14,9 @@ import toml
 
 def update_search_paths(work_dir):
     """Add new path to the search path."""
-    sys.path.insert(
-        0, os.path.abspath(os.path.join(work_dir, 'scripts/config_tool')))
+    sys.path.insert(0,
+                    os.path.abspath(
+                        os.path.join(work_dir, 'scripts/config_tool')))
     paths = os.environ['PATH'].split(':')
     paths.insert(0, os.path.abspath(os.path.join(work_dir, 'bin')))
     os.environ['PATH'] = ':'.join(paths)
@@ -81,7 +82,6 @@ def need_directory(dirpath):
 
 
 class AddressList(list):
-
     @classmethod
     def from_str(cls, addrs_str, size_check=None, delimiter=','):
         addrs = cls()
@@ -100,9 +100,8 @@ class AddressList(list):
                 raise Exception(
                     'input {} is not like IP:PORT'.format(addr_str))
         if size_check and size_check != len(addrs):
-            raise Exception(
-                'Except {} but got {} addresses from {}.'.format(
-                    size_check, len(addrs), addrs_str))
+            raise Exception('Except {} but got {} addresses from {}.'.format(
+                size_check, len(addrs), addrs_str))
         return addrs
 
     @classmethod
@@ -112,22 +111,21 @@ class AddressList(list):
     def add_after_check(self, host, port):
         for addr in self:
             if addr['host'] == host and addr['port'] == port:
-                raise Exception(
-                    'address {}:{} has been added twice'.format(host, port))
+                raise Exception('address {}:{} has been added twice'.format(
+                    host, port))
         self.append(dict(host=host, port=port, signer=''))
 
     def add_signers(self, signers):
         if len(self) != len(signers):
-            raise Exception(
-                'Size of signers [{}] is not equal to'
-                ' size of addresses [{}].'.format(len(signers), len(self)))
+            raise Exception('Size of signers [{}] is not equal to'
+                            ' size of addresses [{}].'.format(
+                                len(signers), len(self)))
         size = len(self)
         for idx in range(0, size):
             self[idx]['signer'] = signers[idx]
 
 
 class AuthorityList(list):
-
     @classmethod
     def from_str(cls, addrs_str, delimiter=','):
         addrs = cls()
@@ -139,8 +137,7 @@ class AuthorityList(list):
 
     def add_after_check(self, addr):
         if addr in self:
-            raise Exception(
-                'authority {} has been added twice'.format(addr))
+            raise Exception('authority {} has been added twice'.format(addr))
         self.append(addr)
 
     def to_str(self, delimiter=','):
@@ -158,22 +155,21 @@ class ChainInfo(object):
         self.contracts_dir = os.path.join(self.template_dir, 'contracts')
         self.contracts_docs_dir = os.path.join(self.contracts_dir, 'docs')
         self.configs_dir = os.path.join(self.template_dir, 'configs')
-        self.init_data_file = os.path.join(
-            self.template_dir, 'init_data.yml')
+        self.init_data_file = os.path.join(self.template_dir, 'init_data.yml')
         self.genesis_path = os.path.join(self.configs_dir, 'genesis.json')
         self.nodes_list = os.path.join(self.template_dir, 'nodes.list')
-        self.authorities_list = os.path.join(
-            self.template_dir, 'authorities.list')
+        self.authorities_list = os.path.join(self.template_dir,
+                                             'authorities.list')
         self.nodes = AddressList()
 
-    def template_create_from_arguments(
-            self, args, contracts_dir_src, configs_dir_src):
+    def template_create_from_arguments(self, args, contracts_dir_src,
+                                       configs_dir_src):
         if os.path.exists(self.output_root):
             logging.critical(
                 'The chain named `%s` has already been created.'
                 ' Please specify another chain name use --chain_name,'
-                ' or remove the old directory [%s].',
-                self.node_prefix, self.output_root)
+                ' or remove the old directory [%s].', self.node_prefix,
+                self.output_root)
             sys.exit(1)
         else:
             os.makedirs(self.template_dir)
@@ -210,35 +206,29 @@ class ChainInfo(object):
             for authority in args.authorities:
                 stream.write('{}\n'.format(authority))
 
-
     def template_load_from_existed(self):
         if not os.path.exists(self.output_root):
-            logging.critical(
-                'The chain named `%s` has not been created.'
-                ' (directory [%s] is not existed)'
-                ' Please specify an existed chain.',
-                self.node_prefix, self.output_root)
+            logging.critical('The chain named `%s` has not been created.'
+                             ' (directory [%s] is not existed)'
+                             ' Please specify an existed chain.',
+                             self.node_prefix, self.output_root)
         with open(self.nodes_list, 'rt') as stream:
             nodes_str = ''.join(stream.readlines()).replace('\n', ',')
         self.nodes = AddressList.from_str(nodes_str)
 
     def create_init_data(self, super_admin, contract_arguments):
         from create_init_data import core as create_init_data
-        create_init_data(
-            self.init_data_file, super_admin, contract_arguments)
+        create_init_data(self.init_data_file, super_admin, contract_arguments)
 
     def create_genesis(self, timestamp, resource_dir):
         from create_genesis import core as create_genesis
         prevhash = generate_prevhash(resource_dir)
         if resource_dir is not None:
-            shutil.copytree(
-                resource_dir,
-                os.path.join(self.configs_dir, 'resource'),
-                False)
-        create_genesis(
-            self.contracts_dir, self.contracts_docs_dir,
-            self.init_data_file, self.genesis_path,
-            timestamp, prevhash)
+            shutil.copytree(resource_dir,
+                            os.path.join(self.configs_dir, 'resource'), False)
+        create_genesis(self.contracts_dir, self.contracts_docs_dir,
+                       self.init_data_file, self.genesis_path, timestamp,
+                       prevhash)
 
     def append_node(self, node):
         if isinstance(node, AddressList):
@@ -292,9 +282,7 @@ class ChainInfo(object):
             with open(network_config, 'rt') as stream:
                 network_data = toml.load(stream)
                 network_data['peers'].append(
-                    dict(id_card=node_id,
-                         ip=node['host'],
-                         port=node['port']))
+                    dict(id_card=node_id, ip=node['host'], port=node['port']))
             with open(network_config, 'wt') as stream:
                 toml.dump(network_data, stream)
 
@@ -313,14 +301,12 @@ class ChainInfo(object):
 def run_subcmd_create(args, work_dir):
     info = ChainInfo(args.chain_name, work_dir)
     info.template_create_from_arguments(
-        args,
-        os.path.join(work_dir, 'scripts/contracts'),
+        args, os.path.join(work_dir, 'scripts/contracts'),
         os.path.join(work_dir, 'scripts/config_tool/config_example'))
     info.create_init_data(args.super_admin, args.contract_arguments)
     info.create_genesis(args.timestamp, args.resource_dir)
     for node in args.nodes:
         info.append_node(node)
-
 
 
 def run_subcmd_append(args, work_dir):
@@ -334,9 +320,7 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(
-        dest='subcmd',
-        title='subcommands',
-        help='additional help')
+        dest='subcmd', title='subcommands', help='additional help')
 
     #
     # Subcommand: create
@@ -348,22 +332,19 @@ def parse_arguments():
     pcreate.add_argument(
         '--authorities',
         type=AuthorityList.from_str,
-        metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(
-            var='AUTHORITY'),
+        metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(var='AUTHORITY'),
         help='Authorities (addresses) list.')
-    pcreate.add_argument(
-        '--chain_name', help='Name of the new chain.')
+    pcreate.add_argument('--chain_name', help='Name of the new chain.')
 
     pcreate.add_argument(
         '--nodes',
-        type=AddressList.from_str, default=AddressList(),
-        metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(
-            var='IP:PORT'),
+        type=AddressList.from_str,
+        default=AddressList(),
+        metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(var='IP:PORT'),
         help='Node network addresses for new nodes.')
 
     # For create init data
-    pcreate.add_argument(
-        '--super_admin', help='Address of super admin.')
+    pcreate.add_argument('--super_admin', help='Address of super admin.')
     pcreate.add_argument(
         '--contract_arguments',
         nargs='+',
@@ -377,18 +358,20 @@ def parse_arguments():
     # For create genesis
     pcreate.add_argument(
         '--timestamp', type=int, help='Specify a timestamp to use.')
-    pcreate.add_argument(
-        '--resource_dir', help='Chain resource directory.')
+    pcreate.add_argument('--resource_dir', help='Chain resource directory.')
 
     # Modify ports
     pcreate.add_argument(
-        '--grpc_port', type=int, default=5000,
-        help='grpc port for this chain')
+        '--grpc_port', type=int, default=5000, help='grpc port for this chain')
     pcreate.add_argument(
-        '--jsonrpc_port', type=int, default=1337,
+        '--jsonrpc_port',
+        type=int,
+        default=1337,
         help='jsonrpc port for this chain')
     pcreate.add_argument(
-        '--ws_port', type=int, default=4337,
+        '--ws_port',
+        type=int,
+        default=4337,
         help='websocket port for this chain')
 
     #
@@ -398,15 +381,15 @@ def parse_arguments():
     pappend = subparsers.add_parser(
         SUBCMD_APPEND, help='append a node into a existed chain')
 
-    pappend.add_argument(
-        '--chain_name', help='Name of the existed chain.')
+    pappend.add_argument('--chain_name', help='Name of the existed chain.')
 
     pappend.add_argument(
         '--signer',
         help='The signer of new node. Will generate a new if not set.')
 
     pappend.add_argument(
-        '--node', required=False,
+        '--node',
+        required=False,
         type=AddressList.from_str_get_one,
         metavar='IP:PORT',
         help='Node network addresses for new nodes.')
@@ -417,25 +400,25 @@ def parse_arguments():
     if args.subcmd == SUBCMD_CREATE:
         if not args.authorities:
             if not args.nodes:
-                logging.critical(
-                    'Both --authorities and --nodes is empty.')
+                logging.critical('Both --authorities and --nodes is empty.')
                 sys.exit(1)
             authorities, signers = generate_authorities(len(args.nodes))
             args.nodes.add_signers(signers)
             setattr(args, 'authorities', authorities)
-        for val in (
-                ('authorities', 'NodeManager', 'nodes'),
-                ('chain_name', 'SysConfig', 'chain_name')):
+        for val in (('authorities', 'NodeManager', 'nodes'),
+                    ('chain_name', 'SysConfig', 'chain_name')):
             if args.contract_arguments.kkv_get(val[1], val[2]):
-                logging.critical(
-                    'Please use --%s to instead of specify'
-                    ' --contract_arguments %s.%s directly',
-                    val[0], val[1], val[2])
+                logging.critical('Please use --%s to instead of specify'
+                                 ' --contract_arguments %s.%s directly',
+                                 val[0], val[1], val[2])
                 sys.exit(1)
-        args.contract_arguments.kkv_set(
-            'SysConfig', 'chain_name', args.chain_name)
-        args.contract_arguments.kkv_set(
-            'NodeManager', 'nodes', args.authorities.to_str())
+        args.contract_arguments.kkv_set('SysConfig', 'chain_name',
+                                        args.chain_name)
+        args.contract_arguments.kkv_set('NodeManager', 'nodes',
+                                        args.authorities.to_str())
+        if not args.contract_arguments.kkv_get('NodeManager', 'stakes'):
+            stakes = ','.join(['0' for _ in args.authorities])
+            args.contract_arguments.kkv_set('NodeManager', 'stakes', stakes)
     elif args.subcmd == SUBCMD_APPEND:
         if args.signer:
             args.node.add_signers([args.signer])

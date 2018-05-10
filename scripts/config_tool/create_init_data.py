@@ -6,7 +6,6 @@ import argparse
 import collections
 import yaml
 
-
 DEFAULT_CONFIG = '''
 Contracts:
 - SysConfig:
@@ -25,6 +24,7 @@ Contracts:
   - nodes: []
   - admins:
     - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+  - stakes: []
 - ChainManager:
   - current_chain_id: 1
   - parent_chain_id: 0
@@ -47,6 +47,7 @@ def dictlist_to_ordereddict(dictlist):
             odd[key] = val
     return odd
 
+
 def ordereddict_to_dictlist(ordereddict):
     """Convert an ordered dict to a list of dict."""
     return [{key: value} for key, value in ordereddict.items()]
@@ -68,12 +69,10 @@ def conv_type_as_old(new, old, key1, key2, val=None):
         return int(new)
     elif isinstance(old, str) or old is None:
         return str(new)
-    raise Exception(
-        'Type for {}.{}={} is not right'.format(key1, key2, val))
+    raise Exception('Type for {}.{}={} is not right'.format(key1, key2, val))
 
 
 class InitializationData(object):
-
     def __init__(self, contracts_cfgs):
         self.contracts_cfgs = contracts_cfgs
 
@@ -91,8 +90,7 @@ class InitializationData(object):
         for key1, val1 in kkv_dict.items():
             configs = self.contracts_cfgs.get(key1)
             if configs is None:
-                raise Exception(
-                    'There is no contract named {}'.format(key1))
+                raise Exception('There is no contract named {}'.format(key1))
             else:
                 for key2, val2 in val1.items():
                     val2_old = configs.get(key2)
@@ -105,7 +103,6 @@ class InitializationData(object):
                             val2, val2_old, key1, key2)
                 self.contracts_cfgs[key1] = configs
 
-
     def set_super_admin(self, super_admin):
         if not super_admin:
             return
@@ -113,7 +110,6 @@ class InitializationData(object):
         self.contracts_cfgs['QuotaManager']['admin'] = super_admin
         self.contracts_cfgs['Authorization']['super_admin'] = super_admin
         self.contracts_cfgs['Group']['accounts'] = [super_admin]
-
 
     def save_to_file(self, filepath):
         data = dict()
@@ -126,7 +122,6 @@ class InitializationData(object):
 
 
 class KeyKeyValueDict(dict):
-
     @staticmethod
     def str2tuple(kkv):
         kk_v = kkv.split('=')
@@ -134,8 +129,7 @@ class KeyKeyValueDict(dict):
             k_k = kk_v[0].split('.')
             if len(k_k) == 2 and k_k[0] and k_k[1]:
                 return (k_k[0], k_k[1], kk_v[1])
-        raise Exception(
-            'input {} is not like Key.Key=Value'.format(kkv))
+        raise Exception('input {} is not like Key.Key=Value'.format(kkv))
 
     def kkv_get(self, key1, key2):
         key2vals = self.get(key1)
@@ -149,9 +143,8 @@ class KeyKeyValueDict(dict):
             if val is not None:
                 self.kkv_update(key1, key2, val)
         else:
-            raise Exception(
-                '{}.{} has been set twice: {} and {}'.format(
-                    key1, key2, val, val_old))
+            raise Exception('{}.{} has been set twice: {} and {}'.format(
+                key1, key2, val, val_old))
 
     def kkv_update(self, key1, key2, val):
         key2vals = self.get(key1)
@@ -165,8 +158,7 @@ class KeyKeyValueDict(dict):
 class KeyKeyValueAction(argparse.Action):
     # pylint: disable=too-few-public-methods
     def __init__(self, option_strings, dest, **kwargs):
-        super(KeyKeyValueAction, self).__init__(
-            option_strings, dest, **kwargs)
+        super(KeyKeyValueAction, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         kkv = getattr(namespace, self.dest)
@@ -180,10 +172,8 @@ class KeyKeyValueAction(argparse.Action):
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--output', required=True,
-        help='Path of the output file.')
-    parser.add_argument(
-        '--super_admin', help='Address of super admin.')
+        '--output', required=True, help='Path of the output file.')
+    parser.add_argument('--super_admin', help='Address of super admin.')
     parser.add_argument(
         '--contract_arguments',
         nargs='+',
