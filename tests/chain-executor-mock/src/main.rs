@@ -41,9 +41,9 @@ extern crate serde_yaml;
 
 mod generate_block;
 
+use std::{fs, u8};
 use std::collections::HashMap;
 use std::convert::{From, TryFrom};
-use std::fs;
 use std::io::Read;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
@@ -204,7 +204,7 @@ fn main() {
                 if let Some(_) = mock_blocks.remove(&rich_status.height) {
                     _current_height = rich_status.height as u8;
                     repeat = 0;
-                } else {
+                } else if repeat < u8::MAX {
                     repeat += 1;
                 }
 

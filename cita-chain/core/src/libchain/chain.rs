@@ -1329,18 +1329,19 @@ impl Chain {
 
     /// clear sync block
     pub fn clear_block_map(&self) {
-        let mut guard = self.block_map.write();
-        let old_block_map = guard.clone();
+        let mut block_map = self.block_map.write();
         let mut new_block_map: BTreeMap<u64, BlockInQueue> = BTreeMap::new();
-        for (key, value) in old_block_map
+        block_map
+            .clone()
             .into_iter()
             .filter_map(|(key, value)| match value {
                 BlockInQueue::SyncBlock(_) => None,
                 _ => Some((key, value)),
-            }) {
-            new_block_map.insert(key, value);
-        }
-        *guard = new_block_map;
+            })
+            .for_each(|(key, value)| {
+                new_block_map.insert(key, value);
+            });
+        *block_map = new_block_map;
         self.max_store_height
             .store(self.get_max_height() as usize, Ordering::SeqCst);
     }
