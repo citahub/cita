@@ -20,6 +20,7 @@
 use super::{encode_contract_name, to_address_vec};
 use super::ContractCallExt;
 use libexecutor::executor::Executor;
+use rand::{Rng, SeedableRng, StdRng};
 use rustc_hex::ToHex;
 use std::str::FromStr;
 use util::{Address, H160};
@@ -41,6 +42,16 @@ impl NodeManager {
         let nodes: Vec<Address> = to_address_vec(&output);
         trace!("nodemanager nodes: {:?}", nodes);
         nodes
+    }
+
+    pub fn shuffle_node<T>(node_vec: &mut Vec<T>, rng_seed: u64) {
+        let seed: &[_] = &[rng_seed as usize];
+        let mut rng: StdRng = SeedableRng::from_seed(seed);
+
+        for i in 0..node_vec.len() {
+            let j: usize = rng.gen::<usize>() % (i + 1);
+            node_vec.swap(i, j);
+        }
     }
 }
 
