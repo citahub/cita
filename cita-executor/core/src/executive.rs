@@ -222,7 +222,7 @@ fn get_groups(group_accounts: &HashMap<Address, Vec<Address>>, account: &Address
 }
 
 /// Check the quota while processing the transaction
-pub fn check_quota(
+/*pub fn check_quota(
     gas_used: U256,
     gas_limit: U256,
     account_gas_limit: U256,
@@ -246,7 +246,7 @@ pub fn check_quota(
     }
 
     Ok(())
-}
+}*/
 
 /// Transaction execution options.
 #[derive(Default, Copy, Clone, PartialEq)]
@@ -394,7 +394,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             });
         }
 
-        trace!("quota should be checked: {}", options.check_quota);
+        /*trace!("quota should be checked: {}", options.check_quota);
         if options.check_quota {
             check_quota(
                 self.info.gas_used,
@@ -402,7 +402,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 self.info.account_gas_limit,
                 t,
             )?;
-        }
+        }*/
 
         if t.action == Action::AbiStore {
             let account = H160::from(&t.data[0..20]);

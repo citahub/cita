@@ -382,13 +382,14 @@ fn main() {
             // Receive a message from pool_txs channel. All messages in this channel
             // are sent by handle_remote_msg.
             if let Ok(txsinfo) = pool_txs_receiver.recv() {
-                let (height, txs, block_gas_limit, account_gas_limit) = txsinfo;
+                let (height, txs, block_gas_limit, account_gas_limit, check_quota) = txsinfo;
                 dispatch.lock().deal_txs(
                     height,
                     &txs,
                     &txs_pub_clone,
                     block_gas_limit,
                     account_gas_limit,
+                    check_quota,
                 );
             }
         }

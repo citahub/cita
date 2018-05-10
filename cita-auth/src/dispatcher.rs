@@ -221,6 +221,7 @@ impl Dispatcher {
         mq_pub: &Sender<(String, Vec<u8>)>,
         block_gas_limit: u64,
         account_gas_limit: AccountGasLimit,
+        check_quota: bool,
     ) {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
@@ -230,9 +231,14 @@ impl Dispatcher {
             self.del_txs_from_pool_with_hash(txs);
         }
 
-        let out_txs = self.get_txs_from_pool(height as u64, block_gas_limit, account_gas_limit);
+        let out_txs = self.get_txs_from_pool(
+            height as u64,
+            block_gas_limit,
+            account_gas_limit,
+            check_quota,
+        );
         info!(
-            "public block height {} with {:?} transactions",
+            "public block txs height {} with {:?} transactions",
             height,
             out_txs.len()
         );
@@ -307,13 +313,14 @@ impl Dispatcher {
         height: u64,
         block_gas_limit: u64,
         account_gas_limit: AccountGasLimit,
+        check_quota: bool,
     ) -> Vec<SignedTransaction> {
         if self.data_from_pool.load(Ordering::SeqCst) {
             self.data_from_pool.store(false, Ordering::SeqCst);
             Vec::new()
         } else {
             let txs_pool = &mut self.txs_pool.borrow_mut();
-            txs_pool.package(height, block_gas_limit, account_gas_limit)
+            txs_pool.package(height, block_gas_limit, account_gas_limit, check_quota)
         }
     }
 
