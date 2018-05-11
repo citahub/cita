@@ -36,7 +36,7 @@ use libexecutor::call_request::CallRequest;
 use libexecutor::executor::Executor;
 use sha3::sha3_256;
 use types::ids::BlockId;
-use util::{Address, H256};
+use util::{Address, H256, U256};
 
 /// Extend `Executor` with some methods related to contract
 trait ContractCallExt {
@@ -101,29 +101,26 @@ pub fn to_address_vec(output: &[u8]) -> Vec<Address> {
 }
 
 /// Parse solidity return data `uint256[]` to rust `Vec<u64>`
-pub fn to_low_u64_vec(output: &[u8]) -> Vec<u64> {
+pub fn to_u256_vec(output: &[u8]) -> Vec<U256> {
     let mut decoded = decode(&[ParamType::Array(Box::new(ParamType::Uint(256)))], &output).unwrap();
     let results = decoded.remove(0).to_array().unwrap();
-    let results = results
+    results
         .into_iter()
         .map(|result| {
             let result = result.to_uint();
             let h256 = H256::from(result.expect("decode u256"));
-            h256.low_u64()
+            U256::from(&h256)
         })
-        .collect();
-    debug!("decoded u64: {:?}", results);
-    results
+        .collect()
 }
 
 /// Parse solidity return data `uint256` to rust `u64`
-pub fn to_low_u64(output: &[u8]) -> u64 {
+pub fn to_u256(output: &[u8]) -> U256 {
     let mut decoded = decode(&[ParamType::Uint(256)], &output).expect("decode quota");
     let result = decoded.remove(0).to_uint();
 
     let h256 = H256::from(result.expect("decode u256"));
-    debug!("decoded u64: {:?}", h256.low_u64());
-    h256.low_u64()
+    U256::from(&h256)
 }
 
 /// Parse solidity return data `Address[], bytes4[]` to rust `Vec<Resource>`

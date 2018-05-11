@@ -32,7 +32,7 @@ interface SysConfigInterface {
     function setWebsite(string) public;
 
     /// @notice The interval time for creating a block (milliseconds)
-    function getBlockInterval() public view returns (uint);
+    function getBlockInterval() public view returns (uint64);
 }
 
 
@@ -50,7 +50,7 @@ contract SysConfig is SysConfigInterface {
     uint32 chain_id;
     string operator;
     string website;
-    uint block_interval;
+    uint64 block_interval;
     EconomicalModel economicalModel;
 
     /// @notice Setup
@@ -62,7 +62,7 @@ contract SysConfig is SysConfigInterface {
         uint32 _chainId,
         string _operator,
         string _website,
-        uint _blockInterval,
+        uint64 _blockInterval,
         EconomicalModel _economical
     )
         public
@@ -106,7 +106,7 @@ contract SysConfig is SysConfigInterface {
         return website;
     }
 
-    function getBlockInterval() public view returns (uint) {
+    function getBlockInterval() public view returns (uint64) {
         return block_interval;
     }
 

@@ -3,19 +3,19 @@ pragma solidity ^0.4.18;
 contract ChainManager {
 
     // Id of self chain. Must greater than 0.
-    uint chainId;
+    uint64 chainId;
 
     // Id of the parent chain. 0 means no parent chain.
-    uint parentChainId;
+    uint64 parentChainId;
 
     // Nodes of the parent chain.
     address[] parentChainNodes;
 
     // Count of side chain.
-    uint sideChainCount;
+    uint64 sideChainCount;
 
     // Stores `ChainInfo` struct for each chain.
-    mapping(uint => ChainInfo) public sideChains;
+    mapping(uint64 => ChainInfo) public sideChains;
 
     // Default: Unknown
     enum ChainStatus { Unknown, Disable, Enable }
@@ -30,13 +30,13 @@ contract ChainManager {
         _;
     }
 
-    modifier hasSideChain(uint _id) {
+    modifier hasSideChain(uint64 _id) {
         require(sideChains[_id].status != ChainStatus.Unknown);
         _;
     }
 
     // Constructor.
-    function ChainManager(uint _id, uint _pid, address[] _addrs)
+    function ChainManager(uint64 _id, uint64 _pid, address[] _addrs)
         public
     {
         require(_id > 0);
@@ -53,7 +53,7 @@ contract ChainManager {
     function getChainId()
         public
         view
-        returns (uint)
+        returns (uint64)
     {
         return chainId;
     }
@@ -62,7 +62,7 @@ contract ChainManager {
         public
         view
         hasParentChain
-        returns (uint)
+        returns (uint64)
     {
         return parentChainId;
     }
@@ -70,32 +70,32 @@ contract ChainManager {
     // Register a new side chain.
     function newSideChain(address[] addrs)
         public
-        returns (uint)
+        returns (uint64)
     {
         require(addrs.length > 0);
         sideChainCount++;
-        uint sideChainId = chainId + sideChainCount;
+        uint64 sideChainId = chainId + sideChainCount;
         sideChains[sideChainId] = ChainInfo(ChainStatus.Disable, addrs);
         // TODO A sorted array can search data more fast.
         //      And we can remove duplicated data, simply.
         return sideChainId;
     }
 
-    function enableSideChain(uint id)
+    function enableSideChain(uint64 id)
         public
         hasSideChain(id)
     {
         sideChains[id].status = ChainStatus.Enable;
     }
 
-    function disableSideChain(uint id)
+    function disableSideChain(uint64 id)
         public
         hasSideChain(id)
     {
         sideChains[id].status = ChainStatus.Disable;
     }
 
-    function getAuthorities(uint id)
+    function getAuthorities(uint64 id)
         public
         view
         returns (address[])
