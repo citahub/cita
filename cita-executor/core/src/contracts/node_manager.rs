@@ -137,6 +137,7 @@ impl NodeManager {
             let total_seats = largest_remainder_electoral(&stakes, EPOCH);
             stake_nodes = party_seats(nodes, &total_seats);
         }
+        
         stake_nodes
     }
 }

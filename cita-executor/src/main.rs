@@ -7,28 +7,26 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     | Queue    | SubModule | Message Type       |
+//!     | Queue    | PubModule | Message Type       |
 //!     | -------- | --------- | ------------------ |
 //!     | executor | Chain     | LocalSync          |
 //!     | executor | Chain     | Request            |
 //!     | executor | Chain     | Status             |
 //!     | executor | Consensus | BlockWithProof     |
 //!     | executor | Consensus | SignedProposal     |
-//!     | executor | Consensus | RawBytes           |
 //!     | executor | Consensus | MiscellaneousReq   |
 //!     | executor | Net       | SyncResponse       |
 //!     | executor | Net       | SignedProposal     |
-//!     | executor | Net       | RawBytes           |
 //!     | executor | Snapshot  | SnapshotReq        |
 //!
 //! 2. Publish channel
 //!
-//!     | Queue    | SubModule | Message Type   |
-//!     | -------- | --------- | -------------- |
-//!     | executor | Executor  | SnapshotResp   |
-//!     | executor | Executor  | Response       |
-//!     | executor | Executor  | ExecutedResult |
-//!     | executor | Executor  | Miscellaneous  |
+//!     | Queue    | PubModule | SubModule | Message Type   |
+//!     | -------- | --------- | --------- | -------------- |
+//!     | executor | Executor  | Snapshot  | SnapshotResp   |
+//!     | executor | Executor  | Jsonrpc   | Response       |
+//!     | executor | Executor  | Chain     | ExecutedResult |
+//!     | executor | Executor  | Auth      | Miscellaneous  |
 //!
 //! ### Key behavior
 //!
