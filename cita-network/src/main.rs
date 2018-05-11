@@ -24,7 +24,7 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     |       Queue       | SubModule | Message Type   |
+//!     |       Queue       | PubModule | Message Type   |
 //!     | ----------------- | --------- | -------------- |
 //!     | network_tx        | Auth      | Request        |
 //!     | network_consensus | Consensus | SignedProposal |
@@ -35,14 +35,14 @@
 //!
 //! 2. Publish channel
 //!
-//!     |       Queue       | SubModule | Message Type   |
-//!     | ----------------- | --------- | -------------- |
-//!     | network           | Net       | SyncResponse   |
-//!     | network           | Net       | SnapshotResp   |
-//!     | network           | Net       | Response       |
-//!     | network_tx        | Net       | Request        |
-//!     | network_consensus | Net       | SignedProposal |
-//!     | network_consensus | Net       | RawBytes       |
+//!     |       Queue       | PubModule | SubModule           | Message Type   |
+//!     | ----------------- | --------- | ------------------- | -------------- |
+//!     | network           | Net       | Chain, Executor     | SyncResponse   |
+//!     | network           | Net       | Snapshot            | SnapshotResp   |
+//!     | network           | Net       | Jsonrpc             | Response       |
+//!     | network_tx        | Net       | Auth                | Request        |
+//!     | network_consensus | Net       | Executor, Consensus | SignedProposal |
+//!     | network_consensus | Net       | Consensus           | RawBytes       |
 //!
 //! ### p2p binary protocol
 //! | Start      | Full length | Key length | Key value      | Message value    |

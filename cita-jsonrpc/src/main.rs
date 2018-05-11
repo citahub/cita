@@ -7,7 +7,7 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     |  Queue  | SubModule | Message Type |
+//!     |  Queue  | PubModule | Message Type |
 //!     | ------- | --------- | ------------ |
 //!     | jsonrpc | Auth      | Response     |
 //!     | jsonrpc | Chain     | Response     |
@@ -16,11 +16,11 @@
 //!
 //! 2. Publish channel
 //!
-//!     |  Queue  | SubModule | Message Type      |
-//!     | ------- | --------- | ----------------- |
-//!     | jsonrpc | Jsonrpc   | RequestNewTxBatch |
-//!     | jsonrpc | Jsonrpc   | Request           |
-//!     | jsonrpc | Jsonrpc   | RequestNet        |
+//!     |  Queue  | PubModule | SubModule | Message Type      |
+//!     | ------- | --------- | --------- | ----------------- |
+//!     | jsonrpc | Jsonrpc   | Auth      | RequestNewTxBatch |
+//!     | jsonrpc | Jsonrpc   | Chain     | Request           |
+//!     | jsonrpc | Jsonrpc   | Net       | RequestNet        |
 //!
 //! ### Key behavior
 //!

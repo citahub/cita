@@ -25,7 +25,7 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     | Queue | SubModule | Message Type      |
+//!     | Queue | PubModule | Message Type      |
 //!     | ----- | --------- | ----------------- |
 //!     | auth  | Consensus | VerifyBlockReq    |
 //!     | auth  | Chain     | BlockTxHashes     |
@@ -36,15 +36,15 @@
 //!
 //! 2. Publish channel
 //!
-//!     | Queue | SubModule | Message Type      |
-//!     | ----- | --------- | ----------------- |
-//!     | auth  | Auth      | BlockTxHashesReq  |
-//!     | auth  | Auth      | VerifyBlockResp   |
-//!     | auth  | Auth      | Response          |
-//!     | auth  | Auth      | Request           |
-//!     | auth  | Auth      | BlockTxs          |
-//!     | auth  | Auth      | SnapshotResp      |
-//!     | auth  | Auth      | MiscellaneousReq  |
+//!     | Queue | PubModule | SubModule | Message Type      |
+//!     | ----- | --------- | --------- | ----------------- |
+//!     | auth  | Auth      | Chain     | BlockTxHashesReq  |
+//!     | auth  | Auth      | Consensus | VerifyBlockResp   |
+//!     | auth  | Auth      | Jsonrpc   | Response          |
+//!     | auth  | Auth      | Net       | Request           |
+//!     | auth  | Auth      | Consensus | BlockTxs          |
+//!     | auth  | Auth      | Snapshot  | SnapshotResp      |
+//!     | auth  | Auth      | Executor  | MiscellaneousReq  |
 //!
 //! ### Key behavior
 //!

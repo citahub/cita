@@ -23,7 +23,7 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     | Queue   | SubModule   | Message Type     |
+//!     | Queue   | PubModule   | Message Type     |
 //!     | ------- | ----------- | ---------------- |
 //!     | chain   | Net         | SyncResponse     |
 //!     | chain   | Net         | SyncRequest      |
@@ -35,16 +35,16 @@
 //!
 //! 2. Publish channel
 //!
-//!     | Queue | SubModule | Message Type  |
-//!     | ----- | --------- | ------------- |
-//!     | chain | Chain     | BlockTxHashes |
-//!     | chain | Chain     | Status        |
-//!     | chain | Chain     | Request       |
-//!     | chain | Chain     | Response      |
-//!     | chain | Chain     | SyncResponse  |
-//!     | chain | Chain     | SnapshotResp  |
-//!     | chain | Chain     | LocalSync     |
-//!     | chain | Chain     | RichStatus    |
+//!     | Queue | PubModule | SubModule     | Message Type  |
+//!     | ----- | --------- | ------------- | ------------- |
+//!     | chain | Chain     | Auth          | BlockTxHashes |
+//!     | chain | Chain     | Net, Executor | Status        |
+//!     | chain | Chain     | Executor      | Request       |
+//!     | chain | Chain     | Jsonrpc       | Response      |
+//!     | chain | Chain     | Net           | SyncResponse  |
+//!     | chain | Chain     | Snapshot      | SnapshotResp  |
+//!     | chain | Chain     | Executor      | LocalSync     |
+//!     | chain | Chain     | Consensus     | RichStatus    |
 //!
 //! ### Key behavior
 //!
