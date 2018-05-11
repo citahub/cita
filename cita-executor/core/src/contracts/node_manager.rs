@@ -26,6 +26,7 @@ use std::cmp::Ordering;
 use std::iter;
 use std::str::FromStr;
 use util::{Address, H160};
+use rand::{Rng, SeedableRng, StdRng};
 
 const LIST_NODE: &'static [u8] = &*b"listNode()";
 const LIST_STAKE: &'static [u8] = *&b"listStake()";
@@ -138,6 +139,14 @@ impl NodeManager {
             stake_nodes = party_seats(nodes, &total_seats);
         }
         stake_nodes
+=======
+            if j != i {
+                ret[i] = ret[j];
+            }
+            ret[j] = node_vec[i];
+        }
+        ret
+>>>>>>> provide the random-shuffle function
     }
 }
 
