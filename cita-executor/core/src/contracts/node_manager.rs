@@ -139,6 +139,7 @@ impl NodeManager {
         }
         stake_nodes
     }
+}
 
 #[cfg(test)]
 mod tests {
