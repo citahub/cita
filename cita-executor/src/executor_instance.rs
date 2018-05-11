@@ -1,4 +1,3 @@
-use core::contracts::node_manager::NodeManager;
 use core::contracts::sys_config::SysConfig;
 use core::db;
 use core::libexecutor::Genesis;
@@ -483,7 +482,7 @@ impl ExecutorInstance {
                             chain_name: sys_config.chain_name(Some(block_id)),
                             operator: sys_config.operator(Some(block_id)),
                             website: sys_config.website(Some(block_id)),
-                            validators: NodeManager::nodes(&self.ext),
+                            validators: self.ext.node_manager().shuffled_stake_nodes(),
                             block_interval: sys_config.block_interval(),
                         }
                     }) {
