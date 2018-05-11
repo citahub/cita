@@ -11,64 +11,39 @@ const { abi, addr, admin } = config.contract.quota;
 const quotaManager = web3.eth.contract(abi);
 const quotaContractIns = quotaManager.at(addr);
 
-const quota = util.quota;
-const blockLimit = util.blockLimit;
-
-const tx_params = {
-    privkey: sender.privkey,
-    nonce: util.randomInt(),
-    quota,
-    validUntilBlock: web3.eth.blockNumber + blockLimit,
-    from: sender.address
-};
+const genTxParams = util.genTxParams;
 
 // addAdmin
 const addAdmin = function (account, _sender = sender) {
-    tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
-    tx_params.privkey = _sender.privkey;
-    tx_params.from = _sender.address;
     return quotaContractIns.addAdmin.sendTransaction(
-            account,
-            tx_params
-        );
+                account,
+                genTxParams(_sender)
+            );
 };
 
 // setBQL
 const setBQL = function (value, _sender = sender) {
-    tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
-    tx_params.privkey = _sender.privkey;
-    tx_params.from = _sender.address;
     return quotaContractIns.setBQL.sendTransaction(
-            value,
-            tx_params
-        );
+                value,
+                genTxParams(_sender)
+            );
 };
 
 // setDefaultAQL
 const setDefaultAQL = function (value, _sender = sender) {
-    tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
-    tx_params.privkey = _sender.privkey;
-    tx_params.from = _sender.address;
     return quotaContractIns.setDefaultAQL.sendTransaction(
-            value,
-            tx_params
-        );
+                value,
+                genTxParams(_sender)
+            );
 };
 
 // setAQL
 const setAQL = function (account, value, _sender = sender) {
-    tx_params.nonce = util.randomInt();
-    tx_params.validUntilBlock = web3.eth.blockNumber + blockLimit;
-    tx_params.privkey = _sender.privkey;
-    tx_params.from = _sender.address;
     return quotaContractIns.setAQL.sendTransaction(
-            account,
-            value,
-            tx_params
-        );
+                account,
+                value,
+                genTxParams(_sender)
+            );
 };
 
 // isAdmin

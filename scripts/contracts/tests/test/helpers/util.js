@@ -41,10 +41,25 @@ const getTxReceipt = function (res) {
 const quota = 9999999;
 const blockLimit = 100;
 
+const genTxParams = function (sender) {
+    let tx_params = {
+        privkey: sender.privkey,
+        nonce: randomInt(),
+        quota: quota,
+        validUntilBlock: web3.eth.blockNumber + blockLimit,
+        from: sender.address,
+        version: 0,
+        chainId: web3.eth.getMetaData(0x0).chainId
+    };
+
+    return tx_params;
+};
+
 module.exports = {
     web3,
     randomInt,
     getTxReceipt,
     quota,
-    blockLimit
+    blockLimit,
+    genTxParams
 };
