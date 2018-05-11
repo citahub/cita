@@ -105,11 +105,7 @@ impl NodeManager {
         trace!("node manager nodes: {:?}", nodes);
         nodes
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> change it to generic version
     pub fn shuffle_node<T>(node_vec: &mut Vec<T>, rng_seed: u64) {
         let seed: &[_] = &[rng_seed as usize];
         let mut rng: StdRng = SeedableRng::from_seed(seed);
@@ -117,7 +113,6 @@ impl NodeManager {
         for i in 0..node_vec.len() {
             let j: usize = rng.gen::<usize>() % (i + 1);
             node_vec.swap(i, j);
-<<<<<<< HEAD
         }
     }
 
@@ -144,6 +139,10 @@ impl NodeManager {
         }
         stake_nodes
     }
+=======
+        }
+    }
+>>>>>>> c7fc76f931022b957b9dbb7dc0d8752dc5993729
 }
 
 #[cfg(test)]
