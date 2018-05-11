@@ -18,9 +18,9 @@ const queryInfo = function () {
 // inPermission
 const inPermission = function (addr, func) {
     return pContractInstance.inPermission.call(
-            addr,
-            func 
-        );
+                addr,
+                func 
+            );
 };
 
 module.exports = {

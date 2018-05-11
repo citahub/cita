@@ -173,7 +173,7 @@ describe('\n\ntest role management contract\n\n', function () {
             getTxReceipt(res)
                 .then((receipt) => {
                     console.log('\nSend ok and get receipt with error message:\n', receipt);
-                    assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
+                    assert.equal(receipt.errorMessage, "Reverted.", JSON.stringify(receipt.errorMessage));
                     done();
                 })
                 .catch(err => {
@@ -257,7 +257,7 @@ describe('\n\ntest role management contract\n\n', function () {
             getTxReceipt(res)
                 .then((receipt) => {
                     console.log('\nSend ok and get receipt with error message:\n', receipt);
-                    assert.equal(receipt.errorMessage, "Reverted", JSON.stringify(receipt.errorMessage));
+                    assert.equal(receipt.errorMessage, "Reverted.", JSON.stringify(receipt.errorMessage));
                     done();
                 })
                 .catch(err => {

@@ -24,10 +24,10 @@ const queryAccounts = function (perm) {
 // checkPermission
 const checkPermission = function (account, addr, func) {
     return aContractInstance.checkPermission.call(
-            account,
-            addr,
-            func
-        );
+                account,
+                addr,
+                func
+            );
 };
 
 // queryAllAccounts

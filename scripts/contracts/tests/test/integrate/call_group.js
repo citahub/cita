@@ -137,7 +137,7 @@ describe('\n\nintegrate test group: \n\n', function() {
         getTxReceipt(res)
             .then((receipt) => {
                 console.log('\nSend ok and get receipt:\n', receipt);
-                assert.equal(receipt.errorMessage, 'Reverted', JSON.stringify(receipt.errorMessage));
+                assert.equal(receipt.errorMessage, 'Reverted.', JSON.stringify(receipt.errorMessage));
                 done();
             })
             .catch(err => {
