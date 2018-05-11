@@ -100,6 +100,16 @@ pub fn check_verify_request_preprocess(
             response.set_ret(Ret::InvalidUntilBlock);
             processed = true;
             final_response = response;
+        } else if !is_single_verify && verifier.read().check_hash_exist(&tx_hash) {
+            let mut response = VerifyTxResp::new();
+            response.set_tx_hash(req.get_tx_hash().to_vec());
+            if verifier.read().is_inited() {
+                response.set_ret(Ret::Dup);
+            } else {
+                response.set_ret(Ret::NotReady);
+            }
+            processed = true;
+            final_response = response;
         } else if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
             processed = true;
             final_response = resp;
