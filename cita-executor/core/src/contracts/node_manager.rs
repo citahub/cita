@@ -139,10 +139,6 @@ impl NodeManager {
         }
         stake_nodes
     }
-=======
-        }
-    }
->>>>>>> c7fc76f931022b957b9dbb7dc0d8752dc5993729
 }
 
 #[cfg(test)]
