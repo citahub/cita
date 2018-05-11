@@ -17,10 +17,10 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use proof::TendermintProof;
 use serde_json;
+use std::{mem, u8};
 use std::cell::RefCell;
 use std::convert::{Into, TryFrom, TryInto};
 use std::fs::File;
-use std::mem;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
@@ -870,7 +870,7 @@ impl ExecutorInstance {
 
         self.chain_status = status;
 
-        if old_chain_height == new_chain_height {
+        if old_chain_height == new_chain_height && self.local_sync_count < u8::MAX {
             // Chain height does not increase
             self.local_sync_count += 1;
         }

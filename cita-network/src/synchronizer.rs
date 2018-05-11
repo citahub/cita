@@ -9,6 +9,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::convert::{Into, TryFrom, TryInto};
 use std::sync::{mpsc, Arc};
 use std::time::{Duration, Instant};
+use std::u8;
 
 const SYNC_STEP: u64 = 200;
 const SYNC_TIME_OUT: u64 = 60;
@@ -74,7 +75,7 @@ impl Synchronizer {
         let old_height = self.current_status.get_height();
         let new_height = latest_status.get_height();
 
-        if new_height == old_height {
+        if new_height == old_height && self.local_sync_count < u8::MAX {
             // Chain height does not increase
             self.local_sync_count += 1;
         }
