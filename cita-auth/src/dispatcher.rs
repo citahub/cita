@@ -33,8 +33,9 @@ use std::thread;
 use std::time::SystemTime;
 use tx_pool;
 use txwal::TxWal;
-use util::{H256, ToPretty};
+use util::{H256, RwLock, ToPretty};
 use uuid::Uuid;
+use verifier::Verifier;
 
 pub struct Dispatcher {
     txs_pool: RefCell<tx_pool::Pool>,
@@ -124,14 +125,25 @@ impl Dispatcher {
         tx_response: TxResponse,
         tx: &SignedTransaction,
         mq_pub: &Sender<(String, Vec<u8>)>,
+        verifier: Arc<RwLock<Verifier>>,
     ) {
         let mut error_msg: Option<String> = None;
 
-        // add tx to txs_pool and wal.
-        if self.add_tx_to_pool(tx) {
-            self.update_capacity();
+        let tx_hash = tx.crypt_hash();
+        let ret = verifier.read().check_hash_exist(&tx_hash);
+        if ret {
+            if verifier.read().is_inited() {
+                error_msg = Some(String::from("Dup"));
+            } else {
+                error_msg = Some(String::from("NotReady"));
+            }
         } else {
-            error_msg = Some(String::from("Dup"));
+            // add tx to txs_pool and wal.
+            if self.add_tx_to_pool(tx) {
+                self.update_capacity();
+            } else {
+                error_msg = Some(String::from("Dup"));
+            }
         }
 
         if error_msg.is_none() {

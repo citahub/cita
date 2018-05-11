@@ -217,16 +217,6 @@ impl Verifier {
             return resp;
         }
 
-        let tx_hash = H256::from_slice(req.get_tx_hash());
-        let ret = self.check_hash_exist(&tx_hash);
-        if ret {
-            if self.is_inited() {
-                resp.set_ret(Ret::Dup);
-            } else {
-                resp.set_ret(Ret::NotReady);
-            }
-            return resp;
-        }
         if !self.chain_id.is_some() {
             resp.set_ret(Ret::NotReady);
             return resp;

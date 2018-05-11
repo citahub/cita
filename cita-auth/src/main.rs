@@ -346,6 +346,7 @@ fn main() {
     let clear = dispatch_clone.clone();
     let txs_pub_clone = txs_pub.clone();
     let clear_txs_pool = Arc::new(AtomicBool::new(false));
+    let verifier_for_tx_pool = verifier.clone();
 
     thread::spawn(move || {
         let dispatch = dispatch_clone.clone();
@@ -355,9 +356,14 @@ fn main() {
             // are sent by handle_verification_result.
             if let Ok(txinfo) = pool_tx_receiver.try_recv() {
                 let (key, reqid, tx_res, tx) = txinfo;
-                dispatch
-                    .lock()
-                    .deal_tx(key, reqid, tx_res, &tx, &txs_pub_clone);
+                dispatch.lock().deal_tx(
+                    key,
+                    reqid,
+                    tx_res,
+                    &tx,
+                    &txs_pub_clone,
+                    verifier_for_tx_pool.clone(),
+                );
                 flag = true;
             } else {
                 if flag {
