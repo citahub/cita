@@ -11,7 +11,7 @@
 //!     | -------- | --------- | ------------------ |
 //!     | executor | Chain     | LocalSync          |
 //!     | executor | Chain     | Request            |
-//!     | executor | Chain     | Status             |
+//!     | executor | Chain     | Richstatus         |
 //!     | executor | Consensus | BlockWithProof     |
 //!     | executor | Consensus | SignedProposal     |
 //!     | executor | Consensus | MiscellaneousReq   |
@@ -127,7 +127,7 @@ fn main() {
             Net >> SyncResponse,
             Consensus >> BlockWithProof,
             Chain >> Request,
-            Chain >> Status,
+            Chain >> RichStatus,
             Consensus >> SignedProposal,
             Consensus >> RawBytes,
             Net >> SignedProposal,

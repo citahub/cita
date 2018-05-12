@@ -10,7 +10,7 @@ use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, BlockTag, CountOrCode, MetaData};
 use libproto::{request, response, Message, SyncResponse};
 use libproto::auth::Miscellaneous;
-use libproto::blockchain::{BlockWithProof, Proof, ProofType, Status};
+use libproto::blockchain::{BlockWithProof, Proof, ProofType, RichStatus};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -43,7 +43,7 @@ pub struct ExecutorInstance {
     pub ext: Arc<Executor>,
     pub grpc_port: u16,
     closed_block: RefCell<Option<ClosedBlock>>,
-    chain_status: Status,
+    chain_status: RichStatus,
     local_sync_count: u8,
 }
 
@@ -74,7 +74,7 @@ impl ExecutorInstance {
             ext: executor,
             grpc_port: grpc_port,
             closed_block: RefCell::new(None),
-            chain_status: Status::new(),
+            chain_status: RichStatus::new(),
             local_sync_count: 0,
         }
     }
@@ -93,8 +93,8 @@ impl ExecutorInstance {
                 self.reply_request(req);
             }
 
-            routing_key!(Chain >> Status) => {
-                if let Some(status) = msg.take_status() {
+            routing_key!(Chain >> RichStatus) => {
+                if let Some(status) = msg.take_rich_status() {
                     self.execute_chain_status(status);
                 };
             }
@@ -863,7 +863,7 @@ impl ExecutorInstance {
 
     /// The processing logic here is the same as the network pruned/re-transmitted information based on
     /// the state of the chain, but here is pruned/re-transmitted `ExecutedResult`.
-    fn execute_chain_status(&mut self, status: Status) {
+    fn execute_chain_status(&mut self, status: RichStatus) {
         let old_chain_height = self.chain_status.get_height();
         let new_chain_height = status.get_height();
         self.ext.prune_execute_result_cache(&status);

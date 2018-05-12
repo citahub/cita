@@ -36,7 +36,7 @@ use libexecutor::genesis::Genesis;
 pub use libexecutor::transaction::*;
 
 use libproto::{ConsensusConfig, ExecutedResult, Message};
-use libproto::blockchain::{Proof as ProtoProof, ProofType, Status};
+use libproto::blockchain::{Proof as ProtoProof, ProofType, RichStatus};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
@@ -824,7 +824,7 @@ impl Executor {
     }
 
     /// Prune executed_result on `BTreeMap`
-    pub fn prune_execute_result_cache(&self, status: &Status) {
+    pub fn prune_execute_result_cache(&self, status: &RichStatus) {
         let height = status.get_height();
         if height > 1 {
             let mut executed_map = self.executed_result.write();
