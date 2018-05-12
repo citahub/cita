@@ -168,14 +168,19 @@ fn main() {
         }
     });
 
+    let mut timeout_factor = 0u8;
     loop {
-        if let Ok(number) = write_receiver.recv_timeout(Duration::new(8, 0)) {
+        if let Ok(number) = write_receiver.recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0)) {
             ext_instance.execute_block(number);
+            timeout_factor = 0;
         } else {
             for height in ext_instance.ext.executed_result.read().keys() {
                 ext_instance
                     .ext
                     .send_executed_info_to_chain(*height, &ctx_pub);
+            }
+            if timeout_factor < 6 {
+                timeout_factor += 1
             }
         }
     }
