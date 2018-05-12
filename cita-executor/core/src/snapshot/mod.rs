@@ -22,6 +22,7 @@ extern crate num_cpus;
 const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 
 use account_db::{AccountDB, AccountDBMut};
+use cita_types::{Address, H256, U256};
 use db;
 use libexecutor::executor::Executor;
 use rlp::{DecoderError, RlpStream, UntrustedRlp};
@@ -29,9 +30,9 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Duration;
-use util::{Address, H256, Mutex, U256, sha3};
 use util::{snappy, Bytes, HashDB};
 use util::{Trie, TrieDB, TrieDBMut, TrieMut, HASH_EMPTY};
+use util::{Mutex, sha3};
 use util::HASH_NULL_RLP;
 use util::hashdb::DBValue;
 use util::journaldb::{self, Algorithm};

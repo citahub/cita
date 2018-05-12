@@ -19,6 +19,7 @@
 #![feature(test)]
 #![feature(try_from)]
 extern crate cita_crypto as crypto;
+extern crate cita_types;
 extern crate clap;
 #[macro_use]
 extern crate env_logger;

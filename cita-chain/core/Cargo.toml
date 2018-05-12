@@ -17,9 +17,7 @@ rustc-serialize = "0.3"
 lru-cache = "0.1.1"
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-bloomchain = "0.1"
 ethcore-bloom-journal = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-bloomable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 ethkey = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 lazy_static = "0.2"
 bit-set = "0.4"
@@ -36,6 +34,7 @@ transient-hashmap = "0.4.0"
 ethcore-io = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 sha3 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 

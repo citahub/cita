@@ -20,6 +20,7 @@ use rlp::{self, RlpStream};
 use state::Account;
 use std::collections::BTreeMap;
 use std::fmt;
+use cita_types::{H256, U256};
 use util::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

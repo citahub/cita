@@ -18,7 +18,8 @@
 use super::super::instructions;
 use bit_set::BitSet;
 use std::sync::Arc;
-use util::{H256, HeapSizeOf, Mutex, HASH_EMPTY};
+use cita_types::H256;
+use util::{HeapSizeOf, Mutex, HASH_EMPTY};
 use util::cache::MemoryLruCache;
 
 const DEFAULT_CACHE_SIZE: usize = 4 * 1024 * 1024;

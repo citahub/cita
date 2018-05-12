@@ -17,6 +17,7 @@
 //! Transaction Execution environment.
 
 use action_params::{ActionParams, ActionValue};
+use cita_types::{Address, H160, U256};
 use contracts::Resource;
 use contracts::permission_management::contains_resource;
 use crossbeam;
@@ -959,6 +960,7 @@ mod tests {
     use self::rustc_hex::FromHex;
     use super::*;
     use action_params::{ActionParams, ActionValue};
+    use cita_types::{Address, H256, U256};
     use engines::NullEngine;
     use env_info::EnvInfo;
     use evm::{Factory, VMType};
@@ -968,7 +970,6 @@ mod tests {
     use std::sync::Arc;
     use tests::helpers::*;
     use trace::{ExecutiveTracer, ExecutiveVMTracer};
-    use util::{Address, H256, U256};
 
     #[test]
     fn test_create_contract_out_of_gas() {

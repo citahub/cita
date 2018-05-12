@@ -20,6 +20,8 @@
 #![cfg_attr(test, feature(test))]
 extern crate byteorder;
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate log;
@@ -32,8 +34,6 @@ extern crate serde_derive;
 #[macro_use]
 extern crate util;
 
-extern crate bloomable;
-extern crate bloomchain;
 #[macro_use]
 extern crate rlp_derive;
 extern crate rustc_hex;
@@ -42,6 +42,7 @@ extern crate bincode;
 extern crate bit_set;
 extern crate cita_ed25519;
 extern crate cita_secp256k1;
+extern crate cita_types;
 extern crate common_types as types;
 extern crate crossbeam;
 extern crate crypto;
@@ -62,7 +63,6 @@ pub mod state_db;
 #[macro_use]
 pub mod basic_types;
 pub mod env_info;
-pub mod blooms;
 pub mod header;
 pub mod cache_manager;
 #[macro_use]

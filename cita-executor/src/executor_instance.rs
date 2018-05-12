@@ -1,3 +1,4 @@
+use cita_types::Address;
 use core::contracts::sys_config::SysConfig;
 use core::db;
 use core::libexecutor::Genesis;
@@ -24,7 +25,6 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 use types::ids::BlockId;
-use util::Address;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 

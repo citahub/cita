@@ -1,4 +1,4 @@
-use util::H256;
+use cita_types::H256;
 
 //TODO respone contain error
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

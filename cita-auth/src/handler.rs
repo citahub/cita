@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::H256;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
 use libproto::{Message, Response, Ret, VerifyBlockReq, VerifyBlockResp, VerifyTxResp};
@@ -29,7 +30,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::time::SystemTime;
 use std::vec::*;
 use threadpool::ThreadPool;
-use util::{H256, RwLock};
+use util::RwLock;
 use verifier::*;
 
 pub fn process_flow_control_failed(
@@ -680,6 +681,7 @@ fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cita_types::{H256, U256};
     use crypto::*;
     use libproto::{BlockTxHashes, Message, Request, Ret, SignedTransaction, Transaction, VerifyBlockReq, VerifyTxReq};
     use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -688,7 +690,6 @@ mod tests {
     use std::thread;
     use std::time::Duration;
     use threadpool;
-    use util::{H256, U256};
     use util::Hashable;
     use uuid::Uuid;
 

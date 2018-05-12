@@ -17,7 +17,6 @@
 //! Tracing
 #![rustfmt_skip]
 
-mod bloom;
 mod config;
 mod db;
 mod error;
@@ -41,7 +40,8 @@ pub use self::types::flat::{FlatTrace, FlatTransactionTraces, FlatBlockTraces};
 pub use self::types::trace::{VMTrace, VMOperation, VMExecutedOperation, MemoryDiff, StorageDiff};
 use action_params::ActionParams;
 use header::BlockNumber;
-use util::{Bytes, Address, U256, H256, DBTransaction};
+use cita_types::{Address, U256, H256};
+use util::{Bytes, DBTransaction};
 
 /// This trait is used by executive to build traces.
 pub trait Tracer: Send {

@@ -18,6 +18,7 @@
 #![rustfmt_skip]
 use rlp::NULL_RLP;
 use std::collections::HashMap;
+use cita_types::{Address, H256};
 use util::*;
 
 static NULL_RLP_STATIC: [u8; 1] = [0x80; 1];

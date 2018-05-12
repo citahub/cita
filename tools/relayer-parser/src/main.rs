@@ -31,13 +31,13 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio_core;
 
+extern crate cita_types;
 extern crate core;
 extern crate jsonrpc_types;
 extern crate libproto;
 #[macro_use]
 extern crate log;
 extern crate logger;
-extern crate util;
 
 mod arguments;
 mod configuration;
@@ -45,9 +45,9 @@ mod communication;
 mod transaction;
 
 use cita_crypto::PrivKey;
+use cita_types::H256;
 use core::libchain::chain::{RelayInfo, TxProof};
 use libproto::blockchain::UnverifiedTransaction;
-use util::H256;
 
 use arguments::{build_commandline, parse_arguments};
 use configuration::{parse_configfile, UpStream};

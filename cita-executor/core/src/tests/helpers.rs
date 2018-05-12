@@ -21,6 +21,8 @@ extern crate rustc_serialize;
 use self::mktemp::Temp;
 use self::rustc_serialize::hex::FromHex;
 use cita_crypto::KeyPair;
+use cita_types::{Address, U256};
+use cita_types::traits::LowerHex;
 use core::libchain::chain;
 use db;
 use journaldb;
@@ -39,7 +41,6 @@ use std::process::Command;
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 use types::transaction::SignedTransaction;
-use util::{Address, U256};
 use util::KeyValueDB;
 use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
@@ -148,9 +149,9 @@ pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u3
         if to == Address::from(0) {
             tx.set_to(String::from(""));
         } else {
-            tx.set_to(to.hex());
+            tx.set_to(to.lower_hex());
         }
-        tx.set_nonce(U256::from(i).to_hex());
+        tx.set_nonce(U256::from(i).lower_hex());
         tx.set_data(data.clone());
         tx.set_valid_until_block(100);
         tx.set_quota(1844674);

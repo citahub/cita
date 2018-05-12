@@ -19,7 +19,7 @@
 
 use super::trace::{Action, Res};
 use header::BlockNumber;
-use util::H256;
+use cita_types::H256;
 
 /// Localized trace.
 #[derive(Debug, PartialEq, Clone)]

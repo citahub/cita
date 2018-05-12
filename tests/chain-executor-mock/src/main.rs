@@ -18,6 +18,7 @@
 #![feature(try_from)]
 extern crate bincode;
 extern crate cita_crypto as crypto;
+extern crate cita_types;
 extern crate clap;
 extern crate common_types;
 extern crate core;
@@ -45,18 +46,20 @@ use std::{fs, u8};
 use std::collections::HashMap;
 use std::convert::{From, TryFrom};
 use std::io::Read;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
 use std::time;
 
 use clap::App;
 
+use cita_types::{H256, U256};
+use cita_types::traits::LowerHex;
 use crypto::{CreateKey, KeyPair, PrivKey};
 use generate_block::BuildBlock;
 use libproto::Message;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
-use util::{H256, U256};
 
 pub type PubType = (String, Vec<u8>);
 
@@ -80,7 +83,7 @@ fn send_block(
         .map(|tx| {
             let contract_address = tx["to"].as_str().unwrap();
             let tx_privkey_str = tx["privkey"].as_str().unwrap();
-            let tx_privkey: PrivKey = PrivKey::from_any_str(tx_privkey_str).unwrap();
+            let tx_privkey: PrivKey = PrivKey::from_str(tx_privkey_str).unwrap();
             let data = tx["data"].as_str().unwrap();
             let quota = tx["quota"].as_u64().unwrap();
             let nonce = tx["nonce"].as_u64().unwrap() as u32;
@@ -89,8 +92,8 @@ fn send_block(
             let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
             info!(
                 "sender={}, contract_address={}",
-                sender.hex(),
-                BuildBlock::build_contract_address(&sender, &U256::from(nonce)).hex()
+                sender.lower_hex(),
+                BuildBlock::build_contract_address(&sender, &U256::from(nonce)).lower_hex()
             );
             info!(
                 "address={}, quota={}, nonce={}",
@@ -170,7 +173,7 @@ fn main() {
 
     let privkey: PrivKey = {
         let privkey_str = mock_data["privkey"].as_str().unwrap();
-        PrivKey::from_any_str(privkey_str).unwrap()
+        PrivKey::from_str(privkey_str).unwrap()
     };
     let mut mock_blocks: HashMap<u64, &serde_yaml::Value> = HashMap::new();
     for block in mock_data["blocks"].as_sequence_mut().unwrap().into_iter() {

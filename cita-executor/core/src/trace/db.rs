@@ -18,9 +18,9 @@
 #![rustfmt_skip]
 
 use super::flat::{FlatTrace, FlatBlockTraces, FlatTransactionTraces};
-use bloomchain::{Number, Config as BloomConfig};
-use bloomchain::group::{BloomGroupDatabase, BloomGroupChain, GroupPosition, BloomGroup};
-use blooms;
+use bloomchain::{Bloom, Number as BloomChainNumber, Config as BloomChainConfig};
+use bloomchain::group::{BloomGroup, BloomGroupDatabase, BloomGroupChain, GroupPosition};
+use log_blooms::LogBloomGroup;
 use cache_manager::CacheManager;
 use db::{self, Key, Writable, Readable, CacheUpdatePolicy};
 use header::BlockNumber;
@@ -28,7 +28,8 @@ use std::collections::{HashMap, VecDeque};
 use std::ops::Deref;
 use std::sync::Arc;
 use trace::{LocalizedTrace, Config, Filter, Database as TraceDatabase, ImportRequest, DatabaseExtras};
-use util::{H256, H264, KeyValueDB, DBTransaction, RwLock, HeapSizeOf};
+use cita_types::{H256, H264};
+use util::{KeyValueDB, DBTransaction, RwLock, HeapSizeOf};
 
 const TRACE_DB_VER: &'static [u8] = b"1.0";
 
@@ -52,14 +53,14 @@ impl Key<FlatBlockTraces> for H256 {
     }
 }
 
-/// Wrapper around `blooms::GroupPosition` so it could be
+/// Wrapper around `GroupPosition` so it could be
 /// uniquely identified in the database.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-struct TraceGroupPosition(blooms::GroupPosition);
+struct TraceGroupPosition(GroupPosition);
 
 impl From<GroupPosition> for TraceGroupPosition {
     fn from(position: GroupPosition) -> Self {
-        TraceGroupPosition(From::from(position))
+        TraceGroupPosition(position)
     }
 }
 
@@ -80,13 +81,13 @@ impl Deref for TraceGroupKey {
     }
 }
 
-impl Key<blooms::BloomGroup> for TraceGroupPosition {
+impl Key<LogBloomGroup> for TraceGroupPosition {
     type Target = TraceGroupKey;
 
     fn key(&self) -> Self::Target {
         let mut result = [0u8; 6];
         result[0] = TraceDBIndex::BloomGroups as u8;
-        result[1] = self.0.level;
+        result[1] = self.0.level as u8;
         result[2] = self.0.index as u8;
         result[3] = (self.0.index >> 8) as u8;
         result[4] = (self.0.index >> 16) as u8;
@@ -108,12 +109,12 @@ where
 {
     // cache
     traces: RwLock<HashMap<H256, FlatBlockTraces>>,
-    blooms: RwLock<HashMap<TraceGroupPosition, blooms::BloomGroup>>,
+    blooms: RwLock<HashMap<TraceGroupPosition, LogBloomGroup>>,
     cache_manager: RwLock<CacheManager<CacheId>>,
     // db
     tracesdb: Arc<KeyValueDB>,
     // config,
-    bloom_config: BloomConfig,
+    bloom_config: BloomChainConfig,
     // tracing enabled
     enabled: bool,
     // extras
@@ -263,7 +264,7 @@ where
 
         // now let's rebuild the blooms
         if !request.enacted.is_empty() {
-            let range_start = request.block_number as Number + 1 - request.enacted.len();
+            let range_start = request.block_number as BloomChainNumber + 1 - request.enacted.len();
             let range_end = range_start + request.retracted;
             let replaced_range = range_start..range_end;
             let enacted_blooms = request.enacted
@@ -276,15 +277,14 @@ where
                 } else {
                     self.traces(block_hash).expect("Traces database is incomplete.").bloom()
                 })
-                .map(blooms::Bloom::from)
-                .map(Into::into)
+                .map(|x| Bloom::from(Into::<[u8; 256]>::into(x)))
                 .collect();
 
             let chain = BloomGroupChain::new(self.bloom_config, self);
             let trace_blooms = chain.replace(&replaced_range, enacted_blooms);
             let blooms_to_insert = trace_blooms.into_iter()
                                                .map(|p| (From::from(p.0), From::from(p.1)))
-                                               .collect::<HashMap<TraceGroupPosition, blooms::BloomGroup>>();
+                                               .collect::<HashMap<TraceGroupPosition, LogBloomGroup>>();
 
             let blooms_keys: Vec<_> = blooms_to_insert.keys().cloned().collect();
             let mut blooms = self.blooms.write();
@@ -417,7 +417,8 @@ mod tests {
     use trace::{Config, TraceDB, Database as TraceDatabase, DatabaseExtras, ImportRequest};
     use trace::flat::{FlatTrace, FlatBlockTraces, FlatTransactionTraces};
     use trace::trace::{Call, Action, Res};
-    use util::{Address, U256, H256, DBTransaction};
+    use cita_types::{Address, U256, H256};
+    use util::DBTransaction;
 
     struct NoopExtras;
 

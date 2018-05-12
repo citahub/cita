@@ -23,7 +23,8 @@ use std::fmt;
 use trace::{VMTrace, FlatTrace};
 use types::log_entry::LogEntry;
 use types::state_diff::StateDiff;
-use util::{Bytes, U256, Address, U512, trie};
+use cita_types::{U256, Address, U512};
+use util::{Bytes, trie};
 
 /// The type of the call-like instruction.
 #[derive(Debug, PartialEq, Clone)]

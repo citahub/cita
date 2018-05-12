@@ -18,6 +18,7 @@
 #![feature(try_from)]
 extern crate bincode;
 extern crate cita_crypto as crypto;
+extern crate cita_types;
 extern crate clap;
 extern crate common_types;
 extern crate core;
@@ -39,6 +40,7 @@ extern crate serde_derive;
 
 mod generate_block;
 
+use cita_types::H256;
 use clap::App;
 use crypto::*;
 use generate_block::Generateblock;
@@ -49,7 +51,6 @@ use std::convert::TryFrom;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
 use std::time;
-use util::H256;
 
 pub type PubType = (String, Vec<u8>);
 

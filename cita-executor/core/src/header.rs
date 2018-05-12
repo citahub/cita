@@ -18,6 +18,7 @@
 //! Block header.
 
 use basic_types::{LogBloom, ZERO_LOGBLOOM};
+use cita_types::{Address, H256, U256};
 use libproto::blockchain::{BlockHeader, Proof, ProofType};
 use libproto::executor::ExecutedHeader;
 use rlp::*;
@@ -94,7 +95,7 @@ impl Default for Header {
             transactions_root: HASH_NULL_RLP,
             state_root: HASH_NULL_RLP,
             receipts_root: HASH_NULL_RLP,
-            log_bloom: ZERO_LOGBLOOM,
+            log_bloom: *ZERO_LOGBLOOM,
             gas_used: U256::default(),
             gas_limit: U256::from(u64::max_value()),
             proof: Proof::new(),
@@ -114,7 +115,7 @@ impl From<BlockHeader> for Header {
             transactions_root: H256::from(bh.get_transactions_root()),
             state_root: H256::default(),
             receipts_root: H256::default(),
-            log_bloom: ZERO_LOGBLOOM,
+            log_bloom: *ZERO_LOGBLOOM,
             gas_used: U256::zero(),
             gas_limit: U256::from(u64::max_value()),
             proof: bh.get_proof().clone(),

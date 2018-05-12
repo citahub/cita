@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bytes::Bytes;
-use util::Address;
+use cita_types::Address;
 
 /// Call request
 #[derive(Debug, Default, PartialEq, Clone, Deserialize)]
@@ -37,8 +37,8 @@ mod tests {
 
     #[test]
     fn call_deserialization() {
-        let s = "{\"from\":\"d46e8dd67c5d32be8058bb8eb970870f07244567\",\
-                 \"to\":\"b60e8dd61c5d32be8058bb8eb970870f07233155\",\
+        let s = "{\"from\":\"0xd46e8dd67c5d32be8058bb8eb970870f07244567\",\
+                 \"to\":\"0xb60e8dd61c5d32be8058bb8eb970870f07233155\",\
                  \"data\":\"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675\"}";
         let call: Result<CallRequest, Error> = serde_json::from_str(s);
         assert!(call.is_ok());

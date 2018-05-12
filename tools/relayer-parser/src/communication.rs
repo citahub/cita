@@ -24,10 +24,11 @@ use serde_json;
 use std::convert::TryInto;
 use tokio_core::reactor::{Core, Timeout};
 
+use cita_types::{H256, U256};
+use cita_types::traits::LowerHex;
 use configuration::UpStream;
 use jsonrpc_types;
 use libproto::blockchain::UnverifiedTransaction;
-use util::{H256, ToPretty, U256};
 
 #[derive(Debug)]
 pub enum Error {
@@ -152,7 +153,7 @@ pub fn cita_get_transaction_proof(upstream: &UpStream, tx_hash: H256) -> Result<
     let result = rpc_send_and_get_result_from_reply!(
         upstream,
         "cita_getTransactionProof",
-        [format!("0x{:?}", tx_hash)],
+        [tx_hash],
         jsonrpc_types::bytes::Bytes
     );
     Ok(result.vec())
@@ -178,7 +179,7 @@ pub fn cita_send_transaction(upstream: &UpStream, utx: &UnverifiedTransaction) -
     let result = rpc_send_and_get_result_from_reply!(
         upstream,
         "cita_sendTransaction",
-        [tx_bytes.to_hex()],
+        [tx_bytes.lower_hex()],
         jsonrpc_types::rpctypes::TxResponse
     );
     if result.status.to_uppercase() == "OK" {

@@ -21,8 +21,8 @@ use std::str::FromStr;
 
 use ethabi::{decode, ParamType, Token};
 
+use cita_types::{Address, H256};
 use types::ids::BlockId;
-use util::{Address, H256};
 
 use super::ContractCallExt;
 use super::encode_contract_name;

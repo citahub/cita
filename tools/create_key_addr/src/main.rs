@@ -46,16 +46,17 @@ fn create_key(path: String) -> PubKey {
     let keypair = KeyPair::gen_keypair();
     let privkey = keypair.privkey().clone();
     let hex_str = to_hex_string(&privkey);
-    write_to_file(path, &hex_str, false);
+    let hex_str_with_0x = String::from("0x") + &hex_str + "\n";
+    write_to_file(path, &hex_str_with_0x, false);
     keypair.pubkey().clone()
 }
 
 fn create_addr(path: String, pubkey: PubKey) {
     let hash = pubkey.crypt_hash();
     let addr = &hash.0[12..];
-    let str = to_hex_string(addr);
-    let hex_str = String::from("0x") + &str + "\n";
-    write_to_file(path, &hex_str, true);
+    let hex_str = to_hex_string(addr);
+    let hex_str_with_0x = String::from("0x") + &hex_str + "\n";
+    write_to_file(path, &hex_str_with_0x, true);
 }
 
 fn main() {

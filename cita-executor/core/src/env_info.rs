@@ -19,7 +19,7 @@
 
 use header::BlockNumber;
 use std::sync::Arc;
-use util::{Address, H256 /* Hashable */, U256};
+use cita_types::{Address, H256, U256};
 // use ethjson;
 
 /// Simple vector of hashes, should be at most 256 items large, can be smaller if being used

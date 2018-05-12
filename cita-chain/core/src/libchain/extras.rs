@@ -17,8 +17,9 @@
 
 //! Blockchain DB extras.
 
-use bloomchain;
-use blooms::{BloomGroup, GroupPosition};
+use basic_types::LogBloomGroup;
+use bloomchain::group::GroupPosition;
+use cita_types::{H256, H264};
 use db::Key;
 use header::{BlockNumber, Header};
 use libchain::block::BlockBody;
@@ -205,25 +206,25 @@ impl Deref for LogGroupKey {
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct LogGroupPosition(GroupPosition);
 
-impl From<bloomchain::group::GroupPosition> for LogGroupPosition {
-    fn from(position: bloomchain::group::GroupPosition) -> Self {
-        LogGroupPosition(From::from(position))
+impl From<GroupPosition> for LogGroupPosition {
+    fn from(position: GroupPosition) -> Self {
+        LogGroupPosition(position)
     }
 }
 
 impl HeapSizeOf for LogGroupPosition {
     fn heap_size_of_children(&self) -> usize {
-        self.0.heap_size_of_children()
+        0
     }
 }
 
-impl Key<BloomGroup> for LogGroupPosition {
+impl Key<LogBloomGroup> for LogGroupPosition {
     type Target = LogGroupKey;
 
     fn key(&self) -> Self::Target {
         let mut result = [0u8; 6];
         result[0] = ExtrasIndex::BlocksBlooms as u8;
-        result[1] = self.0.level;
+        result[1] = self.0.level as u8;
         result[2] = (self.0.index >> 24) as u8;
         result[3] = (self.0.index >> 16) as u8;
         result[4] = (self.0.index >> 8) as u8;

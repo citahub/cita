@@ -21,7 +21,7 @@ use account_diff::*;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::*;
-use util::Address;
+use cita_types::Address;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 #[cfg_attr(feature = "ipc", binary)]

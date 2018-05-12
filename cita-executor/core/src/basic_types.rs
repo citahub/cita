@@ -16,13 +16,13 @@
 
 //! Ethcore basic typenames.
 
-use util::H2048;
-
 /// Type for a 2048-bit log-bloom, as used by our blocks.
-pub type LogBloom = ::log_entry::LogBloom;
+pub use types::log_entry::LogBloom;
 
 /// Constant 2048-bit datum for 0. Often used as a default.
-pub static ZERO_LOGBLOOM: LogBloom = H2048([0x00; 256]);
+lazy_static! {
+    pub static ref ZERO_LOGBLOOM: LogBloom = LogBloom::from([0x00; 256]);
+}
 
 #[cfg_attr(feature = "dev", allow(enum_variant_names))]
 /// Semantic boolean for when a seal/signature is included.

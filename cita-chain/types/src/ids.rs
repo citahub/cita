@@ -18,7 +18,7 @@
 //! Unique identifiers.
 
 use BlockNumber;
-use util::H256;
+use cita_types::H256;
 
 /// Uniquely identifies block.
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]

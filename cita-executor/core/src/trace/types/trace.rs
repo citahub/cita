@@ -21,11 +21,11 @@ use super::error::Error;
 
 use action_params::ActionParams;
 use basic_types::LogBloom;
-use bloomable::Bloomable;
 use executed::CallType;
 use rlp::*;
-use util::{U256, Bytes, Address};
-use util::Hashable;
+use cita_types::{U256, Address};
+use cita_types::traits::BloomTools;
+use util::Bytes;
 
 /// `Call` result.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -92,7 +92,7 @@ impl Decodable for CreateResult {
 impl CreateResult {
     /// Returns bloom.
     pub fn bloom(&self) -> LogBloom {
-        LogBloom::from_bloomed(&self.address.crypt_hash())
+        LogBloom::from_raw(&self.address)
     }
 }
 
@@ -158,7 +158,9 @@ impl Call {
     /// Returns call action bloom.
     /// The bloom contains from and to addresses.
     pub fn bloom(&self) -> LogBloom {
-        LogBloom::from_bloomed(&self.from.crypt_hash()).with_bloomed(&self.to.crypt_hash())
+        let mut b = LogBloom::from_raw(&self.from);
+        b.accrue_raw(&self.to);
+        b
     }
 }
 
@@ -214,7 +216,7 @@ impl Create {
     /// Returns bloom create action bloom.
     /// The bloom contains only from address.
     pub fn bloom(&self) -> LogBloom {
-        LogBloom::from_bloomed(&self.from.crypt_hash())
+        LogBloom::from_raw(&self.from)
     }
 }
 
@@ -233,7 +235,9 @@ pub struct Suicide {
 impl Suicide {
     /// Return suicide action bloom.
     pub fn bloom(&self) -> LogBloom {
-        LogBloom::from_bloomed(&self.address.crypt_hash()).with_bloomed(&self.refund_address.crypt_hash())
+        let mut b = LogBloom::from_raw(&self.address);
+        b.accrue_raw(&self.refund_address);
+        b
     }
 }
 

@@ -15,12 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::Address;
+use cita_types::traits::LowerHex;
 use crypto::{pubkey_to_address, KeyPair, PrivKey};
 use libproto::blockchain::{Transaction, UnverifiedTransaction};
 use rustc_hex::FromHex;
 use std::convert::TryInto;
 use test::Bencher;
-use util::*;
 use util::crypto::CreateKey;
 
 #[derive(Clone, Debug)]
@@ -73,7 +74,7 @@ impl Client {
                 let tx_bytes: Vec<u8> = tx.try_into().unwrap();
                 format!(
                     "{{\"jsonrpc\":\"2.0\",\"method\":\"cita_sendTransaction\",\"params\":[\"{}\"],\"id\":2}}",
-                    tx_bytes.to_hex()
+                    tx_bytes.lower_hex()
                 )
             }
             RpcMethod::Height => {

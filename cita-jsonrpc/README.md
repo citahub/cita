@@ -398,7 +398,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":
 
     ```js
     params: [
-        "b38e5b6572b2613cab8088f93e6835576209f2b796104779b4a43fa5adc737af"
+        "0xb38e5b6572b2613cab8088f93e6835576209f2b796104779b4a43fa5adc737af"
     ]
     ```
 
@@ -661,7 +661,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getTransaction","params":["
 * Example
 
 ```shell
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionCount","params":["5b073e9233944b5e729e46d618f0d8edf3d9c34a","0x1F"],"id":1}'
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionCount","params":["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a","0x1F"],"id":1}'
 
 // Result:
 {
@@ -747,7 +747,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getAbi","params":["73552bc4e
 * Example
 
 ```shell
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getBalance","params":["ea4f6bc98b456ef085da5c424db710489848cab5", "0x1F"],"id":1}'
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getBalance","params":["0xea4f6bc98b456ef085da5c424db710489848cab5", "0x1F"],"id":1}'
 
 // Result:
 {

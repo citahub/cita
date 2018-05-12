@@ -16,8 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bytes::Bytes;
+use cita_types::{H160, H256, U256};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
-use util::{H160, H256, U256};
 
 /// Log
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]

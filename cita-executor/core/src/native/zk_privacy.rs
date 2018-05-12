@@ -1,11 +1,11 @@
 use super::*;
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
+use cita_types::{H256, U256};
 use evm::ReturnData;
 use native::storage::*;
 use std::collections::VecDeque;
 use std::str::FromStr;
-use util::{H256, U256};
 use zktx::base::*;
 use zktx::c2p::*;
 use zktx::convert::*;

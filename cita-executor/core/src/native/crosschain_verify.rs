@@ -1,9 +1,10 @@
 use super::*;
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
+use cita_types::{Address, H256, U256};
+use cita_types::traits::LowerHex;
 use contracts::ChainManagement;
 use core::libchain::chain::TxProof;
-use util::{Address, H256, U256};
 
 #[derive(Clone)]
 pub struct CrossChainVerify {
@@ -61,7 +62,7 @@ impl CrossChainVerify {
             return Err(evm::Error::Internal("no hasher".to_string()));
         }
         // U256 to hex no leading zero
-        let mut hasher = U256::from(hasher_data.unwrap()).to_hex();
+        let mut hasher = U256::from(hasher_data.unwrap()).lower_hex();
         if hasher.len() > 8 {
             return Err(evm::Error::OutOfGas);
         }

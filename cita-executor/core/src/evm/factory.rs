@@ -23,7 +23,7 @@ use super::interpreter::SharedCache;
 use evm::Evm;
 use std::fmt;
 use std::sync::Arc;
-use util::U256;
+use cita_types::U256;
 
 #[derive(Debug, PartialEq, Clone)]
 /// Type of EVM to use.

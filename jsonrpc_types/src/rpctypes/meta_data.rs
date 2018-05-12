@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use util::Address;
+use cita_types::Address;
 
 /// Metadata of current chain.
 ///
@@ -71,10 +71,10 @@ mod tests {
             website: "https://www.google.com".to_owned(),
             genesis_timestamp: 1524000000000,
             validators: vec![
-                "0xa83ca59edc87a9cc7e384afa8d218dcca71cae88",
-                "0xbc1fafd5ba5485f97e937fe574f836b275e593dd",
-                "0xfc788efe3fda574e21691d383e429be02c530e4c",
-                "0xe9deeae8b2a43675f113d11573119b9c68e5e3d8",
+                "a83ca59edc87a9cc7e384afa8d218dcca71cae88",
+                "bc1fafd5ba5485f97e937fe574f836b275e593dd",
+                "fc788efe3fda574e21691d383e429be02c530e4c",
+                "e9deeae8b2a43675f113d11573119b9c68e5e3d8",
             ].into_iter()
                 .map(|s| Address::from_str(s).unwrap())
                 .collect::<Vec<_>>(),

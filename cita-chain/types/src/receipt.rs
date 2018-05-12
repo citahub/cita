@@ -17,12 +17,13 @@
 //! Receipt
 
 use BlockNumber;
+use cita_types::{Address, H256, U256};
+use cita_types::traits::LowerHex;
 use libproto::executor::{Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot};
 use log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
 use rlp::*;
 use std::str::FromStr;
-use util::{Address, Bytes, H256, U256};
-use util::HeapSizeOf;
+use util::{Bytes, HeapSizeOf};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
@@ -216,7 +217,7 @@ impl Receipt {
             receipt_proto.set_error(receipt_error_with_option);
         }
 
-        receipt_proto.set_gas_used(self.gas_used.to_hex());
+        receipt_proto.set_gas_used(self.gas_used.lower_hex());
         receipt_proto.set_log_bloom(self.log_bloom.to_vec());
         receipt_proto.logs = self.logs
             .clone()

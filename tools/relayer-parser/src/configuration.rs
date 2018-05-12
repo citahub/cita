@@ -17,7 +17,6 @@
 
 use serde_json;
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::time::Duration;
 
 use cita_crypto::PrivKey;
@@ -36,7 +35,7 @@ struct Chain {
 
 #[derive(Debug, Deserialize, Clone)]
 struct FileConfig {
-    pub private_key: String,
+    pub private_key: PrivKey,
     pub chains: Vec<Chain>,
 }
 
@@ -67,7 +66,7 @@ impl Config {
 
 pub fn parse_configfile(path: &str) -> Config {
     let config = FileConfig::load(path);
-    let pkey = PrivKey::from_str(config.private_key.as_str()).expect("failed to parse private key from string");
+    let pkey = config.private_key;
     let servers = config
         .chains
         .into_iter()

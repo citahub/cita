@@ -2,6 +2,7 @@
 extern crate bincode;
 extern crate chrono;
 extern crate cita_crypto as crypto;
+extern crate cita_types;
 extern crate clap;
 #[macro_use]
 extern crate libproto;
@@ -17,6 +18,7 @@ extern crate util;
 
 use bincode::{serialize, Infinite};
 use chrono::NaiveDateTime;
+use cita_types::{Address, H256};
 use clap::{App, ArgMatches};
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use libproto::Message;
@@ -28,8 +30,9 @@ use std::collections::HashMap;
 use std::convert::{Into, TryFrom, TryInto};
 use std::fs;
 use std::io::Read;
+use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender};
-use util::{Address, H256, Hashable};
+use util::Hashable;
 
 pub type PubType = (String, Vec<u8>);
 
@@ -141,7 +144,7 @@ fn parse_mock_data<'a>(mock_data: &'a mut serde_yaml::Value) -> (PrivKey, HashMa
     // get the private-key of the miner
     let pk_miner: PrivKey = {
         let pk_str = mock_data["privkey"].as_str().unwrap();
-        PrivKey::from_any_str(pk_str).unwrap()
+        PrivKey::from_str(pk_str).unwrap()
     };
 
     // get the detailed block information

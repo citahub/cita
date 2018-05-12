@@ -19,7 +19,7 @@ use crypto::*;
 use libproto::blockchain::{Transaction, UnverifiedTransaction};
 use rustc_hex::FromHex;
 use std::convert::TryInto;
-use util::*;
+use util::ToPretty;
 
 #[allow(dead_code, unused_variables)]
 #[derive(Clone, Debug)]

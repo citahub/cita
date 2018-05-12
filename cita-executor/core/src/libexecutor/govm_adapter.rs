@@ -1,4 +1,7 @@
 //use contracts::permission_management::contains_resource;
+use cita_types::{Address, H160, H256, U256};
+use cita_types::clean_0x;
+use cita_types::traits::LowerHex;
 use db::{self as db, Key, Readable, Writable};
 use error::{Error, ExecutionError};
 use executive::check_permission;
@@ -22,8 +25,6 @@ use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction};
 use util::*;
 use util::RwLock;
-use util::ToPretty;
-use util::clean_0x;
 
 #[derive(Clone)]
 pub struct ConnectInfo {
@@ -230,7 +231,7 @@ impl ExecutorService for ExecutorServiceImpl {
         let req_key = req.get_key();
         let key = H256::from_slice(String::from(req_key).as_bytes());
 
-        let address = Address::from_any_str(caddr.as_ref()).unwrap();
+        let address = Address::from_str(caddr.as_ref()).unwrap();
         let mut hi: u64 = 0;
         if let Some(info) = self.service_map.get(clean_0x(caddr).to_string(), true) {
             hi = info.height;
@@ -285,7 +286,7 @@ impl ExecutorServiceImpl {
                     if modnum > 0 {
                         pos = pos + U256::one();
                         if let Ok(val) = state.storage_at(&address, &H256::from(pos)) {
-                            out.extend_from_slice(&val.as_ref()[0..modnum as usize])
+                            out.extend_from_slice(&(val.as_ref() as &[u8])[0..modnum as usize])
                         }
                     }
                 }
@@ -389,10 +390,10 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
                     let contract_address = Address::from_slice(&t.data);
                     executor
                         .service_map
-                        .set_enable(clean_0x(&contract_address.hex()).to_string());
+                        .set_enable(contract_address.lower_hex());
                     info!(
                         "enable go contract {} at {}:{}",
-                        contract_address.pretty(),
+                        contract_address.lower_hex(),
                         ip,
                         port
                     );
@@ -409,7 +410,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
             executor.db.write(batch).unwrap();
             executor
                 .service_map
-                .set_enable_height(clean_0x(&contract_address.hex()).to_string(), h);
+                .set_enable_height(contract_address.lower_hex(), h);
 
             for storage in resp.get_storages().into_iter() {
                 let mut value = Vec::new();

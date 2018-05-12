@@ -16,6 +16,7 @@ bincode = "0.8.0"
 cpuprofiler = "0.0.3"
 uuid = { version = "0.4", features = ["v4"] }
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

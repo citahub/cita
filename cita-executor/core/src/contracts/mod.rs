@@ -31,12 +31,12 @@ pub use self::quota_manager::{AccountGasLimit, QuotaManager};
 pub use self::sys_config::SysConfig;
 pub use self::user_management::UserManagement;
 
+use cita_types::{Address, H256, U256};
 use ethabi::{decode, ParamType, Token};
 use libexecutor::call_request::CallRequest;
 use libexecutor::executor::Executor;
 use sha3::sha3_256;
 use types::ids::BlockId;
-use util::{Address, H256, U256};
 
 /// Extend `Executor` with some methods related to contract
 trait ContractCallExt {

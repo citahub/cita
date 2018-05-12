@@ -25,6 +25,7 @@ use ethcore_io::*;
 use header::BlockNumber;
 use std::fmt;
 use util::*;
+use cita_types::{H256, U256, U512};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 /// Errors concerning transaction processing.

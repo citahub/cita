@@ -20,7 +20,8 @@
 use action_params::ActionParams;
 use trace::{Tracer, VMTracer, FlatTrace, TraceError};
 use trace::trace::{Call, Create, Action, Res, CreateResult, CallResult, VMTrace, VMOperation, VMExecutedOperation, MemoryDiff, StorageDiff, Suicide};
-use util::{Bytes, Address, U256};
+use cita_types::{Address, U256};
+use util::Bytes;
 
 /// Simple executive tracer. Traces all calls and creates. Ignores delegatecalls.
 #[derive(Default)]

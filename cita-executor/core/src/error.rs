@@ -18,6 +18,7 @@
 
 use basic_types::LogBloom;
 use cita_ed25519::Error as EthkeyError;
+use cita_types::{H256, U256};
 use ethcore_io::*;
 
 pub use executed::{CallError, ExecutionError};

@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::Log;
+use cita_types::{Address, H256};
 use rpctypes::block_number::BlockNumber;
 use serde::{Deserialize, Deserializer, Serializer};
 use serde::de::DeserializeOwned;
@@ -24,7 +25,6 @@ use serde::ser::Serialize;
 use serde_json::{from_value, Value};
 use types::filter::Filter as EthFilter;
 use types::ids::BlockId;
-use util::{Address, H256};
 
 /// Variadic value
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize)]
@@ -172,12 +172,12 @@ impl<'de> Deserialize<'de> for FilterChanges {
 #[cfg(test)]
 mod tests {
     use super::{Filter, FilterChanges, Log, Topic, VariadicValue};
+    use cita_types::{H160, H256, U256};
     use rpctypes::block_number::{BlockNumber, BlockTag};
     use serde_json;
     use std::str::FromStr;
     use types::filter::Filter as EthFilter;
     use types::ids::BlockId;
-    use util::{H160, H256, U256};
 
     #[test]
     fn topic_deserialization() {

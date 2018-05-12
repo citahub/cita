@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::{H160, H256};
 use common_types::receipt::LocalizedReceipt;
 use core::libchain::chain::Chain;
 use core_executor::libexecutor::Genesis;
 use core_executor::libexecutor::executor::{Block, Config, Executor};
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
-use util::{H160, H256};
 use util::KeyValueDB;
 
 #[allow(unused_variables, dead_code)]

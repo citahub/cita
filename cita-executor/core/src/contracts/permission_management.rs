@@ -18,9 +18,9 @@
 
 use super::{encode_contract_name, to_address_vec, to_resource_vec};
 use super::ContractCallExt;
+use cita_types::{Address, H160, H256};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
-use util::{Address, H160, H256};
 
 const ALLACCOUNTS: &'static [u8] = &*b"queryAllAccounts()";
 const PERMISSIONS: &'static [u8] = &*b"queryPermissions(address)";
@@ -137,10 +137,10 @@ mod tests {
     extern crate mktemp;
     use super::{PermissionManagement, Resource};
     use super::contains_resource;
+    use cita_types::{Address, H160, H256};
     use std::collections::HashMap;
     use std::str::FromStr;
     use tests::helpers::init_executor;
-    use util::{Address, H160, H256};
 
     #[test]
     fn test_contains_resource() {

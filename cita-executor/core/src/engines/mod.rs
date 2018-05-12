@@ -15,8 +15,9 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use builtin::Builtin;
+use cita_types::{Address, U256};
 use std::collections::BTreeMap;
-use util::{Address, BytesRef, U256};
+use util::BytesRef;
 pub trait Engine: Sync + Send {
     /// The name of this engine.
     fn name(&self) -> &str;
