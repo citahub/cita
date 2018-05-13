@@ -88,7 +88,7 @@ Function signatures:
 
 其中 `category` 只有两种取值，等于 1 时表示创建合约，等于 2 时表示调用合约； `ipandport` 表示接收该交易的节点 IP 地址和端口； `txnum` 表示发送的交易个数，该配置是为了以后兼容批量交易而预留的扩展接口； `threads` 表示执行该交易启动的线程个数；而 `code` 表示编译合约后生成的字节码，即上述编译合约输出的 `Binary` 。
 
-然后使用以下命令创建智能合约，该命令执行程序文件在target/install/bin目录下：
+然后使用以下命令创建智能合约，该命令执行程序文件在bin目录下：
 
 ```bash
 trans_evm --config=config_create.json
