@@ -375,6 +375,8 @@ impl Chain {
             state_db: state_db,
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
+            // need to be cautious here
+            // because it's not read from the config file
             block_interval: RwLock::new(3000),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
