@@ -178,6 +178,8 @@ fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
 //       pool_txs_receiver --> deal_txs
 fn main() {
     micro_service_init!("cita-auth", "CITA:auth");
+    info!("Version: {}", get_build_info_str(true));
+
     // init app
     let matches = App::new("auth")
         .version(get_build_info_str(true))

@@ -103,6 +103,7 @@ include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
     micro_service_init!("cita-executor", "CITA:executor");
+    info!("Version: {}", get_build_info_str(true));
 
     let matches = App::new("executor")
         .version(get_build_info_str(true))

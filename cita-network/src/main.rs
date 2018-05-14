@@ -135,6 +135,8 @@ include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
     micro_service_init!("cita-network", "CITA:network");
+    info!("Version: {}", get_build_info_str(true));
+
     // init app
     // todo load config
     let matches = App::new("network")
