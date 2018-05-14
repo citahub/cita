@@ -322,6 +322,11 @@ impl Executor {
         *self.current_header.read().state_root()
     }
 
+    pub fn genesis_header(&self) -> Header {
+        self.block_header(BlockId::Earliest)
+            .expect("get genesis error")
+    }
+
     /// Get block header by BlockId
     pub fn block_header(&self, id: BlockId) -> Option<Header> {
         match id {
@@ -482,7 +487,7 @@ impl Executor {
             .map_or(None, |h| self.gen_state(*h.state_root(), *h.parent_hash()))
     }
 
-    /// generate block's final state.
+    /// Generate block's final state.
     pub fn gen_state(&self, root: H256, parent_hash: H256) -> Option<State<StateDB>> {
         let db = self.state_db.boxed_clone_canon(&parent_hash);
         State::from_existing(db, root, U256::from(0), self.factories.clone()).ok()
@@ -714,6 +719,10 @@ impl Executor {
         self.finalize_block(closed_block, ctx_pub);
     }
 
+    pub fn node_manager(&self) -> NodeManager {
+        NodeManager::new(self, self.genesis_header().timestamp())
+    }
+
     /// Reorg system config from system contract
     /// 1. Consensus nodes
     /// 2. BlockGasLimit and AccountGasLimit
@@ -721,7 +730,7 @@ impl Executor {
     /// 4. Prune history
     pub fn reorg_config(&self) {
         let mut conf = GlobalSysConfig::new();
-        conf.nodes = NodeManager::nodes(self);
+        conf.nodes = self.node_manager().shuffled_stake_nodes();
         conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
         let sys_config = SysConfig::new(self);
         conf.delay_active_interval = sys_config.delay_block_number() as usize;

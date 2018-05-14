@@ -19,7 +19,7 @@
 
 use super::{encode_contract_name, to_address_vec, to_low_u64_vec};
 use super::ContractCallExt;
-use libexecutor::executor::Executor;
+use libexecutor::executor::{EconomicalModel, Executor};
 use rand::{Rng, SeedableRng, StdRng};
 use rustc_hex::ToHex;
 use std::cmp::Ordering;
@@ -91,11 +91,31 @@ pub fn largest_remainder_electoral(votes: &Vec<u64>, seat_number: u64) -> Vec<u6
     seats
 }
 
-pub struct NodeManager;
+pub fn shuffle<T>(node_vec: &mut Vec<T>, rng_seed: u64) {
+    let seed: &[_] = &[rng_seed as usize];
+    let mut rng: StdRng = SeedableRng::from_seed(seed);
 
-impl NodeManager {
-    pub fn nodes(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
+    for i in 0..node_vec.len() {
+        let j: usize = rng.gen::<usize>() % (i + 1);
+        node_vec.swap(i, j);
+    }
+}
+
+/// Configuration items from system contract
+pub struct NodeManager<'a> {
+    executor: &'a Executor,
+    rng_seed: u64,
+}
+
+impl<'a> NodeManager<'a> {
+    pub fn new(executor: &'a Executor, rng_seed: u64) -> Self {
+        NodeManager { executor, rng_seed }
+    }
+
+    pub fn nodes(&self) -> Vec<Address> {
+        let output = self.executor
+            .call_method_latest(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
+
         trace!(
             "node manager output: {:?}",
             ToHex::to_hex(output.as_slice())
@@ -106,18 +126,10 @@ impl NodeManager {
         nodes
     }
 
-    pub fn shuffle_node<T>(node_vec: &mut Vec<T>, rng_seed: u64) {
-        let seed: &[_] = &[rng_seed as usize];
-        let mut rng: StdRng = SeedableRng::from_seed(seed);
+    pub fn stakes(&self) -> Vec<u64> {
+        let output = self.executor
+            .call_method_latest(&*CONTRACT_ADDRESS, &*LIST_STAKE_ENCODED.as_slice());
 
-        for i in 0..node_vec.len() {
-            let j: usize = rng.gen::<usize>() % (i + 1);
-            node_vec.swap(i, j);
-        }
-    }
-
-    pub fn stakes(executor: &Executor) -> Vec<u64> {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*LIST_STAKE_ENCODED.as_slice());
         trace!("stakes output: {:?}", ToHex::to_hex(output.as_slice()));
 
         let stakes: Vec<u64> = to_low_u64_vec(&output);
@@ -125,20 +137,25 @@ impl NodeManager {
         stakes
     }
 
-    pub fn stake_nodes(exeuctor: &Executor) -> Vec<Address> {
-        let nodes = NodeManager::nodes(&exeuctor);
-        let stakes = NodeManager::stakes(&exeuctor);
+    pub fn shuffled_stake_nodes(&self) -> Vec<Address> {
+        let mut stake_nodes = self.stake_nodes();
+        shuffle(&mut stake_nodes, self.rng_seed);
+        stake_nodes
+    }
+
+    pub fn stake_nodes(&self) -> Vec<Address> {
+        let nodes = self.nodes();
+        if let EconomicalModel::Quota = *self.executor.economical_model.read() {
+            return nodes;
+        }
+        let stakes = self.stakes();
         let total = stakes.iter().fold(0, |acc, &x| acc + x);
-        let stake_nodes: Vec<Address>;
 
         if total == 0 {
-            stake_nodes = nodes;
-        } else {
-            let total_seats = largest_remainder_electoral(&stakes, EPOCH);
-            stake_nodes = party_seats(nodes, &total_seats);
+            return nodes;
         }
-
-        stake_nodes
+        let total_seats = largest_remainder_electoral(&stakes, EPOCH);
+        party_seats(nodes, &total_seats)
     }
 }
 
@@ -155,7 +172,8 @@ mod tests {
     #[test]
     fn test_node_manager_contract() {
         let executor = init_executor();
-        let nodes = NodeManager::nodes(&executor);
+        let node_manager = NodeManager::new(&executor, executor.genesis_header().timestamp());
+        let nodes = node_manager.nodes();
 
         assert_eq!(
             nodes,
