@@ -107,6 +107,7 @@ include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
     micro_service_init!("cita-jsonrpc", "CITA:jsonrpc");
+    info!("Version: {}", get_build_info_str(true));
 
     // todo load config
     let matches = App::new("JsonRpc")
