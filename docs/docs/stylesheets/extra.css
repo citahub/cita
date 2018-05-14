@@ -4,3 +4,6 @@
 .md-nav__link--active {
   color: #3151d9;
 }
+article a[title='编辑此页'] {
+  display: none;
+}
