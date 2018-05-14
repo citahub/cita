@@ -61,6 +61,7 @@ docker kill $(docker ps -a -q)
 
 可以按照自己的需求自行选择相应的编译方式（Debug-调试模式 或 Release-发行模式）
 
+
 ```shell
 ./env.sh make debug
 ```
@@ -224,4 +225,4 @@ Result:
 
 返回块高度，表示节点已经开始正常出块。
 
-更多 API（如合约调用、交易查询）请参见[RPC 调用](https://cryptape.github.io/cita/usage-guide/rpc)。
+更多 API（如合约调用、交易查询）请参见[RPC 调用](https://cryptape.github.io/cita/zh/usage-guide/rpc/)。

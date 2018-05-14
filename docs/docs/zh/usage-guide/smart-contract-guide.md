@@ -91,7 +91,7 @@ Function signatures:
 然后使用以下命令创建智能合约：
 
 ```bash
-trans_evm --config=config_create.json
+./bin/trans_evm --config=config_create.json
 ```
 
 执行成功后，便会经过 CITA 系统的处理，然后返回创建合约交易的执行结果。
@@ -116,7 +116,7 @@ trans_evm --config=config_create.json
 然后使用以下命令调用智能合约：
 
 ```bash
-trans_evm --config=config_call.json
+./bin/trans_evm --config=config_call.json
 ```
 
 执行成功后，便会经过 CITA 系统的处理，然后返回调用合约交易的执行结果。
