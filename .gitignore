@@ -52,6 +52,7 @@ scripts/txtool/output
 
 # node
 **/node_modules
+yarn-error.log
 
 # docs
 docs/site
