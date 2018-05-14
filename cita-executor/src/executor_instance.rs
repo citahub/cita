@@ -173,6 +173,7 @@ impl ExecutorInstance {
         inum <= self.ext.get_current_height()
     }
 
+    /// TODO: Move to a separated file
     /// execute block transaction
     pub fn execute_block(&self, number: u64) {
         let block_in_queue = {
@@ -187,6 +188,7 @@ impl ExecutorInstance {
             Some(BlockInQueue::ConsensusBlock(block, _)) => {
                 if self.ext.validate_height(block.number()) && self.ext.validate_hash(block.parent_hash()) {
                     // Not Match before proposal
+                    // TODO: check proposal transaction root is eq block transaction root
                     if self.ext.is_interrupted.load(Ordering::SeqCst) {
                         self.ext.is_interrupted.store(false, Ordering::SeqCst);
                         {
@@ -247,6 +249,7 @@ impl ExecutorInstance {
                     need_clean_map = true;
                 };
             }
+            // State must be Idle or WaitFinalized after executed proposal
             Some(BlockInQueue::Proposal(proposal)) => {
                 // Interrupte pre proposal
                 if self.ext.is_interrupted.load(Ordering::SeqCst) {
@@ -259,6 +262,7 @@ impl ExecutorInstance {
                     // Interruppted by laster proposal/consensus block
                     if self.ext.is_interrupted.load(Ordering::SeqCst) {
                         self.ext.is_interrupted.store(false, Ordering::SeqCst);
+                        *self.ext.stage.write() = Stage::Idle;
                         return;
                     }
                     // After execute proposal, check whether block-in-map is changed
