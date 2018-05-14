@@ -163,7 +163,7 @@ journaldb_type = "archive"
 
 在`scripts/contracts/docs`目录也提供了`NodeManager-hashes.json`可供查看，并提供了针对用户和开发者的文档，分别为`NodeManager-userdoc.json`及`NodeManager-devdoc.json`
 
-共识节点管理的相关描述及方法介绍见[node_manager](https://cryptape.github.io/cita/zh/system_management/node/index.html#_6)
+共识节点管理的相关描述及方法介绍见[node_manager](https://cryptape.github.io/cita/en/system_management/node/index.html#_6)
 
 ### 配额管理系统合约
 
@@ -171,11 +171,11 @@ journaldb_type = "archive"
 
 在`scripts/contracts/docs`目录下也提供了`QuotaManager-hashes.json`可供查看，并提供了针对用户和开发者的文档，分别为`QuotaManager-userdoc.json`及`QuotaManager-devdoc.json`
 
-配额管理的相关描述及方法介绍见[quota_manager](https://cryptape.github.io/cita/zh/system_management/quota/index.html)
+配额管理的相关描述及方法介绍见[quota_manager](https://cryptape.github.io/cita/en/system_management/quota/index.html)
 
 ### 单独增加节点
 
-相关描述及操作见[普通节点管理](https://cryptape.github.io/cita/system_management/node/index.html#_2)
+相关描述及操作见[ordinary_node_management](https://cryptape.github.io/cita/en/system_management/node/index.html#_2)
 
 #### 权限管理系统合约
 
@@ -183,4 +183,4 @@ journaldb_type = "archive"
 
 在`scripts/contracts/docs`目录下也提供了`PermissionManagement-hashes.json`可供查看，并提供了针对用户和开发者的文档，分别为`PermissionManagement-userdoc.json`及`PermissionManagement-devdoc.json`
 
-详细的接口说明见[permission_management](https://cryptape.github.io/cita/zh/system_management/permission/index.html#_3)
+详细的接口说明见[permission_management](https://cryptape.github.io/cita/en/system_management/permission/index.html#_3)
