@@ -1,22 +1,22 @@
 # Blockchain
 
-## What is blockchain
+## What is blockchain ？
 
 Blockchain is a decentralized distributed ledger system, used to maintain a record growing block by block. Each block contains a timestamp and a link to the previous block. The blockchain is managed by a peer to peer network and all of the network nodes comply with one protocol for verifying new blocks. In design, the blockchain itself resists the modification of data. Once the data is recorded in the blockchain, it cannot be changed unless the subsequent blocks are changed and most of network nodes are collusion. In function, blockchain can be used as an open distributed ledger, which can record transactions which can be verified and kept permanently between parties.
 
-The concept of blockchain was proposed in 2008 “bitcoin White Paper” by Nakamoto Satoshi. And in 2009, Bitcoin, a digital currency, was created based on blockchain concept. Bitcoin is the first digital currency that successfully solved the Double-Bill problem without a central authority or a central server. In addition, blockchain can also be used to register and distribute digital assets, title certificates, points, etc., and transfer, pay, and trade in a peer to peer manner. Compared with the traditional centralized ledger system, the blockchain system has the advantage of full disclosure, non-discrimination, prevention of Double-Bill，and it does not depend on any trusted third party.
+The concept of blockchain was proposed in 2008 “bitcoin White Paper” by Nakamoto Satoshi. And in 2009, Bitcoin, a digital currency, was created based on blockchain concept. Bitcoin is the first digital currency that successfully solved the Double-spending problem without a central authority or a central server. In addition, blockchain can also be used to register and distribute digital assets, title certificates, points, etc., and transfer, pay, and trade in a peer to peer manner. Compared with the traditional centralized ledger system, the blockchain system has the advantage of full disclosure, non-discrimination, prevention of Double-spending，and it does not depend on any trusted third party.
 
 ## Smart Contract
 
-Smart contract is computer protocol designed to promote, validate or enforce contract, first proposed by Mick Szabo in 1994.
+A smart contract is a computer protocol intended to digitally facilitate, verify, or enforce the negotiation or performance of a contract, first proposed by Nick Szabo in 1994.
 
 A smart contract is a trading agreement that can enforce the terms of the contract by executing computer program. It is not only a computer program that can be executed automatically, but also a system participant that can respond to received information, accept and store value, and send out information and value. This smart program is just like a person who can be trusted to keep assets temporarily, and always follow the rules specified in advance.
 
 A smart contract model: A piece of code(smart contract), deployed on a shared, replicable ledger, can maintain its own state, control its own assets, and respond to received external information or assets.
 
-Smart contracts are common used in financial area. Each type of financial contract can be written by program code as a smart contract, such as CFDs, token system, digital wallet，insurance, etc.
+Smart contracts are common used in financial area. Each type of financial contract can be written by program code as a smart contract, such as CFDs, token system, digital wallet, insurance, etc.
 
-## Consensus:
+## Consensus
 
 Wikipedia defines consensus as a group decision-making process in which group members develop, and agree to support a decision in the best interest of the whole.
 
@@ -29,9 +29,12 @@ In order to avoid sybil attack, PoW and PoS are common used in permissionless bl
 
 ## Permissionless blockchain
 
-Permissionless blockchain network is completely open and anyone can participate in the network and no pre-existing trust is assumed between participants nodes.Anyone with an internet connection can send transactions to it as well as become a validator to participate in the execution of a consensus protocol. The security of the public blockchain is maintained by the “cryptocurrency economy”. In order to encourage more participants to join the network, the blockchain network typically has an incentivizing mechanism that combines workload proof and economic reward. It follows the general principle that the economic rewards are directly proportional to the contribution to the consensus process.
+A permissionless blockchain is a blockchain that anyone in the world can read, anyone in the world can send transactions to and expect to see them included if they are valid, and anyone in the world can participate in the consensus process – the process for determining what blocks get added to the chain and what the current state is. As a substitute for centralized or quasi-centralized trust, public blockchains are secured by cryptoeconomics – the combination of economic incentives and cryptographic verification using mechanisms such as proof of work or proof of stake, following a general principle that the degree to which someone can have an influence in the consensus process is proportional to the quantity of economic resources that they can bring to bear.
 
-Three characteristics of permissionless blockchain: First, to protect users from the influence of developers. In the permissionless blockchain, program developers do not have the right to interfere with users, so blockchains can protect users who use the programs; Second, the threshold is very low, which means anyone as long as with an internet connection can access it; Third, all data are public by default, although all associated participants hide their own real Identity. All the nodes gain their own security through the data publicity that each participant can see all account balances and all their trading activities.
+Three characteristics of permissionless blockchain: 
+ (1) Anyone can download the code and start running a public node on their local device, validating transactions in the network, thus participating in the consensus process – the process for determining what blocks get added to the chain and what the current state is. 
+ (2) Anyone in the world can send transactions through the network and expect to see them included in the blockchain if they are valid. 
+ (3) Anyone can read transaction on the public block explorer. Transactions are transparent, but anonymous/pseudonumous.
 
 ## Permissioned blockchain
 
@@ -53,7 +56,9 @@ However, the blockchain technology enables peer-to-peer transactions and share t
 ![](/img/4e1a2af8fb4b7db9098b371badf76fb8.jpg)
 
 In addition to payment settlement, blockchain technology can also be applied to other banking businesses: bills and supply chain finance areas, as well as risk management areas such as "know your customers (KYC)" and "anti-money laundering (AML)".
+
 In securities market, including securities issuance and trading, clearing and settlement, and shareholder voting, seamless integration with blockchain technology can be achieved. In the insurance industry, insurance operators can also apply blockchain technology to solve credit problems by recording credit on the public network and accept supervision from the entire network. The function of time stamping guarantees that all transaction records cannot be changed. This greatly reduces management costs and is more likely to return to the original intention of mutual insurance.
 In accounting and auditing field, the blockchain system can meet the stakeholders' objective requirements for independent auditing and the professional ethics requirements for auditing work. It can be applied to the audit industry and can promote more transparent and efficient audit work.
+
 In addition, in the fields of credit information, medical treatment, notarization, energy, etc., blockchains also have rich application scenarios, which are not introduced here.
 
