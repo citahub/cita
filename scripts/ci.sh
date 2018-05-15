@@ -2,8 +2,14 @@
 
 DOCKER_IMAGE="cita/cita-build:latest"
 
-SCRIPT_PATH=$(realpath $0)
-SOURCE_DIR=$(realpath "$(dirname ${SCRIPT_PATH})/..")
+if [[ `uname` == 'Darwin' ]]
+then
+    SCRIPT_PATH=$(realpath $0)
+    SOURCE_DIR=$(realpath "$(dirname ${SCRIPT_PATH})/..")
+else
+    SCRIPT_PATH=$(readlink -f $0)
+    SOURCE_DIR=$(readlink -f "$(dirname ${SCRIPT_PATH})/..")
+fi
 
 DEFAULT_HASH="sha3hash"
 DEFAULT_CRYPT="secp256k1"

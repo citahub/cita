@@ -1,7 +1,12 @@
 #!/bin/bash
 set -e
 
-SOURCE_DIR=$(realpath $(dirname $0)/../..)
+if [[ `uname` == 'Darwin' ]]
+then
+    SOURCE_DIR=$(realpath $(dirname $0)/../..)
+else
+    SOURCE_DIR=$(readlink -f $(dirname $0)/../..)
+fi
 BINARY_DIR=${SOURCE_DIR}/target/install
 
 ################################################################################

@@ -10,8 +10,15 @@ sudo() {
     set +o noglob
 }
 
-SCRIPT_PATH=`realpath $0`
-SOURCE_DIR=$(realpath $(dirname ${SCRIPT_PATH})/..)
+if [[ `uname` == 'Darwin' ]]
+then
+    SCRIPT_PATH=`realpath $0`
+    SOURCE_DIR=$(realpath $(dirname ${SCRIPT_PATH})/..)
+else
+    SCRIPT_PATH=`readlink -f $0`
+    SOURCE_DIR=$(readlink -f $(dirname ${SCRIPT_PATH})/..)
+fi
+
 cd ${SOURCE_DIR}
 
 echo "################################################################################"

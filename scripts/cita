@@ -126,7 +126,13 @@ usage(){
     echo "      usage            display help information"
 }
 
-SCRIPT_DIR=$(dirname $(realpath $0))
+if [[ `uname` == 'Darwin' ]]
+then
+    SCRIPT_DIR=$(dirname $(realpath $0))
+else
+    SCRIPT_DIR=$(dirname $(readlink -f $0))
+fi
+
 export PATH=$PATH:${SCRIPT_DIR}/../bin
 
 if [ $# -gt 3 ];

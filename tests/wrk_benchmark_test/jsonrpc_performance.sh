@@ -1,5 +1,11 @@
 #!/bin/bash
-SOURCE_DIR=$(realpath $(dirname $(realpath $0))/../..)
+
+if [[ `uname` == 'Darwin' ]]
+then
+    SOURCE_DIR=$(realpath $(dirname $(realpath $0))/../..)
+else
+    SOURCE_DIR=$(readlink -f $(dirname $(realpath $0))/../..)
+fi
 
 tests/wrk_benchmark_test/jsonrpc_performance.sh
 if [ $# == 0 ]; then

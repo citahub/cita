@@ -1,6 +1,12 @@
 #!/bin/bash
 
-SOURCE_DIR=$(realpath $(dirname $(realpath $0))/..)
+if [[ `uname` == 'Darwin' ]]
+then
+    SOURCE_DIR=$(realpath $(dirname $(realpath $0))/..)
+else
+    SOURCE_DIR=$(readlink -f $(dirname $(realpath $0))/..)
+fi
+
 cd ${SOURCE_DIR}
 
 if [ $# -ne 1 ] ; then

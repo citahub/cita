@@ -1,6 +1,12 @@
 #!/bin/bash
 
-SOURCE_DIR=$(realpath $(dirname $(realpath $0))/../..)
+if [[ `uname` == 'Darwin' ]]
+then
+    SOURCE_DIR=$(realpath $(dirname $(realpath $0))/../..)
+else
+    SOURCE_DIR=$(readlink -f $(dirname $(realpath $0))/../..)
+fi
+
 BINARY_DIR=${SOURCE_DIR}/target/install
 
 cd ${BINARY_DIR}/
