@@ -1067,7 +1067,6 @@ mod tests {
     use std::sync::Arc;
     use tests::helpers::*;
     use util::crypto::CreateKey;
-    use util::hashable::HASH_NAME;
 
     #[test]
     #[ignore]
@@ -2256,17 +2255,13 @@ mod tests {
         let a = Address::zero();
         state.require(&a, false, false).unwrap();
         state.commit().unwrap();
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                state.root().lower_hex(),
-                "a54656ec37549bd2d5cca77d4a5b32c8d6109727ccd910a54d61634a0f62b694"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                state.root().lower_hex(),
-                "7221afbf2f39fc39464a4acf9b8debc35bc657ad4454110e0a569d2b35047f3b"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "a54656ec37549bd2d5cca77d4a5b32c8d6109727ccd910a54d61634a0f62b694";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "7221afbf2f39fc39464a4acf9b8debc35bc657ad4454110e0a569d2b35047f3b";
+
+        assert_eq!(state.root().lower_hex(), expected);
     }
 
     #[test]
@@ -2304,19 +2299,14 @@ mod tests {
     #[test]
     fn create_empty() {
         let mut state = get_temp_state();
-        if HASH_NAME == "sha3" {
-            state.commit().unwrap();
-            assert_eq!(
-                state.root().lower_hex(),
-                "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
-            );
-        } else if HASH_NAME == "blake2b" {
-            state.commit().unwrap();
-            assert_eq!(
-                state.root().lower_hex(),
-                "c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9af"
-            );
-        }
+        state.commit().unwrap();
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9af";
+
+        assert_eq!(state.root().lower_hex(), expected);
     }
 
     #[test]

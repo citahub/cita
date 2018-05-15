@@ -682,7 +682,6 @@ mod tests {
     use super::*;
     use account_db::*;
     use rlp::{Compressible, RlpType, UntrustedRlp};
-    use util::hashable::HASH_NAME;
 
     #[test]
     fn account_compress() {
@@ -713,17 +712,14 @@ mod tests {
         };
 
         let a = Account::from_rlp(&rlp);
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                a.storage_root().unwrap().lower_hex(),
-                "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                a.storage_root().unwrap().lower_hex(),
-                "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b";
+
+        assert_eq!(a.storage_root().unwrap().lower_hex(), expected);
+
         assert_eq!(
             a.storage_at(
                 &Default::default(),
@@ -787,19 +783,14 @@ mod tests {
         let mut db = AccountDBMut::new(&mut db, &Address::new());
         a.set_storage(0.into(), 0x1234.into());
         assert_eq!(a.storage_root(), None);
-        if HASH_NAME == "sha3" {
-            a.commit_storage(&Default::default(), &mut db).unwrap();
-            assert_eq!(
-                a.storage_root().unwrap().lower_hex(),
-                "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
-            );
-        } else if HASH_NAME == "blake2b" {
-            a.commit_storage(&Default::default(), &mut db).unwrap();
-            assert_eq!(
-                a.storage_root().unwrap().lower_hex(),
-                "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b";
+
+        a.commit_storage(&Default::default(), &mut db).unwrap();
+        assert_eq!(a.storage_root().unwrap().lower_hex(), expected);
     }
 
     #[test]
@@ -812,19 +803,14 @@ mod tests {
         a.set_storage(1.into(), 0x1234.into());
         a.commit_storage(&Default::default(), &mut db).unwrap();
         a.set_storage(1.into(), 0.into());
-        if HASH_NAME == "sha3" {
-            a.commit_storage(&Default::default(), &mut db).unwrap();
-            assert_eq!(
-                a.storage_root().unwrap().lower_hex(),
-                "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
-            );
-        } else if HASH_NAME == "blake2b" {
-            a.commit_storage(&Default::default(), &mut db).unwrap();
-            assert_eq!(
-                a.storage_root().unwrap().lower_hex(),
-                "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b";
+
+        a.commit_storage(&Default::default(), &mut db).unwrap();
+        assert_eq!(a.storage_root().unwrap().lower_hex(), expected);
     }
 
     #[test]
@@ -836,17 +822,13 @@ mod tests {
         assert_eq!(a.code_filth, Filth::Dirty);
         assert_eq!(a.code_size(), Some(3));
         a.commit_code(&mut db);
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                a.code_hash().lower_hex(),
-                "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                a.code_hash().lower_hex(),
-                "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845";
+
+        assert_eq!(a.code_hash().lower_hex(), expected);
     }
 
     #[test]
@@ -858,17 +840,13 @@ mod tests {
         assert_eq!(a.abi_filth, Filth::Dirty);
         assert_eq!(a.abi_size(), Some(3));
         a.commit_abi(&mut db);
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                a.abi_hash().lower_hex(),
-                "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                a.abi_hash().lower_hex(),
-                "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845";
+
+        assert_eq!(a.abi_hash().lower_hex(), expected);
     }
 
     #[test]
@@ -880,31 +858,24 @@ mod tests {
         assert_eq!(a.code_filth, Filth::Dirty);
         a.commit_code(&mut db);
         assert_eq!(a.code_filth, Filth::Clean);
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                a.code_hash().lower_hex(),
-                "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                a.code_hash().lower_hex(),
-                "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845";
+
+        assert_eq!(a.code_hash().lower_hex(), expected);
+
         a.reset_code(vec![0x55]);
         assert_eq!(a.code_filth, Filth::Dirty);
         a.commit_code(&mut db);
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                a.code_hash().lower_hex(),
-                "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                a.code_hash().lower_hex(),
-                "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01";
+
+        assert_eq!(a.code_hash().lower_hex(), expected);
     }
 
     #[test]
@@ -916,31 +887,24 @@ mod tests {
         assert_eq!(a.abi_filth, Filth::Dirty);
         a.commit_abi(&mut db);
         assert_eq!(a.abi_filth, Filth::Clean);
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                a.abi_hash().lower_hex(),
-                "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                a.abi_hash().lower_hex(),
-                "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845";
+
+        assert_eq!(a.abi_hash().lower_hex(), expected);
+
         a.reset_abi(vec![0x55]);
         assert_eq!(a.abi_filth, Filth::Dirty);
         a.commit_abi(&mut db);
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                a.abi_hash().lower_hex(),
-                "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                a.abi_hash().lower_hex(),
-                "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01";
+
+        assert_eq!(a.abi_hash().lower_hex(), expected);
     }
 
     #[test]
@@ -968,21 +932,20 @@ mod tests {
             Bytes::new(),
             Bytes::new(),
         );
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                a.rlp().to_hex(),
-                "f8658080a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2\
-                 460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470a0c5d2460186f7233c92\
-                 7e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                a.rlp().to_hex(),
-                "f8658080a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67f\
-                 729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9fa0d67f729f8d19ed2e92\
-                 f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "f8658080a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622f\
+                        b5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfa\
+                        d8045d85a470a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7b\
+                        fad8045d85a470";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "f8658080a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13\
+                        ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7\
+                        665f46c36b9fa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41\
+                        c7665f46c36b9f";
+
+        assert_eq!(a.rlp().to_hex(), expected);
+
         assert_eq!(a.nonce(), &U256::from(0u8));
         assert_eq!(a.code_hash(), HASH_EMPTY);
         assert_eq!(a.abi_hash(), HASH_EMPTY);
@@ -998,21 +961,19 @@ mod tests {
             Bytes::new(),
             Bytes::new(),
         );
-        if HASH_NAME == "sha3" {
-            assert_eq!(
-                a.rlp().to_hex(),
-                "f8658080a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d\
-                 2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470a0c5d2460186f7233c\
-                 927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-            );
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(
-                a.rlp().to_hex(),
-                "f8658080a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9afa0d67\
-                 f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9fa0d67f729f8d19ed2e\
-                 92f817cf5c31c7812dd39ed35b0b1aae41c7665f46c36b9f"
-            );
-        }
+
+        #[cfg(feature = "sha3hash")]
+        let expected = "f8658080a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622f\
+                        b5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfa\
+                        d8045d85a470a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7b\
+                        fad8045d85a470";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "f8658080a0c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13\
+                        ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7\
+                        665f46c36b9fa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41\
+                        c7665f46c36b9f";
+
+        assert_eq!(a.rlp().to_hex(), expected);
     }
 
 }

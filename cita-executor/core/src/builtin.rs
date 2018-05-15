@@ -206,7 +206,6 @@ mod tests {
     use util::BytesRef;
     use util::crypto::{Sign, CreateKey};
     // use ethjson;
-    use util::hashable::HASH_NAME;
 
     #[test]
     fn identity() {
@@ -288,13 +287,12 @@ mod tests {
         let i = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
 
         let mut o = [255u8; 32];
-        if HASH_NAME == "sha3" {
-            f.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
-            assert_eq!(&o[..], &(FromHex::from_hex("000000000000000000000000c08b5542d177ac6686946920409741463a15dddb").unwrap())[..]);
-        } else if HASH_NAME == "blake2b" {
-            f.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
-            assert_eq!(&o[..], &(FromHex::from_hex("0000000000000000000000009f374781e8bf2e7dc910b0ee56baf9c2d475f1d9").unwrap())[..]);
-        }
+        f.execute(&i[..], &mut BytesRef::Fixed(&mut o[..]));
+        #[cfg(feature = "sha3hash")]
+        let expected = "000000000000000000000000c08b5542d177ac6686946920409741463a15dddb";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "0000000000000000000000009f374781e8bf2e7dc910b0ee56baf9c2d475f1d9";
+        assert_eq!(&o[..], &(FromHex::from_hex(expected).unwrap())[..]);
 
         let mut o8 = [255u8; 8];
         f.execute(&i[..], &mut BytesRef::Fixed(&mut o8[..]));
@@ -302,11 +300,11 @@ mod tests {
 
         let mut o34 = [255u8; 34];
         f.execute(&i[..], &mut BytesRef::Fixed(&mut o34[..]));
-        if HASH_NAME == "sha3" {
-            assert_eq!(&o34[..], &(FromHex::from_hex("000000000000000000000000c08b5542d177ac6686946920409741463a15dddbffff").unwrap())[..]);
-        } else if HASH_NAME == "blake2b" {
-            assert_eq!(&o34[..], &(FromHex::from_hex("0000000000000000000000009f374781e8bf2e7dc910b0ee56baf9c2d475f1d9ffff").unwrap())[..]);
-        }
+        #[cfg(feature = "sha3hash")]
+        let expected = "000000000000000000000000c08b5542d177ac6686946920409741463a15dddbffff";
+        #[cfg(feature = "blake2bhash")]
+        let expected = "0000000000000000000000009f374781e8bf2e7dc910b0ee56baf9c2d475f1d9ffff";
+        assert_eq!(&o34[..], &(FromHex::from_hex(expected).unwrap())[..]);
 
         let i_bad = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001a650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
         let mut o = [255u8; 32];
