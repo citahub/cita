@@ -370,6 +370,10 @@ impl Executor {
         self.current_header.read().number()
     }
 
+    pub fn get_current_timestamp(&self) -> u64 {
+        self.current_header.read().timestamp()
+    }
+
     pub fn get_max_height(&self) -> u64 {
         self.max_height.load(Ordering::SeqCst) as u64
     }
@@ -409,6 +413,21 @@ impl Executor {
             block_number - 1
         );
         current_height + 1 == block_number
+    }
+
+    /// Verify the block generation time interval
+    /// Make sure it's longer than 3s
+    pub fn validate_timestamp(&self, timestamp: u64) -> bool {
+        let sys_config = SysConfig::new(self);
+        let block_interval = sys_config.block_interval();
+        let current_timestamp = self.get_current_timestamp();
+        trace!(
+            "validate_timestamp current_timestamp {:?} timestamp {:?}",
+            current_timestamp,
+            timestamp,
+        );
+
+        timestamp - current_timestamp >= block_interval
     }
 
     /// Build last 256 block hashes.
