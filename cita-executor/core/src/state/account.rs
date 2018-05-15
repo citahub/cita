@@ -718,10 +718,10 @@ mod tests {
                 a.storage_root().unwrap().lower_hex(),
                 "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
             );
-        } else if HASH_NAME == "balec2b" {
+        } else if HASH_NAME == "blake2b" {
             assert_eq!(
                 a.storage_root().unwrap().lower_hex(),
-                "f2294578afd49317eb0ac5349dbf9206abcfc1484b25b04aa68df925c629c3ef"
+                "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b"
             );
         }
         assert_eq!(
