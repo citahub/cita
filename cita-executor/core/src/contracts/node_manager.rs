@@ -17,7 +17,7 @@
 
 //! Node manager.
 
-use super::{encode_contract_name, to_address_vec, to_low_u64_vec};
+use super::{encode_contract_name, to_address_vec, to_u256_vec};
 use super::ContractCallExt;
 use libexecutor::executor::{EconomicalModel, Executor};
 use rand::{Rng, SeedableRng, StdRng};
@@ -56,7 +56,6 @@ where
 /// Hare quota
 pub fn largest_remainder_electoral(votes: &Vec<u64>, seat_number: u64) -> Vec<u64> {
     let total = votes.iter().fold(0, |acc, &x| acc + x);
-    // TODO: PLS fix me!!!
     let hare_quota = total as f64 / seat_number as f64;
 
     let votes_quota: Vec<f64> = votes
@@ -132,7 +131,7 @@ impl<'a> NodeManager<'a> {
 
         trace!("stakes output: {:?}", ToHex::to_hex(output.as_slice()));
 
-        let stakes: Vec<u64> = to_low_u64_vec(&output);
+        let stakes: Vec<u64> = to_u256_vec(&output).iter().map(|i| i.low_u64()).collect();
         trace!("node manager stakes: {:?}", stakes);
         stakes
     }

@@ -208,7 +208,7 @@ function test_demo_contract () {
 
     title "Check all authorities."
     local data=$(printf "%064x" "${side_chain_id}")
-    local code="$(func_encode 'getAuthorities(uint256)')${data}"
+    local code="$(func_encode 'getAuthorities(uint64)')${data}"
     assert_equal \
         "$(parse_addresses \
             $(call_contract main "${CMNC_ADDR}" "${code}") \
@@ -217,7 +217,7 @@ function test_demo_contract () {
             | sort | xargs -I {} printf {})" \
         "The authorities is not right for side chain."
     local data=$(printf "%064x" "${main_chain_id}")
-    local code="$(func_encode 'getAuthorities(uint256)')${data}"
+    local code="$(func_encode 'getAuthorities(uint64)')${data}"
     assert_equal \
         "$(parse_addresses \
             $(call_contract side "${CMNC_ADDR}" "${code}") \

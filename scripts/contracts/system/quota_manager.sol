@@ -8,8 +8,8 @@ import "./quota_interface.sol";
 /// @notice The address: 0x00000000000000000000000000000000013241a3
 contract QuotaManager is QuotaInterface {
 
-    mapping (address => bool) admins;
-    mapping (address => uint) quota;
+    mapping(address => bool) admins;
+    mapping(address => uint) quota;
     // Block quota limit
     uint BQL = 1073741824;
     // Default account quota limit

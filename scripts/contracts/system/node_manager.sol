@@ -34,11 +34,11 @@ interface NodeInterface {
     /// @notice Check the account is admin
     function isAdmin(address) view public returns (bool);
     /// @notice Set node stake
-    function setStake(address _node, uint stake) public;
+    function setStake(address _node, uint64 stake) public;
     /// @notice Node stake list
-    function listStake() view public returns (uint[] _stakes);
+    function listStake() view public returns (uint64[] _stakes);
     /// @notice Stake permillage
-    function stakePermillage(address _node) view public returns (uint);
+    function stakePermillage(address _node) view public returns (uint64);
 }
 
 /// @title Node manager contract
@@ -52,7 +52,7 @@ contract NodeManager is NodeInterface {
     mapping(uint => bool) block_op;
     // Consensus node list
     address[] nodes;
-    mapping(address => uint) stakes;
+    mapping(address => uint64) stakes;
 
     // Default: Close
     enum NodeStatus { Close, Ready, Start }
@@ -84,7 +84,7 @@ contract NodeManager is NodeInterface {
     }
 
     /// @notice Setup
-    function NodeManager(address[] _nodes, address[] _admins, uint[] _stakes) public {
+    function NodeManager(address[] _nodes, address[] _admins, uint64[] _stakes) public {
         // Initialize the address to Start
         require(_nodes.length == _stakes.length);
         for (uint i = 0; i < _nodes.length; i++) {
@@ -181,7 +181,7 @@ contract NodeManager is NodeInterface {
     }
 
     /// @notice Set node stake
-    function setStake(address _node, uint stake)
+    function setStake(address _node, uint64 stake)
         public
         onlyAdmin
     {
@@ -191,8 +191,8 @@ contract NodeManager is NodeInterface {
 
     /// @notice Node stake list
     /// @return All the node stake list
-    function listStake() view public returns (uint[] memory _stakes) {
-        _stakes = new uint[](nodes.length);
+    function listStake() view public returns (uint64[] memory _stakes) {
+        _stakes = new uint64[](nodes.length);
         for (uint j = 0; j < nodes.length; j++) {
             _stakes[j] = stakes[nodes[j]];
         }
@@ -203,11 +203,11 @@ contract NodeManager is NodeInterface {
     /// This is the slot number which ignore the remainder, not exactly precise.
     /// https://en.wikipedia.org/wiki/Largest_remainder_method
     /// Hare quota
-    function stakePermillage(address _node) view public returns (uint) {
+    function stakePermillage(address _node) view public returns (uint64) {
         uint total;
         for (uint j = 0; j < nodes.length; j++) {
-            total = SafeMath.add(total, stakes[nodes[j]]);
+            total = SafeMath.add(uint(total), uint(stakes[nodes[j]]));
         }
-        return SafeMath.div(SafeMath.mul(stakes[_node], 1000), total);
+        return uint64(SafeMath.div(SafeMath.mul(stakes[_node], 1000), total));
     }
 }

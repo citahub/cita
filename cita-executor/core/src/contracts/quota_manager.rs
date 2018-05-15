@@ -17,7 +17,7 @@
 
 //! Quota manager.
 
-use super::{encode_contract_name, to_address_vec, to_low_u64, to_low_u64_vec};
+use super::{encode_contract_name, to_address_vec, to_u256, to_u256_vec};
 use super::ContractCallExt;
 use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
@@ -101,7 +101,7 @@ impl QuotaManager {
         let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice());
         trace!("quota output: {:?}", output);
 
-        to_low_u64_vec(&output)
+        to_u256_vec(&output).iter().map(|i| i.low_u64()).collect()
     }
 
     /// Account array
@@ -117,7 +117,7 @@ impl QuotaManager {
         let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice());
         trace!("block_gas_limit output: {:?}", output);
 
-        to_low_u64(&output)
+        to_u256(&output).low_u64()
     }
 
     /// Global account gas limit
@@ -125,7 +125,7 @@ impl QuotaManager {
         let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*DEFAULT_AQL_HASH.as_slice());
         trace!("account_gas_limit output: {:?}", output);
 
-        to_low_u64(&output)
+        to_u256(&output).low_u64()
     }
 }
 

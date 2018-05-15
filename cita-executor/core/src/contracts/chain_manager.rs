@@ -25,7 +25,7 @@ use std::str::FromStr;
 use util::{Address, H160, H256, U256};
 
 const CHAIN_ID: &'static [u8] = &*b"getChainId()";
-const AUTHORITIES: &'static [u8] = &*b"getAuthorities(uint256)";
+const AUTHORITIES: &'static [u8] = &*b"getAuthorities(uint64)";
 
 lazy_static! {
     static ref CHAIN_ID_ENCODED: Vec<u8> = encode_contract_name(CHAIN_ID);
