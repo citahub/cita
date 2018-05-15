@@ -714,7 +714,10 @@ impl Executor {
                     .state
                     .add_balance(&new_proposer, &BLOCK_REWARD)
                     .expect("Trie error while add proposer reward");
+
                 closed_block.state.commit().expect("commit trie error");
+                let state_root = closed_block.state.root().clone();
+                closed_block.set_state_root(state_root);
             }
         }
 
