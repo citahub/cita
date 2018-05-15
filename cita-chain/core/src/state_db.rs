@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::H256;
 use state::backend::*;
-use util::{DBTransaction, H256, HashDB, JournalDB, UtilError};
+use util::{DBTransaction, HashDB, JournalDB, UtilError};
 
 pub struct StateDB {
     /// Backing database.

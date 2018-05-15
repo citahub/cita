@@ -19,11 +19,12 @@
 
 use super::{encode_contract_name, to_address_vec, to_u256, to_u256_vec};
 use super::ContractCallExt;
+use cita_types::{Address, H160};
+use cita_types::traits::LowerHex;
 use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
-use util::{Address, H160};
 
 const QUOTAS: &'static [u8] = &*b"getQuotas()";
 const ACCOUNTS: &'static [u8] = &*b"getAccounts()";
@@ -75,7 +76,7 @@ impl Into<ProtoAccountGasLimit> for AccountGasLimit {
         r.common_gas_limit = self.common_gas_limit;
         let specific_gas_limit: HashMap<String, u64> = self.get_specific_gas_limit()
             .iter()
-            .map(|(k, v)| (k.hex(), *v))
+            .map(|(k, v)| (k.lower_hex(), *v))
             .collect();
         r.set_specific_gas_limit(specific_gas_limit);
         r
@@ -135,9 +136,9 @@ mod tests {
     extern crate mktemp;
     use super::QuotaManager;
     use cita_crypto::{PrivKey, SIGNATURE_NAME};
+    use cita_types::H160;
     use std::str::FromStr;
     use tests::helpers::init_executor;
-    use util::H160;
 
     #[test]
     fn test_users() {

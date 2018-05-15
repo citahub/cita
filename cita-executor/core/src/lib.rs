@@ -34,8 +34,6 @@ extern crate serde_json;
 #[macro_use]
 extern crate util;
 
-extern crate bloomable;
-extern crate bloomchain;
 #[macro_use]
 extern crate rlp_derive;
 extern crate rustc_hex;
@@ -43,6 +41,7 @@ extern crate rustc_hex;
 extern crate bit_set;
 extern crate cita_ed25519;
 extern crate cita_secp256k1;
+extern crate cita_types;
 extern crate common_types as types;
 extern crate crossbeam;
 extern crate crypto;
@@ -85,7 +84,6 @@ pub mod trace;
 pub mod basic_types;
 pub mod env_info;
 pub mod builtin;
-pub mod blooms;
 pub mod header;
 pub mod cache_manager;
 pub mod executive;

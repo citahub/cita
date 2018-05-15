@@ -18,9 +18,9 @@
 use super::{BlockTransaction, FullTransaction};
 use super::Proof;
 use super::RpcBlock;
+use cita_types::{Address, H256, U256};
 use libproto::{Block as ProtoBlock, BlockHeader as ProtoBlockHeader};
 use std::convert::TryFrom;
-use util::{Address, H256, U256};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BlockBody {

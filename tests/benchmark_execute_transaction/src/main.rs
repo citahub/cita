@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate cita_crypto;
+extern crate cita_types;
 extern crate clap;
 extern crate common_types as types;
 extern crate core_executor;
@@ -30,6 +31,7 @@ extern crate serde_json;
 extern crate util;
 
 use cita_crypto::KeyPair;
+use cita_types::traits::LowerHex;
 use core_executor::libexecutor::block::{Block, BlockBody, Drain, OpenBlock};
 use mktemp::Temp;
 use rustc_serialize::hex::FromHex;
@@ -48,11 +50,11 @@ use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 //use std::sync::mpsc::channel;
 //use std::thread;
+use cita_types::{Address, H256, U256};
 use clap::App;
 use libproto::blockchain;
 use std::time::Instant;
 use types::transaction::SignedTransaction;
-use util::{Address, H256, U256};
 use util::crypto::CreateKey;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
@@ -126,9 +128,9 @@ pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u3
         if to == Address::from(0) {
             tx.set_to(String::from(""));
         } else {
-            tx.set_to(to.hex());
+            tx.set_to(to.lower_hex());
         }
-        tx.set_nonce(U256::from(i).to_hex());
+        tx.set_nonce(U256::from(i).lower_hex());
         tx.set_data(data.clone());
         tx.set_valid_until_block(100);
         tx.set_quota(1844674);

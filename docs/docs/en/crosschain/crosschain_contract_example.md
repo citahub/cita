@@ -82,7 +82,7 @@ cita-relayer-parser -c SEND_CHAIN_ID -t TX_HASH -f relayer-parser.json
 
 ```json
 {
-    "private_key": "1111111111111111111111111111111111111111111111111111111111111111",
+    "private_key": "0x1111111111111111111111111111111111111111111111111111111111111111",
     "chains": [
         {
             "id": 1,

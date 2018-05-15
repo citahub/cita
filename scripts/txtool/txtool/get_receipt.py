@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 from jsonrpcclient.http_client import HTTPClient
 from url_util import endpoint
-from util import findDict, remove_hex_0x
+from util import findDict
 from util import run_command
 import simplejson
 import time
@@ -61,7 +61,7 @@ def main():
     tx_hash = opts.tx if opts.tx else get_transaction_hash()
 
     while True:
-        receipt = get_receipt_by(remove_hex_0x(tx_hash))
+        receipt = get_receipt_by(tx_hash)
         if receipt is not None:
             print(simplejson.dumps(receipt, indent=2))
             topics = _log_topics(receipt)

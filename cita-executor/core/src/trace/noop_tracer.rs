@@ -20,7 +20,8 @@
 use action_params::ActionParams;
 use trace::{Tracer, VMTracer, FlatTrace, TraceError};
 use trace::trace::{Call, Create, VMTrace};
-use util::{Bytes, Address, U256};
+use cita_types::{Address, U256};
+use util::Bytes;
 
 /// Nonoperative tracer. Does not trace anything.
 pub struct NoopTracer;

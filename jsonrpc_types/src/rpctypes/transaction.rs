@@ -16,10 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bytes::Bytes;
+use cita_types::{H256, U256};
 use libproto::FullTransaction as PTransaction;
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use std::convert::TryInto;
-use util::{H256, U256};
 
 // TODO: No need Deserialize. Just because test in trans.rs
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

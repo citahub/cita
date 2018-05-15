@@ -119,7 +119,7 @@ function send_contract () {
     local input="$5"
     local code="$(abi_encode "${abi}" "${func}" "${input}")"
     txtool_run ${chain} make_tx.py --privkey "${PKEY}" \
-        --to "${addr}" --code "0x${code}"
+        --to "0x${addr}" --code "0x${code}"
     txtool_run ${chain} send_tx.py
     txtool_run ${chain} get_receipt.py --forever true
 }
@@ -137,7 +137,7 @@ function call_contract () {
             exit 1
             ;;
     esac
-    curl -s -X POST -d "$(printf "${ETHCALL}" "${addr}" "0x${code}")" \
+    curl -s -X POST -d "$(printf "${ETHCALL}" "0x${addr}" "0x${code}")" \
         127.0.0.1:${port} \
         | jq .result | xargs -I {} echo {}
 }
@@ -261,7 +261,7 @@ function test_demo_contract () {
         "${side_chain_id}, '${SIDE_CONTRACT_ADDR}', ${crosschain_tokens}"
     local maintx=$(get_tx main)
 
-    title "Waiting for proof."
+    title "Waiting for proof for ${maintx}."
     local height_now=$(txtool_run main block_number.py | tail -1)
     wait_chain_for_height main $((height_now+3))
 
@@ -269,6 +269,8 @@ function test_demo_contract () {
     local sidetx=$(./bin/cita-relayer-parser \
         -c ${main_chain_id} -t ${maintx} \
         -f ../../tools/relayer-parser/res/relayer-parser-demo.json)
+
+    title "Waiting for receipt for ${sidetx}."
     txtool_run side get_receipt.py --tx=${sidetx} --forever true
 
     title "Check balance for both chains after crosschain transaction."

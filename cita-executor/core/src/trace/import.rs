@@ -19,7 +19,7 @@
 
 use header::BlockNumber;
 use trace::FlatBlockTraces;
-use util::H256;
+use cita_types::H256;
 
 /// Traces import request.
 pub struct ImportRequest {

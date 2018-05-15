@@ -23,6 +23,7 @@
 #![allow(unused_extern_crates)]
 extern crate bincode;
 extern crate cita_crypto as crypto;
+extern crate cita_types;
 extern crate common_types as types;
 extern crate libproto;
 #[macro_use]
@@ -37,7 +38,6 @@ extern crate serde_json;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_json;
-extern crate util;
 extern crate uuid;
 
 mod id;

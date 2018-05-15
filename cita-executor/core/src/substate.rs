@@ -21,7 +21,7 @@ use evm::Schedule;
 use log_entry::LogEntry;
 use state::CleanupMode;
 use std::collections::HashSet;
-use util::{Address, U256};
+use cita_types::{Address, U256};
 
 /// State changes which should be applied in finalize,
 /// after transaction is fully executed.

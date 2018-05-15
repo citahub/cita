@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::{Address, H256, U256, clean_0x};
+use cita_types::traits::ConvertType;
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 use db::{self as db, Writable};
@@ -30,9 +32,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
-use std::str::FromStr;
 use std::sync::Arc;
-use util::{Address, H256, U256, clean_0x};
 use util::kvdb::KeyValueDB;
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
@@ -91,7 +91,7 @@ impl Genesis {
                 let mut hash_str = "0x00000000000000000000000000000000".to_string();
                 hash_str += &hasher.result_str();
                 info!("resource hash {}", hash_str);
-                pre_hash = H256::from_str(hash_str.as_str()).unwrap();
+                pre_hash = H256::from_unaligned(hash_str.as_str()).unwrap();
             }
         }
 
@@ -118,7 +118,7 @@ impl Genesis {
         info!("This is the first time to init executor, and it will init contracts on height 0");
         trace!("**** begin **** \n");
         for (address, contract) in self.spec.alloc.clone() {
-            let address = Address::from_any_str(address.as_str()).unwrap();
+            let address = Address::from_unaligned(address.as_str()).unwrap();
             state.new_contract(&address, U256::from(0), U256::from(0));
             {
                 state
@@ -129,8 +129,8 @@ impl Genesis {
                 state
                     .set_storage(
                         &address,
-                        H256::from_any_str(key.as_ref()).unwrap(),
-                        H256::from_any_str(values.as_ref()).unwrap(),
+                        H256::from_unaligned(key.as_ref()).unwrap(),
+                        H256::from_unaligned(values.as_ref()).unwrap(),
                     )
                     .expect("init code set_storage fail");
             }
@@ -138,9 +138,9 @@ impl Genesis {
         state.commit().expect("state commit error");
         //query is store in chain
         for (address, contract) in &self.spec.alloc {
-            let address = Address::from_any_str(address.as_str()).unwrap();
+            let address = Address::from_unaligned(address.as_str()).unwrap();
             for (key, values) in &contract.storage {
-                let result = state.storage_at(&address, &H256::from_any_str(key.as_ref()).unwrap());
+                let result = state.storage_at(&address, &H256::from_unaligned(key.as_ref()).unwrap());
                 trace!(
                     "address = {:?}, key = {:?}, result = {:?}",
                     address,
@@ -148,7 +148,7 @@ impl Genesis {
                     result
                 );
                 assert_eq!(
-                    H256::from_any_str(values.as_ref()).unwrap(),
+                    H256::from_unaligned(values.as_ref()).unwrap(),
                     result.expect("storage error")
                 );
             }

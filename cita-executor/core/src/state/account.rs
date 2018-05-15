@@ -19,6 +19,8 @@
 
 //! Single account in the system.
 
+use cita_types::{Address, H256, U256};
+use cita_types::traits::LowerHex;
 use lru_cache::LruCache;
 use pod_account::*;
 use rlp::*;
@@ -355,7 +357,7 @@ impl Account {
             "Account::cache_code: ic={}; self.code_hash={:?}, self.code_cache={}",
             self.is_cached(),
             self.code_hash,
-            self.code_cache.pretty()
+            self.code_cache.lower_hex()
         );
 
         if self.is_cached() {
@@ -382,7 +384,7 @@ impl Account {
             "Account::cache_abi: ic={}; self.abi_hash={:?}, self.abi_cache={}",
             self.is_abi_cached(),
             self.abi_hash,
-            self.abi_cache.pretty()
+            self.abi_cache.lower_hex()
         );
 
         if self.is_abi_cached() {
@@ -409,7 +411,7 @@ impl Account {
             "Account::cache_given_code: ic={}; self.code_hash={:?}, self.code_cache={}",
             self.is_cached(),
             self.code_hash,
-            self.code_cache.pretty()
+            self.code_cache.lower_hex()
         );
 
         self.code_size = Some(code.len());
@@ -423,7 +425,7 @@ impl Account {
             "Account::cache_given_abi: ic={}; self.abi_hash={:?}, self.abi_cache={}",
             self.is_abi_cached(),
             self.abi_hash,
-            self.abi_cache.pretty()
+            self.abi_cache.lower_hex()
         );
 
         self.abi_size = Some(abi.len());
@@ -437,7 +439,7 @@ impl Account {
             "Account::cache_code_size: ic={}; self.code_hash={:?}, self.code_cache={}",
             self.is_cached(),
             self.code_hash,
-            self.code_cache.pretty()
+            self.code_cache.lower_hex()
         );
         self.code_size.is_some() || if self.code_hash != HASH_EMPTY {
             match db.get(&self.code_hash) {
@@ -462,7 +464,7 @@ impl Account {
             "Account::cache_abi_size: ic={}; self.abi_hash={:?}, self.abi_cache={}",
             self.is_abi_cached(),
             self.abi_hash,
-            self.abi_cache.pretty()
+            self.abi_cache.lower_hex()
         );
         self.abi_size.is_some() || if self.abi_hash != HASH_EMPTY {
             match db.get(&self.abi_hash) {
@@ -713,12 +715,12 @@ mod tests {
         let a = Account::from_rlp(&rlp);
         if HASH_NAME == "sha3" {
             assert_eq!(
-                a.storage_root().unwrap().hex(),
+                a.storage_root().unwrap().lower_hex(),
                 "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
             );
         } else if HASH_NAME == "balec2b" {
             assert_eq!(
-                a.storage_root().unwrap().hex(),
+                a.storage_root().unwrap().lower_hex(),
                 "f2294578afd49317eb0ac5349dbf9206abcfc1484b25b04aa68df925c629c3ef"
             );
         }
@@ -788,13 +790,13 @@ mod tests {
         if HASH_NAME == "sha3" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
             assert_eq!(
-                a.storage_root().unwrap().hex(),
+                a.storage_root().unwrap().lower_hex(),
                 "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
             );
         } else if HASH_NAME == "blake2b" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
             assert_eq!(
-                a.storage_root().unwrap().hex(),
+                a.storage_root().unwrap().lower_hex(),
                 "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b"
             );
         }
@@ -813,13 +815,13 @@ mod tests {
         if HASH_NAME == "sha3" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
             assert_eq!(
-                a.storage_root().unwrap().hex(),
+                a.storage_root().unwrap().lower_hex(),
                 "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2"
             );
         } else if HASH_NAME == "blake2b" {
             a.commit_storage(&Default::default(), &mut db).unwrap();
             assert_eq!(
-                a.storage_root().unwrap().hex(),
+                a.storage_root().unwrap().lower_hex(),
                 "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b"
             );
         }
@@ -836,12 +838,12 @@ mod tests {
         a.commit_code(&mut db);
         if HASH_NAME == "sha3" {
             assert_eq!(
-                a.code_hash().hex(),
+                a.code_hash().lower_hex(),
                 "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
-                a.code_hash().hex(),
+                a.code_hash().lower_hex(),
                 "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
             );
         }
@@ -858,12 +860,12 @@ mod tests {
         a.commit_abi(&mut db);
         if HASH_NAME == "sha3" {
             assert_eq!(
-                a.abi_hash().hex(),
+                a.abi_hash().lower_hex(),
                 "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
-                a.abi_hash().hex(),
+                a.abi_hash().lower_hex(),
                 "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
             );
         }
@@ -880,12 +882,12 @@ mod tests {
         assert_eq!(a.code_filth, Filth::Clean);
         if HASH_NAME == "sha3" {
             assert_eq!(
-                a.code_hash().hex(),
+                a.code_hash().lower_hex(),
                 "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
-                a.code_hash().hex(),
+                a.code_hash().lower_hex(),
                 "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
             );
         }
@@ -894,12 +896,12 @@ mod tests {
         a.commit_code(&mut db);
         if HASH_NAME == "sha3" {
             assert_eq!(
-                a.code_hash().hex(),
+                a.code_hash().lower_hex(),
                 "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
-                a.code_hash().hex(),
+                a.code_hash().lower_hex(),
                 "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01"
             );
         }
@@ -916,12 +918,12 @@ mod tests {
         assert_eq!(a.abi_filth, Filth::Clean);
         if HASH_NAME == "sha3" {
             assert_eq!(
-                a.abi_hash().hex(),
+                a.abi_hash().lower_hex(),
                 "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
-                a.abi_hash().hex(),
+                a.abi_hash().lower_hex(),
                 "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845"
             );
         }
@@ -930,12 +932,12 @@ mod tests {
         a.commit_abi(&mut db);
         if HASH_NAME == "sha3" {
             assert_eq!(
-                a.abi_hash().hex(),
+                a.abi_hash().lower_hex(),
                 "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
-                a.abi_hash().hex(),
+                a.abi_hash().lower_hex(),
                 "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01"
             );
         }

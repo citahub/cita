@@ -22,6 +22,7 @@
 //! Unconfirmed sub-states are managed with `checkpoint`s which may be canonicalized
 //! or rolled back.
 
+use cita_types::{Address, H256};
 use std::collections::hash_set::HashSet;
 use util::*;
 pub mod backend;

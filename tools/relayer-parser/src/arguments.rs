@@ -18,7 +18,7 @@
 use clap;
 use std::str::FromStr;
 
-use util::H256;
+use cita_types::H256;
 
 pub struct AppArgs {
     pub cfg_file: String,

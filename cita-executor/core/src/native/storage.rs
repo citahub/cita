@@ -15,12 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::{H256, U256};
 use evm::Error as EvmError;
 use evm::Ext;
 use std::boxed::Box;
 use std::convert::From;
 use std::string::FromUtf8Error;
-use util::{H256, U256, sha3};
+use util::sha3;
 
 ////////////////////////////////////////////////////////////////////////////////
 pub trait Serialize {

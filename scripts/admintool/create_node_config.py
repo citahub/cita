@@ -12,7 +12,7 @@ def main():
 
     secret_path = os.path.join(node_path, "privkey")
     with open(secret_path, "r") as secret_key:
-        signer = secret_key.read()
+        signer = secret_key.read().strip()
 
     params = dict(signer=signer)
     dump_path = os.path.join(node_path, "consensus.toml")

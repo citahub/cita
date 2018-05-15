@@ -17,14 +17,13 @@
 
 use super::{Call, Error, Params};
 //#[warn(non_snake_case)]
+use cita_types::{H160, H256, U256, clean_0x};
+use cita_types::traits::LowerHex;
 use libproto::{request as reqlib, UnverifiedTransaction};
 use rpctypes::{BlockNumber, BlockParamsByHash, BlockParamsByNumber, CallRequest, CountOrCode, Filter};
 use rustc_serialize::hex::FromHex;
 use serde_json;
 use std::convert::TryFrom;
-use util::{H160, H256, U256};
-use util::ToPretty;
-use util::clean_0x;
 use uuid::Uuid;
 
 pub mod method {
@@ -156,10 +155,10 @@ impl MethodHandler {
                 "SEND ProtoTransaction: nonce {:?}, block_limit {:?}, data {}, quota {:?}, to {:?}, hash {}",
                 tx.get_nonce(),
                 tx.get_valid_until_block(),
-                tx.get_data().pretty(),
+                tx.get_data().lower_hex(),
                 tx.get_quota(),
                 tx.get_to(),
-                un_tx.crypt_hash().pretty()
+                un_tx.crypt_hash().lower_hex()
             );
         }
         request.set_un_tx(un_tx);
@@ -444,6 +443,8 @@ mod tests {
     use super::*;
     use Id;
     use bytes::Bytes;
+    use cita_types::H160;
+    use cita_types::traits::LowerHex;
     use libproto::blockchain::{Transaction, UnverifiedTransaction};
     use libproto::request;
     use method::MethodHandler;
@@ -452,8 +453,6 @@ mod tests {
     use serde_json;
     use serde_json::Value;
     use std::convert::TryInto;
-    use util::H160 as Hash160;
-    use util::ToPretty;
 
     #[test]
     fn test_rpc_serialize() {
@@ -557,18 +556,14 @@ mod tests {
             jsonrpc: Some(Version::V2),
             method: method::CITA_SEND_TRANSACTION.to_owned(),
             id: Id::Str("2".to_string()),
-            params: Some(Params::Array(vec![
-                Value::from(utx_string.to_hex().to_owned()),
-            ])),
+            params: Some(Params::Array(vec![Value::from(utx_string.lower_hex())])),
         };
 
         let rpc2 = Call {
             jsonrpc: Some(Version::V2),
             method: method::CITA_SEND_TRANSACTION.to_owned(),
             id: Id::Str("2".to_string()),
-            params: Some(Params::Array(vec![
-                Value::from(clean_0x(&utx_string.to_hex()).to_owned()),
-            ])),
+            params: Some(Params::Array(vec![Value::from(utx_string.lower_hex())])),
         };
         let handler = MethodHandler;
         let result1: Result<reqlib::Request, Error> = handler.send_transaction(&rpc1);
@@ -636,8 +631,8 @@ mod tests {
     fn eth_call_with_blockid_deserialization() {
         let rpc = "{\"jsonrpc\":\"2.0\",\
                    \"method\":\"eth_call\",\
-                   \"params\":[{\"from\":\"d46e8dd67c5d32be8058bb8eb970870f07244567\",\
-                   \"to\":\"b60e8dd61c5d32be8058bb8eb970870f07233155\",\
+                   \"params\":[{\"from\":\"0xd46e8dd67c5d32be8058bb8eb970870f07244567\",\
+                   \"to\":\"0xb60e8dd61c5d32be8058bb8eb970870f07233155\",\
                    \"data\":\"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f0724456\
                    75058bb8eb970870f072445675\"},\
                    \"22\"],\"id\":2}";
@@ -651,13 +646,13 @@ mod tests {
         let call = request.get_call();
         assert_eq!(
             call.get_from(),
-            Hash160::from("0xd46e8dd67c5d32be8058bb8eb970870f07244567")
+            H160::from("0xd46e8dd67c5d32be8058bb8eb970870f07244567")
                 .to_vec()
                 .as_slice()
         );
         assert_eq!(
             call.get_to(),
-            Hash160::from("0xb60e8dd61c5d32be8058bb8eb970870f07233155")
+            H160::from("0xb60e8dd61c5d32be8058bb8eb970870f07233155")
                 .to_vec()
                 .as_slice()
         );
@@ -677,8 +672,8 @@ mod tests {
     fn eth_call_deserialization() {
         let rpc = "{\"jsonrpc\":\"2.0\",\
                    \"method\":\"eth_call\",\
-                   \"params\":[{\"from\":\"d46e8dd67c5d32be8058bb8eb970870f07244567\",\
-                   \"to\":\"b60e8dd61c5d32be8058bb8eb970870f07233155\",\
+                   \"params\":[{\"from\":\"0xd46e8dd67c5d32be8058bb8eb970870f07244567\",\
+                   \"to\":\"0xb60e8dd61c5d32be8058bb8eb970870f07233155\",\
                    \"data\":\"0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f07\
                    2445675058bb8eb970870f072445675\"}],\
                    \"id\":2}";
@@ -692,13 +687,13 @@ mod tests {
         let call = request.get_call();
         assert_eq!(
             call.get_from(),
-            Hash160::from("0xd46e8dd67c5d32be8058bb8eb970870f07244567")
+            H160::from("0xd46e8dd67c5d32be8058bb8eb970870f07244567")
                 .to_vec()
                 .as_slice()
         );
         assert_eq!(
             call.get_to(),
-            Hash160::from("0xb60e8dd61c5d32be8058bb8eb970870f07233155")
+            H160::from("0xb60e8dd61c5d32be8058bb8eb970870f07233155")
                 .to_vec()
                 .as_slice()
         );
@@ -719,7 +714,7 @@ mod tests {
                    \"method\":\"eth_getLogs\",\
                    \"params\":[{\"fromBlock\":\"0x1\",\
                    \"toBlock\":\"0x2\",\
-                   \"address\":\"8888f1f195afa192cfee860698584c030f4c9db1\",\
+                   \"address\":\"0x8888f1f195afa192cfee860698584c030f4c9db1\",\
                    \"topics\": [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
                    null,\
                    [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\

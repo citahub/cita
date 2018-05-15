@@ -19,12 +19,11 @@
 
 use super::trace::{Action, Res};
 use basic_types::LogBloom;
-use bloomable::Bloomable;
 use bloomchain::{Filter as BloomFilter, Bloom, Number};
 use std::ops::Range;
 use trace::flat::FlatTrace;
-use util::Address;
-use util::Hashable;
+use cita_types::Address;
+use cita_types::traits::BloomTools;
 
 /// Addresses filter.
 ///
@@ -56,7 +55,7 @@ impl AddressesFilter {
         if self.list.is_empty() {
             vec![LogBloom::default()]
         } else {
-            self.list.iter().map(|address| LogBloom::from_bloomed(&address.crypt_hash())).collect()
+            self.list.iter().map(|address| LogBloom::from_raw(&address)).collect()
         }
     }
 
@@ -66,7 +65,13 @@ impl AddressesFilter {
             blooms
         } else {
             blooms.into_iter()
-                  .flat_map(|bloom| self.list.iter().map(|address| bloom.with_bloomed(&address.crypt_hash())).collect::<Vec<_>>())
+                  .flat_map(|bloom| {
+                      self.list.iter().map(|address| {
+                          let mut bloom = bloom.clone();
+                          bloom.accrue_raw(&address);
+                          bloom
+                      }).collect::<Vec<_>>()
+                  })
                   .collect()
         }
     }
@@ -130,13 +135,13 @@ impl Filter {
 
 #[cfg(test)]
 mod tests {
-    use bloomable::Bloomable;
+    use cita_types::traits::BloomTools;
     use evm::CallType;
     use trace::{Filter, AddressesFilter, TraceError};
     use trace::flat::FlatTrace;
     use trace::trace::{Action, Call, Res, Create, CreateResult, Suicide};
-    use util::Address;
-    use util::Hashable;
+    use cita_types::Address;
+    use basic_types::LogBloom;
 
     #[test]
     fn empty_trace_filter_bloom_possibilities() {
@@ -147,7 +152,7 @@ mod tests {
         };
 
         let blooms = filter.bloom_possibilities();
-        assert_eq!(blooms, vec![Default::default()]);
+        assert_eq!(blooms, vec![LogBloom::default()]);
     }
 
     #[test]
@@ -161,9 +166,9 @@ mod tests {
         let blooms = filter.bloom_possibilities();
         assert_eq!(blooms.len(), 1);
 
-        assert!(blooms[0].contains_bloomed(&Address::from(1).crypt_hash()));
-        assert!(blooms[0].contains_bloomed(&Address::from(2).crypt_hash()));
-        assert!(!blooms[0].contains_bloomed(&Address::from(3).crypt_hash()));
+        assert!(blooms[0].contains_raw(&Address::from(1)));
+        assert!(blooms[0].contains_raw(&Address::from(2)));
+        assert!(!blooms[0].contains_raw(&Address::from(3)));
     }
 
     #[test]
@@ -177,8 +182,8 @@ mod tests {
         let blooms = filter.bloom_possibilities();
         assert_eq!(blooms.len(), 1);
 
-        assert!(blooms[0].contains_bloomed(&Address::from(1).crypt_hash()));
-        assert!(!blooms[0].contains_bloomed(&Address::from(2).crypt_hash()));
+        assert!(blooms[0].contains_raw(&Address::from(1)));
+        assert!(!blooms[0].contains_raw(&Address::from(2)));
     }
 
     #[test]
@@ -192,8 +197,8 @@ mod tests {
         let blooms = filter.bloom_possibilities();
         assert_eq!(blooms.len(), 1);
 
-        assert!(blooms[0].contains_bloomed(&Address::from(1).crypt_hash()));
-        assert!(!blooms[0].contains_bloomed(&Address::from(2).crypt_hash()));
+        assert!(blooms[0].contains_raw(&Address::from(1)));
+        assert!(!blooms[0].contains_raw(&Address::from(2)));
     }
 
     #[test]
@@ -207,25 +212,25 @@ mod tests {
         let blooms = filter.bloom_possibilities();
         assert_eq!(blooms.len(), 4);
 
-        assert!(blooms[0].contains_bloomed(&Address::from(1).crypt_hash()));
-        assert!(blooms[0].contains_bloomed(&Address::from(2).crypt_hash()));
-        assert!(!blooms[0].contains_bloomed(&Address::from(3).crypt_hash()));
-        assert!(!blooms[0].contains_bloomed(&Address::from(4).crypt_hash()));
+        assert!(blooms[0].contains_raw(&Address::from(1)));
+        assert!(blooms[0].contains_raw(&Address::from(2)));
+        assert!(!blooms[0].contains_raw(&Address::from(3)));
+        assert!(!blooms[0].contains_raw(&Address::from(4)));
 
-        assert!(blooms[1].contains_bloomed(&Address::from(1).crypt_hash()));
-        assert!(blooms[1].contains_bloomed(&Address::from(4).crypt_hash()));
-        assert!(!blooms[1].contains_bloomed(&Address::from(2).crypt_hash()));
-        assert!(!blooms[1].contains_bloomed(&Address::from(3).crypt_hash()));
+        assert!(blooms[1].contains_raw(&Address::from(1)));
+        assert!(blooms[1].contains_raw(&Address::from(4)));
+        assert!(!blooms[1].contains_raw(&Address::from(2)));
+        assert!(!blooms[1].contains_raw(&Address::from(3)));
 
-        assert!(blooms[2].contains_bloomed(&Address::from(2).crypt_hash()));
-        assert!(blooms[2].contains_bloomed(&Address::from(3).crypt_hash()));
-        assert!(!blooms[2].contains_bloomed(&Address::from(1).crypt_hash()));
-        assert!(!blooms[2].contains_bloomed(&Address::from(4).crypt_hash()));
+        assert!(blooms[2].contains_raw(&Address::from(2)));
+        assert!(blooms[2].contains_raw(&Address::from(3)));
+        assert!(!blooms[2].contains_raw(&Address::from(1)));
+        assert!(!blooms[2].contains_raw(&Address::from(4)));
 
-        assert!(blooms[3].contains_bloomed(&Address::from(3).crypt_hash()));
-        assert!(blooms[3].contains_bloomed(&Address::from(4).crypt_hash()));
-        assert!(!blooms[3].contains_bloomed(&Address::from(1).crypt_hash()));
-        assert!(!blooms[3].contains_bloomed(&Address::from(2).crypt_hash()));
+        assert!(blooms[3].contains_raw(&Address::from(3)));
+        assert!(blooms[3].contains_raw(&Address::from(4)));
+        assert!(!blooms[3].contains_raw(&Address::from(1)));
+        assert!(!blooms[3].contains_raw(&Address::from(2)));
     }
 
     #[test]

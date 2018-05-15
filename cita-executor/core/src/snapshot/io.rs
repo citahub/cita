@@ -25,9 +25,10 @@ use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
+use cita_types::H256;
+use cita_types::traits::LowerHex;
 use rlp::{RlpStream, UntrustedRlp};
 use util::Bytes;
-use util::hash::H256;
 
 use super::ManifestData;
 
@@ -159,7 +160,7 @@ impl LooseWriter {
     // writing logic is the same for both kinds of chunks.
     fn write_chunk(&mut self, hash: H256, chunk: &[u8]) -> io::Result<()> {
         let mut file_path = self.dir.clone();
-        file_path.push(hash.hex());
+        file_path.push(hash.lower_hex());
 
         let mut file = File::create(file_path)?;
         file.write_all(chunk)?;
@@ -306,7 +307,7 @@ impl SnapshotReader for LooseReader {
 
     fn chunk(&self, hash: H256) -> io::Result<Bytes> {
         let mut path = self.dir.clone();
-        path.push(hash.hex());
+        path.push(hash.lower_hex());
 
         let mut buf = Vec::new();
         let mut file = File::open(&path)?;

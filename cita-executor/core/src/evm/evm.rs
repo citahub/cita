@@ -20,7 +20,8 @@
 use action_params::ActionParams;
 use evm::Ext;
 use std::{ops, cmp, fmt};
-use util::{U128, U256, U512, trie};
+use cita_types::{U128, U256, U512};
+use util::trie;
 
 /// Evm errors.
 #[derive(Debug, Clone, PartialEq)]
@@ -168,7 +169,7 @@ pub trait Finalize {
     /// Consume the externalities, call return if necessary, and produce call result.
     fn finalize<E: Ext>(self, ext: E) -> Result<FinalizationResult>;
 }
-  
+
 impl Finalize for Result<GasLeft> {
     fn finalize<E: Ext>(self, ext: E) -> Result<FinalizationResult> {
         match self {
@@ -281,7 +282,7 @@ pub trait Evm {
 #[cfg(test)]
 mod tests {
     use super::CostType;
-    use util::U256;
+    use cita_types::U256;
 
     #[test]
     fn should_calculate_overflow_mul_shr_without_overflow() {

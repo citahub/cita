@@ -18,9 +18,9 @@
 
 use super::{encode_contract_name, to_address_vec};
 use super::ContractCallExt;
+use cita_types::{Address, H160};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
-use util::{Address, H160};
 
 const ALLGROUPS: &'static [u8] = &*b"queryGroups()";
 const ACCOUNTS: &'static [u8] = &*b"queryAccounts()";
@@ -70,9 +70,9 @@ mod tests {
     extern crate mktemp;
 
     use super::UserManagement;
+    use cita_types::{Address, H160};
     use std::str::FromStr;
     use tests::helpers::init_executor;
-    use util::{Address, H160};
 
     #[test]
     fn test_all_groups() {
@@ -90,9 +90,9 @@ mod tests {
         assert_eq!(
             accounts,
             vec![
-                Address::from_str("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523").unwrap(),
-                Address::from_str("0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap(),
-                Address::from_str("0x9dcd6b234e2772c5451fd4ccf7582f4283140697").unwrap(),
+                Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523").unwrap(),
+                Address::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap(),
+                Address::from_str("9dcd6b234e2772c5451fd4ccf7582f4283140697").unwrap(),
             ]
         );
     }
@@ -106,9 +106,9 @@ mod tests {
         assert_eq!(
             *group_accounts.get(&root).unwrap(),
             vec![
-                Address::from_str("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523").unwrap(),
-                Address::from_str("0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap(),
-                Address::from_str("0x9dcd6b234e2772c5451fd4ccf7582f4283140697").unwrap(),
+                Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523").unwrap(),
+                Address::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap(),
+                Address::from_str("9dcd6b234e2772c5451fd4ccf7582f4283140697").unwrap(),
             ]
         );
     }

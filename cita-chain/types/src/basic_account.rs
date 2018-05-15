@@ -18,7 +18,7 @@
 #![rustfmt_skip]
 
 use rlp::*;
-use util::{U256, H256};
+use cita_types::{H256, U256};
 
 /// Basic account type.
 #[derive(Debug, Clone, PartialEq, Eq)]

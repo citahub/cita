@@ -14,21 +14,26 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 #![feature(custom_attribute)]
 #![allow(unused_attributes)]
-extern crate bloomable;
 extern crate cita_crypto as crypto;
+extern crate cita_types;
 extern crate libproto;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
 extern crate util;
+
+pub extern crate bloomchain;
+
 pub mod account_diff;
 pub mod basic_account;
 pub mod call_analytics;
 pub mod filter;
 pub mod ids;
 pub mod log_entry;
+pub mod log_blooms;
 pub mod receipt;
 pub mod state_diff;
 pub mod transaction;

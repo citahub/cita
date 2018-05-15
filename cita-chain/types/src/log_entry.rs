@@ -18,14 +18,14 @@
 #![rustfmt_skip]
 
 use BlockNumber;
-use bloomable::Bloomable;
 use rlp::*;
 use std::ops::Deref;
-use util::{Address, Bytes, H256, Hashable, HeapSizeOf};
+use cita_types::{Address, Bloom, H256};
+use cita_types::traits::BloomTools;
+use util::{Bytes, HeapSizeOf};
 use libproto::executor::LogEntry as ProtoLogEntry;
-// use ethjson;
 
-pub type LogBloom = ::util::H2048;
+pub type LogBloom = Bloom;
 
 /// A record of execution for a `LOG` operation.
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
@@ -68,8 +68,12 @@ impl LogEntry {
     /// Calculates the bloom of this log entry.
     pub fn bloom(&self) -> LogBloom {
         self.topics.iter().fold(
-            LogBloom::from_bloomed(&self.address.crypt_hash()),
-            |b, t| b.with_bloomed(&t.crypt_hash()),
+            LogBloom::from_raw(&self.address),
+            |b, t| {
+                let mut b = b.clone();
+                b.accrue_raw(&t);
+                b
+            }
         )
     }
 
@@ -86,16 +90,6 @@ impl LogEntry {
         proto_log_entry
     }
 }
-
-// impl From<ethjson::state::Log> for LogEntry {
-//     fn from(l: ethjson::state::Log) -> Self {
-//         LogEntry {
-//             address: l.address.into(),
-//             topics: l.topics.into_iter().map(Into::into).collect(),
-//             data: l.data.into(),
-//         }
-//     }
-// }
 
 /// Log localized in a blockchain.
 #[derive(Default, Debug, PartialEq, Clone)]
@@ -127,22 +121,20 @@ impl Deref for LocalizedLogEntry {
 #[cfg(test)]
 mod tests {
     use super::{LogEntry, LogBloom};
-    use util::*;
-    use util::hashable::HASH_NAME;
+    use cita_types::Address;
 
     #[test]
     fn test_empty_log_bloom() {
-        let mut bloom = LogBloom::default();
-        if HASH_NAME == "sha3" {
-            bloom = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-                .parse::<H2048>()
-                .unwrap();
-        }
-        if HASH_NAME == "blake2b" {
-            bloom = "00000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-                .parse::<H2048>()
-                .unwrap();
-        }
+        let bloom = "0000000000000000000000000000000000000000000000000000000000000000\
+                     0000000000000000000000000000000000000000000000000000000000000000\
+                     0000000000000000000000000000000000000000000000000000088000000000\
+                     0000000000000000000000000000000000000000000000000000000000000000\
+                     0000000000000000000000000000000000000000000000000000000000000000\
+                     0000000000000000000000000000000000000000000000000000000000000000\
+                     0000000000000000000080000000000000000000000000000000000000000000\
+                     0000000000000000000000000000000000000000000000000000000000000000"
+            .parse::<LogBloom>()
+            .unwrap();
         let address = "0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6".parse::<Address>().unwrap();
         let log = LogEntry {
             address: address,

@@ -28,6 +28,7 @@ use std::hash::Hash;
 use std::str::FromStr;
 use std::sync::Arc;
 use util::*;
+use cita_types::{Address, H256, U256};
 
 pub struct FakeLogEntry {
     topics: Vec<H256>,

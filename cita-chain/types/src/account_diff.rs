@@ -20,7 +20,8 @@
 use std::cmp::*;
 use std::collections::BTreeMap;
 use std::fmt;
-use util::{U256, H256, Bytes};
+use util::Bytes;
+use cita_types::{H256, U256};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 /// Diff type for specifying a change (or not).
@@ -126,9 +127,9 @@ impl AccountDiff {
 // TODO: refactor into something nicer.
 fn interpreted_hash(u: &H256) -> String {
     if u <= &H256::from(0xffffffff) {
-        format!("{} = 0x{:x}", U256::from(&**u).low_u32(), U256::from(&**u).low_u32())
+        format!("{} = {:#x}", U256::from(&**u).low_u32(), U256::from(&**u).low_u32())
     } else if u <= &H256::from(u64::max_value()) {
-        format!("{} = 0x{:x}", U256::from(&**u).low_u64(), U256::from(&**u).low_u64())
+        format!("{} = {:#x}", U256::from(&**u).low_u64(), U256::from(&**u).low_u64())
     //    } else if u <= &H256::from("0xffffffffffffffffffffffffffffffffffffffff") {
     //        format!("@{}", Address::from(u))
     } else {

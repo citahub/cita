@@ -160,15 +160,15 @@ impl SimpleStorage {
 extern crate bincode;
 use self::bincode::Infinite;
 use self::bincode::internal::serialize_into;
+use cita_types::{Address, H256, U256};
 use evm::tests::FakeExt;
 use std::io::Write;
 use std::str::FromStr;
-use util::{Address, H256, U256};
 #[test]
 fn test_native_contract() {
     let factory = Factory::default();
     let mut ext = FakeExt::new();
-    let native_addr = Address::from_str("0x0000000000000000000000000000000000000400").unwrap();
+    let native_addr = Address::from_str("0000000000000000000000000000000000000400").unwrap();
     let value = U256::from(0x1234);
     {
         let mut params = ActionParams::default();

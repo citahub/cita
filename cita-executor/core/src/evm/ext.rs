@@ -22,6 +22,7 @@ use evm::{self, Schedule, ReturnData};
 use executed::CallType;
 use std::sync::Arc;
 use util::*;
+use cita_types::{Address, H256, U256};
 
 /// Result of externalities create function.
 pub enum ContractCreateResult {

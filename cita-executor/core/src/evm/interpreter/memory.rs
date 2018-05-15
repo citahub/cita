@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 #![rustfmt_skip]
-use util::U256;
+use cita_types::U256;
 use evm::ReturnData;
 
 const MAX_RETURN_WASTE_BYTES: usize = 16384;

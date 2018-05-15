@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::{Bloom, H160, H256, U256};
 use rpctypes::log::Log;
 use types::receipt::LocalizedReceipt;
-use util::{Bloom, H160, H256, U256};
 
 /// Receipt
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -78,13 +78,13 @@ impl From<LocalizedReceipt> for Receipt {
 mod tests {
     use super::*;
     use bincode::{deserialize, serialize, Infinite};
+    use cita_types::{Bloom, H256};
     use serde_json;
-    use util::{H2048 as Hash2048, H256 as Hash256};
 
     #[test]
     fn receipt_serialization() {
         let receipt = Receipt {
-            transaction_hash: Some(Hash256::from(0).into()),
+            transaction_hash: Some(H256::from(0).into()),
             transaction_index: Some(0.into()),
             block_hash: Some(
                 "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
@@ -113,14 +113,14 @@ mod tests {
                             .unwrap(),
                     ),
                     block_number: Some(0x4510c.into()),
-                    transaction_hash: Some(Hash256::from(0).into()),
+                    transaction_hash: Some(H256::from(0).into()),
                     transaction_index: Some(0.into()),
                     transaction_log_index: None,
                     log_index: Some(1.into()),
                 },
             ],
-            logs_bloom: Hash2048::from(15).into(),
-            state_root: Some(Hash256::from(10).into()),
+            logs_bloom: Bloom::from(15).into(),
+            state_root: Some(H256::from(10).into()),
             error_message: None,
         };
 
@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn test_bincode_deserialization() {
         let receipt = Receipt {
-            transaction_hash: Some(Hash256::from(0).into()),
+            transaction_hash: Some(H256::from(0).into()),
             transaction_index: Some(0.into()),
             block_hash: Some(
                 "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
@@ -161,14 +161,14 @@ mod tests {
                             .unwrap(),
                     ),
                     block_number: Some(0x4510c.into()),
-                    transaction_hash: Some(Hash256::from(0).into()),
+                    transaction_hash: Some(H256::from(0).into()),
                     transaction_index: Some(0.into()),
                     transaction_log_index: None,
                     log_index: Some(1.into()),
                 },
             ],
-            logs_bloom: Hash2048::from(15).into(),
-            state_root: Some(Hash256::from(10).into()),
+            logs_bloom: Bloom::from(15).into(),
+            state_root: Some(H256::from(10).into()),
             error_message: None,
         };
 

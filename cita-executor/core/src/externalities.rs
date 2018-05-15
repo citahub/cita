@@ -33,6 +33,8 @@ use std::sync::Arc;
 use substate::Substate;
 use trace::{Tracer, VMTracer};
 use util::*;
+use cita_types::{Address, H256, U256};
+
 /// Policy for handling output data on `RETURN` opcode.
 pub enum OutputPolicy<'a, 'b> {
     /// Return reference to fixed sized output.

@@ -15,8 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::Address;
 use libproto::request::Call;
-use util::{Address, Bytes};
+use util::Bytes;
 
 /// Call request
 #[derive(Debug, Default, PartialEq)]

@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::{Address, H256};
 use libproto::blockchain::RichStatus as ProtoRichStatus;
 use protobuf::RepeatedField;
-use util::{Address, H256};
 
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct RichStatus {

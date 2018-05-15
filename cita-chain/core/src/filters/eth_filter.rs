@@ -15,11 +15,11 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{limit_logs, PollFilter, PollId};
+use cita_types::H256;
 use jsonrpc_types::rpctypes::{Filter, FilterChanges, Index, Log};
 use libchain::chain::Chain;
 use types::filter::Filter as EthcoreFilter;
 use types::ids::BlockId;
-use util::H256;
 
 pub trait EthFilter {
     fn new_filter(&self, filter: Filter) -> PollId;

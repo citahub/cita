@@ -94,15 +94,16 @@ function run_in_machine () {
     time ./tests/integrate_test/cita_basic.sh
     draw_title "        5.2) Byzantine Test"
     time ./tests/integrate_test/cita_byzantinetest.sh
-    draw_title "        5.3) JSONRPC schema mock test"
     if [ "${DEFAULT_HASH}" = "${SELECT_HASH}" ] \
             && [ "${DEFAULT_CRYPT}" = "${SELECT_CRYPT}" ]; then
+        draw_title "        5.3) JSONRPC schema mock test"
         time ./tests/integrate_test/cita_jsonrpc_schema_mock.sh
+        draw_title "        5.4) Crosschain transaction test"
+        time ./tests/integrate_test/cita_crosschain.sh
     else
         echo "[Info ] Skip JSONRPC schema mock test."
+        echo "[Info ] Skip Crosschain transaction test."
     fi
-    draw_title "        5.4) Crosschain transaction test"
-    time ./tests/integrate_test/cita_crosschain.sh
 }
 
 function replace_algorithm () {

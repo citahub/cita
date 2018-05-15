@@ -19,6 +19,7 @@
 //! Unconfirmed sub-states are managed with `checkpoint`s which may be canonicalized
 //! or rolled back.
 
+use cita_types::{Address, H256, U256};
 use contracts::Resource;
 use engines::NullEngine;
 use env_info::EnvInfo;
@@ -1060,10 +1061,11 @@ mod tests {
     use self::rustc_hex::FromHex;
     use super::*;
     use cita_crypto::KeyPair;
+    use cita_types::{Address, H256};
+    use cita_types::traits::LowerHex;
     use env_info::EnvInfo;
     use std::sync::Arc;
     use tests::helpers::*;
-    use util::{Address, H256};
     use util::crypto::CreateKey;
     use util::hashable::HASH_NAME;
 
@@ -2256,12 +2258,12 @@ mod tests {
         state.commit().unwrap();
         if HASH_NAME == "sha3" {
             assert_eq!(
-                state.root().hex(),
+                state.root().lower_hex(),
                 "a54656ec37549bd2d5cca77d4a5b32c8d6109727ccd910a54d61634a0f62b694"
             );
         } else if HASH_NAME == "blake2b" {
             assert_eq!(
-                state.root().hex(),
+                state.root().lower_hex(),
                 "7221afbf2f39fc39464a4acf9b8debc35bc657ad4454110e0a569d2b35047f3b"
             );
         }
@@ -2305,13 +2307,13 @@ mod tests {
         if HASH_NAME == "sha3" {
             state.commit().unwrap();
             assert_eq!(
-                state.root().hex(),
+                state.root().lower_hex(),
                 "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
             );
         } else if HASH_NAME == "blake2b" {
             state.commit().unwrap();
             assert_eq!(
-                state.root().hex(),
+                state.root().lower_hex(),
                 "c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9af"
             );
         }

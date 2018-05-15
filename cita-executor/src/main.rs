@@ -68,6 +68,7 @@
 #![feature(refcell_replace_swap)]
 #![feature(try_from)]
 extern crate bincode;
+extern crate cita_types;
 extern crate clap;
 extern crate common_types as types;
 extern crate core_executor as core;

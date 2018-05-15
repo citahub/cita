@@ -16,11 +16,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use chain_core::db;
+use cita_types::H256;
 use libproto::blockchain::SignedTransaction;
 use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 use tx_pool::Pool;
-use util::H256;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
 

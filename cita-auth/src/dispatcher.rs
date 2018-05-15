@@ -23,6 +23,8 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use protobuf::RepeatedField;
 use serde_json;
 
+use cita_types::H256;
+use cita_types::traits::LowerHex;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::convert::{Into, TryInto};
@@ -33,7 +35,7 @@ use std::thread;
 use std::time::SystemTime;
 use tx_pool;
 use txwal::TxWal;
-use util::{H256, RwLock, ToPretty};
+use util::RwLock;
 use uuid::Uuid;
 use verifier::Verifier;
 
@@ -292,7 +294,7 @@ impl Dispatcher {
     pub fn add_tx_to_pool(&self, tx: &SignedTransaction) -> bool {
         // 交易放入pool，
         // 放入pool完成后，持久化
-        trace!("add tx {} to pool", tx.get_tx_hash().pretty());
+        trace!("add tx {} to pool", tx.get_tx_hash().lower_hex());
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let success = txs_pool.enqueue(tx.clone());
         if self.wal_enable {
@@ -301,7 +303,7 @@ impl Dispatcher {
             } else {
                 warn!(
                     "the transaction {} is already exist",
-                    tx.get_tx_hash().pretty()
+                    tx.get_tx_hash().lower_hex()
                 );
             }
         }

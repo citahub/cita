@@ -16,10 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::deserialize;
+use cita_types::{Address, H256};
 use libproto::blockchain::{Proof as ProtoProof, ProofType};
 use proof::{AuthorityRoundProof as AProof, TendermintProof as TProof};
 use std::collections::HashMap;
-use util::{Address, H256};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Proof {

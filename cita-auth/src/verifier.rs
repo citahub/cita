@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::{Address, H256};
+use cita_types::traits::LowerHex;
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use libproto::{BlockTxHashesReq, Crypto, Message, Ret, UnverifiedTransaction, VerifyBlockReq, VerifyTxReq,
                VerifyTxResp};
@@ -25,7 +27,7 @@ use std::convert::{Into, TryInto};
 use std::result::Result;
 use std::sync::mpsc::Sender;
 use std::time::SystemTime;
-use util::{Address, H256, BLOCKLIMIT};
+use util::BLOCKLIMIT;
 
 #[derive(Debug, Clone)]
 pub enum VerifyRequestID {
@@ -313,7 +315,7 @@ impl Verifier {
                         }
                     }
                 } else {
-                    if let Some(value) = specific_gas_limit.remove(&signer.hex()) {
+                    if let Some(value) = specific_gas_limit.remove(&signer.lower_hex()) {
                         gas_limit = value;
                     }
                     let mut _remainder = 0;

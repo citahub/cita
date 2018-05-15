@@ -43,7 +43,7 @@ mod inner {
     use std::iter;
     use std::time::{Instant, Duration};
 
-    use util::U256;
+    use cita_types::U256;
 
     macro_rules! evm_debug {
         ($x: expr) => {

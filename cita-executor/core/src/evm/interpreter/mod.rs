@@ -39,6 +39,7 @@ use std::mem;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use cita_types::{Address, H256, U256, U512};
 use util::*;
 
 type ProgramCounter = usize;
@@ -306,11 +307,11 @@ impl<Cost: CostType> Interpreter<Cost> {
                 let code_address = stack.pop_back();
                 let code_address = u256_to_address(&code_address);
 
-                let value = if instruction == instructions::DELEGATECALL { 
+                let value = if instruction == instructions::DELEGATECALL {
                     None
                 } else if instruction == instructions::STATICCALL {
                     Some(U256::zero())
-                } else { 
+                } else {
                     Some(stack.pop_back())
                 };
 
@@ -377,7 +378,7 @@ impl<Cost: CostType> Interpreter<Cost> {
             instructions::RETURN => {
                 let init_off = stack.pop_back();
                 let init_size = stack.pop_back();
-                
+
                 return Ok(InstructionResult::StopExecutionNeedsReturn {gas: gas, init_off: init_off, init_size: init_size, apply: true})
             }
             instructions::REVERT => {

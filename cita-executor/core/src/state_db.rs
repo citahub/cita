@@ -18,6 +18,7 @@
 // Remove some hf code.
 
 use byteorder::{ByteOrder, LittleEndian};
+use cita_types::{Address, H256};
 use db::COL_ACCOUNT_BLOOM;
 use ethcore_bloom_journal::*;
 use header::BlockNumber;
@@ -26,7 +27,7 @@ use state::Account;
 use state::backend::*;
 use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
-use util::{Address, DBTransaction, H256, HashDB, JournalDB, KeyValueDB, Mutex, UtilError};
+use util::{DBTransaction, HashDB, JournalDB, KeyValueDB, Mutex, UtilError};
 use util::Hashable;
 use util::cache::MemoryLruCache;
 

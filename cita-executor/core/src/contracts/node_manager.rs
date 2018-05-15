@@ -19,13 +19,13 @@
 
 use super::{encode_contract_name, to_address_vec, to_u256_vec};
 use super::ContractCallExt;
+use cita_types::{Address, H160};
 use libexecutor::executor::{EconomicalModel, Executor};
 use rand::{Rng, SeedableRng, StdRng};
 use rustc_hex::ToHex;
 use std::cmp::Ordering;
 use std::iter;
 use std::str::FromStr;
-use util::{Address, H160};
 
 const LIST_NODE: &'static [u8] = &*b"listNode()";
 const LIST_STAKE: &'static [u8] = *&b"listStake()";
@@ -164,9 +164,9 @@ mod tests {
     extern crate mktemp;
 
     use super::{largest_remainder_electoral, party_seats, NodeManager};
+    use cita_types::H160;
     use std::str::FromStr;
     use tests::helpers::init_executor;
-    use util::H160;
 
     #[test]
     fn test_node_manager_contract() {

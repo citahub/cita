@@ -16,13 +16,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use BlockNumber;
+use cita_types::{Address, H256, U256, clean_0x};
+use cita_types::traits::LowerHex;
 use crypto::{pubkey_to_address, PubKey, Public, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN};
 use libproto::blockchain::{Crypto as ProtoCrypto, SignedTransaction as ProtoSignedTransaction,
                            Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{Address, Bytes, H256, HeapSizeOf, U256};
+use util::{Bytes, HeapSizeOf};
 
 // pub const STORE_ADDRESS: H160 =  H160( [0xff; 20] );
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
@@ -211,7 +213,7 @@ impl Transaction {
                         STORE_ADDRESS => Action::Store,
                         ABI_ADDRESS => Action::AbiStore,
                         GO_CONTRACT => Action::GoCreate,
-                        _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
+                        _ => Action::Call(Address::from_str(clean_0x(to)).map_err(|_| Error::ParseError)?),
                     },
                 }
             },
@@ -272,7 +274,7 @@ impl Transaction {
         pt.set_version(self.version);
         match self.action {
             Action::Create => pt.clear_to(),
-            Action::Call(ref to) => pt.set_to(to.hex()),
+            Action::Call(ref to) => pt.set_to(to.lower_hex()),
             Action::Store => pt.set_to(STORE_ADDRESS.into()),
             Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
             Action::GoCreate => pt.set_to(GO_CONTRACT.into()),

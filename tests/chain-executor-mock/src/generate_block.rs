@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, Infinite};
+use cita_types::{Address, H256, U256};
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
 use proof::TendermintProof;
@@ -24,7 +25,6 @@ use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::convert::{Into, TryInto};
 use std::time::Duration;
-use util::{Address, H256, U256};
 use util::Hashable;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]

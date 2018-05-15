@@ -22,6 +22,7 @@ use core::libchain::block::Block;
 use core::libchain::chain::{BlockInQueue, Chain};
 use error::ErrorCode;
 //CountOrCode
+use cita_types::H256;
 use jsonrpc_types::rpctypes::{self as rpctypes, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
                               Log as RpcLog, Receipt as RpcReceipt, RpcBlock};
 use libproto::{request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
@@ -39,7 +40,6 @@ use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 use types::filter::Filter;
 use types::ids::BlockId;
-use util::H256;
 
 use core::snapshot;
 use core::snapshot::Progress;

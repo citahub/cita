@@ -18,11 +18,11 @@
 //! Chain manager.
 
 use super::encode_contract_name;
+use cita_types::{Address, H160, H256, U256};
 use ethabi::{decode, ParamType};
 use evm::ext::{Ext, MessageCallResult};
 use executed::CallType;
 use std::str::FromStr;
-use util::{Address, H160, H256, U256};
 
 const CHAIN_ID: &'static [u8] = &*b"getChainId()";
 const AUTHORITIES: &'static [u8] = &*b"getAuthorities(uint64)";

@@ -16,6 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::LogBloom;
+use cita_types::{Address, H256, U256};
+use cita_types::traits::LowerHex;
 use db::{self as db, Readable};
 use env_info::EnvInfo;
 use env_info::LastHashes;
@@ -41,7 +43,7 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 use trace::FlatTrace;
 use types::transaction::{Action, SignedTransaction};
-use util::{merklehash, Address, H256, HeapSizeOf, U256};
+use util::{merklehash, HeapSizeOf};
 
 /// Check the 256 transactions once
 const CHECK_NUM: usize = 0xff;
@@ -420,7 +422,7 @@ impl OpenBlock {
                 Action::Call(ref address) => {
                     if is_go_contract(*address) {
                         go_contract = true;
-                        str_addr = address.hex();
+                        str_addr = address.lower_hex();
                         if let Some(value) = executor.service_map.get(str_addr.clone(), true) {
                             ip = value.conn_info.get_ip().to_string();
                             port = value.conn_info.get_port();
@@ -435,7 +437,7 @@ impl OpenBlock {
                     let address = Address::from_slice(&t.data);
                     if is_go_contract(address) {
                         go_contract = true;
-                        str_addr = address.hex();
+                        str_addr = address.lower_hex();
                         if let Some(ref value) = executor.service_map.get(str_addr.clone(), false) {
                             ip = value.conn_info.get_ip().to_string();
                             port = value.conn_info.get_port();
@@ -537,14 +539,14 @@ impl OpenBlock {
     ) {
         let mut env_info = ProtoEnvInfo::new();
         env_info.set_number(format!("{}", self.number()));
-        env_info.set_author(Address::default().hex());
+        env_info.set_author(Address::default().lower_hex());
         let timestamp = self.env_info().timestamp;
         env_info.set_timestamp(format!("{}", timestamp));
 
         let mut action_params = ActionParams::new();
         action_params.set_code_address(connect_info.get_addr().to_string());
         action_params.set_data(t.data.clone());
-        action_params.set_sender(t.sender().hex());
+        action_params.set_sender(t.sender().lower_hex());
         //to be discussed
         //action_params.set_gas("1000".to_string());
         let ret = {

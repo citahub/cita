@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, Infinite};
+use cita_types::H256;
 use core_executor::libexecutor::block::Block;
 use core_executor::transaction::SignedTransaction;
 use crypto::*;
@@ -25,7 +26,6 @@ use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::convert::{Into, TryInto};
 use std::time::{Duration, UNIX_EPOCH};
-use util::H256;
 use util::Hashable;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]

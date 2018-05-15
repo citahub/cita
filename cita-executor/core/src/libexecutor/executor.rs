@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use bloomchain as bc;
+use bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
 use contracts::{AccountGasLimit, NodeManager, PermissionManagement, QuotaManager, Resource, SysConfig, UserManagement};
@@ -40,6 +40,7 @@ use libproto::blockchain::{Proof as ProtoProof, ProofType, RichStatus};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
+use cita_types::{Address, H256, U256};
 use native::Factory as NativeFactory;
 use snapshot;
 use state::State;
@@ -52,7 +53,7 @@ use std::sync::mpsc::Sender;
 use std::time::Instant;
 use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction, Transaction};
-use util::{journaldb, Address, Bytes, H256, U256};
+use util::{journaldb, Bytes};
 use util::RwLock;
 use util::UtilError;
 use util::kvdb::*;
@@ -79,8 +80,8 @@ impl Config {
     }
 }
 
-impl bc::group::BloomGroupDatabase for Executor {
-    fn blooms_at(&self, position: &bc::group::GroupPosition) -> Option<bc::group::BloomGroup> {
+impl BloomGroupDatabase for Executor {
+    fn blooms_at(&self, position: &GroupPosition) -> Option<BloomGroup> {
         let position = LogGroupPosition::from(position.clone());
         let result = self.db.read(db::COL_EXTRA, &position).map(Into::into);
         result
@@ -861,6 +862,7 @@ mod tests {
     extern crate mktemp;
 
     use super::*;
+    use cita_types::Address;
     use core::libchain::block::Block as ChainBlock;
     use core::receipt::ReceiptError;
     use libproto::Message;
@@ -868,7 +870,6 @@ mod tests {
     use std::convert::TryFrom;
     use std::sync::mpsc::channel;
     use tests::helpers::{create_block, init_chain, init_executor, solc};
-    use util::Address;
 
     fn generate_contract() -> Vec<u8> {
         let source = r#"

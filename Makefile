@@ -9,7 +9,7 @@ release:
 	scripts/release.sh release
 
 test:
-	$(CARGO) test --all 2>&1
+	RUST_BACKTRACE=full $(CARGO) test --all 2>&1
 
 bench:
 	-rm target/bench.log

@@ -33,10 +33,10 @@ use super::io::{LooseReader, LooseWriter, SnapshotReader, SnapshotWriter};
 use error::Error;
 //use types::ids::BlockId;
 
+use cita_types::H256;
 use journaldb::Algorithm;
 use util::{Mutex, RwLock, RwLockReadGuard};
 use util::Bytes;
-use util::H256;
 use util::UtilError;
 use util::kvdb::{Database, DatabaseConfig};
 use util::snappy;

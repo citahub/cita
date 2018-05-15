@@ -15,8 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use bloomchain as bc;
-use blooms::*;
+use basic_types::{LogBloom, LogBloomGroup};
+use bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
+use bloomchain::group::{BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition};
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use db;
@@ -34,6 +35,8 @@ pub use libchain::transaction::*;
 use libproto::blockchain::{AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
                            RichStatus as ProtoRichStatus};
 
+use cita_types::{Address, H256, U256};
+use cita_types::traits::LowerHex;
 use header::Header;
 use libproto::{BlockTxHashes, FullTransaction, Message};
 use libproto::executor::ExecutedResult;
@@ -53,11 +56,10 @@ use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
 use types::transaction::{Action, SignedTransaction};
-use util::{journaldb, Address, H2048, H256, U256};
 use util::{Mutex, RwLock};
 use util::Hashable;
 use util::HeapSizeOf;
-use util::ToPretty;
+use util::journaldb;
 use util::kvdb::*;
 use util::merklehash;
 
@@ -150,7 +152,7 @@ impl TxProof {
             let from_chain_id = U256::from(iter.next().unwrap()).low_u64();
             let to_chain_id = U256::from(iter.next().unwrap()).low_u64();
             let dest_contract = Address::from(H256::from(iter.next().unwrap()));
-            let mut dest_hasher = U256::from(iter.next().unwrap()).to_hex();
+            let mut dest_hasher = U256::from(iter.next().unwrap()).lower_hex();
             // U256 to hex no leading zero
             if dest_hasher.len() > 8 {
                 return None;
@@ -244,8 +246,8 @@ impl Config {
     }
 }
 
-impl bc::group::BloomGroupDatabase for Chain {
-    fn blooms_at(&self, position: &bc::group::GroupPosition) -> Option<bc::group::BloomGroup> {
+impl BloomGroupDatabase for Chain {
+    fn blooms_at(&self, position: &BloomGroupPosition) -> Option<BloomGroup> {
         let position = LogGroupPosition::from(position.clone());
         let result = self.db
             .read_with_cache(db::COL_EXTRA, &self.blocks_blooms, &position)
@@ -268,7 +270,7 @@ pub enum BlockInQueue {
 // TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
 // 所有直接unwrap的地方都可能会报错！
 pub struct Chain {
-    blooms_config: bc::Config,
+    blooms_config: BloomChainConfig,
     pub current_header: RwLock<Header>,
     // Chain current height
     pub current_height: AtomicUsize,
@@ -285,7 +287,7 @@ pub struct Chain {
     // extra caches
     pub block_hashes: RwLock<HashMap<H256, BlockNumber>>,
     pub transaction_addresses: RwLock<HashMap<TransactionId, TransactionAddress>>,
-    pub blocks_blooms: RwLock<HashMap<LogGroupPosition, BloomGroup>>,
+    pub blocks_blooms: RwLock<HashMap<LogGroupPosition, LogBloomGroup>>,
     pub block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
     pub nodes: RwLock<Vec<Address>>,
     pub block_interval: RwLock<u64>,
@@ -339,7 +341,7 @@ impl Chain {
 
         let journal_db = journaldb::new(Arc::clone(&db), journaldb::Algorithm::Archive, COL_STATE);
         let state_db = StateDB::new(journal_db);
-        let blooms_config = bc::Config {
+        let blooms_config = BloomChainConfig {
             levels: LOG_BLOOMS_LEVELS,
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
         };
@@ -438,7 +440,7 @@ impl Chain {
         let info = ret.get_executed_info();
         let number = info.get_header().get_height();
         let mut hdr = Header::new();
-        let log_bloom = H2048::from(info.get_header().get_log_bloom());
+        let log_bloom = LogBloom::from(info.get_header().get_log_bloom());
         hdr.set_gas_limit(U256::from(info.get_header().get_gas_limit()));
         hdr.set_gas_used(U256::from(info.get_header().get_gas_used()));
         hdr.set_number(number);
@@ -454,12 +456,15 @@ impl Chain {
 
         let hash = hdr.hash();
         let block_transaction_addresses = block.transaction_addresses(hash);
-        let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = if log_bloom.is_zero() {
+        let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = if log_bloom.is_zero() {
             HashMap::new()
         } else {
-            let bgroup = bc::group::BloomGroupChain::new(self.blooms_config, self);
+            let bgroup = BloomGroupChain::new(self.blooms_config, self);
             bgroup
-                .insert(number as bc::Number, Bloom::from(log_bloom).into())
+                .insert(
+                    number as BloomChainNumber,
+                    Bloom::from(Into::<[u8; 256]>::into(log_bloom)),
+                )
                 .into_iter()
                 .map(|p| (From::from(p.0), From::from(p.1)))
                 .collect()
@@ -1051,11 +1056,15 @@ impl Chain {
     }
 
     /// Returns numbers of blocks containing given bloom.
-    pub fn blocks_with_bloom(&self, bloom: &H2048, from_block: BlockNumber, to_block: BlockNumber) -> Vec<BlockNumber> {
-        let range = from_block as bc::Number..to_block as bc::Number;
-        let chain = bc::group::BloomGroupChain::new(self.blooms_config, self);
-        chain
-            .with_bloom(&range, &Bloom::from(*bloom).into())
+    pub fn blocks_with_bloom(
+        &self,
+        bloom: &LogBloom,
+        from_block: BlockNumber,
+        to_block: BlockNumber,
+    ) -> Vec<BlockNumber> {
+        let range = from_block as BloomChainNumber..to_block as BloomChainNumber;
+        BloomGroupChain::new(self.blooms_config, self)
+            .with_bloom(&range, &Bloom::from(Into::<[u8; 256]>::into(*bloom)))
             .into_iter()
             .map(|b| b as BlockNumber)
             .collect()
@@ -1064,7 +1073,7 @@ impl Chain {
     /// Returns numbers of blocks containing given bloom by blockId.
     pub fn blocks_with_bloom_by_id(
         &self,
-        bloom: &H2048,
+        bloom: &LogBloom,
         from_block: BlockId,
         to_block: BlockId,
     ) -> Option<Vec<BlockNumber>> {
@@ -1232,7 +1241,7 @@ impl Chain {
         info!(
             "new chain status height {}, hash {}",
             status.get_height(),
-            status.get_hash().pretty()
+            status.get_hash().lower_hex()
         );
         let sync_msg: Message = status.into();
         ctx_pub
@@ -1358,7 +1367,7 @@ impl Chain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use util::H256;
+    use cita_types::H256;
 
     #[test]
     fn test_heapsizeof() {
@@ -1368,7 +1377,7 @@ mod tests {
     #[test]
     fn test_cache_size() {
         let transaction_addresses: HashMap<TransactionId, TransactionAddress> = HashMap::new();
-        let blocks_blooms: HashMap<LogGroupPosition, BloomGroup> = HashMap::new();
+        let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = HashMap::new();
         let mut block_receipts: HashMap<H256, BlockReceipts> = HashMap::new();
 
         assert_eq!(transaction_addresses.heap_size_of_children(), 0);

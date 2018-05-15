@@ -17,12 +17,12 @@
 //! Account state encoding and decoding
 
 use account_db::{AccountDB, AccountDBMut};
+use cita_types::{H256, U256};
 use rlp::{RlpStream, UntrustedRlp};
 use snapshot::Error;
 use std::collections::HashSet;
 use types::basic_account::BasicAccount as Account;
 use util::{Bytes, Trie, TrieDB, TrieDBMut, TrieMut};
-use util::{H256, U256};
 use util::{HASH_EMPTY, HASH_NULL_RLP};
 use util::hashdb::HashDB;
 

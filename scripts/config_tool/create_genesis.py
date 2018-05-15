@@ -35,9 +35,10 @@ def hexstr_to_bytes(hexstr):
 
 class GenesisData(object):
     # pylint: disable=too-many-instance-attributes,too-many-arguments
-    def __init__(self, contracts_dir, contracts_docs_dir, init_data_file,
-                 timestamp, prevhash):
-        self.timestamp = int(time.time()) if not timestamp else timestamp
+    def __init__(
+            self, contracts_dir, contracts_docs_dir, init_data_file,
+            timestamp, prevhash):
+        self.timestamp = int(time.time() * 1000) if not timestamp else timestamp
         self.prevhash = DEFAULT_PREVHASH if not prevhash else prevhash
 
         self.contracts_dir = contracts_dir

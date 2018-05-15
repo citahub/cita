@@ -17,6 +17,7 @@
 
 use Id;
 use bytes::Bytes;
+use cita_types::{H256, U256};
 use error::Error;
 use libproto::response::{Response, Response_oneof_data};
 use request::Version;
@@ -26,7 +27,6 @@ use serde::de::Error as SError;
 use serde_json;
 use serde_json::{from_value, Value};
 use std::vec::Vec;
-use util::{H256, U256};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(untagged)]

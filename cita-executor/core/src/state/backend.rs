@@ -16,6 +16,7 @@
 
 use std::sync::Arc;
 
+use cita_types::{Address, H256};
 use state::Account;
 use util::*;
 

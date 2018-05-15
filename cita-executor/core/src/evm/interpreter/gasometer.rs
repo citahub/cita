@@ -21,7 +21,7 @@ use evm::instructions::{self, Instruction, InstructionInfo};
 use evm::interpreter::stack::Stack;
 use evm::schedule::Schedule;
 use std::cmp;
-use util::*;
+use cita_types::{H256, U256};
 
 macro_rules! overflowing {
     ($x: expr) => {{

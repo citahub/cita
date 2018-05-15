@@ -21,7 +21,8 @@ use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160 as Ripemd160Digest;
 use crypto::sha2::Sha256 as Sha256Digest;
 use std::cmp::min;
-use util::{U256, H256, BytesRef, Hashable};
+use cita_types::{U256, H256};
+use util::{BytesRef, Hashable};
 use util::crypto::Sign;
 // use ethjson;
 
@@ -201,7 +202,8 @@ mod tests {
 
     use super::{Builtin, Linear, ethereum_builtin, Pricer};
     use cita_ed25519::{Signature, KeyPair, pubkey_to_address as ED_pubkey_to_address};
-    use util::{U256, H256, BytesRef};
+    use cita_types::{U256, H256};
+    use util::BytesRef;
     use util::crypto::{Sign, CreateKey};
     // use ethjson;
     use util::hashable::HASH_NAME;

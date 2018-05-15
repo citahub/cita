@@ -21,9 +21,9 @@
 //use env_info::LastHashes;
 use header::*;
 //use libchain::extras::TransactionAddress;
+use cita_types::H256;
 use libchain::extras::TransactionAddress;
 use std::collections::HashMap;
-use util::H256;
 
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
@@ -37,7 +37,6 @@ use std::ops::{Deref, DerefMut};
 //use std::sync::Arc;
 
 use types::transaction::SignedTransaction;
-//use util::{U256, H256, Address, merklehash, HeapSizeOf};
 use util::HeapSizeOf;
 
 /// Trait for a object that has a state database.
