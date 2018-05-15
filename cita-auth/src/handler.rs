@@ -181,6 +181,15 @@ fn verify_proposal_block(
             let block_verify_stamp = SystemTime::now();
             *block_verify_status_guard = new_block_verify_status;
             let now = SystemTime::now();
+
+            {
+                let vclone = verifier.clone();
+                if !vclone.read().verify_quota(&blkreq) {
+                    publish_block_verification_result(request_id, Ret::QuotaNotEnough, tx_pub);
+                    return;
+                }
+            }
+
             for req in blkreq.get_reqs() {
                 let verify_request_info = VerifyRequestResponseInfo {
                     key: key.clone(),
@@ -222,7 +231,8 @@ fn verify_proposal_block(
                             request_id, resp_ret
                         );
                         publish_block_verification_result(request_id, resp_ret, tx_pub);
-                        break;
+                        //return when verified error
+                        return;
                     }
                     _ => {
                         let verify_request_info = VerifyRequestResponseInfo {
@@ -301,7 +311,7 @@ pub fn handle_remote_msg(
     tx_pub: &Sender<(String, Vec<u8>)>,
     block_verify_status: Arc<RwLock<BlockVerifyStatus>>,
     cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
-    txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit)>,
+    txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit, bool)>,
     resp_sender: &Sender<VerifyRequestResponseInfo>,
     clear_txs_pool: Arc<AtomicBool>,
     saved_req: &mut Option<VerifyBlockReq>,
@@ -328,6 +338,7 @@ pub fn handle_remote_msg(
                     .write()
                     .update_hashes(height, tx_hashes_in_h256.clone(), tx_pub);
             }
+
             let mut flag = true;
             if let Some(h) = verifier.read().get_height_latest() {
                 if height != h {
@@ -343,10 +354,17 @@ pub fn handle_remote_msg(
                 );
                 let block_gas_limit = block_tx_hashes.get_block_gas_limit();
                 let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
+                let check_quota = block_tx_hashes.get_check_quota();
                 debug!(
-                    "Auth rich status block gas limit: {:?}, account gas limit {:?}",
-                    block_gas_limit, account_gas_limit
+                    "Auth rich status block gas limit: {:?}, account gas limit {:?} check_quota {:?}",
+                    block_gas_limit, account_gas_limit, check_quota
                 );
+
+                {
+                    verifier
+                        .write()
+                        .set_quota_check_info(check_quota, block_gas_limit, account_gas_limit.clone());
+                }
 
                 // Message will be handled in deal_txs thread.
                 let _ = txs_sender.send((
@@ -354,6 +372,7 @@ pub fn handle_remote_msg(
                     tx_hashes_in_h256,
                     block_gas_limit,
                     account_gas_limit,
+                    check_quota,
                 ));
 
                 let mut flag = false;

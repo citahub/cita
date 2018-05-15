@@ -583,7 +583,8 @@ impl Executor {
         let mut executed_map = self.executed_result.write();
         executed_map.entry(height).or_insert(ExecutedResult::new());
 
-        let conf = self.get_sys_config(self.get_max_height());
+        //send the next height's config to chain,and transfer to auth
+        let conf = self.get_sys_config(height + 1);
 
         let mut send_config = ConsensusConfig::new();
         let node_list = conf.nodes
@@ -592,6 +593,7 @@ impl Executor {
             .collect();
         send_config.set_block_gas_limit(conf.block_gas_limit as u64);
         send_config.set_account_gas_limit(conf.account_gas_limit.into());
+        send_config.set_check_quota(conf.check_quota);
         trace!("node_list : {:?}", node_list);
         send_config.set_nodes(node_list);
         send_config.set_block_interval(conf.block_interval);

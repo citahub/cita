@@ -548,7 +548,7 @@ impl OpenBlock {
         //to be discussed
         //action_params.set_gas("1000".to_string());
         let ret = {
-            let mut evm_impl = CallEvmImpl::new(&mut self.state, check_permission, check_quota);
+            let mut evm_impl = CallEvmImpl::new(&mut self.state, check_permission);
             evm_impl.transact(executor, t, env_info, action_params, connect_info)
         };
 

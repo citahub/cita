@@ -47,7 +47,7 @@ use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::{Into, TryInto};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
@@ -292,6 +292,7 @@ pub struct Chain {
 
     pub block_gas_limit: AtomicUsize,
     pub account_gas_limit: RwLock<ProtoAccountGasLimit>,
+    pub check_quota: AtomicBool,
 
     cache_man: Mutex<CacheManager<CacheId>>,
     polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
@@ -380,6 +381,7 @@ impl Chain {
             block_interval: RwLock::new(3000),
             block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
             account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
+            check_quota: AtomicBool::new(false),
             prooftype: chain_config.prooftype,
         };
 
@@ -425,6 +427,7 @@ impl Chain {
             conf.get_account_gas_limit(),
             &nodes,
             block_interval,
+            conf.get_check_quota(),
         );
     }
 
@@ -631,7 +634,9 @@ impl Chain {
         agas_limit: &ProtoAccountGasLimit,
         nodes: &Vec<Address>,
         block_interval: u64,
+        check_quota: bool,
     ) {
+        self.check_quota.store(check_quota, Ordering::Relaxed);
         self.block_gas_limit
             .store(bgas_limit as usize, Ordering::SeqCst);
         *self.account_gas_limit.write() = agas_limit.clone();
@@ -1092,6 +1097,7 @@ impl Chain {
         let mut block_tx_hashes = BlockTxHashes::new();
         block_tx_hashes.set_height(block_height);
         {
+            block_tx_hashes.set_check_quota(self.check_quota.load(Ordering::Relaxed));
             block_tx_hashes.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
             block_tx_hashes.set_account_gas_limit(self.account_gas_limit.read().clone().into());
         }

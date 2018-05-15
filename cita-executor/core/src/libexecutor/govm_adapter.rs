@@ -1,7 +1,7 @@
 //use contracts::permission_management::contains_resource;
 use db::{self as db, Key, Readable, Writable};
 use error::{Error, ExecutionError};
-use executive::{check_permission, check_quota};
+use executive::check_permission;
 use grpc::Result as GrpcResult;
 use grpc::Server;
 use libexecutor::executor::Executor;
@@ -314,22 +314,16 @@ pub fn vm_grpc_server(port: u16, service_map: Arc<ServiceMap>, ext: Arc<Executor
 
 pub struct CallEvmImpl<'a, B: 'a + StateBackend> {
     state: &'a mut State<B>,
-    gas_limit: U256,
-    account_gas_limit: U256,
     gas_used: U256,
     check_permission: bool,
-    check_quota: bool,
 }
 
 impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
-    pub fn new(state: &'a mut State<B>, check_permission: bool, check_quota: bool) -> Self {
+    pub fn new(state: &'a mut State<B>, check_permission: bool) -> Self {
         CallEvmImpl {
             state: state,
-            gas_limit: U256::from(u64::max_value()),
-            account_gas_limit: 0.into(),
             gas_used: 0.into(),
             check_permission: check_permission,
-            check_quota: check_quota,
         }
     }
 
@@ -377,11 +371,6 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
                 required: base_gas_required,
                 got: t.gas,
             }));
-        }
-
-        trace!("quota should be checked: {}", self.check_quota);
-        if self.check_quota {
-            check_quota(self.gas_used, self.gas_limit, self.account_gas_limit, t)?;
         }
 
         let ip = connect_info.get_ip();

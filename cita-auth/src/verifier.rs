@@ -15,15 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crypto::{PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
-use libproto::{BlockTxHashesReq, Crypto, Message, Ret, UnverifiedTransaction, VerifyTxReq, VerifyTxResp};
+use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
+use libproto::{BlockTxHashesReq, Crypto, Message, Ret, UnverifiedTransaction, VerifyBlockReq, VerifyTxReq,
+               VerifyTxResp};
+use libproto::blockchain::AccountGasLimit;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryInto};
 use std::result::Result;
 use std::sync::mpsc::Sender;
 use std::time::SystemTime;
-use util::{H256, BLOCKLIMIT};
+use util::{Address, H256, BLOCKLIMIT};
 
 #[derive(Debug, Clone)]
 pub enum VerifyRequestID {
@@ -77,6 +79,10 @@ pub struct Verifier {
     height_low: Option<u64>,
     hashes: HashMap<u64, HashSet<H256>>,
     chain_id: Option<u32>,
+
+    check_quota: bool,
+    block_gas_limit: u64,
+    account_gas_limit: AccountGasLimit,
 }
 
 impl Default for Verifier {
@@ -87,6 +93,9 @@ impl Default for Verifier {
             height_low: None,
             hashes: HashMap::with_capacity(BLOCKLIMIT as usize),
             chain_id: None,
+            check_quota: false,
+            block_gas_limit: 0,
+            account_gas_limit: AccountGasLimit::new(),
         }
     }
 }
@@ -114,6 +123,17 @@ impl Verifier {
 
     pub fn get_height_low(&self) -> Option<u64> {
         self.height_low
+    }
+
+    pub fn set_quota_check_info(
+        &mut self,
+        check_quota: bool,
+        block_gas_limit: u64,
+        account_gas_limit: AccountGasLimit,
+    ) {
+        self.check_quota = check_quota;
+        self.block_gas_limit = block_gas_limit;
+        self.account_gas_limit = account_gas_limit;
     }
 
     pub fn send_txhashes_req(low: u64, high: u64, tx_pub: &Sender<(String, Vec<u8>)>) {
@@ -263,6 +283,51 @@ impl Verifier {
             }
         }
         result
+    }
+
+    pub fn verify_quota(&self, blkreq: &VerifyBlockReq) -> bool {
+        let reqs = blkreq.get_reqs();
+        let len = reqs.len();
+        let mut gas_limit = self.account_gas_limit.get_common_gas_limit();
+        let mut specific_gas_limit = self.account_gas_limit.get_specific_gas_limit().clone();
+        let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
+        let mut n = self.block_gas_limit;
+        for req in reqs {
+            let quota = req.get_quota();
+            let signer = pubkey_to_address(&PubKey::from(req.get_signer()));
+
+            if n < quota {
+                if len == 1 {
+                    return true;
+                }
+                return false;
+            }
+
+            if self.check_quota {
+                if account_gas_used.contains_key(&signer) {
+                    if let Some(value) = account_gas_used.get_mut(&signer) {
+                        if *value < quota {
+                            return false;
+                        } else {
+                            *value = *value - quota;
+                        }
+                    }
+                } else {
+                    if let Some(value) = specific_gas_limit.remove(&signer.hex()) {
+                        gas_limit = value;
+                    }
+                    let mut _remainder = 0;
+                    if quota < gas_limit {
+                        _remainder = gas_limit - quota;
+                    } else {
+                        _remainder = 0;
+                    }
+                    account_gas_used.insert(Address::from(signer), _remainder);
+                }
+            }
+            n = n - quota;
+        }
+        true
     }
 }
 
