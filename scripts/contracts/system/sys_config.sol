@@ -83,11 +83,11 @@ contract SysConfig is SysConfigInterface {
     }
 
     function getPermissionCheck() public view returns (bool) {
-        return check_permission;
+        return check_permission && (economicalModel == EconomicalModel.Quota);
     }
 
     function getQuotaCheck() public view returns (bool) {
-        return check_quota;
+        return check_quota && (economicalModel == EconomicalModel.Quota);
     }
 
     function getChainName() public view returns (string) {
