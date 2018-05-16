@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 import argparse
 from jsonrpcclient.http_client import HTTPClient
 from url_util import host, endpoint
 from util import findDict, remove_hex_0x
+
 
 def block_by_hash(params):
     try:
@@ -14,6 +15,7 @@ def block_by_hash(params):
         return None
 
     return response
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -25,6 +27,7 @@ def main():
 
     params = [remove_hex_0x(args.hash), args.detail]
     resp = block_by_hash(params)
+
 
 if __name__ == "__main__":
     main()

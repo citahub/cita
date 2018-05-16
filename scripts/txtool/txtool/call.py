@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 import argparse
@@ -48,7 +48,7 @@ def main():
     sender = args.sender
     if args.sender is None:
         sender = ""
-    
+
     number = args.number
     if args.number is None:
         number = 'latest'
@@ -56,7 +56,7 @@ def main():
     params = build_params(sender, args.to, args.data, number)
     resp = call(params)
     if resp is not None:
-        print resp
+        print(resp)
 
 
 if __name__ == "__main__":

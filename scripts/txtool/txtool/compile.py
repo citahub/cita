@@ -1,12 +1,14 @@
-#!/usr/bin/env python  
-# coding=utf-8  
+#!/usr/bin/env python2
+# coding=utf-8
 
 import argparse
 import os.path
 from solc import compile_standard, compile_files, compile_source
 from pathlib import Path
 from util import findDict, run_command, path_leaf, add_hex_0x, solidity_file_dirname
+from log import logger
 import simplejson
+
 
 def save_abi(abi):
     with open("../output/compiled/abi", "w+") as abifile:
@@ -39,7 +41,7 @@ def main():
     if not compile_path.is_dir():
         command = 'mkdir -p ../output/compiled'.split()
         for line in run_command(command):
-            print(line)
+            logger.debug(line)
 
     if parsed.source:
         solidity_source = parsed.source
@@ -47,19 +49,19 @@ def main():
             'language': 'Solidity',
             'sources': {'standard.sol': {'content': solidity_source}}
         })
-        print("contract bytecode stored in 'output/compiled/bytecode'")
+        logger.info("contract abi stored in 'output/compiled/bytecode'")
         save_abi(findDict(output['contracts'], 'abi'))
-        print("function signature stored in 'output/compiled/functions'")
+        logger.info("function signature stored in 'output/compiled/functions'")
         save_functions(findDict(output, 'methodIdentifiers'))
 
         bytecode = compile_source(parsed.source)
-        print("contract bytecode stored in 'output/compiled/bytecode'")
+        logger.info("contract bytecode stored in 'output/compiled/bytecode'")
         save_bincode(str(findDict(bytecode, 'bin')))
-        print(str(findDict(bytecode, 'bin')))
+        logger.debug(str(findDict(bytecode, 'bin')))
 
     elif parsed.file:
-        # TODO: 错误处理 文件格式检查
-        print(parsed.file)
+        # TODO: error handling check file format
+        logger.debug(parsed.file)
         paths = solidity_file_dirname(parsed.file)
         origin_path = os.getcwd()
         if paths is not None:
@@ -71,24 +73,24 @@ def main():
             }, allow_paths=basepath)
 
             os.chdir(origin_path)
-            print("contract abi stored in 'output/compiled/abi'")
+            logger.info("contract abi stored in 'output/compiled/abi'")
             save_abi(findDict(output['contracts'], 'abi'))
-            print("function signature stored in 'output/compiled/functions'")
+            logger.info("function signature stored in 'output/compiled/functions'")
             save_functions(findDict(output, 'methodIdentifiers'))
 
             bytecode = compile_files([parsed.file])
-            print("contract bytecode stored in 'output/compiled/bytecode'")
+            logger.info("contract bytecode stored in 'output/compiled/bytecode'")
             save_bincode(str(findDict(bytecode, 'bin')))
-            print(str(findDict(bytecode, 'bin')))
+            logger.info(str(findDict(bytecode, 'bin')))
 
     elif parsed.procedure:
         key = parsed.procedure
         functions = read_functions()
         if functions is None or functions == "":
-            print("Compile Solidity source first.")
+            logger.info("Compile Solidity source first.")
         else:
             data = findDict(functions, key)
-            print(add_hex_0x(data))
+            logger.debug(add_hex_0x(data))
 
 
 if __name__ == "__main__":

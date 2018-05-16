@@ -49,6 +49,7 @@ tests/wrk_benchmark_test/hash.txt
 consensus/authority_round/data/
 
 scripts/txtool/output
+scripts/txtool/txtool/*.log
 
 # node
 **/node_modules

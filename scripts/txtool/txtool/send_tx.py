@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 from __future__ import print_function
@@ -8,6 +8,8 @@ from jsonrpcclient.http_client import HTTPClient
 from jsonrpcclient.request import Request
 from url_util import endpoint
 from util import findDict, run_command
+from log import logger
+
 
 def save_transaction_hash(tx_hash):
     deployfile = open("../output/transaction/hash", "w+")
@@ -30,6 +32,7 @@ def send_transaction(params):
 
     return response
 
+
 def send_txs(params):
     try:
         for item in params:
@@ -38,6 +41,7 @@ def send_txs(params):
         return None
 
     return response
+
 
 def parse_arguments():
     args = None
@@ -49,12 +53,13 @@ def parse_arguments():
 
     return args
 
+
 def main():
     compile_path = Path("../output/transaction")
     if not compile_path.is_dir():
         command = 'mkdir -p ../output/transaction'.split()
         for line in run_command(command):
-            print(line)
+            logger.debug(line)
 
     params = parse_arguments()
     if params is None:
@@ -65,10 +70,11 @@ def main():
     else:
         resp = send_transaction(params)
 
-    print("transaction hash 保存到../output/transaction/hash")
+    logger.info("transaction hash is stored in../output/transaction/hash")
     if resp is not None:
         tx_hash = findDict(resp, 'hash')
         save_transaction_hash(tx_hash)
+
 
 if __name__ == "__main__":
     main()

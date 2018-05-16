@@ -1,30 +1,21 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 import argparse
 from jsonrpcclient.http_client import HTTPClient
 from url_util import endpoint
+from log import logger
 
-def get_transaction_count(params):
+
+def get_tx_count(params):
     try:
         url = endpoint()
         response = HTTPClient(url).request("eth_getTransactionCount", params)
+        logger.debug(response)
     except:
         return None
 
     return response
-
-
-def block_number(number):
-    result = 0
-    if number.startswith('0x') or number.startswith('0X'):
-        result = int(number[2:], 16)
-    elif number == 'pending' or number == 'earliest' or number == 'latest':
-        result = number
-    else:
-        result = int(number, 10)
-
-    return result
 
 
 def address_infile():
@@ -36,7 +27,7 @@ def address_infile():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--address", help="20 bytes ethereum compatiable address.")
-    parser.add_argument("number", help="block number")
+    parser.add_argument("number", help="integer block number(hex string)")
 
     args = parser.parse_args()
 
@@ -44,9 +35,14 @@ def main():
     if args.address is None:
         address = address_infile()
 
-    params = [address, block_number(args.number)]
-    resp = get_transaction_count(params)
-    print int(resp, 16)
+    params = [address, args.number]
+    logger.debug(params)
+    resp = get_tx_count(params)
+    if resp is None:
+        print('None')
+    else:
+        print(int(resp, 16))
+
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 from jsonrpcclient.http_client import HTTPClient
@@ -18,9 +18,10 @@ def peer_count():
 def main():
     count = peer_count()
     if count is not None:
-        print int(count, 16)
+        print(int(count, 16))
     else:
-        print "Please check CITA is on."
+        print("Please check CITA is on.")
+
 
 if __name__ == "__main__":
     main()

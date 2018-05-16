@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 from __future__ import print_function
@@ -34,7 +34,7 @@ def parse_arguments():
 def main():
     from_block, to_block = parse_arguments()
     topics = get_topics()
-    print(topics)
+    logger.debug(topics)
     resp = get_logs(topics, from_block, to_block)
     print(resp)
 

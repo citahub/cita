@@ -1,26 +1,28 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 from __future__ import print_function, absolute_import
 import argparse
 import binascii
+import random
+import string
 from pathlib import Path
 from transaction_pb2 import Transaction, SignedTransaction, UnverifiedTransaction, Crypto
 from util import hex2bytes, run_command, remove_hex_0x, recover_pub
 from secp256k1 import PrivateKey
 from ethereum.utils import sha3
-from tx_count import get_transaction_count
 import pysodium
 from generate_account import generate
 from block_number import block_number
 from url_util import endpoint
 from jsonrpcclient.http_client import HTTPClient
+from log import logger
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
     command = 'mkdir -p ../output/transaction'.split()
     for line in run_command(command):
-        print(line)
+        logger.debug(line)
 
 
 def save_deploy(code):
@@ -50,17 +52,10 @@ def _sender_from_file():
         address = addressfile.read()
         return address
 
+def get_nonce(size=6):
+    """Get a random string."""
+    return (''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size)))
 
-def get_nonce(sender):
-    """Get nonce of sender at latest block."""
-    nonce = get_transaction_count([sender, 'latest'])
-    if nonce is not None:
-        nonce = int(nonce, 16)
-    else:
-        nonce = 0
-
-    print(str(nonce))
-    return str(nonce)
 
 def get_chainid():
     params = ['latest']
@@ -68,15 +63,16 @@ def get_chainid():
 
     try:
         url = endpoint()
-        print(url)
+        logger.debug(url)
         response = HTTPClient(url).request("cita_getMetaData", params)
         chainid = response['chainId']
-        print(response)
+        logger.debug(response)
     except:
         chainid = 0
 
-    print("final chainId is {}".format(chainid))
+    logger.debug("final chainId is {}".format(chainid))
     return chainid
+
 
 def generate_deploy_data(current_height,
                          bytecode,
@@ -100,11 +96,11 @@ def _blake2b_ed25519_deploy_data(current_height,
                                  version=0,
                                  receiver=None):
     sender = get_sender(private_key, True)
-    print(sender)
-    nonce = get_nonce(sender)
-    print("nonce is {}".format(nonce))
+    logger.debug(sender)
+    nonce = get_nonce()
+    logger.debug("nonce is {}".format(nonce))
     chainid = get_chainid()
-    print("chainid is {}".format(chainid))
+    logger.debug("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
@@ -116,21 +112,21 @@ def _blake2b_ed25519_deploy_data(current_height,
     tx.data = hex2bytes(bytecode)
 
     message = _blake2b(tx.SerializeToString())
-    print("msg is {}".format(message))
+    logger.debug("blake2b msg")
     sig = pysodium.crypto_sign_detached(message, hex2bytes(privatekey))
-    print("sig {}".format(binascii.b2a_hex(sig)))
+    logger.debug("sig {}".format(binascii.b2a_hex(sig)))
 
     pubkey = pysodium.crypto_sign_sk_to_pk(hex2bytes(privatekey))
-    print("pubkey is {}".format(binascii.b2a_hex(pubkey)))
+    logger.debug("pubkey is {}".format(binascii.b2a_hex(pubkey)))
     signature = binascii.hexlify(sig[:]) + binascii.hexlify(pubkey[:])
-    print("signature is {}".format(signature))
+    logger.debug("signature is {}".format(signature))
 
     unverify_tx = UnverifiedTransaction()
     unverify_tx.transaction.CopyFrom(tx)
     unverify_tx.signature = hex2bytes(signature)
     unverify_tx.crypto = Crypto.Value('SECP')
 
-    print("unverify_tx is {}".format(
+    logger.info("unverify_tx is {}".format(
         binascii.hexlify(unverify_tx.SerializeToString())))
     return binascii.hexlify(unverify_tx.SerializeToString())
 
@@ -147,11 +143,11 @@ def _sha3_secp256k1_deploy_data(current_height,
     else:
         privkey = PrivateKey(hex2bytes(privatekey))
 
-    print(sender)
-    nonce = get_nonce(sender)
-    print("nonce is {}".format(nonce))
+    logger.debug(sender)
+    nonce = get_nonce()
+    logger.debug("nonce is {}".format(nonce))
     chainid = get_chainid()
-    print("chainid is {}".format(chainid))
+    logger.debug("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
@@ -165,7 +161,7 @@ def _sha3_secp256k1_deploy_data(current_height,
 
     message = sha3(tx.SerializeToString())
 
-    print("message: {}".format(message))
+    logger.debug("hash message: {}")
     sign_recover = privkey.ecdsa_sign_recoverable(message, raw=True)
     sig = privkey.ecdsa_recoverable_serialize(sign_recover)
 
@@ -177,7 +173,7 @@ def _sha3_secp256k1_deploy_data(current_height,
     unverify_tx.signature = hex2bytes(signature)
     unverify_tx.crypto = Crypto.Value('SECP')
 
-    print("unverify_tx is {}".format(
+    logger.info("unverify_tx is {}".format(
         binascii.hexlify(unverify_tx.SerializeToString())))
     return binascii.hexlify(unverify_tx.SerializeToString())
 
@@ -228,13 +224,13 @@ def _blake2b(seed):
 
 def main():
     blake2b_ed25519 = parse_arguments().newcrypto
-    print(blake2b_ed25519)
+    logger.debug(blake2b_ed25519)
     bytecode, privkey, receiver, version = _params_or_default()
     current_height = int(block_number(), 16)
     data = generate_deploy_data(
         current_height, remove_hex_0x(bytecode), privkey,
         remove_hex_0x(receiver), blake2b_ed25519, version)
-    print("save deploy code to ../output/transaction/deploycode")
+    logger.info("save deploy code to ../output/transaction/deploycode")
     save_deploy(data)
 
 

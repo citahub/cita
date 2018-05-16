@@ -1,12 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
-# TODO 列出来所有的可接受的参数
-# TODO 处理外部传过来的参数
+# TODO List all the acceptable params
+# TODO Handle passed params
 
 
 from jsonrpcclient.http_client import HTTPClient
 from url_util import endpoint
+from log import logger
 # '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":1}'
 
 
@@ -24,6 +25,6 @@ def check_cita_status():
 
 if __name__ == '__main__':
     if check_cita_status():
-        print "CITA is on."
+        print("CITA is on.")
     else:
-        print "CITA is not working."
+        print("CITA is not working.")

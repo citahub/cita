@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2
 # coding=utf-8
 
 import subprocess
@@ -6,6 +6,8 @@ import sys
 import ntpath
 import os.path
 from ecdsa import SigningKey, SECP256k1
+from log import logger
+
 
 def which(program):
     import os
@@ -61,6 +63,7 @@ def path_leaf(path):
     head, tail = ntpath.split(path)
     return tail or ntpath.basename(head)
 
+
 def hex2bytes(hex_string):
     return bytes(bytearray.fromhex(hex_string))
 
@@ -110,15 +113,16 @@ def solidity_file_dirname(solidity_filename):
             full_path_name =  os.path.abspath(file_path)
             return (solidity_filename,  os.path.dirname(file_path), full_path_name)
         else:
-            print("solidity file {} may be wrong format or not in folder 'solidity'".format(solidity_filename))
+            logger.error("solidity file {} may be wrong format or not in folder 'solidity'".format(solidity_filename))
             return None
     else:
         return (os.path.basename(solidity_filename), os.path.dirname(solidity_filename), solidity_filename)
 
+
 def recover_pub(signkey):
     if not isinstance(signkey, str):
         raise ValueError("Sign key is not a string.")
-    
+
     sk = SigningKey.from_string(signkey, curve=SECP256k1)
     pub = sk.get_verifying_key().to_string()
     return pub

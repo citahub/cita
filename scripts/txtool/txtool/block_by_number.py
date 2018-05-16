@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 import argparse
 from jsonrpcclient.http_client import HTTPClient
 from url_util import host, endpoint
 from util import findDict, remove_hex_0x
+
 
 def block_by_number(params):
     try:
@@ -16,19 +17,6 @@ def block_by_number(params):
     return response
 
 
-def block_number(number):
-    # result = 0
-    # if number.startswith('0x') or number.startswith('0X'):
-    #     result = int(number[2:], 16)
-    # elif number == 'pending' or number == 'earliest' or number == 'latest':
-    #     result = number
-    # else:
-    #     result = int(number, 10)
-
-    return number
-
-
-# TODO: block_number要能处理‘pending’ 'earliest' 'latest'
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("number", help="block number as param")
@@ -37,8 +25,9 @@ def main():
     parser.set_defaults(detail=True)
     args = parser.parse_args()
 
-    params = [block_number(args.number), args.detail]
+    params = [args.number, args.detail]
     resp = block_by_number(params)
+
 
 if __name__ == "__main__":
     main()
