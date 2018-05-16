@@ -179,7 +179,8 @@ impl ExecutorInstance {
         if let EconomicalModel::Charge = *self.ext.economical_model.read() {
             is_valid = self.ext.validate_timestamp(timestamp)
         }
-        is_valid
+        // TODO: Open it later
+        is_valid || true
     }
 
     /// TODO: Move to a separated file

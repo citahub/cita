@@ -699,7 +699,18 @@ impl Executor {
     /// 2. Update cache
     /// 3. Commited data to db
     /// Notice: Write db if and only if finalize block.
-    pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn finalize_block(&self, mut closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        if let EconomicalModel::Charge = *self.economical_model.read() {
+            let new_proposer = closed_block.proposer().clone();
+            closed_block
+                .state
+                .add_balance(&new_proposer, &BLOCK_REWARD)
+                .expect("Trie error while add proposer reward");
+
+            closed_block.state.commit().expect("commit trie error");
+            let state_root = closed_block.state.root().clone();
+            closed_block.set_state_root(state_root);
+        }
         self.reorg_config();
         self.set_executed_result(&closed_block);
         self.send_executed_info_to_chain(closed_block.number(), ctx_pub);
@@ -723,22 +734,6 @@ impl Executor {
         let new_proposer = comming.proposer().clone();
         if old_proposer != new_proposer {
             closed_block.header.set_proposer(new_proposer);
-
-            if let EconomicalModel::Charge = *self.economical_model.read() {
-                closed_block
-                    .state
-                    .sub_balance(&old_proposer, &BLOCK_REWARD)
-                    .expect("Trie error while add proposer reward");
-
-                closed_block
-                    .state
-                    .add_balance(&new_proposer, &BLOCK_REWARD)
-                    .expect("Trie error while add proposer reward");
-
-                closed_block.state.commit().expect("commit trie error");
-                let state_root = closed_block.state.root().clone();
-                closed_block.set_state_root(state_root);
-            }
         }
 
         self.finalize_block(closed_block, ctx_pub);
@@ -812,13 +807,8 @@ impl Executor {
             current_state_root,
             last_hashes.into(),
         ).unwrap();
-        if open_block.apply_transactions(
-            self,
-            conf.check_permission,
-            conf.check_quota,
-            self.economical_model.read().clone(),
-        ) {
-            let closed_block = open_block.close();
+        if open_block.apply_transactions(self, conf.check_permission, conf.check_quota) {
+            let closed_block = open_block.close(self.economical_model.read().clone());
             let new_now = Instant::now();
             info!("execute block use {:?}", new_now.duration_since(now));
             self.finalize_block(closed_block, ctx_pub);
@@ -844,8 +834,8 @@ impl Executor {
             current_state_root,
             last_hashes.into(),
         ).unwrap();
-        if open_block.apply_transactions(self, perm, quota, self.economical_model.read().clone()) {
-            let closed_block = open_block.close();
+        if open_block.apply_transactions(self, perm, quota) {
+            let closed_block = open_block.close(self.economical_model.read().clone());
             let new_now = Instant::now();
             debug!("execute proposal use {:?}", new_now.duration_since(now));
             let h = closed_block.number();

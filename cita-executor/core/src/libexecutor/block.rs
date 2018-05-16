@@ -399,13 +399,7 @@ impl OpenBlock {
 
     /// Execute transactions
     /// Return false if be interrupted
-    pub fn apply_transactions(
-        &mut self,
-        executor: &Executor,
-        check_permission: bool,
-        check_quota: bool,
-        economical_model: EconomicalModel,
-    ) -> bool {
+    pub fn apply_transactions(&mut self, executor: &Executor, check_permission: bool, check_quota: bool) -> bool {
         for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 {
                 if executor.is_interrupted.load(Ordering::SeqCst) {
@@ -457,17 +451,12 @@ impl OpenBlock {
             }
         }
 
-        if let EconomicalModel::Charge = economical_model {
-            let proposer = self.header().proposer().clone();
-            self.state
-                .add_balance(&proposer, &BLOCK_REWARD)
-                .expect("Trie error while add proposer reward");
+        if let EconomicalModel::Quota = *executor.economical_model.read() {
+            let now = Instant::now();
+            self.state.commit().expect("commit trie error");
+            let new_now = Instant::now();
+            debug!("state root use {:?}", new_now.duration_since(now));
         }
-
-        let now = Instant::now();
-        self.state.commit().expect("commit trie error");
-        let new_now = Instant::now();
-        debug!("state root use {:?}", new_now.duration_since(now));
 
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
@@ -576,12 +565,14 @@ impl OpenBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(mut self) -> ClosedBlock {
+    pub fn close(mut self, economical_model: EconomicalModel) -> ClosedBlock {
         // Rebuild block
-        let state_root = *self.state.root();
+        if let EconomicalModel::Quota = economical_model {
+            let state_root = *self.state.root();
+            self.set_state_root(state_root);
+        }
         let receipts_root =
             merklehash::MerkleTree::from_bytes(self.receipts.iter().map(|r| r.rlp_bytes().to_vec())).get_root_hash();
-        self.set_state_root(state_root);
         self.set_receipts_root(receipts_root);
 
         // blocks blooms
