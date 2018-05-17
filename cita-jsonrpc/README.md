@@ -582,11 +582,9 @@ contract中get方法Hash和编码后的数据
 
 发送和获取数据
 
-```js
+```shell
 // Request
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call",
-"params":[{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5",
-"data":"0x6d4ce63c"}, "0x6"],"id":2}'
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5","data":"0x6d4ce63c"}, "0x6"],"id":2}'
 
 // Result
 {
