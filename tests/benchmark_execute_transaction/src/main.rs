@@ -247,7 +247,7 @@ fn bench_execute_trans(config_path: &str, genesis_path: &str, trans_num: u32, is
         open_block.set_gas_used(gas_used);
 
         //save data to db
-        let closed_block = open_block.close(ext.economical_model.read().clone());
+        let closed_block = open_block.close();
 
         //write state root
         let now = Instant::now();
