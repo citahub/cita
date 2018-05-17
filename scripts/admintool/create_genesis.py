@@ -24,6 +24,12 @@ assert get_solidity() is not None, 'Solidity not found!'
 CONTRACTS_DIR = path.join(path.dirname(__file__), os.pardir, 'contracts')
 # Remove 'admintool'
 COMMON_DIR = path.join(path.dirname(__file__)[:-10], 'contracts/common')
+ECONOMICAL_MODELS = {
+    # Default model. Sending Transaction is free, should work with authority together.
+    "quota": 0,
+    # Transaction charges for gas * gasPrice. BlockProposer get the block reward.
+    "charge": 1,
+}
 
 CONTRACTS = {
     '0x00000000000000000000000000000000013241a2': {
@@ -133,6 +139,9 @@ def init_contracts(nodes, args):
                 print 'params: {}'.format(params)
                 with open(args.chain_id_file, 'w') as f:
                     f.write('{}\n'.format(params[4]))
+                if args.economical_model:
+                    params[8] = ECONOMICAL_MODELS[args.economical_model]
+                print '[economical-model]: {}'.format(params[8])
                 extra = ct.encode_constructor_arguments(params)
             else:
                 extra = b''
@@ -209,6 +218,10 @@ def main():
         type=int,
         default=0,
         help="Specify the timestamp to use.")
+    parser.add_argument(
+        "--economical_model",
+        choices=ECONOMICAL_MODELS.keys(),
+        help="Specify the economical model")
     parser.add_argument("--authorities", help="Authorities nodes list file.")
     parser.add_argument("--init_data", help="init with constructor_arguments.")
     parser.add_argument("--resource", help="chain resource folder.")
