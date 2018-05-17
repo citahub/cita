@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# coding=utf-8
+# -*- coding: utf-8 -*-
 
 import argparse
 import json
@@ -93,7 +93,7 @@ def init_contracts(nodes, args):
     env.config['BLOCK_GAS_LIMIT'] = 471238800
     tester_state = Chain(env=env)
 
-    for address, contract in CONTRACTS.iteritems():
+    for address, contract in iter(CONTRACTS.items()):
         contract_path = path.join(CONTRACTS_DIR, contract['file'])
         simple_compiled = compile_file(
             contract_path,
@@ -135,8 +135,8 @@ def init_contracts(nodes, args):
                 #   - 3  bit prefix (0b000 means testnet)
                 #   - 29 bit id is a random number in range [0, 2**29]
                 params[4] = args.chain_id or random.randint(0, 2**(32 - 3))
-                print '[chain-id]: {}'.format(params[4])
-                print 'params: {}'.format(params)
+                print('[chain-id]: {}'.format(params[4]))
+                print('params: {}'.format(params))
                 with open(args.chain_id_file, 'w') as f:
                     f.write('{}\n'.format(params[4]))
                 if args.economical_model:
@@ -152,12 +152,11 @@ def init_contracts(nodes, args):
             extra = (ct.encode_constructor_arguments(nodes[address][:3])
                      if nodes[address] else b'')
         elif address == '0x00000000000000000000000000000000013241b5':
-            for addr, permission in nodes[address].iteritems():
+            for addr, permission in iter(nodes[address].items()):
                 new_funcs = []
+                # transform a hex to bytes
                 for func in permission[2]:
-                    new_func = ''
-                    for i in range(0, len(func), 2):
-                        new_func += chr((int(func[i:i + 2], 16)))
+                    new_func = binascii.unhexlify(func)
                     new_funcs.append(new_func)
 
                 extra_common = (ct.encode_constructor_arguments(
@@ -189,7 +188,7 @@ def init_contracts(nodes, args):
                 [current_chain_id, parent_chain_id, parent_chain_nodes]))
 
         else:
-            extra = ''
+            extra = b''
 
         print("contract:\n", contract['name'])
         print("extra:\n", binascii.hexlify(extra))
@@ -272,7 +271,7 @@ def main():
     timestamp = int(time.time() * 1000
                     if not args.timestamp else args.timestamp)
     if os.path.exists(res_path) and os.path.isdir(res_path):
-        #file list make sure same order when calc hash
+        # file list make sure same order when calc hash
         file_list = ""
         res_path_len = len(res_path)
         md5obj = hashlib.md5()
