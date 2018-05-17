@@ -129,11 +129,21 @@ jobs:
           name: basic
           command: './tests/integrate_test/cita_basic.sh'
       - run:
-          name: byzantine
-          command: './tests/integrate_test/cita_byzantinetest.sh'
+          # EconomicalModel == Quota
+          name: byzantine-quota
+          command: './tests/integrate_test/cita_byzantinetest.sh quota'
       - run:
-          name: jsonrpc-mock-tests
-          command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh'
+          # EconomicalModel == Charge
+          name: byzantine-charge
+          command: './tests/integrate_test/cita_byzantinetest.sh charge'
+      - run:
+          # EconomicalModel == Quota
+          name: jsonrpc-mock-tests-quota
+          command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh quota'
+      - run:
+          # EconomicalModel == Charge
+          name: jsonrpc-mock-tests-charge
+          command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh charge'
 
   integrate_test_crosschain_sha3:
     docker:
