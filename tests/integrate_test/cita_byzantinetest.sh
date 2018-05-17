@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+ECONOMICAL_MODEL="quota"
+if [ -n $1 ]; then
+    ECONOMICAL_MODEL=$1
+fi
+
 if [[ `uname` == 'Darwin' ]]
 then
     SOURCE_DIR=$(realpath $(dirname $0)/../..)
@@ -21,8 +26,9 @@ cleanup
 echo "DONE"
 
 ################################################################################
+
 echo -n "2) generate config  ...  "
-./bin/admintool.sh > /dev/null
+./bin/admintool.sh -E ${ECONOMICAL_MODEL} > /dev/null
 echo "DONE"
 
 ################################################################################

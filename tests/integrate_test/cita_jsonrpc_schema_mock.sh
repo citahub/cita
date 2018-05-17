@@ -2,6 +2,11 @@
 
 set -e
 
+ECONOMICAL_MODEL="quota"
+if [ -n $1 ]; then
+    ECONOMICAL_MODEL=$1
+fi
+
 if [[ `uname` == 'Darwin' ]]
 then
     SOURCE_DIR=$(realpath $(dirname $0)/../..)
@@ -28,6 +33,7 @@ if [ ! -d "resource" ]; then
     mkdir resource
 fi
 ${BINARY_DIR}/bin/admintool.sh \
+             -E ${ECONOMICAL_MODEL} \
              -T 1524000000 \
              -C 123 \
              -A ${SOURCE_DIR}/tests/interfaces/rpc/config/authorities > /dev/null 2>&1
