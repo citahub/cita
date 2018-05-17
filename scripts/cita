@@ -15,7 +15,7 @@ setup() {
     # config rabbitmq
     if [[ `uname` == 'Darwin' ]]
     then
-        ps -ax | grep rabbitmq-server | grep -v grep > /dev/null || rabbitmq-server restart > /dev/null
+        ps -ax | grep rabbitmq-server | grep -v grep > /dev/null || brew services restart rabbitmq > /dev/null
     else
         ps -C rabbitmq-server > /dev/null || sudo /etc/init.d/rabbitmq-server restart > /dev/null
     fi
