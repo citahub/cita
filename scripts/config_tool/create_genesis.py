@@ -24,13 +24,7 @@ BLOCK_GAS_LIMIT = 471238800
 def function_encode(func_sign):
     keccak = sha3.keccak_256()
     keccak.update(func_sign)
-    return hexstr_to_bytes(keccak.hexdigest()[0:8])
-
-
-def hexstr_to_bytes(hexstr):
-    if len(hexstr) % 2 != 0:
-        raise Exception('Parse hex string {} failed.'.format(hexstr))
-    return binascii.unhexlify(hexstr)
+    return binascii.unhexlify(keccak.hexdigest()[0:8])
 
 
 class GenesisData(object):
@@ -140,7 +134,7 @@ class GenesisData(object):
         for name, info in pcinfo['basic'].items():
             addr = info['address']
             conts = [addr]
-            funcs = [hexstr_to_bytes('00000000')]
+            funcs = [binascii.unhexlify('00000000')]
             ctt = ContractTranslator(data['abi'])
             extra = ctt.encode_constructor_arguments([name, conts, funcs])
             self.mine_contract_on_chain_tester(addr, data['bin'] + extra)
