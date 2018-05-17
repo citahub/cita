@@ -216,9 +216,8 @@ fn verify_proposal_block(
                         );
                     }
                     VerifyResult::VerifyFailed => {
-                        // statement with no effect, bug here?
-                        block_verify_status_guard.block_verify_result == VerifyResult::VerifyFailed;
-
+                        block_verify_status_guard.block_verify_result = VerifyResult::VerifyFailed;
+			
                         let tx_hash = H256::from_slice(req.get_tx_hash());
                         let resp_ret;
                         if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
