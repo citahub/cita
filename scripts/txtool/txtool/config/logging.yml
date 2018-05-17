@@ -1,0 +1,33 @@
+version: 1
+formatters:
+  simple:
+    format: '%(asctime)s - %(filename)s - %(name)s %(lineno)d - %(levelname)s - %(message)s'
+handlers:
+  console:
+    class: logging.FileHandler
+    level:  INFO 
+    formatter: simple
+    filename: info.log
+  console_debug:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: simple
+    filename: info.log
+  console_error:
+    class: logging.StreamHandler
+    level: ERROR
+    formatter: simple
+    stream: ext://sys.stderr
+loggers:
+  info:
+    level: INFO
+    handlers: [console]
+    propagate: yes
+  debug:
+    level: DEBUG
+    handlers: [console_debug]
+    propagate: yes
+  error:
+    level: ERROR
+    handlers: [console_error]
+    propagate: yes

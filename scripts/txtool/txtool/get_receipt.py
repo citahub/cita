@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 from __future__ import print_function
@@ -8,8 +8,10 @@ from jsonrpcclient.http_client import HTTPClient
 from url_util import endpoint
 from util import findDict
 from util import run_command
+from log import logger
 import simplejson
 import time
+
 
 def save_topcis(topics):
     if topics is not None:
@@ -40,6 +42,7 @@ def get_receipt_by(tx_hash):
 
     return response
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--tx", help="Transaction hash with or without 0x prefix.")
@@ -50,12 +53,13 @@ def parse_arguments():
 
     return opts
 
+
 def main():
     compile_path = Path("../output/transaction")
     if not compile_path.is_dir():
         command = 'mkdir -p ../output/transaction'.split()
         for line in run_command(command):
-            print(line)
+            logger.debug(line)
 
     opts = parse_arguments()
     tx_hash = opts.tx if opts.tx else get_transaction_hash()
@@ -85,6 +89,7 @@ def _log_topics(receipt):
         result_list = list(set(result_list + topics))
 
     return result_list
+
 
 if __name__ == "__main__":
     main()

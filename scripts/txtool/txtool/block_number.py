@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 from jsonrpcclient.http_client import HTTPClient
@@ -21,6 +21,7 @@ def main():
         print(int(number, 16))
     else:
         print("None")
+
 
 if __name__ == "__main__":
     main()

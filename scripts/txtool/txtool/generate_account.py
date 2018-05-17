@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # coding=utf-8
 
 from __future__ import print_function
@@ -10,8 +10,9 @@ from util import which, run_command, hex2bytes
 from ecdsa import SigningKey, SECP256k1
 import sha3
 import pysodium
+from log import logger
 
-# 检查是否安装了openssl
+# check openssl
 openssl_installed = which("openssl")
 if not openssl_installed:
     sys.exit("Openssl not installed.Check txtool/README.md and prerequest_sudo.sh for more infomation.")
@@ -20,19 +21,19 @@ accounts_path = Path("../output/accounts")
 if not accounts_path.is_dir():
     command = 'mkdir -p ../output/accounts'.split()
     for line in run_command(command):
-        print(line)
+        logger.debug(line)
 
 
 def save_privkey(privkey):
-    print("私钥{}".format(privkey))
-    print("生成私钥保存在output/accounts/privkey中")
+    logger.debug("private key {}".format(privkey))
+    logger.info("the private key stores in output/accounts/privkey")
     with open("../output/accounts/privkey", "w+") as privkey_file:
         privkey_file.write(privkey)
 
 
 def save_pubkey(pubkey):
-    print("公钥{}".format(pubkey))
-    print("生成公钥保存在output/accounts/pubkey中")
+    logger.debug("public key {}".format(pubkey))
+    logger.info("the public key is stored in output/accounts/pubkey")
     with open("../output/accounts/pubkey", "w+") as pubkey_file:
         pubkey_file.write(pubkey)
 
@@ -55,7 +56,7 @@ def _generate_old(privkey=None):
         priv = SigningKey.generate(curve=SECP256k1)
     else:
         priv = SigningKey.from_string(hex2bytes(privkey), curve=SECP256k1)
-    
+
     pub = priv.get_verifying_key().to_string()
 
     keccak.update(pub)
@@ -64,6 +65,7 @@ def _generate_old(privkey=None):
     save_privkey(binascii.hexlify(priv.to_string()))
     save_pubkey(binascii.hexlify(pub))
     save_address(address)
+
 
 def _generate_new(privkey=None):
     pk, sk = pysodium.crypto_sign_keypair()
@@ -74,6 +76,7 @@ def _generate_new(privkey=None):
     address = binascii.b2a_hex(pysodium.crypto_generichash_blake2b_salt_personal(pk, key = "CryptapeCryptape")[12:])
     save_address(address)
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--newcrypto', dest='newcrypto', action='store_true')
@@ -81,6 +84,7 @@ def main():
     parser.set_defaults(newcrypto=False)
     args = parser.parse_args()
     generate(None, args.newcrypto)
+
 
 if __name__ == "__main__":
     main()
