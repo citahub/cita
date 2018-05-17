@@ -9,6 +9,7 @@ import sha3
 import sys
 import time
 import yaml
+import binascii
 
 from ethereum.abi import ContractTranslator
 import ethereum.tools.tester as eth_tester
@@ -29,8 +30,7 @@ def function_encode(func_sign):
 def hexstr_to_bytes(hexstr):
     if len(hexstr) % 2 != 0:
         raise Exception('Parse hex string {} failed.'.format(hexstr))
-    return ''.join((chr((int(hexstr[idx:idx + 2], 16)))
-                    for idx in range(0, len(hexstr), 2)))
+    return binascii.unhexlify(hexstr)
 
 
 class GenesisData(object):
