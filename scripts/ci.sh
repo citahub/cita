@@ -62,7 +62,6 @@ function run_in_docker () {
         DOCKER_RUN_OPTIONS="${DOCKER_RUN_OPTIONS} -i"
     fi
     docker run --rm ${DOCKER_RUN_OPTIONS} \
-           --env RUN_IN_DOCKER=1  \
            --volume ${SOURCE_DIR}:${SOURCE_DIR} \
            --volume ${HOME}/.cargo/registry:/root/.cargo/registry  \
            --volume ${HOME}/.cargo/git:/root/.cargo/git \
