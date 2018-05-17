@@ -123,13 +123,19 @@ pub enum Stage {
 }
 
 enum_from_primitive! {
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum EconomicalModel {
     /// Default model. Sending Transaction is free, should work with authority together.
     Quota,
     /// Transaction charges for gas * gasPrice. BlockProposer get the block reward.
     Charge,
 }
+}
+
+impl Default for EconomicalModel {
+    fn default() -> Self {
+        EconomicalModel::Quota
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -586,6 +592,7 @@ impl Executor {
             vm_tracing: analytics.vm_tracing,
             check_permission: false,
             check_quota: false,
+            economical_model: EconomicalModel::Quota,
         };
 
         let ret = Executive::new(

@@ -27,6 +27,7 @@ use error::{Error, ExecutionError};
 use evm::Error as EvmError;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
+use libexecutor::executor::EconomicalModel;
 use receipt::{Receipt, ReceiptError};
 use std::cell::{RefCell, RefMut};
 use std::collections::{HashMap, HashSet};
@@ -669,6 +670,7 @@ impl<B: Backend> State<B> {
         tracing: bool,
         check_permission: bool,
         check_quota: bool,
+        economical_model: EconomicalModel,
     ) -> ApplyResult {
         let engine = &NullEngine::default();
         let options = TransactOptions {
@@ -676,6 +678,7 @@ impl<B: Backend> State<B> {
             vm_tracing: false,
             check_permission: check_permission,
             check_quota: check_quota,
+            economical_model: economical_model,
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
@@ -1153,7 +1156,9 @@ mod tests {
         };
         let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(1));
         println!("contract_address {:?}", contract_address);
-        let result = state.apply(&info, &signed, true, false, false).unwrap();
+        let result = state
+            .apply(&info, &signed, true, false, false, Default::default())
+            .unwrap();
         println!(
             "{:?}",
             state
