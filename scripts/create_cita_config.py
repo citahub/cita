@@ -264,9 +264,9 @@ class ChainInfo(object):
                     self.node_prefix, node_id))
             stream.write('DATA_PATH=./data\n')
 
-        consensus_config = os.path.join(node_dir, 'consensus.toml')
+        consensus_config = os.path.join(node_dir, 'privkey')
         with open(consensus_config, 'wt') as stream:
-            stream.write('signer = "{}"\n'.format(node['signer']))
+            stream.write(node['signer'])
 
         network_config = os.path.join(self.configs_dir, 'network.toml')
         with open(network_config, 'rt') as stream:
