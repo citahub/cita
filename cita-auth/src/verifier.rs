@@ -20,6 +20,7 @@ use cita_types::traits::LowerHex;
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use libproto::{BlockTxHashesReq, Crypto, Message, Ret, UnverifiedTransaction, VerifyBlockReq, VerifyTxReq,
                VerifyTxResp};
+use libproto::SignedTransaction;
 use libproto::blockchain::AccountGasLimit;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use std::collections::{HashMap, HashSet};
@@ -289,7 +290,6 @@ impl Verifier {
 
     pub fn verify_quota(&self, blkreq: &VerifyBlockReq) -> bool {
         let reqs = blkreq.get_reqs();
-        let len = reqs.len();
         let mut gas_limit = self.account_gas_limit.get_common_gas_limit();
         let mut specific_gas_limit = self.account_gas_limit.get_specific_gas_limit().clone();
         let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
@@ -299,9 +299,6 @@ impl Verifier {
             let signer = pubkey_to_address(&PubKey::from(req.get_signer()));
 
             if n < quota {
-                if len == 1 {
-                    return true;
-                }
                 return false;
             }
 
@@ -322,12 +319,31 @@ impl Verifier {
                     if quota < gas_limit {
                         _remainder = gas_limit - quota;
                     } else {
-                        _remainder = 0;
+                        return false;
                     }
                     account_gas_used.insert(Address::from(signer), _remainder);
                 }
             }
             n = n - quota;
+        }
+        true
+    }
+
+    pub fn verify_tx_quota(&self, stx: &SignedTransaction) -> bool {
+        let quota = stx.get_transaction_with_sig().get_transaction().get_quota();
+        if quota > self.block_gas_limit {
+            return false;
+        }
+        if self.check_quota {
+            let signer = pubkey_to_address(&PubKey::from(stx.get_signer()));
+            let mut gas_limit = self.account_gas_limit.get_common_gas_limit();
+            let mut specific_gas_limit = self.account_gas_limit.get_specific_gas_limit().clone();
+            if let Some(value) = specific_gas_limit.remove(&signer.lower_hex()) {
+                gas_limit = value;
+            }
+            if quota > gas_limit {
+                return false;
+            }
         }
         true
     }

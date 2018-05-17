@@ -139,6 +139,8 @@ impl Dispatcher {
             } else {
                 error_msg = Some(String::from("NotReady"));
             }
+        } else if !verifier.read().verify_tx_quota(tx) {
+            error_msg = Some(String::from("QuotaNotEnough"));
         } else {
             // add tx to txs_pool and wal.
             if self.add_tx_to_pool(tx) {
