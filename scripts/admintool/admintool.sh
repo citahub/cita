@@ -196,7 +196,7 @@ function create_genesis () {
         mv "${AUTH_FILE}" "${AUTH_FILE}.bak"
         cp -f "${AUTHORITIES_FILE}" "${AUTH_FILE}"
     fi
-    python "${TEMPLATE_DIR}/create_genesis.py" \
+    python3 "${TEMPLATE_DIR}/create_genesis.py" \
         --timestamp ${TIMESTAMP} \
         --chain_id ${CHAIN_ID} \
         --genesis_file "${GENESIS_FILE}" \
@@ -217,13 +217,13 @@ function create_genesis () {
 
 function create_key () {
     local nodeid=${1}
-    python "${TEMPLATE_DIR}/create_keys_addr.py" \
+    python3 "${TEMPLATE_DIR}/create_keys_addr.py" \
         "$(target_dir ${nodeid})/" "${AUTH_FILE}" "create_key_addr"
 }
 
 function consensus () {
     local nodeid=${1}
-    python "${TEMPLATE_DIR}/create_node_config.py" \
+    python3 "${TEMPLATE_DIR}/create_node_config.py" \
         "$(target_dir ${nodeid})/"
 
     cp -f "${TEMPLATE_DIR}/ntp_config_example.toml" "$(target_dir ${nodeid})/ntp.toml"
@@ -254,7 +254,7 @@ function network () {
             if [ "${ID}" = "${nodeid}" ]; then
                 update_existed=false
             fi
-            python "${TEMPLATE_DIR}/create_network_config.py" \
+            python3 "${TEMPLATE_DIR}/create_network_config.py" \
                 "$(target_dir ${ID})/network.toml" \
                 ${nodeid} \
                 $IP_LIST \
@@ -262,7 +262,7 @@ function network () {
         done
     else
         local update_existed=false
-        python "${TEMPLATE_DIR}/create_network_config.py" \
+        python3 "${TEMPLATE_DIR}/create_network_config.py" \
             "$(target_dir ${nodeid})/network.toml" \
             ${nodeid} \
             $IP_LIST \
@@ -292,7 +292,7 @@ function executor () {
     if [ "${DEVELOP_MODE}" == "true" ] || [ "${append_mode}" == "true" ]; then
         grpc_port=$((grpc_port + nodeid))
     fi
-    python "${TEMPLATE_DIR}/create_executor_config.py" \
+    python3 "${TEMPLATE_DIR}/create_executor_config.py" \
         "$(target_dir ${nodeid})/executor.toml" ${grpc_port}
 
 }
@@ -306,7 +306,7 @@ function jsonrpc () {
         http_port=$((http_port + nodeid))
         ws_port=$((ws_port + nodeid))
     fi
-    python "${TEMPLATE_DIR}/create_jsonrpc_config.py" \
+    python3 "${TEMPLATE_DIR}/create_jsonrpc_config.py" \
         ${HTTP_ENABLE}  ${http_port} \
         ${WS_ENABLE}    ${ws_port} \
         "$(target_dir ${nodeid})/"
