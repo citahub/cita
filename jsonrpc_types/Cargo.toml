@@ -13,22 +13,17 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 rustc-serialize = "0.3"
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 time = "0.1"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../cita-chain/types" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 clippy = { version = "0.0.175", optional = true }
 
 [features]
-default = ["secp256k1", "sha3hash", "rabbitmq"]
-secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "proof/secp256k1"]
-ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "proof/ed25519"]
-sm2 = ["cita-crypto/sm2", "libproto/sm2", "proof/sm2"]
+default = ["secp256k1", "sha3hash"]
+secp256k1 = ["libproto/secp256k1", "proof/secp256k1"]
+ed25519 = ["libproto/ed25519", "proof/ed25519"]
+sm2 = ["libproto/sm2", "proof/sm2"]
 sha3hash = ["libproto/sha3hash", "proof/sha3hash"]
 blake2bhash = ["libproto/blake2bhash", "proof/blake2bhash"]
 sm3hash = ["libproto/sm3hash", "proof/sm3hash"]
-rabbitmq = ["pubsub/rabbitmq"]
-zeromq = ["pubsub/zeromq"]
-kafka = ["pubsub/kafka"]
