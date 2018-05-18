@@ -25,7 +25,7 @@ use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
 use libexecutor::{CallEvmImpl, ConnectInfo};
-use libexecutor::executor::{Executor, GlobalSysConfig};
+use libexecutor::executor::{EconomicalModel, Executor, GlobalSysConfig};
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::citacode::{ActionParams, EnvInfo as ProtoEnvInfo};
