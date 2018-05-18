@@ -195,7 +195,7 @@ contract SimpleStorage {
 
 #### 构造签名
 
-1. 构造Transaction对象tx，填充to, nonce, valid_until_block, quota, data, verion 6个字段。
+1. 构造Transaction对象tx，填充to, nonce, valid_until_block, quota, data, value, chain_id, version 8个字段。
 2. tx对象protobuf序列化后 sha3 -> hash
 3. 对 hash 进行签名 -> signature
 4. 构造UnverifiedTransaction, 使用hash, signature, SECP填充UnverifiedTransaction  -> unverify_tx
