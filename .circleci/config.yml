@@ -12,7 +12,7 @@ jobs:
           command: 'git submodule update --init'
       - run:
           name: format
-          command: 'cargo fmt --all  -- --write-mode diff'
+          command: 'cargo fmt --all  -- --check'
       - run:
           name: build
           command: 'RUSTFLAGS="-F warnings" cargo build --all'
