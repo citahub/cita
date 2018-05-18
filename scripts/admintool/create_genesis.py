@@ -141,7 +141,7 @@ def init_contracts(nodes, args):
                     f.write('{}\n'.format(params[4]))
                 if args.economical_model:
                     params[8] = ECONOMICAL_MODELS[args.economical_model]
-                print '[economical-model]: {}'.format(params[8])
+                print('[economical-model]: {}'.format(params[8]))
                 extra = ct.encode_constructor_arguments(params)
             else:
                 extra = b''
