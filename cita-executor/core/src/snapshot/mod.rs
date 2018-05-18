@@ -27,22 +27,22 @@ use db;
 use libexecutor::executor::Executor;
 use rlp::{DecoderError, RlpStream, UntrustedRlp};
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
+use util::hashdb::DBValue;
+use util::journaldb::JournalDB;
+use util::journaldb::{self, Algorithm};
+use util::kvdb::Database;
+use util::HASH_NULL_RLP;
+use util::{sha3, Mutex};
 use util::{snappy, Bytes, HashDB};
 use util::{Trie, TrieDB, TrieDBMut, TrieMut, HASH_EMPTY};
-use util::{Mutex, sha3};
-use util::HASH_NULL_RLP;
-use util::hashdb::DBValue;
-use util::journaldb::{self, Algorithm};
-use util::journaldb::JournalDB;
-use util::kvdb::Database;
 
-pub mod service;
-pub mod io;
 pub mod account;
 mod error;
+pub mod io;
+pub mod service;
 use self::error::Error;
 use self::io::SnapshotReader;
 use self::io::SnapshotWriter;
@@ -357,7 +357,8 @@ impl StateRebuilder {
 
         // patch up all missing code. must be done after collecting all new missing code entries.
         for (code_hash, code, first_with) in status.new_code {
-            for addr_hash in self.missing_code
+            for addr_hash in self
+                .missing_code
                 .remove(&code_hash)
                 .unwrap_or_else(Vec::new)
             {
@@ -479,7 +480,11 @@ fn rebuild_accounts(
 
 // helper for reading chunks from arbitrary reader and feeding them into the
 // service.
-pub fn restore_using<R: SnapshotReader>(snapshot: Arc<Service>, reader: &R, recover: bool) -> Result<(), String> {
+pub fn restore_using<R: SnapshotReader>(
+    snapshot: Arc<Service>,
+    reader: &R,
+    recover: bool,
+) -> Result<(), String> {
     let manifest = reader.manifest();
 
     info!(
@@ -532,7 +537,9 @@ pub fn restore_using<R: SnapshotReader>(snapshot: Arc<Service>, reader: &R, reco
     }
 
     match snapshot.status() {
-        RestorationStatus::Ongoing { .. } => Err("Snapshot file is incomplete and missing chunks.".into()),
+        RestorationStatus::Ongoing { .. } => {
+            Err("Snapshot file is incomplete and missing chunks.".into())
+        }
         RestorationStatus::Failed => Err("Snapshot restoration failed.".into()),
         RestorationStatus::Inactive => {
             info!("Restoration complete.");

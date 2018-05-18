@@ -16,14 +16,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::{Id, Params};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{from_value, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Version {
-    #[serde(rename = "1.0")] V1,
-    #[serde(rename = "2.0")] V2,
+    #[serde(rename = "1.0")]
+    V1,
+    #[serde(rename = "2.0")]
+    V2,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]

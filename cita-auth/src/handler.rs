@@ -18,15 +18,15 @@
 use cita_types::H256;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{Message, Response, Ret, VerifyBlockReq, VerifyBlockResp, VerifyTxResp};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
+use libproto::{Message, Response, Ret, VerifyBlockReq, VerifyBlockResp, VerifyTxResp};
 use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryFrom, TryInto};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
+use std::sync::Arc;
 use std::time::SystemTime;
 use std::vec::*;
 use threadpool::ThreadPool;
@@ -133,7 +133,10 @@ pub fn check_verify_request_preprocess(
     }
 }
 
-fn get_resp_from_cache(tx_hash: &H256, cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>) -> Option<VerifyTxResp> {
+fn get_resp_from_cache(
+    tx_hash: &H256,
+    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
+) -> Option<VerifyTxResp> {
     if let Some(resp) = cache.read().get(tx_hash) {
         Some(resp.clone())
     } else {
@@ -217,7 +220,7 @@ fn verify_proposal_block(
                     }
                     VerifyResult::VerifyFailed => {
                         block_verify_status_guard.block_verify_result = VerifyResult::VerifyFailed;
-			
+
                         let tx_hash = H256::from_slice(req.get_tx_hash());
                         let resp_ret;
                         if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
@@ -361,9 +364,11 @@ pub fn handle_remote_msg(
                 );
 
                 {
-                    verifier
-                        .write()
-                        .set_quota_check_info(check_quota, block_gas_limit, account_gas_limit.clone());
+                    verifier.write().set_quota_check_info(
+                        check_quota,
+                        block_gas_limit,
+                        account_gas_limit.clone(),
+                    );
                 }
 
                 // Message will be handled in deal_txs thread.
@@ -459,7 +464,9 @@ pub fn handle_remote_msg(
                     let verify_request_info = VerifyRequestResponseInfo {
                         key: key.clone(),
                         verify_type: VerifyType::SingleVerify,
-                        request_id: VerifyRequestID::SingleVerifyRequestID(tx_req.get_request_id().to_vec()),
+                        request_id: VerifyRequestID::SingleVerifyRequestID(
+                            tx_req.get_request_id().to_vec(),
+                        ),
                         time_stamp: now,
                         req_resp: VerifyRequestResponse::AuthRequest(verify_tx_req),
                         un_tx: Some(tx_req.get_un_tx().clone()),
@@ -476,7 +483,9 @@ pub fn handle_remote_msg(
                 let verify_request_info = VerifyRequestResponseInfo {
                     key: key.clone(),
                     verify_type: VerifyType::SingleVerify,
-                    request_id: VerifyRequestID::SingleVerifyRequestID(newtx_req.get_request_id().to_vec()),
+                    request_id: VerifyRequestID::SingleVerifyRequestID(
+                        newtx_req.get_request_id().to_vec(),
+                    ),
                     time_stamp: now,
                     req_resp: VerifyRequestResponse::AuthRequest(verify_tx_req),
                     un_tx: Some(newtx_req.get_un_tx().clone()),
@@ -571,12 +580,16 @@ pub fn handle_verification_result(
                             resp.get_ret()
                         );
 
-                        if let VerifyRequestID::SingleVerifyRequestID(request_id) = verify_response_info.request_id {
+                        if let VerifyRequestID::SingleVerifyRequestID(request_id) =
+                            verify_response_info.request_id
+                        {
                             let result = format!("{:?}", resp.get_ret());
                             match resp.get_ret() {
                                 Ret::OK => {
                                     let mut signed_tx = SignedTransaction::new();
-                                    signed_tx.set_transaction_with_sig(verify_response_info.un_tx.unwrap());
+                                    signed_tx.set_transaction_with_sig(
+                                        verify_response_info.un_tx.unwrap(),
+                                    );
                                     signed_tx.set_signer(resp.get_signer().to_vec());
                                     signed_tx.set_tx_hash(tx_hash.to_vec());
                                     let tx_response = TxResponse::new(tx_hash, result.clone());
@@ -589,7 +602,9 @@ pub fn handle_verification_result(
                                     trace!("Send singed tx to txpool");
                                 }
                                 _ => {
-                                    if RoutingKey::from(&verify_response_info.key).is_sub_module(SubModules::Jsonrpc) {
+                                    if RoutingKey::from(&verify_response_info.key)
+                                        .is_sub_module(SubModules::Jsonrpc)
+                                    {
                                         let tx_response = TxResponse::new(tx_hash, result);
 
                                         let mut response = Response::new();
@@ -611,14 +626,18 @@ pub fn handle_verification_result(
                         }
                     }
                     VerifyType::BlockVerify => {
-                        if let VerifyRequestID::BlockVerifyRequestID(request_id) = verify_response_info.request_id {
+                        if let VerifyRequestID::BlockVerifyRequestID(request_id) =
+                            verify_response_info.request_id
+                        {
                             let result = resp.get_ret();
                             if Ret::OK != result {
                                 let mut block_verify_status_guard = block_verify_status.write();
                                 if request_id == block_verify_status_guard.request_id
-                                    && VerifyResult::VerifyFailed != block_verify_status_guard.block_verify_result
+                                    && VerifyResult::VerifyFailed
+                                        != block_verify_status_guard.block_verify_result
                                 {
-                                    block_verify_status_guard.block_verify_result = VerifyResult::VerifyFailed;
+                                    block_verify_status_guard.block_verify_result =
+                                        VerifyResult::VerifyFailed;
                                     warn!(
                                         "Failed to do verify blk req for request_id: {}, ret: {:?}, from key: {}",
                                         request_id, result, verify_response_info.key
@@ -637,7 +656,8 @@ pub fn handle_verification_result(
                                     if block_verify_status_guard.verify_success_cnt_capture
                                         == block_verify_status_guard.verify_success_cnt_required
                                     {
-                                        block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
+                                        block_verify_status_guard.block_verify_result =
+                                            VerifyResult::VerifySucceeded;
                                         info!(
                                             "Succeed to do verify blk req for request_id: {}, \
                                              ret: {:?}, \
@@ -648,7 +668,11 @@ pub fn handle_verification_result(
                                             verify_response_info.time_stamp.elapsed().unwrap(),
                                             *block_verify_status_guard
                                         );
-                                        publish_block_verification_result(request_id, Ret::OK, tx_pub);
+                                        publish_block_verification_result(
+                                            request_id,
+                                            Ret::OK,
+                                            tx_pub,
+                                        );
                                     }
                                 }
                             }
@@ -663,7 +687,11 @@ pub fn handle_verification_result(
     }
 }
 
-fn publish_block_verification_result(request_id: u64, ret: Ret, tx_pub: &Sender<(String, Vec<u8>)>) {
+fn publish_block_verification_result(
+    request_id: u64,
+    ret: Ret,
+    tx_pub: &Sender<(String, Vec<u8>)>,
+) {
     let mut blkresp = VerifyBlockResp::new();
     blkresp.set_id(request_id);
     blkresp.set_ret(ret);
@@ -682,8 +710,11 @@ mod tests {
     use super::*;
     use cita_types::{H256, U256};
     use crypto::*;
-    use libproto::{BlockTxHashes, Message, Request, Ret, SignedTransaction, Transaction, VerifyBlockReq, VerifyTxReq};
     use libproto::router::{MsgType, RoutingKey, SubModules};
+    use libproto::{
+        BlockTxHashes, Message, Request, Ret, SignedTransaction, Transaction, VerifyBlockReq,
+        VerifyTxReq,
+    };
     use protobuf::RepeatedField;
     use std::sync::mpsc::channel;
     use std::thread;
@@ -694,7 +725,12 @@ mod tests {
 
     const BLOCK_REQUEST_ID: u64 = 0x0000000000010000;
 
-    fn generate_tx(data: Vec<u8>, valid_until_block: u64, privkey: &PrivKey, chain_id: u32) -> SignedTransaction {
+    fn generate_tx(
+        data: Vec<u8>,
+        valid_until_block: u64,
+        privkey: &PrivKey,
+        chain_id: u32,
+    ) -> SignedTransaction {
         let mut tx = Transaction::new();
         tx.set_data(data);
         tx.set_to("1234567".to_string());
@@ -737,7 +773,8 @@ mod tests {
         );
         let signature = tx.get_transaction_with_sig().get_signature().to_vec();
         req.set_signature(signature);
-        let bytes: Vec<u8> = tx.get_transaction_with_sig()
+        let bytes: Vec<u8> = tx
+            .get_transaction_with_sig()
             .get_transaction()
             .try_into()
             .unwrap();
@@ -768,7 +805,8 @@ mod tests {
         );
         let signature = tx.get_transaction_with_sig().get_signature().to_vec();
         req.set_signature(signature[0..16].to_vec());
-        let bytes: Vec<u8> = tx.get_transaction_with_sig()
+        let bytes: Vec<u8> = tx
+            .get_transaction_with_sig()
             .get_transaction()
             .try_into()
             .unwrap();
@@ -1001,7 +1039,9 @@ mod tests {
         );
         let verify_req_info: VerifyRequestResponseInfo = req_receiver.recv().unwrap();
         assert_eq!(verify_req_info.verify_type, VerifyType::SingleVerify);
-        if let VerifyRequestID::SingleVerifyRequestID(single_request_id) = verify_req_info.request_id {
+        if let VerifyRequestID::SingleVerifyRequestID(single_request_id) =
+            verify_req_info.request_id
+        {
             assert_eq!(request_id, single_request_id);
         }
 

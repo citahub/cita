@@ -15,14 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod cache;
-pub mod executor;
-pub mod transaction;
 pub mod block;
-pub mod genesis;
-mod extras;
+pub mod cache;
 pub mod call_request;
+pub mod executor;
+mod extras;
+pub mod genesis;
 pub mod govm_adapter;
+pub mod transaction;
 
 pub use self::genesis::Genesis;
 pub use self::govm_adapter::{vm_grpc_server, CallEvmImpl, ConnectInfo, ServiceMap};

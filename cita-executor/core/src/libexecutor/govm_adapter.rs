@@ -1,7 +1,7 @@
 //use contracts::permission_management::contains_resource;
-use cita_types::{Address, H160, H256, U256};
 use cita_types::clean_0x;
 use cita_types::traits::LowerHex;
+use cita_types::{Address, H160, H256, U256};
 use db::{self as db, Key, Readable, Writable};
 use error::{Error, ExecutionError};
 use executive::check_permission;
@@ -15,16 +15,16 @@ use libproto::executor_grpc::{ExecutorService, ExecutorServiceServer};
 use log_entry::LogEntry;
 use receipt::Receipt;
 use rlp::*;
-use state::State;
 use state::backend::Backend as StateBackend;
+use state::State;
 use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::str::FromStr;
 use std::sync::Arc;
 use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction};
-use util::*;
 use util::RwLock;
+use util::*;
 
 #[derive(Clone)]
 pub struct ConnectInfo {
@@ -208,7 +208,11 @@ pub struct ExecutorServiceImpl {
 
 impl ExecutorService for ExecutorServiceImpl {
     // add code here
-    fn register(&self, _o: ::grpc::RequestOptions, req: RegisterRequest) -> ::grpc::SingleResponse<RegisterResponse> {
+    fn register(
+        &self,
+        _o: ::grpc::RequestOptions,
+        req: RegisterRequest,
+    ) -> ::grpc::SingleResponse<RegisterResponse> {
         let mut r = RegisterResponse::new();
         let caddr = req.get_contract_address();
         let ip = req.get_ip();
@@ -224,7 +228,11 @@ impl ExecutorService for ExecutorServiceImpl {
         ::grpc::SingleResponse::completed(r)
     }
 
-    fn load(&self, _o: ::grpc::RequestOptions, req: LoadRequest) -> ::grpc::SingleResponse<LoadResponse> {
+    fn load(
+        &self,
+        _o: ::grpc::RequestOptions,
+        req: LoadRequest,
+    ) -> ::grpc::SingleResponse<LoadResponse> {
         let mut r = LoadResponse::new();
 
         let caddr = req.get_contract_address();
@@ -300,7 +308,11 @@ impl ExecutorServiceImpl {
     }
 }
 
-pub fn vm_grpc_server(port: u16, service_map: Arc<ServiceMap>, ext: Arc<Executor>) -> Option<Server> {
+pub fn vm_grpc_server(
+    port: u16,
+    service_map: Arc<ServiceMap>,
+    ext: Arc<Executor>,
+) -> Option<Server> {
     let mut server = ::grpc::ServerBuilder::new_plain();
     server.http.set_port(port);
     server.add_service(ExecutorServiceServer::new_service_def(
@@ -328,13 +340,23 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         }
     }
 
-    pub fn call(&mut self, host: &str, port: u16, invoke_request: InvokeRequest) -> GrpcResult<InvokeResponse> {
+    pub fn call(
+        &mut self,
+        host: &str,
+        port: u16,
+        invoke_request: InvokeRequest,
+    ) -> GrpcResult<InvokeResponse> {
         let client = CitacodeServiceClient::new_plain(host, port, Default::default()).unwrap();
         let resp = client.invoke(::grpc::RequestOptions::new(), invoke_request);
         resp.wait_drop_metadata()
     }
 
-    pub fn create(&mut self, host: &str, port: u16, invoke_request: InvokeRequest) -> GrpcResult<InvokeResponse> {
+    pub fn create(
+        &mut self,
+        host: &str,
+        port: u16,
+        invoke_request: InvokeRequest,
+    ) -> GrpcResult<InvokeResponse> {
         let client = CitacodeServiceClient::new_plain(host, port, Default::default()).unwrap();
         let resp = client.init(::grpc::RequestOptions::new(), invoke_request);
         resp.wait_drop_metadata()
@@ -426,7 +448,8 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
             let gas_used = t.gas - gas_left;
             let cumulative_gas_used = self.gas_used + gas_used;
 
-            let logs = resp.get_logs()
+            let logs = resp
+                .get_logs()
                 .into_iter()
                 .map(|log| {
                     let mut topics = Vec::new();

@@ -1,37 +1,37 @@
 use cita_types::Address;
 use core::contracts::sys_config::SysConfig;
 use core::db;
-use core::libexecutor::Genesis;
-use core::libexecutor::ServiceMap;
 use core::libexecutor::block::{Block, ClosedBlock};
 use core::libexecutor::call_request::CallRequest;
 use core::libexecutor::executor::{BlockInQueue, Config, EconomicalModel, Executor, Stage};
+use core::libexecutor::Genesis;
+use core::libexecutor::ServiceMap;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, BlockTag, CountOrCode, MetaData};
-use libproto::{request, response, Message, SyncResponse};
 use libproto::auth::Miscellaneous;
 use libproto::blockchain::{BlockWithProof, Proof, ProofType, RichStatus};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
+use libproto::{request, response, Message, SyncResponse};
 use proof::TendermintProof;
 use serde_json;
-use std::{mem, u8};
 use std::cell::RefCell;
 use std::convert::{Into, TryFrom, TryInto};
 use std::fs::File;
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
+use std::{mem, u8};
 use types::ids::BlockId;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 
 use core::snapshot;
-use core::snapshot::Progress;
 use core::snapshot::io::{PackedReader, PackedWriter};
 use core::snapshot::service::{Service as SnapshotService, ServiceParams as SnapServiceParams};
+use core::snapshot::Progress;
 use core::state::backend::Backend;
 use std::path::Path;
 
@@ -196,7 +196,8 @@ impl ExecutorInstance {
 
         match block_in_queue {
             Some(BlockInQueue::ConsensusBlock(block, _)) => {
-                if self.ext.validate_height(block.number()) && self.ext.validate_hash(block.parent_hash())
+                if self.ext.validate_height(block.number())
+                    && self.ext.validate_hash(block.parent_hash())
                     && self.timestamp_check(block.timestamp())
                 {
                     // Not Match before proposal
@@ -284,7 +285,9 @@ impl ExecutorInstance {
                     };
                     match in_queue {
                         Some(BlockInQueue::ConsensusBlock(comming, _)) => {
-                            if comming.header().transactions_root() == closed_block.header().transactions_root() {
+                            if comming.header().transactions_root()
+                                == closed_block.header().transactions_root()
+                            {
                                 self.ext
                                     .finalize_proposal(closed_block, comming, &self.ctx_pub);
                                 {
@@ -446,7 +449,8 @@ impl ExecutorInstance {
                     })
                     .map(|balance_content| {
                         let address = Address::from_slice(balance_content.address.as_ref());
-                        match self.ext
+                        match self
+                            .ext
                             .balance_at(&address, balance_content.block_id.into())
                         {
                             Some(balance) => match balance {
@@ -488,7 +492,8 @@ impl ExecutorInstance {
                         // TODO: get chain_name by current block number
                         let block_id = BlockId::Number(number);
                         let sys_config = SysConfig::new(&self.ext);
-                        let genesis_timestamp = self.ext
+                        let genesis_timestamp = self
+                            .ext
                             .block_header(BlockId::Earliest)
                             .unwrap()
                             .timestamp();
@@ -502,7 +507,9 @@ impl ExecutorInstance {
                             block_interval: sys_config.block_interval(),
                         }
                     }) {
-                    Ok(metadata) => response.set_meta_data(serde_json::to_string(&metadata).unwrap()),
+                    Ok(metadata) => {
+                        response.set_meta_data(serde_json::to_string(&metadata).unwrap())
+                    }
                     Err((code, error_msg)) => {
                         response.set_code(code);
                         response.set_error_msg(error_msg);
@@ -553,7 +560,8 @@ impl ExecutorInstance {
             blk_height, current_height, stage
         );
 
-        if self.ext.validate_height(block.number()) && self.ext.validate_hash(block.parent_hash())
+        if self.ext.validate_height(block.number())
+            && self.ext.validate_hash(block.parent_hash())
             && self.timestamp_check(block.timestamp())
         {
             match stage {
@@ -716,7 +724,8 @@ impl ExecutorInstance {
             blk_height, current_height, stage
         );
 
-        if self.ext.validate_height(blk_height) && self.ext.validate_hash(block.parent_hash())
+        if self.ext.validate_height(blk_height)
+            && self.ext.validate_hash(block.parent_hash())
             && self.timestamp_check(block.timestamp())
         {
             match stage {
@@ -763,7 +772,8 @@ impl ExecutorInstance {
         let prev_conf = self.ext.get_sys_config(number - 1);
         let prev_authorities = prev_conf.nodes.clone();
 
-        if self.ext.validate_height(number) && self.ext.validate_hash(block.parent_hash())
+        if self.ext.validate_height(number)
+            && self.ext.validate_hash(block.parent_hash())
             && self.timestamp_check(block.timestamp())
             && (proof.check(proof_height as usize, &authorities)
                 || proof.check(proof_height as usize, &prev_authorities))

@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod poll_manager;
-pub mod poll_filter;
 pub mod eth_filter;
+pub mod poll_filter;
+pub mod poll_manager;
 
 pub use self::poll_filter::{limit_logs, PollFilter};
 pub use self::poll_manager::{PollId, PollManager};

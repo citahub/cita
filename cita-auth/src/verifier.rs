@@ -15,13 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::{Address, H256};
 use cita_types::traits::LowerHex;
+use cita_types::{Address, H256};
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
-use libproto::{BlockTxHashesReq, Crypto, Message, Ret, UnverifiedTransaction, VerifyBlockReq, VerifyTxReq,
-               VerifyTxResp};
 use libproto::blockchain::AccountGasLimit;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::{
+    BlockTxHashesReq, Crypto, Message, Ret, UnverifiedTransaction, VerifyBlockReq, VerifyTxReq,
+    VerifyTxResp,
+};
 use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryInto};
 use std::result::Result;
@@ -152,7 +154,12 @@ impl Verifier {
         }
     }
 
-    pub fn update_hashes(&mut self, h: u64, hashes: HashSet<H256>, tx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn update_hashes(
+        &mut self,
+        h: u64,
+        hashes: HashSet<H256>,
+        tx_pub: &Sender<(String, Vec<u8>)>,
+    ) {
         if self.height_latest.is_none() && self.height_low.is_none() {
             self.height_latest = Some(h);
             self.height_low = if h < BLOCKLIMIT {
@@ -191,7 +198,8 @@ impl Verifier {
             self.height_latest.unwrap()
         );
         self.hashes.insert(h, hashes);
-        if self.hashes.len() as u64 == (self.height_latest.unwrap() - self.height_low.unwrap() + 1) {
+        if self.hashes.len() as u64 == (self.height_latest.unwrap() - self.height_low.unwrap() + 1)
+        {
             self.inited = true;
         }
     }

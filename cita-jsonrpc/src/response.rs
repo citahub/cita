@@ -1,7 +1,7 @@
-use futures::{Async, Poll};
 use futures::future::Future;
 use futures::stream::{Collect, FuturesOrdered};
 use futures::sync::oneshot;
+use futures::{Async, Poll};
 use hyper;
 use hyper::header::Headers;
 use hyper::server::Response;

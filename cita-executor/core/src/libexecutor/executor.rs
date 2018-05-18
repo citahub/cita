@@ -18,7 +18,10 @@
 use bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
-use contracts::{AccountGasLimit, NodeManager, PermissionManagement, QuotaManager, Resource, SysConfig, UserManagement};
+use contracts::{
+    AccountGasLimit, NodeManager, PermissionManagement, QuotaManager, Resource, SysConfig,
+    UserManagement,
+};
 use db;
 use db::*;
 use engines::NullEngine;
@@ -28,16 +31,16 @@ use evm::Factory as EvmFactory;
 use executive::{Executed, Executive, TransactOptions};
 use factory::*;
 use header::*;
-use libexecutor::ServiceMap;
 pub use libexecutor::block::*;
 use libexecutor::call_request::CallRequest;
 use libexecutor::extras::*;
 use libexecutor::genesis::Genesis;
 pub use libexecutor::transaction::*;
+use libexecutor::ServiceMap;
 
-use libproto::{ConsensusConfig, ExecutedResult, Message};
 use libproto::blockchain::{Proof as ProtoProof, ProofType, RichStatus};
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::{ConsensusConfig, ExecutedResult, Message};
 
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 use cita_types::{Address, H256, U256};
@@ -47,17 +50,17 @@ use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::convert::{Into, TryInto};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 use std::time::Instant;
 use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction, Transaction};
-use util::{journaldb, Bytes};
-use util::RwLock;
-use util::UtilError;
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
+use util::RwLock;
+use util::UtilError;
+use util::{journaldb, Bytes};
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
@@ -207,7 +210,11 @@ pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
 }
 
 impl Executor {
-    pub fn init_executor(db: Arc<KeyValueDB>, mut genesis: Genesis, executor_config: Config) -> Executor {
+    pub fn init_executor(
+        db: Arc<KeyValueDB>,
+        mut genesis: Genesis,
+        executor_config: Config,
+    ) -> Executor {
         info!("executor config: {:?}", executor_config);
 
         let trie_factory = TrieFactory::new(TrieSpec::Generic);
@@ -562,7 +569,12 @@ impl Executor {
         }.fake_sign(from)
     }
 
-    fn call(&self, t: &SignedTransaction, block_id: BlockId, analytics: CallAnalytics) -> Result<Executed, CallError> {
+    fn call(
+        &self,
+        t: &SignedTransaction,
+        block_id: BlockId,
+        analytics: CallAnalytics,
+    ) -> Result<Executed, CallError> {
         let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
         let last_hashes = self.build_last_hashes(None, header.number());
         let env_info = EnvInfo {
@@ -607,7 +619,8 @@ impl Executor {
         let conf = self.get_sys_config(height + 1);
 
         let mut send_config = ConsensusConfig::new();
-        let node_list = conf.nodes
+        let node_list = conf
+            .nodes
             .into_iter()
             .map(|address| address.to_vec())
             .collect();
@@ -699,7 +712,11 @@ impl Executor {
     /// 2. Update cache
     /// 3. Commited data to db
     /// Notice: Write db if and only if finalize block.
-    pub fn finalize_block(&self, mut closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn finalize_block(
+        &self,
+        mut closed_block: ClosedBlock,
+        ctx_pub: &Sender<(String, Vec<u8>)>,
+    ) {
         if let EconomicalModel::Charge = *self.economical_model.read() {
             let new_proposer = closed_block.proposer().clone();
             closed_block
@@ -874,8 +891,8 @@ mod tests {
     use cita_types::Address;
     use core::libchain::block::Block as ChainBlock;
     use core::receipt::ReceiptError;
-    use libproto::Message;
     use libproto::router::{MsgType, RoutingKey, SubModules};
+    use libproto::Message;
     use std::convert::TryFrom;
     use std::sync::mpsc::channel;
     use tests::helpers::{create_block, init_chain, init_executor, solc};

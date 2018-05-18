@@ -16,8 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use helper::{encode_request, select_topic, ReqInfo, RpcMap, TransferType};
-use jsonrpc_types::{method, Id};
 use jsonrpc_types::response::RpcFailure;
+use jsonrpc_types::{method, Id};
 use libproto::request as reqlib;
 use num_cpus;
 use serde_json;
@@ -33,7 +33,11 @@ pub struct WsFactory {
 }
 
 impl WsFactory {
-    pub fn new(responses: RpcMap, tx: mpsc::Sender<(String, reqlib::Request)>, thread_num: usize) -> WsFactory {
+    pub fn new(
+        responses: RpcMap,
+        tx: mpsc::Sender<(String, reqlib::Request)>,
+        thread_num: usize,
+    ) -> WsFactory {
         let thread_number = if thread_num == 0 {
             num_cpus::get()
         } else {
@@ -97,8 +101,10 @@ impl Handler for WsHandler {
             };
             //TODO 错误返回
             if let Err(err) = err {
-                let _ = sender
-                    .send(serde_json::to_string(&RpcFailure::from_options(req_id, jsonrpc_version, err)).unwrap());
+                let _ = sender.send(
+                    serde_json::to_string(&RpcFailure::from_options(req_id, jsonrpc_version, err))
+                        .unwrap(),
+                );
             }
         });
         //

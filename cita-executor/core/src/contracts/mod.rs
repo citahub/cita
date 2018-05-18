@@ -17,12 +17,12 @@
 
 //! System contracts.
 
+pub mod chain_manager;
 pub mod node_manager;
+pub mod permission_management;
 pub mod quota_manager;
 pub mod sys_config;
-pub mod permission_management;
 pub mod user_management;
-pub mod chain_manager;
 
 pub use self::chain_manager::ChainManagement;
 pub use self::node_manager::NodeManager;

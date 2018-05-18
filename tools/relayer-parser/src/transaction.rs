@@ -19,8 +19,8 @@ use ethabi;
 use rustc_hex::FromHex;
 
 use cita_crypto::PrivKey;
-use cita_types::{H160, U256};
 use cita_types::traits::LowerHex;
+use cita_types::{H160, U256};
 use libproto::blockchain::{Transaction, UnverifiedTransaction};
 
 pub fn construct_transaction(
@@ -50,7 +50,13 @@ fn encode(dest_hasher: &str, tx_proof_rlp: Vec<u8>) -> Option<Vec<u8>> {
 }
 
 #[inline]
-fn sign(pkey: &PrivKey, addr: H160, code: Vec<u8>, chain_id: u32, height: U256) -> UnverifiedTransaction {
+fn sign(
+    pkey: &PrivKey,
+    addr: H160,
+    code: Vec<u8>,
+    chain_id: u32,
+    height: U256,
+) -> UnverifiedTransaction {
     let mut tx = Transaction::new();
     tx.set_data(code);
     tx.set_to(addr.lower_hex());

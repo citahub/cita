@@ -18,20 +18,20 @@
 use core::param::Param;
 use core::trans::*;
 use crypto::*;
-use hyper::Client;
 use hyper::client::Response;
 use hyper::status::StatusCode;
+use hyper::Client;
 use jsonrpc_types::response::*;
 use jsonrpc_types::rpctypes::MetaData;
 use serde_json;
 use std::fmt;
 use std::fs::File;
-use std::io::Read;
 use std::io::prelude::*;
+use std::io::Read;
 use std::path::Path;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
 
@@ -148,7 +148,9 @@ impl Sendtx {
                         None => (String::new(), false),
                     },
 
-                    ResultBody::MetaData(Metadata) => (serde_json::to_string(&Metadata).unwrap(), false),
+                    ResultBody::MetaData(Metadata) => {
+                        (serde_json::to_string(&Metadata).unwrap(), false)
+                    }
 
                     _ => (String::new(), false),
                 }
@@ -180,12 +182,16 @@ impl Sendtx {
             let curh = self.get_height(url.clone());
             let chainid = self.get_chainid(url.clone());
             let tx = match action {
-                Action::Create => Trans::generate_tx(&self.code, sender.clone(), frompv, curh, chainid),
+                Action::Create => {
+                    Trans::generate_tx(&self.code, sender.clone(), frompv, curh, chainid)
+                }
                 Action::Call => {
                     //读取合约地址
                     Trans::generate_tx(&self.code, sender.clone(), &frompv, curh, chainid)
                 }
-                Action::Store => Trans::generate_tx(&self.code, sender.clone(), frompv, curh, chainid),
+                Action::Store => {
+                    Trans::generate_tx(&self.code, sender.clone(), frompv, curh, chainid)
+                }
             };
             {
                 let mut firsttx = self.first.lock().unwrap();
@@ -342,7 +348,11 @@ impl Sendtx {
     }
 
     //执行合约的交易线程
-    pub fn dispatch_send_thd(&self, sync_send: mpsc::Sender<(u64, u64)>, send_h: mpsc::Sender<u64>) {
+    pub fn dispatch_send_thd(
+        &self,
+        sync_send: mpsc::Sender<(u64, u64)>,
+        send_h: mpsc::Sender<u64>,
+    ) {
         //获取合约地址
         let sender = self.get_contract_address();
 

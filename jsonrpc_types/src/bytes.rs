@@ -17,8 +17,8 @@
 
 use rustc_serialize::hex::FromHex;
 use rustc_serialize::hex::ToHex;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Wrapper structure around vector of bytes.
 #[derive(Debug, PartialEq, Eq, Default, Hash, Clone)]
@@ -89,8 +89,9 @@ impl<'de> Visitor<'de> for BytesVisitor {
             );
             Ok(Bytes::new(Vec::new()))
         } else if value.len() >= 2 && &value[0..2] == "0x" && value.len() & 1 == 0 {
-            Ok(Bytes::new(FromHex::from_hex(&value[2..])
-                .map_err(|_| E::custom("invalid hex"))?))
+            Ok(Bytes::new(
+                FromHex::from_hex(&value[2..]).map_err(|_| E::custom("invalid hex"))?
+            ))
         } else {
             Err(de::Error::custom("invalid format"))
         }

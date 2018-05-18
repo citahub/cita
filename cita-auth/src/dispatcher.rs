@@ -17,20 +17,20 @@
 
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::{BatchRequest, Message, Request, Response};
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::{BatchRequest, Message, Request, Response};
 use protobuf::RepeatedField;
 use serde_json;
 
-use cita_types::H256;
 use cita_types::traits::LowerHex;
+use cita_types::H256;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::convert::{Into, TryInto};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 use std::thread;
 use std::time::SystemTime;
 use tx_pool;
@@ -157,7 +157,8 @@ impl Dispatcher {
             self.batch_forward_info.new_tx_request_buffer.push(request);
 
             let count_buffered = self.batch_forward_info.new_tx_request_buffer.len();
-            let time_elapsed = self.batch_forward_info
+            let time_elapsed = self
+                .batch_forward_info
                 .forward_stamp
                 .elapsed()
                 .unwrap()
@@ -246,7 +247,8 @@ impl Dispatcher {
         );
         {
             let duration = self.start_verify_time.elapsed().unwrap();
-            let time_duration_in_usec = duration.as_secs() * 1_000_000 + (duration.subsec_nanos() / 1_000) as u64;
+            let time_duration_in_usec =
+                duration.as_secs() * 1_000_000 + (duration.subsec_nanos() / 1_000) as u64;
             if 0 != time_duration_in_usec {
                 debug!(
                     "{} txs have been added into tx_pool, and time cost is {:?}, tps: {:?}",
@@ -275,7 +277,8 @@ impl Dispatcher {
     }
 
     pub fn wait_timeout_process(&mut self, mq_pub: &Sender<(String, Vec<u8>)>) {
-        let time_elapsed = self.batch_forward_info
+        let time_elapsed = self
+            .batch_forward_info
             .forward_stamp
             .elapsed()
             .unwrap()

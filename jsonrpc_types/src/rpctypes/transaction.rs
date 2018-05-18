@@ -17,8 +17,8 @@
 
 use bytes::Bytes;
 use cita_types::{H256, U256};
-use libproto::FullTransaction as PTransaction;
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
+use libproto::FullTransaction as PTransaction;
 use std::convert::TryInto;
 
 // TODO: No need Deserialize. Just because test in trans.rs
@@ -32,8 +32,10 @@ pub struct FullTransaction {
 pub struct RpcTransaction {
     pub hash: H256,
     pub content: Bytes,
-    #[serde(rename = "blockNumber")] pub block_number: U256,
-    #[serde(rename = "blockHash")] pub block_hash: H256,
+    #[serde(rename = "blockNumber")]
+    pub block_number: U256,
+    #[serde(rename = "blockHash")]
+    pub block_hash: H256,
     pub index: U256,
 }
 

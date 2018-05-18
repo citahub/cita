@@ -44,12 +44,12 @@ use cita_types::H256;
 use clap::App;
 use crypto::*;
 use generate_block::Generateblock;
-use libproto::Message;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::Message;
 use pubsub::start_pubsub;
 use std::convert::TryFrom;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
+use std::sync::{Arc, Mutex};
 use std::time;
 
 pub type PubType = (String, Vec<u8>);
@@ -131,10 +131,14 @@ fn main() {
         .author("Cryptape")
         .about("CITA Chain Performance by MQ powered by Rust")
         .arg_from_usage("--totaltx=[20000] 'transation num in one block'")
-        .arg_from_usage("--times=[0] 'how many times to send block, i.e. block-height. 0 means limitless'")
+        .arg_from_usage(
+            "--times=[0] 'how many times to send block, i.e. block-height. 0 means limitless'",
+        )
         .arg_from_usage("--quota=[1000] 'transation quota'")
         .arg_from_usage("--flag_multi_sender=[0] 'Multi sender or not'")
-        .arg_from_usage("--flag_tx_type=[1] 'tx type: 0 is store, 1 is creating contract, 2 is call contract'")
+        .arg_from_usage(
+            "--flag_tx_type=[1] 'tx type: 0 is store, 1 is creating contract, 2 is call contract'",
+        )
         .get_matches();
 
     let totaltx = matches

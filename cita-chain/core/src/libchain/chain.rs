@@ -16,8 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::{LogBloom, LogBloomGroup};
+use bloomchain::group::{
+    BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition,
+};
 use bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
-use bloomchain::group::{BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition};
 pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use db;
@@ -32,15 +34,17 @@ use libchain::extras::*;
 use libchain::status::Status;
 pub use libchain::transaction::*;
 
-use libproto::blockchain::{AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
-                           RichStatus as ProtoRichStatus};
+use libproto::blockchain::{
+    AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
+    RichStatus as ProtoRichStatus,
+};
 
-use cita_types::{Address, H256, U256};
 use cita_types::traits::LowerHex;
+use cita_types::{Address, H256, U256};
 use header::Header;
-use libproto::{BlockTxHashes, FullTransaction, Message};
 use libproto::executor::ExecutedResult;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::{BlockTxHashes, FullTransaction, Message};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
@@ -49,19 +53,19 @@ use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::{Into, TryInto};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
 use types::transaction::{Action, SignedTransaction};
-use util::{Mutex, RwLock};
-use util::Hashable;
-use util::HeapSizeOf;
 use util::journaldb;
 use util::kvdb::*;
 use util::merklehash;
+use util::Hashable;
+use util::HeapSizeOf;
+use util::{Mutex, RwLock};
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
@@ -198,7 +202,9 @@ impl TxProof {
                     // check hasher == RECV_FUNC_HASHER
                     // check cross_chain_nonce == cross_chain_nonce
                     // extract origin tx sender and origin tx data
-                    if to_chain_id == my_chain_id && dest_contract == my_contrac_addr && dest_hasher == my_hasher
+                    if to_chain_id == my_chain_id
+                        && dest_contract == my_contrac_addr
+                        && dest_hasher == my_hasher
                         && cross_chain_nonce == my_cross_chain_nonce
                     {
                         // skip hasher(4 bytes) and 2 args each 32 bytes
@@ -249,7 +255,8 @@ impl Config {
 impl BloomGroupDatabase for Chain {
     fn blooms_at(&self, position: &BloomGroupPosition) -> Option<BloomGroup> {
         let position = LogGroupPosition::from(position.clone());
-        let result = self.db
+        let result = self
+            .db
             .read_with_cache(db::COL_EXTRA, &self.blocks_blooms, &position)
             .map(Into::into);
         self.cache_man
@@ -401,7 +408,8 @@ impl Chain {
     }
 
     pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
-        let result = self.db
+        let result = self
+            .db
             .read_with_cache(db::COL_EXTRA, &self.block_hashes, &hash);
         self.cache_man.lock().note_used(CacheId::BlockHashes(hash));
         result
@@ -472,7 +480,8 @@ impl Chain {
 
         let mut batch = DBTransaction::new();
         if info.get_receipts().len() > 0 {
-            let receipts: Vec<Option<Receipt>> = info.get_receipts()
+            let receipts: Vec<Option<Receipt>> = info
+                .get_receipts()
                 .into_iter()
                 .map(|receipt_with_option| {
                     let mut receipt = None;
@@ -705,7 +714,8 @@ impl Chain {
                 return Some(header.clone());
             }
         }
-        let result = self.db
+        let result = self
+            .db
             .read_with_cache(db::COL_HEADERS, &self.block_headers, &idx);
         self.cache_man.lock().note_used(CacheId::BlockHeaders(idx));
         result
@@ -733,7 +743,8 @@ impl Chain {
 
     /// Get block body by height
     fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
-        let result = self.db
+        let result = self
+            .db
             .read_with_cache(db::COL_BODIES, &self.block_bodies, &number);
         self.cache_man
             .lock()
@@ -758,7 +769,8 @@ impl Chain {
 
     /// Get address of transaction by hash.
     fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
-        let result = self.db
+        let result = self
+            .db
             .read_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash);
         self.cache_man
             .lock()
@@ -814,8 +826,9 @@ impl Chain {
                         _ => None,
                     })
                     .and_then(|receipt| {
-                        merklehash::MerkleTree::from_bytes(receipts.receipts.iter().map(|r| r.rlp_bytes().into_vec()))
-                            .get_proof_by_input_index(index)
+                        merklehash::MerkleTree::from_bytes(
+                            receipts.receipts.iter().map(|r| r.rlp_bytes().into_vec()),
+                        ).get_proof_by_input_index(index)
                             .map(|receipt_proof| (index, block, receipt.clone(), receipt_proof))
                     })
             })
@@ -854,7 +867,14 @@ impl Chain {
                 },
             )
             .map(
-                |(tx, receipt, receipt_proof, block_header, next_proposal_header, proposal_proof)| {
+                |(
+                    tx,
+                    receipt,
+                    receipt_proof,
+                    block_header,
+                    next_proposal_header,
+                    proposal_proof,
+                )| {
                     TxProof {
                         tx,
                         receipt,
@@ -938,7 +958,9 @@ impl Chain {
                 };
                 Some(receipt)
             } else {
-                error!("The transaction_hash in receipt is not equal to transaction hash from input.");
+                error!(
+                    "The transaction_hash in receipt is not equal to transaction hash from input."
+                );
                 None
             }
         })
@@ -985,7 +1007,12 @@ impl Chain {
         }
     }
 
-    pub fn logs<F>(&self, mut blocks: Vec<BlockNumber>, matches: F, limit: Option<usize>) -> Vec<LocalizedLogEntry>
+    pub fn logs<F>(
+        &self,
+        mut blocks: Vec<BlockNumber>,
+        matches: F,
+        limit: Option<usize>,
+    ) -> Vec<LocalizedLogEntry>
     where
         F: Fn(&LogEntry) -> bool,
         Self: Sized,
@@ -1162,7 +1189,8 @@ impl Chain {
 
     /// Get receipts of block with given hash.
     pub fn block_receipts(&self, hash: H256) -> Option<BlockReceipts> {
-        let result = self.db
+        let result = self
+            .db
             .read_with_cache(db::COL_EXTRA, &self.block_receipts, &hash);
         self.cache_man
             .lock()
@@ -1334,9 +1362,12 @@ impl Chain {
             blocks_blooms.shrink_to_fit();
             block_receipts.shrink_to_fit();
 
-            block_headers.heap_size_of_children() + block_bodies.heap_size_of_children()
-                + block_hashes.heap_size_of_children() + transaction_addresses.heap_size_of_children()
-                + blocks_blooms.heap_size_of_children() + block_receipts.heap_size_of_children()
+            block_headers.heap_size_of_children()
+                + block_bodies.heap_size_of_children()
+                + block_hashes.heap_size_of_children()
+                + transaction_addresses.heap_size_of_children()
+                + blocks_blooms.heap_size_of_children()
+                + block_receipts.heap_size_of_children()
         });
     }
 

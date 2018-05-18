@@ -89,8 +89,8 @@ extern crate serde_json;
 #[macro_use]
 extern crate util;
 
-mod forward;
 mod block_processor;
+mod forward;
 
 use block_processor::BlockProcessor;
 use clap::App;
@@ -99,8 +99,8 @@ use core::libchain;
 use forward::Forward;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
-use std::sync::Arc;
 use std::sync::mpsc::channel;
+use std::sync::Arc;
 use std::thread;
 use std::time;
 use std::time::Duration;
@@ -174,7 +174,9 @@ fn main() {
     thread::spawn(move || {
         let mut timeout_factor = 0u8;
         loop {
-            if let Ok(einfo) = write_receiver.recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0)) {
+            if let Ok(einfo) = write_receiver
+                .recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0))
+            {
                 block_processor.set_executed_result(einfo);
                 timeout_factor = 0;
             } else {

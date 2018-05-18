@@ -20,12 +20,12 @@ use std::collections::HashSet;
 use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 
 //use super::{ManifestData, StateRebuilder, RestorationStatus, SnapshotService};
-use super::{ManifestData, RestorationStatus, StateRebuilder};
 use super::io::{LooseReader, LooseWriter, SnapshotReader, SnapshotWriter};
+use super::{ManifestData, RestorationStatus, StateRebuilder};
 
 //use engines::EthEngine;
 //use consensus::snapshot_components;
@@ -35,11 +35,11 @@ use error::Error;
 
 use cita_types::H256;
 use journaldb::Algorithm;
-use util::{Mutex, RwLock, RwLockReadGuard};
-use util::Bytes;
-use util::UtilError;
 use util::kvdb::{Database, DatabaseConfig};
 use util::snappy;
+use util::Bytes;
+use util::UtilError;
+use util::{Mutex, RwLock, RwLockReadGuard};
 
 /// External database restoration handler
 pub trait DatabaseRestore: Send + Sync {
@@ -74,8 +74,10 @@ impl Restoration {
 
         let state_chunks = manifest.state_hashes.iter().cloned().collect();
 
-        let raw_db =
-            Arc::new(Database::open(params.db_config, &*params.db_path.to_string_lossy()).map_err(UtilError::from)?);
+        let raw_db = Arc::new(
+            Database::open(params.db_config, &*params.db_path.to_string_lossy())
+                .map_err(UtilError::from)?,
+        );
 
         //let secondary = components.rebuilder(raw_db.clone(), &manifest)?;
 
@@ -93,7 +95,11 @@ impl Restoration {
     }
 
     // feeds a state chunk, aborts early if `flag` becomes false.
-    fn feed_state(&mut self, hash: H256, chunk: &[u8] /*, flag: &AtomicBool*/) -> Result<(), Error> {
+    fn feed_state(
+        &mut self,
+        hash: H256,
+        chunk: &[u8], /*, flag: &AtomicBool*/
+    ) -> Result<(), Error> {
         if self.state_chunks_left.contains(&hash) {
             let mut decompressed_data = Vec::new();
             snappy::decompress_to(chunk, &mut decompressed_data)?;

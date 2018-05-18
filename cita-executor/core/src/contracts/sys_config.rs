@@ -24,8 +24,8 @@ use ethabi::{decode, ParamType, Token};
 use cita_types::{Address, H256};
 use types::ids::BlockId;
 
-use super::ContractCallExt;
 use super::encode_contract_name;
+use super::ContractCallExt;
 use libexecutor::executor::{EconomicalModel, Executor};
 use num::FromPrimitive;
 
@@ -38,7 +38,8 @@ lazy_static! {
     static ref OPERATOR: Vec<u8> = encode_contract_name(b"getOperator()");
     static ref WEBSITE: Vec<u8> = encode_contract_name(b"getWebsite()");
     static ref BLOCK_INTERVAL: Vec<u8> = encode_contract_name(b"getBlockInterval()");
-    static ref CONTRACT_ADDRESS: Address = Address::from_str("0000000000000000000000000000000031415926").unwrap();
+    static ref CONTRACT_ADDRESS: Address =
+        Address::from_str("0000000000000000000000000000000031415926").unwrap();
     static ref ECONOMICAL_MODEL: Vec<u8> = encode_contract_name(b"getEconomicalModel()");
 }
 
@@ -52,7 +53,12 @@ impl<'a> SysConfig<'a> {
         SysConfig { executor }
     }
 
-    fn get_value(&self, param_types: &[ParamType], method: &[u8], block_id: Option<BlockId>) -> Vec<Token> {
+    fn get_value(
+        &self,
+        param_types: &[ParamType],
+        method: &[u8],
+        block_id: Option<BlockId>,
+    ) -> Vec<Token> {
         let address = &*CONTRACT_ADDRESS;
         let block_id = block_id.unwrap_or(BlockId::Latest);
         let output = self.executor.call_method(address, method, None, block_id);
@@ -62,13 +68,14 @@ impl<'a> SysConfig<'a> {
 
     /// Delay block number before validate
     pub fn delay_block_number(&self) -> u64 {
-        let value = self.get_value(
-            &[ParamType::Uint(256)],
-            DELAY_BLOCK_NUMBER.as_slice(),
-            Some(BlockId::Latest),
-        ).remove(0)
-            .to_uint()
-            .expect("decode delay number");
+        let value =
+            self.get_value(
+                &[ParamType::Uint(256)],
+                DELAY_BLOCK_NUMBER.as_slice(),
+                Some(BlockId::Latest),
+            ).remove(0)
+                .to_uint()
+                .expect("decode delay number");
         let number = H256::from(value).low_u64();
         debug!("delay block number: {:?}", number);
         number
@@ -76,33 +83,36 @@ impl<'a> SysConfig<'a> {
 
     /// Whether check permission or not
     pub fn permission_check(&self) -> bool {
-        let check = self.get_value(
-            &[ParamType::Bool],
-            PERMISSION_CHECK.as_slice(),
-            Some(BlockId::Latest),
-        ).remove(0)
-            .to_bool()
-            .expect("decode check permission");
+        let check =
+            self.get_value(
+                &[ParamType::Bool],
+                PERMISSION_CHECK.as_slice(),
+                Some(BlockId::Latest),
+            ).remove(0)
+                .to_bool()
+                .expect("decode check permission");
         debug!("check permission: {:?}", check);
         check
     }
 
     /// Whether check quota or not
     pub fn quota_check(&self) -> bool {
-        let check = self.get_value(
-            &[ParamType::Bool],
-            QUOTA_CHECK.as_slice(),
-            Some(BlockId::Latest),
-        ).remove(0)
-            .to_bool()
-            .expect("decode check quota");
+        let check =
+            self.get_value(
+                &[ParamType::Bool],
+                QUOTA_CHECK.as_slice(),
+                Some(BlockId::Latest),
+            ).remove(0)
+                .to_bool()
+                .expect("decode check quota");
         debug!("check quota: {:?}", check);
         check
     }
 
     /// The name of current chain
     pub fn chain_name(&self, block_id: Option<BlockId>) -> String {
-        let chain_name = self.get_value(&[ParamType::String], CHAIN_NAME.as_slice(), block_id)
+        let chain_name = self
+            .get_value(&[ParamType::String], CHAIN_NAME.as_slice(), block_id)
             .remove(0)
             .to_string()
             .expect("decode chain name");
@@ -112,13 +122,14 @@ impl<'a> SysConfig<'a> {
 
     /// The id of current chain
     pub fn chain_id(&self) -> u32 {
-        let value = self.get_value(
-            &[ParamType::Uint(64)],
-            CHAIN_ID.as_slice(),
-            Some(BlockId::Latest),
-        ).remove(0)
-            .to_uint()
-            .expect("decode chain id");
+        let value =
+            self.get_value(
+                &[ParamType::Uint(64)],
+                CHAIN_ID.as_slice(),
+                Some(BlockId::Latest),
+            ).remove(0)
+                .to_uint()
+                .expect("decode chain id");
         let chain_id = H256::from(value).low_u64() as u32;
         debug!("current chain id: {:?}", chain_id);
         chain_id
@@ -126,7 +137,8 @@ impl<'a> SysConfig<'a> {
 
     /// The operator of current chain
     pub fn operator(&self, block_id: Option<BlockId>) -> String {
-        let operator = self.get_value(&[ParamType::String], OPERATOR.as_slice(), block_id)
+        let operator = self
+            .get_value(&[ParamType::String], OPERATOR.as_slice(), block_id)
             .remove(0)
             .to_string()
             .expect("decode operator");
@@ -136,7 +148,8 @@ impl<'a> SysConfig<'a> {
 
     /// Current operator's website URL
     pub fn website(&self, block_id: Option<BlockId>) -> String {
-        let website = self.get_value(&[ParamType::String], WEBSITE.as_slice(), block_id)
+        let website = self
+            .get_value(&[ParamType::String], WEBSITE.as_slice(), block_id)
             .remove(0)
             .to_string()
             .expect("decode website URL");
@@ -146,13 +159,14 @@ impl<'a> SysConfig<'a> {
 
     /// The interval time for creating a block (milliseconds)
     pub fn block_interval(&self) -> u64 {
-        let value = self.get_value(
-            &[ParamType::Uint(64)],
-            BLOCK_INTERVAL.as_slice(),
-            Some(BlockId::Latest),
-        ).remove(0)
-            .to_uint()
-            .expect("decode block interval");
+        let value =
+            self.get_value(
+                &[ParamType::Uint(64)],
+                BLOCK_INTERVAL.as_slice(),
+                Some(BlockId::Latest),
+            ).remove(0)
+                .to_uint()
+                .expect("decode block interval");
         let interval = H256::from(value).low_u64();
         debug!("block interval: {:?}", interval);
         interval
@@ -162,13 +176,14 @@ impl<'a> SysConfig<'a> {
     /// Quota: Default config is quota
     /// Charge: Charging by gas * gasPrice and reward for proposer
     pub fn economical_model(&self) -> EconomicalModel {
-        let value = self.get_value(
-            &[ParamType::Uint(64)],
-            ECONOMICAL_MODEL.as_slice(),
-            Some(BlockId::Latest),
-        ).remove(0)
-            .to_uint()
-            .expect("decode economical model");
+        let value =
+            self.get_value(
+                &[ParamType::Uint(64)],
+                ECONOMICAL_MODEL.as_slice(),
+                Some(BlockId::Latest),
+            ).remove(0)
+                .to_uint()
+                .expect("decode economical model");
         let t = H256::from(value).low_u64() as u8;
         debug!("economical model: {:?}", t);
         EconomicalModel::from_u8(t).expect("unknown economical model")

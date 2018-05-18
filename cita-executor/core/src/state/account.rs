@@ -19,8 +19,8 @@
 
 //! Single account in the system.
 
-use cita_types::{Address, H256, U256};
 use cita_types::traits::LowerHex;
+use cita_types::{Address, H256, U256};
 use lru_cache::LruCache;
 use pod_account::*;
 use rlp::*;
@@ -93,7 +93,13 @@ impl From<BasicAccount> for Account {
 impl Account {
     #[cfg(test)]
     /// General constructor.
-    pub fn new(balance: U256, nonce: U256, storage: HashMap<H256, H256>, code: Bytes, abi: Bytes) -> Account {
+    pub fn new(
+        balance: U256,
+        nonce: U256,
+        storage: HashMap<H256, H256>,
+        code: Bytes,
+        abi: Bytes,
+    ) -> Account {
         Account {
             balance: balance,
             nonce: nonce,
@@ -229,7 +235,12 @@ impl Account {
 
     /// Get (and cache) the contents of the trie's storage at `key`.
     /// Takes modifed storage into account.
-    pub fn storage_at(&self, trie_factory: &TrieFactory, db: &HashDB, key: &H256) -> trie::Result<H256> {
+    pub fn storage_at(
+        &self,
+        trie_factory: &TrieFactory,
+        db: &HashDB,
+        key: &H256,
+    ) -> trie::Result<H256> {
         if let Some(value) = self.cached_storage_at(key) {
             return Ok(value);
         }
@@ -500,7 +511,10 @@ impl Account {
 
     /// Check if account has zero nonce, balance, no code, no abi.
     pub fn is_null(&self) -> bool {
-        self.balance.is_zero() && self.nonce.is_zero() && self.code_hash == HASH_EMPTY && self.abi_hash == HASH_EMPTY
+        self.balance.is_zero()
+            && self.nonce.is_zero()
+            && self.code_hash == HASH_EMPTY
+            && self.abi_hash == HASH_EMPTY
     }
 
     /// Check if account is basic (Has no code).
@@ -540,7 +554,11 @@ impl Account {
     }
 
     /// Commit the `storage_changes` to the backing DB and update `storage_root`.
-    pub fn commit_storage(&mut self, trie_factory: &TrieFactory, db: &mut HashDB) -> trie::Result<()> {
+    pub fn commit_storage(
+        &mut self,
+        trie_factory: &TrieFactory,
+        db: &mut HashDB,
+    ) -> trie::Result<()> {
         let mut t = trie_factory.from_existing(db, &mut self.storage_root)?;
         for (k, v) in self.storage_changes.drain() {
             // cast key and value to trait type,

@@ -55,10 +55,10 @@ use clap::App;
 use libproto::blockchain;
 use std::time::Instant;
 use types::transaction::SignedTransaction;
-use util::AsMillis;
 use util::crypto::CreateKey;
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
+use util::AsMillis;
 
 pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
     // input and output of solc command
@@ -111,7 +111,13 @@ impl Key<H256> for CurrentHash {
     }
 }
 
-pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u32, u32), is_change_pv: bool) -> Block {
+pub fn create_block(
+    executor: &Executor,
+    to: Address,
+    data: &Vec<u8>,
+    nonce: (u32, u32),
+    is_change_pv: bool,
+) -> Block {
     let mut block = Block::new();
 
     block.set_parent_hash(executor.get_current_hash());
@@ -163,7 +169,13 @@ pub fn init_executor(config_path: &str, genesis_path: &str) -> Arc<Executor> {
     ))
 }
 
-fn bench_execute_trans(config_path: &str, genesis_path: &str, trans_num: u32, is_change_pv: bool, max_h: u32) {
+fn bench_execute_trans(
+    config_path: &str,
+    genesis_path: &str,
+    trans_num: u32,
+    is_change_pv: bool,
+    max_h: u32,
+) {
     let source = r#"
         pragma solidity ^0.4.8;
         contract ConstructSol {
@@ -186,7 +198,8 @@ fn bench_execute_trans(config_path: &str, genesis_path: &str, trans_num: u32, is
     "#;
     let (data, _) = solc("ConstructSol", source);
 
-    let mut result = format!("height,execute,state_root,db write(state),db write(header CurrentHash)\n");
+    let mut result =
+        format!("height,execute,state_root,db write(state),db write(header CurrentHash)\n");
 
     let path = Path::new("analysis_result.csv");
     let mut file = match File::create(&path) {
@@ -288,10 +301,14 @@ fn bench_execute_trans(config_path: &str, genesis_path: &str, trans_num: u32, is
             hashes.push_front(ext.get_current_hash());
         }
 
-        let ext_secs = execute_duration.as_secs() as f64 + execute_duration.subsec_nanos() as f64 * 1e-9;
-        let state_secs = state_duration.as_secs() as f64 + state_duration.subsec_nanos() as f64 * 1e-9;
-        let db_secs = db_write_duration.as_secs() as f64 + db_write_duration.subsec_nanos() as f64 * 1e-9;
-        let db2_secs = db_write2_duration.as_secs() as f64 + db_write2_duration.subsec_nanos() as f64 * 1e-9;
+        let ext_secs =
+            execute_duration.as_secs() as f64 + execute_duration.subsec_nanos() as f64 * 1e-9;
+        let state_secs =
+            state_duration.as_secs() as f64 + state_duration.subsec_nanos() as f64 * 1e-9;
+        let db_secs =
+            db_write_duration.as_secs() as f64 + db_write_duration.subsec_nanos() as f64 * 1e-9;
+        let db2_secs =
+            db_write2_duration.as_secs() as f64 + db_write2_duration.subsec_nanos() as f64 * 1e-9;
 
         result = format!(
             "{},{},{},{},{}\n",

@@ -16,15 +16,17 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cita_types::clean_0x;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use types::ids::BlockId;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Hash, Eq)]
 pub enum BlockTag {
-    #[serde(rename = "latest")] Latest,
-    #[serde(rename = "earliest")] Earliest,
+    #[serde(rename = "latest")]
+    Latest,
+    #[serde(rename = "earliest")]
+    Earliest,
 }
 
 /// Represents rpc api block height param.

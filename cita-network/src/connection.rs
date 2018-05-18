@@ -24,9 +24,9 @@ use notify::DebouncedEvent;
 use std::convert::{TryFrom, TryInto};
 use std::io::Write;
 use std::net::{Shutdown, TcpStream};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use util::RwLock;
@@ -63,7 +63,8 @@ impl Connection {
     }
 
     pub fn is_send(id_card: u32, origin: u32, operate: OperateType) -> bool {
-        operate == OperateType::Broadcast || (operate == OperateType::Single && id_card == origin)
+        operate == OperateType::Broadcast
+            || (operate == OperateType::Single && id_card == origin)
             || (operate == OperateType::Subtract && origin != id_card)
     }
 

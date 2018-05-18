@@ -1,16 +1,18 @@
 use error::ErrorCode;
-use futures::{self, Stream};
 use futures::future::{Either, Future};
 use futures::stream::FuturesOrdered;
 use futures::sync::oneshot;
+use futures::{self, Stream};
 use helper::{select_topic, ReqInfo, ReqSender, RpcMap, TransferType};
-use hyper::{self, Method, StatusCode};
-use hyper::header::{AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin,
-                    AccessControlMaxAge, ContentType, Headers};
+use hyper::header::{
+    AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin,
+    AccessControlMaxAge, ContentType, Headers,
+};
 use hyper::server::{Http, NewService, Request, Response, Service};
-use jsonrpc_types::{Call, Error, RpcRequest};
+use hyper::{self, Method, StatusCode};
 use jsonrpc_types::method::{self, MethodHandler};
 use jsonrpc_types::response::RpcFailure;
+use jsonrpc_types::{Call, Error, RpcRequest};
 use libproto::request as reqlib;
 use net2;
 use response::{BatchFutureResponse, SingleFutureResponse};
@@ -77,92 +79,125 @@ impl Service for Server {
                 let mapping = req.body().concat2().and_then(move |chunk| {
                     if let Ok(rpc) = serde_json::from_slice::<RpcRequest>(&chunk) {
                         match rpc {
-                            RpcRequest::Single(call) => match read_single(&call, method_handler, &http_headers) {
-                                Ok(req) => {
-                                    if let Ok(timeout) = Timeout::new(timeout, &reactor_handle) {
-                                        let id = call.id.clone();
-                                        let jsonrpc_version = call.jsonrpc.clone();
-                                        let request_id = req.request_id.clone();
-                                        let mq_resp = handle_single(call, req, &responses, &sender, &http_headers);
+                            RpcRequest::Single(call) => {
+                                match read_single(&call, method_handler, &http_headers) {
+                                    Ok(req) => {
+                                        if let Ok(timeout) = Timeout::new(timeout, &reactor_handle)
+                                        {
+                                            let id = call.id.clone();
+                                            let jsonrpc_version = call.jsonrpc.clone();
+                                            let request_id = req.request_id.clone();
+                                            let mq_resp = handle_single(
+                                                call,
+                                                req,
+                                                &responses,
+                                                &sender,
+                                                &http_headers,
+                                            );
 
-                                        let resp = mq_resp.select2(timeout).then(move |res| match res {
-                                            Ok(Either::A((got, _timeout))) => Ok(got),
-                                            Ok(Either::B((_timeout_error, _get))) => {
-                                                {
-                                                    timeout_responses.lock().remove(&request_id);
+                                            let resp = mq_resp.select2(timeout).then(move |res| {
+                                                match res {
+                                                    Ok(Either::A((got, _timeout))) => Ok(got),
+                                                    Ok(Either::B((_timeout_error, _get))) => {
+                                                        {
+                                                            timeout_responses
+                                                                .lock()
+                                                                .remove(&request_id);
+                                                        }
+                                                        let failure = RpcFailure::from_options(
+                                                            id,
+                                                            jsonrpc_version,
+                                                            Error::server_error(
+                                                                ErrorCode::time_out_error(),
+                                                                "system time out, please resend",
+                                                            ),
+                                                        );
+                                                        let resp_body =
+                                                            serde_json::to_string(&failure).expect(
+                                                                "should be serialize by serde_json",
+                                                            );
+                                                        Ok(Response::new()
+                                                            .with_headers(http_headers)
+                                                            .with_body(resp_body))
+                                                    }
+                                                    Err(Either::A((get_error, _timeout))) => {
+                                                        Err(get_error)
+                                                    }
+                                                    Err(Either::B((timeout_error, _get))) => {
+                                                        Err(From::from(timeout_error))
+                                                    }
                                                 }
-                                                let failure = RpcFailure::from_options(
-                                                    id,
-                                                    jsonrpc_version,
-                                                    Error::server_error(
-                                                        ErrorCode::time_out_error(),
-                                                        "system time out, please resend",
-                                                    ),
-                                                );
-                                                let resp_body = serde_json::to_string(&failure)
-                                                    .expect("should be serialize by serde_json");
-                                                Ok(Response::new()
-                                                    .with_headers(http_headers)
-                                                    .with_body(resp_body))
-                                            }
-                                            Err(Either::A((get_error, _timeout))) => Err(get_error),
-                                            Err(Either::B((timeout_error, _get))) => Err(From::from(timeout_error)),
-                                        });
+                                            });
 
-                                        Either::A(Either::A(resp))
-                                    } else {
-                                        Either::B(futures::future::ok(
-                                            Response::new()
-                                                .with_headers(http_headers)
-                                                .with_status(StatusCode::InternalServerError),
-                                        ))
+                                            Either::A(Either::A(resp))
+                                        } else {
+                                            Either::B(futures::future::ok(
+                                                Response::new()
+                                                    .with_headers(http_headers)
+                                                    .with_status(StatusCode::InternalServerError),
+                                            ))
+                                        }
                                     }
+                                    Err(resp) => Either::B(futures::future::ok(resp)),
                                 }
-                                Err(resp) => Either::B(futures::future::ok(resp)),
-                            },
-                            RpcRequest::Batch(calls) => match read_batch(calls, method_handler, &http_headers) {
-                                Ok(reqs) => {
-                                    let request_ids: Vec<Vec<u8>> = reqs.iter()
+                            }
+                            RpcRequest::Batch(calls) => {
+                                match read_batch(calls, method_handler, &http_headers) {
+                                    Ok(reqs) => {
+                                        let request_ids: Vec<Vec<u8>> = reqs.iter()
                                         .map(|&(ref _call, ref req)| req.request_id.clone())
                                         .collect();
 
-                                    let mq_resp = handle_batch(reqs, &responses, &sender, &http_headers);
+                                        let mq_resp =
+                                            handle_batch(reqs, &responses, &sender, &http_headers);
 
-                                    if let Ok(timeout) = Timeout::new(timeout, &reactor_handle) {
-                                        let resp = mq_resp.select2(timeout).then(move |res| match res {
-                                            Ok(Either::A((got, _timeout))) => Ok(got),
-                                            Ok(Either::B((_timeout_error, _get))) => {
-                                                {
-                                                    let mut guard = timeout_responses.lock();
-                                                    for request_id in request_ids {
-                                                        guard.remove(&request_id);
+                                        if let Ok(timeout) = Timeout::new(timeout, &reactor_handle)
+                                        {
+                                            let resp = mq_resp.select2(timeout).then(move |res| {
+                                                match res {
+                                                    Ok(Either::A((got, _timeout))) => Ok(got),
+                                                    Ok(Either::B((_timeout_error, _get))) => {
+                                                        {
+                                                            let mut guard =
+                                                                timeout_responses.lock();
+                                                            for request_id in request_ids {
+                                                                guard.remove(&request_id);
+                                                            }
+                                                        }
+                                                        let failure =
+                                                            RpcFailure::from(Error::server_error(
+                                                                ErrorCode::time_out_error(),
+                                                                "system time out, please resend",
+                                                            ));
+                                                        let resp_body =
+                                                            serde_json::to_string(&failure).expect(
+                                                                "should be serialize by serde_json",
+                                                            );
+                                                        Ok(Response::new()
+                                                            .with_headers(http_headers)
+                                                            .with_body(resp_body))
+                                                    }
+                                                    Err(Either::A((get_error, _timeout))) => {
+                                                        Err(get_error)
+                                                    }
+                                                    Err(Either::B((timeout_error, _get))) => {
+                                                        Err(From::from(timeout_error))
                                                     }
                                                 }
-                                                let failure = RpcFailure::from(Error::server_error(
-                                                    ErrorCode::time_out_error(),
-                                                    "system time out, please resend",
-                                                ));
-                                                let resp_body = serde_json::to_string(&failure)
-                                                    .expect("should be serialize by serde_json");
-                                                Ok(Response::new()
-                                                    .with_headers(http_headers)
-                                                    .with_body(resp_body))
-                                            }
-                                            Err(Either::A((get_error, _timeout))) => Err(get_error),
-                                            Err(Either::B((timeout_error, _get))) => Err(From::from(timeout_error)),
-                                        });
+                                            });
 
-                                        Either::A(Either::B(resp))
-                                    } else {
-                                        Either::B(futures::future::ok(
-                                            Response::new()
-                                                .with_headers(http_headers)
-                                                .with_status(StatusCode::InternalServerError),
-                                        ))
+                                            Either::A(Either::B(resp))
+                                        } else {
+                                            Either::B(futures::future::ok(
+                                                Response::new()
+                                                    .with_headers(http_headers)
+                                                    .with_status(StatusCode::InternalServerError),
+                                            ))
+                                        }
                                     }
+                                    Err(resp) => Either::B(futures::future::ok(resp)),
                                 }
-                                Err(resp) => Either::B(futures::future::ok(resp)),
-                            },
+                            }
                         }
                     } else {
                         Either::B(futures::future::ok(
@@ -172,7 +207,8 @@ impl Service for Server {
                         ))
                     }
                 });
-                let resp: Box<Future<Error = hyper::Error, Item = hyper::Response>> = Box::new(mapping);
+                let resp: Box<Future<Error = hyper::Error, Item = hyper::Response>> =
+                    Box::new(mapping);
                 resp
             }
             (&Method::Options, "/") => handle_preflighted(http_headers),
@@ -202,7 +238,11 @@ fn handle_preflighted(mut headers: Headers) -> Box<Future<Item = Response, Error
     Box::new(futures::future::ok(Response::new().with_headers(headers)))
 }
 
-fn read_single(call: &Call, method_handler: MethodHandler, headers: &Headers) -> Result<reqlib::Request, Response> {
+fn read_single(
+    call: &Call,
+    method_handler: MethodHandler,
+    headers: &Headers,
+) -> Result<reqlib::Request, Response> {
     match method_handler.request(call) {
         Ok(req) => Ok(req),
         Err(e) => {
@@ -482,11 +522,16 @@ mod integration_test {
                 if let Some(val) = value {
                     match val {
                         TransferType::HTTP((req_info, sender)) => {
-                            let _ = sender.send(Output::from(content, req_info.id, req_info.jsonrpc));
+                            let _ =
+                                sender.send(Output::from(content, req_info.id, req_info.jsonrpc));
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
                             let _ = sender.send(
-                                serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
+                                serde_json::to_string(&Output::from(
+                                    content,
+                                    req_info.id,
+                                    req_info.jsonrpc,
+                                )).unwrap(),
                             );
                         }
                     }
@@ -506,7 +551,9 @@ mod integration_test {
         let client = hyper::Client::configure().keep_alive(true).build(&handle);
 
         let mut works: Vec<Box<Future<Item = (), Error = _>>> = vec![];
-        let uri = hyper::Uri::from_str(format!("http://{}:{}/", serve.addr.ip(), serve.addr.port()).as_str()).unwrap();
+        let uri = hyper::Uri::from_str(
+            format!("http://{}:{}/", serve.addr.ip(), serve.addr.port()).as_str(),
+        ).unwrap();
 
         let req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
         let work_empty = client.request(req).and_then(|resp| {
@@ -565,7 +612,8 @@ mod integration_test {
                 })
                 .and_then(|buf| {
                     let rv: serde_json::Value = serde_json::from_slice(&buf).unwrap();
-                    let error_code = rv.as_object()
+                    let error_code = rv
+                        .as_object()
                         .unwrap()
                         .get("error")
                         .unwrap()
@@ -621,7 +669,8 @@ mod integration_test {
                 .and_then(|buf| {
                     let rv: serde_json::Value = serde_json::from_slice(&buf).unwrap();
                     vec![74, 75].into_iter().enumerate().for_each(|(i, value)| {
-                        let request_id = rv.as_array()
+                        let request_id = rv
+                            .as_array()
                             .unwrap()
                             .get(i)
                             .unwrap()

@@ -40,8 +40,8 @@ extern crate log;
 extern crate logger;
 
 mod arguments;
-mod configuration;
 mod communication;
+mod configuration;
 mod transaction;
 
 use cita_crypto::PrivKey;
@@ -68,7 +68,9 @@ fn main() {
     // Relay the transaction to each server in to-chain servers list, until succeed.
     cfg.get_servers(args.chain_id)
         .and_then(|servers| fetch_txproof(servers, args.tx_hash))
-        .and_then(|tx_proof_rlp| deconstruct_txproof(&tx_proof_rlp).map(|relay_info| (tx_proof_rlp, relay_info)))
+        .and_then(|tx_proof_rlp| {
+            deconstruct_txproof(&tx_proof_rlp).map(|relay_info| (tx_proof_rlp, relay_info))
+        })
         .and_then(|(tx_proof_rlp, relay_info)| {
             cfg.get_servers(relay_info.to_chain_id)
                 .map(|to_servers| (to_servers, tx_proof_rlp, relay_info))
@@ -141,7 +143,9 @@ fn relay_transaction(
 ) -> Option<H256> {
     let mut ret = None;
     for upstream in servers.iter() {
-        if let Some(utx) = construct_transaction(upstream, pkey, tx_proof_rlp.clone(), relay_info.clone()) {
+        if let Some(utx) =
+            construct_transaction(upstream, pkey, tx_proof_rlp.clone(), relay_info.clone())
+        {
             if let Ok(hash) = communication::cita_send_transaction(upstream, &utx) {
                 ret = Some(hash);
                 break;

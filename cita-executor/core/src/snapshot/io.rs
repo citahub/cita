@@ -25,8 +25,8 @@ use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
-use cita_types::H256;
 use cita_types::traits::LowerHex;
+use cita_types::H256;
 use rlp::{RlpStream, UntrustedRlp};
 use util::Bytes;
 
@@ -220,10 +220,14 @@ impl PackedReader {
 
         file.read_exact(&mut off_bytes[..])?;
 
-        let manifest_off: u64 = ((off_bytes[7] as u64) << 56) + ((off_bytes[6] as u64) << 48)
-            + ((off_bytes[5] as u64) << 40) + ((off_bytes[4] as u64) << 32)
-            + ((off_bytes[3] as u64) << 24) + ((off_bytes[2] as u64) << 16)
-            + ((off_bytes[1] as u64) << 8) + (off_bytes[0] as u64);
+        let manifest_off: u64 = ((off_bytes[7] as u64) << 56)
+            + ((off_bytes[6] as u64) << 48)
+            + ((off_bytes[5] as u64) << 40)
+            + ((off_bytes[4] as u64) << 32)
+            + ((off_bytes[3] as u64) << 24)
+            + ((off_bytes[2] as u64) << 16)
+            + ((off_bytes[1] as u64) << 8)
+            + (off_bytes[0] as u64);
 
         let manifest_len = file_len - manifest_off - 8;
         trace!(target: "snapshot", "loading manifest of length {} from offset {}", manifest_len, manifest_off);
@@ -258,7 +262,8 @@ impl SnapshotReader for PackedReader {
     }
 
     fn chunk(&self, hash: H256) -> io::Result<Bytes> {
-        let &(len, off) = self.state_hashes
+        let &(len, off) = self
+            .state_hashes
             .get(&hash)
             .expect("only chunks in the manifest can be requested; qed");
 

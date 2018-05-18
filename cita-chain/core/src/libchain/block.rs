@@ -25,8 +25,8 @@ use cita_types::H256;
 use libchain::extras::TransactionAddress;
 use std::collections::HashMap;
 
-use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
+use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use protobuf::RepeatedField;
 //use receipt::{Receipt, ReceiptError};
 use rlp::*;
@@ -164,7 +164,8 @@ impl HeapSizeOf for BlockBody {
 impl From<ProtoBlockBody> for BlockBody {
     fn from(body: ProtoBlockBody) -> Self {
         BlockBody {
-            transactions: body.get_transactions()
+            transactions: body
+                .get_transactions()
                 .iter()
                 .map(|t| SignedTransaction::new(t).expect("transaction can not be converted"))
                 .collect(),
@@ -189,7 +190,8 @@ impl BlockBody {
 
     pub fn protobuf(&self) -> ProtoBlockBody {
         let mut body = ProtoBlockBody::new();
-        let txs: Vec<ProtoSignedTransaction> = self.transactions.iter().map(|t| t.protobuf()).collect();
+        let txs: Vec<ProtoSignedTransaction> =
+            self.transactions.iter().map(|t| t.protobuf()).collect();
         body.set_transactions(RepeatedField::from_slice(&txs[..]));
         body
     }

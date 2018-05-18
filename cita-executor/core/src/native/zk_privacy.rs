@@ -304,7 +304,9 @@ impl ZkPrivacy {
         }
         let _ = ext.log(
             vec![
-                H256::from_str("0xc73b5a8f31a1a078a14123cc93687f4a59389c76caf88d5d2154d3f3ce25ff49").unwrap(),
+                H256::from_str(
+                    "0xc73b5a8f31a1a078a14123cc93687f4a59389c76caf88d5d2154d3f3ce25ff49",
+                ).unwrap(),
             ],
             &data,
         );
@@ -314,7 +316,11 @@ impl ZkPrivacy {
         Ok(GasLeft::Known(params.gas - gas_cost))
     }
 
-    fn receive_verify(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn receive_verify(
+        &mut self,
+        params: ActionParams,
+        ext: &mut Ext,
+    ) -> Result<GasLeft, evm::Error> {
         let gas_cost = U256::from(1000000);
         if params.gas < gas_cost {
             return Err(evm::Error::OutOfGas);

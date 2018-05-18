@@ -17,8 +17,8 @@
 
 //! Node manager.
 
-use super::{encode_contract_name, to_address_vec, to_u256_vec};
 use super::ContractCallExt;
+use super::{encode_contract_name, to_address_vec, to_u256_vec};
 use cita_types::{Address, H160};
 use largest_remainder_method::apportion;
 use libexecutor::executor::{EconomicalModel, Executor};
@@ -35,7 +35,8 @@ const EPOCH: u64 = 1000;
 lazy_static! {
     static ref LIST_NODE_ENCODED: Vec<u8> = encode_contract_name(LIST_NODE);
     static ref LIST_STAKE_ENCODED: Vec<u8> = encode_contract_name(LIST_STAKE);
-    static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a2").unwrap();
+    static ref CONTRACT_ADDRESS: H160 =
+        H160::from_str("00000000000000000000000000000000013241a2").unwrap();
 }
 
 pub fn party_seats<T>(parties: Vec<T>, seats: &[u64]) -> Vec<T>
@@ -74,7 +75,8 @@ impl<'a> NodeManager<'a> {
     }
 
     pub fn nodes(&self) -> Vec<Address> {
-        let output = self.executor
+        let output = self
+            .executor
             .call_method_latest(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
 
         trace!(
@@ -88,7 +90,8 @@ impl<'a> NodeManager<'a> {
     }
 
     pub fn stakes(&self) -> Vec<u64> {
-        let output = self.executor
+        let output = self
+            .executor
             .call_method_latest(&*CONTRACT_ADDRESS, &*LIST_STAKE_ENCODED.as_slice());
 
         trace!("stakes output: {:?}", ToHex::to_hex(output.as_slice()));

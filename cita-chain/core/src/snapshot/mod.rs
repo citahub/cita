@@ -26,12 +26,12 @@ const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 use libchain::chain::Chain;
 use rlp::{DecoderError, RlpStream, UntrustedRlp};
 //use std::collections::HashSet;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 //use std::time::Duration;
 use cita_types::H256;
+use util::{sha3, Mutex};
 use util::{snappy, Bytes};
-use util::{Mutex, sha3};
 //use util::{Trie, TrieMut};
 //use util::HASH_NULL_RLP;
 //use util::journaldb::{self, Algorithm};
@@ -39,8 +39,8 @@ use util::{Mutex, sha3};
 //use util::kvdb::Database;
 
 //pub mod service;
-pub mod io;
 mod error;
+pub mod io;
 use self::error::Error;
 //use self::io::SnapshotReader;
 use self::io::SnapshotWriter;
@@ -239,7 +239,8 @@ impl<'a> BlockChunker<'a> {
         let mut loaded_size = 0;
         let mut last = self.current_hash;
 
-        let genesis_hash = self.chain
+        let genesis_hash = self
+            .chain
             .block_hash_by_height(0)
             .expect("Genesis hash should always exist");
 
@@ -250,7 +251,8 @@ impl<'a> BlockChunker<'a> {
 
             info!("[chunk_all] current_hash: {:?}", self.current_hash);
 
-            let block = self.chain
+            let block = self
+                .chain
                 .block_by_hash(self.current_hash)
                 .ok_or(Error::BlockNotFound(self.current_hash))?;
             info!("[chunk_all] block");
@@ -304,7 +306,8 @@ impl<'a> BlockChunker<'a> {
     fn write_chunk(&mut self, last: H256) -> Result<(), Error> {
         trace!(target: "snapshot", "prepared block chunk with {} blocks", self.rlps.len());
 
-        let last_header = self.chain
+        let last_header = self
+            .chain
             .block_header_by_hash(last)
             .ok_or(Error::BlockNotFound(last))?;
 

@@ -17,8 +17,8 @@
 
 use helper::{RpcMap, TransferType};
 use jsonrpc_types::response::Output;
-use libproto::Message;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::Message;
 use serde_json;
 use std::convert::TryFrom;
 
@@ -49,11 +49,16 @@ impl MqHandler {
                 if let Some(val) = value {
                     match val {
                         TransferType::HTTP((req_info, sender)) => {
-                            let _ = sender.send(Output::from(content, req_info.id, req_info.jsonrpc));
+                            let _ =
+                                sender.send(Output::from(content, req_info.id, req_info.jsonrpc));
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
                             let _ = sender.send(
-                                serde_json::to_string(&Output::from(content, req_info.id, req_info.jsonrpc)).unwrap(),
+                                serde_json::to_string(&Output::from(
+                                    content,
+                                    req_info.id,
+                                    req_info.jsonrpc,
+                                )).unwrap(),
                             );
                         }
                     }

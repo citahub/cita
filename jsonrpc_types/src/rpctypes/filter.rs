@@ -18,10 +18,10 @@
 use super::Log;
 use cita_types::{Address, H256};
 use rpctypes::block_number::BlockNumber;
-use serde::{Deserialize, Deserializer, Serializer};
 use serde::de::DeserializeOwned;
 use serde::de::Error;
 use serde::ser::Serialize;
+use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::{from_value, Value};
 use types::filter::Filter as EthFilter;
 use types::ids::BlockId;
@@ -96,7 +96,8 @@ impl Into<EthFilter> for Filter {
                 VariadicValue::Multiple(a) => Some(a.into_iter().map(Into::into).collect()),
             }),
             topics: {
-                let mut iter = self.topics
+                let mut iter = self
+                    .topics
                     .map_or_else(Vec::new, |topics| {
                         topics
                             .into_iter()
@@ -104,7 +105,9 @@ impl Into<EthFilter> for Filter {
                             .map(|topic| match topic {
                                 VariadicValue::Null => None,
                                 VariadicValue::Single(t) => Some(vec![t]),
-                                VariadicValue::Multiple(t) => Some(t.into_iter().map(Into::into).collect()),
+                                VariadicValue::Multiple(t) => {
+                                    Some(t.into_iter().map(Into::into).collect())
+                                }
                             })
                             .collect()
                     })
@@ -194,17 +197,20 @@ mod tests {
             deserialized,
             vec![
                 VariadicValue::Single(
-                    H256::from_str("000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
-                        .unwrap()
+                    H256::from_str(
+                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+                    ).unwrap()
                         .into(),
                 ),
                 VariadicValue::Null,
                 VariadicValue::Multiple(vec![
-                    H256::from_str("000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
-                        .unwrap()
+                    H256::from_str(
+                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+                    ).unwrap()
                         .into(),
-                    H256::from_str("0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc")
-                        .unwrap()
+                    H256::from_str(
+                        "0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc",
+                    ).unwrap()
                         .into(),
                 ]),
             ]
@@ -242,13 +248,12 @@ mod tests {
                 from_block: None,
                 to_block: None,
                 address: None,
-                topics: Some(vec![
-                    VariadicValue::Single(
-                        H256::from_str("8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3")
-                            .unwrap()
-                            .into(),
-                    ),
-                ]),
+                topics: Some(vec![VariadicValue::Single(
+                    H256::from_str(
+                        "8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3",
+                    ).unwrap()
+                        .into(),
+                )]),
                 limit: None,
             }
         );
@@ -263,8 +268,9 @@ mod tests {
             topics: Some(vec![
                 VariadicValue::Null,
                 VariadicValue::Single(
-                    H256::from_str("000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
-                        .unwrap()
+                    H256::from_str(
+                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+                    ).unwrap()
                         .into(),
                 ),
                 VariadicValue::Null,
@@ -298,9 +304,7 @@ mod tests {
         assert_eq!(FilterChanges::Empty, serde_json::from_str("[]").unwrap());
 
         assert_eq!(
-            json!([
-                "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"
-            ]),
+            json!(["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"]),
             serde_json::to_value(FilterChanges::Hashes(vec![
                 "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b".into(),
             ])).unwrap()
@@ -330,24 +334,25 @@ mod tests {
             "transactionLogIndex":"0x1"
         }]);
 
-        let logs = FilterChanges::Logs(vec![
-            Log {
-                address: H160::from_str("33990122638b9132ca29c723bdf037f1a891a70c").unwrap(),
-                topics: vec![
-                    H256::from_str("a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc").unwrap(),
-                    H256::from_str("4861736852656700000000000000000000000000000000000000000000000000").unwrap(),
-                ],
-                data: vec![].into(),
-                block_hash: Some(
-                    H256::from_str("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5").unwrap(),
-                ),
-                block_number: Some(U256::from(0x4510c)),
-                transaction_hash: Some(H256::default()),
-                transaction_index: Some(U256::default()),
-                transaction_log_index: Some(1.into()),
-                log_index: Some(U256::from(1)),
-            },
-        ]);
+        let logs = FilterChanges::Logs(vec![Log {
+            address: H160::from_str("33990122638b9132ca29c723bdf037f1a891a70c").unwrap(),
+            topics: vec![
+                H256::from_str("a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc")
+                    .unwrap(),
+                H256::from_str("4861736852656700000000000000000000000000000000000000000000000000")
+                    .unwrap(),
+            ],
+            data: vec![].into(),
+            block_hash: Some(
+                H256::from_str("ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5")
+                    .unwrap(),
+            ),
+            block_number: Some(U256::from(0x4510c)),
+            transaction_hash: Some(H256::default()),
+            transaction_index: Some(U256::default()),
+            transaction_log_index: Some(1.into()),
+            log_index: Some(U256::from(1)),
+        }]);
 
         let serialized = serde_json::to_value(logs.clone()).unwrap();
         assert_eq!(serialized, value);

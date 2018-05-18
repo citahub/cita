@@ -17,10 +17,12 @@
 
 use super::{Call, Error, Params};
 //#[warn(non_snake_case)]
-use cita_types::{H160, H256, U256, clean_0x};
 use cita_types::traits::LowerHex;
+use cita_types::{clean_0x, H160, H256, U256};
 use libproto::{request as reqlib, UnverifiedTransaction};
-use rpctypes::{BlockNumber, BlockParamsByHash, BlockParamsByNumber, CallRequest, CountOrCode, Filter};
+use rpctypes::{
+    BlockNumber, BlockParamsByHash, BlockParamsByNumber, CallRequest, CountOrCode, Filter,
+};
 use rustc_serialize::hex::FromHex;
 use serde_json;
 use std::convert::TryFrom;
@@ -123,7 +125,8 @@ impl MethodHandler {
         let params: (String,) = params.parse()?;
 
         let data = clean_0x(&params.0);
-        let un_tx = data.from_hex()
+        let un_tx = data
+            .from_hex()
             .map_err(|_err| {
                 let err_msg = format!("param not hex string : {:?}", _err);
                 Error::parse_error_with_message(err_msg)
@@ -383,7 +386,8 @@ impl MethodHandler {
         let (filter,): (Filter,) = params.parse()?;
         let mut request = self.create_request();
 
-        let filter = serde_json::to_string(&filter).map_err(|err| Error::invalid_params(format!("{:?}", err)))?;
+        let filter = serde_json::to_string(&filter)
+            .map_err(|err| Error::invalid_params(format!("{:?}", err)))?;
         request.set_new_filter(filter);
         Ok(request)
     }
@@ -441,10 +445,9 @@ impl MethodHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Id;
     use bytes::Bytes;
-    use cita_types::H160;
     use cita_types::traits::LowerHex;
+    use cita_types::H160;
     use libproto::blockchain::{Transaction, UnverifiedTransaction};
     use libproto::request;
     use method::MethodHandler;
@@ -453,6 +456,7 @@ mod tests {
     use serde_json;
     use serde_json::Value;
     use std::convert::TryInto;
+    use Id;
 
     #[test]
     fn test_rpc_serialize() {
@@ -710,16 +714,17 @@ mod tests {
 
     #[test]
     fn cita_get_log_deserialization() {
-        let rpc = "{\"jsonrpc\":\"2.0\",\
-                   \"method\":\"eth_getLogs\",\
-                   \"params\":[{\"fromBlock\":\"0x1\",\
-                   \"toBlock\":\"0x2\",\
-                   \"address\":\"0x8888f1f195afa192cfee860698584c030f4c9db1\",\
-                   \"topics\": [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
-                   null,\
-                   [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
-                   \"0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc\"]]}],\
-                   \"id\":2}";
+        let rpc =
+            "{\"jsonrpc\":\"2.0\",\
+             \"method\":\"eth_getLogs\",\
+             \"params\":[{\"fromBlock\":\"0x1\",\
+             \"toBlock\":\"0x2\",\
+             \"address\":\"0x8888f1f195afa192cfee860698584c030f4c9db1\",\
+             \"topics\": [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
+             null,\
+             [\"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\",\
+             \"0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc\"]]}],\
+             \"id\":2}";
         let rpc_request: Call = serde_json::from_str(rpc).unwrap();
         let handler = MethodHandler;
         let request: Result<request::Request, Error> = handler.get_logs(&rpc_request);
