@@ -7,3 +7,6 @@
 article a[title='编辑此页'] {
   display: none;
 }
+article a[title='Edit this page'] {
+  display: none;
+}
