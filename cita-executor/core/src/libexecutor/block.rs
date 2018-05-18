@@ -447,7 +447,12 @@ impl OpenBlock {
                 self.apply_grpc_vm(executor, &t, check_permission, check_quota, connect_info);
             } else {
                 // Apply transaction and set account nonce
-                self.apply_transaction(&t, check_permission, check_quota, economical_model);
+                self.apply_transaction(
+                    &t,
+                    check_permission,
+                    check_quota,
+                    *executor.economical_model.read(),
+                );
             }
         }
 
