@@ -25,7 +25,7 @@ use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
 use libexecutor::{CallEvmImpl, ConnectInfo};
-use libexecutor::executor::{EconomicalModel, Executor, GlobalSysConfig};
+use libexecutor::executor::{Executor, GlobalSysConfig};
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::citacode::{ActionParams, EnvInfo as ProtoEnvInfo};
@@ -152,6 +152,12 @@ impl Block {
         block.set_header(self.header.protobuf());
         block.set_body(self.body.protobuf());
         block
+    }
+
+    /// Check whether the block should re-execute
+    pub fn is_equivalent(&self, block: &Block) -> bool {
+        self.transactions_root() == block.transactions_root() && self.timestamp() == block.timestamp()
+            && self.proposer() == block.proposer()
     }
 }
 
@@ -456,12 +462,10 @@ impl OpenBlock {
             }
         }
 
-        if let EconomicalModel::Quota = *executor.economical_model.read() {
-            let now = Instant::now();
-            self.state.commit().expect("commit trie error");
-            let new_now = Instant::now();
-            debug!("state root use {:?}", new_now.duration_since(now));
-        }
+        let now = Instant::now();
+        self.state.commit().expect("commit trie error");
+        let new_now = Instant::now();
+        debug!("state root use {:?}", new_now.duration_since(now));
 
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
@@ -581,12 +585,10 @@ impl OpenBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(mut self, economical_model: EconomicalModel) -> ClosedBlock {
+    pub fn close(mut self) -> ClosedBlock {
         // Rebuild block
-        if let EconomicalModel::Quota = economical_model {
-            let state_root = *self.state.root();
-            self.set_state_root(state_root);
-        }
+        let state_root = *self.state.root();
+        self.set_state_root(state_root);
         let receipts_root =
             merklehash::MerkleTree::from_bytes(self.receipts.iter().map(|r| r.rlp_bytes().to_vec())).get_root_hash();
         self.set_receipts_root(receipts_root);
