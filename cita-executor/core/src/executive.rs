@@ -17,7 +17,7 @@
 //! Transaction Execution environment.
 
 use action_params::{ActionParams, ActionValue};
-use cita_types::{Address, H160, U256};
+use cita_types::{Address, H160, U256, U512};
 use contracts::Resource;
 use contracts::permission_management::contains_resource;
 use crossbeam;
@@ -29,6 +29,7 @@ use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use executed::CallType;
 use externalities::*;
+use libexecutor::executor::EconomicalModel;
 use native::Factory as NativeFactory;
 use state::{State, Substate};
 use state::backend::Backend as StateBackend;
@@ -260,6 +261,14 @@ pub struct TransactOptions {
     pub check_permission: bool,
     /// Check account gas limit
     pub check_quota: bool,
+    /// Check EconomicalModel
+    pub economical_model: EconomicalModel,
+}
+
+impl TransactOptions {
+    pub fn payment_required(&self) -> bool {
+        self.economical_model == EconomicalModel::Charge
+    }
 }
 
 /// Transaction executor.
@@ -374,7 +383,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let sender = *t.sender();
         let nonce = self.state.nonce(&sender)?;
 
-        // NOTE: there can be no invalid transactions from this point
         self.state.inc_nonce(&sender)?;
 
         trace!("permission should be check: {}", options.check_permission);
@@ -421,13 +429,24 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             }
         }
 
-        // TODO: we might need checking balance here in future. The relationship between BALANCE & GAS needs discussing.
-
         // NOTE: there can be no invalid transactions from this point
+        let balance = self.state.balance(&sender)?;
+        let gas_cost = t.gas.full_mul(t.gas_price());
+        let total_cost = U512::from(t.value) + gas_cost;
+
+        // avoid unaffordable transactions
+        if options.payment_required() {
+            let balance512 = U512::from(balance);
+            if balance512 < total_cost {
+                return Err(ExecutionError::NotEnoughCash {
+                    required: total_cost,
+                    got: balance512,
+                });
+            }
+            self.state.sub_balance(&sender, &U256::from(gas_cost))?;
+        }
 
         let mut substate = Substate::new();
-
-        // TODO: we might need sub_balance in future. The relationship between BALANCE & GAS needs discussing.
 
         let (result, output) = match t.action {
             Action::Store | Action::AbiStore | Action::GoCreate => (
@@ -447,7 +466,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     sender: sender,
                     origin: sender,
                     gas: t.gas - base_gas_required,
-                    gas_price: t.gas_price,
+                    gas_price: t.gas_price(),
                     value: ActionValue::Transfer(t.value),
                     code: Some(Arc::new(t.data.clone())),
                     data: None,
@@ -465,7 +484,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     sender: sender,
                     origin: sender,
                     gas: t.gas - base_gas_required,
-                    gas_price: t.gas_price,
+                    gas_price: t.gas_price(),
                     value: ActionValue::Transfer(t.value),
                     code: self.state.code(address)?,
                     code_hash: self.state.code_hash(address)?,
@@ -490,6 +509,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // finalize here!
         Ok(self.finalize(
             t,
+            options.economical_model,
             nonce,
             substate,
             result,
@@ -812,6 +832,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     fn finalize(
         &mut self,
         t: &SignedTransaction,
+        economical_model: EconomicalModel,
         account_nonce: U256,
         substate: Substate,
         result: evm::Result<FinalizationResult>,
@@ -838,8 +859,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let gas_left = gas_left_prerefund + refunded;
 
         let gas_used = t.gas - gas_left;
-        let refund_value = gas_left * t.gas_price;
-        let fees_value = gas_used * t.gas_price;
+        let refund_value = gas_left * t.gas_price();
+        let fees_value = gas_used * t.gas_price();
 
         trace!(
             "exec::finalize: t.gas={}, sstore_refunds={}, suicide_refunds={}, refunds_bound={},
@@ -863,7 +884,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             sender
         );
 
-        //TODO: we might need to add_balance here in future. The relationship between BALANCE & GAS needs discussing.
+        if let EconomicalModel::Charge = economical_model {
+            self.state.add_balance(&sender, &refund_value)?;
+        }
 
         trace!(
             "exec::finalize: Compensating author: fees_value={}, author={}\n",
@@ -871,7 +894,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             &self.info.author
         );
 
-        //TODO: we might need to add_balance here in future. The relationship between BALANCE & GAS needs discussing.
+        if let EconomicalModel::Charge = economical_model {
+            self.state.add_balance(&self.info.author, &fees_value)?;
+        }
 
         // perform suicides
         for address in &substate.suicides {

@@ -447,7 +447,7 @@ impl OpenBlock {
                 self.apply_grpc_vm(executor, &t, check_permission, check_quota, connect_info);
             } else {
                 // Apply transaction and set account nonce
-                self.apply_transaction(&t, check_permission, check_quota);
+                self.apply_transaction(&t, check_permission, check_quota, economical_model);
             }
         }
 
@@ -487,7 +487,13 @@ impl OpenBlock {
         })
     }
 
-    pub fn apply_transaction(&mut self, t: &SignedTransaction, check_permission: bool, check_quota: bool) {
+    pub fn apply_transaction(
+        &mut self,
+        t: &SignedTransaction,
+        check_permission: bool,
+        check_quota: bool,
+        economical_model: EconomicalModel,
+    ) {
         let mut env_info = self.env_info();
         if !self.account_gas.contains_key(t.sender()) {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);
@@ -498,9 +504,14 @@ impl OpenBlock {
             .expect("account should exist in account_gas_limit");
 
         let has_traces = self.traces.is_some();
-        match self.state
-            .apply(&env_info, t, has_traces, check_permission, check_quota)
-        {
+        match self.state.apply(
+            &env_info,
+            t,
+            has_traces,
+            check_permission,
+            check_quota,
+            economical_model,
+        ) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());

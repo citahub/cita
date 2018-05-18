@@ -229,7 +229,7 @@ fn bench_execute_trans(config_path: &str, genesis_path: &str, trans_num: u32, is
         let mut transactions = Vec::with_capacity(block.body.transactions.len());
         for (_, mut t) in block.body.transactions.clone().into_iter().enumerate() {
             // Apply transaction and set account nonce
-            open_block.apply_transaction(&mut t, check_permission, check_quota);
+            open_block.apply_transaction(&mut t, check_permission, check_quota, Default::default());
             transactions.push(t);
         }
         let new_now = Instant::now();
