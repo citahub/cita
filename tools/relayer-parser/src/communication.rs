@@ -125,12 +125,7 @@ macro_rules! rpc_send_and_get_result_from_reply {
     ($upstream:ident, $method:expr, $params:tt, $result_type:path) => {{
         define_reply_type!(ReplyType, $result_type);
         let rpc_cli = RpcClient::new($upstream);
-        let body: String = json!({
-                    "jsonrpc": "2.0",
-                    "method": $method,
-                    "params": json!($params),
-                    "id": 1
-                }).to_string();
+        let body: String = json!({"jsonrpc": "2.0", "method": $method, "params": json!($params), "id": 1}).to_string();
         let data = rpc_cli.do_post(&body)?;
         let reply: ReplyType = serde_json::from_slice(&data).map_err(|_| {
             error!(
