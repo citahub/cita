@@ -55,7 +55,7 @@ fn sign(pkey: &PrivKey, addr: H160, code: Vec<u8>, chain_id: u32, height: U256) 
     tx.set_data(code);
     tx.set_to(addr.lower_hex());
     tx.set_valid_until_block(height.low_u64() + 100);
-    tx.set_quota(10000000000);
+    tx.set_quota(1000000);
     tx.set_chain_id(chain_id);
     tx.sign(*pkey).take_transaction_with_sig()
 }
