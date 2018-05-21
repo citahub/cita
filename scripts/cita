@@ -31,8 +31,8 @@ setup() {
         sudo sed -i '/fs.inotify.max_user_instances/'d /etc/sysctl.conf
         sudo sed -i '$a\fs.inotify.max_user_watches=100000\' /etc/sysctl.conf
         sudo sed -i '$a\fs.inotify.max_user_instances=8192\' /etc/sysctl.conf
-        sudo sysctl fs.inotify.max_user_watches=100000
-        sudo sysctl fs.inotify.max_user_instances=8192
+        sudo sysctl -w fs.inotify.max_user_watches=100000
+        sudo sysctl -w fs.inotify.max_user_instances=8192
     fi
 }
 
