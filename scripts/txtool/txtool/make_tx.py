@@ -153,7 +153,7 @@ def _sha3_secp256k1_deploy_data(current_height,
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
     tx.chain_id = chainid
-    tx.quota = 9999999
+    tx.quota = 1000000
     tx.version = version
     if receiver is not None:
         tx.to = receiver
