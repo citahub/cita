@@ -195,7 +195,7 @@ contract SimpleStorage {
 
 #### 构造签名
 
-1. 构造Transaction对象tx，填充to, nonce, valid_until_block, quota, data, verion 6个字段。
+1. 构造Transaction对象tx，填充to, nonce, valid_until_block, quota, data, value, chain_id, version 8个字段。
 2. tx对象protobuf序列化后 sha3 -> hash
 3. 对 hash 进行签名 -> signature
 4. 构造UnverifiedTransaction, 使用hash, signature, SECP填充UnverifiedTransaction  -> unverify_tx
@@ -582,11 +582,9 @@ contract中get方法Hash和编码后的数据
 
 发送和获取数据
 
-```js
+```shell
 // Request
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call",
-"params":[{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5",
-"data":"0x6d4ce63c"}, "0x6"],"id":2}'
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5","data":"0x6d4ce63c"}, "0x6"],"id":2}'
 
 // Result
 {

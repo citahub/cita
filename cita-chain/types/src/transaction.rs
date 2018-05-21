@@ -240,6 +240,10 @@ impl Transaction {
         &self.action
     }
 
+    pub fn gas_price(&self) -> U256 {
+        U256::from(1)
+    }
+
     // Specify the sender; this won't survive the serialize/deserialize process, but can be cloned.
     pub fn fake_sign(self, from: Address) -> SignedTransaction {
         let signature = Signature::default();

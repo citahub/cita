@@ -155,6 +155,13 @@ impl Block {
         block.set_body(self.body.protobuf());
         block
     }
+
+    /// Check whether the block should re-execute
+    pub fn is_equivalent(&self, block: &Block) -> bool {
+        self.transactions_root() == block.transactions_root()
+            && self.timestamp() == block.timestamp()
+            && self.proposer() == block.proposer()
+    }
 }
 
 /// body of block.
@@ -457,16 +464,19 @@ impl OpenBlock {
                 self.apply_grpc_vm(executor, &t, check_permission, check_quota, connect_info);
             } else {
                 // Apply transaction and set account nonce
-                self.apply_transaction(&t, check_permission, check_quota);
+                self.apply_transaction(
+                    &t,
+                    check_permission,
+                    check_quota,
+                    *executor.economical_model.read(),
+                );
             }
         }
 
-        if let EconomicalModel::Quota = *executor.economical_model.read() {
-            let now = Instant::now();
-            self.state.commit().expect("commit trie error");
-            let new_now = Instant::now();
-            debug!("state root use {:?}", new_now.duration_since(now));
-        }
+        let now = Instant::now();
+        self.state.commit().expect("commit trie error");
+        let new_now = Instant::now();
+        debug!("state root use {:?}", new_now.duration_since(now));
 
         let gas_used = self.current_gas_used;
         self.set_gas_used(gas_used);
@@ -504,6 +514,7 @@ impl OpenBlock {
         t: &SignedTransaction,
         check_permission: bool,
         check_quota: bool,
+        economical_model: EconomicalModel,
     ) {
         let mut env_info = self.env_info();
         if !self.account_gas.contains_key(t.sender()) {
@@ -516,10 +527,14 @@ impl OpenBlock {
             .expect("account should exist in account_gas_limit");
 
         let has_traces = self.traces.is_some();
-        match self
-            .state
-            .apply(&env_info, t, has_traces, check_permission, check_quota)
-        {
+        match self.state.apply(
+            &env_info,
+            t,
+            has_traces,
+            check_permission,
+            check_quota,
+            economical_model,
+        ) {
             Ok(outcome) => {
                 let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());
@@ -584,12 +599,10 @@ impl OpenBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(mut self, economical_model: EconomicalModel) -> ClosedBlock {
+    pub fn close(mut self) -> ClosedBlock {
         // Rebuild block
-        if let EconomicalModel::Quota = economical_model {
-            let state_root = *self.state.root();
-            self.set_state_root(state_root);
-        }
+        let state_root = *self.state.root();
+        self.set_state_root(state_root);
         let receipts_root = merklehash::MerkleTree::from_bytes(
             self.receipts.iter().map(|r| r.rlp_bytes().to_vec()),
         ).get_root_hash();

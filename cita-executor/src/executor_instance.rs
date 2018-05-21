@@ -285,9 +285,7 @@ impl ExecutorInstance {
                     };
                     match in_queue {
                         Some(BlockInQueue::ConsensusBlock(comming, _)) => {
-                            if comming.header().transactions_root()
-                                == closed_block.header().transactions_root()
-                            {
+                            if comming.is_equivalent(&closed_block) {
                                 self.ext
                                     .finalize_proposal(closed_block, comming, &self.ctx_pub);
                                 {
@@ -567,7 +565,7 @@ impl ExecutorInstance {
             match stage {
                 Stage::ExecutingProposal => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
-                        if value.header().transactions_root() != block.transactions_root() {
+                        if !value.is_equivalent(&block) {
                             if !self.ext.is_interrupted.load(Ordering::SeqCst) {
                                 self.ext.is_interrupted.store(true, Ordering::SeqCst);
                             }
@@ -578,7 +576,7 @@ impl ExecutorInstance {
                 Stage::WaitFinalized => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
                         // Not interrupt but to notify chain to execute the block
-                        if value.header().transactions_root() != block.transactions_root()
+                        if !value.is_equivalent(&block)
                             && !self.ext.is_interrupted.load(Ordering::SeqCst)
                         {
                             self.ext.is_interrupted.store(true, Ordering::SeqCst);
@@ -731,7 +729,7 @@ impl ExecutorInstance {
             match stage {
                 Stage::ExecutingProposal => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
-                        if value.header().transactions_root() != block.transactions_root() {
+                        if !value.is_equivalent(&block) {
                             if !self.ext.is_interrupted.load(Ordering::SeqCst) {
                                 self.ext.is_interrupted.store(true, Ordering::SeqCst);
                             }
@@ -741,7 +739,7 @@ impl ExecutorInstance {
                 }
                 Stage::WaitFinalized => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
-                        if value.header().transactions_root() != block.transactions_root() {
+                        if !value.is_equivalent(&block) {
                             self.send_proposal(blk_height, block);
                         }
                     }

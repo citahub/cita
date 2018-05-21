@@ -242,7 +242,7 @@ fn bench_execute_trans(
         let mut transactions = Vec::with_capacity(block.body.transactions.len());
         for (_, mut t) in block.body.transactions.clone().into_iter().enumerate() {
             // Apply transaction and set account nonce
-            open_block.apply_transaction(&mut t, check_permission, check_quota);
+            open_block.apply_transaction(&mut t, check_permission, check_quota, Default::default());
             transactions.push(t);
         }
         let new_now = Instant::now();
@@ -260,7 +260,7 @@ fn bench_execute_trans(
         open_block.set_gas_used(gas_used);
 
         //save data to db
-        let closed_block = open_block.close(ext.economical_model.read().clone());
+        let closed_block = open_block.close();
 
         //write state root
         let now = Instant::now();
