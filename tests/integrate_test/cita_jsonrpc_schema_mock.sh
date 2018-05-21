@@ -55,7 +55,7 @@ echo "DONE"
 
 ################################################################################
 echo -n "5) check mock data  ...  "
-python2 ${SOURCE_DIR}/tests/interfaces/rpc/test_runner.py \
+python3 ${SOURCE_DIR}/tests/interfaces/rpc/test_runner.py \
         --rpc-url http://127.0.0.1:1337 \
         --directory ${SOURCE_DIR}/tests/interfaces/rpc/
 echo "DONE"

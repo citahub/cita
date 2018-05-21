@@ -44,7 +44,7 @@ function python_run () {
         pycmd="${pycmd} $1;"
         shift 1
     done
-    python -c "${pycmd}"
+    python3 -c "${pycmd}"
 }
 
 function func_encode () {
@@ -71,7 +71,7 @@ function txtool_run () {
     local chain=$1
     shift 1
     cd "${chain}tool/txtool"
-    python "$@" 2>/dev/null
+    python3 "$@" 2>/dev/null
     cd ../..
 }
 
@@ -93,6 +93,8 @@ function wait_chain_for_height () {
     title "Waiting for chain [${chain}] ..."
     while true; do
         local height_now=$(txtool_run ${chain} block_number.py | tail -1)
+	echo ${height_now}
+	echo height_now
         if [ "${height}" != "None" ] \
                 && [ "${height_now}" != "None" ] \
                 && [ "${height_now}" -gt "${height}" ]; then
@@ -293,7 +295,7 @@ function main () {
     cd target/install
 
     title "Install python packages for tools ..."
-    pip install -r scripts/txtool/requirements.txt
+    pip3 install -r scripts/txtool/requirements.txt
 
     title "Create tools ..."
     mv scripts/txtool maintool && cp -r maintool sidetool

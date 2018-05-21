@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 # pylint: disable=missing-docstring
 
@@ -23,7 +23,7 @@ BLOCK_GAS_LIMIT = 471238800
 
 def function_encode(func_sign):
     keccak = sha3.keccak_256()
-    keccak.update(func_sign)
+    keccak.update(func_sign.encode('utf-8'))
     return binascii.unhexlify(keccak.hexdigest()[0:8])
 
 
@@ -121,7 +121,7 @@ class GenesisData(object):
             self.write_docs(name, data)
             ctt = ContractTranslator(data['abi'])
             args = self.contracts_args.get(name)
-            extra = '' if not args else ctt.encode_constructor_arguments(
+            extra = b'' if not args else ctt.encode_constructor_arguments(
                 [arg for arg in args.values()])
             self.mine_contract_on_chain_tester(addr, data['bin'] + extra)
 
