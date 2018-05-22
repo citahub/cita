@@ -61,7 +61,9 @@ pub fn verify_tx_group_service(
             let tx_hash = H256::from_slice(req.get_tx_hash());
             let response = { verifier.read().verify_tx(&req) };
             {
-                cache.write().insert(tx_hash, response.clone());
+                if response.get_ret()!=Ret::NotReady {
+                    cache.write().insert(tx_hash, response.clone());
+                }
             }
             req_info.req_resp = VerifyRequestResponse::AuthResponse(response);
             resp_sender.send(req_info).unwrap();
