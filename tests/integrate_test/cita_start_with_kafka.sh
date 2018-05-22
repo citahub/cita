@@ -26,7 +26,7 @@ cleanup
 
 echo "###generate config files"
 cd ${BINARY_DIR}
-./bin/admintool.sh -n $consensus -k >/dev/null 2>&1
+./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" >/dev/null 2>&1
 
 echo "###wait for kafka start"
 $SOURCE_DIR/tests/integrate_test/kafka_start.sh ${BINARY_DIR}

@@ -51,28 +51,13 @@ cp -rf  scripts/cita                       target/install/bin/
 # 3) contract
 cp -rf scripts/contracts                   target/install/scripts/
 
-# 4) admintool
-mkdir -p                                   target/install/scripts/admintool
-cp -rf  scripts/admintool/*.py             target/install/scripts/admintool/
-cp -rf  scripts/admintool/*.md             target/install/scripts/admintool/
-cp -rf  scripts/admintool/*.sh             target/install/scripts/admintool/
-cp -rf  scripts/admintool/*.txt            target/install/scripts/admintool/
-cp -rf  scripts/admintool/*.json           target/install/scripts/admintool/
-cp -rf  scripts/admintool/*.toml           target/install/scripts/admintool/
-if [[ `uname` == 'Darwin' ]]
-then
-    gln -srf target/install/scripts/admintool/admintool.sh target/install/bin/
-else
-    ln -srf target/install/scripts/admintool/admintool.sh target/install/bin/
-fi
-
-# 5) config tool
+# 4) config tool
 cp -rf  scripts/config_tool                target/install/scripts/
 cp -f   scripts/create_cita_config.py      target/install/scripts/
 
-# 6) txtool
+# 5) txtool
 cp -rf scripts/txtool                      target/install/scripts/
 
-# 7) docker env
+# 6) docker env
 cp -f scripts/env.sh                       target/install/
 cp -f scripts/daemon.sh                    target/install/

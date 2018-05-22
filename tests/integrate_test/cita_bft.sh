@@ -7,23 +7,23 @@ sudo rabbitmqctl stop_app
 sudo rabbitmqctl reset
 sudo rabbitmqctl start_app
 cd ${CUR_PATH}/../../admintool/
-./admintool.sh -b 5000
+./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
 
 setup_node() {
     id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
+    cd ${CUR_PATH}/../../admintool/release/node/${id}
     ./cita setup ${id}
 }
 
 start_node() {
     id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
+    cd ${CUR_PATH}/../../admintool/release/node/${id}
     ./cita start ${id}
 }
 
 stop_node() {
     id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
+    cd ${CUR_PATH}/../../admintool/release/node/${id}
     ./cita stop ${id}
 }
 
@@ -38,7 +38,7 @@ stop_all () {
 delete_pid_file()
 {
     id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
+    cd ${CUR_PATH}/../../admintool/release/node/${id}
     if [ -f "consensus_cita_bft.pid" ]; then
         rm -rf consensus_cita_bft.pid
     fi
@@ -47,7 +47,7 @@ delete_pid_file()
 stop_consensus_cmd()
 {
     id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
+    cd ${CUR_PATH}/../../admintool/release/node/${id}
 
     if [ ! -f "consensus_cita_bft.pid" ]; then
         consensus_cita_bft_pid=$(tail -3 .pid | head -1)
@@ -76,8 +76,8 @@ stop_consensus()
 start_consensus_cmd()
 {
     id=$1
-    cd ${CUR_PATH}/../../admintool/release/node${id}
-    RUST_LOG=consensus_cita_bft bin/consensus_cita_bft -c consensus.json     >log/node${id}.consensus  2>&1 &
+    cd ${CUR_PATH}/../../admintool/release/node/${id}
+    RUST_LOG=consensus_cita_bft bin/consensus_cita_bft -c consensus.json     >log/node/${id}.consensus  2>&1 &
     echo $! > consensus_cita_bft.pid
 }
 

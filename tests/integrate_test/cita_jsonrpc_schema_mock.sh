@@ -2,9 +2,9 @@
 
 set -e
 
-ECONOMICAL_MODEL="quota"
-if [ -n $1 ]; then
-    ECONOMICAL_MODEL=$1
+ECONOMICAL_MODEL="0"
+if [ -n $1 ] && [ "$1" = "charge" ]; then
+    ECONOMICAL_MODEL="1"
 fi
 
 if [[ `uname` == 'Darwin' ]]
@@ -32,23 +32,37 @@ echo -n "2) generate config  ...  "
 if [ ! -d "resource" ]; then
     mkdir resource
 fi
-${BINARY_DIR}/bin/admintool.sh \
-             -E ${ECONOMICAL_MODEL} \
-             -T 1524000000 \
-             -C 123 \
-             -A ${SOURCE_DIR}/tests/interfaces/rpc/config/authorities > /dev/null 2>&1
+
+AUTHORITIES=""
+cat ${SOURCE_DIR}/tests/interfaces/rpc/config/authorities | (while read line
+do
+    if [ "${AUTHORITIES}" = "" ]; then
+        AUTHORITIES=${line}
+    else
+        AUTHORITIES=${AUTHORITIES}","${line}
+    fi
+done
+
+
+${BINARY_DIR}/scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
+             --contract_arguments "SysConfig.economical_model=${ECONOMICAL_MODEL}" \
+             --timestamp 1524000000 \
+             --chain_name node \
+             --authorities ${AUTHORITIES} > /dev/null 2>&1)
 echo "DONE"
+
+echo 2
 
 ################################################################################
 echo -n "3) just start node0  ...  "
-${BINARY_DIR}/bin/cita setup node0 > /dev/null
-cp ${SOURCE_DIR}/tests/interfaces/rpc/config/genesis.json node0/genesis.json
-${BINARY_DIR}/bin/cita start node0 trace > /dev/null &
+${BINARY_DIR}/bin/cita setup node/0 > /dev/null
+cp ${SOURCE_DIR}/tests/interfaces/rpc/config/genesis.json node/0/genesis.json
+${BINARY_DIR}/bin/cita start node/0 trace > /dev/null &
 echo "DONE"
 
 ################################################################################
 echo -n "4) generate mock data  ...  "
-AMQP_URL=amqp://guest:guest@localhost/node0 \
+AMQP_URL=amqp://guest:guest@localhost/node/0 \
         ${SOURCE_DIR}/target/debug/chain-executor-mock \
         -m ${SOURCE_DIR}/tests/interfaces/rpc/config/blockchain.yaml
 echo "DONE"
@@ -62,7 +76,7 @@ echo "DONE"
 
 ################################################################################
 echo -n "6) stop node0  ...  "
-${BINARY_DIR}/bin/cita stop node0
+${BINARY_DIR}/bin/cita stop node/0
 echo "DONE"
 
 ################################################################################
