@@ -61,7 +61,7 @@ pub fn verify_tx_group_service(
             let tx_hash = H256::from_slice(req.get_tx_hash());
             let response = { verifier.read().verify_tx(&req) };
             {
-                if response.get_ret()!=Ret::NotReady {
+                if response.get_ret() != Ret::NotReady {
                     cache.write().insert(tx_hash, response.clone());
                 }
             }
