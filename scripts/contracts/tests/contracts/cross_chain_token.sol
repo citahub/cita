@@ -3,12 +3,10 @@ pragma solidity ^0.4.18;
 contract MyToken {
     /* This creates an array with all balances */
     mapping (address => uint256) public balanceOf;
-    uint256 from_chain_id;
 
     /* Initializes contract */
-    function MyToken(uint256 _balance, uint256 _from_chain_id) public {
+    function MyToken(uint256 _balance) public {
         balanceOf[msg.sender] = _balance;
-        from_chain_id = _from_chain_id;
     }
 
     /* Send coins */
@@ -27,7 +25,7 @@ contract MyToken {
         return balanceOf[_to];
     }
 
-    event cross_chain(uint256 from_chain_id, uint256 to_chain_id, address dest_contract, uint256 hasher, uint256 nonce);
+    event cross_chain(uint32 from_chain_id, uint32 to_chain_id, address dest_contract, uint256 hasher, uint256 nonce);
     event recv_cross_chain(uint sender, bytes data);
 
     uint256 crosschain_send_nonce;
@@ -40,19 +38,35 @@ contract MyToken {
         return crosschain_recv_nonce;
     }
 
-    function send_to_side_chain(uint256 to_chain_id, address dest_contract, uint256 _value) public {
+    function send_to_side_chain(uint32 to_chain_id, address dest_contract, uint256 _value) public {
         require(balanceOf[msg.sender] >= _value);
         balanceOf[msg.sender] -= _value;
+        uint32 from_chain_id = get_from_chain_id();
         cross_chain(from_chain_id, to_chain_id, dest_contract, RECV_FUNC_HASHER, crosschain_send_nonce);
         crosschain_send_nonce = crosschain_send_nonce + 1;
     }
 
-    function get_from_chain_id() public view returns (uint256) {
-        return from_chain_id;
+    function get_from_chain_id() public view returns (uint32) {
+        // ChainManager: Contract
+        address chainManagerAddr = 0x00000000000000000000000000000000000000ce;
+        // getChainId() function
+        bytes4 getChainIdHash = bytes4(keccak256("getChainId()"));
+
+        uint256 result;
+        uint256 cid;
+
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, getChainIdHash)
+            result := call(20000, chainManagerAddr, 0, ptr, 0x4, ptr, 0x20)
+            if eq(result, 0) { revert(ptr, 0) }
+            cid := mload(ptr)
+        }
+        return uint32(cid);
     }
 
     // verify_proof need:
-    // check from_chain_id and to_chain_id one of them is 0 (cross chain only between main chain and one sidechain)
+    // check from_chain_id in ChainManager.sideChains
     // check to_chain_id == my chain_id
     // check dest_contract == this
     // check hasher == RECV_FUNC_HASHER

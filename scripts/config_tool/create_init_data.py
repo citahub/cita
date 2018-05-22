@@ -13,7 +13,7 @@ Contracts:
   - check_permission: false
   - check_quota: false
   - chain_name: test-chain
-  - chain_id: 0
+  - chain_id: 1
   - operator: test-operator
   - website: https://www.example.com
   - block_interval: 3000
@@ -21,12 +21,13 @@ Contracts:
 - QuotaManager:
   - admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
 - NodeManager:
-  - nodes: []
+  - nodes:
+    - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
   - admins:
     - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
-  - stakes: []
+  - stakes:
+    - 0
 - ChainManager:
-  - current_chain_id: 1
   - parent_chain_id: 0
   - parent_chain_authorities: []
 - Authorization:
@@ -67,8 +68,15 @@ def conv_type_as_old(new, old, key1, key2, val=None):
             return new.lower() == 'true'
     elif isinstance(old, int):
         return int(new)
-    elif isinstance(old, str) or old is None:
+    elif isinstance(old, str):
         return str(new)
+    elif old is None:
+        try:
+            _ = int(new)
+        except ValueError:
+            return str(new)
+        else:
+            return int(new)
     raise Exception('Type for {}.{}={} is not right'.format(key1, key2, val))
 
 

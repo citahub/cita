@@ -41,7 +41,7 @@ interface SysConfigInterface {
 contract SysConfig is SysConfigInterface {
 
     enum EconomicalModel { Quota, Charge }
-    
+
     /// @notice only chain_name, operator, website can be updated
     uint delay_block_number;
     bool check_permission;
@@ -67,6 +67,7 @@ contract SysConfig is SysConfigInterface {
     )
         public
     {
+        require(_chainId > 0);
         delay_block_number = _delayBlockNumber;
         check_permission = _checkPermission;
         check_quota = _checkQuota;

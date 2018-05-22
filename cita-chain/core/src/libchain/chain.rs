@@ -69,8 +69,8 @@ const LOG_BLOOMS_ELEMENTS_PER_INDEX: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct RelayInfo {
-    pub from_chain_id: u64,
-    pub to_chain_id: u64,
+    pub from_chain_id: u32,
+    pub to_chain_id: u32,
     pub dest_contract: Address,
     pub dest_hasher: String,
     pub cross_chain_nonce: u64,
@@ -149,8 +149,8 @@ impl TxProof {
             None
         } else {
             let mut iter = data.chunks(32);
-            let from_chain_id = U256::from(iter.next().unwrap()).low_u64();
-            let to_chain_id = U256::from(iter.next().unwrap()).low_u64();
+            let from_chain_id = U256::from(iter.next().unwrap()).low_u32();
+            let to_chain_id = U256::from(iter.next().unwrap()).low_u32();
             let dest_contract = Address::from(H256::from(iter.next().unwrap()));
             let mut dest_hasher = U256::from(iter.next().unwrap()).lower_hex();
             // U256 to hex no leading zero
@@ -179,7 +179,7 @@ impl TxProof {
         my_contrac_addr: Address,
         my_hasher: String,
         my_cross_chain_nonce: u64,
-        my_chain_id: u64,
+        my_chain_id: u32,
         authorities: &[Address],
     ) -> Option<(Address, Vec<u8>)> {
         if self.verify(authorities) {

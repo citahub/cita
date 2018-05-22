@@ -117,18 +117,30 @@ fn construct_transaction(
     communication::cita_get_metadata(upstream)
         .ok()
         .and_then(|metadata| {
+            if metadata.chain_id == relay_info.to_chain_id {
+                Some(relay_info.to_chain_id)
+            } else {
+                error!(
+                    "chain id is not right {} != {}",
+                    metadata.chain_id, relay_info.to_chain_id
+                );
+                None
+            }
+        })
+        .and_then(|chain_id| {
             communication::cita_block_number(upstream)
                 .ok()
-                .and_then(|height| {
-                    transaction::construct_transaction(
-                        pkey,
-                        tx_proof_rlp,
-                        &relay_info.dest_hasher,
-                        relay_info.dest_contract,
-                        metadata.chain_id,
-                        height,
-                    )
-                })
+                .map(|height| (chain_id, height))
+        })
+        .and_then(|(chain_id, height)| {
+            transaction::construct_transaction(
+                pkey,
+                tx_proof_rlp,
+                &relay_info.dest_hasher,
+                relay_info.dest_contract,
+                chain_id,
+                height,
+            )
         })
 }
 

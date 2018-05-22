@@ -22,14 +22,14 @@ use cita_types::H256;
 
 pub struct AppArgs {
     pub cfg_file: String,
-    pub chain_id: u64,
+    pub chain_id: u32,
     pub tx_hash: H256,
 }
 
 impl<'a> From<&'a clap::ArgMatches<'a>> for AppArgs {
     fn from(matches: &'a clap::ArgMatches) -> Self {
         let cfg_file = matches.value_of("ConfigFile").unwrap();
-        let chain_id = value_t!(matches, "ChainId", u64).unwrap();
+        let chain_id = value_t!(matches, "ChainId", u32).unwrap();
         let tx_hash_str = matches.value_of("TxHash").unwrap();
         let tx_hash_str = if tx_hash_str.starts_with("0x") {
             &tx_hash_str[2..]
