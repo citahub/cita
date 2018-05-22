@@ -46,8 +46,8 @@ done
 
 ${BINARY_DIR}/scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
              --contract_arguments "SysConfig.economical_model=${ECONOMICAL_MODEL}" \
+             --contract_arguments "ChainManager.current_chain_id=123" \
              --timestamp 1524000000 \
-             --chain_name node \
              --authorities ${AUTHORITIES} > /dev/null 2>&1)
 echo "DONE"
 
