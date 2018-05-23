@@ -28,7 +28,8 @@ echo "DONE"
 ################################################################################
 
 echo -n "2) generate config  ...  "
-./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" --contract_arguments "SysConfig.economical_model=${ECONOMICAL_MODEL}" > /dev/null
+./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
+                                --contract_arguments "SysConfig.economical_model=${ECONOMICAL_MODEL}" > /dev/null
 echo "DONE"
 
 ################################################################################
