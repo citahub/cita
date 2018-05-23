@@ -39,6 +39,7 @@ setup() {
 
 start() {
     debug=$1
+    mock=$2
 
     mkdir -p logs
 
@@ -51,12 +52,14 @@ start() {
     curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/network_tx         > /dev/null 2>&1 || true
     curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/network_consensus  > /dev/null 2>&1 || true
 
+    [[ -z ${mock} ]] && config="forever.toml" || config="forever_mock.toml"
+
     if [ -z ${debug} ]; then
-        cita-forever start > /dev/null 2>&1
+        cita-forever -c ${config} start > /dev/null 2>&1
     else
         RUST_LOG=cita_auth=${debug},cita_chain=${debug},cita_executor=${debug},cita_jsonrpc=${debug},cita_network=${debug},cita_bft=${debug},\
 core_executor=${debug},engine=${debug},jsonrpc_types=${debug},libproto=${debug},proof=${debug},txpool=${debug} \
-        cita-forever start > /dev/null 2>&1
+        cita-forever -c ${config} start > /dev/null 2>&1
     fi
 
     sleep 3
@@ -142,7 +145,7 @@ fi
 
 export PATH=$PATH:${SCRIPT_DIR}/../bin
 
-if [ $# -gt 3 ];
+if [ $# -gt 4 ];
 then
     help
 else
@@ -160,7 +163,8 @@ else
         start)
             stop > /dev/null 2>&1 || true
             debug=$3
-            start ${debug}
+            mock=$4
+            start ${debug} ${mock}
             ;;
         stop)
             stop
@@ -168,7 +172,8 @@ else
         restart)
             stop ||true
             debug=$3
-            start ${debug}
+            mock=$4
+            start ${debug} ${mock}
             ;;
         logrotate)
             rotate
