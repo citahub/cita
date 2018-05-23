@@ -53,16 +53,23 @@ impl ChainManagement {
             &mut output,
             CallType::Call,
         ) {
-            MessageCallResult::Success(gas_left, return_data) => decode(&[ParamType::Uint(256)], &*return_data)
-                .ok()
-                .and_then(|decoded| decoded.first().map(|v| v.clone()))
-                .and_then(|id| id.to_uint())
-                .map(|id| (gas_left, H256::from(id).low_u64() as u32)),
+            MessageCallResult::Success(gas_left, return_data) => {
+                decode(&[ParamType::Uint(256)], &*return_data)
+                    .ok()
+                    .and_then(|decoded| decoded.first().map(|v| v.clone()))
+                    .and_then(|id| id.to_uint())
+                    .map(|id| (gas_left, H256::from(id).low_u64() as u32))
+            }
             MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
         }
     }
 
-    pub fn ext_authorities(ext: &mut Ext, gas: &U256, sender: &Address, chain_id: u32) -> Option<(U256, Vec<Address>)> {
+    pub fn ext_authorities(
+        ext: &mut Ext,
+        gas: &U256,
+        sender: &Address,
+        chain_id: u32,
+    ) -> Option<(U256, Vec<Address>)> {
         trace!(
             "call system contract ChainManagement.ext_authorities({})",
             chain_id
