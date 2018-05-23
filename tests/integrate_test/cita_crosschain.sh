@@ -52,7 +52,7 @@ function func_encode () {
     python_run \
         "import sha3" \
         "keccak = sha3.keccak_256()" \
-        "keccak.update('${func}')" \
+        "keccak.update('${func}'.encode('utf-8'))" \
         "print(keccak.hexdigest()[0:8])"
 }
 
@@ -62,9 +62,10 @@ function abi_encode () {
     local data="$3"
     python_run \
         "from ethereum.abi import ContractTranslator" \
-        "ct = ContractTranslator('''${abi}''')" \
+        "import binascii" \
+        "ct = ContractTranslator(b'''${abi}''')" \
         "tx = ct.encode('${func}', [${data}])" \
-        "print(tx.encode('hex'))"
+        "print(binascii.hexlify(tx).decode('utf-8'))"
 }
 
 function txtool_run () {
@@ -93,8 +94,6 @@ function wait_chain_for_height () {
     title "Waiting for chain [${chain}] ..."
     while true; do
         local height_now=$(txtool_run ${chain} block_number.py | tail -1)
-	echo ${height_now}
-	echo height_now
         if [ "${height}" != "None" ] \
                 && [ "${height_now}" != "None" ] \
                 && [ "${height_now}" -gt "${height}" ]; then

@@ -27,7 +27,7 @@ if not accounts_path.is_dir():
 
 def save_deploy(code):
     with open("../output/transaction/deploycode", "w+") as deployfile:
-        deployfile.write(code)
+        deployfile.write(code.decode('utf-8'))
 
 
 def bin_code():

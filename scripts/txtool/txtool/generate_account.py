@@ -28,14 +28,14 @@ def save_privkey(privkey):
     logger.debug("private key {}".format(privkey))
     logger.info("the private key stores in output/accounts/privkey")
     with open("../output/accounts/privkey", "w+") as privkey_file:
-        privkey_file.write(privkey)
+        privkey_file.write(privkey.decode('utf-8'))
 
 
 def save_pubkey(pubkey):
     logger.debug("public key {}".format(pubkey))
     logger.info("the public key is stored in output/accounts/pubkey")
     with open("../output/accounts/pubkey", "w+") as pubkey_file:
-        pubkey_file.write(pubkey)
+        pubkey_file.write(pubkey.decode('utf-8'))
 
 
 def save_address(address):
