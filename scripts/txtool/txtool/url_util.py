@@ -1,4 +1,4 @@
-import ConfigParser
+import configparser
 try:
     import httplib
 except:
@@ -12,14 +12,14 @@ def _join_url(host, port, scheme='http://'):
 
 
 def host():
-    config = ConfigParser.SafeConfigParser()
+    config = configparser.ConfigParser()
     config.read(SETTING_PATH)
     host = config.get('jsonrpc_url', 'host')
     return host
 
 
 def endpoint():
-    config = ConfigParser.SafeConfigParser()
+    config = configparser.ConfigParser()
     config.read(SETTING_PATH)
     host = config.get('jsonrpc_url', 'host')
     port = config.get('jsonrpc_url', 'port')
