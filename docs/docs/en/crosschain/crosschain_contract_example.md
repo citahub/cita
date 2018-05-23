@@ -48,7 +48,7 @@ solc --hashes cross_chain_token.sol
 
 目前，侧链使用系统合约 [ChainManager](https://github.com/cryptape/cita/blob/develop/scripts/contracts/system/chain_manager.sol) 进行管理。
 
-* 生成侧链的验证节点的私钥，使用侧链的验证节点地址，在主链上使用系统合约 `ChainManager` 的方法 `newSideChain` 进行新建侧链，得到侧链的 Id 。
+* 生成侧链的验证节点的私钥，使用侧链的验证节点地址，在主链上使用系统合约 `ChainManager` 的方法 `newSideChain` 进行新建侧链，输入侧链的 Id 和侧链的的验证节点。
 * 在主链上使用系统合约 `ChainManager` 的方法 `enableSideChain` 启动指定 Id 的侧链。
 * 新建侧链，创世块里的系统合约 `ChainManager` 构造时，使用上一个步骤申请的侧链 Id 、主链的 Id 和主链的验证节点地址作为参数。
 * 启动侧链即可。

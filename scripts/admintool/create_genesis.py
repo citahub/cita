@@ -134,7 +134,7 @@ def init_contracts(nodes, args):
                 # Current chain id:
                 #   - 3  bit prefix (0b000 means testnet)
                 #   - 29 bit id is a random number in range [0, 2**29]
-                params[4] = args.chain_id or random.randint(0, 2**(32 - 3))
+                params[4] = args.chain_id or random.randint(1, 2**(32 - 3))
                 print '[chain-id]: {}'.format(params[4])
                 print 'params: {}'.format(params)
                 with open(args.chain_id_file, 'w') as f:
@@ -179,14 +179,12 @@ def init_contracts(nodes, args):
                         'nonce': account['nonce']
                     }
         elif address == '0x00000000000000000000000000000000000000ce' and nodes[address]:
-            current_chain_id = args.current_chain_id if args.current_chain_id else nodes[
-                address][0]
             parent_chain_id = args.parent_chain_id \
-                if args.parent_chain_id else nodes[address][1]
+                if args.parent_chain_id else nodes[address][0]
             parent_chain_nodes = args.parent_chain_nodes.split(',') \
-                if args.parent_chain_nodes else nodes[address][2]
+                if args.parent_chain_nodes else nodes[address][1]
             extra = (ct.encode_constructor_arguments(
-                [current_chain_id, parent_chain_id, parent_chain_nodes]))
+                [parent_chain_id, parent_chain_nodes]))
 
         else:
             extra = ''
@@ -212,7 +210,7 @@ def main():
     parser.add_argument("--genesis_file", help="The genesis.json file.")
     parser.add_argument("--chain_id_file", help="The chain_id file.")
     parser.add_argument(
-        "--chain_id", type=int, default=0, help="Specify the chain_id to use.")
+        "--chain_id", type=int, default=None, help="Specify the chain_id to use.")
     parser.add_argument(
         "--timestamp",
         type=int,
@@ -226,11 +224,6 @@ def main():
     parser.add_argument("--init_data", help="init with constructor_arguments.")
     parser.add_argument("--resource", help="chain resource folder.")
     parser.add_argument("--permission", help="init the permission.")
-    parser.add_argument(
-        "--current_chain_id",
-        type=int,
-        default=0,
-        help="current chain id for chain management, a unique id")
     parser.add_argument(
         "--parent_chain_id",
         type=int,

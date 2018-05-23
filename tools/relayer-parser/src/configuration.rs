@@ -29,7 +29,7 @@ pub struct UpStream {
 
 #[derive(Debug, Deserialize, Clone)]
 struct Chain {
-    pub id: u64,
+    pub id: u32,
     pub servers: Vec<UpStream>,
 }
 
@@ -42,7 +42,7 @@ struct FileConfig {
 #[derive(Debug, Clone)]
 pub struct Config {
     pkey: PrivKey,
-    servers: HashMap<u64, Vec<UpStream>>,
+    servers: HashMap<u32, Vec<UpStream>>,
 }
 
 impl FileConfig {
@@ -55,7 +55,7 @@ impl FileConfig {
 
 impl Config {
     #[inline]
-    pub fn get_servers(&self, chain_id: u64) -> Option<&Vec<UpStream>> {
+    pub fn get_servers(&self, chain_id: u32) -> Option<&Vec<UpStream>> {
         self.servers.get(&chain_id)
     }
     #[inline]

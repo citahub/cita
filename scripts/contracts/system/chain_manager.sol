@@ -2,20 +2,14 @@ pragma solidity ^0.4.18;
 
 contract ChainManager {
 
-    // Id of self chain. Must greater than 0.
-    uint64 chainId;
-
     // Id of the parent chain. 0 means no parent chain.
-    uint64 parentChainId;
+    uint32 parentChainId;
 
     // Nodes of the parent chain.
     address[] parentChainNodes;
 
-    // Count of side chain.
-    uint64 sideChainCount;
-
     // Stores `ChainInfo` struct for each chain.
-    mapping(uint64 => ChainInfo) public sideChains;
+    mapping(uint32 => ChainInfo) public sideChains;
 
     // Default: Unknown
     enum ChainStatus { Unknown, Disable, Enable }
@@ -30,16 +24,15 @@ contract ChainManager {
         _;
     }
 
-    modifier hasSideChain(uint64 _id) {
+    modifier hasSideChain(uint32 _id) {
         require(sideChains[_id].status != ChainStatus.Unknown);
         _;
     }
 
     // Constructor.
-    function ChainManager(uint64 _id, uint64 _pid, address[] _addrs)
+    function ChainManager(uint32 _pid, address[] _addrs)
         public
     {
-        require(_id > 0);
         if (_pid == 0) {
             require(_addrs.length == 0);
         } else {
@@ -47,55 +40,68 @@ contract ChainManager {
             parentChainId = _pid;
             parentChainNodes = _addrs;
         }
-        chainId = _id;
     }
 
     function getChainId()
         public
         view
-        returns (uint64)
+        returns (uint32)
     {
-        return chainId;
+        // SysConfig Contract
+        address sysConfigAddr = 0x0000000000000000000000000000000031415926;
+        // getChainId() function
+        bytes4 getChainIdHash = bytes4(keccak256("getChainId()"));
+
+        uint256 result;
+        uint256 cid;
+
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, getChainIdHash)
+            result := call(10000, sysConfigAddr, 0, ptr, 0x4, ptr, 0x20)
+            if eq(result, 0) { revert(ptr, 0) }
+            cid := mload(ptr)
+        }
+        return uint32(cid);
     }
 
     function getParentChainId()
         public
         view
         hasParentChain
-        returns (uint64)
+        returns (uint32)
     {
         return parentChainId;
     }
 
     // Register a new side chain.
-    function newSideChain(address[] addrs)
+    function newSideChain(uint32 sideChainId, address[] addrs)
         public
-        returns (uint64)
     {
         require(addrs.length > 0);
-        sideChainCount++;
-        uint64 sideChainId = chainId + sideChainCount;
+        uint32 myChainId = getChainId();
+        require(myChainId != sideChainId);
+        require(sideChains[sideChainId].status == ChainStatus.Unknown);
         sideChains[sideChainId] = ChainInfo(ChainStatus.Disable, addrs);
         // TODO A sorted array can search data more fast.
         //      And we can remove duplicated data, simply.
-        return sideChainId;
     }
 
-    function enableSideChain(uint64 id)
+    function enableSideChain(uint32 id)
         public
         hasSideChain(id)
     {
         sideChains[id].status = ChainStatus.Enable;
     }
 
-    function disableSideChain(uint64 id)
+    function disableSideChain(uint32 id)
         public
         hasSideChain(id)
     {
         sideChains[id].status = ChainStatus.Disable;
     }
 
-    function getAuthorities(uint64 id)
+    function getAuthorities(uint32 id)
         public
         view
         returns (address[])
