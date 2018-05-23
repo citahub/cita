@@ -171,9 +171,9 @@ workflows:
       - basic_test_sha3:
           requires:
             - build_sha3
-      - basic_test_coverage_sha3:
-          requires:
-            - build_sha3
+      # - basic_test_coverage_sha3:
+      #     requires:
+      #       - build_sha3
       - integrate_test_sha3:
           requires:
             - build_sha3
