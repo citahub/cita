@@ -17,7 +17,7 @@ extern crate serde_yaml;
 extern crate util;
 
 use bincode::{serialize, Infinite};
-use clap::{App};
+use clap::App;
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use libproto::blockchain::{Block, BlockBody, BlockTxs, BlockWithProof};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -26,7 +26,7 @@ use proof::TendermintProof;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::convert::{Into, TryFrom, TryInto};
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{channel, Sender, RecvTimeoutError};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::thread::sleep;
 use util::{Address, H256, Hashable};
@@ -209,7 +209,11 @@ fn main() {
                     _ => {}
                 }
             }
-            Err(err) => { error!("timeout err {:?}", err) }
+            Err(err) => {
+                if err != RecvTimeoutError::Timeout {
+                    error!("consensus err {:?}", err)
+                }
+            }
         }
     }
 }
