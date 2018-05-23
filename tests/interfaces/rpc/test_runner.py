@@ -5,7 +5,8 @@ import sys
 import json
 import copy
 import argparse
-import commands
+import shlex
+import subprocess
 
 import jsonschema
 import requests
@@ -21,8 +22,8 @@ class FixResolver(jsonschema.RefResolver):
 
 
 def jq_check(assertion, data):
-    output = commands.getoutput('echo \'{}\' | jq "{}"'.format(
-        json.dumps(data), assertion))
+    output = subprocess.Popen(shlex.split('echo \'{}\' | jq "{}"'.format(
+        json.dumps(data), assertion)))
     return output.strip() == 'true'
 
 
