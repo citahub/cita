@@ -209,17 +209,17 @@ unset_delay_at_port() {
 
 setup_node() {
     id=$1
-    ./bin/cita setup node${id}
+    ./bin/cita setup node/${id}
 }
 
 start_node() {
     id=$1
-    ./bin/cita start node${id} ${debug}
+    ./bin/cita start node/${id} ${debug}
 }
 
 stop_node() {
     id=$1
-    ./bin/cita stop node${id}
+    ./bin/cita stop node/${id}
 }
 
 stop_all () {

@@ -22,16 +22,16 @@ echo "DONE"
 
 ################################################################################
 echo -n "2) generate config  ...  "
-./bin/admintool.sh > /dev/null 2>&1
+./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" > /dev/null 2>&1
 echo "DONE"
 
 ################################################################################
 echo -n "3) start nodes  ...  "
 for i in {0..3} ; do
-    bin/cita setup node$i  > /dev/null
+    bin/cita setup node/$i  > /dev/null
 done
 for i in {0..3} ; do
-    bin/cita start node$i trace > /dev/null &
+    bin/cita start node/$i trace > /dev/null &
 done
 echo "DONE"
 
@@ -61,7 +61,7 @@ echo $! > /tmp/cita_basic-trans_evm.pid
 
 ################################################################################
 echo -n "7) stop node3, check height growth  ...  "
-bin/cita stop node3
+bin/cita stop node/3
 timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
                                                exit 1)
@@ -69,7 +69,7 @@ echo "${timeout}s DONE"
 
 ################################################################################
 echo -n "8) stop node2, check height stopped  ...  "
-bin/cita stop node2
+bin/cita stop node/2
 timeout=$(check_height_stopped 0 30) || (echo "FAILED"
                                          echo "failed to check_height_stopped 0: ${timeout}"
                                          exit 1)
@@ -77,7 +77,7 @@ echo "${timeout}s DONE"
 
 ################################################################################
 echo -n "9) start node2, check height growth  ...  "
-bin/cita start node2 trace &
+bin/cita start node/2 trace &
 timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
                                                exit 1)
@@ -91,7 +91,7 @@ if [ $? -ne 0 ] ; then
     echo "failed to get_height: ${node0_height}"
     exit 1
 fi
-bin/cita start node3 trace &
+bin/cita start node/3 trace &
 timeout=$(check_height_sync 3 0) || (echo "FAILED"
                                      echo "failed to check_height_synch 3 0: ${timeout}"
                                      exit 1)
@@ -105,11 +105,11 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 for i in {0..3}; do
-    bin/cita stop node$i
+    bin/cita stop node/$i
 done
 # sleep 1 # TODO: change to this value will produce very different result
 for i in {0..3}; do
-    bin/cita start node$i trace &
+    bin/cita start node/$i trace &
 done
 
 timeout=$(check_height_growth_normal 0 300) || (echo "FAILED"
@@ -126,9 +126,9 @@ echo "${timeout}s DONE"
 
 ################################################################################
 echo -n "12) stop&clean node3, check height synch after restart  ...  "
-bin/cita stop node3
-bin/cita clean node3
-bin/cita start node3 trace &
+bin/cita stop node/3
+bin/cita clean node/3
+bin/cita start node/3 trace &
 timeout=$(check_height_sync 3 0) || (echo "FAILED"
                                      echo "failed to check_height_synch 3 0: ${timeout}"
                                      exit 1)
