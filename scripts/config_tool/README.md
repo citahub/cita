@@ -2,6 +2,6 @@
 
 [online doc](https://cryptape.github.io/cita/en/usage-guide/admintool/index.html)
 
-文档路径： `docs/doc/zh/usage-guide/admintool.md`
+文档路径： `docs/docs/zh/usage-guide/admintool.md`
 
-Path of doc:  `docs/doc/en/usage-guide/admintool.md`
+Path of doc:  `docs/docs/en/usage-guide/admintool.md`
