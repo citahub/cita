@@ -26,7 +26,7 @@ cleanup
 
 echo "###generate config files"
 cd ${BINARY_DIR}
-./bin/admintool.sh -n $consensus >/dev/null 2>&1
+./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" >/dev/null 2>&1
 
 
 echo "###start nodes"
@@ -44,7 +44,7 @@ msg=$(check_height_growth 0 60)|| (echo "FAILED"
                                 exit 1)
 echo "###CITA start OK"
 
-cita_pid=`cat ${BINARY_DIR}/node0/.cita-forever.pid`
+cita_pid=`cat ${BINARY_DIR}/node/0/.cita-forever.pid`
 pid_file="/proc/${cita_pid}/cmdline"
 
 while [ -e ${pid_file} ];do

@@ -1,13 +1,13 @@
 NormalContracts:
+- SysConfig:
+    address: '0x0000000000000000000000000000000031415926'
+    file: system/sys_config.sol
 - NodeManager:
     address: '0x00000000000000000000000000000000013241a2'
     file: system/node_manager.sol
 - QuotaManager:
     address: '0x00000000000000000000000000000000013241a3'
     file: system/quota_manager.sol
-- SysConfig:
-    address: '0x0000000000000000000000000000000031415926'
-    file: system/sys_config.sol
 - ChainManager:
     address: '0x00000000000000000000000000000000000000ce'
     file: system/chain_manager.sol

@@ -93,7 +93,7 @@ class GenesisData(object):
                 doc_file = os.path.join(self.contracts_docs_dir,
                                         '{}-{}.json'.format(name, doc_type))
                 with open(doc_file, 'w') as stream:
-                    json.dump(data[doc_type], stream, indent=4)
+                    json.dump(data[doc_type], stream, separators=(',', ': '),indent=4)
 
     def mine_contract_on_chain_tester(self, addr, code):
         """Mine in test chain to get data of a contract."""
@@ -155,6 +155,7 @@ class GenesisData(object):
                     alloc=self.accounts,
                 ),
                 stream,
+                separators=(',', ': '),
                 indent=4)
 
 

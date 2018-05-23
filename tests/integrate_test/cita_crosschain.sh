@@ -6,9 +6,9 @@ set -e -o pipefail
 PKEY="1234567890123456789012345678901234567890123456789012345678901234"
 PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
 
-# Chain Manager Native Contract
-CMNC_ADDR="00000000000000000000000000000000000000ce"
-CMNC_ABI=$(solc --abi scripts/contracts/system/chain_manager.sol 2>/dev/null | tail -1)
+# Chain Manager Contract
+CMC_ADDR="00000000000000000000000000000000000000ce"
+CMC_ABI=$(solc --abi scripts/contracts/system/chain_manager.sol 2>/dev/null | tail -1)
 
 # Templates for some shell commands
 ETHCALL='{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"%s", "data":"%s"}, "latest"],"id":2}'
@@ -68,6 +68,19 @@ function abi_encode () {
         "print(binascii.hexlify(tx).decode('utf-8'))"
 }
 
+function json_get () {
+    #"outfmt = sys.argv[1].strip().split('.')[1:]" \
+    local outfmt="$1"
+    python_run \
+        "import json" \
+        "import sys" \
+        "from functools import reduce" \
+        "instr = sys.stdin.read().strip()" \
+        "injson = json.loads(instr)" \
+        "outfmt = \"${outfmt}\".strip().split('.')[1:]" \
+        "print(reduce(lambda x, y: x[y], outfmt, injson))"
+}
+
 function txtool_run () {
     local chain=$1
     shift 1
@@ -81,10 +94,19 @@ function start_chain () {
     local size=$2
     title "Start chain [${chain}] ..."
     for ((id=0;id<${size};id++)); do
-        bin/cita setup ${chain}chain/${id}
+        bin/cita setup ${chain}chain/${id} && true
     done
     for ((id=0;id<${size};id++)); do
         bin/cita start ${chain}chain/${id} >/dev/null 2>&1 &
+    done
+}
+
+function stop_chain () {
+    local chain=$1
+    local size=$2
+    title "Stop chain [${chain}] ..."
+    for ((id=0;id<${size};id++)); do
+        bin/cita stop ${chain}chain/${id}
     done
 }
 
@@ -140,21 +162,19 @@ function call_contract () {
     esac
     curl -s -X POST -d "$(printf "${ETHCALL}" "0x${addr}" "0x${code}")" \
         127.0.0.1:${port} \
-        | jq .result | xargs -I {} echo {}
+        | json_get .result | xargs -I {} echo {}
 }
 
 function get_addr () {
     local chain="$1"
-    eval echo \
-        $(txtool_run ${chain} get_receipt.py --forever true \
-        | jq .contractAddress) | cut -c 3-
+    txtool_run ${chain} get_receipt.py --forever true \
+        | json_get .contractAddress | cut -c 3-
 }
 
 function get_tx () {
     local chain="$1"
-    eval echo \
-        $(txtool_run ${chain} get_receipt.py --forever true \
-        | jq .transactionHash) | cut -c 3-
+    txtool_run ${chain} get_receipt.py --forever true \
+        | json_get .transactionHash | cut -c 3-
 }
 
 function hex2dec () {
@@ -201,37 +221,40 @@ function assert_equal () {
 function test_demo_contract () {
     local data=
     local code="$(func_encode 'getChainId()')"
-    local main_chain_id=$(hex2dec $(call_contract main "${CMNC_ADDR}" "${code}"))
-    local side_chain_id=$(hex2dec $(call_contract side "${CMNC_ADDR}" "${code}"))
+    local main_chain_id=$(hex2dec $(call_contract main "${CMC_ADDR}" "${code}"))
+    local side_chain_id=$(hex2dec $(call_contract side "${CMC_ADDR}" "${code}"))
     local main_tokens=50000
     local side_tokens=30000
     local crosschain_tokens=1234
 
+    echo "main_chain_id=[${main_chain_id}]"
+    echo "side_chain_id=[${side_chain_id}]"
+
     title "Check all authorities."
     local data=$(printf "%064x" "${side_chain_id}")
-    local code="$(func_encode 'getAuthorities(uint64)')${data}"
+    local code="$(func_encode 'getAuthorities(uint32)')${data}"
     assert_equal \
         "$(parse_addresses \
-            $(call_contract main "${CMNC_ADDR}" "${code}") \
+            $(call_contract main "${CMC_ADDR}" "${code}") \
                 | xargs -I {} printf {})" \
         "$(cat sidechain/template/authorities.list \
             | sort | xargs -I {} printf {})" \
         "The authorities is not right for side chain."
     local data=$(printf "%064x" "${main_chain_id}")
-    local code="$(func_encode 'getAuthorities(uint64)')${data}"
+    local code="$(func_encode 'getAuthorities(uint32)')${data}"
     assert_equal \
         "$(parse_addresses \
-            $(call_contract side "${CMNC_ADDR}" "${code}") \
+            $(call_contract side "${CMC_ADDR}" "${code}") \
                 | xargs -I {} printf {})" \
         "$(cat mainchain/template/authorities.list \
             | sort | xargs -I {} printf {})" \
         "The authorities is not right for main chain."
 
     title "Deploy contract for both main chain and side chain."
-    deploy_contract main "../../${CONTRACT_DEMO}" \
-        "$(printf "%064x" ${main_tokens})$(printf "%064x" ${main_chain_id})"
-    deploy_contract side "../../${CONTRACT_DEMO}" \
-        "$(printf "%064x" ${side_tokens})$(printf "%064x" ${side_chain_id})"
+    deploy_contract main "${CONTRACT_DEMO}" \
+        "$(printf "%064x" ${main_tokens})"
+    deploy_contract side "${CONTRACT_DEMO}" \
+        "$(printf "%064x" ${side_tokens})"
     MAIN_CONTRACT_ADDR=$(get_addr main)
     SIDE_CONTRACT_ADDR=$(get_addr side)
     echo "Demo contract for main at [${MAIN_CONTRACT_ADDR}]."
@@ -262,14 +285,40 @@ function test_demo_contract () {
         "${side_chain_id}, '${SIDE_CONTRACT_ADDR}', ${crosschain_tokens}"
     local maintx=$(get_tx main)
 
-    title "Waiting for proof for ${maintx}."
+    title "Waiting for proof."
     local height_now=$(txtool_run main block_number.py | tail -1)
     wait_chain_for_height main $((height_now+3))
 
     title "Send tokens to side chain."
+    cat > relayer-parser.json <<EOF
+{
+    "private_key": "0x1111111111111111111111111111111111111111111111111111111111111111",
+    "chains": [
+        {
+            "id": ${main_chain_id},
+            "servers": [
+                { "url": "http://127.0.0.1:11337", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:11338", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:11339", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:11340", "timeout": { "secs": 30, "nanos": 0 } }
+            ]
+        },
+        {
+            "id": ${side_chain_id},
+            "servers": [
+                { "url": "http://127.0.0.1:21337", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:21338", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:21339", "timeout": { "secs": 30, "nanos": 0 } },
+                { "url": "http://127.0.0.1:21340", "timeout": { "secs": 30, "nanos": 0 } }
+            ]
+        }
+    ]
+}
+EOF
     local sidetx=$(./bin/cita-relayer-parser \
         -c ${main_chain_id} -t ${maintx} \
-        -f ../../tools/relayer-parser/res/relayer-parser-demo.json)
+        -f relayer-parser.json)
+    rm relayer-parser.json
 
     title "Waiting for receipt for ${sidetx}."
     txtool_run side get_receipt.py --tx=${sidetx} --forever true
@@ -290,14 +339,20 @@ function main () {
     title "Test is starting ..."
 
     local code=
-
-    cd target/install
+    local main_chain_id=3
+    local side_chain_id=4
 
     title "Install python packages for tools ..."
     pip3 install -r scripts/txtool/requirements.txt
 
+    cd target/install
+
+    title "Clean data ..."
+    rm -rf mainchain sidechain maintool sidetool
+
     title "Create tools ..."
-    mv scripts/txtool maintool && cp -r maintool sidetool
+    cp -r scripts/txtool maintool
+    cp -r scripts/txtool sidetool
     sed -i 's/port=1337/port=11337/g' maintool/txtool/config/setting.cfg
     sed -i 's/port=1337/port=21337/g' sidetool/txtool/config/setting.cfg
 
@@ -305,7 +360,7 @@ function main () {
     ./scripts/create_cita_config.py create --chain_name mainchain \
         --nodes "127.0.0.1:14000,127.0.0.1:14001,127.0.0.1:14002,127.0.0.1:14003" \
         --jsonrpc_port 11337 --ws_port 14337 --grpc_port 15000 \
-        --contract_arguments "ChainManager.current_chain_id=1"
+        --contract_arguments "SysConfig.chain_id=${main_chain_id}"
 
     start_chain main 4
 
@@ -321,15 +376,15 @@ function main () {
     ./scripts/create_cita_config.py create --chain_name sidechain \
         --authorities "${side_auths}" \
         --jsonrpc_port 21337 --ws_port 24337 --grpc_port 25000 \
-        --contract_arguments "ChainManager.current_chain_id=2" \
-            "ChainManager.parent_chain_id=1" \
+        --contract_arguments "SysConfig.chain_id=${side_chain_id}" \
+            "ChainManager.parent_chain_id=${main_chain_id}" \
             "ChainManager.parent_chain_authorities=${main_auths}"
 
     wait_chain_for_height main 5
 
-    title "Register side chain ...."
-    send_contract main "${CMNC_ADDR}" "${CMNC_ABI}" \
-        "newSideChain" "[${side_auths}]"
+    title "Register side chain ..."
+    send_contract main "${CMC_ADDR}" "${CMC_ABI}" \
+        "newSideChain" "${side_chain_id}, [${side_auths}]"
 
     title "Create side chain configs ..."
     for ((id=0;id<4;id++)); do
@@ -342,12 +397,17 @@ function main () {
 
     start_chain side 4
 
-    title "Enable side chain ...."
-    send_contract main "${CMNC_ADDR}" "${CMNC_ABI}" \
-        "enableSideChain" "2"
+    title "Enable side chain ..."
+    send_contract main "${CMC_ADDR}" "${CMC_ABI}" \
+        "enableSideChain" "${side_chain_id}"
 
-    title "Test the demo contract ...."
+    title "Test the demo contract ..."
     test_demo_contract
+
+    title "Clean test data."
+    stop_chain side 4
+    stop_chain main 4
+    rm -rf mainchain sidechain maintool sidetool
 
     cd ../..
 

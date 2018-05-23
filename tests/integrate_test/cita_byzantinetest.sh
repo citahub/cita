@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-ECONOMICAL_MODEL="quota"
-if [ -n $1 ]; then
-    ECONOMICAL_MODEL=$1
+ECONOMICAL_MODEL="0"
+if [ -n $1 ] && [ "$1" = "charge" ]; then
+    ECONOMICAL_MODEL="1"
 fi
 
 if [[ `uname` == 'Darwin' ]]
@@ -28,16 +28,17 @@ echo "DONE"
 ################################################################################
 
 echo -n "2) generate config  ...  "
-./bin/admintool.sh -E ${ECONOMICAL_MODEL} > /dev/null
+./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
+                                --contract_arguments "SysConfig.economical_model=${ECONOMICAL_MODEL}" > /dev/null
 echo "DONE"
 
 ################################################################################
 echo -n "3) start nodes  ...  "
 for i in {0..3} ; do
-    bin/cita setup node$i  > /dev/null
+    bin/cita setup node/$i  > /dev/null
 done
 for i in {0..3} ; do
-    bin/cita start node$i debug > /dev/null &
+    bin/cita start node/$i debug > /dev/null &
 done
 echo "DONE"
 
