@@ -985,6 +985,7 @@ mod tests {
     use self::rustc_hex::FromHex;
     use super::*;
     use action_params::{ActionParams, ActionValue};
+    use cita_crypto::{CreateKey, KeyPair};
     use cita_types::{Address, H256, U256};
     use engines::NullEngine;
     use env_info::EnvInfo;
@@ -995,6 +996,105 @@ mod tests {
     use std::sync::Arc;
     use tests::helpers::*;
     use trace::{ExecutiveTracer, ExecutiveVMTracer};
+    use types::transaction::Transaction;
+
+    #[test]
+    fn test_transfer() {
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Create,
+            value: U256::from(17),
+            data: vec![],
+            gas: U256::from(100_000),
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1,
+            version: 1,
+        }.fake_sign(keypair.address().clone());
+        let sender = t.sender();
+        let contract = contract_address(t.sender(), &U256::zero());
+
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
+        let engine = NullEngine::default();
+        let mut state = get_temp_state();
+        state
+            .add_balance(&sender, &U256::from(18 + 100_000))
+            .unwrap();
+        let mut info = EnvInfo::default();
+        info.gas_limit = U256::from(100_000);
+
+        let executed = {
+            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let opts = TransactOptions {
+                tracing: false,
+                vm_tracing: false,
+                check_permission: false,
+                check_quota: true,
+                economical_model: EconomicalModel::Charge,
+            };
+            ex.transact(&t, opts).unwrap()
+        };
+
+        assert_eq!(executed.gas, U256::from(100_000));
+        assert_eq!(executed.gas_used, U256::from(100));
+        assert_eq!(executed.refunded, U256::from(0));
+        assert_eq!(executed.logs.len(), 0);
+        assert_eq!(executed.contracts_created.len(), 0);
+        assert_eq!(
+            state.balance(&sender).unwrap(),
+            U256::from(18 + 100_000 - 17 - 100)
+        );
+        assert_eq!(state.balance(&contract).unwrap(), U256::from(17));
+        assert_eq!(state.nonce(&sender).unwrap(), U256::from(1));
+        // assert_eq!(state.storage_at(&contract, &H256::new()).unwrap(), H256::from(&U256::from(1)));
+    }
+
+    #[test]
+    fn test_not_enough_cash() {
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Create,
+            value: U256::from(43),
+            data: vec![],
+            gas: U256::from(100_000),
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1,
+            version: 1,
+        }.fake_sign(keypair.address().clone());
+
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
+        let engine = NullEngine::default();
+        let mut state = get_temp_state();
+        state.add_balance(t.sender(), &U256::from(100_042)).unwrap();
+        let mut info = EnvInfo::default();
+        info.gas_limit = U256::from(100_000);
+
+        let result = {
+            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let opts = TransactOptions {
+                tracing: false,
+                vm_tracing: false,
+                check_permission: false,
+                check_quota: true,
+                economical_model: EconomicalModel::Charge,
+            };
+            ex.transact(&t, opts)
+        };
+
+        match result {
+            Err(ExecutionError::NotEnoughCash { required, got })
+                if required == U512::from(100_043) && got == U512::from(100_042) =>
+            {
+                ()
+            }
+            _ => assert!(false, "Expected not enough cash error. {:?}", result),
+        }
+    }
 
     #[test]
     fn test_create_contract_out_of_gas() {
