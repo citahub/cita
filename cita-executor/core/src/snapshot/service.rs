@@ -24,8 +24,8 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
 //use super::{ManifestData, StateRebuilder, RestorationStatus, SnapshotService};
-use super::{BlockRebuilder, ManifestData, RestorationStatus, StateRebuilder};
 use super::io::{LooseReader, LooseWriter, SnapshotReader, SnapshotWriter};
+use super::{BlockRebuilder, ManifestData, RestorationStatus, StateRebuilder};
 
 use error::Error;
 

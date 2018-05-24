@@ -20,22 +20,22 @@ use std::collections::HashSet;
 use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::usize::MAX;
 
 //use super::{SnapshotService};
-use super::{BlockRebuilder, ManifestData, RestorationStatus};
 use super::io::{LooseReader, LooseWriter, SnapshotReader, SnapshotWriter};
+use super::{BlockRebuilder, ManifestData, RestorationStatus};
 
 use cita_types::H256;
 use error::Error;
 
-use util::{Mutex, RwLock, RwLockReadGuard};
-use util::Bytes;
-use util::UtilError;
 use util::kvdb::{Database, DatabaseConfig};
 use util::snappy;
+use util::Bytes;
+use util::UtilError;
+use util::{Mutex, RwLock, RwLockReadGuard};
 
 use state_db::StateDB;
 use util::journaldb::{self, Algorithm};
@@ -154,8 +154,10 @@ impl Restoration {
 
         let block_chunks = manifest.block_hashes.iter().cloned().collect();
 
-        let raw_db =
-            Arc::new(Database::open(params.db_config, &*params.db_path.to_string_lossy()).map_err(UtilError::from)?);
+        let raw_db = Arc::new(
+            Database::open(params.db_config, &*params.db_path.to_string_lossy())
+                .map_err(UtilError::from)?,
+        );
 
         let block_rebuilder = BlockRebuilder::new(
             params.chain.clone(),

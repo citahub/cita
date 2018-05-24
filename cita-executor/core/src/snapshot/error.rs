@@ -106,7 +106,9 @@ impl fmt::Display for Error {
                 "Incomplete snapshot: {} contract abis not found.",
                 missing.len()
             ),
-            Error::UnrecognizedCodeState(state) => write!(f, "Unrecognized code encoding ({})", state),
+            Error::UnrecognizedCodeState(state) => {
+                write!(f, "Unrecognized code encoding ({})", state)
+            }
             Error::RestorationAborted => write!(f, "Snapshot restoration aborted."),
             Error::Io(ref err) => err.fmt(f),
             Error::Decoder(ref err) => err.fmt(f),

@@ -25,9 +25,9 @@ use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
+use super::error::Error;
 use cita_types::traits::LowerHex;
 use cita_types::H256;
-use super::error::Error;
 use rlp::{RlpStream, UntrustedRlp};
 use util::Bytes;
 

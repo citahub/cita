@@ -52,9 +52,9 @@ use util::datapath::DataPath;
 use util::kvdb::DatabaseConfig;
 
 use core::snapshot;
-use core::snapshot::Progress;
 use core::snapshot::io::{PackedReader, PackedWriter};
 use core::snapshot::service::{Service as SnapshotService, ServiceParams as SnapServiceParams};
+use core::snapshot::Progress;
 
 /// Message forwarding and query data
 #[derive(Clone)]

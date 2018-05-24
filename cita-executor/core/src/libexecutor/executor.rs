@@ -85,7 +85,8 @@ impl Config {
 impl BloomGroupDatabase for Executor {
     fn blooms_at(&self, position: &GroupPosition) -> Option<BloomGroup> {
         let position = LogGroupPosition::from(position.clone());
-        let result = self.db
+        let result = self
+            .db
             .read()
             .read(db::COL_EXTRA, &position)
             .map(Into::into);

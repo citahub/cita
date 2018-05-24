@@ -30,22 +30,22 @@ use db::*;
 use libexecutor::executor::Executor;
 use rlp::{DecoderError, Encodable, RlpStream, UntrustedRlp};
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
+use util::hashdb::DBValue;
+use util::journaldb::JournalDB;
+use util::journaldb::{self, Algorithm};
+use util::kvdb::{DBTransaction, Database, KeyValueDB};
+use util::HASH_NULL_RLP;
+use util::{sha3, Mutex};
 use util::{snappy, Bytes, HashDB};
 use util::{Trie, TrieDB, TrieDBMut, TrieMut, HASH_EMPTY};
-use util::{Mutex, sha3};
-use util::HASH_NULL_RLP;
-use util::hashdb::DBValue;
-use util::journaldb::{self, Algorithm};
-use util::journaldb::JournalDB;
-use util::kvdb::{DBTransaction, Database, KeyValueDB};
 
-pub mod service;
-pub mod io;
 pub mod account;
 pub mod error;
+pub mod io;
+pub mod service;
 pub use self::error::Error;
 use self::io::SnapshotReader;
 use self::io::SnapshotWriter;
@@ -353,7 +353,8 @@ impl<'a> BlockChunker<'a> {
         let mut loaded_size = 0;
         let mut last = self.current_hash;
 
-        let genesis_block: Header = self.executor
+        let genesis_block: Header = self
+            .executor
             .block_header_by_height(0)
             .unwrap_or(Header::default());
         let genesis_hash = genesis_block.hash();
@@ -366,7 +367,8 @@ impl<'a> BlockChunker<'a> {
 
             trace!("Current_hash: {:?}", self.current_hash);
 
-            let header = self.executor
+            let header = self
+                .executor
                 .block_header_by_hash(self.current_hash)
                 .ok_or(Error::BlockNotFound(self.current_hash))?;
 
@@ -404,7 +406,8 @@ impl<'a> BlockChunker<'a> {
     fn write_chunk(&mut self, last: H256) -> Result<(), Error> {
         trace!("prepared block chunk with {} blocks", self.rlps.len());
 
-        let last_header = self.executor
+        let last_header = self
+            .executor
             .block_header_by_hash(last)
             .ok_or(Error::BlockNotFound(last))?;
 
@@ -476,7 +479,7 @@ pub struct StateRebuilder {
     state_root: H256,
     known_code: HashMap<H256, Address>, // code hashes mapped to first account with this code.
     missing_code: HashMap<H256, Vec<Address>>, // maps code hashes to lists of accounts missing that code.
-    known_abi: HashMap<H256, Address>,  // abi hashes mapped to first account with this abi.
+    known_abi: HashMap<H256, Address>,         // abi hashes mapped to first account with this abi.
     missing_abi: HashMap<H256, Vec<Address>>, // maps abi hashes to lists of accounts missing that abi.
     bloom: Bloom,
     known_storage_roots: HashMap<Address, H256>, // maps account hashes to last known storage root. Only
@@ -526,7 +529,8 @@ impl StateRebuilder {
 
         // patch up all missing code. must be done after collecting all new missing code entries.
         for (code_hash, code, first_with) in status.new_code {
-            for addr in self.missing_code
+            for addr in self
+                .missing_code
                 .remove(&code_hash)
                 .unwrap_or_else(Vec::new)
             {
@@ -558,7 +562,8 @@ impl StateRebuilder {
 
         // batch trie writes
         {
-            let mut account_trie = TrieDBMut::from_existing(self.db.as_hashdb_mut(), &mut self.state_root)?;
+            let mut account_trie =
+                TrieDBMut::from_existing(self.db.as_hashdb_mut(), &mut self.state_root)?;
 
             for (addr, thin_rlp) in pairs {
                 if !flag.load(Ordering::SeqCst) {
@@ -725,7 +730,12 @@ pub struct BlockRebuilder {
 
 impl BlockRebuilder {
     /// Create a new state rebuilder to write into the given backing DB.
-    pub fn new(executor: Arc<Executor>, db: Arc<KeyValueDB>, manifest: &ManifestData, snapshot_blocks: u64) -> Self {
+    pub fn new(
+        executor: Arc<Executor>,
+        db: Arc<KeyValueDB>,
+        manifest: &ManifestData,
+        snapshot_blocks: u64,
+    ) -> Self {
         BlockRebuilder {
             executor: executor,
             db: db.clone(),
@@ -746,7 +756,9 @@ impl BlockRebuilder {
         trace!("restoring block chunk with {} blocks.", num_blocks);
 
         if self.fed_blocks + num_blocks > self.snapshot_blocks {
-            return Err(Error::TooManyBlocks(self.snapshot_blocks, self.fed_blocks + num_blocks).into());
+            return Err(
+                Error::TooManyBlocks(self.snapshot_blocks, self.fed_blocks + num_blocks).into(),
+            );
         }
 
         // todo: assert here that these values are consistent with chunks being in order.
@@ -767,7 +779,9 @@ impl BlockRebuilder {
 
             if is_best {
                 if header.hash() != self.best_hash {
-                    return Err(Error::WrongBlockHash(cur_number, self.best_hash, header.hash()).into());
+                    return Err(
+                        Error::WrongBlockHash(cur_number, self.best_hash, header.hash()).into(),
+                    );
                 }
 
                 if header.state_root() != &self.best_root {
@@ -836,7 +850,8 @@ impl BlockRebuilder {
             block_hash: genesis_hash,
             proof: vec![],
         });*/
-        let genesis_header = self.executor
+        let genesis_header = self
+            .executor
             .block_header_by_height(0)
             .unwrap_or(Header::default());
         let hash = genesis_header.hash();

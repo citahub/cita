@@ -255,7 +255,8 @@ impl Config {
 impl BloomGroupDatabase for Chain {
     fn blooms_at(&self, position: &BloomGroupPosition) -> Option<BloomGroup> {
         let position = LogGroupPosition::from(position.clone());
-        let result = self.db
+        let result = self
+            .db
             .read()
             .read_with_cache(db::COL_EXTRA, &self.blocks_blooms, &position)
             .map(Into::into);
@@ -409,7 +410,8 @@ impl Chain {
     }
 
     pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
-        let result = self.db
+        let result = self
+            .db
             .read()
             .read_with_cache(db::COL_EXTRA, &self.block_hashes, &hash);
         self.cache_man.lock().note_used(CacheId::BlockHashes(hash));
@@ -701,7 +703,8 @@ impl Chain {
                 return Some(header.clone());
             }
         }
-        let result = self.db
+        let result = self
+            .db
             .read()
             .read_with_cache(db::COL_HEADERS, &self.block_headers, &idx);
         self.cache_man.lock().note_used(CacheId::BlockHeaders(idx));
@@ -728,10 +731,10 @@ impl Chain {
             .map_or(None, |h| self.block_body_by_height(h))
     }
 
-
     /// Get block body by height
     fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
-        let result = self.db
+        let result = self
+            .db
             .read()
             .read_with_cache(db::COL_BODIES, &self.block_bodies, &number);
         self.cache_man
@@ -757,9 +760,10 @@ impl Chain {
 
     /// Get address of transaction by hash.
     fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
-        let result = self.db
-            .read()
-            .read_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash);
+        let result =
+            self.db
+                .read()
+                .read_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash);
         self.cache_man
             .lock()
             .note_used(CacheId::TransactionAddresses(hash));
@@ -1174,7 +1178,8 @@ impl Chain {
 
     /// Get receipts of block with given hash.
     pub fn block_receipts(&self, hash: H256) -> Option<BlockReceipts> {
-        let result = self.db
+        let result = self
+            .db
             .read()
             .read_with_cache(db::COL_EXTRA, &self.block_receipts, &hash);
         self.cache_man

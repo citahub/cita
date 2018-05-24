@@ -19,8 +19,8 @@ pub mod block;
 pub mod cache;
 pub mod call_request;
 pub mod executor;
-pub mod genesis;
 pub mod extras;
+pub mod genesis;
 pub mod govm_adapter;
 pub mod transaction;
 

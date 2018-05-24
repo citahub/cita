@@ -21,8 +21,8 @@ use cita_types::{Address, H256, U256};
 use rlp::{RlpStream, UntrustedRlp};
 use snapshot::Error;
 use std::collections::HashSet;
-use util::hashdb::HashDB;
 use types::basic_account::BasicAccount;
+use util::hashdb::HashDB;
 use util::{Bytes, Trie, TrieDB, TrieDBMut, TrieMut};
 use util::{HASH_EMPTY, HASH_NULL_RLP};
 
