@@ -31,13 +31,15 @@ const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 // than PREFERRED_CHUNK_SIZE so allow some threshold here.
 //const MAX_CHUNK_SIZE: usize = PREFERRED_CHUNK_SIZE / 4 * 5;
 use header::Header;
-// use rlp::*;
+
 use cita_types::H256;
 use rlp::{DecoderError, Encodable, RlpStream, UntrustedRlp};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+
 use std::time::Duration;
-use util::kvdb::*;
+
+use util::kvdb::{DBTransaction, KeyValueDB};
 use util::{sha3, Mutex};
 use util::{snappy, Bytes};
 
@@ -50,13 +52,13 @@ use self::io::SnapshotReader;
 use self::io::SnapshotWriter;
 use self::service::{Service, SnapshotService};
 use super::header::BlockNumber;
-use db::*;
+use db::{CacheUpdatePolicy, Writable, COL_BODIES, COL_EXTRA, COL_HEADERS};
 
 use types::ids::BlockId;
 
-use libchain::block::*;
+use libchain::block::{Block, BlockBody};
 use libchain::chain::Chain;
-use libchain::extras::*;
+use libchain::extras::{BlockReceipts, CurrentHash, CurrentHeight, LogGroupPosition};
 
 use receipt::Receipt;
 
