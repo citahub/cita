@@ -13,6 +13,7 @@ extern crate proof;
 extern crate pubsub;
 #[macro_use]
 extern crate serde_derive;
+extern crate cita_types as types;
 extern crate serde_yaml;
 extern crate util;
 
@@ -26,10 +27,11 @@ use proof::TendermintProof;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::convert::{Into, TryFrom, TryInto};
-use std::sync::mpsc::{channel, Sender, RecvTimeoutError};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
 use std::thread::sleep;
-use util::{Address, H256, Hashable};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use types::{Address, H256};
+use util::Hashable;
 
 pub type PubType = (String, Vec<u8>);
 
@@ -186,9 +188,14 @@ fn main() {
                         }
 
                         // current timestamp
-                        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("get timestamp error").as_secs();
+                        let timestamp = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("get timestamp error")
+                            .as_secs();
 
-                        if let Some(block_txs) = received_block_txs.remove(&(rich_status.height as usize)) {
+                        if let Some(block_txs) =
+                            received_block_txs.remove(&(rich_status.height as usize))
+                        {
                             send_height = rich_status.height + 1;
                             send_block(
                                 H256::from_slice(&rich_status.hash),

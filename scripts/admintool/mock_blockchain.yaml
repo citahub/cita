@@ -1,8 +1,0 @@
-# [Goals]：
-#   - Should create some contracts, then send some transactions call them later.
-#   - Include some token contracts (See: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md)
-#   - Include instructions like: revert, returndatasize, returndatacopy
-
-privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
-
-blocks: []
