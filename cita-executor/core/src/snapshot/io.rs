@@ -27,10 +27,13 @@ use std::path::{Path, PathBuf};
 
 use cita_types::traits::LowerHex;
 use cita_types::H256;
+use super::error::Error;
 use rlp::{RlpStream, UntrustedRlp};
 use util::Bytes;
 
 use super::ManifestData;
+
+const SNAPSHOT_VERSION: u64 = 1;
 
 /// Something which can write snapshots.
 /// Writing the same chunk multiple times will lead to implementation-defined
@@ -40,7 +43,8 @@ pub trait SnapshotWriter {
     fn write_state_chunk(&mut self, hash: H256, chunk: &[u8]) -> io::Result<()>;
 
     /// Write a compressed block chunk.
-    //fn write_block_chunk(&mut self, hash: H256, chunk: &[u8]) -> io::Result<()>;
+    fn write_block_chunk(&mut self, hash: H256, chunk: &[u8]) -> io::Result<()>;
+
     /// Complete writing. The manifest's chunk lists must be consistent
     /// with the chunks written.
     fn finish(self, manifest: ManifestData) -> io::Result<()>
@@ -51,26 +55,6 @@ pub trait SnapshotWriter {
 // (hash, len, offset)
 #[derive(RlpEncodable, RlpDecodable)]
 pub struct ChunkInfo(H256, u64, u64);
-
-/*
-impl Encodable for ChunkInfo {
-	fn rlp_append(&self, s: &mut RlpStream) {
-		s.begin_list(3);
-		s.append(&self.0).append(&self.1).append(&self.2);
-	}
-}
-
-impl rlp::Decodable for ChunkInfo {
-	fn decode<D: rlp::Decoder>(decoder: &D) -> Result<Self, rlp::DecoderError> {
-		let d = decoder.as_rlp();
-
-		let hash = try!(d.val_at(0));
-		let len = try!(d.val_at(1));
-		let off = try!(d.val_at(2));
-		Ok(ChunkInfo(hash, len, off))
-	}
-}
-*/
 
 /// A packed snapshot writer. This writes snapshots to a single concatenated file.
 ///
@@ -85,6 +69,7 @@ impl rlp::Decodable for ChunkInfo {
 pub struct PackedWriter {
     pub file: File,
     pub state_hashes: Vec<ChunkInfo>,
+    pub block_hashes: Vec<ChunkInfo>,
     pub cur_len: u64,
 }
 
@@ -94,6 +79,7 @@ impl PackedWriter {
         Ok(PackedWriter {
             file: File::create(path)?,
             state_hashes: Vec::new(),
+            block_hashes: Vec::new(),
             cur_len: 0,
         })
     }
@@ -110,16 +96,27 @@ impl SnapshotWriter for PackedWriter {
         Ok(())
     }
 
+    fn write_block_chunk(&mut self, hash: H256, chunk: &[u8]) -> io::Result<()> {
+        self.file.write_all(chunk)?;
+
+        let len = chunk.len() as u64;
+        self.block_hashes.push(ChunkInfo(hash, len, self.cur_len));
+
+        self.cur_len += len;
+        Ok(())
+    }
+
     fn finish(mut self, manifest: ManifestData) -> io::Result<()> {
         // we ignore the hashes fields of the manifest under the assumption that
         // they are consistent with ours.
-        let mut stream = RlpStream::new_list(4);
+        let mut stream = RlpStream::new_list(6);
         stream
-			.append_list(&self.state_hashes)
-			//.append(&self.block_hashes)
-			.append(&manifest.state_root)
-			.append(&manifest.block_number)
-			.append(&manifest.block_hash);
+            .append(&SNAPSHOT_VERSION)
+            .append_list(&self.state_hashes)
+            .append_list(&self.block_hashes)
+            .append(&manifest.state_root)
+            .append(&manifest.block_number)
+            .append(&manifest.block_hash);
 
         let manifest_rlp = stream.out();
 
@@ -174,6 +171,10 @@ impl SnapshotWriter for LooseWriter {
         self.write_chunk(hash, chunk)
     }
 
+    fn write_block_chunk(&mut self, hash: H256, chunk: &[u8]) -> io::Result<()> {
+        self.write_chunk(hash, chunk)
+    }
+
     fn finish(self, manifest: ManifestData) -> io::Result<()> {
         let rlp = manifest.to_rlp();
         let mut path = self.dir.clone();
@@ -200,6 +201,7 @@ pub trait SnapshotReader {
 pub struct PackedReader {
     file: File,
     state_hashes: HashMap<H256, (u64, u64)>, // len, offset
+    block_hashes: HashMap<H256, (u64, u64)>, // len, offset
     manifest: ManifestData,
 }
 
@@ -207,7 +209,7 @@ impl PackedReader {
     /// Create a new `PackedReader` for the file at the given path.
     /// This will fail if any io errors are encountered or the file
     /// is not a valid packed snapshot.
-    pub fn new(path: &Path) -> Result<Option<Self>, ::error::Error> {
+    pub fn new(path: &Path) -> Result<Option<Self>, Error> {
         let mut file = File::open(path)?;
         let file_len = file.metadata()?.len();
         if file_len < 8 {
@@ -239,18 +241,27 @@ impl PackedReader {
 
         let rlp = UntrustedRlp::new(&manifest_buf);
 
-        let state: Vec<ChunkInfo> = rlp.list_at(0)?;
+        let version = rlp.val_at(0)?;
+
+        if version > SNAPSHOT_VERSION {
+            return Err(Error::VersionNotSupported(version));
+        }
+
+        let state: Vec<ChunkInfo> = rlp.list_at(1)?;
+        let blocks: Vec<ChunkInfo> = rlp.list_at(2)?;
 
         let manifest = ManifestData {
             state_hashes: state.iter().map(|c| c.0).collect(),
-            state_root: rlp.val_at(1)?,
-            block_number: rlp.val_at(2)?,
-            block_hash: rlp.val_at(3)?,
+            block_hashes: blocks.iter().map(|c| c.0).collect(),
+            state_root: rlp.val_at(3)?,
+            block_number: rlp.val_at(4)?,
+            block_hash: rlp.val_at(5)?,
         };
 
         Ok(Some(PackedReader {
             file: file,
             state_hashes: state.into_iter().map(|c| (c.0, (c.1, c.2))).collect(),
+            block_hashes: blocks.into_iter().map(|c| (c.0, (c.1, c.2))).collect(),
             manifest: manifest,
         }))
     }
@@ -265,6 +276,7 @@ impl SnapshotReader for PackedReader {
         let &(len, off) = self
             .state_hashes
             .get(&hash)
+            .or_else(|| self.block_hashes.get(&hash))
             .expect("only chunks in the manifest can be requested; qed");
 
         let mut file = &self.file;

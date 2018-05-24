@@ -17,17 +17,17 @@
 //! Account state encoding and decoding
 
 use account_db::{AccountDB, AccountDBMut};
-use cita_types::{H256, U256};
+use cita_types::{Address, H256, U256};
 use rlp::{RlpStream, UntrustedRlp};
 use snapshot::Error;
 use std::collections::HashSet;
-use types::basic_account::BasicAccount as Account;
 use util::hashdb::HashDB;
+use types::basic_account::BasicAccount;
 use util::{Bytes, Trie, TrieDB, TrieDBMut, TrieMut};
 use util::{HASH_EMPTY, HASH_NULL_RLP};
 
 // An empty account -- these were replaced with RLP null data for a space optimization in v1.
-const ACC_EMPTY: Account = Account {
+const ACC_EMPTY: BasicAccount = BasicAccount {
     nonce: U256([0, 0, 0, 0]),
     balance: U256([0, 0, 0, 0]),
     storage_root: HASH_NULL_RLP,
@@ -65,42 +65,24 @@ impl CodeState {
 // account address hash, account properties and the storage. Each item contains at most `max_storage_items`
 // storage records split according to snapshot format definition.
 pub fn to_fat_rlps(
-    account_hash: &H256,
-    acc: &Account,
+    address: &Address,
+    acc: &BasicAccount,
     acct_db: &AccountDB,
     used_code: &mut HashSet<H256>,
+    used_abi: &mut HashSet<H256>,
     first_chunk_size: usize,
     max_chunk_size: usize,
 ) -> Result<Vec<Bytes>, Error> {
-    info!("account structure to_fat_rlps entry");
-
-    /*
-    let mut chunks = Vec::new();
-    let mut account_stream = RlpStream::new_list(2);
-    account_stream.append(account_hash);
-    account_stream.append(&acc.nonce);
-    chunks.push(account_stream.out());
-    return Ok(chunks);
-    */
-
-    //TODO: storage
     let db = TrieDB::new(acct_db, &acc.storage_root).unwrap();
     let mut chunks = Vec::new();
     let mut db_iter = db.iter()?;
     let mut target_chunk_size = first_chunk_size;
     let mut account_stream = RlpStream::new_list(2);
     let mut leftover: Option<Vec<u8>> = None;
-    info!(
-        "====account_hash:{:?},acc.nonce:{:?},acc.code_hash:{:?}",
-        account_hash, acc.nonce, acc.code_hash
-    );
+
     loop {
-        info!(
-            "account_hash:{:?},acc.nonce:{:?},acc.code_hash:{:?}",
-            account_hash, acc.nonce, acc.code_hash
-        );
-        account_stream.append(account_hash);
-        account_stream.begin_list(6);
+        account_stream.append(address);
+        account_stream.begin_list(7);
 
         account_stream.append(&acc.nonce).append(&acc.balance);
 
@@ -125,7 +107,28 @@ pub fn to_fat_rlps(
                 }
             }
         }
-        account_stream.append(&acc.abi_hash);
+
+        // [has_abi, abi_hash].
+        if acc.abi_hash == HASH_EMPTY {
+            account_stream
+                .append(&CodeState::Empty.raw())
+                .append_empty_data();
+        } else if used_abi.contains(&acc.abi_hash) {
+            account_stream
+                .append(&CodeState::Hash.raw())
+                .append(&acc.abi_hash);
+        } else {
+            match acct_db.get(&acc.abi_hash) {
+                Some(c) => {
+                    used_abi.insert(acc.abi_hash.clone());
+                    account_stream.append(&CodeState::Inline.raw()).append(&&*c);
+                }
+                None => {
+                    info!("abi lookup failed during snapshot");
+                    account_stream.append(&false).append_empty_data();
+                }
+            }
+        }
 
         account_stream.begin_unbounded_list();
         if account_stream.len() > target_chunk_size {
@@ -139,7 +142,7 @@ pub fn to_fat_rlps(
                 return Err(Error::ChunkTooSmall);
             }
         }
-        info!("chunks 1:{:?}", chunks);
+
         loop {
             match db_iter.next() {
                 Some(Ok((k, v))) => {
@@ -155,10 +158,7 @@ pub fn to_fat_rlps(
                         chunks.push(stream.out());
                         target_chunk_size = max_chunk_size;
                         leftover = Some(pair.into_vec());
-                        info!("chunks some:{:?}", chunks);
-                        for x in &chunks {
-                            info!("for_each chunks some:{:?}", x);
-                        }
+
                         break;
                     }
                 }
@@ -169,16 +169,11 @@ pub fn to_fat_rlps(
                     account_stream.complete_unbounded_list();
                     let stream = ::std::mem::replace(&mut account_stream, RlpStream::new_list(2));
                     chunks.push(stream.out());
-                    info!("chunks none:{:?}", chunks);
-                    for x in &chunks {
-                        info!("for_each chunks none:{:?}", x);
-                    }
+
                     return Ok(chunks);
                 }
             }
-            info!("chunks 2:{:?}", chunks);
         }
-        info!("chunks 3:{:?}", chunks);
     }
 }
 
@@ -189,12 +184,12 @@ pub fn from_fat_rlp(
     acct_db: &mut AccountDBMut,
     rlp: UntrustedRlp,
     mut storage_root: H256,
-) -> Result<(Account, Option<Bytes>), Error> {
+) -> Result<(BasicAccount, Option<Bytes>, Option<Bytes>), Error> {
     //use trie::{TrieDBMut, TrieMut};
 
     // check for special case of empty account.
     if rlp.is_empty() {
-        return Ok((ACC_EMPTY, None));
+        return Ok((ACC_EMPTY, None, None));
     }
 
     let nonce = rlp.val_at(0)?;
@@ -220,14 +215,34 @@ pub fn from_fat_rlp(
         }
     };
 
-    let abi_hash = rlp.val_at(4)?;
+    let abi_state: CodeState = {
+        let raw: u8 = rlp.val_at(4)?;
+        CodeState::from(raw)?
+    };
+
+    // load the abi if it exists.
+    let (abi_hash, new_abi) = match abi_state {
+        CodeState::Empty => (HASH_EMPTY, None),
+        CodeState::Inline => {
+            let abi: Bytes = rlp.val_at(5)?;
+            let abi_hash = acct_db.insert(&abi);
+
+            (abi_hash, Some(abi))
+        }
+        CodeState::Hash => {
+            let abi_hash = rlp.val_at(5)?;
+
+            (abi_hash, None)
+        }
+    };
+
     {
         let mut storage_trie = if storage_root.is_zero() {
             TrieDBMut::new(acct_db, &mut storage_root)
         } else {
             TrieDBMut::from_existing(acct_db, &mut storage_root)?
         };
-        let pairs = rlp.at(5)?;
+        let pairs = rlp.at(6)?;
         for pair_rlp in pairs.iter() {
             let k: Bytes = pair_rlp.val_at(0)?;
             let v: Bytes = pair_rlp.val_at(1)?;
@@ -236,7 +251,7 @@ pub fn from_fat_rlp(
         }
     }
 
-    let acc = Account {
+    let acc = BasicAccount {
         nonce: nonce,
         storage_root: storage_root,
         code_hash: code_hash,
@@ -244,5 +259,5 @@ pub fn from_fat_rlp(
         abi_hash: abi_hash,
     };
 
-    Ok((acc, new_code))
+    Ok((acc, new_code, new_abi))
 }

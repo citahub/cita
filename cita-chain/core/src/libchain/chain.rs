@@ -228,7 +228,7 @@ pub enum BlockSource {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-enum CacheId {
+pub enum CacheId {
     BlockHeaders(BlockNumber),
     BlockBodies(BlockNumber),
     BlockHashes(H256),
@@ -255,8 +255,8 @@ impl Config {
 impl BloomGroupDatabase for Chain {
     fn blooms_at(&self, position: &BloomGroupPosition) -> Option<BloomGroup> {
         let position = LogGroupPosition::from(position.clone());
-        let result = self
-            .db
+        let result = self.db
+            .read()
             .read_with_cache(db::COL_EXTRA, &self.blocks_blooms, &position)
             .map(Into::into);
         self.cache_man
@@ -277,15 +277,15 @@ pub enum BlockInQueue {
 // TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
 // 所有直接unwrap的地方都可能会报错！
 pub struct Chain {
-    blooms_config: BloomChainConfig,
+    pub blooms_config: BloomChainConfig,
     pub current_header: RwLock<Header>,
     // Chain current height
     pub current_height: AtomicUsize,
     // Max height in block map
     pub max_store_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
-    pub db: Arc<KeyValueDB>,
-    pub state_db: StateDB,
+    pub db: RwLock<Arc<KeyValueDB>>,
+    pub state_db: RwLock<StateDB>,
 
     // block cache
     pub block_headers: RwLock<HashMap<BlockNumber, Header>>,
@@ -303,8 +303,8 @@ pub struct Chain {
     pub account_gas_limit: RwLock<ProtoAccountGasLimit>,
     pub check_quota: AtomicBool,
 
-    cache_man: Mutex<CacheManager<CacheId>>,
-    polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
+    pub cache_man: Mutex<CacheManager<CacheId>>,
+    pub polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
 
     /// Proof type
     pub prooftype: u8,
@@ -312,6 +312,8 @@ pub struct Chain {
 
 /// Get latest status
 pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
+    // CANNOT replace CurrentHash & hash with CurrentHeight to get current_height,
+    // because CurrentHeight is set after BlockBody is stored, and CurrentHash is set after BlockHeader is stored.
     let h: Option<H256> = db.read(db::COL_EXTRA, &CurrentHash);
     if let Some(hash) = h {
         let hi: Option<BlockNumber> = db.read(db::COL_EXTRA, &hash);
@@ -371,7 +373,6 @@ impl Chain {
             blooms_config: blooms_config,
             current_header: RwLock::new(header.clone()),
             current_height: current_height,
-            // TODO need to get saved body
             max_store_height: max_store_height,
             block_map: RwLock::new(BTreeMap::new()),
             block_headers: RwLock::new(HashMap::new()),
@@ -381,8 +382,8 @@ impl Chain {
             blocks_blooms: RwLock::new(HashMap::new()),
             block_receipts: RwLock::new(HashMap::new()),
             cache_man: Mutex::new(cache_man),
-            db: db,
-            state_db: state_db,
+            db: RwLock::new(db),
+            state_db: RwLock::new(state_db),
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
             // need to be cautious here
@@ -408,19 +409,14 @@ impl Chain {
     }
 
     pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
-        let result = self
-            .db
+        let result = self.db
+            .read()
             .read_with_cache(db::COL_EXTRA, &self.block_hashes, &hash);
         self.cache_man.lock().note_used(CacheId::BlockHashes(hash));
         result
     }
 
-    pub fn set_executed_result_genesis(&self, ret: &ExecutedResult) {
-        let blk = Block::default();
-        self.set_db_result(ret, &blk);
-    }
-
-    fn set_db_config(&self, ret: &ExecutedResult) {
+    fn set_config(&self, ret: &ExecutedResult) {
         let conf = ret.get_config();
         let nodes = conf.get_nodes();
         let nodes: Vec<Address> = nodes
@@ -432,19 +428,17 @@ impl Chain {
             "consensus nodes {:?}, block_interval {:?}",
             nodes, block_interval
         );
-        self.set_executed_config(
-            conf.get_block_gas_limit(),
-            conf.get_account_gas_limit(),
-            &nodes,
-            block_interval,
-            conf.get_check_quota(),
-        );
+
+        self.check_quota
+            .store(conf.get_check_quota(), Ordering::Relaxed);
+        self.block_gas_limit
+            .store(conf.get_block_gas_limit() as usize, Ordering::SeqCst);
+        *self.account_gas_limit.write() = conf.get_account_gas_limit().clone();
+        *self.nodes.write() = nodes.clone();
+        *self.block_interval.write() = block_interval;
     }
 
     pub fn set_db_result(&self, ret: &ExecutedResult, block: &Block) {
-        //config set in memory
-        self.set_db_config(ret);
-
         let info = ret.get_executed_info();
         let number = info.get_header().get_height();
         let mut hdr = Header::new();
@@ -571,7 +565,7 @@ impl Chain {
         }
 
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
-        self.db.write(batch).expect("DB write failed.");
+        self.db.read().write(batch).expect("DB write failed.");
         {
             *self.current_header.write() = hdr;
         }
@@ -583,21 +577,29 @@ impl Chain {
     }
 
     pub fn set_executed_result(&self, ret: &ExecutedResult, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        // Set config in memory
+        self.set_config(ret);
+
         let info = ret.get_executed_info();
         let number = info.get_header().get_height();
+
+        // Genesis block
         if number == 0 {
-            self.set_executed_result_genesis(ret);
+            let blk = Block::default();
+            self.set_db_result(ret, &blk);
             let block_tx_hashes = Vec::new();
             self.delivery_block_tx_hashes(number, block_tx_hashes, &ctx_pub);
-            self.broadcast_current_status(&ctx_pub);
-        }
-
-        if number == self.get_current_height() {
-            self.set_db_config(ret);
             self.broadcast_current_status(&ctx_pub);
             return;
         }
 
+        // Duplicated block
+        if number == self.get_current_height() {
+            self.broadcast_current_status(&ctx_pub);
+            return;
+        }
+
+        // New block
         let block_in_queue: Option<BlockInQueue>;
         //get block saved
         {
@@ -637,25 +639,10 @@ impl Chain {
             }
         }
 
+        // Discard the blocks whose height is less than current height in 'block_map', reducing its' memory usage.
         let mut guard = self.block_map.write();
         let new_map = guard.split_off(&self.get_current_height());
         *guard = new_map;
-    }
-
-    fn set_executed_config(
-        &self,
-        bgas_limit: u64,
-        agas_limit: &ProtoAccountGasLimit,
-        nodes: &Vec<Address>,
-        block_interval: u64,
-        check_quota: bool,
-    ) {
-        self.check_quota.store(check_quota, Ordering::Relaxed);
-        self.block_gas_limit
-            .store(bgas_limit as usize, Ordering::SeqCst);
-        *self.account_gas_limit.write() = agas_limit.clone();
-        *self.nodes.write() = nodes.clone();
-        *self.block_interval.write() = block_interval;
     }
 
     /// Get block by BlockId
@@ -714,8 +701,8 @@ impl Chain {
                 return Some(header.clone());
             }
         }
-        let result = self
-            .db
+        let result = self.db
+            .read()
             .read_with_cache(db::COL_HEADERS, &self.block_headers, &idx);
         self.cache_man.lock().note_used(CacheId::BlockHeaders(idx));
         result
@@ -741,10 +728,11 @@ impl Chain {
             .map_or(None, |h| self.block_body_by_height(h))
     }
 
+
     /// Get block body by height
     fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
-        let result = self
-            .db
+        let result = self.db
+            .read()
             .read_with_cache(db::COL_BODIES, &self.block_bodies, &number);
         self.cache_man
             .lock()
@@ -769,8 +757,8 @@ impl Chain {
 
     /// Get address of transaction by hash.
     fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
-        let result = self
-            .db
+        let result = self.db
+            .read()
             .read_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash);
         self.cache_man
             .lock()
@@ -987,13 +975,14 @@ impl Chain {
     }
 
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
-        self.db.read(db::COL_EXTRA, &CurrentProof)
+        self.db.read().read(db::COL_EXTRA, &CurrentProof)
     }
 
     pub fn save_current_block_poof(&self, proof: ProtoProof) {
         let mut batch = DBTransaction::new();
         batch.write(db::COL_EXTRA, &CurrentProof, &proof);
         self.db
+            .read()
             .write(batch)
             .expect("save_current_block_poof DB write failed.");
     }
@@ -1154,15 +1143,11 @@ impl Chain {
         trace!("delivery block's tx hashes for height: {}", block_height);
     }
 
-    /// Delivery current rich status
+    /// Delivery current rich status to consensus
+    /// Consensus should resend block if chain commit block failed.
     pub fn delivery_current_rich_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let header = &*self.current_header.read();
-        self.delivery_rich_status(header, ctx_pub);
-    }
 
-    /// Delivery rich status to consensus
-    /// Consensus should resend block if chain commit block failed.
-    fn delivery_rich_status(&self, header: &Header, ctx_pub: &Sender<(String, Vec<u8>)>) {
         if self.nodes.read().is_empty() {
             return;
         }
@@ -1189,8 +1174,8 @@ impl Chain {
 
     /// Get receipts of block with given hash.
     pub fn block_receipts(&self, hash: H256) -> Option<BlockReceipts> {
-        let result = self
-            .db
+        let result = self.db
+            .read()
             .read_with_cache(db::COL_EXTRA, &self.block_receipts, &hash);
         self.cache_man
             .lock()
@@ -1221,7 +1206,7 @@ impl Chain {
 
     /// generate block's final state.
     pub fn gen_state(&self, root: H256) -> Option<State<StateDB>> {
-        let db = self.state_db.boxed_clone();
+        let db = self.state_db.read().boxed_clone();
         State::from_existing(db, root).ok()
     }
 
@@ -1296,7 +1281,7 @@ impl Chain {
                 .note_used(CacheId::BlockBodies(height as BlockNumber));
         }
         batch.write(db::COL_EXTRA, &CurrentHeight, &height);
-        let _ = self.db.write(batch);
+        let _ = self.db.read().write(batch);
     }
 
     pub fn compare_status(&self, st: Status) -> (u64, u64) {

@@ -45,7 +45,6 @@ use libproto::{ConsensusConfig, ExecutedResult, Message};
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 use cita_types::{Address, H256, U256};
 use native::Factory as NativeFactory;
-use snapshot;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, VecDeque};
@@ -86,7 +85,10 @@ impl Config {
 impl BloomGroupDatabase for Executor {
     fn blooms_at(&self, position: &GroupPosition) -> Option<BloomGroup> {
         let position = LogGroupPosition::from(position.clone());
-        let result = self.db.read(db::COL_EXTRA, &position).map(Into::into);
+        let result = self.db
+            .read()
+            .read(db::COL_EXTRA, &position)
+            .map(Into::into);
         result
     }
 }
@@ -186,8 +188,8 @@ pub struct Executor {
     pub max_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
     pub stage: RwLock<Stage>,
-    pub db: Arc<KeyValueDB>,
-    pub state_db: StateDB,
+    pub db: RwLock<Arc<KeyValueDB>>,
+    pub state_db: RwLock<StateDB>,
     pub factories: Factories,
     /// Hash of the given block - only works for 256 most recent blocks excluding current
     pub last_hashes: RwLock<VecDeque<H256>>,
@@ -238,7 +240,6 @@ impl Executor {
         let journal_db = journaldb::new(Arc::clone(&db), journaldb_type, COL_STATE);
         let state_db = StateDB::new(journal_db, 5 * 1024 * 1024); // todo : cache_size would be set in config file.
 
-        let mut executed_ret = ExecutedResult::new();
         let header = match get_current_header(&*db) {
             Some(header) => header,
             _ => {
@@ -251,6 +252,7 @@ impl Executor {
             }
         };
         let executed_header = header.clone().generate_executed_header();
+        let mut executed_ret = ExecutedResult::new();
         executed_ret.mut_executed_info().set_header(executed_header);
 
         let mut executed_map = BTreeMap::new();
@@ -266,8 +268,8 @@ impl Executor {
             max_height: max_height,
             block_map: RwLock::new(BTreeMap::new()),
             stage: RwLock::new(Stage::Idle),
-            db: db,
-            state_db: state_db,
+            db: RwLock::new(db),
+            state_db: RwLock::new(state_db),
             factories: factories,
             last_hashes: RwLock::new(VecDeque::new()),
 
@@ -300,12 +302,12 @@ impl Executor {
 
     /// Get block hash by number
     pub fn block_hash(&self, index: BlockNumber) -> Option<H256> {
-        let result = self.db.read(db::COL_EXTRA, &index);
+        let result = self.db.read().read(db::COL_EXTRA, &index);
         result
     }
 
     pub fn load_config_from_db(&self) -> Option<VecDeque<GlobalSysConfig>> {
-        let res = self.db.read(db::COL_EXTRA, &ConfigHistory);
+        let res = self.db.read().read(db::COL_EXTRA, &ConfigHistory);
         if let Some(bres) = res {
             return bin_deserialize(&bres).ok();
         }
@@ -352,7 +354,7 @@ impl Executor {
     }
 
     /// Get block header by height
-    fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
+    pub fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
         {
             let header = self.current_header.read();
             if header.number() == number {
@@ -371,7 +373,7 @@ impl Executor {
                 return Some(header.clone());
             }
         }
-        let result = self.db.read(db::COL_HEADERS, &hash);
+        let result = self.db.read().read(db::COL_HEADERS, &hash);
         result
     }
 
@@ -502,7 +504,7 @@ impl Executor {
                         Some(ancient_hash) => {
                             let mut batch = DBTransaction::new();
                             state_db.mark_canonical(&mut batch, era, &ancient_hash)?;
-                            self.db.write_buffered(batch);
+                            self.db.read().write_buffered(batch);
                             state_db.journal_db().flush();
                         }
                         None => debug!(target: "client", "Missing expected hash for block {}", era),
@@ -522,7 +524,7 @@ impl Executor {
 
     /// Generate block's final state.
     pub fn gen_state(&self, root: H256, parent_hash: H256) -> Option<State<StateDB>> {
-        let db = self.state_db.boxed_clone_canon(&parent_hash);
+        let db = self.state_db.read().boxed_clone_canon(&parent_hash);
         State::from_existing(db, root, U256::from(0), self.factories.clone()).ok()
     }
 
@@ -684,7 +686,7 @@ impl Executor {
     ///2、currenthash
     ///3、state
     pub fn write_batch(&self, block: ClosedBlock) {
-        let mut batch = self.db.transaction();
+        let mut batch = self.db.read().transaction();
         let height = block.number();
         let hash = block.hash();
         trace!("commit block in db {:?}, {:?}", hash, height);
@@ -703,13 +705,13 @@ impl Executor {
             .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
         state.sync_cache(&[], &[], true);
-        self.db.write_buffered(batch);
+        self.db.read().write_buffered(batch);
 
         self.prune_ancient(state).expect("mark_canonical failed");
 
         // Saving in db
         let now = Instant::now();
-        self.db.flush().expect("DB write failed.");
+        self.db.read().flush().expect("DB write failed.");
         let new_now = Instant::now();
         debug!("db write use {:?}", new_now.duration_since(now));
     }
@@ -805,7 +807,7 @@ impl Executor {
             conf.clone(),
             false,
             block,
-            self.state_db.boxed_clone_canon(&parent_hash),
+            self.state_db.read().boxed_clone_canon(&parent_hash),
             current_state_root,
             last_hashes.into(),
         ).unwrap();
@@ -832,7 +834,7 @@ impl Executor {
             conf,
             false,
             block,
-            self.state_db.boxed_clone_canon(&parent_hash),
+            self.state_db.read().boxed_clone_canon(&parent_hash),
             current_state_root,
             last_hashes.into(),
         ).unwrap();
@@ -856,14 +858,6 @@ impl Executor {
             let mut executed_map = self.executed_result.write();
             *executed_map = executed_map.split_off(&(height - 1));
         }
-    }
-}
-
-impl snapshot::service::DatabaseRestore for Executor {
-    /// Restart the client with a new backend
-    fn restore_db(&self, new_db: &str) -> Result<(), ::error::Error> {
-        info!("new_db :{:?}", new_db);
-        Ok(())
     }
 }
 

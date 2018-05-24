@@ -23,6 +23,7 @@ use ethcore_io::*;
 
 pub use executed::{CallError, ExecutionError};
 use header::BlockNumber;
+use snapshot::Error as SnapshotError;
 use std::fmt;
 use util::*;
 
@@ -335,6 +336,17 @@ impl From<snappy::SnappyError> for Error {
 impl From<EthkeyError> for Error {
     fn from(err: EthkeyError) -> Error {
         Error::Ethkey(err)
+    }
+}
+
+impl From<SnapshotError> for Error {
+    fn from(err: SnapshotError) -> Error {
+        match err {
+            SnapshotError::Io(err) => Error::StdIo(err).into(),
+            SnapshotError::Trie(err) => Error::Trie(err).into(),
+            SnapshotError::Decoder(err) => err.into(),
+            other => /*Error::Snapshot(other)*/ other.into(),
+        }
     }
 }
 

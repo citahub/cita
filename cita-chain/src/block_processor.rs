@@ -37,8 +37,7 @@ impl BlockProcessor {
     }
 
     pub fn broadcast_current_status(&self) {
-        self.chain.delivery_current_rich_status(&self.ctx_pub);
-        self.chain.broadcast_status(&self.ctx_pub);
+        self.chain.broadcast_current_status(&self.ctx_pub);
     }
 
     pub fn set_executed_result(&self, ret: ExecutedResult) {

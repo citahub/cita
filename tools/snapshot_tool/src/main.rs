@@ -51,8 +51,8 @@ fn main() {
         .version("0.1")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .arg_from_usage("-m, --cmd=[snapshot] 'snapshot or restore")
-        .arg_from_usage("-p, --file=[./snapshot] 'The file of snapshot'")  //snap file path
+        .arg_from_usage("-m, --cmd=[snapshot] 'snapshot or restore'")
+        .arg_from_usage("-p, --file=[./snapshot] 'the file of snapshot'")  //snap file path
         .arg_from_usage("-s, --start_height=[0] 'start height'")  //latest or valid ancient block_id
         .arg_from_usage("-e, --end_height=[1000] 'end height'")  //todo remove
         .get_matches();
@@ -94,7 +94,7 @@ fn main() {
             println!("snapshot_tool send snapshot cmd");
         }
         "restore" => {
-            snapshot_instance.clone().begin();
+            snapshot_instance.clone().restore();
             println!("snapshot_tool send restore cmd");
         }
         _ => println!("snapshot_tool send error cmd"),

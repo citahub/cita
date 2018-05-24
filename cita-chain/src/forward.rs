@@ -45,10 +45,16 @@ use std::sync::Arc;
 use types::filter::Filter;
 use types::ids::BlockId;
 
-use core::snapshot;
-use core::snapshot::io::PackedWriter;
-use core::snapshot::Progress;
+use core::db;
 use std::fs::File;
+use std::path::Path;
+use util::datapath::DataPath;
+use util::kvdb::DatabaseConfig;
+
+use core::snapshot;
+use core::snapshot::Progress;
+use core::snapshot::io::{PackedReader, PackedWriter};
+use core::snapshot::service::{Service as SnapshotService, ServiceParams as SnapServiceParams};
 
 /// Message forwarding and query data
 #[derive(Clone)]
@@ -115,7 +121,7 @@ impl Forward {
                     Cmd::Snapshot => {
                         info!("chain receive snapshot cmd: {:?}", req);
                         self.take_snapshot(req);
-                        info!("chain snapshot complete");
+                        info!("chain snapshot creation complete");
 
                         //resp SnapshotAck to snapshot_tool
                         //let mut resp = SnapshotResp::new();
@@ -128,9 +134,26 @@ impl Forward {
                             ))
                             .unwrap();
                     }
+                    Cmd::Restore => {
+                        info!("chain receive snapshot cmd: {:?}", req);
+                        self.restore(&req);
+                        info!("chain snapshot restore complete");
+                        self.chain.broadcast_current_status(&self.ctx_pub);
+
+                        //resp RestoreAck to snapshot_tool
+                        //let mut resp = SnapshotResp::new();
+                        resp.set_resp(Resp::RestoreAck);
+                        let msg: Message = resp.into();
+                        self.ctx_pub
+                            .send((
+                                routing_key!(Chain >> SnapshotResp).into(),
+                                msg.try_into().unwrap(),
+                            ))
+                            .unwrap();
+                    }
 
                     _ => {
-                        trace!("chain receive other snapshot message");
+                        trace!("chain receive other snapshot message: {:?}", req);
                     }
                 }
             }
@@ -570,16 +593,18 @@ impl Forward {
     }
 
     fn take_snapshot(&self, _snap_shot: SnapshotReq) {
-        // chain snapshot entry
+        // TODO: use given path
+        // TODO: use given height, Modify libproto Msg type!!
+        //let block_at = snap_shot.get_start_height();  //ancient block,latest?
+        //let start_hash = self.chain.block_hash_by_height(block_at).unwrap();
+
         let writer = PackedWriter {
-            file: File::create("snap-chain.rlp").unwrap(), //TODO:use given path
+            file: File::create("snap_chain.rlp").unwrap(), //TODO:use given path
             block_hashes: Vec::new(),
             cur_len: 0,
         };
 
         let progress = Arc::new(Progress::default());
-        //let block_at = snap_shot.get_start_height();  //ancient block,latest?
-        //let start_hash = self.chain.block_hash_by_height(block_at).unwrap();
 
         info!(
             "snapshot: current height = {}",
@@ -588,5 +613,27 @@ impl Forward {
         let start_hash = self.chain.get_current_hash();
         info!("take_snapshot start_hash: {:?}", start_hash);
         snapshot::take_snapshot(&self.chain, start_hash, writer, &*progress).unwrap();
+    }
+
+    fn restore(&self, _snap_shot: &SnapshotReq) -> Result<(), String> {
+        let file = "snap_chain.rlp";
+        let reader = PackedReader::new(Path::new(&file))
+            .map_err(|e| format!("Couldn't open snapshot file: {}", e))
+            .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
+        let reader = reader?;
+
+        let db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
+        let snap_path = DataPath::root_node_path() + "/snapshot_chain";
+        let snapshot_params = SnapServiceParams {
+            db_config: db_config.clone(),
+            snapshot_root: snap_path.into(),
+            db_restore: self.chain.clone(),
+            chain: self.chain.clone(),
+        };
+
+        let snapshot = SnapshotService::new(snapshot_params).unwrap();
+        let snapshot = Arc::new(snapshot);
+        snapshot::restore_using(Arc::clone(&snapshot), &reader, true);
+        Ok(())
     }
 }

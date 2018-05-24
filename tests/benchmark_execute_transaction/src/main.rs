@@ -232,7 +232,7 @@ fn bench_execute_trans(
             conf,
             false,
             block.clone(),
-            ext.state_db.boxed_clone(),
+            ext.state_db.read().boxed_clone(),
             current_state_root,
             last_hashes.into(),
         ).unwrap();
@@ -266,7 +266,7 @@ fn bench_execute_trans(
         let now = Instant::now();
         let height = closed_block.number();
         let hash = closed_block.hash();
-        let mut batch = ext.db.transaction();
+        let mut batch = ext.db.read().transaction();
 
         let header = closed_block.header().clone();
         {
@@ -277,18 +277,18 @@ fn bench_execute_trans(
         state
             .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
-        ext.db.write(batch).expect("DB write failed.");
+        ext.db.read().write(batch).expect("DB write failed.");
         let new_now = Instant::now();
         let db_write_duration = new_now.duration_since(now);
         info!("db write use {:?}", db_write_duration);
 
         //write header CurrentHash
         let now = Instant::now();
-        let mut batch = ext.db.transaction();
+        let mut batch = ext.db.read().transaction();
         batch.write(db::COL_HEADERS, &hash, block.header());
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
         batch.write(db::COL_EXTRA, &height, &hash);
-        ext.db.write(batch).expect("DB write failed.");
+        ext.db.read().write(batch).expect("DB write failed.");
         let new_now = Instant::now();
         let db_write2_duration = new_now.duration_since(now);
         info!("db write2 use {:?}", db_write2_duration);

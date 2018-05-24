@@ -18,11 +18,10 @@
 pub mod block;
 pub mod cache;
 pub mod chain;
-mod extras;
+pub mod extras;
 pub mod rich_status;
 pub mod status;
 pub mod transaction;
-
 pub use libproto::*;
 pub use log::*;
 pub use util::journaldb;
