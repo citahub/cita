@@ -26,6 +26,7 @@ use header::BlockNumber;
 use std::fmt;
 use util::*;
 use cita_types::{H256, U256, U512};
+use snapshot::Error as SnapshotError;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 /// Errors concerning transaction processing.
@@ -414,6 +415,17 @@ impl From<snappy::SnappyError> for Error {
 impl From<EthkeyError> for Error {
     fn from(err: EthkeyError) -> Error {
         Error::Ethkey(err)
+    }
+}
+
+impl From<SnapshotError> for Error {
+    fn from(err: SnapshotError) -> Error {
+        match err {
+            SnapshotError::Io(err) => Error::StdIo(err).into(),
+            SnapshotError::Trie(err) => Error::Trie(err).into(),
+            SnapshotError::Decoder(err) => err.into(),
+            other => /*Error::Snapshot(other)*/ other.into(),
+        }
     }
 }
 

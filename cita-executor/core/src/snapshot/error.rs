@@ -20,7 +20,7 @@ use std::fmt;
 
 use types::ids::BlockId;
 
-use cita_types::H256;
+use cita_types::{Address, H256};
 use rlp::DecoderError;
 use util::snappy::SnappyError;
 use util::trie::TrieError;
@@ -43,7 +43,9 @@ pub enum Error {
     /// Old starting block in a pruned database.
     OldBlockPrunedDB,
     /// Missing code.
-    MissingCode(Vec<H256>),
+    MissingCode(Vec<Address>),
+    /// Missing abi.
+    MissingAbi(Vec<Address>),
     /// Unrecognized code encoding.
     UnrecognizedCodeState(u8),
     /// Restoration aborted.
@@ -97,6 +99,11 @@ impl fmt::Display for Error {
             Error::MissingCode(ref missing) => write!(
                 f,
                 "Incomplete snapshot: {} contract codes not found.",
+                missing.len()
+            ),
+            Error::MissingAbi(ref missing) => write!(
+                f,
+                "Incomplete snapshot: {} contract abis not found.",
                 missing.len()
             ),
             Error::UnrecognizedCodeState(state) => write!(f, "Unrecognized code encoding ({})", state),

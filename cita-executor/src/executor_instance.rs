@@ -26,6 +26,7 @@ use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 use types::ids::BlockId;
 use util::datapath::DataPath;
+use util::journaldb::Algorithm;
 use util::kvdb::{Database, DatabaseConfig};
 
 use core::snapshot;
@@ -103,7 +104,7 @@ impl ExecutorInstance {
                 self.consensus_block_enqueue(proof_blk);
             }
 
-            routing_key!(Chain >> LocalSync) | routing_key!(Net >> SyncResponse) => {
+            routing_key!(Net >> SyncResponse) => {
                 let sync_res = msg.take_sync_response().unwrap();
                 self.deal_sync_blocks(sync_res);
             }
@@ -158,7 +159,7 @@ impl ExecutorInstance {
                             .unwrap();
                     }
                     _ => {
-                        trace!("executor receive other snapshot message");
+                        trace!("executor receive other snapshot message: {:?}", req);
                     }
                 }
             }
@@ -169,7 +170,7 @@ impl ExecutorInstance {
         }
     }
 
-    pub fn is_dup_block(&self, inum: u64) -> bool {
+    fn is_dup_block(&self, inum: u64) -> bool {
         inum <= self.ext.get_current_height()
     }
 
@@ -835,48 +836,47 @@ impl ExecutorInstance {
     }
 
     fn take_snapshot(&self, _snap_shot: &SnapshotReq) {
-        // executor snapshot entry
+        // TODO: use given path
+        // TODO: use given height, Modify libproto Msg type!!
+        //let block_at = snap_shot.get_start_height(); //ancient block,latest?
+        //let start_hash = self.ext.block_hash(block_at).unwrap();
+
         let writer = PackedWriter {
-            file: File::create("snap.rlp").unwrap(), //TODO:use given path
+            file: File::create("snap_executor.rlp").unwrap(),
             state_hashes: Vec::new(),
+            block_hashes: Vec::new(),
             cur_len: 0,
         };
 
         let progress = Arc::new(Progress::default());
-        //let block_at = snap_shot.get_start_height(); //ancient block,latest?
-        //let start_hash = self.ext.block_hash(block_at).unwrap();
 
-        info!(
-            "snapshot: current height = {}",
-            self.ext.get_current_height()
-        );
         let start_hash = self.ext.get_current_hash();
-        //let db = self.ext.state_db.journal_db().boxed_clone();
-        let db = self.ext.state_db.boxed_clone();
-        info!("take_snapshot start_hash: {:?}", start_hash);
+
+        let db = self.ext.state_db.read().boxed_clone();
+
         snapshot::take_snapshot(&self.ext, start_hash, db.as_hashdb(), writer, &*progress).unwrap();
     }
 
     fn restore(&self, _snap_shot: &SnapshotReq) -> Result<(), String> {
-        let file = "snap-executor.rlp";
+        let file = "snap_executor.rlp";
         let reader = PackedReader::new(Path::new(&file))
             .map_err(|e| format!("Couldn't open snapshot file: {}", e))
             .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
         let reader = reader?;
 
         let mut db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let snap_path = DataPath::root_node_path() + "/snapshot";
+        let snap_path = DataPath::root_node_path() + "/snapshot_executor";
         let snapshot_params = SnapServiceParams {
             db_config: db_config.clone(),
-            //pruning: pruning,
-            //snapshot_root: DataPath::root_node_path().into(),
+            pruning: Algorithm::Archive,
             snapshot_root: snap_path.into(),
             db_restore: self.ext.clone(),
+            executor: self.ext.clone(),
         };
-        //TODO:get manifest from snap_shot for restore
+
         let snapshot = SnapshotService::new(snapshot_params).unwrap();
         let snapshot = Arc::new(snapshot);
-        snapshot::restore_using(Arc::clone(&snapshot), &reader, true);
+        snapshot::restore_using(snapshot, &reader, true);
         Ok(())
     }
 

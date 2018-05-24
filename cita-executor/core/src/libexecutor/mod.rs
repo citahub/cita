@@ -20,7 +20,7 @@ pub mod executor;
 pub mod transaction;
 pub mod block;
 pub mod genesis;
-mod extras;
+pub mod extras;
 pub mod call_request;
 pub mod govm_adapter;
 

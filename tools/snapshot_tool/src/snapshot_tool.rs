@@ -120,12 +120,12 @@ impl SnapShot {
     }
 
     // send begin
-    pub fn begin(self) -> SnapshotReq {
+    /*pub fn begin(self) -> SnapshotReq {
         let mut snap_shot = SnapshotReq::new();
         snap_shot.set_cmd(Cmd::Begin);
         self.send_cmd(snap_shot.clone());
         snap_shot
-    }
+    }*/
 
     // send clear
     pub fn clear(self) -> SnapshotReq {
@@ -139,6 +139,7 @@ impl SnapShot {
         let mut snap_shot = SnapshotReq::new();
         snap_shot.set_cmd(Cmd::Restore);
         snap_shot.set_file(self.file.clone());
+        self.send_cmd(snap_shot.clone());
         snap_shot
     }
 

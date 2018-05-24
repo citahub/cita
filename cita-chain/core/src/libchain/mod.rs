@@ -19,7 +19,7 @@ pub mod cache;
 pub mod chain;
 pub mod transaction;
 pub mod block;
-mod extras;
+pub mod extras;
 pub mod status;
 pub mod rich_status;
 

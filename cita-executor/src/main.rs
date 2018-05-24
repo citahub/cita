@@ -9,7 +9,6 @@
 //!
 //!     | Queue    | PubModule | Message Type       |
 //!     | -------- | --------- | ------------------ |
-//!     | executor | Chain     | LocalSync          |
 //!     | executor | Chain     | Request            |
 //!     | executor | Chain     | Richstatus         |
 //!     | executor | Consensus | BlockWithProof     |
@@ -120,18 +119,17 @@ fn main() {
     let config_path = matches.value_of("config").unwrap_or("executor.toml");
 
     let (tx, rx) = channel();
-    let (write_sender, write_receiver) = channel();
     let (ctx_pub, crx_pub) = channel();
+    let (write_sender, write_receiver) = channel();
     start_pubsub(
         "executor",
         routing_key!([
-            Chain >> LocalSync,
-            Net >> SyncResponse,
             Consensus >> BlockWithProof,
             Chain >> Request,
             Chain >> RichStatus,
             Consensus >> SignedProposal,
             Consensus >> RawBytes,
+            Net >> SyncResponse,
             Net >> SignedProposal,
             Net >> RawBytes,
             Snapshot >> SnapshotReq,

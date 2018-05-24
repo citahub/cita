@@ -20,7 +20,7 @@
 //use env_info::EnvInfo;
 //use env_info::LastHashes;
 use header::*;
-//use libchain::extras::TransactionAddress;
+
 use cita_types::H256;
 use libchain::extras::TransactionAddress;
 use std::collections::HashMap;

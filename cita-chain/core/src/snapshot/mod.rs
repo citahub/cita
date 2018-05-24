@@ -18,36 +18,51 @@
 
 extern crate num_cpus;
 
-// chunks around 4MB before compression
-const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
-
-//use account_db::{AccountDB, AccountDBMut};
-//use libexecutor::executor::Executor;
-use libchain::chain::Chain;
-use rlp::{DecoderError, RlpStream, UntrustedRlp};
-//use std::collections::HashSet;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-//use std::time::Duration;
-use cita_types::H256;
-use util::{snappy, Bytes};
-use util::{Mutex, sha3};
-//use util::{Trie, TrieMut};
-//use util::HASH_NULL_RLP;
-//use util::journaldb::{self, Algorithm};
-//use util::journaldb::JournalDB;
-//use util::kvdb::Database;
-
 //pub mod service;
 pub mod io;
 mod error;
-use self::error::Error;
-//use self::io::SnapshotReader;
+pub mod service;
+
+// chunks around 4MB before compression
+const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
+
+// Maximal chunk size (decompressed)
+// Snappy::decompressed_len estimation may sometimes yield results greater
+// than PREFERRED_CHUNK_SIZE so allow some threshold here.
+//const MAX_CHUNK_SIZE: usize = PREFERRED_CHUNK_SIZE / 4 * 5;
+
+use header::Header;
+
+use rlp::*;
+
+use cita_types::H256;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::time::Duration;
+use util::{snappy, Bytes};
+use util::{Mutex, sha3};
+use util::kvdb::*;
+
+use basic_types::{LogBloom, LogBloomGroup};
+use bloomchain::{Bloom, Number as BloomChainNumber};
+use bloomchain::group::BloomGroupChain;
+
+pub use self::error::Error;
+use self::io::SnapshotReader;
 use self::io::SnapshotWriter;
-//use self::service::Service;
-//use snapshot::service::SnapshotService;
-use std::collections::VecDeque;
+use self::service::{Service, SnapshotService};
+use super::header::BlockNumber;
+use db::*;
+
 use types::ids::BlockId;
+
+use libchain::block::*;
+use libchain::chain::Chain;
+use libchain::extras::*;
+
+use receipt::Receipt;
+
+use std::collections::{HashMap, VecDeque};
 
 //#[cfg(test)]
 //mod tests;
@@ -87,9 +102,9 @@ pub enum RestorationStatus {
     Inactive,
     /// Ongoing restoration.
     Ongoing {
-        /// Total number of state chunks.
+        /// Total number of block chunks.
         block_chunks: u32,
-        /// Number of state chunks completed.
+        /// Number of block chunks completed.
         block_chunks_done: u32,
     },
     /// Failed restoration.
@@ -99,7 +114,7 @@ pub enum RestorationStatus {
 /// Snapshot manifest type definition.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManifestData {
-    /// List of state chunk hashes.
+    /// List of block chunk hashes.
     pub block_hashes: Vec<H256>,
     /// The final, expected state root.
     pub state_root: H256,
@@ -156,9 +171,9 @@ pub fn take_snapshot<W: SnapshotWriter + Send>(
     info!("Taking snapshot starting at block {}", number);
 
     let writer = Mutex::new(writer);
-    let block_hashes = chunk_block(chain, block_at, &writer, p)?;
+    let block_hashes = chunk_secondary(chain, block_at, &writer, p)?;
 
-    //info!("produced {} state chunks.", state_hashes.len());
+    info!("produced {} block chunks.", block_hashes.len());
 
     let manifest_data = ManifestData {
         block_hashes: block_hashes,
@@ -175,7 +190,7 @@ pub fn take_snapshot<W: SnapshotWriter + Send>(
 }
 
 /// Returns a list of chunk hashes, with the first having the blocks furthest from the genesis.
-pub fn chunk_block<'a>(
+pub fn chunk_secondary<'a>(
     chain: &'a Chain,
     start_hash: H256,
     writer: &Mutex<SnapshotWriter + 'a>,
@@ -189,37 +204,31 @@ pub fn chunk_block<'a>(
             compressed_data.clear();
             snappy::compress_to(raw_data, &mut compressed_data)?;
             let hash = sha3(&compressed_data);
+            let size = compressed_data.len();
 
             writer.lock().write_block_chunk(hash, &compressed_data)?;
-            trace!(target: "snapshot", "wrote block chunk. hash: {:?}, size: {}, uncompressed size: {}",
-                   hash, compressed_data.len(), raw_data.len());
+            trace!(
+                "wrote secondary chunk. hash: {:?}, size: {}, uncompressed size: {}",
+                hash,
+                size,
+                raw_data.len(),
+            );
 
-            progress
-                .size
-                .fetch_add(compressed_data.len(), Ordering::SeqCst);
+            progress.size.fetch_add(size, Ordering::SeqCst);
             chunk_hashes.push(hash);
             Ok(())
         };
 
-        chunk_all(chain, start_hash, &mut chunk_sink, PREFERRED_CHUNK_SIZE)?;
+        BlockChunker {
+            chain: chain,
+            rlps: VecDeque::new(),
+            current_hash: start_hash,
+            writer: &mut chunk_sink,
+            preferred_size: PREFERRED_CHUNK_SIZE,
+        }.chunk_all()?
     }
 
     Ok(chunk_hashes)
-}
-
-pub fn chunk_all(
-    chain: &Chain,
-    block_at: H256,
-    chunk_sink: &mut ChunkSink,
-    preferred_size: usize,
-) -> Result<(), Error> {
-    BlockChunker {
-        chain: chain,
-        rlps: VecDeque::new(),
-        current_hash: block_at,
-        writer: chunk_sink,
-        preferred_size: preferred_size,
-    }.chunk_all()
 }
 
 /// Used to build block chunks.
@@ -242,41 +251,43 @@ impl<'a> BlockChunker<'a> {
         let genesis_hash = self.chain
             .block_hash_by_height(0)
             .expect("Genesis hash should always exist");
+        trace!("Genesis_hash: {:?}", genesis_hash);
 
         loop {
             if self.current_hash == genesis_hash {
                 break;
             }
 
-            info!("[chunk_all] current_hash: {:?}", self.current_hash);
+            trace!("Current_hash: {:?}", self.current_hash);
 
-            let block = self.chain
+            let mut s = RlpStream::new();
+            /*let block = self.chain
                 .block_by_hash(self.current_hash)
                 .ok_or(Error::BlockNotFound(self.current_hash))?;
-            info!("[chunk_all] block");
+            block.rlp_append(&mut s);
+            let block_rlp = s.out();*/
+            let header = self.chain
+                .block_header_by_hash(self.current_hash)
+                .ok_or(Error::BlockNotFound(self.current_hash))?;
+            header.clone().rlp_append(&mut s);
+            let header_rlp = s.out();
+
             let receipts = match self.chain.block_receipts(self.current_hash) {
                 Some(r) => r.receipts,
                 _ => Vec::new(),
             };
-            info!("[chunk_all] get block receipts end");
-            //let abridged_rlp = AbridgedBlock::from_block_view(&block.view()).into_inner();
-            let block_rlp = {
-                let mut block_stream = RlpStream::new_list(2);
-                block_stream.append(&block.header);
-                block_stream.append(&block.body);
-                block_stream.out()
-            };
 
             let pair = {
                 let mut pair_stream = RlpStream::new_list(2);
-                pair_stream.append_raw(&block_rlp, 1).append_list(&receipts);
+                pair_stream
+                    .append_raw(&header_rlp, 1)
+                    .append_list(&receipts);
                 pair_stream.out()
             };
 
             let new_loaded_size = loaded_size + pair.len();
 
             // cut off the chunk if too large.
-
             if new_loaded_size > self.preferred_size && !self.rlps.is_empty() {
                 self.write_chunk(last)?;
                 loaded_size = pair.len();
@@ -287,7 +298,7 @@ impl<'a> BlockChunker<'a> {
             self.rlps.push_front(pair);
 
             last = self.current_hash;
-            self.current_hash = *block.parent_hash();
+            self.current_hash = *header.parent_hash();
         }
 
         if loaded_size != 0 {
@@ -302,7 +313,7 @@ impl<'a> BlockChunker<'a> {
     // we preface each chunk with the parent of the first block's details,
     // obtained from the details of the last block written.
     fn write_chunk(&mut self, last: H256) -> Result<(), Error> {
-        trace!(target: "snapshot", "prepared block chunk with {} blocks", self.rlps.len());
+        trace!("prepared block chunk with {} blocks", self.rlps.len());
 
         let last_header = self.chain
             .block_header_by_hash(last)
@@ -311,7 +322,7 @@ impl<'a> BlockChunker<'a> {
         let parent_number = last_header.number() - 1;
         let parent_hash = last_header.parent_hash();
 
-        trace!(target: "snapshot", "parent last written block: {}", parent_hash);
+        trace!("parent last written block: {}", parent_hash);
 
         let num_entries = self.rlps.len();
         let mut rlp_stream = RlpStream::new_list(2 + num_entries);
@@ -329,7 +340,356 @@ impl<'a> BlockChunker<'a> {
     }
 }
 
-/*
+/// Brief info about inserted block.
+#[derive(Clone)]
+pub struct BlockInfo {
+    /// Block hash.
+    pub hash: H256,
+    /// Block number.
+    pub number: BlockNumber,
+}
+
+/// Block extras update info.
+pub struct ExtrasUpdate {
+    /// Block info.
+    pub info: BlockInfo,
+    /// Current block uncompressed rlp bytes
+    pub block: Block,
+    /// Modified block hashes.
+    pub block_hashes: HashMap<H256, BlockNumber>,
+    /// Modified block receipts.
+    pub block_receipts: HashMap<H256, BlockReceipts>,
+    /// Modified blocks blooms.
+    pub blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup>,
+    // Modified transaction addresses (None signifies removed transactions).
+    //pub transactions_addresses: HashMap<H256, TransactionAddress>,
+}
+
+/// Used to rebuild the state trie piece by piece.
+pub struct BlockRebuilder {
+    chain: Arc<Chain>,
+    db: Arc<KeyValueDB>,
+    //_disconnected: Vec<(u64, H256)>,
+    best_number: u64,
+    best_hash: H256,
+    best_root: H256,
+    fed_blocks: u64,
+    snapshot_blocks: u64,
+}
+
+impl BlockRebuilder {
+    /// Create a new state rebuilder to write into the given backing DB.
+    pub fn new(chain: Arc<Chain>, db: Arc<KeyValueDB>, manifest: &ManifestData, snapshot_blocks: u64) -> Self {
+        BlockRebuilder {
+            chain: chain,
+            db: db.clone(),
+            //_disconnected: Vec::new(),
+            best_number: manifest.block_number,
+            best_hash: manifest.block_hash,
+            best_root: manifest.state_root,
+            fed_blocks: 0,
+            snapshot_blocks: snapshot_blocks,
+        }
+    }
+
+    /// Feed an uncompressed state chunk into the rebuilder.
+    pub fn feed(&mut self, chunk: &[u8], abort_flag: &AtomicBool) -> Result<(), ::error::Error> {
+        let rlp = UntrustedRlp::new(chunk);
+        let item_count = rlp.item_count()?;
+        let num_blocks = (item_count - 2) as u64;
+        trace!("restoring block chunk with {} blocks.", num_blocks);
+
+        if self.fed_blocks + num_blocks > self.snapshot_blocks {
+            return Err(Error::TooManyBlocks(self.snapshot_blocks, self.fed_blocks + num_blocks).into());
+        }
+
+        // todo: assert here that these values are consistent with chunks being in order.
+        let mut cur_number = rlp.val_at::<u64>(0)? + 1;
+        //let mut parent_hash = rlp.val_at::<H256>(1)?;
+
+        for idx in 2..item_count {
+            if !abort_flag.load(Ordering::SeqCst) {
+                return Err(Error::RestorationAborted.into());
+            }
+
+            let pair = rlp.at(idx)?;
+            //let block_rlp = pair.at(0)?.as_raw().to_owned();
+            //let block: Block = ::rlp::decode(block_rlp.as_slice());
+            let header_rlp = pair.at(0)?.as_raw().to_owned();
+            let header: Header = ::rlp::decode(header_rlp.as_slice());
+            let block = Block {
+                header: header.clone(),
+                body: BlockBody::new(),
+            };
+            let receipts: Vec<Option<Receipt>> = pair.list_at(1)?;
+
+            // TODO: abridged_block
+            /*let receipts_root = ordered_trie_root(pair.at(1)?.iter().map(|r| r.as_raw()));
+
+            let block = abridged_block.to_block(parent_hash, cur_number, receipts_root)?;
+            let block_bytes = block.rlp_bytes();*/
+
+            let is_best = cur_number == self.best_number;
+
+            if is_best {
+                if header.hash() != self.best_hash {
+                    return Err(Error::WrongBlockHash(cur_number, self.best_hash, header.hash()).into());
+                }
+
+                if header.state_root() != &self.best_root {
+                    return Err(Error::WrongStateRoot(self.best_root, *header.state_root()).into());
+                }
+            }
+
+            // TODO: verify
+            //verify_old_block(&mut self.rng, &block.header, engine, &self.chain, is_best)?;
+
+            let mut batch = self.db.transaction();
+
+            self.insert_unordered_block(&mut batch, &block, receipts, is_best);
+
+            self.db.write_buffered(batch);
+
+            // TODO: update current Chain.
+            //self.chain.commit();
+
+            //parent_hash = view!(BlockView, &block_bytes).hash();
+            cur_number += 1;
+        }
+
+        self.fed_blocks += num_blocks;
+
+        Ok(())
+    }
+
+    fn insert_unordered_block(
+        &self,
+        batch: &mut DBTransaction,
+        block: &Block,
+        receipts: Vec<Option<Receipt>>,
+        is_best: bool,
+    ) {
+        let header = block.header();
+        //let body = block.body();
+        let hash = header.hash();
+        let height = header.number();
+
+        // store block in db
+        batch.write(COL_HEADERS, &height, &header.clone());
+        //batch.write(COL_BODIES, &height, &body.clone());
+
+        // COL_EXTRA
+        let info = BlockInfo {
+            hash: hash,
+            number: height,
+        };
+        self.prepare_update(
+            batch,
+            ExtrasUpdate {
+                block_hashes: self.prepare_block_hashes_update(block, &info),
+                block_receipts: self.prepare_block_receipts_update(receipts, &info),
+                blocks_blooms: self.prepare_block_blooms_update(block, &info),
+                //transactions_addresses: self.prepare_transaction_addresses_update(block, &info),
+                info: info,
+                block: block.clone(),
+            },
+            is_best,
+        );
+    }
+
+    /// This function returns modified block hashes.
+    fn prepare_block_hashes_update(&self, _block: &Block, info: &BlockInfo) -> HashMap<H256, BlockNumber> {
+        let mut block_hashes = HashMap::new();
+
+        block_hashes.insert(info.hash, info.number);
+
+        block_hashes
+    }
+
+    /// This function returns modified block receipts.
+    fn prepare_block_receipts_update(
+        &self,
+        receipts: Vec<Option<Receipt>>,
+        info: &BlockInfo,
+    ) -> HashMap<H256, BlockReceipts> {
+        let mut block_receipts = HashMap::new();
+
+        block_receipts.insert(info.hash, BlockReceipts::new(receipts));
+
+        block_receipts
+    }
+
+    /// This functions returns modified blocks blooms.
+    ///
+    /// To accelerate blooms lookups, blooms are stored in multiple
+    /// layers (BLOOM_LEVELS, currently 3).
+    /// ChainFilter is responsible for building and rebuilding these layers.
+    /// It returns them in HashMap, where values are Blooms and
+    /// keys are BloomIndexes. BloomIndex represents bloom location on one
+    /// of these layers.
+    ///
+    /// To reduce number of queries to database, block blooms are stored
+    /// in BlocksBlooms structure which contains info about several
+    /// (BLOOM_INDEX_SIZE, currently 16) consecutive blocks blooms.
+    ///
+    /// Later, BloomIndexer is used to map bloom location on filter layer (BloomIndex)
+    /// to bloom location in database (BlocksBloomLocation).
+    ///
+    fn prepare_block_blooms_update(&self, block: &Block, info: &BlockInfo) -> HashMap<LogGroupPosition, LogBloomGroup> {
+        let header = block.header();
+
+        let log_bloom = LogBloom::from(header.log_bloom().to_vec().as_slice());
+        let log_blooms: HashMap<LogGroupPosition, LogBloomGroup> = if log_bloom.is_zero() {
+            HashMap::new()
+        } else {
+            let bgroup = BloomGroupChain::new(self.chain.blooms_config, &*self.chain);
+            bgroup
+                .insert(
+                    info.number as BloomChainNumber,
+                    Bloom::from(Into::<[u8; 256]>::into(log_bloom)),
+                )
+                .into_iter()
+                .map(|p| (From::from(p.0), From::from(p.1)))
+                .collect()
+        };
+        log_blooms
+    }
+
+    /// This function returns modified transaction addresses.
+    /*fn prepare_transaction_addresses_update(
+        &self,
+        block: &Block,
+        info: &BlockInfo,
+    ) -> HashMap<H256, TransactionAddress> {
+        let transaction_hashes = block.body().transaction_hashes();
+
+        transaction_hashes
+            .into_iter()
+            .enumerate()
+            .map(|(i, tx_hash)| {
+                (
+                    tx_hash,
+                    TransactionAddress {
+                        block_hash: info.hash,
+                        index: i,
+                    },
+                )
+            })
+            .collect()
+    }*/
+
+    fn prepare_update(&self, batch: &mut DBTransaction, update: ExtrasUpdate, is_best: bool) {
+        {
+            let mut write_receipts = self.chain.block_receipts.write();
+            batch.extend_with_cache(
+                COL_EXTRA,
+                &mut *write_receipts,
+                update.block_receipts,
+                CacheUpdatePolicy::Remove,
+            );
+        }
+
+        {
+            let mut write_blocks_blooms = self.chain.blocks_blooms.write();
+            // update best block
+            // update all existing blooms groups
+            /*for (key, value) in update.blocks_blooms {
+                match write_blocks_blooms.entry(key) {
+                    hash_map::Entry::Occupied(mut entry) => {
+                        entry.get_mut().accrue_bloom_group(&value);
+                        batch.write(COL_EXTRA, entry.key(), entry.get());
+                    },
+                    hash_map::Entry::Vacant(entry) => {
+                        batch.write(COL_EXTRA, entry.key(), &value);
+                        entry.insert(value);
+                    },
+                }
+            }*/
+            batch.extend_with_cache(
+                COL_EXTRA,
+                &mut *write_blocks_blooms,
+                update.blocks_blooms,
+                CacheUpdatePolicy::Overwrite,
+            );
+        }
+
+        // These cached values must be updated last with all four locks taken to avoid
+        // cache decoherence
+        {
+            if is_best {
+                batch.write(COL_EXTRA, &CurrentHash, &update.info.hash);
+                //batch.write(COL_EXTRA, &CurrentProof, &update.info.hash);
+                batch.write(COL_EXTRA, &CurrentHeight, &update.info.number);
+            }
+
+            let mut write_hashes = self.chain.block_hashes.write();
+            //let mut write_txs = self.chain.transaction_addresses.write();
+            //let mut write_hashes = HashMap::new();
+            //let mut write_txs = HashMap::new();
+
+            /*batch.extend_with_cache(
+                COL_EXTRA,
+                &mut *write_hashes,
+                update.block_hashes,
+                CacheUpdatePolicy::Overwrite,
+            );*/
+            batch.write_with_cache(
+                COL_EXTRA,
+                &mut *write_hashes,
+                update.info.hash,
+                update.info.number as BlockNumber,
+                CacheUpdatePolicy::Overwrite,
+            );
+            /*batch.extend_with_cache(
+                COL_EXTRA,
+                &mut *write_txs,
+                update.transactions_addresses,
+                CacheUpdatePolicy::Overwrite,
+            );*/
+        }
+    }
+
+    /// Glue together any disconnected chunks and check that the chain is complete.
+    fn finalize(&self) -> Result<(), ::error::Error> {
+        let mut batch = self.db.transaction();
+
+        /*for (first_num, first_hash) in self.disconnected.drain(..) {
+            let parent_num = first_num - 1;
+
+            // check if the parent is even in the chain.
+            // since we don't restore every single block in the chain,
+            // the first block of the first chunks has nothing to connect to.
+            if let Some(parent_hash) = self.chain.block_hash(parent_num) {
+                // if so, add the child to it.
+                self.chain.add_child(&mut batch, parent_hash, first_hash);
+            }
+        }*/
+
+        /*let genesis_hash = self.chain.genesis_hash();
+        self.chain.insert_epoch_transition(&mut batch, 0, ::engines::EpochTransition {
+            block_number: 0,
+            block_hash: genesis_hash,
+            proof: vec![],
+        });*/
+        let genesis_block = self.chain.block_by_height(0).unwrap_or(Block::default());
+        batch.write(COL_HEADERS, &0, &genesis_block.header.clone());
+
+        batch.write(COL_BODIES, &0, &genesis_block.body.clone());
+        /*let mut write_bodies: HashMap<BlockNumber, BlockBody> = HashMap::new();
+        batch.write_with_cache(
+            COL_BODIES,
+            &mut write_bodies,
+            0 as BlockNumber,
+            genesis_block.body.clone(),
+            CacheUpdatePolicy::Overwrite,
+        );*/
+        //batch.write(COL_EXTRA, &CurrentProof, &update.info.hash);
+
+        self.db.write_buffered(batch);
+        Ok(())
+    }
+}
+
 // helper for reading chunks from arbitrary reader and feeding them into the
 // service.
 pub fn restore_using<R: SnapshotReader>(snapshot: Arc<Service>, reader: &R, recover: bool) -> Result<(), String> {
@@ -344,44 +704,44 @@ pub fn restore_using<R: SnapshotReader>(snapshot: Arc<Service>, reader: &R, reco
         .init_restore(manifest.clone(), recover)
         .map_err(|e| format!("Failed to begin restoration: {}", e))?;
 
-    let num_state = manifest.state_hashes.len();
+    let num_block = manifest.block_hashes.len();
 
     let informant_handle = snapshot.clone();
     ::std::thread::spawn(move || {
         while let RestorationStatus::Ongoing {
-            state_chunks_done, ..
+            block_chunks_done, ..
         } = informant_handle.status()
         {
             info!(
-                "Processed {}/{} state chunks.",
-                state_chunks_done, num_state
+                "Processed {}/{} block chunks.",
+                block_chunks_done, num_block
             );
             ::std::thread::sleep(Duration::from_secs(5));
         }
     });
 
-    info!("Restoring state");
-    for &state_hash in &manifest.state_hashes {
+    info!("Restoring block");
+    for &block_hash in &manifest.block_hashes {
         if snapshot.status() == RestorationStatus::Failed {
             return Err("Restoration failed".into());
         }
 
-        let chunk = reader.chunk(state_hash).map_err(|e| {
+        let chunk = reader.chunk(block_hash).map_err(|e| {
             format!(
                 "Encountered error while reading chunk {:?}: {}",
-                state_hash, e
+                block_hash, e
             )
         })?;
 
         let hash = sha3(&chunk);
-        if hash != state_hash {
+        if hash != block_hash {
             return Err(format!(
                 "Mismatched chunk hash. Expected {:?}, got {:?}",
-                state_hash, hash
+                block_hash, hash
             ));
         }
 
-        snapshot.feed_state_chunk(state_hash, &chunk);
+        snapshot.feed_block_chunk(block_hash, &chunk);
     }
 
     match snapshot.status() {
@@ -393,4 +753,3 @@ pub fn restore_using<R: SnapshotReader>(snapshot: Arc<Service>, reader: &R, reco
         }
     }
 }
-*/

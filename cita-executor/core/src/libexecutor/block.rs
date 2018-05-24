@@ -426,7 +426,7 @@ impl OpenBlock {
                         if let Some(value) = executor.service_map.get(str_addr.clone(), true) {
                             ip = value.conn_info.get_ip().to_string();
                             port = value.conn_info.get_port();
-                        } else if let Some(value) = executor.db.read(db::COL_EXTRA, address) {
+                        } else if let Some(value) = executor.db.read().read(db::COL_EXTRA, address) {
                             ip = value.conn_info.get_ip().to_string();
                             port = value.conn_info.get_port();
                         }

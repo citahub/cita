@@ -16,7 +16,7 @@
 
 //! Snapshot network service implementation.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
@@ -24,22 +24,30 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 //use super::{ManifestData, StateRebuilder, RestorationStatus, SnapshotService};
-use super::{ManifestData, RestorationStatus, StateRebuilder};
+use super::{BlockRebuilder, ManifestData, RestorationStatus, StateRebuilder};
 use super::io::{LooseReader, LooseWriter, SnapshotReader, SnapshotWriter};
 
-//use engines::EthEngine;
-//use consensus::snapshot_components;
-//use consensus::Rebuilder;
 use error::Error;
-//use types::ids::BlockId;
 
 use cita_types::H256;
-use journaldb::Algorithm;
+
+use libexecutor::executor::{get_current_header, Executor, Stage};
+use state_db::StateDB;
+
 use util::{Mutex, RwLock, RwLockReadGuard};
 use util::Bytes;
 use util::UtilError;
-use util::kvdb::{Database, DatabaseConfig};
+use util::journaldb::{self, Algorithm};
+use util::kvdb::*;
 use util::snappy;
+
+use libproto::ExecutedResult;
+
+/// Number of blocks in an ethash snapshot.
+// make dependent on difficulty incrment divisor?
+//const SNAPSHOT_BLOCKS: u64 = 5000;
+/// Maximum number of blocks allowed in an ethash snapshot.
+const MAX_SNAPSHOT_BLOCKS: u64 = 30000;
 
 /// External database restoration handler
 pub trait DatabaseRestore: Send + Sync {
@@ -47,15 +55,69 @@ pub trait DatabaseRestore: Send + Sync {
     fn restore_db(&self, new_db: &str) -> Result<(), Error>;
 }
 
+impl DatabaseRestore for Executor {
+    /// Restart the client with a new backend
+    fn restore_db(&self, new_db: &str) -> Result<(), ::error::Error> {
+        trace!("Replacing client database with {:?}", new_db);
+        let mut state_db = self.state_db.write();
+
+        let db = self.db.write();
+        db.restore(new_db)?;
+
+        let cache_size = state_db.cache_size();
+        *state_db = StateDB::new(
+            journaldb::new(db.clone(), Algorithm::Archive, ::db::COL_STATE),
+            cache_size,
+        );
+
+        // replace executor
+        //*chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
+        let header = match get_current_header(&*db.clone()) {
+            Some(header) => header,
+            _ => {
+                trace!("Get header failed.");
+                return Err(Error::PowInvalid);
+            }
+        };
+        *self.current_header.write() = header.clone();
+
+        self.is_sync.store(false, Ordering::SeqCst);
+
+        self.is_interrupted.store(false, Ordering::SeqCst);
+        *self.stage.write() = Stage::Idle;
+
+        let height = header.number();
+
+        // executed_map
+        let executed_header = header.clone().generate_executed_header();
+        let mut executed_ret = ExecutedResult::new();
+        executed_ret.mut_executed_info().set_header(executed_header);
+        let mut executed_btmap = BTreeMap::new();
+        executed_btmap.insert(height, executed_ret);
+        *self.executed_result.write() = executed_btmap;
+
+        // max_height
+        self.set_max_height(height as usize);
+
+        // block_map
+        let mut block_map = self.block_map.write();
+        block_map.clear();
+
+        Ok(())
+    }
+}
+
 /// State restoration manager.
 struct Restoration {
-    //manifest: ManifestData,
+    manifest: ManifestData,
     state_chunks_left: HashSet<H256>,
+    block_chunks_left: HashSet<H256>,
     state: StateRebuilder,
+    secondary: Box<BlockRebuilder>,
     writer: Option<LooseWriter>,
-    //final_state_root: H256,
+    final_state_root: H256,
     //guard: Guard,
-    db: Arc<Database>,
+    db: Arc<KeyValueDB>,
 }
 
 struct RestorationParams<'a> {
@@ -64,7 +126,8 @@ struct RestorationParams<'a> {
     db_path: PathBuf,              // database path
     db_config: &'a DatabaseConfig, // configuration for the database.
     writer: Option<LooseWriter>,   // writer for recovered snapshot.
-                                   //guard: Guard,                  // guard for the restoration directory.
+    executor: Arc<Executor>,
+    //guard: Guard,                  // guard for the restoration directory.
 }
 
 impl Restoration {
@@ -73,34 +136,40 @@ impl Restoration {
         let manifest = params.manifest;
 
         let state_chunks = manifest.state_hashes.iter().cloned().collect();
+        let block_chunks = manifest.block_hashes.iter().cloned().collect();
 
         let raw_db =
             Arc::new(Database::open(params.db_config, &*params.db_path.to_string_lossy()).map_err(UtilError::from)?);
 
-        //let secondary = components.rebuilder(raw_db.clone(), &manifest)?;
+        let secondary = BlockRebuilder::new(
+            params.executor.clone(),
+            raw_db.clone(),
+            &manifest,
+            MAX_SNAPSHOT_BLOCKS,
+        );
 
-        //let root = manifest.state_root.clone();
+        let root = manifest.state_root.clone();
 
         Ok(Restoration {
-            //manifest: manifest,
+            manifest: manifest,
             state_chunks_left: state_chunks,
+            block_chunks_left: block_chunks,
             state: StateRebuilder::new(raw_db.clone(), params.pruning),
+            secondary: Box::new(secondary),
             writer: params.writer,
-            //final_state_root: root,
+            final_state_root: root,
             //guard: params.guard,
             db: raw_db,
         })
     }
 
     // feeds a state chunk, aborts early if `flag` becomes false.
-    fn feed_state(&mut self, hash: H256, chunk: &[u8] /*, flag: &AtomicBool*/) -> Result<(), Error> {
+    fn feed_state(&mut self, hash: H256, chunk: &[u8], flag: &AtomicBool) -> Result<(), Error> {
         if self.state_chunks_left.contains(&hash) {
             let mut decompressed_data = Vec::new();
             snappy::decompress_to(chunk, &mut decompressed_data)?;
 
-            let restoring_snapshot: AtomicBool = AtomicBool::new(false);
-            restoring_snapshot.store(true, Ordering::SeqCst);
-            self.state.feed(&decompressed_data, &restoring_snapshot)?;
+            self.state.feed(&decompressed_data, flag)?;
 
             if let Some(ref mut writer) = self.writer.as_mut() {
                 writer.write_state_chunk(hash, chunk)?;
@@ -111,7 +180,24 @@ impl Restoration {
 
         Ok(())
     }
-    /*
+
+    // feeds a block chunk
+    fn feed_blocks(&mut self, hash: H256, chunk: &[u8], flag: &AtomicBool) -> Result<(), Error> {
+        if self.block_chunks_left.contains(&hash) {
+            let mut decompressed_data = Vec::new();
+            snappy::decompress_to(chunk, &mut decompressed_data)?;
+
+            self.secondary.feed(&decompressed_data, flag)?;
+            if let Some(ref mut writer) = self.writer.as_mut() {
+                writer.write_block_chunk(hash, chunk)?;
+            }
+
+            self.block_chunks_left.remove(&hash);
+        }
+
+        Ok(())
+    }
+
     // finish up restoration.
     fn finalize(self) -> Result<(), Error> {
         use util::TrieError;
@@ -125,29 +211,31 @@ impl Restoration {
         if root != self.final_state_root {
             warn!(
                 "Final restored state has wrong state root: expected {:?}, got {:?}",
-                root, self.final_state_root
+                self.final_state_root, root
             );
             return Err(TrieError::InvalidStateRoot(root).into());
         }
 
-        // check for missing code.
-        //self.state.finalize(self.manifest.block_number, self.manifest.block_hash)?;
+        // check for missing code and abi.
+        self.state
+            .finalize(self.manifest.block_number, self.manifest.block_hash)?;
 
         // connect out-of-order chunks and verify chain integrity.
-        //self.secondary.finalize(engine)?;
+        self.secondary.finalize()?;
+
+        let _ = self.db.flush();
 
         if let Some(writer) = self.writer {
             writer.finish(self.manifest)?;
         }
 
-        self.guard.disarm();
+        //self.guard.disarm();
         Ok(())
     }
-    */
 
     // is everything done?
     fn is_done(&self) -> bool {
-        self.state_chunks_left.is_empty()
+        self.block_chunks_left.is_empty() && self.state_chunks_left.is_empty()
     }
 }
 
@@ -156,11 +244,12 @@ pub struct ServiceParams {
     /// Database configuration options.
     pub db_config: DatabaseConfig,
     /// State pruning algorithm.
-    //pub pruning: Algorithm,
+    pub pruning: Algorithm,
     /// Usually "<chain hash>/snapshot"
     pub snapshot_root: PathBuf,
     /// A handle for database restoration.
     pub db_restore: Arc<DatabaseRestore>,
+    pub executor: Arc<Executor>,
 }
 
 /// `SnapshotService` implementation.
@@ -169,14 +258,16 @@ pub struct Service {
     restoration: Mutex<Option<Restoration>>,
     snapshot_root: PathBuf,
     db_config: DatabaseConfig,
-    //pruning: Algorithm,
+    pruning: Algorithm,
     status: Mutex<RestorationStatus>,
     reader: RwLock<Option<LooseReader>>,
     state_chunks: AtomicUsize,
+    block_chunks: AtomicUsize,
     db_restore: Arc<DatabaseRestore>,
     progress: super::Progress,
     taking_snapshot: AtomicBool,
     restoring_snapshot: AtomicBool,
+    executor: Arc<Executor>,
 }
 
 impl Service {
@@ -186,14 +277,16 @@ impl Service {
             restoration: Mutex::new(None),
             snapshot_root: params.snapshot_root,
             db_config: params.db_config,
-            //pruning: params.pruning,
+            pruning: params.pruning,
             status: Mutex::new(RestorationStatus::Inactive),
             reader: RwLock::new(None),
             state_chunks: AtomicUsize::new(0),
+            block_chunks: AtomicUsize::new(0),
             db_restore: params.db_restore,
             progress: Default::default(),
             taking_snapshot: AtomicBool::new(false),
             restoring_snapshot: AtomicBool::new(false),
+            executor: params.executor,
         };
 
         // create the root snapshot dir if it doesn't exist.
@@ -290,7 +383,7 @@ impl Service {
         let mut res = self.restoration.lock();
 
         self.state_chunks.store(0, Ordering::SeqCst);
-        //self.block_chunks.store(0, Ordering::SeqCst);
+        self.block_chunks.store(0, Ordering::SeqCst);
 
         // tear down existing restoration.
         *res = None;
@@ -312,8 +405,9 @@ impl Service {
         };
 
         let params = RestorationParams {
+            executor: self.executor.clone(),
             manifest: manifest,
-            pruning: Algorithm::Archive,
+            pruning: self.pruning,
             db_path: self.restoration_db(),
             db_config: &self.db_config,
             writer: writer,
@@ -321,15 +415,15 @@ impl Service {
         };
 
         let state_chunks = params.manifest.state_hashes.len();
-        //let block_chunks = params.manifest.block_hashes.len();
+        let block_chunks = params.manifest.block_hashes.len();
 
         *res = Some(Restoration::new(params)?);
 
         *self.status.lock() = RestorationStatus::Ongoing {
             state_chunks: state_chunks as u32,
-            //block_chunks: block_chunks as u32,
+            block_chunks: block_chunks as u32,
             state_chunks_done: self.state_chunks.load(Ordering::SeqCst) as u32,
-            //block_chunks_done: self.block_chunks.load(Ordering::SeqCst) as u32,
+            block_chunks_done: self.block_chunks.load(Ordering::SeqCst) as u32,
         };
 
         self.restoring_snapshot.store(true, Ordering::SeqCst);
@@ -340,14 +434,12 @@ impl Service {
     // restoration as an argument -- so acquiring it again _will_
     // lead to deadlock.
     fn finalize_restoration(&self, rest: &mut Option<Restoration>) -> Result<(), Error> {
-        trace!(target: "snapshot", "finalizing restoration");
+        trace!("finalizing restoration");
 
         let recover = rest.as_ref().map_or(false, |rest| rest.writer.is_some());
 
         // destroy the restoration before replacing databases and snapshot.
-        //rest.take()
-        //.map(|r| r.finalize(&*self.engine))
-        //.unwrap_or(Ok(()))?;
+        rest.take().map(|r| r.finalize()).unwrap_or(Ok(()))?;
 
         self.replace_client_db()?;
 
@@ -358,11 +450,14 @@ impl Service {
             let snapshot_dir = self.snapshot_dir();
 
             if snapshot_dir.exists() {
-                trace!(target: "snapshot", "removing old snapshot dir at {}", snapshot_dir.to_string_lossy());
+                trace!(
+                    "removing old snapshot dir at {}",
+                    snapshot_dir.to_string_lossy(),
+                );
                 fs::remove_dir_all(&snapshot_dir)?;
             }
 
-            trace!(target: "snapshot", "copying restored snapshot files over");
+            trace!("copying restored snapshot files over");
             fs::rename(self.temp_recovery_dir(), &snapshot_dir)?;
 
             *reader = Some(LooseReader::new(snapshot_dir)?);
@@ -375,7 +470,7 @@ impl Service {
     }
 
     /// Feed a chunk of either kind. no-op if no restoration or status is wrong.
-    fn feed_chunk(&self, hash: H256, chunk: &[u8] /*, is_state: bool*/) -> Result<(), Error> {
+    fn feed_chunk(&self, hash: H256, chunk: &[u8], is_state: bool) -> Result<(), Error> {
         // TODO: be able to process block chunks and state chunks at same time?
         let (result, db) = {
             let mut restoration = self.restoration.lock();
@@ -390,14 +485,20 @@ impl Service {
                         };
 
                         (
-                            rest.feed_state(hash, chunk).map(|_| rest.is_done()),
+                            match is_state {
+                                true => rest.feed_state(hash, chunk, &self.restoring_snapshot),
+                                false => rest.feed_blocks(hash, chunk, &self.restoring_snapshot),
+                            }.map(|_| rest.is_done()),
                             rest.db.clone(),
                         )
                     };
 
                     let res = match res {
                         Ok(is_done) => {
-                            self.state_chunks.fetch_add(1, Ordering::SeqCst);
+                            match is_state {
+                                true => self.state_chunks.fetch_add(1, Ordering::SeqCst),
+                                false => self.block_chunks.fetch_add(1, Ordering::SeqCst),
+                            };
 
                             match is_done {
                                 true => {
@@ -419,10 +520,23 @@ impl Service {
 
     /// Feed a state chunk to be processed synchronously.
     pub fn feed_state_chunk(&self, hash: H256, chunk: &[u8]) {
-        match self.feed_chunk(hash, chunk) {
+        match self.feed_chunk(hash, chunk, true) {
             Ok(()) => (),
             Err(e) => {
                 warn!("Encountered error during state restoration: {}", e);
+                *self.restoration.lock() = None;
+                *self.status.lock() = RestorationStatus::Failed;
+                let _ = fs::remove_dir_all(self.restoration_dir());
+            }
+        }
+    }
+
+    /// Feed a block chunk to be processed synchronously.
+    pub fn feed_block_chunk(&self, hash: H256, chunk: &[u8]) {
+        match self.feed_chunk(hash, chunk, false) {
+            Ok(()) => (),
+            Err(e) => {
+                warn!("Encountered error during block restoration: {}", e);
                 *self.restoration.lock() = None;
                 *self.status.lock() = RestorationStatus::Failed;
                 let _ = fs::remove_dir_all(self.restoration_dir());
@@ -444,11 +558,12 @@ impl SnapshotService for Service {
         let mut cur_status = self.status.lock();
         if let RestorationStatus::Ongoing {
             ref mut state_chunks_done,
+            ref mut block_chunks_done,
             ..
         } = *cur_status
         {
             *state_chunks_done = self.state_chunks.load(Ordering::SeqCst) as u32;
-            //*block_chunks_done = self.block_chunks.load(Ordering::SeqCst) as u32;
+            *block_chunks_done = self.block_chunks.load(Ordering::SeqCst) as u32;
         }
 
         cur_status.clone()
@@ -459,7 +574,7 @@ impl SnapshotService for Service {
 			trace!("Error sending snapshot service message: {:?}", e);
 		}
 	}
-*/
+    */
 
     fn abort_restore(&self) {
         self.restoring_snapshot.store(false, Ordering::SeqCst);
@@ -472,7 +587,7 @@ impl SnapshotService for Service {
 			trace!("Error sending snapshot service message: {:?}", e);
 		}
 	}
-*/
+    */
 }
 /// The interface for a snapshot network service.
 /// This handles:

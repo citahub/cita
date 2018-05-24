@@ -36,11 +36,9 @@ use super::ManifestData;
 /// Writing the same chunk multiple times will lead to implementation-defined
 /// behavior, and is not advised.
 pub trait SnapshotWriter {
-    /// Write a compressed state chunk.
+    /// Write a compressed block chunk.
     fn write_block_chunk(&mut self, hash: H256, chunk: &[u8]) -> io::Result<()>;
 
-    /// Write a compressed block chunk.
-    //fn write_block_chunk(&mut self, hash: H256, chunk: &[u8]) -> io::Result<()>;
     /// Complete writing. The manifest's chunk lists must be consistent
     /// with the chunks written.
     fn finish(self, manifest: ManifestData) -> io::Result<()>
@@ -205,7 +203,11 @@ impl PackedReader {
             + ((off_bytes[1] as u64) << 8) + (off_bytes[0] as u64);
 
         let manifest_len = file_len - manifest_off - 8;
-        trace!(target: "snapshot", "loading manifest of length {} from offset {}", manifest_len, manifest_off);
+        trace!(
+            "loading manifest of length {} from offset {}",
+            manifest_len,
+            manifest_off,
+        );
 
         let mut manifest_buf = vec![0; manifest_len as usize];
 
@@ -244,7 +246,7 @@ impl SnapshotReader for PackedReader {
         let mut file = &self.file;
 
         file.seek(SeekFrom::Start(off))?;
-        let mut buf = vec![0; len as usize];
+        let mut buf = vec![0u8; len as usize];
 
         file.read_exact(&mut buf[..])?;
 

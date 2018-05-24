@@ -238,7 +238,7 @@ impl ExecutorService for ExecutorServiceImpl {
         }
 
         if hi == 0 {
-            if let Some(value) = self.ext.db.read(db::COL_EXTRA, &address) {
+            if let Some(value) = self.ext.db.read().read(db::COL_EXTRA, &address) {
                 hi = value.height
             }
         }
@@ -403,11 +403,11 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         };
 
         if let Ok(resp) = resp {
-            let mut batch = executor.db.transaction();
+            let mut batch = executor.db.read().transaction();
             let h = env_info.get_number().parse::<u64>().unwrap();
             let value = ContractState::new(ip.to_string(), port, addr.to_string(), h);
             batch.write(db::COL_EXTRA, &contract_address, &value);
-            executor.db.write(batch).unwrap();
+            executor.db.read().write(batch).unwrap();
             executor
                 .service_map
                 .set_enable_height(contract_address.lower_hex(), h);
