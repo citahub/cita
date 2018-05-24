@@ -93,8 +93,8 @@ use core::libexecutor::{vm_grpc_server, ServiceMap};
 use executor_instance::ExecutorInstance;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
-use std::sync::Arc;
 use std::sync::mpsc::channel;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use util::set_panic_handler;
@@ -170,7 +170,9 @@ fn main() {
 
     let mut timeout_factor = 0u8;
     loop {
-        if let Ok(number) = write_receiver.recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0)) {
+        if let Ok(number) =
+            write_receiver.recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0))
+        {
             ext_instance.execute_block(number);
             timeout_factor = 0;
         } else {

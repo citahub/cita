@@ -16,14 +16,16 @@
 
 //! Receipt
 
-use BlockNumber;
-use cita_types::{Address, H256, U256};
 use cita_types::traits::LowerHex;
-use libproto::executor::{Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot};
+use cita_types::{Address, H256, U256};
+use libproto::executor::{
+    Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot,
+};
 use log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
 use rlp::*;
 use std::str::FromStr;
 use util::{Bytes, HeapSizeOf};
+use BlockNumber;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
@@ -65,7 +67,9 @@ impl ReceiptError {
             ReceiptError::ExecutionInternal => "Execution internal error.",
             ReceiptError::TransactionMalformed => "Malformed transaction.",
             ReceiptError::OutOfGas => "Out of gas.",
-            ReceiptError::BadJumpDestination => "Jump position wasn't marked with JUMPDEST instruction.",
+            ReceiptError::BadJumpDestination => {
+                "Jump position wasn't marked with JUMPDEST instruction."
+            }
             ReceiptError::BadInstruction => "Instruction is not supported.",
             ReceiptError::StackUnderflow => "Not enough stack elements to execute instruction.",
             ReceiptError::OutOfStack => "Execution would exceed defined Stack Limit.",
@@ -95,7 +99,9 @@ impl ReceiptError {
             ReceiptError::StackUnderflow => ProtoReceiptError::StackUnderflow,
             ReceiptError::OutOfStack => ProtoReceiptError::OutOfStack,
             ReceiptError::Internal => ProtoReceiptError::Internal,
-            ReceiptError::MutableCallInStaticContext => ProtoReceiptError::MutableCallInStaticContext,
+            ReceiptError::MutableCallInStaticContext => {
+                ProtoReceiptError::MutableCallInStaticContext
+            }
             ReceiptError::OutOfBounds => ProtoReceiptError::OutOfBounds,
             ReceiptError::Reverted => ProtoReceiptError::Reverted,
         }
@@ -119,7 +125,9 @@ impl ReceiptError {
             ProtoReceiptError::StackUnderflow => ReceiptError::StackUnderflow,
             ProtoReceiptError::OutOfStack => ReceiptError::OutOfStack,
             ProtoReceiptError::Internal => ReceiptError::Internal,
-            ProtoReceiptError::MutableCallInStaticContext => ReceiptError::MutableCallInStaticContext,
+            ProtoReceiptError::MutableCallInStaticContext => {
+                ReceiptError::MutableCallInStaticContext
+            }
             ProtoReceiptError::OutOfBounds => ReceiptError::OutOfBounds,
             ProtoReceiptError::Reverted => ReceiptError::Reverted,
         }
@@ -219,7 +227,8 @@ impl Receipt {
 
         receipt_proto.set_gas_used(self.gas_used.lower_hex());
         receipt_proto.set_log_bloom(self.log_bloom.to_vec());
-        receipt_proto.logs = self.logs
+        receipt_proto.logs = self
+            .logs
             .clone()
             .into_iter()
             .map(|log_entry| log_entry.protobuf())
@@ -366,13 +375,11 @@ mod tests {
         let r = Receipt::new(
             None,
             0x40cae.into(),
-            vec![
-                LogEntry {
-                    address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
-                    topics: vec![],
-                    data: vec![0u8; 32],
-                },
-            ],
+            vec![LogEntry {
+                address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
+                topics: vec![],
+                data: vec![0u8; 32],
+            }],
             None,
             1.into(),
             "2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into(),
@@ -389,13 +396,11 @@ mod tests {
         let r = Receipt::new(
             Some("2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into()),
             0x40cae.into(),
-            vec![
-                LogEntry {
-                    address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
-                    topics: vec![],
-                    data: vec![0u8; 32],
-                },
-            ],
+            vec![LogEntry {
+                address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
+                topics: vec![],
+                data: vec![0u8; 32],
+            }],
             None,
             1.into(),
             "2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into(),
@@ -411,13 +416,11 @@ mod tests {
         let r = Receipt::new(
             Some("2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into()),
             0x40cae.into(),
-            vec![
-                LogEntry {
-                    address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
-                    topics: vec![],
-                    data: vec![0u8; 32],
-                },
-            ],
+            vec![LogEntry {
+                address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
+                topics: vec![],
+                data: vec![0u8; 32],
+            }],
             Some(ReceiptError::NoTransactionPermission),
             1.into(),
             "2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into(),

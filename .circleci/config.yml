@@ -2,7 +2,7 @@ version: 2
 jobs:
   build_sha3:
     docker:
-      - image: cita/cita-build:latest
+      - image: cita/cita-build:ubuntu-18.04-20180518
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -12,7 +12,7 @@ jobs:
           command: 'git submodule update --init'
       - run:
           name: format
-          command: 'cargo fmt --all  -- --write-mode diff'
+          command: 'cargo fmt --all  -- --check'
       - run:
           name: build
           command: 'RUSTFLAGS="-F warnings" cargo build --all'
@@ -31,7 +31,7 @@ jobs:
 
   basic_test_sha3:
     docker:
-      - image: cita/cita-build:latest
+      - image: cita/cita-build:ubuntu-18.04-20180518
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -45,7 +45,7 @@ jobs:
 
   build_blake2b:
     docker:
-      - image: cita/cita-build:latest
+      - image: cita/cita-build:ubuntu-18.04-20180518
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -74,7 +74,7 @@ jobs:
 
   basic_test_blake2b:
     docker:
-      - image: cita/cita-build:latest
+      - image: cita/cita-build:ubuntu-18.04-20180518
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -86,37 +86,37 @@ jobs:
           name: test
           command: 'RUSTFLAGS="-F warnings" cargo test --tests'
 
-  basic_test_coverage_sha3:
-    docker:
-      - image: cita/cita-build:latest
-    working_directory: ~/cita-build
-    resource_class: large
-    steps:
-      - restore_cache:
-          key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-      - restore_cache:
-          key: deps-{{ checksum "Cargo.lock" }}-sha3
-      - run:
-          name: test-coverage
-          command: |
-            bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
-            cargo tarpaulin \
-              --packages cita-auth \
-              --packages cita-jsonrpc \
-              --packages cita-chain \
-              --packages core \
-              --packages common-types \
-              --packages cita-bft \
-              --packages cita-network \
-              --packages cita-executor \
-              --packages core-executor \
-              --packages cita-forever \
-              --packages jsonrpc_types \
-              --skip-clean --coveralls ${COVERALLS_TOKEN}
+  # basic_test_coverage_sha3:
+  #   docker:
+  #     - image: cita/cita-build:ubuntu-18.04-20180518
+  #   working_directory: ~/cita-build
+  #   resource_class: large
+  #   steps:
+  #     - restore_cache:
+  #         key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+  #     - restore_cache:
+  #         key: deps-{{ checksum "Cargo.lock" }}-sha3
+  #     - run:
+  #         name: test-coverage
+  #         command: |
+  #           bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
+  #           cargo tarpaulin \
+  #             --packages cita-auth \
+  #             --packages cita-jsonrpc \
+  #             --packages cita-chain \
+  #             --packages core \
+  #             --packages common-types \
+  #             --packages cita-bft \
+  #             --packages cita-network \
+  #             --packages cita-executor \
+  #             --packages core-executor \
+  #             --packages cita-forever \
+  #             --packages jsonrpc_types \
+  #             --skip-clean --coveralls ${COVERALLS_TOKEN}
 
   integrate_test_sha3:
     docker:
-      - image: cita/cita-build:latest
+      - image: cita/cita-build:ubuntu-18.04-20180518
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -147,7 +147,7 @@ jobs:
 
   integrate_test_crosschain_sha3:
     docker:
-      - image: cita/cita-build:latest
+      - image: cita/cita-build:ubuntu-18.04-20180518
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -171,9 +171,9 @@ workflows:
       - basic_test_sha3:
           requires:
             - build_sha3
-      - basic_test_coverage_sha3:
-          requires:
-            - build_sha3
+      # - basic_test_coverage_sha3:
+      #     requires:
+      #       - build_sha3
       - integrate_test_sha3:
           requires:
             - build_sha3

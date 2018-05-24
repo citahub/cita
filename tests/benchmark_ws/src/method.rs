@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use jsonrpc_types::{Call, Error, Id, Params, RpcRequest};
 use jsonrpc_types::method::method;
 use jsonrpc_types::request::Version;
 use jsonrpc_types::response::ResultBody;
+use jsonrpc_types::{Call, Error, Id, Params, RpcRequest};
 use serde_json;
 use uuid::Uuid;
 

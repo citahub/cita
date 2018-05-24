@@ -16,9 +16,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crypto::*;
-use hyper::Client;
 use hyper::client::Response;
 use hyper::status::StatusCode;
+use hyper::Client;
 use jsonrpc_types::response::*;
 use libproto::blockchain::UnverifiedTransaction;
 use param::Param;
@@ -26,12 +26,12 @@ use serde_json;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::fs::File;
-use std::io::{BufRead, Cursor, Read};
 use std::io::prelude::*;
+use std::io::{BufRead, Cursor, Read};
 use std::path::Path;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
 use trans::*;
@@ -568,7 +568,15 @@ impl Sendtx {
                             jsonrpc use time: {} ms
                             tps: {}
                             single tx respone time: {} ns\n"#,
-                            buf, totaltx, sucess, fail, START_H, _end_h, secs, tps, single_tx_response_time
+                            buf,
+                            totaltx,
+                            sucess,
+                            fail,
+                            START_H,
+                            _end_h,
+                            secs,
+                            tps,
+                            single_tx_response_time
                         );
                         let path = Path::new("jsonrpc_performance.txt");
                         let mut file = match File::create(&path) {

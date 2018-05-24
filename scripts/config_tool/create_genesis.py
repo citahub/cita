@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 # pylint: disable=missing-docstring
 
@@ -9,6 +9,7 @@ import sha3
 import sys
 import time
 import yaml
+import binascii
 
 from ethereum.abi import ContractTranslator
 import ethereum.tools.tester as eth_tester
@@ -22,15 +23,8 @@ BLOCK_GAS_LIMIT = 471238800
 
 def function_encode(func_sign):
     keccak = sha3.keccak_256()
-    keccak.update(func_sign)
-    return hexstr_to_bytes(keccak.hexdigest()[0:8])
-
-
-def hexstr_to_bytes(hexstr):
-    if len(hexstr) % 2 != 0:
-        raise Exception('Parse hex string {} failed.'.format(hexstr))
-    return ''.join((chr((int(hexstr[idx:idx + 2], 16)))
-                    for idx in range(0, len(hexstr), 2)))
+    keccak.update(func_sign.encode('utf-8'))
+    return binascii.unhexlify(keccak.hexdigest()[0:8])
 
 
 class GenesisData(object):
@@ -127,7 +121,7 @@ class GenesisData(object):
             self.write_docs(name, data)
             ctt = ContractTranslator(data['abi'])
             args = self.contracts_args.get(name)
-            extra = '' if not args else ctt.encode_constructor_arguments(
+            extra = b'' if not args else ctt.encode_constructor_arguments(
                 [arg for arg in args.values()])
             self.mine_contract_on_chain_tester(addr, data['bin'] + extra)
 
@@ -140,7 +134,7 @@ class GenesisData(object):
         for name, info in pcinfo['basic'].items():
             addr = info['address']
             conts = [addr]
-            funcs = [hexstr_to_bytes('00000000')]
+            funcs = [binascii.unhexlify('00000000')]
             ctt = ContractTranslator(data['abi'])
             extra = ctt.encode_constructor_arguments([name, conts, funcs])
             self.mine_contract_on_chain_tester(addr, data['bin'] + extra)

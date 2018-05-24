@@ -37,23 +37,23 @@ extern crate logger;
 #[macro_use]
 extern crate serde_derive;
 
-mod generate_block;
 mod call_exet;
+mod generate_block;
 
 use call_exet::Callexet;
 use cita_types::H256;
 use clap::App;
-use core::libchain::*;
 use core::libchain::block::Block as ChainBlock;
+use core::libchain::*;
 use core_executor::db;
 use core_executor::libexecutor::Genesis;
 use cpuprofiler::PROFILER;
 use generate_block::Generateblock;
 use libproto::router::{MsgType, RoutingKey, SubModules};
-use std::{thread, time};
 use std::convert::TryFrom;
-use std::sync::Arc;
 use std::sync::mpsc::channel;
+use std::sync::Arc;
+use std::{thread, time};
 use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 
@@ -135,7 +135,13 @@ fn create_contract(
 
 //发送合约交易性能
 #[allow(unused_assignments)]
-fn send_contract_tx(block_tx_num: i32, call: Callexet, pre_hash: H256, flag_prof_start: u64, flag_prof_duration: u64) {
+fn send_contract_tx(
+    block_tx_num: i32,
+    call: Callexet,
+    pre_hash: H256,
+    flag_prof_start: u64,
+    flag_prof_duration: u64,
+) {
     //构造创建合约的交易交易
     let mut code = "60606040523415600e57600080fd5b5b5b5b609480\
                     61001f6000396000f30060606040526000357c0100\

@@ -1,12 +1,12 @@
-use Source;
 use connection::Connection;
-use libproto::{Message, Response};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
+use libproto::{Message, Response};
 use std::convert::{Into, TryFrom, TryInto};
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
+use Source;
 
 /// Message forwarding, include p2p and local
 pub struct NetWork {
@@ -48,8 +48,10 @@ impl NetWork {
                     self.tx_sync.send((source, (key, data)));
                 }
                 routing_key!(Chain >> SyncResponse) => {
-                    self.con
-                        .broadcast_rawbytes(routing_key!(Synchronizer >> SyncResponse).into(), &data);
+                    self.con.broadcast_rawbytes(
+                        routing_key!(Synchronizer >> SyncResponse).into(),
+                        &data,
+                    );
                 }
                 routing_key!(Jsonrpc >> RequestNet) => {
                     self.reply_rpc(&data);
@@ -64,7 +66,8 @@ impl NetWork {
             },
             // Come from Netserver
             Source::REMOTE => match rtkey {
-                routing_key!(Synchronizer >> Status) | routing_key!(Synchronizer >> SyncResponse) => {
+                routing_key!(Synchronizer >> Status)
+                | routing_key!(Synchronizer >> SyncResponse) => {
                     self.tx_sync.send((source, (key, data)));
                 }
                 routing_key!(Synchronizer >> SyncRequest) => {
@@ -140,7 +143,8 @@ impl NetWork {
                 let mut response = Response::new();
                 response.set_request_id(ts.take_request_id());
                 if ts.has_peercount() {
-                    let peercount = self.con
+                    let peercount = self
+                        .con
                         .peers_pair
                         .read()
                         .iter()

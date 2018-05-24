@@ -15,25 +15,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use Id;
 use bytes::Bytes;
 use cita_types::{H256, U256};
 use error::Error;
 use libproto::response::{Response, Response_oneof_data};
 use request::Version;
-use rpctypes::{Block, FilterChanges, Log, MetaData, Receipt, RpcBlock, RpcTransaction, TxResponse};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use rpctypes::{
+    Block, FilterChanges, Log, MetaData, Receipt, RpcBlock, RpcTransaction, TxResponse,
+};
 use serde::de::Error as SError;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json;
 use serde_json::{from_value, Value};
 use std::vec::Vec;
+use Id;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ResultBody {
     BlockNumber(U256),
     FullBlock(Block),
-    #[serde(rename = "null")] Null,
+    #[serde(rename = "null")]
+    Null,
     Receipt(Receipt),
     Transaction(RpcTransaction),
     TxResponse(TxResponse),
@@ -60,14 +63,16 @@ impl Default for ResultBody {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct RpcFailure {
-    #[serde(skip_serializing_if = "Option::is_none")] pub jsonrpc: Option<Version>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub jsonrpc: Option<Version>,
     pub id: Id,
     pub error: Error,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct RpcSuccess {
-    #[serde(skip_serializing_if = "Option::is_none")] pub jsonrpc: Option<Version>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub jsonrpc: Option<Version>,
     pub id: Id,
     pub result: ResultBody,
 }
@@ -164,8 +169,8 @@ impl Output {
                         .set_result(ResultBody::UninstallFliter(is_uninstall))
                         .output(),
                     Response_oneof_data::filter_changes(data) => {
-                        let changes =
-                            serde_json::from_str::<FilterChanges>(&data).expect("failed to parse into FilterChanges");
+                        let changes = serde_json::from_str::<FilterChanges>(&data)
+                            .expect("failed to parse into FilterChanges");
                         success
                             .set_result(ResultBody::FilterChanges(changes))
                             .output()
@@ -178,11 +183,13 @@ impl Output {
                     Response_oneof_data::transaction_proof(proof) => success
                         .set_result(ResultBody::TxProof(Bytes::from(proof)))
                         .output(),
-                    Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(
-                        id.clone(),
-                        jsonrpc.clone(),
-                        Error::server_error(code, err_msg),
-                    )),
+                    Response_oneof_data::error_msg(err_msg) => {
+                        Output::Failure(RpcFailure::from_options(
+                            id.clone(),
+                            jsonrpc.clone(),
+                            Error::server_error(code, err_msg),
+                        ))
+                    }
                     Response_oneof_data::meta_data(data) => success
                         .set_result(ResultBody::MetaData(
                             serde_json::from_str::<MetaData>(&data).unwrap(),
@@ -191,11 +198,13 @@ impl Output {
                 }
             }
             _ => match data.data.unwrap() {
-                Response_oneof_data::error_msg(err_msg) => Output::Failure(RpcFailure::from_options(
-                    id.clone(),
-                    jsonrpc.clone(),
-                    Error::server_error(code, err_msg),
-                )),
+                Response_oneof_data::error_msg(err_msg) => {
+                    Output::Failure(RpcFailure::from_options(
+                        id.clone(),
+                        jsonrpc.clone(),
+                        Error::server_error(code, err_msg),
+                    ))
+                }
                 _ => {
                     error!("return system error!!!");
                     Output::Failure(RpcFailure::from(Error::server_error(code, "system error!")))
@@ -295,9 +304,9 @@ impl Serialize for RpcResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Id;
     use request::Version;
     use serde_json;
+    use Id;
 
     #[test]
     fn test_rpc_deserialize() {

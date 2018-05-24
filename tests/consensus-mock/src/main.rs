@@ -21,9 +21,9 @@ use chrono::NaiveDateTime;
 use cita_types::{Address, H256};
 use clap::{App, ArgMatches};
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
-use libproto::Message;
 use libproto::blockchain::{Block, BlockBody, BlockTxs, BlockWithProof};
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::Message;
 use proof::TendermintProof;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
@@ -134,13 +134,15 @@ fn get_mock_data<'a>(matches: &'a ArgMatches) -> serde_yaml::Value {
         .expect("Failed to open mock data file")
         .read_to_string(&mut mock_data)
         .expect("Failed to read mock data");
-    let mock_data: serde_yaml::Value =
-        serde_yaml::from_str(mock_data.as_str()).expect("Failed to parse the mock data from yaml format");
+    let mock_data: serde_yaml::Value = serde_yaml::from_str(mock_data.as_str())
+        .expect("Failed to parse the mock data from yaml format");
 
     mock_data
 }
 
-fn parse_mock_data<'a>(mock_data: &'a mut serde_yaml::Value) -> (PrivKey, HashMap<u64, &'a serde_yaml::Value>) {
+fn parse_mock_data<'a>(
+    mock_data: &'a mut serde_yaml::Value,
+) -> (PrivKey, HashMap<u64, &'a serde_yaml::Value>) {
     // get the private-key of the miner
     let pk_miner: PrivKey = {
         let pk_str = mock_data["privkey"].as_str().unwrap();

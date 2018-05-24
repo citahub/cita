@@ -1,8 +1,8 @@
 use super::*;
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
-use cita_types::{Address, H256, U256};
 use cita_types::traits::LowerHex;
+use cita_types::{Address, H256, U256};
 use contracts::ChainManagement;
 use core::libchain::chain::TxProof;
 
@@ -118,7 +118,12 @@ impl CrossChainVerify {
         }
         let (gas_left, chain_id) = ret.unwrap();
 
-        let ret = ChainManagement::ext_authorities(ext, &gas_left, &params.sender, relay_info.from_chain_id);
+        let ret = ChainManagement::ext_authorities(
+            ext,
+            &gas_left,
+            &params.sender,
+            relay_info.from_chain_id,
+        );
         if ret.is_none() {
             return Err(evm::Error::Internal("get authorities failed".to_owned()));
         }

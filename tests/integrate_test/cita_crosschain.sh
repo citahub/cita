@@ -44,7 +44,7 @@ function python_run () {
         pycmd="${pycmd} $1;"
         shift 1
     done
-    python -c "${pycmd}"
+    python3 -c "${pycmd}"
 }
 
 function func_encode () {
@@ -52,7 +52,7 @@ function func_encode () {
     python_run \
         "import sha3" \
         "keccak = sha3.keccak_256()" \
-        "keccak.update('${func}')" \
+        "keccak.update('${func}'.encode('utf-8'))" \
         "print(keccak.hexdigest()[0:8])"
 }
 
@@ -62,9 +62,10 @@ function abi_encode () {
     local data="$3"
     python_run \
         "from ethereum.abi import ContractTranslator" \
-        "ct = ContractTranslator('''${abi}''')" \
+        "import binascii" \
+        "ct = ContractTranslator(b'''${abi}''')" \
         "tx = ct.encode('${func}', [${data}])" \
-        "print(tx.encode('hex'))"
+        "print(binascii.hexlify(tx).decode('utf-8'))"
 }
 
 function json_get () {
@@ -84,7 +85,7 @@ function txtool_run () {
     local chain=$1
     shift 1
     cd "${chain}tool/txtool"
-    python "$@" 2>/dev/null
+    python3 "$@" 2>/dev/null
     cd ../..
 }
 
@@ -342,7 +343,7 @@ function main () {
     local side_chain_id=4
 
     title "Install python packages for tools ..."
-    pip install -r scripts/txtool/requirements.txt
+    pip3 install -r scripts/txtool/requirements.txt
 
     cd target/install
 

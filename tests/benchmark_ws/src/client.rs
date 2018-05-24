@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::Address;
 use cita_types::traits::LowerHex;
+use cita_types::Address;
 use crypto::{pubkey_to_address, KeyPair, PrivKey};
 use libproto::blockchain::{Transaction, UnverifiedTransaction};
 use rustc_hex::FromHex;
@@ -51,7 +51,14 @@ impl Client {
         }
     }
 
-    fn generate_tx(&self, code: String, address: String, pv: &PrivKey, curh: u64, quota: u64) -> UnverifiedTransaction {
+    fn generate_tx(
+        &self,
+        code: String,
+        address: String,
+        pv: &PrivKey,
+        curh: u64,
+        quota: u64,
+    ) -> UnverifiedTransaction {
         let data = code.from_hex().unwrap();
         let mut tx = Transaction::new();
         tx.set_data(data);
@@ -62,10 +69,20 @@ impl Client {
         tx.sign(*pv).take_transaction_with_sig()
     }
 
-    pub fn create_contract_data(&self, code: String, to: String, height: u64, quota: u64) -> String {
-        self.get_data_by_method(RpcMethod::SendTransaction(
-            self.generate_tx(code, to, self.key_pair.privkey(), height, quota),
-        ))
+    pub fn create_contract_data(
+        &self,
+        code: String,
+        to: String,
+        height: u64,
+        quota: u64,
+    ) -> String {
+        self.get_data_by_method(RpcMethod::SendTransaction(self.generate_tx(
+            code,
+            to,
+            self.key_pair.privkey(),
+            height,
+            quota,
+        )))
     }
 
     pub fn get_data_by_method(&self, method: RpcMethod) -> String {

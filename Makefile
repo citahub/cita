@@ -17,7 +17,7 @@ bench:
 	cargo bench --all --jobs 1 |tee -a target/bench.log
 
 fmt:
-	cargo fmt --all  -- --write-mode diff
+	cargo fmt --all  -- --check
 
 cov:
 	cargo cov test --all

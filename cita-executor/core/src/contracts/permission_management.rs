@@ -16,8 +16,8 @@
 
 //! Permission management.
 
-use super::{encode_contract_name, to_address_vec, to_resource_vec};
 use super::ContractCallExt;
+use super::{encode_contract_name, to_address_vec, to_resource_vec};
 use cita_types::{Address, H160, H256};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
@@ -135,8 +135,8 @@ pub fn contains_resource(
 mod tests {
     extern crate logger;
     extern crate mktemp;
-    use super::{PermissionManagement, Resource};
     use super::contains_resource;
+    use super::{PermissionManagement, Resource};
     use cita_types::{Address, H160, H256};
     use std::collections::HashMap;
     use std::str::FromStr;
@@ -207,7 +207,8 @@ mod tests {
     fn test_permissions() {
         let executor = init_executor();
         let super_admin = Address::from_str("9dcd6b234e2772c5451fd4ccf7582f4283140697").unwrap();
-        let permissions: Vec<Address> = PermissionManagement::permissions(&executor, &(H256::from(super_admin)));
+        let permissions: Vec<Address> =
+            PermissionManagement::permissions(&executor, &(H256::from(super_admin)));
         assert_eq!(
             permissions,
             vec![
@@ -237,12 +238,10 @@ mod tests {
         let resources: Vec<Resource> = PermissionManagement::resources(&executor, &permission);
         assert_eq!(
             resources,
-            vec![
-                Resource {
-                    cont: Address::from(0x13241b2),
-                    func: vec![0xfc, 0x4a, 0x08, 0x9c],
-                },
-            ]
+            vec![Resource {
+                cont: Address::from(0x13241b2),
+                func: vec![0xfc, 0x4a, 0x08, 0x9c],
+            }]
         );
     }
 

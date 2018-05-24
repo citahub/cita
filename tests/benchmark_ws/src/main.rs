@@ -15,7 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(dead_code, unused_variables, unused_must_use, unused_mut, unused_imports, unused_extern_crates)]
+#![allow(
+    dead_code, unused_variables, unused_must_use, unused_mut, unused_imports, unused_extern_crates
+)]
 #![feature(test)]
 #![feature(try_from)]
 extern crate cita_crypto as crypto;
@@ -41,11 +43,11 @@ extern crate util;
 extern crate uuid;
 extern crate ws;
 
-pub mod method;
-pub mod connection;
-pub mod config;
-pub mod worker;
 pub mod client;
+pub mod config;
+pub mod connection;
+pub mod method;
+pub mod worker;
 
 use clap::App;
 use client::*;
@@ -53,8 +55,8 @@ use config::Config;
 use connection::*;
 use rand::{thread_rng, Rng, ThreadRng};
 use std::str::FromStr;
-use std::sync::Arc;
 use std::sync::mpsc;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use url::Url;

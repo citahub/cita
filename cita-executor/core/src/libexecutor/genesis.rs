@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::{Address, H256, U256, clean_0x};
 use cita_types::traits::ConvertType;
+use cita_types::{clean_0x, Address, H256, U256};
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 use db::{self as db, Writable};
@@ -103,7 +103,11 @@ impl Genesis {
         }
     }
 
-    pub fn lazy_execute(&mut self, state_db: &StateDB, factories: &Factories) -> Result<(), String> {
+    pub fn lazy_execute(
+        &mut self,
+        state_db: &StateDB,
+        factories: &Factories,
+    ) -> Result<(), String> {
         let mut state = State::from_existing(
             state_db.boxed_clone_canon(&self.spec.prevhash),
             *self.block.state_root(),
@@ -140,7 +144,8 @@ impl Genesis {
         for (address, contract) in &self.spec.alloc {
             let address = Address::from_unaligned(address.as_str()).unwrap();
             for (key, values) in &contract.storage {
-                let result = state.storage_at(&address, &H256::from_unaligned(key.as_ref()).unwrap());
+                let result =
+                    state.storage_at(&address, &H256::from_unaligned(key.as_ref()).unwrap());
                 trace!(
                     "address = {:?}, key = {:?}, result = {:?}",
                     address,

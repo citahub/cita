@@ -77,10 +77,16 @@ pub struct Header {
 
 impl PartialEq for Header {
     fn eq(&self, c: &Header) -> bool {
-        self.parent_hash == c.parent_hash && self.timestamp == c.timestamp && self.number == c.number
-            && self.transactions_root == c.transactions_root && self.state_root == c.state_root
-            && self.receipts_root == c.receipts_root && self.log_bloom == c.log_bloom
-            && self.gas_used == c.gas_used && self.gas_limit == c.gas_limit && self.proof == c.proof
+        self.parent_hash == c.parent_hash
+            && self.timestamp == c.timestamp
+            && self.number == c.number
+            && self.transactions_root == c.transactions_root
+            && self.state_root == c.state_root
+            && self.receipts_root == c.receipts_root
+            && self.log_bloom == c.log_bloom
+            && self.gas_used == c.gas_used
+            && self.gas_limit == c.gas_limit
+            && self.proof == c.proof
             && self.proposer == c.proposer
     }
 }

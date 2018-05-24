@@ -22,8 +22,8 @@ use bytes::BufMut;
 use bytes::BytesMut;
 use std::io;
 use std::str;
-use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Decoder, Encoder, Framed};
+use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_proto::pipeline::ServerProto;
 
 pub type CitaRequest = (String, Vec<u8>);

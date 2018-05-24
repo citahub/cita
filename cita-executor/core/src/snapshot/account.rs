@@ -22,9 +22,9 @@ use rlp::{RlpStream, UntrustedRlp};
 use snapshot::Error;
 use std::collections::HashSet;
 use types::basic_account::BasicAccount;
+use util::hashdb::HashDB;
 use util::{Bytes, Trie, TrieDB, TrieDBMut, TrieMut};
 use util::{HASH_EMPTY, HASH_NULL_RLP};
-use util::hashdb::HashDB;
 
 // An empty account -- these were replaced with RLP null data for a space optimization in v1.
 const ACC_EMPTY: BasicAccount = BasicAccount {
@@ -153,7 +153,8 @@ pub fn to_fat_rlps(
                     };
                     if !account_stream.append_raw_checked(&pair, 1, target_chunk_size) {
                         account_stream.complete_unbounded_list();
-                        let stream = ::std::mem::replace(&mut account_stream, RlpStream::new_list(2));
+                        let stream =
+                            ::std::mem::replace(&mut account_stream, RlpStream::new_list(2));
                         chunks.push(stream.out());
                         target_chunk_size = max_chunk_size;
                         leftover = Some(pair.into_vec());

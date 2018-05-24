@@ -1,9 +1,9 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # coding=utf-8
 
 from jsonrpcclient.http_client import HTTPClient
 from url_util import host, endpoint
-
+import binascii
 
 def block_number():
     try:

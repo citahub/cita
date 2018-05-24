@@ -17,10 +17,10 @@
 
 //! Quota manager.
 
-use super::{encode_contract_name, to_address_vec, to_u256, to_u256_vec};
 use super::ContractCallExt;
-use cita_types::{Address, H160};
+use super::{encode_contract_name, to_address_vec, to_u256, to_u256_vec};
 use cita_types::traits::LowerHex;
+use cita_types::{Address, H160};
 use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
@@ -36,7 +36,8 @@ lazy_static! {
     static ref ACCOUNTS_HASH: Vec<u8> = encode_contract_name(ACCOUNTS);
     static ref BQL_HASH: Vec<u8> = encode_contract_name(BQL);
     static ref DEFAULT_AQL_HASH: Vec<u8> = encode_contract_name(DEFAULT_AQL);
-    static ref CONTRACT_ADDRESS: H160 = H160::from_str("00000000000000000000000000000000013241a3").unwrap();
+    static ref CONTRACT_ADDRESS: H160 =
+        H160::from_str("00000000000000000000000000000000013241a3").unwrap();
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
@@ -74,7 +75,8 @@ impl Into<ProtoAccountGasLimit> for AccountGasLimit {
     fn into(self) -> ProtoAccountGasLimit {
         let mut r = ProtoAccountGasLimit::new();
         r.common_gas_limit = self.common_gas_limit;
-        let specific_gas_limit: HashMap<String, u64> = self.get_specific_gas_limit()
+        let specific_gas_limit: HashMap<String, u64> = self
+            .get_specific_gas_limit()
             .iter()
             .map(|(k, v)| (k.lower_hex(), *v))
             .collect();
@@ -161,9 +163,7 @@ mod tests {
 
         assert_eq!(
             users,
-            vec![
-                H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap(),
-            ]
+            vec![H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap()]
         );
     }
 

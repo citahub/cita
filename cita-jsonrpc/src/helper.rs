@@ -1,13 +1,13 @@
 use futures::sync::oneshot;
-use jsonrpc_types::{Call, Error, Id};
 use jsonrpc_types::request::Version;
 use jsonrpc_types::response::Output;
+use jsonrpc_types::{Call, Error, Id};
 use libproto::request as reqlib;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use serde_json;
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::mpsc;
+use std::sync::Arc;
 use util::Mutex;
 use ws;
 

@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
 import json
 import copy
 import argparse
-import commands
+from subprocess import check_output
 
 import jsonschema
 import requests
@@ -21,9 +21,9 @@ class FixResolver(jsonschema.RefResolver):
 
 
 def jq_check(assertion, data):
-    output = commands.getoutput('echo \'{}\' | jq "{}"'.format(
-        json.dumps(data), assertion))
-    return output.strip() == 'true'
+    output = check_output('echo \'{}\' | jq "{}"'.format(
+        json.dumps(data), assertion), shell=True)
+    return output.strip() == b'true'
 
 
 class TestRunner(object):
@@ -105,6 +105,7 @@ class TestRunner(object):
             'expectedResponse': expected_response
         }
         for assertion in test_case['asserts']:
+            print("Assertion = {}".format(assertion))
             assertion_result = jq_check(assertion['program'], assert_data)
             print("    - [Assertion]: {} => {}".format(
                 assertion['description'], assertion_result))

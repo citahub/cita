@@ -33,7 +33,11 @@ impl<T> CacheManager<T>
 where
     T: Eq + Hash,
 {
-    pub fn new(pref_cache_size: usize, max_cache_size: usize, bytes_per_cache_entry: usize) -> Self {
+    pub fn new(
+        pref_cache_size: usize,
+        max_cache_size: usize,
+        bytes_per_cache_entry: usize,
+    ) -> Self {
         CacheManager {
             pref_cache_size: pref_cache_size,
             max_cache_size: max_cache_size,
@@ -47,7 +51,8 @@ where
 
     pub fn note_used(&mut self, id: T) {
         if !self.cache_usage[0].contains(&id) {
-            if let Some(c) = self.cache_usage
+            if let Some(c) = self
+                .cache_usage
                 .iter_mut()
                 .skip(1)
                 .find(|e| e.contains(&id))
@@ -86,7 +91,9 @@ where
             return;
         }
 
-        if self.cache_usage[0].len() * self.bytes_per_cache_entry > self.pref_cache_size / COLLECTION_QUEUE_SIZE {
+        if self.cache_usage[0].len() * self.bytes_per_cache_entry
+            > self.pref_cache_size / COLLECTION_QUEUE_SIZE
+        {
             if let Some(cache) = self.cache_usage.pop_back() {
                 self.cache_usage.push_front(cache);
             }

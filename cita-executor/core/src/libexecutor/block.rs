@@ -16,18 +16,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::LogBloom;
-use cita_types::{Address, H256, U256};
 use cita_types::traits::LowerHex;
+use cita_types::{Address, H256, U256};
 use db::{self as db, Readable};
 use env_info::EnvInfo;
 use env_info::LastHashes;
 use error::{Error, ExecutionError};
 use factory::Factories;
 use header::*;
-use libexecutor::{CallEvmImpl, ConnectInfo};
 use libexecutor::executor::{EconomicalModel, Executor, GlobalSysConfig};
-use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
+use libexecutor::{CallEvmImpl, ConnectInfo};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
+use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::citacode::{ActionParams, EnvInfo as ProtoEnvInfo};
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use protobuf::RepeatedField;
@@ -38,8 +38,8 @@ use state_db::StateDB;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::time::Instant;
 use trace::FlatTrace;
 use types::transaction::{Action, SignedTransaction};
@@ -55,8 +55,10 @@ lazy_static! {
 }
 
 lazy_static! {
-   static ref LOW_CONTRACT_ADDRESS: Address = Address::from_str("0000000000000000000000000000000002000000").unwrap();
-   static ref HIGH_CONTRACT_ADDRESS: Address = Address::from_str("0000000000000000000000000000000003000000").unwrap();
+    static ref LOW_CONTRACT_ADDRESS: Address =
+        Address::from_str("0000000000000000000000000000000002000000").unwrap();
+    static ref HIGH_CONTRACT_ADDRESS: Address =
+        Address::from_str("0000000000000000000000000000000003000000").unwrap();
 }
 pub fn is_go_contract(caddr: Address) -> bool {
     caddr > *LOW_CONTRACT_ADDRESS && caddr < *HIGH_CONTRACT_ADDRESS
@@ -156,7 +158,8 @@ impl Block {
 
     /// Check whether the block should re-execute
     pub fn is_equivalent(&self, block: &Block) -> bool {
-        self.transactions_root() == block.transactions_root() && self.timestamp() == block.timestamp()
+        self.transactions_root() == block.transactions_root()
+            && self.timestamp() == block.timestamp()
             && self.proposer() == block.proposer()
     }
 }
@@ -177,7 +180,8 @@ impl HeapSizeOf for BlockBody {
 impl From<ProtoBlockBody> for BlockBody {
     fn from(body: ProtoBlockBody) -> Self {
         BlockBody {
-            transactions: body.get_transactions()
+            transactions: body
+                .get_transactions()
                 .iter()
                 .map(|t| SignedTransaction::new(t).expect("transaction can not be converted"))
                 .collect(),
@@ -202,7 +206,8 @@ impl BlockBody {
 
     pub fn protobuf(&self) -> ProtoBlockBody {
         let mut body = ProtoBlockBody::new();
-        let txs: Vec<ProtoSignedTransaction> = self.transactions.iter().map(|t| t.protobuf()).collect();
+        let txs: Vec<ProtoSignedTransaction> =
+            self.transactions.iter().map(|t| t.protobuf()).collect();
         body.set_transactions(RepeatedField::from_slice(&txs[..]));
         body
     }
@@ -247,7 +252,8 @@ impl ClosedBlock {
             .mut_header()
             .set_gas_limit(self.gas_limit().low_u64());
 
-        executed_info.receipts = self.receipts
+        executed_info.receipts = self
+            .receipts
             .clone()
             .into_iter()
             .map(|receipt| {
@@ -405,7 +411,12 @@ impl OpenBlock {
 
     /// Execute transactions
     /// Return false if be interrupted
-    pub fn apply_transactions(&mut self, executor: &Executor, check_permission: bool, check_quota: bool) -> bool {
+    pub fn apply_transactions(
+        &mut self,
+        executor: &Executor,
+        check_permission: bool,
+        check_quota: bool,
+    ) -> bool {
         for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 {
                 if executor.is_interrupted.load(Ordering::SeqCst) {
@@ -426,7 +437,8 @@ impl OpenBlock {
                         if let Some(value) = executor.service_map.get(str_addr.clone(), true) {
                             ip = value.conn_info.get_ip().to_string();
                             port = value.conn_info.get_port();
-                        } else if let Some(value) = executor.db.read().read(db::COL_EXTRA, address) {
+                        } else if let Some(value) = executor.db.read().read(db::COL_EXTRA, address)
+                        {
                             ip = value.conn_info.get_ip().to_string();
                             port = value.conn_info.get_port();
                         }
@@ -476,7 +488,9 @@ impl OpenBlock {
         match err {
             ExecutionError::NotEnoughBaseGas { .. } => Some(ReceiptError::NotEnoughBaseGas),
             ExecutionError::BlockGasLimitReached { .. } => Some(ReceiptError::BlockGasLimitReached),
-            ExecutionError::AccountGasLimitReached { .. } => Some(ReceiptError::AccountGasLimitReached),
+            ExecutionError::AccountGasLimitReached { .. } => {
+                Some(ReceiptError::AccountGasLimitReached)
+            }
             ExecutionError::InvalidNonce { .. } => Some(ReceiptError::InvalidNonce),
             ExecutionError::NotEnoughCash { .. } => Some(ReceiptError::NotEnoughCash),
             ExecutionError::NoTransactionPermission => Some(ReceiptError::NoTransactionPermission),
@@ -508,7 +522,8 @@ impl OpenBlock {
             self.account_gas.insert(*t.sender(), self.account_gas_limit);
             env_info.account_gas_limit = self.account_gas_limit;
         }
-        env_info.account_gas_limit = *self.account_gas
+        env_info.account_gas_limit = *self
+            .account_gas
             .get(t.sender())
             .expect("account should exist in account_gas_limit");
 
@@ -589,19 +604,19 @@ impl OpenBlock {
         // Rebuild block
         let state_root = *self.state.root();
         self.set_state_root(state_root);
-        let receipts_root =
-            merklehash::MerkleTree::from_bytes(self.receipts.iter().map(|r| r.rlp_bytes().to_vec())).get_root_hash();
+        let receipts_root = merklehash::MerkleTree::from_bytes(
+            self.receipts.iter().map(|r| r.rlp_bytes().to_vec()),
+        ).get_root_hash();
         self.set_receipts_root(receipts_root);
 
         // blocks blooms
-        let log_bloom = self.receipts
-            .clone()
-            .into_iter()
-            .filter_map(|r| r)
-            .fold(LogBloom::zero(), |mut b, r| {
+        let log_bloom = self.receipts.clone().into_iter().filter_map(|r| r).fold(
+            LogBloom::zero(),
+            |mut b, r| {
                 b = b | r.log_bloom;
                 b
-            });
+            },
+        );
 
         self.set_log_bloom(log_bloom);
 

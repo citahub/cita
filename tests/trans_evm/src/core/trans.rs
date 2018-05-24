@@ -46,7 +46,13 @@ impl Trans {
         }
     }
 
-    pub fn generate_tx(code: &str, address: String, pv: &PrivKey, curh: u64, chainid: u32) -> UnverifiedTransaction {
+    pub fn generate_tx(
+        code: &str,
+        address: String,
+        pv: &PrivKey,
+        curh: u64,
+        chainid: u32,
+    ) -> UnverifiedTransaction {
         let data = code.from_hex().unwrap();
 
         let mut tx = Transaction::new();

@@ -238,7 +238,12 @@ impl Map {
         Scalar::new(key).get(ext)
     }
 
-    pub fn set_bytes<Key, Value>(self: &Self, ext: &mut Ext, key: Key, value: Value) -> Result<(), EvmError>
+    pub fn set_bytes<Key, Value>(
+        self: &Self,
+        ext: &mut Ext,
+        key: Key,
+        value: Value,
+    ) -> Result<(), EvmError>
     where
         Key: Serialize,
         Value: Serialize,

@@ -1,8 +1,7 @@
-use Source;
 use connection::Connection;
-use libproto::{Message, OperateType, SyncRequest, SyncResponse};
 use libproto::blockchain::{Block, Status};
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::{Message, OperateType, SyncRequest, SyncResponse};
 use protobuf::RepeatedField;
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, VecDeque};
@@ -10,6 +9,7 @@ use std::convert::{Into, TryFrom, TryInto};
 use std::sync::{mpsc, Arc};
 use std::time::{Duration, Instant};
 use std::u8;
+use Source;
 
 const SYNC_STEP: u64 = 200;
 const SYNC_TIME_OUT: u64 = 60;
@@ -80,7 +80,8 @@ impl Synchronizer {
             self.local_sync_count += 1;
         }
 
-        self.latest_status_lists = self.latest_status_lists
+        self.latest_status_lists = self
+            .latest_status_lists
             .split_off(&(latest_status.get_height() + 1));
         self.current_status = latest_status;
         self.broadcast_status();
@@ -145,7 +146,9 @@ impl Synchronizer {
             // A node on the chain blocks out, synchronizing the latest block
             self.add_latest_sync_lists(status.get_height(), origin);
 
-            if self.global_status.get_height() > old_global_status.get_height() && self.is_synchronizing {
+            if self.global_status.get_height() > old_global_status.get_height()
+                && self.is_synchronizing
+            {
                 self.start_sync_req(status.get_height(), status.get_height());
             } else {
                 self.is_synchronizing = false;
@@ -154,10 +157,14 @@ impl Synchronizer {
             // The node is far behind the data on the chain and initiates a synchronization request
             self.add_latest_sync_lists(status.get_height(), origin);
 
-            if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT || !self.is_synchronizing {
+            if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
+                || !self.is_synchronizing
+            {
                 self.remote_sync_time_out = Instant::now();
                 self.start_sync_req(current_height + 1, status.get_height());
-            } else if self.global_status.get_height() > old_global_status.get_height() && self.is_synchronizing {
+            } else if self.global_status.get_height() > old_global_status.get_height()
+                && self.is_synchronizing
+            {
                 self.start_sync_req(status.get_height(), status.get_height());
             }
 
@@ -222,7 +229,8 @@ impl Synchronizer {
         let mut end_height = end_height;
         let mut is_send = false;
 
-        if let Some((height, origins)) = self.latest_status_lists
+        if let Some((height, origins)) = self
+            .latest_status_lists
             .iter()
             .rfind(|&(_, origins)| origins.len() >= (2 / (3 * self.con.peers_pair.read().len())))
         {

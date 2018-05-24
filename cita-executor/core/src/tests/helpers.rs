@@ -21,8 +21,8 @@ extern crate rustc_serialize;
 use self::mktemp::Temp;
 use self::rustc_serialize::hex::FromHex;
 use cita_crypto::KeyPair;
-use cita_types::{Address, U256};
 use cita_types::traits::LowerHex;
+use cita_types::{Address, U256};
 use core::libchain::chain;
 use db;
 use journaldb;
@@ -41,10 +41,10 @@ use std::process::Command;
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 use types::transaction::SignedTransaction;
-use util::AsMillis;
-use util::KeyValueDB;
 use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
+use util::AsMillis;
+use util::KeyValueDB;
 
 const EXECUTOR_CONFIG: &str = "executor.toml";
 const CHAIN_CONFIG: &str = "chain.toml";
@@ -110,7 +110,8 @@ pub fn init_executor() -> Arc<Executor> {
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
     // Load from genesis json file
-    let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref()).expect("Failed to load genesis.");
+    let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref())
+        .expect("Failed to load genesis.");
     let genesis = Genesis {
         spec: spec,
         block: Block::default(),

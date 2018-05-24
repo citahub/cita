@@ -15,15 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use Source;
 use citaprotocol::{CitaProto, CitaRequest, CitaResponse};
-use futures::{BoxFuture, Future};
 use futures::future::result;
+use futures::{BoxFuture, Future};
 use std::io;
 use std::net::SocketAddr;
 use std::sync::mpsc::Sender;
 use tokio_proto::TcpServer;
 use tokio_service::{NewService, Service};
+use Source;
 
 #[derive(Clone)]
 pub struct NetServer {

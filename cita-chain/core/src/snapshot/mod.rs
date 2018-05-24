@@ -19,8 +19,8 @@
 extern crate num_cpus;
 
 //pub mod service;
-pub mod io;
 mod error;
+pub mod io;
 pub mod service;
 
 // chunks around 4MB before compression
@@ -30,22 +30,20 @@ const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 // Snappy::decompressed_len estimation may sometimes yield results greater
 // than PREFERRED_CHUNK_SIZE so allow some threshold here.
 //const MAX_CHUNK_SIZE: usize = PREFERRED_CHUNK_SIZE / 4 * 5;
-
 use header::Header;
-
-use rlp::*;
-
+// use rlp::*;
 use cita_types::H256;
-use std::sync::Arc;
+use rlp::{DecoderError, Encodable, RlpStream, UntrustedRlp};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
-use util::{snappy, Bytes};
-use util::{Mutex, sha3};
 use util::kvdb::*;
+use util::{sha3, Mutex};
+use util::{snappy, Bytes};
 
 use basic_types::{LogBloom, LogBloomGroup};
-use bloomchain::{Bloom, Number as BloomChainNumber};
 use bloomchain::group::BloomGroupChain;
+use bloomchain::{Bloom, Number as BloomChainNumber};
 
 pub use self::error::Error;
 use self::io::SnapshotReader;
@@ -248,7 +246,8 @@ impl<'a> BlockChunker<'a> {
         let mut loaded_size = 0;
         let mut last = self.current_hash;
 
-        let genesis_hash = self.chain
+        let genesis_hash = self
+            .chain
             .block_hash_by_height(0)
             .expect("Genesis hash should always exist");
         trace!("Genesis_hash: {:?}", genesis_hash);
@@ -266,7 +265,8 @@ impl<'a> BlockChunker<'a> {
                 .ok_or(Error::BlockNotFound(self.current_hash))?;
             block.rlp_append(&mut s);
             let block_rlp = s.out();*/
-            let header = self.chain
+            let header = self
+                .chain
                 .block_header_by_hash(self.current_hash)
                 .ok_or(Error::BlockNotFound(self.current_hash))?;
             header.clone().rlp_append(&mut s);
@@ -315,7 +315,8 @@ impl<'a> BlockChunker<'a> {
     fn write_chunk(&mut self, last: H256) -> Result<(), Error> {
         trace!("prepared block chunk with {} blocks", self.rlps.len());
 
-        let last_header = self.chain
+        let last_header = self
+            .chain
             .block_header_by_hash(last)
             .ok_or(Error::BlockNotFound(last))?;
 
@@ -379,7 +380,12 @@ pub struct BlockRebuilder {
 
 impl BlockRebuilder {
     /// Create a new state rebuilder to write into the given backing DB.
-    pub fn new(chain: Arc<Chain>, db: Arc<KeyValueDB>, manifest: &ManifestData, snapshot_blocks: u64) -> Self {
+    pub fn new(
+        chain: Arc<Chain>,
+        db: Arc<KeyValueDB>,
+        manifest: &ManifestData,
+        snapshot_blocks: u64,
+    ) -> Self {
         BlockRebuilder {
             chain: chain,
             db: db.clone(),
@@ -400,7 +406,9 @@ impl BlockRebuilder {
         trace!("restoring block chunk with {} blocks.", num_blocks);
 
         if self.fed_blocks + num_blocks > self.snapshot_blocks {
-            return Err(Error::TooManyBlocks(self.snapshot_blocks, self.fed_blocks + num_blocks).into());
+            return Err(
+                Error::TooManyBlocks(self.snapshot_blocks, self.fed_blocks + num_blocks).into(),
+            );
         }
 
         // todo: assert here that these values are consistent with chunks being in order.
@@ -433,7 +441,9 @@ impl BlockRebuilder {
 
             if is_best {
                 if header.hash() != self.best_hash {
-                    return Err(Error::WrongBlockHash(cur_number, self.best_hash, header.hash()).into());
+                    return Err(
+                        Error::WrongBlockHash(cur_number, self.best_hash, header.hash()).into(),
+                    );
                 }
 
                 if header.state_root() != &self.best_root {
@@ -498,7 +508,11 @@ impl BlockRebuilder {
     }
 
     /// This function returns modified block hashes.
-    fn prepare_block_hashes_update(&self, _block: &Block, info: &BlockInfo) -> HashMap<H256, BlockNumber> {
+    fn prepare_block_hashes_update(
+        &self,
+        _block: &Block,
+        info: &BlockInfo,
+    ) -> HashMap<H256, BlockNumber> {
         let mut block_hashes = HashMap::new();
 
         block_hashes.insert(info.hash, info.number);
@@ -535,7 +549,11 @@ impl BlockRebuilder {
     /// Later, BloomIndexer is used to map bloom location on filter layer (BloomIndex)
     /// to bloom location in database (BlocksBloomLocation).
     ///
-    fn prepare_block_blooms_update(&self, block: &Block, info: &BlockInfo) -> HashMap<LogGroupPosition, LogBloomGroup> {
+    fn prepare_block_blooms_update(
+        &self,
+        block: &Block,
+        info: &BlockInfo,
+    ) -> HashMap<LogGroupPosition, LogBloomGroup> {
         let header = block.header();
 
         let log_bloom = LogBloom::from(header.log_bloom().to_vec().as_slice());
@@ -692,7 +710,11 @@ impl BlockRebuilder {
 
 // helper for reading chunks from arbitrary reader and feeding them into the
 // service.
-pub fn restore_using<R: SnapshotReader>(snapshot: Arc<Service>, reader: &R, recover: bool) -> Result<(), String> {
+pub fn restore_using<R: SnapshotReader>(
+    snapshot: Arc<Service>,
+    reader: &R,
+    recover: bool,
+) -> Result<(), String> {
     let manifest = reader.manifest();
 
     info!(
@@ -745,7 +767,9 @@ pub fn restore_using<R: SnapshotReader>(snapshot: Arc<Service>, reader: &R, reco
     }
 
     match snapshot.status() {
-        RestorationStatus::Ongoing { .. } => Err("Snapshot file is incomplete and missing chunks.".into()),
+        RestorationStatus::Ongoing { .. } => {
+            Err("Snapshot file is incomplete and missing chunks.".into())
+        }
         RestorationStatus::Failed => Err("Snapshot restoration failed.".into()),
         RestorationStatus::Inactive => {
             info!("Restoration complete.");

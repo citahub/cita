@@ -18,25 +18,28 @@
 
 use action_params::{ActionParams, ActionValue};
 use cita_types::{Address, H160, U256, U512};
-use contracts::Resource;
 use contracts::permission_management::contains_resource;
+use contracts::Resource;
 use crossbeam;
 use engines::Engine;
 use env_info::EnvInfo;
 use error::ExecutionError;
 use ethcore_io as io;
 use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
-pub use executed::{Executed, ExecutionResult};
 use executed::CallType;
+pub use executed::{Executed, ExecutionResult};
 use externalities::*;
 use libexecutor::executor::EconomicalModel;
 use native::Factory as NativeFactory;
-use state::{State, Substate};
 use state::backend::Backend as StateBackend;
+use state::{State, Substate};
 use std::cmp;
 use std::collections::HashMap;
 use std::sync::Arc;
-use trace::{ExecutiveTracer, ExecutiveVMTracer, FlatTrace, NoopTracer, NoopVMTracer, Tracer, VMTrace, VMTracer};
+use trace::{
+    ExecutiveTracer, ExecutiveVMTracer, FlatTrace, NoopTracer, NoopVMTracer, Tracer, VMTrace,
+    VMTracer,
+};
 use types::transaction::{Action, SignedTransaction};
 use util::*;
 
@@ -355,7 +358,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// This function should be used to execute transaction.
-    pub fn transact(&'a mut self, t: &SignedTransaction, options: TransactOptions) -> Result<Executed, ExecutionError> {
+    pub fn transact(
+        &'a mut self,
+        t: &SignedTransaction,
+        options: TransactOptions,
+    ) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(
                 t,
@@ -363,8 +370,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 ExecutiveTracer::default(),
                 ExecutiveVMTracer::toplevel(),
             ),
-            (true, false) => self.transact_with_tracer(t, options, ExecutiveTracer::default(), NoopVMTracer),
-            (false, true) => self.transact_with_tracer(t, options, NoopTracer, ExecutiveVMTracer::toplevel()),
+            (true, false) => {
+                self.transact_with_tracer(t, options, ExecutiveTracer::default(), NoopVMTracer)
+            }
+            (false, true) => {
+                self.transact_with_tracer(t, options, NoopTracer, ExecutiveVMTracer::toplevel())
+            }
             (false, false) => self.transact_with_tracer(t, options, NoopTracer, NoopVMTracer),
         }
     }
@@ -596,7 +607,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             self.info,
             self.static_flag
         );
-        if (params.call_type == CallType::StaticCall || (params.call_type == CallType::Call && self.static_flag))
+        if (params.call_type == CallType::StaticCall
+            || (params.call_type == CallType::Call && self.static_flag))
             && params.value.value() > 0.into()
         {
             return Err(evm::Error::MutableCallInStaticContext);
@@ -712,7 +724,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
                 let traces = subtracer.traces();
                 match res {
-                    Ok(ref res) => tracer.trace_call(trace_info, gas - res.gas_left, trace_output, traces),
+                    Ok(ref res) => {
+                        tracer.trace_call(trace_info, gas - res.gas_left, trace_output, traces)
+                    }
                     Err(ref e) => tracer.trace_failed_call(trace_info, traces, e.into()),
                 };
 
@@ -847,7 +861,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // refunds from SSTORE nonzero -> zero
         let sstore_refunds = U256::from(schedule.sstore_refund_gas) * substate.sstore_clears_count;
         // refunds from contract suicides
-        let suicide_refunds = U256::from(schedule.suicide_refund_gas) * U256::from(substate.suicides.len());
+        let suicide_refunds =
+            U256::from(schedule.suicide_refund_gas) * U256::from(substate.suicides.len());
         let refunds_bound = sstore_refunds + suicide_refunds;
 
         // real ammount to refund

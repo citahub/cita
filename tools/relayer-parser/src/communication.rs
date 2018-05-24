@@ -15,17 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use futures::{Future, Sink, Stream};
 use futures::future::Either;
 use futures::sync::{mpsc, oneshot};
+use futures::{Future, Sink, Stream};
 use hyper;
 use parking_lot::{Mutex, RwLock};
 use serde_json;
 use std::convert::TryInto;
 use tokio_core::reactor::{Core, Timeout};
 
-use cita_types::{H256, U256};
 use cita_types::traits::LowerHex;
+use cita_types::{H256, U256};
 use configuration::UpStream;
 use jsonrpc_types;
 use libproto::blockchain::UnverifiedTransaction;
@@ -37,7 +37,8 @@ pub enum Error {
     Parse,
 }
 
-type RpcSender = Mutex<mpsc::Sender<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>>;
+type RpcSender =
+    Mutex<mpsc::Sender<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>>;
 
 pub struct RpcClient {
     sender: RpcSender,
@@ -48,46 +49,48 @@ impl RpcClient {
     pub fn new(upstream: &UpStream) -> ::std::sync::Arc<Self> {
         let tb = ::std::thread::Builder::new().name("RpcClient".to_string());
         let uri = upstream.url.parse::<hyper::Uri>().unwrap();
-        let (tx, rx) = mpsc::channel::<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>(65_535);
+        let (tx, rx) =
+            mpsc::channel::<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>(65_535);
         let timeout_duration = upstream.timeout;
 
-        let _tb = tb.spawn(move || {
-            let mut core = Core::new().unwrap();
-            let handle = core.handle();
-            let client = hyper::Client::configure()
-                .connector(hyper::client::HttpConnector::new(4, &handle))
-                .keep_alive(false)
-                .build(&handle);
+        let _tb =
+            tb.spawn(move || {
+                let mut core = Core::new().unwrap();
+                let handle = core.handle();
+                let client = hyper::Client::configure()
+                    .connector(hyper::client::HttpConnector::new(4, &handle))
+                    .keep_alive(false)
+                    .build(&handle);
 
-            let messages = rx.for_each(|(req, sender)| {
-                let timeout = Timeout::new(timeout_duration, &handle).unwrap();
-                let post = client.request(req).and_then(|res| res.body().concat2());
+                let messages = rx.for_each(|(req, sender)| {
+                    let timeout = Timeout::new(timeout_duration, &handle).unwrap();
+                    let post = client.request(req).and_then(|res| res.body().concat2());
 
-                let work = post.select2(timeout).then(move |res| match res {
-                    Ok(Either::A((got, _timeout))) => {
-                        let _ = sender.send(Ok(got));
-                        Ok(())
-                    }
-                    Ok(Either::B((_timeout_error, _get))) => {
-                        let _ = sender.send(Err(Error::Timeout));
-                        Ok(())
-                    }
-                    Err(Either::A((_get_error, _timeout))) => {
-                        let _ = sender.send(Err(Error::Timeout));
-                        Ok(())
-                    }
-                    Err(Either::B((_timeout_error, _get))) => {
-                        let _ = sender.send(Err(Error::Timeout));
-                        Ok(())
-                    }
+                    let work = post.select2(timeout).then(move |res| match res {
+                        Ok(Either::A((got, _timeout))) => {
+                            let _ = sender.send(Ok(got));
+                            Ok(())
+                        }
+                        Ok(Either::B((_timeout_error, _get))) => {
+                            let _ = sender.send(Err(Error::Timeout));
+                            Ok(())
+                        }
+                        Err(Either::A((_get_error, _timeout))) => {
+                            let _ = sender.send(Err(Error::Timeout));
+                            Ok(())
+                        }
+                        Err(Either::B((_timeout_error, _get))) => {
+                            let _ = sender.send(Err(Error::Timeout));
+                            Ok(())
+                        }
+                    });
+
+                    handle.spawn(work);
+                    Ok(())
                 });
 
-                handle.spawn(work);
-                Ok(())
-            });
-
-            core.run(messages).unwrap();
-        }).expect("Couldn't spawn a thread.");
+                core.run(messages).unwrap();
+            }).expect("Couldn't spawn a thread.");
 
         ::std::sync::Arc::new(RpcClient {
             sender: Mutex::new(tx),
@@ -119,18 +122,17 @@ impl RpcClient {
 // Pack the result type into a reply type, and parse result from the reply, and return the result.
 // The user of this macro do NOT have to care about the inner reply type.
 macro_rules! rpc_send_and_get_result_from_reply {
-    ($upstream: ident, $method: expr, $params: tt, $result_type: path) => {{
+    ($upstream:ident, $method:expr, $params:tt, $result_type:path) => {{
         define_reply_type!(ReplyType, $result_type);
         let rpc_cli = RpcClient::new($upstream);
-        let body: String = json!({
-                "jsonrpc": "2.0",
-                "method": $method,
-                "params": json!($params),
-                "id": 1
-            }).to_string();
+        let body: String = json!({"jsonrpc": "2.0", "method": $method, "params": json!($params), "id": 1}).to_string();
         let data = rpc_cli.do_post(&body)?;
         let reply: ReplyType = serde_json::from_slice(&data).map_err(|_| {
-            error!("send {:?} return error: {:?}", &body, ::std::str::from_utf8(&data));
+            error!(
+                "send {:?} return error: {:?}",
+                &body,
+                ::std::str::from_utf8(&data)
+            );
             Error::Parse
         })?;
         trace!("get reply {:?}.", reply);
@@ -139,7 +141,7 @@ macro_rules! rpc_send_and_get_result_from_reply {
 }
 
 macro_rules! define_reply_type {
-    ($reply_type: ident, $result_type: path) => {
+    ($reply_type:ident, $result_type:path) => {
         #[derive(Debug, Clone, Serialize, Deserialize)]
         struct $reply_type {
             pub jsonrpc: Option<jsonrpc_types::Version>,
@@ -174,7 +176,10 @@ pub fn cita_get_metadata(upstream: &UpStream) -> Result<jsonrpc_types::rpctypes:
     Ok(result)
 }
 
-pub fn cita_send_transaction(upstream: &UpStream, utx: &UnverifiedTransaction) -> Result<H256, Error> {
+pub fn cita_send_transaction(
+    upstream: &UpStream,
+    utx: &UnverifiedTransaction,
+) -> Result<H256, Error> {
     let tx_bytes: Vec<u8> = utx.try_into().unwrap();
     let result = rpc_send_and_get_result_from_reply!(
         upstream,

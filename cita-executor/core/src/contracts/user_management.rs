@@ -16,8 +16,8 @@
 
 //! User management.
 
-use super::{encode_contract_name, to_address_vec};
 use super::ContractCallExt;
+use super::{encode_contract_name, to_address_vec};
 use cita_types::{Address, H160};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;

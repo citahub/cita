@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # coding=utf-8
 
 from __future__ import print_function, absolute_import
@@ -27,7 +27,7 @@ if not accounts_path.is_dir():
 
 def save_deploy(code):
     with open("../output/transaction/deploycode", "w+") as deployfile:
-        deployfile.write(code)
+        deployfile.write(code.decode('utf-8'))
 
 
 def bin_code():

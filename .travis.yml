@@ -11,7 +11,7 @@ jobs:
   include:
     - stage: Build & Test
       script:
-        - docker pull cita/cita-build:latest
+        - docker pull cita/cita-build:ubuntu-18.04-20180518
         - bash 'scripts/ci.sh'
 before_cache:
     - sudo chown -R travis:travis $HOME/.cargo

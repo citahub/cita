@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::sync::Arc;
 use std::sync::mpsc;
+use std::sync::Arc;
 use util::RwLock;
 use worker::*;
 use ws::{CloseCode, Factory, Handler, Handshake, Message, Result, Sender};
@@ -51,7 +51,10 @@ pub struct FactoryConnection {
 }
 
 impl FactoryConnection {
-    pub fn new(ws_senders: Arc<RwLock<Vec<Sender>>>, tx: mpsc::Sender<Message>) -> FactoryConnection {
+    pub fn new(
+        ws_senders: Arc<RwLock<Vec<Sender>>>,
+        tx: mpsc::Sender<Message>,
+    ) -> FactoryConnection {
         FactoryConnection {
             ws_senders: ws_senders,
             tx: tx,

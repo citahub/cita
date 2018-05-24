@@ -75,27 +75,27 @@ extern crate uuid;
 extern crate ws;
 
 mod config;
-mod helper;
-mod ws_handler;
-mod mq_handler;
-mod http_server;
-mod response;
 mod fdlimit;
+mod helper;
+mod http_server;
+mod mq_handler;
+mod response;
+mod ws_handler;
 
 use clap::App;
 use config::{NewTxFlowConfig, ProfileConfig};
 use cpuprofiler::PROFILER;
 use fdlimit::set_fd_limit;
 use http_server::Server;
-use libproto::Message;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::Message;
 use protobuf::RepeatedField;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::sync::Arc;
 use std::sync::mpsc::{channel, Sender};
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
 use tokio_core::reactor::Core;
@@ -189,7 +189,8 @@ fn main() {
         let ws_config = config.ws_config.clone();
         let tx = tx_relay.clone();
         thread::spawn(move || {
-            let url = ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
+            let url =
+                ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
             //let factory = WsFactory::new(ws_responses, tx_pub, 0);
             let factory = WsFactory::new(ws_responses, tx, 0);
             info!("WebSocket Listening on {}", url);
@@ -202,7 +203,8 @@ fn main() {
 
     if config.http_config.enable {
         let http_config = config.http_config.clone();
-        let addr = http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
+        let addr =
+            http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
         info!("Http Listening on {}", &addr);
 
         let threads: usize = config

@@ -1,6 +1,7 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 # coding=utf-8
 
+import binascii
 import subprocess
 import sys
 import ntpath
@@ -65,7 +66,7 @@ def path_leaf(path):
 
 
 def hex2bytes(hex_string):
-    return bytes(bytearray.fromhex(hex_string))
+    return binascii.unhexlify(hex_string)
 
 
 def remove_hex_0x(hex_string):

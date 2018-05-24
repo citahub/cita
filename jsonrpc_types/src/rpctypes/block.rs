@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{BlockTransaction, FullTransaction};
 use super::Proof;
 use super::RpcBlock;
+use super::{BlockTransaction, FullTransaction};
 use cita_types::{Address, H256, U256};
 use libproto::{Block as ProtoBlock, BlockHeader as ProtoBlockHeader};
 use std::convert::TryFrom;
@@ -30,12 +30,17 @@ pub struct BlockBody {
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BlockHeader {
     pub timestamp: u64,
-    #[serde(rename = "prevHash")] pub prev_hash: H256,
+    #[serde(rename = "prevHash")]
+    pub prev_hash: H256,
     pub number: U256,
-    #[serde(rename = "stateRoot")] pub state_root: H256,
-    #[serde(rename = "transactionsRoot")] pub transactions_root: H256,
-    #[serde(rename = "receiptsRoot")] pub receipts_root: H256,
-    #[serde(rename = "gasUsed")] pub gas_used: U256,
+    #[serde(rename = "stateRoot")]
+    pub state_root: H256,
+    #[serde(rename = "transactionsRoot")]
+    pub transactions_root: H256,
+    #[serde(rename = "receiptsRoot")]
+    pub receipts_root: H256,
+    #[serde(rename = "gasUsed")]
+    pub gas_used: U256,
     pub proof: Option<Proof>,
     pub proposer: Address,
 }

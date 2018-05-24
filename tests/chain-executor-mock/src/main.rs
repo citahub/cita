@@ -42,23 +42,23 @@ extern crate serde_yaml;
 
 mod generate_block;
 
-use std::{fs, u8};
 use std::collections::HashMap;
 use std::convert::{From, TryFrom};
 use std::io::Read;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
+use std::sync::{Arc, Mutex};
 use std::time;
+use std::{fs, u8};
 
 use clap::App;
 
-use cita_types::{H256, U256};
 use cita_types::traits::LowerHex;
+use cita_types::{H256, U256};
 use crypto::{CreateKey, KeyPair, PrivKey};
 use generate_block::BuildBlock;
-use libproto::Message;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::Message;
 use pubsub::start_pubsub;
 
 pub type PubType = (String, Vec<u8>);

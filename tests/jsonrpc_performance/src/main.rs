@@ -18,8 +18,8 @@ extern crate logger;
 extern crate serde_derive;
 
 pub mod param;
-pub mod trans;
 pub mod send_trans;
+pub mod trans;
 
 use clap::App;
 use param::Param;

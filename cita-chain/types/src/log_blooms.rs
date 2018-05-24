@@ -17,8 +17,8 @@
 
 //! Bridge between bloomchain crate types and cita LogBloom.
 
-use bloomchain::Bloom;
 use bloomchain::group::BloomGroup;
+use bloomchain::Bloom;
 use log_entry::LogBloom;
 use rlp::*;
 use util::HeapSizeOf;
@@ -42,7 +42,8 @@ impl From<BloomGroup> for LogBloomGroup {
 
 impl Into<BloomGroup> for LogBloomGroup {
     fn into(self) -> BloomGroup {
-        let blooms = self.blooms
+        let blooms = self
+            .blooms
             .into_iter()
             .map(|x| Bloom::from(Into::<[u8; 256]>::into(x)))
             .collect();

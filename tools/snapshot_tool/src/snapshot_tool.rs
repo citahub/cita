@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use libproto::Message;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
+use libproto::Message;
 use std::convert::{TryFrom, TryInto};
-use std::sync::{Arc, RwLock};
 use std::sync::mpsc::Sender;
+use std::sync::{Arc, RwLock};
 //use std::thread;
 //use std::time::Duration;
 
@@ -34,7 +34,12 @@ pub struct SnapShot {
 }
 
 impl SnapShot {
-    pub fn new(ctx_pub: Sender<(String, Vec<u8>)>, start_height: u64, end_height: u64, file: String) -> Self {
+    pub fn new(
+        ctx_pub: Sender<(String, Vec<u8>)>,
+        start_height: u64,
+        end_height: u64,
+        file: String,
+    ) -> Self {
         SnapShot {
             ctx_pub: ctx_pub,
             start_height: start_height,

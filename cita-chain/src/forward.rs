@@ -23,21 +23,25 @@ use core::libchain::chain::{BlockInQueue, Chain};
 use error::ErrorCode;
 //CountOrCode
 use cita_types::H256;
-use jsonrpc_types::rpctypes::{self as rpctypes, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
-                              Log as RpcLog, Receipt as RpcReceipt, RpcBlock};
-use libproto::{request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
-               ExecutedResult, Message, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
-               SyncResponse};
+use jsonrpc_types::rpctypes::{
+    self as rpctypes, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter, Log as RpcLog,
+    Receipt as RpcReceipt, RpcBlock,
+};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
+use libproto::{
+    request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
+    ExecutedResult, Message, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
+    SyncResponse,
+};
 use proof::TendermintProof;
 use protobuf::RepeatedField;
 use serde_json;
 use std::convert::{Into, TryFrom, TryInto};
 use std::mem;
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 use types::filter::Filter;
 use types::ids::BlockId;
 
@@ -48,9 +52,9 @@ use util::datapath::DataPath;
 use util::kvdb::DatabaseConfig;
 
 use core::snapshot;
-use core::snapshot::Progress;
 use core::snapshot::io::{PackedReader, PackedWriter};
 use core::snapshot::service::{Service as SnapshotService, ServiceParams as SnapServiceParams};
+use core::snapshot::Progress;
 
 /// Message forwarding and query data
 #[derive(Clone)]
@@ -62,7 +66,11 @@ pub struct Forward {
 
 // TODO: Add future client to support forward
 impl Forward {
-    pub fn new(chain: Arc<Chain>, ctx_pub: Sender<(String, Vec<u8>)>, write_sender: Sender<ExecutedResult>) -> Forward {
+    pub fn new(
+        chain: Arc<Chain>,
+        ctx_pub: Sender<(String, Vec<u8>)>,
+        write_sender: Sender<ExecutedResult>,
+    ) -> Forward {
         Forward {
             chain: chain,
             ctx_pub: ctx_pub,
@@ -178,7 +186,11 @@ impl Forward {
                         let include_txs = param.include_txs;
                         match self.chain.block_by_hash(H256::from(hash.as_slice())) {
                             Some(block) => {
-                                let rpc_block = RpcBlock::new(hash, include_txs, block.protobuf().try_into().unwrap());
+                                let rpc_block = RpcBlock::new(
+                                    hash,
+                                    include_txs,
+                                    block.protobuf().try_into().unwrap(),
+                                );
                                 serde_json::to_string(&rpc_block)
                                     .map(|data| response.set_block(data))
                                     .map_err(|err| {
@@ -197,7 +209,8 @@ impl Forward {
             }
 
             Request::block_by_height(block_height) => {
-                let block_height: BlockParamsByNumber = serde_json::from_str(&block_height).expect("Invalid param");
+                let block_height: BlockParamsByNumber =
+                    serde_json::from_str(&block_height).expect("Invalid param");
                 let include_txs = block_height.include_txs;
                 match self.chain.block(block_height.block_id.into()) {
                     Some(block) => {
@@ -219,14 +232,16 @@ impl Forward {
                 }
             }
 
-            Request::transaction(hash) => match self.chain.full_transaction(H256::from_slice(&hash)) {
-                Some(ts) => {
-                    response.set_ts(ts);
+            Request::transaction(hash) => {
+                match self.chain.full_transaction(H256::from_slice(&hash)) {
+                    Some(ts) => {
+                        response.set_ts(ts);
+                    }
+                    None => {
+                        response.set_none(true);
+                    }
                 }
-                None => {
-                    response.set_none(true);
-                }
-            },
+            }
 
             Request::transaction_proof(hash) => {
                 match self.chain.get_transaction_proof(H256::from_slice(&hash)) {
@@ -316,7 +331,8 @@ impl Forward {
 
             Request::new_filter(new_filter) => {
                 trace!("new_filter {:?}", new_filter);
-                let new_filter: RpcFilter = serde_json::from_str(&new_filter).expect("Invalid param");
+                let new_filter: RpcFilter =
+                    serde_json::from_str(&new_filter).expect("Invalid param");
                 trace!("new_filter {:?}", new_filter);
                 response.set_filter_id(self.chain.new_filter(new_filter) as u64);
             }
@@ -502,7 +518,8 @@ impl Forward {
                     if proof_height == chain_max_height || proof_height == chain_max_store_height {
                         // Set proof of prev sync block
                         if let Some(prev_block_in_queue) = blocks.get_mut(&proof_height) {
-                            if let &mut BlockInQueue::SyncBlock(ref mut value) = prev_block_in_queue {
+                            if let &mut BlockInQueue::SyncBlock(ref mut value) = prev_block_in_queue
+                            {
                                 if value.1.is_none() {
                                     debug!("sync: set prev sync block proof {}", value.0.number());
                                     mem::swap(&mut value.1, &mut Some(block.proof().clone()));
@@ -558,8 +575,10 @@ impl Forward {
                 tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
             }
             block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
-            block_tx_hashes.set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
+            block_tx_hashes
+                .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes
+                .set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
             let msg: Message = block_tx_hashes.into();
             self.ctx_pub
                 .send((

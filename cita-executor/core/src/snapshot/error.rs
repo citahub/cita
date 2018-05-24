@@ -106,12 +106,16 @@ impl fmt::Display for Error {
                 "Incomplete snapshot: {} contract abis not found.",
                 missing.len()
             ),
-            Error::UnrecognizedCodeState(state) => write!(f, "Unrecognized code encoding ({})", state),
+            Error::UnrecognizedCodeState(state) => {
+                write!(f, "Unrecognized code encoding ({})", state)
+            }
             Error::RestorationAborted => write!(f, "Snapshot restoration aborted."),
             Error::Io(ref err) => err.fmt(f),
             Error::Decoder(ref err) => err.fmt(f),
             Error::Trie(ref err) => err.fmt(f),
-            Error::VersionNotSupported(ref ver) => write!(f, "Snapshot version {} is not supprted.", ver),
+            Error::VersionNotSupported(ref ver) => {
+                write!(f, "Snapshot version {} is not supprted.", ver)
+            }
             Error::ChunkTooSmall => write!(f, "Chunk size is too small."),
             Error::SnapshotsUnsupported => write!(f, "Snapshots unsupported by consensus engine."),
             Error::BadEpochProof(i) => write!(f, "Bad epoch proof for transition to epoch {}", i),

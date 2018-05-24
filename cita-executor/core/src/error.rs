@@ -87,18 +87,26 @@ impl fmt::Display for TransactionError {
             Old => "No longer valid".into(),
             TooCheapToReplace => "Gas price too low to replace".into(),
             LimitReached => "Transaction limit reached".into(),
-            InsufficientGasPrice { minimal, got } => format!("Insufficient gas price. Min={}, Given={}", minimal, got),
-            InsufficientGas { minimal, got } => format!("Insufficient gas. Min={}, Given={}", minimal, got),
+            InsufficientGasPrice { minimal, got } => {
+                format!("Insufficient gas price. Min={}, Given={}", minimal, got)
+            }
+            InsufficientGas { minimal, got } => {
+                format!("Insufficient gas. Min={}, Given={}", minimal, got)
+            }
             InsufficientBalance { balance, cost } => format!(
                 "Insufficient balance for transaction. Balance={}, Cost={}",
                 balance, cost
             ),
-            GasLimitExceeded { limit, got } => format!("Gas limit exceeded. Limit={}, Given={}", limit, got),
+            GasLimitExceeded { limit, got } => {
+                format!("Gas limit exceeded. Limit={}, Given={}", limit, got)
+            }
             InvalidGasLimit(ref err) => format!("Invalid gas limit. {}", err),
             SenderBanned => "Sender is temporarily banned.".into(),
             RecipientBanned => "Recipient is temporarily banned.".into(),
             CodeBanned => "Contract code is temporarily banned.".into(),
-            InvalidNetworkId => "Transaction of this network ID is not allowed on this chain.".into(),
+            InvalidNetworkId => {
+                "Transaction of this network ID is not allowed on this chain.".into()
+            }
         };
 
         f.write_fmt(format_args!("Transaction error ({})", msg))
@@ -162,14 +170,18 @@ impl fmt::Display for BlockError {
             TooMuchGasUsed(ref oob) => format!("Block has too much gas used. {}", oob),
             InvalidStateRoot(ref mis) => format!("Invalid state root in header: {}", mis),
             InvalidGasUsed(ref mis) => format!("Invalid gas used in header: {}", mis),
-            InvalidTransactionsRoot(ref mis) => format!("Invalid transactions root in header: {}", mis),
+            InvalidTransactionsRoot(ref mis) => {
+                format!("Invalid transactions root in header: {}", mis)
+            }
             DifficultyOutOfBounds(ref oob) => format!("Invalid block difficulty: {}", oob),
             InvalidDifficulty(ref mis) => format!("Invalid block difficulty: {}", mis),
             MismatchedH256SealElement(ref mis) => format!("Seal element out of bounds: {}", mis),
             InvalidProofOfWork(ref oob) => format!("Block has invalid PoW: {}", oob),
             InvalidSeal => "Block has invalid seal.".into(),
             InvalidGasLimit(ref oob) => format!("Invalid gas limit: {}", oob),
-            InvalidReceiptsRoot(ref mis) => format!("Invalid receipts trie root in header: {}", mis),
+            InvalidReceiptsRoot(ref mis) => {
+                format!("Invalid receipts trie root in header: {}", mis)
+            }
             InvalidTimestamp(ref oob) => format!("Invalid timestamp in header: {}", oob),
             InvalidLogBloom(ref oob) => format!("Invalid log bloom in header: {}", oob),
             InvalidParentHash(ref mis) => format!("Invalid parent hash: {}", mis),
@@ -245,7 +257,9 @@ impl fmt::Display for Error {
             Error::Execution(ref err) => err.fmt(f),
             Error::Transaction(ref err) => err.fmt(f),
             Error::Import(ref err) => err.fmt(f),
-            Error::UnknownEngineName(ref name) => f.write_fmt(format_args!("Unknown engine name ({})", name)),
+            Error::UnknownEngineName(ref name) => {
+                f.write_fmt(format_args!("Unknown engine name ({})", name))
+            }
             Error::PowHashInvalid => f.write_str("Invalid or out of date PoW hash."),
             Error::PowInvalid => f.write_str("Invalid nonce or mishash"),
             Error::Trie(ref err) => err.fmt(f),

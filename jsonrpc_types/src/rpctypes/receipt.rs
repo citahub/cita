@@ -95,30 +95,28 @@ mod tests {
             cumulative_gas_used: 0x20.into(),
             gas_used: Some(0x10.into()),
             contract_address: None,
-            logs: vec![
-                Log {
-                    address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),
-                    topics: vec![
-                        "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc"
-                            .parse()
-                            .unwrap(),
-                        "4861736852656700000000000000000000000000000000000000000000000000"
-                            .parse()
-                            .unwrap(),
-                    ],
-                    data: vec![].into(),
-                    block_hash: Some(
-                        "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
-                            .parse()
-                            .unwrap(),
-                    ),
-                    block_number: Some(0x4510c.into()),
-                    transaction_hash: Some(H256::from(0).into()),
-                    transaction_index: Some(0.into()),
-                    transaction_log_index: None,
-                    log_index: Some(1.into()),
-                },
-            ],
+            logs: vec![Log {
+                address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),
+                topics: vec![
+                    "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc"
+                        .parse()
+                        .unwrap(),
+                    "4861736852656700000000000000000000000000000000000000000000000000"
+                        .parse()
+                        .unwrap(),
+                ],
+                data: vec![].into(),
+                block_hash: Some(
+                    "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
+                        .parse()
+                        .unwrap(),
+                ),
+                block_number: Some(0x4510c.into()),
+                transaction_hash: Some(H256::from(0).into()),
+                transaction_index: Some(0.into()),
+                transaction_log_index: None,
+                log_index: Some(1.into()),
+            }],
             logs_bloom: Bloom::from(15).into(),
             state_root: Some(H256::from(10).into()),
             error_message: None,
@@ -143,30 +141,28 @@ mod tests {
             cumulative_gas_used: 0x20.into(),
             gas_used: Some(0x10.into()),
             contract_address: None,
-            logs: vec![
-                Log {
-                    address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),
-                    topics: vec![
-                        "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc"
-                            .parse()
-                            .unwrap(),
-                        "4861736852656700000000000000000000000000000000000000000000000000"
-                            .parse()
-                            .unwrap(),
-                    ],
-                    data: vec![].into(),
-                    block_hash: Some(
-                        "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
-                            .parse()
-                            .unwrap(),
-                    ),
-                    block_number: Some(0x4510c.into()),
-                    transaction_hash: Some(H256::from(0).into()),
-                    transaction_index: Some(0.into()),
-                    transaction_log_index: None,
-                    log_index: Some(1.into()),
-                },
-            ],
+            logs: vec![Log {
+                address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),
+                topics: vec![
+                    "a6697e974e6a320f454390be03f74955e8978f1a6971ea6730542e37b66179bc"
+                        .parse()
+                        .unwrap(),
+                    "4861736852656700000000000000000000000000000000000000000000000000"
+                        .parse()
+                        .unwrap(),
+                ],
+                data: vec![].into(),
+                block_hash: Some(
+                    "ed76641c68a1c641aee09a94b3b471f4dc0316efe5ac19cf488e2674cf8d05b5"
+                        .parse()
+                        .unwrap(),
+                ),
+                block_number: Some(0x4510c.into()),
+                transaction_hash: Some(H256::from(0).into()),
+                transaction_index: Some(0.into()),
+                transaction_log_index: None,
+                log_index: Some(1.into()),
+            }],
             logs_bloom: Bloom::from(15).into(),
             state_root: Some(H256::from(10).into()),
             error_message: None,
