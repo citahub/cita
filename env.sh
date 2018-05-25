@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
 DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20180518"
+if [[ `uname` == 'Darwin' ]]
+then 
+    cp /etc/localtime $PWD/localtime
+    LOCALTIME_PATH="$PWD/localtime"
+else 
+    LOCALTIME_PATH="/etc/localtime"
+fi
 
 docker_bin=$(which docker)
 if [ -z "${docker_bin}" ]; then
@@ -29,7 +36,7 @@ else
     docker run -d --volume ${SOURCE_DIR}:${SOURCE_DIR} \
         --volume ${HOME}/.docker_cargo/registry:/root/.cargo/registry \
         --volume ${HOME}/.docker_cargo/git:/root/.cargo/git \
-        --volume /etc/localtime:/etc/localtime \
+        --volume ${LOCALTIME_PATH}:/etc/localtime \
         --workdir "${SOURCE_DIR}" --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
         /bin/bash -c "while true;do sleep 100;done"
     sleep 20
