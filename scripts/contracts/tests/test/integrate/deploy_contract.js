@@ -1,201 +1,197 @@
-/* jshint esversion: 6 */
-/* jshint expr: true */
-
-const chai = require('chai');
-const assert = chai.assert;
+const mocha = require('mocha');
+const assert = require('assert');
 const util = require('../helpers/util');
 const config = require('../config');
 const permissionManagement = require('../helpers/permission_management');
 
 // config
-const superAdmin = config.contract.authorization.superAdmin;
+const { superAdmin } = config.contract.authorization;
 const sender = config.testSender;
 
 // util
-const web3 = util.web3;
-const getTxReceipt = util.getTxReceipt;
-const quota = util.quota;
-const blockLimit = util.blockLimit;
+const {
+  logger, web3, getTxReceipt, quota, blockLimit,
+} = util;
 
-const create_contract = "0x0000000000000000000000000000000000000002";
-const send_tx = "0x0000000000000000000000000000000000000001";
-const setAuthorization = permissionManagement.setAuthorization;
-const cancelAuthorization = permissionManagement.cancelAuthorization;
+const createContract = '0x0000000000000000000000000000000000000002';
+const sendTx = '0x0000000000000000000000000000000000000001';
+const { setAuthorization, cancelAuthorization } = permissionManagement;
+
+const {
+  describe, it, before, after,
+} = mocha;
 
 // =======================
 
-describe('\n\ntest create contract permission\n\n', function() { 
+describe('\n\ntest create contract permission\n\n', () => {
+  before('should send a setAuthorization tx and get receipt', (done) => {
+    const res = setAuthorization(sender.address, sendTx);
 
-    before('should send a setAuthorization tx and get receipt', function(done) {
-        let res = setAuthorization(sender.address, send_tx);
+    getTxReceipt(res)
+      .then((receipt) => {
+        logger.debug('\nSend ok and get receipt:\n', receipt);
+        assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+        done();
+      })
+      .catch((err) => {
+        logger.error('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
+        this.skip();
+        done();
+      });
+  });
 
-        getTxReceipt(res)
-            .then((receipt) => {
-                console.log('\nSend ok and get receipt:\n', receipt);
-                assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                done();
-            })
-            .catch(err => {
-                console.log('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
-                this.skip();
-                done();
-            });
+  after('should send a cancelAuthorization tx and get receipt', (done) => {
+    const res = cancelAuthorization(sender.address, sendTx);
+
+    getTxReceipt(res)
+      .then((receipt) => {
+        logger.debug('\nSend ok and get receipt:\n', receipt);
+        assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+        done();
+      })
+      .catch((err) => {
+        logger.error('\n!!!!Get cancelAuthorization receipt err:!!!!\n', err);
+        this.skip();
+        done();
+      });
+  });
+
+
+  it('should send a deploy_contract tx and get receipt: superAdmin', (done) => {
+    const res = web3.eth.sendTransaction({
+      privkey: superAdmin.privkey,
+      nonce: util.randomInt(),
+      quota,
+      validUntilBlock: web3.eth.blockNumber + blockLimit,
+      data: config.testBin,
     });
+    getTxReceipt(res)
+      .then((receipt) => {
+        logger.debug('\nSend ok and get receipt:\n', receipt);
+        assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+        done();
+      })
+      .catch((err) => {
+        logger.error('\n!!!!Get receipt err:!!!!\n', err);
+        this.skip();
+        done();
+      });
+  });
 
-    after('should send a cancelAuthorization tx and get receipt', function(done) {
-        let res = cancelAuthorization(sender.address, send_tx);
-
-        getTxReceipt(res)
-            .then((receipt) => {
-                console.log('\nSend ok and get receipt:\n', receipt);
-                assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                done();
-            })
-            .catch(err => {
-                console.log('\n!!!!Get cancelAuthorization receipt err:!!!!\n', err);
-                this.skip();
-                done();
-            });
+  it('should send a deploy_contract tx and get receipt with error message: testSender', (done) => {
+    const res = web3.eth.sendTransaction({
+      privkey: sender.privkey,
+      nonce: util.randomInt(),
+      quota,
+      validUntilBlock: web3.eth.blockNumber + blockLimit,
+      data: config.testBin,
     });
- 
- 
-    it('should send a deploy_contract tx and get receipt: superAdmin', function(done) {
-        let res = web3.eth.sendTransaction({
-                privkey: superAdmin.privkey,
-                nonce: util.randomInt(),
-                quota: quota,
-                validUntilBlock: web3.eth.blockNumber + blockLimit,
-                data: config.testBin 
-            });
-        getTxReceipt(res)
-            .then((receipt) => {
-                console.log('\nSend ok and get receipt:\n', receipt);
-                assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                done();
-            })
-            .catch(err => {
-                console.log('\n!!!!Get receipt err:!!!!\n', err);
-                this.skip();
-                done();
-            });
-    });
+    getTxReceipt(res)
+      .then((receipt) => {
+        logger.debug('\nSend ok and get receipt:\n', receipt);
+        assert.equal(receipt.errorMessage, 'No contract permission.', JSON.stringify(receipt.errorMessage));
+        done();
+      })
+      .catch((err) => {
+        logger.error('\n!!!!Get receipt err:!!!!\n', err);
+        this.skip();
+        done();
+      });
+  });
 
-    it('should send a deploy_contract tx and get receipt with error message: testSender', function(done) {
-        let res = web3.eth.sendTransaction({
-                privkey: sender.privkey,
-                nonce: util.randomInt(),
-                quota: quota,
-                validUntilBlock: web3.eth.blockNumber + blockLimit,
-                data: config.testBin 
-            });
-        getTxReceipt(res)
-            .then((receipt) => {
-                console.log('\nSend ok and get receipt:\n', receipt);
-                assert.equal(receipt.errorMessage, 'No contract permission.', JSON.stringify(receipt.errorMessage));
-                done();
-            })
-            .catch(err => {
-                console.log('\n!!!!Get receipt err:!!!!\n', err);
-                this.skip();
-                done();
-            });
-    });
+  describe('\n\ntest create contract permission after set createContract permission\n\n', () => {
+    before('should send a setAuthorization tx and get receipt', (done) => {
+      const res = setAuthorization(sender.address, createContract);
 
-    describe('\n\ntest create contract permission after set create_contract permission\n\n', function() { 
-
-        before('should send a setAuthorization tx and get receipt', function(done) {
-            let res = setAuthorization(sender.address, create_contract);
-
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
-                    this.skip();
-                    done();
-                });
-        });
-        
-        it('should wait a new block', function(done) {
-            let num = web3.eth.blockNumber;
-            let tmp;
-            do {
-                tmp = web3.eth.blockNumber;
-            } while (tmp <= num);
-            done();
-        });
-
-        it('should send a deploy_contract tx and get receipt: testSender', function(done) {
-            let res = web3.eth.sendTransaction({
-                    privkey: sender.privkey,
-                    nonce: util.randomInt(),
-                    quota: quota,
-                    validUntilBlock: web3.eth.blockNumber + blockLimit,
-                    data: config.testBin 
-                });
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get receipt err:!!!!\n', err);
-                    this.skip();
-                    done();
-                });
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
+          this.skip();
+          done();
         });
     });
 
-    describe('\n\ntest create contract permission after cancel create_contract permission\n\n', function() { 
+    it('should wait a new block', (done) => {
+      const num = web3.eth.blockNumber;
+      let tmp;
+      do {
+        tmp = web3.eth.blockNumber;
+      } while (tmp <= num);
+      done();
+    });
 
-        before('should send a cancelAuthorization tx and get receipt', function(done) {
-            let res = cancelAuthorization(sender.address, create_contract);
-
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get cancelAuthorization receipt err:!!!!\n', err);
-                    this.skip();
-                    done();
-                });
-        });
-        
-        it('should wait a new block', function(done) {
-            let num = web3.eth.blockNumber;
-            let tmp;
-            do {
-                tmp = web3.eth.blockNumber;
-            } while (tmp <= num);
-            done();
-        });
-
-        it('should send a deploy_contract tx and get receipt with error message: testSender', function(done) {
-            let res = web3.eth.sendTransaction({
-                    privkey: sender.privkey,
-                    nonce: util.randomInt(),
-                    quota: quota,
-                    validUntilBlock: web3.eth.blockNumber + blockLimit,
-                    data: config.testBin 
-                });
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, 'No contract permission.', JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get receipt err:!!!!\n', err);
-                    this.skip();
-                    done();
-                });
+    it('should send a deploy_contract tx and get receipt: testSender', (done) => {
+      const res = web3.eth.sendTransaction({
+        privkey: sender.privkey,
+        nonce: util.randomInt(),
+        quota,
+        validUntilBlock: web3.eth.blockNumber + blockLimit,
+        data: config.testBin,
+      });
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get receipt err:!!!!\n', err);
+          this.skip();
+          done();
         });
     });
+  });
+
+  describe('\n\ntest create contract permission after cancel createContract permission\n\n', () => {
+    before('should send a cancelAuthorization tx and get receipt', (done) => {
+      const res = cancelAuthorization(sender.address, createContract);
+
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get cancelAuthorization receipt err:!!!!\n', err);
+          this.skip();
+          done();
+        });
+    });
+
+    it('should wait a new block', (done) => {
+      const num = web3.eth.blockNumber;
+      let tmp;
+      do {
+        tmp = web3.eth.blockNumber;
+      } while (tmp <= num);
+      done();
+    });
+
+    it('should send a deploy_contract tx and get receipt with error message: testSender', (done) => {
+      const res = web3.eth.sendTransaction({
+        privkey: sender.privkey,
+        nonce: util.randomInt(),
+        quota,
+        validUntilBlock: web3.eth.blockNumber + blockLimit,
+        data: config.testBin,
+      });
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, 'No contract permission.', JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get receipt err:!!!!\n', err);
+          this.skip();
+          done();
+        });
+    });
+  });
 });
