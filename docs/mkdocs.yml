@@ -87,7 +87,7 @@ theme:
     code: 'Roboto Mono'
 extra:
   search:
-    # language: 'en, zh'
+    language: 'jp'
 extra_css:
   - 'stylesheets/extra.css'
 use_directory_urls: false
