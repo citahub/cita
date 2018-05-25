@@ -19,6 +19,7 @@ setup() {
     else
         ps -C rabbitmq-server > /dev/null || sudo /etc/init.d/rabbitmq-server restart > /dev/null
     fi
+    
     sudo rabbitmqctl list_vhosts | grep ${node}                            > /dev/null && sudo rabbitmqctl delete_vhost ${node}    > /dev/null
     sudo rabbitmqctl add_vhost ${node}                                     > /dev/null
     sudo rabbitmqctl set_permissions -p ${node} guest '.*' '.*' '.*'       > /dev/null

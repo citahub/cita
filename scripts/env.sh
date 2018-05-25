@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cita/cita-run:latest"
+DOCKER_IMAGE="cita/cita-run:ubuntu-18.04-20180518"
 
 docker_bin=$(which docker)
 if [ -z "${docker_bin}" ]; then
