@@ -34,9 +34,8 @@ use header::Header;
 
 use cita_types::H256;
 use rlp::{DecoderError, Encodable, RlpStream, UntrustedRlp};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-
+use std::sync::Arc;
 use std::time::Duration;
 
 use util::kvdb::{DBTransaction, KeyValueDB};
