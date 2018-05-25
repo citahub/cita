@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cita/cita-run:latest"
+DOCKER_IMAGE="cita/cita-run:ubuntu-18.04-20180518"
+
 if [[ `uname` == 'Darwin' ]]
 then
     cp /etc/localtime $PWD/localtime

@@ -17,26 +17,21 @@ CITA 中节点分为共识节点和普通节点，交易由共识节点排序并
     ```bash
     $ pwd
     ../cita/target/install
-    $ ls
-    backup  bin  node0  node1  node2  node3  scripts
+    $ ls node/
+      0  1  2  3  template
     ```
-    backup 中保存了当前节点的公钥地址 `backup/authorities`，以及创世块信息 `backup/genesis.json`，目前地址有四个。
+    template 中保存了当前节点的公钥地址 `template/authorities.list`，以及创世块信息 `template/configs/genesis.json`，目前地址有四个。
 
 2. 生成新 node：
 
     ```bash
-    $ ./bin/admintool.sh -Q 4 -l "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003,127.0.0.1:4004"
-    ************************begin create node config******************************
-    ************************end create node config********************************
-    WARN: remember then delete all privkey files!!!
-
-    $ ls
-    backup  bin  node0  node1  node2  node3  node4  scripts
+    $ ./scripts/create_cita_config.py append --node "127.0.0.1:4004"
+    $ ls node/
+      0  1  2  3  4  template
     ```
     
-    - `-Q` 标识要生成的新 node 的 id
-    - `-l` 列出已经存在的 node 的 ip 和端口设置，并在最后加上新 node 的 ip 及端口
-    - 脚本将自动生成新的 node4，并在原有节点中 `node*/network.toml` 中插入新节点的 ip 及端口配置，同时，`backup/authorities` 中新增一行地址，对应新节点
+    - append 子命令，在指定链中增加对应 ip 地址的节点
+    - 脚本将自动生成新的 4，并在原有节点中 `node/*/network.toml` 中插入新节点的 ip 及端口配置
 
 3. 启动新节点：
 
@@ -155,7 +150,9 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 - to 为合约地址，即节点合约的地址
 - data 为函数 hash，此为无参数合约调用方式
 
-返回值为目前的共识节点地址，这种地址如上文所述 `install/authorities` 文件中。最后一个就是新增节点的地址，演示中，地址为 `59a316df602568957f47973332f1f85ae1e2e75e`。
+返回值为目前的共识节点地址。
+
+下面我们需要将新增节点通过交易的方式升级为共识节点，新增节点的公钥地址，演示中，为 `59a316df602568957f47973332f1f85ae1e2e75e`。
 
 #### 构造交易格式并发送
 

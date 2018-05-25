@@ -81,41 +81,40 @@ Switch to release directory at first:
 cd target/install
 ```
 
-The`admintool`in the release directory is used to generate the node configuration file, including the Genesis block configuration, node-related configuration, network connection configuration, and private key configuration.
+The`create_cita_config.py`in the release directory is used to generate the node configuration file, including the Genesis block configuration, node-related configuration, network connection configuration, and private key configuration.
 
 The tool defaults to generate a Demo with 4 local nodes:
 
 ```shell
-./env.sh ./bin/admintool.sh
+./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
 ```
 
 In the production environment, user needs to change the default configuration according to the actual situation.
 
-Use`admintool.sh -h`to get detailed help information, allowing custom configurations to include:
+Use`create_cita_config.py -h`to get detailed help information, allowing custom configurations to include:
 
 * System administrator account
 * Network list, in the format of`IP1:PORT1,IP2:PORT2,IP3:PORT3 ... IPn:PORTn`
-* Consensus algorithm. There are three choices: `cita-bft`、`raft` 和`poa`
-* Encryption method
 * Blocking interval
-* Limit number of transactions in a single block
 * Check for repeated transactions after accumulating a certain amount of historical transactions
+* System contract detailed parameter values
+* Consensus node address
 
 After the node initialization, the node configuration file will be generated in the release directory. The generated node directory is:
 
-* node0
-* node1
-* node2
-* node3
+* node/0
+* node/1
+* node/2
+* node/3
 
 ## Run nodes
 
-The commands of operation the nodes are the same. Take`node0`as an example.
+The commands of operation the nodes are the same. Take`node/0`as an example.
 
 1. Configure the node:
 
     ```shell
-    ./env.sh ./bin/cita setup node0
+    ./env.sh ./bin/cita setup node/0
     ```
 
 2. Start the node：
@@ -123,13 +122,13 @@ The commands of operation the nodes are the same. Take`node0`as an example.
     This command does not return normally, so it needs to run in the background.
 	
     ```shell
-    ./daemon.sh ./bin/cita start node0
+    ./daemon.sh ./bin/cita start node/0
     ```	
 
 3. Stop the node：
 
     ```shell
-    ./env.sh ./bin/cita stop node0
+    ./env.sh ./bin/cita stop node/0
     ```
 
 4. Other operations

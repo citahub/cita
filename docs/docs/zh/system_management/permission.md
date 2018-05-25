@@ -299,10 +299,15 @@ CITA通过智能合约的方式来对权限进行管理。
 
 ### 修改系统配置
 
-* CITA系统默认集成superAdmin账号，在scripts/admintool/init_data_example.json文件中可以修改。superAdmin默认密钥对如下：
+* 演示中 superAdmin 密钥对如下：
     - 公钥： `0x9dcd6b234e2772c5451fd4ccf7582f4283140697`
     - 私钥： `993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9`
-* 修改`0x0000000000000000000000000000000031415926`的第一项打开权限管理，由`false`修改为`true`。通过`bin/admintool.sh`生成各节点。
+* 通过以下命令生成各节点。
+``` shell
+$ ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
+                                         --super_admin "0x9dcd6b234e2772c5451fd4ccf7582f4283140697" \
+                                         --contract_arguments SysConfig.check_permission=true
+```
 
 用户生成普通账户，由superAdmin账户对其进行授权，实现权限管理。使用superAdmin的私钥调用的接口由管理员执行，使用用户john的私钥由用户john执行。
 
