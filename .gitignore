@@ -57,3 +57,6 @@ yarn-error.log
 
 # docs
 docs/site
+
+# localtime for macos users
+localtime

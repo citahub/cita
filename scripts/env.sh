@@ -2,6 +2,14 @@
 
 DOCKER_IMAGE="cita/cita-run:ubuntu-18.04-20180518"
 
+if [[ `uname` == 'Darwin' ]]
+then
+    cp /etc/localtime $PWD/localtime
+    LOCALTIME_PATH="$PWD/localtime"
+else
+    LOCALTIME_PATH="/etc/localtime"
+fi
+
 docker_bin=$(which docker)
 if [ -z "${docker_bin}" ]; then
     echo "Command not found, install docker first."
@@ -24,7 +32,7 @@ else
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm ${CONTAINER_NAME} > /dev/null 2>&1
     docker run -d --net=host --volume ${RELEASE_DIR}:${RELEASE_DIR} \
-        --volume /etc/localtime:/etc/localtime \
+        --volume ${LOCALTIME_PATH}:/etc/localtime \
         --workdir "${RELEASE_DIR}" --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
         /bin/bash -c "while true;do sleep 100;done"
     sleep 20
