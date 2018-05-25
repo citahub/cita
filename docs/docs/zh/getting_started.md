@@ -82,41 +82,40 @@ docker kill $(docker ps -a -q)
 cd target/install
 ```
 
-发布件目录中的`admintool`工具用来生成节点配置文件，包括创世块配置、节点相关配置、网络连接配置、私钥配置等。
+发布件目录中的`create_cita_config.py`工具用来生成节点配置文件，包括创世块配置、节点相关配置、网络连接配置、私钥配置等。
 
 该工具默认生成的是本地 4 个节点的 Demo 示例配置：
 
 ```shell
-./env.sh ./bin/admintool.sh
+./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
 ```
 
 生产环境中，用户需要根据实际情况更改默认配置。
 
-使用命令`admintool.sh -h`来获得详细帮助信息，允许自定义的配置包括：
+使用命令`./scripts/create_cita_config.py -h`来获得详细帮助信息，允许自定义的配置包括：
 
 * 系统管理员账户
 * 网络列表，按照`IP1:PORT1,IP2:PORT2,IP3:PORT3 ... IPn:PORTn`的格式
-* 共识算法选择，可供选择的有`cita-bft`、`raft` 和`poa`
-* 加密方法选择
 * 出块时间间隔
-* 单数据块中交易数量限制
 * 累积多少历史交易量后进行重复交易的检查
+* 系统合约详细参数
+* 共识节点地址
 
 节点初始化操作成功后，将在发布件目录下生成节点的配置文件，其生成的节点目录为：
 
-* node0
-* node1
-* node2
-* node3
+* node/0
+* node/1
+* node/2
+* node/3
 
 ## 运行节点
 
-操作节点的命令都是相同的，以下以`node0`为例进行演示。
+操作节点的命令都是相同的，以下以`node/0`为例进行演示。
 
 1.  配置节点：
 
 ```shell
-./env.sh ./bin/cita setup node0
+./env.sh ./bin/cita setup node/0
 ```
 
 2.  启动节点：
@@ -124,13 +123,13 @@ cd target/install
 该命令正常情况下不会返回，因此需要后台运行。
 
 ```shell
-./daemon.sh ./bin/cita start node0
+./daemon.sh ./bin/cita start node/0
 ```
 
 3.  停止节点：
 
 ```shell
-./env.sh ./bin/cita stop node0
+./env.sh ./bin/cita stop node/0
 ```
 
 4.  其他操作
