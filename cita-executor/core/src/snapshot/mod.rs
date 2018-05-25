@@ -25,8 +25,7 @@ const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 use account_db::{AccountDB, AccountDBMut};
 
 use cita_types::{Address, H256, U256};
-use db::*;
-//use libexecutor::block::*;
+use db::{Writable, COL_EXTRA, COL_HEADERS, COL_STATE};
 use libexecutor::executor::Executor;
 use rlp::{DecoderError, Encodable, RlpStream, UntrustedRlp};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -57,10 +56,10 @@ use types::ids::BlockId;
 use super::state::Account as StateAccount;
 use super::state_db::StateDB;
 use ethcore_bloom_journal::Bloom;
-use header::*;
+use header::Header;
 use util::Hashable;
 
-use libexecutor::extras::*;
+use libexecutor::extras::{ConfigHistory, CurrentHash};
 
 use bincode::{serialize as bin_serialize, Infinite};
 
@@ -444,6 +443,7 @@ pub fn chunk_secondary<'a>(
 
     {
         let mut chunk_sink = |raw_data: &[u8]| {
+            compressed_data.clear();
             snappy::compress_to(raw_data, &mut compressed_data)?;
             let hash = sha3(&compressed_data);
             let size = compressed_data.len();

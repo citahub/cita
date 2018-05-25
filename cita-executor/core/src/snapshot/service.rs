@@ -34,7 +34,7 @@ use libexecutor::executor::{get_current_header, Executor, Stage};
 use state_db::StateDB;
 
 use util::journaldb::{self, Algorithm};
-use util::kvdb::*;
+use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
 use util::snappy;
 use util::Bytes;
 use util::UtilError;
