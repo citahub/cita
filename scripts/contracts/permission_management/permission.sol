@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 
 /// @title Permission contract
@@ -94,7 +94,7 @@ contract Permission {
     /// @return true if in permission, otherwise false
     function inPermission(address cont, bytes4 func)
         public
-        view
+        constant
         returns (bool)
     {
         for (uint i = 0; i < resources.length; i++) {
@@ -109,7 +109,7 @@ contract Permission {
     /// @return The information of permission: name and resources
     function queryInfo()
         public
-        view
+        constant
         returns (bytes32, address[], bytes4[])
     {
         uint len = resources.length;
@@ -128,7 +128,7 @@ contract Permission {
     /// @return The name of permission
     function queryName()
         public
-        view
+        constant
         returns (bytes32)
     {
         return name;
@@ -138,7 +138,7 @@ contract Permission {
     /// @return The resources of permission
     function queryResource()
         public
-        view
+        constant
         returns (address[], bytes4[])
     {
         uint len = resources.length;
@@ -175,7 +175,7 @@ contract Permission {
     /// @notice Private: Get the index of the value in the resources
     function resourceIndex(address _cont, bytes4 _func)
         private
-        view
+        constant
         returns (uint i)
     {
         for (i = 0; i < resources.length; i++) {
@@ -203,7 +203,7 @@ contract Permission {
     /// @notice Private: Check the duplicate resource
     function inResources(address _cont, bytes4 _func)
         private
-        view
+        constant
         returns (bool)
     {
         for (uint i = 0; i < resources.length; i++) {

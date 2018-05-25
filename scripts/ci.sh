@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cita/cita-build:latest"
+DOCKER_IMAGE="cita/cita-build:solc-over-16-params"
 
 SCRIPT_PATH=$(realpath $0)
 SOURCE_DIR=$(realpath "$(dirname ${SCRIPT_PATH})/..")

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 import "../common/address_array.sol";
 import "../common/SafeMath.sol";
@@ -23,22 +23,22 @@ interface NodeInterface {
     function deleteNode(address _node) public returns (bool);
     /// @notice List the consensus nodes that have been approved
     /// which means list the node whose status is start
-    function listNode() view public returns (address[]);
+    function listNode() public constant returns (address[]);
     /*
      * @notice Get the status of the node:
      * @return 0: Close
      * @return 1: Ready
      * @return 2: Start
      */
-    function getStatus(address _node) view public returns (uint8);
+    function getStatus(address _node) public constant returns (uint8);
     /// @notice Check the account is admin
-    function isAdmin(address) view public returns (bool);
+    function isAdmin(address) public constant returns (bool);
     /// @notice Set node stake
     function setStake(address _node, uint stake) public;
     /// @notice Node stake list
-    function listStake() view public returns (uint[] _stakes);
+    function listStake() public constant returns (uint[] _stakes);
     /// @notice Stake permillage
-    function stakePermillage(address _node) view public returns (uint);
+    function stakePermillage(address _node) public constant returns (uint);
 }
 
 /// @title Node manager contract
@@ -162,21 +162,21 @@ contract NodeManager is NodeInterface {
 
     /// @notice Query the consensus nodes
     /// @return All the consensus nodes
-    function listNode() view public returns (address[]) {
+    function listNode() public constant returns (address[]) {
         return nodes;
     }
 
     /// @notice Query the status of node
     /// @param _node The node to be deleted
     /// @return The status of the node
-    function getStatus(address _node) view public returns (uint8) {
+    function getStatus(address _node) public constant returns (uint8) {
         return uint8(status[_node]);
     }
 
     /// @notice Check the account is admin
     /// @param _account The address to be checked
     /// @return true if it is, otherwise false
-    function isAdmin(address _account) view public returns (bool) {
+    function isAdmin(address _account) public constant returns (bool) {
         return admins[_account];
     }
 
@@ -191,7 +191,7 @@ contract NodeManager is NodeInterface {
 
     /// @notice Node stake list
     /// @return All the node stake list
-    function listStake() view public returns (uint[] memory _stakes) {
+    function listStake() public constant returns (uint[] memory _stakes) {
         _stakes = new uint[](nodes.length);
         for (uint j = 0; j < nodes.length; j++) {
             _stakes[j] = stakes[nodes[j]];
@@ -203,7 +203,7 @@ contract NodeManager is NodeInterface {
     /// This is the slot number which ignore the remainder, not exactly precise.
     /// https://en.wikipedia.org/wiki/Largest_remainder_method
     /// Hare quota
-    function stakePermillage(address _node) view public returns (uint) {
+    function stakePermillage(address _node) public constant returns (uint) {
         uint total;
         for (uint j = 0; j < nodes.length; j++) {
             total = SafeMath.add(total, stakes[nodes[j]]);

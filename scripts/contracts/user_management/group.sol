@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 import "../common/address_array.sol";
 
@@ -129,7 +129,7 @@ contract Group {
     /// @return Name and accounts of group
     function queryInfo()
         public
-        view
+        constant
         returns (bytes32, address[])
     {
         return (name, accounts);
@@ -139,7 +139,7 @@ contract Group {
     /// @return The name of group
     function queryName()
         public
-        view
+        constant
         returns (bytes32)
     {
         return name;
@@ -149,7 +149,7 @@ contract Group {
     /// @return The accounts of group
     function queryAccounts()
         public
-        view
+        constant
         returns (address[])
     {
         return accounts;
@@ -160,7 +160,7 @@ contract Group {
     /// @return The children of group
     function queryChild()
         public
-        view
+        constant
         returns (address[])
     {
         return children;
@@ -170,7 +170,7 @@ contract Group {
     /// @return The number of the children group
     function queryChildLength()
         public
-        view
+        constant
         returns (uint)
     {
         return children.length;
@@ -180,7 +180,7 @@ contract Group {
     /// @return The parent of the group
     function queryParent()
         public
-        view
+        constant
         returns (address)
     {
         return parent;
@@ -190,7 +190,7 @@ contract Group {
     /// @return Ture if the account in the group, otherwise false
     function inGroup(address _account)
         public
-        view
+        constant
         returns (bool)
     {
         return AddressArray.exist(_account, accounts);

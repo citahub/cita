@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 import "../common/address_array.sol";
 
@@ -94,7 +94,7 @@ contract Role {
     /// @return The information of role: name and permissions
     function queryRole()
         public
-        view
+        constant
         returns (bytes32, address[])
     {
         return (name, permissions);
@@ -104,7 +104,7 @@ contract Role {
     /// @return The name of role
     function queryName()
         public
-        view
+        constant
         returns (bytes32)
     {
         return name;
@@ -114,7 +114,7 @@ contract Role {
     /// @return The permissions of role
     function queryPermissions()
         public
-        view
+        constant
         returns (address[])
     {
         return permissions;
@@ -124,7 +124,7 @@ contract Role {
     /// @return The number of permission
     function lengthOfPermissions()
         public
-        view
+        constant
         returns (uint)
     {
         return permissions.length;
@@ -134,7 +134,7 @@ contract Role {
     /// @return true if in permissions, otherwise false
     function inPermissions(address _permission)
         public
-        view
+        constant
         returns (bool)
     {
         return AddressArray.exist(_permission, permissions);

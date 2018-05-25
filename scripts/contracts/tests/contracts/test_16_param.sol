@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 contract FunctionParam16 {
     uint[] params;
@@ -43,7 +43,7 @@ contract FunctionParam16 {
         Set(x0);
     }
 
-    function get() view public returns (uint x0, uint x1, uint x2, uint x3, uint x4, uint x5, uint x6, uint x7, uint x8, uint x9, uint x10, uint x11, uint x12, uint x13, uint x14, uint x15) {
+    function get() public constant returns (uint x0, uint x1, uint x2, uint x3, uint x4, uint x5, uint x6, uint x7, uint x8, uint x9, uint x10, uint x11, uint x12, uint x13, uint x14, uint x15) {
         return (params[0], x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, params[15]);
     }
 }

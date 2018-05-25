@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 contract ChainManager {
 
@@ -52,7 +52,7 @@ contract ChainManager {
 
     function getChainId()
         public
-        view
+        constant
         returns (uint)
     {
         return chainId;
@@ -60,7 +60,7 @@ contract ChainManager {
 
     function getParentChainId()
         public
-        view
+        constant
         hasParentChain
         returns (uint)
     {
@@ -97,7 +97,7 @@ contract ChainManager {
 
     function getAuthorities(uint id)
         public
-        view
+        constant
         returns (address[])
     {
         // Is it the parent chain?

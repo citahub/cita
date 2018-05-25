@@ -177,7 +177,7 @@ message UnverifiedTransaction {
 [solidity](https://solidity.readthedocs.io/en/develop/)相关文档
 
 ```solidity
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 contract SimpleStorage {
     uint storedData;

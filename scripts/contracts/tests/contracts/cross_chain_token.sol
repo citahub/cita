@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 contract MyToken {
     /* This creates an array with all balances */
@@ -23,7 +23,7 @@ contract MyToken {
         // Add the same to the recipient
     }
 
-    function get_balance(address _to) public view returns (uint256) {
+    function get_balance(address _to) public constant returns (uint256) {
         return balanceOf[_to];
     }
 
@@ -36,7 +36,7 @@ contract MyToken {
     // size as agrs[2..] of send_to_side_chain
     uint256 DATA_SIZE = 0x20;  // for this demo is _value
 
-    function get_cross_chain_nonce() public view returns (uint256) {
+    function get_cross_chain_nonce() public constant returns (uint256) {
         return crosschain_recv_nonce;
     }
 
@@ -47,7 +47,7 @@ contract MyToken {
         crosschain_send_nonce = crosschain_send_nonce + 1;
     }
 
-    function get_from_chain_id() public view returns (uint256) {
+    function get_from_chain_id() public constant returns (uint256) {
         return from_chain_id;
     }
 

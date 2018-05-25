@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 import "./permission.sol";
 import "../common/address_array.sol";
@@ -139,7 +139,7 @@ contract Authorization {
     /// @return The permissions of account
     function queryPermissions(address _account)
         public
-        view
+        constant
         returns (address[] _permissions)
     {
         return permissions[_account];
@@ -150,7 +150,7 @@ contract Authorization {
     /// @return The accounts of permission
     function queryAccounts(address _permission)
         public
-        view
+        constant
         returns (address[] _accounts)
     {
         return accounts[_permission];
@@ -160,7 +160,7 @@ contract Authorization {
     /// @return All the accounts
     function queryAllAccounts()
         public
-        view
+        constant
         returns (address[])
     {
         return all_accounts;
@@ -173,7 +173,7 @@ contract Authorization {
     /// @return true if passed, otherwise false
     function checkPermission(address _account, address _cont, bytes4 _func)
         public
-        view
+        constant
         returns (bool)
     {
         address[] memory perms = queryPermissions(_account);
