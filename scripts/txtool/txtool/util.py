@@ -12,6 +12,7 @@ from log import logger
 
 def which(program):
     import os
+
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
@@ -30,9 +31,8 @@ def which(program):
 
 
 def run_command(command):
-    p = subprocess.Popen(command,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
+    p = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return iter(p.stdout.readline, b'')
 
 
@@ -60,6 +60,7 @@ def stringToBytes(convertedString):
     else:
         return bytes(convertedString, 'utf8')
 
+
 def path_leaf(path):
     head, tail = ntpath.split(path)
     return tail or ntpath.basename(head)
@@ -82,7 +83,8 @@ def add_hex_0x(hex_string):
     result = hex_string
 
     if hex_string is not None:
-        starts_with_0x = hex_string.startswith('0x') or hex_string.startswith('0X')
+        starts_with_0x = hex_string.startswith('0x') or hex_string.startswith(
+            '0X')
         if not starts_with_0x:
             result = '0x' + hex_string
 
@@ -111,13 +113,17 @@ def solidity_file_dirname(solidity_filename):
         file_path = os.path.join(solidity_path, solidity_filename)
         is_exist = os.path.isfile(file_path)
         if is_exist:
-            full_path_name =  os.path.abspath(file_path)
-            return (solidity_filename,  os.path.dirname(file_path), full_path_name)
+            full_path_name = os.path.abspath(file_path)
+            return (solidity_filename, os.path.dirname(file_path),
+                    full_path_name)
         else:
-            logger.error("solidity file {} may be wrong format or not in folder 'solidity'".format(solidity_filename))
+            logger.error(
+                "solidity file {} may be wrong format or not in folder 'solidity'".
+                format(solidity_filename))
             return None
     else:
-        return (os.path.basename(solidity_filename), os.path.dirname(solidity_filename), solidity_filename)
+        return (os.path.basename(solidity_filename),
+                os.path.dirname(solidity_filename), solidity_filename)
 
 
 def recover_pub(signkey):

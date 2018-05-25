@@ -4,7 +4,7 @@
 import argparse
 from jsonrpcclient.http_client import HTTPClient
 from url_util import host, endpoint
-from util import findDict, remove_hex_0x
+from util import findDict
 
 
 def block_by_hash(params):
@@ -25,7 +25,7 @@ def main():
     parser.set_defaults(detail=True)
     args = parser.parse_args()
 
-    params = [remove_hex_0x(args.hash), args.detail]
+    params = [args.hash, args.detail]
     resp = block_by_hash(params)
 
 

@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 from jsonrpcclient.http_client import HTTPClient
 from url_util import endpoint
-from util import remove_hex_0x, run_command
+from util import run_command
 from log import logger
 
 
@@ -28,7 +28,8 @@ def transaction_by_hash(tx_hash):
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--tx", help="Transaction hash with or without 0x prefix.")
+    parser.add_argument(
+        "--tx", help="Transaction hash with or without 0x prefix.")
     opts = parser.parse_args()
 
     return opts.tx
@@ -45,7 +46,7 @@ def main():
     if tx_hash is None:
         tx_hash = get_transaction_hash()
 
-    transaction = transaction_by_hash(remove_hex_0x(tx_hash))
+    transaction = transaction_by_hash(tx_hash)
     print(transaction)
 
 
