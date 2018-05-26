@@ -23,8 +23,8 @@ fi
 
 SOURCE_DIR=`pwd`
 CONTAINER_NAME="cita_build${SOURCE_DIR//\//_}"
-DOCKER_HOME=/opt
-WORKDIR=${DOCKER_HOME}/cita
+CARGO_HOME=/opt/.cargo
+WORKDIR=/opt/cita
 
 mkdir -p ${HOME}/.docker_cargo/git
 mkdir -p ${HOME}/.docker_cargo/registry
@@ -36,14 +36,14 @@ else
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm ${CONTAINER_NAME} > /dev/null 2>&1
     docker run -d \
-        --volume ${SOURCE_DIR}:${WORKDIR} \
-        --volume ${HOME}/.docker_cargo/registry:${DOCKER_HOME}/.cargo/registry \
-        --volume ${HOME}/.docker_cargo/git:${DOCKER_HOME}/.cargo/git \
-        --volume ${LOCALTIME_PATH}:/etc/localtime \
-        --env USER_ID=`id -u $USER` \
-        --workdir ${WORKDIR} \
-	      --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
-        /bin/bash -c "while true;do sleep 100;done"
+           --volume ${SOURCE_DIR}:${WORKDIR} \
+           --volume ${HOME}/.docker_cargo/registry:${CARGO_HOME}/registry \
+           --volume ${HOME}/.docker_cargo/git:${CARGO_HOME}/git \
+           --volume ${LOCALTIME_PATH}:/etc/localtime \
+           --env USER_ID=`id -u $USER` \
+           --workdir ${WORKDIR} \
+           --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
+           /bin/bash -c "while true;do sleep 100;done"
     sleep 20
 fi
 

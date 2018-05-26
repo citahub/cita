@@ -24,8 +24,7 @@ fi
 
 RELEASE_DIR=`pwd`
 CONTAINER_NAME="cita_run${RELEASE_DIR//\//_}"
-DOCKER_HOME=/opt
-WORKDIR=${DOCKER_HOME}/cita-run
+WORKDIR=/opt/cita-run
 
 docker ps | grep ${CONTAINER_NAME} > /dev/null 2>&1
 if [ $? -eq 0 ]; then
