@@ -2,7 +2,7 @@ version: 2
 jobs:
   build_sha3:
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20180518
+      - image: cita/cita-build:ubuntu-18.04-20180523
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -31,7 +31,7 @@ jobs:
 
   basic_test_sha3:
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20180518
+      - image: cita/cita-build:ubuntu-18.04-20180523
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -45,7 +45,7 @@ jobs:
 
   build_blake2b:
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20180518
+      - image: cita/cita-build:ubuntu-18.04-20180523
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -74,7 +74,7 @@ jobs:
 
   basic_test_blake2b:
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20180518
+      - image: cita/cita-build:ubuntu-18.04-20180523
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -88,7 +88,7 @@ jobs:
 
   # basic_test_coverage_sha3:
   #   docker:
-  #     - image: cita/cita-build:ubuntu-18.04-20180518
+  #     - image: cita/cita-build:ubuntu-18.04-20180523
   #   working_directory: ~/cita-build
   #   resource_class: large
   #   steps:
@@ -116,7 +116,7 @@ jobs:
 
   integrate_test_sha3:
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20180518
+      - image: cita/cita-build:ubuntu-18.04-20180523
     working_directory: ~/cita-build
     resource_class: large
     steps:
@@ -147,7 +147,7 @@ jobs:
 
   integrate_test_crosschain_sha3:
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20180518
+      - image: cita/cita-build:ubuntu-18.04-20180523
     working_directory: ~/cita-build
     resource_class: large
     steps:

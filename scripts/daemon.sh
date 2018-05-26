@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cita/cita-run:ubuntu-18.04-20180518"
+DOCKER_IMAGE="cita/cita-run:ubuntu-18.04-20180523"
 
 if [[ `uname` == 'Darwin' ]]
 then
@@ -24,6 +24,8 @@ fi
 
 RELEASE_DIR=`pwd`
 CONTAINER_NAME="cita_run${RELEASE_DIR//\//_}"
+DOCKER_HOME=/opt
+WORKDIR=${DOCKER_HOME}/cita-run
 
 docker ps | grep ${CONTAINER_NAME} > /dev/null 2>&1
 if [ $? -eq 0 ]; then
@@ -31,11 +33,15 @@ if [ $? -eq 0 ]; then
 else
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm ${CONTAINER_NAME} > /dev/null 2>&1
-    docker run -d --net=host --volume ${RELEASE_DIR}:${RELEASE_DIR} \
-        --volume ${LOCALTIME_PATH}:/etc/localtime \
-        --workdir "${RELEASE_DIR}" --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
-        /bin/bash -c "while true;do sleep 100;done"
+    docker run -d \
+           --net=host \
+           --volume ${RELEASE_DIR}:${WORKDIR} \
+           --volume ${LOCALTIME_PATH}:/etc/localtime \
+           --env USER_ID=`id -u $USER` \
+           --workdir ${WORKDIR} \
+           --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
+           /bin/bash -c "while true;do sleep 100;done"
     sleep 20
 fi
 
-docker exec -d ${CONTAINER_NAME} "$@"
+docker exec -d ${CONTAINER_NAME} /usr/bin/gosu user "$@"

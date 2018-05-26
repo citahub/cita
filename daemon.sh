@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20180518"
+DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20180523"
 if [[ `uname` == 'Darwin' ]]
 then 
     cp /etc/localtime $PWD/localtime
@@ -23,6 +23,8 @@ fi
 
 SOURCE_DIR=`pwd`
 CONTAINER_NAME="cita_build${SOURCE_DIR//\//_}"
+DOCKER_HOME=/opt
+WORKDIR=${DOCKER_HOME}/cita
 
 mkdir -p ${HOME}/.docker_cargo/git
 mkdir -p ${HOME}/.docker_cargo/registry
@@ -33,13 +35,16 @@ if [ $? -eq 0 ]; then
 else
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm ${CONTAINER_NAME} > /dev/null 2>&1
-    docker run -d --volume ${SOURCE_DIR}:${SOURCE_DIR} \
-        --volume ${HOME}/.docker_cargo/registry:/root/.cargo/registry \
-        --volume ${HOME}/.docker_cargo/git:/root/.cargo/git \
-        --volume ${LOCALTIME_PATH}:/etc/localtime \
-        --workdir "${SOURCE_DIR}" --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
-        /bin/bash -c "while true;do sleep 100;done"
+    docker run -d \
+           --volume ${SOURCE_DIR}:${WORKDIR} \
+           --volume ${HOME}/.docker_cargo/registry:${DOCKER_HOME}/.cargo/registry \
+           --volume ${HOME}/.docker_cargo/git:${DOCKER_HOME}/.cargo/git \
+           --volume ${LOCALTIME_PATH}:/etc/localtime \
+           --env USER_ID=`id -u $USER` \
+           --workdir ${WORKDIR} \
+           --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
+           /bin/bash -c "while true;do sleep 100;done"
     sleep 20
 fi
 
-docker exec -d ${CONTAINER_NAME} "$@"
+docker exec -d ${CONTAINER_NAME} /usr/bin/gosu user "$@"
