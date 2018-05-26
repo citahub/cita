@@ -4,7 +4,6 @@
 import argparse
 from jsonrpcclient.http_client import HTTPClient
 from url_util import host, endpoint
-from util import remove_hex_0x
 from log import logger
 
 
@@ -26,14 +25,15 @@ def contract_address_infile():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("address", help="20 bytes ethereum compatiable address.")
+    parser.add_argument(
+        "address", help="20 bytes ethereum compatiable address.")
     parser.add_argument("number", help="integer block number(Hex string)")
 
     args = parser.parse_args()
 
     address = args.address
 
-    params = [remove_hex_0x(address), args.number]
+    params = [address, args.number]
     resp = get_code(params)
     if resp is not None:
         print(resp)

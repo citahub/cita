@@ -52,9 +52,12 @@ def _sender_from_file():
         address = addressfile.read()
         return address
 
+
 def get_nonce(size=6):
     """Get a random string."""
-    return (''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size)))
+    return (''.join(
+        random.choice(string.ascii_uppercase + string.digits)
+        for _ in range(size)))
 
 
 def get_chainid():
@@ -227,9 +230,8 @@ def main():
     logger.debug(blake2b_ed25519)
     bytecode, privkey, receiver, version = _params_or_default()
     current_height = int(block_number(), 16)
-    data = generate_deploy_data(
-        current_height, remove_hex_0x(bytecode), privkey,
-        remove_hex_0x(receiver), blake2b_ed25519, version)
+    data = generate_deploy_data(current_height, remove_hex_0x(bytecode), privkey, remove_hex_0x(receiver),
+                                blake2b_ed25519, version)
     logger.info("save deploy code to ../output/transaction/deploycode")
     save_deploy(data)
 

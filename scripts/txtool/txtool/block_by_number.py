@@ -4,7 +4,7 @@
 import argparse
 from jsonrpcclient.http_client import HTTPClient
 from url_util import host, endpoint
-from util import findDict, remove_hex_0x
+from util import findDict
 
 
 def block_by_number(params):
