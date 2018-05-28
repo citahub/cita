@@ -15,7 +15,7 @@
 智能合约是由一组代码和数据组成的程序，位于以太坊区块链上的一个特殊地址中。我们以 Solidity 编写智能合约为例，简单介绍一下如何编写一个规范的合约程序，合约 HelloWorld.sol 的代码如下：
 
 ```solidity
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.14;
 
 contract HelloWorld {
     uint balance;

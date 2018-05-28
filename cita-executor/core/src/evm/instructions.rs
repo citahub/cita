@@ -283,6 +283,8 @@ lazy_static! {
         arr[STATICCALL as usize] =		InstructionInfo::new("STATICCALL",		0, 6, 1, true, GasPriceTier::Special);
         arr[SUICIDE as usize] =         InstructionInfo::new("SUICIDE",         0, 1, 0, true, GasPriceTier::Special);
         arr[REVERT as usize] =			InstructionInfo::new("REVERT",			0, 2, 0, true, GasPriceTier::Zero);
+        arr[DUPX as usize] =            InstructionInfo::new("DUPX",               0, 0, 0,false, GasPriceTier::VeryLow);
+        arr[SWAPX as usize] =           InstructionInfo::new("SWAPX",              0, 0, 0,false, GasPriceTier::VeryLow);
         arr
     };
 }
@@ -568,3 +570,9 @@ pub const REVERT: Instruction = 0xfd;
 pub const STATICCALL: Instruction = 0xfa;
 /// halt execution and register account for later deletion
 pub const SUICIDE: Instruction = 0xff;
+
+////////////////////////////////////////////////////////////////////////////////
+///< SDC dup copies special height value on the stack
+pub const DUPX: Instruction = 0xb0;
+///< SDC swaps the highest and special height value on the stack
+pub const SWAPX: Instruction = 0xb1;

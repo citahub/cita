@@ -25,7 +25,7 @@ CITA完全兼容以太坊的智能合约，`solidity`是基于以太坊的智能
 ```shell
 # solc --version
 solc, the solidity compiler commandline interface
-Version: 0.4.19+commit.c4cbbb05.Linux.g++
+Version: 0.4.15+commit.30df652a.Linux.g++
 ```
 
 `CITA`发布件中包含了一些智能合约示例，存放在 `scripts/contracts/tests/contracts`中。

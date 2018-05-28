@@ -101,8 +101,8 @@ mod inner {
                 Self::as_micro(&time),
             ));
 
-            if info.args > 0 {
-                for (idx, item) in stack.peek_top(info.args).iter().enumerate() {
+            if info.args(instruction, stack) > 0 {
+                for (idx, item) in stack.peek_top(info.args(instruction, stack)).iter().enumerate() {
                     print(format!("{}       |{:2}: {:?}", self.spacing, idx, item));
                 }
             }

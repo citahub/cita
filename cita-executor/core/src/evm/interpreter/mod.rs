@@ -136,6 +136,8 @@ impl<Cost: CostType> evm::Evm for Interpreter<Cost> {
             self.mem.expand(requirements.memory_required_size);
             gasometer.current_mem_gas = requirements.memory_total_gas;
             gasometer.current_gas = gasometer.current_gas - requirements.gas_cost;
+            // fetch ret position before, because dupx/swapx will remove operand after executed.
+            let ret = info.ret(instruction, &stack);
 
             evm_debug!({
                            informant.before_instruction(reader.position, instruction, info, &gasometer.current_gas, &stack)
@@ -159,7 +161,7 @@ impl<Cost: CostType> evm::Evm for Interpreter<Cost> {
             }
 
             if trace_executed {
-                ext.trace_executed(gasometer.current_gas.as_u256(), stack.peek_top(info.ret), mem_written.map(|(o, s)| (o, &(self.mem[o..(o + s)]))), store_written);
+                ext.trace_executed(gasometer.current_gas.as_u256(), stack.peek_top(ret), mem_written.map(|(o, s)| (o, &(self.mem[o..(o + s)]))), store_written);
             }
 
             // Advance
@@ -204,16 +206,16 @@ impl<Cost: CostType> Interpreter<Cost> {
             return Err(evm::Error::BadInstruction { instruction: instruction });
         }
 
-        if !stack.has(info.args) {
+        if !stack.has(info.args(instruction, stack)) {
             Err(evm::Error::StackUnderflow {
                     instruction: info.name,
-                    wanted: info.args,
+                    wanted: info.args(instruction, stack),
                     on_stack: stack.size(),
                 })
-        } else if stack.size() - info.args + info.ret > schedule.stack_limit {
+        } else if stack.size() - info.args(instruction, stack) + info.ret(instruction, stack) > schedule.stack_limit {
             Err(evm::Error::OutOfStack {
                     instruction: info.name,
-                    wanted: info.ret - info.args,
+                    wanted: info.ret(instruction, stack) - info.args(instruction, stack),
                     limit: schedule.stack_limit,
                 })
         } else {
@@ -796,6 +798,15 @@ impl<Cost: CostType> Interpreter<Cost> {
                     stack.push(if bit { number | !mask } else { number & mask });
                 }
             }
+            instructions::SWAPX => {
+                let position = stack.pop_back().low_u64() as usize;
+                stack.swap_with_top(position);
+            }
+            instructions::DUPX => {
+                let position = stack.pop_back().low_u64() as usize - 1;
+                let val = stack.peek(position).clone();
+                stack.push(val);
+            }
             _ => {
                 return Err(evm::Error::BadInstruction { instruction: instruction });
             }
@@ -822,4 +833,33 @@ fn u256_to_address(value: &U256) -> Address {
 #[inline]
 fn address_to_u256(value: Address) -> U256 {
     U256::from(&*H256::from(value))
+}
+
+impl InstructionInfo {
+    // call before instruction executing.
+    pub fn args(&self, instruction: Instruction, stack: &Stack<U256>) -> usize {
+        match instruction {
+            instructions::SWAPX => {
+                let position = stack.peek(0).low_u64() as usize;
+                trace!(target: "evm", "position: {} ", position);
+                position
+            }
+            instructions::DUPX => stack.peek(0).low_u64() as usize - 1,
+            _ => self.args,
+        }
+    }
+    // call before instruction executing.
+    pub fn ret(&self, instruction: Instruction, stack: &Stack<U256>) -> usize {
+        match instruction {
+            instructions::SWAPX => {
+                let position = stack.peek(0).low_u64() as usize;
+                position
+            }
+            instructions::DUPX => {
+                let position = stack.peek(0).low_u64() as usize + 1;
+                position
+            }
+            _ => self.ret,
+        }
+    }
 }

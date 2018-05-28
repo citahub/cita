@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.14;
 
 contract AccountGasLimitReached {
     bytes32[] balance;

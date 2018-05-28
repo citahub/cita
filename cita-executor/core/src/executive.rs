@@ -1274,4 +1274,76 @@ contract AbiTest {
             H256::from(&U256::from(0x12345678))
         );
     }
+
+    #[test]
+    fn call_17_arguments() {
+        logger::silent();
+        let source = r#"
+pragma solidity ^0.4.14;
+
+contract AbiTest {
+  function test(int a0
+                ,int a1
+                ,int a2
+                ,int a3
+                ,int a4
+                ,int a5
+                ,int a6
+                ,int a7
+                ,int a8
+                ,int a9
+                ,int a10
+                ,int a11
+                ,int a12
+                ,int a13
+                ,int a14
+                ,int a15
+                ,int a16
+                ) public  returns(int) {
+    return a16+12;
+  }
+}
+"#;
+        let gas_required = U256::from(100_000);
+        let contract_addr = Address::zero();
+        let (_, runtime_code) = solc("AbiTest", source);
+        let mut text = String::from("7b1ab5f2");
+        for i in 0x1231..0x1242 {
+            text.push_str(format!("{:064x}", i).as_ref());
+        }
+
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
+        let mut tracer = ExecutiveTracer::default();
+        let mut vm_tracer = ExecutiveVMTracer::toplevel();
+
+        let mut state = get_temp_state();
+        state
+            .init_code(&contract_addr, runtime_code.clone())
+            .unwrap();
+        let mut params = ActionParams::default();
+        params.address = contract_addr.clone();
+        params.sender = Address::zero();
+        params.gas = gas_required;
+        params.code = state.code(&contract_addr).unwrap();
+        params.code_hash = state.code_hash(&contract_addr).unwrap();
+        params.value = ActionValue::Transfer(U256::from(0));
+        params.data = Some(text.from_hex().unwrap());
+
+        let info = EnvInfo::default();
+        let engine = NullEngine::default();
+        let mut substate = Substate::new();
+        {
+            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let mut out = vec![];
+            let _ = ex.call(
+                params,
+                &mut substate,
+                BytesRef::Flexible(&mut out),
+                &mut tracer,
+                &mut vm_tracer,
+            );
+            assert_eq!(out, H256::from(U256::from(0x1241 + 12)).as_ref());
+        };
+    }
 }
