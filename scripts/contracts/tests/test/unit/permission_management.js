@@ -1,10 +1,5 @@
-/* jshint esversion: 6 */
-/* jshint expr: true */
-
-// TODO Refactor: every unit test should be independent
-
-const chai = require('chai');
-const assert = chai.assert;
+const mocha = require('mocha');
+const assert = require('assert');
 const util = require('../helpers/util');
 const permissionManagement = require('../helpers/permission_management');
 const authorization = require('../helpers/authorization');
@@ -12,27 +7,21 @@ const permission = require('../helpers/permission');
 const config = require('../config');
 
 // util
-const web3 = util.web3;
-const getTxReceipt = util.getTxReceipt;
+const { logger, web3, getTxReceipt } = util;
+
+const { describe, it, before } = mocha;
 
 // permission management
-const newPermission = permissionManagement.newPermission;
-const updatePermissionName = permissionManagement.updatePermissionName;
-const addResources = permissionManagement.addResources;
-const deleteResources = permissionManagement.deleteResources;
-const clearAuthorization = permissionManagement.clearAuthorization;
-const setAuthorization = permissionManagement.setAuthorization;
-const cancelAuthorization = permissionManagement.cancelAuthorization;
-const deletePermission = permissionManagement.deletePermission;
-const setAuthorizations = permissionManagement.setAuthorizations;
+const {
+  setAuthorizations, deletePermission, cancelAuthorization, setAuthorization, clearAuthorization,
+  deleteResources, addResources, updatePermissionName, newPermission,
+} = permissionManagement;
 
 // authorization
-const queryPermissions = authorization.queryPermissions;
-const queryAccounts = authorization.queryAccounts;
-const queryAllAccounts = authorization.queryAllAccounts;
+const { queryAllAccounts, queryAccounts, queryPermissions } = authorization;
 
 // perm
-const perm = permission.perm;
+const { perm } = permission;
 let pContractInstance;
 
 // temp
@@ -44,452 +33,434 @@ let lengthOfResources;
 
 // =======================
 
-describe('\n\ntest permission management contract\n\n', function () {
+describe('\n\ntest permission management contract\n\n', () => {
+  describe('\ntest add permission\n', () => {
+    it('should send a newPermission tx and get receipt', (done) => {
+      const name = 'testPermission';
+      const res = newPermission(name, config.testAddr, config.testFunc);
 
-    describe('\ntest add permission\n', function () {
-        it('should send a newPermission tx and get receipt', function (done) {
-            let name = 'testPermission';
-            let res = newPermission(name, config.testAddr, config.testFunc);
-
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    newPermissionAddr = receipt.logs[0].address;
-                    console.log('\nThe new permission contract address:\n', newPermissionAddr);
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get newPermission receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
-        it('should have info of new permission', function () {
-            pContractInstance = perm.at(newPermissionAddr);
-            let res = pContractInstance.queryInfo.call();
-            console.log('\nInfo:\n', res);
-            assert.equal(res[0].substr(0, 30), web3.toHex('testPermission'));
-
-            for (let i = 0; i < res[1].length; i++) {
-                assert.equal(res[1][i], config.testAddr[i]);
-                assert.equal(res[2][i], config.testFunc[i]);
-            }
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          newPermissionAddr = receipt.logs[0].address;
+          logger.debug('\nThe new permission contract address:\n', newPermissionAddr);
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get newPermission receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest update permission name\n', function () {
-        it('should send a updatePermissionName tx and get receipt', function (done) {
-            let num = web3.eth.blockNumber;
-            let res = updatePermissionName(newPermissionAddr, 'testPermissionNewName');
+    it('should have info of new permission', () => {
+      pContractInstance = perm.at(newPermissionAddr);
+      const res = pContractInstance.queryInfo.call();
+      logger.debug('\nInfo:\n', res);
+      assert.equal(res[0].substr(0, 30), web3.toHex('testPermission'));
 
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get updatePermissionName receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
+      for (let i = 0; i < res[1].length; i += 1) {
+        assert.equal(res[1][i], config.testAddr[i]);
+        assert.equal(res[2][i], config.testFunc[i]);
+      }
+    });
+  });
 
-        it('should have the new permission name', function () {
-            pContractInstance = perm.at(newPermissionAddr);
-            let res = pContractInstance.queryName.call();
-            console.log('\nNew permission name:\n', res);
-            assert.equal(res.substr(0, 44), web3.toHex('testPermissionNewName'));
+  describe('\ntest update permission name\n', () => {
+    it('should send a updatePermissionName tx and get receipt', (done) => {
+      const res = updatePermissionName(newPermissionAddr, 'testPermissionNewName');
+
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get updatePermissionName receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest add resources\n', function () {
+    it('should have the new permission name', () => {
+      pContractInstance = perm.at(newPermissionAddr);
+      const res = pContractInstance.queryName.call();
+      logger.debug('\nNew permission name:\n', res);
+      assert.equal(res.substr(0, 44), web3.toHex('testPermissionNewName'));
+    });
+  });
 
-        before('Query the number of the resource', function () {
-            pContractInstance = perm.at(newPermissionAddr);
-            let res = pContractInstance.queryResource.call();
-            console.log('\nThe number of the resource:\n', res[0].length);
-            lengthOfResources = res[0].length;
-        });
+  describe('\ntest add resources\n', () => {
+    before('Query the number of the resource', () => {
+      pContractInstance = perm.at(newPermissionAddr);
+      const res = pContractInstance.queryResource.call();
+      logger.debug('\nThe number of the resource:\n', res[0].length);
+      lengthOfResources = res[0].length;
+    });
 
-        it('should send a addResources tx and get receipt', function (done) {
-            let res = addResources(
-                newPermissionAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
-            );
+    it('should send a addResources tx and get receipt', (done) => {
+      const res = addResources(newPermissionAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']);
 
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get addResources receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
-        it('should have the added resources', function () {
-            pContractInstance = perm.at(newPermissionAddr);
-            let res = pContractInstance.queryResource.call();
-            console.log('\nNew Added resources:\n', res);
-            let l = res[0].length - 1;
-            assert.equal(res[0].length, res[1].length);
-            assert.equal(res[0][l], '0x1a702a25c6bca72b67987968f0bfb3a3213c5603');
-            assert.equal(res[1][l], '0xf036ed59');
-            assert.equal(l, lengthOfResources);
-        });
-
-        it('should send a addResources to an address that does not exist and get receipt with error message', function (done) {
-            let res = addResources(
-                0x1234567, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
-            );
-
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt with error message:\n', receipt);
-                    assert.equal(receipt.errorMessage, "Reverted.", JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get addResources receipt err:!!!!\n', err);
-                    this.skip();
-                });
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get addResources receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest add duplicate resources\n', function () {
+    it('should have the added resources', () => {
+      pContractInstance = perm.at(newPermissionAddr);
+      const res = pContractInstance.queryResource.call();
+      logger.debug('\nNew Added resources:\n', res);
+      const l = res[0].length - 1;
+      assert.equal(res[0].length, res[1].length);
+      assert.equal(res[0][l], '0x1a702a25c6bca72b67987968f0bfb3a3213c5603');
+      assert.equal(res[1][l], '0xf036ed59');
+      assert.equal(l, lengthOfResources);
+    });
 
-        before('Query the number of the resource', function () {
-            pContractInstance = perm.at(newPermissionAddr);
-            let res = pContractInstance.queryResource.call();
-            console.log('\nThe number of the resource:\n', res[0].length);
-            lengthOfResources = res[0].length;
+    it('should send a addResources to an address that does not exist and get receipt with error message', (done) => {
+      const res = addResources(0x1234567, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']);
+
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt with error message:\n', receipt);
+          assert.equal(receipt.errorMessage, 'Reverted.', JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get addResources receipt err:!!!!\n', err);
+          this.skip();
         });
+    });
+  });
 
-        it('should send a addResources tx and get receipt', function (done) {
-            let res = addResources(
-                newPermissionAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
-            );
+  describe('\ntest add duplicate resources\n', () => {
+    before('Query the number of the resource', () => {
+      pContractInstance = perm.at(newPermissionAddr);
+      const res = pContractInstance.queryResource.call();
+      logger.debug('\nThe number of the resource:\n', res[0].length);
+      lengthOfResources = res[0].length;
+    });
 
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get addResources receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
+    it('should send a addResources tx and get receipt', (done) => {
+      const res = addResources(newPermissionAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']);
 
-        it('should not added into the resources', function () {
-            pContractInstance = perm.at(newPermissionAddr);
-            let res = pContractInstance.queryResource.call();
-            console.log('\nThe num of the resource:\n', res[0].length);
-            assert.equal(res[0].length, lengthOfResources);
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get addResources receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest delete resources\n', function () {
-        it('should send a deleteResources tx and get receipt', function (done) {
-            let res = deleteResources(
-                newPermissionAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
-            );
-
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get deleteResources receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
-        it('should have deleted the resources', function () {
-            pContractInstance = perm.at(newPermissionAddr);
-            let res = pContractInstance.queryResource.call();
-            console.log('\nResources lefted:\n', res);
-            for (let i = 0; i < res[1].length; i++) {
-                assert.equal(res[0][i], config.testAddr[i]);
-                assert.equal(res[1][i], config.testFunc[i]);
-            }
-        });
-
-        it('should send a deleteResources to an address that does not exist and get receipt with error message', function (done) {
-            let res = deleteResources(
-                0x1234567, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']
-            );
-
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt with error message:\n', receipt);
-                    assert.equal(receipt.errorMessage, "Reverted.", JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get deleteResources receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
+    it('should not added into the resources', () => {
+      pContractInstance = perm.at(newPermissionAddr);
+      const res = pContractInstance.queryResource.call();
+      logger.debug('\nThe num of the resource:\n', res[0].length);
+      assert.equal(res[0].length, lengthOfResources);
     });
+  });
 
-    describe('\ntest clear authorization\n', function () {
-        it('should send a clearAuthorization tx and get receipt', function (done) {
-            let res = clearAuthorization(config.testAddr[0]);
+  describe('\ntest delete resources\n', () => {
+    it('should send a deleteResources tx and get receipt', (done) => {
+      const res = deleteResources(newPermissionAddr, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']);
 
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get clearAuthorization receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
-        it('should have no permissions of testAccount', function () {
-            let res = queryPermissions(config.testAddr[0]);
-            console.log('\nPermissions of testAccount:\n', res);
-            assert.equal(res.length, 0);
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get deleteResources receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest set authorization\n', function () {
-        before('Query the number of the account', function () {
-            let res = queryAllAccounts();
-            lengthOfAccounts = res.length;
+    it('should have deleted the resources', () => {
+      pContractInstance = perm.at(newPermissionAddr);
+      const res = pContractInstance.queryResource.call();
+      logger.debug('\nResources lefted:\n', res);
+      for (let i = 0; i < res[1].length; i += 1) {
+        assert.equal(res[0][i], config.testAddr[i]);
+        assert.equal(res[1][i], config.testFunc[i]);
+      }
+    });
+
+    it('should send a deleteResources to an address that does not exist and get receipt with error message', (done) => {
+      const res = deleteResources(0x1234567, ['0x1a702a25c6bca72b67987968f0bfb3a3213c5603'], ['0xf036ed59']);
+
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt with error message:\n', receipt);
+          assert.equal(receipt.errorMessage, 'Reverted.', JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get deleteResources receipt err:!!!!\n', err);
+          this.skip();
         });
+    });
+  });
 
-        it('should send a setAuthorization tx and get receipt', function (done) {
-            let res = setAuthorization(config.testAddr[0], config.testAddr[1]);
+  describe('\ntest clear authorization\n', () => {
+    it('should send a clearAuthorization tx and get receipt', (done) => {
+      const res = clearAuthorization(config.testAddr[0]);
 
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
-        it('should have the permission of account', function () {
-            let res = queryPermissions(config.testAddr[0]);
-            console.log('\nPermissions of testAccount:\n', res);
-            let l = res.length - 1;
-            assert.equal(res[l], config.testAddr[1]);
-            let res2 = queryAccounts(config.testAddr[1]);
-            console.log('\nAccount of permissions:\n', res2);
-            assert.equal(res2, config.testAddr[0]);
-        });
-
-        it('should have all accounts', function () {
-            let res = queryAllAccounts();
-            console.log('\nAll accounts:\n', res);
-            assert.equal(res[res.length - 1], config.testAddr[0]);
-            assert.equal(res.length, lengthOfAccounts + 1);
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get clearAuthorization receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest set duplicated authorization\n', function () {
-        before('Query the number of the account', function () {
-            let res = queryAllAccounts();
-            lengthOfAccounts = res.length;
-        });
+    it('should have no permissions of testAccount', () => {
+      const res = queryPermissions(config.testAddr[0]);
+      logger.debug('\nPermissions of testAccount:\n', res);
+      assert.equal(res.length, 0);
+    });
+  });
 
-        it('should send a setAuthorization tx and get receipt', function (done) {
-            let res = setAuthorization(config.testAddr[0], config.testAddr[1]);
+  describe('\ntest set authorization\n', () => {
+    before('Query the number of the account', () => {
+      const res = queryAllAccounts();
+      lengthOfAccounts = res.length;
+    });
 
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
+    it('should send a setAuthorization tx and get receipt', (done) => {
+      const res = setAuthorization(config.testAddr[0], config.testAddr[1]);
 
-        it('should not be setted', function () {
-            let res = queryAllAccounts();
-            console.log('\nAll accounts:\n', res);
-            assert.equal(res.length, lengthOfAccounts);
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest cancel authorization\n', function () {
-        it('should send a cancelAuthorization tx and get receipt', function (done) {
-            let res = cancelAuthorization(config.testAddr[0], config.testAddr[1]);
+    it('should have the permission of account', () => {
+      const res = queryPermissions(config.testAddr[0]);
+      logger.debug('\nPermissions of testAccount:\n', res);
+      const l = res.length - 1;
+      assert.equal(res[l], config.testAddr[1]);
+      const res2 = queryAccounts(config.testAddr[1]);
+      logger.debug('\nAccount of permissions:\n', res2);
+      assert.equal(res2, config.testAddr[0]);
+    });
 
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get canelAuthorization receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
+    it('should have all accounts', () => {
+      const res = queryAllAccounts();
+      logger.debug('\nAll accounts:\n', res);
+      assert.equal(res[res.length - 1], config.testAddr[0]);
+      assert.equal(res.length, lengthOfAccounts + 1);
+    });
+  });
 
-        it('should not have the permission of account', function () {
-            let res = queryPermissions(config.testAddr[0]);
-            console.log('\nPermissions of testAccount:\n', res);
-            assert.equal(res.length, 0);
-            let res2 = queryAccounts(config.testAddr[1]);
-            console.log('\nAccount of permissions:\n', res2);
-            assert.equal(res2.length, 0);
+  describe('\ntest set duplicated authorization\n', () => {
+    before('Query the number of the account', () => {
+      const res = queryAllAccounts();
+      lengthOfAccounts = res.length;
+    });
+
+    it('should send a setAuthorization tx and get receipt', (done) => {
+      const res = setAuthorization(config.testAddr[0], config.testAddr[1]);
+
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest delete built-in permission\n', function () {
-        it('should send a deletePermission tx and get receipt with error message', function () {
+    it('should not be setted', () => {
+      const res = queryAllAccounts();
+      logger.debug('\nAll accounts:\n', res);
+      assert.equal(res.length, lengthOfAccounts);
+    });
+  });
 
-            let builtInPermissions = [
-                "0x00000000000000000000000000000000013241b5",
-                "0x00000000000000000000000000000000023241b5",
-                "0x00000000000000000000000000000000033241B5",
-                "0x00000000000000000000000000000000043241b5",
-                "0x00000000000000000000000000000000053241b5",
-                "0x00000000000000000000000000000000063241b5",
-                "0x00000000000000000000000000000000073241b5",
-                "0x00000000000000000000000000000000083241B5",
-                "0x00000000000000000000000000000000093241B5",
-                "0x000000000000000000000000000000000A3241b5",
-                "0x0000000000000000000000000000000000000001",
-                "0x0000000000000000000000000000000000000002"
-            ];
+  describe('\ntest cancel authorization\n', () => {
+    it('should send a cancelAuthorization tx and get receipt', (done) => {
+      const res = cancelAuthorization(config.testAddr[0], config.testAddr[1]);
 
-            builtInPermissions.map(perm => getTxReceipt(deletePermission(perm)).then(receipt => {
-                console.log(`
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get canelAuthorization receipt err:!!!!\n', err);
+          this.skip();
+        });
+    });
+
+    it('should not have the permission of account', () => {
+      const res = queryPermissions(config.testAddr[0]);
+      logger.debug('\nPermissions of testAccount:\n', res);
+      assert.equal(res.length, 0);
+      const res2 = queryAccounts(config.testAddr[1]);
+      logger.debug('\nAccount of permissions:\n', res2);
+      assert.equal(res2.length, 0);
+    });
+  });
+
+  describe('\ntest delete built-in permission\n', () => {
+    it('should send a deletePermission tx and get receipt with error message', () => {
+      const builtInPermissions = [
+        '0x00000000000000000000000000000000013241b5',
+        '0x00000000000000000000000000000000023241b5',
+        '0x00000000000000000000000000000000033241B5',
+        '0x00000000000000000000000000000000043241b5',
+        '0x00000000000000000000000000000000053241b5',
+        '0x00000000000000000000000000000000063241b5',
+        '0x00000000000000000000000000000000073241b5',
+        '0x00000000000000000000000000000000083241B5',
+        '0x00000000000000000000000000000000093241B5',
+        '0x000000000000000000000000000000000A3241b5',
+        '0x0000000000000000000000000000000000000001',
+        '0x0000000000000000000000000000000000000002',
+      ];
+
+      builtInPermissions.map(p => getTxReceipt(deletePermission(p)).then((receipt) => {
+        logger.debug(`
                 Send ok and get receipt:
                 ${receipt}`);
-                assert.equal(receipt.errorMessage, "Reverted.", JSON.stringify(receipt.errorMessage));
-            }).catch(err => {
-                console.log(`
+        assert.equal(receipt.errorMessage, 'Reverted.', JSON.stringify(receipt.errorMessage));
+      }).catch((err) => {
+        logger.error(`
                 !!!!Get deletePermission receipt err:!!!
                 ${err}`);
-                this.skip();
-            }));
+        this.skip();
+      }));
+    });
+  });
+
+  describe('\ntest delete permission\n', () => {
+    it('should send a deletePermission tx and get receipt', (done) => {
+      const res = deletePermission(newPermissionAddr);
+
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          assert.equal(receipt.logs[0].data.substr(26), newPermissionAddr.substr(2));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get deletePermission receipt err:!!!!\n', err);
+          this.skip();
+        });
+    });
+  });
+
+  describe('\ntest delete permission: query the auth\n', () => {
+    it('should send a newPermission tx and get receipt', (done) => {
+      const res = newPermission('testPermissionA', config.testAddr, config.testFunc);
+
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          newPermissionAddrA = receipt.logs[0].address;
+          logger.debug('\nThe new permission contract address:\n', newPermissionAddr);
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get newPermission receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest delete permission\n', function () {
-        it('should send a deletePermission tx and get receipt', function (done) {
-            let res = deletePermission(newPermissionAddr);
+    it('should send a newPermission tx and get receipt', (done) => {
+      const res = newPermission('testPermissionB', config.testAddr, config.testFunc);
 
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    assert.equal(receipt.logs[0].data.substr(26), newPermissionAddr.substr(2));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get deletePermission receipt err:!!!!\n', err);
-                    this.skip();
-                });
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          newPermissionAddrB = receipt.logs[0].address;
+          logger.debug('\nThe new permission contract address:\n', newPermissionAddr);
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get newPermission receipt err:!!!!\n', err);
+          this.skip();
         });
     });
 
-    describe('\ntest delete permission: query the auth\n', function () {
-        it('should send a newPermission tx and get receipt', function (done) {
-            let res = newPermission('testPermissionA', config.testAddr, config.testFunc);
+    it('should send a setAuthorization tx and get receipt', (done) => {
+      const res = setAuthorizations(config.testAddr[0], [newPermissionAddrA, newPermissionAddrB]);
 
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    newPermissionAddrA = receipt.logs[0].address;
-                    console.log('\nThe new permission contract address:\n', newPermissionAddr);
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get newPermission receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
-        it('should send a newPermission tx and get receipt', function (done) {
-            let res = newPermission('testPermissionB', config.testAddr, config.testFunc);
-
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    newPermissionAddrB = receipt.logs[0].address;
-                    console.log('\nThe new permission contract address:\n', newPermissionAddr);
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get newPermission receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
-        it('should send a setAuthorization tx and get receipt', function (done) {
-            let res = setAuthorizations(
-                config.testAddr[0], [newPermissionAddrA, newPermissionAddrB]
-            );
-
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
-        it('should have the permission of account', function () {
-            let res = queryPermissions(config.testAddr[0]);
-            console.log('\nPermissions of testAccount:\n', res);
-            let l = res.length - 1;
-            assert.equal(res[l], newPermissionAddrB);
-            assert.equal(res[l - 1], newPermissionAddrA);
-            let res1 = queryAccounts(newPermissionAddrA);
-            console.log('\nAccount of permissionA:\n', res1);
-            let res2 = queryAccounts(newPermissionAddrB);
-            console.log('\nAccount of permissionB:\n', res2);
-            assert.equal(res2, config.testAddr[0]);
-        });
-
-        it('should send a deletePermission tx and get receipt', function (done) {
-            let res = deletePermission(newPermissionAddrA);
-
-            getTxReceipt(res)
-                .then((receipt) => {
-                    console.log('\nSend ok and get receipt:\n', receipt);
-                    assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-                    done();
-                })
-                .catch(err => {
-                    console.log('\n!!!!Get deletePermission receipt err:!!!!\n', err);
-                    this.skip();
-                });
-        });
-
-        it("should cancel the account's permission", function () {
-            let res = queryPermissions(config.testAddr[0]);
-            console.log('\nPermissions of testAccount:\n', res);
-            assert.equal(res.length, 1);
-            assert.equal(res[0], newPermissionAddrB);
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get setAuthorization receipt err:!!!!\n', err);
+          this.skip();
         });
     });
+
+    it('should have the permission of account', () => {
+      const res = queryPermissions(config.testAddr[0]);
+      logger.debug('\nPermissions of testAccount:\n', res);
+      const l = res.length - 1;
+      assert.equal(res[l], newPermissionAddrB);
+      assert.equal(res[l - 1], newPermissionAddrA);
+      const res1 = queryAccounts(newPermissionAddrA);
+      logger.debug('\nAccount of permissionA:\n', res1);
+      const res2 = queryAccounts(newPermissionAddrB);
+      logger.debug('\nAccount of permissionB:\n', res2);
+      assert.equal(res2, config.testAddr[0]);
+    });
+
+    it('should send a deletePermission tx and get receipt', (done) => {
+      const res = deletePermission(newPermissionAddrA);
+
+      getTxReceipt(res)
+        .then((receipt) => {
+          logger.debug('\nSend ok and get receipt:\n', receipt);
+          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
+          done();
+        })
+        .catch((err) => {
+          logger.error('\n!!!!Get deletePermission receipt err:!!!!\n', err);
+          this.skip();
+        });
+    });
+
+    it("should cancel the account's permission", () => {
+      const res = queryPermissions(config.testAddr[0]);
+      logger.debug('\nPermissions of testAccount:\n', res);
+      assert.equal(res.length, 1);
+      assert.equal(res[0], newPermissionAddrB);
+    });
+  });
 });
