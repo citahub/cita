@@ -156,7 +156,12 @@ mod tests {
             panic!("unexcepted signature algorithm");
         };
         println!("privkey: {:?}", privkey);
-        let executor = init_executor();
+        let executor = init_executor(vec![
+            ((
+                "QuotaManager.admin",
+                "0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888",
+            )),
+        ]);
         println!("init executor finish");
 
         let users = QuotaManager::users(&executor);
@@ -181,7 +186,7 @@ mod tests {
             panic!("unexcepted signature algorithm");
         };
         println!("privkey: {:?}", privkey);
-        let executor = init_executor();
+        let executor = init_executor(vec![]);
         println!("init executor finish");
 
         let quota = QuotaManager::quota(&executor);
@@ -203,7 +208,7 @@ mod tests {
             panic!("unexcepted signature algorithm");
         };
         println!("privkey: {:?}", privkey);
-        let executor = init_executor();
+        let executor = init_executor(vec![]);
         println!("init executor finish");
 
         let block_gas_limit = QuotaManager::block_gas_limit(&executor);
@@ -225,7 +230,7 @@ mod tests {
             panic!("unexcepted signature algorithm");
         };
         println!("privkey: {:?}", privkey);
-        let executor = init_executor();
+        let executor = init_executor(vec![]);
         println!("init executor finish");
 
         let account_gas_limit = QuotaManager::account_gas_limit(&executor);

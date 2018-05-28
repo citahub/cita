@@ -904,7 +904,7 @@ mod tests {
 
     #[test]
     fn test_contract_address_from_permission_denied() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.check_permission", "true")]);
         let chain = init_chain();
 
         let data = generate_contract();

@@ -200,66 +200,64 @@ mod tests {
 
     #[test]
     fn test_delay_block_number() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.delay_block_number", "2")]);
         let number = SysConfig::new(&executor).delay_block_number();
-        assert_eq!(number, 1);
+        assert_eq!(number, 2);
     }
 
     #[test]
     fn test_permission_check() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.check_permission", "false")]);
         let check_permission = SysConfig::new(&executor).permission_check();
-        // Is true in the test module.
-        assert_eq!(check_permission, true);
+        assert_eq!(check_permission, false);
     }
 
     #[test]
     fn test_quota_check() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.check_quota", "true")]);
         let check_quota = SysConfig::new(&executor).quota_check();
-        // Is true in the test module.
         assert_eq!(check_quota, true);
     }
 
     #[test]
     fn test_chain_name() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.chain_name", "test-chain")]);
         let value = SysConfig::new(&executor).chain_name(None);
         assert_eq!(value, "test-chain");
     }
 
     #[test]
     fn test_chain_id() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.chain_id", "123")]);
         let value = SysConfig::new(&executor).chain_id();
         assert_eq!(value, 123);
     }
 
     #[test]
     fn test_operator() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.operator", "test-operator")]);
         let value = SysConfig::new(&executor).operator(None);
         assert_eq!(value, "test-operator");
     }
 
     #[test]
     fn test_website() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.website", "https://www.cryptape.com")]);
         let value = SysConfig::new(&executor).website(None);
         assert_eq!(value, "https://www.cryptape.com");
     }
 
     #[test]
     fn test_block_interval() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.block_interval", "3006")]);
         let value = SysConfig::new(&executor).block_interval();
-        assert_eq!(value, 3000);
+        assert_eq!(value, 3006);
     }
 
     #[test]
     fn test_economical_model() {
-        let executor = init_executor();
+        let executor = init_executor(vec![("SysConfig.economical_model", "1")]);
         let value = SysConfig::new(&executor).economical_model();
-        assert_eq!(value, EconomicalModel::Quota);
+        assert_eq!(value, EconomicalModel::Charge);
     }
 }
