@@ -974,7 +974,7 @@ mod tests {
     fn test_create_contract_out_of_gas() {
         logger::silent();
         let source = r#"
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.14;
 
 contract HelloWorld {
   uint balance;

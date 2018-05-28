@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 import "./quota_interface.sol";
 
@@ -110,8 +110,8 @@ contract QuotaManager is QuotaInterface {
     /// @param _account The address to be checked
     /// @return true if it is, otherwise false
     function isAdmin(address _account)
-        view
         public
+        constant
         returns (bool)
     {
         return admins[_account];
@@ -120,8 +120,8 @@ contract QuotaManager is QuotaInterface {
     /// @notice Get all accounts that have account quota limit
     /// @return The accounts that have AQL
     function getAccounts()
-        view
         public
+        constant
         returns (address[])
     {
         return accounts;
@@ -130,8 +130,8 @@ contract QuotaManager is QuotaInterface {
     /// @notice Get all accounts' quotas
     /// @return The accounts' quotas
     function getQuotas()
-        view
         public
+        constant
         returns (uint[])
     {
         return quotas;
@@ -140,8 +140,8 @@ contract QuotaManager is QuotaInterface {
     /// @notice Get block quota limit
     /// @return The block quota limit
     function getBQL()
-        view
         public
+        constant
         returns (uint)
     {
         return BQL;
@@ -150,8 +150,8 @@ contract QuotaManager is QuotaInterface {
     /// @notice Get default account quota limit
     /// @return The default account quota limit
     function getDefaultAQL()
-        view
         public
+        constant
         returns (uint)
     {
         return defaultAQL;
@@ -160,8 +160,8 @@ contract QuotaManager is QuotaInterface {
     /// @notice Get account quota limit
     /// @return The account quota limit
     function getAQL(address _account)
-        view
         public
+        constant
         returns (uint)
     {
         if (quota[_account] == 0)

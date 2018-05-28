@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.14;
 
 
 /// @title A library for operation of contract
@@ -12,7 +12,7 @@ library ContractCheck {
     /// @return true if successed, false otherwise
     function isContract(address _target)
         internal
-        view
+        constant
         returns (bool)
     {
         uint size;

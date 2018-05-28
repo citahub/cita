@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cita/cita-build:latest"
+DOCKER_IMAGE="cita/cita-build:solc-over-16-params"
 
 docker_bin=$(which docker)
 if [ -z "${docker_bin}" ]; then
