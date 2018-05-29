@@ -32,6 +32,7 @@ for binary in \
         create_key_addr \
         cita-relayer-parser \
         snapshot_tool \
+        consensus-mock \
         ; do
     cp -rf "target/${type}/${binary}" target/install/bin/
 done

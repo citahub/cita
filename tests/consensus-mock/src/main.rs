@@ -2,7 +2,7 @@
 extern crate bincode;
 extern crate chrono;
 extern crate cita_crypto as crypto;
-extern crate cita_types;
+#[macro_use]
 extern crate clap;
 #[macro_use]
 extern crate libproto;
@@ -13,13 +13,12 @@ extern crate proof;
 extern crate pubsub;
 #[macro_use]
 extern crate serde_derive;
+extern crate cita_types as types;
 extern crate serde_yaml;
 extern crate util;
 
 use bincode::{serialize, Infinite};
-use chrono::NaiveDateTime;
-use cita_types::{Address, H256};
-use clap::{App, ArgMatches};
+use clap::App;
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use libproto::blockchain::{Block, BlockBody, BlockTxs, BlockWithProof};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -28,10 +27,10 @@ use proof::TendermintProof;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::convert::{Into, TryFrom, TryInto};
-use std::fs;
-use std::io::Read;
-use std::str::FromStr;
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
+use std::thread::sleep;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use types::{Address, H256};
 use util::Hashable;
 
 pub type PubType = (String, Vec<u8>);
@@ -100,20 +99,17 @@ fn send_block(
     pre_block_hash: H256,
     height: u64,
     pub_sender: Sender<PubType>,
-    mock_block: &serde_yaml::Value,
+    timestamp: u64,
     block_txs: &BlockTxs,
     privkey: &PrivKey,
 ) {
-    let time_stamp = mock_block["time_stamp"].as_str().unwrap();
-    let time_stamp = NaiveDateTime::parse_from_str(time_stamp, "%Y-%m-%d %H:%M:%S.%f").unwrap();
-    let time_stamp = time_stamp.timestamp_millis() as u64;
     // let txs = &block_txs.body.get_ref().transactions.clone().into_vec();
     let (send_data, _block) = build_block(
         &block_txs.body.get_ref(),
         pre_block_hash,
         height,
         privkey,
-        time_stamp,
+        timestamp,
     );
     pub_sender
         .send((
@@ -121,51 +117,6 @@ fn send_block(
             send_data.clone(),
         ))
         .unwrap();
-}
-
-fn get_mock_data<'a>(matches: &'a ArgMatches) -> serde_yaml::Value {
-    // get the path of mock-data file
-    let mock_data_path = matches.value_of("mock-data").unwrap();
-
-    // read mock-data from the corresponding file
-    // and convert it to serde_yaml format
-    let mut mock_data = String::new();
-    fs::File::open(mock_data_path)
-        .expect("Failed to open mock data file")
-        .read_to_string(&mut mock_data)
-        .expect("Failed to read mock data");
-    let mock_data: serde_yaml::Value = serde_yaml::from_str(mock_data.as_str())
-        .expect("Failed to parse the mock data from yaml format");
-
-    mock_data
-}
-
-fn parse_mock_data<'a>(
-    mock_data: &'a mut serde_yaml::Value,
-) -> (PrivKey, HashMap<u64, &'a serde_yaml::Value>) {
-    // get the private-key of the miner
-    let pk_miner: PrivKey = {
-        let pk_str = mock_data["privkey"].as_str().unwrap();
-        PrivKey::from_str(pk_str).unwrap()
-    };
-
-    // get the detailed block information
-    let mut mock_blocks: HashMap<u64, &serde_yaml::Value> = HashMap::new();
-    for block in mock_data["blocks"].as_sequence_mut().unwrap().into_iter() {
-        let block_number = block["number"].as_u64().unwrap();
-        mock_blocks.insert(block_number, block);
-    }
-    info!(">> numbers: {:?}", mock_blocks.keys());
-
-    // verify the existence of all blocks
-    for number in 1..(mock_blocks.len() as u64 + 1) {
-        if !mock_blocks.contains_key(&number) {
-            error!("Block missing, number={}", number);
-            panic!("Exit because of missing block");
-        }
-    }
-
-    (pk_miner, mock_blocks)
 }
 
 fn main() {
@@ -178,18 +129,20 @@ fn main() {
         .author("Cryptape")
         .about("Mock the process of consensus")
         .arg(
-            clap::Arg::with_name("mock-data")
-                .short("m")
-                .long("mock-data")
+            clap::Arg::with_name("interval")
+                .short("i")
+                .long("interval(seconds) of block generating, default: 3")
                 .required(true)
                 .takes_value(true)
                 .help("Set the path of mock data in YAML format"),
         )
         .get_matches();
 
+    let default_interval = 3;
     // get the mock data and parse it to serde_yaml format
-    let mut mock_data = get_mock_data(&matches);
-    let (pk_miner, mut mock_blocks) = parse_mock_data(&mut mock_data);
+    let interval = value_t!(matches, "interval", u64).unwrap_or(default_interval);
+    let key_pair = KeyPair::gen_keypair();
+    let pk_miner = key_pair.privkey();
 
     let (tx_sub, rx_sub) = channel();
     let (tx_pub, rx_pub) = channel();
@@ -203,43 +156,71 @@ fn main() {
 
     let mut received_block_txs: HashMap<usize, BlockTxs> = HashMap::new();
 
+    let mut send_height = 0;
+    let interval_duration = Duration::new(interval, 0);
+    let mut last_new_block_at = Instant::now();
     loop {
-        let (key, body) = rx_sub.recv().unwrap();
-        let routing_key = RoutingKey::from(&key);
-        let mut msg = Message::try_from(body).unwrap();
+        match rx_sub.recv_timeout(interval_duration) {
+            Ok((key, body)) => {
+                let routing_key = RoutingKey::from(&key);
+                let mut msg = Message::try_from(body).unwrap();
 
-        match routing_key {
-            routing_key!(Auth >> BlockTxs) => {
-                let block_txs = msg.take_block_txs().unwrap();
-                let height = block_txs.get_height() as usize;
-                received_block_txs.insert(height, block_txs);
-            }
-            routing_key!(Chain >> RichStatus) => {
-                let rich_status = msg.take_rich_status().unwrap();
-                trace!("get new local status {:?}", rich_status.height);
-                let rich_status_height = rich_status.height;
-                let height = rich_status_height + 1;
-                if let Some(block_txs) = received_block_txs.remove(&(rich_status_height as usize)) {
-                    if let Some(mock_block) = mock_blocks.remove(&height) {
-                        send_block(
-                            H256::from_slice(&rich_status.hash),
-                            height,
-                            tx_pub.clone(),
-                            &mock_block,
-                            &block_txs,
-                            &pk_miner,
-                        );
-                    } else {
-                        warn!("No mock_block at height = {:?}", height);
+                match routing_key {
+                    routing_key!(Auth >> BlockTxs) => {
+                        // add received block
+                        let block_txs = msg.take_block_txs().unwrap();
+                        let height = block_txs.get_height() as usize;
+                        received_block_txs.insert(height, block_txs);
                     }
-                } else {
-                    warn!(
-                        "No received block_txs at rich_status_height = {:?}",
-                        rich_status_height
-                    );
+                    routing_key!(Chain >> RichStatus) => {
+                        // update rich status
+                        let rich_status = msg.take_rich_status().unwrap();
+                        if rich_status.height < send_height {
+                            continue;
+                        }
+
+                        // sleep until hit inteval
+                        let seconds_since_last = last_new_block_at.elapsed().as_secs();
+                        if seconds_since_last < interval {
+                            sleep(Duration::from_secs(interval - seconds_since_last));
+                        } else {
+                            last_new_block_at = Instant::now();
+                        }
+
+                        // current timestamp
+                        let timestamp = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("get timestamp error")
+                            .as_secs();
+
+                        if let Some(block_txs) =
+                            received_block_txs.remove(&(rich_status.height as usize))
+                        {
+                            send_height = rich_status.height + 1;
+                            send_block(
+                                H256::from_slice(&rich_status.hash),
+                                send_height,
+                                tx_pub.clone(),
+                                timestamp,
+                                &block_txs,
+                                &pk_miner,
+                            );
+                        } else {
+                            warn!(
+                                "No received block_txs at rich_status_height = {:?}",
+                                rich_status.height
+                            );
+                        }
+                        trace!("get new local status {:?}", rich_status);
+                    }
+                    _ => {}
                 }
             }
-            _ => {}
+            Err(err) => {
+                if err != RecvTimeoutError::Timeout {
+                    error!("consensus err {:?}", err)
+                }
+            }
         }
     }
 }
