@@ -343,7 +343,7 @@ function main () {
     local side_chain_id=4
 
     title "Install python packages for tools ..."
-    pip3 install -r scripts/txtool/requirements.txt
+    sudo pip3 install -r scripts/txtool/requirements.txt
 
     cd target/install
 

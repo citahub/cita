@@ -43,24 +43,7 @@ timeout=$(check_height_growth_normal 0 60)||(echo "FAILED"
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "5) create contract  ...  "
-${BINARY_DIR}/bin/trans_evm --config ${SOURCE_DIR}/tests/wrk_benchmark_test/config_create.json 2>&1 | grep "sucess" > /dev/null
-if [ $? -ne 0 ] ; then
-    exit 1
-fi
-echo "DONE"
-
-################################################################################
-echo "6) send transactions continually in the background"
-while [ 1 ] ; do
-    ${BINARY_DIR}/bin/trans_evm --config ${SOURCE_DIR}/tests/wrk_benchmark_test/config_call.json 2>&1 >/dev/null
-    sleep 1
-done &
-echo $! > /tmp/cita_basic-trans_evm.pid
-
-
-################################################################################
-echo -n "7) stop node3, check height growth  ...  "
+echo -n "5) stop node3, check height growth  ...  "
 bin/cita stop node/3
 timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
@@ -68,7 +51,7 @@ timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "8) stop node2, check height stopped  ...  "
+echo -n "6) stop node2, check height stopped  ...  "
 bin/cita stop node/2
 timeout=$(check_height_stopped 0 30) || (echo "FAILED"
                                          echo "failed to check_height_stopped 0: ${timeout}"
@@ -76,7 +59,7 @@ timeout=$(check_height_stopped 0 30) || (echo "FAILED"
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "9) start node2, check height growth  ...  "
+echo -n "7) start node2, check height growth  ...  "
 bin/cita start node/2 trace &
 timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                echo "failed to check_height_growth 0: ${timeout}"
@@ -84,7 +67,7 @@ timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "10) start node3, check synch  ...  "
+echo -n "8) start node3, check synch  ...  "
 node0_height=$(get_height 0)
 
 if [ $? -ne 0 ] ; then
@@ -98,7 +81,7 @@ timeout=$(check_height_sync 3 0) || (echo "FAILED"
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "11) stop all nodes, check height changed after restart  ...  "
+echo -n "9) stop all nodes, check height changed after restart  ...  "
 before_height=$(get_height 0)
 if [ $? -ne 0 ] ; then
     echo "failed to get_height: ${before_height}"
@@ -125,7 +108,7 @@ fi
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "12) stop&clean node3, check height synch after restart  ...  "
+echo -n "10) stop&clean node3, check height synch after restart  ...  "
 bin/cita stop node/3
 bin/cita clean node/3
 bin/cita start node/3 trace &
@@ -135,6 +118,6 @@ timeout=$(check_height_sync 3 0) || (echo "FAILED"
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "13) cleanup ... "
+echo -n "11) cleanup ... "
 cleanup
 echo "DONE"

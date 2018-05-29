@@ -29,14 +29,6 @@ for binary in \
         cita-forever \
         cita-jsonrpc \
         cita-network \
-        \
-        amqp_test \
-        benchmark_ws \
-        chain_performance \
-        jsonrpc_performance \
-        latency \
-        trans_evm \
-        \
         create_key_addr \
         cita-relayer-parser \
         snapshot_tool \

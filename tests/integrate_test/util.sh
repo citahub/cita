@@ -121,7 +121,7 @@ check_height_sync () {
     fi
     id=$1
     refer=$2
-    timeout=60                  # seconds
+    timeout=180                  # seconds
     refer_height=$(get_height ${refer})
     if [ $? -ne 0 ] ; then
         echo "failed to get_height(refer): ${refer_height}"
