@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_all_groups() {
-        let executor = init_executor();
+        let executor = init_executor(vec![]);
         let all_groups: Vec<Address> = UserManagement::all_groups(&executor);
 
         assert_eq!(all_groups, vec![H160::from(0x13241b6)]);
@@ -84,7 +84,14 @@ mod tests {
 
     #[test]
     fn test_accounts() {
-        let executor = init_executor();
+        let executor = init_executor(vec![(
+            "Group.accounts",
+            concat!(
+                "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523,",
+                "0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888,",
+                "0x9dcd6b234e2772c5451fd4ccf7582f4283140697"
+            ),
+        )]);
         let accounts: Vec<Address> = UserManagement::accounts(&executor, &H160::from(0x13241b6));
 
         assert_eq!(
@@ -99,7 +106,14 @@ mod tests {
 
     #[test]
     fn test_load_group_accounts() {
-        let executor = init_executor();
+        let executor = init_executor(vec![(
+            "Group.accounts",
+            concat!(
+                "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523,",
+                "0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888,",
+                "0x9dcd6b234e2772c5451fd4ccf7582f4283140697"
+            ),
+        )]);
         let root = H160::from(0x13241b6);
         let group_accounts = UserManagement::load_group_accounts(&executor);
         assert_eq!(group_accounts.contains_key(&root), true);

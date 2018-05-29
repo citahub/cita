@@ -37,6 +37,7 @@ use state_db::*;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
+use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
@@ -48,7 +49,7 @@ use util::KeyValueDB;
 
 const EXECUTOR_CONFIG: &str = "executor.toml";
 const CHAIN_CONFIG: &str = "chain.toml";
-const GENESIS_CONFIG: &str = include_str!("../../genesis.json");
+const SCRIPTS_DIR: &str = "../../scripts";
 pub fn get_temp_state() -> State<StateDB> {
     let journal_db = get_temp_state_db();
     State::new(journal_db, 0.into(), Default::default())
@@ -105,13 +106,56 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
     (deploy_code, runtime_code)
 }
 
-pub fn init_executor() -> Arc<Executor> {
+pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
     let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
+
+    let create_init_data_py = Path::new(SCRIPTS_DIR).join("config_tool/create_init_data.py");
+    let create_genesis_py = Path::new(SCRIPTS_DIR).join("config_tool/create_genesis.py");
+    let contracts_dir = Path::new(SCRIPTS_DIR).join("contracts");
+    let mut init_data_yml = tempdir.clone();
+    init_data_yml.push("init_data.yml");
+    let mut genesis_json = tempdir.clone();
+    genesis_json.push("genesis.json");
+
+    let contract_arguments = contract_arguments
+        .iter()
+        .map(|(key, value)| format!("{}={}", key, value))
+        .collect::<Vec<String>>();
+    let mut init_data_args: Vec<&str> = vec![
+        create_init_data_py.to_str().unwrap(),
+        "--output",
+        init_data_yml.to_str().unwrap(),
+    ];
+    if !contract_arguments.is_empty() {
+        init_data_args.push("--contract_arguments");
+        contract_arguments.iter().for_each(|arg| {
+            init_data_args.push(arg);
+        });
+    }
+
+    let _ = Command::new("python3")
+        .args(init_data_args.as_slice())
+        .output()
+        .expect("Failed to create init data");
+    let _ = Command::new("python3")
+        .args(&[
+            create_genesis_py.to_str().unwrap(),
+            "--output",
+            genesis_json.to_str().unwrap(),
+            "--init_data_file",
+            init_data_yml.to_str().unwrap(),
+            "--contracts_dir",
+            contracts_dir.to_str().unwrap(),
+        ])
+        .output()
+        .expect("Failed to create init data");
+
     // Load from genesis json file
-    let spec: Spec = serde_json::from_reader::<&[u8], _>(GENESIS_CONFIG.as_ref())
-        .expect("Failed to load genesis.");
+    println!("genesis_json: {}", genesis_json.to_str().unwrap());
+    let genesis_file = File::open(genesis_json.to_str().unwrap()).unwrap();
+    let spec: Spec = serde_json::from_reader(genesis_file).expect("Failed to load genesis.");
     let genesis = Genesis {
         spec: spec,
         block: Block::default(),

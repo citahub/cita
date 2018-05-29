@@ -135,7 +135,18 @@ mod tests {
 
     #[test]
     fn test_node_manager_contract() {
-        let executor = init_executor();
+        let executor = init_executor(vec![
+            (
+                "NodeManager.nodes",
+                concat!(
+                    "0x50ad2b9d6946d9c75ae978534043e3021ee1bfb1,",
+                    "0xeeb3a71c4046f63a941013f826fccc503be26b77,",
+                    "0xa2bbb65d4f8c3ada29f7471abe416e18061127f3,",
+                    "0x72eb1e258c9cdccebb7b62930a35cfb6ef4cd24b"
+                ),
+            ),
+            ("NodeManager.stakes", "1,1,1,1"),
+        ]);
         let node_manager = NodeManager::new(&executor, executor.genesis_header().timestamp());
         let nodes = node_manager.nodes();
 
