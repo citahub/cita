@@ -25,8 +25,8 @@ use contracts::{
 use db;
 use db::*;
 use engines::NullEngine;
-use env_info::{EnvInfo, LastHashes};
 use error::CallError;
+use evm::env_info::{EnvInfo, LastHashes};
 use evm::Factory as EvmFactory;
 use executive::{Executed, Executive, TransactOptions};
 use factory::*;
@@ -44,7 +44,7 @@ use libproto::{ConsensusConfig, ExecutedResult, Message};
 
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 use cita_types::{Address, H256, U256};
-use native::Factory as NativeFactory;
+use native::factory::Factory as NativeFactory;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, VecDeque};

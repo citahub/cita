@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 #![rustfmt_skip]
 
-use evm::instructions;
+use super::instructions;
 use std::fmt;
 
 /// Stack trait with VM-friendly API

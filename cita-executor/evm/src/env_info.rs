@@ -17,7 +17,7 @@
 // use std::cmp;
 #![rustfmt_skip]
 
-use header::BlockNumber;
+use types::BlockNumber;
 use std::sync::Arc;
 use cita_types::{Address, H256, U256};
 // use ethjson;

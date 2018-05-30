@@ -18,7 +18,7 @@
 
 // use ethjson;
 #![rustfmt_skip]
-use executed::CallType;
+use call_type::CallType;
 
 use std::sync::Arc;
 use cita_types::{Address, H256, U256};
@@ -37,8 +37,7 @@ impl ActionValue {
     /// Returns action value as U256.
     pub fn value(&self) -> U256 {
         match *self {
-            ActionValue::Transfer(x) |
-            ActionValue::Apparent(x) => x,
+            ActionValue::Transfer(x) | ActionValue::Apparent(x) => x,
         }
     }
 }

@@ -46,6 +46,7 @@ dotenv = "0.10.0"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
+evm = { path = "../evm" }
 jsonrpc_types = { path = "../../jsonrpc_types"}
 clippy = {version = "*", optional = true}
 ethabi = "4.2.0"

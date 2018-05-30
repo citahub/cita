@@ -30,11 +30,14 @@ pub use self::shared_cache::SharedCache;
 use self::stack::{Stack, VecStack};
 use action_params::{ActionParams, ActionValue};
 use bit_set::BitSet;
-use evm::{self, MessageCallResult, ContractCreateResult, GasLeft, CostType, ReturnData};
-use evm::instructions::{self, Instruction, InstructionInfo};
-use executed::CallType;
+use evm::{self, CostType};
+use super::return_data::{GasLeft, ReturnData};
+use super::error::{Error, Result};
+use instructions::{self, Instruction, InstructionInfo};
+use super::call_type::CallType;
 use std::cmp;
 use std::mem;
+use ext::{Ext, ContractCreateResult, MessageCallResult};
 
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -108,7 +111,7 @@ pub struct Interpreter<Cost: CostType> {
 }
 
 impl<Cost: CostType> evm::Evm for Interpreter<Cost> {
-    fn exec(&mut self, params: ActionParams, ext: &mut evm::Ext) -> evm::Result<GasLeft> {
+    fn exec(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft> {
         self.mem.clear();
 
         let mut informant = informant::EvmInformant::new(ext.depth());
@@ -198,21 +201,21 @@ impl<Cost: CostType> Interpreter<Cost> {
         }
     }
 
-    fn verify_instruction(&self, ext: &evm::Ext, instruction: Instruction, info: &InstructionInfo, stack: &Stack<U256>) -> evm::Result<()> {
+    fn verify_instruction(&self, ext: &Ext, instruction: Instruction, info: &InstructionInfo, stack: &Stack<U256>) -> Result<()> {
         let schedule = ext.schedule();
 
         if info.tier == instructions::GasPriceTier::Invalid {
-            return Err(evm::Error::BadInstruction { instruction: instruction });
+            return Err(Error::BadInstruction { instruction: instruction });
         }
 
         if !stack.has(info.args) {
-            Err(evm::Error::StackUnderflow {
+            Err(Error::StackUnderflow {
                     instruction: info.name,
                     wanted: info.args,
                     on_stack: stack.size(),
                 })
         } else if stack.size() - info.args + info.ret > schedule.stack_limit {
-            Err(evm::Error::OutOfStack {
+            Err(Error::OutOfStack {
                     instruction: info.name,
                     wanted: info.ret - info.args,
                     limit: schedule.stack_limit,
@@ -244,7 +247,7 @@ impl<Cost: CostType> Interpreter<Cost> {
     }
 
     #[cfg_attr(feature = "dev", allow(too_many_arguments))]
-    fn exec_instruction(&mut self, gas: Cost, params: &ActionParams, ext: &mut evm::Ext, instruction: Instruction, code: &mut CodeReader, stack: &mut Stack<U256>, provided: Option<Cost>) -> evm::Result<InstructionResult<Cost>> {
+    fn exec_instruction(&mut self, gas: Cost, params: &ActionParams, ext: &mut Ext, instruction: Instruction, code: &mut CodeReader, stack: &mut Stack<U256>, provided: Option<Cost>) -> Result<InstructionResult<Cost>> {
         match instruction {
             instructions::JUMP => {
                 let jump = stack.pop_back();
@@ -293,7 +296,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                         Ok(InstructionResult::Ok)
                     }
                     ContractCreateResult::FailedInStaticCall => {
-                        Err(evm::Error::MutableCallInStaticContext)
+                        Err(Error::MutableCallInStaticContext)
                     }
                 };
             }
@@ -327,7 +330,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 let (sender_address, receive_address, has_balance, call_type) = match instruction {
                     instructions::CALL => {
                         if ext.is_static() && value.map_or(false, |v| !v.is_zero()) {
-                            return Err(evm::Error::MutableCallInStaticContext);
+                            return Err(Error::MutableCallInStaticContext);
                         }
                         let has_balance = ext.balance(&params.address)? >= value.expect("value set for all but delegate call and staticcall; qed");
                         (&params.address, &code_address, has_balance, CallType::Call)
@@ -513,7 +516,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                     let size = stack.peek(2);
                     let return_data_len = U256::from(self.return_data.len());
                     if source_offset.overflow_add(*size).0 > return_data_len {
-                        return Err(evm::Error::OutOfBounds);
+                        return Err(Error::OutOfBounds);
                     }
                 }
                 Self::copy_data_to_memory(&mut self.mem, stack, &*self.return_data);
@@ -582,13 +585,13 @@ impl<Cost: CostType> Interpreter<Cost> {
         }
     }
 
-    fn verify_jump(&self, jump_u: U256, valid_jump_destinations: &BitSet) -> evm::Result<usize> {
+    fn verify_jump(&self, jump_u: U256, valid_jump_destinations: &BitSet) -> Result<usize> {
         let jump = jump_u.low_u64() as usize;
 
         if valid_jump_destinations.contains(jump) && U256::from(jump) == jump_u {
             Ok(jump)
         } else {
-            Err(evm::Error::BadJumpDestination { destination: jump })
+            Err(Error::BadJumpDestination { destination: jump })
         }
     }
 
@@ -600,7 +603,7 @@ impl<Cost: CostType> Interpreter<Cost> {
         if val { U256::one() } else { U256::zero() }
     }
 
-    fn exec_stack_instruction(&self, instruction: Instruction, stack: &mut Stack<U256>) -> evm::Result<()> {
+    fn exec_stack_instruction(&self, instruction: Instruction, stack: &mut Stack<U256>) -> Result<()> {
         match instruction {
             instructions::DUP1...instructions::DUP16 => {
                 let position = instructions::get_dup_position(instruction);
@@ -798,7 +801,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 }
             }
             _ => {
-                return Err(evm::Error::BadInstruction { instruction: instruction });
+                return Err(Error::BadInstruction { instruction: instruction });
             }
         }
         Ok(())

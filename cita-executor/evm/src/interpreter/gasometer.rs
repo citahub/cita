@@ -16,17 +16,19 @@
 #![rustfmt_skip]
 
 use super::u256_to_address;
-use evm::{self, CostType};
-use evm::instructions::{self, Instruction, InstructionInfo};
-use evm::interpreter::stack::Stack;
-use evm::schedule::Schedule;
+use evm::CostType;
+use instructions::{self, Instruction, InstructionInfo};
+use interpreter::stack::Stack;
+use schedule::Schedule;
 use std::cmp;
+use ext::Ext;
+use error::{Error, Result};
 use cita_types::{H256, U256};
 
 macro_rules! overflowing {
     ($x: expr) => {{
         let (v, overflow) = $x;
-        if overflow { return Err(evm::Error::OutOfGas); }
+        if overflow { return Err(Error::OutOfGas); }
         v
     }}
 }
@@ -59,13 +61,13 @@ impl<Gas: CostType> Gasometer<Gas> {
         }
     }
 
-    pub fn verify_gas(&self, gas_cost: &Gas) -> evm::Result<()> {
-        if &self.current_gas < gas_cost { Err(evm::Error::OutOfGas) } else { Ok(()) }
+    pub fn verify_gas(&self, gas_cost: &Gas) -> Result<()> {
+        if &self.current_gas < gas_cost { Err(Error::OutOfGas) } else { Ok(()) }
     }
 
     /// How much gas is provided to a CALL/CREATE, given that we need to deduct `needed` for this operation
     /// and that we `requested` some.
-    pub fn gas_provided(&self, schedule: &Schedule, needed: Gas, requested: Option<U256>) -> evm::Result<Gas> {
+    pub fn gas_provided(&self, schedule: &Schedule, needed: Gas, requested: Option<U256>) -> Result<Gas> {
         // Try converting requested gas to `Gas` (`U256/u64`)
         // but in EIP150 even if we request more we should never fail from OOG
         let requested = requested.map(Gas::from_u256);
@@ -98,7 +100,7 @@ impl<Gas: CostType> Gasometer<Gas> {
     /// We guarantee that the final element of the returned tuple (`provided`) will be `Some`
     /// iff the `instruction` is one of `CREATE`, or any of the `CALL` variants. In this case,
     /// it will be the amount of gas that the current context provides to the child context.
-    pub fn requirements(&mut self, ext: &evm::Ext, instruction: Instruction, info: &InstructionInfo, stack: &Stack<U256>, current_mem_size: usize) -> evm::Result<InstructionRequirements<Gas>> {
+    pub fn requirements(&mut self, ext: &Ext, instruction: Instruction, info: &InstructionInfo, stack: &Stack<U256>, current_mem_size: usize) -> Result<InstructionRequirements<Gas>> {
         let schedule = ext.schedule();
         let tier = instructions::get_tier_idx(info.tier);
         let default_gas = Gas::from(schedule.tier_step_gas[tier]);
@@ -262,7 +264,7 @@ impl<Gas: CostType> Gasometer<Gas> {
            })
     }
 
-    fn mem_gas_cost(&self, schedule: &evm::Schedule, current_mem_size: usize, mem_size: &Gas) -> evm::Result<(Gas, Gas, usize)> {
+    fn mem_gas_cost(&self, schedule: &Schedule, current_mem_size: usize, mem_size: &Gas) -> Result<(Gas, Gas, usize)> {
         let gas_for_mem = |mem_size: Gas| {
             let s = mem_size >> 5;
             // s * memory_gas + s * s / quad_coeff_div
@@ -290,12 +292,12 @@ impl<Gas: CostType> Gasometer<Gas> {
 
 
 #[inline]
-fn mem_needed_const<Gas: CostType>(mem: &U256, add: usize) -> evm::Result<Gas> {
+fn mem_needed_const<Gas: CostType>(mem: &U256, add: usize) -> Result<Gas> {
     Gas::from_u256(overflowing!(mem.overflowing_add(U256::from(add))))
 }
 
 #[inline]
-fn mem_needed<Gas: CostType>(offset: &U256, size: &U256) -> evm::Result<Gas> {
+fn mem_needed<Gas: CostType>(offset: &U256, size: &U256) -> Result<Gas> {
     if size.is_zero() {
         return Ok(Gas::from(0));
     }
@@ -312,7 +314,7 @@ fn add_gas_usize<Gas: CostType>(value: Gas, num: usize) -> (Gas, bool) {
 fn test_mem_gas_cost() {
     // given
     let gasometer = Gasometer::<U256>::new(U256::zero());
-    let schedule = evm::Schedule::default();
+    let schedule = Schedule::default();
     let current_mem_size = 5;
     let mem_size = !U256::zero();
 
@@ -329,7 +331,7 @@ fn test_mem_gas_cost() {
 fn test_calculate_mem_cost() {
     // given
     let gasometer = Gasometer::<usize>::new(0);
-    let schedule = evm::Schedule::default();
+    let schedule = Schedule::default();
     let current_mem_size = 0;
     let mem_size = 5;
 

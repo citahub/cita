@@ -17,7 +17,7 @@
 //! Nonoperative tracer.
 #![rustfmt_skip]
 
-use action_params::ActionParams;
+use evm::action_params::ActionParams;
 use trace::{Tracer, VMTracer, FlatTrace, TraceError};
 use trace::trace::{Call, Create, VMTrace};
 use cita_types::{Address, U256};

@@ -136,7 +136,7 @@ impl Filter {
 #[cfg(test)]
 mod tests {
     use cita_types::traits::BloomTools;
-    use evm::CallType;
+    use evm::call_type::CallType;
     use trace::{Filter, AddressesFilter, TraceError};
     use trace::flat::FlatTrace;
     use trace::trace::{Action, Call, Res, Create, CreateResult, Suicide};

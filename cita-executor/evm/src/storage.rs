@@ -16,12 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cita_types::{H256, U256};
-use evm::Error as EvmError;
-use evm::Ext;
 use std::boxed::Box;
 use std::convert::From;
 use std::string::FromUtf8Error;
 use util::sha3;
+use Error as EvmError;
+use Ext;
 
 ////////////////////////////////////////////////////////////////////////////////
 pub trait Serialize {
@@ -293,7 +293,7 @@ impl Map {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use evm::tests::FakeExt;
+    use fake_tests::FakeExt;
 
     #[test]
     fn test_scalar_bytes() {
