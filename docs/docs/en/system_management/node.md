@@ -154,7 +154,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 - to: consensus node management contract address
 - data: function signature of listNode()
 
-The return value is the current consensus node address.
+The return value is the list of current consensus nodes address.
 
 Now we need to upgrade the new node to a consensus node by constructing a transaction. In the demo, the public key address of the new node is `59a316df602568957f47973332f1f85ae1e2e75e`.
 
