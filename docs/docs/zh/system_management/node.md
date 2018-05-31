@@ -150,7 +150,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 - to 为节点管理合约地址
 - data 为listNode（）的Function signature
 
-返回值为目前的共识节点地址。
+返回值为目前的共识节点地址列表。
 
 下面我们需要将新增节点通过交易的方式升级为共识节点，新增节点的公钥地址，演示中，为 `59a316df602568957f47973332f1f85ae1e2e75e`。
 
