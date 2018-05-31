@@ -1,58 +1,102 @@
-# 帮助使用CITA的新用户了解操作的流程
+# TXTOOL
 
-## 安装需要的依赖
+## 进入 docker 镜像
 
-```shell
-sudo add-apt-repository ppa:ethereum/ethereum
-sudo apt-get update
-sudo apt-get install solc
+```
+./env.sh
+```
+
+## 安装依赖
+
+```
+cd scripts/txtool
 ```
 
 ```shell
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 bash requirements_sudo.sh
 ```
 
-## 检查CITA是否正常启动
+## 用法
+
+### check
+
+检查 CITA 是否正常启动
 
 ```shell
-python check.py
+python3 check.py
 ```
 
-## net_peerCount
+### peer_count
+
+获取链接的节点数
 
 ```shell
-python peer_count.py
+python3 peer_count.py
 ```
 
-## cita_blockNumber
+### block_number
+
+获取块的高度
 
 ```shell
-python block_number.py
+python3 block_number.py
 ```
 
-## 生成账户信息
+### generate_account
 
-使用secp256k1签名算法和sha3 hash
+```
+python3 generate_account -h
+```
+
+```
+usage: generate_account.py [-h] [--newcrypto] [--no-newcrypto]
+
+optional arguments:
+  -h, --help      show this help message and exit
+  --newcrypto
+  --no-newcrypto
+```
+
+* 使用 secp256k1 签名算法和 sha3 hash算法
 
 ```shell
-python generate_account.py
+python3 generate_account.py
 ```
 
-使用ed25519签名算法和blake2b hash
+* 使用 ed25519 签名算法和blake2b hash算法
 
 ```shell
-python generate_account.py --newcrypto
+python3 generate_account.py --newcrypto
 ```
 
-## 编译合约
+### compile
+
+编译合约
+
+```shell
+python3 compile.py -h
+```
+
+```
+usage: compile.py [-h] [-s SOURCE] [-f FILE] [-p PROCEDURE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SOURCE, --source SOURCE
+                        Solidity source code
+  -f FILE, --file FILE  solidity file name with full path. Like
+                        ~/examplefolder/test.solc
+  -p PROCEDURE, --procedure PROCEDURE
+                        Solidity function name.
+```
 
 ```shell
 // 传入文件的绝对路径
-python compile.py -f /home/jerry/rustproj/cita/admintool/txtool/txtool/tests/test.sol
+python3 compile.py -f /home/jerry/rustproj/cita/admintool/txtool/txtool/tests/test.sol
 
 // 或者传入源码
-python compile.py -s "pragma solidity ^0.4.0;
+python3 compile.py -s "pragma solidity ^0.4.0;
 
 contract SimpleStorage {
     uint storedData;
@@ -83,97 +127,149 @@ contract SimpleStorage {
 获取编译合约的函数地址
 
 ```shell
-$ python compile.py -p "get()"
+$ python3 compile.py -p "get()"
 0x6d4ce63c
 ```
 
-## 构造交易
+### make_tx
 
-使用secp256k1签名算法和sha3 hash
+构造交易
 
-```shell
-python make_tx.py
-
-python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to`
+```
+python3 make_tx -h
 ```
 
-使用ed25519签名算法和blake2b hash
+```
+usage: make_tx.py [-h] [--code CODE] [--privkey PRIVKEY] [--to TO]
+                  [--newcrypto] [--no-newcrypto] [--version VERSION]
+                  [--chain_id CHAIN_ID]
 
-```shell
-python make_tx.py --newcrypto
-
-python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to` --newcrypto
+optional arguments:
+  -h, --help           show this help message and exit
+  --code CODE          Compiled contract bytecode.
+  --privkey PRIVKEY    private key genearted by secp256k1 alogrithm.
+  --to TO              transaction to
+  --newcrypto          Use ed25519 and blake2b.
+  --no-newcrypto       Use ecdsa and sha3.
+  --version VERSION    Tansaction version.
+  --chain_id CHAIN_ID
 ```
 
-## 发送交易
-
-交易相关的信息保存在output/transaction目录
+使用 secp256k1 签名算法和 sha3-hash
 
 ```shell
-python send_tx.py
+python3 make_tx.py
 
-python send_tx.py `deploycode`
-
-python send_tx.py --codes `deploycode1` `deploycode2` `deploycode3` ...
+python3 make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to`
 ```
 
-## 获取交易
-
-交易的hash使用output/transaction/hash文件中的值
+使用 ed25519 签名算法和 blake2b-hash 算法
 
 ```shell
-python get_tx.py
+python3 make_tx.py --newcrypto
 
-python get_tx.py --tx `transaction_hash`
+python3 make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to` --newcrypto
 ```
 
-## cita_getBlockByHash
+### send_tx
 
-```shell
-python block_by_hash.py hash --detail
-python block_by_hash.py hash --no-detail
+发送交易
+
+```
+python3 send_tx.py -h
 ```
 
-## cita_getBlockByNumber
+```
+usage: send_tx.py [-h] [--codes CODES [CODES ...]]
 
-```shell
-python block_by_number.py number --detail
-python block_by_number.py number --no-detail
+optional arguments:
+  -h, --help            show this help message and exit
+  --codes CODES [CODES ...]
+                        send transaction params.
 ```
 
-## 获取receipt
+交易相关的信息保存在 output/transaction 目录
 
 ```shell
-python get_receipt.py
-python get_receipt.py --tx `transaction_hash`
+python3 send_tx.py
+
+python3 send_tx.py `deploycode`
+
+python3 send_tx.py --codes `deploycode1` `deploycode2` `deploycode3` ...
 ```
 
-## eth_getTransactionCount
+### get_tx
+
+获取交易
+
+交易的 hash 使用 output/transaction/hash 文件中的值
 
 ```shell
-python tx_count.py `block_number` -a `address`
+python3 get_tx.py
+
+python3 get_tx.py --tx `transaction_hash`
 ```
 
-## eth_getCode
+### block_by_hash
 
 ```shell
-python get_code.py `address` `number`
+python3 block_by_hash.py hash --detail
+python3 block_by_hash.py hash --no-detail
 ```
 
-## 获取Logs
+### block_by_number
 
 ```shell
-python get_logs.py
+python3 block_by_number.py number --detail
+python3 block_by_number.py number --no-detail
 ```
 
-## 调用合约
+### get_receipt
 
 ```shell
-python call.py `to` `data`
+python3 get_receipt.py
+python3 get_receipt.py --tx `transaction_hash`
+```
 
-python call.py `to` `data` `block_number` --sender `option sender`
+### tx_count
+
+```shell
+python3 tx_count.py `block_number` -a `address`
+```
+
+### get_code
+
+```shell
+python3 get_code.py `address` `number`
+```
+
+### get_logs
+
+获取日志
+
+```shell
+python3 get_logs.py -h
+```
+
+```
+usage: get_logs.py [-h] [--fromBlock FROMBLOCK] [--toBlock TOBLOCK]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --fromBlock FROMBLOCK
+  --toBlock TOBLOCK
+```
+
+### call
+
+调用合约
+
+```shell
+python3 call.py `to` `data`
+
+python3 call.py `to` `data` `block_number` --sender `option sender`
 
 to --- contract address
 data --- contract method, params encoded data.
-// data构造参考contract ABI
+// data 构造参考 contract ABI
 ```
