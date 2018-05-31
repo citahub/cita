@@ -15,1498 +15,945 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::H256;
+use cita_types::traits::LowerHex;
+use cita_types::{Address, H256};
+use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
+use dispatcher::Dispatcher;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
+use libproto::auth::MiscellaneousReq;
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
-use libproto::{Message, Response, Ret, VerifyBlockReq, VerifyBlockResp, VerifyTxResp};
+use libproto::{
+    BlockTxHashesReq, Crypto, Message, Request, Response, Ret, VerifyBlockReq, VerifyBlockResp,
+    VerifyTxReq,
+};
+use lru::LruCache;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon::ThreadPoolBuilder;
+use serde_json;
+use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryFrom, TryInto};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::Arc;
-use std::time::SystemTime;
-use std::vec::*;
-use threadpool::ThreadPool;
-use util::RwLock;
-use verifier::*;
+use std::time::Duration;
+use util::instrument::{unix_now, AsMillis};
+use util::BLOCKLIMIT;
 
-pub fn process_flow_control_failed(
-    mut verify_info: VerifyRequestResponseInfo,
-    resp_sender: &Sender<VerifyRequestResponseInfo>,
-) {
-    let mut response = VerifyTxResp::new();
-    if let VerifyRequestResponse::AuthRequest(req) = verify_info.req_resp {
-        response.set_tx_hash(req.get_tx_hash().to_vec());
-        response.set_ret(Ret::Busy);
-        verify_info.req_resp = VerifyRequestResponse::AuthResponse(response);
-        resp_sender.send(verify_info).unwrap();
-    }
+struct HistoryHeights {
+    heights: HashSet<u64>,
+    max_height: u64,
+    min_height: u64,
+    is_init: bool,
+    latest_update_timestamp: u64,
 }
 
-#[cfg_attr(feature = "clippy", allow(needless_pass_by_value))]
-pub fn verify_tx_group_service(
-    mut req_grp: Vec<VerifyRequestResponseInfo>,
-    verifier: Arc<RwLock<Verifier>>,
-    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
-    resp_sender: Sender<VerifyRequestResponseInfo>,
-) {
-    let now = SystemTime::now();
-    let len = req_grp.len();
-
-    while let Some(mut req_info) = req_grp.pop() {
-        if let VerifyRequestResponse::AuthRequest(req) = req_info.req_resp {
-            let tx_hash = H256::from_slice(req.get_tx_hash());
-            let response = { verifier.read().verify_tx(&req) };
-            if response.get_ret() != Ret::NotReady {
-                cache.write().insert(tx_hash, response.clone());
-            }
-            req_info.req_resp = VerifyRequestResponse::AuthResponse(response);
-            resp_sender.send(req_info).unwrap();
+impl HistoryHeights {
+    pub fn new() -> Self {
+        HistoryHeights {
+            heights: HashSet::new(),
+            max_height: 0,
+            min_height: 0,
+            is_init: false,
+            //init value is 0 mean first time must not too frequent
+            latest_update_timestamp: 0,
         }
     }
 
-    trace!(
-        "verify_tx_group_service Time cost {} ns for {} req ...",
-        now.elapsed().unwrap().subsec_nanos(),
-        len
-    );
-}
-
-pub fn check_verify_request_preprocess(
-    mut req_info: VerifyRequestResponseInfo,
-    verifier: Arc<RwLock<Verifier>>,
-    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
-    resp_sender: &Sender<VerifyRequestResponseInfo>,
-) -> VerifyResult {
-    if let VerifyRequestResponse::AuthRequest(req) = req_info.req_resp {
-        let tx_hash = H256::from_slice(req.get_tx_hash());
-        let mut final_response = VerifyTxResp::new();
-        let mut processed = false;
-        let mut result = VerifyResult::VerifyNotBegin;
-        let is_single_verify = req_info.verify_type == VerifyType::SingleVerify;
-
-        // Verify valid until block.
-        // Each transations can set a value to "valid_until_block" to hint its timeout in
-        // blockchain system. But the "value" cannot be to large (<= self.height + BLOCKLIMIT).
-        if is_single_verify
-            && !verifier
-                .read()
-                .verify_valid_until_block(req.get_valid_until_block())
-        {
-            let mut response = VerifyTxResp::new();
-            response.set_tx_hash(req.get_tx_hash().to_vec());
-            response.set_ret(Ret::InvalidUntilBlock);
-            processed = true;
-            final_response = response;
-        } else if !is_single_verify && verifier.read().check_hash_exist(&tx_hash) {
-            let mut response = VerifyTxResp::new();
-            response.set_tx_hash(req.get_tx_hash().to_vec());
-            if verifier.read().is_inited() {
-                response.set_ret(Ret::Dup);
-            } else {
-                response.set_ret(Ret::NotReady);
-            }
-            processed = true;
-            final_response = response;
-        } else if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
-            processed = true;
-            final_response = resp;
-        }
-
-        if processed {
-            match final_response.get_ret() {
-                Ret::OK => result = VerifyResult::VerifySucceeded,
-                _ => result = VerifyResult::VerifyFailed,
-            }
-            //only send result when the verify type is single
-            if is_single_verify {
-                req_info.req_resp = VerifyRequestResponse::AuthResponse(final_response);
-                resp_sender.send(req_info).unwrap();
-            }
-        }
-        result
-    } else {
-        VerifyResult::VerifyNotBegin
-    }
-}
-
-fn get_resp_from_cache(
-    tx_hash: &H256,
-    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
-) -> Option<VerifyTxResp> {
-    if let Some(resp) = cache.read().get(tx_hash) {
-        Some(resp.clone())
-    } else {
-        None
-    }
-}
-
-fn verify_proposal_block(
-    key: String,
-    blkreq: &VerifyBlockReq,
-    on_proposal: Arc<AtomicBool>,
-    pool: &ThreadPool,
-    proposal_tx_verify_num_per_thread: usize,
-    verifier: Arc<RwLock<Verifier>>,
-    tx_pub: &Sender<(String, Vec<u8>)>,
-    block_verify_status: Arc<RwLock<BlockVerifyStatus>>,
-    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
-    resp_sender: &Sender<VerifyRequestResponseInfo>,
-) {
-    let tx_cnt = blkreq.get_reqs().len();
-    let mut tx_need_verify = Vec::new();
-    if tx_cnt > 0 {
-        let request_id = blkreq.get_id();
-        let new_block_verify_status = BlockVerifyStatus {
-            request_id: request_id,
-            block_verify_result: VerifyResult::VerifyOngoing,
-            verify_success_cnt_required: blkreq.get_reqs().len(),
-            verify_success_cnt_capture: 0,
-            cache_hit: 0,
+    fn update(&mut self, height: u64) {
+        let old_min_height = self.min_height;
+        self.max_height = height;
+        self.min_height = if height > BLOCKLIMIT {
+            height - BLOCKLIMIT + 1
+        } else {
+            0
         };
-
-        info!(
-            "Coming new block verify request with request_id: {}",
-            request_id
-        );
-        //add big brace here to release write lock as soon as poobible
-        {
-            let mut block_verify_status_guard = block_verify_status.write();
-            if block_verify_status_guard.block_verify_result == VerifyResult::VerifyOngoing {
-                warn!(
-                    "block verification request with request_id: {:?} \
-                     has been expired, and the current info is: {:?}",
-                    block_verify_status_guard.request_id, *block_verify_status_guard
-                );
-            }
-            let block_verify_stamp = SystemTime::now();
-            *block_verify_status_guard = new_block_verify_status;
-            let now = SystemTime::now();
-
-            {
-                let vclone = verifier.clone();
-                if !vclone.read().verify_quota(&blkreq) {
-                    publish_block_verification_result(request_id, Ret::QuotaNotEnough, tx_pub);
-                    return;
-                }
-            }
-
-            for req in blkreq.get_reqs() {
-                let verify_request_info = VerifyRequestResponseInfo {
-                    key: key.clone(),
-                    verify_type: VerifyType::BlockVerify,
-                    request_id: VerifyRequestID::BlockVerifyRequestID(request_id),
-                    time_stamp: now,
-                    req_resp: VerifyRequestResponse::AuthRequest(req.clone()),
-                    un_tx: None,
-                };
-                let result = check_verify_request_preprocess(
-                    verify_request_info,
-                    verifier.clone(),
-                    cache.clone(),
-                    resp_sender,
-                );
-                match result {
-                    VerifyResult::VerifySucceeded => {
-                        block_verify_status_guard.verify_success_cnt_capture += 1;
-                        block_verify_status_guard.cache_hit += 1;
-                        trace!(
-                            "The verification request： {:?} has been cached already",
-                            req
-                        );
-                    }
-                    VerifyResult::VerifyFailed => {
-                        block_verify_status_guard.block_verify_result = VerifyResult::VerifyFailed;
-
-                        let tx_hash = H256::from_slice(req.get_tx_hash());
-                        let resp_ret;
-                        if let Some(resp) = get_resp_from_cache(&tx_hash, cache.clone()) {
-                            resp_ret = resp.get_ret();
-                        } else {
-                            // Can't get response from cache, set bad sig as default
-                            resp_ret = Ret::BadSig;
-                        }
-                        warn!(
-                            "Failed to do verify blk req for request_id: {}, ret: {:?}",
-                            request_id, resp_ret
-                        );
-                        publish_block_verification_result(request_id, resp_ret, tx_pub);
-                        //return when verified error
-                        return;
-                    }
-                    _ => {
-                        let verify_request_info = VerifyRequestResponseInfo {
-                            key: key.clone(),
-                            verify_type: VerifyType::BlockVerify,
-                            request_id: VerifyRequestID::BlockVerifyRequestID(request_id),
-                            time_stamp: now,
-                            req_resp: VerifyRequestResponse::AuthRequest(req.clone()),
-                            un_tx: None,
-                        };
-                        tx_need_verify.push(verify_request_info);
-                    }
-                }
-            }
-            let tx_need_verify_len = tx_need_verify.len();
-            // Most of time nearly all the transactions hit the cache.
-            if tx_need_verify_len > 0 {
-                on_proposal.store(true, Ordering::SeqCst);
-                let iter = tx_need_verify.chunks(proposal_tx_verify_num_per_thread);
-                for group in iter {
-                    let verifier_clone = verifier.clone();
-                    let cache_clone = cache.clone();
-                    let resp_sender_clone = resp_sender.clone();
-                    let group_for_pool = group.to_vec().clone();
-                    pool.execute(move || {
-                        verify_tx_group_service(
-                            group_for_pool,
-                            verifier_clone,
-                            cache_clone,
-                            resp_sender_clone,
-                        );
-                    });
-                }
-                on_proposal.store(false, Ordering::SeqCst);
-            } else if block_verify_status_guard.verify_success_cnt_capture
-                == block_verify_status_guard.verify_success_cnt_required
-            {
-                block_verify_status_guard.block_verify_result = VerifyResult::VerifySucceeded;
-                info!(
-                    "Succeed to do verify blk req for request_id: {}, \
-                     ret: {:?}, \
-                     time cost: {:?}, \
-                     and final status is: {:?}",
-                    request_id,
-                    Ret::OK,
-                    block_verify_stamp.elapsed().unwrap(),
-                    *block_verify_status_guard
-                );
-                publish_block_verification_result(request_id, Ret::OK, tx_pub);
+        for i in old_min_height..self.min_height {
+            self.heights.remove(&i);
+        }
+        let mut is_init = true;
+        for i in self.min_height..self.max_height {
+            if !self.heights.contains(&i) {
+                is_init = false;
+                break;
             }
         }
-    } else {
-        error!(
-            "Wrong block verification request with 0 tx for block verify request_id: {} from key: {}",
-            blkreq.get_id(),
-            key
-        );
+        self.is_init = is_init;
+        self.latest_update_timestamp = unix_now().as_millis();
     }
-}
 
-fn get_idx_from_reqid(reqid: u64) -> (u64, u64) {
-    (reqid >> 16, reqid & 0xffff)
-}
-
-// this function has too many arguments
-// the function has a cyclomatic complexity of 29
-// consider changing the type to: `&[u8]`
-pub fn handle_remote_msg(
-    key: String,
-    payload: Vec<u8>,
-    on_proposal: Arc<AtomicBool>,
-    pool: &ThreadPool,
-    proposal_tx_verify_num_per_thread: usize,
-    verifier: Arc<RwLock<Verifier>>,
-    tx_req_single: &Sender<VerifyRequestResponseInfo>,
-    tx_pub: &Sender<(String, Vec<u8>)>,
-    block_verify_status: Arc<RwLock<BlockVerifyStatus>>,
-    cache: Arc<RwLock<HashMap<H256, VerifyTxResp>>>,
-    txs_sender: &Sender<(usize, HashSet<H256>, u64, AccountGasLimit, bool)>,
-    resp_sender: &Sender<VerifyRequestResponseInfo>,
-    clear_txs_pool: Arc<AtomicBool>,
-    saved_req: &mut Option<VerifyBlockReq>,
-) {
-    let mut msg = Message::try_from(&payload).unwrap();
-    match RoutingKey::from(&key) {
-        routing_key!(Chain >> BlockTxHashes) => {
-            let block_tx_hashes = msg.take_block_tx_hashes().unwrap();
-            let height = block_tx_hashes.get_height();
-            debug!("get block tx hashs for height {:?}", height);
-            let tx_hashes = block_tx_hashes.get_tx_hashes();
-            let mut tx_hashes_in_h256 = HashSet::with_capacity(tx_hashes.len());
-            {
-                let mut cache_guard = cache.write();
-
-                for data in tx_hashes.iter() {
-                    let hash = H256::from_slice(data);
-                    cache_guard.remove(&hash);
-                    tx_hashes_in_h256.insert(hash);
-                }
-            }
-            {
-                verifier
-                    .write()
-                    .update_hashes(height, tx_hashes_in_h256.clone(), tx_pub);
-            }
-
-            let mut flag = true;
-            if let Some(h) = verifier.read().get_height_latest() {
-                if height != h {
-                    flag = false;
-                }
-            }
-            // this blockhashes is sequential
-            if flag {
-                debug!(
-                    "BLOCKTXHASHES come height {}, tx_hashes count is: {:?}",
-                    height,
-                    tx_hashes_in_h256.len()
-                );
-                let block_gas_limit = block_tx_hashes.get_block_gas_limit();
-                let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
-                let check_quota = block_tx_hashes.get_check_quota();
-                debug!(
-                    "Auth rich status block gas limit: {:?}, account gas limit {:?} check_quota {:?}",
-                    block_gas_limit, account_gas_limit, check_quota
-                );
-
-                {
-                    verifier.write().set_quota_check_info(
-                        check_quota,
-                        block_gas_limit,
-                        account_gas_limit.clone(),
-                    );
-                }
-
-                // Message will be handled in deal_txs thread.
-                let _ = txs_sender.send((
-                    height as usize,
-                    tx_hashes_in_h256,
-                    block_gas_limit,
-                    account_gas_limit,
-                    check_quota,
-                ));
-
-                let mut flag = false;
-                if let Some(ref req) = *saved_req {
-                    let (vheight, _) = get_idx_from_reqid(req.get_id());
-                    if vheight == height + 1 {
-                        verify_proposal_block(
-                            key,
-                            req,
-                            on_proposal,
-                            pool,
-                            proposal_tx_verify_num_per_thread,
-                            verifier,
-                            tx_pub,
-                            block_verify_status,
-                            cache,
-                            resp_sender,
-                        );
-                        flag = true;
-                    }
-                }
-
-                if flag {
-                    *saved_req = None;
-                }
-            }
-        }
-        // TODO: Add ProposalVerifier { status, request_id, threadpool }, Status: On, Failed, Successed, Experied
-        // TODO: Make most of the logic asynchronous
-        // Verify Proposal from consensus
-        routing_key!(Consensus >> VerifyBlockReq) => {
-            let blkreq = msg.take_verify_block_req().unwrap();
-            info!(
-                "get block verify request with {:?} request",
-                blkreq.get_reqs().len()
-            );
-
-            let (height, _) = get_idx_from_reqid(blkreq.get_id());
-            if let Some(now_height) = verifier.read().get_height_latest() {
-                if now_height + 1 == height {
-                    verify_proposal_block(
-                        key,
-                        &blkreq,
-                        on_proposal,
-                        pool,
-                        proposal_tx_verify_num_per_thread,
-                        verifier.clone(),
-                        tx_pub,
-                        block_verify_status,
-                        cache,
-                        resp_sender,
-                    );
-                }
-                //the block verify request not so far from now height
-                else if now_height + 3 > height {
-                    let mut change_flag = false;
-                    if let Some(ref req) = *saved_req {
-                        if blkreq.get_id() > req.get_id() {
-                            change_flag = true;
-                        }
-                    } else {
-                        change_flag = true;
-                    }
-                    if change_flag {
-                        *saved_req = Some(blkreq);
-                    }
-                }
-            }
-        }
-        routing_key!(Net >> Request) | routing_key!(Jsonrpc >> RequestNewTxBatch) => {
-            let newtx_req = msg.take_request().unwrap();
-            if newtx_req.has_batch_req() {
-                let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
-                let now = SystemTime::now();
-                trace!(
-                    "get batch new tx request from key:{} in system time :{:?}, and has got {} new tx ",
-                    key,
-                    now,
-                    batch_new_tx.len()
-                );
-
-                for tx_req in batch_new_tx.iter() {
-                    let verify_tx_req = tx_req.get_un_tx().tx_verify_req_msg();
-                    let verify_request_info = VerifyRequestResponseInfo {
-                        key: key.clone(),
-                        verify_type: VerifyType::SingleVerify,
-                        request_id: VerifyRequestID::SingleVerifyRequestID(
-                            tx_req.get_request_id().to_vec(),
-                        ),
-                        time_stamp: now,
-                        req_resp: VerifyRequestResponse::AuthRequest(verify_tx_req),
-                        un_tx: Some(tx_req.get_un_tx().clone()),
-                    };
-                    tx_req_single.send(verify_request_info).unwrap();
-                }
-            } else if newtx_req.has_un_tx() {
-                let now = SystemTime::now();
-                trace!(
-                    "get single new tx request from peer node with system time :{:?}",
-                    now
-                );
-                let verify_tx_req = newtx_req.get_un_tx().tx_verify_req_msg();
-                let verify_request_info = VerifyRequestResponseInfo {
-                    key: key.clone(),
-                    verify_type: VerifyType::SingleVerify,
-                    request_id: VerifyRequestID::SingleVerifyRequestID(
-                        newtx_req.get_request_id().to_vec(),
-                    ),
-                    time_stamp: now,
-                    req_resp: VerifyRequestResponse::AuthRequest(verify_tx_req),
-                    un_tx: Some(newtx_req.get_un_tx().clone()),
-                };
-
-                tx_req_single.send(verify_request_info).unwrap();
-            }
-        }
-        routing_key!(Snapshot >> SnapshotReq) => {
-            let req = msg.take_snapshot_req().unwrap();
-            let mut resp = SnapshotResp::new();
-            match req.cmd {
-                Cmd::Begin => {
-                    resp.set_resp(Resp::BeginAck);
-                    let msg: Message = resp.into();
-                    info!("[snapshot] auth send BeginAck");
-                    tx_pub
-                        .send((
-                            routing_key!(Auth >> SnapshotResp).into(),
-                            (&msg).try_into().unwrap(),
-                        ))
-                        .unwrap();
-                }
-                Cmd::Clear => {
-                    resp.set_resp(Resp::ClearAck);
-                    clear_txs_pool.store(true, Ordering::SeqCst);
-                    let msg: Message = resp.into();
-                    info!("[snapshot] auth send ClearAck");
-                    tx_pub
-                        .send((
-                            routing_key!(Auth >> SnapshotResp).into(),
-                            (&msg).try_into().unwrap(),
-                        ))
-                        .unwrap();
-                }
-                Cmd::End => {
-                    resp.set_resp(Resp::EndAck);
-                    clear_txs_pool.store(false, Ordering::SeqCst);
-                    let msg: Message = resp.into();
-                    info!("[snapshot] auth send EndAck");
-                    tx_pub
-                        .send((
-                            routing_key!(Auth >> SnapshotResp).into(),
-                            (&msg).try_into().unwrap(),
-                        ))
-                        .unwrap();
-                }
-                _ => {
-                    warn!(
-                        "[snapshot_req]receive: unexpected snapshot cmd = {:?}",
-                        req.cmd
-                    );
-                }
-            }
-        }
-        routing_key!(Executor >> Miscellaneous) => {
-            let miscellaneous = msg.take_miscellaneous().unwrap();
-            info!("Get chain_id({}) from executor", miscellaneous.chain_id);
-            verifier
-                .try_write()
-                .unwrap()
-                .set_chain_id(miscellaneous.chain_id);
-        }
-        _ => {}
-    }
-}
-
-pub fn handle_verification_result(
-    result_receiver: &Receiver<VerifyRequestResponseInfo>,
-    tx_pub: &Sender<(String, Vec<u8>)>,
-    block_verify_status: Arc<RwLock<BlockVerifyStatus>>,
-    tx_sender: &Sender<(String, Vec<u8>, TxResponse, SignedTransaction)>,
-) {
-    match result_receiver.recv() {
-        Ok(verify_response_info) => {
-            if let VerifyRequestResponse::AuthResponse(resp) = verify_response_info.req_resp {
-                match verify_response_info.verify_type {
-                    VerifyType::SingleVerify => {
-                        let tx_hash: H256 = resp.get_tx_hash().into();
-                        trace!(
-                            "SingleVerify Time cost {} ns for tx hash: {:?}",
-                            verify_response_info
-                                .time_stamp
-                                .elapsed()
-                                .unwrap()
-                                .subsec_nanos(),
-                            resp.get_tx_hash()
-                        );
-                        trace!(
-                            "receive verify resp, hash: {:?}, ret: {:?}",
-                            tx_hash,
-                            resp.get_ret()
-                        );
-
-                        if let VerifyRequestID::SingleVerifyRequestID(request_id) =
-                            verify_response_info.request_id
-                        {
-                            let result = format!("{:?}", resp.get_ret());
-                            match resp.get_ret() {
-                                Ret::OK => {
-                                    let mut signed_tx = SignedTransaction::new();
-                                    signed_tx.set_transaction_with_sig(
-                                        verify_response_info.un_tx.unwrap(),
-                                    );
-                                    signed_tx.set_signer(resp.get_signer().to_vec());
-                                    signed_tx.set_tx_hash(tx_hash.to_vec());
-                                    let tx_response = TxResponse::new(tx_hash, result.clone());
-                                    let _ = tx_sender.send((
-                                        verify_response_info.key,
-                                        request_id.clone(),
-                                        tx_response,
-                                        signed_tx.clone(),
-                                    ));
-                                    trace!("Send singed tx to txpool");
-                                }
-                                _ => {
-                                    if RoutingKey::from(&verify_response_info.key)
-                                        .is_sub_module(SubModules::Jsonrpc)
-                                    {
-                                        let tx_response = TxResponse::new(tx_hash, result);
-
-                                        let mut response = Response::new();
-                                        response.set_request_id(request_id);
-                                        response.set_code(ErrorCode::tx_auth_error());
-                                        response.set_error_msg(tx_response.status);
-
-                                        trace!("response new tx {:?}", response);
-                                        let msg: Message = response.into();
-                                        tx_pub
-                                            .send((
-                                                routing_key!(Auth >> Response).into(),
-                                                msg.try_into().unwrap(),
-                                            ))
-                                            .unwrap();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    VerifyType::BlockVerify => {
-                        if let VerifyRequestID::BlockVerifyRequestID(request_id) =
-                            verify_response_info.request_id
-                        {
-                            let result = resp.get_ret();
-                            if Ret::OK != result {
-                                let mut block_verify_status_guard = block_verify_status.write();
-                                if request_id == block_verify_status_guard.request_id
-                                    && VerifyResult::VerifyFailed
-                                        != block_verify_status_guard.block_verify_result
-                                {
-                                    block_verify_status_guard.block_verify_result =
-                                        VerifyResult::VerifyFailed;
-                                    warn!(
-                                        "Failed to do verify blk req for request_id: {}, ret: {:?}, from key: {}",
-                                        request_id, result, verify_response_info.key
-                                    );
-                                    publish_block_verification_result(request_id, result, tx_pub);
-                                }
-                            } else {
-                                let mut block_verify_status_guard = block_verify_status.write();
-                                if request_id == block_verify_status_guard.request_id {
-                                    trace!(
-                                        "BlockVerify Time cost {:?} for tx hash: {:?}",
-                                        verify_response_info.time_stamp.elapsed().unwrap(),
-                                        resp.get_tx_hash()
-                                    );
-                                    block_verify_status_guard.verify_success_cnt_capture += 1;
-                                    if block_verify_status_guard.verify_success_cnt_capture
-                                        == block_verify_status_guard.verify_success_cnt_required
-                                    {
-                                        block_verify_status_guard.block_verify_result =
-                                            VerifyResult::VerifySucceeded;
-                                        info!(
-                                            "Succeed to do verify blk req for request_id: {}, \
-                                             ret: {:?}, \
-                                             time cost: {:?}, \
-                                             and final status is: {:?}",
-                                            request_id,
-                                            Ret::OK,
-                                            verify_response_info.time_stamp.elapsed().unwrap(),
-                                            *block_verify_status_guard
-                                        );
-                                        publish_block_verification_result(
-                                            request_id,
-                                            Ret::OK,
-                                            tx_pub,
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Err(err_info) => {
-            error!("Failed to receive verify result due to {:?}", err_info);
+    pub fn add_height(&mut self, height: u64) {
+        if height >= self.min_height {
+            self.heights.insert(height);
+            let max_height = self.max_height;
+            self.update(max(height, max_height));
         }
     }
-}
 
-fn publish_block_verification_result(
-    request_id: u64,
-    ret: Ret,
-    tx_pub: &Sender<(String, Vec<u8>)>,
-) {
-    let mut blkresp = VerifyBlockResp::new();
-    blkresp.set_id(request_id);
-    blkresp.set_ret(ret);
+    pub fn next_height(&self) -> u64 {
+        self.max_height + 1
+    }
 
-    let msg: Message = blkresp.into();
-    tx_pub
-        .send((
-            routing_key!(Auth >> VerifyBlockResp).into(),
-            msg.try_into().unwrap(),
-        ))
-        .unwrap();
+    pub fn is_init(&self) -> bool {
+        self.is_init
+    }
+
+    pub fn max_height(&self) -> u64 {
+        self.max_height
+    }
+
+    pub fn min_height(&self) -> u64 {
+        self.min_height
+    }
+
+    // at least wait 3s from latest update
+    pub fn is_too_frequent(&self) -> bool {
+        unix_now().as_millis() < self.latest_update_timestamp + 3000
+    }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use cita_types::{H256, U256};
-    use crypto::*;
-    use libproto::router::{MsgType, RoutingKey, SubModules};
-    use libproto::{
-        BlockTxHashes, Message, Request, Ret, SignedTransaction, Transaction, VerifyBlockReq,
-        VerifyTxReq,
-    };
-    use protobuf::RepeatedField;
-    use std::sync::mpsc::channel;
-    use std::thread;
-    use std::time::Duration;
-    use threadpool;
-    use util::Hashable;
-    use uuid::Uuid;
+mod history_heights_tests {
+    use super::HistoryHeights;
 
-    const BLOCK_REQUEST_ID: u64 = 0x0000000000010000;
+    #[test]
+    fn basic() {
+        let mut h = HistoryHeights::new();
+        assert_eq!(h.is_init(), false);
+        assert_eq!(h.next_height(), 1);
 
-    fn generate_tx(
-        data: Vec<u8>,
-        valid_until_block: u64,
-        privkey: &PrivKey,
-        chain_id: u32,
-    ) -> SignedTransaction {
-        let mut tx = Transaction::new();
-        tx.set_data(data);
-        tx.set_to("1234567".to_string());
-        tx.set_nonce("0".to_string());
-        tx.set_valid_until_block(valid_until_block);
-        tx.set_chain_id(chain_id);
-        let signed_tx = tx.sign(*privkey);
-        signed_tx
+        h.add_height(60);
+        assert_eq!(h.is_init(), false);
+        assert_eq!(h.next_height(), 61);
+
+        for i in 0..60 {
+            h.add_height(i);
+        }
+        assert_eq!(h.is_init(), true);
+        assert_eq!(h.next_height(), 61);
+
+        h.add_height(70);
+        assert_eq!(h.is_init(), false);
+        assert_eq!(h.next_height(), 71);
+
+        for i in 0..70 {
+            h.add_height(i);
+        }
+        assert_eq!(h.is_init(), true);
+        assert_eq!(h.next_height(), 71);
+
+        h.add_height(99);
+        assert_eq!(h.is_init(), false);
+        assert_eq!(h.next_height(), 100);
+
+        for i in 0..99 {
+            h.add_height(i);
+        }
+        assert_eq!(h.is_init(), true);
+        assert_eq!(h.next_height(), 100);
+
+        h.add_height(100);
+        assert_eq!(h.is_init(), true);
+        assert_eq!(h.next_height(), 101);
+
+        h.add_height(101);
+        assert_eq!(h.is_init(), true);
+        assert_eq!(h.next_height(), 102);
+    }
+}
+
+// verify chain id and signature
+pub fn verify_tx_sig(req: &VerifyTxReq) -> Result<Vec<u8>, ()> {
+    let hash = H256::from(req.get_hash());
+    let sig_bytes = req.get_signature();
+    if sig_bytes.len() != SIGNATURE_BYTES_LEN {
+        return Err(());
     }
 
-    fn generate_request(tx: SignedTransaction) -> Request {
-        let request_id = Uuid::new_v4().as_bytes().to_vec();
-        let mut request = Request::new();
-        request.set_un_tx(tx.get_transaction_with_sig().clone());
-        request.set_request_id(request_id);
-        request
+    let sig = Signature::from(sig_bytes);
+    match req.get_crypto() {
+        Crypto::SECP => sig
+            .recover(&hash)
+            .map(|pubkey| pubkey.to_vec())
+            .map_err(|_| ()),
+        _ => {
+            warn!("Unexpected crypto");
+            Err(())
+        }
     }
+}
 
-    fn generate_msg_from_request(request: Request) -> Vec<u8> {
-        let msg: Message = request.into();
-        msg.try_into().unwrap()
-    }
+pub struct MsgHandler {
+    rx_sub: Receiver<(String, Vec<u8>)>,
+    tx_pub: Sender<(String, Vec<u8>)>,
+    // only cache verify sig
+    cache: LruCache<H256, Option<Vec<u8>>>,
+    chain_id: Option<u32>,
+    history_heights: HistoryHeights,
+    cache_block_req: Option<VerifyBlockReq>,
+    history_hashes: HashMap<u64, HashSet<H256>>,
+    dispatcher: Dispatcher,
+    check_quota: bool,
+    block_gas_limit: u64,
+    account_gas_limit: AccountGasLimit,
+    tx_request: Sender<Request>,
+    tx_pool_limit: usize,
+    is_recovery_mod: bool,
+}
 
-    fn generate_msg(tx: SignedTransaction) -> Vec<u8> {
-        let request_id = Uuid::new_v4().as_bytes().to_vec();
-        let mut request = Request::new();
-        request.set_un_tx(tx.get_transaction_with_sig().clone());
-        request.set_request_id(request_id);
-        let msg: Message = request.into();
-        msg.try_into().unwrap()
-    }
-
-    fn generate_blk_msg(tx: SignedTransaction) -> Vec<u8> {
-        //create verify message
-        let mut req = VerifyTxReq::new();
-        req.set_valid_until_block(
-            tx.get_transaction_with_sig()
-                .get_transaction()
-                .get_valid_until_block(),
-        );
-        let signature = tx.get_transaction_with_sig().get_signature().to_vec();
-        req.set_signature(signature);
-        let bytes: Vec<u8> = tx
-            .get_transaction_with_sig()
-            .get_transaction()
-            .try_into()
+impl MsgHandler {
+    pub fn new(
+        rx_sub: Receiver<(String, Vec<u8>)>,
+        tx_pub: Sender<(String, Vec<u8>)>,
+        dispatcher: Dispatcher,
+        tx_request: Sender<Request>,
+        tx_pool_limit: usize,
+        tx_verify_thread_num: usize,
+        tx_verify_cache_size: usize,
+    ) -> Self {
+        ThreadPoolBuilder::new()
+            .num_threads(tx_verify_thread_num)
+            .build_global()
             .unwrap();
-        let hash = bytes.crypt_hash().to_vec();
-        req.set_hash(hash);
-        req.set_tx_hash(tx.get_tx_hash().to_vec());
-        req.set_chain_id(
-            tx.get_transaction_with_sig()
-                .get_transaction()
-                .get_chain_id(),
-        );
-
-        let mut blkreq = VerifyBlockReq::new();
-        blkreq.set_id(BLOCK_REQUEST_ID);
-        blkreq.set_reqs(RepeatedField::from_slice(&[req]));
-
-        let msg: Message = blkreq.into();
-        msg.try_into().unwrap()
+        MsgHandler {
+            rx_sub,
+            tx_pub,
+            cache: LruCache::new(tx_verify_cache_size),
+            chain_id: None,
+            history_heights: HistoryHeights::new(),
+            cache_block_req: None,
+            history_hashes: HashMap::with_capacity(BLOCKLIMIT as usize),
+            dispatcher,
+            check_quota: false,
+            block_gas_limit: 0,
+            account_gas_limit: AccountGasLimit::new(),
+            tx_request,
+            tx_pool_limit,
+            is_recovery_mod: false,
+        }
     }
 
-    fn generate_blk_msg_with_fake_signature(tx: SignedTransaction, pubkey: PubKey) -> Vec<u8> {
-        //create verify message
-        let mut req = VerifyTxReq::new();
-        req.set_valid_until_block(
-            tx.get_transaction_with_sig()
-                .get_transaction()
-                .get_valid_until_block(),
+    fn is_ready(&self) -> bool {
+        self.history_heights.is_init() && self.chain_id.is_some() && !self.is_recovery_mod
+    }
+
+    fn is_flow_control(&self, tx_count: usize) -> bool {
+        self.tx_pool_limit != 0 && tx_count + self.dispatcher.tx_pool_len() > self.tx_pool_limit
+    }
+
+    fn cache_block_request_id(&self) -> Option<u64> {
+        self.cache_block_req
+            .as_ref()
+            .map(|cache_block_req| cache_block_req.get_id())
+    }
+
+    // max(new_request_id, next_request_id, cache_request_id):
+    // new_request_id -> replace the cache
+    // next_request_id -> clean the cache
+    // cache_request_id -> keep the cache
+    fn update_cache_block_req(&mut self, blk_req: VerifyBlockReq) {
+        let new_request_id = blk_req.get_id();
+        let next_height = self.history_heights.next_height();
+        let next_request_id = next_height << 16;
+        match self.cache_block_request_id() {
+            Some(cache_request_id) => {
+                if new_request_id > cache_request_id && new_request_id >= next_request_id {
+                    self.cache_block_req = Some(blk_req);
+                } else if next_request_id > cache_request_id {
+                    self.cache_block_req = None;
+                }
+            }
+            None => {
+                if new_request_id > next_request_id {
+                    self.cache_block_req = Some(blk_req);
+                }
+            }
+        }
+    }
+
+    fn get_ret_from_cache(&self, tx_hash: &H256) -> Option<Option<Vec<u8>>> {
+        self.cache
+            .peek(tx_hash)
+            .map(|option_pubkey| option_pubkey.clone())
+    }
+
+    fn save_ret_to_cache(&mut self, tx_hash: H256, option_pubkey: Option<Vec<u8>>) {
+        self.cache.put(tx_hash, option_pubkey);
+    }
+
+    pub fn verify_block_quota(&self, blkreq: &VerifyBlockReq) -> bool {
+        let reqs = blkreq.get_reqs();
+        let mut gas_limit = self.account_gas_limit.get_common_gas_limit();
+        let mut specific_gas_limit = self.account_gas_limit.get_specific_gas_limit().clone();
+        let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
+        let mut n = self.block_gas_limit;
+        for req in reqs {
+            let quota = req.get_quota();
+            let signer = pubkey_to_address(&PubKey::from(req.get_signer()));
+
+            if n < quota {
+                return false;
+            }
+
+            if self.check_quota {
+                if account_gas_used.contains_key(&signer) {
+                    if let Some(value) = account_gas_used.get_mut(&signer) {
+                        if *value < quota {
+                            return false;
+                        } else {
+                            *value = *value - quota;
+                        }
+                    }
+                } else {
+                    if let Some(value) = specific_gas_limit.remove(&signer.lower_hex()) {
+                        gas_limit = value;
+                    }
+                    let mut _remainder = 0;
+                    if quota < gas_limit {
+                        _remainder = gas_limit - quota;
+                    } else {
+                        return false;
+                    }
+                    account_gas_used.insert(Address::from(signer), _remainder);
+                }
+            }
+            n = n - quota;
+        }
+        true
+    }
+
+    pub fn verify_tx_quota(&self, quota: u64, signer: &[u8]) -> bool {
+        if quota > self.block_gas_limit {
+            return false;
+        }
+        if self.check_quota {
+            let addr = pubkey_to_address(&PubKey::from(signer));
+            let mut gas_limit = self.account_gas_limit.get_common_gas_limit();
+            let mut specific_gas_limit = self.account_gas_limit.get_specific_gas_limit().clone();
+            if let Some(value) = specific_gas_limit.remove(&addr.lower_hex()) {
+                gas_limit = value;
+            }
+            if quota > gas_limit {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn process_block_verify(&mut self, blk_req: VerifyBlockReq) {
+        let tx_cnt = blk_req.get_reqs().len();
+        let request_id = blk_req.get_id();
+        let height = request_id >> 16;
+
+        if self.history_heights.next_height() != height {
+            trace!(
+                "Not current block verify request with request_id: {}",
+                request_id
+            );
+            self.update_cache_block_req(blk_req);
+            return;
+        }
+
+        info!(
+            "Process block verify request with request_id: {}",
+            request_id
         );
-        let signature = tx.get_transaction_with_sig().get_signature().to_vec();
-        req.set_signature(signature[0..16].to_vec());
-        let bytes: Vec<u8> = tx
-            .get_transaction_with_sig()
-            .get_transaction()
-            .try_into()
+
+        // for block verify, req must include signer
+        for req in blk_req.get_reqs() {
+            let req_signer = req.get_signer();
+            if req_signer.is_empty() {
+                let tx_hash = H256::from_slice(req.get_tx_hash());
+                self.publish_block_verification_result(request_id, Ret::BadSig);
+                self.save_ret_to_cache(tx_hash, None);
+                return;
+            }
+        }
+
+        let mut reqs_no_cache = Vec::new();
+        for req in blk_req.get_reqs() {
+            let tx_hash = H256::from_slice(req.get_tx_hash());
+            if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
+                if let Some(pubkey) = option_pubkey {
+                    let req_signer = req.get_signer();
+                    if req_signer != pubkey.to_vec().as_slice() {
+                        self.publish_block_verification_result(request_id, Ret::BadSig);
+                        return;
+                    }
+                } else {
+                    // cached result is bad
+                    self.publish_block_verification_result(request_id, Ret::BadSig);
+                    return;
+                }
+            } else {
+                reqs_no_cache.push(req);
+            }
+        }
+
+        info!(
+            "block verify request with {} tx not hit cache {}",
+            tx_cnt,
+            reqs_no_cache.len()
+        );
+
+        // parallel verify tx and collect results
+        let reqs_no_cache_count = reqs_no_cache.len();
+        let results: Vec<(H256, Vec<u8>)> = reqs_no_cache
+            .into_par_iter()
+            .map(|req| {
+                let tx_hash = H256::from_slice(req.get_tx_hash());
+                let result = verify_tx_sig(&req);
+                match result {
+                    Ok(pubkey) => {
+                        let req_signer = req.get_signer();
+                        if req_signer != pubkey.as_slice() {
+                            None
+                        } else {
+                            Some((tx_hash, pubkey))
+                        }
+                    }
+                    Err(_) => None,
+                }
+            })
+            .while_some()
+            .collect();
+
+        let results_len = results.len();
+        for (tx_hash, pubkey) in results {
+            self.save_ret_to_cache(tx_hash, Some(pubkey));
+        }
+
+        if results_len != reqs_no_cache_count {
+            self.publish_block_verification_result(request_id, Ret::BadSig);
+            return;
+        }
+
+        // check valid_until_block and history block dup
+        for req in blk_req.get_reqs() {
+            let ret = self.verify_tx_req(req);
+            if ret != Ret::OK {
+                self.publish_block_verification_result(request_id, ret);
+                return;
+            }
+        }
+
+        if !self.verify_block_quota(&blk_req) {
+            self.publish_block_verification_result(request_id, Ret::QuotaNotEnough);
+            return;
+        }
+
+        self.publish_block_verification_result(request_id, Ret::OK);
+    }
+
+    // verify chain id, nonce, valid_until_block, dup and quota
+    fn verify_tx_req(&self, req: &VerifyTxReq) -> Ret {
+        let chain_id = req.get_chain_id();
+        if chain_id != self.chain_id.unwrap() {
+            return Ret::BadChainId;
+        }
+
+        if req.get_nonce().len() > 128 {
+            return Ret::InvalidNonce;
+        }
+
+        let valid_until_block = req.get_valid_until_block();
+        let next_height = self.history_heights.next_height();
+        if valid_until_block < next_height || valid_until_block >= (next_height + BLOCKLIMIT) {
+            return Ret::InvalidUntilBlock;
+        }
+
+        let tx_hash = H256::from_slice(req.get_tx_hash());
+        for (height, hashes) in &self.history_hashes {
+            if hashes.contains(&tx_hash) {
+                trace!(
+                    "Tx with hash {:?} has already existed in height:{}",
+                    tx_hash,
+                    height
+                );
+                return Ret::Dup;
+            }
+        }
+
+        if !self.verify_tx_quota(req.get_quota(), req.get_signer()) {
+            return Ret::QuotaNotEnough;
+        }
+
+        return Ret::OK;
+    }
+
+    fn publish_block_verification_result(&self, request_id: u64, ret: Ret) {
+        let mut blkresp = VerifyBlockResp::new();
+        blkresp.set_id(request_id);
+        blkresp.set_ret(ret);
+
+        let msg: Message = blkresp.into();
+        self.tx_pub
+            .send((
+                routing_key!(Auth >> VerifyBlockResp).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
-        let hash = bytes.crypt_hash().to_vec();
-        req.set_hash(hash);
-        req.set_tx_hash(tx.get_tx_hash().to_vec());
-        req.set_signer(pubkey.to_vec());
-
-        let mut blkreq = VerifyBlockReq::new();
-        blkreq.set_id(BLOCK_REQUEST_ID);
-        blkreq.set_reqs(RepeatedField::from_slice(&[req]));
-
-        let msg: Message = blkreq.into();
-        msg.try_into().unwrap()
     }
 
-    fn generate_sync_blk_hash_msg(height: u64) -> Vec<u8> {
-        //prepare and send the block tx hashes to auth
-        let mut block_tx_hashes = BlockTxHashes::new();
-        block_tx_hashes.set_height(height);
-        let mut tx_hashes_in_u8 = Vec::new();
+    fn publish_tx_failed_result(&self, request_id: Vec<u8>, ret: Ret) {
+        let result = format!("{:?}", ret);
+        let mut response = Response::new();
+        response.set_request_id(request_id);
+        response.set_code(ErrorCode::tx_auth_error());
+        response.set_error_msg(result);
 
-        let u: U256 = 0x123456789abcdef0u64.into();
-        let tx_hash_in_h256 = H256::from(u);
-        tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
-
-        let u: U256 = 0x1122334455667788u64.into();
-        let tx_hash_in_h256 = H256::from(u);
-        tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
-
-        block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
-
-        let msg: Message = block_tx_hashes.into();
-        msg.try_into().unwrap()
+        trace!("response new tx {:?}", response);
+        let msg: Message = response.into();
+        self.tx_pub
+            .send((
+                routing_key!(Auth >> Response).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
     }
 
-    fn generate_verifier(chain_id: u32) -> Arc<RwLock<Verifier>> {
-        let v = Arc::new(RwLock::new(Verifier::new()));
-        v.write().set_chain_id(chain_id);
-        v
+    fn publish_tx_success_result(&self, request_id: Vec<u8>, ret: Ret, tx_hash: H256) {
+        let mut response = Response::new();
+        response.set_request_id(request_id);
+
+        let result = format!("{:?}", ret);
+        let tx_response = TxResponse::new(tx_hash, result.clone());
+        let tx_state = serde_json::to_string(&tx_response).unwrap();
+        response.set_tx_state(tx_state);
+
+        let msg: Message = response.into();
+        self.tx_pub
+            .send((
+                routing_key!(Auth >> Response).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
     }
 
-    #[test]
-    fn verify_sync_block_hash() {
-        let (tx_pub, rx_pub) = channel();
-        let (req_sender, req_receiver) = channel();
-        let (resp_sender, resp_receiver) = channel();
-        //verify tx
-        let v = generate_verifier(7);
-
-        let block_verify_status = BlockVerifyStatus {
-            request_id: 0,
-            block_verify_result: VerifyResult::VerifyNotBegin,
-            verify_success_cnt_required: 0,
-            verify_success_cnt_capture: 0,
-            cache_hit: 0,
-        };
-        let c = Arc::new(RwLock::new(block_verify_status));
-        let (pool_txs_sender, pool_txs_receiver) = channel();
-        let verify_cache = HashMap::new();
-        let cache = Arc::new(RwLock::new(verify_cache));
-        let pool = threadpool::ThreadPool::new(10);
-        let tx_verify_num_per_thread = 30;
-        let on_proposal = Arc::new(AtomicBool::new(false));
-        let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: Option<VerifyBlockReq> = None;
-
-        let height = 0;
-        handle_remote_msg(
-            routing_key!(Chain >> BlockTxHashes).into(),
-            generate_sync_blk_hash_msg(height),
-            on_proposal,
-            &pool,
-            tx_verify_num_per_thread,
-            v.clone(),
-            &req_sender,
-            &tx_pub,
-            c,
-            cache,
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-        assert_eq!(rx_pub.try_recv().is_err(), true);
-
-        let u: U256 = 0x123456789abcdef0u64.into();
-        let tx_hash_in_h256 = H256::from(u);
-        assert_eq!(v.read().check_hash_exist(&tx_hash_in_h256), true);
-
-        let u: U256 = 0x1122334455667788u64.into();
-        let tx_hash_in_h256 = H256::from(u);
-        assert_eq!(v.read().check_hash_exist(&tx_hash_in_h256), true);
-
-        let u: U256 = 0x3344.into();
-        let tx_hash_in_h256 = H256::from(u);
-        assert_eq!(v.read().check_hash_exist(&tx_hash_in_h256), false);
-        assert_eq!(v.read().is_inited(), true);
-        // keep the receiver live long enough
-        thread::sleep(Duration::new(0, 9000000));
-        println!(
-            "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub, req_receiver, resp_receiver, pool_txs_receiver
-        );
+    fn forward_request(&self, tx_req: Request) {
+        let _ = self.tx_request.send(tx_req);
     }
 
-    #[test]
-    fn verify_request_sync_block_hash() {
-        let (tx_pub, rx_pub) = channel();
-        let (req_sender, req_receiver) = channel();
-        let (resp_sender, resp_receiver) = channel();
-        //verify tx
-        let v = generate_verifier(7);
-        let block_verify_status = BlockVerifyStatus {
-            request_id: 0,
-            block_verify_result: VerifyResult::VerifyNotBegin,
-            verify_success_cnt_required: 0,
-            verify_success_cnt_capture: 0,
-            cache_hit: 0,
-        };
-        let c = Arc::new(RwLock::new(block_verify_status));
-        let (pool_txs_sender, pool_txs_receiver) = channel();
-        let verify_cache = HashMap::new();
-        let cache = Arc::new(RwLock::new(verify_cache));
-        let on_proposal = Arc::new(AtomicBool::new(false));
-        let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: Option<VerifyBlockReq> = None;
-
-        let height = 1;
-        let pool = threadpool::ThreadPool::new(10);
-        let tx_verify_num_per_thread = 30;
-
-        handle_remote_msg(
-            routing_key!(Chain >> BlockTxHashes).into(),
-            generate_sync_blk_hash_msg(height),
-            on_proposal,
-            &pool,
-            tx_verify_num_per_thread,
-            v.clone(),
-            &req_sender,
-            &tx_pub,
-            c,
-            cache,
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-
-        let u: U256 = 0x123456789abcdef0u64.into();
-        let tx_hash_in_h256 = H256::from(u);
-        assert_eq!(v.read().check_hash_exist(&tx_hash_in_h256), true);
-
-        let u: U256 = 0x1122334455667788u64.into();
-        let tx_hash_in_h256 = H256::from(u);
-        assert_eq!(v.read().check_hash_exist(&tx_hash_in_h256), true);
-
-        let u: U256 = 0x3344.into();
-        let tx_hash_in_h256 = H256::from(u);
-        assert_eq!(v.read().check_hash_exist(&tx_hash_in_h256), true);
-        assert_eq!(v.read().is_inited(), false);
-
-        let (key, sync_request) = rx_pub.recv().unwrap();
-        assert_eq!(
-            routing_key!(Auth >> BlockTxHashesReq),
-            RoutingKey::from(&key)
-        );
-        let mut msg = Message::try_from(&sync_request).unwrap();
-        match msg.take_block_tx_hashes_req() {
-            Some(req) => {
-                assert_eq!(req.get_height(), 0);
+    fn send_block_tx_hashes_req(&self) {
+        // we will send req for all height
+        // so don't too frequent
+        if self.history_heights.is_too_frequent() {
+            return;
+        }
+        for i in self.history_heights.min_height()..self.history_heights.max_height() {
+            if !self.history_hashes.contains_key(&i) {
+                let mut req = BlockTxHashesReq::new();
+                req.set_height(i);
+                let msg: Message = req.into();
+                self.tx_pub
+                    .send((
+                        routing_key!(Auth >> BlockTxHashesReq).into(),
+                        msg.try_into().unwrap(),
+                    ))
+                    .unwrap();
             }
-            None => panic!("test failed"),
         }
-        // keep the receiver live long enough
-        thread::sleep(Duration::new(0, 9000000));
-        println!(
-            "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub, req_receiver, resp_receiver, pool_txs_receiver
-        );
     }
 
-    #[test]
-    fn verify_single_tx_request_dispatch_success() {
-        let (tx_pub, rx_pub) = channel();
-        let (req_sender, req_receiver) = channel();
-        let (resp_sender, resp_receiver) = channel();
-        //verify tx
-        let v = Arc::new(RwLock::new(Verifier::new()));
-        let block_verify_status = BlockVerifyStatus {
-            request_id: 0,
-            block_verify_result: VerifyResult::VerifyNotBegin,
-            verify_success_cnt_required: 0,
-            verify_success_cnt_capture: 0,
-            cache_hit: 0,
-        };
-        let c = Arc::new(RwLock::new(block_verify_status));
-        let (pool_txs_sender, pool_tx_receiver) = channel();
-        let verify_cache = HashMap::new();
-        let cache = Arc::new(RwLock::new(verify_cache));
-
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        // we set chain_id is 7 without any preference
-        let tx = generate_tx(vec![1], 99, privkey, 7);
-        let tx_hash = tx.get_tx_hash().to_vec().clone();
-        let req = generate_request(tx);
-        let request_id = req.get_request_id().to_vec();
-        let pool = threadpool::ThreadPool::new(10);
-        let tx_verify_num_per_thread = 30;
-        let on_proposal = Arc::new(AtomicBool::new(false));
-        let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: Option<VerifyBlockReq> = None;
-
-        handle_remote_msg(
-            routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
-            generate_msg_from_request(req),
-            on_proposal,
-            &pool,
-            tx_verify_num_per_thread,
-            v.clone(),
-            &req_sender,
-            &tx_pub,
-            c,
-            cache,
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-        let verify_req_info: VerifyRequestResponseInfo = req_receiver.recv().unwrap();
-        assert_eq!(verify_req_info.verify_type, VerifyType::SingleVerify);
-        if let VerifyRequestID::SingleVerifyRequestID(single_request_id) =
-            verify_req_info.request_id
-        {
-            assert_eq!(request_id, single_request_id);
-        }
-
-        assert!(RoutingKey::from(&verify_req_info.key).is_sub_module(SubModules::Jsonrpc));
-        if let VerifyRequestResponse::AuthRequest(req) = verify_req_info.req_resp {
-            assert_eq!(req.get_tx_hash().to_vec().clone(), tx_hash);
-        }
-        // keep the receiver live long enough
-        thread::sleep(Duration::new(0, 9000000));
-        println!(
-            "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}",
-            rx_pub, req_receiver, resp_receiver, pool_tx_receiver
-        );
-    }
-
-    #[test]
-    fn verify_block_tx_request_dispatch_success() {
-        let (tx_pub, rx_pub) = channel();
-        let (req_sender, req_receiver) = channel();
-        let (resp_sender, resp_receiver) = channel();
-        //verify tx
-        let v = generate_verifier(7);
-        let block_verify_status = BlockVerifyStatus {
-            request_id: 0,
-            block_verify_result: VerifyResult::VerifyNotBegin,
-            verify_success_cnt_required: 0,
-            verify_success_cnt_capture: 0,
-            cache_hit: 0,
-        };
-        let c = Arc::new(RwLock::new(block_verify_status));
-        let (pool_txs_sender, pool_txs_receiver) = channel();
-        let verify_cache = HashMap::new();
-        let cache = Arc::new(RwLock::new(verify_cache));
-        let pool = threadpool::ThreadPool::new(10);
-        let tx_verify_num_per_thread = 30;
-        let height = 0;
-        let on_proposal = Arc::new(AtomicBool::new(false));
-        let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: Option<VerifyBlockReq> = None;
-
-        handle_remote_msg(
-            routing_key!(Chain >> BlockTxHashes).into(),
-            generate_sync_blk_hash_msg(height),
-            on_proposal.clone(),
-            &pool,
-            tx_verify_num_per_thread,
-            v.clone(),
-            &req_sender,
-            &tx_pub,
-            c.clone(),
-            cache.clone(),
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        // we set chain_id is 7 without any preference
-        let tx = generate_tx(vec![1], 99, privkey, 7);
-        handle_remote_msg(
-            routing_key!(Consensus >> VerifyBlockReq).into(),
-            generate_blk_msg(tx),
-            on_proposal.clone(),
-            &pool,
-            tx_verify_num_per_thread,
-            v.clone(),
-            &req_sender,
-            &tx_pub,
-            c.clone(),
-            cache,
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-
-        let block_verify_status = c.read();
-        assert_eq!(
-            block_verify_status.block_verify_result,
-            VerifyResult::VerifyOngoing
-        );
-        assert_eq!(block_verify_status.verify_success_cnt_required, 1);
-        assert_eq!(block_verify_status.verify_success_cnt_capture, 0);
-        // keep the receiver live long enough
-        thread::sleep(Duration::new(0, 9000000));
-        println!(
-            "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub, req_receiver, resp_receiver, pool_txs_receiver
-        );
-    }
-
-    #[test]
-    fn handle_verification_result_single_tx() {
-        let (tx_pub, rx_pub) = channel();
-        let (req_sender, req_receiver) = channel();
-        let (resp_sender, resp_receiver) = channel();
-        let block_verify_status = BlockVerifyStatus {
-            request_id: 0,
-            block_verify_result: VerifyResult::VerifyNotBegin,
-            verify_success_cnt_required: 0,
-            verify_success_cnt_capture: 0,
-            cache_hit: 0,
-        };
-        let block_verify_status = Arc::new(RwLock::new(block_verify_status));
-        let verify_cache_hashmap = HashMap::new();
-        let verify_cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let verifier = generate_verifier(7);
-        let (pool_txs_sender, _) = channel();
-        let (pool_tx_sender, pool_tx_receiver) = channel();
-        let verify_cache_hashmap = HashMap::new();
-        let cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let pool = threadpool::ThreadPool::new(10);
-        let tx_verify_num_per_thread = 30;
-        let height = 0;
-        let on_proposal = Arc::new(AtomicBool::new(false));
-        let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: Option<VerifyBlockReq> = None;
-
-        handle_remote_msg(
-            routing_key!(Chain >> BlockTxHashes).into(),
-            generate_sync_blk_hash_msg(height),
-            on_proposal.clone(),
-            &pool,
-            tx_verify_num_per_thread,
-            verifier.clone(),
-            &req_sender,
-            &tx_pub,
-            block_verify_status.clone(),
-            cache.clone(),
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        // we set chain_id is 7 without any preference
-        let tx = generate_tx(vec![1], 99, privkey, 7);
-        let tx_hash = tx.get_tx_hash().to_vec().clone();
-        handle_remote_msg(
-            routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
-            generate_msg(tx),
-            on_proposal,
-            &pool,
-            tx_verify_num_per_thread,
-            verifier.clone(),
-            &req_sender,
-            &tx_pub,
-            block_verify_status.clone(),
-            cache.clone(),
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-
-        let verify_req_info: VerifyRequestResponseInfo = req_receiver.recv().unwrap();
-        let mut req_grp: Vec<VerifyRequestResponseInfo> = Vec::new();
-        req_grp.push(verify_req_info);
-        verify_tx_group_service(req_grp, verifier, verify_cache, resp_sender);
-
-        handle_verification_result(
-            &resp_receiver,
-            &tx_pub,
-            block_verify_status,
-            &pool_tx_sender,
-        );
-        let (_, _, resp_msg, _) = pool_tx_receiver.try_recv().unwrap();
-        let ok_result = format!("{:?}", Ret::OK);
-        assert_eq!(resp_msg.status, ok_result);
-        assert_eq!(tx_hash, resp_msg.hash.to_vec());
-        // keep the receiver live long enough
-        thread::sleep(Duration::new(0, 9000000));
-        println!(
-            "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}",
-            rx_pub, req_receiver, resp_receiver, pool_tx_receiver
-        );
-    }
-
-    #[test]
-    fn handle_verification_result_block_tx() {
-        let (tx_pub, rx_pub) = channel();
-        let (req_sender, req_receiver) = channel();
-        let (resp_sender, resp_receiver) = channel();
-        let block_verify_status = BlockVerifyStatus {
-            request_id: 0,
-            block_verify_result: VerifyResult::VerifyNotBegin,
-            verify_success_cnt_required: 0,
-            verify_success_cnt_capture: 0,
-            cache_hit: 0,
-        };
-        let block_verify_status = Arc::new(RwLock::new(block_verify_status));
-        let (pool_txs_sender, pool_txs_receiver) = channel();
-        let (pool_tx_sender, pool_tx_receiver) = channel();
-        let verify_cache_hashmap = HashMap::new();
-        let cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let pool = threadpool::ThreadPool::new(10);
-        let tx_verify_num_per_thread = 30;
-        let height = 0;
-        let verifier = generate_verifier(7);
-        let on_proposal = Arc::new(AtomicBool::new(false));
-        let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: Option<VerifyBlockReq> = None;
-
-        handle_remote_msg(
-            routing_key!(Chain >> BlockTxHashes).into(),
-            generate_sync_blk_hash_msg(height),
-            on_proposal.clone(),
-            &pool,
-            tx_verify_num_per_thread,
-            verifier.clone(),
-            &req_sender,
-            &tx_pub,
-            block_verify_status.clone(),
-            cache.clone(),
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        // we set chain_id is 7 without any preference
-        let tx = generate_tx(vec![1], 99, privkey, 7);
-        handle_remote_msg(
-            routing_key!(Consensus >> VerifyBlockReq).into(),
-            generate_blk_msg(tx),
-            on_proposal,
-            &pool,
-            tx_verify_num_per_thread,
-            verifier.clone(),
-            &req_sender,
-            &tx_pub,
-            block_verify_status.clone(),
-            cache,
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-        handle_verification_result(
-            &resp_receiver,
-            &tx_pub,
-            block_verify_status,
-            &pool_tx_sender,
-        );
-
-        let (_, resp_msg) = rx_pub.recv().unwrap();
-        let mut msg = Message::try_from(&resp_msg).unwrap();
-        match msg.take_verify_block_resp() {
-            Some(resp) => {
-                assert_eq!(resp.get_ret(), Ret::OK);
-                assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
+    pub fn handle_remote_msg(&mut self) {
+        loop {
+            // send request to get chain id if we have not got it
+            if self.chain_id.is_none() {
+                let msg: Message = MiscellaneousReq::new().into();
+                self.tx_pub
+                    .send((
+                        routing_key!(Auth >> MiscellaneousReq).into(),
+                        msg.try_into().unwrap(),
+                    ))
+                    .unwrap();
             }
-            _ => panic!("test failed"),
-        }
-        // keep the receiver live long enough
-        thread::sleep(Duration::new(0, 9000000));
-        println!(
-            "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub, req_receiver, resp_receiver, pool_tx_receiver, pool_txs_receiver
-        );
-    }
 
-    #[test]
-    fn block_verificaton_failed() {
-        let (tx_pub, rx_pub) = channel();
-        let (req_sender, req_receiver) = channel();
-        let (resp_sender, resp_receiver) = channel();
-        let block_verify_status = BlockVerifyStatus {
-            request_id: 0,
-            block_verify_result: VerifyResult::VerifyNotBegin,
-            verify_success_cnt_required: 0,
-            verify_success_cnt_capture: 0,
-            cache_hit: 0,
-        };
-        let block_verify_status = Arc::new(RwLock::new(block_verify_status));
-        let verifier = generate_verifier(7);
-        let (pool_txs_sender, pool_txs_receiver) = channel();
-        let (pool_tx_sender, pool_tx_receiver) = channel();
-        let verify_cache_hashmap = HashMap::new();
-        let cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let pool = threadpool::ThreadPool::new(10);
-        let tx_verify_num_per_thread = 30;
-        let height = 0;
-        let on_proposal = Arc::new(AtomicBool::new(false));
-        let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: Option<VerifyBlockReq> = None;
-
-        handle_remote_msg(
-            routing_key!(Chain >> BlockTxHashes).into(),
-            generate_sync_blk_hash_msg(height),
-            on_proposal.clone(),
-            &pool,
-            tx_verify_num_per_thread,
-            verifier.clone(),
-            &req_sender,
-            &tx_pub,
-            block_verify_status.clone(),
-            cache.clone(),
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        let pubkey = keypair.pubkey().clone();
-        // we set chain_id is 7 without any preference
-        let tx = generate_tx(vec![1], 99, privkey, 7);
-        block_reqs = None;
-
-        handle_remote_msg(
-            routing_key!(Consensus >> VerifyBlockReq).into(),
-            generate_blk_msg_with_fake_signature(tx, pubkey),
-            on_proposal,
-            &pool,
-            tx_verify_num_per_thread,
-            verifier.clone(),
-            &req_sender,
-            &tx_pub,
-            block_verify_status.clone(),
-            cache,
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool,
-            &mut block_reqs,
-        );
-
-        handle_verification_result(
-            &resp_receiver,
-            &tx_pub,
-            block_verify_status,
-            &pool_tx_sender,
-        );
-        let (_, resp_msg) = rx_pub.recv().unwrap();
-        let mut msg = Message::try_from(&resp_msg).unwrap();
-        match msg.take_verify_block_resp() {
-            Some(resp) => {
-                assert_eq!(resp.get_ret(), Ret::BadSig);
-                assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
+            // block hashes of some height we not have
+            // we will send request for these height
+            if !self.history_heights.is_init() {
+                trace!("auth is not ready");
+                self.send_block_tx_hashes_req();
             }
-            _ => panic!("test failed"),
-        }
-        // keep the receiver live long enough
-        thread::sleep(Duration::new(0, 9000000));
-        println!(
-            "rx_pub {:?}, req_receiver {:?}, resp_receiver {:?}, pool_tx_receiver {:?}, pool_txs_receiver {:?}",
-            rx_pub, req_receiver, resp_receiver, pool_tx_receiver, pool_txs_receiver
-        );
-    }
 
-    #[test]
-    fn get_tx_verificaton_from_cache() {
-        let (tx_pub, rx_pub) = channel();
-        let (req_sender, _) = channel();
-        let (resp_sender, resp_receiver) = channel();
-        let block_verify_status = BlockVerifyStatus {
-            request_id: 0,
-            block_verify_result: VerifyResult::VerifyNotBegin,
-            verify_success_cnt_required: 0,
-            verify_success_cnt_capture: 0,
-            cache_hit: 0,
-        };
-        let block_verify_status = Arc::new(RwLock::new(block_verify_status));
-        let verify_cache_hashmap = HashMap::new();
-        let verify_cache = Arc::new(RwLock::new(verify_cache_hashmap));
-        let verifier = generate_verifier(7);
-        let (pool_txs_sender, _) = channel();
-        let (pool_tx_sender, _) = channel();
-        let pool = threadpool::ThreadPool::new(10);
-        let tx_verify_num_per_thread = 30;
-        let on_proposal = Arc::new(AtomicBool::new(false));
-        let clear_txs_pool = Arc::new(AtomicBool::new(false));
-        let mut block_reqs: Option<VerifyBlockReq> = None;
+            // process message from MQ
+            match self.rx_sub.recv_timeout(Duration::new(3, 0)) {
+                Ok((key, payload)) => {
+                    let mut msg = Message::try_from(&payload).unwrap();
+                    let rounting_key = RoutingKey::from(&key);
+                    match rounting_key {
+                        // we got this message when chain reach new height or response the BlockTxHashesReq
+                        routing_key!(Chain >> BlockTxHashes) => {
+                            let block_tx_hashes = msg.take_block_tx_hashes().unwrap();
+                            let height = block_tx_hashes.get_height();
+                            info!("get block tx hashes for height {:?}", height);
 
-        let height = 0;
-        handle_remote_msg(
-            routing_key!(Chain >> BlockTxHashes).into(),
-            generate_sync_blk_hash_msg(height),
-            on_proposal.clone(),
-            &pool,
-            tx_verify_num_per_thread,
-            verifier.clone(),
-            &req_sender,
-            &tx_pub,
-            block_verify_status.clone(),
-            verify_cache.clone(),
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
+                            if height >= self.history_heights.next_height() {
+                                // get latest quota info from chain
+                                let block_gas_limit = block_tx_hashes.get_block_gas_limit();
+                                let account_gas_limit =
+                                    block_tx_hashes.get_account_gas_limit().clone();
+                                let check_quota = block_tx_hashes.get_check_quota();
+                                self.check_quota = check_quota;
+                                self.block_gas_limit = block_gas_limit;
+                                self.account_gas_limit = account_gas_limit.clone();
+                            }
 
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        // we set chain_id is 7 without any preference
-        let tx = generate_tx(vec![1], 99, privkey, 7);
-        block_reqs = None;
+                            // update history block tx hashes
+                            let old_min_height = self.history_heights.min_height();
 
-        handle_remote_msg(
-            routing_key!(Consensus >> VerifyBlockReq).into(),
-            generate_blk_msg(tx.clone()),
-            on_proposal.clone(),
-            &pool,
-            tx_verify_num_per_thread,
-            verifier.clone(),
-            &req_sender,
-            &tx_pub,
-            block_verify_status.clone(),
-            verify_cache.clone(),
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-        handle_verification_result(
-            &resp_receiver,
-            &tx_pub,
-            block_verify_status.clone(),
-            &pool_tx_sender,
-        );
-        let (_, resp_msg) = rx_pub.recv().unwrap();
-        let mut msg = Message::try_from(&resp_msg).unwrap();
-        match msg.take_verify_block_resp() {
-            Some(resp) => {
-                assert_eq!(resp.get_ret(), Ret::OK);
-                assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
+                            self.history_heights.add_height(height);
+
+                            // remove unnecessary oldest history block tx hashes
+                            for i in old_min_height..self.history_heights.min_height() {
+                                self.history_hashes.remove(&i);
+                            }
+
+                            let tx_hashes = block_tx_hashes.get_tx_hashes();
+                            let mut tx_hashes_h256 = HashSet::with_capacity(tx_hashes.len());
+                            for data in tx_hashes.iter() {
+                                let hash = H256::from_slice(data);
+                                tx_hashes_h256.insert(hash);
+                            }
+
+                            // update tx pool
+                            self.dispatcher.del_txs_from_pool_with_hash(&tx_hashes_h256);
+
+                            // add new history block tx hashes
+                            if !self.history_hashes.contains_key(&height) {
+                                self.history_hashes.insert(height, tx_hashes_h256);
+                            }
+
+                            if self.is_ready() {
+                                // process block verify if we have cached block request
+                                if let Some(cache_request_id) = self.cache_block_request_id() {
+                                    let cache_height = cache_request_id >> 16;
+                                    if cache_height == self.history_heights.next_height() {
+                                        let cache_block_req = self.cache_block_req.take().unwrap();
+                                        self.process_block_verify(cache_block_req);
+                                    }
+                                }
+
+                                // proposal new block
+                                self.dispatcher.proposal_tx_list(
+                                    (self.history_heights.next_height() - 1) as usize, // todo fix bft
+                                    &self.tx_pub,
+                                    self.block_gas_limit,
+                                    self.account_gas_limit.clone(),
+                                    self.check_quota,
+                                );
+                            } else {
+                                trace!("auth is not ready");
+                                // not ready means block hashes of some height we not have
+                                // we will send request for these height
+                                self.send_block_tx_hashes_req();
+                            }
+                        }
+                        routing_key!(Consensus >> VerifyBlockReq) => {
+                            let blk_req = msg.take_verify_block_req().unwrap();
+                            let tx_cnt = blk_req.get_reqs().len();
+                            info!("get block verify request with {:?} request", tx_cnt);
+
+                            if tx_cnt == 0 {
+                                error!(
+                                    "Wrong block verify request with 0 tx request_id: {} from key: {}",
+                                    blk_req.get_id(),
+                                    key
+                                );
+                                continue;
+                            }
+
+                            if !self.is_ready() {
+                                trace!("auth is not ready");
+                                self.update_cache_block_req(blk_req);
+                                continue;
+                            }
+
+                            self.process_block_verify(blk_req);
+                        }
+                        routing_key!(Net >> Request)
+                        | routing_key!(Jsonrpc >> RequestNewTxBatch) => {
+                            let is_local = rounting_key.is_sub_module(SubModules::Jsonrpc);
+                            let newtx_req = msg.take_request().unwrap();
+                            if newtx_req.has_batch_req() {
+                                let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
+                                trace!(
+                                    "get batch new tx request has {} tx, is local? {}",
+                                    batch_new_tx.len(),
+                                    is_local
+                                );
+                                if !self.is_ready() {
+                                    if is_local {
+                                        for tx_req in batch_new_tx.iter() {
+                                            let request_id = tx_req.get_request_id().to_vec();
+                                            self.publish_tx_failed_result(
+                                                request_id,
+                                                Ret::NotReady,
+                                            );
+                                        }
+                                    }
+                                    continue;
+                                }
+
+                                if self.is_flow_control(batch_new_tx.len()) {
+                                    trace!("flow control ...");
+                                    if is_local {
+                                        for tx_req in batch_new_tx.iter() {
+                                            let request_id = tx_req.get_request_id().to_vec();
+                                            if is_local {
+                                                self.publish_tx_failed_result(
+                                                    request_id,
+                                                    Ret::Busy,
+                                                );
+                                            }
+                                        }
+                                    }
+                                    continue;
+                                }
+
+                                let mut requests = HashMap::new();
+                                let mut requests_no_cached = HashMap::new();
+                                for tx_req in batch_new_tx {
+                                    let req = tx_req.get_un_tx().tx_verify_req_msg();
+                                    let tx_hash = H256::from_slice(req.get_tx_hash());
+                                    if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
+                                        if option_pubkey.is_none() {
+                                            if is_local {
+                                                let request_id = tx_req.get_request_id().to_vec();
+                                                self.publish_tx_failed_result(
+                                                    request_id,
+                                                    Ret::BadSig,
+                                                );
+                                            }
+                                            continue;
+                                        }
+                                        let mut new_req = req.clone();
+                                        new_req.set_signer(option_pubkey.unwrap());
+                                        requests.insert(tx_hash, (new_req, tx_req, true));
+                                    } else {
+                                        requests_no_cached.insert(tx_hash, req.clone());
+                                        requests.insert(tx_hash, (req, tx_req, true));
+                                    }
+                                }
+
+                                let results: Vec<(
+                                    H256,
+                                    Option<Vec<u8>>,
+                                )> = requests_no_cached
+                                    .into_par_iter()
+                                    .map(|(tx_hash, ref req)| {
+                                        let result = verify_tx_sig(req);
+                                        match result {
+                                            Ok(pubkey) => (tx_hash, Some(pubkey)),
+                                            Err(_) => (tx_hash, None),
+                                        }
+                                    })
+                                    .collect();
+
+                                for (tx_hash, option_pubkey) in results {
+                                    self.save_ret_to_cache(tx_hash.clone(), option_pubkey.clone());
+                                    if let Some(pubkey) = option_pubkey {
+                                        if let Some(ref mut v) = requests.get_mut(&tx_hash) {
+                                            v.0.set_signer(pubkey);
+                                        }
+                                    } else {
+                                        if let Some(ref mut v) = requests.get_mut(&tx_hash) {
+                                            if is_local {
+                                                let request_id = v.1.get_request_id().to_vec();
+                                                self.publish_tx_failed_result(
+                                                    request_id,
+                                                    Ret::BadSig,
+                                                );
+                                            }
+                                            v.2 = false;
+                                        }
+                                    }
+                                }
+
+                                // other verify
+                                requests
+                                    .into_iter()
+                                    .filter(|(_tx_hash, (_req, _tx_req, flag))| *flag)
+                                    .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
+                                        let ret = self.verify_tx_req(&req);
+                                        if ret != Ret::OK {
+                                            if is_local {
+                                                let request_id = tx_req.get_request_id().to_vec();
+                                                self.publish_tx_failed_result(request_id, ret);
+                                            }
+                                            false
+                                        } else {
+                                            true
+                                        }
+                                    })
+                                    .for_each(|(tx_hash, (req, tx_req, _flag))| {
+                                        let mut signed_tx = SignedTransaction::new();
+                                        signed_tx
+                                            .set_transaction_with_sig(tx_req.get_un_tx().clone());
+                                        signed_tx.set_signer(req.get_signer().to_vec());
+                                        signed_tx.set_tx_hash(tx_hash.to_vec());
+                                        let request_id = tx_req.get_request_id().to_vec();
+                                        if self.dispatcher.add_tx_to_pool(&signed_tx) {
+                                            if is_local {
+                                                self.publish_tx_success_result(
+                                                    request_id,
+                                                    Ret::OK,
+                                                    tx_hash.clone(),
+                                                );
+                                            }
+                                            // new tx need forward to other nodes
+                                            self.forward_request(tx_req.clone());
+                                        } else {
+                                            // dup with transaction in tx pool
+                                            if is_local {
+                                                self.publish_tx_success_result(
+                                                    request_id,
+                                                    Ret::Dup,
+                                                    tx_hash.clone(),
+                                                );
+                                            }
+                                        }
+                                    });
+                            } else if newtx_req.has_un_tx() {
+                                trace!("get single new tx request from Jsonrpc");
+                                let request_id = newtx_req.get_request_id().to_vec();
+                                if !self.is_ready() {
+                                    trace!("auth is not ready");
+                                    if is_local {
+                                        self.publish_tx_failed_result(request_id, Ret::NotReady);
+                                    }
+                                    continue;
+                                }
+                                if self.is_flow_control(1) {
+                                    trace!("flow control ...");
+                                    if is_local {
+                                        self.publish_tx_failed_result(request_id, Ret::Busy);
+                                    }
+                                    continue;
+                                }
+                                let mut req = newtx_req.get_un_tx().tx_verify_req_msg();
+                                // verify with cache
+                                let tx_hash = H256::from_slice(req.get_tx_hash());
+                                if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
+                                    if option_pubkey.is_none() {
+                                        self.publish_tx_failed_result(request_id, Ret::BadSig);
+                                        continue;
+                                    }
+                                    req.set_signer(option_pubkey.unwrap());
+                                } else {
+                                    let result = verify_tx_sig(&req);
+                                    self.save_ret_to_cache(tx_hash, result.clone().ok());
+                                    match result {
+                                        Ok(pubkey) => {
+                                            req.set_signer(pubkey);
+                                        }
+                                        Err(_) => {
+                                            if is_local {
+                                                self.publish_tx_failed_result(
+                                                    request_id,
+                                                    Ret::BadSig,
+                                                );
+                                            }
+                                            continue;
+                                        }
+                                    }
+                                }
+                                // other verify
+                                let ret = self.verify_tx_req(&req);
+                                if ret != Ret::OK {
+                                    if is_local {
+                                        self.publish_tx_failed_result(request_id, ret);
+                                    }
+                                    continue;
+                                }
+
+                                // add tx pool
+                                let mut signed_tx = SignedTransaction::new();
+                                signed_tx.set_transaction_with_sig(newtx_req.get_un_tx().clone());
+                                signed_tx.set_signer(req.get_signer().to_vec());
+                                signed_tx.set_tx_hash(tx_hash.to_vec());
+                                if self.dispatcher.add_tx_to_pool(&signed_tx) {
+                                    if is_local {
+                                        self.publish_tx_success_result(
+                                            request_id,
+                                            Ret::OK,
+                                            tx_hash,
+                                        );
+                                    }
+                                    // new tx need forward to other nodes
+                                    self.forward_request(newtx_req);
+                                } else {
+                                    // dup with transaction in tx pool
+                                    if is_local {
+                                        self.publish_tx_success_result(
+                                            request_id,
+                                            Ret::Dup,
+                                            tx_hash,
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        routing_key!(Executor >> Miscellaneous) => {
+                            let miscellaneous = msg.take_miscellaneous().unwrap();
+                            info!("Get chain_id({}) from executor", miscellaneous.chain_id);
+                            self.chain_id = Some(miscellaneous.chain_id);
+                        }
+                        routing_key!(Snapshot >> SnapshotReq) => {
+                            let req = msg.take_snapshot_req().unwrap();
+                            let mut resp = SnapshotResp::new();
+                            match req.cmd {
+                                Cmd::Begin => {
+                                    resp.set_resp(Resp::BeginAck);
+                                    let msg: Message = resp.into();
+                                    info!("[snapshot] auth send BeginAck");
+                                    self.tx_pub
+                                        .send((
+                                            routing_key!(Auth >> SnapshotResp).into(),
+                                            (&msg).try_into().unwrap(),
+                                        ))
+                                        .unwrap();
+                                }
+                                Cmd::Clear => {
+                                    resp.set_resp(Resp::ClearAck);
+                                    self.is_recovery_mod = true;
+                                    self.dispatcher.clear_txs_pool(0);
+                                    let msg: Message = resp.into();
+                                    info!("[snapshot] auth send ClearAck");
+                                    self.tx_pub
+                                        .send((
+                                            routing_key!(Auth >> SnapshotResp).into(),
+                                            (&msg).try_into().unwrap(),
+                                        ))
+                                        .unwrap();
+                                }
+                                Cmd::End => {
+                                    resp.set_resp(Resp::EndAck);
+                                    self.is_recovery_mod = false;
+                                    let msg: Message = resp.into();
+                                    info!("[snapshot] auth send EndAck");
+                                    self.tx_pub
+                                        .send((
+                                            routing_key!(Auth >> SnapshotResp).into(),
+                                            (&msg).try_into().unwrap(),
+                                        ))
+                                        .unwrap();
+                                }
+                                _ => {
+                                    warn!(
+                                        "[snapshot_req]receive: unexpected snapshot cmd = {:?}",
+                                        req.cmd
+                                    );
+                                }
+                            }
+                        }
+                        _ => {
+                            error!("receive unexpected message key {}", key);
+                        }
+                    }
+                }
+                _ => {}
             }
-            _ => panic!("test failed"),
-        }
-        block_reqs = None;
-
-        thread::sleep(Duration::new(0, 9000000));
-        // Begin to construct the same tx's verification request
-        handle_remote_msg(
-            routing_key!(Consensus >> VerifyBlockReq).into(),
-            generate_blk_msg(tx.clone()),
-            on_proposal.clone(),
-            &pool,
-            tx_verify_num_per_thread,
-            verifier.clone(),
-            &req_sender,
-            &tx_pub,
-            block_verify_status.clone(),
-            verify_cache.clone(),
-            &pool_txs_sender,
-            &resp_sender,
-            clear_txs_pool.clone(),
-            &mut block_reqs,
-        );
-        let (_, resp_msg) = rx_pub.recv().unwrap();
-        let mut msg = Message::try_from(&resp_msg).unwrap();
-        match msg.take_verify_block_resp() {
-            Some(resp) => {
-                assert_eq!(resp.get_ret(), Ret::OK);
-                assert_eq!(resp.get_id(), BLOCK_REQUEST_ID);
-            }
-            _ => panic!("test failed"),
         }
     }
-
 }
