@@ -405,7 +405,7 @@ impl Chain {
             BlockId::Number(number) => Some(number),
             BlockId::Hash(hash) => self.block_height_by_hash(hash),
             BlockId::Earliest => Some(0),
-            BlockId::Latest => Some(self.get_current_height()),
+            BlockId::Latest => Some(self.get_atomic_current_height()),
         }
     }
 
@@ -528,7 +528,7 @@ impl Chain {
             hdr.clone(),
             CacheUpdatePolicy::Overwrite,
         );
-        let mheight = self.max_store_height.load(Ordering::SeqCst) as u64;
+        let mheight = self.get_max_store_height();
         if mheight < number || (number == 0 && mheight == 0) {
             batch.write_with_cache(
                 db::COL_BODIES,
@@ -538,7 +538,6 @@ impl Chain {
                 CacheUpdatePolicy::Overwrite,
             );
         }
-        self.current_height.store(number as usize, Ordering::SeqCst);
         batch.write_with_cache(
             db::COL_EXTRA,
             &mut *write_hashes,
@@ -571,6 +570,7 @@ impl Chain {
         {
             *self.current_header.write() = hdr;
         }
+        self.current_height.store(number as usize, Ordering::SeqCst);
     }
 
     pub fn broadcast_current_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
@@ -596,7 +596,7 @@ impl Chain {
         }
 
         // Duplicated block
-        if number == self.get_current_height() {
+        if number == self.get_atomic_current_height() {
             self.broadcast_current_status(&ctx_pub);
             return;
         }
@@ -614,7 +614,7 @@ impl Chain {
                 if self.validate_height(block.number()) && self.validate_hash(block.parent_hash()) {
                     self.set_db_result(&ret, &block);
                     self.broadcast_current_status(&ctx_pub);
-                    debug!("set consensus block-{}", number);
+                    debug!("executed set consensus block-{}", number);
                 }
             }
             Some(BlockInQueue::SyncBlock((block, op))) => {
@@ -623,7 +623,7 @@ impl Chain {
                 } else {
                     debug!("SyncBlock not has proof in  {}", block.number());
                 }
-                if number == self.get_current_height() + 1 {
+                if number == self.get_atomic_current_height() + 1 {
                     if self.validate_hash(block.parent_hash()) {
                         self.set_db_result(&ret, &block);
                         let tx_hashes = block.body().transaction_hashes();
@@ -643,7 +643,7 @@ impl Chain {
 
         // Discard the blocks whose height is less than current height in 'block_map', reducing its' memory usage.
         let mut guard = self.block_map.write();
-        let new_map = guard.split_off(&self.get_current_height());
+        let new_map = guard.split_off(&self.get_atomic_current_height());
         *guard = new_map;
     }
 
@@ -653,7 +653,7 @@ impl Chain {
             BlockId::Hash(hash) => self.block_by_hash(hash),
             BlockId::Number(number) => self.block_by_height(number),
             BlockId::Earliest => self.block_by_height(0),
-            BlockId::Latest => self.block_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_by_height(self.get_atomic_current_height()),
         }
     }
 
@@ -680,7 +680,7 @@ impl Chain {
             BlockId::Hash(hash) => self.block_header_by_hash(hash),
             BlockId::Number(number) => self.block_header_by_height(number),
             BlockId::Earliest => self.block_header_by_height(0),
-            BlockId::Latest => self.block_header_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_header_by_height(self.get_atomic_current_height()),
         }
     }
 
@@ -717,7 +717,7 @@ impl Chain {
             BlockId::Hash(hash) => self.block_body_by_hash(hash),
             BlockId::Number(number) => self.block_body_by_height(number),
             BlockId::Earliest => self.block_body_by_height(0),
-            BlockId::Latest => self.block_body_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_body_by_height(self.get_atomic_current_height()),
         }
     }
 
@@ -962,16 +962,21 @@ impl Chain {
         self.current_header.read().number()
     }
 
+    pub fn get_atomic_current_height(&self) -> u64 {
+        self.current_height.load(Ordering::SeqCst) as u64
+    }
+
     pub fn get_current_hash(&self) -> H256 {
         self.current_header.read().hash()
     }
 
-    pub fn get_max_height(&self) -> u64 {
-        self.current_height.load(Ordering::SeqCst) as u64
-    }
-
     pub fn get_max_store_height(&self) -> u64 {
         self.max_store_height.load(Ordering::SeqCst) as u64
+    }
+
+    pub fn set_max_store_height(&self, height: u64) {
+        self.max_store_height
+            .store(height as usize, Ordering::SeqCst);
     }
 
     pub fn current_state_root(&self) -> H256 {
@@ -1198,7 +1203,7 @@ impl Chain {
     fn current_status(&self) -> Status {
         let mut status = Status::default();
         status.set_hash(self.get_current_hash());
-        status.set_number(self.get_current_height());
+        status.set_number(self.get_atomic_current_height());
         status
     }
 
@@ -1226,11 +1231,11 @@ impl Chain {
     }
 
     pub fn validate_height(&self, block_number: u64) -> bool {
-        let current_height = self.get_current_height();
+        let current_height = self.get_atomic_current_height();
         trace!(
-            "validate_height current_height {:?} block_number {:?}",
+            "validate_height current_height {:?} need validate block_number {:?}",
             current_height,
-            block_number - 1
+            block_number
         );
         current_height + 1 == block_number
     }
@@ -1252,7 +1257,7 @@ impl Chain {
 
     /// Broadcast new status
     pub fn broadcast_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        if self.max_store_height.load(Ordering::SeqCst) == 0 {
+        if self.get_max_store_height() == 0 {
             return;
         }
         let status = self.current_status().protobuf();
@@ -1290,7 +1295,7 @@ impl Chain {
     }
 
     pub fn compare_status(&self, st: Status) -> (u64, u64) {
-        let current_height = self.get_current_height();
+        let current_height = self.get_atomic_current_height();
         if st.number() > current_height {
             (current_height + 1, st.number() - current_height)
         } else {
@@ -1380,8 +1385,7 @@ impl Chain {
                 new_block_map.insert(key, value);
             });
         *block_map = new_block_map;
-        self.max_store_height
-            .store(self.get_max_height() as usize, Ordering::SeqCst);
+        self.set_max_store_height(self.get_atomic_current_height());
     }
 }
 

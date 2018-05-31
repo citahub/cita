@@ -17,7 +17,6 @@
 
 use core::libchain::chain::Chain;
 use libproto::executor::ExecutedResult;
-use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 
@@ -46,7 +45,6 @@ impl BlockProcessor {
 
     pub fn reset_max_store_height(&self) {
         self.chain
-            .max_store_height
-            .store(self.chain.get_max_height() as usize, Ordering::SeqCst);
+            .set_max_store_height(self.chain.get_atomic_current_height());
     }
 }
