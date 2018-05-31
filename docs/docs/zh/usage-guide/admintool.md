@@ -50,14 +50,16 @@ optional arguments:
 
 参数的简单解释：
 
-`chain_name` : cita 支持侧链后，通过 chain_name 生成不同的链配置，默认为 node
+- `chain_name` : cita 支持侧链后，通过 chain_name 生成不同的链配置，默认为 node
 
-`super_admin` : 指定生成链的超级管理员地址
+- `super_admin` : 指定生成链的超级管理员地址
 
-`contract_arguments` : 设定系统合约的默认值，这个参数具体的信息请详细查看系统合约文档
-例如：
-- 链的 chain_id 值设为1，默认为随机数 `--contract_arguments "SysConfig.chain_id=1"`
-- 链的经济模型设为 quota，默认为 quota(0), 其他选项有 charge(1) `--contract_arguments "SysConfig.economical_model=0"`
+- `contract_arguments` : 设定系统合约的默认值，这个参数具体的信息请详细查看系统合约文档
+
+	例如：
+
+	- 链的 chain_id 值设为1，默认为随机数 `--contract_arguments "SysConfig.chain_id=1"`
+	- 链的经济模型设为 quota，默认为 quota(0), 其他选项有 charge(1) `—contract_arguments "SysConfig.economical_model=0"`
 
 
 
@@ -70,22 +72,23 @@ $ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.
 $ ls node/
   0  1  2  3  template
 ```
+
 相对应给出的参数，生成 4 个节点，`node/*` 里面包含节点的配置文件，具体如下：
 
-- 生成私钥和地址，私钥存放在`node/*/privkey`，其中nodeID为节点号；而所有节点地址都存放在`backup/authorities`；
+- 生成私钥和地址，私钥存放在`node/*/privkey`，其中 nodeID 为节点号；而所有节点地址都存放在`backup/authorities`；
 - 生成网络配置文件，存放在`node/*/network.toml`，文件内容主要为总节点数、本地节点端口以及其它节点的ip和端口号；
-- 生成genesis块文件，存放在`node/*/genesis.json`， 其中timestamp为时间戳，秒为单位；prevhash指前一个块哈希，这里是默认值；而alloc指部署到创世块的合约内容；
+- 生成 genesis 块文件，存放在`node/*/genesis.json`， 其中 timestamp 为时间戳，秒为单位；prevhash 指前一个块哈希，这里是默认值；而 alloc 指部署到创世块的合约内容；
 - 生成节点配置文件，存放在`node/*/consensus.json`，主要包含共识算法的相关参数；
-- 生成jsonrpc配置文件，存放在`node/*/jsonrpc.toml`，主要包含jsonrpc模块的相关参数。
+- 生成 jsonrpc 配置文件，存放在`node/*/jsonrpc.toml`，主要包含 jsonrpc 模块的相关参数。
 - `node/template`目录下是模板文件，包括这个链的共识节点地址 `node/template/authorities.list`，系统合约生成参数 `node/template/init_data.yml`, 节点端口地址`node/template/nodes.list` 等信息
 
 ## 系统合约
 
-系统合约是从genesis块开始就部署到链上的用来实现特定功能的合约，它的合约地址写在genesis块里，是固定的地址。CITA里主要的系统合约有节点管理合约、配额管理合约、权限管理合约及用户管理合约等。
+系统合约是从 genesis 块开始就部署到链上的用来实现特定功能的合约，它的合约地址写在genesis 块里，是固定的地址。CITA 里主要的系统合约有节点管理合约、配额管理合约、权限管理合约及用户管理合约等。
 
 ### 初始化系统合约说明
 
-用户可选择自定义初始化系统合约数据及使用系统默认数据，其中release文件下的`init_data.json`为初始化系统合约数据文件。
+用户可选择自定义初始化系统合约数据及使用系统默认数据，其中 release 文件下的`init_data.json`为初始化系统合约数据文件。
 
 ### 用户自定义初始化系统合约数据
 
@@ -125,16 +128,12 @@ $ ls node/
 
 其中:
 
-- `0x00000000000000000000000000000000013241a2`: 代表共识节点管理系统合约地址，二维数组内`[]`内为节点地址列表，由系统生成，忽略此选项，用户可修改`["0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"]`值为自己生成的地址，
-                                                其为管理员地址，可由此地址进行共识节点的增删。 ***须保存好对应的私钥***
-- `0x00000000000000000000000000000000013241a3`: 代表配额管理系统合约地址，用户可修改`0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888`值为自己生成的地址，其为配额管理的管理员地址，
-                                                可由此地址进行配额的管理。 ***须保存好对应的私钥***
+- `0x00000000000000000000000000000000013241a2`: 代表共识节点管理系统合约地址，二维数组内`[]`内为节点地址列表，由系统生成，忽略此选项，用户可修改`["0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"]`值为自己生成的地址，其为管理员地址，可由此地址进行共识节点的增删。 ***须保存好对应的私钥***
+- `0x00000000000000000000000000000000013241a3`: 代表配额管理系统合约地址，用户可修改`0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888`值为自己生成的地址，其为配额管理的管理员地址，可由此地址进行配额的管理。 ***须保存好对应的私钥***
 - `0x0000000000000000000000000000000031415926`: 代表配置合约SysConfig。
-- `0x00000000000000000000000000000000013241b4`: 代表CITA权限管理合约地址，用户可修改`0x9dcd6b234e2772c5451fd4ccf7582f4283140697`值为自己生成的地址，其为超级管理员地址，
-                                                此地址拥有权限管理本身的所有权限。 ***须保存好对应的私钥***
+- `0x00000000000000000000000000000000013241b4`: 代表 CITA 权限管理合约地址，用户可修改`0x9dcd6b234e2772c5451fd4ccf7582f4283140697`值为自己生成的地址，其为超级管理员地址，此地址拥有权限管理本身的所有权限。 ***须保存好对应的私钥***
 - `0x00000000000000000000000000000000013241b5`: 代表权限合约地址，其中的多个地址分别代表系统内置的权限类型。
-- `0x00000000000000000000000000000000013241b6`: 代表用户管理合约地址，三个参数分别代表rootGroup的父Group、rootGroup的名称以及组内初始的用户地址。
-                                                用户可填入多个组内用户地址。 ***须保存好对应的私钥***
+- `0x00000000000000000000000000000000013241b6`: 代表用户管理合约地址，三个参数分别代表 rootGroup 的父 Group、rootGroup 的名称以及组内初始的用户地址。用户可填入多个组内用户地址。 ***须保存好对应的私钥***
 
 ### 使用默认的初始化数据
 
@@ -152,7 +151,7 @@ $ ls node/
 prooftype = 2
 ```
 
-也可在本目录下创建`executor.toml`文件来自定义journaldb的类型等。格式参考`executor_config_example.toml`文件，如下:
+也可在本目录下创建`executor.toml`文件来自定义 journaldb 的类型等。格式参考`executor_config_example.toml`文件，如下:
 
 ```shell
 prooftype = 2
@@ -161,8 +160,8 @@ journaldb_type = "archive"
 
 其中:
 
-- `prooftype`: 表示当前使用的共识算法，0表示采用的Poa算法、1表示采用的Raft算法、2表示采用的Tendermint算法，默认采用Tendermint算法。
-- `journaldb_type`: 表示当前使用的JournalDB算法，有"archive" "light" "fast" "basic"等4种类型，默认是archive。
+- `prooftype`: 表示当前使用的共识算法，0 表示采用的 Poa 算法、1 表示采用的 Raft 算法、2 表示采用的 Tendermint 算法，默认采用 Tendermint 算法。
+- `journaldb_type`: 表示当前使用的 JournalDB 算法，有 "archive" "light" "fast" "basic" 等4种类型，默认是 archive。
 
 ### 节点管理系统合约
 

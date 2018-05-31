@@ -1,4 +1,4 @@
-# 帮助使用CITA的新用户了解操作的流程
+# 帮助使用 CITA 的新用户了解操作的流程
 
 ## 安装需要的依赖
 
@@ -13,7 +13,7 @@ pip install -r requirements.txt
 bash requirements_sudo.sh
 ```
 
-## 检查CITA是否正常启动
+## 检查 CITA 是否正常启动
 
 ```shell
 python check.py
@@ -33,13 +33,13 @@ python block_number.py
 
 ## 生成账户信息
 
-使用secp256k1签名算法和sha3 hash
+使用 secp256k1 签名算法和 sha3-hash
 
 ```shell
 python generate_account.py
 ```
 
-使用ed25519签名算法和blake2b hash
+使用 ed25519 签名算法和 blake2b-hash
 
 ```shell
 python generate_account.py --newcrypto
@@ -89,7 +89,7 @@ $ python compile.py -p "get()"
 
 ## 构造交易
 
-使用secp256k1签名算法和sha3 hash
+使用 secp256k1 签名算法和 sha3-hash
 
 ```shell
 python make_tx.py
@@ -97,7 +97,7 @@ python make_tx.py
 python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transaction to`
 ```
 
-使用ed25519签名算法和blake2b hash
+使用 ed25519 签名算法和 blake2b-hash
 
 ```shell
 python make_tx.py --newcrypto
@@ -107,7 +107,7 @@ python make_tx.py --code `contract bytecode` --privkey `privatekey` --to `transa
 
 ## 发送交易
 
-交易相关的信息保存在output/transaction目录
+交易相关的信息保存在 output/transaction 目录
 
 ```shell
 python send_tx.py
@@ -119,7 +119,7 @@ python send_tx.py --codes `deploycode1` `deploycode2` `deploycode3` ...
 
 ## 获取交易
 
-交易的hash使用output/transaction/hash文件中的值
+交易的 hash 使用 output/transaction/hash 文件中的值
 
 ```shell
 python get_tx.py

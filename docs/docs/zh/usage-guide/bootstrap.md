@@ -8,9 +8,9 @@
 
 具体步骤请参见[快速入门](https://cryptape.github.io/cita/zh/getting_started/)
 
-在发布件目录启动所有的`CITA`节点后，直接运行`./env.sh`获取一个docker环境的shell。
+在发布件目录启动所有的`CITA`节点后，直接运行`./env.sh`获取一个 docker 环境的 shell。
 
-后续命令都在这个shell中执行。
+后续命令都在这个 shell 中执行。
 
 ## 部署智能合约
 
@@ -18,9 +18,9 @@ CITA完全兼容以太坊的智能合约，`solidity`是基于以太坊的智能
 
 ### 编译
 
-智能合约的源码文件，需要先使用solidity编译器`solc`编译成字节码。
+智能合约的源码文件，需要先使用 solidity 编译器`solc`编译成字节码。
 
-我们提供的docker环境中已经包含了`solc`。在shell中执行`solc --version`查看版本信息：
+我们提供的 docker 环境中已经包含了`solc`。在 shell 中执行`solc --version`查看版本信息：
 
 ```shell
 # solc --version
@@ -31,8 +31,6 @@ Version: 0.4.19+commit.c4cbbb05.Linux.g++
 `CITA`发布件中包含了一些智能合约示例，存放在 `scripts/contracts/tests/contracts`中。
 
 以`test_example.sol`为例。这是一个很简单的合约文件，只提供了简单的`get`和`set`方法。我们可以先调用`set`方法存储一个任意数值，然后再调用`get`方法验证存储是否生效，以此来检验合约部署和运行是否正常。
-
-的执行：
 
 ```shell
 # cd scripts/contracts/tests/contracts
@@ -48,11 +46,11 @@ Binary:
 
 得到合约字节码后，就可以将其部署到`CITA`链上了，部署的方法已经用`python`脚本封装，只需要传入私钥和字节码即可。
 
-目前支持的`python`版本是2.7，`python`脚本存放的位置为`scripts/txtool/txtool`，具体安装和使用方法可以参考目录下的`README.md`文件。
+目前支持的`python`版本是 2.7，`python`脚本存放的位置为`scripts/txtool/txtool`，具体安装和使用方法可以参考目录下的`README.md`文件。
 
-划重点， txtool在使用上有限制：不能在别的目录通过相对路径调用，一定要cd到scripts/txtool/txtool目录下。
+划重点， txtool 在使用上有限制：不能在别的目录通过相对路径调用，一定要 cd 到scripts/txtool/txtool 目录下。
 
-docker环境已经包含了该工具的依赖，可以直接运行命令部署合约：
+docker 环境已经包含了该工具的依赖，可以直接运行命令部署合约：
 
 ```shell
 cd scripts/txtool/txtool

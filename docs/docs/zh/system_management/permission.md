@@ -10,8 +10,8 @@ CITA通过智能合约的方式来对权限进行管理。
     - 外部账户： 拥有公私钥对，可发送交易的用户。
     - 合约账户： 拥有相关的代码(code)及存储(storage)。
 
-目前权限管理针对外部账户进行细粒度管理。CITA默认集成了superAdmin账户，拥有权限管理涉及到的所有权限。在CITA启动前可以对superAdmin进行配置。
-在权限系统开启时，由用户生成的外部账户，在CITA系统中没有任何权限，需要superAdmin对其进行授权。
+目前权限管理针对外部账户进行细粒度管理。CITA 默认集成了 superAdmin 账户，拥有权限管理涉及到的所有权限。在 CITA 启动前可以对 superAdmin 进行配置。
+在权限系统开启时，由用户生成的外部账户，在 CITA 系统中没有任何权限，需要 superAdmin 对其进行授权。
 
 权限管理默认未开启，配置相关信息查看[系统合约](https://cryptape.github.io/cita/zh/usage-guide/admintool/index.html#_3)
 
@@ -39,7 +39,7 @@ CITA通过智能合约的方式来对权限进行管理。
 * `deleteGroup`: 表示删除一个组的权限
 * `updateGroup`: 表示更新一个组的权限
 
-系统内置了superAdmin的帐号，其拥有以上所有权限，可对其进行正常的权限管理。默认配置情况下其他普通账户也拥有以上权限，建议在初始化CITA系统前对权限管理进行配置。
+系统内置了 superAdmin 的帐号，其拥有以上所有权限，可对其进行正常的权限管理。默认配置情况下其他普通账户也拥有以上权限，建议在初始化 CITA 系统前对权限管理进行配置。
 
 ### 权限管理合约接口
 
@@ -303,17 +303,19 @@ CITA通过智能合约的方式来对权限进行管理。
     - 公钥： `0x9dcd6b234e2772c5451fd4ccf7582f4283140697`
     - 私钥： `993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9`
 * 通过以下命令生成各节点。
-``` shell
-$ ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
-                                         --super_admin "0x9dcd6b234e2772c5451fd4ccf7582f4283140697" \
-                                         --contract_arguments SysConfig.check_permission=true
-```
+
+	``` shell
+	$ ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
+	                                         --super_admin "0x9dcd6b234e2772c5451fd4ccf7582f4283140697" \
+	                                         --contract_arguments SysConfig.check_permission=true
+	```
 
 用户生成普通账户，由superAdmin账户对其进行授权，实现权限管理。使用superAdmin的私钥调用的接口由管理员执行，使用用户john的私钥由用户john执行。
 
 ### 生成普通账户
 
 用户可以自己生成公私钥对。也可以使用CITA提供的工具`create_key_addr`生成。例如用户john通过工具生成如下密钥。
+
 根据输入的字符串"john"使用`./bin/create_key_addr /tmp/privKey "john"`命令生成账户地址:
 
 * `/tmp/privKey`文件内容为工具生成的私钥
@@ -330,6 +332,7 @@ a71f68fd5f0a64c0a66737357ec6e491c5bab8e001f8d7116252c22a9a4f03b4
 ### 部署合约
 
 拥有私钥用户john需要部署如下合约，默认时用户john没有部署权限，需要由superAdmin授权。
+
 合约内容：
 
 ```shell
@@ -413,23 +416,23 @@ $python get_receipt.py
 
 * 授予发送交易权限
 
-```shell
-######调用系统合约setAuthorization对用户john授予sendTx权限，createContract对应的ID为0x1，ID作为setAuthorization的第二个参数
-$python make_tx.py --privkey "993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9" --to "00000000000000000000000000000000013241b2" --code "0f5aa9f30000000000000000000000006212dd3506a68d6ec231177c6cb9c46dcfd431900000000000000000000000000000000000000000000000000000000000000001"
-$python send_tx.py
-$python get_receipt.py
-```
+	```shell
+	######调用系统合约setAuthorization对用户john授予sendTx权限，createContract对应的ID为0x1，ID作为setAuthorization的第二个参数
+	$python make_tx.py --privkey "993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9" --to "00000000000000000000000000000000013241b2" --code "0f5aa9f30000000000000000000000006212dd3506a68d6ec231177c6cb9c46dcfd431900000000000000000000000000000000000000000000000000000000000000001"
+	$python send_tx.py
+	$python get_receipt.py
+	```
 
 其中`--to`为权限管理的系统合约地址，`--code`前`0x0f5aa9f3`为系统合约的setAuthorization接口，其后紧跟需要授权地址和所授权限。`0x1`表示sendTx发送权限。
 
 * 授予创建合约权限
 
-```shell
-######调用系统合约setAuthorization对用户john授予createContract权限，createContract对应的ID为0x2，ID作为setAuthorization的第二个参数
-$python make_tx.py --privkey "993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9" --to "00000000000000000000000000000000013241b2" --code "0f5aa9f30000000000000000000000006212dd3506a68d6ec231177c6cb9c46dcfd431900000000000000000000000000000000000000000000000000000000000000002"
-$python send_tx.py
-$python get_receipt.py
-```
+	```shell
+	######调用系统合约setAuthorization对用户john授予createContract权限，createContract对应的ID为0x2，ID作为setAuthorization的第二个参数
+	$python make_tx.py --privkey "993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9" --to "00000000000000000000000000000000013241b2" --code "0f5aa9f30000000000000000000000006212dd3506a68d6ec231177c6cb9c46dcfd431900000000000000000000000000000000000000000000000000000000000000002"
+	$python send_tx.py
+	$python get_receipt.py
+	```
 
 其中`--to`为权限管理的系统合约地址，`--code`前`0x0f5aa9f3`为系统合约的setAuthorization接口，其后紧跟需要授权地址和所授权限。0x2表示createContract创建合约权限。
 
