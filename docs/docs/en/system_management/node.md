@@ -163,7 +163,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
     ```bash
     $ cd script/txtool/txtool
 
-    $ python make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    $ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
 
     - privkey 是私钥，用来签证，确认交易信息合法，系统默认的几个私钥可以看 [系统合约相关](../usage-guide/admintool/index.html#_5)
@@ -174,7 +174,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 2. 发送交易
 
     ```bash
-    $ python send_tx.py 
+    $ python3 send_tx.py 
     --> {"params": ["0a5b0a283030303030303030303030303030303030303030303030303030303030303030303133323431613212013018fface20420dc012a24ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e1241bc58c97ad8979f429bac343157fd8ecb193edb8255ca256ca077d352c24161e31ad634214f5443ea27ac95a3fe0b2ef2efc2a991b26c043f193325ea12033e7400"], "jsonrpc": "2.0", "method": "cita_sendTransaction", "id": 1}
     <-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0xdacbbb3697085eec3bfb0321d5142b86266a88eeaf5fba7ff40552a8350f4323","status":"OK"}} (200 OK)
     ```
@@ -182,7 +182,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 3. 接收回执
 
     ```bash
-    $ python get_receipt.py
+    $ python3 get_receipt.py
     {
       "contractAddress": null,
       "cumulativeGasUsed": "0x5615",
@@ -217,14 +217,14 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 4. 构造 approveNode 交易信息
 
     ```bash
-    $ python make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    $ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
     可以看出，只是 code 中的函数 hash 换了一下而已。
 
 5. 发送交易
 
     ```bash
-    $ python send_tx.py
+    $ python3 send_tx.py
     --> {"params": ["0a5b0a283030303030303030303030303030303030303030303030303030303030303030303133323431613212013118fface20420ef012a24dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e124177a025eaafcda1f28f4b2eedd1c8ecb0d339b141e452a3bd8736cd9abc45e7387af7ab41045df5646aa411e7cac1b3a8b78e7efc81b356877afcf4a2080c06d500"], "jsonrpc": "2.0", "method": "cita_sendTransaction", "id": 1}
     <-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0xd6b38b125efcacb8d59379eef9394e3d9d4f7bb4151e53f0c2c50682f9f037b4","status":"OK"}} (200 OK)
     ```
@@ -232,7 +232,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 6. 接收回执
 
     ```bash
-    $ python get_receipt.py 
+    $ python3 get_receipt.py 
     {
       "contractAddress": null,
       "cumulativeGasUsed": "0xcf15",
