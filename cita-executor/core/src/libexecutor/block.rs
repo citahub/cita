@@ -600,7 +600,12 @@ impl OpenBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(mut self) -> ClosedBlock {
+    pub fn close(mut self, economical_model: EconomicalModel) -> ClosedBlock {
+        if economical_model == EconomicalModel::Charge {
+            let proposer = self.block.header.proposer().clone();
+            self.state.add_balance(&proposer, &BLOCK_REWARD).unwrap();
+            self.state.commit().unwrap();
+        }
         // Rebuild block
         let state_root = *self.state.root();
         self.set_state_root(state_root);
