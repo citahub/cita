@@ -17,7 +17,7 @@
 //! Transaction Execution environment.
 
 use action_params::{ActionParams, ActionValue};
-use cita_types::{Address, H160, U256, U512};
+use cita_types::{Address, H160, H256, U256, U512};
 use contracts::permission_management::contains_resource;
 use contracts::Resource;
 use crossbeam;
@@ -49,6 +49,13 @@ use util::*;
 /// Maybe something like here:
 /// `https://github.com/ethereum/libethereum/blob/4db169b8504f2b87f7d5a481819cfb959fc65f6c/libethereum/ExtVM.cpp`
 const STACK_SIZE_PER_DEPTH: usize = 24 * 1024;
+
+///amend the abi data
+const AMEND_ABI: u32 = 1;
+///amend the account code
+const AMEND_CODE: u32 = 2;
+///amend the kv of db
+const AMEND_KV_H256: u32 = 3;
 
 /// Returns new address created from address and given nonce.
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
@@ -380,6 +387,42 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
     }
 
+    fn transact_set_abi(&mut self, data: &[u8]) -> bool {
+        let account = H160::from(&data[0..20]);
+        let abi = &data[20..];
+        info!("set abi of contract address: {:?}", account);
+        let res = match self.state.exists(&account) {
+            Ok(true) => {
+                if let Ok(_) = self.state.init_abi(&account, abi.to_vec()) {
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        };
+        res
+    }
+
+    fn transact_set_code(&mut self, data: &[u8]) -> bool {
+        let account = H160::from(&data[0..20]);
+        let code = &data[20..];
+        if let Ok(_) = self.state.reset_code(&account, code.to_vec()) {
+            return true;
+        }
+        false
+    }
+
+    fn transact_set_kv_h256(&mut self, data: &[u8]) -> bool {
+        let account = H160::from(&data[0..20]);
+        let key = H256::from_slice(&data[20..52]);
+        let val = H256::from_slice(&data[52..84]);
+        if let Ok(_) = self.state.set_storage(&account, key, val) {
+            return true;
+        }
+        false
+    }
+
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
         t: &SignedTransaction,
@@ -425,16 +468,38 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }*/
 
         if t.action == Action::AbiStore {
-            let account = H160::from(&t.data[0..20]);
-            let abi = &t.data[20..];
-            info!("set abi of contract address: {:?}", account);
-            match self.state.exists(&account) {
-                Ok(true) => {
-                    self.state.init_abi(&account, abi.to_vec())?;
+            if !self.transact_set_abi(&t.data) {
+                return Err(ExecutionError::TransactionMalformed(
+                    "Account doesn't exist".to_string(),
+                ));
+            }
+        } else if t.action == Action::AmendData {
+            let atype = t.value.low_u32();
+            match atype {
+                AMEND_ABI => {
+                    if !self.transact_set_abi(&t.data) {
+                        return Err(ExecutionError::TransactionMalformed(
+                            "Account doesn't exist".to_string(),
+                        ));
+                    }
+                }
+                AMEND_CODE => {
+                    if !self.transact_set_code(&t.data) {
+                        return Err(ExecutionError::TransactionMalformed(
+                            "Account doesn't exist".to_string(),
+                        ));
+                    }
+                }
+                AMEND_KV_H256 => {
+                    if !self.transact_set_kv_h256(&t.data) {
+                        return Err(ExecutionError::TransactionMalformed(
+                            "Account doesn't exist".to_string(),
+                        ));
+                    }
                 }
                 _ => {
                     return Err(ExecutionError::TransactionMalformed(
-                        "Account doesn't exist".to_string(),
+                        "amend type if error".to_string(),
                     ));
                 }
             }
@@ -461,6 +526,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let (result, output) = match t.action {
             Action::Store | Action::AbiStore | Action::GoCreate => (
+                Ok(FinalizationResult {
+                    gas_left: t.gas,
+                    return_data: ReturnData::empty(),
+                    apply_state: true,
+                }),
+                vec![],
+            ),
+            Action::AmendData => (
                 Ok(FinalizationResult {
                     gas_left: t.gas,
                     return_data: ReturnData::empty(),

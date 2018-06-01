@@ -37,6 +37,8 @@ pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
 pub const ABI_ADDRESS: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 // pub const GO_CONTRACT: H160 =   H160( [0xbb; 20] );
 pub const GO_CONTRACT: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+// pub const GO_CONTRACT: H160 =   H160( [0xCC; 20] );
+pub const AMEND_ADDRESS: &str = "cccccccccccccccccccccccccccccccccccccccc";
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {
@@ -60,6 +62,8 @@ pub enum Action {
     AbiStore,
     /// Create creates new contract for grpc.
     GoCreate,
+    /// amend data in state
+    AmendData,
 }
 
 impl Default for Action {
@@ -76,6 +80,7 @@ impl Decodable for Action {
             let store_addr: Address = STORE_ADDRESS.into();
             let abi_addr: Address = ABI_ADDRESS.into();
             let go_addr: Address = GO_CONTRACT.into();
+            let amend_addr: Address = AMEND_ADDRESS.into();
             let addr: Address = rlp.as_val()?;
             if addr == store_addr {
                 Ok(Action::Store)
@@ -83,6 +88,8 @@ impl Decodable for Action {
                 Ok(Action::AbiStore)
             } else if addr == go_addr {
                 Ok(Action::GoCreate)
+            } else if addr == amend_addr {
+                Ok(Action::AmendData)
             } else {
                 Ok(Action::Call(addr))
             }
@@ -95,12 +102,14 @@ impl Encodable for Action {
         let store_addr: Address = STORE_ADDRESS.into();
         let abi_addr: Address = ABI_ADDRESS.into();
         let go_addr: Address = GO_CONTRACT.into();
+        let amend_addr: Address = AMEND_ADDRESS.into();
         match *self {
             Action::Create => s.append_internal(&""),
             Action::Call(ref addr) => s.append_internal(addr),
             Action::Store => s.append_internal(&store_addr),
             Action::AbiStore => s.append_internal(&abi_addr),
             Action::GoCreate => s.append_internal(&go_addr),
+            Action::AmendData => s.append_internal(&amend_addr),
         };
     }
 }
@@ -218,6 +227,7 @@ impl Transaction {
                         STORE_ADDRESS => Action::Store,
                         ABI_ADDRESS => Action::AbiStore,
                         GO_CONTRACT => Action::GoCreate,
+                        AMEND_ADDRESS => Action::AmendData,
                         _ => Action::Call(
                             Address::from_str(clean_0x(to)).map_err(|_| Error::ParseError)?
                         ),
@@ -289,6 +299,7 @@ impl Transaction {
             Action::Store => pt.set_to(STORE_ADDRESS.into()),
             Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
             Action::GoCreate => pt.set_to(GO_CONTRACT.into()),
+            Action::AmendData => pt.set_to(AMEND_ADDRESS.into()),
         }
         pt
     }
