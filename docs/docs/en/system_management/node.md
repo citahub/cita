@@ -120,14 +120,9 @@ The management of consensus nodes includes adding, deleting, and getting consens
 
 ### Add consensus nodes
 
-Only after a node is added as ordianry nodes, it can make the request to become a consensus node. Then, it is necessary to approve the request by administrator. After all of these operations, a consensus node can be added sucessfully. If a ordnary node want to be updated to a consensus node, detailed steps are as follows：
+Only after a node is added as ordianry nodes, it can make the request to become a consensus node. Then, it is necessary to approve the request by administrator. After all of these operations, a consensus node can be added sucessfully. If a ordinary node want to be updated to a consensus node, detailed steps are as follows：
 
-* Submit the account address to the administrator;
-* The node initiates a contract that records it as a consensus node, and the administrator completes the confirmation; 
-* Modify the local white-list together with other nodes;
-* Participate in consensus process after completing the block data synchronization.
-
-Let's illustrate it with an example. We will use `newNode(address)`/`approveNode(address)` in here.
+Let's illustrate how a ordinary node become a consensus node with an example. We will use `newNode(address)`/`approveNode(address)` in the process.
 
 Consensus nodes management contract is system contract and written into genesis by default. Below are function signatures of management contract：
 
@@ -151,7 +146,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 
 ```
 
-- to: consensus node management contract address
+- to: consensus nodes management contract address
 - data: function signature of listNode()
 
 The return value is the list of current consensus nodes address.
