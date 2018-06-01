@@ -25,7 +25,7 @@ extern crate rlp;
 extern crate rustc_hex;
 extern crate util;
 #[macro_use]
-extern crate log;
+extern crate logger;
 
 pub mod action_params;
 pub mod call_type;

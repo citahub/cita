@@ -23,7 +23,7 @@ extern crate byteorder;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate log;
+extern crate logger;
 extern crate lru_cache;
 extern crate proof;
 extern crate protobuf;

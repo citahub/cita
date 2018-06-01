@@ -6,7 +6,7 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 [dependencies]
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 byteorder = { version = "1", default-features = false }
-log = "0.4.0"
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 bincode = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"
@@ -58,7 +58,6 @@ largest-remainder-method = "0.1"
 rand = "0.3"
 cpuprofiler = "0.0.3"
 mktemp = "0.3.1"
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

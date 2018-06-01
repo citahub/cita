@@ -26,7 +26,7 @@ extern crate cita_types;
 extern crate common_types as types;
 extern crate libproto;
 #[macro_use]
-extern crate log;
+extern crate logger;
 extern crate proof;
 extern crate rustc_serialize;
 extern crate serde;

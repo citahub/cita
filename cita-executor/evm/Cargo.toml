@@ -10,5 +10,5 @@ util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop"
 bit-set = "0.4"
 common-types = { path = "../../cita-chain/types" }
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-log = "0.4.0"
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rustc-hex = "1.0"
