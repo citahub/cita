@@ -238,7 +238,7 @@ impl Synchronizer {
         if let Some((height, origins)) = self
             .latest_status_lists
             .iter()
-            .rfind(|&(_, origins)| origins.len() >= (2 / (3 * self.con.peers_pair.read().len())))
+            .rfind(|&(_, origins)| origins.len() > 0)
         {
             debug!(
                 "sync: start_sync_req: height = {}, origins = {:?}",
