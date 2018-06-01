@@ -120,7 +120,7 @@ The management of consensus nodes includes adding, deleting, and getting consens
 
 ### Add consensus nodes
 
-Only after a node is added as ordianry nodes, it can make the request to become a consensus node. Then, it is necessary to approve the request by administrator. After all of these operations, a consensus node can be added sucessfully. If a ordnary want to be updated to a consensus, detailed steps are as follows：
+Only after a node is added as ordianry nodes, it can make the request to become a consensus node. Then, it is necessary to approve the request by administrator. After all of these operations, a consensus node can be added sucessfully. If a ordnary node want to be updated to a consensus node, detailed steps are as follows：
 
 * Submit the account address to the administrator;
 * The node initiates a contract that records it as a consensus node, and the administrator completes the confirmation; 
@@ -156,9 +156,9 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x
 
 The return value is the list of current consensus nodes address.
 
-Now we need to upgrade the new node to a consensus node by constructing a transaction. In the demo, the public key address of the new node is `59a316df602568957f47973332f1f85ae1e2e75e`.
+Now we need to upgrade the new ordinary node to a consensus node by constructing transactions. In the demo, the public key address of the new node is `59a316df602568957f47973332f1f85ae1e2e75e`.
 
-#### Construct and send transaction 
+#### Construct and send transactions 
 
 The standard of calling contract follows [ABI](https://solidity.readthedocs.io/en/develop/abi-spec.html), we privide a transaction tool `make_tx.py`：
 
@@ -217,7 +217,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
     }
     ```
 
-    If the transaction has not been processed yet, an error will occur. Try it several times to get the delivery confirmation . If `errorMassage` is null, it means normal and you can continue to the next step.
+    If the transaction has not been processed yet, an error will occur. Try it several times to get the receipt. If `errorMassage` is null, it means normal and you can continue to the next step.
 
 4. Construct approveNode transaction inforamtion
 
@@ -275,7 +275,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
 
     {"jsonrpc":"2.0","id":2,"result":"0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000005000000000000000000000000cb9480d61bf0964687c6839670f1c3e65c1ca193000000000000000000000000dd21b5f342b017a6546a3e5455be1a6e4d6e83a10000000000000000000000000bb7249753e5dcec37c4ad3b917f10c68d64bffa00000000000000000000000011f0bba536cde870fb7c733f93d9b12ecedd13a100000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"}
     ```
-    It can be seen that an address is added at the end of the returned result, which means, the newly added node has become a consensus node is added sucessfully.
+    It can be seen that an address is added at the end of the returned result, which means, the newly added node has become a consensus node sucessfully.
 
 > The return value of the above code has been partially deleted, so the actual operation will be slightly different.
 
