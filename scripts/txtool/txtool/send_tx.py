@@ -25,7 +25,7 @@ def get_deploy_code():
 def send_transaction(params):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("cita_sendTransaction", params)
+        response = HTTPClient(url).request("cita_sendRawTransaction", params)
     except Exception as e:
         logger.error(e)
         return None

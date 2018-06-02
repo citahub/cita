@@ -19,7 +19,7 @@
 
 ``` json
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -33,7 +33,7 @@
 
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -46,7 +46,7 @@
     }
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -59,7 +59,7 @@
     }
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -72,7 +72,7 @@
     }
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -85,7 +85,7 @@
     }
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -103,7 +103,7 @@
 
 ``` json
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
        //result
        {
          "jsonrpc": "2.0",

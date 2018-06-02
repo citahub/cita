@@ -33,7 +33,7 @@ pub mod method {
     pub const CITA_GET_BLOCK_BY_HASH: &str = "cita_getBlockByHash";
     pub const CITA_GET_BLOCK_BY_NUMBER: &str = "cita_getBlockByNumber";
     pub const CITA_GET_TRANSACTION: &str = "cita_getTransaction";
-    pub const CITA_SEND_TRANSACTION: &str = "cita_sendTransaction";
+    pub const CITA_SEND_TRANSACTION: &str = "cita_sendRawTransaction";
     pub const CITA_GET_TRANSACTION_PROOF: &str = "cita_getTransactionProof";
     pub const CITA_GET_META_DATA: &str = "cita_getMetaData";
     pub const NET_PEER_COUNT: &str = "net_peerCount";
@@ -620,7 +620,7 @@ mod tests {
     // 交易添加valid_until_block后，兼容测试以前的交易。
     fn test_blocklimit_backword_compatibility() {
         let rpc = "{\"jsonrpc\":\"2.0\",\
-                   \"method\":\"cita_sendTransaction\",\
+                   \"method\":\"cita_sendRawTransaction\",\
                    \"params\":[\"0x1201311a85010a401201311a3b2239080a12350a24303561626\
                    36538642d316431662d343536352d396636342d6262316430323639336533391\
                    0641a03303037220443495441280312417922853b51d097df76791aa10836942\

@@ -14,7 +14,7 @@ CITA RPC specifications and tests.
 
   错误参数：[个数错误，类型错误]
 
-- cita_sendTransaction 暂时不处理
+- cita_sendRawTransaction 暂时不处理
 
 - cita_getBlockByHash
 
