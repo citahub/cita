@@ -41,6 +41,9 @@ echo "DONE"
 ################################################################################
 echo -n "4) Run charge mode tests ...  "
 echo ""
+echo "    Install python packages for tools ..."
+sudo pip3 install -r ${SOURCE_DIR}/scripts/txtool/requirements.txt
+
 NODE_0_PRIVKEY=`cat ./node/0/privkey`
 NODE_1_PRIVKEY=`cat ./node/1/privkey`
 NODE_2_PRIVKEY=`cat ./node/2/privkey`

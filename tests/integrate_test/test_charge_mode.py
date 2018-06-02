@@ -12,7 +12,7 @@ import binascii
 
 import sha3
 from ecdsa import SigningKey, SECP256k1
-from jsonrpcclient import HTTPClient
+from jsonrpcclient.http_client import HTTPClient
 
 
 def send_tx(privkey, to_addr, value=0, code=""):
@@ -73,7 +73,7 @@ def test_transfer(
         receipt = rpc_request('eth_getTransactionReceipt', [tx_hash])
         if receipt is not None:
             break
-        time.sleep(2)
+        time.sleep(4)
         retry -= 1
     assert receipt and receipt['errorMessage'] is None, \
         'Send transaction failed: receipt={}'.format(receipt)
@@ -94,7 +94,7 @@ def test_transfer(
 
 def get_miner_with_balance(miner_privkeys):
     """ Select a miner with non-zero balance """
-    retry = 30
+    retry = 15
     while retry > 0:
         for privkey in miner_privkeys:
             address = key_address(privkey)
@@ -103,9 +103,9 @@ def get_miner_with_balance(miner_privkeys):
                     return (privkey, address)
             except Exception as ex:
                 print('Get balance error: {}', ex)
-        time.sleep(2)
+        time.sleep(4)
         retry -= 1
-    raise Exception('Get miner with balance timeout(16)')
+    raise Exception('Get miner with balance timeout(60)')
 
 
 def key_address(privkey):
@@ -143,12 +143,16 @@ def main():
 
     test_transfer(miner_privkey, miner_address, alice_address, 10000 * 10000,
                   sender_is_miner=True)
+    assert get_balance(alice_address) == 10000 * 10000, \
+        'Alice({}) should have 10000 * 10000 now'.format(alice_address)
     # [FIXME]:
     #   There must a BUG in EVM.
     #   If the miner transfer only (1000 * 10000) to Alice,
     #   then the transaction which Alice transfer 200 to Bob will
     #   fail with "Cost of transaction exceeds sender balance".
     test_transfer(alice_privkey, alice_address, bob_address, 200)
+    assert get_balance(bob_address) == 200, \
+        'Bob({}) should have 200 now'.format(bob_address)
     print('>>> Charge Mode test successfully!')
 
 
