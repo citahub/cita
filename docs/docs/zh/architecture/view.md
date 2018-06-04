@@ -67,7 +67,6 @@ CITA采用了一种更高效的AVL来保存账户状态，并且采用了Simple 
 
 更多关于AVL的介绍可以参考Wiki [AVL_tree](https://en.wikipedia.org/wiki/AVL_tree)。
 
-
 ### Simple Merkle Tree
 
 在Ethreum中，交易和交易回执同样采用MPT树来进行保存。而CITA中，区块中的交易在共识完成后就已经确认了。所以在Chain处理交易时，交易的顺序和交易结果的顺序都是确定不变的。
