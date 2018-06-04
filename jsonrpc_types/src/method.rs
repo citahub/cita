@@ -33,7 +33,8 @@ pub mod method {
     pub const CITA_GET_BLOCK_BY_HASH: &str = "cita_getBlockByHash";
     pub const CITA_GET_BLOCK_BY_NUMBER: &str = "cita_getBlockByNumber";
     pub const CITA_GET_TRANSACTION: &str = "cita_getTransaction";
-    pub const CITA_SEND_TRANSACTION: &str = "cita_sendRawTransaction";
+    pub const CITA_SEND_RAW_TRANSACTION: &str = "cita_sendRawTransaction";
+    pub const CITA_SEND_TRANSACTION: &str = "cita_sendTransaction";
     pub const CITA_GET_TRANSACTION_PROOF: &str = "cita_getTransactionProof";
     pub const CITA_GET_META_DATA: &str = "cita_getMetaData";
     pub const NET_PEER_COUNT: &str = "net_peerCount";
@@ -101,7 +102,9 @@ impl MethodHandler {
             method::ETH_GET_CODE => self.get_code(rpc),
             method::ETH_GET_ABI => self.get_abi(rpc),
             method::ETH_GET_BALANCE => self.get_balance(rpc),
-            method::CITA_SEND_TRANSACTION => self.send_transaction(rpc),
+            method::CITA_SEND_TRANSACTION | method::CITA_SEND_RAW_TRANSACTION => {
+                self.send_transaction(rpc)
+            }
 
             method::ETH_NEW_FILTER => self.new_filter(rpc),
 
