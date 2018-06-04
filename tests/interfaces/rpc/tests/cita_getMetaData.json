@@ -25,7 +25,10 @@
             "0xcf51a608ef18ce5d70f485d603371da79bd3eb7e",
             "0xba79eb663adde7deef1c58e5e5a339cf6c4477d2"
           ],
-          "blockInterval": 3000
+          "blockInterval": 3000,
+          "tokenName": "tokenName",
+          "tokenSymbol": "tokenSymbol",
+          "tokenAvatar": "tokenAvatar"
         }
       },
       "asserts": [

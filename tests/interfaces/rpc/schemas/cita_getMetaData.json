@@ -85,6 +85,15 @@
               "blockInterval": {
                 "type": "integer",
                 "description": "The interval time for creating a block (milliseconds)"
+              },
+              "tokenName": {
+                "type": "string"
+              },
+              "tokenSymbol": {
+                "type": "string"
+              },
+              "tokenAvata": {
+                "type": "string"
               }
             }
           }

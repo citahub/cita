@@ -33,6 +33,8 @@ interface SysConfigInterface {
 
     /// @notice The interval time for creating a block (milliseconds)
     function getBlockInterval() public view returns (uint64);
+
+    function getTokenInfo() public view returns(string, string, string);
 }
 
 
@@ -52,6 +54,13 @@ contract SysConfig is SysConfigInterface {
     string website;
     uint64 block_interval;
     EconomicalModel economicalModel;
+    TokenInfo tokenInfo;
+
+    struct TokenInfo {
+        string name;
+        string symbol;
+        string avatar;
+    }
 
     /// @notice Setup
     function SysConfig(
@@ -63,7 +72,10 @@ contract SysConfig is SysConfigInterface {
         string _operator,
         string _website,
         uint64 _blockInterval,
-        EconomicalModel _economical
+        EconomicalModel _economical,
+        string _name,
+        string _symbol,
+        string _avatar
     )
         public
     {
@@ -77,6 +89,11 @@ contract SysConfig is SysConfigInterface {
         website = _website;
         block_interval = _blockInterval;
         economicalModel = _economical;
+        tokenInfo = TokenInfo({
+            name: _name,
+            symbol: _symbol,
+            avatar: _avatar
+        });
     }
 
     function getDelayBlockNumber() public view returns (uint) {
@@ -125,5 +142,11 @@ contract SysConfig is SysConfigInterface {
 
     function setChainName(string _chainName) public {
         chain_name = _chainName;
+    }
+
+    function getTokenInfo() public view returns(string name, string symbol, string avatar) {
+        name = tokenInfo.name;
+        symbol = tokenInfo.symbol;
+        avatar = tokenInfo.avatar;
     }
 }

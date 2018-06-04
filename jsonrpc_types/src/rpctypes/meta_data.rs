@@ -40,6 +40,10 @@ pub struct MetaData {
     /// The interval time for creating a block (milliseconds)
     #[serde(rename = "blockInterval")]
     pub block_interval: u64,
+    /// Token name
+    pub token_name: String,
+    pub token_symbol: String,
+    pub token_avatar: String,
 }
 
 #[cfg(test)]
@@ -63,6 +67,9 @@ mod tests {
                 "0xe9deeae8b2a43675f113d11573119b9c68e5e3d8",
             ],
             "blockInterval": 3000,
+            "token_name": "eth",
+            "token_symbol": "eth",
+            "token_avatar": "avatar"
         });
         let metadata = MetaData {
             chain_id: 123,
@@ -79,6 +86,9 @@ mod tests {
                 .map(|s| Address::from_str(s).unwrap())
                 .collect::<Vec<_>>(),
             block_interval: 3000,
+            token_name: "eth".to_owned(),
+            token_symbol: "eth".to_owned(),
+            token_avatar: "avatar".to_owned(),
         };
         assert_eq!(serde_json::to_value(metadata).unwrap(), value);
     }

@@ -41,6 +41,14 @@ lazy_static! {
     static ref CONTRACT_ADDRESS: Address =
         Address::from_str("0000000000000000000000000000000031415926").unwrap();
     static ref ECONOMICAL_MODEL: Vec<u8> = encode_contract_name(b"getEconomicalModel()");
+    static ref GET_TOKEN_INFO: Vec<u8> = encode_contract_name(b"getTokenInfo()");
+}
+
+#[derive(PartialEq, Debug)]
+pub struct TokenInfo {
+    pub name: String,
+    pub symbol: String,
+    pub avatar: String,
 }
 
 /// Configuration items from system contract
@@ -188,6 +196,31 @@ impl<'a> SysConfig<'a> {
         debug!("economical model: {:?}", t);
         EconomicalModel::from_u8(t).expect("unknown economical model")
     }
+
+    pub fn token_info(&self) -> TokenInfo {
+        let address = &*CONTRACT_ADDRESS;
+        let output =
+            self.executor
+                .call_method(address, GET_TOKEN_INFO.as_slice(), None, BlockId::Latest);
+        let mut token_info = decode(
+            &[ParamType::String, ParamType::String, ParamType::String],
+            &output,
+        ).expect("decode value error");
+        TokenInfo {
+            name: token_info
+                .remove(0)
+                .to_string()
+                .expect("decode token name error"),
+            symbol: token_info
+                .remove(0)
+                .to_string()
+                .expect("decode token symbol error"),
+            avatar: token_info
+                .remove(0)
+                .to_string()
+                .expect("decode token avatar error"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -195,7 +228,7 @@ mod tests {
     extern crate logger;
     extern crate mktemp;
 
-    use super::{EconomicalModel, SysConfig};
+    use super::{EconomicalModel, SysConfig, TokenInfo};
     use tests::helpers::init_executor;
 
     #[test]
@@ -259,5 +292,23 @@ mod tests {
         let executor = init_executor(vec![("SysConfig.economical_model", "1")]);
         let value = SysConfig::new(&executor).economical_model();
         assert_eq!(value, EconomicalModel::Charge);
+    }
+
+    #[test]
+    fn test_token_info() {
+        let executor = init_executor(vec![
+            ("SysConfig.name", "name"),
+            ("SysConfig.symbol", "symbol"),
+            ("SysConfig.avatar", "avatar"),
+        ]);
+        let value = SysConfig::new(&executor).token_info();
+        assert_eq!(
+            value,
+            TokenInfo {
+                name: "name".to_owned(),
+                symbol: "symbol".to_owned(),
+                avatar: "avatar".to_owned()
+            }
+        );
     }
 }

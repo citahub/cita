@@ -1022,19 +1022,41 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getTransactionProof","param
 
 * Returns
     * `chainId`, u32 - Deal with transaction replay attack
-    * `chainName`, String - Chain Name
+    * `chainName`, String - Chain name
     * `operator`, String - Chain operator
     * `genesisTimestamp`, Timestamp - Genesis timestamp
     * `validators`, [Address] - Validator array
     * `blockInterval` u64 - block interval by millisecond
+    * `tokenName`, String - Token name
+    * `tokenSymbol`, String - Token symbol
+    * `tokenAvatar`, String - Token avatar url
 * Example
 
-```shell
-$ curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getMetaData","params":["0xff"],"id":1}' 127.0.0.1:1337
+    ```shell
+    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getMetaData","params":["0xff"],"id":1}' 127.0.0.1:1337
 
-{"jsonrpc":"2.0","id":1,"result":{"chainId":464896313,"chainName":"test-chain","operator":"test-operator","website":"https://www.example.com","genesisTimestamp":1525313122,"validators":["0x1c82af8ac82348748c14970296386cf466271bed","0xd3e9c874eb92663337db36f570bca4c0167312be","0x56075c47c33ebac18a8f8be0c3cbaf66328027ac","0xbd5e28047ac06f31fe27cc3ab6ce014cfa05ced3"],"blockInterval":3000}}
-
-```
+    {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+            "chainId": 1,
+            "chainName": "test-chain",
+            "operator": "test-operator",
+            "website": "https://www.example.com",
+            "genesisTimestamp": 1528076976075,
+            "validators": [
+            "0x18e79b84cd3e5801e7f3dc66546b3b46af812cbd",
+            "0x5bb02723557a4633cebfa3f83b1ecb657002f444",
+            "0xafbf170735a3535f141cd929f67296de50842638",
+            "0xdd321f6586f2c5ceb4ae3ce28d0bd92fb631d3ae"
+            ],
+            "blockInterval": 3000,
+            "token_name": "tokenName",
+            "token_symbol": "tokenSymbol",
+            "token_avatar": "tokenAvatar"
+        }
+    }
+    ```
 
 ***
 

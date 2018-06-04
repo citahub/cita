@@ -18,6 +18,9 @@ Contracts:
   - website: https://www.example.com
   - block_interval: 3000
   - economical_model: 0
+  - name: tokenName
+  - symbol: tokenSymbol
+  - avatar: tokenAvatar
 - QuotaManager:
   - admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
 - NodeManager:

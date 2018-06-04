@@ -496,6 +496,7 @@ impl ExecutorInstance {
                             .block_header(BlockId::Earliest)
                             .unwrap()
                             .timestamp();
+                        let token = sys_config.token_info();
                         MetaData {
                             genesis_timestamp,
                             chain_id: sys_config.chain_id(),
@@ -504,6 +505,9 @@ impl ExecutorInstance {
                             website: sys_config.website(Some(block_id)),
                             validators: self.ext.node_manager().shuffled_stake_nodes(),
                             block_interval: sys_config.block_interval(),
+                            token_name: token.name,
+                            token_avatar: token.avatar,
+                            token_symbol: token.symbol,
                         }
                     }) {
                     Ok(metadata) => {
