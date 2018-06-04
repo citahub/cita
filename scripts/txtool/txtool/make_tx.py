@@ -15,8 +15,10 @@ import pysodium
 from generate_account import generate
 from block_number import block_number
 from url_util import endpoint
-from jsonrpcclient.http_client import HTTPClient
 from log import logger
+from jsonrpcclient.http_client import HTTPClient
+
+
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():

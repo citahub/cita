@@ -2,9 +2,10 @@
 # coding=utf-8
 
 import argparse
+from log import logger
 from jsonrpcclient.http_client import HTTPClient
 from url_util import endpoint
-from log import logger
+
 
 
 def get_tx_count(params):

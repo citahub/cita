@@ -4,11 +4,10 @@
 from __future__ import print_function
 import argparse
 from pathlib import Path
+from log import logger
 from jsonrpcclient.http_client import HTTPClient
-from jsonrpcclient.request import Request
 from url_util import endpoint
 from util import findDict, run_command
-from log import logger
 
 
 def save_transaction_hash(tx_hash):
@@ -27,7 +26,8 @@ def send_transaction(params):
     try:
         url = endpoint()
         response = HTTPClient(url).request("cita_sendTransaction", params)
-    except:
+    except Exception as e:
+        logger.error(e)
         return None
 
     return response

@@ -4,7 +4,6 @@
 import argparse
 from jsonrpcclient.http_client import HTTPClient
 from url_util import host, endpoint
-from log import logger
 
 
 def get_code(params):

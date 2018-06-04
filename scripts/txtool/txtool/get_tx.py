@@ -4,10 +4,11 @@
 from __future__ import print_function
 import argparse
 from pathlib import Path
+from log import logger
 from jsonrpcclient.http_client import HTTPClient
 from url_util import endpoint
 from util import run_command
-from log import logger
+
 
 
 def get_transaction_hash():
