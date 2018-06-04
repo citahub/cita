@@ -15,12 +15,13 @@ from ecdsa import SigningKey, SECP256k1
 from jsonrpcclient.http_client import HTTPClient
 
 
-def send_tx(privkey, to_addr, value=0, code=""):
+def send_tx(privkey, to_addr, value=0, quota=1000, code=""):
     """
     Send a transfer transaction to a node
 
         python3 make_tx.py \
         --value 20000 \
+        --quota 1000\
         --code "" \
         --privkey 101c286e965ddf8176dd6c0793e9ad5f3d745105fab744eea6ffdae6a98d0553 \
         --to 0xc94bcce78b4e618c6a259d4eb8e7bf45e145f0d0 \
@@ -34,6 +35,7 @@ def send_tx(privkey, to_addr, value=0, code=""):
         '--to': to_addr,
         '--code': code,
         '--value': str(value),
+        '--quota': str(quota),
     }
     args = functools.reduce(
         lambda lst, kv: lst + list(kv),
@@ -141,15 +143,10 @@ def main():
     bob_address = key_address(bob_privkey)
     print('[Bob.address]: {}'.format(bob_address))
 
-    test_transfer(miner_privkey, miner_address, alice_address, 10000 * 10000,
+    test_transfer(miner_privkey, miner_address, alice_address, 10 * 10000,
                   sender_is_miner=True)
-    assert get_balance(alice_address) == 10000 * 10000, \
-        'Alice({}) should have 10000 * 10000 now'.format(alice_address)
-    # [FIXME]:
-    #   There must a BUG in EVM.
-    #   If the miner transfer only (1000 * 10000) to Alice,
-    #   then the transaction which Alice transfer 200 to Bob will
-    #   fail with "Cost of transaction exceeds sender balance".
+    assert get_balance(alice_address) == 10 * 10000, \
+        'Alice({}) should have 10000 now'.format(alice_address)
     test_transfer(alice_privkey, alice_address, bob_address, 200)
     assert get_balance(bob_address) == 200, \
         'Bob({}) should have 200 now'.format(bob_address)

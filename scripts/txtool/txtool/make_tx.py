@@ -80,15 +80,16 @@ def get_chainid():
 def generate_deploy_data(current_height,
                          bytecode,
                          value,
+                         quota,
                          privatekey,
                          receiver=None,
                          newcrypto=False,
                          version=0):
     if newcrypto:
-        data = _blake2b_ed25519_deploy_data(current_height, bytecode, value,
+        data = _blake2b_ed25519_deploy_data(current_height, bytecode, value, quota,
                                             privatekey, version, receiver)
     else:
-        data = _sha3_secp256k1_deploy_data(current_height, bytecode, value,
+        data = _sha3_secp256k1_deploy_data(current_height, bytecode, value, quota,
                                            privatekey, version, receiver)
 
     return data
@@ -97,6 +98,7 @@ def generate_deploy_data(current_height,
 def _blake2b_ed25519_deploy_data(current_height,
                                  bytecode,
                                  value,
+                                 quota,
                                  privatekey,
                                  version=0,
                                  receiver=None):
@@ -116,6 +118,7 @@ def _blake2b_ed25519_deploy_data(current_height,
         tx.to = receiver
     tx.data = hex2bytes(bytecode)
     tx.value = value
+    tx.quota = quota
 
     message = _blake2b(tx.SerializeToString())
     logger.debug("blake2b msg")
@@ -140,6 +143,7 @@ def _blake2b_ed25519_deploy_data(current_height,
 def _sha3_secp256k1_deploy_data(current_height,
                                 bytecode,
                                 value,
+                                quota,
                                 privatekey,
                                 version=0,
                                 receiver=None):
@@ -160,12 +164,12 @@ def _sha3_secp256k1_deploy_data(current_height,
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
     tx.chain_id = chainid
-    tx.quota = 1000000
     tx.version = version
     if receiver is not None:
         tx.to = receiver
     tx.data = hex2bytes(bytecode)
     tx.value = value
+    tx.quota = quota
 
     message = sha3(tx.SerializeToString())
 
@@ -190,6 +194,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--code", help="Compiled contract bytecode.")
     parser.add_argument("--value", type=int, default=0, help="The value to send.")
+    parser.add_argument("--quota", type=int, default=1000000, help="The quota(gas limit).")
     parser.add_argument(
         "--privkey", help="private key genearted by secp256k1 alogrithm.")
     parser.add_argument("--to", help="transaction to")
@@ -216,6 +221,7 @@ def _params_or_default():
     opts = parse_arguments()
     bytecode = opts.code
     value = opts.value
+    quota = opts.quota
     privkey = opts.privkey
     receiver = opts.to
     version = opts.version
@@ -223,7 +229,7 @@ def _params_or_default():
     if bytecode is None:
         bytecode = bin_code()
 
-    return (bytecode, value, privkey, receiver, version)
+    return (bytecode, value, quota, privkey, receiver, version)
 
 
 def _blake2b(seed):
@@ -235,10 +241,10 @@ def _blake2b(seed):
 def main():
     blake2b_ed25519 = parse_arguments().newcrypto
     logger.debug(blake2b_ed25519)
-    bytecode, value, privkey, receiver, version = _params_or_default()
+    bytecode, value, quota, privkey, receiver, version = _params_or_default()
     current_height = int(block_number(), 16)
     data = generate_deploy_data(
-        current_height, remove_hex_0x(bytecode), value,
+        current_height, remove_hex_0x(bytecode), value, quota,
         remove_hex_0x(privkey), remove_hex_0x(receiver), blake2b_ed25519, version)
     logger.info("save deploy code to ../output/transaction/deploycode")
     save_deploy(data)
