@@ -107,6 +107,8 @@ function run_in_machine () {
         time ./tests/integrate_test/cita_jsonrpc_schema_mock.sh charge
         draw_title "        5.4) Crosschain transaction test"
         time ./tests/integrate_test/cita_crosschain.sh
+        draw_title "        5.5) EconomicalModel = Charge transfer value tests"
+        time ./tests/integrate_test/cita_charge_mode.sh
     else
         echo "[Info ] Skip JSONRPC schema mock test."
         echo "[Info ] Skip Crosschain transaction test."
