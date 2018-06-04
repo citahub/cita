@@ -22,8 +22,8 @@
 use cita_types::{Address, H256, U256};
 use contracts::Resource;
 use engines::NullEngine;
-use env_info::EnvInfo;
 use error::{Error, ExecutionError};
+use evm::env_info::EnvInfo;
 use evm::Error as EvmError;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
@@ -1124,7 +1124,7 @@ mod tests {
     use cita_crypto::KeyPair;
     use cita_types::traits::LowerHex;
     use cita_types::{Address, H256};
-    use env_info::EnvInfo;
+    use evm::env_info::EnvInfo;
     use std::sync::Arc;
     use tests::helpers::*;
     use util::crypto::CreateKey;

@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 #![rustfmt_skip]
 use cita_types::U256;
-use evm::ReturnData;
+use return_data::ReturnData;
 
 const MAX_RETURN_WASTE_BYTES: usize = 16384;
 

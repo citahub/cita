@@ -16,21 +16,21 @@
 
 //! Transaction Execution environment.
 
-use action_params::{ActionParams, ActionValue};
 use cita_types::{Address, H160, H256, U256, U512};
 use contracts::permission_management::contains_resource;
 use contracts::Resource;
 use crossbeam;
 use engines::Engine;
-use env_info::EnvInfo;
 use error::ExecutionError;
 use ethcore_io as io;
+use evm::action_params::{ActionParams, ActionValue};
+use evm::call_type::CallType;
+use evm::env_info::EnvInfo;
 use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
-use executed::CallType;
 pub use executed::{Executed, ExecutionResult};
 use externalities::*;
 use libexecutor::executor::EconomicalModel;
-use native::Factory as NativeFactory;
+use native::factory::Factory as NativeFactory;
 use state::backend::Backend as StateBackend;
 use state::{State, Substate};
 use std::cmp;
@@ -1072,11 +1072,11 @@ mod tests {
 
     use self::rustc_hex::FromHex;
     use super::*;
-    use action_params::{ActionParams, ActionValue};
     use cita_crypto::{CreateKey, KeyPair};
     use cita_types::{Address, H256, U256};
     use engines::NullEngine;
-    use env_info::EnvInfo;
+    use evm::action_params::{ActionParams, ActionValue};
+    use evm::env_info::EnvInfo;
     use evm::{Factory, VMType};
     use state::Substate;
     use std::ops::Deref;

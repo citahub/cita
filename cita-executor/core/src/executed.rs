@@ -18,56 +18,12 @@
 #![rustfmt_skip]
 
 use evm;
-use rlp::*;
 use std::fmt;
 use trace::{VMTrace, FlatTrace};
 use types::log_entry::LogEntry;
 use types::state_diff::StateDiff;
 use cita_types::{U256, Address, U512};
 use util::{Bytes, trie};
-
-/// The type of the call-like instruction.
-#[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "ipc", binary)]
-pub enum CallType {
-    /// Not a CALL.
-    None,
-    /// CALL.
-    Call,
-    /// CALLCODE.
-    CallCode,
-    /// DELEGATECALL.
-    DelegateCall,
-    /// STATICCALL
-    StaticCall,
-}
-
-impl Encodable for CallType {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        let value = match *self {
-            CallType::None => 0u32,
-            CallType::Call => 1,
-            CallType::CallCode => 2,
-            CallType::DelegateCall => 3,
-            CallType::StaticCall => 4,
-        };
-        s.append_internal(&value);
-    }
-}
-
-impl Decodable for CallType {
-    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        let value: u8 = rlp.as_val()?;
-        match value {
-            0 => Ok(CallType::None),
-            1 => Ok(CallType::Call),
-            2 => Ok(CallType::CallCode),
-            3 => Ok(CallType::DelegateCall),
-            4 => Ok(CallType::StaticCall),
-            _ => Err(DecoderError::Custom("Invalid value of CallType item")),
-        }
-    }
-}
 
 /// Transaction execution receipt.
 #[derive(Debug, PartialEq, Clone)]
@@ -240,29 +196,3 @@ impl fmt::Display for CallError {
 
 /// Transaction execution result.
 pub type ExecutionResult = Result<Executed, ExecutionError>;
-
-#[cfg(test)]
-mod tests {
-    use super::CallType;
-    use rlp::*;
-
-    #[test]
-    fn encode_call_type() {
-        let ct = CallType::Call;
-
-        let mut s = RlpStream::new_list(2);
-        s.append(&ct);
-        assert!(!s.is_finished(), "List shouldn't finished yet");
-        s.append(&ct);
-        assert!(s.is_finished(), "List should be finished now");
-        s.out();
-    }
-
-    #[test]
-    fn should_encode_and_decode_call_type() {
-        let original = CallType::Call;
-        let encoded = encode(&original);
-        let decoded = decode(&encoded);
-        assert_eq!(original, decoded);
-    }
-}

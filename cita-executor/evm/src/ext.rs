@@ -18,8 +18,10 @@
 #![rustfmt_skip]
 
 use env_info::*;
-use evm::{self, Schedule, ReturnData};
-use executed::CallType;
+use return_data::ReturnData;
+use error::Result;
+use Schedule;
+use call_type::CallType;
 use std::sync::Arc;
 use util::*;
 use cita_types::{Address, H256, U256};
@@ -56,22 +58,22 @@ pub enum MessageCallResult {
 /// Externalities interface for EVMs
 pub trait Ext {
     /// Returns a value for given key.
-    fn storage_at(&self, key: &H256) -> evm::Result<H256>;
+    fn storage_at(&self, key: &H256) -> Result<H256>;
 
     /// Stores a value for given key.
-    fn set_storage(&mut self, key: H256, value: H256) -> evm::Result<()>;
+    fn set_storage(&mut self, key: H256, value: H256) -> Result<()>;
 
     /// Determine whether an account exists.
-    fn exists(&self, address: &Address) -> evm::Result<bool>;
+    fn exists(&self, address: &Address) -> Result<bool>;
 
     /// Determine whether an account exists and is not null (zero balance/nonce, no code).
-    fn exists_and_not_null(&self, address: &Address) -> evm::Result<bool>;
+    fn exists_and_not_null(&self, address: &Address) -> Result<bool>;
 
     /// Balance of the origin account.
-    fn origin_balance(&self) -> evm::Result<U256>;
+    fn origin_balance(&self) -> Result<U256>;
 
     /// Returns address balance.
-    fn balance(&self, address: &Address) -> evm::Result<U256>;
+    fn balance(&self, address: &Address) -> Result<U256>;
 
     /// Returns the hash of one of the 256 most recent complete blocks.
     fn blockhash(&self, number: &U256) -> H256;
@@ -90,21 +92,21 @@ pub trait Ext {
     fn call(&mut self, gas: &U256, sender_address: &Address, receive_address: &Address, value: Option<U256>, data: &[u8], code_address: &Address, output: &mut [u8], call_type: CallType) -> MessageCallResult;
 
     /// Returns code at given address
-    fn extcode(&self, address: &Address) -> evm::Result<Arc<Bytes>>;
+    fn extcode(&self, address: &Address) -> Result<Arc<Bytes>>;
 
     /// Returns code size at given address
-    fn extcodesize(&self, address: &Address) -> evm::Result<usize>;
+    fn extcodesize(&self, address: &Address) -> Result<usize>;
 
     /// Creates log entry with given topics and data
-    fn log(&mut self, topics: Vec<H256>, data: &[u8]) -> evm::Result<()>;
+    fn log(&mut self, topics: Vec<H256>, data: &[u8]) -> Result<()>;
 
     /// Should be called when transaction calls `RETURN` opcode.
     /// Returns gas_left if cost of returning the data is not too high.
-    fn ret(self, gas: &U256, data: &ReturnData, apply_state: bool) -> evm::Result<U256>;
+    fn ret(self, gas: &U256, data: &ReturnData, apply_state: bool) -> Result<U256>;
 
     /// Should be called when contract commits suicide.
     /// Address to which funds should be refunded.
-    fn suicide(&mut self, refund_address: &Address) -> evm::Result<()>;
+    fn suicide(&mut self, refund_address: &Address) -> Result<()>;
 
     /// Returns schedule.
     fn schedule(&self) -> &Schedule;

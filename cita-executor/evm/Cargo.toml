@@ -1,0 +1,14 @@
+[package]
+name = "evm"
+version = "0.1.0"
+authors = ["Cryptape Technologies <contact@cryptape.com>"]
+
+[dependencies]
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+lazy_static = "0.2"
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+bit-set = "0.4"
+common-types = { path = "../../cita-chain/types" }
+rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+log = "0.4.0"
+rustc-hex = "1.0"

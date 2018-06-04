@@ -17,24 +17,46 @@
 //! Ethereum virtual machine.
 #![feature(custom_attribute)]
 #![allow(unused_attributes)]
-#![rustfmt_skip]
-pub mod ext;
+
+extern crate bit_set;
+extern crate cita_types;
+extern crate common_types as types;
+extern crate rlp;
+extern crate rustc_hex;
+extern crate util;
+#[macro_use]
+extern crate log;
+
+pub mod action_params;
+pub mod call_type;
+pub mod env_info;
+pub mod error;
 pub mod evm;
+pub mod ext;
 pub mod interpreter;
+pub mod return_data;
+#[macro_use]
+pub mod storage;
 #[macro_use]
 pub mod factory;
+pub mod instructions;
 pub mod schedule;
-mod instructions;
+#[macro_use]
+extern crate lazy_static;
 #[cfg(feature = "jit")]
 mod jit;
 
-#[cfg(test)]
-pub mod tests;
 #[cfg(all(feature = "benches", test))]
 mod benches;
+#[cfg(test)]
+pub mod tests;
 
-pub use self::evm::{Evm, Error, Finalize, FinalizationResult, GasLeft, Result, CostType, ReturnData};
-pub use self::ext::{Ext, ContractCreateResult, MessageCallResult};
+pub mod fake_tests;
+
+pub use self::error::{Error, Result};
+pub use self::evm::{CostType, Evm, FinalizationResult, Finalize};
+pub use self::ext::{ContractCreateResult, Ext, MessageCallResult};
 pub use self::factory::{Factory, VMType};
+pub use self::instructions::*;
+pub use self::return_data::{GasLeft, ReturnData};
 pub use self::schedule::Schedule;
-pub use executed::CallType;

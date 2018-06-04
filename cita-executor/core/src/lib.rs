@@ -46,6 +46,7 @@ extern crate common_types as types;
 extern crate crossbeam;
 extern crate crypto;
 extern crate ethcore_io;
+extern crate evm;
 extern crate jsonrpc_types;
 #[macro_use]
 extern crate lazy_static;
@@ -72,7 +73,6 @@ extern crate num;
 extern crate rand;
 
 pub mod account_db;
-pub mod action_params;
 pub mod db;
 pub mod executed;
 pub mod factory;
@@ -85,13 +85,11 @@ pub mod trace;
 pub mod basic_types;
 pub mod builtin;
 pub mod cache_manager;
-pub mod env_info;
 pub mod executive;
 pub mod externalities;
 pub mod header;
 pub mod pod_account;
 #[macro_use]
-pub mod evm;
 pub mod engines;
 pub mod error;
 pub mod native;
@@ -101,6 +99,7 @@ pub mod contracts;
 pub mod libexecutor;
 pub mod snapshot;
 
+pub use evm::Error;
 pub use factory::*;
 pub use types::*;
 pub use util::journaldb;

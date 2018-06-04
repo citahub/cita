@@ -162,7 +162,7 @@ impl Into<Vec<FlatTransactionTraces>> for FlatBlockTraces {
 #[cfg(test)]
 mod tests {
     use super::{FlatBlockTraces, FlatTransactionTraces, FlatTrace};
-    use evm::CallType;
+    use evm::call_type::CallType;
     use rlp::*;
     use trace::trace::{Action, Res, CallResult, Call, Suicide};
 

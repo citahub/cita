@@ -19,6 +19,7 @@ libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "deve
 error =  { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 core-executor = { path = "./core" }
+evm = { path = "./evm" }
 common-types = { path = "../cita-chain/types" }
 jsonrpc_types = { path = "../jsonrpc_types" }
 

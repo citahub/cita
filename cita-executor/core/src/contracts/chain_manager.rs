@@ -20,8 +20,8 @@
 use super::encode_contract_name;
 use cita_types::{Address, H160, H256, U256};
 use ethabi::{decode, ParamType};
+use evm::call_type::CallType;
 use evm::ext::{Ext, MessageCallResult};
-use executed::CallType;
 use std::str::FromStr;
 
 const CHAIN_ID: &'static [u8] = &*b"getChainId()";

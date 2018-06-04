@@ -1,8 +1,20 @@
-use super::*;
+use self::bincode::internal::serialize_into;
+use self::bincode::Infinite;
+use bincode;
+use cita_types::{Address, H256, U256};
+use evm;
+use evm::fake_tests::FakeExt;
+use native::factory::Factory;
+use std::io::Write;
+use std::str::FromStr;
+
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
-use evm::ReturnData;
-use native::storage::*;
+use evm::action_params::ActionParams;
+use evm::ext::Ext;
+use evm::return_data::{GasLeft, ReturnData};
+use evm::storage::*;
+use native::factory::Contract;
 #[derive(Clone)]
 
 pub struct SimpleStorage {
@@ -162,14 +174,7 @@ impl SimpleStorage {
         })
     }
 }
-//use byteorder::{};
-extern crate bincode;
-use self::bincode::internal::serialize_into;
-use self::bincode::Infinite;
-use cita_types::{Address, H256, U256};
-use evm::tests::FakeExt;
-use std::io::Write;
-use std::str::FromStr;
+
 #[test]
 fn test_native_contract() {
     let factory = Factory::default();

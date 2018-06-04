@@ -16,7 +16,7 @@
 
 use account_db::Factory as AccountFactory;
 use evm::Factory as EvmFactory;
-use native::Factory as NativeFactory;
+use native::factory::Factory as NativeFactory;
 use util::trie::TrieFactory;
 
 /// Collection of factories.

@@ -19,9 +19,9 @@
 
 use super::error::Error;
 
-use action_params::ActionParams;
+use evm::action_params::ActionParams;
 use basic_types::LogBloom;
-use executed::CallType;
+use evm::call_type::CallType;
 use rlp::*;
 use cita_types::{U256, Address};
 use cita_types::traits::BloomTools;

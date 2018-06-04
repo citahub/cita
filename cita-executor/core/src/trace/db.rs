@@ -409,7 +409,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use executed::CallType;
+    use evm::call_type::CallType;
     use header::BlockNumber;
     use std::collections::HashMap;
     use std::sync::Arc;
