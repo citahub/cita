@@ -4,7 +4,7 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{Message, OperateType, SyncRequest, SyncResponse};
 use protobuf::RepeatedField;
 use rand::{thread_rng, Rng, ThreadRng};
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::convert::{Into, TryFrom, TryInto};
 use std::sync::{mpsc, Arc};
 use std::time::{Duration, Instant};
@@ -150,6 +150,12 @@ impl Synchronizer {
                 && self.is_synchronizing
             {
                 self.start_sync_req(status.get_height(), status.get_height());
+            } else if self.global_status.get_height() == old_global_status.get_height() {
+                if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT {
+                    self.remote_sync_time_out = Instant::now();
+                    self.start_sync_req(current_height + 1, status.get_height());
+                    self.is_synchronizing = true;
+                }
             } else {
                 self.is_synchronizing = false;
             }
@@ -232,7 +238,7 @@ impl Synchronizer {
         if let Some((height, origins)) = self
             .latest_status_lists
             .iter()
-            .rfind(|&(_, origins)| origins.len() >= (2 / (3 * self.con.peers_pair.read().len())))
+            .rfind(|&(_, origins)| origins.len() > 0)
         {
             debug!(
                 "sync: start_sync_req: height = {}, origins = {:?}",
@@ -395,10 +401,22 @@ impl Synchronizer {
             origin,
             height
         );
-        self.latest_status_lists
+        if self
+            .latest_status_lists
             .entry(height)
             .or_insert_with(VecDeque::new)
-            .push_back(origin);
+            .iter()
+            .fold(HashSet::new(), |mut set, item| {
+                set.insert(item);
+                set
+            })
+            .insert(&origin)
+        {
+            self.latest_status_lists
+                .entry(height)
+                .or_insert_with(VecDeque::new)
+                .push_back(origin);
+        }
     }
 
     /// Prune block on btreemap
