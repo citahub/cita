@@ -19,11 +19,15 @@ setup() {
     else
         ps -C rabbitmq-server > /dev/null || sudo /etc/init.d/rabbitmq-server restart > /dev/null
     fi
-    
+    NODE_ID=`echo ${node} |awk -F/ '{print $2}'`
     sudo rabbitmqctl list_vhosts | grep ${node}                            > /dev/null && sudo rabbitmqctl delete_vhost ${node}    > /dev/null
     sudo rabbitmqctl add_vhost ${node}                                     > /dev/null
     sudo rabbitmqctl set_permissions -p ${node} guest '.*' '.*' '.*'       > /dev/null
     sudo rabbitmq-plugins enable rabbitmq_management                       > /dev/null
+    sudo rabbitmqctl add_user  cita${NODE_ID}_monitor cita_monitor        > /dev/null
+    sudo rabbitmqctl set_user_tags cita${NODE_ID}_monitor monitoring      > /dev/null
+    sudo rabbitmqctl set_permissions -p ${node} cita${NODE_ID}_monitor '.*' '.*' '.*'      > /dev/null
+
 
     # setup env
     if [[ `uname` != 'Darwin' ]]
