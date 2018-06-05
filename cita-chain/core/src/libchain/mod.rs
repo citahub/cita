@@ -23,5 +23,4 @@ pub mod rich_status;
 pub mod status;
 pub mod transaction;
 pub use libproto::*;
-pub use log::*;
 pub use util::journaldb;

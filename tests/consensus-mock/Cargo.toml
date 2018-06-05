@@ -14,7 +14,6 @@ libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "deve
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rustc-serialize = "0.3"
 protobuf = { version = "^1.0.0" }
-log = "0.4"
 clap = "2"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

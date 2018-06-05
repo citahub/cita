@@ -50,7 +50,6 @@ extern crate libc;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate log;
 extern crate logger;
 extern crate net2;
 extern crate num_cpus;

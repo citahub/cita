@@ -32,7 +32,6 @@ extern crate rustc_serialize;
 extern crate util;
 
 #[macro_use]
-extern crate log;
 extern crate logger;
 extern crate pubsub;
 #[macro_use]

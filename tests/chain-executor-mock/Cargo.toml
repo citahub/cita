@@ -11,7 +11,6 @@ clap = "2"
 protobuf = { version = "^1.0.0" }
 rustc-serialize = "0.3"
 dotenv = "0.10.0"
-log = "0.4.0"
 bincode = "0.8.0"
 cpuprofiler = "0.0.3"
 uuid = { version = "0.4", features = ["v4"] }

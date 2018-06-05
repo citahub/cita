@@ -36,7 +36,6 @@ extern crate core;
 extern crate jsonrpc_types;
 extern crate libproto;
 #[macro_use]
-extern crate log;
 extern crate logger;
 
 mod arguments;

@@ -5,7 +5,6 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
 clap = "2"
-log = "0.4"
 dotenv = "0.10.0"
 cpuprofiler = "0.0.3"
 threadpool = "1.7.0"

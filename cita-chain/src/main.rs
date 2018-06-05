@@ -80,7 +80,6 @@ extern crate jsonrpc_types;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate log;
 extern crate logger;
 extern crate proof;
 extern crate protobuf;
