@@ -169,6 +169,9 @@ lazy_static! {
         arr[OR as usize] =                InstructionInfo::new("OR",                0, 2, 1, false, GasPriceTier::VeryLow);
         arr[XOR as usize] =             InstructionInfo::new("XOR",                0, 2, 1, false, GasPriceTier::VeryLow);
         arr[BYTE as usize] =            InstructionInfo::new("BYTE",            0, 2, 1, false, GasPriceTier::VeryLow);
+        arr[SHL as usize] =             InstructionInfo::new("SHL",             0, 2, 1, false, GasPriceTier::VeryLow);
+        arr[SHR as usize] =             InstructionInfo::new("SHR",             0, 2, 1, false, GasPriceTier::VeryLow);
+        arr[SAR as usize] =             InstructionInfo::new("SAR",             0, 2, 1, false, GasPriceTier::VeryLow);
         arr[ADDMOD as usize] =            InstructionInfo::new("ADDMOD",            0, 3, 1, false, GasPriceTier::Mid);
         arr[MULMOD as usize] =            InstructionInfo::new("MULMOD",            0, 3, 1, false, GasPriceTier::Mid);
         arr[SIGNEXTEND as usize] =        InstructionInfo::new("SIGNEXTEND",        0, 2, 1, false, GasPriceTier::Low);
@@ -335,6 +338,12 @@ pub const XOR: Instruction = 0x18;
 pub const NOT: Instruction = 0x19;
 /// retrieve single byte from word
 pub const BYTE: Instruction = 0x1a;
+/// shift left operation
+pub const SHL: Instruction = 0x1b;
+/// logical shift right operation
+pub const SHR: Instruction = 0x1c;
+/// arithmetic shift right operation
+pub const SAR: Instruction = 0x1d;
 
 /// compute SHA3-256 hash
 pub const SHA3: Instruction = 0x20;
