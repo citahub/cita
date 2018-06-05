@@ -49,8 +49,8 @@ CITA 中的 Chain 模块主要功能有以下几点：
 
 * EVM 合约引擎
 
-	用户可使用 [Solidity](https://solidity.readthedocs.io/en/latest/introduction-to-smart-contracts.html) 语言编写智能合约，并在 [Remix](http://remix.ethereum.org) 集成开发环境中开发和测试，最后通过 CITA 的合约创建和调用接口来部署和调用。换句话说，CITA 的合约通过以太坊智能合约的生态，一方面降低用户培养成本，一方面降低安全风险。
+    用户可使用 [Solidity](https://solidity.readthedocs.io/en/latest/introduction-to-smart-contracts.html) 语言编写智能合约，并在 [Remix](http://remix.ethereum.org) 集成开发环境中开发和测试，最后通过 CITA 的合约创建和调用接口来部署和调用。换句话说，CITA 的合约通过以太坊智能合约的生态，一方面降低用户培养成本，一方面降低安全风险。
 
 * 原生合约引擎
 
-	使用 EVM 合约能够快速完成功能开发，并满足初期性能需求。随着业务发展，当性能上遇到瓶颈时，可以 EVM 合约开发的基础上，用原生合约来实现，合约调用接口不变。原生合约支持两种数据访问接口，兼容 EVM 合约的键值数据库方式与传统的结构化数据库方式。同时也提供了原生合约的注册表机制，用户可以实现合约的创建与销毁。
+    使用 EVM 合约能够快速完成功能开发，并满足初期性能需求。随着业务发展，当性能上遇到瓶颈时，可以 EVM 合约开发的基础上，用原生合约来实现，合约调用接口不变。原生合约支持两种数据访问接口，兼容 EVM 合约的键值数据库方式与传统的结构化数据库方式。同时也提供了原生合约的注册表机制，用户可以实现合约的创建与销毁。

@@ -114,31 +114,31 @@ cd target/install
 
 1.  配置节点：
 
-	```shell
-	./env.sh ./bin/cita setup node/0
-	```
+    ```shell
+    ./env.sh ./bin/cita setup node/0
+    ```
 
 2.  启动节点：
 
-	该命令正常情况下不会返回，因此需要后台运行。
-	
-	```shell
-	./daemon.sh ./bin/cita start node/0
-	```
+    该命令正常情况下不会返回，因此需要后台运行。
+    
+    ```shell
+    ./daemon.sh ./bin/cita start node/0
+    ```
 
 3.  停止节点：
 
-	```shell
-	./env.sh ./bin/cita stop node/0
-	```
+    ```shell
+    ./env.sh ./bin/cita stop node/0
+    ```
 
 4.  其他操作
 
-	具体使用查看命令的帮助信息：
-	
-	```shell
-	./env.sh ./bin/cita help
-	```
+    具体使用查看命令的帮助信息：
+    
+    ```shell
+    ./env.sh ./bin/cita help
+    ```
 
 ## 测试
 
@@ -148,80 +148,80 @@ cd target/install
 
 1.  启动 4 个节点
 
-	```shell
-	./env.sh tests/integrate_test/cita_start.sh
-	```
+    ```shell
+    ./env.sh tests/integrate_test/cita_start.sh
+    ```
 
-	该命令正常情况下不会返回，需要保持 shell 不退出。或者用`daemon.sh`运行。
+    该命令正常情况下不会返回，需要保持 shell 不退出。或者用`daemon.sh`运行。
 
 2.  停止 4 个节点
 
-	上一节中的命令中止，或者执行命令：
-	
-	```shell
-	./env.sh ./tests/integrate_test/cita_stop.sh
-	```
+    上一节中的命令中止，或者执行命令：
+    
+    ```shell
+    ./env.sh ./tests/integrate_test/cita_stop.sh
+    ```
 
 3.  基本功能测试
 
-	4 个节点启动并成功出块，基本功能测试然后停止 4 个节点：
-	
-	```shell
-	./env.sh ./tests/integrate_test/cita_basic.sh
-	```
+    4 个节点启动并成功出块，基本功能测试然后停止 4 个节点：
+    
+    ```shell
+    ./env.sh ./tests/integrate_test/cita_basic.sh
+    ```
 
 4.  发送交易测试
 
-	```shell
-	./env.sh ./tests/integrate_test/cita_transactiontest.sh
-	```
+    ```shell
+    ./env.sh ./tests/integrate_test/cita_transactiontest.sh
+    ```
 
 5.  拜占庭测试
 
-	模拟网络异常情况下的功能测试。
-	
-	```shell
-	./env.sh ./tests/integrate_test/cita_byzantinetest.sh
-	```
+    模拟网络异常情况下的功能测试。
+    
+    ```shell
+    ./env.sh ./tests/integrate_test/cita_byzantinetest.sh
+    ```
 
 ## 验证
 
 * 查询节点个数
 
-	Request:
-	
-	```shell
-	./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}' 127.0.0.1:1337
-	```
+    Request:
+    
+    ```shell
+    ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}' 127.0.0.1:1337
+    ```
 
-	Result:
-	
-	```shell
-	{
-	  "jsonrpc": "2.0",
-	  "id": 74,
-	  "result": "0x3"
-	}
-	```
+    Result:
+    
+    ```shell
+    {
+      "jsonrpc": "2.0",
+      "id": 74,
+      "result": "0x3"
+    }
+    ```
 
 * 查询当前块高度。
 
-	Request:
-	
-	```shell
-	./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}' 127.0.0.1:1337
-	```
+    Request:
+    
+    ```shell
+    ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}' 127.0.0.1:1337
+    ```
 
-	Result:
-	
-	```shell
-	{
-	  "jsonrpc": "2.0",
-	  "id": 83,
-	  "result": "0x8"
-	}
-	```
-	
-	返回块高度，表示节点已经开始正常出块。
+    Result:
+    
+    ```shell
+    {
+      "jsonrpc": "2.0",
+      "id": 83,
+      "result": "0x8"
+    }
+    ```
+    
+    返回块高度，表示节点已经开始正常出块。
 
 更多 API（如合约调用、交易查询）请参见[RPC 调用](https://cryptape.github.io/cita/zh/usage-guide/rpc/)。
