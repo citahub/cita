@@ -151,7 +151,7 @@ fn main() {
         chain_config,
     ));
 
-    let current_height = chain.get_atomic_current_height();
+    let current_height = chain.get_current_height();
     if let Some(block_tx_hashes) = chain.block_tx_hashes(current_height) {
         chain.delivery_block_tx_hashes(current_height, block_tx_hashes, &ctx_pub);
     }

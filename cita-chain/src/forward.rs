@@ -173,7 +173,7 @@ impl Forward {
                 // let sys_time = SystemTime::now();
                 let mut height = self.chain.get_max_store_height();
                 if height == ::std::u64::MAX {
-                    height = self.chain.get_atomic_current_height();
+                    height = self.chain.get_current_height();
                 }
                 response.set_block_number(height);
             }
@@ -379,7 +379,7 @@ impl Forward {
 
     // Consensus block enqueue
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
-        let current_height = self.chain.get_atomic_current_height() as usize;
+        let current_height = self.chain.get_current_height() as usize;
         let mut proof_blk = proof_blk;
         let block = proof_blk.take_blk();
         let proof = proof_blk.take_proof();
@@ -419,7 +419,7 @@ impl Forward {
             if let Some(block) = self.chain.block(BlockId::Number(height)) {
                 res_vec.mut_blocks().push(block.protobuf());
                 //push double
-                if height == self.chain.get_atomic_current_height() {
+                if height == self.chain.get_current_height() {
                     let mut proof_block = ProtobufBlock::new();
                     //get current block proof
                     if let Some(proof) = self.chain.current_block_poof() {
@@ -458,15 +458,12 @@ impl Forward {
     }
 
     fn deal_sync_blocks(&self, mut sync_res: SyncResponse) {
-        debug!(
-            "sync: current height = {}",
-            self.chain.get_atomic_current_height()
-        );
+        debug!("sync: current height = {}", self.chain.get_current_height());
         for block in sync_res.take_blocks().into_iter() {
             let blk_height = block.get_header().get_height();
 
             // return if the block existed
-            if blk_height < self.chain.get_atomic_current_height() {
+            if blk_height < self.chain.get_current_height() {
                 continue;
             };
 
@@ -489,7 +486,7 @@ impl Forward {
         let block_proof_type = block.proof_type();
         let chain_proof_type = self.chain.get_chain_prooftype();
         let blk_height = block.number() as usize;
-        let chain_max_height = self.chain.get_atomic_current_height();
+        let chain_max_height = self.chain.get_current_height();
         let chain_max_store_height = self.chain.get_max_store_height();
         //check sync_block's proof type, it must be consistent with chain
         if chain_proof_type != block_proof_type {
@@ -545,7 +542,7 @@ impl Forward {
                             proof_height
                         );
                     }
-                } else if proof_height > self.chain.get_atomic_current_height() {
+                } else if proof_height > self.chain.get_current_height() {
                     if let Some(block_in_queue) = blocks.get_mut(&proof_height) {
                         if let &mut BlockInQueue::SyncBlock(ref mut value) = block_in_queue {
                             if value.1.is_none() {
@@ -607,7 +604,7 @@ impl Forward {
 
         info!(
             "snapshot: current height = {}",
-            self.chain.get_atomic_current_height()
+            self.chain.get_current_height()
         );
         let start_hash = self.chain.get_current_hash();
         info!("take_snapshot start_hash: {:?}", start_hash);
