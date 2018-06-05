@@ -183,7 +183,7 @@ pub fn cita_send_transaction(
     let tx_bytes: Vec<u8> = utx.try_into().unwrap();
     let result = rpc_send_and_get_result_from_reply!(
         upstream,
-        "cita_sendTransaction",
+        "cita_sendRawTransaction",
         [tx_bytes.lower_hex()],
         jsonrpc_types::rpctypes::TxResponse
     );

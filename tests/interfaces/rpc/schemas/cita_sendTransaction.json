@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "cita_sendTransaction",
-    "description": "cita_sendTransaction JSON-RPC method request and response schema.",
+    "title": "cita_sendRawTransaction",
+    "description": "cita_sendRawTransaction JSON-RPC method request and response schema.",
     "request": {
         "id": "#request",
         "allOf": [
@@ -19,7 +19,7 @@
                     "method": {
                         "type": "string",
                         "enum": [
-                            "cita_sendTransaction"
+                            "cita_sendRawTransaction"
                         ]
                     },
                     "params": {
