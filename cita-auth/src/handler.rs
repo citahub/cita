@@ -588,7 +588,9 @@ impl MsgHandler {
                             let height = block_tx_hashes.get_height();
                             info!("get block tx hashes for height {:?}", height);
 
-                            if height >= self.history_heights.next_height() {
+                            // because next height init value is 1
+                            // the empty chain first msg height is 0 with quota info
+                            if height >= self.history_heights.next_height() || height == 0 {
                                 // get latest quota info from chain
                                 let block_gas_limit = block_tx_hashes.get_block_gas_limit();
                                 let account_gas_limit =
