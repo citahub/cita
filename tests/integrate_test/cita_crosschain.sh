@@ -8,14 +8,13 @@ PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
 
 # Chain Manager Contract
 CMC_ADDR="00000000000000000000000000000000000000ce"
-CMC_ABI=$(solc --abi scripts/contracts/system/chain_manager.sol 2>/dev/null | tail -1)
+CMC="scripts/contracts/system/chain_manager.sol"
 
 # Templates for some shell commands
 ETHCALL='{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"%s", "data":"%s"}, "latest"],"id":2}'
 
 # Test contract file
 CONTRACT_DEMO="scripts/contracts/tests/contracts/cross_chain_token.sol"
-DEMO_ABI=$(solc --abi ${CONTRACT_DEMO} 2>/dev/null | tail -1)
 
 # Global variables which are set in functions
 MAIN_CONTRACT_ADDR=
@@ -280,7 +279,10 @@ function test_demo_contract () {
         "The tokens is not right for side chain."
 
     title "Send tokens from main chain."
-    send_contract main "${MAIN_CONTRACT_ADDR}" "${DEMO_ABI}" \
+    local demo_abi=$(solc --combined-json abi ${CONTRACT_DEMO} \
+    | sed "s@${CONTRACT_DEMO}:@@g" \
+    | json_get '.contracts.MyToken.abi')
+    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
         "send_to_side_chain" \
         "${side_chain_id}, '${SIDE_CONTRACT_ADDR}', ${crosschain_tokens}"
     local maintx=$(get_tx main)
@@ -383,7 +385,11 @@ function main () {
     wait_chain_for_height main 5
 
     title "Register side chain ..."
-    send_contract main "${CMC_ADDR}" "${CMC_ABI}" \
+    local cmc_abi=$(solc --combined-json abi ${CMC} \
+    | sed "s@${CMC}:@@g" \
+    | json_get '.contracts.ChainManager.abi')
+
+    send_contract main "${CMC_ADDR}" "${cmc_abi}" \
         "newSideChain" "${side_chain_id}, [${side_auths}]"
 
     title "Create side chain configs ..."
@@ -398,7 +404,7 @@ function main () {
     start_chain side 4
 
     title "Enable side chain ..."
-    send_contract main "${CMC_ADDR}" "${CMC_ABI}" \
+    send_contract main "${CMC_ADDR}" "${cmc_abi}" \
         "enableSideChain" "${side_chain_id}"
 
     title "Test the demo contract ..."

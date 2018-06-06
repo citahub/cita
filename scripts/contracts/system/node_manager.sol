@@ -2,6 +2,8 @@ pragma solidity ^0.4.18;
 
 import "../common/address_array.sol";
 import "../common/SafeMath.sol";
+import "./error.sol";
+
 
 /// @title The interface of node_manager
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -41,10 +43,11 @@ interface NodeInterface {
     function stakePermillage(address _node) view public returns (uint64);
 }
 
+
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0x00000000000000000000000000000000013241a2
-contract NodeManager is NodeInterface {
+contract NodeManager is NodeInterface, Error {
 
     mapping(address => NodeStatus) public status;
     mapping(address => bool) admins;
@@ -58,29 +61,49 @@ contract NodeManager is NodeInterface {
     enum NodeStatus { Close, Ready, Start }
 
     modifier onlyAdmin {
-        require(admins[msg.sender]);
-        _;
+        if (admins[msg.sender])
+            _;
+        else {
+            ErrorLog(ErrorType.NotAdmin, "Not the admin account");
+            return;
+        }
     }
 
     // Should operate one time in a block
     modifier oneOperate {
-        require(!block_op[block.number]);
-        _;
+        if (!block_op[block.number])
+            _;
+        else {
+            ErrorLog(ErrorType.NotOneOperate, "should operate one time in a block");
+            return;
+        }
     }
 
     modifier onlyClose(address _node) {
-        require(NodeStatus.Close == status[_node]);
-        _;
+        if (NodeStatus.Close == status[_node])
+            _;
+        else {
+            ErrorLog(ErrorType.NotClose, "node does not close");
+            return;
+        }
     }
 
     modifier onlyStart(address _node) {
-        require(NodeStatus.Start == status[_node]);
-        _;
+        if (NodeStatus.Start == status[_node])
+            _;
+        else {
+            ErrorLog(ErrorType.NotStart, "node does not start");
+            return;
+        }
     }
 
     modifier onlyReady(address _node) {
-        require(NodeStatus.Ready == status[_node]);
-        _;
+        if (NodeStatus.Ready == status[_node])
+            _;
+        else {
+            ErrorLog(ErrorType.NotReady, "node does no ready");
+            return;
+        }
     }
 
     /// @notice Setup

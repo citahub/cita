@@ -1,12 +1,13 @@
 pragma solidity ^0.4.18;
 
 import "./quota_interface.sol";
+import "./error.sol";
 
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0x00000000000000000000000000000000013241a3
-contract QuotaManager is QuotaInterface {
+contract QuotaManager is QuotaInterface, Error {
 
     mapping(address => bool) admins;
     mapping(address => uint) quota;
@@ -18,21 +19,33 @@ contract QuotaManager is QuotaInterface {
     uint[] quotas;
 
     modifier onlyAdmin {
-        require(admins[msg.sender]);
-        _;
+        if (admins[msg.sender])
+            _;
+        else {
+            ErrorLog(ErrorType.NotAdmin, "Not the admin account");
+            return;
+        }
     }
 
     modifier checkBaseLimit(uint _v) {
         uint maxLimit = 2 ** 63 - 1;
         uint baseLimit = 2 ** 22 - 1;
-        require(_v <= maxLimit && _v >= baseLimit);
-        _;
+        if (_v <= maxLimit && _v >= baseLimit)
+            _;
+        else {
+            ErrorLog(ErrorType.OutOfBaseLimit, "The value is out of base limit");
+            return;
+        }
     }
 
     modifier checkBlockLimit(uint _v) {
         uint blockLimit = 2 ** 28 - 1;
-        require(_v > blockLimit);
-        _;
+        if (_v > blockLimit)
+            _;
+        else {
+            ErrorLog(ErrorType.OutOfBlockLimit, "The value is out of block limit");
+            return;
+        }
     }
 
     /// @notice Setup
