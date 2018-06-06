@@ -25,6 +25,12 @@ fi
 RELEASE_DIR=`pwd`
 CONTAINER_NAME="cita_run${RELEASE_DIR//\//_}"
 WORKDIR=/opt/cita-run
+USER_ID=`id -u $USER`
+USER_NAME="user"
+
+if [ "${USER_ID}" = "0" ]; then
+    USER_NAME="root"
+fi
 
 docker ps | grep ${CONTAINER_NAME} > /dev/null 2>&1
 if [ $? -eq 0 ]; then
@@ -36,11 +42,10 @@ else
            --net=host \
            --volume ${RELEASE_DIR}:${WORKDIR} \
            --volume ${LOCALTIME_PATH}:/etc/localtime \
-           --env USER_ID=`id -u $USER` \
+           --env USER_ID=${USER_ID} \
            --workdir ${WORKDIR} \
            --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
            /bin/bash -c "while true;do sleep 100;done"
-    sleep 20
 fi
 
-docker exec -d ${CONTAINER_NAME} /usr/bin/gosu user "$@"
+docker exec -d ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
