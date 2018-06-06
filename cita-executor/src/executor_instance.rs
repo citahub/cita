@@ -3,7 +3,7 @@ use core::contracts::sys_config::SysConfig;
 use core::db;
 use core::libexecutor::block::{Block, ClosedBlock};
 use core::libexecutor::call_request::CallRequest;
-use core::libexecutor::executor::{BlockInQueue, Config, EconomicalModel, Executor, Stage};
+use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use core::libexecutor::Genesis;
 use core::libexecutor::ServiceMap;
 use error::ErrorCode;
@@ -174,16 +174,6 @@ impl ExecutorInstance {
         inum <= self.ext.get_current_height()
     }
 
-    pub fn timestamp_check(&self, timestamp: u64) -> bool {
-        let mut is_valid = true;
-
-        if let EconomicalModel::Charge = *self.ext.economical_model.read() {
-            is_valid = self.ext.validate_timestamp(timestamp)
-        }
-        // TODO: Open it later
-        is_valid || true
-    }
-
     /// TODO: Move to a separated file
     /// execute block transaction
     pub fn execute_block(&self, number: u64) {
@@ -199,7 +189,6 @@ impl ExecutorInstance {
             Some(BlockInQueue::ConsensusBlock(block, _)) => {
                 if self.ext.validate_height(block.number())
                     && self.ext.validate_hash(block.parent_hash())
-                    && self.timestamp_check(block.timestamp())
                 {
                     // Not Match before proposal
                     // TODO: check proposal transaction root is eq block transaction root
@@ -563,10 +552,7 @@ impl ExecutorInstance {
             blk_height, current_height, stage
         );
 
-        if self.ext.validate_height(block.number())
-            && self.ext.validate_hash(block.parent_hash())
-            && self.timestamp_check(block.timestamp())
-        {
+        if self.ext.validate_height(block.number()) && self.ext.validate_hash(block.parent_hash()) {
             match stage {
                 Stage::ExecutingProposal => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
@@ -727,10 +713,7 @@ impl ExecutorInstance {
             blk_height, current_height, stage
         );
 
-        if self.ext.validate_height(blk_height)
-            && self.ext.validate_hash(block.parent_hash())
-            && self.timestamp_check(block.timestamp())
-        {
+        if self.ext.validate_height(blk_height) && self.ext.validate_hash(block.parent_hash()) {
             match stage {
                 Stage::ExecutingProposal => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
@@ -775,9 +758,7 @@ impl ExecutorInstance {
         let prev_conf = self.ext.get_sys_config(number - 1);
         let prev_authorities = prev_conf.nodes.clone();
 
-        if self.ext.validate_height(number)
-            && self.ext.validate_hash(block.parent_hash())
-            && self.timestamp_check(block.timestamp())
+        if self.ext.validate_height(number) && self.ext.validate_hash(block.parent_hash())
             && (proof.check(proof_height as usize, &authorities)
                 || proof.check(proof_height as usize, &prev_authorities))
         {
