@@ -8,14 +8,17 @@ PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
 
 # Chain Manager Contract
 CMC_ADDR="00000000000000000000000000000000000000ce"
-CMC_ABI=$(solc --abi scripts/contracts/system/chain_manager.sol 2>/dev/null | tail -1)
+CMC="scripts/contracts/system/chain_manager.sol"
+solc --combined-json abi ${CMC} > tmp
+CMC_ABI=$(cat tmp | jq '.contracts."chain_manager.sol:ChainManager".abi')
 
 # Templates for some shell commands
 ETHCALL='{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"%s", "data":"%s"}, "latest"],"id":2}'
 
 # Test contract file
 CONTRACT_DEMO="scripts/contracts/tests/contracts/cross_chain_token.sol"
-DEMO_ABI=$(solc --abi ${CONTRACT_DEMO} 2>/dev/null | tail -1)
+solc --combined-json abi ${CONTRACT_DEMO} > tmp
+DEMO_ABI=$(cat tmp | jq '.contracts."cross_chain_token.sol:MyToken".abi')
 
 # Global variables which are set in functions
 MAIN_CONTRACT_ADDR=
@@ -63,7 +66,7 @@ function abi_encode () {
     python_run \
         "from ethereum.abi import ContractTranslator" \
         "import binascii" \
-        "ct = ContractTranslator(b'''${abi}''')" \
+        "ct = ContractTranslator(${abi})" \
         "tx = ct.encode('${func}', [${data}])" \
         "print(binascii.hexlify(tx).decode('utf-8'))"
 }
@@ -407,7 +410,7 @@ function main () {
     title "Clean test data."
     stop_chain side 4
     stop_chain main 4
-    rm -rf mainchain sidechain maintool sidetool
+    rm -rf mainchain sidechain maintool sidetool tmp
 
     cd ../..
 
