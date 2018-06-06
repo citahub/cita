@@ -2,8 +2,6 @@ pragma solidity ^0.4.18;
 
 import "../common/address_array.sol";
 import "../common/SafeMath.sol";
-import "./error.sol";
-
 
 /// @title The interface of node_manager
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -43,11 +41,10 @@ interface NodeInterface {
     function stakePermillage(address _node) view public returns (uint64);
 }
 
-
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0x00000000000000000000000000000000013241a2
-contract NodeManager is NodeInterface, Error {
+contract NodeManager is NodeInterface {
 
     mapping(address => NodeStatus) public status;
     mapping(address => bool) admins;
@@ -61,49 +58,29 @@ contract NodeManager is NodeInterface, Error {
     enum NodeStatus { Close, Ready, Start }
 
     modifier onlyAdmin {
-        if (admins[msg.sender])
-            _;
-        else {
-            ErrorLog(ErrorType.NotAdmin, "Not the admin account");
-            return;
-        }
+        require(admins[msg.sender]);
+        _;
     }
 
     // Should operate one time in a block
     modifier oneOperate {
-        if (!block_op[block.number])
-            _;
-        else {
-            ErrorLog(ErrorType.NotOneOperate, "should operate one time in a block");
-            return;
-        }
+        require(!block_op[block.number]);
+        _;
     }
 
     modifier onlyClose(address _node) {
-        if (NodeStatus.Close == status[_node])
-            _;
-        else {
-            ErrorLog(ErrorType.NotClose, "node does not close");
-            return;
-        }
+        require(NodeStatus.Close == status[_node]);
+        _;
     }
 
     modifier onlyStart(address _node) {
-        if (NodeStatus.Start == status[_node])
-            _;
-        else {
-            ErrorLog(ErrorType.NotStart, "node does not start");
-            return;
-        }
+        require(NodeStatus.Start == status[_node]);
+        _;
     }
 
     modifier onlyReady(address _node) {
-        if (NodeStatus.Ready == status[_node])
-            _;
-        else {
-            ErrorLog(ErrorType.NotReady, "node does no ready");
-            return;
-        }
+        require(NodeStatus.Ready == status[_node]);
+        _;
     }
 
     /// @notice Setup
