@@ -269,6 +269,10 @@ impl<Cost: CostType> Interpreter<Cost> {
                 let init_size = stack.pop_back();
                 let create_gas = provided.expect("`provided` comes through Self::exec from `Gasometer::get_gas_cost_mem`; `gas_gas_mem_cost` guarantees `Some` when instruction is `CALL`/`CALLCODE`/`DELEGATECALL`/`CREATE`; this is `CREATE`; qed");
 
+                if ext.is_static() {
+                    return Err(Error::MutableCallInStaticContext);
+                }
+
                 let contract_code = self.mem.read_slice(init_off, init_size);
                 let can_create = ext.balance(&params.address)? >= endowment && ext.depth() < ext.schedule().max_depth;
 

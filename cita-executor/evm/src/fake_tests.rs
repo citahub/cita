@@ -64,6 +64,7 @@ pub struct FakeExt {
     pub schedule: Schedule,
     pub balances: HashMap<Address, U256>,
     pub calls: HashSet<FakeCall>,
+    pub is_static: bool,
 }
 
 // similar to the normal `finalize` function, but ignoring NeedsReturn.
@@ -180,7 +181,7 @@ impl Ext for FakeExt {
     }
 
     fn is_static(&self) -> bool {
-         false
+        self.is_static
      }
 
     fn inc_sstore_clears(&mut self) {

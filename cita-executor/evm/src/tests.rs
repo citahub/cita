@@ -803,6 +803,27 @@ fn test_calls(factory: super::Factory) {
     assert_eq!(ext.calls.len(), 2);
 }
 
+evm_test!{test_create_in_staticcall: test_create_in_staticcall_jit, test_create_in_staticcall_int}
+fn test_create_in_staticcall(factory: super::Factory) {
+    let code = "600060006064f000".from_hex().unwrap();
+
+    let address = Address::from(0x155);
+    let mut params = ActionParams::default();
+    params.gas = U256::from(100_000);
+    params.code = Some(Arc::new(code));
+    params.address = address.clone();
+    let mut ext = FakeExt::new();
+    ext.is_static = true;
+
+    let err = {
+        let mut vm = factory.create(params.gas);
+        test_finalize(vm.exec(params, &mut ext)).unwrap_err()
+    };
+
+    assert_eq!(err, error::Error::MutableCallInStaticContext);
+    assert_eq!(ext.calls.len(), 0);
+}
+
 evm_test!{test_shl: test_shl_int_jit, test_shl_int}
 fn test_shl(factory: super::Factory) {
     push_two_pop_one_constantinople_test(
