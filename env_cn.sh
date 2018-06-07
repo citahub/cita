@@ -50,6 +50,8 @@ else
            --workdir ${WORKDIR} \
            --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
            /bin/bash -c "echo -e '[source.crates-io]\nregistry = \"https://github.com/rust-lang/crates.io-index\"\nreplace-with = \"ustc\"\n[source.ustc]\nregistry = \"https://mirrors.ustc.edu.cn/crates.io-index\"' | sudo tee /opt/.cargo/config;while true;do sleep 100;done"
+    # Wait entrypoint.sh to finish
+    sleep 3
 fi
 
 test -t 1 && USE_TTY="-t"

@@ -50,6 +50,8 @@ else
            --workdir ${WORKDIR} \
            --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
            /bin/bash -c "while true;do sleep 100;done"
+    # Wait entrypoint.sh to finish
+    sleep 3
 fi
 
 docker exec -d ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
