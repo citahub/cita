@@ -4,17 +4,17 @@
 
 ## What is CITA
 
-CITA is a fast and scalable blockchain for enterprises. CITA supports both native contract and EVM contract, by which enterprise users can build their own blockchain applications. CITA has an unique architecture which enables enterprise users to unlease all their computing resources.
+CITA is a fast and scalable blockchain for enterprises. CITA supports both native contract and EVM contract, by which enterprise users can build their own blockchain applications. CITA has a unique architecture which enables enterprise users to release all their computing resources.
 
-- **Horizontal scalability**: CITA adopts a microservices architecture to boost each (logical) node’s performance.With the microservice architecture, a logical node can be easily scaled to a cluster of servers. Outside one node's bounday, nodes communicate with each other using P2P network; Inside each node, microservices communicate with each other by messaging queue. (Note this is completely different from Fabric which use a messaging queue only as consensus process)
+- **Horizontal scalability**: CITA adopts a microservices architecture to boost each (logical) node’s performance. With the microservices architecture, a logical node can be easily scaled to a cluster of servers. Outside one node's boundary, nodes communicate with each other using P2P network; Inside each node, microservices communicate with each other by messaging queue. (Note this is completely different from Fabric which uses a messaging queue only as consensus process)
 
 ![](https://github.com/cryptape/cita-whitepaper/blob/master/en/cita-network.png?raw=true)
 
 ![](https://github.com/cryptape/cita-whitepaper/blob/master/en/cita-parallel.png?raw=true)
 
-- **High Performance**: In CITA, consensus and transaction execution are decoupled as separate microservices. The consensus service is only responsible for transaction ordering, which can finish independently before transaction execution, thus increase transaction processing performance. CITA also includes a lot of optimizations to fully utilize multi-cores and multi-servers's computing power.
+- **High Performance**: In CITA, consensus and transaction execution are decoupled as separate microservices. The consensus service is only responsible for transaction ordering, which can finish independently before transaction execution, thus increase transaction processing performance. CITA also includes a lot of optimizations to fully utilize multi-cores and multi-servers' computing power.
 
-- **Customizable and Pluggable Components**: CITA is designed to be highly customizable. CITA's microservices are decoupled from each other in the cleanest way, talk with each other by simple messages. It's easy to customize your blockchain to fit your own business requirements. For example you can replace the default consensus with more appropriate algorithms if necessary or you can replace the default executor EVM to something else as well.
+- **Customizable and Pluggable Components**: CITA is designed to be highly customizable. CITA's microservices are decoupled from each other in the cleanest way, talk with each other by simple messages. It's easy to customize your blockchain to fit your own business requirements. For example, you can replace the default consensus with more appropriate algorithms if necessary or you can replace the default executor EVM to something else as well.
 
 - **Production Ready**: There're many CITA networks running in banks and payment gateways production environment, with Cryptape or CITA Integration Provider's technical support.
 
@@ -32,7 +32,7 @@ For more details please check the white paper.
 
 ## API/SDK
 
-CITA supports jsonrpc and websocket (experimental) API/v1. Interfaces with `cita_` prefix can be used to interact with both native and EVM contracts, and those with `eth_` prefix are EVM contract only.
+CITA supports JSON-RPC and WebSocket (experimental) API/v1. Interfaces with `cita_` prefix can be used to interact with both native and EVM contracts, and those with `eth_` prefix are EVM contract only.
 
 For CITA API/v1, You can use any HTTP client, or following SDKs:
 
