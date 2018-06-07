@@ -169,7 +169,7 @@ blocks:
     data: '60fe47b10000000000000000000000000000000000000000000000000000000011228899'
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
     nonce: 12
-    quota: 20000
+    quota: 420000
     valid_until_block: 100
     # A special address to store contract ABI data
     to: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'

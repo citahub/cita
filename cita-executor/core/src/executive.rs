@@ -525,7 +525,19 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let mut substate = Substate::new();
 
         let (result, output) = match t.action {
-            Action::Store | Action::AbiStore | Action::GoCreate => (
+            Action::Store | Action::AbiStore => {
+                let schedule = Schedule::new_v1();
+                let store_gas_used = U256::from(t.data.len() * schedule.create_data_gas);
+                (
+                    Ok(FinalizationResult {
+                        gas_left: t.gas - store_gas_used,
+                        return_data: ReturnData::empty(),
+                        apply_state: true,
+                    }),
+                    vec![],
+                )
+            }
+            Action::GoCreate => (
                 Ok(FinalizationResult {
                     gas_left: t.gas,
                     return_data: ReturnData::empty(),
