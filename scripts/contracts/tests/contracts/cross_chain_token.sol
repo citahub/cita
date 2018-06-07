@@ -48,7 +48,7 @@ contract MyToken {
 
     function get_from_chain_id() public view returns (uint32) {
         // ChainManager: Contract
-        address chainManagerAddr = 0x00000000000000000000000000000000000000ce;
+        address chainManagerAddr = 0x00000000000000000000000000000000000000CE;
         // getChainId() function
         bytes4 getChainIdHash = bytes4(keccak256("getChainId()"));
 

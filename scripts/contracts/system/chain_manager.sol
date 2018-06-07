@@ -1,6 +1,11 @@
 pragma solidity ^0.4.18;
 
-contract ChainManager {
+import "./error.sol";
+
+
+/// @title Chain Manager
+/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+contract ChainManager is Error {
 
     // Id of the parent chain. 0 means no parent chain.
     uint32 parentChainId;
@@ -20,13 +25,21 @@ contract ChainManager {
     }
 
     modifier hasParentChain {
-        require(parentChainId != 0);
-        _;
+        if (parentChainId != 0)
+            _;
+        else {
+            ErrorLog(ErrorType.NoParentChain, "has no parent chain");
+            return;
+        }
     }
 
     modifier hasSideChain(uint32 _id) {
-        require(sideChains[_id].status != ChainStatus.Unknown);
-        _;
+        if (sideChains[_id].status != ChainStatus.Unknown)
+            _;
+        else {
+            ErrorLog(ErrorType.NoSideChain, "has no side chain");
+            return;
+        }
     }
 
     // Constructor.
@@ -67,7 +80,6 @@ contract ChainManager {
 
     function getParentChainId()
         public
-        view
         hasParentChain
         returns (uint32)
     {
