@@ -21,6 +21,8 @@ fi
 
 cd ${SOURCE_DIR}
 
+CARGO_HOME=/opt/.cargo
+
 echo "################################################################################"
 echo "1) check whether docker support"
 IMAGE="cryptape/cita-build"
@@ -56,7 +58,7 @@ echo "##########################################################################
 echo "3) setup & build & test"
 echo "################################################################################"
 echo "3.1) setup"
-source ${HOME}/.cargo/env
+source ${CARGO_HOME}/env
 scripts/config_rabbitmq.sh
 # For native machine, skip this step.
 # scripts/install_develop.sh
