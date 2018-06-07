@@ -26,6 +26,7 @@
 //!     | executor | Executor  | Jsonrpc   | Response       |
 //!     | executor | Executor  | Chain     | ExecutedResult |
 //!     | executor | Executor  | Auth      | Miscellaneous  |
+//!     | executor | Executor  | Auth      | BlackList      |
 //!
 //! ### Key behavior
 //!

@@ -31,6 +31,7 @@ use evm::Factory as EvmFactory;
 use executive::{Executed, Executive, TransactOptions};
 use factory::*;
 use header::*;
+use libexecutor::blacklist::BlackList;
 pub use libexecutor::block::*;
 use libexecutor::call_request::CallRequest;
 use libexecutor::extras::*;
@@ -54,6 +55,7 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::time::Instant;
 use types::ids::BlockId;
+use types::receipt::ReceiptError;
 use types::transaction::{Action, SignedTransaction, Transaction};
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
@@ -623,7 +625,6 @@ impl Executor {
 
     pub fn set_gas_and_nodes(&self, height: u64) {
         let mut executed_map = self.executed_result.write();
-        executed_map.entry(height).or_insert(ExecutedResult::new());
 
         //send the next height's config to chain,and transfer to auth
         let conf = self.get_sys_config(height + 1);
@@ -642,17 +643,14 @@ impl Executor {
         send_config.set_block_interval(conf.block_interval);
 
         executed_map
-            .get_mut(&height)
-            .unwrap()
+            .entry(height)
+            .or_insert(ExecutedResult::new())
             .set_config(send_config);
     }
 
     fn set_executed_result(&self, block: &ClosedBlock) {
         self.set_gas_and_nodes(block.number());
         let mut executed_map = self.executed_result.write();
-        executed_map
-            .entry(block.number())
-            .or_insert(ExecutedResult::new());
 
         executed_map
             .get_mut(&block.number())
@@ -725,6 +723,7 @@ impl Executor {
     pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
         self.reorg_config();
         self.set_executed_result(&closed_block);
+        self.pub_black_list(&closed_block, ctx_pub);
         self.send_executed_info_to_chain(closed_block.number(), ctx_pub);
         self.write_batch(closed_block.clone());
         let header = closed_block.header().clone();
@@ -858,6 +857,48 @@ impl Executor {
         if height > 1 {
             let mut executed_map = self.executed_result.write();
             *executed_map = executed_map.split_off(&(height - 1));
+        }
+    }
+
+    /// Find the public key of all senders that caused the specified error message, and then publish it
+    fn pub_black_list(&self, close_block: &ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let blacklist_transaction_hash: Vec<H256> = close_block
+            .receipts
+            .iter()
+            .filter(|ref receipt_option| match receipt_option {
+                Some(receipt) => match receipt.error {
+                    Some(ReceiptError::NotEnoughBaseGas) => true,
+                    _ => false,
+                },
+                _ => false,
+            })
+            .map(|receipt_option| match receipt_option {
+                Some(receipt) => receipt.transaction_hash,
+                None => H256::default(),
+            })
+            .filter(|hash| hash != &H256::default())
+            .collect();
+
+        let blacklist: Vec<Vec<u8>> = close_block
+            .body()
+            .transactions()
+            .iter()
+            .filter(|tx| blacklist_transaction_hash.contains(&tx.get_transaction_hash()))
+            .map(|tx| tx.public_key().to_vec())
+            .collect();
+
+        let black_list = BlackList::new().set_black_list(blacklist);
+        if black_list.len() > 0 {
+            let black_list_bytes: Message = black_list.protobuf().into();
+
+            info!("black list is {:?}", black_list.black_list());
+
+            ctx_pub
+                .send((
+                    routing_key!(Executor >> BlackList).into(),
+                    black_list_bytes.try_into().unwrap(),
+                ))
+                .unwrap();
         }
     }
 }

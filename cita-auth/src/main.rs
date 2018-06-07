@@ -29,6 +29,7 @@
 //!     | ----- | --------- | ----------------- |
 //!     | auth  | Consensus | VerifyBlockReq    |
 //!     | auth  | Chain     | BlockTxHashes     |
+//!     | auth  | Executor  | BlackList         |
 //!     | auth  | Jsonrpc   | RequestNewTxBatch |
 //!     | auth  | Net       | Request           |
 //!     | auth  | Snapshot  | SnapshotReq       |
@@ -180,6 +181,7 @@ fn main() {
         routing_key!([
             Consensus >> VerifyBlockReq,
             Chain >> BlockTxHashes,
+            Executor >> BlackList,
             Jsonrpc >> RequestNewTxBatch,
             Net >> Request,
             Snapshot >> SnapshotReq,

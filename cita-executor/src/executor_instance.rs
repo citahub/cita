@@ -118,10 +118,6 @@ impl ExecutorInstance {
                 }
             }
 
-            routing_key!(Consensus >> RawBytes) | routing_key!(Net >> RawBytes) => {
-                trace!("Receive other message content.");
-            }
-
             routing_key!(Snapshot >> SnapshotReq) => {
                 let req = msg.take_snapshot_req().unwrap();
                 let mut resp = SnapshotResp::new();

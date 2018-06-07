@@ -17,7 +17,7 @@
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256};
-use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
+use crypto::{pubkey_to_address, PubKey, Public, Sign, Signature, SIGNATURE_BYTES_LEN};
 use dispatcher::Dispatcher;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
@@ -200,6 +200,7 @@ pub struct MsgHandler {
     tx_request: Sender<Request>,
     tx_pool_limit: usize,
     is_recovery_mod: bool,
+    black_list_cache: HashMap<Public, i8>,
 }
 
 impl MsgHandler {
@@ -231,6 +232,7 @@ impl MsgHandler {
             tx_request,
             tx_pool_limit,
             is_recovery_mod: false,
+            black_list_cache: HashMap::new(),
         }
     }
 
@@ -446,7 +448,23 @@ impl MsgHandler {
         self.publish_block_verification_result(request_id, Ret::OK);
     }
 
-    // verify chain id, nonce, valid_until_block, dup and quota
+    /// Verify black list
+    fn verify_black_list(&self, req: &VerifyTxReq) -> Ret {
+        match self
+            .black_list_cache
+            .get(&Public::from_slice(req.get_signer()))
+        {
+            Some(credit) => {
+                if credit < &0 {
+                    return Ret::Forbidden;
+                }
+            }
+            None => {}
+        }
+        Ret::OK
+    }
+
+    // verify chain id, nonce, valid_until_block, dup, quota and black list
     fn verify_tx_req(&self, req: &VerifyTxReq) -> Ret {
         let chain_id = req.get_chain_id();
         if chain_id != self.chain_id.unwrap() {
@@ -651,6 +669,23 @@ impl MsgHandler {
                                 self.send_block_tx_hashes_req();
                             }
                         }
+                        routing_key!(Executor >> BlackList) => {
+                            let black_list = msg.take_black_list().unwrap();
+                            black_list
+                                .get_signer()
+                                .into_iter()
+                                .for_each(|blacklist: &Vec<u8>| {
+                                    self.black_list_cache
+                                        .entry(Public::from_slice(blacklist.as_slice()))
+                                        .and_modify(|e| {
+                                            if *e >= 0 {
+                                                *e -= 1;
+                                            }
+                                        })
+                                        .or_insert(3);
+                                    debug!("Current black list is {:?}", self.black_list_cache);
+                                });
+                        }
                         routing_key!(Consensus >> VerifyBlockReq) => {
                             let blk_req = msg.take_verify_block_req().unwrap();
                             let tx_cnt = blk_req.get_reqs().len();
@@ -777,6 +812,18 @@ impl MsgHandler {
                                     .into_iter()
                                     .filter(|(_tx_hash, (_req, _tx_req, flag))| *flag)
                                     .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
+                                        let ret = self.verify_black_list(&req);
+                                        if ret != Ret::OK {
+                                            if is_local {
+                                                let request_id = tx_req.get_request_id().to_vec();
+                                                self.publish_tx_failed_result(request_id, ret);
+                                            }
+                                            false
+                                        } else {
+                                            true
+                                        }
+                                    })
+                                    .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
                                         let ret = self.verify_tx_req(&req);
                                         if ret != Ret::OK {
                                             if is_local {
@@ -860,6 +907,16 @@ impl MsgHandler {
                                         }
                                     }
                                 }
+
+                                // black verify
+                                let ret = self.verify_black_list(&req);
+                                if ret != Ret::OK {
+                                    if is_local {
+                                        self.publish_tx_failed_result(request_id, ret);
+                                    }
+                                    continue;
+                                }
+
                                 // other verify
                                 let ret = self.verify_tx_req(&req);
                                 if ret != Ret::OK {

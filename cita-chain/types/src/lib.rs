@@ -40,3 +40,5 @@ pub mod transaction;
 
 /// Type for block number.
 pub type BlockNumber = u64;
+
+pub use crypto::Public;
