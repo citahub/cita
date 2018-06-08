@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 import "./quota_interface.sol";
 import "./error.sol";
@@ -49,7 +49,7 @@ contract QuotaManager is QuotaInterface, Error {
     }
 
     /// @notice Setup
-    function QuotaManager(address _admin) public {
+    constructor(address _admin) public {
         admins[_admin] = true;
         quota[_admin] = 1073741824;
         accounts.push(_admin);
@@ -65,7 +65,7 @@ contract QuotaManager is QuotaInterface, Error {
         returns (bool)
     {
         admins[_account] = true;
-        AdminAdded(_account, msg.sender);
+        emit AdminAdded(_account, msg.sender);
         return true;
     }
 
@@ -80,7 +80,7 @@ contract QuotaManager is QuotaInterface, Error {
         returns (bool)
     {
         BQL = _value;
-        BqlSetted(_value, msg.sender);
+        emit BqlSetted(_value, msg.sender);
         return true;
     }
 
@@ -94,7 +94,7 @@ contract QuotaManager is QuotaInterface, Error {
         returns (bool)
     {
         defaultAQL = _value;
-        DefaultAqlSetted(_value, msg.sender);
+        emit DefaultAqlSetted(_value, msg.sender);
         return true;
     }
 
@@ -111,7 +111,7 @@ contract QuotaManager is QuotaInterface, Error {
         quota[_account] = _value;
         accounts.push(_account);
         quotas.push(_value);
-        AqlSetted(
+        emit AqlSetted(
             _account,
             _value,
             msg.sender

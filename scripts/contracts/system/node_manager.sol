@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 import "../common/address_array.sol";
 import "../common/SafeMath.sol";
@@ -16,31 +16,31 @@ interface NodeInterface {
     event SetStake(address indexed _node, uint stake);
 
     /// @notice Add an admin
-    function addAdmin(address) public returns (bool);
+    function addAdmin(address) external returns (bool);
     /// @notice Apply to be consensus node. status will be ready
-    function newNode(address _node) public returns (bool);
+    function newNode(address _node) external returns (bool);
     /// @notice Approve to be consensus node. status will be start
-    function approveNode(address _node) public returns (bool);
+    function approveNode(address _node) external returns (bool);
     /// @notice Delete the consensus node that has been approved. status will be close
-    function deleteNode(address _node) public returns (bool);
+    function deleteNode(address _node) external returns (bool);
     /// @notice List the consensus nodes that have been approved
     /// which means list the node whose status is start
-    function listNode() view public returns (address[]);
+    function listNode() view external returns (address[]);
     /*
      * @notice Get the status of the node:
      * @return 0: Close
      * @return 1: Ready
      * @return 2: Start
      */
-    function getStatus(address _node) view public returns (uint8);
+    function getStatus(address _node) view external returns (uint8);
     /// @notice Check the account is admin
-    function isAdmin(address) view public returns (bool);
+    function isAdmin(address) view external returns (bool);
     /// @notice Set node stake
-    function setStake(address _node, uint64 stake) public;
+    function setStake(address _node, uint64 stake) external;
     /// @notice Node stake list
-    function listStake() view public returns (uint64[] _stakes);
+    function listStake() view external returns (uint64[] _stakes);
     /// @notice Stake permillage
-    function stakePermillage(address _node) view public returns (uint64);
+    function stakePermillage(address _node) view external returns (uint64);
 }
 
 
@@ -107,7 +107,7 @@ contract NodeManager is NodeInterface, Error {
     }
 
     /// @notice Setup
-    function NodeManager(address[] _nodes, address[] _admins, uint64[] _stakes) public {
+    constructor(address[] _nodes, address[] _admins, uint64[] _stakes) public {
         // Initialize the address to Start
         require(_nodes.length == _stakes.length);
         for (uint i = 0; i < _nodes.length; i++) {
@@ -131,7 +131,7 @@ contract NodeManager is NodeInterface, Error {
         returns (bool)
     {
         admins[_account] = true;
-        AddAdmin(_account, msg.sender);
+        emit AddAdmin(_account, msg.sender);
         return true;
     }
 
@@ -144,7 +144,7 @@ contract NodeManager is NodeInterface, Error {
         returns (bool)
     {
         status[_node] = NodeStatus.Ready;
-        NewNode(_node);
+        emit NewNode(_node);
         return true;
     }
 
@@ -161,7 +161,7 @@ contract NodeManager is NodeInterface, Error {
         status[_node] = NodeStatus.Start;
         block_op[block.number] = true;
         nodes.push(_node);
-        ApproveNode(_node);
+        emit ApproveNode(_node);
         return true;
     }
 
@@ -179,7 +179,7 @@ contract NodeManager is NodeInterface, Error {
         block_op[block.number] = false;
         status[_node] = NodeStatus.Close;
         stakes[_node] = 0;
-        DeleteNode(_node);
+        emit DeleteNode(_node);
         return true;
     }
 
@@ -208,7 +208,7 @@ contract NodeManager is NodeInterface, Error {
         public
         onlyAdmin
     {
-        SetStake(_node, stake);
+        emit SetStake(_node, stake);
         stakes[_node] = stake;
     }
 

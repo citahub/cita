@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 import "./role_creator.sol";
 import "./permission_management.sol";
@@ -123,7 +123,7 @@ contract RoleManagement {
         if (!AddressArray.exist(_account, accounts[_role]))
             accounts[_role].push(_account);
 
-        RoleSetted(_account, _role);
+        emit RoleSetted(_account, _role);
         return true;
     }
 
@@ -155,7 +155,7 @@ contract RoleManagement {
 
         // Clear all roles associate with _account
         delete roles[_account];
-        RoleCleared(_account);
+        emit RoleCleared(_account);
 
         return true;
     }
@@ -233,7 +233,7 @@ contract RoleManagement {
         // Cancel role permissions of account.
         require(_cancelRolePermissions(_account, _role));
 
-        RoleCanceled(_account, _role);
+        emit RoleCanceled(_account, _role);
         return true;
     }
 

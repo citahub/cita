@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 import "./group.sol";
 
@@ -24,6 +24,6 @@ contract GroupCreator {
         require(userManagementAddr == msg.sender);
 
         groupAddress = new Group(_parent, _name, _accounts);
-        GroupCreated(groupAddress, _parent, _name, _accounts);
+        emit GroupCreated(groupAddress, _parent, _name, _accounts);
     }
 }

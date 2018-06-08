@@ -1,40 +1,40 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 
 /// @title The interface of system config
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 interface SysConfigInterface {
     /// @notice Get delay block number before validate
-    function getDelayBlockNumber() public view returns (uint);
+    function getDelayBlockNumber() external view returns (uint);
 
     /// @notice Whether check permission in the system or not, true represents check and false represents don't check.
-    function getPermissionCheck() public view returns (bool);
+    function getPermissionCheck() external view returns (bool);
 
     /// @notice Whether check quota in the system or not, true represents check and false represents don't check.
-    function getQuotaCheck() public view returns (bool);
+    function getQuotaCheck() external view returns (bool);
 
     /// @notice The name of current chain
-    function getChainName() public view returns (string);
+    function getChainName() external view returns (string);
     /// @notice Update current chain name
     function setChainName(string) public;
 
     /// @notice The id of current chain
-    function getChainId() public view returns (uint32);
+    function getChainId() external view returns (uint32);
 
     /// @notice The operator of current chain
-    function getOperator() public view returns (string);
+    function getOperator() external view returns (string);
     /// @notice Update current operator
     function setOperator(string) public;
 
     /// @notice Current operator's website URL
-    function getWebsite() public view returns (string);
+    function getWebsite() external view returns (string);
     /// @notice Update current operator's website URL
     function setWebsite(string) public;
 
     /// @notice The interval time for creating a block (milliseconds)
-    function getBlockInterval() public view returns (uint64);
+    function getBlockInterval() external view returns (uint64);
 
-    function getTokenInfo() public view returns(string, string, string);
+    function getTokenInfo() external view returns(string, string, string);
 }
 
 
@@ -63,7 +63,7 @@ contract SysConfig is SysConfigInterface {
     }
 
     /// @notice Setup
-    function SysConfig(
+    constructor(
         uint _delayBlockNumber,
         bool _checkPermission,
         bool _checkQuota,
