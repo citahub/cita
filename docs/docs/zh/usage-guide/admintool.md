@@ -143,7 +143,7 @@ address = "0.pool.ntp.org:123"
 其中：
 
 - `enabled`: 表示开启ntp
-- `threshold`: 表示时间便宜的阀值
+- `threshold`: 表示时间偏移的阀值
 - `address`: 表示ntp服务器地址
 
 ## 系统合约

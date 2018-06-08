@@ -4,7 +4,7 @@
 
 ### 系统平台要求
 
-CITA 是基于 Ubuntu 16.04 稳定版开发的，在该系统版本上运行将是正确无误的。
+CITA 是基于 `Ubuntu 18.04` 稳定版开发的，在该系统版本上运行将是正确无误的。
 
 推荐使用 `docker` 编译和部署 `CITA`，保证环境一致。
 
@@ -49,7 +49,7 @@ git submodule update
 
 国内用户请使用 `env_cn.sh`，提供了编译时的国内镜像加速。
 
-还提供了`daemon.sh`,用法同`env.sh`，效果是后台运行。
+还提供了`daemon.sh`，用法同`env.sh`，效果是后台运行。
 
 如果出现 docker 相关的报错，可以执行如下命令并重试：
 
@@ -108,6 +108,10 @@ cd target/install
 * node/2
 * node/3
 
+> ***<font color=red>注意</font>***  
+> 对于多服务器部署，选择一台服务器执行命令之后把相关节点目录进行拷贝。  
+> 不可多服务器都执行配置脚本。
+
 ## 运行节点
 
 操作节点的命令都是相同的，以下以`node/0`为例进行演示。
@@ -139,6 +143,9 @@ cd target/install
     ```shell
     ./env.sh ./bin/cita help
     ```
+
+> ***<font color=red>注意</font>***  
+> 不可到bin目录然后执行`./cita setup/start/stop node/0`
 
 ## 测试
 
@@ -184,6 +191,9 @@ cd target/install
     ./env.sh ./tests/integrate_test/cita_byzantinetest.sh
     ```
 
+> ***<font color=red>注意</font>***  
+> 必须使用`./env.sh`
+
 ## 验证
 
 * 查询节点个数
@@ -223,5 +233,9 @@ cd target/install
     ```
     
     返回块高度，表示节点已经开始正常出块。
+
+> ***<font color=red>注意</font>***  
+> 在发布件目录(target/install)下运行节点。
+> 可选择使用`./env.sh`
 
 更多 API（如合约调用、交易查询）请参见[RPC 调用](https://cryptape.github.io/cita/zh/usage-guide/rpc/)。
