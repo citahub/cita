@@ -34,7 +34,7 @@ describe('test side chain management contract', () => {
     });
 
     it('should send a newSideChain tx and get receipt', (done) => {
-      const res = newSideChain(config.testAddr);
+      const res = newSideChain(100, config.testAddr);
 
       getTxReceipt(res)
         .then((receipt) => {

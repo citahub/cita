@@ -1,7 +1,7 @@
 const util = require('./util');
 const config = require('../config');
 
-const { web3, genTxParams } = util.web3;
+const { web3, genTxParams } = util;
 
 const sender = config.contract.authorization.superAdmin;
 const { abi, addr } = config.contract.node_manager;

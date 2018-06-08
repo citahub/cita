@@ -1,7 +1,7 @@
 const util = require('./util');
 const config = require('../config');
 
-const { web3 } = util.web3;
+const { web3 } = util;
 
 const {
   aABI, aAddr,

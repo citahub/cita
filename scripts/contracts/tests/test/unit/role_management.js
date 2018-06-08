@@ -18,7 +18,7 @@ const role = web3.eth.contract(rABI);
 
 // role management
 const {
-  queryPermissionsFromRoleMana, queryAccounts, queryRoles, deleteRole, clearRole,
+  queryAccounts, queryRoles, deleteRole, clearRole,
   cancelRole, setRole, deletePermissions, addPermissions, updateRoleName, newRole,
 } = roleManagement;
 
@@ -144,13 +144,6 @@ describe('\n\ntest role management contract\n\n', () => {
     it('should have the added permissions: role', () => {
       roleInstance = role.at(newRoleAddr);
       const res = roleInstance.queryPermissions.call();
-      logger.debug('\nNew Added permissions:\n', res);
-      assert.equal(res[res.length - 1], newPermissionAddr);
-      assert.equal(res.length, lengthOfPermissions + 1);
-    });
-
-    it('should have the added permissions: from role_management', () => {
-      const res = queryPermissionsFromRoleMana(newRoleAddr);
       logger.debug('\nNew Added permissions:\n', res);
       assert.equal(res[res.length - 1], newPermissionAddr);
       assert.equal(res.length, lengthOfPermissions + 1);

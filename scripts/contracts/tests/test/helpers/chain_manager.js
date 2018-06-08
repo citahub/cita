@@ -1,7 +1,7 @@
 const util = require('./util');
 const config = require('../config');
 
-const { web3, genTxParams } = util.web3;
+const { web3, genTxParams } = util;
 
 const sender = config.contract.authorization.superAdmin;
 const { abi, addr } = config.contract.chain_manager;
@@ -10,8 +10,9 @@ const sidechain = web3.eth.contract(abi);
 const sContractInstance = sidechain.at(addr);
 
 // newSideChain
-const newSideChain = function newSideChain(address, _sender = sender) {
+const newSideChain = function newSideChain(id, address, _sender = sender) {
   return sContractInstance.newSideChain.sendTransaction(
+    id,
     address,
     genTxParams(_sender),
   );

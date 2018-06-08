@@ -125,10 +125,10 @@ npm run-script unit_node
 npm run-script unit_quota
 ```
 
-* To test sidechain manager contract
+* To test chain manager contract
 
 ```
-npm run-script unit_side
+npm run-script unit_chain
 ```
 
 * To run all integrate test:

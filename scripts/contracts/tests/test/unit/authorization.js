@@ -5,7 +5,7 @@ const util = require('../helpers/util');
 const config = require('../config');
 
 const { superAdmin } = config.contract.authorization;
-const { permissions, resources } = config.permissions;
+const { permissions, resources } = config;
 
 const {
   queryPermissions, queryAccounts, checkPermission, queryAllAccounts,
