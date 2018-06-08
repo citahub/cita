@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 import "./error.sol";
 
@@ -43,7 +43,7 @@ contract ChainManager is Error {
     }
 
     // Constructor.
-    function ChainManager(uint32 _pid, address[] _addrs)
+    constructor(uint32 _pid, address[] _addrs)
         public
     {
         if (_pid == 0) {

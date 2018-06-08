@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 import "./permission_creator.sol";
 import "./authorization.sol";
@@ -44,7 +44,7 @@ contract PermissionManagement {
     }
 
     modifier notBuiltInPermission(address _permission) {
-        for (uint i = 0; i<builtInPermissions.length; i++)
+        for (uint i = 0; i < builtInPermissions.length; i++)
             require(_permission != builtInPermissions[i]);
         _;
     }
@@ -75,7 +75,7 @@ contract PermissionManagement {
         require(perm.close());
         // Cancel the auth of the accounts who have the permission
         require(auth.clearAuthOfPermission(_permission));
-        PermissionDeleted(_permission);
+        emit PermissionDeleted(_permission);
         return true;
     }
 

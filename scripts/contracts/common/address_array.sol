@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 
 /// @title A library for operation of address array
@@ -15,7 +15,7 @@ library AddressArray {
         internal
         returns (bool)
     {
-        uint _index = index(_value,  _array);
+        uint _index = index(_value, _array);
         // Not found
         if (_index >= _array.length)
             return false;
@@ -34,8 +34,8 @@ library AddressArray {
     /// @param _array The array to find from
     /// @return The index if founded, length of array otherwise
     function index(address _value, address[] _array)
-        pure
         internal
+        pure
         returns (uint i)
     {
         // Find the index of the value in the array
@@ -50,8 +50,8 @@ library AddressArray {
     /// @param _array The array to check from
     /// @return true if existed, false otherwise
     function exist(address _value, address[] _array)
-        pure
         internal
+        pure
         returns (bool)
     {
         // Have found the value in array
@@ -68,8 +68,8 @@ library AddressArray {
     /// @param _array The array to check from
     /// @return true if is null, false otherwise
     function isNull(address[] _array)
-        pure
         internal
+        pure
         returns (bool)
     {
         if (_array.length == 0)
