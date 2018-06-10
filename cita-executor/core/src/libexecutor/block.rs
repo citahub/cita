@@ -517,10 +517,9 @@ impl OpenBlock {
         economical_model: EconomicalModel,
     ) {
         let mut env_info = self.env_info();
-        if !self.account_gas.contains_key(t.sender()) {
-            self.account_gas.insert(*t.sender(), self.account_gas_limit);
-            env_info.account_gas_limit = self.account_gas_limit;
-        }
+        self.account_gas
+            .entry(*t.sender())
+            .or_insert(self.account_gas_limit);
         env_info.account_gas_limit = *self
             .account_gas
             .get(t.sender())
@@ -536,9 +535,10 @@ impl OpenBlock {
             economical_model,
         ) {
             Ok(outcome) => {
-                let trace = outcome.trace;
                 trace!("apply signed transaction {} success", t.hash());
-                self.traces.as_mut().map(|tr| tr.push(trace));
+                if let Some(ref mut traces) = self.traces {
+                    traces.push(outcome.trace);
+                }
                 let transaction_gas_used = outcome.receipt.gas_used - self.current_gas_used;
                 self.current_gas_used = outcome.receipt.gas_used;
                 if check_quota {

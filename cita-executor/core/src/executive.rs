@@ -391,36 +391,23 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let account = H160::from(&data[0..20]);
         let abi = &data[20..];
         info!("set abi of contract address: {:?}", account);
-        let res = match self.state.exists(&account) {
-            Ok(true) => {
-                if let Ok(_) = self.state.init_abi(&account, abi.to_vec()) {
-                    true
-                } else {
-                    false
-                }
-            }
-            _ => false,
-        };
-        res
+        self.state
+            .exists(&account)
+            .map(|exists| exists && self.state.init_abi(&account, abi.to_vec()).is_ok())
+            .unwrap_or(false)
     }
 
     fn transact_set_code(&mut self, data: &[u8]) -> bool {
         let account = H160::from(&data[0..20]);
         let code = &data[20..];
-        if let Ok(_) = self.state.reset_code(&account, code.to_vec()) {
-            return true;
-        }
-        false
+        self.state.reset_code(&account, code.to_vec()).is_ok()
     }
 
     fn transact_set_kv_h256(&mut self, data: &[u8]) -> bool {
         let account = H160::from(&data[0..20]);
         let key = H256::from_slice(&data[20..52]);
         let val = H256::from_slice(&data[52..84]);
-        if let Ok(_) = self.state.set_storage(&account, key, val) {
-            return true;
-        }
-        false
+        self.state.set_storage(&account, key, val).is_ok()
     }
 
     pub fn transact_with_tracer<T, V>(
@@ -524,13 +511,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let mut substate = Substate::new();
 
+        let init_gas = t.gas - base_gas_required;
         let (result, output) = match t.action {
             Action::Store | Action::AbiStore => {
                 let schedule = Schedule::new_v1();
                 let store_gas_used = U256::from(t.data.len() * schedule.create_data_gas);
                 (
                     Ok(FinalizationResult {
-                        gas_left: t.gas - store_gas_used,
+                        gas_left: init_gas - store_gas_used,
                         return_data: ReturnData::empty(),
                         apply_state: true,
                     }),
@@ -539,7 +527,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             }
             Action::GoCreate => (
                 Ok(FinalizationResult {
-                    gas_left: t.gas,
+                    gas_left: init_gas,
                     return_data: ReturnData::empty(),
                     apply_state: true,
                 }),
@@ -547,6 +535,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             ),
             Action::AmendData => (
                 Ok(FinalizationResult {
+                    // Super admin operations do not cost gas
                     gas_left: t.gas,
                     return_data: ReturnData::empty(),
                     apply_state: true,
@@ -561,7 +550,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     address: new_address,
                     sender: sender,
                     origin: sender,
-                    gas: t.gas - base_gas_required,
+                    gas: init_gas,
                     gas_price: t.gas_price(),
                     value: ActionValue::Transfer(t.value),
                     code: Some(Arc::new(t.data.clone())),
@@ -579,7 +568,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     address: *address,
                     sender: sender,
                     origin: sender,
-                    gas: t.gas - base_gas_required,
+                    gas: init_gas,
                     gas_price: t.gas_price(),
                     value: ActionValue::Transfer(t.value),
                     code: self.state.code(address)?,
