@@ -161,7 +161,7 @@ impl ExecutorInstance {
             }
 
             _ => {
-                error!("dipatch msg found error key {}!!!!", key);
+                error!("dispatch msg found error key {}!!!!", key);
             }
         }
     }
@@ -375,7 +375,7 @@ impl ExecutorInstance {
             }
 
             Request::code(code_content) => {
-                trace!("code request from josnrpc  {:?}", code_content);
+                trace!("code request from jsonrpc  {:?}", code_content);
                 serde_json::from_str::<CountOrCode>(&code_content)
                     .map_err(|err| {
                         response.set_code(ErrorCode::query_error());
@@ -400,7 +400,7 @@ impl ExecutorInstance {
             }
 
             Request::abi(abi_content) => {
-                trace!("abi request from josnrpc  {:?}", abi_content);
+                trace!("abi request from jsonrpc  {:?}", abi_content);
                 serde_json::from_str::<CountOrCode>(&abi_content)
                     .map_err(|err| {
                         response.set_code(ErrorCode::query_error());
@@ -425,7 +425,7 @@ impl ExecutorInstance {
             }
 
             Request::balance(balance_content) => {
-                trace!("balance request from josnrpc  {:?}", balance_content);
+                trace!("balance request from jsonrpc  {:?}", balance_content);
                 serde_json::from_str::<CountOrCode>(&balance_content)
                     .map_err(|err| {
                         response.set_code(ErrorCode::query_error());
@@ -453,7 +453,7 @@ impl ExecutorInstance {
             }
 
             Request::meta_data(data) => {
-                trace!("metadata request from josnrpc {:?}", data);
+                trace!("metadata request from jsonrpc {:?}", data);
                 match serde_json::from_str::<BlockNumber>(&data)
                     .map_err(|err| (ErrorCode::query_error(), format!("{:?}", err)))
                     .and_then(|number: BlockNumber| {

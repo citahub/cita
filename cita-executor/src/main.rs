@@ -124,14 +124,12 @@ fn main() {
     start_pubsub(
         "executor",
         routing_key!([
-            Consensus >> BlockWithProof,
             Chain >> Request,
             Chain >> RichStatus,
+            Consensus >> BlockWithProof,
             Consensus >> SignedProposal,
-            Consensus >> RawBytes,
             Net >> SyncResponse,
             Net >> SignedProposal,
-            Net >> RawBytes,
             Snapshot >> SnapshotReq,
             Auth >> MiscellaneousReq,
         ]),
