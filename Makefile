@@ -29,3 +29,10 @@ clean:
 
 clippy:
 	cargo build --features clippy --all
+
+# use cargo-audit to audit Cargo.lock for crates with security vulnerabilities
+# expecting to see "Success No vulnerable packages found"
+security_audit:
+	which cargo-audit || cargo install cargo-audit
+	cargo audit
+
