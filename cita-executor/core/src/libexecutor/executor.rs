@@ -612,15 +612,14 @@ impl Executor {
             economical_model: EconomicalModel::Quota,
         };
 
-        let ret = Executive::new(
+        Executive::new(
             &mut state,
             &env_info,
             &engine,
             &self.factories.vm,
             &self.factories.native,
-        ).transact(t, options)?;
-
-        Ok(ret)
+        ).transact(t, options)
+            .map_err(Into::into)
     }
 
     pub fn set_gas_and_nodes(&self, height: u64) {
@@ -827,7 +826,7 @@ impl Executor {
         let last_hashes = self.last_hashes();
         let conf = self.get_sys_config(self.get_max_height());
         let perm = conf.check_permission;
-        let quota = conf.check_quota;
+        let check_quota = conf.check_quota;
         let parent_hash = block.parent_hash().clone();
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
@@ -838,7 +837,7 @@ impl Executor {
             current_state_root,
             last_hashes.into(),
         ).unwrap();
-        if open_block.apply_transactions(self, perm, quota) {
+        if open_block.apply_transactions(self, perm, check_quota) {
             let closed_block = open_block.close(*self.economical_model.read());
             let new_now = Instant::now();
             debug!("execute proposal use {:?}", new_now.duration_since(now));

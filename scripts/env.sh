@@ -46,6 +46,8 @@ else
            --workdir ${WORKDIR} \
            --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
            /bin/bash -c "while true;do sleep 100;done"
+    # Wait entrypoint.sh to finish
+    sleep 3
 fi
 
 test -t 1 && USE_TTY="-t"

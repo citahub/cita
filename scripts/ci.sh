@@ -76,7 +76,11 @@ function run_in_docker () {
 function run_in_machine () {
     draw_title "Run in Machine"
     draw_title "    1) Setup"
-    source ${HOME}/.cargo/env
+    local cargo_home=${CARGO_HOME}
+    if [ ! -d "${cargo_home}" ]; then
+        cargo_home=${HOME}/.cargo
+    fi
+    source ${cargo_home}/env
     scripts/config_rabbitmq.sh
     # For native machine, skip this step.
     # scripts/install_develop.sh
