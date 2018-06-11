@@ -64,7 +64,7 @@ contract NodeManager is NodeInterface, Error {
         if (admins[msg.sender])
             _;
         else {
-            ErrorLog(ErrorType.NotAdmin, "Not the admin account");
+            emit ErrorLog(ErrorType.NotAdmin, "Not the admin account");
             return;
         }
     }
@@ -74,7 +74,7 @@ contract NodeManager is NodeInterface, Error {
         if (!block_op[block.number])
             _;
         else {
-            ErrorLog(ErrorType.NotOneOperate, "should operate one time in a block");
+            emit ErrorLog(ErrorType.NotOneOperate, "should operate one time in a block");
             return;
         }
     }
@@ -83,7 +83,7 @@ contract NodeManager is NodeInterface, Error {
         if (NodeStatus.Close == status[_node])
             _;
         else {
-            ErrorLog(ErrorType.NotClose, "node does not close");
+            emit ErrorLog(ErrorType.NotClose, "node does not close");
             return;
         }
     }
@@ -92,7 +92,7 @@ contract NodeManager is NodeInterface, Error {
         if (NodeStatus.Start == status[_node])
             _;
         else {
-            ErrorLog(ErrorType.NotStart, "node does not start");
+            emit ErrorLog(ErrorType.NotStart, "node does not start");
             return;
         }
     }
@@ -101,7 +101,7 @@ contract NodeManager is NodeInterface, Error {
         if (NodeStatus.Ready == status[_node])
             _;
         else {
-            ErrorLog(ErrorType.NotReady, "node does no ready");
+            emit ErrorLog(ErrorType.NotReady, "node does no ready");
             return;
         }
     }

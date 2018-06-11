@@ -28,7 +28,7 @@ contract ChainManager is Error {
         if (parentChainId != 0)
             _;
         else {
-            ErrorLog(ErrorType.NoParentChain, "has no parent chain");
+            emit ErrorLog(ErrorType.NoParentChain, "has no parent chain");
             return;
         }
     }
@@ -37,7 +37,7 @@ contract ChainManager is Error {
         if (sideChains[_id].status != ChainStatus.Unknown)
             _;
         else {
-            ErrorLog(ErrorType.NoSideChain, "has no side chain");
+            emit ErrorLog(ErrorType.NoSideChain, "has no side chain");
             return;
         }
     }

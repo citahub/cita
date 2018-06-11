@@ -22,7 +22,7 @@ contract QuotaManager is QuotaInterface, Error {
         if (admins[msg.sender])
             _;
         else {
-            ErrorLog(ErrorType.NotAdmin, "Not the admin account");
+            emit ErrorLog(ErrorType.NotAdmin, "Not the admin account");
             return;
         }
     }
@@ -33,7 +33,7 @@ contract QuotaManager is QuotaInterface, Error {
         if (_v <= maxLimit && _v >= baseLimit)
             _;
         else {
-            ErrorLog(ErrorType.OutOfBaseLimit, "The value is out of base limit");
+            emit ErrorLog(ErrorType.OutOfBaseLimit, "The value is out of base limit");
             return;
         }
     }
@@ -43,7 +43,7 @@ contract QuotaManager is QuotaInterface, Error {
         if (_v > blockLimit)
             _;
         else {
-            ErrorLog(ErrorType.OutOfBlockLimit, "The value is out of block limit");
+            emit ErrorLog(ErrorType.OutOfBlockLimit, "The value is out of block limit");
             return;
         }
     }
