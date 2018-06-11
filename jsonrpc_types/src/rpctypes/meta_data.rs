@@ -41,8 +41,11 @@ pub struct MetaData {
     #[serde(rename = "blockInterval")]
     pub block_interval: u64,
     /// Token name
+    #[serde(rename = "tokenName")]
     pub token_name: String,
+    #[serde(rename = "tokenSymbol")]
     pub token_symbol: String,
+    #[serde(rename = "tokenAvatar")]
     pub token_avatar: String,
 }
 
@@ -67,9 +70,9 @@ mod tests {
                 "0xe9deeae8b2a43675f113d11573119b9c68e5e3d8",
             ],
             "blockInterval": 3000,
-            "token_name": "eth",
-            "token_symbol": "eth",
-            "token_avatar": "avatar"
+            "tokenName": "Nervos",
+            "tokenSymbol": "NOS",
+            "tokenAvatar": "https://avatars1.githubusercontent.com/u/35361817"
         });
         let metadata = MetaData {
             chain_id: 123,
@@ -86,9 +89,9 @@ mod tests {
                 .map(|s| Address::from_str(s).unwrap())
                 .collect::<Vec<_>>(),
             block_interval: 3000,
-            token_name: "eth".to_owned(),
-            token_symbol: "eth".to_owned(),
-            token_avatar: "avatar".to_owned(),
+            token_name: "Nervos".to_owned(),
+            token_symbol: "NOS".to_owned(),
+            token_avatar: "https://avatars1.githubusercontent.com/u/35361817".to_owned(),
         };
         assert_eq!(serde_json::to_value(metadata).unwrap(), value);
     }
