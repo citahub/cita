@@ -20,6 +20,9 @@ jobs:
       - run:
           name: check_cargolock
           command: '[ $(git status --short Cargo.lock | wc -l) -ne 0 ] && echo "[Error] Please update Cargo.lock BEFORE commit." && git diff Cargo.lock && exit 1 || true'
+      - run:
+          name: security_audit
+          command: 'make security_audit'
       - save_cache:
           key: cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
           paths:
