@@ -210,9 +210,6 @@ impl Encodable for Transaction {
     }
 }
 
-// TODO: refactor transaction in protobuf,
-// now using the same type `ProtoTransaction`,
-// it's not a good design.
 impl Transaction {
     pub fn new(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
         Ok(Transaction {

@@ -613,7 +613,6 @@ impl Executor {
             vm_tracing: analytics.vm_tracing,
             check_permission: false,
             check_quota: false,
-            economical_model: EconomicalModel::Quota,
         };
 
         Executive::new(
@@ -622,6 +621,8 @@ impl Executor {
             &engine,
             &self.factories.vm,
             &self.factories.native,
+            false,
+            EconomicalModel::Quota,
         ).transact(t, options)
             .map_err(Into::into)
     }
