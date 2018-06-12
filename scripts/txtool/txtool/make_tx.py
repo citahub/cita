@@ -7,7 +7,7 @@ import binascii
 import random
 import string
 from pathlib import Path
-from transaction_pb2 import Transaction, SignedTransaction, UnverifiedTransaction, Crypto
+from blockchain_pb2 import Transaction, SignedTransaction, UnverifiedTransaction, Crypto
 from util import hex2bytes, run_command, remove_hex_0x, recover_pub
 from secp256k1 import PrivateKey
 from ethereum.utils import sha3
@@ -119,7 +119,7 @@ def _blake2b_ed25519_deploy_data(current_height,
     if receiver is not None:
         tx.to = receiver
     tx.data = hex2bytes(bytecode)
-    tx.value = value
+    tx.value = value.to_bytes(32, byteorder='big')
     tx.quota = quota
 
     message = _blake2b(tx.SerializeToString())
@@ -170,7 +170,7 @@ def _sha3_secp256k1_deploy_data(current_height,
     if receiver is not None:
         tx.to = receiver
     tx.data = hex2bytes(bytecode)
-    tx.value = value
+    tx.value = value.to_bytes(32, byteorder='big')
     tx.quota = quota
 
     message = sha3(tx.SerializeToString())
