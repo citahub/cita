@@ -290,7 +290,7 @@ impl Transaction {
         pt.set_valid_until_block(self.block_limit);
         pt.set_data(self.data.clone());
         pt.set_quota(self.gas.as_u64());
-        pt.set_value(self.value.as_u64());
+        pt.set_value(<[u8; 32]>::from(self.value).to_vec());
         pt.set_chain_id(self.chain_id);
         pt.set_version(self.version);
         match self.action {
