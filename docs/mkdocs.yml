@@ -1,7 +1,7 @@
 # Refer to https://github.com/mkdocs/mkdocs/blob/master/mkdocs.yml for a working example
 site_name: CITA
 site_url: https://github.com/cryptape/cita
-site_description: 
+site_description:
 site_author: Cryptape
 repo_url: https://github.com/cryptape/cita
 edit_uri: docs/docs/
@@ -19,6 +19,7 @@ pages:
         - Bootstrap: 'zh/usage-guide/bootstrap.md'
         - 智能合约指南: 'zh/usage-guide/smart-contract-guide.md'
         - JSON-RPC: 'zh/usage-guide/rpc.md'
+        - JSON-RPC 参数和返回值的数据类型: 'zh/usage-guide/rpc-types.md'
         - JSON-RPC 错误码: 'zh/usage-guide/rpc_error_code.md'
         - 系统合约: 'zh/usage-guide/admintool.md'
         - 交易相关工具: 'zh/usage-guide/txtool.md'
@@ -31,7 +32,7 @@ pages:
         - 快照: 'zh/system_management/snapshot.md'
     - 跨链:
         - 跨链合约编写及操作示例: 'zh/crosschain/crosschain_contract_example.md'
-    - 架构设计: 
+    - 架构设计:
         - 微服务: 'zh/architecture/architecture.md'
         - 共识: 'zh/architecture/consensus.md'
         - 交易处理: 'zh/architecture/transaction_process.md'
@@ -41,7 +42,7 @@ pages:
       - 贡献代码: 'zh/appendix/contributing.md'
       - 词汇表: 'zh/appendix/glossary.md'
 
-  - EN: 
+  - EN:
     - Index: 'en/index.md'
     - 'Getting Started': 'en/getting_started.md'
     - Concepts:
@@ -52,6 +53,7 @@ pages:
         - Bootstrap: 'en/usage-guide/bootstrap.md'
         - 'Smart Contracts': 'en/usage-guide/smart-contract-guide.md'
         - JSON-RPC: 'en/usage-guide/rpc.md'
+        # TODO - 'Types of JSON-RPC Parameters and Returns': 'en/usage-guide/rpc-types.md'
         - 'JSON-RPC Error Code': 'en/usage-guide/rpc_error_code.md'
         - 'System Contract': 'en/usage-guide/admintool.md'
         - 'Transaction Tool': 'en/usage-guide/txtool.md'
@@ -64,7 +66,7 @@ pages:
         - Snapshot: 'en/system_management/snapshot.md'
     - 'Cross Chain':
         - 'Cross Chain Contract Examples': 'en/crosschain/crosschain_contract_example.md'
-    - Architecture: 
+    - Architecture:
         - 'Micro Service': 'en/architecture/architecture.md'
         - 'Consensus': 'en/architecture/consensus.md'
         - 'Transaction Process': 'en/architecture/transaction_process.md'
