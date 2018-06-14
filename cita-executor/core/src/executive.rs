@@ -511,7 +511,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                         need_output = v.to_vec();
                     } else {
                         return Err(ExecutionError::TransactionMalformed(
-                            "Account doesn't exist".to_string(),
+                            "May be incomplete trie error".to_string(),
                         ));
                     }
                 }

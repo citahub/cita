@@ -763,14 +763,7 @@ impl Executor {
         conf.check_quota = sys_config.quota_check();
         conf.block_interval = sys_config.block_interval();
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
-        let accounts = PermissionManagement::all_accounts(self);
-        conf.super_admin_account = {
-            if accounts.is_empty() {
-                None
-            } else {
-                Some(accounts[0])
-            }
-        };
+        conf.super_admin_account = PermissionManagement::get_super_admin_account(self);
         conf.group_accounts = UserManagement::load_group_accounts(self);
         {
             *self.economical_model.write() = sys_config.economical_model();
