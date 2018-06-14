@@ -15,17 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::H256;
-
-//TODO respone contain error
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct TxResponse {
-    pub hash: H256,
-    pub status: String,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum Version {
+    #[serde(rename = "1.0")]
+    V1,
+    #[serde(rename = "2.0")]
+    V2,
 }
 
-impl TxResponse {
-    pub fn new(hash: H256, status: String) -> Self {
-        TxResponse { hash, status }
+impl Default for Version {
+    fn default() -> Self {
+        Version::V2
     }
 }

@@ -17,12 +17,11 @@
 
 #![allow(unused_must_use)]
 
+use cita_types::H256;
 use core::filters::eth_filter::EthFilter;
 use core::libchain::block::Block;
 use core::libchain::chain::{BlockInQueue, Chain};
 use error::ErrorCode;
-//CountOrCode
-use cita_types::H256;
 use jsonrpc_types::rpctypes::{
     self as rpctypes, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter, Log as RpcLog,
     Receipt as RpcReceipt, RpcBlock,

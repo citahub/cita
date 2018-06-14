@@ -460,7 +460,7 @@ impl ExecutorInstance {
                         let current_height = self.ext.get_current_height();
                         let number = match number {
                             BlockNumber::Tag(BlockTag::Earliest) => 0,
-                            BlockNumber::Height(n) => n,
+                            BlockNumber::Height(n) => n.into(),
                             BlockNumber::Tag(BlockTag::Latest) => current_height,
                         };
                         if number > current_height {

@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use bytes::Bytes;
 use cita_types::{H160, H256, U256};
+use rpctypes::Data;
 use types::log_entry::{LocalizedLogEntry, LogEntry};
 
 /// Log
@@ -27,7 +27,7 @@ pub struct Log {
     /// Topics
     pub topics: Vec<H256>,
     /// Data
-    pub data: Bytes,
+    pub data: Data,
     /// Block Hash
     #[serde(rename = "blockHash")]
     pub block_hash: Option<H256>,

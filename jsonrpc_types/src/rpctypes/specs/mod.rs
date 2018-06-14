@@ -15,17 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::H256;
+mod id;
+mod params;
+mod version;
 
-//TODO respone contain error
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct TxResponse {
-    pub hash: H256,
-    pub status: String,
-}
-
-impl TxResponse {
-    pub fn new(hash: H256, status: String) -> Self {
-        TxResponse { hash, status }
-    }
-}
+pub use self::id::Id;
+pub use self::params::Params;
+pub use self::version::Version;

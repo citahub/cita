@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,11 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::{Error, Value};
+use error::Error;
 use serde::de::{DeserializeOwned, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json;
-use serde_json::value::from_value;
+use serde_json::{self, from_value, Value};
 use std::fmt;
 
 /// Request parameters
@@ -126,11 +125,9 @@ impl<'a> Visitor<'a> for ParamsVisitor {
 #[cfg(test)]
 mod tests {
     use super::Params;
+    use error::Error;
     use rpctypes::Filter;
-    use serde_json;
-    use serde_json::Map;
-    use serde_json::Number;
-    use {Error, Value};
+    use serde_json::{self, Map, Number, Value};
 
     #[test]
     fn params_deserialization() {
