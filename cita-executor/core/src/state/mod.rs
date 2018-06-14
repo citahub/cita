@@ -216,6 +216,7 @@ pub struct State<B: Backend> {
     factories: Factories,
     pub account_permissions: HashMap<Address, Vec<Resource>>,
     pub group_accounts: HashMap<Address, Vec<Address>>,
+    pub super_admin_account: Option<Address>,
 }
 
 #[derive(Copy, Clone)]
@@ -262,6 +263,7 @@ impl<B: Backend> State<B> {
             factories: factories,
             account_permissions: HashMap::new(),
             group_accounts: HashMap::new(),
+            super_admin_account: None,
         }
     }
 
@@ -285,6 +287,7 @@ impl<B: Backend> State<B> {
             factories: factories,
             account_permissions: HashMap::new(),
             group_accounts: HashMap::new(),
+            super_admin_account: None,
         };
 
         Ok(state)
@@ -1107,6 +1110,7 @@ impl Clone for State<StateDB> {
             factories: self.factories.clone(),
             account_permissions: self.account_permissions.clone(),
             group_accounts: self.group_accounts.clone(),
+            super_admin_account: self.super_admin_account.clone(),
         }
     }
 }
