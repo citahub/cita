@@ -2,26 +2,26 @@
 
 ## JSON-RPC
 
-* net_peerCount
-* cita_blockNumber
-* cita_sendRawTransaction
-* cita_getBlockByHash
-* cita_getBlockByNumber
-* eth_getTransactionReceipt
-* eth_getLogs
-* eth_call
-* cita_getTransaction
-* eth_getTransactionCount
-* eth_getCode
-* eth_getAbi
-* eth_getBalance
-* eth_newFilter
-* eth_newBlockFilter
-* eth_uninstallFilter
-* eth_getFilterChanges
-* eth_getFilterLogs
-* cita_getTransactionProof
-* cita_getMetaData
+* [net_peerCount](#net_peercount)
+* [cita_blockNumber](#cita_blocknumber)
+* [cita_sendRawTransaction](#cita_sendrawtransaction)
+* [cita_getBlockByHash](#cita_getblockbyhash)
+* [cita_getBlockByNumber](#cita_getblockbynumber)
+* [eth_getTransactionReceipt](#eth_gettransactionreceipt)
+* [eth_getLogs](#eth_getlogs)
+* [eth_call](#eth_call)
+* [cita_getTransaction](#cita_gettransaction)
+* [eth_getTransactionCount](#eth_gettransactioncount)
+* [eth_getCode](#eth_getcode)
+* [eth_getAbi](#eth_getabi)
+* [eth_getBalance](#eth_getbalance)
+* [eth_newFilter](#eth_newfilter)
+* [eth_newBlockFilter](#eth_newblockfilter)
+* [eth_uninstallFilter](#eth_uninstallfilter)
+* [eth_getFilterChanges](#eth_getfilterchanges)
+* [eth_getFilterLogs](#eth_getfilterlogs)
+* [cita_getTransactionProof](#cita_gettransactionproof)
+* [cita_getMetaData](#cita_getmetadata)
 
 ***
 
@@ -35,14 +35,14 @@
 
 * Returns
 
-	QUANTITY - integer of the number of connected peers.
+	`Quantity` - integer of the number of connected peers.
 
 * Example
 
 	```js
 	// Request
 	curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}'
-	
+
 	// Result
 	{
 	    "id": 74,
@@ -63,14 +63,14 @@
 
 * Returns
 
-	`QUANTITY` - integer of current block height of CITA.
+	`Quantity` - integer of current block height of CITA.
 
 * Example
 
 	```js
 	// Request
 	curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}'
-	
+
 	// Result
 	{
 	    "id": 83,
@@ -87,7 +87,7 @@
 
 * Parameters
 
-    1. `DATA`, The signed transaction data.
+    1. `Data`, The signed transaction data.
 
 	```js
 	const signed_data = "0a9b0412013018fface20420f73b2a8d046060604052341561000f57600080fd5b5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b5b610178806100956000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100495780636d4ce63c1461006c575b600080fd5b341561005457600080fd5b61006a6004808035906020019091905050610095565b005b341561007757600080fd5b61007f610142565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b50565b6000805490505b905600a165627a7a72305820631927ec00e7a86b68950c2304ba2614a8dcb84780b339fc2bfe442bba418ce800291241884bfdfd8e417ab286fd761d42b71a9544071d91084c56f9063471ce82e266122a8f9a24614e1cf75070eea301bf1e7a65857def86093b6892e09ae7d0bcdff901"
@@ -133,7 +133,7 @@ message UnverifiedTransaction {
 - `nonce` -> 交易的填充字段。
 
 	区块链为了防止重放攻击，会拒绝接受重复的交易。如果交易中仅包含有效的交易数据，会存在两个正常的交易完全一样的情况。比如两次转账，如果转账人，收款人和金额都一样，那么两个交易就完全一样。因此需要用户在交易中填充一些内容，使得两个交易不一样。
-	
+
 	填充内容的形式为字符串，最大长度 128，具体内容用户自己定义。
 
 - `quota` -> 交易的配额。
@@ -143,9 +143,9 @@ message UnverifiedTransaction {
 - `valid_until_block` -> 交易上链的最大区块高度。
 
 	区块链的发送交易接口是异步的，交易进入交易池接口即返回。后面需要用户轮询交易什么时候真正上链得到确认。视系统的拥堵情况，等待时间并没有一个确定的值。甚至有可能在后续环节发生错误，最终没有上链。因此用户轮询一段时间之后，发现交易还没有上链，这时无法确定交易的状态(失败 or 拥堵)。发送交易操作没有幂等性，因此无法通过重复发送交易来解决。所以需要一个类似超时的机制，保证等待一段时间之后，交易的状态就确定是失败的。
-	
+
 	该字段就是起这个作用，表示用户愿意等待交易上链的最大区块高度。在区块链达到该高度之后，交易就确定不会再上链了，用户可以放心地重新发送交易，或者进行其他的后续处理。
-	
+
 	实际使用中，可选的值在当前区块高度到当前区块高度 +100 之间。
 
 #### 获得合约对应的bytecode
@@ -222,14 +222,14 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 * Returns
 
-	`DATA`, 32 Bytes - 交易hash
+	`Data32` - 交易hash
 
 * Example
 
 	```js
 	// Request
 	curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["0a910212013218fface20420a0492a8302606060405234156100105760006000fd5b610015565b60e0806100236000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604b5780636d4ce63c14606c576045565b60006000fd5b341560565760006000fd5b606a60048080359060200190919050506093565b005b341560775760006000fd5b607d60a3565b6040518082815260200191505060405180910390f35b8060006000508190909055505b50565b6000600060005054905060b1565b905600a165627a7a72305820942223976c6dd48a3aa1d4749f45ad270915cfacd9c0bf3583c018d4c86f9da200291241edd3fb02bc1e844e1a6743e8986a61e1d8a584aac26db5fa1ce5b32700eba5d16ba4c754731f43692f3f5299e85176627e55b9f61f5fe3e43572ec8c535b0d9201"],"id":1}'
-	
+
 	// Result
 	{
 	  "jsonrpc": "2.0",
@@ -239,9 +239,9 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 	    "status": "OK"
 	  }
 	}
-	
+
 	// 如果是近期发送的重复交易，则会提示重复交易
-	
+
 	{
 	  "jsonrpc": "2.0",
 	  "id": 1,
@@ -250,8 +250,8 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 	    "message": "Dup"//重复交易
 	  }
 	}
-	
-	
+
+
 	```
 
 ***
@@ -262,8 +262,8 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 * Parameters
 
-    1. DATA, 32 Bytes - Hash of a block.
-    2. Boolean - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
+    1. `Data32` - Hash of a block.
+    2. `Boolean` - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
 
     ```shell
     params: [
@@ -274,14 +274,14 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 * Returns
 
-    1. Object - A block object, or null when no block was found:
+    1. `Object` - A block object, or null when no block was found:
 
 * Example
 
 	```shell
 	// Request
 	curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByHash","params":["0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329", true],"id":1}'
-	
+
 	// Result
 	{
 	  "jsonrpc": "2.0",
@@ -320,7 +320,7 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 	    }
 	  }
 	}
-	
+
 	```
 
 ***
@@ -331,7 +331,7 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 * Parameters
 
-    1. `QUANTITY` - integer of a block height.
+    1. `Quantity` - integer of a block height.
     2. `Boolean` - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
 
 	```js
@@ -372,7 +372,7 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 * Parameters
 
-    1. `DATA`, 32 Bytes - hash of a transaction
+    1. `Data32` - hash of a transaction
 
     ```js
     params: [
@@ -384,16 +384,16 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
     Object - A receipt object:
 
-    * transactionHash: DATA, 32 Bytes - hash of the transaction.
-    * transactionIndex: QUANTITY - transaction index.
-    * blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its not in block.
-    * blockNumber: QUANTITY - block number where this transaction was in. null when its not in block.
-    * cumulativeGasUsed: QUANTITY - The total amount of gas used when this transaction was executed in the block.
-    * gasUsed: QUANTITY - The amount of gas used by this specific transaction alone.
-    * contractAddress: DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
-    * logs: Array - Array of log objects, which this transaction generated.
-    * root: DATA 32 bytes of post-transaction stateroot.
-    * errorMessage: String, execution error message.
+    * transactionHash: `Data32` - hash of the transaction.
+    * transactionIndex: `Quantity` - transaction index.
+    * blockHash: `Data32` - hash of the block where this transaction was in. null when its not in block.
+    * blockNumber: `Quantity` - block number where this transaction was in. null when its not in block.
+    * cumulativeGasUsed: `Quantity` - The total amount of gas used when this transaction was executed in the block.
+    * gasUsed: `Quantity` - The amount of gas used by this specific transaction alone.
+    * contractAddress: `Data20` - The contract address created, if the transaction was a contract creation, otherwise null.
+    * logs: `Array` - Array of log objects, which this transaction generated.
+    * root: `Data32` of post-transaction stateroot.
+    * errorMessage: `String` execution error message.
 
     Receipt error messages:
 
@@ -417,7 +417,7 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 	```js
 	// Request
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"],"id":1}'
-	
+
 	// Result
 	{
 	    "jsonrpc":"2.0",
@@ -449,7 +449,7 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 	        "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100040000000010000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	    }
 	}
-	
+
 	error：
 	{
 	  "contractAddress": "0xbb6f8266fae605da373c2526c386fe07542b4957",
@@ -474,23 +474,9 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 根据Topic查询logs。
 
-A note on specifying topic filters:
-
-Topics are order-dependent. A transaction with a log with topics [A, B] will be matched by the following topic filters:
-
-* `[]` "anything"
-* `[A]` "A in first position (and anything after)"
-* `[null, B]` "anything in first position AND B in second position (and anything after)"
-* `[A, B]` "A in first position AND B in second position (and anything after)"
-* `[[A, B], [A, B]]` "(A OR B) in first position AND (A OR B) in second position (and anything after)"
-
 * Parameters
 
-    1. `Object` - The filter object:
-        * `fromBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
-        * `toBlock`: `QUANTITY|TAG` - (optional, default: `"latest"`) Integer block number(Hex string), or `"latest"` or `"earliest"`.
-        * `address`: `DATA|Array`, 20 Bytes - (optional) Contract address or a list of addresses from which logs should originate.
-        * `topics`: `Array of DATA`,  - (optional) Array of 32 Bytes `DATA` topics. Topics are order-dependent. Each topic can also be an array of DATA with "or" options.
+    1. `Filter` - The filter object，详见 `Filter` 的说明。
 
 * Returns
 
@@ -501,7 +487,7 @@ Topics are order-dependent. A transaction with a log with topics [A, B] will be 
 	```js
 	// Request
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"],"fromBlock": "0x0"}],"id":74}'
-	
+
 	// Result
 	{
 	    "jsonrpc":"2.0",
@@ -522,7 +508,7 @@ Topics are order-dependent. A transaction with a log with topics [A, B] will be 
 	        }
 	    ]
 	}
-	
+
 	```
 
 ***
@@ -533,14 +519,8 @@ Topics are order-dependent. A transaction with a log with topics [A, B] will be 
 
 * Parameters
 
-    1. Object - The transaction call object
-        * from: DATA, 20 Bytes - (optional) The address the transaction is sent from.
-        * to:   DATA, 20 Bytes - The address the transaction is directed to.
-        * data: DATA - (optional) Hash of the method signature and encoded parameters. For details see [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)
-    2. QUANTITY - block parameter
-        * HEX String - an integer block number
-        * String "earliest" for the earliest/genesis block
-        * String "latest" - for the latest mined block
+    1. `CallRequest` - The transaction call object. 详见 `CallRequest` 的说明。
+    2. `BlockNumber` - block parameter.
 
 	```js
 	params: [{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5","data":"0x6d4ce63c"}, "0x1d23"]
@@ -548,7 +528,7 @@ Topics are order-dependent. A transaction with a log with topics [A, B] will be 
 
 * Returns
 
-	`DATA`, 32 Bytes - the transaction hash.
+	`Data32` - the transaction hash.
 
 * Example
 
@@ -581,7 +561,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"0xc
 
 * Parameters
 
-    1. `DATA`, 32 Bytes - hash of a transaction
+    1. `Data32` - hash of a transaction
 
     ```js
     params: [
@@ -593,18 +573,18 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"0xc
 
     Object - A transaction object, or null when no transaction was found:
 
-    * hash: DATA, 32 Bytes - hash of the transaction.
-    * content: DATA, 交易内容.
-    * blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its not in block.
-    * blockNumber: QUANTITY - block number where this transaction was in. null when its not in block.
-    * index: QUANTITY - integer of the transactions index position in the block. null when its not in block.
+    * hash: `Data32` - hash of the transaction.
+    * content: `Data` 交易内容.
+    * blockHash: `Data32` - hash of the block where this transaction was in. null when its not in block.
+    * blockNumber: `Quantity` - block number where this transaction was in. null when its not in block.
+    * index: `Quantity` - integer of the transactions index position in the block. null when its not in block.
 
 * Example
 
 	```js
 	// Request
 	curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getTransaction","params":["0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"],"id":1}'
-	
+
 	// Result
 	{
 	  "jsonrpc": "2.0",
@@ -627,25 +607,25 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"0xc
 
 * Parameters
 
-    1. `DATA`, 20 Bytes - address.
-    2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
+    1. `Data20` - address.
+    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
 
 * Returns
 
-	`QUANTITY` - integer of the number of transactions send from this address.
+	`Quantity` - integer of the number of transactions send from this address.
 
 * Example
 
 	```shell
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionCount","params":["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a","0x1F"],"id":1}'
-	
+
 	// Result:
 	{
 	  "jsonrpc": "2.0",
 	  "id": 1,
 	  "result": "0x1"
 	}
-	
+
 	```
 
 ***
@@ -656,18 +636,18 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"0xc
 
 * Parameters
 
-    1. `DATA`, 20 Bytes - address.
-    2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
+    1. `Data20` - address.
+    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
 
 * Returns
 
-	`DATA` - the code from the given address.
+	`Data` - the code from the given address.
 
 * Example
 
 	```shell
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["ea4f6bc98b456ef085da5c424db710489848cab5", "0x1F"],"id":1}'
-	
+
 	// Result:
 	{
 	  "jsonrpc": "2.0",
@@ -684,25 +664,25 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"0xc
 
 * Parameters
 
-    1. `DATA`, 20 Bytes - address.
-    2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
+    1. `Data20` - address.
+    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
 
 * Returns
 
-	`DATA` - the abi from the given address.
+	`Data` - the abi from the given address.
 
 * Example
 
 	```shell
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getAbi","params":["73552bc4e960a1d53013b40074569ea05b950b4d", "latest"],"id":1}'
-	
+
 	// Result:
 	{
 	  "jsonrpc": "2.0",
 	  "id": 1,
 	  "result": "0x4ed3885e000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000001275b7b22636f6e7374616e74223a66616c73652c22696e70757473223a5b7b226e616d65223a2278222c2274797065223a2275696e74323536227d5d2c226e616d65223a22736574222c226f757470757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a2266756e6374696f6e227d2c7b22636f6e7374616e74223a747275652c22696e70757473223a5b5d2c226e616d65223a22676574222c226f757470757473223a5b7b226e616d65223a22222c2274797065223a2275696e74323536227d5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d5d00000000000000000000000000000000000000000000000000"
 	}
-	
+
 	```
 
 ***
@@ -713,18 +693,18 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"0xc
 
 * Parameters
 
-    1. `DATA`, 20 Bytes - address.
-    2. `QUANTITY|TAG` - integer block number(Hex string), or the string "latest", "earliest"
+    1. `Data` - address.
+    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
 
 * Returns
 
-	`DATA` - the balance from the given address.
+	`Data` - the balance from the given address.
 
 * Example
 
 	```shell
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getBalance","params":["0xea4f6bc98b456ef085da5c424db710489848cab5", "0x1F"],"id":1}'
-	
+
 	// Result:
 	{
 	  "jsonrpc": "2.0",
@@ -741,17 +721,17 @@ Creates a filter object, based on filter options, to notify when the state chang
 
 * Parameters
 
-    1. `Object` - The filter object, see [eth_getLogs](#eth_getLogs)
+    1. `Filter` - The filter object, see [eth_getLogs](#eth_getlogs)
 
 * Returns
 
-	`QUANTITY` - A filter id.
+	`Quantity` - A filter id.
 
 * Example
 
 	```shell
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_newFilter","params":[{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"]}],"id":1}'
-	
+
 	// Result
 	{
 	  "id":1,
@@ -772,13 +752,13 @@ Creates a filter in the node, to notify when a new block arrives. To check if th
 
 * Returns
 
-	`QUANTITY` - A filter id.
+	`Quantity` - A filter id.
 
 * Example
 
 	```shell
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_newBlockFilter","params":[],"id":73}'
-	
+
 	// Result
 	{
 	  "id":1,
@@ -796,7 +776,7 @@ Additonally Filters timeout when they aren't requested with eth_getFilterChanges
 
 * Parameters
 
-    1. `QUANTITY` - The filter id.
+    1. `Quantity` - The filter id.
 
 * Returns
 
@@ -806,7 +786,7 @@ Additonally Filters timeout when they aren't requested with eth_getFilterChanges
 
 	```shell
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_uninstallFilter","params":["0xb"],"id":73}'
-	
+
 	// Result
 	{
 	  "id":1,
@@ -823,7 +803,7 @@ Polling method for a filter, which returns an array of logs which occurred since
 
 * Parameters
 
-    1. `QUANTITY` - The filter id.
+    1. `Quantity` - The filter id.
 
 * Returns
 
@@ -833,7 +813,7 @@ Polling method for a filter, which returns an array of logs which occurred since
 
 	```shell
 	curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getFilterChanges","params":["0x16"],"id":74}'
-	
+
 	// Result
 	{
 	    "jsonrpc":"2.0",
@@ -864,7 +844,7 @@ Returns an array of all logs matching filter with given id.
 
 * Parameters
 
-    1. `QUANTITY` - The filter id.
+    1. `Quantity` - The filter id.
 
 * Returns
 
@@ -872,7 +852,7 @@ Returns an array of all logs matching filter with given id.
 
 * Example
 
-	see [eth_getFilterChanges](#eth_getFilterChanges)
+	see [eth_getFilterChanges](#eth_getfilterchanges)
 
 ***
 
@@ -889,7 +869,7 @@ Returns an array of all logs matching filter with given id.
 3. 构造交易 data，前 20 字节为合约地址，后面字节为 abi 的编码成的 bytes；
 4. 发送交易，使用`cita_sendRawTransaction`接口；
 
-Example 
+Example
 
 以`scripts/contracts/tests/contracts/test_example.sol`这个合约为例子，正常在链上创建该合约；
 
@@ -897,7 +877,7 @@ Example
 
 	```shell
 	solc --abi test_example.sol
-	
+
 	// Result
 	[{"constant":false,"inputs":[{"name":"x","type":"uint256"}],"name":"set","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"get","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]
 	```
@@ -927,14 +907,14 @@ Example
 	654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d5d00000000000000000000000000000000000000000
 	000000000" --to "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"  --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a
 	18f58007fa894214"
-	
+
 	python3 send_tx.py
-	
+
 	// Result
 	--> {"params": ["0ad0030a286161616161616161616161616161616161616161616161616161616161616161616161616161616112013118fface20420ba022a980373552bc4e960a1d53013b40074569ea05b950b4d4ed3885e000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000001275b7b22636f6e7374616e74223a66616c73652c22696e70757473223a5b7b226e616d65223a2278222c2274797065223a2275696e74323536227d5d2c226e616d65223a22736574222c226f757470757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a2266756e6374696f6e227d2c7b22636f6e7374616e74223a747275652c22696e70757473223a5b5d2c226e616d65223a22676574222c226f757470757473223a5b7b226e616d65223a22222c2274797065223a2275696e74323536227d5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d5d000000000000000000000000000000000000000000000000001241a79c6b34aaa552ccbe99c1240ecf892a982fa337d26143f5485cb578f3972c426aaebd031d49b5ce32164422fd292957e183fa5933da8cb9eee426607e3314f101"], "jsonrpc": "2.0", "method": "cita_sendRawTransaction", "id": 1}
 	<-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0x5ea7cf509ef5325bd58f737ab533c7fe5683c285a2d7b71dde90519f5640ae73","status":"OK"}} (200 OK)
 	transaction hash 保存到../output/transaction/hash
-	
+
 	```
 
 ### 查询abi
@@ -957,7 +937,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getAbi","params":["73552bc4e
 
 * Parameters
 
-    1. `DATA`, 32 Bytes - hash of a transaction
+    1. `Data32` - hash of a transaction
 
 	    ```js
 	    params: [
@@ -967,14 +947,14 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getAbi","params":["73552bc4e
 
 * Returns
 
-	`DATA` - A proof include transaction, receipt, receipt merkle tree proof, block header. There will be a tool to verify the proof and extract some info.
+	`Data` - A proof include transaction, receipt, receipt merkle tree proof, block header. There will be a tool to verify the proof and extract some info.
 
 * Example
 
 	```js
 	// Request
 	curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getTransactionProof","params":["0x37f1261203d7b81a5a5cfc4a5c4abf15297555a47fd8686580d5a211876516c4"],"id":1}'
-	
+
 	// Result
 	{
 	    "jsonrpc": "2.0",
@@ -991,7 +971,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getAbi","params":["73552bc4e
 
 * Parameters
 
-    1. `QUANTITY`, integer of a block height or "latest"
+    1. `Quantity`, integer of a block height or "latest"
 
 	    ```py
 	    params: [
@@ -1000,15 +980,15 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getAbi","params":["73552bc4e
 	    ```
 
 * Returns
-    * `chainId`, u32 - Deal with transaction replay attack
-    * `chainName`, String - Chain name
-    * `operator`, String - Chain operator
-    * `genesisTimestamp`, Timestamp - Genesis timestamp
-    * `validators`, [Address] - Validator array
-    * `blockInterval` u64 - block interval by millisecond
-    * `tokenName`, String - Token name
-    * `tokenSymbol`, String - Token symbol
-    * `tokenAvatar`, String - Token avatar url
+    * `chainId`, `Integer` - Deal with transaction replay attack
+    * `chainName`, `String` - Chain name
+    * `operator`, `String` - Chain operator
+    * `genesisTimestamp`, `Integer` - Genesis timestamp
+    * `validators`, `[Data20]` - Validator array
+    * `blockInterval` `Integer` - block interval by millisecond
+    * `tokenName`, `String` - Token name
+    * `tokenSymbol`, `String` - Token symbol
+    * `tokenAvatar`, `String` - Token avatar url
 * Example
 
 	```shell

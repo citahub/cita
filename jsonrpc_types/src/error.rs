@@ -17,9 +17,9 @@
 
 //! jsonrpc errors
 
-use super::Value;
 use serde::de::{Deserialize, Deserializer};
 use serde::ser::{Serialize, Serializer};
+use serde_json::{self, Value};
 
 /// JSONRPC error code
 #[derive(Debug, PartialEq, Clone)]
@@ -188,7 +188,6 @@ impl Error {
     }
 }
 
-use serde_json;
 impl From<serde_json::Error> for Error {
     fn from(err: serde_json::Error) -> Error {
         Error {
@@ -198,19 +197,3 @@ impl From<serde_json::Error> for Error {
         }
     }
 }
-
-// TODO: 对用户更友好的错误提示。错误码提示修改 https://github.com/ethereum/wiki/wiki/JSON-RPC-Error-Codes-Improvement-Proposal
-// 比如可以提示期待3或2个参数，收到4个参数等等
-// eg:
-// {
-//     "jsonrpc": "2.0",
-//     "error": {
-//         "code": -32602,
-//         "message": "unknown field `input`, expected one of `from`, \
-//                        `to`, `gasPrice`, `gas`, `value`, `data`, `nonce`",
-//         "data": null
-//     },
-//     "id": 1
-// }
-// {"jsonrpc":"2.0","error":{"code":-32602,"message":"Invalid length.","data":null},"id":1}
-// {"jsonrpc":"2.0","error":{"code":-32602,"message":"invalid format","data":null},"id":1}

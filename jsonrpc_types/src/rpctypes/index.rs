@@ -13,10 +13,9 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
-#![rustfmt_skip]
 
-use serde::{Deserialize, Deserializer};
 use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer};
 use std::fmt;
 
 /// Represents usize.
@@ -53,8 +52,13 @@ impl<'a> Visitor<'a> for IndexVisitor {
         E: Error,
     {
         match value {
-            _ if value.starts_with("0x") => usize::from_str_radix(&value[2..], 16).map(Index).map_err(|_| Error::custom("invalid index")),
-            _ => value.parse::<usize>().map(Index).map_err(|_| Error::custom("invalid index")),
+            _ if value.starts_with("0x") => usize::from_str_radix(&value[2..], 16)
+                .map(Index)
+                .map_err(|_| Error::custom("invalid index")),
+            _ => value
+                .parse::<usize>()
+                .map(Index)
+                .map_err(|_| Error::custom("invalid index")),
         }
     }
 

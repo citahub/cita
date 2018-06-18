@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -16,83 +16,63 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::Log;
-use cita_types::{Address, H256};
-use rpctypes::block_number::BlockNumber;
-use serde::de::DeserializeOwned;
 use serde::de::Error;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::{from_value, Value};
 use types::filter::Filter as EthFilter;
-use types::ids::BlockId;
 
-/// Variadic value
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize)]
-#[serde(untagged)]
-pub enum VariadicValue<T>
-where
-    T: DeserializeOwned + Serialize,
-{
-    /// Single
-    Single(T),
-    /// List
-    Multiple(Vec<T>),
-    /// None
-    Null,
-}
-
-impl<'de, T> Deserialize<'de> for VariadicValue<T>
-where
-    T: DeserializeOwned + Serialize,
-{
-    fn deserialize<D>(deserializer: D) -> Result<VariadicValue<T>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let v: Value = Deserialize::deserialize(deserializer)?;
-
-        if v.is_null() {
-            return Ok(VariadicValue::Null);
-        }
-
-        from_value(v.clone())
-            .map(VariadicValue::Single)
-            .or_else(|_| from_value(v).map(VariadicValue::Multiple))
-            .map_err(|_| D::Error::custom("Invalid type."))
-    }
-}
+use rpctypes::{BlockNumber, Data20, Data32, VariadicValue};
 
 /// Filter Address
-pub type FilterAddress = VariadicValue<Address>;
+pub type FilterAddress = VariadicValue<Data20>;
 /// Topic
-pub type Topic = VariadicValue<H256>;
+pub type Topic = VariadicValue<Data32>;
 
 /// Filter
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Filter {
     /// From Block
-    #[serde(rename = "fromBlock")]
-    pub from_block: Option<BlockNumber>,
+    #[serde(rename = "fromBlock", default, skip_serializing_if = "BlockNumber::is_default")]
+    pub from_block: BlockNumber,
     /// To Block
-    #[serde(rename = "toBlock")]
-    pub to_block: Option<BlockNumber>,
+    #[serde(rename = "toBlock", default, skip_serializing_if = "BlockNumber::is_default")]
+    pub to_block: BlockNumber,
     /// Address
     pub address: Option<FilterAddress>,
     /// Topics
     pub topics: Option<Vec<Topic>>,
     /// Limit
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
+}
+
+impl Filter {
+    pub fn new(
+        from_block: BlockNumber,
+        to_block: BlockNumber,
+        address: Option<FilterAddress>,
+        topics: Option<Vec<Topic>>,
+    ) -> Self {
+        Filter {
+            from_block,
+            to_block,
+            address,
+            topics,
+            limit: None,
+        }
+    }
 }
 
 impl Into<EthFilter> for Filter {
     fn into(self) -> EthFilter {
         EthFilter {
-            from_block: self.from_block.map_or_else(|| BlockId::Latest, Into::into),
-            to_block: self.to_block.map_or_else(|| BlockId::Latest, Into::into),
+            from_block: self.from_block.into(),
+            to_block: self.to_block.into(),
             address: self.address.and_then(|address| match address {
                 VariadicValue::Null => None,
-                VariadicValue::Single(a) => Some(vec![a]),
+                VariadicValue::Single(a) => Some(vec![a.into()]),
                 VariadicValue::Multiple(a) => Some(a.into_iter().map(Into::into).collect()),
             }),
             topics: {
@@ -104,7 +84,7 @@ impl Into<EthFilter> for Filter {
                             .take(4)
                             .map(|topic| match topic {
                                 VariadicValue::Null => None,
-                                VariadicValue::Single(t) => Some(vec![t]),
+                                VariadicValue::Single(t) => Some(vec![t.into()]),
                                 VariadicValue::Multiple(t) => {
                                     Some(t.into_iter().map(Into::into).collect())
                                 }
@@ -131,7 +111,7 @@ pub enum FilterChanges {
     /// New logs.
     Logs(Vec<Log>),
     /// New hashes (block or transactions)
-    Hashes(Vec<H256>),
+    Hashes(Vec<Data32>),
     /// Empty result,
     Empty,
 }
@@ -174,127 +154,55 @@ impl<'de> Deserialize<'de> for FilterChanges {
 
 #[cfg(test)]
 mod tests {
-    use super::{Filter, FilterChanges, Log, Topic, VariadicValue};
+    use super::{BlockNumber, Data32, Filter, FilterChanges, Log, VariadicValue};
     use cita_types::{H160, H256, U256};
-    use rpctypes::block_number::{BlockNumber, BlockTag};
     use serde_json;
+    use std::convert::Into;
     use std::str::FromStr;
-    use types::filter::Filter as EthFilter;
-    use types::ids::BlockId;
 
-    #[test]
-    fn topic_deserialization() {
-        let value = json!([
-            "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-            null,
-            [
-                "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-                "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"
-            ]
-        ]);
-        let deserialized: Vec<Topic> = serde_json::from_value(value).unwrap();
-        assert_eq!(
-            deserialized,
-            vec![
-                VariadicValue::Single(
-                    H256::from_str(
-                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-                    ).unwrap()
-                        .into(),
-                ),
-                VariadicValue::Null,
-                VariadicValue::Multiple(vec![
-                    H256::from_str(
-                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-                    ).unwrap()
-                        .into(),
-                    H256::from_str(
-                        "0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc",
-                    ).unwrap()
-                        .into(),
-                ]),
-            ]
-        );
-    }
-
-    #[test]
-    fn filter_deserialization() {
-        let value = json!({
-            "fromBlock":"earliest",
-            "toBlock":"latest"
-        });
-        let deserialized: Filter = serde_json::from_value(value).unwrap();
-        assert_eq!(
-            deserialized,
-            Filter {
-                from_block: Some(BlockNumber::Tag(BlockTag::Earliest)),
-                to_block: Some(BlockNumber::Tag(BlockTag::Latest)),
-                address: None,
-                topics: None,
-                limit: None,
-            }
-        );
-    }
-
-    #[test]
-    fn filter_deserialization2() {
-        let value = json!({
-            "topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"]
-        });
-        let deserialized: Filter = serde_json::from_value(value).unwrap();
-        assert_eq!(
-            deserialized,
-            Filter {
-                from_block: None,
-                to_block: None,
-                address: None,
-                topics: Some(vec![VariadicValue::Single(
-                    H256::from_str(
-                        "8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3",
-                    ).unwrap()
-                        .into(),
-                )]),
-                limit: None,
-            }
-        );
-    }
-
-    #[test]
-    fn filter_conversion() {
-        let filter = Filter {
-            from_block: Some(BlockNumber::Tag(BlockTag::Earliest)),
-            to_block: Some(BlockNumber::Tag(BlockTag::Latest)),
-            address: Some(VariadicValue::Multiple(vec![])),
-            topics: Some(vec![
-                VariadicValue::Null,
-                VariadicValue::Single(
-                    H256::from_str(
-                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-                    ).unwrap()
-                        .into(),
-                ),
-                VariadicValue::Null,
-            ]),
-            limit: None,
+    macro_rules! test_ser_and_de {
+        ($type:tt, $json_params:tt, $value:tt) => {
+            let data = $type::new$value;
+            let serialized = serde_json::to_value(&data).unwrap();
+            let jsonval = json!($json_params);
+            assert_eq!(serialized, jsonval);
+            let deserialized: $type = serde_json::from_str(&jsonval.to_string()).unwrap();
+            assert_eq!(deserialized, data);
         };
+    }
 
-        let eth_filter: EthFilter = filter.into();
-        assert_eq!(
-            eth_filter,
-            EthFilter {
-                from_block: BlockId::Earliest,
-                to_block: BlockId::Latest,
-                address: Some(vec![]),
-                topics: vec![
-                    None,
-                    Some(vec![
-                        "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b".into(),
-                    ]),
-                    None,
-                    None,
-                ],
-                limit: None,
-            }
+    #[test]
+    fn serialize_and_deserialize() {
+        test_ser_and_de!(
+            Filter,
+            {
+                "fromBlock": "0xa",
+                "address": "0x0000000000000000000000000000000000000010",
+                "topics": [
+                    "0x0000000000000000000000000000000000000000000000000000000000000001",
+                    [
+                        "0x0000000000000000000000000000000000000000000000000000000000000002",
+                        "0x0000000000000000000000000000000000000000000000000000000000000003",
+                    ],
+                    null,
+                ]
+            },
+            (
+                BlockNumber::new(10u64.into()),
+                BlockNumber::latest(),
+                Some(VariadicValue::single(H160::from(16).into())),
+                Some(
+                    vec![
+                        VariadicValue::single(H256::from(1).into()),
+                        VariadicValue::multiple(
+                            vec![
+                                H256::from(2).into(),
+                                H256::from(3).into(),
+                            ]),
+                        VariadicValue::null(),
+                    ]
+                ),
+            )
         );
     }
 
@@ -305,15 +213,15 @@ mod tests {
 
         assert_eq!(
             json!(["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"]),
-            serde_json::to_value(FilterChanges::Hashes(vec![
+            serde_json::to_value(FilterChanges::Hashes(vec![Data32::new(
                 "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b".into(),
-            ])).unwrap()
+            )])).unwrap()
         );
 
         assert_eq!(
-            FilterChanges::Hashes(vec![
+            FilterChanges::Hashes(vec![Data32::new(
                 "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b".into(),
-            ]),
+            )]),
             serde_json::from_value(json!([
                 "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"
             ])).unwrap()

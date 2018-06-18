@@ -1,10 +1,8 @@
 use futures::sync::oneshot;
-use jsonrpc_types::request::Version;
+use jsonrpc_types::request::RequestInfo;
 use jsonrpc_types::response::Output;
-use jsonrpc_types::{Call, Error, Id};
-use libproto::request as reqlib;
+use libproto::request::Request as ProtoRequest;
 use libproto::router::{MsgType, RoutingKey, SubModules};
-use serde_json;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -13,36 +11,13 @@ use ws;
 
 pub enum TransferType {
     /// http output sender
-    HTTP((ReqInfo, oneshot::Sender<Output>)),
+    HTTP((RequestInfo, oneshot::Sender<Output>)),
     /// websocket output sender
-    WEBSOCKET((ReqInfo, ws::Sender)),
-}
-
-#[derive(Debug, Clone)]
-pub struct ReqInfo {
-    pub jsonrpc: Option<Version>,
-    pub id: Id,
+    WEBSOCKET((RequestInfo, ws::Sender)),
 }
 
 pub type RpcMap = Arc<Mutex<HashMap<Vec<u8>, TransferType>>>;
-pub type ReqSender = Mutex<mpsc::Sender<(String, reqlib::Request)>>;
-
-impl ReqInfo {
-    pub fn new(jsonrpc: Option<Version>, id: Id) -> ReqInfo {
-        ReqInfo {
-            jsonrpc: jsonrpc,
-            id: id,
-        }
-    }
-}
-
-pub fn encode_request(body: &str) -> Result<Call, Error> {
-    let rpc: Result<Call, serde_json::Error> = serde_json::from_str(body);
-    match rpc {
-        Err(_err_msg) => Err(Error::from(_err_msg)),
-        Ok(rpc) => Ok(rpc),
-    }
-}
+pub type ReqSender = Mutex<mpsc::Sender<(String, ProtoRequest)>>;
 
 pub fn select_topic(method: &str) -> String {
     if method.starts_with("cita_send") {
@@ -58,7 +33,7 @@ pub fn select_topic(method: &str) -> String {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use super::select_topic;
 
     #[test]
     fn test_get_topic() {

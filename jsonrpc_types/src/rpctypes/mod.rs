@@ -15,27 +15,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod block;
-pub mod block_number;
-pub mod call_request;
-pub mod filter;
-pub mod index;
-pub mod log;
-pub mod meta_data;
-pub mod middle_modle;
-pub mod proof;
-pub mod receipt;
-pub mod transaction;
-pub mod tx_response;
+mod basic;
+mod block;
+mod block_number;
+mod call_request;
+mod exchange;
+mod filter;
+mod index;
+mod log;
+mod meta_data;
+mod proof;
+mod receipt;
+mod specs;
+mod transaction;
+mod tx_response;
+
+pub use self::basic::{
+    BlockTag, Boolean, Data, Data20, Data32, OneItemTupleTrick, Quantity, VariadicValue,
+};
+pub use self::exchange::{BlockParamsByHash, BlockParamsByNumber, CountOrCode, RpcBlock};
+pub use self::specs::{Id, Params, Version};
 
 pub use self::block::{Block, BlockBody, BlockHeader};
-pub use self::block_number::{BlockNumber, BlockTag};
+pub use self::block_number::BlockNumber;
 pub use self::call_request::CallRequest;
-pub use self::filter::{Filter, FilterAddress, FilterChanges, Topic, VariadicValue};
+pub use self::filter::{Filter, FilterAddress, FilterChanges, Topic};
 pub use self::index::Index;
 pub use self::log::Log;
 pub use self::meta_data::MetaData;
-pub use self::middle_modle::{BlockParamsByHash, BlockParamsByNumber, CountOrCode, RpcBlock};
 pub use self::proof::{AuthorityRoundProof, Proof, TendermintProof};
 pub use self::receipt::Receipt;
 pub use self::transaction::{BlockTransaction, FullTransaction, RpcTransaction};

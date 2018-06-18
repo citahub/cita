@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20180523"
-CARGO_HOME=/opt/.cargo
-WORKDIR=/opt/cita
 
 if [[ `uname` == 'Darwin' ]]
 then
@@ -63,13 +61,15 @@ function run_in_docker () {
     if [ -t 0 ]; then
         DOCKER_RUN_OPTIONS="${DOCKER_RUN_OPTIONS} -i"
     fi
+    local cargo_home=/opt/.cargo
+    local workdir=/opt/cita
     docker run --rm ${DOCKER_RUN_OPTIONS} \
-           --volume ${SOURCE_DIR}:${WORKDIR} \
-           --volume ${HOME}/.docker_cargo/registry:${CARGO_HOME}/registry \
-           --volume ${HOME}/.docker_cargo/git:${CARGO_HOME}/git \
+           --volume ${SOURCE_DIR}:${workdir} \
+           --volume ${HOME}/.docker_cargo/registry:${cargo_home}/registry \
+           --volume ${HOME}/.docker_cargo/git:${cargo_home}/git \
            --volume /etc/localtime:/etc/localtime \
            --env USER_ID=`id -u $USER` \
-           --workdir ${WORKDIR} \
+           --workdir ${workdir} \
            "${DOCKER_IMAGE}" ./scripts/ci.sh
 }
 

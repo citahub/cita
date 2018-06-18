@@ -15,23 +15,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use bytes::Bytes;
 use cita_types::{H256, U256};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::FullTransaction as PTransaction;
+use rpctypes::Data;
 use std::convert::TryInto;
 
 // TODO: No need Deserialize. Just because test in trans.rs
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct FullTransaction {
     pub hash: H256,
-    pub content: Bytes,
+    pub content: Data,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct RpcTransaction {
     pub hash: H256,
-    pub content: Bytes,
+    pub content: Data,
     #[serde(rename = "blockNumber")]
     pub block_number: U256,
     #[serde(rename = "blockHash")]
@@ -65,7 +65,7 @@ impl From<PTransaction> for RpcTransaction {
 
         RpcTransaction {
             hash: H256::from_slice(stx.get_tx_hash()),
-            content: Bytes(unverified_tx.try_into().unwrap()),
+            content: Data::new(unverified_tx.try_into().unwrap()),
             block_number: U256::from(ptransaction.block_number),
             block_hash: bhash,
             index: U256::from(ptransaction.index),
@@ -77,7 +77,7 @@ impl From<ProtoSignedTransaction> for FullTransaction {
     fn from(stx: ProtoSignedTransaction) -> Self {
         FullTransaction {
             hash: H256::from_slice(stx.get_tx_hash()),
-            content: Bytes(stx.get_transaction_with_sig().try_into().unwrap()),
+            content: Data::new(stx.get_transaction_with_sig().try_into().unwrap()),
         }
     }
 }

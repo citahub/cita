@@ -15,17 +15,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::H256;
+mod arbitrary_data;
+mod boolean;
+mod fixed_data;
+mod integer;
+mod quantity;
+mod tags;
+mod variadic;
 
-//TODO respone contain error
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct TxResponse {
-    pub hash: H256,
-    pub status: String,
-}
+pub use self::arbitrary_data::Data;
+pub use self::boolean::Boolean;
+pub use self::fixed_data::{Data20, Data32};
+pub use self::integer::Integer;
+pub use self::quantity::Quantity;
+pub use self::tags::BlockTag;
+pub use self::variadic::VariadicValue;
 
-impl TxResponse {
-    pub fn new(hash: H256, status: String) -> Self {
-        TxResponse { hash, status }
+// serde: Tuple enums with single element should not be a json-array
+// https://github.com/serde-rs/serde/pull/111
+#[derive(Debug, Clone, PartialEq)]
+pub struct OneItemTupleTrick {}
+
+impl Default for OneItemTupleTrick {
+    fn default() -> Self {
+        OneItemTupleTrick {}
     }
 }

@@ -3,17 +3,17 @@ use futures::future::{Either, Future};
 use futures::stream::FuturesOrdered;
 use futures::sync::oneshot;
 use futures::{self, Stream};
-use helper::{select_topic, ReqInfo, ReqSender, RpcMap, TransferType};
+use helper::{select_topic, ReqSender, RpcMap, TransferType};
 use hyper::header::{
     AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin,
     AccessControlMaxAge, ContentType, Headers,
 };
 use hyper::server::{Http, NewService, Request, Response, Service};
 use hyper::{self, Method, StatusCode};
-use jsonrpc_types::method::{self, MethodHandler};
+use jsonrpc_types::request::{PartialRequest, Request as FullRequest, RpcRequest};
 use jsonrpc_types::response::RpcFailure;
-use jsonrpc_types::{Call, Error, RpcRequest};
-use libproto::request as reqlib;
+use jsonrpc_types::Error;
+use libproto::request::Request as ProtoRequest;
 use net2;
 use response::{BatchFutureResponse, SingleFutureResponse};
 use serde_json;
@@ -34,7 +34,6 @@ struct Inner {
     pub responses: RpcMap,
     pub timeout: Duration,
     pub reactor_handle: Handle,
-    pub method_handler: method::MethodHandler,
     pub http_headers: Headers,
 }
 
@@ -69,7 +68,6 @@ impl Service for Server {
         let sender = { self.inner.tx.lock().clone() };
         let responses = Arc::clone(&self.inner.responses);
         let timeout_responses = Arc::clone(&self.inner.responses);
-        let method_handler = self.inner.method_handler;
         let timeout = self.inner.timeout;
         let reactor_handle = self.inner.reactor_handle.clone();
         let http_headers = self.inner.http_headers.clone();
@@ -79,73 +77,70 @@ impl Service for Server {
                 let mapping = req.body().concat2().and_then(move |chunk| {
                     if let Ok(rpc) = serde_json::from_slice::<RpcRequest>(&chunk) {
                         match rpc {
-                            RpcRequest::Single(call) => {
-                                match read_single(&call, method_handler, &http_headers) {
-                                    Ok(req) => {
-                                        if let Ok(timeout) = Timeout::new(timeout, &reactor_handle)
-                                        {
-                                            let id = call.id.clone();
-                                            let jsonrpc_version = call.jsonrpc.clone();
-                                            let request_id = req.request_id.clone();
-                                            let mq_resp = handle_single(
-                                                call,
-                                                req,
-                                                &responses,
-                                                &sender,
-                                                &http_headers,
-                                            );
+                            RpcRequest::Single(part_req) => match read_single(
+                                part_req,
+                                &http_headers,
+                            ) {
+                                Ok((full_req, req)) => {
+                                    if let Ok(timeout) = Timeout::new(timeout, &reactor_handle) {
+                                        let req_info = full_req.get_info();
+                                        let request_id = req.request_id.clone();
+                                        let mq_resp = handle_single(
+                                            full_req,
+                                            req,
+                                            &responses,
+                                            &sender,
+                                            &http_headers,
+                                        );
 
-                                            let resp = mq_resp.select2(timeout).then(move |res| {
-                                                match res {
-                                                    Ok(Either::A((got, _timeout))) => Ok(got),
-                                                    Ok(Either::B((_timeout_error, _get))) => {
-                                                        {
-                                                            timeout_responses
-                                                                .lock()
-                                                                .remove(&request_id);
-                                                        }
-                                                        let failure = RpcFailure::from_options(
-                                                            id,
-                                                            jsonrpc_version,
-                                                            Error::server_error(
-                                                                ErrorCode::time_out_error(),
-                                                                "system time out, please resend",
-                                                            ),
+                                        let resp =
+                                            mq_resp.select2(timeout).then(move |res| match res {
+                                                Ok(Either::A((got, _timeout))) => Ok(got),
+                                                Ok(Either::B((_timeout_error, _get))) => {
+                                                    {
+                                                        timeout_responses
+                                                            .lock()
+                                                            .remove(&request_id);
+                                                    }
+                                                    let failure = RpcFailure::from_options(
+                                                        req_info,
+                                                        Error::server_error(
+                                                            ErrorCode::time_out_error(),
+                                                            "system time out, please resend",
+                                                        ),
+                                                    );
+                                                    let resp_body = serde_json::to_string(&failure)
+                                                        .expect(
+                                                            "should be serialize by serde_json",
                                                         );
-                                                        let resp_body =
-                                                            serde_json::to_string(&failure).expect(
-                                                                "should be serialize by serde_json",
-                                                            );
-                                                        Ok(Response::new()
-                                                            .with_headers(http_headers)
-                                                            .with_body(resp_body))
-                                                    }
-                                                    Err(Either::A((get_error, _timeout))) => {
-                                                        Err(get_error)
-                                                    }
-                                                    Err(Either::B((timeout_error, _get))) => {
-                                                        Err(From::from(timeout_error))
-                                                    }
+                                                    Ok(Response::new()
+                                                        .with_headers(http_headers)
+                                                        .with_body(resp_body))
+                                                }
+                                                Err(Either::A((get_error, _timeout))) => {
+                                                    Err(get_error)
+                                                }
+                                                Err(Either::B((timeout_error, _get))) => {
+                                                    Err(From::from(timeout_error))
                                                 }
                                             });
 
-                                            Either::A(Either::A(resp))
-                                        } else {
-                                            Either::B(futures::future::ok(
-                                                Response::new()
-                                                    .with_headers(http_headers)
-                                                    .with_status(StatusCode::InternalServerError),
-                                            ))
-                                        }
+                                        Either::A(Either::A(resp))
+                                    } else {
+                                        Either::B(futures::future::ok(
+                                            Response::new()
+                                                .with_headers(http_headers)
+                                                .with_status(StatusCode::InternalServerError),
+                                        ))
                                     }
-                                    Err(resp) => Either::B(futures::future::ok(resp)),
                                 }
-                            }
-                            RpcRequest::Batch(calls) => {
-                                match read_batch(calls, method_handler, &http_headers) {
+                                Err(resp) => Either::B(futures::future::ok(resp)),
+                            },
+                            RpcRequest::Batch(part_reqs) => {
+                                match read_batch(part_reqs, &http_headers) {
                                     Ok(reqs) => {
                                         let request_ids: Vec<Vec<u8>> = reqs.iter()
-                                        .map(|&(ref _call, ref req)| req.request_id.clone())
+                                        .map(|&(_, ref req)| req.request_id.clone())
                                         .collect();
 
                                         let mq_resp =
@@ -239,40 +234,33 @@ fn handle_preflighted(mut headers: Headers) -> Box<Future<Item = Response, Error
 }
 
 fn read_single(
-    call: &Call,
-    method_handler: MethodHandler,
+    part_req: PartialRequest,
     headers: &Headers,
-) -> Result<reqlib::Request, Response> {
-    match method_handler.request(call) {
-        Ok(req) => Ok(req),
-        Err(e) => {
-            let resp_body = serde_json::to_vec(&RpcFailure::from_options(
-                call.id.clone(),
-                call.jsonrpc.clone(),
-                e,
-            )).expect("should be serialize by serde_json");
-            Err(Response::new()
-                .with_headers(headers.clone())
-                .with_body(resp_body))
-        }
-    }
+) -> Result<(FullRequest, ProtoRequest), Response> {
+    let req_info = part_req.get_info();
+    part_req.complete_and_into_proto().map_err(|err| {
+        let resp_body = serde_json::to_vec(&RpcFailure::from_options(req_info, err))
+            .expect("should be serialize by serde_json");
+        Response::new()
+            .with_headers(headers.clone())
+            .with_body(resp_body)
+    })
 }
 
 fn handle_single(
-    call: Call,
-    req: reqlib::Request,
+    full_req: FullRequest,
+    req: ProtoRequest,
     responses: &RpcMap,
-    sender: &mpsc::Sender<(String, reqlib::Request)>,
+    sender: &mpsc::Sender<(String, ProtoRequest)>,
     headers: &Headers,
 ) -> SingleFutureResponse {
     let request_id = req.request_id.clone();
     let (tx, rx) = oneshot::channel();
-    let topic = select_topic(&call.method);
-    let req_info = (ReqInfo::new(call.jsonrpc, call.id), tx);
+    let topic = select_topic(full_req.get_method());
     {
         responses
             .lock()
-            .insert(request_id, TransferType::HTTP(req_info));
+            .insert(request_id, TransferType::HTTP((full_req.get_info(), tx)));
     }
     let _ = sender.send((topic, req));
     let headers = headers.clone();
@@ -281,15 +269,14 @@ fn handle_single(
 }
 
 fn read_batch(
-    calls: Vec<Call>,
-    method_handler: MethodHandler,
+    part_reqs: Vec<PartialRequest>,
     headers: &Headers,
-) -> Result<Vec<(Call, reqlib::Request)>, Response> {
-    let mut reqs = Vec::with_capacity(calls.len());
-    for call in calls {
-        match method_handler.request(&call) {
-            Ok(req) => {
-                reqs.push((call, req));
+) -> Result<Vec<(FullRequest, ProtoRequest)>, Response> {
+    let mut reqs = Vec::with_capacity(part_reqs.len());
+    for part_req in part_reqs {
+        match part_req.complete_and_into_proto() {
+            Ok(ret) => {
+                reqs.push(ret);
             }
             Err(_) => {
                 return Err(Response::new()
@@ -302,22 +289,21 @@ fn read_batch(
 }
 
 fn handle_batch(
-    reqs: Vec<(Call, reqlib::Request)>,
+    reqs: Vec<(FullRequest, ProtoRequest)>,
     responses: &RpcMap,
-    sender: &mpsc::Sender<(String, reqlib::Request)>,
+    sender: &mpsc::Sender<(String, ProtoRequest)>,
     headers: &Headers,
 ) -> BatchFutureResponse {
     use std::iter::FromIterator;
     let mut rxs = Vec::with_capacity(reqs.len());
-    for (call, req) in reqs {
+    for (full_req, req) in reqs {
         let request_id = req.request_id.clone();
-        let topic = select_topic(&call.method);
+        let topic = select_topic(full_req.get_method());
         let (tx, rx) = oneshot::channel();
-        let req_info = (ReqInfo::new(call.jsonrpc, call.id), tx);
         {
             responses
                 .lock()
-                .insert(request_id, TransferType::HTTP(req_info));
+                .insert(request_id, TransferType::HTTP((full_req.get_info(), tx)));
         }
         let _ = sender.send((topic, req));
         rxs.push(rx);
@@ -331,7 +317,7 @@ impl Server {
     pub fn start(
         core: Core,
         listener: TcpListener,
-        tx: mpsc::Sender<(String, reqlib::Request)>,
+        tx: mpsc::Sender<(String, ProtoRequest)>,
         responses: RpcMap,
         timeout: Duration,
         allow_origin: &Option<String>,
@@ -347,7 +333,6 @@ impl Server {
                 responses: responses,
                 timeout: timeout,
                 reactor_handle: core.handle(),
-                method_handler: method::MethodHandler,
                 http_headers: headers,
             }),
         };
@@ -389,7 +374,7 @@ fn configure_tcp(tcp: &net2::TcpBuilder) -> io::Result<()> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use super::{parse_origin, AccessControlAllowOrigin};
 
     #[test]
     fn test_parse_origin() {
@@ -441,7 +426,7 @@ mod integration_test {
 
     fn start_server(
         responses: RpcMap,
-        tx: mpsc::Sender<(String, reqlib::Request)>,
+        tx: mpsc::Sender<(String, ProtoRequest)>,
         timeout: u64,
         allow_origin: Option<&str>,
     ) -> Serve {
@@ -472,7 +457,6 @@ mod integration_test {
                         responses: responses,
                         timeout: timeout,
                         reactor_handle: core.handle(),
-                        method_handler: method::MethodHandler,
                         http_headers: headers,
                     }),
                 };
@@ -522,16 +506,11 @@ mod integration_test {
                 if let Some(val) = value {
                     match val {
                         TransferType::HTTP((req_info, sender)) => {
-                            let _ =
-                                sender.send(Output::from(content, req_info.id, req_info.jsonrpc));
+                            let _ = sender.send(Output::from(content, req_info));
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
                             let _ = sender.send(
-                                serde_json::to_string(&Output::from(
-                                    content,
-                                    req_info.id,
-                                    req_info.jsonrpc,
-                                )).unwrap(),
+                                serde_json::to_string(&Output::from(content, req_info)).unwrap(),
                             );
                         }
                     }
@@ -592,15 +571,14 @@ mod integration_test {
             Ok(())
         });
 
-        let params_str = r#"[{"from":"foo", "to":"bar"}, 99]"#;
-        let params = serde_json::from_str::<jsonrpc_types::Params>(params_str).unwrap();
-        let rpc_call = Call {
-            jsonrpc: Some(jsonrpc_types::Version::V2),
-            method: "test_method".to_owned(),
-            id: jsonrpc_types::Id::Null,
-            params: Some(params),
-        };
-        let data = serde_json::to_string(&RpcRequest::Single(rpc_call)).unwrap();
+        let request_str = r#"{
+            "jsonrpc": "2.0",
+            "id": null,
+            "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"]
+        }"#;
+        let rpcreq =
+            serde_json::from_str::<jsonrpc_types::request::PartialRequest>(request_str).unwrap();
+        let data = serde_json::to_string(&RpcRequest::Single(rpcreq)).unwrap();
         let mut req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
         req.set_body(data);
         let work_method_not_found = client.request(req).and_then(|resp| {

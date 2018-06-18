@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -24,4 +24,10 @@ pub enum Id {
     Str(String),
     /// Numeric id
     Num(u64),
+}
+
+impl Default for Id {
+    fn default() -> Self {
+        Id::Null
+    }
 }

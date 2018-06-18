@@ -15,10 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use helper::{encode_request, select_topic, ReqInfo, RpcMap, TransferType};
+use helper::{select_topic, RpcMap, TransferType};
+use jsonrpc_types::request::{PartialRequest, RequestInfo};
 use jsonrpc_types::response::RpcFailure;
-use jsonrpc_types::{method, Id};
-use libproto::request as reqlib;
+use jsonrpc_types::Error;
+use libproto::request::Request as ProtoRequest;
 use num_cpus;
 use serde_json;
 use std::sync::{mpsc, Arc};
@@ -29,13 +30,13 @@ pub struct WsFactory {
     //TODO 定时清理工作
     responses: RpcMap,
     thread_pool: ThreadPool,
-    tx: mpsc::Sender<(String, reqlib::Request)>,
+    tx: mpsc::Sender<(String, ProtoRequest)>,
 }
 
 impl WsFactory {
     pub fn new(
         responses: RpcMap,
-        tx: mpsc::Sender<(String, reqlib::Request)>,
+        tx: mpsc::Sender<(String, ProtoRequest)>,
         thread_num: usize,
     ) -> WsFactory {
         let thread_number = if thread_num == 0 {
@@ -60,7 +61,6 @@ impl Factory for WsFactory {
             responses: Arc::clone(&self.responses),
             tx: self.tx.clone(),
             thread_pool: self.thread_pool.clone(),
-            method_handler: method::MethodHandler,
         }
     }
 }
@@ -69,43 +69,35 @@ impl Handler for WsHandler {
     fn on_message(&mut self, msg: ws::Message) -> ws::Result<()> {
         trace!("Server got message '{}'  post thread_pool deal task ", msg);
         // let this = self.clone();
-        let method_handler = self.method_handler;
         let tx = self.tx.clone();
         let response = Arc::clone(&self.responses);
         let sender = self.sender.clone();
 
         self.thread_pool.execute(move || {
-            let mut req_id = Id::Null;
-            let mut jsonrpc_version = None;
-            let err = match encode_request(&msg.into_text().unwrap()) {
-                Err(err) => Err(err),
-                Ok(rpc) => {
-                    req_id = rpc.id.clone();
-                    jsonrpc_version = rpc.jsonrpc.clone();
-                    let topic = select_topic(&rpc.method);
-                    let req_info = ReqInfo {
-                        jsonrpc: jsonrpc_version.clone(),
-                        id: req_id.clone(),
-                    };
-                    method_handler.request(&rpc).map(|req| {
+            let mut req_info = RequestInfo::null();
+
+            let _ = serde_json::from_str::<PartialRequest>(&msg.into_text().unwrap())
+                .map_err(|err_msg| Error::from(err_msg))
+                .and_then(|part_req| {
+                    req_info = part_req.get_info();
+                    part_req.complete_and_into_proto().map(|(full_req, req)| {
                         let request_id = req.request_id.clone();
+                        let topic = select_topic(&full_req.get_method());
                         let _ = tx.send((topic, req));
-                        let value = (req_info, sender.clone());
+                        let value = (req_info.clone(), sender.clone());
                         {
                             response
                                 .lock()
                                 .insert(request_id, TransferType::WEBSOCKET(value));
                         }
                     })
-                }
-            };
-            //TODO 错误返回
-            if let Err(err) = err {
-                let _ = sender.send(
-                    serde_json::to_string(&RpcFailure::from_options(req_id, jsonrpc_version, err))
-                        .unwrap(),
-                );
-            }
+                })
+                .map_err(|err| {
+                    // TODO 错误返回
+                    sender.send(
+                        serde_json::to_string(&RpcFailure::from_options(req_info, err)).unwrap(),
+                    )
+                });
         });
         //
         Ok(())
@@ -125,7 +117,6 @@ impl Handler for WsHandler {
 pub struct WsHandler {
     responses: RpcMap,
     thread_pool: ThreadPool,
-    method_handler: method::MethodHandler,
     sender: ws::Sender,
-    tx: mpsc::Sender<(String, reqlib::Request)>,
+    tx: mpsc::Sender<(String, ProtoRequest)>,
 }

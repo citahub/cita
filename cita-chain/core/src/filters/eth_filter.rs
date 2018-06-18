@@ -64,7 +64,9 @@ impl EthFilter for Chain {
                         .collect::<Vec<H256>>();
 
                     *block_number = current_number;
-                    Some(FilterChanges::Hashes(hashes))
+                    Some(FilterChanges::Hashes(
+                        hashes.into_iter().map(Into::into).collect(),
+                    ))
                 }
                 PollFilter::Logs(ref mut block_number, ref mut _previous_logs, ref filter) => {
                     // retrive the current block number

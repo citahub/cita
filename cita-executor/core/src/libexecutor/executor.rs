@@ -549,7 +549,11 @@ impl Executor {
     pub fn balance_at(&self, address: &Address, id: BlockId) -> Option<Option<Bytes>> {
         self.state_at(id)
             .and_then(|s| s.balance(address).ok())
-            .map(|c| Some(H256::from(c).to_vec()))
+            .map(|c| {
+                let mut bytes = [0u8; 32];
+                c.to_big_endian(&mut bytes);
+                Some(bytes.to_vec())
+            })
     }
 
     pub fn nonce(&self, address: &Address, id: BlockId) -> Option<U256> {

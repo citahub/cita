@@ -15,44 +15,42 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use bytes::Bytes;
-use cita_types::{H256, U256};
 use error::Error;
 use libproto::response::{Response, Response_oneof_data};
-use request::Version;
+use request::RequestInfo;
 use rpctypes::{
-    Block, FilterChanges, Log, MetaData, Receipt, RpcBlock, RpcTransaction, TxResponse,
+    Block, Boolean, Data, FilterChanges, Id, Log, MetaData, Quantity, Receipt, RpcBlock,
+    RpcTransaction, TxResponse, Version,
 };
 use serde::de::Error as SError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json;
 use serde_json::{from_value, Value};
 use std::vec::Vec;
-use Id;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ResultBody {
-    BlockNumber(U256),
+    BlockNumber(Quantity),
     FullBlock(Block),
     #[serde(rename = "null")]
     Null,
     Receipt(Receipt),
     Transaction(RpcTransaction),
     TxResponse(TxResponse),
-    PeerCount(U256),
-    CallResult(Bytes),
+    PeerCount(Quantity),
+    CallResult(Data),
     Logs(Vec<Log>),
-    TranactionCount(U256),
-    ContractCode(Bytes),
-    ContractAbi(Bytes),
-    FilterId(U256),
-    UninstallFliter(bool),
+    TranactionCount(Quantity),
+    ContractCode(Data),
+    ContractAbi(Data),
+    FilterId(Quantity),
+    UninstallFliter(Boolean),
     FilterChanges(FilterChanges),
     FilterLog(Vec<Log>),
-    TxProof(Bytes),
+    TxProof(Data),
     MetaData(MetaData),
-    Balance(U256),
+    Balance(Quantity),
 }
 
 impl Default for ResultBody {
@@ -63,7 +61,6 @@ impl Default for ResultBody {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct RpcFailure {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub jsonrpc: Option<Version>,
     pub id: Id,
     pub error: Error,
@@ -71,22 +68,21 @@ pub struct RpcFailure {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct RpcSuccess {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub jsonrpc: Option<Version>,
     pub id: Id,
     pub result: ResultBody,
 }
 
 impl RpcSuccess {
-    pub fn new(id: Id, jsonrpc: Option<Version>) -> RpcSuccess {
+    pub fn new(info: RequestInfo) -> Self {
         RpcSuccess {
-            id: id,
-            jsonrpc: jsonrpc,
+            jsonrpc: info.jsonrpc,
+            id: info.id,
             result: ResultBody::default(),
         }
     }
 
-    pub fn set_result(mut self, reuslt: ResultBody) -> RpcSuccess {
+    pub fn set_result(mut self, reuslt: ResultBody) -> Self {
         self.result = reuslt;
         self
     }
@@ -106,11 +102,11 @@ pub enum Output {
 
 impl Output {
     /// Creates new output given `Result`, `Id` and `Version`.
-    pub fn from(data: Response, id: Id, jsonrpc: Option<Version>) -> Self {
-        let success = RpcSuccess::new(id.clone(), jsonrpc.clone());
+    pub fn from(data: Response, info: RequestInfo) -> Self {
         let code = data.get_code();
         match code {
             0 => {
+                let success = RpcSuccess::new(info.clone());
                 //success
                 match data.data.unwrap() {
                     Response_oneof_data::tx_state(tx_state) => {
@@ -120,7 +116,7 @@ impl Output {
                             .output()
                     }
                     Response_oneof_data::block_number(bn) => success
-                        .set_result(ResultBody::BlockNumber(U256::from(bn)))
+                        .set_result(ResultBody::BlockNumber(bn.into()))
                         .output(),
                     Response_oneof_data::none(_) => success.output(),
                     Response_oneof_data::block(rpc_block) => {
@@ -132,11 +128,11 @@ impl Output {
                     Response_oneof_data::ts(x) => success
                         .set_result(ResultBody::Transaction(RpcTransaction::from(x)))
                         .output(),
-                    Response_oneof_data::peercount(x) => success
-                        .set_result(ResultBody::PeerCount(U256::from(x)))
-                        .output(),
+                    Response_oneof_data::peercount(x) => {
+                        success.set_result(ResultBody::PeerCount(x.into())).output()
+                    }
                     Response_oneof_data::call_result(x) => success
-                        .set_result(ResultBody::CallResult(Bytes::from(x)))
+                        .set_result(ResultBody::CallResult(x.into()))
                         .output(),
                     Response_oneof_data::logs(serialized) => success
                         .set_result(ResultBody::Logs(
@@ -151,22 +147,22 @@ impl Output {
                         )
                         .output(),
                     Response_oneof_data::transaction_count(x) => success
-                        .set_result(ResultBody::TranactionCount(U256::from(x)))
+                        .set_result(ResultBody::TranactionCount(x.into()))
                         .output(),
                     Response_oneof_data::contract_code(x) => success
-                        .set_result(ResultBody::ContractCode(Bytes::from(x)))
+                        .set_result(ResultBody::ContractCode(x.into()))
                         .output(),
                     Response_oneof_data::contract_abi(x) => success
-                        .set_result(ResultBody::ContractAbi(Bytes::from(x)))
+                        .set_result(ResultBody::ContractAbi(x.into()))
                         .output(),
                     Response_oneof_data::balance(x) => success
-                        .set_result(ResultBody::Balance(U256::from(H256::from(x.as_slice()))))
+                        .set_result(ResultBody::Balance(x.as_slice().into()))
                         .output(),
-                    Response_oneof_data::filter_id(id) => success
-                        .set_result(ResultBody::FilterId(U256::from(id)))
-                        .output(),
+                    Response_oneof_data::filter_id(id) => {
+                        success.set_result(ResultBody::FilterId(id.into())).output()
+                    }
                     Response_oneof_data::uninstall_filter(is_uninstall) => success
-                        .set_result(ResultBody::UninstallFliter(is_uninstall))
+                        .set_result(ResultBody::UninstallFliter(is_uninstall.into()))
                         .output(),
                     Response_oneof_data::filter_changes(data) => {
                         let changes = serde_json::from_str::<FilterChanges>(&data)
@@ -181,15 +177,11 @@ impl Output {
                         ))
                         .output(),
                     Response_oneof_data::transaction_proof(proof) => success
-                        .set_result(ResultBody::TxProof(Bytes::from(proof)))
+                        .set_result(ResultBody::TxProof(proof.into()))
                         .output(),
-                    Response_oneof_data::error_msg(err_msg) => {
-                        Output::Failure(RpcFailure::from_options(
-                            id.clone(),
-                            jsonrpc.clone(),
-                            Error::server_error(code, err_msg),
-                        ))
-                    }
+                    Response_oneof_data::error_msg(err_msg) => Output::Failure(
+                        RpcFailure::from_options(info, Error::server_error(code, err_msg)),
+                    ),
                     Response_oneof_data::meta_data(data) => success
                         .set_result(ResultBody::MetaData(
                             serde_json::from_str::<MetaData>(&data).unwrap(),
@@ -198,13 +190,9 @@ impl Output {
                 }
             }
             _ => match data.data.unwrap() {
-                Response_oneof_data::error_msg(err_msg) => {
-                    Output::Failure(RpcFailure::from_options(
-                        id.clone(),
-                        jsonrpc.clone(),
-                        Error::server_error(code, err_msg),
-                    ))
-                }
+                Response_oneof_data::error_msg(err_msg) => Output::Failure(
+                    RpcFailure::from_options(info, Error::server_error(code, err_msg)),
+                ),
                 _ => {
                     error!("return system error!!!");
                     Output::Failure(RpcFailure::from(Error::server_error(code, "system error!")))
@@ -214,12 +202,8 @@ impl Output {
     }
 
     /// Creates new failure output indicating malformed request.
-    pub fn invalid_request(id: Id, jsonrpc: Option<Version>) -> Self {
-        Output::Failure(RpcFailure {
-            id: id,
-            jsonrpc: jsonrpc,
-            error: Error::invalid_request(),
-        })
+    pub fn invalid_request(info: RequestInfo) -> Self {
+        Output::Failure(RpcFailure::from_options(info, Error::invalid_request()))
     }
 }
 
@@ -250,19 +234,15 @@ impl Serialize for Output {
 
 impl From<Error> for RpcFailure {
     fn from(err: Error) -> Self {
-        RpcFailure {
-            id: Id::Null,
-            jsonrpc: None,
-            error: err,
-        }
+        RpcFailure::from_options(RequestInfo::null(), err)
     }
 }
 
 impl RpcFailure {
-    pub fn from_options(id: Id, jsonrpc: Option<Version>, err: Error) -> RpcFailure {
+    pub fn from_options(info: RequestInfo, err: Error) -> Self {
         RpcFailure {
-            id: id,
-            jsonrpc: jsonrpc,
+            jsonrpc: info.jsonrpc,
+            id: info.id,
             error: err,
         }
     }
@@ -303,18 +283,15 @@ impl Serialize for RpcResponse {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use request::Version;
+    use super::{ResultBody, RpcSuccess};
+    use request::RequestInfo;
+    use rpctypes::{Id, Version};
     use serde_json;
-    use Id;
 
     #[test]
     fn test_rpc_deserialize() {
-        let rpc = RpcSuccess {
-            jsonrpc: Some(Version::V2),
-            id: Id::Num(2),
-            result: ResultBody::Null,
-        };
+        let rpc = RpcSuccess::new(RequestInfo::new(Some(Version::V2), Id::Num(2)))
+            .set_result(ResultBody::Null);
 
         let rpc_body = serde_json::to_string(&rpc).unwrap();
         assert_eq!(rpc_body, r#"{"jsonrpc":"2.0","id":2,"result":null}"#);
@@ -322,11 +299,10 @@ mod tests {
 
     #[test]
     fn test_rpc_deserialize2() {
-        let rpc = RpcSuccess {
-            jsonrpc: Some(Version::V2),
-            id: Id::Str("2".to_string()),
-            result: ResultBody::BlockNumber(U256::from(3)),
-        };
+        let rpc = RpcSuccess::new(RequestInfo::new(
+            Some(Version::V2),
+            Id::Str("2".to_string()),
+        )).set_result(ResultBody::BlockNumber(3u64.into()));
 
         let rpc_body = serde_json::to_string(&rpc).unwrap();
         assert_eq!(rpc_body, r#"{"jsonrpc":"2.0","id":"2","result":"0x3"}"#);

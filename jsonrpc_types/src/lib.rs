@@ -19,6 +19,7 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![feature(custom_attribute)]
 #![feature(try_from)]
+#![feature(concat_idents)]
 #![allow(unused_attributes)]
 #![allow(unused_extern_crates)]
 extern crate bincode;
@@ -39,18 +40,8 @@ extern crate serde_json;
 extern crate serde_json;
 extern crate uuid;
 
-pub mod bytes;
-pub mod error;
-mod id;
-pub mod method;
-mod params;
+mod error;
+pub use error::{Error, ErrorCode};
 pub mod request;
 pub mod response;
 pub mod rpctypes;
-pub use self::error::*;
-pub use self::id::*;
-pub use self::params::*;
-pub use self::request::*;
-pub use serde_json::to_string;
-pub use serde_json::value::to_value;
-pub use serde_json::Value;

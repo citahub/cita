@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use super::BlockNumber;
-use std::default::Default;
+/// Structs for combine paramters and exchange between request handler and response handler.
+use rpctypes::BlockNumber;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct CountOrCode {
@@ -68,7 +68,6 @@ impl Default for BlockParamsByHash {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct BlockParamsByNumber {
-    // message fields
     pub block_id: BlockNumber,
     pub include_txs: bool,
 }
@@ -93,9 +92,9 @@ impl Default for BlockParamsByNumber {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct RpcBlock {
-    pub block: ::std::vec::Vec<u8>,
+    pub block: Vec<u8>,
     pub include_txs: bool,
-    pub hash: ::std::vec::Vec<u8>,
+    pub hash: Vec<u8>,
 }
 
 impl RpcBlock {

@@ -23,6 +23,9 @@ def get_deploy_code():
 
 
 def send_transaction(params):
+    if params is not None \
+            and (len(params) < 2 or params[:2].lower() != '0x'):
+        params = '0x' + params
     try:
         url = endpoint()
         response = HTTPClient(url).request("cita_sendRawTransaction", params)

@@ -280,8 +280,8 @@ function test_demo_contract () {
 
     title "Send tokens from main chain."
     local demo_abi=$(solc --combined-json abi ${CONTRACT_DEMO} \
-    | sed "s@${CONTRACT_DEMO}:@@g" \
-    | json_get '.contracts.MyToken.abi')
+        | sed "s@${CONTRACT_DEMO}:@@g" \
+        | json_get '.contracts.MyToken.abi')
     send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
         "send_to_side_chain" \
         "${side_chain_id}, '${SIDE_CONTRACT_ADDR}', ${crosschain_tokens}"
@@ -385,9 +385,9 @@ function main () {
     wait_chain_for_height main 5
 
     title "Register side chain ..."
-    local cmc_abi=$(solc --combined-json abi ${CMC} \
-    | sed "s@${CMC}:@@g" \
-    | json_get '.contracts.ChainManager.abi')
+    local cmc_abi=$(solc --combined-json abi ${CMC} 2>/dev/null \
+        | sed "s@${CMC}:@@g" \
+        | json_get '.contracts.ChainManager.abi')
 
     send_contract main "${CMC_ADDR}" "${cmc_abi}" \
         "newSideChain" "${side_chain_id}, [${side_auths}]"

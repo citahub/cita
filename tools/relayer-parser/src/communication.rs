@@ -21,13 +21,12 @@ use futures::{Future, Sink, Stream};
 use hyper;
 use parking_lot::{Mutex, RwLock};
 use serde_json;
-use std::convert::TryInto;
+use std::convert::{Into, TryInto};
 use tokio_core::reactor::{Core, Timeout};
 
-use cita_types::traits::LowerHex;
 use cita_types::{H256, U256};
 use configuration::UpStream;
-use jsonrpc_types;
+use jsonrpc_types::{request, rpctypes};
 use libproto::blockchain::UnverifiedTransaction;
 
 #[derive(Debug)]
@@ -71,15 +70,7 @@ impl RpcClient {
                             let _ = sender.send(Ok(got));
                             Ok(())
                         }
-                        Ok(Either::B((_timeout_error, _get))) => {
-                            let _ = sender.send(Err(Error::Timeout));
-                            Ok(())
-                        }
-                        Err(Either::A((_get_error, _timeout))) => {
-                            let _ = sender.send(Err(Error::Timeout));
-                            Ok(())
-                        }
-                        Err(Either::B((_timeout_error, _get))) => {
+                        Ok(Either::B(_)) | Err(_) => {
                             let _ = sender.send(Err(Error::Timeout));
                             Ok(())
                         }
@@ -122,10 +113,10 @@ impl RpcClient {
 // Pack the result type into a reply type, and parse result from the reply, and return the result.
 // The user of this macro do NOT have to care about the inner reply type.
 macro_rules! rpc_send_and_get_result_from_reply {
-    ($upstream:ident, $method:expr, $params:tt, $result_type:path) => {{
+    ($upstream:ident, $request:ident, $result_type:path) => {{
         define_reply_type!(ReplyType, $result_type);
         let rpc_cli = RpcClient::new($upstream);
-        let body: String = json!({"jsonrpc": "2.0", "method": $method, "params": json!($params), "id": 1}).to_string();
+        let body: String = $request.into();
         let data = rpc_cli.do_post(&body)?;
         let reply: ReplyType = serde_json::from_slice(&data).map_err(|_| {
             error!(
@@ -144,35 +135,29 @@ macro_rules! define_reply_type {
     ($reply_type:ident, $result_type:path) => {
         #[derive(Debug, Clone, Serialize, Deserialize)]
         struct $reply_type {
-            pub jsonrpc: Option<jsonrpc_types::Version>,
-            pub id: jsonrpc_types::Id,
+            pub jsonrpc: Option<rpctypes::Version>,
+            pub id: rpctypes::Id,
             pub result: $result_type,
         }
     };
 }
 
 pub fn cita_get_transaction_proof(upstream: &UpStream, tx_hash: H256) -> Result<Vec<u8>, Error> {
-    let result = rpc_send_and_get_result_from_reply!(
-        upstream,
-        "cita_getTransactionProof",
-        [tx_hash],
-        jsonrpc_types::bytes::Bytes
-    );
-    Ok(result.vec())
+    let req: request::Request = request::CitaGetTransactionProofParams::new(tx_hash.into()).into();
+    let result = rpc_send_and_get_result_from_reply!(upstream, req, rpctypes::Data);
+    Ok(result.into())
 }
 
 pub fn cita_block_number(upstream: &UpStream) -> Result<U256, Error> {
-    let result = rpc_send_and_get_result_from_reply!(upstream, "cita_blockNumber", [], U256);
+    let req: request::Request = request::CitaBlockNumberParams::new().into();
+    let result = rpc_send_and_get_result_from_reply!(upstream, req, U256);
     Ok(result)
 }
 
-pub fn cita_get_metadata(upstream: &UpStream) -> Result<jsonrpc_types::rpctypes::MetaData, Error> {
-    let result = rpc_send_and_get_result_from_reply!(
-        upstream,
-        "cita_getMetaData",
-        ["latest"],
-        jsonrpc_types::rpctypes::MetaData
-    );
+pub fn cita_get_metadata(upstream: &UpStream) -> Result<rpctypes::MetaData, Error> {
+    let height = rpctypes::BlockNumber::latest();
+    let req: request::Request = request::CitaGetMetaDataParams::new(height).into();
+    let result = rpc_send_and_get_result_from_reply!(upstream, req, rpctypes::MetaData);
     Ok(result)
 }
 
@@ -181,12 +166,8 @@ pub fn cita_send_transaction(
     utx: &UnverifiedTransaction,
 ) -> Result<H256, Error> {
     let tx_bytes: Vec<u8> = utx.try_into().unwrap();
-    let result = rpc_send_and_get_result_from_reply!(
-        upstream,
-        "cita_sendRawTransaction",
-        [tx_bytes.lower_hex()],
-        jsonrpc_types::rpctypes::TxResponse
-    );
+    let req: request::Request = request::CitaSendRawTransactionParams::new(tx_bytes.into()).into();
+    let result = rpc_send_and_get_result_from_reply!(upstream, req, rpctypes::TxResponse);
     if result.status.to_uppercase() == "OK" {
         Ok(result.hash)
     } else {
