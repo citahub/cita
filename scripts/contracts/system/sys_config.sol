@@ -16,7 +16,7 @@ interface SysConfigInterface {
     /// @notice The name of current chain
     function getChainName() external view returns (string);
     /// @notice Update current chain name
-    function setChainName(string) public;
+    function setChainName(string) external;
 
     /// @notice The id of current chain
     function getChainId() external view returns (uint32);
@@ -24,12 +24,12 @@ interface SysConfigInterface {
     /// @notice The operator of current chain
     function getOperator() external view returns (string);
     /// @notice Update current operator
-    function setOperator(string) public;
+    function setOperator(string) external;
 
     /// @notice Current operator's website URL
     function getWebsite() external view returns (string);
     /// @notice Update current operator's website URL
-    function setWebsite(string) public;
+    function setWebsite(string) external;
 
     /// @notice The interval time for creating a block (milliseconds)
     function getBlockInterval() external view returns (uint64);
@@ -132,15 +132,15 @@ contract SysConfig is SysConfigInterface {
         return economicalModel;
     }
 
-    function setOperator(string _operator) public {
+    function setOperator(string _operator) external {
         operator = _operator;
     }
 
-    function setWebsite(string _website) public {
+    function setWebsite(string _website) external {
         website = _website;
     }
 
-    function setChainName(string _chainName) public {
+    function setChainName(string _chainName) external {
         chain_name = _chainName;
     }
 
