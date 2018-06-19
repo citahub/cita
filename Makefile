@@ -35,4 +35,3 @@ clippy:
 security_audit:
 	which cargo-audit || cargo install cargo-audit
 	cargo audit
-

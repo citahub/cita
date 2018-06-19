@@ -34,6 +34,7 @@ use substate::Substate;
 use trace::{Tracer, VMTracer};
 use util::*;
 use cita_types::{Address, H256, U256};
+use libexecutor::executor::EconomicalModel;
 
 /// Policy for handling output data on `RETURN` opcode.
 pub enum OutputPolicy<'a, 'b> {
@@ -87,6 +88,7 @@ where
     tracer: &'a mut T,
     vm_tracer: &'a mut V,
     static_flag: bool,
+    economical_model: EconomicalModel,
 }
 
 
@@ -98,7 +100,7 @@ where
 {
     /// Basic `Externalities` constructor.
     #[cfg_attr(feature = "dev", allow(too_many_arguments))]
-    pub fn new(state: &'a mut State<B>, env_info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, depth: usize, origin_info: OriginInfo, substate: &'a mut Substate, output: OutputPolicy<'a, 'a>, tracer: &'a mut T, vm_tracer: &'a mut V, static_flag: bool) -> Self {
+    pub fn new(state: &'a mut State<B>, env_info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, depth: usize, origin_info: OriginInfo, substate: &'a mut Substate, output: OutputPolicy<'a, 'a>, tracer: &'a mut T, vm_tracer: &'a mut V, static_flag: bool, economical_model: EconomicalModel) -> Self {
         Externalities {
             state: state,
             env_info: env_info,
@@ -113,6 +115,7 @@ where
             tracer: tracer,
             vm_tracer: vm_tracer,
             static_flag: static_flag,
+            economical_model: economical_model,
         }
     }
 }
@@ -151,10 +154,8 @@ where
         self.balance(&self.origin_info.address).map_err(Into::into)
     }
 
-    #[allow(unused_variables)]
     fn balance(&self, address: &Address) -> evm::Result<U256> {
-        Ok(U256::zero())
-        //self.state.balance(address)
+        self.state.balance(address).map_err(Into::into)
     }
 
     fn blockhash(&self, number: &U256) -> H256 {
@@ -202,7 +203,7 @@ where
                 return evm::ContractCreateResult::Failed;
             }
         }
-        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag);
+        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model);
 
         // TODO: handle internal error separately
         match ex.create(params, self.substate, self.tracer, self.vm_tracer) {
@@ -248,7 +249,7 @@ where
             params.value = ActionValue::Transfer(value);
         }
 
-        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag);
+        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model);
 
         match ex.call(params, self.substate, BytesRef::Fixed(output), self.tracer, self.vm_tracer) {
             Ok(FinalizationResult{ gas_left, return_data, apply_state: true }) => MessageCallResult::Success(gas_left, return_data),

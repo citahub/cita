@@ -686,13 +686,19 @@ impl<B: Backend> State<B> {
             vm_tracing: false,
             check_permission: check_permission,
             check_quota: check_quota,
-            economical_model: economical_model,
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
 
-        match Executive::new(self, env_info, engine, &vm_factory, &native_factory)
-            .transact(t, options)
+        match Executive::new(
+            self,
+            env_info,
+            engine,
+            &vm_factory,
+            &native_factory,
+            false,
+            economical_model,
+        ).transact(t, options)
         {
             Ok(e) => {
                 // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));

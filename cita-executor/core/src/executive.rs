@@ -271,14 +271,6 @@ pub struct TransactOptions {
     pub check_permission: bool,
     /// Check account gas limit
     pub check_quota: bool,
-    /// Check EconomicalModel
-    pub economical_model: EconomicalModel,
-}
-
-impl TransactOptions {
-    pub fn payment_required(&self) -> bool {
-        self.economical_model == EconomicalModel::Charge
-    }
 }
 
 /// Transaction executor.
@@ -290,6 +282,8 @@ pub struct Executive<'a, B: 'a + StateBackend> {
     depth: usize,
     static_flag: bool,
     native_factory: &'a NativeFactory,
+    /// Check EconomicalModel
+    economical_model: EconomicalModel,
 }
 
 impl<'a, B: 'a + StateBackend> Executive<'a, B> {
@@ -300,6 +294,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         engine: &'a Engine,
         vm_factory: &'a Factory,
         native_factory: &'a NativeFactory,
+        static_flag: bool,
+        economical_model: EconomicalModel,
     ) -> Self {
         Executive {
             state: state,
@@ -308,8 +304,13 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             vm_factory: vm_factory,
             native_factory: native_factory,
             depth: 0,
-            static_flag: false,
+            static_flag: static_flag,
+            economical_model: economical_model,
         }
+    }
+
+    pub fn payment_required(&self) -> bool {
+        self.economical_model == EconomicalModel::Charge
     }
 
     /// Populates executive from parent properties. Increments executive depth.
@@ -321,6 +322,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         native_factory: &'a NativeFactory,
         parent_depth: usize,
         static_flag: bool,
+        economical_model: EconomicalModel,
     ) -> Self {
         Executive {
             state: state,
@@ -330,6 +332,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             native_factory: native_factory,
             depth: parent_depth + 1,
             static_flag: static_flag,
+            economical_model: economical_model,
         }
     }
 
@@ -342,6 +345,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         tracer: &'any mut T,
         vm_tracer: &'any mut V,
         static_call: bool,
+        economical_model: EconomicalModel,
     ) -> Externalities<'any, T, V, B>
     where
         T: Tracer,
@@ -361,6 +365,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             tracer,
             vm_tracer,
             is_static,
+            economical_model,
         )
     }
 
@@ -498,7 +503,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let total_cost = U512::from(t.value) + gas_cost;
 
         // avoid unaffordable transactions
-        if options.payment_required() {
+        if self.payment_required() {
             let balance512 = U512::from(balance);
             if balance512 < total_cost {
                 return Err(ExecutionError::NotEnoughCash {
@@ -594,7 +599,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // finalize here!
         Ok(self.finalize(
             t,
-            options.economical_model,
             nonce,
             substate,
             result,
@@ -622,6 +626,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // Ordinary execution - keep VM in same thread
         if (self.depth + 1) % depth_threshold != 0 {
             let vm_factory = self.vm_factory;
+            let economical_model = self.economical_model;
             let mut ext = self.as_externalities(
                 OriginInfo::from(&params),
                 unconfirmed_substate,
@@ -629,6 +634,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 tracer,
                 vm_tracer,
                 static_call,
+                economical_model,
             );
             return vm_factory
                 .create(params.gas)
@@ -641,6 +647,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // https://github.com/aturon/crossbeam/issues/16
         crossbeam::scope(|scope| {
             let vm_factory = self.vm_factory;
+            let economical_model = self.economical_model;
             let mut ext = self.as_externalities(
                 OriginInfo::from(&params),
                 unconfirmed_substate,
@@ -648,6 +655,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 tracer,
                 vm_tracer,
                 static_call,
+                economical_model,
             );
 
             scope.spawn(move || {
@@ -694,7 +702,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let static_call = params.call_type == CallType::StaticCall;
 
         // at first, transfer value to destination
-        if let ActionValue::Transfer(val) = params.value {
+        if let (true, ActionValue::Transfer(val)) = (self.payment_required(), &params.value) {
             self.state
                 .transfer_balance(&params.sender, &params.address, &val)?;
         }
@@ -708,6 +716,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 let res = {
                     let mut tracer = NoopTracer;
                     let mut vmtracer = NoopVMTracer;
+                    let economical_model = self.economical_model;
                     let mut ext = self.as_externalities(
                         OriginInfo::from(&params),
                         &mut unconfirmed_substate,
@@ -715,6 +724,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                         &mut tracer,
                         &mut vmtracer,
                         static_call,
+                        economical_model,
                     );
                     contract.exec(params, &mut ext).finalize(ext)
                 };
@@ -868,7 +878,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let nonce_offset = if schedule.no_empty {1} else {0}.into();*/
         let nonce_offset = U256::from(0);
         let prev_bal = self.state.balance(&params.address)?;
-        if let ActionValue::Transfer(val) = params.value {
+        if let (true, &ActionValue::Transfer(val)) = (self.payment_required(), &params.value) {
             self.state.sub_balance(&params.sender, &val)?;
             self.state
                 .new_contract(&params.address, val + prev_bal, nonce_offset);
@@ -876,7 +886,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             self.state
                 .new_contract(&params.address, prev_bal, nonce_offset);
         }
-        //self.state.new_contract(&params.address, 0.into(), nonce_offset);
 
         let trace_info = tracer.prepare_trace_create(&params);
         let mut trace_output = tracer.prepare_trace_output();
@@ -920,7 +929,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     fn finalize(
         &mut self,
         t: &SignedTransaction,
-        economical_model: EconomicalModel,
         account_nonce: U256,
         substate: Substate,
         result: evm::Result<FinalizationResult>,
@@ -973,7 +981,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             sender
         );
 
-        if let EconomicalModel::Charge = economical_model {
+        if let EconomicalModel::Charge = self.economical_model {
             self.state.add_balance(&sender, &refund_value)?;
         }
 
@@ -983,7 +991,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             &self.info.author
         );
 
-        if let EconomicalModel::Charge = economical_model {
+        if let EconomicalModel::Charge = self.economical_model {
             self.state.add_balance(&self.info.author, &fees_value)?;
         }
 
@@ -1088,7 +1096,7 @@ mod tests {
     use types::transaction::Transaction;
 
     #[test]
-    fn test_transfer() {
+    fn test_transfer_for_charge() {
         let keypair = KeyPair::gen_keypair();
         let t = Transaction {
             action: Action::Create,
@@ -1115,13 +1123,20 @@ mod tests {
         info.gas_limit = U256::from(100_000);
 
         let executed = {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let mut ex = Executive::new(
+                &mut state,
+                &info,
+                &engine,
+                &factory,
+                &native_factory,
+                false,
+                EconomicalModel::Charge,
+            );
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
-                economical_model: EconomicalModel::Charge,
             };
             ex.transact(&t, opts).unwrap()
         };
@@ -1141,7 +1156,7 @@ mod tests {
     }
 
     #[test]
-    fn test_not_enough_cash() {
+    fn test_not_enough_cash_for_charge() {
         let keypair = KeyPair::gen_keypair();
         let t = Transaction {
             action: Action::Create,
@@ -1164,13 +1179,20 @@ mod tests {
         info.gas_limit = U256::from(100_000);
 
         let result = {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let mut ex = Executive::new(
+                &mut state,
+                &info,
+                &engine,
+                &factory,
+                &native_factory,
+                false,
+                EconomicalModel::Charge,
+            );
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
-                economical_model: EconomicalModel::Charge,
             };
             ex.transact(&t, opts)
         };
@@ -1183,6 +1205,50 @@ mod tests {
             }
             _ => assert!(false, "Expected not enough cash error. {:?}", result),
         }
+    }
+
+    #[test]
+    fn test_not_enough_cash_for_quota() {
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Create,
+            value: U256::from(43),
+            data: vec![],
+            gas: U256::from(100_000),
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1,
+            version: 1,
+        }.fake_sign(keypair.address().clone());
+
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
+        let engine = NullEngine::default();
+        let mut state = get_temp_state();
+        let mut info = EnvInfo::default();
+        info.gas_limit = U256::from(100_000);
+
+        let result = {
+            let mut ex = Executive::new(
+                &mut state,
+                &info,
+                &engine,
+                &factory,
+                &native_factory,
+                false,
+                EconomicalModel::Quota,
+            );
+            let opts = TransactOptions {
+                tracing: false,
+                vm_tracing: false,
+                check_permission: false,
+                check_quota: true,
+            };
+            ex.transact(&t, opts)
+        };
+
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -1223,7 +1289,15 @@ contract HelloWorld {
         let mut tracer = ExecutiveTracer::default();
         let mut vm_tracer = ExecutiveVMTracer::toplevel();
 
-        let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+        let mut ex = Executive::new(
+            &mut state,
+            &info,
+            &engine,
+            &factory,
+            &native_factory,
+            false,
+            EconomicalModel::Quota,
+        );
         let res = ex.create(params.clone(), &mut substate, &mut tracer, &mut vm_tracer);
         assert!(res.is_err());
         match res {
@@ -1269,7 +1343,15 @@ contract AbiTest {
         let mut vm_tracer = ExecutiveVMTracer::toplevel();
 
         {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let mut ex = Executive::new(
+                &mut state,
+                &info,
+                &engine,
+                &factory,
+                &native_factory,
+                false,
+                EconomicalModel::Quota,
+            );
             let _ = ex.create(params.clone(), &mut substate, &mut tracer, &mut vm_tracer);
         }
 
@@ -1322,7 +1404,15 @@ contract AbiTest {
         let engine = NullEngine::default();
         let mut substate = Substate::new();
         {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let mut ex = Executive::new(
+                &mut state,
+                &info,
+                &engine,
+                &factory,
+                &native_factory,
+                false,
+                EconomicalModel::Quota,
+            );
             let mut out = vec![];
             let _ = ex.call(
                 params,
@@ -1391,7 +1481,15 @@ contract AbiTest {
         let engine = NullEngine::default();
         let mut substate = Substate::new();
         {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let mut ex = Executive::new(
+                &mut state,
+                &info,
+                &engine,
+                &factory,
+                &native_factory,
+                false,
+                EconomicalModel::Quota,
+            );
             let mut out = vec![];
             let res = ex.call(
                 params,
@@ -1465,7 +1563,15 @@ contract AbiTest {
         let engine = NullEngine::default();
         let mut substate = Substate::new();
         {
-            let mut ex = Executive::new(&mut state, &info, &engine, &factory, &native_factory);
+            let mut ex = Executive::new(
+                &mut state,
+                &info,
+                &engine,
+                &factory,
+                &native_factory,
+                false,
+                EconomicalModel::Quota,
+            );
             let mut out = vec![];
             let res = ex.call(
                 params,
