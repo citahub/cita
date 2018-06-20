@@ -613,7 +613,7 @@ mod integration_test {
         );
         let mut req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
         req.set_body(data);
-        let work_net_peercount = client.request(req).and_then(|resp| {
+        let work_peercount = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
             resp.body()
                 .fold(vec![], |mut buf, chunk| {
@@ -637,7 +637,7 @@ mod integration_test {
         );
         let mut req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
         req.set_body(data);
-        let work_net_peercount_batch = client.request(req).and_then(|resp| {
+        let work_peercount_batch = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
             resp.body()
                 .fold(vec![], |mut buf, chunk| {
@@ -667,8 +667,8 @@ mod integration_test {
         works.push(Box::new(work_empty));
         works.push(Box::new(work_options));
         works.push(Box::new(work_method_not_found));
-        works.push(Box::new(work_net_peercount));
-        works.push(Box::new(work_net_peercount_batch));
+        works.push(Box::new(work_peercount));
+        works.push(Box::new(work_peercount_batch));
         core.run(futures::future::join_all(works)).unwrap();
 
         tx_quit.send(()).unwrap();
