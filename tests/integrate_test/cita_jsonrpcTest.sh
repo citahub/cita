@@ -35,11 +35,11 @@ invalid_jsonrpc_method=-32601
 
 ./cita_start.sh
 ## request of invalid http method
-err_code=`curl -s -X GET -d '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":2}' $IP:$PORT | jq ".error.code"`
+err_code=`curl -s -X GET -d '{"jsonrpc":"2.0","method":"peerCount","params":[],"id":2}' $IP:$PORT | jq ".error.code"`
 assert $err_code $invalid_http_method "request of invalid http method"
 
 ## invalid request of missing id
-err_code=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"net_peerCount","params":[]}' $IP:$PORT | jq ".error.code"`
+err_code=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"peerCount","params":[]}' $IP:$PORT | jq ".error.code"`
 assert $err_code $invalid_params "invalid request of missing id"
 
 ## request of invalid json
@@ -51,7 +51,7 @@ err_code=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"invalid_method","params
 assert $err_code $invalid_jsonrpc_method "invalid jsonrpc method"
 
 ## invalid request of missing params
-err_code=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"cita_getTransaction","params":[],"id":2}' $IP:$PORT | jq ".error.code"`
+err_code=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"getTransaction","params":[],"id":2}' $IP:$PORT | jq ".error.code"`
 assert $err_code $invalid_params "invalid request params"
 
 ## get null block
@@ -59,11 +59,11 @@ result=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"cita_getBlockByHeight","p
 assert_null $result "get null block"
 
 ## get null transaction
-result=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"cita_getTransaction","params":["0000000000000000000000000000000000000000000000000000000000000000"],"id":2}' $IP:$PORT | jq ".error.code"`
+result=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"getTransaction","params":["0000000000000000000000000000000000000000000000000000000000000000"],"id":2}' $IP:$PORT | jq ".error.code"`
 assert_null $result "get null transaction"
 
 ## null block hash
-result=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"cita_getBlockByHash","params":["0000000000000000000000000000000000000000000000000000000000000000",true],"id":2}' $IP:$PORT | jq ".error.code"`
+result=`curl -s -X POST -d '{"jsonrpc":"2.0","method":"getBlockByHash","params":["0000000000000000000000000000000000000000000000000000000000000000",true],"id":2}' $IP:$PORT | jq ".error.code"`
 assert_null $result "null block hash"
 
 ./cita_stop.sh

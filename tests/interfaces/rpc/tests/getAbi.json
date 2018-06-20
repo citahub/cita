@@ -1,13 +1,13 @@
 {
-  "title": "eth_getAbi",
+  "title": "getAbi",
   "schema": {
-    "$ref": "../schemas/eth_getAbi.json"
+    "$ref": "../schemas/getAbi.json"
   },
   "tests": [
     {
-      "title": "eth_getAbi with params and success",
+      "title": "getAbi with params and success",
       "request": {
-        "method": "eth_getAbi",
+        "method": "getAbi",
         "params": [
           "0xeffb1dab2e6ed61aa213eacaefbd1a9a41e047ea",
           "latest"
@@ -18,15 +18,15 @@
       },
       "asserts": [
         {
-          "description": "eth_getAbi result should be equal",
+          "description": "getAbi result should be equal",
           "program": ".receivedResponse.result == .expectedResponse.result"
         }
       ]
     },
     {
-      "title": "eth_getAbi with wrong param `contract address`",
+      "title": "getAbi with wrong param `contract address`",
       "request": {
-        "method": "eth_getAbi",
+        "method": "getAbi",
         "params": [
           "0xeffb1dab2e6ed61aa213eacaefbd1a9a41000000",
           "latest"
@@ -37,15 +37,15 @@
       },
       "asserts": [
         {
-          "description": "eth_getAbi with nonexistent address should return empty result(0x)",
+          "description": "getAbi with nonexistent address should return empty result(0x)",
           "program": ".receivedResponse.result == .expectedResponse.result"
         }
       ]
     },
     {
-      "title": "eth_getAbi with no parameters",
+      "title": "getAbi with no parameters",
       "request": {
-        "method": "eth_getAbi",
+        "method": "getAbi",
         "params": [],
         "shouldFailSchema": true
       },

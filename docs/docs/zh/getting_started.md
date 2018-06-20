@@ -201,7 +201,7 @@ cd target/install
     Request:
     
     ```shell
-    ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}' 127.0.0.1:1337
+    ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"peerCount","params":[],"id":74}' 127.0.0.1:1337
     ```
 
     Result:
@@ -219,7 +219,7 @@ cd target/install
     Request:
     
     ```shell
-    ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":83}' 127.0.0.1:1337
+    ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"blockNumber","params":[],"id":83}' 127.0.0.1:1337
     ```
 
     Result:

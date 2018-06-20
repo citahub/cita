@@ -20,7 +20,7 @@ def get_transaction_hash():
 def transaction_by_hash(tx_hash):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("cita_getTransaction", tx_hash)
+        response = HTTPClient(url).request("getTransaction", tx_hash)
     except:
         return None
 

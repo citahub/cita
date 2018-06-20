@@ -10,7 +10,7 @@ from util import findDict
 def block_by_number(params):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("cita_getBlockByNumber", params)
+        response = HTTPClient(url).request("getBlockByNumber", params)
     except:
         return None
 

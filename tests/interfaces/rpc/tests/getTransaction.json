@@ -1,13 +1,13 @@
 {
-  "title": "cita_getTransaction",
+  "title": "getTransaction",
   "schema": {
-    "$ref": "../schemas/cita_getTransaction.json"
+    "$ref": "../schemas/getTransaction.json"
   },
   "tests": [
     {
-      "title": "cita_getTransaction by hash (create contract HelloWorld.sol)",
+      "title": "getTransaction by hash (create contract HelloWorld.sol)",
       "request": {
-        "method": "cita_getTransaction",
+        "method": "getTransaction",
         "params": [
           "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17"
         ]
@@ -33,9 +33,9 @@
       ]
     },
     {
-      "title": "cita_getTransaction with no parameters",
+      "title": "getTransaction with no parameters",
       "request": {
-        "method": "cita_getTransaction",
+        "method": "getTransaction",
         "params": [],
         "shouldFailSchema": true
       },

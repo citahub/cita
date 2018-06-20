@@ -11,7 +11,7 @@ CMC_ADDR="00000000000000000000000000000000000000ce"
 CMC="scripts/contracts/system/chain_manager.sol"
 
 # Templates for some shell commands
-ETHCALL='{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"%s", "data":"%s"}, "latest"],"id":2}'
+ETHCALL='{"jsonrpc":"2.0","method":"call", "params":[{"to":"%s", "data":"%s"}, "latest"],"id":2}'
 
 # Test contract file
 CONTRACT_DEMO="scripts/contracts/tests/contracts/cross_chain_token.sol"

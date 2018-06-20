@@ -557,7 +557,7 @@ $python3 get_receipt.py
 用户john通过合约的get方法可以获得add方法的结果。
 
 ```shell
-$curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"0x47113fea5720d201b31ecf82a7da5ea3ed150255","data":"0x6d4ce63c"}, "latest"],"id":2}' 127.0.0.1:1337|jq
+$curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"to":"0x47113fea5720d201b31ecf82a7da5ea3ed150255","data":"0x6d4ce63c"}, "latest"],"id":2}' 127.0.0.1:1337|jq
 {
   "jsonrpc": "2.0",
   "id": 2,
@@ -571,11 +571,11 @@ $curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"0x47
 
 ### 查询账户权限
 
-查询账户权限非发送交易方式，调用合约内容直接调用jsonrpc中的`eth_call`接口。
+查询账户权限非发送交易方式，调用合约内容直接调用jsonrpc中的`call`接口。
 
 ```shell
 ######调用系统合约queryPermissions方法查询用户john权限
-$curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"0x00000000000000000000000000000000013241b4","data":"0x945a25550000000000000000000000006212dd3506a68d6ec231177c6cb9c46dcfd43190"}, "latest"],"id":2}' 127.0.0.1:1337|jq
+$curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"to":"0x00000000000000000000000000000000013241b4","data":"0x945a25550000000000000000000000006212dd3506a68d6ec231177c6cb9c46dcfd43190"}, "latest"],"id":2}' 127.0.0.1:1337|jq
 {
   "jsonrpc": "2.0",
   "id": 2,
@@ -586,13 +586,13 @@ $curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"0x00
 其中params中:
 
 * `to`参数，为queryPermissions所在系统合约地址；
-* `data`为调用`eth_call`的输入参数，由queryPermissions的hash和queryPermissions参数组成。
+* `data`为调用`call`的输入参数，由queryPermissions的hash和queryPermissions参数组成。
 
 result返回给用户john的所有权限，包括sendTx、createContract以及0x3682affa243cb9536cb6989307c54e388198e709新权限。
 
 ```shell
 ######调用系统合约queryResource方法查询新权限0x3682affa243cb9536cb6989307c54e388198e709内容
-$curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"0x3682affa243cb9536cb6989307c54e388198e709","data":"0x53f4a519"}, "latest"],"id":2}' 127.0.0.1:1337|jq
+$curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"to":"0x3682affa243cb9536cb6989307c54e388198e709","data":"0x53f4a519"}, "latest"],"id":2}' 127.0.0.1:1337|jq
 {
   "jsonrpc": "2.0",
   "id": 2,

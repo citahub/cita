@@ -69,7 +69,7 @@ def get_chainid():
     try:
         url = endpoint()
         logger.debug(url)
-        response = HTTPClient(url).request("cita_getMetaData", params)
+        response = HTTPClient(url).request("getMetaData", params)
         chainid = response['chainId']
         logger.debug(response)
     except:

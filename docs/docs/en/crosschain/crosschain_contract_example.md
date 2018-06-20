@@ -10,7 +10,7 @@ Compared with ordinary token contract, two functions, `send_to_side_chain` and `
 
 `send_to_side_chain` is designed to deduct tokens from one chain.
 
-After the transaction is executed, use JsonRPC `cita_getTransactionProof` interface to get the transaction proof.
+After the transaction is executed, use JsonRPC `getTransactionProof` interface to get the transaction proof.
 
 Send this proof to function `recv_from_side_chain` of another chain. After verification, this proof can be parsed out original transaction information,  which is transfer amount in here. In the end, add the same number of tokens to the same user.
 

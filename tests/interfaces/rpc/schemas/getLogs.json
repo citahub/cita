@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "eth_getLogs",
-  "description": "eth_getLogs JSON-RPC method request and response schema.",
+  "title": "getLogs",
+  "description": "getLogs JSON-RPC method request and response schema.",
   "request": {
     "id": "#request",
     "allOf": [
@@ -9,7 +9,7 @@
         "$ref": "jsonrpc-request.json"
       },
       {
-        "$ref": "eth_getLogs.json#/request/definitions/request-obj"
+        "$ref": "getLogs.json#/request/definitions/request-obj"
       }
     ],
     "definitions": {
@@ -24,7 +24,7 @@
               "type": "null"
             },
             {
-              "$ref": "eth_getLogs.json#/request/definitions/topics"
+              "$ref": "getLogs.json#/request/definitions/topics"
             }
           ]
         }
@@ -35,7 +35,7 @@
           "method": {
             "type": "string",
             "enum": [
-              "eth_getLogs"
+              "getLogs"
             ]
           },
           "params": {
@@ -67,7 +67,7 @@
                     "description": "DATA|Array, 20 Bytes - (optional) Contract address or a list of addresses from which logs should originate."
                   },
                   "topics": {
-                    "$ref": "eth_getLogs.json#/request/definitions/topics"
+                    "$ref": "getLogs.json#/request/definitions/topics"
                   }
                 }
               }
@@ -86,7 +86,7 @@
         "$ref": "jsonrpc-response.json"
       },
       {
-        "$ref": "eth_getLogs.json#/response/definitions/response-obj"
+        "$ref": "getLogs.json#/response/definitions/response-obj"
       }
     ],
     "definitions": {

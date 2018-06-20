@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "cita_getBlockByHash",
-  "description": "cita_getBlockByHash JSON-RPC method request and response schema.",
+  "title": "getBlockByNumber",
+  "description": "getBlockByNumber JSON-RPC method request and response schema.",
   "request": {
     "id": "#request",
     "allOf": [
@@ -9,7 +9,7 @@
         "$ref": "jsonrpc-request.json"
       },
       {
-        "$ref": "cita_getBlockByHash.json#/request/definitions/request-obj"
+        "$ref": "getBlockByNumber.json#/request/definitions/request-obj"
       }
     ],
     "definitions": {
@@ -19,7 +19,7 @@
           "method": {
             "type": "string",
             "enum": [
-              "cita_getBlockByHash"
+              "getBlockByNumber"
             ]
           },
           "params": {
@@ -27,7 +27,7 @@
             "items": [
               {
                 "type": "string",
-                "description": "DATA, 32 Bytes - hash of a block."
+                "description": "QUANTITY|TAG - integer of a block number, or the string \"earliest\", \"latest\", as in the default block parameter."
               },
               {
                 "type": "boolean",

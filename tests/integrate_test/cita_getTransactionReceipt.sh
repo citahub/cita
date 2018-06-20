@@ -9,4 +9,4 @@ else
     echo "args: hash ip (default localhost) "
     exit
 fi
-curl -s -X POST -d '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":['\"$HASH\"'],"id":2}' $IP:1337
+curl -s -X POST -d '{"jsonrpc":"2.0","method":"getTransactionReceipt","params":['\"$HASH\"'],"id":2}' $IP:1337

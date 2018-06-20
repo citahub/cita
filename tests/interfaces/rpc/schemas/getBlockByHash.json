@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "eth_getTransactionCount",
-  "description": "eth_getTransactionCount JSON-RPC method request and response schema.",
+  "title": "getBlockByHash",
+  "description": "getBlockByHash JSON-RPC method request and response schema.",
   "request": {
     "id": "#request",
     "allOf": [
@@ -9,7 +9,7 @@
         "$ref": "jsonrpc-request.json"
       },
       {
-        "$ref": "eth_getTransactionCount.json#/request/definitions/request-obj"
+        "$ref": "getBlockByHash.json#/request/definitions/request-obj"
       }
     ],
     "definitions": {
@@ -19,7 +19,7 @@
           "method": {
             "type": "string",
             "enum": [
-              "eth_getTransactionCount"
+              "getBlockByHash"
             ]
           },
           "params": {
@@ -27,11 +27,11 @@
             "items": [
               {
                 "type": "string",
-                "description": "DATA - 20 Bytes - address."
+                "description": "DATA, 32 Bytes - hash of a block."
               },
               {
-                "type": "string",
-                "description": "QUANTITY|TAG - integer block number(Hex string), or the string 'latest', 'earliest'"
+                "type": "boolean",
+                "description": "Boolean - If true it returns the full transaction objects, if false only the hashes of the transactions."
               }
             ],
             "minItems": 2,
@@ -48,18 +48,8 @@
         "$ref": "jsonrpc-response.json"
       },
       {
-        "$ref": "eth_getTransactionCount.json#/response/definitions/response-obj"
+        "$ref": "block.json"
       }
-    ],
-    "definitions": {
-      "response-obj": {
-        "properties": {
-          "result": {
-            "type": "string",
-            "description": "QUANTITY"
-          }
-        }
-      }
-    }
+    ]
   }
 }

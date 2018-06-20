@@ -36,7 +36,7 @@ def get_transaction_hash():
 def get_receipt_by(tx_hash):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("eth_getTransactionReceipt", tx_hash)
+        response = HTTPClient(url).request("getTransactionReceipt", tx_hash)
     except:
         return None
 

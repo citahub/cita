@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "eth_call",
-  "description": "eth_call JSON-RPC method request and response schema.",
+  "title": "call",
+  "description": "call JSON-RPC method request and response schema.",
   "request": {
     "id": "#request",
     "allOf": [
@@ -9,7 +9,7 @@
         "$ref": "jsonrpc-request.json"
       },
       {
-        "$ref": "eth_call.json#/request/definitions/request-obj"
+        "$ref": "call.json#/request/definitions/request-obj"
       }
     ],
     "definitions": {
@@ -19,7 +19,7 @@
           "method": {
             "type": "string",
             "enum": [
-              "eth_call"
+              "call"
             ]
           },
           "params": {
@@ -64,7 +64,7 @@
         "$ref": "jsonrpc-response.json"
       },
       {
-        "$ref": "eth_call.json#/response/definitions/response-obj"
+        "$ref": "call.json#/response/definitions/response-obj"
       }
     ],
     "definitions": {

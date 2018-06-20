@@ -1,13 +1,13 @@
 {
-  "title": "eth_getCode",
+  "title": "getCode",
   "schema": {
-    "$ref": "../schemas/eth_getCode.json"
+    "$ref": "../schemas/getCode.json"
   },
   "tests": [
     {
-      "title": "eth_getCode with params and success (HelloWorld.sol)",
+      "title": "getCode with params and success (HelloWorld.sol)",
       "request": {
-        "method": "eth_getCode",
+        "method": "getCode",
         "params": [
           "0xfdde938c6f71b066eb34c1c92e5814186dbdcb5e",
           "latest"
@@ -18,15 +18,15 @@
       },
       "asserts": [
         {
-          "description": "eth_getCode result should be equal",
+          "description": "getCode result should be equal",
           "program": ".receivedResponse.result == .expectedResponse.result"
         }
       ]
     },
     {
-      "title": "eth_getCode with params and success (SimpleStorage.sol)",
+      "title": "getCode with params and success (SimpleStorage.sol)",
       "request": {
-        "method": "eth_getCode",
+        "method": "getCode",
         "params": [
           "0xeffb1dab2e6ed61aa213eacaefbd1a9a41e047ea",
           "latest"
@@ -37,15 +37,15 @@
       },
       "asserts": [
         {
-          "description": "eth_getCode result should be equal",
+          "description": "getCode result should be equal",
           "program": ".receivedResponse.result == .expectedResponse.result"
         }
       ]
     },
     {
-      "title": "eth_getCode with wrong address and get empty result",
+      "title": "getCode with wrong address and get empty result",
       "request": {
-        "method": "eth_getCode",
+        "method": "getCode",
         "params": [
           "0xeffb1dab2e6ed61aa213eacaefbd1a9a41e00000",
           "latest"
@@ -56,15 +56,15 @@
       },
       "asserts": [
         {
-          "description": "eth_getCode with nonexistent address should return empty result(0x)",
+          "description": "getCode with nonexistent address should return empty result(0x)",
           "program": ".receivedResponse.result == .expectedResponse.result"
         }
       ]
     },
     {
-      "title": "eth_getCode with no parameters",
+      "title": "getCode with no parameters",
       "request": {
-        "method": "eth_getCode",
+        "method": "getCode",
         "params": [],
         "shouldFailSchema": true
       },

@@ -19,7 +19,7 @@
 
 ``` json
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -33,7 +33,7 @@
 
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -46,7 +46,7 @@
     }
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -59,7 +59,7 @@
     }
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -72,7 +72,7 @@
     }
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -85,7 +85,7 @@
     }
 
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -103,7 +103,7 @@
 
 ``` json
     //request 发送交易
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"sendRawTransaction","params":["..."],"id":1}' 127.0.0.1:1337 | jq
        //result
        {
          "jsonrpc": "2.0",
@@ -119,7 +119,7 @@
 
 ``` json
     //request 应发送POST请求，而不是GET请求
-    curl -X GET -d '{"jsonrpc":"2.0","method":"cita_blockNumber","params":[],"id":"1"}' 127.0.0.1:1337 | jq
+    curl -X GET -d '{"jsonrpc":"2.0","method":"blockNumber","params":[],"id":"1"}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -153,7 +153,7 @@
 
 ``` json
     //request 参数不能是十进制整数,需要是十六进制
-    curl -X POST --data '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":[249, true],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getBlockByNumber","params":[249, true],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -167,7 +167,7 @@
 
 
     //request 参数个数不正确
-    curl -X POST -d '{"jsonrpc":"2.0","method":"cita_getTransaction","params":["0x0063187e6a84ae731cf9",true],"id":2}' 127.0.0.1:1337 | jq
+    curl -X POST -d '{"jsonrpc":"2.0","method":"getTransaction","params":["0x0063187e6a84ae731cf9",true],"id":2}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -185,7 +185,7 @@
 
 ``` json
     //request 交易个数为０或者地址不正确
-    curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionCount","params":["5b073e9233944b5e729e46d618f0d8edf3d9c342",2],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getTransactionCount","params":["5b073e9233944b5e729e46d618f0d8edf3d9c342",2],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -195,7 +195,7 @@
     }
 
     //request 没有部署合约
-    curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["ea4f6bc98b456ef085da5c424db710489848cab9",35],"id":1}' 127.0.0.1:1337 | jq
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getCode","params":["ea4f6bc98b456ef085da5c424db710489848cab9",35],"id":1}' 127.0.0.1:1337 | jq
 
     //result
     {
@@ -205,7 +205,7 @@
     }
 
     //request 高度未达到
-    curl -X POST -d '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":[99999,true],"id":2}' 127.0.0.1:1337 | jq
+    curl -X POST -d '{"jsonrpc":"2.0","method":"getBlockByNumber","params":[99999,true],"id":2}' 127.0.0.1:1337 | jq
 
     //result
     {

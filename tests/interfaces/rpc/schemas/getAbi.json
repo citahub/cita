@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "cita_blockNumber",
-  "description": "cita_blockNumber JSON-RPC method request and response schema.",
+  "title": "getAbi",
+  "description": "getAbi JSON-RPC method request and response schema.",
   "request": {
     "id": "#request",
     "allOf": [
@@ -9,7 +9,7 @@
         "$ref": "jsonrpc-request.json"
       },
       {
-        "$ref": "cita_blockNumber.json#/request/definitions/request-obj"
+        "$ref": "getAbi.json#/request/definitions/request-obj"
       }
     ],
     "definitions": {
@@ -19,16 +19,23 @@
           "method": {
             "type": "string",
             "enum": [
-              "cita_blockNumber"
+              "getAbi"
             ]
           },
           "params": {
-            "oneOf": [
+            "type": "array",
+            "items": [
               {
-                "type": "array",
-                "maxItems": 0
+                "type": "string",
+                "description": "DATA - 20 Bytes - address."
+              },
+              {
+                "type": "string",
+                "description": "QUANTITY|TAG - integer block number(Hex string), or the string 'latest', 'earliest'"
               }
-            ]
+            ],
+            "minItems": 2,
+            "maxItems": 2
           }
         }
       }
@@ -41,15 +48,14 @@
         "$ref": "jsonrpc-response.json"
       },
       {
-        "$ref": "cita_blockNumber.json#/response/definitions/response-obj"
+        "$ref": "getAbi.json#/response/definitions/response-obj"
       }
     ],
     "definitions": {
       "response-obj": {
         "properties": {
           "result": {
-            "type": "string",
-            "description": "QUANTITY - the block number."
+            "type": "string"
           }
         }
       }

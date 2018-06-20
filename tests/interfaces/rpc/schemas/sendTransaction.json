@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "net_peerCount",
-    "description": "net_peerCount JSON-RPC method request and response schema.",
+    "title": "sendRawTransaction",
+    "description": "sendRawTransaction JSON-RPC method request and response schema.",
     "request": {
         "id": "#request",
         "allOf": [
@@ -19,16 +19,19 @@
                     "method": {
                         "type": "string",
                         "enum": [
-                            "net_peerCount"
+                            "sendRawTransaction"
                         ]
                     },
                     "params": {
-                        "oneOf": [
+                        "type": "array",
+                        "items": [
                             {
-                                "type": "array",
-                                "maxItems": 0
+                                "type": "string",
+                                "description": "DATA, transaction data"
                             }
-                        ]
+                        ],
+                        "minItems": 1,
+                        "maxItems": 1
                     }
                 }
             }
@@ -49,7 +52,7 @@
                 "properties": {
                     "result": {
                         "type": "string",
-                        "description": "QUANTITY - peer count."
+                        "description": "DATA, 32 Bytes - hash of the transaction."
                     }
                 }
             }

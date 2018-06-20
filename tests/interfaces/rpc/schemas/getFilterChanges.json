@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "eth_getFilterChanges",
-    "description": "eth_getFilterChanges JSON-RPC method request and response schema.",
+    "title": "getFilterChanges",
+    "description": "getFilterChanges JSON-RPC method request and response schema.",
     "request": {
         "id": "#request",
         "allOf": [
@@ -19,7 +19,7 @@
                     "method": {
                         "type": "string",
                         "enum": [
-                            "eth_getFilterChanges"
+                            "getFilterChanges"
                         ]
                     },
                     "params": {

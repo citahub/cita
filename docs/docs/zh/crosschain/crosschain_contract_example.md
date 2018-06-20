@@ -12,7 +12,7 @@
 
 `send_to_side_chain` 只是在一条链上扣掉一部分 token 。
 
-等交易执行之后，使用 JsonRPC 接口 `cita_getTransactionProof` 获取交易执行的证明。
+等交易执行之后，使用 JsonRPC 接口 `getTransactionProof` 获取交易执行的证明。
 
 将证明发送到另外一个链上的 `recv_from_side_chain`。校验证明之后解析出原始交易的内容。在这个例子里就是转账金额。
 

@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "cita_sendRawTransaction",
-    "description": "cita_sendRawTransaction JSON-RPC method request and response schema.",
+    "title": "newBlockFilter",
+    "description": "newBlockFilter JSON-RPC method request and response schema.",
     "request": {
         "id": "#request",
         "allOf": [
@@ -19,19 +19,12 @@
                     "method": {
                         "type": "string",
                         "enum": [
-                            "cita_sendRawTransaction"
+                            "newBlockFilter"
                         ]
                     },
                     "params": {
                         "type": "array",
-                        "items": [
-                            {
-                                "type": "string",
-                                "description": "DATA, transaction data"
-                            }
-                        ],
-                        "minItems": 1,
-                        "maxItems": 1
+                        "maxItems": 0
                     }
                 }
             }
@@ -52,7 +45,7 @@
                 "properties": {
                     "result": {
                         "type": "string",
-                        "description": "DATA, 32 Bytes - hash of the transaction."
+                        "description": "QUANTITY"
                     }
                 }
             }

@@ -1,13 +1,13 @@
 {
-  "title": "cita_blockNumber",
+  "title": "blockNumber",
   "schema": {
-    "$ref": "../schemas/cita_blockNumber.json"
+    "$ref": "../schemas/blockNumber.json"
   },
   "tests": [
     {
-      "title": "Simple cita_blockNumber",
+      "title": "Simple blockNumber",
       "request": {
-        "method": "cita_blockNumber",
+        "method": "blockNumber",
         "params": []
       },
       "expectedResponse": {

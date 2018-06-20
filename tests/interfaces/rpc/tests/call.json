@@ -1,13 +1,13 @@
 {
-  "title": "eth_call",
+  "title": "call",
   "schema": {
-    "$ref": "../schemas/eth_call.json"
+    "$ref": "../schemas/call.json"
   },
   "tests": [
     {
-      "title": "eth_call with params and success",
+      "title": "call with params and success",
       "request": {
-        "method": "eth_call",
+        "method": "call",
         "params": [
           {
             "to": "0xeffb1dab2e6ed61aa213eacaefbd1a9a41e047ea",
@@ -21,15 +21,15 @@
       },
       "asserts": [
         {
-          "description": "eth_call result should be equal (SimpleStorage::get())",
+          "description": "call result should be equal (SimpleStorage::get())",
           "program": ".receivedResponse.result == .expectedResponse.result"
         }
       ]
     },
     {
-      "title": "eth_call with wrong param `to`",
+      "title": "call with wrong param `to`",
       "request": {
-        "method": "eth_call",
+        "method": "call",
         "params": [
           {
             "to": "0xeffb1dab2e6ed61aa213eacaefbd1a9a41000000",
@@ -43,15 +43,15 @@
       },
       "asserts": [
         {
-          "description": "eth_call with nonexistent address should return empty result(0x) (SimpleStorage::get())",
+          "description": "call with nonexistent address should return empty result(0x) (SimpleStorage::get())",
           "program": ".receivedResponse.result == .expectedResponse.result"
         }
       ]
     },
     {
-      "title": "eth_call with no parameters",
+      "title": "call with no parameters",
       "request": {
-        "method": "eth_call",
+        "method": "call",
         "params": [],
         "shouldFailSchema": true
       },

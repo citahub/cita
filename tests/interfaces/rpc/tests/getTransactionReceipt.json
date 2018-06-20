@@ -1,13 +1,13 @@
 {
-  "title": "eth_getTransactionReceipt",
+  "title": "getTransactionReceipt",
   "schema": {
-    "$ref": "../schemas/eth_getTransactionReceipt.json"
+    "$ref": "../schemas/getTransactionReceipt.json"
   },
   "tests": [
     {
-      "title": "eth_getTransactionReceipt with transaction hash and success (HelloWorld.sol)",
+      "title": "getTransactionReceipt with transaction hash and success (HelloWorld.sol)",
       "request": {
-        "method": "eth_getTransactionReceipt",
+        "method": "getTransactionReceipt",
         "params": [
           "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a4f2e17"
         ]
@@ -29,27 +29,27 @@
       },
       "asserts": [
         {
-          "description": "eth_getTransactionReceipt result.transactionHash should be equal",
+          "description": "getTransactionReceipt result.transactionHash should be equal",
           "program": ".receivedResponse.result.transactionHash == .expectedResponse.result.transactionHash"
         },
         {
-          "description": "eth_getTransactionReceipt result.contractAddress should be equal",
+          "description": "getTransactionReceipt result.contractAddress should be equal",
           "program": ".receivedResponse.result.contractAddress == .expectedResponse.result.contractAddress"
         },
         {
-          "description": "eth_getTransactionReceipt result.logsBloom should be equal",
+          "description": "getTransactionReceipt result.logsBloom should be equal",
           "program": ".receivedResponse.result.logsBloom == .expectedResponse.result.logsBloom"
         },
         {
-          "description": "eth_getTransactionReceipt result.errorMessage should be equal (both `null`)",
+          "description": "getTransactionReceipt result.errorMessage should be equal (both `null`)",
           "program": ".receivedResponse.result.errorMessage == .expectedResponse.result.errorMessage"
         }
       ]
     },
     {
-      "title": "eth_getTransactionReceipt with transaction hash and success (SimpleStorage.sol)",
+      "title": "getTransactionReceipt with transaction hash and success (SimpleStorage.sol)",
       "request": {
-        "method": "eth_getTransactionReceipt",
+        "method": "getTransactionReceipt",
         "params": [
           "0x044b46c7aaa3f3293177aff9d598e749cc343310b1af90761a39b0c364a9042a"
         ]
@@ -85,35 +85,35 @@
       },
       "asserts": [
         {
-          "description": "eth_getTransactionReceipt result.transactionHash should be equal",
+          "description": "getTransactionReceipt result.transactionHash should be equal",
           "program": ".receivedResponse.result.transactionHash == .expectedResponse.result.transactionHash"
         },
         {
-          "description": "eth_getTransactionReceipt result.contractAddress should be equal",
+          "description": "getTransactionReceipt result.contractAddress should be equal",
           "program": ".receivedResponse.result.contractAddress == .expectedResponse.result.contractAddress"
         },
         {
-          "description": "eth_getTransactionReceipt result.logsBloom should be equal",
+          "description": "getTransactionReceipt result.logsBloom should be equal",
           "program": ".receivedResponse.result.logsBloom == .expectedResponse.result.logsBloom"
         },
         {
-          "description": "eth_getTransactionReceipt result.errorMessage should be equal (both `null`)",
+          "description": "getTransactionReceipt result.errorMessage should be equal (both `null`)",
           "program": ".receivedResponse.result.errorMessage == .expectedResponse.result.errorMessage"
         },
         {
-          "description": "eth_getTransactionReceipt result.logs[0].topics[0] should be equal",
+          "description": "getTransactionReceipt result.logs[0].topics[0] should be equal",
           "program": ".receivedResponse.result.logs[0].topics[0] == .expectedResponse.result.logs[0].topics[0]"
         },
         {
-          "description": "eth_getTransactionReceipt result.logs[0].data should be equal",
+          "description": "getTransactionReceipt result.logs[0].data should be equal",
           "program": ".receivedResponse.result.logs[0].data == .expectedResponse.result.logs[0].data"
         }
       ]
     },
     {
-      "title": "eth_getTransactionReceipt with transaction hash and return errorMessage(Not enough base gas.)",
+      "title": "getTransactionReceipt with transaction hash and return errorMessage(Not enough base gas.)",
       "request": {
-        "method": "eth_getTransactionReceipt",
+        "method": "getTransactionReceipt",
         "params": [
           "0x3d1980cd96546485de23be4aeaeadb7ccf8381e64d2bc660450a2a5ec64cb816"
         ]
@@ -135,35 +135,35 @@
       },
       "asserts": [
         {
-          "description": "eth_getTransactionReceipt result.transactionHash should be equal",
+          "description": "getTransactionReceipt result.transactionHash should be equal",
           "program": ".receivedResponse.result.transactionHash == .expectedResponse.result.transactionHash"
         },
         {
-          "description": "eth_getTransactionReceipt result.contractAddress should be equal",
+          "description": "getTransactionReceipt result.contractAddress should be equal",
           "program": ".receivedResponse.result.contractAddress == .expectedResponse.result.contractAddress"
         },
         {
-          "description": "eth_getTransactionReceipt result.logsBloom should be equal",
+          "description": "getTransactionReceipt result.logsBloom should be equal",
           "program": ".receivedResponse.result.logsBloom == .expectedResponse.result.logsBloom"
         },
         {
-          "description": "eth_getTransactionReceipt result.errorMessage should be equal",
+          "description": "getTransactionReceipt result.errorMessage should be equal",
           "program": ".receivedResponse.result.errorMessage == .expectedResponse.result.errorMessage"
         },
         {
-          "description": "eth_getTransactionReceipt result.logs should be equal",
+          "description": "getTransactionReceipt result.logs should be equal",
           "program": ".receivedResponse.result.logs == .expectedResponse.result.logs"
         },
         {
-          "description": "eth_getTransactionReceipt result.gasUsed should be equal",
+          "description": "getTransactionReceipt result.gasUsed should be equal",
           "program": ".receivedResponse.result.gasUsed == .expectedResponse.result.gasUsed"
         }
       ]
     },
     {
-      "title": "eth_getTransactionReceipt with transaction hash and return errorMessage(Out of gas.)",
+      "title": "getTransactionReceipt with transaction hash and return errorMessage(Out of gas.)",
       "request": {
-        "method": "eth_getTransactionReceipt",
+        "method": "getTransactionReceipt",
         "params": [
           "0x85de5454b57c8bfc7b46522a08f5344a75c29389f39b6ee37fbcd45d8faa7788"
         ]
@@ -185,35 +185,35 @@
       },
       "asserts": [
         {
-          "description": "eth_getTransactionReceipt result.transactionHash should be equal",
+          "description": "getTransactionReceipt result.transactionHash should be equal",
           "program": ".receivedResponse.result.transactionHash == .expectedResponse.result.transactionHash"
         },
         {
-          "description": "eth_getTransactionReceipt result.contractAddress should be equal",
+          "description": "getTransactionReceipt result.contractAddress should be equal",
           "program": ".receivedResponse.result.contractAddress == .expectedResponse.result.contractAddress"
         },
         {
-          "description": "eth_getTransactionReceipt result.logsBloom should be equal",
+          "description": "getTransactionReceipt result.logsBloom should be equal",
           "program": ".receivedResponse.result.logsBloom == .expectedResponse.result.logsBloom"
         },
         {
-          "description": "eth_getTransactionReceipt result.errorMessage should be equal",
+          "description": "getTransactionReceipt result.errorMessage should be equal",
           "program": ".receivedResponse.result.errorMessage == .expectedResponse.result.errorMessage"
         },
         {
-          "description": "eth_getTransactionReceipt result.logs should be equal",
+          "description": "getTransactionReceipt result.logs should be equal",
           "program": ".receivedResponse.result.logs == .expectedResponse.result.logs"
         },
         {
-          "description": "eth_getTransactionReceipt result.gasUsed should be equal",
+          "description": "getTransactionReceipt result.gasUsed should be equal",
           "program": ".receivedResponse.result.gasUsed == .expectedResponse.result.gasUsed"
         }
       ]
     },
     {
-      "title": "eth_getTransactionReceipt with transaction hash and return EVM Error.",
+      "title": "getTransactionReceipt with transaction hash and return EVM Error.",
       "request": {
-        "method": "eth_getTransactionReceipt",
+        "method": "getTransactionReceipt",
         "params": [
           "0x6b8f5a4ce53c529de93329b9cacf17cc62b866fb07fdaf5a829e0698602568c5"
         ]
@@ -235,31 +235,31 @@
       },
       "asserts": [
         {
-          "description": "eth_getTransactionReceipt result.transactionHash should be equal",
+          "description": "getTransactionReceipt result.transactionHash should be equal",
           "program": ".receivedResponse.result.transactionHash == .expectedResponse.result.transactionHash"
         },
         {
-          "description": "eth_getTransactionReceipt result.contractAddress should be equal",
+          "description": "getTransactionReceipt result.contractAddress should be equal",
           "program": ".receivedResponse.result.contractAddress == .expectedResponse.result.contractAddress"
         },
         {
-          "description": "eth_getTransactionReceipt result.logsBloom should be equal",
+          "description": "getTransactionReceipt result.logsBloom should be equal",
           "program": ".receivedResponse.result.logsBloom == .expectedResponse.result.logsBloom"
         },
         {
-          "description": "eth_getTransactionReceipt result.errorMessage should be equal",
+          "description": "getTransactionReceipt result.errorMessage should be equal",
           "program": ".receivedResponse.result.errorMessage == .expectedResponse.result.errorMessage"
         },
         {
-          "description": "eth_getTransactionReceipt result.logs should be equal",
+          "description": "getTransactionReceipt result.logs should be equal",
           "program": ".receivedResponse.result.logs == .expectedResponse.result.logs"
         }
       ]
     },
     {
-      "title": "eth_getTransactionReceipt with wrong transaction hash and get empty result",
+      "title": "getTransactionReceipt with wrong transaction hash and get empty result",
       "request": {
-        "method": "eth_getTransactionReceipt",
+        "method": "getTransactionReceipt",
         "params": [
           "0x25a1d215c49f14a14d33b9836a5e29dd5269c2e9337ab6eaa78766ea9a000000"
         ]
@@ -269,15 +269,15 @@
       },
       "asserts": [
         {
-          "description": "eth_getTransactionReceipt result should be equal",
+          "description": "getTransactionReceipt result should be equal",
           "program": ".receivedResponse.result == .expectedResponse.result"
         }
       ]
     },
     {
-      "title": "eth_getTransactionReceipt with no parameters",
+      "title": "getTransactionReceipt with no parameters",
       "request": {
-        "method": "eth_getTransactionReceipt",
+        "method": "getTransactionReceipt",
         "params": [],
         "shouldFailSchema": true
       },

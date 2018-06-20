@@ -179,7 +179,7 @@ python3 make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18
 调用合约中的`get`方法，验证之前`set`方法的执行效果
 
 ```shell
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 其中`to`参数为合约目标地址，`data`为`get`方法的`hash`值

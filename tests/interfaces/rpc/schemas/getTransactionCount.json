@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "eth_getAbi",
-  "description": "eth_getAbi JSON-RPC method request and response schema.",
+  "title": "getTransactionCount",
+  "description": "getTransactionCount JSON-RPC method request and response schema.",
   "request": {
     "id": "#request",
     "allOf": [
@@ -9,7 +9,7 @@
         "$ref": "jsonrpc-request.json"
       },
       {
-        "$ref": "eth_getAbi.json#/request/definitions/request-obj"
+        "$ref": "getTransactionCount.json#/request/definitions/request-obj"
       }
     ],
     "definitions": {
@@ -19,7 +19,7 @@
           "method": {
             "type": "string",
             "enum": [
-              "eth_getAbi"
+              "getTransactionCount"
             ]
           },
           "params": {
@@ -48,14 +48,15 @@
         "$ref": "jsonrpc-response.json"
       },
       {
-        "$ref": "eth_getAbi.json#/response/definitions/response-obj"
+        "$ref": "getTransactionCount.json#/response/definitions/response-obj"
       }
     ],
     "definitions": {
       "response-obj": {
         "properties": {
           "result": {
-            "type": "string"
+            "type": "string",
+            "description": "QUANTITY"
           }
         }
       }

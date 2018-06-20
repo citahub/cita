@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "eth_getFilterLogs",
-    "description": "eth_getFilterLogs JSON-RPC method request and response schema.",
+    "title": "getFilterLogs",
+    "description": "getFilterLogs JSON-RPC method request and response schema.",
     "request": {
         "id": "#request",
         "allOf": [
@@ -19,7 +19,7 @@
                     "method": {
                         "type": "string",
                         "enum": [
-                            "eth_getFilterLogs"
+                            "getFilterLogs"
                         ]
                     },
                     "params": {

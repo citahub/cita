@@ -9,7 +9,7 @@ from url_util import host, endpoint
 def get_code(params):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("eth_getCode", params)
+        response = HTTPClient(url).request("getCode", params)
     except:
         return None
 

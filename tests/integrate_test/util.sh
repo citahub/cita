@@ -37,7 +37,7 @@ get_height(){
     start=$(date +%s)
 
     while [ 1 ] ; do
-        height=$(${SOURCE_DIR}/tests/integrate_test/cita_blockNumber.sh 127.0.0.1 $((1337+${id})))
+        height=$(${SOURCE_DIR}/tests/integrate_test/blockNumber.sh 127.0.0.1 $((1337+${id})))
         if [ $? -eq 0 ] ; then
             echo ${height}
             return 0

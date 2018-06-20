@@ -96,10 +96,10 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 
 *详见README中步骤2*
 
-8. use `eth_call` to call the get funciton
+8. use `call` to call the get funciton
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x73552bc4e960a1d53013b40074569ea05b950b4d", "data":"0x6d4ce63c"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 结果：

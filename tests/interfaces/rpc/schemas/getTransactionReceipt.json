@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "eth_getTransactionReceipt",
-  "description": "eth_getTransactionReceipt JSON-RPC method request and response schema.",
+  "title": "getTransactionReceipt",
+  "description": "getTransactionReceipt JSON-RPC method request and response schema.",
   "request": {
     "id": "#request",
     "allOf": [
@@ -9,7 +9,7 @@
         "$ref": "jsonrpc-request.json"
       },
       {
-        "$ref": "eth_getTransactionReceipt.json#/request/definitions/request-obj"
+        "$ref": "getTransactionReceipt.json#/request/definitions/request-obj"
       }
     ],
     "definitions": {
@@ -19,7 +19,7 @@
           "method": {
             "type": "string",
             "enum": [
-              "eth_getTransactionReceipt"
+              "getTransactionReceipt"
             ]
           },
           "params": {
@@ -44,7 +44,7 @@
         "$ref": "jsonrpc-response.json"
       },
       {
-        "$ref": "eth_getTransactionReceipt.json#/response/definitions/response-obj"
+        "$ref": "getTransactionReceipt.json#/response/definitions/response-obj"
       }
     ],
     "definitions": {

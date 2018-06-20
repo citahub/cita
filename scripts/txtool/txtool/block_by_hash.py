@@ -10,7 +10,7 @@ from util import findDict
 def block_by_hash(params):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("cita_getBlockByHash", params)
+        response = HTTPClient(url).request("getBlockByHash", params)
     except:
         return None
 

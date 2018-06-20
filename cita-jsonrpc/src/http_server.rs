@@ -609,7 +609,7 @@ mod integration_test {
 
         let data = format!(
             "{}",
-            json!({"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74})
+            json!({"jsonrpc":"2.0","method":"peerCount","params":[],"id":74})
         );
         let mut req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
         req.set_body(data);
@@ -631,8 +631,8 @@ mod integration_test {
         let data = format!(
             "{}",
             json!([
-                {"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74},
-                {"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":75}
+                {"jsonrpc":"2.0","method":"peerCount","params":[],"id":74},
+                {"jsonrpc":"2.0","method":"peerCount","params":[],"id":75}
             ])
         );
         let mut req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());

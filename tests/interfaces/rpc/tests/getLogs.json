@@ -1,13 +1,13 @@
 {
-  "title": "eth_getLogs",
+  "title": "getLogs",
   "schema": {
-    "$ref": "../schemas/eth_getLogs.json"
+    "$ref": "../schemas/getLogs.json"
   },
   "tests": [
     {
-      "title": "eth_getLogs with params and success",
+      "title": "getLogs with params and success",
       "request": {
-        "method": "eth_getLogs",
+        "method": "getLogs",
         "params": [
           {
             "topics": ["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"],
@@ -35,19 +35,19 @@
       },
       "asserts": [
         {
-          "description": "eth_getLogs data should be equal",
+          "description": "getLogs data should be equal",
           "program": ".receivedResponse.result[0].data == .expectedResponse.result[0].data"
         },
         {
-          "description": "eth_getLogs transactionHash should be equal",
+          "description": "getLogs transactionHash should be equal",
           "program": ".receivedResponse.result[0].transactionHash == .expectedResponse.result[0].transactionHash"
         }
       ]
     },
     {
-      "title": "eth_getLogs with params and success, return multiple results",
+      "title": "getLogs with params and success, return multiple results",
       "request": {
-        "method": "eth_getLogs",
+        "method": "getLogs",
         "params": [
           {
             "topics": ["0xfd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b9"],
@@ -88,27 +88,27 @@
       },
       "asserts": [
         {
-          "description": "eth_getLogs result[0].data should be equal",
+          "description": "getLogs result[0].data should be equal",
           "program": ".receivedResponse.result[0].data == .expectedResponse.result[0].data"
         },
         {
-          "description": "eth_getLogs result[0].transactionHash should be equal",
+          "description": "getLogs result[0].transactionHash should be equal",
           "program": ".receivedResponse.result[0].transactionHash == .expectedResponse.result[0].transactionHash"
         },
         {
-          "description": "eth_getLogs result[1] data should be equal",
+          "description": "getLogs result[1] data should be equal",
           "program": ".receivedResponse.result[1].data == .expectedResponse.result[1].data"
         },
         {
-          "description": "eth_getLogs result[1].transactionHash should be equal",
+          "description": "getLogs result[1].transactionHash should be equal",
           "program": ".receivedResponse.result[1].transactionHash == .expectedResponse.result[1].transactionHash"
         }
       ]
     },
     {
-      "title": "eth_getLogs with invalid topic return empty result",
+      "title": "getLogs with invalid topic return empty result",
       "request": {
-        "method": "eth_getLogs",
+        "method": "getLogs",
         "params": [
           {
             "topics": ["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d000000"],
@@ -128,9 +128,9 @@
       ]
     },
     {
-      "title": "eth_getLogs with no parameters",
+      "title": "getLogs with no parameters",
       "request": {
-        "method": "eth_getLogs",
+        "method": "getLogs",
         "params": [],
         "shouldFailSchema": true
       },

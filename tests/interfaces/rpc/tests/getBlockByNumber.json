@@ -1,13 +1,13 @@
 {
-  "title": "cita_getBlockByNumber",
+  "title": "getBlockByNumber",
   "schema": {
-    "$ref": "../schemas/cita_getBlockByNumber.json"
+    "$ref": "../schemas/getBlockByNumber.json"
   },
   "tests": [
     {
-      "title": "cita_getBlockByNumber without full transactions",
+      "title": "getBlockByNumber without full transactions",
       "request": {
-        "method": "cita_getBlockByNumber",
+        "method": "getBlockByNumber",
         "params": [
           "0x1",
           false
@@ -57,9 +57,9 @@
       ]
     },
     {
-      "title": "cita_getBlockByNumber with full transactions",
+      "title": "getBlockByNumber with full transactions",
       "request": {
-        "method": "cita_getBlockByNumber",
+        "method": "getBlockByNumber",
         "params": [
           "0x2",
           true
@@ -127,9 +127,9 @@
       ]
     },
     {
-      "title": "cita_getBlockByNumber with no parameters",
+      "title": "getBlockByNumber with no parameters",
       "request": {
-        "method": "cita_getBlockByNumber",
+        "method": "getBlockByNumber",
         "params": [],
         "shouldFailSchema": true
       },
@@ -151,9 +151,9 @@
       ]
     },
     {
-      "title": "cita_getBlockByNumber with one parameter",
+      "title": "getBlockByNumber with one parameter",
       "request": {
-        "method": "cita_getBlockByNumber",
+        "method": "getBlockByNumber",
         "params": [
           "0xa"
         ],

@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "eth_uninstallFilter",
-    "description": "eth_uninstallFilter JSON-RPC method request and response schema.",
+    "title": "peerCount",
+    "description": "peerCount JSON-RPC method request and response schema.",
     "request": {
         "id": "#request",
         "allOf": [
@@ -19,19 +19,16 @@
                     "method": {
                         "type": "string",
                         "enum": [
-                            "eth_uninstallFilter"
+                            "peerCount"
                         ]
                     },
                     "params": {
-                        "type": "array",
-                        "items": [
+                        "oneOf": [
                             {
-                                "type": "string",
-                                "description": "`QUANTITY` - The filter id."
+                                "type": "array",
+                                "maxItems": 0
                             }
-                        ],
-                        "minItems": 1,
-                        "maxItems": 1
+                        ]
                     }
                 }
             }
@@ -51,8 +48,8 @@
             "response-obj": {
                 "properties": {
                     "result": {
-                        "type": "boolean",
-                        "description": "true if the filter was successfully uninstalled, otherwise false."
+                        "type": "string",
+                        "description": "QUANTITY - peer count."
                     }
                 }
             }

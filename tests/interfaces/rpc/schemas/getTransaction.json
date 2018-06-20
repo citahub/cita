@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "cita_getTransaction",
-  "description": "cita_getTransaction JSON-RPC method request and response schema.",
+  "title": "getTransaction",
+  "description": "getTransaction JSON-RPC method request and response schema.",
   "request": {
     "id": "#request",
     "allOf": [
@@ -9,7 +9,7 @@
         "$ref": "jsonrpc-request.json"
       },
       {
-        "$ref": "cita_getTransaction.json#/request/definitions/request-obj"
+        "$ref": "getTransaction.json#/request/definitions/request-obj"
       }
     ],
     "definitions": {
@@ -19,7 +19,7 @@
           "method": {
             "type": "string",
             "enum": [
-              "cita_getTransaction"
+              "getTransaction"
             ]
           },
           "params": {
@@ -44,7 +44,7 @@
         "$ref": "jsonrpc-response.json"
       },
       {
-        "$ref": "cita_getTransaction.json#/response/definitions/response-obj"
+        "$ref": "getTransaction.json#/response/definitions/response-obj"
       }
     ],
     "definitions": {

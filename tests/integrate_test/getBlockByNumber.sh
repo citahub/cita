@@ -9,4 +9,4 @@ else
     echo "args: height ip (default localhost) "
     exit
 fi
-curl -s -X POST -d '{"jsonrpc":"2.0","method":"cita_getBlockByNumber","params":["'$HEIGHT'",false],"id":2}' $IP:1337
+curl -s -X POST -d '{"jsonrpc":"2.0","method":"getBlockByNumber","params":["'$HEIGHT'",false],"id":2}' $IP:1337

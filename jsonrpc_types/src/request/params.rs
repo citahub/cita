@@ -21,203 +21,202 @@ use rpctypes::{
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CitaBlockNumberParams();
+pub struct BlockNumberParams();
 
-impl CitaBlockNumberParams {
+impl BlockNumberParams {
     pub fn new() -> Self {
-        CitaBlockNumberParams()
+        BlockNumberParams()
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct NetPeerCountParams();
+pub struct PeerCountParams();
 
-impl NetPeerCountParams {
+impl PeerCountParams {
     pub fn new() -> Self {
-        NetPeerCountParams()
+        PeerCountParams()
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CitaSendRawTransactionParams(pub Data, #[serde(skip)] OneItemTupleTrick);
+pub struct SendRawTransactionParams(pub Data, #[serde(skip)] OneItemTupleTrick);
 
-impl CitaSendRawTransactionParams {
+impl SendRawTransactionParams {
     pub fn new(signed_tx: Data) -> Self {
-        CitaSendRawTransactionParams(signed_tx, OneItemTupleTrick::default())
+        SendRawTransactionParams(signed_tx, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CitaSendTransactionParams(pub Data, #[serde(skip)] OneItemTupleTrick);
+pub struct SendTransactionParams(pub Data, #[serde(skip)] OneItemTupleTrick);
 
-impl CitaSendTransactionParams {
+impl SendTransactionParams {
     pub fn new(signed_tx: Data) -> Self {
-        CitaSendTransactionParams(signed_tx, OneItemTupleTrick::default())
+        SendTransactionParams(signed_tx, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CitaGetBlockByHashParams(pub Data32, pub Boolean);
+pub struct GetBlockByHashParams(pub Data32, pub Boolean);
 
-impl CitaGetBlockByHashParams {
+impl GetBlockByHashParams {
     pub fn new(block_hash: Data32, with_txs: Boolean) -> Self {
-        CitaGetBlockByHashParams(block_hash, with_txs)
+        GetBlockByHashParams(block_hash, with_txs)
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CitaGetBlockByNumberParams(pub BlockNumber, pub Boolean);
+pub struct GetBlockByNumberParams(pub BlockNumber, pub Boolean);
 
-impl CitaGetBlockByNumberParams {
+impl GetBlockByNumberParams {
     pub fn new(block_height: BlockNumber, with_txs: Boolean) -> Self {
-        CitaGetBlockByNumberParams(block_height, with_txs)
+        GetBlockByNumberParams(block_height, with_txs)
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthGetTransactionReceiptParams(pub Data32, #[serde(skip)] OneItemTupleTrick);
+pub struct GetTransactionReceiptParams(pub Data32, #[serde(skip)] OneItemTupleTrick);
 
-impl EthGetTransactionReceiptParams {
+impl GetTransactionReceiptParams {
     pub fn new(tx_hash: Data32) -> Self {
-        EthGetTransactionReceiptParams(tx_hash, OneItemTupleTrick::default())
+        GetTransactionReceiptParams(tx_hash, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthGetLogsParams(pub Filter, #[serde(skip)] OneItemTupleTrick);
+pub struct GetLogsParams(pub Filter, #[serde(skip)] OneItemTupleTrick);
 
-impl EthGetLogsParams {
+impl GetLogsParams {
     pub fn new(filter: Filter) -> Self {
-        EthGetLogsParams(filter, OneItemTupleTrick::default())
+        GetLogsParams(filter, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthCallParams(pub CallRequest, #[serde(default)] pub BlockNumber);
+pub struct CallParams(pub CallRequest, #[serde(default)] pub BlockNumber);
 
-impl EthCallParams {
+impl CallParams {
     pub fn new(call_req: CallRequest, block_height: BlockNumber) -> Self {
-        EthCallParams(call_req, block_height)
+        CallParams(call_req, block_height)
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CitaGetTransactionParams(pub Data32, #[serde(skip)] OneItemTupleTrick);
+pub struct GetTransactionParams(pub Data32, #[serde(skip)] OneItemTupleTrick);
 
-impl CitaGetTransactionParams {
+impl GetTransactionParams {
     pub fn new(tx_hash: Data32) -> Self {
-        CitaGetTransactionParams(tx_hash, OneItemTupleTrick::default())
+        GetTransactionParams(tx_hash, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthGetTransactionCountParams(pub Data20, #[serde(default)] pub BlockNumber);
+pub struct GetTransactionCountParams(pub Data20, #[serde(default)] pub BlockNumber);
 
-impl EthGetTransactionCountParams {
+impl GetTransactionCountParams {
     pub fn new(address: Data20, block_height: BlockNumber) -> Self {
-        EthGetTransactionCountParams(address, block_height)
+        GetTransactionCountParams(address, block_height)
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthGetCodeParams(pub Data20, #[serde(default)] pub BlockNumber);
+pub struct GetCodeParams(pub Data20, #[serde(default)] pub BlockNumber);
 
-impl EthGetCodeParams {
+impl GetCodeParams {
     pub fn new(address: Data20, block_height: BlockNumber) -> Self {
-        EthGetCodeParams(address, block_height)
+        GetCodeParams(address, block_height)
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthGetAbiParams(pub Data20, #[serde(default)] pub BlockNumber);
+pub struct GetAbiParams(pub Data20, #[serde(default)] pub BlockNumber);
 
-impl EthGetAbiParams {
+impl GetAbiParams {
     pub fn new(address: Data20, block_height: BlockNumber) -> Self {
-        EthGetAbiParams(address, block_height)
+        GetAbiParams(address, block_height)
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthGetBalanceParams(pub Data20, #[serde(default)] pub BlockNumber);
+pub struct GetBalanceParams(pub Data20, #[serde(default)] pub BlockNumber);
 
-impl EthGetBalanceParams {
+impl GetBalanceParams {
     pub fn new(address: Data20, block_height: BlockNumber) -> Self {
-        EthGetBalanceParams(address, block_height)
+        GetBalanceParams(address, block_height)
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthNewFilterParams(pub Filter, #[serde(skip)] OneItemTupleTrick);
+pub struct NewFilterParams(pub Filter, #[serde(skip)] OneItemTupleTrick);
 
-impl EthNewFilterParams {
+impl NewFilterParams {
     pub fn new(filter: Filter) -> Self {
-        EthNewFilterParams(filter, OneItemTupleTrick::default())
+        NewFilterParams(filter, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthNewBlockFilterParams();
+pub struct NewBlockFilterParams();
 
-impl EthNewBlockFilterParams {
+impl NewBlockFilterParams {
     pub fn new() -> Self {
-        EthNewBlockFilterParams()
+        NewBlockFilterParams()
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthUninstallFilterParams(pub Quantity, #[serde(skip)] OneItemTupleTrick);
+pub struct UninstallFilterParams(pub Quantity, #[serde(skip)] OneItemTupleTrick);
 
-impl EthUninstallFilterParams {
+impl UninstallFilterParams {
     pub fn new(filter_id: Quantity) -> Self {
-        EthUninstallFilterParams(filter_id, OneItemTupleTrick::default())
+        UninstallFilterParams(filter_id, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthGetFilterChangesParams(pub Quantity, #[serde(skip)] OneItemTupleTrick);
+pub struct GetFilterChangesParams(pub Quantity, #[serde(skip)] OneItemTupleTrick);
 
-impl EthGetFilterChangesParams {
+impl GetFilterChangesParams {
     pub fn new(filter_id: Quantity) -> Self {
-        EthGetFilterChangesParams(filter_id, OneItemTupleTrick::default())
+        GetFilterChangesParams(filter_id, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct EthGetFilterLogsParams(pub Quantity, #[serde(skip)] OneItemTupleTrick);
+pub struct GetFilterLogsParams(pub Quantity, #[serde(skip)] OneItemTupleTrick);
 
-impl EthGetFilterLogsParams {
+impl GetFilterLogsParams {
     pub fn new(filter_id: Quantity) -> Self {
-        EthGetFilterLogsParams(filter_id, OneItemTupleTrick::default())
+        GetFilterLogsParams(filter_id, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CitaGetTransactionProofParams(pub Data32, #[serde(skip)] OneItemTupleTrick);
+pub struct GetTransactionProofParams(pub Data32, #[serde(skip)] OneItemTupleTrick);
 
-impl CitaGetTransactionProofParams {
+impl GetTransactionProofParams {
     pub fn new(tx_hash: Data32) -> Self {
-        CitaGetTransactionProofParams(tx_hash, OneItemTupleTrick::default())
+        GetTransactionProofParams(tx_hash, OneItemTupleTrick::default())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CitaGetMetaDataParams(pub BlockNumber, #[serde(skip)] OneItemTupleTrick);
+pub struct GetMetaDataParams(pub BlockNumber, #[serde(skip)] OneItemTupleTrick);
 
-impl CitaGetMetaDataParams {
+impl GetMetaDataParams {
     pub fn new(block_height: BlockNumber) -> Self {
-        CitaGetMetaDataParams(block_height, OneItemTupleTrick::default())
+        GetMetaDataParams(block_height, OneItemTupleTrick::default())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        CitaBlockNumberParams, CitaGetBlockByHashParams, CitaGetBlockByNumberParams,
-        CitaGetMetaDataParams, CitaGetTransactionParams, CitaGetTransactionProofParams,
-        CitaSendRawTransactionParams, EthCallParams, EthGetAbiParams, EthGetBalanceParams,
-        EthGetCodeParams, EthGetFilterChangesParams, EthGetFilterLogsParams, EthGetLogsParams,
-        EthGetTransactionCountParams, EthGetTransactionReceiptParams, EthNewBlockFilterParams,
-        EthNewFilterParams, EthUninstallFilterParams, NetPeerCountParams,
+        BlockNumberParams, CallParams, GetAbiParams, GetBalanceParams, GetBlockByHashParams,
+        GetBlockByNumberParams, GetCodeParams, GetFilterChangesParams, GetFilterLogsParams,
+        GetLogsParams, GetMetaDataParams, GetTransactionCountParams, GetTransactionParams,
+        GetTransactionProofParams, GetTransactionReceiptParams, NewBlockFilterParams,
+        NewFilterParams, PeerCountParams, SendRawTransactionParams, UninstallFilterParams,
     };
     use cita_types::{H160, H256, U256};
     use rpctypes::{BlockNumber, CallRequest, Filter, VariadicValue};
@@ -246,18 +245,18 @@ mod tests {
 
     #[test]
     fn serialize_and_deserialize() {
-        test_ser_and_de!(CitaBlockNumberParams, [], ());
+        test_ser_and_de!(BlockNumberParams, [], ());
 
-        test_ser_and_de!(NetPeerCountParams, [], ());
+        test_ser_and_de!(PeerCountParams, [], ());
 
         test_ser_and_de!(
-            CitaSendRawTransactionParams,
+            SendRawTransactionParams,
             ["0xabcdef"],
             (vec![0xab, 0xcd, 0xef].into())
         );
 
         test_ser_and_de!(
-            CitaGetBlockByHashParams,
+            GetBlockByHashParams,
             [
                 "0x000000000000000000000000000000000000000000000000000000000000000a",
                 true
@@ -266,20 +265,20 @@ mod tests {
         );
 
         test_ser_and_de!(
-            CitaGetBlockByNumberParams,
+            GetBlockByNumberParams,
             ["0x10", false],
             (BlockNumber::new(16u64.into()), false.into())
         );
 
         test_ser_and_de!(
-            EthGetTransactionReceiptParams,
+            GetTransactionReceiptParams,
             ["0x000000000000000000000000000000000000000000000000000000000000000a"],
             (H256::from(10).into())
         );
 
         test_ser_and_de!(
             value,
-            EthGetLogsParams,
+            GetLogsParams,
             [{
                 "fromBlock": "0xb",
                 "address": "0x0000000000000000000000000000000000000010",
@@ -311,7 +310,7 @@ mod tests {
         );
 
         test_ser_and_de!(
-            EthCallParams,
+            CallParams,
             [
                 {
                     "from": "0x000000000000000000000000000000000000000b",
@@ -326,38 +325,38 @@ mod tests {
             ));
 
         test_ser_and_de!(
-            CitaGetTransactionParams,
+            GetTransactionParams,
             ["0x000000000000000000000000000000000000000000000000000000000000000a"],
             (H256::from(10).into())
         );
 
         test_ser_and_de!(
-            EthGetTransactionCountParams,
+            GetTransactionCountParams,
             ["0x000000000000000000000000000000000000000a", "0x10"],
             (H160::from(10).into(), BlockNumber::new(16u64.into()))
         );
 
         test_ser_and_de!(
-            EthGetCodeParams,
+            GetCodeParams,
             ["0x000000000000000000000000000000000000000b", "0x11"],
             (H160::from(11).into(), BlockNumber::new(17u64.into()))
         );
 
         test_ser_and_de!(
-            EthGetAbiParams,
+            GetAbiParams,
             ["0x000000000000000000000000000000000000000c", "0x12"],
             (H160::from(12).into(), BlockNumber::new(18u64.into()))
         );
 
         test_ser_and_de!(
-            EthGetBalanceParams,
+            GetBalanceParams,
             ["0x000000000000000000000000000000000000000d", "0x13"],
             (H160::from(13).into(), BlockNumber::new(19u64.into()))
         );
 
         test_ser_and_de!(
             value,
-            EthNewFilterParams,
+            NewFilterParams,
             [{
                 "fromBlock": "0xc",
                 "address": "0x0000000000000000000000000000000000000010",
@@ -388,24 +387,20 @@ mod tests {
             ))
         );
 
-        test_ser_and_de!(EthNewBlockFilterParams, [], ());
+        test_ser_and_de!(NewBlockFilterParams, [], ());
 
-        test_ser_and_de!(EthUninstallFilterParams, ["0xa"], (U256::from(10).into()));
+        test_ser_and_de!(UninstallFilterParams, ["0xa"], (U256::from(10).into()));
 
-        test_ser_and_de!(EthGetFilterChangesParams, ["0xb"], (U256::from(11).into()));
+        test_ser_and_de!(GetFilterChangesParams, ["0xb"], (U256::from(11).into()));
 
-        test_ser_and_de!(EthGetFilterLogsParams, ["0xc"], (U256::from(12).into()));
+        test_ser_and_de!(GetFilterLogsParams, ["0xc"], (U256::from(12).into()));
 
         test_ser_and_de!(
-            CitaGetTransactionProofParams,
+            GetTransactionProofParams,
             ["0x000000000000000000000000000000000000000000000000000000000000000b"],
             (H256::from(11).into())
         );
 
-        test_ser_and_de!(
-            CitaGetMetaDataParams,
-            ["earliest"],
-            (BlockNumber::earliest())
-        );
+        test_ser_and_de!(GetMetaDataParams, ["earliest"], (BlockNumber::earliest()));
     }
 }

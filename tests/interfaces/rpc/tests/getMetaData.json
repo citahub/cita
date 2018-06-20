@@ -1,13 +1,13 @@
 {
-  "title": "cita_getMetaData",
+  "title": "getMetaData",
   "schema": {
-    "$ref": "../schemas/cita_getMetaData.json"
+    "$ref": "../schemas/getMetaData.json"
   },
   "tests": [
     {
-      "title": "cita_getMetaData by hash (create contract HelloWorld.sol)",
+      "title": "getMetaData by hash (create contract HelloWorld.sol)",
       "request": {
-        "method": "cita_getMetaData",
+        "method": "getMetaData",
         "params": [
           "0x0"
         ]
@@ -63,9 +63,9 @@
       ]
     },
     {
-      "title": "cita_getMetaData with no parameters",
+      "title": "getMetaData with no parameters",
       "request": {
-        "method": "cita_getMetaData",
+        "method": "getMetaData",
         "params": [],
         "shouldFailSchema": true
       },
