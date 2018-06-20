@@ -15,45 +15,56 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::Address;
 use libproto::BlackList as ProtoBlackList;
 use protobuf::RepeatedField;
-use types::Public;
 
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct BlackList {
-    black_list: Vec<Public>,
+    black_list: Vec<Address>,
+    clear_list: Vec<Address>,
 }
 
 impl BlackList {
     pub fn new() -> Self {
         BlackList {
             black_list: Vec::new(),
+            clear_list: Vec::new(),
         }
     }
 
-    pub fn black_list(&self) -> Vec<Public> {
+    pub fn black_list(&self) -> Vec<Address> {
         self.black_list.clone()
     }
 
-    pub fn set_black_list(mut self, black_list: Vec<Vec<u8>>) -> Self {
-        self.black_list = black_list
-            .iter()
-            .map(|public| Public::from_slice(public.as_slice()))
-            .collect();
+    pub fn set_black_list(mut self, black_list: Vec<Address>) -> Self {
+        self.black_list = black_list;
+        self
+    }
+
+    pub fn set_clear_list(mut self, clear_list: Vec<Address>) -> Self {
+        self.clear_list = clear_list;
         self
     }
 
     pub fn len(&self) -> usize {
-        self.black_list.len()
+        self.black_list.len() + self.clear_list.len()
     }
 
     pub fn protobuf(&self) -> ProtoBlackList {
         let mut bl = ProtoBlackList::new();
-        bl.set_signer(RepeatedField::from_vec(
+        bl.set_black_list(RepeatedField::from_vec(
             self.black_list
                 .clone()
                 .into_iter()
-                .map(|public| public.to_vec())
+                .map(|address| address.to_vec())
+                .collect(),
+        ));
+        bl.set_clear_list(RepeatedField::from_vec(
+            self.clear_list
+                .clone()
+                .into_iter()
+                .map(|address| address.to_vec())
                 .collect(),
         ));
         bl
