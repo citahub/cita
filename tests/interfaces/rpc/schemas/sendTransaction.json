@@ -1,0 +1,61 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "sendRawTransaction",
+    "description": "sendRawTransaction JSON-RPC method request and response schema.",
+    "request": {
+        "id": "#request",
+        "allOf": [
+            {
+                "$ref": "jsonrpc-request.json"
+            },
+            {
+                "$ref": "#/request/definitions/request-obj"
+            }
+        ],
+        "definitions": {
+            "request-obj": {
+                "id": "#request-obj",
+                "properties": {
+                    "method": {
+                        "type": "string",
+                        "enum": [
+                            "sendRawTransaction"
+                        ]
+                    },
+                    "params": {
+                        "type": "array",
+                        "items": [
+                            {
+                                "type": "string",
+                                "description": "DATA, transaction data"
+                            }
+                        ],
+                        "minItems": 1,
+                        "maxItems": 1
+                    }
+                }
+            }
+        }
+    },
+    "response": {
+        "id": "#response",
+        "allOf": [
+            {
+                "$ref": "jsonrpc-response.json"
+            },
+            {
+                "$ref": "#/response/definitions/response-obj"
+            }
+        ],
+        "definitions": {
+            "response-obj": {
+                "properties": {
+                    "result": {
+                        "type": "string",
+                        "description": "DATA, 32 Bytes - hash of the transaction."
+                    }
+                }
+            }
+        }
+    }
+}

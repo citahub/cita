@@ -28,12 +28,11 @@ use libproto::request::{Call as ProtoCall, Request as ProtoRequest};
 use libproto::UnverifiedTransaction;
 
 use super::params::{
-    CitaBlockNumberParams, CitaGetBlockByHashParams, CitaGetBlockByNumberParams,
-    CitaGetMetaDataParams, CitaGetTransactionParams, CitaGetTransactionProofParams,
-    CitaSendRawTransactionParams, CitaSendTransactionParams, EthCallParams, EthGetAbiParams,
-    EthGetBalanceParams, EthGetCodeParams, EthGetFilterChangesParams, EthGetFilterLogsParams,
-    EthGetLogsParams, EthGetTransactionCountParams, EthGetTransactionReceiptParams,
-    EthNewBlockFilterParams, EthNewFilterParams, EthUninstallFilterParams, NetPeerCountParams,
+    BlockNumberParams, CallParams, GetAbiParams, GetBalanceParams, GetBlockByHashParams,
+    GetBlockByNumberParams, GetCodeParams, GetFilterChangesParams, GetFilterLogsParams,
+    GetLogsParams, GetMetaDataParams, GetTransactionCountParams, GetTransactionParams,
+    GetTransactionProofParams, GetTransactionReceiptParams, NewBlockFilterParams, NewFilterParams,
+    PeerCountParams, SendRawTransactionParams, SendTransactionParams, UninstallFilterParams,
 };
 use error::Error;
 use rpctypes::{BlockParamsByHash, BlockParamsByNumber, CountOrCode};
@@ -45,7 +44,7 @@ fn create_request() -> ProtoRequest {
     request
 }
 
-impl TryInto<ProtoRequest> for CitaBlockNumberParams {
+impl TryInto<ProtoRequest> for BlockNumberParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -54,7 +53,7 @@ impl TryInto<ProtoRequest> for CitaBlockNumberParams {
     }
 }
 
-impl TryInto<ProtoRequest> for NetPeerCountParams {
+impl TryInto<ProtoRequest> for PeerCountParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -63,12 +62,12 @@ impl TryInto<ProtoRequest> for NetPeerCountParams {
     }
 }
 
-impl TryInto<ProtoRequest> for CitaSendRawTransactionParams {
+impl TryInto<ProtoRequest> for SendRawTransactionParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
         let data: Vec<u8> = self.0.into();
-        match CitaSendRawTransactionParams::extract_unverified_tx(&data[..]) {
+        match SendRawTransactionParams::extract_unverified_tx(&data[..]) {
             Ok(un_tx) => {
                 request.set_un_tx(un_tx);
                 Ok(request)
@@ -78,12 +77,12 @@ impl TryInto<ProtoRequest> for CitaSendRawTransactionParams {
     }
 }
 
-impl TryInto<ProtoRequest> for CitaSendTransactionParams {
+impl TryInto<ProtoRequest> for SendTransactionParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
         let data: Vec<u8> = self.0.into();
-        match CitaSendRawTransactionParams::extract_unverified_tx(&data[..]) {
+        match SendRawTransactionParams::extract_unverified_tx(&data[..]) {
             Ok(un_tx) => {
                 request.set_un_tx(un_tx);
                 Ok(request)
@@ -93,7 +92,7 @@ impl TryInto<ProtoRequest> for CitaSendTransactionParams {
     }
 }
 
-impl CitaSendRawTransactionParams {
+impl SendRawTransactionParams {
     fn extract_unverified_tx(data: &[u8]) -> Result<UnverifiedTransaction, Error> {
         let un_tx = UnverifiedTransaction::try_from(data).map_err(|_err| {
             let err_msg = format!(
@@ -129,7 +128,7 @@ impl CitaSendRawTransactionParams {
     }
 }
 
-impl TryInto<ProtoRequest> for CitaGetBlockByHashParams {
+impl TryInto<ProtoRequest> for GetBlockByHashParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -142,7 +141,7 @@ impl TryInto<ProtoRequest> for CitaGetBlockByHashParams {
     }
 }
 
-impl TryInto<ProtoRequest> for CitaGetBlockByNumberParams {
+impl TryInto<ProtoRequest> for GetBlockByNumberParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -155,7 +154,7 @@ impl TryInto<ProtoRequest> for CitaGetBlockByNumberParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthGetTransactionReceiptParams {
+impl TryInto<ProtoRequest> for GetTransactionReceiptParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -164,7 +163,7 @@ impl TryInto<ProtoRequest> for EthGetTransactionReceiptParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthGetLogsParams {
+impl TryInto<ProtoRequest> for GetLogsParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -173,7 +172,7 @@ impl TryInto<ProtoRequest> for EthGetLogsParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthCallParams {
+impl TryInto<ProtoRequest> for CallParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -191,7 +190,7 @@ impl TryInto<ProtoRequest> for EthCallParams {
     }
 }
 
-impl TryInto<ProtoRequest> for CitaGetTransactionParams {
+impl TryInto<ProtoRequest> for GetTransactionParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -200,7 +199,7 @@ impl TryInto<ProtoRequest> for CitaGetTransactionParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthGetTransactionCountParams {
+impl TryInto<ProtoRequest> for GetTransactionCountParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -213,7 +212,7 @@ impl TryInto<ProtoRequest> for EthGetTransactionCountParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthGetCodeParams {
+impl TryInto<ProtoRequest> for GetCodeParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -226,7 +225,7 @@ impl TryInto<ProtoRequest> for EthGetCodeParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthGetAbiParams {
+impl TryInto<ProtoRequest> for GetAbiParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -239,7 +238,7 @@ impl TryInto<ProtoRequest> for EthGetAbiParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthGetBalanceParams {
+impl TryInto<ProtoRequest> for GetBalanceParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -252,7 +251,7 @@ impl TryInto<ProtoRequest> for EthGetBalanceParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthNewFilterParams {
+impl TryInto<ProtoRequest> for NewFilterParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -263,7 +262,7 @@ impl TryInto<ProtoRequest> for EthNewFilterParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthNewBlockFilterParams {
+impl TryInto<ProtoRequest> for NewBlockFilterParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -272,7 +271,7 @@ impl TryInto<ProtoRequest> for EthNewBlockFilterParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthUninstallFilterParams {
+impl TryInto<ProtoRequest> for UninstallFilterParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -281,7 +280,7 @@ impl TryInto<ProtoRequest> for EthUninstallFilterParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthGetFilterChangesParams {
+impl TryInto<ProtoRequest> for GetFilterChangesParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -290,7 +289,7 @@ impl TryInto<ProtoRequest> for EthGetFilterChangesParams {
     }
 }
 
-impl TryInto<ProtoRequest> for EthGetFilterLogsParams {
+impl TryInto<ProtoRequest> for GetFilterLogsParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -299,7 +298,7 @@ impl TryInto<ProtoRequest> for EthGetFilterLogsParams {
     }
 }
 
-impl TryInto<ProtoRequest> for CitaGetTransactionProofParams {
+impl TryInto<ProtoRequest> for GetTransactionProofParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();
@@ -308,7 +307,7 @@ impl TryInto<ProtoRequest> for CitaGetTransactionProofParams {
     }
 }
 
-impl TryInto<ProtoRequest> for CitaGetMetaDataParams {
+impl TryInto<ProtoRequest> for GetMetaDataParams {
     type Error = Error;
     fn try_into(self) -> Result<ProtoRequest, Self::Error> {
         let mut request = create_request();

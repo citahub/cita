@@ -28,7 +28,7 @@ def send_transaction(params):
         params = '0x' + params
     try:
         url = endpoint()
-        response = HTTPClient(url).request("cita_sendRawTransaction", params)
+        response = HTTPClient(url).request("sendRawTransaction", params)
     except Exception as e:
         logger.error(e)
         return None

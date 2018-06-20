@@ -8,7 +8,7 @@ from url_util import host, endpoint
 def peer_count():
     try:
         url = endpoint()
-        response = HTTPClient(url).request("net_peerCount", [])
+        response = HTTPClient(url).request("peerCount", [])
     except:
         return None
 

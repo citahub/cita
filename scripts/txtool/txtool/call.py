@@ -28,7 +28,7 @@ def block_number(number):
 def call(params):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("eth_call", params)
+        response = HTTPClient(url).request("call", params)
     except:
         return None
 

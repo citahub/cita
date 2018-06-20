@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "getBlockByHash",
+  "description": "getBlockByHash JSON-RPC method request and response schema.",
+  "request": {
+    "id": "#request",
+    "allOf": [
+      {
+        "$ref": "jsonrpc-request.json"
+      },
+      {
+        "$ref": "getBlockByHash.json#/request/definitions/request-obj"
+      }
+    ],
+    "definitions": {
+      "request-obj": {
+        "id": "#request-obj",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "getBlockByHash"
+            ]
+          },
+          "params": {
+            "type": "array",
+            "items": [
+              {
+                "type": "string",
+                "description": "DATA, 32 Bytes - hash of a block."
+              },
+              {
+                "type": "boolean",
+                "description": "Boolean - If true it returns the full transaction objects, if false only the hashes of the transactions."
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    }
+  },
+  "response": {
+    "id": "#response",
+    "allOf": [
+      {
+        "$ref": "jsonrpc-response.json"
+      },
+      {
+        "$ref": "block.json"
+      }
+    ]
+  }
+}

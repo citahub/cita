@@ -1,0 +1,90 @@
+{
+  "title": "getMetaData",
+  "schema": {
+    "$ref": "../schemas/getMetaData.json"
+  },
+  "tests": [
+    {
+      "title": "getMetaData by hash (create contract HelloWorld.sol)",
+      "request": {
+        "method": "getMetaData",
+        "params": [
+          "0x0"
+        ]
+      },
+      "expectedResponse": {
+        "result": {
+          "chainId": 123,
+          "chainName": "test-chain",
+          "operator": "test-operator",
+          "website": "https://www.example.com",
+          "genesisTimestamp": 1524000000,
+          "validators": [
+            "0x33cd649d8e600b7a7d3d5a20c40b63bf0637eda3",
+            "0x00a5d2abb7a544573761f856139ba73d093d89e7",
+            "0xcf51a608ef18ce5d70f485d603371da79bd3eb7e",
+            "0xba79eb663adde7deef1c58e5e5a339cf6c4477d2"
+          ],
+          "blockInterval": 3000,
+          "tokenName": "tokenName",
+          "tokenSymbol": "tokenSymbol",
+          "tokenAvatar": "tokenAvatar"
+        }
+      },
+      "asserts": [
+        {
+          "description": "chainId should not null",
+          "program": ".receivedResponse.result.chainId != null"
+        },
+        {
+          "description": "chainName should equal",
+          "program": ".receivedResponse.result.chainName == .expectedResponse.result.chainName"
+        },
+        {
+          "description": "operator should equal",
+          "program": ".receivedResponse.result.operator == .expectedResponse.result.operator"
+        },
+        {
+          "description": "website should not null",
+          "program": ".receivedResponse.result.website != null"
+        },
+        {
+          "description": "genesisTimestamp should not null",
+          "program": ".receivedResponse.result.genesisTimestamp != null"
+        },
+        {
+          "description": "validators.length should >= 4 ",
+          "program": "(.receivedResponse.result.validators | length) >= 4"
+        },
+        {
+          "description": "blockInterval should equal",
+          "program": ".receivedResponse.result.blockInterval == .expectedResponse.result.blockInterval"
+        }
+      ]
+    },
+    {
+      "title": "getMetaData with no parameters",
+      "request": {
+        "method": "getMetaData",
+        "params": [],
+        "shouldFailSchema": true
+      },
+      "expectedResponse": {
+        "error": {
+          "message": "missing value for required argument 0",
+          "code": -32602
+        }
+      },
+      "asserts": [
+        {
+          "description": "response should be an error",
+          "program": ".receivedResponse.error != null"
+        },
+        {
+          "description": "error code should be -32602",
+          "program": ".receivedResponse.error.code == .expectedResponse.error.code"
+        }
+      ]
+    }
+  ]
+}

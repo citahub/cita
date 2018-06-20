@@ -22,12 +22,11 @@ use std::convert::TryInto;
 use libproto::request::Request as ProtoRequest;
 
 use super::params::{
-    CitaBlockNumberParams, CitaGetBlockByHashParams, CitaGetBlockByNumberParams,
-    CitaGetMetaDataParams, CitaGetTransactionParams, CitaGetTransactionProofParams,
-    CitaSendRawTransactionParams, CitaSendTransactionParams, EthCallParams, EthGetAbiParams,
-    EthGetBalanceParams, EthGetCodeParams, EthGetFilterChangesParams, EthGetFilterLogsParams,
-    EthGetLogsParams, EthGetTransactionCountParams, EthGetTransactionReceiptParams,
-    EthNewBlockFilterParams, EthNewFilterParams, EthUninstallFilterParams, NetPeerCountParams,
+    BlockNumberParams, CallParams, GetAbiParams, GetBalanceParams, GetBlockByHashParams,
+    GetBlockByNumberParams, GetCodeParams, GetFilterChangesParams, GetFilterLogsParams,
+    GetLogsParams, GetMetaDataParams, GetTransactionCountParams, GetTransactionParams,
+    GetTransactionProofParams, GetTransactionReceiptParams, NewBlockFilterParams, NewFilterParams,
+    PeerCountParams, SendRawTransactionParams, SendTransactionParams, UninstallFilterParams,
 };
 use error::Error;
 use rpctypes::{Id, Params as PartialParams, Version};
@@ -232,34 +231,32 @@ macro_rules! define_call {
 
 define_call!(
     // (Call-Item-Name-in-Enum, Method-Name-in-JSONRPC, Params-Length)
-    (CitaBlockNumber, "cita_blockNumber", 0),
-    (NetPeerCount, "net_peerCount", 0),
-    (CitaSendRawTransaction, "cita_sendRawTransaction", 1),
-    (CitaSendTransaction, "cita_sendTransaction", 1),
-    (CitaGetBlockByHash, "cita_getBlockByHash", 2),
-    (CitaGetBlockByNumber, "cita_getBlockByNumber", 2),
-    (EthGetTransactionReceipt, "eth_getTransactionReceipt", 1),
-    (EthGetLogs, "eth_getLogs", 1),
-    (EthCall, "eth_call", 2),
-    (CitaGetTransaction, "cita_getTransaction", 1),
-    (EthGetTransactionCount, "eth_getTransactionCount", 2),
-    (EthGetCode, "eth_getCode", 2),
-    (EthGetAbi, "eth_getAbi", 2),
-    (EthGetBalance, "eth_getBalance", 2),
-    (EthNewFilter, "eth_newFilter", 1),
-    (EthNewBlockFilter, "eth_newBlockFilter", 0),
-    (EthUninstallFilter, "eth_uninstallFilter", 1),
-    (EthGetFilterChanges, "eth_getFilterChanges", 1),
-    (EthGetFilterLogs, "eth_getFilterLogs", 1),
-    (CitaGetTransactionProof, "cita_getTransactionProof", 1),
-    (CitaGetMetaData, "cita_getMetaData", 1),
+    (BlockNumber, "blockNumber", 0),
+    (PeerCount, "peerCount", 0),
+    (SendRawTransaction, "sendRawTransaction", 1),
+    (SendTransaction, "sendTransaction", 1),
+    (GetBlockByHash, "getBlockByHash", 2),
+    (GetBlockByNumber, "getBlockByNumber", 2),
+    (GetTransactionReceipt, "getTransactionReceipt", 1),
+    (GetLogs, "getLogs", 1),
+    (Call, "call", 2),
+    (GetTransaction, "getTransaction", 1),
+    (GetTransactionCount, "getTransactionCount", 2),
+    (GetCode, "getCode", 2),
+    (GetAbi, "getAbi", 2),
+    (GetBalance, "getBalance", 2),
+    (NewFilter, "newFilter", 1),
+    (NewBlockFilter, "newBlockFilter", 0),
+    (UninstallFilter, "uninstallFilter", 1),
+    (GetFilterChanges, "getFilterChanges", 1),
+    (GetFilterLogs, "getFilterLogs", 1),
+    (GetTransactionProof, "getTransactionProof", 1),
+    (GetMetaData, "getMetaData", 1),
 );
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        CitaBlockNumberParams, Error, EthGetTransactionReceiptParams, PartialRequest, Request,
-    };
+    use super::{BlockNumberParams, Error, GetTransactionReceiptParams, PartialRequest, Request};
     use cita_types::H256;
     use serde_json;
     use std::convert::Into;
@@ -281,9 +278,9 @@ mod tests {
 
     #[test]
     fn serialize_and_deserialize() {
-        let params = EthGetTransactionReceiptParams::new(H256::from(10).into());
+        let params = GetTransactionReceiptParams::new(H256::from(10).into());
         test_ser_and_de!(
-            EthGetTransactionReceiptParams,
+            GetTransactionReceiptParams,
             params,
             ["0x000000000000000000000000000000000000000000000000000000000000000a"]
         );
@@ -292,7 +289,7 @@ mod tests {
         test_ser_and_de!(Request, full_req,  {
             "jsonrpc": "2.0",
             "id": null,
-            "method": "eth_getTransactionReceipt",
+            "method": "getTransactionReceipt",
             "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"],
         });
 
@@ -301,21 +298,21 @@ mod tests {
         test_ser_and_de!(PartialRequest, part_req, {
             "jsonrpc": "2.0",
             "id": null,
-            "method": "eth_getTransactionReceipt",
+            "method": "getTransactionReceipt",
             "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"],
         });
 
         let req_str = r#"{
             "jsonrpc": "2.0",
             "id": null,
-            "method": "eth_getTransactionReceipt",
+            "method": "getTransactionReceipt",
             "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"]
         }"#;
         let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
         test_ser_and_de!(PartialRequest, part_req, {
             "jsonrpc": "2.0",
             "id": null,
-            "method": "eth_getTransactionReceipt",
+            "method": "getTransactionReceipt",
             "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"],
         });
         assert_eq!(part_req.complete().unwrap(), full_req);
@@ -323,13 +320,13 @@ mod tests {
         let req_str = r#"{
             "jsonrpc": "2.0",
             "id": null,
-            "method": "eth_getTransactionReceipt"
+            "method": "getTransactionReceipt"
         }"#;
         let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
         test_ser_and_de!(PartialRequest, part_req, {
             "jsonrpc": "2.0",
             "id": null,
-            "method": "eth_getTransactionReceipt",
+            "method": "getTransactionReceipt",
             "params": null,
         });
         assert_eq!(
@@ -340,14 +337,14 @@ mod tests {
         let req_str = r#"{
             "jsonrpc": "2.0",
             "id": null,
-            "method": "eth_getTransactionReceipt",
+            "method": "getTransactionReceipt",
             "params": [1, 2]
         }"#;
         let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
         test_ser_and_de!(PartialRequest, part_req, {
             "jsonrpc": "2.0",
             "id": null,
-            "method": "eth_getTransactionReceipt",
+            "method": "getTransactionReceipt",
             "params": [1, 2],
         });
         assert_eq!(
@@ -355,14 +352,14 @@ mod tests {
             Error::invalid_params_len()
         );
 
-        let params = CitaBlockNumberParams::new();
-        test_ser_and_de!(CitaBlockNumberParams, params, []);
+        let params = BlockNumberParams::new();
+        test_ser_and_de!(BlockNumberParams, params, []);
 
         let full_req: Request = params.into();
         test_ser_and_de!(Request, full_req,  {
             "jsonrpc": "2.0",
             "id": null,
-            "method": "cita_blockNumber",
+            "method": "blockNumber",
             "params": [],
         });
 
@@ -371,20 +368,20 @@ mod tests {
         test_ser_and_de!(PartialRequest, part_req, {
             "jsonrpc": "2.0",
             "id": null,
-            "method": "cita_blockNumber",
+            "method": "blockNumber",
             "params": [],
         });
 
         let req_str = r#"{
             "jsonrpc": "2.0",
             "id": null,
-            "method": "cita_blockNumber"
+            "method": "blockNumber"
         }"#;
         let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
         test_ser_and_de!(PartialRequest, part_req, {
             "jsonrpc": "2.0",
             "id": null,
-            "method": "cita_blockNumber",
+            "method": "blockNumber",
             "params": null,
         });
         assert_eq!(part_req.complete().unwrap(), full_req);

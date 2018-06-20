@@ -11,7 +11,7 @@ from url_util import endpoint
 def get_tx_count(params):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("eth_getTransactionCount", params)
+        response = HTTPClient(url).request("getTransactionCount", params)
         logger.debug(response)
     except:
         return None

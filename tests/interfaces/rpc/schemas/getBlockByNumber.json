@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "getBlockByNumber",
+  "description": "getBlockByNumber JSON-RPC method request and response schema.",
+  "request": {
+    "id": "#request",
+    "allOf": [
+      {
+        "$ref": "jsonrpc-request.json"
+      },
+      {
+        "$ref": "getBlockByNumber.json#/request/definitions/request-obj"
+      }
+    ],
+    "definitions": {
+      "request-obj": {
+        "id": "#request-obj",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "getBlockByNumber"
+            ]
+          },
+          "params": {
+            "type": "array",
+            "items": [
+              {
+                "type": "string",
+                "description": "QUANTITY|TAG - integer of a block number, or the string \"earliest\", \"latest\", as in the default block parameter."
+              },
+              {
+                "type": "boolean",
+                "description": "Boolean - If true it returns the full transaction objects, if false only the hashes of the transactions."
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    }
+  },
+  "response": {
+    "id": "#response",
+    "allOf": [
+      {
+        "$ref": "jsonrpc-response.json"
+      },
+      {
+        "$ref": "block.json"
+      }
+    ]
+  }
+}

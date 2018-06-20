@@ -5,13 +5,13 @@
 暂时包括共识节点管理合约及配额管理合约
 
 测试步骤(脚本):
-0. 调用eth_call获得get类函数返回值(限于系统合约，因为其地址固定)
+0. 调用call获得get类函数返回值(限于系统合约，因为其地址固定)
 1. 调用tests/integrate_test/cita_start.sh脚本启动CITA
 2. 调用scripts/txtool/txtool/check.py验证CITA启动
 3. 调用scripts/txtool/txtool/txtool/make_tx.py构造交易
 4. 调用scripts/txtool/txtool/txtool/send_tx发送交易
 5. 调用scripts/txtool/txtool/txtool/get_receipt获得receipt内结果验证功能
-6. 调用eth_call获得get类函数返回值
+6. 调用call获得get类函数返回值
 以上是通用测试流程，实际测试过程中需要多次调用3-6过程
 
 *以上txtool下脚本使用方法可以查看其README文档*
@@ -26,7 +26,7 @@
 0. use jsonrpc to check the list of the consensus node
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 *构造方法详见jsonRPC README文档*
@@ -156,7 +156,7 @@ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c9
 8. check the consensus node list of the genensis 
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 *结果见步骤0*
@@ -164,7 +164,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00
 9. check the consensus node list of the new
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 返回结果如下:
@@ -245,10 +245,10 @@ python3 make_tx.py --to "00000000000000000000000000000000013241a3" --code "b107e
 
 *check the account gas limit: 45141592*
 
-4. eth_call getAccountGasLimit
+4. call getAccountGasLimit
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call", "params":[{"to":"0x00000000000000000000000000000000013241a3", "data":"0xdae99b3a"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a3", "data":"0xdae99b3a"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 *详见步骤0*

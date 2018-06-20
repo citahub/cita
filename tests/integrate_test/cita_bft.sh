@@ -105,7 +105,7 @@ start_all () {
 }
 
 get_height(){
-    h=`${CUR_PATH}/cita_blockNumber.sh`
+    h=`${CUR_PATH}/blockNumber.sh`
     h=$(echo $h | sed 's/\"//g')
     echo $((h))
 }

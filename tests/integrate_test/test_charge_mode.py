@@ -57,7 +57,7 @@ def rpc_request(method, params):
 
 def get_balance(addr):
     """ Get the balance of an address """
-    return int(rpc_request('eth_getBalance', [addr, 'latest']), 16)
+    return int(rpc_request('getBalance', [addr, 'latest']), 16)
 
 
 def test_transfer(
@@ -72,7 +72,7 @@ def test_transfer(
     tx_hash = send_tx(sender_privkey, receiver_addr, value)
     retry = 8
     while retry > 0:
-        receipt = rpc_request('eth_getTransactionReceipt', [tx_hash])
+        receipt = rpc_request('getTransactionReceipt', [tx_hash])
         if receipt is not None:
             break
         time.sleep(4)

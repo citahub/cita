@@ -20,14 +20,10 @@ pub type RpcMap = Arc<Mutex<HashMap<Vec<u8>, TransferType>>>;
 pub type ReqSender = Mutex<mpsc::Sender<(String, ProtoRequest)>>;
 
 pub fn select_topic(method: &str) -> String {
-    if method.starts_with("cita_send") {
-        routing_key!(Jsonrpc >> RequestNewTx).into()
-    } else if method.starts_with("cita") || method.starts_with("eth") {
-        routing_key!(Jsonrpc >> Request).into()
-    } else if method.starts_with("net_") {
-        routing_key!(Jsonrpc >> RequestNet).into()
-    } else {
-        "jsonrpc".to_string()
+    match method {
+        "peerCount" => routing_key!(Jsonrpc >> RequestNet).into(),
+        "sendRawTransaction" | "sendTransaction" => routing_key!(Jsonrpc >> RequestNewTx).into(),
+        _ => routing_key!(Jsonrpc >> Request).into(),
     }
 }
 
@@ -37,13 +33,16 @@ mod test {
 
     #[test]
     fn test_get_topic() {
-        assert_eq!(select_topic("net_work"), "jsonrpc.request_net".to_string());
+        assert_eq!(select_topic("peerCount"), "jsonrpc.request_net".to_string());
         assert_eq!(
-            select_topic("cita_send"),
+            select_topic("sendTransaction"),
             "jsonrpc.request_new_tx".to_string()
         );
-        assert_eq!(select_topic("cita"), "jsonrpc.request".to_string());
-        assert_eq!(select_topic("eth"), "jsonrpc.request".to_string());
-        assert_eq!(select_topic("123"), "jsonrpc".to_string());
+        assert_eq!(select_topic("blockNumber"), "jsonrpc.request".to_string());
+        assert_eq!(
+            select_topic("getBlockByNumber"),
+            "jsonrpc.request".to_string()
+        );
+        assert_eq!(select_topic("error"), "jsonrpc.request".to_string());
     }
 }

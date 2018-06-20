@@ -21,12 +21,11 @@ mod request;
 mod rpcrequest;
 
 pub use self::params::{
-    CitaBlockNumberParams, CitaGetBlockByHashParams, CitaGetBlockByNumberParams,
-    CitaGetMetaDataParams, CitaGetTransactionParams, CitaGetTransactionProofParams,
-    CitaSendRawTransactionParams, CitaSendTransactionParams, EthCallParams, EthGetAbiParams,
-    EthGetBalanceParams, EthGetCodeParams, EthGetFilterChangesParams, EthGetFilterLogsParams,
-    EthGetLogsParams, EthGetTransactionCountParams, EthGetTransactionReceiptParams,
-    EthNewBlockFilterParams, EthNewFilterParams, EthUninstallFilterParams, NetPeerCountParams,
+    BlockNumberParams, CallParams, GetAbiParams, GetBalanceParams, GetBlockByHashParams,
+    GetBlockByNumberParams, GetCodeParams, GetFilterChangesParams, GetFilterLogsParams,
+    GetLogsParams, GetMetaDataParams, GetTransactionCountParams, GetTransactionParams,
+    GetTransactionProofParams, GetTransactionReceiptParams, NewBlockFilterParams, NewFilterParams,
+    PeerCountParams, SendRawTransactionParams, SendTransactionParams, UninstallFilterParams,
 };
 pub use self::request::{Call, PartialCall, PartialRequest, Request, RequestInfo};
 pub use self::rpcrequest::RpcRequest;

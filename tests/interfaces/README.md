@@ -8,15 +8,15 @@ CITA RPC specifications and tests.
 
 ## 分类
 
-- cita_blockNumber
+- blockNumber
 
   正确参数：[正确结果[包含交易内容，不包含交易内容]，错误结果]
 
   错误参数：[个数错误，类型错误]
 
-- cita_sendRawTransaction 暂时不处理
+- sendRawTransaction 暂时不处理
 
-- cita_getBlockByHash
+- getBlockByHash
 
   正确参数：
 
@@ -25,13 +25,13 @@ CITA RPC specifications and tests.
 
   错误参数：...
 
-- cita_getBlockByNumber
+- getBlockByNumber
 
   正确参数：...
 
   错误参数：...
 
-- eth_getTransactionReceipt
+- getTransactionReceipt
 
   正确参数:
 
@@ -42,37 +42,37 @@ CITA RPC specifications and tests.
 
   错误参数：
 
-- eth_getLogs
+- getLogs
 
   正确参数：几种组合...
 
   错误参数：...
 
-- eth_call
+- call
 
   正确参数: [...]
 
   错误参数: ...
 
-- cita_getTransaction...
+- getTransaction...
 
-- eth_getTransactionCount ...
+- getTransactionCount ...
 
-- eth_getCode ...
+- getCode ...
 
-- eth_getAbi...
+- getAbi...
 
-- eth_newFilter ...
+- newFilter ...
 
-- eth_newBlockFilter 暂时不测试
+- newBlockFilter 暂时不测试
 
-- eth_uninstallFilter 暂时不测试
+- uninstallFilter 暂时不测试
 
-- eth_getFilterChanges 暂时不测试
+- getFilterChanges 暂时不测试
 
-- eth_getFilterLogs 暂时不测试
+- getFilterLogs 暂时不测试
 
-- cita_getTransactionProof 暂时不测试
+- getTransactionProof 暂时不测试
 
 ## 原则
 
