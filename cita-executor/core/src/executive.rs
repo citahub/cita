@@ -56,6 +56,8 @@ const AMEND_ABI: u32 = 1;
 const AMEND_CODE: u32 = 2;
 ///amend the kv of db
 const AMEND_KV_H256: u32 = 3;
+///amend get the value of db
+const AMEND_GET_KV_H256: u32 = 4;
 
 /// Returns new address created from address and given nonce.
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
@@ -415,6 +417,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         self.state.set_storage(&account, key, val).is_ok()
     }
 
+    fn transact_get_kv_h256(&mut self, data: &[u8]) -> Option<H256> {
+        let account = H160::from(&data[0..20]);
+        let key = H256::from_slice(&data[20..52]);
+        self.state.storage_at(&account, &key).ok()
+    }
+
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
         t: &SignedTransaction,
@@ -442,11 +450,24 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let base_gas_required = U256::from(100); // `CREATE` transaction cost
 
-        if sender != Address::zero() && t.action != Action::Store && t.gas < base_gas_required {
+        if sender != Address::zero()
+            && (t.action != Action::Store || t.action != Action::AmendData)
+            && t.gas < base_gas_required
+        {
             return Err(ExecutionError::NotEnoughBaseGas {
                 required: base_gas_required,
                 got: t.gas,
             });
+        }
+
+        if t.action == Action::AmendData {
+            if let Some(admin) = self.state.super_admin_account {
+                if *t.sender() != admin {
+                    return Err(ExecutionError::NoTransactionPermission);
+                }
+            } else {
+                return Err(ExecutionError::NoTransactionPermission);
+            }
         }
 
         /*trace!("quota should be checked: {}", options.check_quota);
@@ -459,6 +480,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             )?;
         }*/
 
+        let mut need_output: Vec<u8> = vec![];
         if t.action == Action::AbiStore {
             if !self.transact_set_abi(&t.data) {
                 return Err(ExecutionError::TransactionMalformed(
@@ -486,6 +508,15 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     if !self.transact_set_kv_h256(&t.data) {
                         return Err(ExecutionError::TransactionMalformed(
                             "Account doesn't exist".to_string(),
+                        ));
+                    }
+                }
+                AMEND_GET_KV_H256 => {
+                    if let Some(v) = self.transact_get_kv_h256(&t.data) {
+                        need_output = v.to_vec();
+                    } else {
+                        return Err(ExecutionError::TransactionMalformed(
+                            "May be incomplete trie error".to_string(),
                         ));
                     }
                 }
@@ -542,7 +573,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 Ok(FinalizationResult {
                     // Super admin operations do not cost gas
                     gas_left: t.gas,
-                    return_data: ReturnData::empty(),
+                    return_data: {
+                        if need_output.is_empty() {
+                            ReturnData::empty()
+                        } else {
+                            let len = need_output.len();
+                            ReturnData::new(need_output, 0, len)
+                        }
+                    },
                     apply_state: true,
                 }),
                 vec![],

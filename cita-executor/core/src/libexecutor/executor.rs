@@ -157,6 +157,7 @@ pub struct GlobalSysConfig {
     pub check_permission: bool,
     pub account_permissions: HashMap<Address, Vec<Resource>>,
     pub group_accounts: HashMap<Address, Vec<Address>>,
+    pub super_admin_account: Option<Address>,
     /// Interval time for creating a block (milliseconds)
     pub block_interval: u64,
 }
@@ -173,6 +174,7 @@ impl GlobalSysConfig {
             check_permission: false,
             account_permissions: HashMap::new(),
             group_accounts: HashMap::new(),
+            super_admin_account: None,
             block_interval: 3000,
         }
     }
@@ -766,6 +768,7 @@ impl Executor {
         conf.check_quota = sys_config.quota_check();
         conf.block_interval = sys_config.block_interval();
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
+        conf.super_admin_account = PermissionManagement::get_super_admin_account(self);
         conf.group_accounts = UserManagement::load_group_accounts(self);
         {
             *self.economical_model.write() = sys_config.economical_model();

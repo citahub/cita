@@ -92,6 +92,15 @@ impl PermissionManagement {
         to_address_vec(&output)
     }
 
+    pub fn get_super_admin_account(executor: &Executor) -> Option<Address> {
+        let accounts = PermissionManagement::all_accounts(executor);
+        if accounts.is_empty() {
+            None
+        } else {
+            Some(accounts[0])
+        }
+    }
+
     /// Permission array
     pub fn permissions(executor: &Executor, param: &H256) -> Vec<Address> {
         let mut tx_data = PERMISSIONS_HASH.to_vec();
