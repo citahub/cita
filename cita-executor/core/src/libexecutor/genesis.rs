@@ -130,7 +130,9 @@ impl Genesis {
                     .init_code(&address, clean_0x(&contract.code).from_hex().unwrap())
                     .expect("init code fail");
                 if let Some(value) = contract.value {
-                    state.add_balance(&address, &value).expect("init balance fail");                    
+                    state
+                        .add_balance(&address, &value)
+                        .expect("init balance fail");
                 }
             }
             for (key, values) in contract.storage.clone() {
@@ -188,9 +190,12 @@ impl Genesis {
     }
 }
 
-#[cft(test)]
+#[cfg(test)]
 mod test {
-    use super::*;
+    use cita_types::{H256, U256};
+    use libexecutor::genesis::{Contract, Spec};
+    use serde_json;
+    use std::collections::HashMap;
     use std::str::FromStr;
 
     #[test]
@@ -209,27 +214,44 @@ mod test {
                 "0x000000000000000000000000000000000a3241b6": {
                     "nonce": "1",
                     "code": "0x6060604052600436106100745763",
-                    "value": 1000000000000000000000,
+                    "value": "0x10000000",
+                    "storage": {}
                 },
-                "prevhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-            }
+            },
+            "prevhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         });
         let spec = Spec {
-            prevhash: H256::from_str("0000000000000000000000000000000000000000000000000000000000000000").unwrap(),
+            prevhash: H256::from_str(
+                "0000000000000000000000000000000000000000000000000000000000000000",
+            ).unwrap(),
             timestamp: 1524000000,
-            alloc: [("0x000000000000000000000000000000000a3241b5".to_owned(), Contract { 
+            alloc: [
+                (
+                    "0x000000000000000000000000000000000a3241b5".to_owned(),
+                    Contract {
                         nonce: "1".to_owned(),
                         code: "0x6060604052600436106100745763".to_owned(),
                         value: None,
-                        storage: [("0x00".to_owned(), "0x013241b2".to_owned()),("0x01".to_owned(), "0x02".to_owned())].iter().cloned().collect()
-                    }),
-                    ("0x000000000000000000000000000000000a3241b6".to_owned(), Contract {
+                        storage: [
+                            ("0x00".to_owned(), "0x013241b2".to_owned()),
+                            ("0x01".to_owned(), "0x02".to_owned()),
+                        ].iter()
+                            .cloned()
+                            .collect(),
+                    },
+                ),
+                (
+                    "0x000000000000000000000000000000000a3241b6".to_owned(),
+                    Contract {
                         nonce: "1".to_owned(),
                         code: "0x6060604052600436106100745763".to_owned(),
-                        value: Some(U256::from(1000000000000000000000)),
-                        storage: HashMap::new()
-                    })]
-                    .iter().cloned().collect(),
+                        value: Some(U256::from(0x10000000)),
+                        storage: HashMap::new(),
+                    },
+                ),
+            ].iter()
+                .cloned()
+                .collect(),
         };
         assert_eq!(serde_json::from_value::<Spec>(genesis).unwrap(), spec);
     }
