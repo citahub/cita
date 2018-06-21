@@ -179,6 +179,16 @@ class GenesisData(object):
             extra = ctt.encode_constructor_arguments([name, conts, funcs])
             self.mine_contract_on_chain_tester(addr, data['bin'] + extra)
 
+    def set_account_value(self, address, value):
+        for addr in address:
+            self.accounts[addr] = {
+                'code': '',
+                'storage': {},
+                'nonce': '1',
+                'value': value,
+            }
+
+
     def save_to_file(self, filepath):
         with open(filepath, 'w') as stream:
             json.dump(
@@ -236,8 +246,15 @@ def core(contracts_dir, contracts_docs_dir, init_data_file, output, timestamp,
         timestamp,
         prevhash,
     )
+    with open(init_data_file, 'r') as stream:
+        data = yaml.load(stream)
+    address = data['Contracts'][2]['NodeManager'][0]['nodes']
+    super_admin = data['Contracts'][4]['Authorization'][0]['super_admin']
+    address.append(super_admin)
+    value = '0xffffffffffffffffffffffffff'
     genesis_data.init_normal_contracts()
     genesis_data.init_permission_contracts()
+    genesis_data.set_account_value(address, value)
     genesis_data.save_to_file(output)
 
 
