@@ -819,7 +819,7 @@ impl Executor {
             last_hashes.into(),
         ).unwrap();
         if open_block.apply_transactions(self, conf.check_permission, conf.check_quota) {
-            let closed_block = open_block.close(*self.economical_model.read());
+            let closed_block = open_block.close();
             let new_now = Instant::now();
             info!("execute block use {:?}", new_now.duration_since(now));
             self.finalize_block(closed_block, ctx_pub);
@@ -846,7 +846,7 @@ impl Executor {
             last_hashes.into(),
         ).unwrap();
         if open_block.apply_transactions(self, perm, check_quota) {
-            let closed_block = open_block.close(*self.economical_model.read());
+            let closed_block = open_block.close();
             let new_now = Instant::now();
             debug!("execute proposal use {:?}", new_now.duration_since(now));
             let h = closed_block.number();
