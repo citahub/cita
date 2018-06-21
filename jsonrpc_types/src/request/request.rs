@@ -19,16 +19,13 @@
 use serde_json;
 use std::convert::TryInto;
 
+use jsonrpc_types_internals::construct_params;
 use libproto::request::Request as ProtoRequest;
 
-use super::params::{
-    BlockNumberParams, CallParams, GetAbiParams, GetBalanceParams, GetBlockByHashParams,
-    GetBlockByNumberParams, GetCodeParams, GetFilterChangesParams, GetFilterLogsParams,
-    GetLogsParams, GetMetaDataParams, GetTransactionCountParams, GetTransactionParams,
-    GetTransactionProofParams, GetTransactionReceiptParams, NewBlockFilterParams, NewFilterParams,
-    PeerCountParams, SendRawTransactionParams, SendTransactionParams, UninstallFilterParams,
-};
 use error::Error;
+use rpctypes::{
+    BlockNumber, Boolean, CallRequest, Data, Data20, Data32, Filter, OneItemTupleTrick, Quantity,
+};
 use rpctypes::{Id, Params as PartialParams, Version};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -47,7 +44,7 @@ impl RequestInfo {
     pub fn null() -> Self {
         RequestInfo {
             jsonrpc: None,
-            id: Id::Num(1),
+            id: Id::Null,
         }
     }
 }
@@ -61,7 +58,9 @@ impl Default for RequestInfo {
 /// JSON-RPC 2.0 Request object (http://www.jsonrpc.org/specification#request_object)
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Request {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub jsonrpc: Option<Version>,
+    #[serde(default, skip_serializing_if = "Id::is_null")]
     pub id: Id,
     /// Contain method and params.
     #[serde(flatten)]
@@ -120,26 +119,28 @@ impl PartialRequest {
 }
 
 macro_rules! define_call {
-    ($( ($name:ident, $rpcname:expr, $params_len:expr) ),+ ,) => {
-        define_call!($( ($name, $rpcname, $params_len) ),+);
+    ($( ($enum_name:ident, $params_name:ident: $params_list:expr) ),+ ,) => {
+        define_call!($( ($enum_name, $params_name: $params_list) ),+);
     };
-    ($( ($name:ident, $rpcname:expr, $params_len:expr) ),+ ) => {
+    ($( ($enum_name:ident, $params_name:ident: $params_list:expr) ),+ ) => {
+
+        $(
+            construct_params!($params_name: $params_list);
+        )+
 
         #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-        #[serde(tag = "method")]
+        #[serde(tag = "method", rename_all = "camelCase")]
         pub enum Call {
             $(
-                #[serde(rename = $rpcname)]
-                $name { params: concat_idents!($name, Params) },
+                $enum_name { params: $params_name},
             )+
         }
 
         #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-        #[serde(tag = "method")]
+        #[serde(tag = "method", rename_all = "camelCase")]
         pub enum PartialCall {
             $(
-                #[serde(rename = $rpcname)]
-                $name {
+                $enum_name {
                     params: Option<serde_json::Value>
                 },
             )+
@@ -149,16 +150,23 @@ macro_rules! define_call {
             pub fn get_method(&self) -> &str {
                 match self {
                     $(
-                        &Call::$name { params: _ } => $rpcname,
+                        &Call::$enum_name { ref params } => params.method_name(),
                     )+
                 }
             }
             pub fn into_proto(&self) -> Result<ProtoRequest, Error> {
                 match self {
                     $(
-                        &Call::$name { ref params } => params.clone().try_into(),
+                        &Call::$enum_name { ref params } => params.clone().try_into(),
                     )+
                 }
+            }
+            pub fn into_request(self, id: u64) -> Request {
+                Request::new(
+                    Some(Version::default()),
+                    Id::Num(id),
+                    self,
+                )
             }
         }
 
@@ -166,17 +174,17 @@ macro_rules! define_call {
             pub fn complete(self) -> Result<Call, Error> {
                 match self {
                     $(
-                        PartialCall::$name { params } => {
+                        PartialCall::$enum_name { params } => {
                             if let Some(params) = params {
                                 let pparams: PartialParams = serde_json::from_value(params.clone())?;
-                                if pparams.len() != $params_len {
+                                if pparams.len() != $params_name::required_len() {
                                     Err(Error::invalid_params_len())
                                 } else {
-                                    Ok(Call::$name{params: serde_json::from_value(params)?})
+                                    Ok(Call::$enum_name{ params: serde_json::from_value(params)? })
                                 }
                             } else {
-                                if $params_len == 0 {
-                                    Ok(Call::$name{
+                                if $params_name::required_len() == 0 {
+                                    Ok(Call::$enum_name{
                                         params: serde_json::from_value(
                                                     serde_json::Value::Array(Vec::new()))?})
                                 } else {
@@ -190,9 +198,9 @@ macro_rules! define_call {
         }
 
         $(
-            impl Into<concat_idents!($name, Params)> for Call {
-                fn into(self) -> concat_idents!($name, Params) {
-                    if let Call::$name{params} = self {
+            impl Into<$params_name> for Call {
+                fn into(self) -> $params_name{
+                    if let Call::$enum_name{ params } = self {
                         params
                     } else {
                         // IMHO, in Rust, no static check can do this.
@@ -203,218 +211,61 @@ macro_rules! define_call {
                 }
             }
 
-            impl From<concat_idents!($name, Params)> for Call {
-                fn from(params: concat_idents!($name, Params)) -> Call {
-                    Call::$name{params: params}
+            impl From<$params_name> for Call {
+                fn from(params: $params_name) -> Call {
+                    Call::$enum_name{ params }
                 }
             }
 
-            impl From<concat_idents!($name, Params)> for Request {
-                fn from(params: concat_idents!($name, Params)) -> Request {
+            impl $params_name {
+                pub fn into_request(self, id: u64) -> Request {
                     Request::new(
                         Some(Version::default()),
-                        Id::default(),
-                        Call::$name{params},
+                        Id::Num(id),
+                        self.into(),
                     )
-                }
-            }
-
-            impl From<concat_idents!($name, Params)> for String {
-                fn from(params: concat_idents!($name, Params)) -> String {
-                    let req: Request = params.into();
-                    req.into()
                 }
             }
         )+
     };
 }
 
+// Q. How to add a JSON-RPC method?
+//
+// A.
+//  First, add a tuple into the follow macro.
+//
+//    - The 1st item in tuple is a enum name used in `Call` / `PartialCall`.
+//      The enum name will used to generate the JSON-RPC method name.
+//      The enum name is PascalCase and JSON-RPC method name is camelCase.
+//
+//    - The 2st item is params type name and it's structure.
+//      The params type has some methods, such as `new()` and `method_name()`.
+//      More details can found in the definition of `construct_params`.
+//
+//  Second, implement `TryInto<ProtoRequest>` for the new params type.
+//
+//  DONE!
 define_call!(
-    // (Call-Item-Name-in-Enum, Method-Name-in-JSONRPC, Params-Length)
-    (BlockNumber, "blockNumber", 0),
-    (PeerCount, "peerCount", 0),
-    (SendRawTransaction, "sendRawTransaction", 1),
-    (SendTransaction, "sendTransaction", 1),
-    (GetBlockByHash, "getBlockByHash", 2),
-    (GetBlockByNumber, "getBlockByNumber", 2),
-    (GetTransactionReceipt, "getTransactionReceipt", 1),
-    (GetLogs, "getLogs", 1),
-    (Call, "call", 2),
-    (GetTransaction, "getTransaction", 1),
-    (GetTransactionCount, "getTransactionCount", 2),
-    (GetCode, "getCode", 2),
-    (GetAbi, "getAbi", 2),
-    (GetBalance, "getBalance", 2),
-    (NewFilter, "newFilter", 1),
-    (NewBlockFilter, "newBlockFilter", 0),
-    (UninstallFilter, "uninstallFilter", 1),
-    (GetFilterChanges, "getFilterChanges", 1),
-    (GetFilterLogs, "getFilterLogs", 1),
-    (GetTransactionProof, "getTransactionProof", 1),
-    (GetMetaData, "getMetaData", 1),
+    (BlockNumber, BlockNumberParams: []),
+    (PeerCount, PeerCountParams: []),
+    (SendRawTransaction, SendRawTransactionParams: [Data]),
+    (SendTransaction, SendTransactionParams: [Data]),
+    (GetBlockByHash, GetBlockByHashParams: [Data32, Boolean]),
+    (GetBlockByNumber, GetBlockByNumberParams: [BlockNumber, Boolean]),
+    (GetTransactionReceipt, GetTransactionReceiptParams: [Data32]),
+    (GetLogs, GetLogsParams: [Filter]),
+    (Call, CallParams: [CallRequest, BlockNumber]),
+    (GetTransaction, GetTransactionParams: [Data32]),
+    (GetTransactionCount, GetTransactionCountParams: [Data20, BlockNumber]),
+    (GetCode, GetCodeParams: [Data20, BlockNumber]),
+    (GetAbi, GetAbiParams: [Data20, BlockNumber]),
+    (GetBalance, GetBalanceParams: [Data20, BlockNumber]),
+    (NewFilter, NewFilterParams: [Filter]),
+    (NewBlockFilter, NewBlockFilterParams: []),
+    (UninstallFilter, UninstallFilterParams: [Quantity]),
+    (GetFilterChanges, GetFilterChangesParams: [Quantity]),
+    (GetFilterLogs, GetFilterLogsParams: [Quantity]),
+    (GetTransactionProof, GetTransactionProofParams: [Data32]),
+    (GetMetaData, GetMetaDataParams: [BlockNumber]),
 );
-
-#[cfg(test)]
-mod tests {
-    use super::{BlockNumberParams, Error, GetTransactionReceiptParams, PartialRequest, Request};
-    use cita_types::H256;
-    use serde_json;
-    use std::convert::Into;
-
-    macro_rules! test_ser_and_de {
-        ($type:ty, $data:ident, $json_params:tt) => {
-            let serialized = serde_json::to_value(&$data).unwrap();
-            let jsonval = json!($json_params);
-            assert_eq!(serialized, jsonval);
-            let jsonstr = jsonval.to_string();
-            let deserialized = serde_json::from_str::<$type>(&jsonstr);
-            if let Ok(deserialized) = deserialized {
-                assert_eq!(deserialized, $data);
-            } else {
-                assert_eq!(&jsonstr, "");
-            }
-        };
-    }
-
-    #[test]
-    fn serialize_and_deserialize() {
-        let params = GetTransactionReceiptParams::new(H256::from(10).into());
-        test_ser_and_de!(
-            GetTransactionReceiptParams,
-            params,
-            ["0x000000000000000000000000000000000000000000000000000000000000000a"]
-        );
-
-        let full_req: Request = params.into();
-        test_ser_and_de!(Request, full_req,  {
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "getTransactionReceipt",
-            "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"],
-        });
-
-        let req_str: String = full_req.clone().into();
-        let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
-        test_ser_and_de!(PartialRequest, part_req, {
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "getTransactionReceipt",
-            "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"],
-        });
-
-        let req_str = r#"{
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "getTransactionReceipt",
-            "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"]
-        }"#;
-        let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
-        test_ser_and_de!(PartialRequest, part_req, {
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "getTransactionReceipt",
-            "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"],
-        });
-        assert_eq!(part_req.complete().unwrap(), full_req);
-
-        let req_str = r#"{
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "getTransactionReceipt"
-        }"#;
-        let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
-        test_ser_and_de!(PartialRequest, part_req, {
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "getTransactionReceipt",
-            "params": null,
-        });
-        assert_eq!(
-            part_req.complete().err().unwrap(),
-            Error::invalid_params("params is requeired")
-        );
-
-        let req_str = r#"{
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "getTransactionReceipt",
-            "params": [1, 2]
-        }"#;
-        let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
-        test_ser_and_de!(PartialRequest, part_req, {
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "getTransactionReceipt",
-            "params": [1, 2],
-        });
-        assert_eq!(
-            part_req.complete().err().unwrap(),
-            Error::invalid_params_len()
-        );
-
-        let params = BlockNumberParams::new();
-        test_ser_and_de!(BlockNumberParams, params, []);
-
-        let full_req: Request = params.into();
-        test_ser_and_de!(Request, full_req,  {
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "blockNumber",
-            "params": [],
-        });
-
-        let req_str: String = full_req.clone().into();
-        let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
-        test_ser_and_de!(PartialRequest, part_req, {
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "blockNumber",
-            "params": [],
-        });
-
-        let req_str = r#"{
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "blockNumber"
-        }"#;
-        let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
-        test_ser_and_de!(PartialRequest, part_req, {
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "blockNumber",
-            "params": null,
-        });
-        assert_eq!(part_req.complete().unwrap(), full_req);
-
-        let req_str = r#"{
-            "jsonrpc": "2.0",
-            "id": null,
-            "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"]
-        }"#;
-        let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
-        test_ser_and_de!(PartialRequest, part_req, {
-            "jsonrpc": "2.0",
-            "id": null,
-        });
-        assert_eq!(
-            part_req.complete().err().unwrap(),
-            Error::method_not_found()
-        );
-
-        let req_str = r#"{
-            "jsonrpc": "2.0",
-            "id": null,
-            "method": "not_aMethod",
-            "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"]
-        }"#;
-        let part_req = serde_json::from_str::<PartialRequest>(&req_str).unwrap();
-        test_ser_and_de!(PartialRequest, part_req, {
-            "jsonrpc": "2.0",
-            "id": null,
-        });
-        assert_eq!(
-            part_req.complete().err().unwrap(),
-            Error::method_not_found()
-        );
-    }
-}

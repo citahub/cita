@@ -65,12 +65,30 @@ impl<'de> Visitor<'de> for QuantityVisitor {
         E: de::Error,
     {
         if value.len() > 2 && (&value[0..2] == "0x" || &value[0..2] == "0X") {
-            let data = U256::from_str(&value[2..])
-                .map_err(|_| E::custom(format!("invalid hexadecimal string: [{}]", value)))?;
+            let data = U256::from_str(&value[2..]).map_err(|_| {
+                if value.len() > 12 {
+                    E::custom(format!(
+                        "invalid hexadecimal string: [{}..{}]",
+                        &value[..6],
+                        &value[value.len() - 6..value.len()]
+                    ))
+                } else {
+                    E::custom(format!("invalid hexadecimal string: [{}]", value))
+                }
+            })?;
             Ok(Quantity::new(data))
         } else if value.len() > 0 {
-            let data = U256::from_dec_str(&value[..])
-                .map_err(|_| E::custom(format!("invalid decimal string: [{}]", value)))?;
+            let data = U256::from_dec_str(&value[..]).map_err(|_| {
+                if value.len() > 12 {
+                    E::custom(format!(
+                        "invalid decimal string: [{}..{}]",
+                        &value[..6],
+                        &value[value.len() - 6..value.len()]
+                    ))
+                } else {
+                    E::custom(format!("invalid decimal string: [{}]", value))
+                }
+            })?;
             Ok(Quantity::new(data))
         } else {
             Err(E::custom(format!("invalid input: string is empty")))

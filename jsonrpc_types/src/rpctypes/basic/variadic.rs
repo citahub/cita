@@ -66,7 +66,7 @@ where
         serde_json::from_value(v.clone())
             .map(VariadicValue::Single)
             .or_else(|_| serde_json::from_value(v).map(VariadicValue::Multiple))
-            .map_err(|_| de::Error::custom("invalid type."))
+            .map_err(|_| de::Error::custom("invalid type"))
     }
 }
 

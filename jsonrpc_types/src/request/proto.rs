@@ -27,7 +27,7 @@ use cita_types::traits::LowerHex;
 use libproto::request::{Call as ProtoCall, Request as ProtoRequest};
 use libproto::UnverifiedTransaction;
 
-use super::params::{
+use super::request::{
     BlockNumberParams, CallParams, GetAbiParams, GetBalanceParams, GetBlockByHashParams,
     GetBlockByNumberParams, GetCodeParams, GetFilterChangesParams, GetFilterLogsParams,
     GetLogsParams, GetMetaDataParams, GetTransactionCountParams, GetTransactionParams,

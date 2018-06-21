@@ -17,9 +17,9 @@
 
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
-#![feature(custom_attribute)]
 #![feature(try_from)]
 #![feature(concat_idents)]
+#![feature(proc_macro)]
 #![allow(unused_attributes)]
 #![allow(unused_extern_crates)]
 extern crate bincode;
@@ -39,6 +39,8 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_json;
 extern crate uuid;
+
+extern crate jsonrpc_types_internals;
 
 mod error;
 pub use error::{Error, ErrorCode};

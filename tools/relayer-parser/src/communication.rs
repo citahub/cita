@@ -143,20 +143,20 @@ macro_rules! define_reply_type {
 }
 
 pub fn cita_get_transaction_proof(upstream: &UpStream, tx_hash: H256) -> Result<Vec<u8>, Error> {
-    let req: request::Request = request::GetTransactionProofParams::new(tx_hash.into()).into();
+    let req = request::GetTransactionProofParams::new(tx_hash.into()).into_request(1);
     let result = rpc_send_and_get_result_from_reply!(upstream, req, rpctypes::Data);
     Ok(result.into())
 }
 
 pub fn cita_block_number(upstream: &UpStream) -> Result<U256, Error> {
-    let req: request::Request = request::BlockNumberParams::new().into();
+    let req = request::BlockNumberParams::new().into_request(1);
     let result = rpc_send_and_get_result_from_reply!(upstream, req, U256);
     Ok(result)
 }
 
 pub fn cita_get_metadata(upstream: &UpStream) -> Result<rpctypes::MetaData, Error> {
     let height = rpctypes::BlockNumber::latest();
-    let req: request::Request = request::GetMetaDataParams::new(height).into();
+    let req = request::GetMetaDataParams::new(height).into_request(1);
     let result = rpc_send_and_get_result_from_reply!(upstream, req, rpctypes::MetaData);
     Ok(result)
 }
@@ -166,7 +166,7 @@ pub fn cita_send_transaction(
     utx: &UnverifiedTransaction,
 ) -> Result<H256, Error> {
     let tx_bytes: Vec<u8> = utx.try_into().unwrap();
-    let req: request::Request = request::SendRawTransactionParams::new(tx_bytes.into()).into();
+    let req = request::SendRawTransactionParams::new(tx_bytes.into()).into_request(1);
     let result = rpc_send_and_get_result_from_reply!(upstream, req, rpctypes::TxResponse);
     if result.status.to_uppercase() == "OK" {
         Ok(result.hash)

@@ -18,6 +18,7 @@ proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop
 common-types = { path = "../cita-chain/types" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 clippy = { version = "0.0.175", optional = true }
+jsonrpc-types-internals = { path = "internals" }
 
 [features]
 default = ["secp256k1", "sha3hash"]
