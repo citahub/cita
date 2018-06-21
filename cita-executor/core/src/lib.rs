@@ -30,6 +30,10 @@ extern crate protobuf;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
+#[cfg(not(test))]
+extern crate serde_json;
+#[cfg(test)]
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate util;
