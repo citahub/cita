@@ -27,6 +27,7 @@ else
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm ${CONTAINER_NAME} > /dev/null 2>&1
     docker run -d --volume ${SOURCE_DIR}:${SOURCE_DIR} \
+        --network host \
         --volume ${HOME}/.docker_cargo/registry:/root/.cargo/registry \
         --volume ${HOME}/.docker_cargo/git:/root/.cargo/git \
         --volume /etc/localtime:/etc/localtime \
