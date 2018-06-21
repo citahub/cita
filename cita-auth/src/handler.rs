@@ -672,16 +672,15 @@ impl MsgHandler {
                         routing_key!(Executor >> BlackList) => {
                             let black_list = msg.take_black_list().unwrap();
 
-                            black_list.get_clear_list()
-                                .into_iter()
-                                .for_each( |clear_list: &Vec<u8>| {
-                                    self.black_list_cache.remove(&Address::from_slice(clear_list.as_slice()))
-                                });
+                            black_list.get_clear_list().into_iter().for_each(
+                                |clear_list: &Vec<u8>| {
+                                    self.black_list_cache
+                                        .remove(&Address::from_slice(clear_list.as_slice()));
+                                },
+                            );
 
-                            black_list
-                                .get_black_list()
-                                .into_iter()
-                                .for_each(|blacklist: &Vec<u8>| {
+                            black_list.get_black_list().into_iter().for_each(
+                                |blacklist: &Vec<u8>| {
                                     self.black_list_cache
                                         .entry(Address::from_slice(blacklist.as_slice()))
                                         .and_modify(|e| {
@@ -691,7 +690,8 @@ impl MsgHandler {
                                         })
                                         .or_insert(3);
                                     debug!("Current black list is {:?}", self.black_list_cache);
-                                });
+                                },
+                            );
                         }
                         routing_key!(Consensus >> VerifyBlockReq) => {
                             let blk_req = msg.take_verify_block_req().unwrap();

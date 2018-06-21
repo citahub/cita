@@ -861,91 +861,93 @@ impl Executor {
         }
     }
 
-    /// Find the public key of all senders that caused the specified error message, and then publish it
-    fn pub_black_list(&self, close_block: &ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        // Get all transaction hash that is reported as not enough gas
-        let blacklist_transaction_hash: Vec<H256> = close_block
-            .receipts
-            .iter()
-            .filter(|ref receipt_option| match receipt_option {
-                Some(receipt) => match receipt.error {
-                    Some(ReceiptError::NotEnoughBaseGas) => true,
-                    _ => false,
-                },
-                _ => false,
-            })
-            .map(|receipt_option| match receipt_option {
-                Some(receipt) => receipt.transaction_hash,
-                None => H256::default(),
-            })
-            .filter(|hash| hash != &H256::default())
-            .collect();
-
-        // Filter out accounts in the black list where the account balance has reached the benchmark value
-        let clear_list: Vec<Address> = close_block
-            .state
-            .cache()
-            .iter()
-            .filter(|&(_, ref a)| a.is_dirty())
-            .map(|(address, ref mut a)| match a.account() {
-                Some(ref account)
-                    if self.black_list_cache.read().contains(address)
-                        && account.balance() >= &U256::from(100) =>
-                {
-                    *address
-                }
-                _ => Address::default(),
-            })
-            .filter(|address| address != &Address::default())
-            .collect();
-
-        // Get address of sending account by transaction hash
-        let blacklist: Vec<Address> = close_block
-            .body()
-            .transactions()
-            .iter()
-            .filter(|tx| blacklist_transaction_hash.contains(&tx.get_transaction_hash()))
-            .map(|tx| *tx.sender())
-            .collect();
-
-        {
-            let mut black_list_cache = self.black_list_cache.write();
-            *black_list_cache = black_list_cache
-                .symmetric_difference(&clear_list
-                    .iter()
-                    .map(|&address| address)
-                    .collect())
-                .cloned()
-                .collect::<HashSet<Address>>()
-                .union(&blacklist.iter().map(|&address| address).collect())
-                .cloned()
-                .collect::<HashSet<Address>>();
-        }
-
-        let black_list = BlackList::new()
-            .set_black_list(blacklist)
-            .set_clear_list(clear_list);
-
-        if black_list.len() > 0 {
-            let black_list_bytes: Message = black_list.protobuf().into();
-
-            info!("black list is {:?}", black_list.black_list());
-
-            ctx_pub
-                .send((
-                    routing_key!(Executor >> BlackList).into(),
-                    black_list_bytes.try_into().unwrap(),
-                ))
-                .unwrap();
-        }
-    }
-
     /// Prune executed_result on `BTreeMap`
     pub fn prune_execute_result_cache(&self, status: &RichStatus) {
         let height = status.get_height();
         if height > 1 {
             let mut executed_map = self.executed_result.write();
             *executed_map = executed_map.split_off(&(height - 1));
+        }
+    }
+
+    /// Find the public key of all senders that caused the specified error message, and then publish it
+    fn pub_black_list(&self, close_block: &ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        match *self.economical_model.read() {
+            EconomicalModel::Charge => {
+                // Get all transaction hash that is reported as not enough gas
+                let blacklist_transaction_hash: Vec<H256> = close_block
+                    .receipts
+                    .iter()
+                    .filter(|ref receipt_option| match receipt_option {
+                        Some(receipt) => match receipt.error {
+                            Some(ReceiptError::NotEnoughBaseGas) => true,
+                            _ => false,
+                        },
+                        _ => false,
+                    })
+                    .map(|receipt_option| match receipt_option {
+                        Some(receipt) => receipt.transaction_hash,
+                        None => H256::default(),
+                    })
+                    .filter(|hash| hash != &H256::default())
+                    .collect();
+
+                // Filter out accounts in the black list where the account balance has reached the benchmark value
+                let clear_list: Vec<Address> = close_block
+                    .state
+                    .cache()
+                    .iter()
+                    .filter(|&(_, ref a)| a.is_dirty())
+                    .map(|(address, ref mut a)| match a.account() {
+                        Some(ref account)
+                            if self.black_list_cache.read().contains(address)
+                                && account.balance() >= &U256::from(100) =>
+                        {
+                            *address
+                        }
+                        None | Some(_) => Address::default(),
+                    })
+                    .filter(|address| address != &Address::default())
+                    .collect();
+
+                // Get address of sending account by transaction hash
+                let blacklist: Vec<Address> = close_block
+                    .body()
+                    .transactions()
+                    .iter()
+                    .filter(|tx| blacklist_transaction_hash.contains(&tx.get_transaction_hash()))
+                    .map(|tx| *tx.sender())
+                    .collect();
+
+                {
+                    let mut black_list_cache = self.black_list_cache.write();
+                    *black_list_cache = black_list_cache
+                        .symmetric_difference(&clear_list.iter().map(|&address| address).collect())
+                        .cloned()
+                        .collect::<HashSet<Address>>()
+                        .union(&blacklist.iter().map(|&address| address).collect())
+                        .cloned()
+                        .collect::<HashSet<Address>>();
+                }
+
+                let black_list = BlackList::new()
+                    .set_black_list(blacklist)
+                    .set_clear_list(clear_list);
+
+                if black_list.len() > 0 {
+                    let black_list_bytes: Message = black_list.protobuf().into();
+
+                    info!("black list is {:?}", black_list.black_list());
+
+                    ctx_pub
+                        .send((
+                            routing_key!(Executor >> BlackList).into(),
+                            black_list_bytes.try_into().unwrap(),
+                        ))
+                        .unwrap();
+                }
+            }
+            EconomicalModel::Quota => {}
         }
     }
 }
