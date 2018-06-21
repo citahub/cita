@@ -893,7 +893,7 @@ impl Executor {
                     .collect();
 
                 // Filter out accounts in the black list where the account balance has reached the benchmark value
-                let clear_list: Vec<Address> = close_block
+                let clear_list: HashSet<Address> = close_block
                     .state
                     .cache()
                     .iter()
@@ -911,7 +911,7 @@ impl Executor {
                     .collect();
 
                 // Get address of sending account by transaction hash
-                let blacklist: Vec<Address> = close_block
+                let blacklist: HashSet<Address> = close_block
                     .body()
                     .transactions()
                     .iter()
@@ -922,10 +922,10 @@ impl Executor {
                 {
                     let mut black_list_cache = self.black_list_cache.write();
                     *black_list_cache = black_list_cache
-                        .symmetric_difference(&clear_list.iter().map(|&address| address).collect())
+                        .symmetric_difference(&clear_list)
                         .cloned()
                         .collect::<HashSet<Address>>()
-                        .union(&blacklist.iter().map(|&address| address).collect())
+                        .union(&blacklist)
                         .cloned()
                         .collect::<HashSet<Address>>();
                 }

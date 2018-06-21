@@ -18,31 +18,36 @@
 use cita_types::Address;
 use libproto::BlackList as ProtoBlackList;
 use protobuf::RepeatedField;
+use std::collections::HashSet;
 
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct BlackList {
-    black_list: Vec<Address>,
-    clear_list: Vec<Address>,
+    black_list: HashSet<Address>,
+    clear_list: HashSet<Address>,
 }
 
 impl BlackList {
     pub fn new() -> Self {
         BlackList {
-            black_list: Vec::new(),
-            clear_list: Vec::new(),
+            black_list: HashSet::new(),
+            clear_list: HashSet::new(),
         }
     }
 
-    pub fn black_list(&self) -> Vec<Address> {
+    pub fn black_list(&self) -> HashSet<Address> {
         self.black_list.clone()
     }
 
-    pub fn set_black_list(mut self, black_list: Vec<Address>) -> Self {
+    pub fn clear_list(&self) -> HashSet<Address> {
+        self.clear_list.clone()
+    }
+
+    pub fn set_black_list(mut self, black_list: HashSet<Address>) -> Self {
         self.black_list = black_list;
         self
     }
 
-    pub fn set_clear_list(mut self, clear_list: Vec<Address>) -> Self {
+    pub fn set_clear_list(mut self, clear_list: HashSet<Address>) -> Self {
         self.clear_list = clear_list;
         self
     }
