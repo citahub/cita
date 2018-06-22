@@ -48,8 +48,7 @@ use cita_types::{Address, H256, U256};
 use native::factory::Factory as NativeFactory;
 use state::State;
 use state_db::StateDB;
-use std::collections::HashSet;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::convert::{Into, TryInto};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
@@ -210,7 +209,7 @@ pub struct Executor {
 
     pub service_map: Arc<ServiceMap>,
     pub economical_model: RwLock<EconomicalModel>,
-    black_list_cache: RwLock<HashSet<Address>>,
+    black_list_cache: RwLock<BlackListCache>,
 }
 
 /// Get latest header
@@ -285,7 +284,7 @@ impl Executor {
             sys_configs: RwLock::new(VecDeque::new()),
             service_map: Arc::new(ServiceMap::new()),
             economical_model: RwLock::new(EconomicalModel::Quota),
-            black_list_cache: RwLock::new(HashSet::new()),
+            black_list_cache: RwLock::new(BlackListCache::new(10_000_000)),
         };
 
         // Build executor config
@@ -893,7 +892,7 @@ impl Executor {
                     .collect();
 
                 // Filter out accounts in the black list where the account balance has reached the benchmark value
-                let clear_list: HashSet<Address> = close_block
+                let mut clear_list: Vec<Address> = close_block
                     .state
                     .cache()
                     .iter()
@@ -911,7 +910,7 @@ impl Executor {
                     .collect();
 
                 // Get address of sending account by transaction hash
-                let blacklist: HashSet<Address> = close_block
+                let blacklist: Vec<Address> = close_block
                     .body()
                     .transactions()
                     .iter()
@@ -921,13 +920,10 @@ impl Executor {
 
                 {
                     let mut black_list_cache = self.black_list_cache.write();
-                    *black_list_cache = black_list_cache
-                        .symmetric_difference(&clear_list)
-                        .cloned()
-                        .collect::<HashSet<Address>>()
-                        .union(&blacklist)
-                        .cloned()
-                        .collect::<HashSet<Address>>();
+                    black_list_cache
+                        .prune(&clear_list)
+                        .extend(&blacklist, close_block.number());
+                    clear_list.extend(black_list_cache.lru().iter());
                 }
 
                 let black_list = BlackList::new()
@@ -948,6 +944,70 @@ impl Executor {
                 }
             }
             EconomicalModel::Quota => {}
+        }
+    }
+}
+
+/// This structure is used to perform lru based on block height
+struct BlackListCache {
+    cache_by_block_number: BTreeMap<u64, Vec<Address>>,
+    cache_by_address: BTreeMap<Address, u64>,
+    lru_number: u64,
+}
+
+impl BlackListCache {
+    pub fn new(lru_number: u64) -> Self {
+        BlackListCache {
+            cache_by_block_number: BTreeMap::new(),
+            cache_by_address: BTreeMap::new(),
+            lru_number: lru_number,
+        }
+    }
+
+    pub fn contains(&self, key: &Address) -> bool {
+        self.cache_by_address.contains_key(key)
+    }
+
+    pub fn extend(&mut self, extend: &Vec<Address>, height: u64) -> &mut Self {
+        extend.clone().into_iter().for_each(|address| {
+            let _ = self.cache_by_address.insert(address, height);
+        });
+        self.cache_by_block_number.insert(height, extend.to_owned());
+        self
+    }
+
+    pub fn prune(&mut self, clear_list: &Vec<Address>) -> &mut Self {
+        let heights: HashSet<u64> = clear_list
+            .clone()
+            .iter()
+            .map(|address| self.cache_by_address.remove(&address).unwrap())
+            .collect();
+
+        heights.iter().for_each(|&height| {
+            self.cache_by_block_number
+                .entry(height)
+                .and_modify(|values| {
+                    let _ = values
+                        .iter()
+                        .filter(|&value| !clear_list.contains(&value))
+                        .map(|&value| value)
+                        .collect::<Vec<Address>>();
+                });
+        });
+        self
+    }
+
+    pub fn lru(&mut self) -> Vec<Address> {
+        if self.lru_number <= self.cache_by_address.len() as u64 {
+            let temp = self.cache_by_block_number.clone();
+            let (k, v) = temp.iter().next().unwrap();
+            self.cache_by_block_number.remove(k);
+            v.iter().for_each(|address| {
+                let _ = self.cache_by_address.remove(address);
+            });
+            v.clone()
+        } else {
+            Vec::new()
         }
     }
 }
