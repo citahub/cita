@@ -145,7 +145,8 @@ cd target/install
     ```
 
 > ***<font color=red>注意</font>***
-> 不可到bin目录然后执行`./cita setup/start/stop test-chain/0`
+> 不可到bin目录然后执行`./cita setup/start/stop test-chain/0`。
+> 虽然cita在docker中运行，但是容器并没有做网络隔离。因此请勿在一台服务器上运行多个容器。也不要同时在host系统里面运行cita以及相关的rabbitmq等软件，以免造成端口冲突。
 
 ## 测试
 
