@@ -16,11 +16,12 @@
 
 ### 创建快照
 
-假设当前工作目录为`../cita/target/install/node0`，执行如下快照命令：
+假设当前工作目录为`../cita/target/install/`，执行如下快照命令：
 
 ```bash
-node0$ ../bin/snapshot_tool -m snapshot 
-node0$ ls snap*
+$ cd test-chain/0
+$ ../../bin/snapshot_tool -m snapshot
+$ ls snap*
 snap-chain.rlp  snap.rlp
 ```
 
@@ -35,7 +36,8 @@ snap-chain.rlp  snap.rlp
 1. 将上述生成的快照文件拷贝到需恢复链数据的节点目录下
 
     ```bash
-    node1$ cp ../node0/snap.rlp ../node0/snap-chain.rlp ./
+    $ cd test-chain/1
+    $ cp ../0/snap.rlp ../0/snap-chain.rlp ./
     ```
 
 2. 依快照文件快照恢复
@@ -43,5 +45,5 @@ snap-chain.rlp  snap.rlp
     快照命令行工具接受恢复参数后，依据快照文件恢复数据。
 
     ```bash
-    node1$ ../bin/snapshot_tool -m restore 
-    ``` 
+    $ ../../bin/snapshot_tool -m restore
+    ```

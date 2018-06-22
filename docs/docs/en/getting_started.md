@@ -1,4 +1,4 @@
-# Getting Started 
+# Getting Started
 
 ## Dependencies
 
@@ -102,33 +102,33 @@ Use`create_cita_config.py -h`to get detailed help information, allowing custom c
 
 After the node initialization, the node configuration file will be generated in the release directory. The generated node directory is:
 
-* node/0
-* node/1
-* node/2
-* node/3
+* test-chain/0
+* test-chain/1
+* test-chain/2
+* test-chain/3
 
 ## Run nodes
 
-The commands of operation the nodes are the same. Take`node/0`as an example.
+The commands of operation the nodes are the same. Take`test-chain/0`as an example.
 
 1. Configure the node:
 
     ```shell
-    ./env.sh ./bin/cita setup node/0
+    ./env.sh ./bin/cita setup test-chain/0
     ```
 
 2. Start the node：
 
     This command does not return normally, so it needs to run in the background.
-	
+
     ```shell
-    ./daemon.sh ./bin/cita start node/0
-    ```	
+    ./daemon.sh ./bin/cita start test-chain/0
+    ```
 
 3. Stop the node：
 
     ```shell
-    ./env.sh ./bin/cita stop node/0
+    ./env.sh ./bin/cita stop test-chain/0
     ```
 
 4. Other operations
@@ -145,19 +145,19 @@ There are two ways to set up test environment.
 
 - You can start 4 nodes one by one as mentioned in previous section. When you do not need to use them, close them one by one.
 - You can also start and shut down nodes in batches by using the following script.
-	
+
     The following commands run in the source root directory.
-	
+
 	- Start 4 nodes
-		
+
         ```shell
         ./env.sh tests/integrate_test/cita_start.sh
         ```
-		
+
         This command does not return normally and you need to keep the shell from exiting. Or run with`daemon.sh`.
 
 	- Stop 4 nodes
-		
+
         ```shell
         ./env.sh ./tests/integrate_test/cita_stop.sh
         ```

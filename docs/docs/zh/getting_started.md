@@ -103,49 +103,49 @@ cd target/install
 
 节点初始化操作成功后，将在发布件目录下生成节点的配置文件，其生成的节点目录为：
 
-* node/0
-* node/1
-* node/2
-* node/3
+* test-chain/0
+* test-chain/1
+* test-chain/2
+* test-chain/3
 
-> ***<font color=red>注意</font>***  
-> 对于多服务器部署，选择一台服务器执行命令之后把相关节点目录进行拷贝。  
+> ***<font color=red>注意</font>***
+> 对于多服务器部署，选择一台服务器执行命令之后把相关节点目录进行拷贝。
 > 不可多服务器都执行配置脚本。
 
 ## 运行节点
 
-操作节点的命令都是相同的，以下以`node/0`为例进行演示。
+操作节点的命令都是相同的，以下以`test-chain/0`为例进行演示。
 
 1.  配置节点：
 
     ```shell
-    ./env.sh ./bin/cita setup node/0
+    ./env.sh ./bin/cita setup test-chain/0
     ```
 
 2.  启动节点：
 
     该命令正常情况下不会返回，因此需要后台运行。
-    
+
     ```shell
-    ./daemon.sh ./bin/cita start node/0
+    ./daemon.sh ./bin/cita start test-chain/0
     ```
 
 3.  停止节点：
 
     ```shell
-    ./env.sh ./bin/cita stop node/0
+    ./env.sh ./bin/cita stop test-chain/0
     ```
 
 4.  其他操作
 
     具体使用查看命令的帮助信息：
-    
+
     ```shell
     ./env.sh ./bin/cita help
     ```
 
-> ***<font color=red>注意</font>***  
-> 不可到bin目录然后执行`./cita setup/start/stop node/0`
+> ***<font color=red>注意</font>***
+> 不可到bin目录然后执行`./cita setup/start/stop test-chain/0`
 
 ## 测试
 
@@ -164,7 +164,7 @@ cd target/install
 2.  停止 4 个节点
 
     上一节中的命令中止，或者执行命令：
-    
+
     ```shell
     ./env.sh ./tests/integrate_test/cita_stop.sh
     ```
@@ -172,7 +172,7 @@ cd target/install
 3.  基本功能测试
 
     4 个节点启动并成功出块，基本功能测试然后停止 4 个节点：
-    
+
     ```shell
     ./env.sh ./tests/integrate_test/cita_basic.sh
     ```
@@ -186,12 +186,12 @@ cd target/install
 5.  拜占庭测试
 
     模拟网络异常情况下的功能测试。
-    
+
     ```shell
     ./env.sh ./tests/integrate_test/cita_byzantinetest.sh
     ```
 
-> ***<font color=red>注意</font>***  
+> ***<font color=red>注意</font>***
 > 必须使用`./env.sh`
 
 ## 验证
@@ -199,13 +199,13 @@ cd target/install
 * 查询节点个数
 
     Request:
-    
+
     ```shell
     ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"peerCount","params":[],"id":74}' 127.0.0.1:1337
     ```
 
     Result:
-    
+
     ```shell
     {
       "jsonrpc": "2.0",
@@ -217,13 +217,13 @@ cd target/install
 * 查询当前块高度。
 
     Request:
-    
+
     ```shell
     ./env.sh curl -X POST --data '{"jsonrpc":"2.0","method":"blockNumber","params":[],"id":83}' 127.0.0.1:1337
     ```
 
     Result:
-    
+
     ```shell
     {
       "jsonrpc": "2.0",
@@ -231,10 +231,10 @@ cd target/install
       "result": "0x8"
     }
     ```
-    
+
     返回块高度，表示节点已经开始正常出块。
 
-> ***<font color=red>注意</font>***  
+> ***<font color=red>注意</font>***
 > 在发布件目录(target/install)下运行节点。
 > 可选择使用`./env.sh`
 

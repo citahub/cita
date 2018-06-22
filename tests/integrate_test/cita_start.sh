@@ -26,7 +26,9 @@ cleanup
 
 echo "###generate config files"
 cd ${BINARY_DIR}
-./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" >/dev/null 2>&1
+./scripts/create_cita_config.py create \
+    --chain_name "node" \
+    --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" >/dev/null 2>&1
 
 
 echo "###start nodes"
