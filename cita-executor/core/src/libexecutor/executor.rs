@@ -1002,10 +1002,21 @@ impl BlackListCache {
             let temp = self.cache_by_block_number.clone();
             let (k, v) = temp.iter().next().unwrap();
             self.cache_by_block_number.remove(k);
+
+            let v: Vec<Address> = v
+                .into_iter()
+                .filter(|address| match self.cache_by_address.get(address) {
+                    Some(ref height) if height == &k => true,
+                    None | Some(_) => false,
+                })
+                .map(|&address| address)
+                .collect();
+
             v.iter().for_each(|address| {
                 let _ = self.cache_by_address.remove(address);
             });
-            v.clone()
+
+            v
         } else {
             Vec::new()
         }
@@ -1104,4 +1115,33 @@ mod tests {
         assert_eq!(lhs, rhs);
     }
 
+    #[test]
+    fn test_lru() {
+        let mut cache = BlackListCache::new(2);
+        cache
+            .extend(&vec![Address::from([0; 20]), Address::from([1; 20])], 1)
+            .extend(&vec![Address::from([2; 20]), Address::from([3; 20])], 2);
+        assert!(cache.contains(&Address::from([0; 20])));
+        assert!(cache.contains(&Address::from([3; 20])));
+
+        cache.prune(&vec![Address::from([0; 20]), Address::from([1; 20])]);
+        assert_eq!(cache.contains(&Address::from([0; 20])), false);
+        assert_eq!(cache.contains(&Address::from([1; 20])), false);
+        assert_eq!(cache.contains(&Address::from([2; 20])), true);
+
+        cache.extend(&vec![Address::from([2; 20]), Address::from([3; 20])], 3);
+        assert_eq!(cache.lru(), Vec::new());
+
+        cache.extend(&vec![Address::from([2; 20]), Address::from([3; 20])], 4);
+        assert_eq!(cache.lru(), Vec::new());
+
+        cache.extend(&vec![Address::from([4; 20]), Address::from([5; 20])], 5);
+        assert_eq!(cache.lru(), Vec::new());
+
+        cache.extend(&vec![Address::from([4; 20]), Address::from([5; 20])], 5);
+        assert_eq!(
+            cache.lru(),
+            vec![Address::from([2; 20]), Address::from([3; 20])]
+        );
+    }
 }
