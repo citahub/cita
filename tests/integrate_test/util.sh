@@ -15,7 +15,7 @@ cleanup() {
         ps ax | grep ${pid} | grep -v grep | awk '{print $1}' | xargs -n 1 -I %  kill -9 % 2>&1 >/dev/null ||true
     done
 
-    rm -rf ${BINARY_DIR}/node*
+    rm -rf ${BINARY_DIR}/${1:-node}*
     rm -rf ${BINARY_DIR}/*.json
     sudo tc qdisc del dev lo root> /dev/null 2>&1||true
 

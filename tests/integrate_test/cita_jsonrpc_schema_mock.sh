@@ -24,7 +24,7 @@ echo "DONE"
 
 ################################################################################
 echo -n "1) cleanup   ...  "
-cleanup
+cleanup "mock-chain"
 echo "DONE"
 
 ################################################################################
@@ -36,23 +36,22 @@ fi
 AUTHORITIES=`cat ${SOURCE_DIR}/tests/interfaces/rpc/config/authorities |xargs echo |sed "s/ /,/g"`
 
 ${BINARY_DIR}/scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
-             --chain_name "node" \
+             --chain_name "mock-chain" \
              --contract_arguments "SysConfig.economical_model=${ECONOMICAL_MODEL}" \
              --contract_arguments "SysConfig.chain_id=123" \
              --timestamp 1524000000 \
-             --authorities ${AUTHORITIES} > /dev/null 2>&1
+             --authorities ${AUTHORITIES}
 echo "DONE"
 
 ################################################################################
-echo -n "3) just start node0  ...  "
-${BINARY_DIR}/bin/cita setup node/0 > /dev/null
-cp ${SOURCE_DIR}/tests/interfaces/rpc/config/genesis.json node/0/genesis.json
-${BINARY_DIR}/bin/cita start node/0 trace > /dev/null &
+echo -n "3) just start mock-chain/0  ...  "
+${BINARY_DIR}/bin/cita setup mock-chain/0 > /dev/null
+${BINARY_DIR}/bin/cita start mock-chain/0 trace > /dev/null &
 echo "DONE"
 
 ################################################################################
 echo -n "4) generate mock data  ...  "
-AMQP_URL=amqp://guest:guest@localhost/node/0 \
+AMQP_URL=amqp://guest:guest@localhost/mock-chain/0 \
         ${SOURCE_DIR}/target/debug/chain-executor-mock \
         -m ${SOURCE_DIR}/tests/interfaces/rpc/config/blockchain.yaml
 echo "DONE"
@@ -65,11 +64,11 @@ python3 ${SOURCE_DIR}/tests/interfaces/rpc/test_runner.py \
 echo "DONE"
 
 ################################################################################
-echo -n "6) stop node0  ...  "
-${BINARY_DIR}/bin/cita stop node/0
+echo -n "6) stop mock-chain/0  ...  "
+${BINARY_DIR}/bin/cita stop mock-chain/0
 echo "DONE"
 
 ################################################################################
 echo -n "7) cleanup ... "
-cleanup
+cleanup "mock-chain"
 echo "DONE"
