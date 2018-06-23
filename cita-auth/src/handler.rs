@@ -200,7 +200,7 @@ pub struct MsgHandler {
     tx_request: Sender<Request>,
     tx_pool_limit: usize,
     is_recovery_mod: bool,
-    black_list_cache: HashMap<Public, i8>,
+    black_list_cache: HashMap<Address, i8>,
 }
 
 impl MsgHandler {
@@ -452,7 +452,7 @@ impl MsgHandler {
     fn verify_black_list(&self, req: &VerifyTxReq) -> Ret {
         match self
             .black_list_cache
-            .get(&Public::from_slice(req.get_signer()))
+            .get(&pubkey_to_address(&Public::from_slice(req.get_signer())))
         {
             Some(credit) => {
                 if credit < &0 {
@@ -671,12 +671,18 @@ impl MsgHandler {
                         }
                         routing_key!(Executor >> BlackList) => {
                             let black_list = msg.take_black_list().unwrap();
-                            black_list
-                                .get_signer()
-                                .into_iter()
-                                .for_each(|blacklist: &Vec<u8>| {
+
+                            black_list.get_clear_list().into_iter().for_each(
+                                |clear_list: &Vec<u8>| {
                                     self.black_list_cache
-                                        .entry(Public::from_slice(blacklist.as_slice()))
+                                        .remove(&Address::from_slice(clear_list.as_slice()));
+                                },
+                            );
+
+                            black_list.get_black_list().into_iter().for_each(
+                                |blacklist: &Vec<u8>| {
+                                    self.black_list_cache
+                                        .entry(Address::from_slice(blacklist.as_slice()))
                                         .and_modify(|e| {
                                             if *e >= 0 {
                                                 *e -= 1;
@@ -684,7 +690,8 @@ impl MsgHandler {
                                         })
                                         .or_insert(3);
                                     debug!("Current black list is {:?}", self.black_list_cache);
-                                });
+                                },
+                            );
                         }
                         routing_key!(Consensus >> VerifyBlockReq) => {
                             let blk_req = msg.take_verify_block_req().unwrap();

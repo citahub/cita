@@ -29,7 +29,7 @@ use executive::{Executive, TransactOptions};
 use factory::Factories;
 use libexecutor::executor::EconomicalModel;
 use receipt::{Receipt, ReceiptError};
-use std::cell::{RefCell, RefMut};
+use std::cell::{Ref, RefCell, RefMut};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -79,7 +79,7 @@ enum AccountState {
 /// and the modification status.
 /// Account entry can contain existing (`Some`) or non-existing
 /// account (`None`)
-struct AccountEntry {
+pub struct AccountEntry {
     /// Account entry. `None` if account known to be non-existant.
     account: Option<Account>,
     /// Unmodified account balance.
@@ -91,7 +91,7 @@ struct AccountEntry {
 // Account cache item. Contains account data and
 // modification state
 impl AccountEntry {
-    fn is_dirty(&self) -> bool {
+    pub fn is_dirty(&self) -> bool {
         self.state == AccountState::Dirty
     }
 
@@ -158,6 +158,10 @@ impl AccountEntry {
             }
             None => self.account = None,
         }
+    }
+
+    pub fn account(&self) -> Option<&Account> {
+        self.account.as_ref()
     }
 }
 
@@ -265,6 +269,10 @@ impl<B: Backend> State<B> {
             group_accounts: HashMap::new(),
             super_admin_account: None,
         }
+    }
+
+    pub fn cache(&self) -> Ref<HashMap<Address, AccountEntry>> {
+        self.cache.borrow()
     }
 
     /// Creates new state with existing state root
