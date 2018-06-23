@@ -50,7 +50,7 @@ optional arguments:
 
 参数的简单解释：
 
-- `chain_name` : cita 支持侧链后，通过 chain_name 生成不同的链配置，默认为 node
+- `chain_name` : cita 支持侧链后，通过 chain_name 生成不同的链配置，默认为 test-chain
 
 - `super_admin` : 指定生成链的超级管理员地址
 
@@ -68,18 +68,18 @@ optional arguments:
 
 ```shell
 $ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
-$ ls node/
+$ ls test-chain/
   0  1  2  3  template
 ```
 
-相对应给出的参数，生成 4 个节点，`node/*` 里面包含节点的配置文件，具体如下：
+相对应给出的参数，生成 4 个节点，`test-chain/*` 里面包含节点的配置文件，具体如下：
 
-- 生成私钥和地址，私钥存放在`node/*/privkey`，其中 nodeID 为节点号；而所有节点地址都存放在`backup/authorities`；
-- 生成网络配置文件，存放在`node/*/network.toml`，文件内容主要为总节点数、本地节点端口以及其它节点的ip和端口号；
-- 生成 genesis 块文件，存放在`node/*/genesis.json`， 其中 timestamp 为时间戳，秒为单位；prevhash 指前一个块哈希，这里是默认值；而 alloc 指部署到创世块的合约内容；
-- 生成节点配置文件，存放在`node/*/consensus.json`，主要包含共识算法的相关参数；
-- 生成 jsonrpc 配置文件，存放在`node/*/jsonrpc.toml`，主要包含 jsonrpc 模块的相关参数。
-- `node/template`目录下是模板文件，包括这个链的共识节点地址 `node/template/authorities.list`，系统合约生成参数 `node/template/init_data.yml`, 节点端口地址`node/template/nodes.list` 等信息
+- 生成私钥和地址，私钥存放在`test-chain/*/privkey`，其中 `*` 为节点号；而所有节点地址都存放在`test-chain/template/authorities`；
+- 生成网络配置文件，存放在`test-chain/*/network.toml`，文件内容主要为总节点数、本地节点端口以及其它节点的ip和端口号；
+- 生成 genesis 块文件，存放在`test-chain/*/genesis.json`， 其中 timestamp 为时间戳，秒为单位；prevhash 指前一个块哈希，这里是默认值；而 alloc 指部署到创世块的合约内容；
+- 生成节点配置文件，存放在`test-chain/*/consensus.toml`，主要包含共识算法的相关参数；
+- 生成 jsonrpc 配置文件，存放在`test-chain/*/jsonrpc.toml`，主要包含 jsonrpc 模块的相关参数。
+- `test-chain/template`目录下是模板文件，包括这个链的共识节点地址 `test-chain/template/authorities.list`，系统合约生成参数 `test-chain/template/init_data.yml`, 节点端口地址`test-chain/template/nodes.list` 等信息
 
 ### 配置文件
 

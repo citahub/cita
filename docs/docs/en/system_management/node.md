@@ -6,7 +6,7 @@ The public blockchain don't have any permission management, which means that any
 
 ## Ordinary Nodes Management  (White-list)
 
-Currently, CITA adopts white-list for ordinary nodes permission management. Each node saves the node White-list configuration file locally, which records the information of nodes that are allowed to connect for p2p communication and data synchronization, including its public key, IP address, port, and corresponding identity information. 
+Currently, CITA adopts white-list for ordinary nodes permission management. Each node saves the node White-list configuration file locally, which records the information of nodes that are allowed to connect for p2p communication and data synchronization, including its public key, IP address, port, and corresponding identity information.
 The white-list is generated and distributed by the management organization, and the operation and maintenance personnel can maintain and manage it. Depending on nodeself，it is permitted to connect and configure several additional nodes to perform data analysis and other tasks.
 
 ### Operations
@@ -20,29 +20,29 @@ The management of ordinary nodes includes adding and deleting. Let's illustrate 
     ```bash
     $ pwd
     ../cita/target/install
-    $ ls node/
+    $ ls test-chain/
       0  1  2  3  template
     ```
-     The current nodes' public key address are saved in file `template/authorities.list` and the block information of genesis is saved in file `template/configs/genesis.json`. We have four nodes currently. 
+     The current nodes' public key address are saved in file `template/authorities.list` and the block information of genesis is saved in file `template/configs/genesis.json`. We have four nodes currently.
 
 2. Generate new nodes：
 
     ```bash
     $ ./scripts/create_cita_config.py append --node "127.0.0.1:4004"
-    $ ls node/
+    $ ls test-chain/
       0  1  2  3  4  template
     ```
-    
+
     - append：add new node with specified IP
-    - The script will generate a new node（No.4）automatically and insert the new node's ip and port configuration into `node/*/network.toml`
+    - The script will generate a new node（No.4）automatically and insert the new node's ip and port configuration into `test-chain/*/network.toml`
 
 3. Start new nodes：
 
     Just start the new node in normal process. It can connect to the network and start to synchronize the block data on the chain automatically. **Note that the new node here is only an ordinary node and does not participate in the consensus process, which means it can only synchronize data and receive Jsonrpc Request**。
 
     ```bash
-    $ ./bin/cita setup node4
-    $ ./bin/cita start node4
+    $ ./bin/cita setup test-chain/4
+    $ ./bin/cita start test-chain/4
     ```
 
     For the original node, if it is running, after network.toml is modified, they will automatically reload the p2p network configuration and try to find new nodes.
@@ -51,9 +51,9 @@ The management of ordinary nodes includes adding and deleting. Let's illustrate 
 
 Go to the corresponding node directory, find `network.toml`, delete the corresponding `peers` entry.
 
-## Consensus Nodes Management 
+## Consensus Nodes Management
 
-As a blockchain framework for enterprise-level applications, CITA needs to ensure that supervisors can get related permission to manage consensus nodes, including adding and deleting consensus nodes and other operations. For the consensus microservice, it is necessary to provide supervisors with an interface for reading the consensus node list in real time. 
+As a blockchain framework for enterprise-level applications, CITA needs to ensure that supervisors can get related permission to manage consensus nodes, including adding and deleting consensus nodes and other operations. For the consensus microservice, it is necessary to provide supervisors with an interface for reading the consensus node list in real time.
 Compared with centralized management which cannot guarantee the security and consistency of the consensus node list of each node, CITA adopts contract method to implement the consensus nodes management which can effectively guarantee the security and consistency.
 
 When initializing genesis block, an administrator address needs to be initialized first. Then both the administrator address and consensus nodes management contract address need to be written into the genesis block file of each node. The contents of genesis block cannot be modified after initialization. After the blockchain starts, the management contract will be written into the genesis block. Out-of-chain operators can manage consensus nodes by calling the RPC interface.
@@ -153,11 +153,11 @@ The return value is the list of current consensus nodes address.
 
 Now we need to upgrade the new ordinary node to a consensus node by constructing transactions. In the demo, the public key address of the new node is `59a316df602568957f47973332f1f85ae1e2e75e`.
 
-#### Construct and send transactions 
+#### Construct and send transactions
 
 The standard of calling contract follows [ABI](https://solidity.readthedocs.io/en/develop/abi-spec.html), we privide a transaction tool `make_tx.py`：
 
-1. Construct newNode transaction information 
+1. Construct newNode transaction information
 
     ```bash
     $ cd script/txtool/txtool
@@ -173,7 +173,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
 2. Send transaction
 
     ```bash
-    $ python3 send_tx.py 
+    $ python3 send_tx.py
     --> {"params": ["0a5b0a283030303030303030303030303030303030303030303030303030303030303030303133323431613212013018fface20420dc012a24ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e1241bc58c97ad8979f429bac343157fd8ecb193edb8255ca256ca077d352c24161e31ad634214f5443ea27ac95a3fe0b2ef2efc2a991b26c043f193325ea12033e7400"], "jsonrpc": "2.0", "method": "sendRawTransaction", "id": 1}
     <-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0xdacbbb3697085eec3bfb0321d5142b86266a88eeaf5fba7ff40552a8350f4323","status":"OK"}} (200 OK)
     ```
@@ -232,7 +232,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
 6. Get receipt
 
     ```bash
-    $ python3 get_receipt.py 
+    $ python3 get_receipt.py
     {
       "contractAddress": null,
       "cumulativeGasUsed": "0xcf15",
@@ -263,7 +263,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
     }
     ```
 
-7. View the current number of consensus nodes 
+7. View the current number of consensus nodes
 
     ```bash
     $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337

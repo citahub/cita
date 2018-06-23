@@ -7,8 +7,8 @@ CITA 每个微服务的日志信息都会被记录到一个单独的日志文件
 CITA 日志文件位于节点文件夹下的 logs 目录中，每个微服务单独一个日志文件。
 
 ```
-~/cita/node0$ ls logs/
-cita-auth.log  cita-bft.log  cita-chain.log  cita-executor.log  cita-jsonrpc.log  cita-network.log 
+~/cita/test-chain/0$ ls logs/
+cita-auth.log  cita-bft.log  cita-chain.log  cita-executor.log  cita-jsonrpc.log  cita-network.log
 ```
 
 ## 日志优先级
@@ -39,7 +39,7 @@ CITA 默认日志等级为`Info`。示例如下：
 日志优先级可以在启动 CITA 的时候通过参数修改：
 
 ```
-./env.sh ./bin/cita start node0 trace
+./env.sh ./bin/cita start test-chain/0 trace
 ```
 
 这时`Trace`级别的日志也可以打印出来了：
@@ -75,24 +75,24 @@ CITA 节点需要长时间持续运行，因此日志文件会越来越大，需
 对于一个节点内的多个微服务，有如下的命令封装：
 
 ```
-./env.sh ./bin/cita logrotate node0
+./env.sh ./bin/cita logrotate test-chain/0
 ```
 
 效果如下：
 
 ```
-./node0/logs/cita-auth.log
-./node0/logs/cita-auth_2018-04-02_11-34-51.log
-./node0/logs/cita-chain.log
-./node0/logs/cita-chain_2018-04-02_11-34-51.log
-./node0/logs/cita-jsonrpc.log
-./node0/logs/cita-jsonrpc_2018-04-02_11-34-51.log
-./node0/logs/cita-executor.log
-./node0/logs/cita-executor_2018-04-02_11-34-51。log
-./node0/logs/cita-bft.log
-./node0/logs/cita-bft_2018-04-02_11-34-51.log
-./node0/logs/cita-network.log
-./node0/logs/cita-network_2018-04-02_11-34-51.log
+./test-chain/0/logs/cita-auth.log
+./test-chain/0/logs/cita-auth_2018-04-02_11-34-51.log
+./test-chain/0/logs/cita-chain.log
+./test-chain/0/logs/cita-chain_2018-04-02_11-34-51.log
+./test-chain/0/logs/cita-jsonrpc.log
+./test-chain/0/logs/cita-jsonrpc_2018-04-02_11-34-51.log
+./test-chain/0/logs/cita-executor.log
+./test-chain/0/logs/cita-executor_2018-04-02_11-34-51。log
+./test-chain/0/logs/cita-bft.log
+./test-chain/0/logs/cita-bft_2018-04-02_11-34-51.log
+./test-chain/0/logs/cita-network.log
+./test-chain/0/logs/cita-network_2018-04-02_11-34-51.log
 ```
 
 原有日志内容转移到带有当前日期的备份日志文件中，原有日志文件清空，进程继续往原有的日志文件里面写入。
@@ -100,7 +100,7 @@ CITA 节点需要长时间持续运行，因此日志文件会越来越大，需
 可通过如下命令将备份的日志文件筛选出来：
 
 ```
-find ./node*/logs | grep `date "+%Y-%m-%d"`
+find ./test-chain/*/logs | grep `date "+%Y-%m-%d"`
 ```
 
 然后可以根据用户的需要，移动到专门的备份的地方，压缩保存，甚至是直接删除。

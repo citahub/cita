@@ -148,7 +148,7 @@ class ChainInfo(object):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, chain_name, output_dir):
-        self.node_prefix = chain_name or 'node'
+        self.node_prefix = chain_name
         self.output_root = os.path.join(output_dir, self.node_prefix)
 
         self.template_dir = os.path.join(self.output_root, 'template')
@@ -334,7 +334,10 @@ def parse_arguments():
         type=AuthorityList.from_str,
         metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(var='AUTHORITY'),
         help='Authorities (addresses) list.')
-    pcreate.add_argument('--chain_name', help='Name of the new chain.')
+    pcreate.add_argument(
+        '--chain_name',
+        default='test-chain',
+        help='Name of the new chain.')
 
     pcreate.add_argument(
         '--nodes',
@@ -425,6 +428,9 @@ def parse_arguments():
         else:
             _, signers = generate_authorities(1)
             args.node.add_signers(signers)
+    else:
+        logging.critical('Please select a valid subcommand.')
+        sys.exit(1)
     return args
 
 

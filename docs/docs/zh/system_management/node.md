@@ -17,7 +17,7 @@ CITA 中节点分为共识节点和普通节点，交易由共识节点排序并
     ```bash
     $ pwd
     ../cita/target/install
-    $ ls node/
+    $ ls test-chain/
       0  1  2  3  template
     ```
     template 中保存了当前节点的公钥地址 `template/authorities.list`，以及创世块信息 `template/configs/genesis.json`，目前地址有四个。
@@ -26,12 +26,12 @@ CITA 中节点分为共识节点和普通节点，交易由共识节点排序并
 
     ```bash
     $ ./scripts/create_cita_config.py append --node "127.0.0.1:4004"
-    $ ls node/
+    $ ls test-chain/
       0  1  2  3  4  template
     ```
-    
+
     - append 子命令，在指定链中增加对应 ip 地址的节点
-    - 脚本将自动生成 4 号节点，并在原有节点中 `node/*/network.toml` 中插入新节点的 ip 及端口配置
+    - 脚本将自动生成 4 号节点，并在原有节点中 `test-chain/*/network.toml` 中插入新节点的 ip 及端口配置
 
 3. 启动新节点：
 
@@ -40,8 +40,8 @@ CITA 中节点分为共识节点和普通节点，交易由共识节点排序并
     新节点只需要按照正常流程启动，就可以连接入网络，并开始同步链上的块数据，**注意，此时的新节点为普通节点，不参与共识选举，即只能同步数据和接收 jsonrpc 请求**。
 
     ```bash
-    $ ./bin/cita setup node4
-    $ ./bin/cita start node4
+    $ ./bin/cita setup test-chain/4
+    $ ./bin/cita start test-chain/4
     ```
 
 ### 删除普通节点
@@ -169,7 +169,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x0000
 2. 发送交易
 
     ```bash
-    $ python3 send_tx.py 
+    $ python3 send_tx.py
     --> {"params": ["0a5b0a283030303030303030303030303030303030303030303030303030303030303030303133323431613212013018fface20420dc012a24ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e1241bc58c97ad8979f429bac343157fd8ecb193edb8255ca256ca077d352c24161e31ad634214f5443ea27ac95a3fe0b2ef2efc2a991b26c043f193325ea12033e7400"], "jsonrpc": "2.0", "method": "sendRawTransaction", "id": 1}
     <-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0xdacbbb3697085eec3bfb0321d5142b86266a88eeaf5fba7ff40552a8350f4323","status":"OK"}} (200 OK)
     ```
@@ -227,7 +227,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x0000
 6. 获取回执
 
     ```bash
-    $ python3 get_receipt.py 
+    $ python3 get_receipt.py
     {
       "contractAddress": null,
       "cumulativeGasUsed": "0xcf15",

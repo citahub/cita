@@ -7,7 +7,9 @@ sudo rabbitmqctl stop_app
 sudo rabbitmqctl reset
 sudo rabbitmqctl start_app
 cd ${CUR_PATH}/../../admintool/
-./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
+./scripts/create_cita_config.py create \
+    --chain_name "node" \
+    --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
 
 setup_node() {
     id=$1
