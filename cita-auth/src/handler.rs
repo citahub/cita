@@ -475,6 +475,10 @@ impl MsgHandler {
             return Ret::InvalidNonce;
         }
 
+        if req.get_value().len() > 32 {
+            return Ret::InvalidValue;
+        }
+
         let valid_until_block = req.get_valid_until_block();
         let next_height = self.history_heights.next_height();
         if valid_until_block < next_height || valid_until_block >= (next_height + BLOCKLIMIT) {
