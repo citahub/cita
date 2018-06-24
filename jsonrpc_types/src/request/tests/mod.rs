@@ -15,25 +15,5 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum Id {
-    /// No id (notification)
-    Null,
-    /// String id
-    Str(String),
-    /// Numeric id
-    Num(u64),
-}
-
-impl Default for Id {
-    fn default() -> Self {
-        Id::Null
-    }
-}
-
-impl Id {
-    pub fn is_null(&self) -> bool {
-        *self == Id::Null
-    }
-}
+mod params;
+mod request;

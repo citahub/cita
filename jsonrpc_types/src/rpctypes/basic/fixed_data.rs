@@ -76,11 +76,27 @@ macro_rules! impl_for_fixed_type {
                     && (&value[0..2] == "0x" || &value[0..2] == "0X")
                 {
                     let data = $inner::from_str(&value[2..]).map_err(|_| {
-                        E::custom(format!("invalid hexadecimal string: [{}]", value))
+                        if value.len() > 12 {
+                            E::custom(format!(
+                                "invalid hexadecimal string: [{}..{}]",
+                                &value[..6],
+                                &value[value.len() - 6..value.len()]
+                            ))
+                        } else {
+                            E::custom(format!("invalid hexadecimal string: [{}]", value))
+                        }
                     })?;
                     Ok($outer::new(data))
                 } else {
-                    Err(E::custom(format!("invalid format: [{}]", value)))
+                    if value.len() > 12 {
+                        Err(E::custom(format!(
+                            "invalid format: [{}..{}]",
+                            &value[..6],
+                            &value[value.len() - 6..value.len()]
+                        )))
+                    } else {
+                        Err(E::custom(format!("invalid format: [{}]", value)))
+                    }
                 }
             }
 

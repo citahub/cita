@@ -56,7 +56,7 @@ impl ::std::fmt::Display for AppArgs {
 }
 
 pub fn build_commandline<'a>() -> clap::ArgMatches<'a> {
-    let matches = clap_app!(myapp =>
+    let matches = clap_app!(RelayerParser =>
         (version: "0.1")
         (author: "Cryptape Technologies")
         (about: "CITA Relay Info Parser by Rust")

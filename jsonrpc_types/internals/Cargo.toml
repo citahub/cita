@@ -1,0 +1,12 @@
+[package]
+name = "jsonrpc-types-internals"
+version = "0.1.0"
+authors = ["Cryptape Technologies <contact@cryptape.com>"]
+
+[dependencies]
+syn = "0.14"
+quote = "0.6"
+proc-macro2 = "0.4"
+
+[lib]
+proc-macro = true

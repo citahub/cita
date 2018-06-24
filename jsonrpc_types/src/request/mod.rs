@@ -15,12 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-mod params;
 mod proto;
 mod request;
 mod rpcrequest;
+#[cfg(test)]
+mod tests;
 
-pub use self::params::{
+pub use self::request::{
     BlockNumberParams, CallParams, GetAbiParams, GetBalanceParams, GetBlockByHashParams,
     GetBlockByNumberParams, GetCodeParams, GetFilterChangesParams, GetFilterLogsParams,
     GetLogsParams, GetMetaDataParams, GetTransactionCountParams, GetTransactionParams,

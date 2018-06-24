@@ -68,11 +68,28 @@ impl<'de> Visitor<'de> for DataVisitor {
             && (&value[0..2] == "0x" || &value[0..2] == "0X")
             && value.len() & 1 == 0
         {
-            let data = FromHex::from_hex(&value[2..])
-                .map_err(|_| E::custom(format!("invalid hexadecimal string: [{}]", value)))?;
+            let data = FromHex::from_hex(&value[2..]).map_err(|_| {
+                if value.len() > 12 {
+                    E::custom(format!(
+                        "invalid hexadecimal string: [{}..{}]",
+                        &value[..6],
+                        &value[value.len() - 6..value.len()]
+                    ))
+                } else {
+                    E::custom(format!("invalid hexadecimal string: [{}]", value))
+                }
+            })?;
             Ok(Data::new(data))
         } else {
-            Err(E::custom(format!("invalid format: [{}]", value)))
+            if value.len() > 12 {
+                Err(E::custom(format!(
+                    "invalid format: [{}..{}]",
+                    &value[..6],
+                    &value[value.len() - 6..value.len()]
+                )))
+            } else {
+                Err(E::custom(format!("invalid format: [{}]", value)))
+            }
         }
     }
 
