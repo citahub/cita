@@ -10,8 +10,6 @@ import sys
 import time
 
 from ethereum.abi import ContractTranslator
-import ethereum.tools.tester as eth_tester
-import ethereum.tools._solidity as solidity
 import sha3
 import yaml
 
@@ -20,6 +18,33 @@ from create_init_data import dictlist_to_ordereddict
 
 DEFAULT_PREVHASH = '0x{:064x}'.format(0)
 BLOCK_GAS_LIMIT = 471238800
+
+
+def disable_import_warning():
+    """This is a temporary method.
+    We do NOT need bitcoin. We want to decrease the size of docker.
+    So, just filter out the unnecessary warning.
+    """
+
+    import builtins
+    from types import ModuleType
+
+    class DummyModule(ModuleType):
+        def __getattr__(self, key):
+            return None
+        __all__ = []
+
+    def filterimport(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == 'bitcoin':
+            return DummyModule(name)
+        return realimport(name, globals, locals, fromlist, level)
+
+    realimport, builtins.__import__ = builtins.__import__, filterimport
+
+
+disable_import_warning()
+import ethereum.tools.tester as eth_tester
+import ethereum.tools._solidity as solidity
 
 
 def replaceLogRecord():
