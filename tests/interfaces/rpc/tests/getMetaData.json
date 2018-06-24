@@ -15,7 +15,7 @@
       "expectedResponse": {
         "result": {
           "chainId": 123,
-          "chainName": "test-chain",
+          "chainName": "mock-chain",
           "operator": "test-operator",
           "website": "https://www.example.com",
           "genesisTimestamp": 1524000000,

@@ -143,10 +143,11 @@ jobs:
           # EconomicalModel == Quota
           name: jsonrpc-mock-tests-quota
           command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh quota'
-      - run:
+      # TODO: We should add it back later
+      # - run:
           # EconomicalModel == Charge
-          name: jsonrpc-mock-tests-charge
-          command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh charge'
+          # name: jsonrpc-mock-tests-charge
+          # command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh charge'
       - run:
           name: economical-mode-charge-transfer-value
           command: './tests/integrate_test/cita_charge_mode.sh'
