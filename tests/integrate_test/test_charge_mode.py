@@ -59,24 +59,27 @@ def get_balance(addr):
     """ Get the balance of an address """
     return int(rpc_request('getBalance', [addr, 'latest']), 16)
 
+def get_receipt(tx_hash, retry=8):
+    """ Get receipt of a transaction """
+    while retry > 0:
+        receipt = rpc_request('getTransactionReceipt', [tx_hash])
+        if receipt is not None:
+            return receipt
+        time.sleep(4)
+        retry -= 1
 
 def test_transfer(
-        sender_privkey, sender_addr, receiver_addr, value,
+        sender_privkey, receiver_addr, value,
         sender_is_miner=False):
     """ Transfer and check balances """
+    sender_addr = key_address(sender_privkey)
     sender_balance_old = get_balance(sender_addr)
     receiver_balance_old = get_balance(receiver_addr)
     assert sender_balance_old > 0, \
         'Sender balance not enough: address={}'.format(sender_addr)
 
     tx_hash = send_tx(sender_privkey, receiver_addr, value)
-    retry = 8
-    while retry > 0:
-        receipt = rpc_request('getTransactionReceipt', [tx_hash])
-        if receipt is not None:
-            break
-        time.sleep(4)
-        retry -= 1
+    receipt = get_receipt(tx_hash)
     assert receipt and receipt['errorMessage'] is None, \
         'Send transaction failed: receipt={}'.format(receipt)
 
@@ -102,7 +105,7 @@ def get_miner_with_balance(miner_privkeys):
             address = key_address(privkey)
             try:
                 if get_balance(address) > 0:
-                    return (privkey, address)
+                    return privkey
             except Exception as ex:
                 print('Get balance error: {}', ex)
         time.sleep(4)
@@ -133,7 +136,7 @@ def main():
     )
     args = parser.parse_args()
 
-    (miner_privkey, miner_address) = get_miner_with_balance(args.miner_privkeys)
+    miner_privkey = get_miner_with_balance(args.miner_privkeys)
 
     alice_privkey = '0xb5d6f7a1bf4493af95afc96f5bf116a3236038fae25e0287ac847623d4e183e6'
     alice_address = key_address(alice_privkey)
@@ -143,13 +146,25 @@ def main():
     bob_address = key_address(bob_privkey)
     print('[Bob.address]: {}'.format(bob_address))
 
-    test_transfer(miner_privkey, miner_address, alice_address, 10 * 10000,
+    # Send 10 * 10000 from miner to alice
+    test_transfer(miner_privkey, alice_address, 10 * 10000,
                   sender_is_miner=True)
     assert get_balance(alice_address) == 10 * 10000, \
-        'Alice({}) should have 10000 now'.format(alice_address)
-    test_transfer(alice_privkey, alice_address, bob_address, 200)
+        'Alice({}) should have 10 * 10000 now'.format(alice_address)
+    # Send 200 from alice to bob
+    test_transfer(alice_privkey, bob_address, 200)
     assert get_balance(bob_address) == 200, \
         'Bob({}) should have 200 now'.format(bob_address)
+
+    # Bob send an invalid transaction to chain (Error=NotEnoughCash)
+    tx_hash = send_tx(bob_privkey, "", quota=300, code="")
+    # Wait the transaction receipt then check the balance
+    get_receipt(tx_hash)
+    bob_balance = get_balance(bob_address)
+    # Because base_gas_required=100 (200 - 100 = 100)
+    assert bob_balance == 100, \
+        'Bob({}) should have 100 now (got: {})'.format(bob_address, bob_balance)
+
     print('>>> Charge Mode test successfully!')
 
 

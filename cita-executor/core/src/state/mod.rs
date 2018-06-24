@@ -30,6 +30,7 @@ use factory::Factories;
 use libexecutor::executor::EconomicalModel;
 use receipt::{Receipt, ReceiptError};
 use std::cell::{Ref, RefCell, RefMut};
+use std::cmp;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -765,9 +766,26 @@ impl<B: Backend> State<B> {
                         Some(ReceiptError::TransactionMalformed)
                     }
                 };
+                let sender = *t.sender();
+                let tx_gas_used = match err {
+                    ExecutionError::ExecutionInternal { .. } => t.gas,
+                    _ => cmp::min(
+                        self.balance(&sender).unwrap_or(U256::from(0)),
+                        U256::from(100),
+                    ),
+                };
+                if economical_model == EconomicalModel::Charge {
+                    let tx_fee_value = tx_gas_used * t.gas_price();
+                    if let Err(err) = self.sub_balance(&sender, &tx_fee_value) {
+                        error!("Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}", tx_fee_value, err);
+                    }
+                    self.add_balance(&env_info.author, &tx_fee_value)
+                        .expect("Add balance to author(miner) must success");
+                }
+                let cumulative_gas_used = env_info.gas_used + tx_gas_used;
                 let receipt = Receipt::new(
                     None,
-                    0.into(),
+                    cumulative_gas_used,
                     Vec::new(),
                     receipt_error,
                     0.into(),

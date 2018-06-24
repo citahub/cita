@@ -450,10 +450,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let base_gas_required = U256::from(100); // `CREATE` transaction cost
 
-        if sender != Address::zero()
-            && (t.action != Action::Store || t.action != Action::AmendData)
-            && t.gas < base_gas_required
-        {
+        if sender != Address::zero() && t.gas < base_gas_required {
             return Err(ExecutionError::NotEnoughBaseGas {
                 required: base_gas_required,
                 got: t.gas,
