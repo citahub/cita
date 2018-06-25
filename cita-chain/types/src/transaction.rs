@@ -212,6 +212,9 @@ impl Encodable for Transaction {
 
 impl Transaction {
     pub fn new(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
+        if plain_transaction.get_value().len() > 32 {
+            return Err(Error::ParseError);
+        }
         Ok(Transaction {
             nonce: plain_transaction.get_nonce().to_owned(),
             gas_price: U256::default(),
@@ -231,8 +234,8 @@ impl Transaction {
                     },
                 }
             },
-            value: plain_transaction.get_value().into(),
-            data: plain_transaction.get_data().into(),
+            value: U256::from(plain_transaction.get_value()),
+            data: Bytes::from(plain_transaction.get_data()),
             block_limit: plain_transaction.get_valid_until_block(),
             chain_id: plain_transaction.get_chain_id(),
             version: plain_transaction.get_version(),
@@ -559,5 +562,15 @@ mod tests {
         let stx_encoded = rlp::encode(&stx).into_vec();
 
         assert_eq!(stx_rlp, stx_encoded);
+    }
+
+    #[test]
+    fn invalid_value() {
+        let mut plain_transaction = ProtoTransaction::new();
+        plain_transaction.set_value(vec![0; 100]);
+
+        let res = Transaction::new(&plain_transaction);
+
+        assert!(res.is_err());
     }
 }
