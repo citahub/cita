@@ -45,7 +45,7 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 
 4. get function hash
 
-run `solc example.sol --hash`，结果如下:
+run `solc example.sol --hashes`，结果如下:
 
 ```
 ======= example.sol:SimpleStorage =======

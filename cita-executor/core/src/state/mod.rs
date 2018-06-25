@@ -1169,7 +1169,6 @@ mod tests {
     #[ignore]
     fn should_apply_create_transaction() {
         /*
-        ~/codes/parity-contract-demo $ cat contracts/AbiTest.sol
         pragma solidity ^0.4.8;
         contract AbiTest {
           uint balance;
@@ -1178,24 +1177,7 @@ mod tests {
             balance = value;
           }
         }
-        ~/codes/parity-contract-demo $ solc contracts/AbiTest.sol  --bin-runtime --bin --hash
-        Warning: This is a pre-release compiler version, please do not use it in production.
-
-        ======= contracts/AbiTest.sol:AbiTest =======
-        Binary:
-        60606040523415600b57fe5b5b5b5b608e8061001c6000396000f300606060405260003
-        57c0100000000000000000000000000000000000000000000000000000000900463ffff
-        ffff1680635524107714603a575bfe5b3415604157fe5b6055600480803590602001909
-        19050506057565b005b806000819055505b505600a165627a7a7230582079b763be08c2
-        4124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
-        Binary of the runtime part:
-        60606040526000357c01000000000000000000000000000000000000000000000000000
-        00000900463ffffffff1680635524107714603a575bfe5b3415604157fe5b6055600480
-        80359060200190919050506057565b005b806000819055505b505600a165627a7a72305
-        82079b763be08c24124c9fa25c78b9d221bdee3e981ca0b2e371628798c41e292ca0029
-        Function signatures:
-        55241077: setValue(uint256)
-         */
+        */
         logger::silent();
 
         // 1) tx = (to, data(code), nonce, valid_until_block)
