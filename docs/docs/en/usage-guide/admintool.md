@@ -48,6 +48,18 @@ optional arguments:
   --ws_port WS_PORT     websocket port for this chain
 ```
 
+注意：
+1. 配置工具会创建以chain_name为名称的文件夹，如果没有传递该参数则默认为`test-chain`。该文件夹里面再按节点序号创建0，1，2等节点文件夹，分别存放每个节点的配置文件。
+2. 为了方便测试时多个节点在同一台服务器上运行。
+    grpc，jsonrpc，ws_port等参数指定的端口号是一个起始端口号。
+    节点实际使用的端口号，按照节点排列顺序顺延，即port+n（n为节点序号）。
+    比如总共4个节点，传递grpc_port参数为7000。则test-chain/0的grpc端口号为7000，test-chain/1的grpc端口号为7001，等等。
+3. CITA有一些保留端口，设置节点网络端口，或者自定义端口的时候要避免产生端口冲突。保留端口有：
+    - 默认的grpc端口：5000到5000+N（N为节点总数,以下相同）
+    - 默认的jsonrpc端口：1337到1337+N
+    - 默认的websocket端口：4337到4337+N
+    - 默认的rabbitmq端口：4369(epmd)/25672(Erlang distribution)/5671，5672(AMQP)/15672(management plugin)
+
 参数的简单解释：
 
 - `chain_name` : cita 支持侧链后，通过 chain_name 生成不同的链配置，默认为 test-chain
