@@ -27,7 +27,7 @@
 
 ### peerCount
 
-当前的节点连接数。
+当前节点连接数。
 
 * Parameters
 
@@ -94,7 +94,7 @@
     params: [signed_data]
     ```
 
-#### 生成签名数据的过程
+#### 生成签名交易的过程
 
 #### 构造protobuf数据结构
 
@@ -155,7 +155,7 @@ message UnverifiedTransaction {
 [solidity](https://solidity.readthedocs.io/en/develop/)相关文档
 
 ```solidity
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 contract SimpleStorage {
     uint storedData;
@@ -481,6 +481,9 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 * Returns
 
     `Array` - Array of log objects, or an empty array if no logs
+      * `address` - 合约地址
+      * `topics`- 用来构造过滤器的topics
+      * `data`- 经过 topics 筛选的 log 数据
 
 * Example
 
@@ -882,6 +885,7 @@ Polling method for a filter, which returns an array of logs which occurred since
 * Returns
 
     `Array` - Array of log objects, or an empty array if nothing has changed since last poll.
+    同 [getLogs](#getlogs)
 
 * Example
 
@@ -926,7 +930,7 @@ Returns an array of all logs matching filter with given id.
 
 * Example
 
-    see [getFilterChanges](#getfilterchanges)
+    同 [getFilterChanges](#getfilterchanges)
 
 ***
 
