@@ -47,7 +47,7 @@ python make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18f
 
 3. get contract function hashes
 
-run `solc test_out_of_quota.sol --hash`，结果如下:
+run `solc test_out_of_quota.sol --hashes`，结果如下:
 
 ```
 ======= test_quota_sol.sol:SimpleStorage =======

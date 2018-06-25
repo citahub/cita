@@ -109,7 +109,7 @@ python3 make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18
 
 合约的调用是通过发送交易命令完成，调用具体的方法则是通过方法`hash`值完成
 
-执行：`solc test_example.sol --hash`
+执行：`solc test_example.sol --hashes`
 
 结果如下:
 
