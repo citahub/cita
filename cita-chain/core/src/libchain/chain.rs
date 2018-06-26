@@ -285,6 +285,7 @@ pub struct Chain {
     // Max height in block map
     pub max_store_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
+    pub proof_map: RwLock<BTreeMap<u64, ProtoProof>>,
     pub db: RwLock<Arc<KeyValueDB>>,
     pub state_db: RwLock<StateDB>,
 
@@ -365,6 +366,7 @@ impl Chain {
         if let Some(height) = get_chain_body_height(&*db) {
             max_store_height.store(height as usize, Ordering::SeqCst);
         }
+
         info!(
             "get chain max_store_height : {:?}  current_height: {:?}",
             max_store_height, current_height
@@ -394,8 +396,18 @@ impl Chain {
             account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
             check_quota: AtomicBool::new(false),
             prooftype: chain_config.prooftype,
+            proof_map: RwLock::new(BTreeMap::new()),
         };
 
+        if let Some(proto_proof) = chain.current_block_poof() {
+            if let Some(ProofType::Tendermint) = chain.get_chain_prooftype() {
+                let proof = TendermintProof::from(proto_proof.clone());
+                chain
+                    .proof_map
+                    .write()
+                    .insert(proof.height as u64, proto_proof);
+            }
+        }
         chain
     }
 
@@ -407,6 +419,20 @@ impl Chain {
             BlockId::Earliest => Some(0),
             BlockId::Latest => Some(self.get_current_height()),
         }
+    }
+
+    pub fn get_proof_with_height(&self, height: u64) -> Option<ProtoProof> {
+        self.proof_map.read().get(&height).map(|p| p.clone())
+    }
+
+    pub fn set_proof_with_height(&self, height: u64, proof: &ProtoProof) {
+        self.proof_map.write().insert(height, proof.clone());
+    }
+
+    pub fn clean_proof_with_height(&self, height: u64) {
+        let mut guard = self.proof_map.write();
+        let new_map = guard.split_off(&height);
+        *guard = new_map;
     }
 
     pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
@@ -571,6 +597,7 @@ impl Chain {
             *self.current_header.write() = hdr;
         }
         self.current_height.store(number as usize, Ordering::SeqCst);
+        self.clean_proof_with_height(number);
     }
 
     pub fn broadcast_current_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
@@ -634,7 +661,13 @@ impl Chain {
                         self.clear_block_map();
                         self.broadcast_current_status(&ctx_pub);
                     }
-                };
+                } else {
+                    warn!(
+                        "executor'ret is not continous,ret num {} current height {}",
+                        number,
+                        self.get_current_height()
+                    );
+                }
             }
             _ => {
                 warn!("block-{} in queue is invalid", number);
@@ -983,9 +1016,9 @@ impl Chain {
         self.db.read().read(db::COL_EXTRA, &CurrentProof)
     }
 
-    pub fn save_current_block_poof(&self, proof: ProtoProof) {
+    pub fn save_current_block_poof(&self, proof: &ProtoProof) {
         let mut batch = DBTransaction::new();
-        batch.write(db::COL_EXTRA, &CurrentProof, &proof);
+        batch.write(db::COL_EXTRA, &CurrentProof, proof);
         self.db
             .read()
             .write(batch)
