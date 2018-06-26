@@ -384,7 +384,10 @@ def parse_arguments():
     pappend = subparsers.add_parser(
         SUBCMD_APPEND, help='append a node into a existed chain')
 
-    pappend.add_argument('--chain_name', help='Name of the existed chain.')
+    pappend.add_argument(
+        '--chain_name',
+        required=True,
+        help='Name of the existed chain.')
 
     pappend.add_argument(
         '--signer',
