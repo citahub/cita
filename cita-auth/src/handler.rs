@@ -201,6 +201,7 @@ pub struct MsgHandler {
     tx_pool_limit: usize,
     is_recovery_mod: bool,
     black_list_cache: HashMap<Address, i8>,
+    is_need_proposal_new_block: bool,
 }
 
 impl MsgHandler {
@@ -233,6 +234,7 @@ impl MsgHandler {
             tx_pool_limit,
             is_recovery_mod: false,
             black_list_cache: HashMap::new(),
+            is_need_proposal_new_block: false,
         }
     }
 
@@ -582,6 +584,7 @@ impl MsgHandler {
         loop {
             // send request to get chain id if we have not got it
             if self.chain_id.is_none() {
+                trace!("chain id is not ready");
                 let msg: Message = MiscellaneousReq::new().into();
                 self.tx_pub
                     .send((
@@ -594,8 +597,41 @@ impl MsgHandler {
             // block hashes of some height we not have
             // we will send request for these height
             if !self.history_heights.is_init() {
-                trace!("auth is not ready");
+                trace!("history block hashes is not ready");
                 self.send_block_tx_hashes_req();
+            }
+
+            // Daily tasks
+            {
+                if self.is_ready() {
+                    // process block verify if we have cached block request
+                    if let Some(cache_request_id) = self.cache_block_request_id() {
+                        let cache_height = cache_request_id >> 16;
+                        if cache_height == self.history_heights.next_height() {
+                            let cache_block_req = self.cache_block_req.take().unwrap();
+                            self.process_block_verify(cache_block_req);
+                        }
+                    }
+                }
+
+                if self.is_need_proposal_new_block {
+                    // if not ready we will proposal empty blk by set block_gas_limit 0
+                    let block_gas_limit = if self.is_ready() {
+                        self.block_gas_limit
+                    } else {
+                        0
+                    };
+                    self.dispatcher.proposal_tx_list(
+                        (self.history_heights.next_height() - 1) as usize, // todo fix bft
+                        &self.tx_pub,
+                        block_gas_limit,
+                        self.account_gas_limit.clone(),
+                        self.check_quota,
+                    );
+
+                    // after proposal new block clear flag
+                    self.is_need_proposal_new_block = false;
+                }
             }
 
             // process message from MQ
@@ -612,7 +648,9 @@ impl MsgHandler {
 
                             // because next height init value is 1
                             // the empty chain first msg height is 0 with quota info
-                            if height >= self.history_heights.next_height() || height == 0 {
+                            if height >= self.history_heights.next_height()
+                                || (self.history_heights.next_height() == 1 && height == 0)
+                            {
                                 // get latest quota info from chain
                                 let block_gas_limit = block_tx_hashes.get_block_gas_limit();
                                 let account_gas_limit =
@@ -621,6 +659,9 @@ impl MsgHandler {
                                 self.check_quota = check_quota;
                                 self.block_gas_limit = block_gas_limit;
                                 self.account_gas_limit = account_gas_limit.clone();
+
+                                // need to proposal new block
+                                self.is_need_proposal_new_block = true;
                             }
 
                             // update history block tx hashes
@@ -646,31 +687,6 @@ impl MsgHandler {
                             // add new history block tx hashes
                             if !self.history_hashes.contains_key(&height) {
                                 self.history_hashes.insert(height, tx_hashes_h256);
-                            }
-
-                            if self.is_ready() {
-                                // process block verify if we have cached block request
-                                if let Some(cache_request_id) = self.cache_block_request_id() {
-                                    let cache_height = cache_request_id >> 16;
-                                    if cache_height == self.history_heights.next_height() {
-                                        let cache_block_req = self.cache_block_req.take().unwrap();
-                                        self.process_block_verify(cache_block_req);
-                                    }
-                                }
-
-                                // proposal new block
-                                self.dispatcher.proposal_tx_list(
-                                    (self.history_heights.next_height() - 1) as usize, // todo fix bft
-                                    &self.tx_pub,
-                                    self.block_gas_limit,
-                                    self.account_gas_limit.clone(),
-                                    self.check_quota,
-                                );
-                            } else {
-                                trace!("auth is not ready");
-                                // not ready means block hashes of some height we not have
-                                // we will send request for these height
-                                self.send_block_tx_hashes_req();
                             }
                         }
                         routing_key!(Executor >> BlackList) => {
