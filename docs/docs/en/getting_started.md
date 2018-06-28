@@ -47,8 +47,6 @@ This means running`make debug`in docker.。
 
 Running`./env.sh`without any arguments will directly get a shell in docker.
 
-For users in China, speed up by using `env_cn.sh`.
-
 We also provided`daemon.sh`, same usage as`env.sh`，but run in background.
 
 If there are some docker-related errors, you can try again after executing the following command：
