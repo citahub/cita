@@ -396,7 +396,8 @@ impl Forward {
                     BlockInQueue::ConsensusBlock(rblock.clone(), proof.clone()),
                 );
             };
-            self.chain.save_current_block_poof(proof);
+            self.chain.set_proof_with_height(blk_height as u64, &proof);
+            self.chain.save_current_block_poof(&proof);
             self.chain.set_block_body(blk_height as u64, &rblock);
             self.chain.set_max_store_height(blk_height as u64);
             let tx_hashes = rblock.body().transaction_hashes();
@@ -419,10 +420,9 @@ impl Forward {
                 res_vec.mut_blocks().push(block.protobuf());
                 //push double
                 if height == self.chain.get_current_height() {
-                    let mut proof_block = ProtobufBlock::new();
-                    //get current block proof
-                    if let Some(proof) = self.chain.current_block_poof() {
-                        proof_block.mut_header().set_proof(proof);
+                    if let Some(pproof) = self.chain.get_proof_with_height(height) {
+                        let mut proof_block = ProtobufBlock::new();
+                        proof_block.mut_header().set_proof(pproof);
                         proof_block.mut_header().set_height(::std::u64::MAX);
                         res_vec.mut_blocks().push(proof_block);
                         trace!(
@@ -510,11 +510,12 @@ impl Forward {
                 );
 
                 let height = block.number();
-                let mut blocks = self.chain.block_map.write();
                 if blk_height != ::std::usize::MAX {
                     if proof_height == chain_max_height || proof_height == chain_max_store_height {
                         // Set proof of prev sync block
-                        if let Some(prev_block_in_queue) = blocks.get_mut(&proof_height) {
+                        if let Some(prev_block_in_queue) =
+                            self.chain.block_map.write().get_mut(&proof_height)
+                        {
                             if let &mut BlockInQueue::SyncBlock(ref mut value) = prev_block_in_queue
                             {
                                 if value.1.is_none() {
@@ -528,12 +529,16 @@ impl Forward {
 
                         /*when syncing blocks,not deliver blockhashs when recieving block,
                         just deliver blockhashs when executed block*/
-                        /*
-                        let tx_hashes = block.body().transaction_hashes();
+
+                        let saved_proof = self.chain.get_proof_with_height(height);
+                        debug!(
+                            "sync: insert block-{} proof {:?} in map",
+                            height, saved_proof
+                        );
                         self.chain
-                            .delivery_block_tx_hashes(height, tx_hashes, &self.ctx_pub);*/
-                        debug!("sync: insert block-{} in map", block.number());
-                        blocks.insert(height, BlockInQueue::SyncBlock((block, None)));
+                            .block_map
+                            .write()
+                            .insert(height, BlockInQueue::SyncBlock((block, saved_proof)));
                     } else {
                         warn!(
                             "sync: insert block-{} is not continious proof height {}",
@@ -542,7 +547,9 @@ impl Forward {
                         );
                     }
                 } else if proof_height > self.chain.get_current_height() {
-                    if let Some(block_in_queue) = blocks.get_mut(&proof_height) {
+                    if let Some(block_in_queue) =
+                        self.chain.block_map.write().get_mut(&proof_height)
+                    {
                         if let &mut BlockInQueue::SyncBlock(ref mut value) = block_in_queue {
                             if value.1.is_none() {
                                 debug!("sync: insert block proof {} in map", proof_height);
@@ -550,6 +557,9 @@ impl Forward {
                             }
                         }
                     }
+                    self.chain
+                        .set_proof_with_height(proof_height, block.proof());
+                    self.chain.save_current_block_poof(block.proof());
                 }
             }
             // TODO: Handle Raft and POA
