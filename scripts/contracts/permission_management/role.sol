@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 import "../common/address_array.sol";
 
@@ -24,12 +24,12 @@ contract Role {
     }
 
     /// @notice Constructor
-    constructor(bytes32 _name, address[] _permissions)
+    function Role(bytes32 _name, address[] _permissions)
         public
     {
         name = _name;
         permissions = _permissions;
-        emit RoleCreated(_name, _permissions);
+        RoleCreated(_name, _permissions);
     }
 
     /// @notice Delete the role
@@ -51,7 +51,7 @@ contract Role {
         onlyRoleManagement
         returns (bool)
     {
-        emit NameUpdated(name, _name);
+        NameUpdated(name, _name);
         name = _name;
         return true;
     }
@@ -69,7 +69,7 @@ contract Role {
                 permissions.push(_permissions[index]);
         }
 
-        emit PermissionsAdded(_permissions);
+        PermissionsAdded(_permissions);
         return true;
     }
 
@@ -86,7 +86,7 @@ contract Role {
             assert(AddressArray.remove(_permissions[i], permissions));
         }
 
-        emit PermissionsDeleted(_permissions);
+        PermissionsDeleted(_permissions);
         return true;
     }
 

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 import "./quota_interface.sol";
 import "./error.sol";
@@ -22,7 +22,7 @@ contract QuotaManager is QuotaInterface, Error {
         if (admins[msg.sender])
             _;
         else {
-            emit ErrorLog(ErrorType.NotAdmin, "Not the admin account");
+            ErrorLog(ErrorType.NotAdmin, "Not the admin account");
             return;
         }
     }
@@ -33,7 +33,7 @@ contract QuotaManager is QuotaInterface, Error {
         if (_v <= maxLimit && _v >= baseLimit)
             _;
         else {
-            emit ErrorLog(ErrorType.OutOfBaseLimit, "The value is out of base limit");
+            ErrorLog(ErrorType.OutOfBaseLimit, "The value is out of base limit");
             return;
         }
     }
@@ -43,13 +43,13 @@ contract QuotaManager is QuotaInterface, Error {
         if (_v > blockLimit)
             _;
         else {
-            emit ErrorLog(ErrorType.OutOfBlockLimit, "The value is out of block limit");
+            ErrorLog(ErrorType.OutOfBlockLimit, "The value is out of block limit");
             return;
         }
     }
 
     /// @notice Setup
-    constructor(address _admin) public {
+    function QuotaManager(address _admin) public {
         admins[_admin] = true;
         quota[_admin] = 1073741824;
         accounts.push(_admin);
@@ -65,7 +65,7 @@ contract QuotaManager is QuotaInterface, Error {
         returns (bool)
     {
         admins[_account] = true;
-        emit AdminAdded(_account, msg.sender);
+        AdminAdded(_account, msg.sender);
         return true;
     }
 
@@ -80,7 +80,7 @@ contract QuotaManager is QuotaInterface, Error {
         returns (bool)
     {
         BQL = _value;
-        emit BqlSetted(_value, msg.sender);
+        BqlSetted(_value, msg.sender);
         return true;
     }
 
@@ -94,7 +94,7 @@ contract QuotaManager is QuotaInterface, Error {
         returns (bool)
     {
         defaultAQL = _value;
-        emit DefaultAqlSetted(_value, msg.sender);
+        DefaultAqlSetted(_value, msg.sender);
         return true;
     }
 
@@ -111,7 +111,7 @@ contract QuotaManager is QuotaInterface, Error {
         quota[_account] = _value;
         accounts.push(_account);
         quotas.push(_value);
-        emit AqlSetted(
+        AqlSetted(
             _account,
             _value,
             msg.sender

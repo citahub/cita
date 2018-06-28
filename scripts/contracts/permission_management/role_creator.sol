@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 import "./role.sol";
 
@@ -24,6 +24,6 @@ contract RoleCreator {
         require(roleManagementAddr == msg.sender);
 
         roleAddress = new Role(_name, _permissions);
-        emit RoleCreated(roleAddress, _name, _permissions);
+        RoleCreated(roleAddress, _name, _permissions);
     }
 }

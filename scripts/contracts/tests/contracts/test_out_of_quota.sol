@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 contract SimpleStorage {
     uint storedData;
@@ -12,7 +12,7 @@ contract SimpleStorage {
             storedData = i;
         }
 
-        emit Set(x);
+        Set(x);
     }
 
     function get() view public returns (uint) {

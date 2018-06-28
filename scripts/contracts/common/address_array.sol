@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 
 /// @title A library for operation of address array
@@ -68,8 +68,8 @@ library AddressArray {
     /// @param _array The array to check from
     /// @return true if is null, false otherwise
     function isNull(address[] _array)
-        internal
         pure
+        internal
         returns (bool)
     {
         if (_array.length == 0)

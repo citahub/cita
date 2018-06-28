@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 import "./group_creator.sol";
 import "../common/address_array.sol";
@@ -33,7 +33,7 @@ contract GroupManagement {
     }
 
     /// @notice Constructor
-    constructor() public {
+    function GroupManagement() public {
         // Root
         groups.push(rootGroupAddr);
     }
@@ -70,7 +70,7 @@ contract GroupManagement {
         require(group.close());
         // Remove it from the groups
         AddressArray.remove(_target, groups);
-        emit GroupDeleted(_target);
+        GroupDeleted(_target);
         return true;
     }
 

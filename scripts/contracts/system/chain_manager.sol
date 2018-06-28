@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 import "./error.sol";
 
@@ -28,7 +28,7 @@ contract ChainManager is Error {
         if (parentChainId != 0)
             _;
         else {
-            emit ErrorLog(ErrorType.NoParentChain, "has no parent chain");
+            ErrorLog(ErrorType.NoParentChain, "has no parent chain");
             return;
         }
     }
@@ -37,13 +37,13 @@ contract ChainManager is Error {
         if (sideChains[_id].status != ChainStatus.Unknown)
             _;
         else {
-            emit ErrorLog(ErrorType.NoSideChain, "has no side chain");
+            ErrorLog(ErrorType.NoSideChain, "has no side chain");
             return;
         }
     }
 
     // Constructor.
-    constructor(uint32 _pid, address[] _addrs)
+    function ChainManager(uint32 _pid, address[] _addrs)
         public
     {
         if (_pid == 0) {

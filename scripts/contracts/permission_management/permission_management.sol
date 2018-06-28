@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 import "./permission_creator.sol";
 import "./authorization.sol";
@@ -75,7 +75,7 @@ contract PermissionManagement {
         require(perm.close());
         // Cancel the auth of the accounts who have the permission
         require(auth.clearAuthOfPermission(_permission));
-        emit PermissionDeleted(_permission);
+        PermissionDeleted(_permission);
         return true;
     }
 

@@ -1,11 +1,11 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 contract MyToken {
     /* This creates an array with all balances */
     mapping (address => uint256) public balanceOf;
 
     /* Initializes contract */
-    constructor(uint256 _balance) public {
+    function MyToken(uint256 _balance) public {
         balanceOf[msg.sender] = _balance;
     }
 
@@ -42,7 +42,7 @@ contract MyToken {
         require(balanceOf[msg.sender] >= _value);
         balanceOf[msg.sender] -= _value;
         uint32 from_chain_id = get_from_chain_id();
-        emit cross_chain(from_chain_id, to_chain_id, dest_contract, RECV_FUNC_HASHER, crosschain_send_nonce);
+        cross_chain(from_chain_id, to_chain_id, dest_contract, RECV_FUNC_HASHER, crosschain_send_nonce);
         crosschain_send_nonce = crosschain_send_nonce + 1;
     }
 
@@ -107,7 +107,7 @@ contract MyToken {
         }
         crosschain_recv_nonce = crosschain_recv_nonce + 1;
 
-        emit recv_cross_chain(sender, data);
+        recv_cross_chain(sender, data);
 
         address origin_tx_sender = address(sender);
         uint256 value;

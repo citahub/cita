@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 import "./permission.sol";
 
@@ -25,6 +25,6 @@ contract PermissionCreator {
         require(permissionManagementAddr == msg.sender);
 
         permissionAddress = new Permission(_name, _conts, _funcs);
-        emit PermissionCreated(permissionAddress, _name, _conts, _funcs);
+        PermissionCreated(permissionAddress, _name, _conts, _funcs);
     }
 }

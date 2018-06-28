@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
 import "./permission.sol";
 import "../common/address_array.sol";
@@ -49,7 +49,7 @@ contract Authorization {
     }
 
     /// @notice Initialize the superAdmin's auth
-    constructor(address _superAdmin) public {
+    function Authorization(address _superAdmin) public {
         _setAuth(_superAdmin, sendTxAddr);
         _setAuth(_superAdmin, createContractAddr);
         _setAuth(_superAdmin, newPermissionAddr);
@@ -94,7 +94,7 @@ contract Authorization {
     {
         AddressArray.remove(_account, accounts[_permission]);
         AddressArray.remove(_permission, permissions[_account]);
-        emit AuthCanceled(_account, _permission);
+        AuthCanceled(_account, _permission);
         return true;
     }
 
@@ -114,7 +114,7 @@ contract Authorization {
         delete permissions[_account];
         AddressArray.remove(_account, all_accounts);
 
-        emit AuthCleared(_account);
+        AuthCleared(_account);
         return true;
     }
 
@@ -199,7 +199,7 @@ contract Authorization {
         if (!AddressArray.exist(_account, all_accounts))
             all_accounts.push(_account);
 
-        emit AuthSetted(_account, _permission);
+        AuthSetted(_account, _permission);
         return true;
     }
 }
