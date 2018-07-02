@@ -6,17 +6,23 @@
 
 CITA is a fast and scalable blockchain for enterprises. CITA supports both native contract and EVM contract, by which enterprise users can build their own blockchain applications. CITA has a unique architecture which enables enterprise users to release all their computing resources.
 
-- **Horizontal scalability**: CITA adopts a microservices architecture to boost each (logical) node’s performance. With the microservices architecture, a logical node can be easily scaled to a cluster of servers. Outside one node's boundary, nodes communicate with each other using P2P network; Inside each node, microservices communicate with each other by messaging queue. (Note this is completely different from Fabric which uses a messaging queue only as consensus process)
+- **Horizontal scalability**: With the microservice architecture, a logical node can be easily scaled to a cluster of servers. Node administrators can increase system capacity simply by adding more PC servers on high load. The administrator can even use dedicated servers to provide services for hot-spot accounts. Outside one node's boundary, nodes communicate with each other using P2P network; inside each node, microservices communicate with each other by messaging queue (Note this is completely different from Fabric which uses a messaging queue only as consensus process).
 
 ![](https://github.com/cryptape/cita-whitepaper/blob/master/en/cita-network.png?raw=true)
 
 ![](https://github.com/cryptape/cita-whitepaper/blob/master/en/cita-parallel.png?raw=true)
 
-- **High Performance**: In CITA, consensus and transaction execution are decoupled as separate microservices. The consensus service is only responsible for transaction ordering, which can finish independently before transaction execution, thus increase transaction processing performance. CITA also includes a lot of optimizations to fully utilize multi-cores and multi-servers' computing power.
+- **Customizable and Pluggable Components**: CITA's microservices are loosely coupled and their communications are only via the message queue. Hence, it‘s flexible to improve current components with better algorithms (such as new consensus algorithms) or more appropriate technical solutions (such as new DBs or new privacy solutions). Moreover, business logic is extremely complicated in enterprise applications. With CITA, you can easily customize your blockchain with the certain feature to fit your own business requirements.
 
-- **Customizable and Pluggable Components**: CITA is designed to be highly customizable. CITA's microservices are decoupled from each other in the cleanest way, talk with each other by simple messages. It's easy to customize your blockchain to fit your own business requirements. For example, you can replace the default consensus with more appropriate algorithms if necessary or you can replace the default executor EVM to something else as well.
+- **High Performance**: In CITA, consensus and transaction execution are decoupled as separate microservices. The consensus service is only responsible for transaction ordering, which can finish independently before transaction execution, thus increase transaction processing performance. In additional, CITA also includes lots of other optimizations to fully utilize multi-cores and multi-servers' computing power. To this end, it utilizes the Rust language, a hybrid imperative/OO/functional language with an emphasis on efficiency.
 
-- **Production Ready**: There're many CITA networks running in banks and payment gateways production environment, with Cryptape or CITA Integration Provider's technical support.
+- **Resiliency and Reliability**: CITA provides tools to backup blockchain data by taking snapshot, which can help you to resync the blockchain data in a short time. And through Rust’s language-level memory and thread guarantees and a disciplined approach to exception-handling, we can state with a high degree of certainty that our code cannot crash, hang or bomb-out unexpectedly.
+
+- **Compatibility**: CITA supports the use of Solidity, Go, and Rust to develop smart contracts. It also supports all Ethereum development tools (Truffle, Zeppelin, Remix, etc.).
+
+- **Chain Interoperability**: We perceive that independent blockchains are constantly emerging nowadays and even more in the future. How do these chains interoperate with each other to form blockchain network? CITA Support cross-chain communication by providing a simple cross-chain protocol currently. More explorations are undertaking in CITA, aiming to amplify the value of applications running on the various chains.
+
+- **Engineering Experience**: There're many CITA networks running in banks, payment and insurance production environment, with Cryptape or CITA Integration Provider's technical support.  CITA has accumulated a lot of engineering experience.
 
 ## White Paper
 
@@ -27,18 +33,18 @@ For more details please check the white paper.
 
 ## Document
 
-- [English](https://cryptape.github.io/cita/en/index.html)
-- [Chinese](https://cryptape.github.io/cita/zh/index.html)
+- [English](https://cryptape.github.io/cita/#/en-US/latest/index)
+- [Chinese](https://cryptape.github.io/cita/)
 
 ## API/SDK
 
-CITA supports JSON-RPC and WebSocket (experimental) API/v1. Interfaces with `cita_` prefix can be used to interact with both native and EVM contracts, and those with `eth_` prefix are EVM contract only.
+CITA supports JSON-RPC and WebSocket (experimental) API/v1. 
 
 For CITA API/v1, You can use any HTTP client, or following SDKs:
 
 * [Java](https://github.com/cryptape/web3j)
 * [Rust](https://github.com/cryptape/rust-web3)
-* [Javascript](https://github.com/cryptape/web3.js)
+* [Javascript](https://github.com/cryptape/web3)
 
 ## Contributing
 
