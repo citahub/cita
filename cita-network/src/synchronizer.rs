@@ -2,7 +2,6 @@ use connection::Connection;
 use libproto::blockchain::{Block, Status};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{Message, OperateType, SyncRequest, SyncResponse};
-use protobuf::RepeatedField;
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::convert::{Into, TryFrom, TryInto};
@@ -383,7 +382,7 @@ impl Synchronizer {
                 blocks.len()
             );
             let mut sync_res = SyncResponse::new();
-            sync_res.set_blocks(RepeatedField::from_vec(blocks));
+            sync_res.set_blocks(blocks.into());
             let msg: Message = sync_res.into();
             self.tx_pub.send((
                 routing_key!(Net >> SyncResponse).into(),

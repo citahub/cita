@@ -27,7 +27,6 @@ use std::collections::HashMap;
 
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
-use protobuf::RepeatedField;
 //use receipt::{Receipt, ReceiptError};
 use rlp::*;
 //use state::State;
@@ -192,7 +191,7 @@ impl BlockBody {
         let mut body = ProtoBlockBody::new();
         let txs: Vec<ProtoSignedTransaction> =
             self.transactions.iter().map(|t| t.protobuf()).collect();
-        body.set_transactions(RepeatedField::from_slice(&txs[..]));
+        body.set_transactions(txs.into());
         body
     }
 

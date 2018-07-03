@@ -34,7 +34,6 @@ use libproto::{
     SyncRequest, SyncResponse,
 };
 use proof::TendermintProof;
-use protobuf::RepeatedField;
 use serde_json;
 use std::convert::{Into, TryFrom, TryInto};
 use std::mem;
@@ -564,7 +563,7 @@ impl Forward {
         for tx_hash_in_h256 in &tx_hashes {
             tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
         }
-        block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
+        block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
         block_tx_hashes
             .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
         block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());

@@ -18,7 +18,6 @@ error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-protobuf = { version = "^1.0.0"}
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 tx_pool = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 core = { path = "../cita-chain/core" }

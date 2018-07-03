@@ -27,7 +27,6 @@ extern crate libproto;
 extern crate logger;
 extern crate lru_cache;
 extern crate proof;
-extern crate protobuf;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;

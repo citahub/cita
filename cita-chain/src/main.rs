@@ -83,7 +83,6 @@ extern crate libproto;
 #[macro_use]
 extern crate logger;
 extern crate proof;
-extern crate protobuf;
 extern crate pubsub;
 extern crate serde_json;
 #[macro_use]

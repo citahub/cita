@@ -8,7 +8,6 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_yaml = "0.7.3"
 clap = "2"
-protobuf = { version = "^1.0.0" }
 rustc-serialize = "0.3"
 dotenv = "0.10.0"
 bincode = "0.8.0"

@@ -17,7 +17,6 @@
 
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{BatchRequest, Message, Request};
-use protobuf::RepeatedField;
 use std::convert::{Into, TryInto};
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
@@ -78,7 +77,7 @@ impl BatchForward {
             self.request_buffer.len()
         );
         let mut batch_request = BatchRequest::new();
-        batch_request.set_new_tx_requests(RepeatedField::from_slice(&self.request_buffer[..]));
+        batch_request.set_new_tx_requests(self.request_buffer.clone().into());
 
         let request_id = Uuid::new_v4().as_bytes().to_vec();
         let mut request = Request::new();

@@ -18,7 +18,6 @@ dotenv = "0.10.0"
 bytes = "0.4"
 notify = "4.0.0"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-protobuf = { version = "^1.0.0"}
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

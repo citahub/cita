@@ -53,7 +53,6 @@ extern crate libproto;
 extern crate logger;
 extern crate net2;
 extern crate num_cpus;
-extern crate protobuf;
 extern crate pubsub;
 extern crate serde;
 #[macro_use]
@@ -89,7 +88,6 @@ use http_server::Server;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
-use protobuf::RepeatedField;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -247,7 +245,7 @@ fn batch_forward_new_tx(
         time_stamp.elapsed().unwrap()
     );
     let mut batch_request = BatchRequest::new();
-    batch_request.set_new_tx_requests(RepeatedField::from_slice(&new_tx_request_buffer[..]));
+    batch_request.set_new_tx_requests(new_tx_request_buffer.clone().into());
 
     let request_id = Uuid::new_v4().as_bytes().to_vec();
     let mut request = reqlib::Request::new();

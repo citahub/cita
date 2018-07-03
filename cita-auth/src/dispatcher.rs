@@ -20,7 +20,6 @@ use cita_types::H256;
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
-use protobuf::RepeatedField;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::convert::{Into, TryInto};
@@ -87,7 +86,7 @@ impl Dispatcher {
         );
 
         if !out_txs.is_empty() {
-            body.set_transactions(RepeatedField::from_vec(out_txs));
+            body.set_transactions(out_txs.into());
         }
         block_txs.set_height(height as u64);
         block_txs.set_body(body);
