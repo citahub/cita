@@ -17,16 +17,14 @@ setup() {
     then
         ps -ax | grep rabbitmq-server | grep -v grep > /dev/null || brew services restart rabbitmq > /dev/null
     else
-        ps -C rabbitmq-server > /dev/null || sudo /etc/init.d/rabbitmq-server restart > /dev/null
+        flock -x -w 30 /tmp/rabbitmq.lock -c "ps -C rabbitmq-server > /dev/null || sudo /etc/init.d/rabbitmq-server restart > /dev/null"
     fi
     RABBITMQ_USER=cita_monitor
     RABBITMQ_PASSWD=cita_monitor
-    sudo rabbitmqctl list_vhosts | grep ${node}                            > /dev/null && sudo rabbitmqctl delete_vhost ${node}    > /dev/null
-    sudo rabbitmqctl add_vhost ${node}                                     > /dev/null
+    sudo rabbitmqctl list_vhosts | grep ${node}                            > /dev/null || sudo rabbitmqctl add_vhost ${node} > /dev/null
     sudo rabbitmqctl set_permissions -p ${node} guest '.*' '.*' '.*'       > /dev/null
     sudo rabbitmq-plugins enable rabbitmq_management                       > /dev/null
-    sudo rabbitmqctl  list_users | grep ${RABBITMQ_USER}                   > /dev/null &&  sudo rabbitmqctl delete_user  ${RABBITMQ_USER}   > /dev/null
-    sudo rabbitmqctl  add_user   ${RABBITMQ_USER} ${RABBITMQ_PASSWD}             > /dev/null
+    sudo rabbitmqctl  list_users | grep ${RABBITMQ_USER}                   > /dev/null || sudo rabbitmqctl add_user ${RABBITMQ_USER} ${RABBITMQ_PASSWD} > /dev/null
     sudo rabbitmqctl  set_user_tags  ${RABBITMQ_USER} monitoring           > /dev/null
     sudo rabbitmqctl set_permissions -p ${node}  ${RABBITMQ_USER} '.*' '.*' '.*'      > /dev/null
 
