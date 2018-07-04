@@ -99,9 +99,7 @@ impl BuildBlock {
         block.mut_header().set_timestamp(timestamp * 1000);
         block.mut_header().set_height(height);
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
-        block
-            .mut_body()
-            .set_transactions(txs.clone().into());
+        block.mut_body().set_transactions(txs.clone().into());
         let mut proof = TendermintProof::default();
         proof.height = (height - 1) as usize;
         proof.round = 0;

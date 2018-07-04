@@ -61,14 +61,16 @@ impl BlackList {
                 .clone()
                 .into_iter()
                 .map(|address| address.to_vec())
-                .collect::<Vec<Vec<u8>>>().into()
+                .collect::<Vec<Vec<u8>>>()
+                .into(),
         );
         bl.set_clear_list(
             self.clear_list
                 .clone()
                 .into_iter()
                 .map(|address| address.to_vec())
-                .collect::<Vec<Vec<u8>>>().into()
+                .collect::<Vec<Vec<u8>>>()
+                .into(),
         );
         bl
     }
