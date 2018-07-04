@@ -11,5 +11,5 @@ jobs:
   include:
     - stage: Build & Test
       script:
-        - docker pull cita/cita-build:ubuntu-18.04-20180523
+        - docker pull cita/cita-build:ubuntu-18.04-20180703
         - ./env.sh ./scripts/ci.sh
