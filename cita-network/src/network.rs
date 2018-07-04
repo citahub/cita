@@ -39,7 +39,9 @@ impl NetWork {
         let rtkey = RoutingKey::from(&key);
         trace!("Network receive Msg from {:?}/{}", source, key);
         if self.con.is_disconnect.load(Ordering::SeqCst) {
-            return;
+            if rtkey.get_sub_module() != SubModules::Snapshot {
+                return;
+            }
         }
         match source {
             // Come from MQ
@@ -57,7 +59,7 @@ impl NetWork {
                     self.reply_rpc(&data);
                 }
                 routing_key!(Snapshot >> SnapshotReq) => {
-                    info!("set disconnect and respone");
+                    info!("set disconnect and response");
                     self.snapshot_req(&data);
                 }
                 _ => {
@@ -100,27 +102,24 @@ impl NetWork {
         let mut send = false;
         match req.cmd {
             Cmd::Begin => {
+                info!("[snapshot] receive cmd: Begin");
                 resp.set_resp(Resp::BeginAck);
-                info!("network resp BeginAck");
                 send = true;
             }
             Cmd::Clear => {
+                info!("[snapshot] receive cmd: Clear");
                 self.con.is_disconnect.store(true, Ordering::SeqCst);
                 resp.set_resp(Resp::ClearAck);
-                info!("network resp ClearAck");
                 send = true;
             }
             Cmd::End => {
+                info!("[snapshot] receive cmd: End");
                 self.con.is_disconnect.store(false, Ordering::SeqCst);
                 resp.set_resp(Resp::EndAck);
-                info!("network resp ClearAck");
                 send = true;
             }
             _ => {
-                warn!(
-                    "[snapshot_req]receive: unexpected snapshot cmd = {:?}",
-                    req.cmd
-                );
+                warn!("[snapshot] receive unexpected cmd = {:?}", req.cmd);
             }
         }
 

@@ -91,12 +91,13 @@ impl SnapshotWriter for PackedWriter {
     fn finish(mut self, manifest: ManifestData) -> io::Result<()> {
         // we ignore the hashes fields of the manifest under the assumption that
         // they are consistent with ours.
-        let mut stream = RlpStream::new_list(4);
+        let mut stream = RlpStream::new_list(5);
         stream
             .append_list(&self.block_hashes)
             .append(&manifest.state_root)
             .append(&manifest.block_number)
-            .append(&manifest.block_hash);
+            .append(&manifest.block_hash)
+            .append(&manifest.last_proof);
 
         let manifest_rlp = stream.out();
 
@@ -227,6 +228,7 @@ impl PackedReader {
             state_root: rlp.val_at(1)?,
             block_number: rlp.val_at(2)?,
             block_hash: rlp.val_at(3)?,
+            last_proof: rlp.val_at(4)?,
         };
 
         Ok(Some(PackedReader {

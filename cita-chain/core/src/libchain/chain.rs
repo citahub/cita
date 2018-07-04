@@ -24,12 +24,12 @@ pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use db;
 use db::*;
+use lru_cache::LruCache;
 
 use filters::{PollFilter, PollManager};
 use header::*;
 pub use libchain::block::*;
 use libchain::cache::CacheSize;
-
 use libchain::extras::*;
 use libchain::status::Status;
 pub use libchain::transaction::*;
@@ -70,6 +70,7 @@ use util::{Mutex, RwLock};
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
 const LOG_BLOOMS_ELEMENTS_PER_INDEX: usize = 16;
+const TX_HASHES_CACHE_ITEMS: usize = 200;
 
 #[derive(Debug, Clone)]
 pub struct RelayInfo {
@@ -310,6 +311,9 @@ pub struct Chain {
 
     /// Proof type
     pub prooftype: u8,
+
+    // snapshot: get tx_hashes from file and sent to auth.
+    pub tx_hashes_cache: RwLock<LruCache<u64, Vec<H256>>>,
 }
 
 /// Get latest status
@@ -397,6 +401,7 @@ impl Chain {
             check_quota: AtomicBool::new(false),
             prooftype: chain_config.prooftype,
             proof_map: RwLock::new(BTreeMap::new()),
+            tx_hashes_cache: RwLock::new(LruCache::new(TX_HASHES_CACHE_ITEMS)),
         };
 
         if let Some(proto_proof) = chain.current_block_poof() {
@@ -1270,7 +1275,7 @@ impl Chain {
     }
 
     // Get the height of proof.
-    pub fn get_block_proof_height(block: &Block) -> usize {
+    pub fn get_block_proof_height(&self, block: &Block) -> usize {
         match block.proof_type() {
             Some(ProofType::Tendermint) => {
                 let proof = TendermintProof::from(block.proof().clone());
@@ -1281,6 +1286,18 @@ impl Chain {
                 proof.height
             }
             _ => block.number() as usize,
+        }
+    }
+
+    // Get block proof by height.
+    pub fn get_block_proof_by_height(&self, height: u64) -> Option<ProtoProof> {
+        match self.current_header.read().proof_type() {
+            Some(ProofType::Tendermint) => {
+                // TODO: use CONSTANT to replace the '1'.
+                self.block_by_height(height + 1)
+                    .map_or(None, |block| Some(block.header.proof().clone()))
+            }
+            _ => None,
         }
     }
 

@@ -38,13 +38,14 @@
 //!     | Queue | PubModule | SubModule     | Message Type  |
 //!     | ----- | --------- | ------------- | ------------- |
 //!     | chain | Chain     | Auth          | BlockTxHashes |
-//!     | chain | Chain     | Net, Executor | Status        |
+//!     | chain | Chain     | Net           | Status        |
 //!     | chain | Chain     | Executor      | Request       |
 //!     | chain | Chain     | Jsonrpc       | Response      |
 //!     | chain | Chain     | Net           | SyncResponse  |
 //!     | chain | Chain     | Snapshot      | SnapshotResp  |
 //!     | chain | Chain     | Executor      | LocalSync     |
 //!     | chain | Chain     | Consensus     | RichStatus    |
+//!     | chain | Chain     | Executor      | RichStatus    |
 //!
 //! ### Key behavior
 //!
@@ -142,8 +143,8 @@ fn main() {
 
     let nosql_path = DataPath::nosql_path();
     trace!("nosql_path is {:?}", nosql_path);
-    let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    let db = Database::open(&config, &nosql_path).unwrap();
+    let db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
+    let db = Database::open(&db_config, &nosql_path).unwrap();
 
     let chain_config = libchain::chain::Config::new(config_path);
     let chain = Arc::new(libchain::chain::Chain::init_chain(

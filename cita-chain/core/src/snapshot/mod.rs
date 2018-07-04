@@ -34,6 +34,7 @@ use header::Header;
 
 use cita_types::H256;
 use rlp::{DecoderError, Encodable, RlpStream, UntrustedRlp};
+use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -59,9 +60,9 @@ use libchain::block::{Block, BlockBody};
 use libchain::chain::Chain;
 use libchain::extras::{BlockReceipts, CurrentHash, CurrentHeight, LogGroupPosition};
 
-use receipt::Receipt;
+use libproto::Proof;
 
-use std::collections::{HashMap, VecDeque};
+use receipt::Receipt;
 
 //#[cfg(test)]
 //mod tests;
@@ -121,6 +122,8 @@ pub struct ManifestData {
     pub block_number: u64,
     // Block hash this snapshot was taken at.
     pub block_hash: H256,
+    // Last Block proof
+    pub last_proof: Proof,
 }
 
 /// Snapshot manifest encode/decode.
@@ -132,6 +135,7 @@ impl ManifestData {
         stream.append(&self.state_root);
         stream.append(&self.block_number);
         stream.append(&self.block_hash);
+        stream.append(&self.last_proof);
 
         stream.out()
     }
@@ -144,12 +148,14 @@ impl ManifestData {
         let state_root: H256 = decoder.val_at(1)?;
         let block_number: u64 = decoder.val_at(2)?;
         let block_hash: H256 = decoder.val_at(3)?;
+        let last_proof: Proof = decoder.val_at(4)?;
 
         Ok(ManifestData {
             block_hashes: block_hashes,
             state_root: state_root,
             block_number: block_number,
             block_hash: block_hash,
+            last_proof: last_proof,
         })
     }
 }
@@ -157,28 +163,38 @@ impl ManifestData {
 /// snapshot using: given Executor+ starting block hash + database; writing into the given writer.
 pub fn take_snapshot<W: SnapshotWriter + Send>(
     chain: &Arc<Chain>,
-    block_at: H256,
+    block_at: u64,
     writer: W,
     p: &Progress,
 ) -> Result<(), Error> {
+    let block_hash = chain.block_hash_by_height(block_at).unwrap();
+
     let start_header = chain
-        .block_header_by_hash(block_at)
-        .ok_or(Error::InvalidStartingBlock(BlockId::Hash(block_at)))?;
+        .block_header_by_hash(block_hash)
+        .ok_or(Error::InvalidStartingBlock(BlockId::Hash(block_hash)))?;
     let state_root = start_header.state_root();
     let number = start_header.number();
 
     info!("Taking snapshot starting at block {}", number);
 
     let writer = Mutex::new(writer);
-    let block_hashes = chunk_secondary(chain, block_at, &writer, p)?;
+    let block_hashes = chunk_secondary(chain, block_hash, &writer, p)?;
 
     info!("produced {} block chunks.", block_hashes.len());
+
+    let last_proof: Proof;
+    if block_at == chain.get_current_height() {
+        last_proof = chain.current_block_poof().unwrap();
+    } else {
+        last_proof = chain.get_block_proof_by_height(block_at).unwrap();
+    }
 
     let manifest_data = ManifestData {
         block_hashes: block_hashes,
         state_root: *state_root,
         block_number: number,
-        block_hash: block_at,
+        block_hash: block_hash,
+        last_proof: last_proof,
     };
 
     writer.into_inner().finish(manifest_data)?;
@@ -278,11 +294,20 @@ impl<'a> BlockChunker<'a> {
                 _ => Vec::new(),
             };
 
+            let tx_hashes = match self
+                .chain
+                .transaction_hashes(BlockId::Hash(self.current_hash))
+            {
+                Some(hashes) => hashes,
+                _ => Vec::new(),
+            };
+
             let pair = {
-                let mut pair_stream = RlpStream::new_list(2);
+                let mut pair_stream = RlpStream::new_list(3);
                 pair_stream
                     .append_raw(&header_rlp, 1)
-                    .append_list(&receipts);
+                    .append_list(&receipts)
+                    .append_list(&tx_hashes);
                 pair_stream.out()
             };
 
@@ -431,6 +456,7 @@ impl BlockRebuilder {
                 body: BlockBody::new(),
             };
             let receipts: Vec<Option<Receipt>> = pair.list_at(1)?;
+            let tx_hashes: Vec<H256> = pair.list_at(2)?;
 
             // TODO: abridged_block
             /*let receipts_root = ordered_trie_root(pair.at(1)?.iter().map(|r| r.as_raw()));
@@ -457,7 +483,7 @@ impl BlockRebuilder {
 
             let mut batch = self.db.transaction();
 
-            self.insert_unordered_block(&mut batch, &block, receipts, is_best);
+            self.insert_unordered_block(&mut batch, &block, receipts, tx_hashes, is_best);
 
             self.db.write_buffered(batch);
 
@@ -474,10 +500,11 @@ impl BlockRebuilder {
     }
 
     fn insert_unordered_block(
-        &self,
+        &mut self,
         batch: &mut DBTransaction,
         block: &Block,
         receipts: Vec<Option<Receipt>>,
+        tx_hashes: Vec<H256>,
         is_best: bool,
     ) {
         let header = block.header();
@@ -494,6 +521,13 @@ impl BlockRebuilder {
             hash: hash,
             number: height,
         };
+
+        {
+            // Maybe tx hashes will be stored in DB in future.
+            let mut write_tx_hashes = self.chain.tx_hashes_cache.write();
+            write_tx_hashes.insert(info.number, tx_hashes);
+        }
+
         self.prepare_update(
             batch,
             ExtrasUpdate {

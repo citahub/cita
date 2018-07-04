@@ -30,8 +30,8 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use libproto::{
     request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
-    ExecutedResult, Message, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
-    SyncResponse,
+    ExecutedResult, Message, OperateType, Proof, ProofType, Request_oneof_req as Request,
+    SyncRequest, SyncResponse,
 };
 use proof::TendermintProof;
 use protobuf::RepeatedField;
@@ -41,6 +41,8 @@ use std::mem;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 use types::filter::Filter;
 use types::ids::BlockId;
 
@@ -51,7 +53,7 @@ use util::datapath::DataPath;
 use util::kvdb::DatabaseConfig;
 
 use core::snapshot;
-use core::snapshot::io::{PackedReader, PackedWriter};
+use core::snapshot::io::{PackedReader, PackedWriter, SnapshotReader};
 use core::snapshot::service::{Service as SnapshotService, ServiceParams as SnapServiceParams};
 use core::snapshot::Progress;
 
@@ -114,47 +116,8 @@ impl Forward {
             }
 
             routing_key!(Snapshot >> SnapshotReq) => {
-                let req = msg.take_snapshot_req().unwrap();
-                let mut resp = SnapshotResp::new();
-                match req.cmd {
-                    Cmd::Snapshot => {
-                        info!("chain receive snapshot cmd: {:?}", req);
-                        self.take_snapshot(req);
-                        info!("chain snapshot creation complete");
-
-                        //resp SnapshotAck to snapshot_tool
-                        //let mut resp = SnapshotResp::new();
-                        resp.set_resp(Resp::SnapshotAck);
-                        let msg: Message = resp.into();
-                        self.ctx_pub
-                            .send((
-                                routing_key!(Chain >> SnapshotResp).into(),
-                                msg.try_into().unwrap(),
-                            ))
-                            .unwrap();
-                    }
-                    Cmd::Restore => {
-                        info!("chain receive snapshot cmd: {:?}", req);
-                        self.restore(&req);
-                        info!("chain snapshot restore complete");
-                        self.chain.broadcast_current_status(&self.ctx_pub);
-
-                        //resp RestoreAck to snapshot_tool
-                        //let mut resp = SnapshotResp::new();
-                        resp.set_resp(Resp::RestoreAck);
-                        let msg: Message = resp.into();
-                        self.ctx_pub
-                            .send((
-                                routing_key!(Chain >> SnapshotResp).into(),
-                                msg.try_into().unwrap(),
-                            ))
-                            .unwrap();
-                    }
-
-                    _ => {
-                        trace!("chain receive other snapshot message: {:?}", req);
-                    }
-                }
+                let snapshot_req = msg.take_snapshot_req().unwrap();
+                self.deal_snapshot_req(&snapshot_req);
             }
 
             _ => {
@@ -571,58 +534,132 @@ impl Forward {
 
     fn deal_block_tx_req(&self, block_tx_hashes_req: &BlockTxHashesReq) {
         let block_height = block_tx_hashes_req.get_height();
-        if let Some(tx_hashes) = self.chain.transaction_hashes(BlockId::Number(block_height)) {
-            //prepare and send the block tx hashes to auth
-            let mut block_tx_hashes = BlockTxHashes::new();
-            block_tx_hashes.set_height(block_height);
-            let mut tx_hashes_in_u8 = Vec::new();
-            for tx_hash_in_h256 in &tx_hashes {
-                tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
+        let tx_hashes: Vec<H256>;
+        let mut need_insert: bool = false;
+        {
+            if let Some(hashes) = self.chain.tx_hashes_cache.write().get_mut(&block_height) {
+                info!(
+                    "get tx_hashes at height {} in chain.tx_hashes",
+                    block_height
+                );
+                tx_hashes = hashes.clone();
+            } else if let Some(hashes) =
+                self.chain.transaction_hashes(BlockId::Number(block_height))
+            {
+                tx_hashes = hashes;
+                need_insert = true;
+            } else {
+                warn!("get block's tx hashes for height:{} error", block_height);
+                return;
             }
-            block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
-            block_tx_hashes
-                .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes
-                .set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
-            let msg: Message = block_tx_hashes.into();
-            self.ctx_pub
-                .send((
-                    routing_key!(Chain >> BlockTxHashes).into(),
-                    msg.try_into().unwrap(),
-                ))
-                .unwrap();
-            trace!("response block's tx hashes for height:{}", block_height);
-        } else {
-            warn!("get block's tx hashes for height:{} error", block_height);
+        }
+        {
+            if need_insert {
+                self.chain
+                    .tx_hashes_cache
+                    .write()
+                    .insert(block_height, tx_hashes.clone());
+            }
+        }
+
+        //prepare and send the block tx hashes to auth
+        let mut block_tx_hashes = BlockTxHashes::new();
+        block_tx_hashes.set_height(block_height);
+        let mut tx_hashes_in_u8 = Vec::new();
+        for tx_hash_in_h256 in &tx_hashes {
+            tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
+        }
+        block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
+        block_tx_hashes
+            .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
+        block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
+        let msg: Message = block_tx_hashes.into();
+        self.ctx_pub
+            .send((
+                routing_key!(Chain >> BlockTxHashes).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
+
+        trace!("response block's tx hashes for height:{}", block_height);
+    }
+
+    fn deal_snapshot_req(&self, snapshot_req: &SnapshotReq) {
+        let mut resp = SnapshotResp::new();
+        match snapshot_req.cmd {
+            Cmd::Snapshot => {
+                info!("[snapshot] receive cmd: {:?}", snapshot_req);
+                self.take_snapshot(snapshot_req);
+
+                //resp SnapshotAck to snapshot_tool
+                resp.set_resp(Resp::SnapshotAck);
+                let msg: Message = resp.into();
+                self.ctx_pub
+                    .send((
+                        routing_key!(Chain >> SnapshotResp).into(),
+                        msg.try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
+            Cmd::Restore => {
+                info!("[snapshot] receive cmd: {:?}", snapshot_req);
+                let proof = self.restore_snapshot(snapshot_req).unwrap();
+
+                //resp RestoreAck to snapshot_tool
+                resp.set_resp(Resp::RestoreAck);
+                resp.set_proof(proof);
+                resp.set_height(self.chain.get_current_height());
+                let msg: Message = resp.into();
+                self.ctx_pub
+                    .send((
+                        routing_key!(Chain >> SnapshotResp).into(),
+                        msg.try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
+            Cmd::End => {
+                let chain = self.chain.clone();
+                let ctx_pub = self.ctx_pub.clone();
+                thread::spawn(move || {
+                    thread::sleep(Duration::new(3, 0));
+                    // broadcast status and rich-status.
+                    chain.broadcast_current_status(&ctx_pub);
+                });
+            }
+            _ => {
+                warn!("[snapshot] receive other cmd: {:?}", snapshot_req);
+            }
         }
     }
 
-    fn take_snapshot(&self, _snap_shot: SnapshotReq) {
-        // TODO: use given path
-        // TODO: use given height, Modify libproto Msg type!!
-        //let block_at = snap_shot.get_start_height();  //ancient block,latest?
-        //let start_hash = self.chain.block_hash_by_height(block_at).unwrap();
-
+    fn take_snapshot(&self, snapshot_req: &SnapshotReq) {
+        // use given path
+        let file_name = snapshot_req.file.clone() + "_chain.rlp";
         let writer = PackedWriter {
-            file: File::create("snap_chain.rlp").unwrap(), //TODO:use given path
+            file: File::create(file_name).unwrap(), //TODO:use given path
             block_hashes: Vec::new(),
             cur_len: 0,
         };
 
+        // use given height: ancient block, or latest
+        let mut block_at = snapshot_req.get_end_height();
+        let current_height = self.chain.get_current_height();
+        if block_at == 0 || block_at > current_height {
+            warn!(
+                "block height is equal to 0 or bigger than current height, \
+                 and be set to current height!"
+            );
+            block_at = current_height;
+        }
+
         let progress = Arc::new(Progress::default());
 
-        info!(
-            "snapshot: current height = {}",
-            self.chain.get_current_height()
-        );
-        let start_hash = self.chain.get_current_hash();
-        info!("take_snapshot start_hash: {:?}", start_hash);
-        snapshot::take_snapshot(&self.chain, start_hash, writer, &*progress).unwrap();
+        snapshot::take_snapshot(&self.chain, block_at, writer, &*progress).unwrap();
     }
 
-    fn restore(&self, _snap_shot: &SnapshotReq) -> Result<(), String> {
-        let file = "snap_chain.rlp";
-        let reader = PackedReader::new(Path::new(&file))
+    fn restore_snapshot(&self, snapshot_req: &SnapshotReq) -> Result<Proof, String> {
+        let file_name = snapshot_req.file.clone() + "_chain.rlp";
+        let reader = PackedReader::new(Path::new(&file_name))
             .map_err(|e| format!("Couldn't open snapshot file: {}", e))
             .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
         let reader = reader?;
@@ -639,6 +676,9 @@ impl Forward {
         let snapshot = SnapshotService::new(snapshot_params).unwrap();
         let snapshot = Arc::new(snapshot);
         snapshot::restore_using(Arc::clone(&snapshot), &reader, true);
-        Ok(())
+
+        // return proof
+        let proof = reader.manifest().last_proof.clone();
+        Ok(proof)
     }
 }

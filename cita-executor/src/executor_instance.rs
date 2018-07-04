@@ -119,45 +119,8 @@ impl ExecutorInstance {
             }
 
             routing_key!(Snapshot >> SnapshotReq) => {
-                let req = msg.take_snapshot_req().unwrap();
-                let mut resp = SnapshotResp::new();
-                match req.cmd {
-                    Cmd::Snapshot => {
-                        info!("executor receive snapshot cmd: {:?}", req);
-                        self.take_snapshot(&req);
-                        info!("executor snapshot creation complete");
-
-                        //resp SnapshotAck to snapshot_tool
-                        //let mut resp = SnapshotResp::new();
-                        resp.set_resp(Resp::SnapshotAck);
-                        let msg: Message = resp.into();
-                        self.ctx_pub
-                            .send((
-                                routing_key!(Executor >> SnapshotResp).into(),
-                                msg.try_into().unwrap(),
-                            ))
-                            .unwrap();
-                    }
-                    Cmd::Restore => {
-                        info!("executor receive restore cmd: {:?}", req);
-                        self.restore(&req);
-                        info!("executor snapshot restore complete");
-
-                        //resp RestoreAck to snapshot_tool
-                        //let mut resp = SnapshotResp::new();
-                        resp.set_resp(Resp::RestoreAck);
-                        let msg: Message = resp.into();
-                        self.ctx_pub
-                            .send((
-                                routing_key!(Executor >> SnapshotResp).into(),
-                                msg.try_into().unwrap(),
-                            ))
-                            .unwrap();
-                    }
-                    _ => {
-                        trace!("executor receive other snapshot message: {:?}", req);
-                    }
-                }
+                let snapshot_req = msg.take_snapshot_req().unwrap();
+                self.deal_snapshot_req(&snapshot_req);
             }
 
             _ => {
@@ -826,31 +789,75 @@ impl ExecutorInstance {
         self.write_sender.send(blk_height);
     }
 
-    fn take_snapshot(&self, _snap_shot: &SnapshotReq) {
-        // TODO: use given path
-        // TODO: use given height, Modify libproto Msg type!!
-        //let block_at = snap_shot.get_start_height(); //ancient block,latest?
-        //let start_hash = self.ext.block_hash(block_at).unwrap();
+    fn deal_snapshot_req(&self, snapshot_req: &SnapshotReq) {
+        let mut resp = SnapshotResp::new();
+        match snapshot_req.cmd {
+            Cmd::Snapshot => {
+                info!("[snapshot] receive cmd: {:?}", snapshot_req);
+                self.take_snapshot(snapshot_req);
 
+                //resp SnapshotAck to snapshot_tool
+                resp.set_resp(Resp::SnapshotAck);
+                let msg: Message = resp.into();
+                self.ctx_pub
+                    .send((
+                        routing_key!(Executor >> SnapshotResp).into(),
+                        msg.try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
+            Cmd::Restore => {
+                info!("[snapshot] receive cmd: {:?}", snapshot_req);
+                self.restore(snapshot_req);
+
+                //resp RestoreAck to snapshot_tool
+                resp.set_resp(Resp::RestoreAck);
+                let msg: Message = resp.into();
+                self.ctx_pub
+                    .send((
+                        routing_key!(Executor >> SnapshotResp).into(),
+                        msg.try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
+            _ => {
+                warn!("[snapshot] receive other message: {:?}", snapshot_req);
+            }
+        }
+    }
+
+    fn take_snapshot(&self, snapshot_req: &SnapshotReq) {
+        // use given path
+        let file_name = snapshot_req.file.clone() + "_executor.rlp";
         let writer = PackedWriter {
-            file: File::create("snap_executor.rlp").unwrap(),
+            file: File::create(file_name).unwrap(),
             state_hashes: Vec::new(),
             block_hashes: Vec::new(),
             cur_len: 0,
         };
 
-        let progress = Arc::new(Progress::default());
-
-        let start_hash = self.ext.get_current_hash();
+        // use given height: ancient block, or latest
+        let mut block_at = snapshot_req.get_end_height();
+        let current_height = self.ext.get_current_height();
+        if block_at == 0 || block_at > current_height {
+            warn!(
+                "block height is equal to 0 or bigger than current height, \
+                 and be set to current height!"
+            );
+            block_at = current_height;
+        }
+        let start_hash = self.ext.block_hash(block_at).unwrap();
 
         let db = self.ext.state_db.read().boxed_clone();
+
+        let progress = Arc::new(Progress::default());
 
         snapshot::take_snapshot(&self.ext, start_hash, db.as_hashdb(), writer, &*progress).unwrap();
     }
 
-    fn restore(&self, _snap_shot: &SnapshotReq) -> Result<(), String> {
-        let file = "snap_executor.rlp";
-        let reader = PackedReader::new(Path::new(&file))
+    fn restore(&self, snapshot_req: &SnapshotReq) -> Result<(), String> {
+        let file_name = snapshot_req.file.clone() + "_executor.rlp";
+        let reader = PackedReader::new(Path::new(&file_name))
             .map_err(|e| format!("Couldn't open snapshot file: {}", e))
             .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
         let reader = reader?;

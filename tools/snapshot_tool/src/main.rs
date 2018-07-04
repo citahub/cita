@@ -51,13 +51,13 @@ fn main() {
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .arg_from_usage("-m, --cmd=[snapshot] 'snapshot or restore'")
-        .arg_from_usage("-p, --file=[./snapshot] 'the file of snapshot'")  //snap file path
+        .arg_from_usage("-f, --file=[snapshot] 'the file of snapshot'")  //snap file path
         .arg_from_usage("-s, --start_height=[0] 'start height'")  //latest or valid ancient block_id
         .arg_from_usage("-e, --end_height=[1000] 'end height'")  //todo remove
         .get_matches();
 
     let cmd = matches.value_of("cmd").unwrap_or("snapshot");
-    let file = matches.value_of("file").unwrap_or("./snapshot");
+    let file = matches.value_of("file").unwrap_or("snapshot");
     let start_height = matches
         .value_of("start_height")
         .unwrap_or("0")
@@ -65,7 +65,7 @@ fn main() {
         .unwrap();
     let end_height = matches
         .value_of("end_height")
-        .unwrap_or("1000")
+        .unwrap_or("0")
         .parse::<u64>()
         .unwrap();
 
@@ -89,11 +89,11 @@ fn main() {
 
     match cmd {
         "snapshot" => {
-            snapshot_instance.clone().snapshot();
+            snapshot_instance.snapshot();
             println!("snapshot_tool send snapshot cmd");
         }
         "restore" => {
-            snapshot_instance.clone().restore();
+            snapshot_instance.begin();
             println!("snapshot_tool send restore cmd");
         }
         _ => println!("snapshot_tool send error cmd"),
@@ -102,7 +102,7 @@ fn main() {
     loop {
         if let Ok((key, msg)) = rx.recv() {
             info!("snapshot_tool receive ack key: {:?}", key);
-            exit = snapshot_instance.clone().parse_data(key, msg);
+            exit = snapshot_instance.parse_data(key, msg);
         }
         if exit {
             break;

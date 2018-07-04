@@ -33,7 +33,6 @@ use lru::LruCache;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon::ThreadPoolBuilder;
 use serde_json;
-use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryFrom, TryInto};
 use std::sync::mpsc::{Receiver, Sender};
@@ -41,12 +40,13 @@ use std::time::Duration;
 use util::instrument::{unix_now, AsMillis};
 use util::BLOCKLIMIT;
 
+#[derive(Debug)]
 struct HistoryHeights {
     heights: HashSet<u64>,
     max_height: u64,
     min_height: u64,
     is_init: bool,
-    latest_update_timestamp: u64,
+    last_timestamp: u64,
 }
 
 impl HistoryHeights {
@@ -57,21 +57,46 @@ impl HistoryHeights {
             min_height: 0,
             is_init: false,
             //init value is 0 mean first time must not too frequent
-            latest_update_timestamp: 0,
+            last_timestamp: 0,
         }
     }
 
-    fn update(&mut self, height: u64) {
-        let old_min_height = self.min_height;
-        self.max_height = height;
-        self.min_height = if height > BLOCKLIMIT {
-            height - BLOCKLIMIT + 1
+    pub fn reset(&mut self) {
+        self.heights.clear();
+        self.max_height = 0;
+        self.min_height = 0;
+        self.is_init = false;
+        self.last_timestamp = 0;
+    }
+
+    pub fn update_height(&mut self, height: u64) {
+        // update 'min_height', 'max_height', 'heights'
+        if height < self.min_height {
+            trace!(
+                "height is small than min_height: {} < {}",
+                height,
+                self.min_height,
+            );
+            return;
+        } else if height > self.max_height {
+            self.max_height = height;
+
+            let old_min_height = self.min_height;
+            self.min_height = if height > BLOCKLIMIT {
+                height - BLOCKLIMIT + 1
+            } else {
+                0
+            };
+
+            self.heights.insert(height);
+            for i in old_min_height..self.min_height {
+                self.heights.remove(&i);
+            }
         } else {
-            0
-        };
-        for i in old_min_height..self.min_height {
-            self.heights.remove(&i);
+            self.heights.insert(height);
         }
+
+        // update 'is_init'
         let mut is_init = true;
         for i in self.min_height..self.max_height {
             if !self.heights.contains(&i) {
@@ -80,15 +105,6 @@ impl HistoryHeights {
             }
         }
         self.is_init = is_init;
-        self.latest_update_timestamp = unix_now().as_millis();
-    }
-
-    pub fn add_height(&mut self, height: u64) {
-        if height >= self.min_height {
-            self.heights.insert(height);
-            let max_height = self.max_height;
-            self.update(max(height, max_height));
-        }
     }
 
     pub fn next_height(&self) -> u64 {
@@ -109,7 +125,12 @@ impl HistoryHeights {
 
     // at least wait 3s from latest update
     pub fn is_too_frequent(&self) -> bool {
-        unix_now().as_millis() < self.latest_update_timestamp + 3000
+        unix_now().as_millis() < self.last_timestamp + 3000
+    }
+
+    pub fn update_time_stamp(&mut self) {
+        // update time_stamp
+        self.last_timestamp = unix_now().as_millis();
     }
 }
 
@@ -123,41 +144,41 @@ mod history_heights_tests {
         assert_eq!(h.is_init(), false);
         assert_eq!(h.next_height(), 1);
 
-        h.add_height(60);
+        h.update_height(60);
         assert_eq!(h.is_init(), false);
         assert_eq!(h.next_height(), 61);
 
         for i in 0..60 {
-            h.add_height(i);
+            h.update_height(i);
         }
         assert_eq!(h.is_init(), true);
         assert_eq!(h.next_height(), 61);
 
-        h.add_height(70);
+        h.update_height(70);
         assert_eq!(h.is_init(), false);
         assert_eq!(h.next_height(), 71);
 
         for i in 0..70 {
-            h.add_height(i);
+            h.update_height(i);
         }
         assert_eq!(h.is_init(), true);
         assert_eq!(h.next_height(), 71);
 
-        h.add_height(99);
+        h.update_height(99);
         assert_eq!(h.is_init(), false);
         assert_eq!(h.next_height(), 100);
 
         for i in 0..99 {
-            h.add_height(i);
+            h.update_height(i);
         }
         assert_eq!(h.is_init(), true);
         assert_eq!(h.next_height(), 100);
 
-        h.add_height(100);
+        h.update_height(100);
         assert_eq!(h.is_init(), true);
         assert_eq!(h.next_height(), 101);
 
-        h.add_height(101);
+        h.update_height(101);
         assert_eq!(h.is_init(), true);
         assert_eq!(h.next_height(), 102);
     }
@@ -199,7 +220,7 @@ pub struct MsgHandler {
     account_gas_limit: AccountGasLimit,
     tx_request: Sender<Request>,
     tx_pool_limit: usize,
-    is_recovery_mod: bool,
+    is_snapshot: bool,
     black_list_cache: HashMap<Address, i8>,
     is_need_proposal_new_block: bool,
 }
@@ -232,14 +253,14 @@ impl MsgHandler {
             account_gas_limit: AccountGasLimit::new(),
             tx_request,
             tx_pool_limit,
-            is_recovery_mod: false,
+            is_snapshot: false,
             black_list_cache: HashMap::new(),
             is_need_proposal_new_block: false,
         }
     }
 
     fn is_ready(&self) -> bool {
-        self.history_heights.is_init() && self.chain_id.is_some() && !self.is_recovery_mod
+        self.history_heights.is_init() && self.chain_id.is_some() && !self.is_snapshot
     }
 
     fn is_flow_control(&self, tx_count: usize) -> bool {
@@ -559,11 +580,14 @@ impl MsgHandler {
         let _ = self.tx_request.send(tx_req);
     }
 
-    fn send_block_tx_hashes_req(&self) {
+    fn send_block_tx_hashes_req(&mut self, check: bool) {
         // we will send req for all height
         // so don't too frequent
-        if self.history_heights.is_too_frequent() {
-            return;
+        if check {
+            if self.history_heights.is_too_frequent() {
+                warn!("Too frequent to send request!");
+                return;
+            }
         }
         for i in self.history_heights.min_height()..self.history_heights.max_height() {
             if !self.history_hashes.contains_key(&i) {
@@ -578,6 +602,8 @@ impl MsgHandler {
                     .unwrap();
             }
         }
+
+        self.history_heights.update_time_stamp();
     }
 
     pub fn handle_remote_msg(&mut self) {
@@ -598,7 +624,7 @@ impl MsgHandler {
             // we will send request for these height
             if !self.history_heights.is_init() {
                 trace!("history block hashes is not ready");
-                self.send_block_tx_hashes_req();
+                self.send_block_tx_hashes_req(true);
             }
 
             // Daily tasks
@@ -645,6 +671,7 @@ impl MsgHandler {
                             let block_tx_hashes = msg.take_block_tx_hashes().unwrap();
                             let height = block_tx_hashes.get_height();
                             info!("get block tx hashes for height {:?}", height);
+                            let tx_hashes = block_tx_hashes.get_tx_hashes();
 
                             // because next height init value is 1
                             // the empty chain first msg height is 0 with quota info
@@ -664,27 +691,22 @@ impl MsgHandler {
                                 self.is_need_proposal_new_block = true;
                             }
 
-                            // update history block tx hashes
+                            // update history_heights
                             let old_min_height = self.history_heights.min_height();
+                            self.history_heights.update_height(height);
 
-                            self.history_heights.add_height(height);
-
-                            // remove unnecessary oldest history block tx hashes
-                            for i in old_min_height..self.history_heights.min_height() {
-                                self.history_hashes.remove(&i);
-                            }
-
-                            let tx_hashes = block_tx_hashes.get_tx_hashes();
+                            // update tx pool
                             let mut tx_hashes_h256 = HashSet::with_capacity(tx_hashes.len());
                             for data in tx_hashes.iter() {
                                 let hash = H256::from_slice(data);
                                 tx_hashes_h256.insert(hash);
                             }
-
-                            // update tx pool
                             self.dispatcher.del_txs_from_pool_with_hash(&tx_hashes_h256);
 
-                            // add new history block tx hashes
+                            // update history_hashes
+                            for i in old_min_height..self.history_heights.min_height() {
+                                self.history_hashes.remove(&i);
+                            }
                             if !self.history_hashes.contains_key(&height) {
                                 self.history_hashes.insert(height, tx_hashes_h256);
                             }
@@ -728,7 +750,7 @@ impl MsgHandler {
                             }
 
                             if !self.is_ready() {
-                                trace!("auth is not ready");
+                                trace!("consensus >> verifyblock: auth is not ready");
                                 self.update_cache_block_req(blk_req);
                                 continue;
                             }
@@ -894,7 +916,7 @@ impl MsgHandler {
                                 trace!("get single new tx request from Jsonrpc");
                                 let request_id = newtx_req.get_request_id().to_vec();
                                 if !self.is_ready() {
-                                    trace!("auth is not ready");
+                                    trace!("net || jsonrpc: auth is not ready");
                                     if is_local {
                                         self.publish_tx_failed_result(request_id, Ret::NotReady);
                                     }
@@ -990,9 +1012,11 @@ impl MsgHandler {
                             let mut resp = SnapshotResp::new();
                             match req.cmd {
                                 Cmd::Begin => {
+                                    info!("[snapshot] receive cmd: Begin");
+                                    self.is_snapshot = true;
+
                                     resp.set_resp(Resp::BeginAck);
                                     let msg: Message = resp.into();
-                                    info!("[snapshot] auth send BeginAck");
                                     self.tx_pub
                                         .send((
                                             routing_key!(Auth >> SnapshotResp).into(),
@@ -1001,11 +1025,17 @@ impl MsgHandler {
                                         .unwrap();
                                 }
                                 Cmd::Clear => {
-                                    resp.set_resp(Resp::ClearAck);
-                                    self.is_recovery_mod = true;
+                                    info!("[snapshot] receive cmd: Clear");
+
                                     self.dispatcher.clear_txs_pool(0);
+                                    self.cache.clear();
+                                    self.history_heights.reset();
+                                    self.cache_block_req = None;
+                                    self.history_hashes.clear();
+                                    self.black_list_cache.clear();
+
+                                    resp.set_resp(Resp::ClearAck);
                                     let msg: Message = resp.into();
-                                    info!("[snapshot] auth send ClearAck");
                                     self.tx_pub
                                         .send((
                                             routing_key!(Auth >> SnapshotResp).into(),
@@ -1014,10 +1044,16 @@ impl MsgHandler {
                                         .unwrap();
                                 }
                                 Cmd::End => {
+                                    info!(
+                                        "[snapshot] receive cmd: End, height = {}",
+                                        req.end_height
+                                    );
+                                    self.history_heights.update_height(req.end_height);
+                                    self.send_block_tx_hashes_req(false);
+                                    self.is_snapshot = false;
+
                                     resp.set_resp(Resp::EndAck);
-                                    self.is_recovery_mod = false;
                                     let msg: Message = resp.into();
-                                    info!("[snapshot] auth send EndAck");
                                     self.tx_pub
                                         .send((
                                             routing_key!(Auth >> SnapshotResp).into(),
@@ -1026,10 +1062,7 @@ impl MsgHandler {
                                         .unwrap();
                                 }
                                 _ => {
-                                    warn!(
-                                        "[snapshot_req]receive: unexpected snapshot cmd = {:?}",
-                                        req.cmd
-                                    );
+                                    warn!("[snapshot] receive other cmd: {:?}", req.cmd);
                                 }
                             }
                         }
