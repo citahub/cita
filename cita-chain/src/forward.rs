@@ -132,12 +132,7 @@ impl Forward {
         match req.req.unwrap() {
             // TODO: should check the result, parse it first!
             Request::block_number(_) => {
-                // let sys_time = SystemTime::now();
-                let mut height = self.chain.get_max_store_height();
-                if height == ::std::u64::MAX {
-                    height = self.chain.get_current_height();
-                }
-                response.set_block_number(height);
+                response.set_block_number(self.chain.get_current_height());
             }
 
             Request::block_by_hash(rpc) => {
