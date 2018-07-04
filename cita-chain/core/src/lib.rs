@@ -46,7 +46,6 @@ extern crate cita_types;
 extern crate common_types as types;
 extern crate crossbeam;
 extern crate crypto;
-extern crate ethcore_io;
 extern crate jsonrpc_types;
 extern crate sha3;
 extern crate time;

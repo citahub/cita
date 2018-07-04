@@ -19,7 +19,6 @@
 
 use basic_types::LogBloom;
 use cita_ed25519::Error as EthkeyError;
-use ethcore_io::*;
 
 
 use header::BlockNumber;
@@ -317,8 +316,6 @@ pub enum Error {
     PowInvalid,
     /// Error concerning TrieDBs
     Trie(TrieError),
-    /// Io crate error.
-    Io(IoError),
     /// Standard io error.
     StdIo(::std::io::Error),
     /// Snappy error.
@@ -331,7 +328,6 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::Util(ref err) => err.fmt(f),
-            Error::Io(ref err) => err.fmt(f),
             Error::Block(ref err) => err.fmt(f),
             Error::Execution(ref err) => err.fmt(f),
             Error::Transaction(ref err) => err.fmt(f),
@@ -388,12 +384,6 @@ impl From<UtilError> for Error {
     }
 }
 
-impl From<IoError> for Error {
-    fn from(err: IoError) -> Error {
-        Error::Io(err)
-    }
-}
-
 impl From<TrieError> for Error {
     fn from(err: TrieError) -> Error {
         Error::Trie(err)
@@ -421,7 +411,6 @@ impl From<EthkeyError> for Error {
 impl From<SnapshotError> for Error {
     fn from(err: SnapshotError) -> Error {
         match err {
-            SnapshotError::Io(err) => Error::StdIo(err).into(),
             SnapshotError::Trie(err) => Error::Trie(err).into(),
             SnapshotError::Decoder(err) => err.into(),
             other => /*Error::Snapshot(other)*/ other.into(),

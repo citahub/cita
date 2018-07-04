@@ -22,7 +22,6 @@ use contracts::Resource;
 use crossbeam;
 use engines::Engine;
 use error::ExecutionError;
-use ethcore_io as io;
 use evm::action_params::{ActionParams, ActionValue};
 use evm::call_type::CallType;
 use evm::env_info::EnvInfo;
@@ -49,6 +48,15 @@ use util::*;
 /// Maybe something like here:
 /// `https://github.com/ethereum/libethereum/blob/4db169b8504f2b87f7d5a481819cfb959fc65f6c/libethereum/ExtVM.cpp`
 const STACK_SIZE_PER_DEPTH: usize = 24 * 1024;
+
+thread_local! {
+    /// Stack size
+    /// Should be modified if it is changed in Rust since it is no way
+    /// to know or get it
+    pub static LOCAL_STACK_SIZE: ::std::cell::Cell<usize> = ::std::cell::Cell::new(
+        ::std::env::var("RUST_MIN_STACK").ok().and_then(
+            |s| s.parse().ok()).unwrap_or(2 * 1024 * 1024));
+}
 
 ///amend the abi data
 const AMEND_ABI: u32 = 1;
@@ -655,7 +663,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         T: Tracer,
         V: VMTracer,
     {
-        let depth_threshold = io::LOCAL_STACK_SIZE.with(|sz| sz.get() / STACK_SIZE_PER_DEPTH);
+        let depth_threshold = LOCAL_STACK_SIZE.with(|sz| sz.get() / STACK_SIZE_PER_DEPTH);
         let static_call = params.call_type == CallType::StaticCall;
 
         // Ordinary execution - keep VM in same thread
