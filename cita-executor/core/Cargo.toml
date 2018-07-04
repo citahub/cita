@@ -19,7 +19,6 @@ lru-cache = "0.1.1"
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 ethcore-bloom-journal = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-ethkey = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 lazy_static = "0.2"
 bit-set = "0.4"
 rust-crypto = "0.2.34"
