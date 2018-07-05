@@ -37,8 +37,7 @@ lazy_static! {
     static ref ACCOUNTS_HASH: Vec<u8> = encode_contract_name(ACCOUNTS);
     static ref BQL_HASH: Vec<u8> = encode_contract_name(BQL);
     static ref DEFAULT_AQL_HASH: Vec<u8> = encode_contract_name(DEFAULT_AQL);
-    static ref CONTRACT_ADDRESS: H160 =
-        H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap();
+    static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap();
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]

@@ -40,24 +40,24 @@ PermissionContracts:
   file: permission_management/permission.sol
   basic:
   - sendTx:
-      address: '0x0000000000000000000000000000000000000001'
+      address: '0xffffffffffffffffffffffffffffffffff021000'
   - createContract:
-      address: '0x0000000000000000000000000000000000000002'
+      address: '0xffffffffffffffffffffffffffffffffff021001'
   contracts:
   - newPermission:
-      address: '0x00000000000000000000000000000000013241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021010'
       contracts:
       - PermissionManagement
       functions:
       - 'newPermission(bytes32,address[],bytes4[])'
   - deletePermission:
-      address: '0x00000000000000000000000000000000023241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021011'
       contracts:
       - PermissionManagement
       functions:
       - 'deletePermission(address)'
   - updatePermission:
-      address: '0x00000000000000000000000000000000033241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021012'
       contracts:
       - PermissionManagement
       - PermissionManagement
@@ -67,7 +67,7 @@ PermissionContracts:
       - 'deleteResources(address,address[],bytes4[])'
       - 'updatePermissionName(address,bytes32)'
   - setAuth:
-      address: '0x00000000000000000000000000000000043241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021013'
       contracts:
       - PermissionManagement
       - PermissionManagement
@@ -75,7 +75,7 @@ PermissionContracts:
       - 'setAuthorization(address,address)'
       - 'setAuthorizations(address,address[])'
   - cancelAuth:
-      address: '0x00000000000000000000000000000000053241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021014'
       contracts:
       - PermissionManagement
       - PermissionManagement
@@ -85,19 +85,19 @@ PermissionContracts:
       - 'clearAuthorization(address)'
       - 'cancelAuthorizations(address,address[])'
   - newRole:
-      address: '0x00000000000000000000000000000000063241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021015'
       contracts:
       - RoleManagement
       functions:
       - 'newRole(bytes32,address[])'
   - deleteRole:
-      address: '0x00000000000000000000000000000000073241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021016'
       contracts:
       - RoleManagement
       functions:
       - 'deleteRole(address)'
   - updateRole:
-      address: '0x00000000000000000000000000000000083241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021017'
       contracts:
       - RoleManagement
       - RoleManagement
@@ -107,13 +107,13 @@ PermissionContracts:
       - 'deletePermissions(address,address[])'
       - 'updateRoleName(address,bytes32)'
   - setRole:
-      address: '0x00000000000000000000000000000000093241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021018'
       contracts:
       - RoleManagement
       functions:
       - 'setRole(address,address)'
   - cancelRole:
-      address: '0x000000000000000000000000000000000a3241b5'
+      address: '0xffffffffffffffffffffffffffffffffff021019'
       contracts:
       - RoleManagement
       - RoleManagement
@@ -121,19 +121,19 @@ PermissionContracts:
       - 'cancelRole(address,address)'
       - 'clearRole(address)'
   - newGroup:
-      address: '0x000000000000000000000000000000000b3241b5'
+      address: '0xffffffffffffffffffffffffffffffffff02101a'
       contracts:
       - GroupManagement
       functions:
       - 'newGroup(address,bytes32,address[])'
   - deleteGroup:
-      address: '0x000000000000000000000000000000000c3241b5'
+      address: '0xffffffffffffffffffffffffffffffffff02101b'
       contracts:
       - GroupManagement
       functions:
       - 'deleteGroup(address,address)'
   - updateGroup:
-      address: '0x000000000000000000000000000000000d3241b5'
+      address: '0xffffffffffffffffffffffffffffffffff02101c'
       contracts:
       - GroupManagement
       - GroupManagement

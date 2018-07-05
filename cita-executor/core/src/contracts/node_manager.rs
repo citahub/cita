@@ -36,8 +36,7 @@ const EPOCH: u64 = 1000;
 lazy_static! {
     static ref LIST_NODE_ENCODED: Vec<u8> = encode_contract_name(LIST_NODE);
     static ref LIST_STAKE_ENCODED: Vec<u8> = encode_contract_name(LIST_STAKE);
-    static ref CONTRACT_ADDRESS: H160 =
-        H160::from_str(reserved_addresses::NODE_MANAGER).unwrap();
+    static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::NODE_MANAGER).unwrap();
 }
 
 pub fn party_seats<T>(parties: Vec<T>, seats: &[u64]) -> Vec<T>

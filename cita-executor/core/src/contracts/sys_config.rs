@@ -39,7 +39,8 @@ lazy_static! {
     static ref OPERATOR: Vec<u8> = encode_contract_name(b"getOperator()");
     static ref WEBSITE: Vec<u8> = encode_contract_name(b"getWebsite()");
     static ref BLOCK_INTERVAL: Vec<u8> = encode_contract_name(b"getBlockInterval()");
-    static ref CONTRACT_ADDRESS: Address = Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
+    static ref CONTRACT_ADDRESS: Address =
+        Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
     static ref ECONOMICAL_MODEL: Vec<u8> = encode_contract_name(b"getEconomicalModel()");
     static ref GET_TOKEN_INFO: Vec<u8> = encode_contract_name(b"getTokenInfo()");
 }

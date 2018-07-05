@@ -21,6 +21,8 @@ use super::{encode_contract_name, to_address_vec};
 use cita_types::{Address, H160};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
+use std::str::FromStr;
+use types::reserved_addresses;
 
 const ALLGROUPS: &'static [u8] = &*b"queryGroups()";
 const ACCOUNTS: &'static [u8] = &*b"queryAccounts()";
@@ -28,7 +30,8 @@ const ACCOUNTS: &'static [u8] = &*b"queryAccounts()";
 lazy_static! {
     static ref ACCOUNTS_HASH: Vec<u8> = encode_contract_name(ACCOUNTS);
     static ref ALLGROUPS_HASH: Vec<u8> = encode_contract_name(ALLGROUPS);
-    static ref CONTRACT_ADDRESS: H160 = H160::from(0x13241c2);
+    static ref CONTRACT_ADDRESS: H160 =
+        H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
 }
 
 pub struct UserManagement;
@@ -73,13 +76,17 @@ mod tests {
     use cita_types::{Address, H160};
     use std::str::FromStr;
     use tests::helpers::init_executor;
+    use types::reserved_addresses;
 
     #[test]
     fn test_all_groups() {
         let executor = init_executor(vec![]);
         let all_groups: Vec<Address> = UserManagement::all_groups(&executor);
 
-        assert_eq!(all_groups, vec![H160::from(0x13241b6)]);
+        assert_eq!(
+            all_groups,
+            vec![H160::from_str(reserved_addresses::GROUP).unwrap()]
+        );
     }
 
     #[test]
@@ -92,7 +99,10 @@ mod tests {
                 "0x9dcd6b234e2772c5451fd4ccf7582f4283140697"
             ),
         )]);
-        let accounts: Vec<Address> = UserManagement::accounts(&executor, &H160::from(0x13241b6));
+        let accounts: Vec<Address> = UserManagement::accounts(
+            &executor,
+            &H160::from_str("ffffffffffffffffffffffffffffffffff020009").unwrap(),
+        );
 
         assert_eq!(
             accounts,
@@ -114,7 +124,7 @@ mod tests {
                 "0x9dcd6b234e2772c5451fd4ccf7582f4283140697"
             ),
         )]);
-        let root = H160::from(0x13241b6);
+        let root = H160::from_str(reserved_addresses::GROUP).unwrap();
         let group_accounts = UserManagement::load_group_accounts(&executor);
         assert_eq!(group_accounts.contains_key(&root), true);
         assert_eq!(

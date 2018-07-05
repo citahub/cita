@@ -61,7 +61,7 @@ contract ChainManager is Error {
         returns (uint32)
     {
         // SysConfig Contract
-        address sysConfigAddr = 0xffffffffffffffffffffffffffffffffff020000;
+        address sysConfigAddr = 0xFFfffFFfFfFffFFfFFfffFffFfFFFffFFf020000;
         // getChainId() function
         bytes4 getChainIdHash = bytes4(keccak256("getChainId()"));
 

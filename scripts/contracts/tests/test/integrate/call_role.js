@@ -17,9 +17,9 @@ const { cancelAuthorization, setAuthorization, newRole } = roleManagement;
 // role
 const role = web3.eth.contract(rABI);
 
-const sendTx = '0x0000000000000000000000000000000000000001';
+const sendTx = '0xffffffffffffffffffffffffffffffffff021000';
 const permissions = [sendTx];
-const newRolePermission = '0x00000000000000000000000000000000063241b5';
+const newRolePermission = '0xffffffffffffffffffffffffffffffffff021015';
 
 // temp
 let newRoleAddr;

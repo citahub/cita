@@ -13,8 +13,8 @@ const {
   logger, web3, getTxReceipt, quota, blockLimit,
 } = util;
 
-const createContract = '0x0000000000000000000000000000000000000002';
-const sendTx = '0x0000000000000000000000000000000000000001';
+const createContract = '0xffffffffffffffffffffffffffffffffff021001';
+const sendTx = '0xffffffffffffffffffffffffffffffffff021000';
 const { setAuthorization, cancelAuthorization } = permissionManagement;
 
 const {

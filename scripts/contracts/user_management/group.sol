@@ -9,7 +9,7 @@ import "../common/address_array.sol";
 ///         The interface can be called: Only query type
 contract Group {
 
-    address userManagementAddr = 0x00000000000000000000000000000000013241C2;
+    address userManagementAddr = 0xFFFffFFfffffFFfffFFffffFFFffFfFffF02000a;
 
     bytes32 name;
     address parent;

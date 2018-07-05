@@ -6,33 +6,33 @@ import "./authorization.sol";
 
 /// @title Permission management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0xffffffffffffffffffffffffffffffffff020004
+/// @notice The address: 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004
 ///         The interface the can be called: All
 /// @dev TODO check address is contract
 contract PermissionManagement {
 
-    address permissionCreatorAddr = 0xffffffffffffffffffffffffffffffffff020005;
+    address permissionCreatorAddr = 0xffFFFffFfFFffffFffffFFfFffffFfFFFF020005;
     PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
 
-    address authorizationAddr = 0xffffffffffffffffffffffffffffffffff020006;
+    address authorizationAddr = 0xFFfFffFfffFFFFFfFfFfffFFfFfFfFFfFf020006;
     Authorization auth = Authorization(authorizationAddr);
 
     address[15] builtInPermissions = [
-        0x00000000000000000000000000000000013241b5,
-        0x00000000000000000000000000000000023241b5,
-        0x00000000000000000000000000000000033241B5,
-        0x00000000000000000000000000000000043241b5,
-        0x00000000000000000000000000000000053241b5,
-        0x00000000000000000000000000000000063241b5,
-        0x00000000000000000000000000000000073241b5,
-        0x00000000000000000000000000000000083241B5,
-        0x00000000000000000000000000000000093241B5,
-        0x000000000000000000000000000000000A3241b5,
-        0x000000000000000000000000000000000b3241b5,
-        0x000000000000000000000000000000000C3241B5,
-        0x000000000000000000000000000000000D3241b5,
-        0x0000000000000000000000000000000000000001,
-        0x0000000000000000000000000000000000000002
+        0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,
+        0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011,
+        0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012,
+        0xfFFFffFffFfffFffFfffFfFFfFFFfFffFf021013,
+        0xfFFFffFfffFFFFffFfFffffFfFFFfffFfF021014,
+        0xFFFFFfffffFFFfFfffffFfFfffffFFffFf021015,
+        0xfFfFFFFFffFFfFFfFFfFFfFfFFfffFFffF021016,
+        0xFFFFffFFFFfFFFFFFfFFffffFFFFFFFFff021017,
+        0xfFFFfFfFFFFFFffFfFFFFfffFffFfFFFFF021018,
+        0xfFFffffffFffFffFFFFFFFFFffFfffFFfF021019,
+        0xFFFFffffffffFFfFffFffFFfFfFfFffFFf02101A,
+        0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B,
+        0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c,
+        0xFFffFFFFfFFFFFFfffFfFFffFfFFFFfFFf021000,
+        0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001
     ];
 
     event PermissionDeleted(address _permission);

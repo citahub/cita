@@ -26,7 +26,7 @@ let newGroupAddr;
 let newGroupAddr2;
 let lengthOfGroups;
 
-const deleteGroupPermission = '0x000000000000000000000000000000000c3241b5';
+const deleteGroupPermission = '0xffffffffffffffffffffffffffffffffff02101b';
 const rootGroupAddr = '0xffffffffffffffffffffffffffffffffff020009';
 
 // Only deleteGroup

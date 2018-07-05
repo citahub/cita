@@ -17,8 +17,8 @@ contract RoleManagement {
     RoleCreator roleCreator = RoleCreator(roleCreatorAddress);
 
     address internal roleManagementAddr = 0xe3b5DDB80AdDb513b5c981e27Bb030A86A8821eE;
-    address internal permissionManagementAddr = 0xffffffffffffffffffffffffffffffffff020004;
-    address internal authorizationAddr = 0xffffffffffffffffffffffffffffffffff020006;
+    address internal permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
+    address internal authorizationAddr = 0xFFfFffFfffFFFFFfFfFfffFFfFfFfFFfFf020006;
     // bytes4 internal queryPermissionsHash = 0x46f02832;
 
     PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);

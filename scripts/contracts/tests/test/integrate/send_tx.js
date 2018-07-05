@@ -18,7 +18,7 @@ const {
 } = mocha;
 
 // const STORE_ADDRESS = '0xffffffffffffffffffffffffffffffffff010000';
-const sendTx = '0x0000000000000000000000000000000000000001';
+const sendTx = '0xffffffffffffffffffffffffffffffffff021000';
 const { setAuthorization, cancelAuthorization } = permissionManagement;
 
 // TODO / BUG: use store_address

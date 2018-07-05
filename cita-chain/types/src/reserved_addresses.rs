@@ -15,43 +15,43 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Define all Reserved Addresses.
-//!
-//! # All
-//!
-//!     Start: 0xffffffffffffffffffffffffffffffffff000000
-//!     End  : 0xffffffffffffffffffffffffffffffffffffffff
-//!
-//! ## Action Address:
-//!
-//!     Start: 0xffffffffffffffffffffffffffffffffff010000
-//!     End  : 0xffffffffffffffffffffffffffffffffff01ffff
-//!
-//! ### Normal Action Address
-//!
-//!     Start: 0xffffffffffffffffffffffffffffffffff010000
-//!     End  : 0xffffffffffffffffffffffffffffffffff0100ff
-//!
-//! ### Go Action Address
-//!
-//!     Start: 0xffffffffffffffffffffffffffffffffff018000
-//!     End  : 0xffffffffffffffffffffffffffffffffff018fff
-//!
-//! ## System Contracts
-//!
-//!     Start: 0xffffffffffffffffffffffffffffffffff020000
-//!     End  : 0xffffffffffffffffffffffffffffffffff02ffff
-//!
-//! ### Normal System Contracts
-//!
-//!     Start: 0xffffffffffffffffffffffffffffffffff020000
-//!     End  : 0xffffffffffffffffffffffffffffffffff0200ff
-//!
-//! ### Permission System Contracts
-//!
-//!     Start: 0xffffffffffffffffffffffffffffffffff021000
-//!     End  : 0xffffffffffffffffffffffffffffffffff0210ff
-//!
+// Define all Reserved Addresses.
+//
+// # All
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff000000
+//     End  : 0xffffffffffffffffffffffffffffffffffffffff
+//
+// ## Action Address:
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff010000
+//     End  : 0xffffffffffffffffffffffffffffffffff01ffff
+//
+// ### Normal Action Address
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff010000
+//     End  : 0xffffffffffffffffffffffffffffffffff0100ff
+//
+// ### Go Action Address
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff018000
+//     End  : 0xffffffffffffffffffffffffffffffffff018fff
+//
+// ## System Contracts
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff020000
+//     End  : 0xffffffffffffffffffffffffffffffffff02ffff
+//
+// ### Normal System Contracts
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff020000
+//     End  : 0xffffffffffffffffffffffffffffffffff0200ff
+//
+// ### Permission System Contracts
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff021000
+//     End  : 0xffffffffffffffffffffffffffffffffff0210ff
+//
 
 // Normal Action Address
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010000";
@@ -74,3 +74,20 @@ pub const ROLE_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020008";
 pub const GROUP: &str = "ffffffffffffffffffffffffffffffffff020009";
 pub const GROUP_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff02000a";
 pub const GROUP_CREATOR: &str = "ffffffffffffffffffffffffffffffffff02000b";
+// Permission System Contracts
+pub const PERMISSION_SEND_TX: &str = "ffffffffffffffffffffffffffffffffff021000";
+pub const PERMISSION_CREATE_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff021001";
+pub const PERMISSION_NEW_PERMISSION: &str = "ffffffffffffffffffffffffffffffffff021010";
+pub const PERMISSION_DELETE_PERMISSION: &str = "ffffffffffffffffffffffffffffffffff021011";
+pub const PERMISSION_UPDATE_PERMISSION: &str = "ffffffffffffffffffffffffffffffffff021012";
+
+pub const PERMISSION_SET_AUTH: &str = "ffffffffffffffffffffffffffffffffff021013";
+pub const PERMISSION_CANCEL_AUTH: &str = "ffffffffffffffffffffffffffffffffff021014";
+pub const PERMISSION_NEW_ROLE: &str = "ffffffffffffffffffffffffffffffffff021015";
+pub const PERMISSION_DELETE_ROLE: &str = "ffffffffffffffffffffffffffffffffff021016";
+pub const PERMISSION_UPDATE_ROLE: &str = "ffffffffffffffffffffffffffffffffff021017";
+pub const PERMISSION_SET_ROLE: &str = "ffffffffffffffffffffffffffffffffff021018";
+pub const PERMISSION_CANCEL_ROLE: &str = "ffffffffffffffffffffffffffffffffff021019";
+pub const PERMISSION_NEW_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101a";
+pub const PERMISSION_DELETE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101b";
+pub const PERMISSION_UPDATE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101c";

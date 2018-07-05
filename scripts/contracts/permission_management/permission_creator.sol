@@ -5,11 +5,11 @@ import "./permission.sol";
 
 /// @title Permission factory contract to create permission contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0xffffffffffffffffffffffffffffffffff020005
+/// @notice The address:0xffFFFffFfFFffffFffffFFfFffffFfFFFF020005
 ///         The interface: None
 contract PermissionCreator {
 
-    address permissionManagementAddr = 0xffffffffffffffffffffffffffffffffff020004;
+    address permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
 
     event PermissionCreated(address indexed _id, bytes32 indexed _name, address[] _conts, bytes4[] _funcs);
 

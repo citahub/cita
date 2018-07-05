@@ -21,6 +21,8 @@ use super::{encode_contract_name, to_address_vec, to_resource_vec};
 use cita_types::{Address, H160, H256};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
+use std::str::FromStr;
+use types::reserved_addresses;
 
 const ALLACCOUNTS: &'static [u8] = &*b"queryAllAccounts()";
 const PERMISSIONS: &'static [u8] = &*b"queryPermissions(address)";
@@ -30,7 +32,7 @@ lazy_static! {
     static ref ALLACCOUNTS_HASH: Vec<u8> = encode_contract_name(ALLACCOUNTS);
     static ref PERMISSIONS_HASH: Vec<u8> = encode_contract_name(PERMISSIONS);
     static ref RESOURCES_HASH: Vec<u8> = encode_contract_name(RESOURCES);
-    static ref CONTRACT_ADDRESS: H160 = H160::from(0x13241b4);
+    static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::AUTHORIZATION).unwrap();
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize, Eq, PartialOrd, Ord)]
@@ -142,14 +144,17 @@ pub fn contains_resource(
 
 #[cfg(test)]
 mod tests {
+
     extern crate logger;
     extern crate mktemp;
+
     use super::contains_resource;
     use super::{PermissionManagement, Resource};
     use cita_types::{Address, H160, H256};
     use std::collections::HashMap;
     use std::str::FromStr;
     use tests::helpers::init_executor;
+    use types::reserved_addresses;
 
     #[test]
     fn test_contains_resource() {
@@ -157,11 +162,11 @@ mod tests {
         let addr = Address::from(0x1);
         let resources = vec![
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0xf0, 0x36, 0xed, 0x56],
             },
             Resource {
-                cont: Address::from(0x13241b3),
+                cont: Address::from_str(reserved_addresses::PERMISSION_CREATOR).unwrap(),
                 func: vec![0xf0, 0x36, 0xed, 0x56],
             },
         ];
@@ -169,31 +174,31 @@ mod tests {
         assert!(contains_resource(
             &permission_resources,
             &Address::from(0x1),
-            Address::from(0x13241b2),
+            Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x56]
         ));
         assert!(contains_resource(
             &permission_resources,
             &Address::from(0x1),
-            Address::from(0x13241b3),
+            Address::from_str(reserved_addresses::PERMISSION_CREATOR).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x56]
         ));
         assert!(!contains_resource(
             &permission_resources,
             &Address::from(0x2),
-            Address::from(0x13241b2),
+            Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x56]
         ));
         assert!(!contains_resource(
             &permission_resources,
             &Address::from(0x1),
-            Address::from(0x13241b4),
+            Address::from_str(reserved_addresses::AUTHORIZATION).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x56]
         ));
         assert!(!contains_resource(
             &permission_resources,
             &Address::from(0x1),
-            Address::from(0x13241b2),
+            Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x57]
         ));
     }
@@ -210,7 +215,7 @@ mod tests {
             all_accounts,
             vec![
                 Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000").unwrap(),
-                Address::from(0x13241b6),
+                Address::from_str(reserved_addresses::GROUP).unwrap(),
             ]
         );
     }
@@ -229,21 +234,21 @@ mod tests {
         permissions.sort();
 
         let mut expected_permissions = vec![
-            Address::from(0x13241b5),
-            Address::from(0x23241b5),
-            Address::from(0x33241b5),
-            Address::from(0x43241b5),
-            Address::from(0x53241b5),
-            Address::from(0x63241b5),
-            Address::from(0x73241b5),
-            Address::from(0x83241b5),
-            Address::from(0x93241b5),
-            Address::from(0xa3241b5),
-            Address::from(0xb3241b5),
-            Address::from(0xc3241b5),
-            Address::from(0xd3241b5),
-            Address::from(0x1),
-            Address::from(0x2),
+            Address::from_str(reserved_addresses::PERMISSION_NEW_PERMISSION).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_DELETE_PERMISSION).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_UPDATE_PERMISSION).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_SET_AUTH).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_CANCEL_AUTH).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_NEW_ROLE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_DELETE_ROLE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_UPDATE_ROLE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_SET_ROLE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_CANCEL_ROLE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_NEW_GROUP).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_DELETE_GROUP).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_UPDATE_GROUP).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap(),
         ];
         expected_permissions.sort();
 
@@ -253,12 +258,12 @@ mod tests {
     #[test]
     fn test_resources() {
         let executor = init_executor(vec![]);
-        let permission = Address::from(0x13241b5);
+        let permission = Address::from_str(reserved_addresses::PERMISSION_NEW_PERMISSION).unwrap();
         let resources: Vec<Resource> = PermissionManagement::resources(&executor, &permission);
         assert_eq!(
             resources,
             vec![Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0xfc, 0x4a, 0x08, 0x9c],
             }]
         );
@@ -289,117 +294,117 @@ mod tests {
         let mut expected_resources = vec![
             // newPermission
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0xfc, 0x4a, 0x08, 0x9c],
             },
             // deletePermission
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0x98, 0xa0, 0x5b, 0xb1],
             },
             // updatePermission
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0xf0, 0x36, 0xed, 0x56],
             },
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0x64, 0x46, 0xeb, 0xd8],
             },
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0x53, 0x7b, 0xf9, 0xa3],
             },
             // setAuth
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0x0f, 0x5a, 0xa9, 0xf3],
             },
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0x52, 0xc5, 0xb4, 0xcc],
             },
             // cancelAuth
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0x34, 0x82, 0xe0, 0xc9],
             },
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0xa5, 0x92, 0x5b, 0x5b],
             },
             Resource {
-                cont: Address::from(0x13241b2),
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
                 func: vec![0xba, 0x00, 0xab, 0x60],
             },
             // newRole
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
+                cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
                 func: vec![0x55, 0x1e, 0xf8, 0x60],
             },
             // deleteRole
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
+                cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
                 func: vec![0x54, 0xb0, 0x25, 0xc5],
             },
             // updateRole
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
+                cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
                 func: vec![0x07, 0x73, 0xe6, 0xba],
             },
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
+                cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
                 func: vec![0x17, 0xb2, 0xe3, 0x50],
             },
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
+                cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
                 func: vec![0xd9, 0xc0, 0x90, 0xa0],
             },
             // setRole
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
+                cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
                 func: vec![0xa3, 0x27, 0x10, 0xeb],
             },
             // cancelRole
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
+                cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
                 func: vec![0xa8, 0x31, 0x94, 0x81],
             },
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
+                cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
                 func: vec![0xc6, 0x31, 0xe7, 0x58],
             },
             // newGroup
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
+                cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
                 func: vec![0xd7, 0xcd, 0x72, 0x09],
             },
             // deleteGroup
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
+                cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
                 func: vec![0xba, 0xeb, 0x8c, 0xad],
             },
             // updateGroup
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
+                cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
                 func: vec![0x2c, 0x84, 0xe3, 0x1f],
             },
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
+                cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
                 func: vec![0xd8, 0x6d, 0xf3, 0x33],
             },
             Resource {
-                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
+                cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
                 func: vec![0x7e, 0xaf, 0xcd, 0xb1],
             },
             // senTx
             Resource {
-                cont: Address::from(0x1),
+                cont: H160::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap(),
                 func: vec![0, 0, 0, 0],
             },
             // createContract
             Resource {
-                cont: Address::from(0x2),
+                cont: H160::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap(),
                 func: vec![0, 0, 0, 0],
             },
         ];

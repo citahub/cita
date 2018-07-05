@@ -6,14 +6,14 @@ import "../common/address_array.sol";
 
 /// @title User management using group struct
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0x00000000000000000000000000000000013241C2
+/// @notice The address: 0xFFFffFFfffffFFfffFFffffFFFffFfFffF02000a
 ///         The interface the can be called: All
 ///         Origin: One group choosed by sender from all his groups
 ///         Target: The target group to be operated
 contract GroupManagement {
 
-    address rootGroupAddr = 0xffffffffffffffffffffffffffffffffff020009;
-    address groupCreatorAddr = 0xffffffffffffffffffffffffffffffffff02000b;
+    address rootGroupAddr = 0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009;
+    address groupCreatorAddr = 0xfFFffFfFFFFfFFFfFfffffFFfffffffffF02000B;
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
 
     address[] groups;
