@@ -726,12 +726,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         T: Tracer,
         V: VMTracer,
     {
-        trace!(
-            "Executive::call(params={:?}) self.env_info={:?}, static={}",
-            params,
-            self.info,
-            self.static_flag
-        );
         if (params.call_type == CallType::StaticCall
             || (params.call_type == CallType::Call && self.static_flag))
             && params.value.value() > 0.into()

@@ -57,7 +57,6 @@ use super::state::Account as StateAccount;
 use super::state_db::StateDB;
 use ethcore_bloom_journal::Bloom;
 use header::Header;
-use util::Hashable;
 
 use libexecutor::extras::{ConfigHistory, CurrentHash};
 
@@ -571,7 +570,7 @@ impl StateRebuilder {
                 }
 
                 if &thin_rlp[..] != &empty_rlp[..] {
-                    self.bloom.set(&*(addr.crypt_hash()));
+                    self.bloom.set(addr);
                 }
 
                 account_trie.insert(&addr, &thin_rlp)?;
