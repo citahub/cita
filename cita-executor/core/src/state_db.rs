@@ -28,7 +28,6 @@ use state::Account;
 use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
 use util::cache::MemoryLruCache;
-use util::Hashable;
 use util::{DBTransaction, HashDB, JournalDB, KeyValueDB, Mutex, UtilError};
 
 /// Value used to initialize bloom bitmap size.
@@ -473,13 +472,13 @@ impl Backend for StateDB {
     fn note_non_null_account(&self, address: &Address) {
         trace!(target: "account_bloom", "Note account bloom: {:?}", address);
         let mut bloom = self.account_bloom.lock();
-        bloom.set(&*(address.crypt_hash()));
+        bloom.set(address);
     }
 
     fn is_known_null(&self, address: &Address) -> bool {
         trace!(target: "account_bloom", "Check account bloom: {:?}", address);
         let bloom = self.account_bloom.lock();
-        let is_null = !bloom.check(&*(address.crypt_hash()));
+        let is_null = !bloom.check(address);
         is_null
     }
 }
