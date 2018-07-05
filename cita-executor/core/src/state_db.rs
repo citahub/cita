@@ -479,7 +479,6 @@ impl Backend for StateDB {
         trace!(target: "account_bloom", "Check account bloom: {:?}", address);
         let bloom = self.account_bloom.lock();
         let is_null = !bloom.check(address);
-        info!("is_null = {}", is_null);
         is_null
     }
 }
