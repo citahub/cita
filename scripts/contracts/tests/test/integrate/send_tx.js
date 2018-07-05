@@ -17,7 +17,7 @@ const {
   describe, it, before,
 } = mocha;
 
-// const STORE_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff';
+// const STORE_ADDRESS = '0xffffffffffffffffffffffffffffffffff010000';
 const sendTx = '0x0000000000000000000000000000000000000001';
 const { setAuthorization, cancelAuthorization } = permissionManagement;
 

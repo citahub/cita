@@ -35,6 +35,7 @@ pub mod ids;
 pub mod log_blooms;
 pub mod log_entry;
 pub mod receipt;
+pub mod reserved_addresses;
 pub mod state_diff;
 pub mod transaction;
 

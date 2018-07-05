@@ -1,6 +1,6 @@
 # CITA JSON-RPC
 
-!> **Methods Name Changed ！**   
+!> **Methods Name Changed ！**
 For the user of V0.16 and older versions: Please pay attention that we deprecated the pre-fix in the name of Json-RPC interfaces, which makes it looks more tidy and easier to use.
 
 
@@ -694,7 +694,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"from":"0xca35b
 
 ### 在Account中保存ABI和获取ABI
 
-默认将接收方地址为`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`的交易为保存合约ABI交易类型。
+默认将接收方地址为`0xffffffffffffffffffffffffffffffffff010001` 的交易为保存合约ABI交易类型。
 
 #### 保存ABI
 
@@ -741,7 +741,7 @@ Example
     65223a2266756e6374696f6e227d2c7b22636f6e7374616e74223a747275652c22696e70757473223a5b5d2c226e616d65223a22676574222c226f7
     57470757473223a5b7b226e616d65223a22222c2274797065223a2275696e74323536227d5d2c2270617961626c65223a66616c73652c2273746174
     654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d5d00000000000000000000000000000000000000000
-    000000000" --to "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"  --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a
+    000000000" --to "ffffffffffffffffffffffffffffffffff010001"  --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a
     18f58007fa894214"
 
     python3 send_tx.py
