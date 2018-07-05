@@ -209,7 +209,7 @@ pub struct Executor {
 
     pub service_map: Arc<ServiceMap>,
     pub economical_model: RwLock<EconomicalModel>,
-    black_list_cache: RwLock<BlackListCache>,
+    black_list_cache: RwLock<LRUCache<u64, Address>>,
 }
 
 /// Get latest header
@@ -284,7 +284,7 @@ impl Executor {
             sys_configs: RwLock::new(VecDeque::new()),
             service_map: Arc::new(ServiceMap::new()),
             economical_model: RwLock::new(EconomicalModel::Quota),
-            black_list_cache: RwLock::new(BlackListCache::new(10_000_000)),
+            black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
         };
 
         // Build executor config
@@ -922,7 +922,7 @@ impl Executor {
                     let mut black_list_cache = self.black_list_cache.write();
                     black_list_cache
                         .prune(&clear_list)
-                        .extend(&blacklist, close_block.number());
+                        .extend(blacklist.clone(), close_block.number());
                     clear_list.extend(black_list_cache.lru().iter());
                 }
 
@@ -949,71 +949,79 @@ impl Executor {
 }
 
 /// This structure is used to perform lru based on block height
-struct BlackListCache {
-    cache_by_block_number: BTreeMap<u64, Vec<Address>>,
-    cache_by_address: BTreeMap<Address, u64>,
+/// supports sequential lru and precise deletion
+struct LRUCache<K, V> {
+    cache_by_key: BTreeMap<K, Vec<V>>,
+    cache_by_value: BTreeMap<V, K>,
     lru_number: u64,
 }
 
-impl BlackListCache {
+impl<K, V> LRUCache<K, V>
+where
+    K: Ord + Clone + ::std::hash::Hash,
+    V: Ord + Clone,
+{
+    /// New with the max cache
     pub fn new(lru_number: u64) -> Self {
-        BlackListCache {
-            cache_by_block_number: BTreeMap::new(),
-            cache_by_address: BTreeMap::new(),
+        LRUCache {
+            cache_by_key: BTreeMap::new(),
+            cache_by_value: BTreeMap::new(),
             lru_number: lru_number,
         }
     }
 
-    pub fn contains(&self, key: &Address) -> bool {
-        self.cache_by_address.contains_key(key)
+    /// Determine if key exists
+    pub fn contains(&self, key: &V) -> bool {
+        self.cache_by_value.contains_key(key)
     }
 
-    pub fn extend(&mut self, extend: &Vec<Address>, height: u64) -> &mut Self {
-        extend.clone().into_iter().for_each(|address| {
-            let _ = self.cache_by_address.insert(address, height);
+    /// Extend key-value pairs
+    pub fn extend(&mut self, extend: Vec<V>, key: K) -> &mut Self {
+        extend.clone().into_iter().for_each(|value| {
+            let _ = self.cache_by_value.insert(value, key.clone());
         });
-        self.cache_by_block_number.insert(height, extend.to_owned());
+        self.cache_by_key.insert(key, extend.to_owned());
         self
     }
 
-    pub fn prune(&mut self, clear_list: &Vec<Address>) -> &mut Self {
-        let heights: HashSet<u64> = clear_list
+    /// Precise prune value
+    pub fn prune(&mut self, value_list: &Vec<V>) -> &mut Self {
+        let keys: HashSet<K> = value_list
             .clone()
             .iter()
-            .map(|address| self.cache_by_address.remove(&address).unwrap())
+            .map(|value| self.cache_by_value.remove(&value).unwrap())
             .collect();
 
-        heights.iter().for_each(|&height| {
-            self.cache_by_block_number
-                .entry(height)
-                .and_modify(|values| {
-                    let _ = values
-                        .iter()
-                        .filter(|&value| !clear_list.contains(&value))
-                        .map(|&value| value)
-                        .collect::<Vec<Address>>();
-                });
+        keys.iter().for_each(|key| {
+            self.cache_by_key.entry(key.clone()).and_modify(|values| {
+                let _ = values
+                    .iter()
+                    .filter(|ref value| !value_list.contains(&value))
+                    .map(|value| value.to_owned())
+                    .collect::<Vec<V>>();
+            });
         });
         self
     }
 
-    pub fn lru(&mut self) -> Vec<Address> {
-        if self.lru_number <= self.cache_by_address.len() as u64 {
-            let temp = self.cache_by_block_number.clone();
+    /// Execute lru
+    pub fn lru(&mut self) -> Vec<V> {
+        if self.lru_number <= self.cache_by_value.len() as u64 {
+            let temp = self.cache_by_key.clone();
             let (k, v) = temp.iter().next().unwrap();
-            self.cache_by_block_number.remove(k);
+            self.cache_by_key.remove(k);
 
-            let v: Vec<Address> = v
+            let v: Vec<V> = v
                 .into_iter()
-                .filter(|address| match self.cache_by_address.get(address) {
-                    Some(ref height) if height == &k => true,
+                .filter(|value| match self.cache_by_value.get(value) {
+                    Some(ref key) if key == &k => true,
                     None | Some(_) => false,
                 })
-                .map(|&address| address)
+                .map(|value| value.to_owned())
                 .collect();
 
-            v.iter().for_each(|address| {
-                let _ = self.cache_by_address.remove(address);
+            v.iter().for_each(|value| {
+                let _ = self.cache_by_value.remove(value);
             });
 
             v
@@ -1117,10 +1125,10 @@ mod tests {
 
     #[test]
     fn test_lru() {
-        let mut cache = BlackListCache::new(2);
+        let mut cache = LRUCache::new(2);
         cache
-            .extend(&vec![Address::from([0; 20]), Address::from([1; 20])], 1)
-            .extend(&vec![Address::from([2; 20]), Address::from([3; 20])], 2);
+            .extend(vec![Address::from([0; 20]), Address::from([1; 20])], 1)
+            .extend(vec![Address::from([2; 20]), Address::from([3; 20])], 2);
         assert!(cache.contains(&Address::from([0; 20])));
         assert!(cache.contains(&Address::from([3; 20])));
 
@@ -1129,16 +1137,16 @@ mod tests {
         assert_eq!(cache.contains(&Address::from([1; 20])), false);
         assert_eq!(cache.contains(&Address::from([2; 20])), true);
 
-        cache.extend(&vec![Address::from([2; 20]), Address::from([3; 20])], 3);
+        cache.extend(vec![Address::from([2; 20]), Address::from([3; 20])], 3);
         assert_eq!(cache.lru(), Vec::new());
 
-        cache.extend(&vec![Address::from([2; 20]), Address::from([3; 20])], 4);
+        cache.extend(vec![Address::from([2; 20]), Address::from([3; 20])], 4);
         assert_eq!(cache.lru(), Vec::new());
 
-        cache.extend(&vec![Address::from([4; 20]), Address::from([5; 20])], 5);
+        cache.extend(vec![Address::from([4; 20]), Address::from([5; 20])], 5);
         assert_eq!(cache.lru(), Vec::new());
 
-        cache.extend(&vec![Address::from([4; 20]), Address::from([5; 20])], 5);
+        cache.extend(vec![Address::from([4; 20]), Address::from([5; 20])], 5);
         assert_eq!(
             cache.lru(),
             vec![Address::from([2; 20]), Address::from([3; 20])]
