@@ -15,7 +15,7 @@ const { logger } = util;
 
 const { describe, it } = mocha;
 
-const rootGroup = '0x00000000000000000000000000000000013241b6';
+const rootGroup = '0xffffffffffffffffffffffffffffffffff020009';
 const len = permissions.length;
 
 // =======================
@@ -80,7 +80,7 @@ describe('test authorization contract', () => {
   it('should check the superAdmin does not have the resource: wrong func', () => {
     const res = checkPermission(
       superAdmin.address,
-      '0x00000000000000000000000000000000013241b2',
+      '0xffffffffffffffffffffffffffffffffff020004',
       '0xf036ed57',
     );
     logger.debug('\nResult of check:\n', res);
@@ -90,7 +90,7 @@ describe('test authorization contract', () => {
   it('should check the superAdmin does not have the resource: wrong cont', () => {
     const res = checkPermission(
       superAdmin.address,
-      '0x00000000000000000000000000000000013241b3',
+      '0xffffffffffffffffffffffffffffffffff020005',
       '0xf036ed56',
     );
     logger.debug('\nResult of check:\n', res);

@@ -54,7 +54,7 @@ module.exports = {
       }, {
         anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }], name: 'AuthCleared', type: 'event',
       }],
-      aAddr: '0x00000000000000000000000000000000013241b4',
+      aAddr: '0xffffffffffffffffffffffffffffffffff020006',
       superAdmin: {
         address: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523',
         privkey: '5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6',
@@ -84,7 +84,7 @@ module.exports = {
       }, {
         anonymous: false, inputs: [{ indexed: false, name: '_permission', type: 'address' }], name: 'PermissionDeleted', type: 'event',
       }],
-      pManagementAddr: '0x00000000000000000000000000000000013241b2',
+      pManagementAddr: '0xffffffffffffffffffffffffffffffffff020004',
     },
     role_management: {
       rmABI: [{
@@ -116,7 +116,7 @@ module.exports = {
       }, {
         anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }], name: 'RoleCleared', type: 'event',
       }],
-      rmAddr: '0xe3b5ddb80addb513b5c981e27bb030a86a8821ee',
+      rmAddr: '0xffffffffffffffffffffffffffffffffff020008',
     },
     role: {
       rABI: [{
@@ -169,7 +169,7 @@ module.exports = {
       }, {
         anonymous: false, inputs: [{ indexed: false, name: '_group', type: 'address' }], name: 'GroupDeleted', type: 'event',
       }],
-      gmAddr: '0x00000000000000000000000000000000013241c2',
+      gmAddr: '0xffffffffffffffffffffffffffffffffff02000a',
     },
     group: {
       gABI: [{
@@ -213,7 +213,7 @@ module.exports = {
       }, {
         anonymous: false, inputs: [{ indexed: true, name: '_child', type: 'address' }], name: 'ChildAdded', type: 'event',
       }],
-      gAddr: '0x00000000000000000000000000000000013241b6',
+      gAddr: '0xffffffffffffffffffffffffffffffffff020009',
     },
     quota: {
       abi: [{
@@ -247,7 +247,7 @@ module.exports = {
       }, {
         anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }, { indexed: false, name: 'value', type: 'uint256' }, { indexed: true, name: '_sender', type: 'address' }], name: 'AqlSetted', type: 'event',
       }],
-      addr: '0x00000000000000000000000000000000013241a3',
+      addr: '0xffffffffffffffffffffffffffffffffff020003',
       admin: {
         address: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523',
         privkey: '5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6',
@@ -281,7 +281,7 @@ module.exports = {
       }, {
         anonymous: false, inputs: [{ indexed: true, name: '_node', type: 'address' }, { indexed: true, name: '_sender', type: 'address' }], name: 'AddAdmin', type: 'event',
       }],
-      addr: '0x00000000000000000000000000000000013241a2',
+      addr: '0xffffffffffffffffffffffffffffffffff020001',
       admin: {
         address: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523',
         privkey: '5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6',
@@ -308,7 +308,7 @@ module.exports = {
       }, {
         anonymous: false, inputs: [{ indexed: true, name: 'errorType', type: 'uint8' }, { indexed: false, name: 'msg', type: 'string' }], name: 'ErrorLog', type: 'event',
       }],
-      addr: '0x00000000000000000000000000000000000000ce',
+      addr: '0xffffffffffffffffffffffffffffffffff020002',
     },
   },
   localServer: 'http://127.0.0.1:1337',
@@ -341,8 +341,8 @@ module.exports = {
   resources: [
     ['0x0000000000000000000000000000000000000001', '0x00000000'],
     ['0x0000000000000000000000000000000000000002', '0x00000000'],
-    ['0x00000000000000000000000000000000013241b2', '0xfc4a089c', '0x98a05bb1', '0xf036ed56', '0x6446ebd8', '0x537bf9a3', '0x0f5aa9f3', '0x52c5b4cc', '0x3482e0c9', '0xa5925b5b', '0xba00ab60'],
-    ['0xe3b5ddb80addb513b5c981e27bb030a86a8821ee', '0x551ef860', '0x54b025c5', '0x0773e6ba', '0x17b2e350', '0xd9c090a0', '0xa32710eb', '0xa8319481', '0xc631e758'],
-    ['0x00000000000000000000000000000000013241c2', '0xd7cd7209', '0xbaeb8cad', '0x2c84e31f', '0xd86df333', '0x7eafcdb1'],
+    ['0xffffffffffffffffffffffffffffffffff020004', '0xfc4a089c', '0x98a05bb1', '0xf036ed56', '0x6446ebd8', '0x537bf9a3', '0x0f5aa9f3', '0x52c5b4cc', '0x3482e0c9', '0xa5925b5b', '0xba00ab60'],
+    ['0xffffffffffffffffffffffffffffffffff020008', '0x551ef860', '0x54b025c5', '0x0773e6ba', '0x17b2e350', '0xd9c090a0', '0xa32710eb', '0xa8319481', '0xc631e758'],
+    ['0xffffffffffffffffffffffffffffffffff02000a', '0xd7cd7209', '0xbaeb8cad', '0x2c84e31f', '0xd86df333', '0x7eafcdb1'],
   ],
 };

@@ -23,6 +23,7 @@ use ethabi::{decode, ParamType};
 use evm::call_type::CallType;
 use evm::ext::{Ext, MessageCallResult};
 use std::str::FromStr;
+use types::reserved_addresses;
 
 const CHAIN_ID: &'static [u8] = &*b"getChainId()";
 const AUTHORITIES: &'static [u8] = &*b"getAuthorities(uint32)";
@@ -30,8 +31,7 @@ const AUTHORITIES: &'static [u8] = &*b"getAuthorities(uint32)";
 lazy_static! {
     static ref CHAIN_ID_ENCODED: Vec<u8> = encode_contract_name(CHAIN_ID);
     static ref AUTHORITIES_ENCODED: Vec<u8> = encode_contract_name(AUTHORITIES);
-    static ref CONTRACT_ADDRESS: H160 =
-        H160::from_str("00000000000000000000000000000000000000ce").unwrap();
+    static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::CHAIN_MANAGER).unwrap();
 }
 
 pub struct ChainManagement;

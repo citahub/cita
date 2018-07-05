@@ -26,7 +26,7 @@
 0. use jsonrpc to check the list of the consensus node
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 *构造方法详见jsonRPC README文档*
@@ -42,7 +42,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x000000
 
 1. 由具有增减节点管理的地址进行增加共识节点的操作，测试的增加地址为`0x3f1a71d1d8f073f4e725f57bbe14d67da22f888`。首先调用`new`方法
 ```
-python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2ffe000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "ddad2ffe000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
 ```
 
 *构造方法见步骤1*
@@ -50,7 +50,7 @@ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2
 2. python3 send_tx.py
 
 ```
-{"jsonrpc":"2.0","id":1,"result":{"hash":"0x54d242d3284181610f663a41f1b0c3e14851ae928065f02a03690660a77f1de4","status":"Ok"}} 
+{"jsonrpc":"2.0","id":1,"result":{"hash":"0x54d242d3284181610f663a41f1b0c3e14851ae928065f02a03690660a77f1de4","status":"Ok"}}
 ```
 
 *具体见步骤2*
@@ -70,7 +70,7 @@ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2
         "0xfd96b5bdd2e0412ade018159455c7af2bed1366ab61906962a1b5638f29c68c1"
       ],
       "blockNumber": "0x37",
-      "address": "0x00000000000000000000000000000000013241a2",
+      "address": "0xffffffffffffffffffffffffffffffffff020001",
       "transactionLogIndex": "0x0",
       "logIndex": "0x0",
       "data": "0x000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888"
@@ -93,7 +93,7 @@ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2
 4. 调用`approve`升级测试地址为共识节点地址
 
 ```
-python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c97a0000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "dd4c97a0000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
 ```
 
 *构造方法见步骤1*
@@ -121,7 +121,7 @@ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c9
         "0x5d55f24dd047ef52a5f36ddefc8c424e4b26c8415d8758be1bbb88b5c65e04eb"
       ],
       "blockNumber": "0x3d",
-      "address": "0x00000000000000000000000000000000013241a2",
+      "address": "0xffffffffffffffffffffffffffffffffff020001",
       "transactionLogIndex": "0x0",
       "logIndex": "0x0",
       "data": "0x000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888"
@@ -153,10 +153,10 @@ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c9
 
 * chain里可以看到共识节点多了`d3f1a71d1d8f073f4e725f57bbe14d67da22f888`
 
-8. check the consensus node list of the genensis 
+8. check the consensus node list of the genensis
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 *结果见步骤0*
@@ -164,7 +164,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x000000
 9. check the consensus node list of the new
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 返回结果如下:
@@ -185,7 +185,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x000000
 0. 由具有设置配额的地址进行设置配额的操作，测试设置的quota为`0x2b0ce58`
 
 ```
-python3 make_tx.py --to "00000000000000000000000000000000013241a3" --code "b107ea120000000000000000000000000000000000000000000000000000000002b0ce58" --privkey "61b760173f6d6b87726a28b93d7fcb4b4f842224921de8fa8e49b983a3388c03"
+python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020003" --code "b107ea120000000000000000000000000000000000000000000000000000000002b0ce58" --privkey "61b760173f6d6b87726a28b93d7fcb4b4f842224921de8fa8e49b983a3388c03"
 ```
 
 *详见步骤1*
@@ -216,7 +216,7 @@ python3 make_tx.py --to "00000000000000000000000000000000013241a3" --code "b107e
         "0x000000000000000000000000d3f1a71d1d8f073f4e725f57bbe14d67da22f888"
       ],
       "blockNumber": "0x23",
-      "address": "0x00000000000000000000000000000000013241a3",
+      "address": "0xffffffffffffffffffffffffffffffffff020003",
       "transactionLogIndex": "0x0",
       "logIndex": "0x0",
       "data": "0x"
@@ -248,7 +248,7 @@ python3 make_tx.py --to "00000000000000000000000000000000013241a3" --code "b107e
 4. call getAccountGasLimit
 
 ```
-curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a3", "data":"0xdae99b3a"}, "latest"],"id":2}' 127.0.0.1:1337
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020003", "data":"0xdae99b3a"}, "latest"],"id":2}' 127.0.0.1:1337
 ```
 
 *详见步骤0*
@@ -299,7 +299,7 @@ python3 make_tx.py --privkey "352416e1c910e413768c51390dfd791b414212b7b4fe6b1a18
 
 其中:
 
-* `errorMessage`: check `Account gas limit reached.` 
+* `errorMessage`: check `Account gas limit reached.`
 
 ### 测试发送重复交易
 

@@ -5,7 +5,7 @@ import "./role.sol";
 
 /// @title Role factory contract to create role contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380
+/// @notice The address: 0xffffffffffffffffffffffffffffffffff020007
 ///         The interface: None
 contract RoleCreator {
 

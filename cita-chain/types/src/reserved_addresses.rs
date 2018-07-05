@@ -61,3 +61,16 @@ pub const AMEND_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010002";
 pub const GO_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff018000";
 pub const GO_CONTRACT_MIN: &str = "ffffffffffffffffffffffffffffffffff018001";
 pub const GO_CONTRACT_MAX: &str = "ffffffffffffffffffffffffffffffffff018fff";
+// Normal System Contracts
+pub const SYS_CONFIG: &str = "ffffffffffffffffffffffffffffffffff020000";
+pub const NODE_MANAGER: &str = "ffffffffffffffffffffffffffffffffff020001";
+pub const CHAIN_MANAGER: &str = "ffffffffffffffffffffffffffffffffff020002";
+pub const QUOTA_MANAGER: &str = "ffffffffffffffffffffffffffffffffff020003";
+pub const PERMISSION_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020004";
+pub const PERMISSION_CREATOR: &str = "ffffffffffffffffffffffffffffffffff020005";
+pub const AUTHORIZATION: &str = "ffffffffffffffffffffffffffffffffff020006";
+pub const ROLE_CREATOR: &str = "ffffffffffffffffffffffffffffffffff020007";
+pub const ROLE_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020008";
+pub const GROUP: &str = "ffffffffffffffffffffffffffffffffff020009";
+pub const GROUP_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff02000a";
+pub const GROUP_CREATOR: &str = "ffffffffffffffffffffffffffffffffff02000b";

@@ -26,6 +26,7 @@ use rand::{Rng, SeedableRng, StdRng};
 use rustc_hex::ToHex;
 use std::iter;
 use std::str::FromStr;
+use types::reserved_addresses;
 
 const LIST_NODE: &'static [u8] = &*b"listNode()";
 const LIST_STAKE: &'static [u8] = *&b"listStake()";
@@ -36,7 +37,7 @@ lazy_static! {
     static ref LIST_NODE_ENCODED: Vec<u8> = encode_contract_name(LIST_NODE);
     static ref LIST_STAKE_ENCODED: Vec<u8> = encode_contract_name(LIST_STAKE);
     static ref CONTRACT_ADDRESS: H160 =
-        H160::from_str("00000000000000000000000000000000013241a2").unwrap();
+        H160::from_str(reserved_addresses::NODE_MANAGER).unwrap();
 }
 
 pub fn party_seats<T>(parties: Vec<T>, seats: &[u64]) -> Vec<T>

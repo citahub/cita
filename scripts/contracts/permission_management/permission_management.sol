@@ -6,15 +6,15 @@ import "./authorization.sol";
 
 /// @title Permission management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0x00000000000000000000000000000000013241b2
+/// @notice The address: 0xffffffffffffffffffffffffffffffffff020004
 ///         The interface the can be called: All
 /// @dev TODO check address is contract
 contract PermissionManagement {
 
-    address permissionCreatorAddr = 0x00000000000000000000000000000000013241b3;
+    address permissionCreatorAddr = 0xffffffffffffffffffffffffffffffffff020005;
     PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
 
-    address authorizationAddr = 0x00000000000000000000000000000000013241b4;
+    address authorizationAddr = 0xffffffffffffffffffffffffffffffffff020006;
     Authorization auth = Authorization(authorizationAddr);
 
     address[15] builtInPermissions = [

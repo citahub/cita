@@ -123,7 +123,7 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
 共识节点管理合约是系统合约，默认将放在创世块上，下面是共识节点管理合约的 hash：
 
 ```
-contract address: 0x00000000000000000000000000000000013241a2
+contract address: 0xffffffffffffffffffffffffffffffffff020001
 Function signatures:
     dd4c97a0: approveNode(address)
     2d4ede93: deleteNode(address)
@@ -136,7 +136,7 @@ Function signatures:
 #### 首先，获取当前链上的共识节点列表：
 
 ```bash
-$ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+$ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 
 {"jsonrpc":"2.0","id":2,"result":"0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000005000000000000000000000000cb9480d61bf0964687c6839670f1c3e65c1ca193000000000000000000000000dd21b5f342b017a6546a3e5455be1a6e4d6e83a10000000000000000000000000bb7249753e5dcec37c4ad3b917f10c68d64bffa00000000000000000000000011f0bba536cde870fb7c733f93d9b12ecedd13a1"}
 
@@ -158,7 +158,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x0000
     ```bash
     $ cd script/txtool/txtool
 
-    $ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
 
     - privkey 是私钥，用来签证，确认交易信息合法，系统默认的几个私钥可以看 [系统合约相关](../usage-guide/admintool/index.html#_5)
@@ -191,7 +191,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x0000
             "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
           ],
           "blockNumber": "0x89",
-          "address": "0x00000000000000000000000000000000013241a2",
+          "address": "0xffffffffffffffffffffffffffffffffff020001",
           "transactionLogIndex": "0x0",
           "logIndex": "0x0",
           "data": "0x"
@@ -212,7 +212,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x0000
 4. 构造 approveNode 交易信息
 
     ```bash
-    $ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
     可以看出，只是 code 中的函数 hash 换了一下而已。
 
@@ -241,7 +241,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x0000
             "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
           ],
           "blockNumber": "0x9b",
-          "address": "0x00000000000000000000000000000000013241a2",
+          "address": "0xffffffffffffffffffffffffffffffffff020001",
           "transactionLogIndex": "0x0",
           "logIndex": "0x0",
           "data": "0x"
@@ -261,7 +261,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x0000
 7. 查看当前的共识节点数
 
     ```bash
-    $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+    $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 
     {"jsonrpc":"2.0","id":2,"result":"0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000005000000000000000000000000cb9480d61bf0964687c6839670f1c3e65c1ca193000000000000000000000000dd21b5f342b017a6546a3e5455be1a6e4d6e83a10000000000000000000000000bb7249753e5dcec37c4ad3b917f10c68d64bffa00000000000000000000000011f0bba536cde870fb7c733f93d9b12ecedd13a100000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"}
     ```

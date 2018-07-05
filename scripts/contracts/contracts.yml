@@ -1,39 +1,39 @@
 NormalContracts:
 - SysConfig:
-    address: '0x0000000000000000000000000000000031415926'
+    address: '0xffffffffffffffffffffffffffffffffff020000'
     file: system/sys_config.sol
 - NodeManager:
-    address: '0x00000000000000000000000000000000013241a2'
+    address: '0xffffffffffffffffffffffffffffffffff020001'
     file: system/node_manager.sol
-- QuotaManager:
-    address: '0x00000000000000000000000000000000013241a3'
-    file: system/quota_manager.sol
 - ChainManager:
-    address: '0x00000000000000000000000000000000000000ce'
+    address: '0xffffffffffffffffffffffffffffffffff020002'
     file: system/chain_manager.sol
+- QuotaManager:
+    address: '0xffffffffffffffffffffffffffffffffff020003'
+    file: system/quota_manager.sol
 - PermissionManagement:
-    address: '0x00000000000000000000000000000000013241b2'
+    address: '0xffffffffffffffffffffffffffffffffff020004'
     file: permission_management/permission_management.sol
 - PermissionCreator:
-    address: '0x00000000000000000000000000000000013241b3'
+    address: '0xffffffffffffffffffffffffffffffffff020005'
     file: permission_management/permission_creator.sol
 - Authorization:
-    address: '0x00000000000000000000000000000000013241b4'
+    address: '0xffffffffffffffffffffffffffffffffff020006'
     file: permission_management/authorization.sol
 - RoleCreator:
-    address: '0xe9e2593c7d1db5ee843c143e9cb52b8d996b2380'
+    address: '0xffffffffffffffffffffffffffffffffff020007'
     file: permission_management/role_creator.sol
 - RoleManagement:
-    address: '0xe3b5ddb80addb513b5c981e27bb030a86a8821ee'
+    address: '0xffffffffffffffffffffffffffffffffff020008'
     file: permission_management/role_management.sol
 - Group:
-    address: '0x00000000000000000000000000000000013241b6'
+    address: '0xffffffffffffffffffffffffffffffffff020009'
     file: user_management/group.sol
 - GroupManagement:
-    address: '0x00000000000000000000000000000000013241c2'
+    address: '0xffffffffffffffffffffffffffffffffff02000a'
     file: user_management/group_management.sol
 - GroupCreator:
-    address: '0x00000000000000000000000000000000013241c3'
+    address: '0xffffffffffffffffffffffffffffffffff02000b'
     file: user_management/group_creator.sol
 
 PermissionContracts:

@@ -5,7 +5,7 @@ import "./group.sol";
 
 /// @title Group factory contract to create group contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0x00000000000000000000000000000000013241c3
+/// @notice The address: 0xffffffffffffffffffffffffffffffffff02000b
 ///         The interface: None
 contract GroupCreator {
 

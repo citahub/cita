@@ -12,8 +12,8 @@ import "../common/address_array.sol";
 ///         Target: The target group to be operated
 contract GroupManagement {
 
-    address rootGroupAddr = 0x00000000000000000000000000000000013241b6;
-    address groupCreatorAddr = 0x00000000000000000000000000000000013241c3;
+    address rootGroupAddr = 0xffffffffffffffffffffffffffffffffff020009;
+    address groupCreatorAddr = 0xffffffffffffffffffffffffffffffffff02000b;
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
 
     address[] groups;
@@ -40,8 +40,8 @@ contract GroupManagement {
 
     /// @notice Create a new group
     /// @param _origin The sender's orgin group
-    /// @param _name  The name of group 
-    /// @param _accounts The accounts of group 
+    /// @param _name  The name of group
+    /// @param _accounts The accounts of group
     /// @return New role's address
     function newGroup(address _origin, bytes32 _name, address[] _accounts)
         external

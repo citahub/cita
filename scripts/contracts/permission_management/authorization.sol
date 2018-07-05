@@ -6,11 +6,11 @@ import "../common/address_array.sol";
 
 /// @title Authorization about the permission and account
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0x00000000000000000000000000000000013241b4
+/// @notice The address: 0xffffffffffffffffffffffffffffffffff020006
 ///         The interface can be called: Only query type
 contract Authorization {
 
-    address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
+    address permissionManagementAddr = 0xffffffffffffffffffffffffffffffffff020004;
     address newPermissionAddr = 0x00000000000000000000000000000000013241b5;
     address deletePermissionAddr = 0x00000000000000000000000000000000023241b5;
     address updatePermissionAddr = 0x00000000000000000000000000000000033241B5;
@@ -27,7 +27,7 @@ contract Authorization {
     address sendTxAddr = 0x0000000000000000000000000000000000000001;
     address createContractAddr = 0x0000000000000000000000000000000000000002;
 
-    address rootGroup = 0x00000000000000000000000000000000013241b6;
+    address rootGroup = 0xffffffffffffffffffffffffffffffffff020009;
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;

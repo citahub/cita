@@ -334,62 +334,62 @@ mod tests {
             },
             // newRole
             Resource {
-                cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
                 func: vec![0x55, 0x1e, 0xf8, 0x60],
             },
             // deleteRole
             Resource {
-                cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
                 func: vec![0x54, 0xb0, 0x25, 0xc5],
             },
             // updateRole
             Resource {
-                cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
                 func: vec![0x07, 0x73, 0xe6, 0xba],
             },
             Resource {
-                cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
                 func: vec![0x17, 0xb2, 0xe3, 0x50],
             },
             Resource {
-                cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
                 func: vec![0xd9, 0xc0, 0x90, 0xa0],
             },
             // setRole
             Resource {
-                cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
                 func: vec![0xa3, 0x27, 0x10, 0xeb],
             },
             // cancelRole
             Resource {
-                cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
                 func: vec![0xa8, 0x31, 0x94, 0x81],
             },
             Resource {
-                cont: H160::from_str("e3b5ddb80addb513b5c981e27bb030a86a8821ee").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff020008").unwrap(),
                 func: vec![0xc6, 0x31, 0xe7, 0x58],
             },
             // newGroup
             Resource {
-                cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
                 func: vec![0xd7, 0xcd, 0x72, 0x09],
             },
             // deleteGroup
             Resource {
-                cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
                 func: vec![0xba, 0xeb, 0x8c, 0xad],
             },
             // updateGroup
             Resource {
-                cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
                 func: vec![0x2c, 0x84, 0xe3, 0x1f],
             },
             Resource {
-                cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
                 func: vec![0xd8, 0x6d, 0xf3, 0x33],
             },
             Resource {
-                cont: H160::from_str("00000000000000000000000000000000013241c2").unwrap(),
+                cont: H160::from_str("ffffffffffffffffffffffffffffffffff02000a").unwrap(),
                 func: vec![0x7e, 0xaf, 0xcd, 0xb1],
             },
             // senTx
