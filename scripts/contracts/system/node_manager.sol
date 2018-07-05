@@ -115,8 +115,8 @@ contract NodeManager is NodeInterface, Error {
     }
 
     /// @notice Setup
-    function NodeManager(address[] _nodes, address[] _admins, uint64[] _stakes) 
-        public 
+    function NodeManager(address[] _nodes, address[] _admins, uint64[] _stakes)
+        public
     {
         // Initialize the address to Start
         require(_nodes.length == _stakes.length);
@@ -204,10 +204,10 @@ contract NodeManager is NodeInterface, Error {
 
     /// @notice Query the consensus nodes
     /// @return All the consensus nodes
-    function listNode() 
-        public 
-        view 
-        returns (address[]) 
+    function listNode()
+        public
+        view
+        returns (address[])
     {
         return nodes;
     }
@@ -215,10 +215,10 @@ contract NodeManager is NodeInterface, Error {
     /// @notice Query the status of node
     /// @param _node The node to be deleted
     /// @return The status of the node
-    function getStatus(address _node) 
-        public 
-        view 
-        returns (uint8) 
+    function getStatus(address _node)
+        public
+        view
+        returns (uint8)
     {
         return uint8(status[_node]);
     }
@@ -226,20 +226,20 @@ contract NodeManager is NodeInterface, Error {
     /// @notice Check the account is admin
     /// @param _account The address to be checked
     /// @return true if it is, otherwise false
-    function isAdmin(address _account) 
-        public 
-        view 
-        returns (bool) 
+    function isAdmin(address _account)
+        public
+        view
+        returns (bool)
     {
         return admins[_account];
     }
 
     /// @notice Node stake list
     /// @return All the node stake list
-    function listStake() 
-        public 
-        view 
-        returns (uint64[] memory _stakes) 
+    function listStake()
+        public
+        view
+        returns (uint64[] memory _stakes)
     {
         _stakes = new uint64[](nodes.length);
         for (uint j = 0; j < nodes.length; j++) {

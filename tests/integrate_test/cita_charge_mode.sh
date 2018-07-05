@@ -26,7 +26,7 @@ echo -n "2) generate config  ...  "
     create \
     --chain_name "node" \
     --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
-    --contract_arguments "SysConfig.economical_model=1" > /dev/null 2>&1
+    --contract_arguments "SysConfig.economicalModel=1" > /dev/null 2>&1
 echo "DONE"
 
 ################################################################################

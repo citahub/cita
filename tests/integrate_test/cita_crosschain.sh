@@ -362,7 +362,7 @@ function main () {
     ./scripts/create_cita_config.py create --chain_name mainchain \
         --nodes "127.0.0.1:14000,127.0.0.1:14001,127.0.0.1:14002,127.0.0.1:14003" \
         --jsonrpc_port 11337 --ws_port 14337 --grpc_port 15000 \
-        --contract_arguments "SysConfig.chain_id=${main_chain_id}"
+        --contract_arguments "SysConfig.chainId=${main_chain_id}"
 
     start_chain main 4
 
@@ -378,7 +378,7 @@ function main () {
     ./scripts/create_cita_config.py create --chain_name sidechain \
         --authorities "${side_auths}" \
         --jsonrpc_port 21337 --ws_port 24337 --grpc_port 25000 \
-        --contract_arguments "SysConfig.chain_id=${side_chain_id}" \
+        --contract_arguments "SysConfig.chainId=${side_chain_id}" \
             "ChainManager.parent_chain_id=${main_chain_id}" \
             "ChainManager.parent_chain_authorities=${main_auths}"
 

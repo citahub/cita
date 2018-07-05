@@ -100,100 +100,100 @@ contract SysConfig is SysConfigInterface {
         });
     }
 
-    function setOperator(string _operator) 
-        public 
+    function setOperator(string _operator)
+        public
     {
         operator = _operator;
     }
 
-    function setWebsite(string _website) 
-        public 
+    function setWebsite(string _website)
+        public
     {
         website = _website;
     }
 
-    function setChainName(string _chainName) 
-        public 
+    function setChainName(string _chainName)
+        public
     {
         chainName = _chainName;
     }
 
-    function getDelayBlockNumber() 
-        public 
-        view 
-        returns (uint) 
+    function getDelayBlockNumber()
+        public
+        view
+        returns (uint)
     {
         return delayBlockNumber;
     }
 
-    function getPermissionCheck() 
-        public 
-        view 
-        returns (bool) 
+    function getPermissionCheck()
+        public
+        view
+        returns (bool)
     {
         return checkPermission && (economicalModel == EconomicalModel.Quota);
     }
 
-    function getQuotaCheck() 
-        public 
-        view 
-        returns (bool) 
+    function getQuotaCheck()
+        public
+        view
+        returns (bool)
     {
         return checkQuota && (economicalModel == EconomicalModel.Quota);
     }
 
-    function getChainName() 
-        public 
-        view 
-        returns (string) 
+    function getChainName()
+        public
+        view
+        returns (string)
     {
         return chainName;
     }
 
-    function getChainId() 
-        public 
-        view 
-        returns (uint32) 
+    function getChainId()
+        public
+        view
+        returns (uint32)
     {
         return chainId;
     }
 
-    function getOperator() 
-        public 
-        view 
-        returns (string) 
+    function getOperator()
+        public
+        view
+        returns (string)
     {
         return operator;
     }
 
-    function getWebsite() 
-        public 
-        view 
-        returns (string) 
+    function getWebsite()
+        public
+        view
+        returns (string)
     {
         return website;
     }
 
-    function getBlockInterval() 
-        public 
-        view 
-        returns (uint64) 
+    function getBlockInterval()
+        public
+        view
+        returns (uint64)
     {
         return blockInterval;
     }
 
-    function getEconomicalModel() 
-        public 
-        view 
-        returns (EconomicalModel) 
+    function getEconomicalModel()
+        public
+        view
+        returns (EconomicalModel)
     {
         return economicalModel;
     }
 
-    function getTokenInfo() 
-        public 
-        view 
-        returns(string name, string symbol, string avatar) 
+    function getTokenInfo()
+        public
+        view
+        returns(string name, string symbol, string avatar)
     {
         name = tokenInfo.name;
         symbol = tokenInfo.symbol;

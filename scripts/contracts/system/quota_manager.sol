@@ -49,8 +49,8 @@ contract QuotaManager is QuotaInterface, Error {
     }
 
     /// @notice Setup
-    function QuotaManager(address _admin) 
-        public 
+    function QuotaManager(address _admin)
+        public
     {
         admins[_admin] = true;
         quota[_admin] = 1073741824;

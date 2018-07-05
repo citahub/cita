@@ -307,7 +307,7 @@ CITA通过智能合约的方式来对权限进行管理。
 	``` shell
 	$ ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
 	                                         --super_admin "0x9dcd6b234e2772c5451fd4ccf7582f4283140697" \
-	                                         --contract_arguments SysConfig.check_permission=true
+	                                         --contract_arguments SysConfig.checkPermission=true
 	```
 
 用户生成普通账户，由superAdmin账户对其进行授权，实现权限管理。使用superAdmin的私钥调用的接口由管理员执行，使用用户john的私钥由用户john执行。
