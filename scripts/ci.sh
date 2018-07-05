@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20180703"
+DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19"
 
 if [[ `uname` == 'Darwin' ]]
 then

@@ -1638,4 +1638,95 @@ contract AbiTest {
             H256::from(&U256::from(0x12345678))
         );
     }
+
+    #[test]
+    fn test_call_instruction() {
+        logger::silent();
+        let fake_auth = r#"
+pragma solidity ^0.4.18;
+
+contract FakeAuth {
+    function setAuth() public pure returns(bool) {
+        return true;
+    }
+}
+"#;
+
+        let fake_permission_manager = r#"
+pragma solidity ^0.4.18;
+
+contract FakeAuth {
+    function setAuth() public returns(bool);
+}
+
+contract FakePermissionManagement {
+    function setAuth(address _auth) public returns(bool) {
+        FakeAuth auth = FakeAuth(_auth);
+        require(auth.setAuth());
+        return true;
+    }
+}
+"#;
+        let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
+        let gas_required = U256::from(100_000);
+        let auth_addr = Address::from_str("27ec3678e4d61534ab8a87cf8feb8ac110ddeda5").unwrap();
+        let permission_addr =
+            Address::from_str("33f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
+        let mut tracer = ExecutiveTracer::default();
+        let mut vm_tracer = ExecutiveVMTracer::toplevel();
+
+        let mut state = get_temp_state();
+        let (_, runtime_code) = solc("FakeAuth", fake_auth);
+        state.init_code(&auth_addr, runtime_code.clone()).unwrap();
+
+        let (_, runtime_code) = solc("FakePermissionManagement", fake_permission_manager);
+        state
+            .init_code(&permission_addr, runtime_code.clone())
+            .unwrap();
+
+        // 2b2e05c1: setAuth(address)
+        let data = "2b2e05c100000000000000000000000027ec3678e4d61534ab8a87cf8feb8ac110ddeda5"
+            .from_hex()
+            .unwrap();
+        let mut params = ActionParams::default();
+        params.address = permission_addr.clone();
+        params.sender = sender.clone();
+        params.gas = gas_required;
+        params.code = state.code(&permission_addr).unwrap();
+        params.code_hash = state.code_hash(&permission_addr).unwrap();
+        params.value = ActionValue::Transfer(U256::from(0));
+        params.data = Some(data);
+
+        let info = EnvInfo::default();
+        let engine = NullEngine::default();
+        let mut substate = Substate::new();
+        {
+            let mut ex = Executive::new(
+                &mut state,
+                &info,
+                &engine,
+                &factory,
+                &native_factory,
+                false,
+                EconomicalModel::Quota,
+            );
+            let mut out = vec![];
+            let res = ex.call(
+                params,
+                &mut substate,
+                BytesRef::Fixed(&mut out),
+                &mut tracer,
+                &mut vm_tracer,
+            );
+
+            assert!(res.is_ok());
+            match res {
+                Ok(gas_used) => println!("gas used: {:?}", gas_used),
+                Err(e) => println!("e: {:?}", e),
+            }
+        };
+    }
 }
