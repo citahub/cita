@@ -33,9 +33,9 @@ git submodule update
 
 ### Docker env and daemon
 
-In the root directory of the source code, we provide `env.sh`script，which encapsulates docker-related operations.
+In the root directory of the source code, we provide `env.sh` script，which encapsulates docker-related operations.
 
-Running this script with actual commands that you want to run inside docker environment as arguments.
+Running this script with actual commands that you want to run inside docker container environment as arguments.
 
 For example：
 
@@ -43,9 +43,18 @@ For example：
 ./env.sh make debug
 ```
 
-This means running`make debug`in docker.。
+This means running`make debug`in docker container.
 
-Running`./env.sh`without any arguments will directly get a shell in docker.
+Running`./env.sh` without any arguments will directly get a shell in docker container.
+
+If container is already created by root user, running `./env.sh` without any arguments by a non-root user will get the following error:
+
+```shell
+$ ./env.sh
+  docker container cita_run_cita_secp256k1_sha3 is already running
+  error: failed switching to "user": unable to find user user: no matching entries in passwd file
+```
+We should keep same user all the time.
 
 We also provided`daemon.sh`, same usage as`env.sh`，but run in background.
 
