@@ -50,13 +50,13 @@ impl RichStatus {
         let mut ps = ProtoRichStatus::new();
         ps.set_height(self.number());
         ps.set_hash(self.hash().to_vec());
-        let node_list: Vec<Vec<u8>> = self
-            .nodes
-            .clone()
-            .into_iter()
-            .map(|address| address.to_vec())
-            .collect();
-        ps.set_nodes(node_list.into());
+        ps.set_nodes(
+            self.nodes
+                .clone()
+                .into_iter()
+                .map(|address| address.to_vec())
+                .collect(),
+        );
         ps
     }
 }

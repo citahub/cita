@@ -1201,8 +1201,7 @@ impl Chain {
         let mut rich_status = ProtoRichStatus::new();
         rich_status.set_hash(current_hash.0.to_vec());
         rich_status.set_height(current_height);
-        let node_list: Vec<Vec<u8>> = nodes.into_iter().map(|address| address.to_vec()).collect();
-        rich_status.set_nodes(node_list.into());
+        rich_status.set_nodes(nodes.into_iter().map(|address| address.to_vec()).collect());
         rich_status.set_interval(block_interval);
 
         let msg: Message = rich_status.into();
