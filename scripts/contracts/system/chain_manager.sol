@@ -86,7 +86,7 @@ contract ChainManager is Error {
         return parentChainId;
     }
 
-    // Register a new side chain.
+    // @notice Register a new side chain.
     function newSideChain(uint32 sideChainId, address[] addrs)
         public
     {

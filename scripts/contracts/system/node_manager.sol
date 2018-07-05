@@ -13,34 +13,42 @@ interface NodeInterface {
     event ApproveNode(address indexed _node);
     event DeleteNode(address indexed _node);
     event AddAdmin(address indexed _account, address indexed _sender);
-    event SetStake(address indexed _node, uint stake);
+    event SetStake(address indexed _node, uint _stake);
 
     /// @notice Add an admin
-    function addAdmin(address) public returns (bool);
+    function addAdmin(address _account) public returns (bool);
+
     /// @notice Apply to be consensus node. status will be ready
     function newNode(address _node) public returns (bool);
+
     /// @notice Approve to be consensus node. status will be start
     function approveNode(address _node) public returns (bool);
+
     /// @notice Delete the consensus node that has been approved. status will be close
     function deleteNode(address _node) public returns (bool);
+
     /// @notice List the consensus nodes that have been approved
     /// which means list the node whose status is start
-    function listNode() view public returns (address[]);
+    function listNode() public view returns (address[]);
+
+    /// @notice Set node stake
+    function setStake(address _node, uint64 stake) public;
     /*
      * @notice Get the status of the node:
      * @return 0: Close
      * @return 1: Ready
      * @return 2: Start
      */
-    function getStatus(address _node) view public returns (uint8);
+    function getStatus(address _node) public view returns (uint8);
+
     /// @notice Check the account is admin
-    function isAdmin(address) view public returns (bool);
-    /// @notice Set node stake
-    function setStake(address _node, uint64 stake) public;
+    function isAdmin(address _account) public view returns (bool);
+
     /// @notice Node stake list
-    function listStake() view public returns (uint64[] _stakes);
+    function listStake() public view returns (uint64[] _stakes);
+
     /// @notice Stake permillage
-    function stakePermillage(address _node) view public returns (uint64);
+    function stakePermillage(address _node) public view returns (uint64);
 }
 
 
@@ -107,7 +115,9 @@ contract NodeManager is NodeInterface, Error {
     }
 
     /// @notice Setup
-    function NodeManager(address[] _nodes, address[] _admins, uint64[] _stakes) public {
+    function NodeManager(address[] _nodes, address[] _admins, uint64[] _stakes) 
+        public 
+    {
         // Initialize the address to Start
         require(_nodes.length == _stakes.length);
         for (uint i = 0; i < _nodes.length; i++) {
@@ -120,6 +130,15 @@ contract NodeManager is NodeInterface, Error {
         for (uint j = 0; j < _admins.length; j++) {
             admins[_admins[j]] = true;
         }
+    }
+
+    /// @notice Set node stake
+    function setStake(address _node, uint64 stake)
+        public
+        onlyAdmin
+    {
+        SetStake(_node, stake);
+        stakes[_node] = stake;
     }
 
     /// @notice Add an admin
@@ -185,36 +204,43 @@ contract NodeManager is NodeInterface, Error {
 
     /// @notice Query the consensus nodes
     /// @return All the consensus nodes
-    function listNode() view public returns (address[]) {
+    function listNode() 
+        public 
+        view 
+        returns (address[]) 
+    {
         return nodes;
     }
 
     /// @notice Query the status of node
     /// @param _node The node to be deleted
     /// @return The status of the node
-    function getStatus(address _node) view public returns (uint8) {
+    function getStatus(address _node) 
+        public 
+        view 
+        returns (uint8) 
+    {
         return uint8(status[_node]);
     }
 
     /// @notice Check the account is admin
     /// @param _account The address to be checked
     /// @return true if it is, otherwise false
-    function isAdmin(address _account) view public returns (bool) {
-        return admins[_account];
-    }
-
-    /// @notice Set node stake
-    function setStake(address _node, uint64 stake)
-        public
-        onlyAdmin
+    function isAdmin(address _account) 
+        public 
+        view 
+        returns (bool) 
     {
-        SetStake(_node, stake);
-        stakes[_node] = stake;
+        return admins[_account];
     }
 
     /// @notice Node stake list
     /// @return All the node stake list
-    function listStake() view public returns (uint64[] memory _stakes) {
+    function listStake() 
+        public 
+        view 
+        returns (uint64[] memory _stakes) 
+    {
         _stakes = new uint64[](nodes.length);
         for (uint j = 0; j < nodes.length; j++) {
             _stakes[j] = stakes[nodes[j]];
@@ -226,7 +252,11 @@ contract NodeManager is NodeInterface, Error {
     /// This is the slot number which ignore the remainder, not exactly precise.
     /// https://en.wikipedia.org/wiki/Largest_remainder_method
     /// Hare quota
-    function stakePermillage(address _node) view public returns (uint64) {
+    function stakePermillage(address _node) 
+        public 
+        view 
+        returns (uint64) 
+    {
         uint total;
         for (uint j = 0; j < nodes.length; j++) {
             total = SafeMath.add(uint(total), uint(stakes[nodes[j]]));
