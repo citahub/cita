@@ -27,7 +27,6 @@ extern crate dotenv;
 #[macro_use]
 extern crate libproto;
 extern crate proof;
-extern crate protobuf;
 extern crate rustc_serialize;
 extern crate util;
 

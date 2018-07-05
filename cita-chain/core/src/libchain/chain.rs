@@ -46,7 +46,6 @@ use libproto::executor::ExecutedResult;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{BlockTxHashes, FullTransaction, Message};
 use proof::TendermintProof;
-use protobuf::RepeatedField;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
 use state::State;
@@ -1174,7 +1173,7 @@ impl Chain {
         for tx_hash_in_h256 in &tx_hashes {
             tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
         }
-        block_tx_hashes.set_tx_hashes(RepeatedField::from_slice(&tx_hashes_in_u8[..]));
+        block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
         let msg: Message = block_tx_hashes.into();
 
         ctx_pub_clone
@@ -1202,8 +1201,8 @@ impl Chain {
         let mut rich_status = ProtoRichStatus::new();
         rich_status.set_hash(current_hash.0.to_vec());
         rich_status.set_height(current_height);
-        let node_list = nodes.into_iter().map(|address| address.to_vec()).collect();
-        rich_status.set_nodes(RepeatedField::from_vec(node_list));
+        let node_list: Vec<Vec<u8>> = nodes.into_iter().map(|address| address.to_vec()).collect();
+        rich_status.set_nodes(node_list.into());
         rich_status.set_interval(block_interval);
 
         let msg: Message = rich_status.into();

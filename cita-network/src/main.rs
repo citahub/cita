@@ -89,7 +89,6 @@ extern crate libproto;
 #[macro_use]
 extern crate logger;
 extern crate notify;
-extern crate protobuf;
 extern crate pubsub;
 extern crate rand;
 extern crate rustc_serialize;

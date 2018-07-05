@@ -36,7 +36,6 @@ cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "de
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 sha3 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
-protobuf = { version = "^1.0.0"}
 threadpool = "1.7.0"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 dotenv = "0.10.0"

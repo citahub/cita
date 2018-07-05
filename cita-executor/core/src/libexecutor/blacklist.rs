@@ -17,7 +17,6 @@
 
 use cita_types::Address;
 use libproto::BlackList as ProtoBlackList;
-use protobuf::RepeatedField;
 
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct BlackList {
@@ -57,20 +56,22 @@ impl BlackList {
 
     pub fn protobuf(&self) -> ProtoBlackList {
         let mut bl = ProtoBlackList::new();
-        bl.set_black_list(RepeatedField::from_vec(
+        bl.set_black_list(
             self.black_list
                 .clone()
                 .into_iter()
                 .map(|address| address.to_vec())
-                .collect(),
-        ));
-        bl.set_clear_list(RepeatedField::from_vec(
+                .collect::<Vec<Vec<u8>>>()
+                .into(),
+        );
+        bl.set_clear_list(
             self.clear_list
                 .clone()
                 .into_iter()
                 .map(|address| address.to_vec())
-                .collect(),
-        ));
+                .collect::<Vec<Vec<u8>>>()
+                .into(),
+        );
         bl
     }
 }

@@ -20,7 +20,6 @@ use cita_types::{Address, H256, U256};
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
 use proof::TendermintProof;
-use protobuf::RepeatedField;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::convert::{Into, TryInto};
@@ -100,9 +99,7 @@ impl BuildBlock {
         block.mut_header().set_timestamp(timestamp * 1000);
         block.mut_header().set_height(height);
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
-        block
-            .mut_body()
-            .set_transactions(RepeatedField::from_vec(txs.clone()));
+        block.mut_body().set_transactions(txs.clone().into());
         let mut proof = TendermintProof::default();
         proof.height = (height - 1) as usize;
         proof.round = 0;
