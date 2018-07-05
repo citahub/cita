@@ -70,7 +70,7 @@ optional arguments:
 
 	例如：
 
-	- 链的 chain_id 值设为1，默认为随机数 `--contract_arguments "SysConfig.chainId=1"`
+	- 链的 chainId 值设为1，默认为随机数 `--contract_arguments "SysConfig.chainId=1"`
 	- 链的经济模型设为 quota，默认为 quota(0), 其他选项有 charge(1) `--contract_arguments "SysConfig.economicalModel=0"`
       (***此模型下只有`super_admin`账户及节点地址有余额***)
 
