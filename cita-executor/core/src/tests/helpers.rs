@@ -38,7 +38,7 @@ use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Output};
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 use types::transaction::SignedTransaction;
@@ -135,11 +135,23 @@ pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
         });
     }
 
-    let _ = Command::new("python3")
+    fn check_command_output(output: Output) {
+        if !output.status.success() {
+            panic!(
+                "\n[stderr]: {}\n[stdout]: {}",
+                String::from_utf8_lossy(output.stderr.as_slice()),
+                String::from_utf8_lossy(output.stdout.as_slice()),
+            );
+        }
+    }
+
+    let output = Command::new("python3")
         .args(init_data_args.as_slice())
         .output()
         .expect("Failed to create init data");
-    let _ = Command::new("python3")
+
+    check_command_output(output);
+    let output = Command::new("python3")
         .args(&[
             create_genesis_py.to_str().unwrap(),
             "--output",
@@ -151,6 +163,7 @@ pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
         ])
         .output()
         .expect("Failed to create init data");
+    check_command_output(output);
 
     // Load from genesis json file
     println!("genesis_json: {}", genesis_json.to_str().unwrap());
