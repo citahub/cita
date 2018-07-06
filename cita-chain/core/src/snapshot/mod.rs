@@ -64,6 +64,8 @@ use libproto::Proof;
 
 use receipt::Receipt;
 
+const TX_HASHES_NUM: u32 = 100;
+
 //#[cfg(test)]
 //mod tests;
 
@@ -268,6 +270,7 @@ impl<'a> BlockChunker<'a> {
             .block_hash_by_height(0)
             .expect("Genesis hash should always exist");
         trace!("Genesis_hash: {:?}", genesis_hash);
+        let mut tx_hashes_num = 0;
 
         loop {
             if self.current_hash == genesis_hash {
@@ -294,22 +297,35 @@ impl<'a> BlockChunker<'a> {
                 _ => Vec::new(),
             };
 
-            let tx_hashes = match self
-                .chain
-                .transaction_hashes(BlockId::Hash(self.current_hash))
-            {
-                Some(hashes) => hashes,
-                _ => Vec::new(),
-            };
+            let pair: Vec<u8>;
+            if tx_hashes_num < TX_HASHES_NUM {
+                let tx_hashes = match self
+                    .chain
+                    .transaction_hashes(BlockId::Hash(self.current_hash))
+                {
+                    Some(hashes) => hashes,
+                    _ => Vec::new(),
+                };
 
-            let pair = {
-                let mut pair_stream = RlpStream::new_list(3);
-                pair_stream
-                    .append_raw(&header_rlp, 1)
-                    .append_list(&receipts)
-                    .append_list(&tx_hashes);
-                pair_stream.out()
-            };
+                pair = {
+                    let mut pair_stream = RlpStream::new_list(3);
+                    pair_stream
+                        .append_raw(&header_rlp, 1)
+                        .append_list(&receipts)
+                        .append_list(&tx_hashes);
+                    pair_stream.out()
+                };
+
+                tx_hashes_num += 1;
+            } else {
+                pair = {
+                    let mut pair_stream = RlpStream::new_list(2);
+                    pair_stream
+                        .append_raw(&header_rlp, 1)
+                        .append_list(&receipts);
+                    pair_stream.out()
+                };
+            }
 
             let new_loaded_size = loaded_size + pair.len();
 
@@ -456,7 +472,7 @@ impl BlockRebuilder {
                 body: BlockBody::new(),
             };
             let receipts: Vec<Option<Receipt>> = pair.list_at(1)?;
-            let tx_hashes: Vec<H256> = pair.list_at(2)?;
+            let tx_hashes_opt: Option<Vec<H256>> = pair.list_at(2).ok();
 
             // TODO: abridged_block
             /*let receipts_root = ordered_trie_root(pair.at(1)?.iter().map(|r| r.as_raw()));
@@ -483,7 +499,7 @@ impl BlockRebuilder {
 
             let mut batch = self.db.transaction();
 
-            self.insert_unordered_block(&mut batch, &block, receipts, tx_hashes, is_best);
+            self.insert_unordered_block(&mut batch, &block, receipts, tx_hashes_opt, is_best);
 
             self.db.write_buffered(batch);
 
@@ -504,7 +520,7 @@ impl BlockRebuilder {
         batch: &mut DBTransaction,
         block: &Block,
         receipts: Vec<Option<Receipt>>,
-        tx_hashes: Vec<H256>,
+        tx_hashes_opt: Option<Vec<H256>>,
         is_best: bool,
     ) {
         let header = block.header();
@@ -524,8 +540,10 @@ impl BlockRebuilder {
 
         {
             // Maybe tx hashes will be stored in DB in future.
-            let mut write_tx_hashes = self.chain.tx_hashes_cache.write();
-            write_tx_hashes.insert(info.number, tx_hashes);
+            if let Some(tx_hashes) = tx_hashes_opt {
+                let mut write_tx_hashes = self.chain.tx_hashes_cache.write();
+                write_tx_hashes.insert(info.number, tx_hashes);
+            }
         }
 
         self.prepare_update(
