@@ -419,7 +419,7 @@ def parse_arguments():
                                  val[0], val[1], val[2])
                 sys.exit(1)
         args.contract_arguments.kkv_set('SysConfig', 'chainName',
-                                        args.chainName)
+                                        args.chain_name)
         args.contract_arguments.kkv_set('NodeManager', 'nodes',
                                         args.authorities.to_str())
         if not args.contract_arguments.kkv_get('NodeManager', 'stakes'):
