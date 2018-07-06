@@ -33,6 +33,7 @@ use cita_types::H256;
 use libexecutor::executor::{get_current_header, Executor, Stage};
 use state_db::StateDB;
 
+use header::Header;
 use util::journaldb::{self, Algorithm};
 use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
 use util::snappy;
@@ -52,6 +53,12 @@ const MAX_SNAPSHOT_BLOCKS: u64 = 30000;
 pub trait DatabaseRestore: Send + Sync {
     /// Restart with a new backend. Takes ownership of passed database and moves it to a new location.
     fn restore_db(&self, new_db: &str) -> Result<(), Error>;
+
+    /// Roll back to the specified height
+    fn roll_back(&self, height: u64);
+
+    /// replace executor
+    fn replace_executor(&self, header: Header, is_interrupted: bool);
 }
 
 impl DatabaseRestore for Executor {
@@ -70,7 +77,7 @@ impl DatabaseRestore for Executor {
         );
 
         // replace executor
-        //*chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
+        // *chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
         let header = match get_current_header(&*db.clone()) {
             Some(header) => header,
             _ => {
@@ -78,17 +85,29 @@ impl DatabaseRestore for Executor {
                 return Err(Error::PowInvalid);
             }
         };
+
+        self.replace_executor(header, false);
+
+        Ok(())
+    }
+
+    fn roll_back(&self, height: u64) {
+        let header = self.block_header_by_height(height).unwrap();
+        self.replace_executor(header, true);
+    }
+
+    fn replace_executor(&self, header: Header, is_interrupted: bool) {
         *self.current_header.write() = header.clone();
 
         self.is_sync.store(false, Ordering::SeqCst);
 
-        self.is_interrupted.store(false, Ordering::SeqCst);
+        self.is_interrupted.store(is_interrupted, Ordering::SeqCst);
         *self.stage.write() = Stage::Idle;
 
         let height = header.number();
 
         // executed_map
-        let executed_header = header.clone().generate_executed_header();
+        let executed_header = header.generate_executed_header();
         let mut executed_ret = ExecutedResult::new();
         executed_ret.mut_executed_info().set_header(executed_header);
         let mut executed_btmap = BTreeMap::new();
@@ -101,8 +120,6 @@ impl DatabaseRestore for Executor {
         // block_map
         let mut block_map = self.block_map.write();
         block_map.clear();
-
-        Ok(())
     }
 }
 
