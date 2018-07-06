@@ -114,13 +114,13 @@ class InitializationData(object):
                             val2, val2_old, key1, key2)
                 self.contracts_cfgs[key1] = configs
 
-    def set_super_admin(self, super_admin):
-        if not super_admin:
+    def set_super_admin(self, superAdmin):
+        if not superAdmin:
             return
-        self.contracts_cfgs['NodeManager']['admins'] = [super_admin]
-        self.contracts_cfgs['QuotaManager']['admin'] = super_admin
-        self.contracts_cfgs['Authorization']['super_admin'] = super_admin
-        self.contracts_cfgs['Group']['accounts'] = [super_admin]
+        self.contracts_cfgs['NodeManager']['admins'] = [superAdmin]
+        self.contracts_cfgs['QuotaManager']['admin'] = superAdmin
+        self.contracts_cfgs['Authorization']['superAdmin'] = superAdmin
+        self.contracts_cfgs['Group']['accounts'] = [superAdmin]
 
     def save_to_file(self, filepath):
         data = dict()
@@ -184,7 +184,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--output', required=True, help='Path of the output file.')
-    parser.add_argument('--super_admin', help='Address of super admin.')
+    parser.add_argument('--superAdmin', help='Address of super admin.')
     parser.add_argument(
         '--contract_arguments',
         nargs='+',
@@ -196,15 +196,15 @@ def parse_arguments():
     args = parser.parse_args()
     return dict(
         contract_arguments=args.contract_arguments,
-        super_admin=args.super_admin,
+        superAdmin=args.superAdmin,
         output=args.output,
     )
 
 
-def core(output, super_admin, contract_arguments):
+def core(output, superAdmin, contract_arguments):
     init_data = InitializationData.load_from_string(DEFAULT_CONFIG)
     init_data.update_by_kkv_dict(contract_arguments)
-    init_data.set_super_admin(super_admin)
+    init_data.set_super_admin(superAdmin)
     init_data.save_to_file(output)
 
 

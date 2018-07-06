@@ -379,8 +379,8 @@ function main () {
         --authorities "${side_auths}" \
         --jsonrpc_port 21337 --ws_port 24337 --grpc_port 25000 \
         --contract_arguments "SysConfig.chainId=${side_chain_id}" \
-            "ChainManager.parent_chain_id=${main_chain_id}" \
-            "ChainManager.parent_chain_authorities=${main_auths}"
+            "ChainManager.parentChainId=${main_chain_id}" \
+            "ChainManager.parentChainAuthorities=${main_auths}"
 
     wait_chain_for_height main 5
 

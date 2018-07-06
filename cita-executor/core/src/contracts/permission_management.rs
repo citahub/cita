@@ -201,7 +201,7 @@ mod tests {
     #[test]
     fn test_all_accounts() {
         let executor = init_executor(vec![(
-            "Authorization.super_admin",
+            "Authorization.superAdmin",
             "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000",
         )]);
         let all_accounts: Vec<Address> = PermissionManagement::all_accounts(&executor);
@@ -219,7 +219,7 @@ mod tests {
     fn test_permissions() {
         let executor = init_executor(vec![
             ((
-                "Authorization.super_admin",
+                "Authorization.superAdmin",
                 "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000",
             )),
         ]);
@@ -275,7 +275,7 @@ mod tests {
     #[test]
     fn test_load_account_permissions() {
         let executor = init_executor(vec![(
-            "Authorization.super_admin",
+            "Authorization.superAdmin",
             "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000",
         )]);
         let super_admin = Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000").unwrap();

@@ -306,7 +306,7 @@ CITA通过智能合约的方式来对权限进行管理。
 
 	``` shell
 	$ ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
-	                                         --super_admin "0x9dcd6b234e2772c5451fd4ccf7582f4283140697" \
+	                                         --superAdmin "0x9dcd6b234e2772c5451fd4ccf7582f4283140697" \
 	                                         --contract_arguments SysConfig.checkPermission=true
 	```
 
