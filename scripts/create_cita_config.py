@@ -310,7 +310,7 @@ def run_subcmd_create(args, work_dir):
 
 
 def run_subcmd_append(args, work_dir):
-    info = ChainInfo(args.chainName, work_dir)
+    info = ChainInfo(args.chain_name, work_dir)
     info.template_load_from_existed()
     info.append_node(args.node)
 
