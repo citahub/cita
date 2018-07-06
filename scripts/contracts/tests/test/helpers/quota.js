@@ -1,79 +1,56 @@
 const util = require('./util');
 const config = require('../config');
 
-const { web3, genTxParams } = util;
+const { genContract, genTxParams } = util;
 
-const sender = config.contract.authorization.superAdmin;
-const { abi, addr, admin } = config.contract.quota;
+const sender = config.superAdmin;
+const { abi, addr } = config.contract.quota;
 
-const quotaManager = web3.eth.contract(abi);
-const quotaContractIns = quotaManager.at(addr);
+const contract = genContract(abi, addr);
 
 // addAdmin
-const addAdmin = function addAdmin(account, _sender = sender) {
-  return quotaContractIns.addAdmin.sendTransaction(
-    account,
-    genTxParams(_sender),
-  );
+const addAdmin = async (account, _sender = sender) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.addAdmin(account).send(param);
 };
 
 // setBQL
-const setBQL = function setBQL(value, _sender = sender) {
-  return quotaContractIns.setBQL.sendTransaction(
-    value,
-    genTxParams(_sender),
-  );
+const setBQL = async (value, _sender = sender) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.setBQL(value).send(param);
 };
 
 // setDefaultAQL
-const setDefaultAQL = function setDefaultAQL(value, _sender = sender) {
-  return quotaContractIns.setDefaultAQL.sendTransaction(
-    value,
-    genTxParams(_sender),
-  );
+const setDefaultAQL = async (value, _sender = sender) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.setDefaultAQL(value).send(param);
 };
 
 // setAQL
-const setAQL = function setAQL(account, value, _sender = sender) {
-  return quotaContractIns.setAQL.sendTransaction(
-    account,
-    value,
-    genTxParams(_sender),
-  );
+const setAQL = async (account, value, _sender = sender) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.setAQL(account, value).send(param);
 };
 
 // isAdmin
-const isAdmin = function isAdmin(account) {
-  return quotaContractIns.isAdmin.call(account);
-};
+const isAdmin = account => contract.methods.isAdmin(account).call();
 
 // getAccounts
-const getAccounts = function getAccounts() {
-  return quotaContractIns.getAccounts.call();
-};
+const getAccounts = () => contract.methods.getAccounts().call();
 
 // getQuotas
-const getQuotas = function getQuotas() {
-  return quotaContractIns.getQuotas.call();
-};
+const getQuotas = () => contract.methods.getQuotas().call();
 
 // getBQL
-const getBQL = function getBQL() {
-  return quotaContractIns.getBQL.call();
-};
+const getBQL = () => contract.methods.getBQL().call();
 
 // getDefaultAQL
-const getDefaultAQL = function getDefaultAQL() {
-  return quotaContractIns.getDefaultAQL.call();
-};
+const getDefaultAQL = () => contract.methods.getDefaultAQL().call();
 
 // getAQL
-const getAQL = function getAQL(account) {
-  return quotaContractIns.getAQL.call(account);
-};
+const getAQL = account => contract.methods.getAQL(account).call();
 
 module.exports = {
-  admin,
   addAdmin,
   setBQL,
   setDefaultAQL,

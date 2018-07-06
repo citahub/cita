@@ -1,52 +1,39 @@
 const util = require('./util');
 const config = require('../config');
 
-const { web3, genTxParams } = util;
+const { genContract, genTxParams } = util;
 
-const sender = config.contract.authorization.superAdmin;
+const sender = config.superAdmin;
 const { abi, addr } = config.contract.node_manager;
 
-const nodeAbi = web3.eth.contract(abi);
-const nodeContractIns = nodeAbi.at(addr);
+const contract = genContract(abi, addr);
 
 // addAdmin
-const addAdmin = function addAdmin(account, _sender = sender) {
-  return nodeContractIns.addAdmin.sendTransaction(
-    account,
-    genTxParams(_sender),
-  );
+const addAdmin = async (account, _sender = sender) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.addAdmin(account).send(param);
 };
 
 // approveNode
-const approveNode = function approveNode(node, _sender = sender) {
-  return nodeContractIns.approveNode.sendTransaction(
-    node,
-    genTxParams(_sender),
-  );
+const approveNode = async (node, _sender = sender) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.approveNode(node).send(param);
 };
 
 // deleteNode
-const deleteNode = function deleteNode(node, _sender = sender) {
-  return nodeContractIns.deleteNode.sendTransaction(
-    node,
-    genTxParams(_sender),
-  );
+const deleteNode = async (node, _sender = sender) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.deleteNode(node).send(param);
 };
 
 // listNode
-const listNode = function listNode() {
-  return nodeContractIns.listNode.call();
-};
+const listNode = () => contract.methods.listNode().call();
 
 // getStatus
-const getStatus = function getStatus(node) {
-  return nodeContractIns.getStatus.call(node);
-};
+const getStatus = node => contract.methods.getStatus(node).call();
 
 // isAdmin
-const isAdmin = function isAdmin(account) {
-  return nodeContractIns.isAdmin.call(account);
-};
+const isAdmin = account => contract.methods.isAdmin(account).call();
 
 module.exports = {
   addAdmin,

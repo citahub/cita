@@ -1,114 +1,104 @@
-const mocha = require('mocha');
-const assert = require('assert');
 const util = require('../helpers/util');
 const nodeManager = require('../helpers/node_manager');
 const config = require('../config');
+const chai = require('chai');
 
-// util
-const { logger, web3, getTxReceipt } = util;
-
-// node_manager
+const { expect } = chai;
+const {
+  logger, getTxReceipt,
+} = util;
 const {
   isAdmin, getStatus, listNode, deleteNode, approveNode, addAdmin,
 } = nodeManager;
+const { testAddr } = config;
 
-const { admin } = config.contract.node_manager;
+// temo
+let hash;
 
-const { describe, it, before } = mocha;
-
-// =======================
+// test data
+const addr = testAddr[0];
+const addr1 = testAddr[1];
 
 describe('\n\ntest node manager\n\n', () => {
-  describe('\ntest add admin\n', () => {
-    it('should send a addAdmin tx and get receipt', (done) => {
-      const res = addAdmin(config.testAddr[0], admin);
-
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get addAdmin receipt err:!!!!\n', err);
-          this.skip();
-        });
+  describe('\ntest add superAdmin\n', () => {
+    it('should send a tx: addAdmin', async () => {
+      const res = await addAdmin(addr);
+      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
     });
 
-    it('should have new admin', () => {
-      const res = isAdmin(config.testAddr[0]);
-      logger.debug('\nthe account is an admin:\n', res);
-      assert.equal(res, true);
+    it('should get receipt: addAdmin', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nget receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
+    });
+
+    it('should have new superAdmin', async () => {
+      const res = await isAdmin(addr);
+      logger.debug('\nthe account is an superAdmin:\n', res);
+      expect(res).to.be.true;
     });
   });
 
   describe('\ntest approve node\n', () => {
-    before('should be close status', () => {
-      const res = getStatus(config.testAddr[1]);
+    before('should be close status', async () => {
+      const res = await getStatus(addr);
       logger.debug('\nthe status of the node:\n', res);
-      assert.equal(res, 1);
+      expect(res).to.equal('0');
     });
 
-    it('should send a approveNode tx and get receipt', (done) => {
-      const res = approveNode(config.testAddr[1], admin);
-
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get approveNode receipt err:!!!!\n', err);
-          this.skip();
-        });
+    it('should send a tx: approveNode', async () => {
+      const res = await approveNode(addr1);
+      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
     });
 
-    it('should be start status', () => {
-      const res = getStatus(config.testAddr[1]);
+    it('should get receipt: approveNode', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nget receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
+    });
+
+    it('should be start status', async () => {
+      const res = await getStatus(addr1);
       logger.debug('\nthe status of the node:\n', res);
-      assert.equal(res, 2);
+      expect(res).to.equal('1');
     });
 
-    it('should have the new consensus node', () => {
-      const res = listNode();
+    it('should have the new consensus node', async () => {
+      const res = await listNode();
       logger.debug('\nthe consensus nodes:\n', res);
-      assert.equal(res[res.length - 1], config.testAddr[1]);
+      expect(addr1).to.be.oneOf(res);
     });
   });
 
   describe('\ntest delete consensus node\n', () => {
-    before('should be start status and wait a new block', (done) => {
-      const res = getStatus(config.testAddr[1]);
+    before('should be start status and wait a new block', async () => {
+      const res = await getStatus(addr1);
       logger.debug('\nthe status of the node:\n', res);
-      assert.equal(res, 2);
-      const num = web3.eth.blockNumber;
-      let tmp;
-      do {
-        tmp = web3.eth.blockNumber;
-      } while (tmp <= num);
-      done();
+      expect(res).to.equal('1');
+      setTimeout(() => {}, 10000);
     });
 
-    it('should send a deleteNode tx and get receipt', (done) => {
-      const res = deleteNode(config.testAddr[1], admin);
-
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get deleteNode receipt err:!!!!\n', err);
-          this.skip();
-        });
+    it('should send a tx: deleteNode', async () => {
+      const res = await deleteNode(addr1);
+      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
     });
 
-    it('should be close status', () => {
-      const res = getStatus(config.testAddr[1]);
+    it('should get receipt: deleteNode', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nget receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
+    });
+
+    it('should be close status', async () => {
+      const res = await getStatus(addr1);
       logger.debug('\nthe status of the node:\n', res);
-      assert.equal(res, 0);
+      expect(res).to.equal('0');
     });
   });
 });

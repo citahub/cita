@@ -1,28 +1,22 @@
 const util = require('./util');
 const config = require('../config');
 
-const { web3 } = util;
+const { genContract } = util;
 
-const { pABI, pAddr } = config.contract.permission;
+const { abi, addr } = config.contract.permission;
 
-const perm = web3.eth.contract(pABI);
-const pContractInstance = perm.at(pAddr);
+const contract = genContract(abi, addr);
 
 // queryInfo
-const queryInfo = function queryInfo() {
-  return pContractInstance.queryInfo.call();
-};
+const queryInfo = () => contract.methods.queryInfo().call();
 
 // inPermission
-const inPermission = function inPermission(addr, func) {
-  return pContractInstance.inPermission.call(
-    addr,
-    func,
-  );
-};
+const inPermission = (cont, func) => contract.methods.inPermission(
+  cont,
+  func,
+).call();
 
 module.exports = {
-  perm,
   queryInfo,
   inPermission,
 };

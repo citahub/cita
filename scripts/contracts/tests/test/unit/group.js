@@ -1,40 +1,44 @@
-const assert = require('assert');
-const mocha = require('mocha');
 const util = require('../helpers/util');
+const config = require('../config');
 const group = require('../helpers/group');
+const chai = require('chai');
+
+const { expect } = chai;
 
 const { web3, logger } = util;
-const { it, describe } = mocha;
 
 const {
   queryInfo, queryAccounts, queryParent, inGroup,
 } = group;
 
-// =======================
+// test data
+const { address } = config.superAdmin;
+const name = web3.utils.utf8ToHex('rootGroup');
+const nul = '0x0000000000000000000000000000000000000000';
 
 describe('test group contract', () => {
-  it('should be the build-in rootGroup', () => {
-    const res = queryInfo();
+  it('should be the build-in rootGroup', async () => {
+    const res = await queryInfo();
     logger.debug('\nInfo:\n', res);
-    assert.equal(res[0].substr(0, 20), web3.toHex('rootGroup'));
-    assert.equal(res[1][0], '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523');
+    expect(res[0]).to.have.string(name);
+    expect(address).to.be.oneOf(res[1]);
   });
 
-  it('should be the build-in accounts', () => {
-    const res = queryAccounts();
+  it('should be the build-in accounts', async () => {
+    const res = await queryAccounts();
     logger.debug('\nAccounts:\n', res);
-    assert.equal(res[0], '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523');
+    expect(address).to.be.oneOf(res);
   });
 
-  it('should be the build-in parent group', () => {
-    const res = queryParent();
+  it('should be the build-in parent group', async () => {
+    const res = await queryParent();
     logger.debug('\nParent group:\n', res);
-    assert.equal(res, '0x0000000000000000000000000000000000000000');
+    expect(res).to.equal(nul);
   });
 
-  it('should in the rootGroup', () => {
-    const res = inGroup('0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523');
+  it('should in the rootGroup', async () => {
+    const res = await inGroup(address);
     logger.debug('\nIs in the group:\n', res);
-    assert.equal(res, true);
+    expect(res).to.be.true;
   });
 });

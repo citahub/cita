@@ -1,51 +1,56 @@
-const mocha = require('mocha');
-const assert = require('assert');
 const util = require('../helpers/util');
 const quota = require('../helpers/quota');
+const chai = require('chai');
+const config = require('../config');
 
+const { expect } = chai;
 const { logger } = util;
-const { describe, it } = mocha;
+const { superAdmin } = config;
 
 const {
   getAQL, getDefaultAQL, getBQL, getQuotas, getAccounts, isAdmin,
 } = quota;
 
-// =======================
+// test data TODO as a file
+const admin = superAdmin.address;
+const BQL = '1073741824';
+const defaultAQL = '268435456';
+const AQL = '1073741824';
 
 describe('test quota manager constructor', () => {
-  it('should have build-in admin', () => {
-    const res = isAdmin(quota.admin.address);
+  it('should have build-in admin', async () => {
+    const res = await isAdmin(admin);
     logger.debug('\nthe account is the admin:\n', res);
-    assert.equal(res, true);
+    expect(res).to.be.true;
   });
 
-  it('should have build-in special account', () => {
-    const res = getAccounts();
+  it('should have build-in special account', async () => {
+    const res = await getAccounts();
     logger.debug('\nthe special accounts:\n', res);
-    assert.equal(res[0], quota.admin.address);
+    expect(res[0]).to.equal(admin);
   });
 
-  it('should have build-in quotas of special accounts', () => {
-    const res = getQuotas();
+  it('should have build-in quotas of special accounts', async () => {
+    const res = await getQuotas();
     logger.debug('\nthe quotas of the special accounts:\n', res);
-    assert.equal(res[0], 1073741824);
+    expect(res[0]).to.equal(AQL);
   });
 
-  it('should have build-in block quota limit', () => {
-    const res = getBQL();
+  it('should have build-in block quota limit', async () => {
+    const res = await getBQL();
     logger.debug('\nthe block quota limit:\n', res);
-    assert.equal(res, 1073741824);
+    expect(res).to.equal(BQL);
   });
 
-  it('should have build-in default quota limit of account', () => {
-    const res = getDefaultAQL();
+  it('should have build-in default quota limit of account', async () => {
+    const res = await getDefaultAQL();
     logger.debug('\nthe default quota limit of account:\n', res);
-    assert.equal(res, 268435456);
+    expect(res).to.equal(defaultAQL);
   });
 
-  it('should have build-in quota of admin', () => {
-    const res = getAQL(quota.admin.address);
+  it('should have build-in quota of admin', async () => {
+    const res = await getAQL(admin);
     logger.debug('\nthe quota of admin:\n', res);
-    assert.equal(res, 1073741824);
+    expect(res).to.equal(AQL);
   });
 });
