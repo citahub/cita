@@ -5,7 +5,7 @@
 create_cita_config.py 分为两种模式：
 
 - create: 创建全新的一条链
-- append: 在已有的链配置上新增一个节点，新增节点命令请查看节点管理章节
+- append: 在已有的链配置上新增一个节点
 
 可通过运行如下命令查看：
 
@@ -76,7 +76,7 @@ optional arguments:
 
 ## setup
 
-默认 4 个节点的生成方式如下:
+默认创建 4 个共识节点的生成方式如下:
 
 ```shell
 $ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
@@ -92,6 +92,15 @@ $ ls test-chain/
 - 生成节点配置文件，存放在`test-chain/*/consensus.toml`，主要包含共识算法的相关参数；
 - 生成 jsonrpc 配置文件，存放在`test-chain/*/jsonrpc.toml`，主要包含 jsonrpc 模块的相关参数。
 - `test-chain/template`目录下是模板文件，包括这个链的共识节点地址 `test-chain/template/authorities.list`，系统合约生成参数 `test-chain/template/init_data.yml`, 节点端口地址`test-chain/template/nodes.list` 等信息
+
+增加 1 个节点，需要指定已经创建过的`chain_name`。举例如下：
+```shell
+$ ./env.sh ./scripts/create_cita_config.py append --chain_name test-chain --node "127.0.0.1:4004"
+$ ls test-chain/
+  0  1  2  3  4  template
+```
+
+注意：每次只能增加一个节点，且增加的为普通节点。如何把普通接点升级为共识节点，请参考`节点管理`。
 
 ### 配置文件
 

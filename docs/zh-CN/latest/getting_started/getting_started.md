@@ -35,7 +35,7 @@ git submodule update
 
 在源码根目录下，我们提供了`env.sh`脚本，封装了 docker 相关的操作。
 
-运行此脚本，以实际要运行的命令作为参数，即表示在 docker 环境中运行相关命令。
+运行此脚本，以实际要运行的命令作为参数，即表示在 docker 容器环境中运行相关命令。
 
 例如：
 
@@ -43,11 +43,20 @@ git submodule update
 ./env.sh make debug
 ```
 
-即表示在 docker 环境中运行`make debug`。
+即表示在 docker 容器环境中运行`make debug`。
 
-不带任何参数运行`./env.sh`，将直接获取一个 docker 环境的 shell。
+不带任何参数运行`./env.sh`，将直接获取一个 docker 容器环境的 shell。
 
-还提供了`daemon.sh`，用法同`env.sh`，效果是后台运行。
+如果docker容器是被root用户创建的，后续非root用户使用`./env.sh`会出现如下错误：
+
+```shell
+$ ./env.sh
+  docker container cita_run_cita_secp256k1_sha3 is already running
+  error: failed switching to "user": unable to find user user: no matching entries in passwd file
+```
+要保证操作使用的始终是同一个系统用户。
+
+我们还提供了`daemon.sh`，用法同`env.sh`，效果是后台运行。
 
 如果出现 docker 相关的报错，可以执行如下命令并重试：
 
