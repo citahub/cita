@@ -24,10 +24,10 @@ use jsonrpc_types::rpctypes::TxResponse;
 use libproto::auth::MiscellaneousReq;
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
-use libproto::snapshot::{Cmd, Resp, SnapshotResp};
+use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use libproto::{
-    BlockTxHashesReq, Crypto, Message, Request, Response, Ret, VerifyBlockReq, VerifyBlockResp,
-    VerifyTxReq,
+    BlackList, BlockTxHashes, BlockTxHashesReq, Crypto, Message, Request, Response, Ret,
+    VerifyBlockReq, VerifyBlockResp, VerifyTxReq,
 };
 use lru::LruCache;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -669,338 +669,21 @@ impl MsgHandler {
                         // we got this message when chain reach new height or response the BlockTxHashesReq
                         routing_key!(Chain >> BlockTxHashes) => {
                             let block_tx_hashes = msg.take_block_tx_hashes().unwrap();
-                            let height = block_tx_hashes.get_height();
-                            info!("get block tx hashes for height {:?}", height);
-                            let tx_hashes = block_tx_hashes.get_tx_hashes();
-
-                            // because next height init value is 1
-                            // the empty chain first msg height is 0 with quota info
-                            if height >= self.history_heights.next_height()
-                                || (self.history_heights.next_height() == 1 && height == 0)
-                            {
-                                // get latest quota info from chain
-                                let block_gas_limit = block_tx_hashes.get_block_gas_limit();
-                                let account_gas_limit =
-                                    block_tx_hashes.get_account_gas_limit().clone();
-                                let check_quota = block_tx_hashes.get_check_quota();
-                                self.check_quota = check_quota;
-                                self.block_gas_limit = block_gas_limit;
-                                self.account_gas_limit = account_gas_limit.clone();
-
-                                // need to proposal new block
-                                self.is_need_proposal_new_block = true;
-                            }
-
-                            // update history_heights
-                            let old_min_height = self.history_heights.min_height();
-                            self.history_heights.update_height(height);
-
-                            // update tx pool
-                            let mut tx_hashes_h256 = HashSet::with_capacity(tx_hashes.len());
-                            for data in tx_hashes.iter() {
-                                let hash = H256::from_slice(data);
-                                tx_hashes_h256.insert(hash);
-                            }
-                            self.dispatcher.del_txs_from_pool_with_hash(&tx_hashes_h256);
-
-                            // update history_hashes
-                            for i in old_min_height..self.history_heights.min_height() {
-                                self.history_hashes.remove(&i);
-                            }
-                            if !self.history_hashes.contains_key(&height) {
-                                self.history_hashes.insert(height, tx_hashes_h256);
-                            }
+                            self.deal_block_tx_hashes(block_tx_hashes)
                         }
                         routing_key!(Executor >> BlackList) => {
                             let black_list = msg.take_black_list().unwrap();
-
-                            black_list.get_clear_list().into_iter().for_each(
-                                |clear_list: &Vec<u8>| {
-                                    self.black_list_cache
-                                        .remove(&Address::from_slice(clear_list.as_slice()));
-                                },
-                            );
-
-                            black_list.get_black_list().into_iter().for_each(
-                                |blacklist: &Vec<u8>| {
-                                    self.black_list_cache
-                                        .entry(Address::from_slice(blacklist.as_slice()))
-                                        .and_modify(|e| {
-                                            if *e >= 0 {
-                                                *e -= 1;
-                                            }
-                                        })
-                                        .or_insert(3);
-                                    debug!("Current black list is {:?}", self.black_list_cache);
-                                },
-                            );
+                            self.deal_black_list(black_list);
                         }
                         routing_key!(Consensus >> VerifyBlockReq) => {
                             let blk_req = msg.take_verify_block_req().unwrap();
-                            let tx_cnt = blk_req.get_reqs().len();
-                            info!("get block verify request with {:?} request", tx_cnt);
-
-                            if tx_cnt == 0 {
-                                error!(
-                                    "Wrong block verify request with 0 tx request_id: {} from key: {}",
-                                    blk_req.get_id(),
-                                    key
-                                );
-                                continue;
-                            }
-
-                            if !self.is_ready() {
-                                trace!("consensus >> verifyblock: auth is not ready");
-                                self.update_cache_block_req(blk_req);
-                                continue;
-                            }
-
-                            self.process_block_verify(blk_req);
+                            self.deal_verify_block_req(blk_req);
                         }
                         routing_key!(Net >> Request)
                         | routing_key!(Jsonrpc >> RequestNewTxBatch) => {
                             let is_local = rounting_key.is_sub_module(SubModules::Jsonrpc);
                             let newtx_req = msg.take_request().unwrap();
-                            if newtx_req.has_batch_req() {
-                                let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
-                                trace!(
-                                    "get batch new tx request has {} tx, is local? {}",
-                                    batch_new_tx.len(),
-                                    is_local
-                                );
-                                if !self.is_ready() {
-                                    if is_local {
-                                        for tx_req in batch_new_tx.iter() {
-                                            let request_id = tx_req.get_request_id().to_vec();
-                                            self.publish_tx_failed_result(
-                                                request_id,
-                                                Ret::NotReady,
-                                            );
-                                        }
-                                    }
-                                    continue;
-                                }
-
-                                if self.is_flow_control(batch_new_tx.len()) {
-                                    trace!("flow control ...");
-                                    if is_local {
-                                        for tx_req in batch_new_tx.iter() {
-                                            let request_id = tx_req.get_request_id().to_vec();
-                                            if is_local {
-                                                self.publish_tx_failed_result(
-                                                    request_id,
-                                                    Ret::Busy,
-                                                );
-                                            }
-                                        }
-                                    }
-                                    continue;
-                                }
-
-                                let mut requests = HashMap::new();
-                                let mut requests_no_cached = HashMap::new();
-                                for tx_req in batch_new_tx {
-                                    let req = tx_req.get_un_tx().tx_verify_req_msg();
-                                    let tx_hash = H256::from_slice(req.get_tx_hash());
-                                    if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
-                                        if option_pubkey.is_none() {
-                                            if is_local {
-                                                let request_id = tx_req.get_request_id().to_vec();
-                                                self.publish_tx_failed_result(
-                                                    request_id,
-                                                    Ret::BadSig,
-                                                );
-                                            }
-                                            continue;
-                                        }
-                                        let mut new_req = req.clone();
-                                        new_req.set_signer(option_pubkey.unwrap());
-                                        requests.insert(tx_hash, (new_req, tx_req, true));
-                                    } else {
-                                        requests_no_cached.insert(tx_hash, req.clone());
-                                        requests.insert(tx_hash, (req, tx_req, true));
-                                    }
-                                }
-
-                                let results: Vec<(
-                                    H256,
-                                    Option<Vec<u8>>,
-                                )> = requests_no_cached
-                                    .into_par_iter()
-                                    .map(|(tx_hash, ref req)| {
-                                        let result = verify_tx_sig(req);
-                                        match result {
-                                            Ok(pubkey) => (tx_hash, Some(pubkey)),
-                                            Err(_) => (tx_hash, None),
-                                        }
-                                    })
-                                    .collect();
-
-                                for (tx_hash, option_pubkey) in results {
-                                    self.save_ret_to_cache(tx_hash.clone(), option_pubkey.clone());
-                                    if let Some(pubkey) = option_pubkey {
-                                        if let Some(ref mut v) = requests.get_mut(&tx_hash) {
-                                            v.0.set_signer(pubkey);
-                                        }
-                                    } else {
-                                        if let Some(ref mut v) = requests.get_mut(&tx_hash) {
-                                            if is_local {
-                                                let request_id = v.1.get_request_id().to_vec();
-                                                self.publish_tx_failed_result(
-                                                    request_id,
-                                                    Ret::BadSig,
-                                                );
-                                            }
-                                            v.2 = false;
-                                        }
-                                    }
-                                }
-
-                                // other verify
-                                requests
-                                    .into_iter()
-                                    .filter(|(_tx_hash, (_req, _tx_req, flag))| *flag)
-                                    .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
-                                        let ret = self.verify_black_list(&req);
-                                        if ret != Ret::OK {
-                                            if is_local {
-                                                let request_id = tx_req.get_request_id().to_vec();
-                                                self.publish_tx_failed_result(request_id, ret);
-                                            }
-                                            false
-                                        } else {
-                                            true
-                                        }
-                                    })
-                                    .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
-                                        let ret = self.verify_tx_req(&req);
-                                        if ret != Ret::OK {
-                                            if is_local {
-                                                let request_id = tx_req.get_request_id().to_vec();
-                                                self.publish_tx_failed_result(request_id, ret);
-                                            }
-                                            false
-                                        } else {
-                                            true
-                                        }
-                                    })
-                                    .for_each(|(tx_hash, (req, tx_req, _flag))| {
-                                        let mut signed_tx = SignedTransaction::new();
-                                        signed_tx
-                                            .set_transaction_with_sig(tx_req.get_un_tx().clone());
-                                        signed_tx.set_signer(req.get_signer().to_vec());
-                                        signed_tx.set_tx_hash(tx_hash.to_vec());
-                                        let request_id = tx_req.get_request_id().to_vec();
-                                        if self.dispatcher.add_tx_to_pool(&signed_tx) {
-                                            if is_local {
-                                                self.publish_tx_success_result(
-                                                    request_id,
-                                                    Ret::OK,
-                                                    tx_hash.clone(),
-                                                );
-                                            }
-                                            // new tx need forward to other nodes
-                                            self.forward_request(tx_req.clone());
-                                        } else {
-                                            // dup with transaction in tx pool
-                                            if is_local {
-                                                self.publish_tx_success_result(
-                                                    request_id,
-                                                    Ret::Dup,
-                                                    tx_hash.clone(),
-                                                );
-                                            }
-                                        }
-                                    });
-                            } else if newtx_req.has_un_tx() {
-                                trace!("get single new tx request from Jsonrpc");
-                                let request_id = newtx_req.get_request_id().to_vec();
-                                if !self.is_ready() {
-                                    trace!("net || jsonrpc: auth is not ready");
-                                    if is_local {
-                                        self.publish_tx_failed_result(request_id, Ret::NotReady);
-                                    }
-                                    continue;
-                                }
-                                if self.is_flow_control(1) {
-                                    trace!("flow control ...");
-                                    if is_local {
-                                        self.publish_tx_failed_result(request_id, Ret::Busy);
-                                    }
-                                    continue;
-                                }
-                                let mut req = newtx_req.get_un_tx().tx_verify_req_msg();
-                                // verify with cache
-                                let tx_hash = H256::from_slice(req.get_tx_hash());
-                                if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
-                                    if option_pubkey.is_none() {
-                                        self.publish_tx_failed_result(request_id, Ret::BadSig);
-                                        continue;
-                                    }
-                                    req.set_signer(option_pubkey.unwrap());
-                                } else {
-                                    let result = verify_tx_sig(&req);
-                                    self.save_ret_to_cache(tx_hash, result.clone().ok());
-                                    match result {
-                                        Ok(pubkey) => {
-                                            req.set_signer(pubkey);
-                                        }
-                                        Err(_) => {
-                                            if is_local {
-                                                self.publish_tx_failed_result(
-                                                    request_id,
-                                                    Ret::BadSig,
-                                                );
-                                            }
-                                            continue;
-                                        }
-                                    }
-                                }
-
-                                // black verify
-                                let ret = self.verify_black_list(&req);
-                                if ret != Ret::OK {
-                                    if is_local {
-                                        self.publish_tx_failed_result(request_id, ret);
-                                    }
-                                    continue;
-                                }
-
-                                // other verify
-                                let ret = self.verify_tx_req(&req);
-                                if ret != Ret::OK {
-                                    if is_local {
-                                        self.publish_tx_failed_result(request_id, ret);
-                                    }
-                                    continue;
-                                }
-
-                                // add tx pool
-                                let mut signed_tx = SignedTransaction::new();
-                                signed_tx.set_transaction_with_sig(newtx_req.get_un_tx().clone());
-                                signed_tx.set_signer(req.get_signer().to_vec());
-                                signed_tx.set_tx_hash(tx_hash.to_vec());
-                                if self.dispatcher.add_tx_to_pool(&signed_tx) {
-                                    if is_local {
-                                        self.publish_tx_success_result(
-                                            request_id,
-                                            Ret::OK,
-                                            tx_hash,
-                                        );
-                                    }
-                                    // new tx need forward to other nodes
-                                    self.forward_request(newtx_req);
-                                } else {
-                                    // dup with transaction in tx pool
-                                    if is_local {
-                                        self.publish_tx_success_result(
-                                            request_id,
-                                            Ret::Dup,
-                                            tx_hash,
-                                        );
-                                    }
-                                }
-                            }
+                            self.deal_request(is_local, newtx_req);
                         }
                         routing_key!(Executor >> Miscellaneous) => {
                             let miscellaneous = msg.take_miscellaneous().unwrap();
@@ -1008,63 +691,8 @@ impl MsgHandler {
                             self.chain_id = Some(miscellaneous.chain_id);
                         }
                         routing_key!(Snapshot >> SnapshotReq) => {
-                            let req = msg.take_snapshot_req().unwrap();
-                            let mut resp = SnapshotResp::new();
-                            match req.cmd {
-                                Cmd::Begin => {
-                                    info!("[snapshot] receive cmd: Begin");
-                                    self.is_snapshot = true;
-
-                                    resp.set_resp(Resp::BeginAck);
-                                    let msg: Message = resp.into();
-                                    self.tx_pub
-                                        .send((
-                                            routing_key!(Auth >> SnapshotResp).into(),
-                                            (&msg).try_into().unwrap(),
-                                        ))
-                                        .unwrap();
-                                }
-                                Cmd::Clear => {
-                                    info!("[snapshot] receive cmd: Clear");
-
-                                    self.dispatcher.clear_txs_pool(0);
-                                    self.cache.clear();
-                                    self.history_heights.reset();
-                                    self.cache_block_req = None;
-                                    self.history_hashes.clear();
-                                    self.black_list_cache.clear();
-
-                                    resp.set_resp(Resp::ClearAck);
-                                    let msg: Message = resp.into();
-                                    self.tx_pub
-                                        .send((
-                                            routing_key!(Auth >> SnapshotResp).into(),
-                                            (&msg).try_into().unwrap(),
-                                        ))
-                                        .unwrap();
-                                }
-                                Cmd::End => {
-                                    info!(
-                                        "[snapshot] receive cmd: End, height = {}",
-                                        req.end_height
-                                    );
-                                    self.history_heights.update_height(req.end_height);
-                                    self.send_block_tx_hashes_req(false);
-                                    self.is_snapshot = false;
-
-                                    resp.set_resp(Resp::EndAck);
-                                    let msg: Message = resp.into();
-                                    self.tx_pub
-                                        .send((
-                                            routing_key!(Auth >> SnapshotResp).into(),
-                                            (&msg).try_into().unwrap(),
-                                        ))
-                                        .unwrap();
-                                }
-                                _ => {
-                                    warn!("[snapshot] receive other cmd: {:?}", req.cmd);
-                                }
-                            }
+                            let snapshot_req = msg.take_snapshot_req().unwrap();
+                            self.deal_snapshot(snapshot_req);
                         }
                         _ => {
                             error!("receive unexpected message key {}", key);
@@ -1072,6 +700,362 @@ impl MsgHandler {
                     }
                 }
                 _ => {}
+            }
+        }
+    }
+
+    fn deal_block_tx_hashes(&mut self, block_tx_hashes: BlockTxHashes) {
+        let height = block_tx_hashes.get_height();
+        info!("get block tx hashes for height {:?}", height);
+        let tx_hashes = block_tx_hashes.get_tx_hashes();
+
+        // because next height init value is 1
+        // the empty chain first msg height is 0 with quota info
+        if height >= self.history_heights.next_height()
+            || (self.history_heights.next_height() == 1 && height == 0)
+        {
+            // get latest quota info from chain
+            let block_gas_limit = block_tx_hashes.get_block_gas_limit();
+            let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
+            let check_quota = block_tx_hashes.get_check_quota();
+            self.check_quota = check_quota;
+            self.block_gas_limit = block_gas_limit;
+            self.account_gas_limit = account_gas_limit.clone();
+
+            // need to proposal new block
+            self.is_need_proposal_new_block = true;
+        }
+
+        // update history_heights
+        let old_min_height = self.history_heights.min_height();
+        self.history_heights.update_height(height);
+
+        // update tx pool
+        let mut tx_hashes_h256 = HashSet::with_capacity(tx_hashes.len());
+        for data in tx_hashes.iter() {
+            let hash = H256::from_slice(data);
+            tx_hashes_h256.insert(hash);
+        }
+        self.dispatcher.del_txs_from_pool_with_hash(&tx_hashes_h256);
+
+        // update history_hashes
+        for i in old_min_height..self.history_heights.min_height() {
+            self.history_hashes.remove(&i);
+        }
+        if !self.history_hashes.contains_key(&height) {
+            self.history_hashes.insert(height, tx_hashes_h256);
+        }
+    }
+
+    fn deal_black_list(&mut self, black_list: BlackList) {
+        black_list
+            .get_clear_list()
+            .into_iter()
+            .for_each(|clear_list: &Vec<u8>| {
+                self.black_list_cache
+                    .remove(&Address::from_slice(clear_list.as_slice()));
+            });
+
+        black_list
+            .get_black_list()
+            .into_iter()
+            .for_each(|blacklist: &Vec<u8>| {
+                self.black_list_cache
+                    .entry(Address::from_slice(blacklist.as_slice()))
+                    .and_modify(|e| {
+                        if *e >= 0 {
+                            *e -= 1;
+                        }
+                    })
+                    .or_insert(3);
+                debug!("Current black list is {:?}", self.black_list_cache);
+            });
+    }
+
+    fn deal_verify_block_req(&mut self, blk_req: VerifyBlockReq) {
+        let tx_cnt = blk_req.get_reqs().len();
+        info!("get block verify request with {:?} request", tx_cnt);
+
+        if tx_cnt == 0 {
+            error!(
+                "Wrong block verify request with 0 tx request_id: {}",
+                blk_req.get_id()
+            );
+            return;
+        }
+
+        if !self.is_ready() {
+            trace!("consensus >> verifyblock: auth is not ready");
+            self.update_cache_block_req(blk_req);
+            return;
+        }
+
+        self.process_block_verify(blk_req);
+    }
+
+    fn deal_request(&mut self, is_local: bool, newtx_req: Request) {
+        if newtx_req.has_batch_req() {
+            let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
+            trace!(
+                "get batch new tx request has {} tx, is local? {}",
+                batch_new_tx.len(),
+                is_local
+            );
+            if !self.is_ready() {
+                if is_local {
+                    for tx_req in batch_new_tx.iter() {
+                        let request_id = tx_req.get_request_id().to_vec();
+                        self.publish_tx_failed_result(request_id, Ret::NotReady);
+                    }
+                }
+                return;
+            }
+
+            if self.is_flow_control(batch_new_tx.len()) {
+                trace!("flow control ...");
+                if is_local {
+                    for tx_req in batch_new_tx.iter() {
+                        let request_id = tx_req.get_request_id().to_vec();
+                        if is_local {
+                            self.publish_tx_failed_result(request_id, Ret::Busy);
+                        }
+                    }
+                }
+                return;
+            }
+
+            let mut requests = HashMap::new();
+            let mut requests_no_cached = HashMap::new();
+            for tx_req in batch_new_tx {
+                let req = tx_req.get_un_tx().tx_verify_req_msg();
+                let tx_hash = H256::from_slice(req.get_tx_hash());
+                if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
+                    if option_pubkey.is_none() {
+                        if is_local {
+                            let request_id = tx_req.get_request_id().to_vec();
+                            self.publish_tx_failed_result(request_id, Ret::BadSig);
+                        }
+                        continue;
+                    }
+                    let mut new_req = req.clone();
+                    new_req.set_signer(option_pubkey.unwrap());
+                    requests.insert(tx_hash, (new_req, tx_req, true));
+                } else {
+                    requests_no_cached.insert(tx_hash, req.clone());
+                    requests.insert(tx_hash, (req, tx_req, true));
+                }
+            }
+
+            let results: Vec<(H256, Option<Vec<u8>>)> = requests_no_cached
+                .into_par_iter()
+                .map(|(tx_hash, ref req)| {
+                    let result = verify_tx_sig(req);
+                    match result {
+                        Ok(pubkey) => (tx_hash, Some(pubkey)),
+                        Err(_) => (tx_hash, None),
+                    }
+                })
+                .collect();
+
+            for (tx_hash, option_pubkey) in results {
+                self.save_ret_to_cache(tx_hash.clone(), option_pubkey.clone());
+                if let Some(pubkey) = option_pubkey {
+                    if let Some(ref mut v) = requests.get_mut(&tx_hash) {
+                        v.0.set_signer(pubkey);
+                    }
+                } else {
+                    if let Some(ref mut v) = requests.get_mut(&tx_hash) {
+                        if is_local {
+                            let request_id = v.1.get_request_id().to_vec();
+                            self.publish_tx_failed_result(request_id, Ret::BadSig);
+                        }
+                        v.2 = false;
+                    }
+                }
+            }
+
+            // other verify
+            requests
+                .into_iter()
+                .filter(|(_tx_hash, (_req, _tx_req, flag))| *flag)
+                .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
+                    let ret = self.verify_black_list(&req);
+                    if ret != Ret::OK {
+                        if is_local {
+                            let request_id = tx_req.get_request_id().to_vec();
+                            self.publish_tx_failed_result(request_id, ret);
+                        }
+                        false
+                    } else {
+                        true
+                    }
+                })
+                .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
+                    let ret = self.verify_tx_req(&req);
+                    if ret != Ret::OK {
+                        if is_local {
+                            let request_id = tx_req.get_request_id().to_vec();
+                            self.publish_tx_failed_result(request_id, ret);
+                        }
+                        false
+                    } else {
+                        true
+                    }
+                })
+                .for_each(|(tx_hash, (req, tx_req, _flag))| {
+                    let mut signed_tx = SignedTransaction::new();
+                    signed_tx.set_transaction_with_sig(tx_req.get_un_tx().clone());
+                    signed_tx.set_signer(req.get_signer().to_vec());
+                    signed_tx.set_tx_hash(tx_hash.to_vec());
+                    let request_id = tx_req.get_request_id().to_vec();
+                    if self.dispatcher.add_tx_to_pool(&signed_tx) {
+                        if is_local {
+                            self.publish_tx_success_result(request_id, Ret::OK, tx_hash.clone());
+                        }
+                        // new tx need forward to other nodes
+                        self.forward_request(tx_req.clone());
+                    } else {
+                        // dup with transaction in tx pool
+                        if is_local {
+                            self.publish_tx_success_result(request_id, Ret::Dup, tx_hash.clone());
+                        }
+                    }
+                });
+        } else if newtx_req.has_un_tx() {
+            trace!("get single new tx request from Jsonrpc");
+            let request_id = newtx_req.get_request_id().to_vec();
+            if !self.is_ready() {
+                trace!("net || jsonrpc: auth is not ready");
+                if is_local {
+                    self.publish_tx_failed_result(request_id, Ret::NotReady);
+                }
+                return;
+            }
+            if self.is_flow_control(1) {
+                trace!("flow control ...");
+                if is_local {
+                    self.publish_tx_failed_result(request_id, Ret::Busy);
+                }
+                return;
+            }
+            let mut req = newtx_req.get_un_tx().tx_verify_req_msg();
+            // verify with cache
+            let tx_hash = H256::from_slice(req.get_tx_hash());
+            if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
+                if option_pubkey.is_none() {
+                    self.publish_tx_failed_result(request_id, Ret::BadSig);
+                    return;
+                }
+                req.set_signer(option_pubkey.unwrap());
+            } else {
+                let result = verify_tx_sig(&req);
+                self.save_ret_to_cache(tx_hash, result.clone().ok());
+                match result {
+                    Ok(pubkey) => {
+                        req.set_signer(pubkey);
+                    }
+                    Err(_) => {
+                        if is_local {
+                            self.publish_tx_failed_result(request_id, Ret::BadSig);
+                        }
+                        return;
+                    }
+                }
+            }
+
+            // black verify
+            let ret = self.verify_black_list(&req);
+            if ret != Ret::OK {
+                if is_local {
+                    self.publish_tx_failed_result(request_id, ret);
+                }
+                return;
+            }
+
+            // other verify
+            let ret = self.verify_tx_req(&req);
+            if ret != Ret::OK {
+                if is_local {
+                    self.publish_tx_failed_result(request_id, ret);
+                }
+                return;
+            }
+
+            // add tx pool
+            let mut signed_tx = SignedTransaction::new();
+            signed_tx.set_transaction_with_sig(newtx_req.get_un_tx().clone());
+            signed_tx.set_signer(req.get_signer().to_vec());
+            signed_tx.set_tx_hash(tx_hash.to_vec());
+            if self.dispatcher.add_tx_to_pool(&signed_tx) {
+                if is_local {
+                    self.publish_tx_success_result(request_id, Ret::OK, tx_hash);
+                }
+                // new tx need forward to other nodes
+                self.forward_request(newtx_req);
+            } else {
+                // dup with transaction in tx pool
+                if is_local {
+                    self.publish_tx_success_result(request_id, Ret::Dup, tx_hash);
+                }
+            }
+        }
+    }
+
+    fn deal_snapshot(&mut self, snapshot_req: SnapshotReq) {
+        let mut resp = SnapshotResp::new();
+        match snapshot_req.cmd {
+            Cmd::Begin => {
+                info!("[snapshot] receive cmd: Begin");
+                self.is_snapshot = true;
+
+                resp.set_resp(Resp::BeginAck);
+                let msg: Message = resp.into();
+                self.tx_pub
+                    .send((
+                        routing_key!(Auth >> SnapshotResp).into(),
+                        (&msg).try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
+            Cmd::Clear => {
+                info!("[snapshot] receive cmd: Clear");
+
+                self.dispatcher.clear_txs_pool(0);
+                self.cache.clear();
+                self.history_heights.reset();
+                self.cache_block_req = None;
+                self.history_hashes.clear();
+                self.black_list_cache.clear();
+
+                resp.set_resp(Resp::ClearAck);
+                let msg: Message = resp.into();
+                self.tx_pub
+                    .send((
+                        routing_key!(Auth >> SnapshotResp).into(),
+                        (&msg).try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
+            Cmd::End => {
+                info!(
+                    "[snapshot] receive cmd: End, height = {}",
+                    snapshot_req.end_height
+                );
+                self.history_heights.update_height(snapshot_req.end_height);
+                self.send_block_tx_hashes_req(false);
+                self.is_snapshot = false;
+
+                resp.set_resp(Resp::EndAck);
+                let msg: Message = resp.into();
+                self.tx_pub
+                    .send((
+                        routing_key!(Auth >> SnapshotResp).into(),
+                        (&msg).try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
+            _ => {
+                warn!("[snapshot] receive other cmd: {:?}", snapshot_req.cmd);
             }
         }
     }
