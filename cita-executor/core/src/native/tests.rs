@@ -7,6 +7,7 @@ use evm::fake_tests::FakeExt;
 use native::factory::Factory;
 use std::io::Write;
 use std::str::FromStr;
+use types::reserved_addresses;
 
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
@@ -179,7 +180,7 @@ impl SimpleStorage {
 fn test_native_contract() {
     let factory = Factory::default();
     let mut ext = FakeExt::new();
-    let native_addr = Address::from_str("0000000000000000000000000000000000000400").unwrap();
+    let native_addr = Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap();
     let value = U256::from(0x1234);
     {
         let mut params = ActionParams::default();

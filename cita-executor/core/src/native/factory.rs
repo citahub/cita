@@ -15,11 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use evm::action_params::ActionParams;
-// pub use super::evm::error::Error as EvmError;
 use cita_types::Address;
+use evm::action_params::ActionParams;
 use evm::{self, Ext, GasLeft};
 use std::collections::HashMap;
+use std::str::FromStr;
+use types::reserved_addresses;
 
 ////////////////////////////////////////////////////////////////////////////////
 pub type Signature = u32;
@@ -79,17 +80,26 @@ impl Default for Factory {
         // here we register contracts with addresses defined in genesis.json.
         {
             use native::crosschain_verify::CrossChainVerify;
-            factory.register(Address::from(0x1301), Box::new(CrossChainVerify::default()));
+            factory.register(
+                Address::from_str(reserved_addresses::NATIVE_CROSS_CHAIN_VERIFY).unwrap(),
+                Box::new(CrossChainVerify::default()),
+            );
         }
         #[cfg(test)]
         {
             use native::tests::SimpleStorage;
-            factory.register(Address::from(0x400), Box::new(SimpleStorage::default()));
+            factory.register(
+                Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap(),
+                Box::new(SimpleStorage::default()),
+            );
         }
         #[cfg(feature = "privatetx")]
         {
             use native::zk_privacy::ZkPrivacy;
-            factory.register(Address::from(0x12345678), Box::new(ZkPrivacy::default()));
+            factory.register(
+                Address::from_str(reserved_addresses::NATIVE_ZK_PRIVACY).unwrap(),
+                Box::new(ZkPrivacy::default()),
+            );
         }
         factory
     }

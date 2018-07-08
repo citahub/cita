@@ -52,6 +52,11 @@
 //     Start: 0xffffffffffffffffffffffffffffffffff021000
 //     End  : 0xffffffffffffffffffffffffffffffffff0210ff
 //
+// ## Native Contracts
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff030000
+//     End  : 0xffffffffffffffffffffffffffffffffff03ffff
+//
 
 // Normal Action Address
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010000";
@@ -80,7 +85,6 @@ pub const PERMISSION_CREATE_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff
 pub const PERMISSION_NEW_PERMISSION: &str = "ffffffffffffffffffffffffffffffffff021010";
 pub const PERMISSION_DELETE_PERMISSION: &str = "ffffffffffffffffffffffffffffffffff021011";
 pub const PERMISSION_UPDATE_PERMISSION: &str = "ffffffffffffffffffffffffffffffffff021012";
-
 pub const PERMISSION_SET_AUTH: &str = "ffffffffffffffffffffffffffffffffff021013";
 pub const PERMISSION_CANCEL_AUTH: &str = "ffffffffffffffffffffffffffffffffff021014";
 pub const PERMISSION_NEW_ROLE: &str = "ffffffffffffffffffffffffffffffffff021015";
@@ -91,3 +95,7 @@ pub const PERMISSION_CANCEL_ROLE: &str = "ffffffffffffffffffffffffffffffffff0210
 pub const PERMISSION_NEW_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101a";
 pub const PERMISSION_DELETE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101b";
 pub const PERMISSION_UPDATE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101c";
+// Native Contracts
+pub const NATIVE_SIMPLE_STORAGE: &str = "ffffffffffffffffffffffffffffffffff030000";
+pub const NATIVE_ZK_PRIVACY: &str = "ffffffffffffffffffffffffffffffffff030001";
+pub const NATIVE_CROSS_CHAIN_VERIFY: &str = "ffffffffffffffffffffffffffffffffff030002";
