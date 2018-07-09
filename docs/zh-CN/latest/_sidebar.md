@@ -18,6 +18,7 @@
     - [整体架构](zh-CN/latest/architecture/architecture.md)
     - [系统组件](zh-CN/latest/architecture/components.md)
 - 参考
+    - [保留地址](zh-CN/latest/reference/addresses.md)
     - [词汇表](zh-CN/latest/reference/glossary.md)
     - [FAQ](zh-CN/latest/reference/faq.md)
 - [贡献代码](zh-CN/latest/contributing.md)

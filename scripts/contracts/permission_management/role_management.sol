@@ -8,7 +8,7 @@ import "../common/address_array.sol";
 
 /// @title Role management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0xffffffffffffffffffffffffffffffffff020008
+/// @notice The address: 0xffffffffffffffffffffffffffffffffff020007
 ///         The interface the can be called: All
 /// @dev TODO Split to a new file: role_auth.sol
 contract RoleManagement {

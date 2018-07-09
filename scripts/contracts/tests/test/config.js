@@ -116,7 +116,7 @@ module.exports = {
       }, {
         anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }], name: 'RoleCleared', type: 'event',
       }],
-      rmAddr: '0xffffffffffffffffffffffffffffffffff020008',
+      rmAddr: '0xffffffffffffffffffffffffffffffffff020007',
     },
     role: {
       rABI: [{
@@ -342,7 +342,7 @@ module.exports = {
     ['0xffffffffffffffffffffffffffffffffff021000', '0x00000000'],
     ['0xffffffffffffffffffffffffffffffffff021001', '0x00000000'],
     ['0xffffffffffffffffffffffffffffffffff020004', '0xfc4a089c', '0x98a05bb1', '0xf036ed56', '0x6446ebd8', '0x537bf9a3', '0x0f5aa9f3', '0x52c5b4cc', '0x3482e0c9', '0xa5925b5b', '0xba00ab60'],
-    ['0xffffffffffffffffffffffffffffffffff020008', '0x551ef860', '0x54b025c5', '0x0773e6ba', '0x17b2e350', '0xd9c090a0', '0xa32710eb', '0xa8319481', '0xc631e758'],
+    ['0xffffffffffffffffffffffffffffffffff020007', '0x551ef860', '0x54b025c5', '0x0773e6ba', '0x17b2e350', '0xd9c090a0', '0xa32710eb', '0xa8319481', '0xc631e758'],
     ['0xffffffffffffffffffffffffffffffffff02000a', '0xd7cd7209', '0xbaeb8cad', '0x2c84e31f', '0xd86df333', '0x7eafcdb1'],
   ],
 };
