@@ -254,33 +254,40 @@ module.exports = {
       },
     },
     node_manager: {
-      abi: [{
-        constant: true, inputs: [{ name: '_node', type: 'address' }], name: 'isAdmin', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'view', type: 'function',
-      }, {
-        constant: false, inputs: [{ name: '_node', type: 'address' }], name: 'deleteNode', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
-      }, {
-        constant: true, inputs: [{ name: '_node', type: 'address' }], name: 'getStatus', outputs: [{ name: '', type: 'uint8' }], payable: false, stateMutability: 'view', type: 'function',
-      }, {
-        constant: true, inputs: [], name: 'listNode', outputs: [{ name: '', type: 'address[]' }], payable: false, stateMutability: 'view', type: 'function',
-      }, {
-        constant: true, inputs: [{ name: '', type: 'address' }], name: 'status', outputs: [{ name: '', type: 'uint8' }], payable: false, stateMutability: 'view', type: 'function',
-      }, {
-        constant: false, inputs: [{ name: '_node', type: 'address' }], name: 'addAdmin', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
-      }, {
-        constant: false, inputs: [{ name: '_node', type: 'address' }], name: 'approveNode', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
-      }, {
-        constant: false, inputs: [{ name: '_node', type: 'address' }], name: 'newNode', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
-      }, {
-        inputs: [{ name: '_nodes', type: 'address[]' }, { name: '_admins', type: 'address[]' }], payable: false, stateMutability: 'nonpayable', type: 'constructor',
-      }, {
-        anonymous: false, inputs: [{ indexed: true, name: '_node', type: 'address' }], name: 'NewNode', type: 'event',
-      }, {
-        anonymous: false, inputs: [{ indexed: true, name: '_node', type: 'address' }], name: 'ApproveNode', type: 'event',
-      }, {
-        anonymous: false, inputs: [{ indexed: true, name: '_node', type: 'address' }], name: 'DeleteNode', type: 'event',
-      }, {
-        anonymous: false, inputs: [{ indexed: true, name: '_node', type: 'address' }, { indexed: true, name: '_sender', type: 'address' }], name: 'AddAdmin', type: 'event',
-      }],
+      abi:
+        [{
+          constant: true, inputs: [{ name: '_node', type: 'address' }], name: 'stakePermillage', outputs: [{ name: '', type: 'uint64' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [{ name: '_account', type: 'address' }], name: 'isAdmin', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_node', type: 'address' }], name: 'deleteNode', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          constant: true, inputs: [{ name: '_node', type: 'address' }], name: 'getStatus', outputs: [{ name: '', type: 'uint8' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_node', type: 'address' }, { name: 'stake', type: 'uint64' }], name: 'setStake', outputs: [], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'listNode', outputs: [{ name: '', type: 'address[]' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [{ name: '', type: 'address' }], name: 'status', outputs: [{ name: '', type: 'uint8' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'listStake', outputs: [{ name: '_stakes', type: 'uint64[]' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_account', type: 'address' }], name: 'addAdmin', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_node', type: 'address' }], name: 'approveNode', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          inputs: [{ name: '_nodes', type: 'address[]' }, { name: '_admins', type: 'address[]' }, { name: '_stakes', type: 'uint64[]' }], payable: false, stateMutability: 'nonpayable', type: 'constructor',
+        }, {
+          anonymous: false, inputs: [{ indexed: true, name: 'errorType', type: 'uint8' }, { indexed: false, name: 'msg', type: 'string' }], name: 'ErrorLog', type: 'event',
+        }, {
+          anonymous: false, inputs: [{ indexed: true, name: '_node', type: 'address' }], name: 'ApproveNode', type: 'event',
+        }, {
+          anonymous: false, inputs: [{ indexed: true, name: '_node', type: 'address' }], name: 'DeleteNode', type: 'event',
+        }, {
+          anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }, { indexed: true, name: '_sender', type: 'address' }], name: 'AddAdmin', type: 'event',
+        }, {
+          anonymous: false, inputs: [{ indexed: true, name: '_node', type: 'address' }, { indexed: false, name: 'stake', type: 'uint256' }], name: 'SetStake', type: 'event',
+        }],
       addr: '0xffffffffffffffffffffffffffffffffff020001',
       admin: {
         address: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523',

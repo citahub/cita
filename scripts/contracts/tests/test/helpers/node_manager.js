@@ -17,14 +17,6 @@ const addAdmin = function addAdmin(account, _sender = sender) {
   );
 };
 
-// newNode
-const newNode = function newNode(node, _sender = sender) {
-  return nodeContractIns.newNode.sendTransaction(
-    node,
-    genTxParams(_sender),
-  );
-};
-
 // approveNode
 const approveNode = function approveNode(node, _sender = sender) {
   return nodeContractIns.approveNode.sendTransaction(
@@ -58,7 +50,6 @@ const isAdmin = function isAdmin(account) {
 
 module.exports = {
   addAdmin,
-  newNode,
   approveNode,
   deleteNode,
   listNode,

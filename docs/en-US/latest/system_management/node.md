@@ -60,7 +60,7 @@ When initializing genesis block, an administrator address needs to be initialize
 
 The management of consensus nodes includes adding, deleting, and getting consensus nodes list:
 
-* The adding operation is divided into initiation and confirmation. The node first initiates a request to becomes a consensus node. After confirmation by administrator (the account with the administrator role)，the node is added successfully;
+* Adding operation can only be performed by administrator;
 * Deleting operation can only be performed by administrator;
 * Get consensus nodes list by calling interface
 
@@ -75,18 +75,11 @@ The management of consensus nodes includes adding, deleting, and getting consens
     <th>Detailed Discription</th>
   </tr>
   <tr>
-    <td>newNode(address)</td>
-    <td>Ordinary</td>
-    <td>New node address</td>
-    <td>Bool (indicating whether this operaiton is sucessful )</td>
-    <td>If this operation is sucessful, the new node would be recoreded in the consensus nodes list and ready to become a consensus node. The node status shows new in here.</td>
-  </tr>
-  <tr>
     <td>approveNode(address)</td>
     <td>Administrator</td>
     <td>New consensus node address</td>
     <td>Bool (indicating whether this operaiton is sucessful )</td>
-    <td>After the newNode(address) operation is successful, you can call this interface to make a approvement that the node are allowed a consensus node, The node status shows consensus in here.</td>
+    <td>After the newNode(address) operation is successful, you can call this interface to make a approvement that the node are allowed a consensus node, The node status shows start in here.</td>
   </tr>
   <tr>
     <td>deleteNode(address)</td>
@@ -100,7 +93,7 @@ The management of consensus nodes includes adding, deleting, and getting consens
     <td>Ordinary (read only)</td>
     <td>Null</td>
     <td>Address list(address[])</td>
-    <td>Acquire consensus nodes list in which all nodes are in consensus status</td>
+    <td>Acquire consensus nodes list in which all nodes are in start status</td>
   </tr>
   <tr>
     <td>getStatus(address)</td>
@@ -110,8 +103,7 @@ The management of consensus nodes includes adding, deleting, and getting consens
       node status (uint8):
       <ul>
         <li>0: close</li>
-        <li>1: new</li>
-        <li>2: consensus</li>
+        <li>1: start</li>
       </ul>
     </td>
     <td>Get the status of nodes</td>
@@ -122,7 +114,7 @@ The management of consensus nodes includes adding, deleting, and getting consens
 
 Only after a node is added as ordianry nodes, it can make the request to become a consensus node. Then, it is necessary to approve the request by administrator. After all of these operations, a consensus node can be added sucessfully. If a ordinary node want to be updated to a consensus node, detailed steps are as follows：
 
-Let's illustrate how a ordinary node become a consensus node with an example. We will use `newNode(address)`/`approveNode(address)` in the process.
+Let's illustrate how a ordinary node become a consensus node with an example. We will use `approveNode(address)` in the process.
 
 Consensus nodes management contract is system contract and written into genesis by default. Below are function signatures of management contract：
 
@@ -133,7 +125,6 @@ Function signatures:
     2d4ede93: deleteNode(address)
     30ccebb5: getStatus(address)
     609df32f: listNode()
-    ddad2ffe: newNode(address)
     645b8b1b: status(address)
 ```
 
@@ -157,71 +148,16 @@ Now we need to upgrade the new ordinary node to a consensus node by constructing
 
 The standard of calling contract follows [ABI](https://solidity.readthedocs.io/en/develop/abi-spec.html), we privide a transaction tool `make_tx.py`：
 
-1. Construct newNode transaction information
+1. Construct approveNode transaction inforamtion
 
     ```bash
-    $ cd script/txtool/txtool
-
-    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
 
     - privkey: private key，used to verify the transaction information. The system's default private keys can be viewed in[systerm contract](https://docs.nervos.org/Nervos-AppChain-Docs/#/en-US/quick-start/deploy-smart-contract)
     - The first 8 bits are the function hash value and the next 64 bits are node address (less than 64 bits are filled with 0).
 
-    Generated information is stored in `../output/transaction/deploycode`.
-
 2. Send transaction
-
-    ```bash
-    $ python3 send_tx.py
-    --> {"params": ["0a5b0a283030303030303030303030303030303030303030303030303030303030303030303133323431613212013018fface20420dc012a24ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e1241bc58c97ad8979f429bac343157fd8ecb193edb8255ca256ca077d352c24161e31ad634214f5443ea27ac95a3fe0b2ef2efc2a991b26c043f193325ea12033e7400"], "jsonrpc": "2.0", "method": "sendRawTransaction", "id": 1}
-    <-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0xdacbbb3697085eec3bfb0321d5142b86266a88eeaf5fba7ff40552a8350f4323","status":"OK"}} (200 OK)
-    ```
-
-3. Get receipt
-
-    ```bash
-    $ python3 get_receipt.py
-    {
-      "contractAddress": null,
-      "cumulativeGasUsed": "0x5615",
-      "logs": [
-        {
-          "blockHash": "0xe5f58cbe8d4817adabec30c93662610fd4859cf87eecc2f3a4d483d74f9b256d",
-          "transactionHash": "0xdacbbb3697085eec3bfb0321d5142b86266a88eeaf5fba7ff40552a8350f4323",
-          "transactionIndex": "0x0",
-          "topics": [
-            "0xfd96b5bdd2e0412ade018159455c7af2bed1366ab61906962a1b5638f29c68c1",
-            "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
-          ],
-          "blockNumber": "0x89",
-          "address": "0xffffffffffffffffffffffffffffffffff020001",
-          "transactionLogIndex": "0x0",
-          "logIndex": "0x0",
-          "data": "0x"
-        }
-      ],
-      "blockHash": "0xe5f58cbe8d4817adabec30c93662610fd4859cf87eecc2f3a4d483d74f9b256d",
-      "transactionHash": "0xdacbbb3697085eec3bfb0321d5142b86266a88eeaf5fba7ff40552a8350f4323",
-      "root": null,
-      "errorMessage": null,
-      "blockNumber": "0x89",
-      "logsBloom": "0x00000000000000020040000000000000000000000000000000000000000000200000000000000000000004000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000208000000000000000000000000000",
-      "transactionIndex": "0x0",
-      "gasUsed": "0x5615"
-    }
-    ```
-
-    If the transaction has not been processed yet, an error will occur. Try it several times to get the receipt. If `errorMassage` is null, it means normal and you can continue to the next step.
-
-4. Construct approveNode transaction inforamtion
-
-    ```bash
-    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
-    ```
-    Only function hash in code is changed.
-
-5. Send transaction
 
     ```bash
     $ python3 send_tx.py
@@ -229,7 +165,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
     <-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0xd6b38b125efcacb8d59379eef9394e3d9d4f7bb4151e53f0c2c50682f9f037b4","status":"OK"}} (200 OK)
     ```
 
-6. Get receipt
+3. Get receipt
 
     ```bash
     $ python3 get_receipt.py
@@ -263,7 +199,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
     }
     ```
 
-7. View the current number of consensus nodes
+4. View the current number of consensus nodes
 
     ```bash
     $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
