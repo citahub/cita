@@ -70,8 +70,8 @@ optional arguments:
 
 	例如：
 
-	- 链的 chain_id 值设为1，默认为随机数 `--contract_arguments "SysConfig.chain_id=1"`
-	- 链的经济模型设为 quota，默认为 quota(0), 其他选项有 charge(1) `--contract_arguments "SysConfig.economical_model=0"`
+	- 链的 chain_id 值设为1，默认为随机数 `--contract_arguments "SysConfig.chainId=1"`
+	- 链的经济模型设为 quota，默认为 quota(0), 其他选项有 charge(1) `--contract_arguments "SysConfig.economicalModel=0"`
       (***此模型下只有`super_admin`账户及节点地址有余额***)
 
 ## setup
@@ -190,15 +190,15 @@ CITA 里主要的系统合约有配置合约、共识节点管理合约、配额
 ```
 Contracts:
 - SysConfig:
-  - delay_block_number: 1
-  - check_permission: false
-  - check_quota: false
-  - chain_name: test-chain
-  - chain_id: 1
+  - delayBlockNumber: 1
+  - checkPermission: false
+  - checkQuota: false
+  - chainName: test-chain
+  - chainId: 1
   - operator: test-operator
   - website: https://www.example.com
-  - block_interval: 3000
-  - economical_model: 0
+  - blockInterval: 3000
+  - economicalModel: 0
 - QuotaManager:
   - admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
 - NodeManager:
@@ -209,10 +209,10 @@ Contracts:
   - stakes:
     - 0
 - ChainManager:
-  - parent_chain_id: 0
-  - parent_chain_authorities: []
+  - parentChainId: 0
+  - parentChainAuthorities: []
 - Authorization:
-  - super_admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+  - superAdmin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
 - Group:
   - parent: '0x0000000000000000000000000000000000000000'
   - name: rootGroup

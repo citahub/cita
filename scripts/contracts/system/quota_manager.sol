@@ -49,7 +49,9 @@ contract QuotaManager is QuotaInterface, Error {
     }
 
     /// @notice Setup
-    function QuotaManager(address _admin) public {
+    function QuotaManager(address _admin)
+        public
+    {
         admins[_admin] = true;
         quota[_admin] = 1073741824;
         accounts.push(_admin);
@@ -66,21 +68,6 @@ contract QuotaManager is QuotaInterface, Error {
     {
         admins[_account] = true;
         AdminAdded(_account, msg.sender);
-        return true;
-    }
-
-    /// @notice Set the block quota limit
-    /// @param _value The value to be setted
-    /// @return true if successed, otherwise false
-    function setBQL(uint _value)
-        public
-        onlyAdmin
-        checkBaseLimit(_value)
-        checkBlockLimit(_value)
-        returns (bool)
-    {
-        BQL = _value;
-        BqlSetted(_value, msg.sender);
         return true;
     }
 
@@ -119,12 +106,27 @@ contract QuotaManager is QuotaInterface, Error {
         return true;
     }
 
+    /// @notice Set the block quota limit
+    /// @param _value The value to be setted
+    /// @return true if successed, otherwise false
+    function setBQL(uint _value)
+        public
+        onlyAdmin
+        checkBaseLimit(_value)
+        checkBlockLimit(_value)
+        returns (bool)
+    {
+        BQL = _value;
+        BqlSetted(_value, msg.sender);
+        return true;
+    }
+
     /// @notice Check the account is admin
     /// @param _account The address to be checked
     /// @return true if it is, otherwise false
     function isAdmin(address _account)
-        view
         public
+        view
         returns (bool)
     {
         return admins[_account];
@@ -133,8 +135,8 @@ contract QuotaManager is QuotaInterface, Error {
     /// @notice Get all accounts that have account quota limit
     /// @return The accounts that have AQL
     function getAccounts()
-        view
         public
+        view
         returns (address[])
     {
         return accounts;
@@ -143,8 +145,8 @@ contract QuotaManager is QuotaInterface, Error {
     /// @notice Get all accounts' quotas
     /// @return The accounts' quotas
     function getQuotas()
-        view
         public
+        view
         returns (uint[])
     {
         return quotas;
@@ -153,8 +155,8 @@ contract QuotaManager is QuotaInterface, Error {
     /// @notice Get block quota limit
     /// @return The block quota limit
     function getBQL()
-        view
         public
+        view
         returns (uint)
     {
         return BQL;
@@ -163,8 +165,8 @@ contract QuotaManager is QuotaInterface, Error {
     /// @notice Get default account quota limit
     /// @return The default account quota limit
     function getDefaultAQL()
-        view
         public
+        view
         returns (uint)
     {
         return defaultAQL;
@@ -173,8 +175,8 @@ contract QuotaManager is QuotaInterface, Error {
     /// @notice Get account quota limit
     /// @return The account quota limit
     function getAQL(address _account)
-        view
         public
+        view
         returns (uint)
     {
         if (quota[_account] == 0)

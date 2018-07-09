@@ -9,15 +9,15 @@ import yaml
 DEFAULT_CONFIG = '''
 Contracts:
 - SysConfig:
-  - delay_block_number: 1
-  - check_permission: false
-  - check_quota: false
-  - chain_name: test-chain
-  - chain_id: 1
+  - delayBlockNumber: 1
+  - checkPermission: false
+  - checkQuota: false
+  - chainName: test-chain
+  - chainId: 1
   - operator: test-operator
   - website: https://www.example.com
-  - block_interval: 3000
-  - economical_model: 0
+  - blockInterval: 3000
+  - economicalModel: 0
   - name: Nervos
   - symbol: NOS
   - avatar: https://avatars1.githubusercontent.com/u/35361817
@@ -31,10 +31,10 @@ Contracts:
   - stakes:
     - 0
 - ChainManager:
-  - parent_chain_id: 0
-  - parent_chain_authorities: []
+  - parentChainId: 0
+  - parentChainAuthorities: []
 - Authorization:
-  - super_admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+  - superAdmin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
 - Group:
   - parent: '0x0000000000000000000000000000000000000000'
   - name: rootGroup
@@ -119,7 +119,7 @@ class InitializationData(object):
             return
         self.contracts_cfgs['NodeManager']['admins'] = [super_admin]
         self.contracts_cfgs['QuotaManager']['admin'] = super_admin
-        self.contracts_cfgs['Authorization']['super_admin'] = super_admin
+        self.contracts_cfgs['Authorization']['superAdmin'] = super_admin
         self.contracts_cfgs['Group']['accounts'] = [super_admin]
 
     def save_to_file(self, filepath):

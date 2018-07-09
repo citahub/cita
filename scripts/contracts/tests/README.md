@@ -132,7 +132,7 @@ npm run-script unit_chain
 ```
 
 * To run all integrate test:
-    - Should set the check_permission be true(scripts/admintool/init_data)example.json):
+    - Should set the checkPermission be true(scripts/admintool/init_data)example.json):
 
     ```
     "0x0000000000000000000000000000000031415926": [
