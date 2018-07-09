@@ -770,8 +770,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 return res;
             }
         }
-        if self.engine.is_builtin(&params.code_address) {
+        if let Some(builtin) = self.engine.builtin(&params.code_address, self.info.number) {
             // if destination is builtin, try to execute it
+            if !builtin.is_active(self.info.number) {
+                panic!(
+                    "Consensus failure: engine implementation prematurely enabled built-in at {}",
+                    params.code_address
+                );
+            }
 
             let default = [];
             let data = if let Some(ref d) = params.data {
@@ -782,10 +788,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
             let trace_info = tracer.prepare_trace_call(&params);
 
-            let cost = self.engine.cost_of_builtin(&params.code_address, data);
+            let cost = builtin.cost(data);
             if cost <= params.gas {
-                self.engine
-                    .execute_builtin(&params.code_address, data, &mut output);
+                builtin.execute(data, &mut output);
                 self.state.discard_checkpoint();
 
                 // trace only top level calls to builtins to avoid DDoS attacks

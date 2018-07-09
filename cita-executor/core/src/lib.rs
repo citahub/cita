@@ -101,6 +101,8 @@ pub mod contracts;
 pub mod libexecutor;
 pub mod snapshot;
 
+mod spec;
+
 pub use evm::Error;
 pub use factory::*;
 pub use types::*;

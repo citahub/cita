@@ -692,7 +692,7 @@ impl<B: Backend> State<B> {
         check_quota: bool,
         economical_model: EconomicalModel,
     ) -> ApplyResult {
-        let engine = &NullEngine::default();
+        let engine = &NullEngine::cita();
         let options = TransactOptions {
             tracing: tracing,
             vm_tracing: false,
