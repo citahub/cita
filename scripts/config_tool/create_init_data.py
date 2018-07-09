@@ -196,7 +196,7 @@ def parse_arguments():
     args = parser.parse_args()
     return dict(
         contract_arguments=args.contract_arguments,
-        super_admin=args.superAdmin,
+        super_admin=args.super_admin,
         output=args.output,
     )
 
