@@ -147,8 +147,8 @@ class AuthorityList(list):
 class ChainInfo(object):
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, chainName, output_dir):
-        self.node_prefix = chainName
+    def __init__(self, chain_name, output_dir):
+        self.node_prefix = chain_name
         self.output_root = os.path.join(output_dir, self.node_prefix)
 
         self.template_dir = os.path.join(self.output_root, 'template')
@@ -216,9 +216,9 @@ class ChainInfo(object):
             nodes_str = ''.join(stream.readlines()).replace('\n', ',')
         self.nodes = AddressList.from_str(nodes_str)
 
-    def create_init_data(self, superAdmin, contract_arguments):
+    def create_init_data(self, super_admin, contract_arguments):
         from create_init_data import core as create_init_data
-        create_init_data(self.init_data_file, superAdmin, contract_arguments)
+        create_init_data(self.init_data_file, super_admin, contract_arguments)
 
     def create_genesis(self, timestamp, resource_dir):
         from create_genesis import core as create_genesis
@@ -303,7 +303,7 @@ def run_subcmd_create(args, work_dir):
     info.template_create_from_arguments(
         args, os.path.join(work_dir, 'scripts/contracts'),
         os.path.join(work_dir, 'scripts/config_tool/config_example'))
-    info.create_init_data(args.superAdmin, args.contract_arguments)
+    info.create_init_data(args.super_admin, args.contract_arguments)
     info.create_genesis(args.timestamp, args.resource_dir)
     for node in args.nodes:
         info.append_node(node)
@@ -347,7 +347,7 @@ def parse_arguments():
         help='Node network addresses for new nodes.')
 
     # For create init data
-    pcreate.add_argument('--superAdmin', help='Address of super admin.')
+    pcreate.add_argument('--super_admin', help='Address of super admin.')
     pcreate.add_argument(
         '--contract_arguments',
         nargs='+',
@@ -412,7 +412,7 @@ def parse_arguments():
             args.nodes.add_signers(signers)
             setattr(args, 'authorities', authorities)
         for val in (('authorities', 'NodeManager', 'nodes'),
-                    ('chainName', 'SysConfig', 'chainName')):
+                    ('chain_name', 'SysConfig', 'chainName')):
             if args.contract_arguments.kkv_get(val[1], val[2]):
                 logging.critical('Please use --%s to instead of specify'
                                  ' --contract_arguments %s.%s directly',

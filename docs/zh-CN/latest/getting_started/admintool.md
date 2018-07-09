@@ -14,9 +14,9 @@ $ ./env.sh ./script/create_cita_config.py create --help
 
 usage: create_cita_config.py create [-h]
                                     [--authorities AUTHORITY[,AUTHORITY[,AUTHORITY[,AUTHORITY[, ...]]]]]
-                                    [--chainName CHAINNAME]
+                                    [--chain_name CHAIN_NAME]
                                     [--nodes IP:PORT[,IP:PORT[,IP:PORT[,IP:PORT[, ...]]]]]
-                                    [--superAdmin SUPERADMIN]
+                                    [--super_admin SUPER_ADMIN]
                                     [--contract_arguments Contract.Argument=Value [Contract.Argument=Value ...]]
                                     [--timestamp TIMESTAMP]
                                     [--resource_dir RESOURCE_DIR]
@@ -28,11 +28,11 @@ optional arguments:
   -h, --help            show this help message and exit
   --authorities AUTHORITY[,AUTHORITY[,AUTHORITY[,AUTHORITY[, ...]]]]
                         Authorities (addresses) list.
-  --chainName CHAINNAME
+  --chain_name CHAIN_NAME
                         Name of the new chain.
   --nodes IP:PORT[,IP:PORT[,IP:PORT[,IP:PORT[, ...]]]]
                         Node network addresses for new nodes.
-  --superAdmin SUPERADMIN
+  --super_admin SUPER_ADMIN
                         Address of super admin.
   --contract_arguments Contract.Argument=Value [Contract.Argument=Value ...]
                         Update constructor arguments for system contract. Can
@@ -62,17 +62,17 @@ optional arguments:
 
 参数的简单解释：
 
-- `chainName` : cita 支持侧链后，通过 chainName 生成不同的链配置，默认为 test-chain
+- `chain_name` : cita 支持侧链后，通过 chain_name 生成不同的链配置，默认为 test-chain
 
-- `superAdmin` : 指定生成链的超级管理员地址
+- `super_admin` : 指定生成链的超级管理员地址
 
 - `contract_arguments` : 设定系统合约的默认值，这个参数具体的信息请详细查看系统合约文档
 
 	例如：
 
-	- 链的 chainId 值设为1，默认为随机数 `--contract_arguments "SysConfig.chainId=1"`
+	- 链的 chain_id 值设为1，默认为随机数 `--contract_arguments "SysConfig.chainId=1"`
 	- 链的经济模型设为 quota，默认为 quota(0), 其他选项有 charge(1) `--contract_arguments "SysConfig.economicalModel=0"`
-      (***此模型下只有`superAdmin`账户及节点地址有余额***)
+      (***此模型下只有`super_admin`账户及节点地址有余额***)
 
 ## setup
 

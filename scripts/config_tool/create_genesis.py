@@ -274,8 +274,8 @@ def core(contracts_dir, contracts_docs_dir, init_data_file, output, timestamp,
     with open(init_data_file, 'r') as stream:
         data = yaml.load(stream)
     address = data['Contracts'][2]['NodeManager'][0]['nodes']
-    superAdmin = data['Contracts'][4]['Authorization'][0]['superAdmin']
-    address.append(superAdmin)
+    super_admin = data['Contracts'][4]['Authorization'][0]['superAdmin']
+    address.append(super_admin)
     value = '0xffffffffffffffffffffffffff'
     genesis_data.init_normal_contracts()
     genesis_data.init_permission_contracts()
