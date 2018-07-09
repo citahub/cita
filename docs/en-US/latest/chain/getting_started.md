@@ -243,4 +243,4 @@ The following command is run in the source root directory.
 
     Return the block height, indicating that the node has started to block out normally.
 
-More APIs (such as contract calls, transaction queries),please check[RPC calls](https://cryptape.github.io/cita/en/usage-guide/rpc)。
+More APIs (such as contract calls, transaction queries),please check[RPC calls](./rpc_guide/rpc)。

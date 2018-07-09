@@ -49,20 +49,20 @@ CITA采用了一种更高效的AVL来保存账户状态，并且采用了Simple 
 
 当N个数据元素经过加密后插入Merkle树时，你至多计算2*log2(N)次就能检查出任意某数据元素是否在该树中，这使得该数据结构非常高效。同时Merkle树可以很好的支持轻节点。
 
-![Merkle Tree](/img/merkle-tree.png)
+![Merkle Tree](../../../_image/merkle-tree.png)
 
 ### Merkle Patricia Trie
 
 在Ethereum中，使用Trie来构建Merkle tree，即Merkle Patricia Trie。它是Ethereum中主要的数据结构，用来存储所有账号的状态以及交易和交易回执。MPT支持高效的检索及动态的插入、删除、修改，Ethereum将其命名为Merkle Patricia Tree（MPT），其示意图如下：
 
-![Merkle Patricia Trie](/img/merkle-patricia-trie.png)
+![Merkle Patricia Trie](../../../_image/merkle-patricia-trie.png)
 
 更多关于MPT的介绍可以参考Ethereum [Patricia-Tree](https://github.com/ethereum/wiki/wiki/Patricia-Tree)。
 
 ### Merkle AVL Tree
 
 对于Ethereum中的MPT，由于Sha3运算的开销并不低。随着账户地址的增多，以及合约存储数据量的增多，Sha3计算的数据量也会增多。对于常见金融领域来讲，千万级数据将会导致MPT性能下降，Sha3的计算将有可能成为瓶颈。
-为了提高效率，我们希望在每次更新树时能够计算Sha3的数据量最少。对于树形结构，更新一个节点所需要重新计算的Sha3数据量约为O(mlog\ :sub:`m`\ n)，其中 m 为分支数，故当 m=2 时，Sha3的计算量最小。
+为了提高效率，我们希望在每次更新树时能够计算Sha3的数据量最少。对于树形结构，更新一个节点所需要重新计算的Sha3数据量约为O(mlog<sub>m</sub>n)，其中 m 为分支数，故当 m=2 时，Sha3的计算量最小。
 又因为AVL Tree的平衡性更好（尽管这意味着更多的旋转操作，幸运的是旋转操作并不增加Sha3计算），同时又能很好地保持MPT动态插入、删除、修改的特点。因此选用AVL Tree来构建Merkle Tree似乎是一个不错的选择，我们简称之为MAT。
 
 更多关于AVL的介绍可以参考Wiki [AVL_tree](https://en.wikipedia.org/wiki/AVL_tree)。

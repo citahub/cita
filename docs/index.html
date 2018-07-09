@@ -7,22 +7,83 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>CITA</title>
+    <title>CITA Document</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="description" content="Description">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <link rel="stylesheet" href="//unpkg.com/docsify/lib/themes/vue.css">
-    <script src="//unpkg.com/lodash/lodash.min.js"></script>
-    <script src="script/utils.js"></script>
-    <script src="script/customization-value.js"></script>
-    <script src="script/common-setting.js"></script>
-    <script src="script/customization-setting.js"></script>
-    <script src="script/main.js"></script>
+
 </head>
 
 <body>
-    <nav></nav>
+
+    <!-- configuration of navigation bar -->
+    <nav class="app-nav no-badge">
+        <ul>
+            <!-- links to other docs -->
+            <li>
+                <a href="https://cryptape.github.io/Nervos-Docs">Nervos</a>
+                <ul>
+                    <li>
+                        <a href="https://cryptape.github.io/Nervos-AppChain-Docs/">AppChain</a>
+                    </li>
+                    <li>
+                        <a href="https://cryptape.github.io/cita/">CITA</a>
+                    </li>
+                    <li>
+                        <a href="https://cryptape.github.io/Neuron-Android/#/">Neuron</a>
+                    </li>
+                    <li>
+                        <a href="https://cryptape.github.io/Microscope/">Microscope</a>
+                    </li>
+                </ul>
+            </li>
+            <!-- language selection -->
+            <li>
+                <p id="tag_language">Language</p>
+                <ul>
+                    <li>
+                        <a href="" onclick="setLang('en-US');">English</a>
+                    </li>
+                    <li>
+                        <a href="" onclick="setLang('zh-CN');">中文</a>
+                    </li>
+                </ul>
+            </li>
+            <!-- version selection -->
+            <!-- you can add a new version by adding another <li></li> tag -->
+            <li>
+                <p id="tag_version">Version</p>
+                <ul>
+                    <li>
+                        <a href="" onclick="setVersion('Latest');">Latest</a>
+                    </li>
+                    <li>
+                        <a href="" onclick="setVersion('v0.16');">v0.16</a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+
+    <script>
+        function setLang(language) {
+            sessionStorage.setItem("language", language);
+        }
+
+        function setVersion(version) {
+            sessionStorage.setItem("version", version);
+        }
+    </script>
+
     <div id="app">Loading</div>
+
+    <script src="//unpkg.com/lodash/lodash.min.js"></script>
+    <script src="script/customization-value.js"></script>
+    <script src="script/utils.js"></script>
+    <script src="script/common-setting.js"></script>
+    <script src="script/customization-setting.js"></script>
+    <script src="script/main.js"></script>
     <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
     <script src="//unpkg.com/docsify-pagination/dist/docsify-pagination.min.js"></script>
     <script src="//unpkg.com/docsify/lib/plugins/search.js"></script>

@@ -6,7 +6,7 @@
 
 为了简化`CITA`的部署，帮助用户快速搭建`CITA`运行环境，我们推荐使用`docker`部署 `CITA`。
 
-具体步骤请参见[快速入门](https://cryptape.github.io/cita/en/getting_started/)
+具体步骤请参见[快速入门](./getting_started)
 
 在发布件目录启动所有的`CITA`节点后，直接运行`./env.sh`获取一个docker环境的shell。
 

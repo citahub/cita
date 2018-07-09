@@ -165,7 +165,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
     $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
 
-    - privkey: private key，used to verify the transaction information. The system's default private keys can be viewed in[systerm contract](https://cryptape.github.io/cita/en/usage-guide/smart-contract-guide/index.html#_5)
+    - privkey: private key，used to verify the transaction information. The system's default private keys can be viewed in[systerm contract](https://docs.nervos.org/Nervos-AppChain-Docs/#/en-US/quick-start/deploy-smart-contract)
     - The first 8 bits are the function hash value and the next 64 bits are node address (less than 64 bits are filled with 0).
 
     Generated information is stored in `../output/transaction/deploycode`.

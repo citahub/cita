@@ -49,7 +49,6 @@ Microservices coordinate with eath other via message queue. By configuring and c
   
   There're many CITA networks running in banks, payment and insurance production environment, with Cryptape or CITA Integration Provider's technical support.  CITA has accumulated a lot of engineering experience.
 
-It’s recommended for first-time users to begin by going through the [Getting Started](https://cryptape.github.io/cita/en/system_management/permission/index.html) section in order to gain familiarity with how to build a simple chain and how to run a node. 
+It’s recommended for first-time users to begin by going through the [Getting Started](./chain/getting_started) section in order to gain familiarity with how to build a simple chain and how to run a node. 
 Once comfortable, continue exploring the system management, technical specifications, APIs, etc.
 
-> If you have questions not addressed by this documentation, or run into issues with any of the tutorials, please visit the Still Have Questions page for some tips on where to find additional help.

@@ -75,6 +75,6 @@ git push -f
 
 * 不要破坏已有的测试套件;
 
-CITA 是采用 Rust 语言编写而成，若要在本机上编译并调试源码，请参考[安装依赖](http://cita.readthedocs.io/zh_CN/latest/dependencies.html)。
+CITA 是采用 Rust 语言编写而成，若要在本机上编译并调试源码，请参考[快速搭链](./getting_started)。
 
 以上步骤，如有对 git 命令不熟悉的，请参考[git 使用手册](https://git-scm.com/doc)。

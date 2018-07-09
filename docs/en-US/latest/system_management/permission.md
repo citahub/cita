@@ -13,7 +13,7 @@ CITA通过智能合约的方式来对权限进行管理。
 目前权限管理针对外部账户进行细粒度管理。CITA 默认集成了 superAdmin 账户，拥有权限管理涉及到的所有权限。在 CITA 启动前可以对 superAdmin 进行配置。
 在权限系统开启时，由用户生成的外部账户，在 CITA 系统中没有任何权限，需要 superAdmin 对其进行授权。
 
-权限管理默认未开启，配置相关信息查看[系统合约](https://cryptape.github.io/cita/en/usage-guide/admintool/index.html#_3)
+权限管理默认未开启，配置相关信息查看[系统合约](./chain/admintool)
 
 ## 权限管理概述
 

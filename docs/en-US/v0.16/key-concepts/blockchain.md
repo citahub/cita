@@ -53,7 +53,7 @@ Taking clearing and payment as an example, in the process of a standard inter-ba
 
 However, the blockchain technology enables peer-to-peer transactions and share transaction data with the entire network. This can effectively improve the payment and settlement efficiency and reduce transaction costs. By decentralizing the ledger instead of the central authority to verify the ownership of the assets, the agencies operate and inspect together to prevent fraud and human manipulation.
 
-![](/img/4e1a2af8fb4b7db9098b371badf76fb8.jpg)
+![](../../../_image/4e1a2af8fb4b7db9098b371badf76fb8.jpg)
 
 In addition to payment settlement, blockchain technology can also be applied to other banking businesses: bills and supply chain finance areas, as well as risk management areas such as "know your customers (KYC)" and "anti-money laundering (AML)".
 
