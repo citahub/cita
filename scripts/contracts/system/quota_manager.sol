@@ -6,7 +6,7 @@ import "./error.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0x00000000000000000000000000000000013241a3
+/// @notice The address: 0xffffffffffffffffffffffffffffffffff020003
 contract QuotaManager is QuotaInterface, Error {
 
     mapping(address => bool) admins;

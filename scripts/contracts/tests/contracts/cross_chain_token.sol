@@ -48,7 +48,7 @@ contract MyToken {
 
     function get_from_chain_id() public view returns (uint32) {
         // ChainManager: Contract
-        address chainManagerAddr = 0x00000000000000000000000000000000000000CE;
+        address chainManagerAddr = 0xffFFFfffFFfFFfFFFFffFFFfFfFFffFFfF020002;
         // getChainId() function
         bytes4 getChainIdHash = bytes4(keccak256("getChainId()"));
 
@@ -92,7 +92,7 @@ contract MyToken {
 
             switch call(                     //This is the critical change (Pop the top stack value)
                     100000,                  //100k gas
-                    0x1301,                  //To addr
+                    0xffFfffFfFFFfFFfffFFFffffFfFfffFfFF030002,
                     0,                       //No value
                     _calldata,               //Inputs are stored at location _calldata
                     add(calldatasize, 0x40), //Inputs are xx bytes long

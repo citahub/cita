@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -25,6 +25,7 @@ use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
+use types::reserved_addresses;
 
 const QUOTAS: &'static [u8] = &*b"getQuotas()";
 const ACCOUNTS: &'static [u8] = &*b"getAccounts()";
@@ -36,8 +37,7 @@ lazy_static! {
     static ref ACCOUNTS_HASH: Vec<u8> = encode_contract_name(ACCOUNTS);
     static ref BQL_HASH: Vec<u8> = encode_contract_name(BQL);
     static ref DEFAULT_AQL_HASH: Vec<u8> = encode_contract_name(DEFAULT_AQL);
-    static ref CONTRACT_ADDRESS: H160 =
-        H160::from_str("00000000000000000000000000000000013241a3").unwrap();
+    static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap();
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]

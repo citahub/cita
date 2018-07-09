@@ -8,7 +8,7 @@ import "../common/address_array.sol";
 
 /// @title Role management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0xe3b5ddb80addb513b5c981e27bb030a86a8821ee
+/// @notice The address: 0xffffffffffffffffffffffffffffffffff020007
 ///         The interface the can be called: All
 /// @dev TODO Split to a new file: role_auth.sol
 contract RoleManagement {
@@ -17,8 +17,8 @@ contract RoleManagement {
     RoleCreator roleCreator = RoleCreator(roleCreatorAddress);
 
     address internal roleManagementAddr = 0xe3b5DDB80AdDb513b5c981e27Bb030A86A8821eE;
-    address internal permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
-    address internal authorizationAddr = 0x00000000000000000000000000000000013241b4;
+    address internal permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
+    address internal authorizationAddr = 0xFFfFffFfffFFFFFfFfFfffFFfFfFfFFfFf020006;
     // bytes4 internal queryPermissionsHash = 0x46f02832;
 
     PermissionManagement pmContract = PermissionManagement(permissionManagementAddr);

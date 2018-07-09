@@ -54,7 +54,7 @@ interface NodeInterface {
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0x00000000000000000000000000000000013241a2
+/// @notice The address: 0xffffffffffffffffffffffffffffffffff020001
 contract NodeManager is NodeInterface, Error {
 
     mapping(address => NodeStatus) public status;

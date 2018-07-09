@@ -85,7 +85,7 @@ fn create_contract(
 
     let contract_address = match flag {
         1 => "",
-        0 => "ffffffffffffffffffffffffffffffffffffffff",
+        0 => common_types::reserved_addresses::STORE_ADDRESS,
         _ => "0000000000000000000000000000000082720029",
     };
     let mut txs = Vec::new();

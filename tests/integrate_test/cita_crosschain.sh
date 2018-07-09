@@ -7,7 +7,7 @@ PKEY="1234567890123456789012345678901234567890123456789012345678901234"
 PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
 
 # Chain Manager Contract
-CMC_ADDR="00000000000000000000000000000000000000ce"
+CMC_ADDR="ffffffffffffffffffffffffffffffffff020002"
 CMC="scripts/contracts/system/chain_manager.sol"
 
 # Templates for some shell commands

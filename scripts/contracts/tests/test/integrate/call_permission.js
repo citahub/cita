@@ -20,8 +20,8 @@ const {
 const { perm } = permission;
 let pContractInstance;
 
-const sendTx = '0x0000000000000000000000000000000000000001';
-const updatePermission = '0x00000000000000000000000000000000033241b5';
+const sendTx = '0xffffffffffffffffffffffffffffffffff021000';
+const updatePermission = '0xffffffffffffffffffffffffffffffffff021012';
 
 const {
   describe, it, before, after,

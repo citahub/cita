@@ -203,7 +203,7 @@ mod test {
         let genesis = json!({
             "timestamp": 1524000000,
             "alloc": {
-                "0x000000000000000000000000000000000a3241b5": {
+                "0xffffffffffffffffffffffffffffffffff021019": {
                     "nonce": "1",
                     "code": "0x6060604052600436106100745763",
                     "storage": {
@@ -227,7 +227,7 @@ mod test {
             timestamp: 1524000000,
             alloc: [
                 (
-                    "0x000000000000000000000000000000000a3241b5".to_owned(),
+                    "0xffffffffffffffffffffffffffffffffff021019".to_owned(),
                     Contract {
                         nonce: "1".to_owned(),
                         code: "0x6060604052600436106100745763".to_owned(),

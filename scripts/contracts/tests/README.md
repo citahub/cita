@@ -46,7 +46,7 @@ Use the script:
 tests/integrate_test/cita_start.sh
 ```
 
-Or other ways. 
+Or other ways.
 Check the doc of CITA [getting_started](https://cryptape.github.io/cita/getting_started/).
 
 ### 1.1 Run the test
@@ -54,7 +54,7 @@ Check the doc of CITA [getting_started](https://cryptape.github.io/cita/getting_
 Use mocha framework:
 [usage of mochajs](https://mochajs.org/#usage)
 
-Some options of mocha usage: 
+Some options of mocha usage:
 
 * `-t 60s`: set test-case timeout
 * `-g <pattern>`: only run tests matching <pattern>
@@ -135,7 +135,7 @@ npm run-script unit_chain
     - Should set the checkPermission be true(scripts/admintool/init_data)example.json):
 
     ```
-    "0x0000000000000000000000000000000031415926": [
+    "0xffffffffffffffffffffffffffffffffff020000": [
         1,
         true,
         false,

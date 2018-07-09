@@ -6,28 +6,28 @@ import "../common/address_array.sol";
 
 /// @title Authorization about the permission and account
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0x00000000000000000000000000000000013241b4
+/// @notice The address: 0xffffffffffffffffffffffffffffffffff020006
 ///         The interface can be called: Only query type
 contract Authorization {
 
-    address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
-    address newPermissionAddr = 0x00000000000000000000000000000000013241b5;
-    address deletePermissionAddr = 0x00000000000000000000000000000000023241b5;
-    address updatePermissionAddr = 0x00000000000000000000000000000000033241B5;
-    address setAuthAddr = 0x00000000000000000000000000000000043241b5;
-    address cancelAuthAddr = 0x00000000000000000000000000000000053241b5;
-    address newRoleAddr = 0x00000000000000000000000000000000063241b5;
-    address deleteRoleAddr = 0x00000000000000000000000000000000073241b5;
-    address updateRoleAddr = 0x00000000000000000000000000000000083241B5;
-    address setRoleAddr = 0x00000000000000000000000000000000093241B5;
-    address cancelRoleAddr = 0x000000000000000000000000000000000A3241b5;
-    address newGroupAddr = 0x000000000000000000000000000000000b3241b5;
-    address deleteGroupAddr = 0x000000000000000000000000000000000C3241B5;
-    address updateGroupAddr = 0x000000000000000000000000000000000D3241b5;
-    address sendTxAddr = 0x0000000000000000000000000000000000000001;
-    address createContractAddr = 0x0000000000000000000000000000000000000002;
+    address permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
+    address newPermissionAddr = 0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010;
+    address deletePermissionAddr = 0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011;
+    address updatePermissionAddr = 0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012;
+    address setAuthAddr = 0xfFFFffFffFfffFffFfffFfFFfFFFfFffFf021013;
+    address cancelAuthAddr = 0xfFFFffFfffFFFFffFfFffffFfFFFfffFfF021014;
+    address newRoleAddr = 0xFFFFFfffffFFFfFfffffFfFfffffFFffFf021015;
+    address deleteRoleAddr = 0xfFfFFFFFffFFfFFfFFfFFfFfFFfffFFffF021016;
+    address updateRoleAddr = 0xFFFFffFFFFfFFFFFFfFFffffFFFFFFFFff021017;
+    address setRoleAddr = 0xfFFFfFfFFFFFFffFfFFFFfffFffFfFFFFF021018;
+    address cancelRoleAddr = 0xfFFffffffFffFffFFFFFFFFFffFfffFFfF021019;
+    address newGroupAddr = 0xFFFFffffffffFFfFffFffFFfFfFfFffFFf02101A;
+    address deleteGroupAddr = 0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B;
+    address updateGroupAddr = 0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c;
+    address sendTxAddr = 0xFFffFFFFfFFFFFFfffFfFFffFfFFFFfFFf021000;
+    address createContractAddr = 0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001;
 
-    address rootGroup = 0x00000000000000000000000000000000013241b6;
+    address rootGroup = 0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009;
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;

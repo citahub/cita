@@ -40,6 +40,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
 use trace::FlatTrace;
+use types::reserved_addresses;
 use types::transaction::{Action, SignedTransaction};
 use util::{merklehash, HeapSizeOf};
 
@@ -54,9 +55,9 @@ lazy_static! {
 
 lazy_static! {
     static ref LOW_CONTRACT_ADDRESS: Address =
-        Address::from_str("0000000000000000000000000000000002000000").unwrap();
+        Address::from_str(reserved_addresses::GO_CONTRACT_MIN).unwrap();
     static ref HIGH_CONTRACT_ADDRESS: Address =
-        Address::from_str("0000000000000000000000000000000003000000").unwrap();
+        Address::from_str(reserved_addresses::GO_CONTRACT_MAX).unwrap();
 }
 pub fn is_go_contract(caddr: Address) -> bool {
     caddr > *LOW_CONTRACT_ADDRESS && caddr < *HIGH_CONTRACT_ADDRESS

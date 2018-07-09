@@ -25,20 +25,12 @@ use libproto::blockchain::{
     Crypto as ProtoCrypto, SignedTransaction as ProtoSignedTransaction,
     Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction,
 };
+use reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, GO_CONTRACT, STORE_ADDRESS};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 use util::{Bytes, HeapSizeOf};
 use BlockNumber;
-
-// pub const STORE_ADDRESS: H160 =  H160( [0xff; 20] );
-pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffffffffff";
-// pub const ABI_ADDRESS: H160 =  H160( [0xaa; 20] );
-pub const ABI_ADDRESS: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-// pub const GO_CONTRACT: H160 =   H160( [0xbb; 20] );
-pub const GO_CONTRACT: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-// pub const GO_CONTRACT: H160 =   H160( [0xCC; 20] );
-pub const AMEND_ADDRESS: &str = "cccccccccccccccccccccccccccccccccccccccc";
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {

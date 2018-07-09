@@ -5,11 +5,11 @@ import "./group.sol";
 
 /// @title Group factory contract to create group contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @notice The address: 0x00000000000000000000000000000000013241c3
+/// @notice The address: 0xfFFffFfFFFFfFFFfFfffffFFfffffffffF02000B
 ///         The interface: None
 contract GroupCreator {
 
-    address userManagementAddr = 0x00000000000000000000000000000000013241C2;
+    address userManagementAddr = 0xFFFffFFfffffFFfffFFffffFFFffFfFffF02000a;
 
     event GroupCreated(address indexed _id, address indexed _parent, bytes32 indexed _name, address[] accounts);
 

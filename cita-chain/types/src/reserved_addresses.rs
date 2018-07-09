@@ -1,0 +1,101 @@
+// CITA
+// Copyright 2016-2018 Cryptape Technologies LLC.
+
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+// Define all Reserved Addresses.
+//
+// # All
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff000000
+//     End  : 0xffffffffffffffffffffffffffffffffffffffff
+//
+// ## Action Address:
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff010000
+//     End  : 0xffffffffffffffffffffffffffffffffff01ffff
+//
+// ### Normal Action Address
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff010000
+//     End  : 0xffffffffffffffffffffffffffffffffff0100ff
+//
+// ### Go Action Address
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff018000
+//     End  : 0xffffffffffffffffffffffffffffffffff018fff
+//
+// ## System Contracts
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff020000
+//     End  : 0xffffffffffffffffffffffffffffffffff02ffff
+//
+// ### Normal System Contracts
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff020000
+//     End  : 0xffffffffffffffffffffffffffffffffff0200ff
+//
+// ### Permission System Contracts
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff021000
+//     End  : 0xffffffffffffffffffffffffffffffffff0210ff
+//
+// ## Native Contracts
+//
+//     Start: 0xffffffffffffffffffffffffffffffffff030000
+//     End  : 0xffffffffffffffffffffffffffffffffff03ffff
+//
+
+// Normal Action Address
+pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010000";
+pub const ABI_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010001";
+pub const AMEND_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010002";
+// Go Action Address
+pub const GO_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff018000";
+pub const GO_CONTRACT_MIN: &str = "ffffffffffffffffffffffffffffffffff018001";
+pub const GO_CONTRACT_MAX: &str = "ffffffffffffffffffffffffffffffffff018fff";
+// Normal System Contracts
+pub const SYS_CONFIG: &str = "ffffffffffffffffffffffffffffffffff020000";
+pub const NODE_MANAGER: &str = "ffffffffffffffffffffffffffffffffff020001";
+pub const CHAIN_MANAGER: &str = "ffffffffffffffffffffffffffffffffff020002";
+pub const QUOTA_MANAGER: &str = "ffffffffffffffffffffffffffffffffff020003";
+pub const PERMISSION_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020004";
+pub const PERMISSION_CREATOR: &str = "ffffffffffffffffffffffffffffffffff020005";
+pub const AUTHORIZATION: &str = "ffffffffffffffffffffffffffffffffff020006";
+pub const ROLE_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020007";
+pub const ROLE_CREATOR: &str = "ffffffffffffffffffffffffffffffffff020008";
+pub const GROUP: &str = "ffffffffffffffffffffffffffffffffff020009";
+pub const GROUP_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff02000a";
+pub const GROUP_CREATOR: &str = "ffffffffffffffffffffffffffffffffff02000b";
+// Permission System Contracts
+pub const PERMISSION_SEND_TX: &str = "ffffffffffffffffffffffffffffffffff021000";
+pub const PERMISSION_CREATE_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff021001";
+pub const PERMISSION_NEW_PERMISSION: &str = "ffffffffffffffffffffffffffffffffff021010";
+pub const PERMISSION_DELETE_PERMISSION: &str = "ffffffffffffffffffffffffffffffffff021011";
+pub const PERMISSION_UPDATE_PERMISSION: &str = "ffffffffffffffffffffffffffffffffff021012";
+pub const PERMISSION_SET_AUTH: &str = "ffffffffffffffffffffffffffffffffff021013";
+pub const PERMISSION_CANCEL_AUTH: &str = "ffffffffffffffffffffffffffffffffff021014";
+pub const PERMISSION_NEW_ROLE: &str = "ffffffffffffffffffffffffffffffffff021015";
+pub const PERMISSION_DELETE_ROLE: &str = "ffffffffffffffffffffffffffffffffff021016";
+pub const PERMISSION_UPDATE_ROLE: &str = "ffffffffffffffffffffffffffffffffff021017";
+pub const PERMISSION_SET_ROLE: &str = "ffffffffffffffffffffffffffffffffff021018";
+pub const PERMISSION_CANCEL_ROLE: &str = "ffffffffffffffffffffffffffffffffff021019";
+pub const PERMISSION_NEW_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101a";
+pub const PERMISSION_DELETE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101b";
+pub const PERMISSION_UPDATE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101c";
+// Native Contracts
+pub const NATIVE_SIMPLE_STORAGE: &str = "ffffffffffffffffffffffffffffffffff030000";
+pub const NATIVE_ZK_PRIVACY: &str = "ffffffffffffffffffffffffffffffffff030001";
+pub const NATIVE_CROSS_CHAIN_VERIFY: &str = "ffffffffffffffffffffffffffffffffff030002";

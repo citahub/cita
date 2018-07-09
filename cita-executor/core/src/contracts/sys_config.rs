@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -23,6 +23,7 @@ use ethabi::{decode, ParamType, Token};
 
 use cita_types::{Address, H256};
 use types::ids::BlockId;
+use types::reserved_addresses;
 
 use super::encode_contract_name;
 use super::ContractCallExt;
@@ -39,7 +40,7 @@ lazy_static! {
     static ref WEBSITE: Vec<u8> = encode_contract_name(b"getWebsite()");
     static ref BLOCK_INTERVAL: Vec<u8> = encode_contract_name(b"getBlockInterval()");
     static ref CONTRACT_ADDRESS: Address =
-        Address::from_str("0000000000000000000000000000000031415926").unwrap();
+        Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
     static ref ECONOMICAL_MODEL: Vec<u8> = encode_contract_name(b"getEconomicalModel()");
     static ref GET_TOKEN_INFO: Vec<u8> = encode_contract_name(b"getTokenInfo()");
 }

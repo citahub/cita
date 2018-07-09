@@ -1435,7 +1435,7 @@ mod tests {
     //         trace_address: Default::default(),
     //         action: trace::Action::Call(trace::Call {
     //             from: "9cce34f7ab185c7aba1b7c8140d620b4bda941d6".into(),
-    //             to: "0000000000000000000000000000000000000001".into(),
+    //             to: "ffffffffffffffffffffffffffffffffff021000".into(),
     //             value: 0.into(),
     //             gas: 79_000.into(),
     //             input: vec![],

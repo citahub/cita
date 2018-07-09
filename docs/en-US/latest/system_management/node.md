@@ -127,7 +127,7 @@ Let's illustrate how a ordinary node become a consensus node with an example. We
 Consensus nodes management contract is system contract and written into genesis by default. Below are function signatures of management contract：
 
 ```
-contract address: 0x00000000000000000000000000000000013241a2
+contract address: 0xffffffffffffffffffffffffffffffffff020001
 Function signatures:
     dd4c97a0: approveNode(address)
     2d4ede93: deleteNode(address)
@@ -140,7 +140,7 @@ Function signatures:
 #### First, get the consensus nodes list：
 
 ```bash
-$ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+$ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 
 {"jsonrpc":"2.0","id":2,"result":"0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000005000000000000000000000000cb9480d61bf0964687c6839670f1c3e65c1ca193000000000000000000000000dd21b5f342b017a6546a3e5455be1a6e4d6e83a10000000000000000000000000bb7249753e5dcec37c4ad3b917f10c68d64bffa00000000000000000000000011f0bba536cde870fb7c733f93d9b12ecedd13a1"}
 
@@ -162,7 +162,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
     ```bash
     $ cd script/txtool/txtool
 
-    $ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
 
     - privkey: private key，used to verify the transaction information. The system's default private keys can be viewed in[systerm contract](https://cryptape.github.io/cita/en/usage-guide/smart-contract-guide/index.html#_5)
@@ -195,7 +195,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
             "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
           ],
           "blockNumber": "0x89",
-          "address": "0x00000000000000000000000000000000013241a2",
+          "address": "0xffffffffffffffffffffffffffffffffff020001",
           "transactionLogIndex": "0x0",
           "logIndex": "0x0",
           "data": "0x"
@@ -217,7 +217,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
 4. Construct approveNode transaction inforamtion
 
     ```bash
-    $ python3 make_tx.py --to "00000000000000000000000000000000013241a2" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
     Only function hash in code is changed.
 
@@ -246,7 +246,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
             "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
           ],
           "blockNumber": "0x9b",
-          "address": "0x00000000000000000000000000000000013241a2",
+          "address": "0xffffffffffffffffffffffffffffffffff020001",
           "transactionLogIndex": "0x0",
           "logIndex": "0x0",
           "data": "0x"
@@ -266,7 +266,7 @@ The standard of calling contract follows [ABI](https://solidity.readthedocs.io/e
 7. View the current number of consensus nodes
 
     ```bash
-    $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0x00000000000000000000000000000000013241a2", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+    $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
 
     {"jsonrpc":"2.0","id":2,"result":"0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000005000000000000000000000000cb9480d61bf0964687c6839670f1c3e65c1ca193000000000000000000000000dd21b5f342b017a6546a3e5455be1a6e4d6e83a10000000000000000000000000bb7249753e5dcec37c4ad3b917f10c68d64bffa00000000000000000000000011f0bba536cde870fb7c733f93d9b12ecedd13a100000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"}
     ```

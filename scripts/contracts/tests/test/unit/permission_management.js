@@ -332,18 +332,18 @@ describe('\n\ntest permission management contract\n\n', () => {
   describe('\ntest delete built-in permission\n', () => {
     it('should send a deletePermission tx and get receipt with error message', () => {
       const builtInPermissions = [
-        '0x00000000000000000000000000000000013241b5',
-        '0x00000000000000000000000000000000023241b5',
+        '0xffffffffffffffffffffffffffffffffff021010',
+        '0xffffffffffffffffffffffffffffffffff021011',
         '0x00000000000000000000000000000000033241B5',
-        '0x00000000000000000000000000000000043241b5',
-        '0x00000000000000000000000000000000053241b5',
-        '0x00000000000000000000000000000000063241b5',
-        '0x00000000000000000000000000000000073241b5',
+        '0xffffffffffffffffffffffffffffffffff021013',
+        '0xffffffffffffffffffffffffffffffffff021014',
+        '0xffffffffffffffffffffffffffffffffff021015',
+        '0xffffffffffffffffffffffffffffffffff021016',
         '0x00000000000000000000000000000000083241B5',
         '0x00000000000000000000000000000000093241B5',
         '0x000000000000000000000000000000000A3241b5',
-        '0x0000000000000000000000000000000000000001',
-        '0x0000000000000000000000000000000000000002',
+        '0xffffffffffffffffffffffffffffffffff021000',
+        '0xffffffffffffffffffffffffffffffffff021001',
       ];
 
       builtInPermissions.map(p => getTxReceipt(deletePermission(p)).then((receipt) => {

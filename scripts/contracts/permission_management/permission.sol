@@ -14,7 +14,7 @@ contract Permission {
         bytes4 func;
     }
 
-    address permissionManagementAddr = 0x00000000000000000000000000000000013241b2;
+    address permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
     Resource[] resources;
     bytes32 name;
 
