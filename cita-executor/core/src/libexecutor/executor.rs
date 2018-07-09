@@ -46,7 +46,6 @@ use libproto::{ConsensusConfig, ExecutedResult, Message};
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 use cita_types::{Address, H256, U256};
 use native::factory::Factory as NativeFactory;
-use snapshot::service::DatabaseRestore;
 use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
@@ -954,6 +953,39 @@ impl Executor {
             }
             EconomicalModel::Quota => {}
         }
+    }
+
+    /// Roll back to the specified height
+    fn roll_back(&self, height: u64) {
+        let header = self.block_header_by_height(height).unwrap();
+        self.replace_executor(header, true);
+    }
+
+    /// Replace executor
+    pub fn replace_executor(&self, header: Header, is_interrupted: bool) {
+        *self.current_header.write() = header.clone();
+
+        self.is_sync.store(false, Ordering::SeqCst);
+
+        self.is_interrupted.store(is_interrupted, Ordering::SeqCst);
+        *self.stage.write() = Stage::Idle;
+
+        let height = header.number();
+
+        // executed_map
+        let executed_header = header.generate_executed_header();
+        let mut executed_ret = ExecutedResult::new();
+        executed_ret.mut_executed_info().set_header(executed_header);
+        let mut executed_btmap = BTreeMap::new();
+        executed_btmap.insert(height, executed_ret);
+        *self.executed_result.write() = executed_btmap;
+
+        // max_height
+        self.set_max_height(height as usize);
+
+        // block_map
+        let mut block_map = self.block_map.write();
+        block_map.clear();
     }
 }
 

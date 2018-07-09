@@ -16,7 +16,7 @@
 
 //! Snapshot network service implementation.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
@@ -30,18 +30,15 @@ use super::{BlockRebuilder, ManifestData, RestorationStatus, StateRebuilder};
 use error::Error;
 
 use cita_types::H256;
-use libexecutor::executor::{get_current_header, Executor, Stage};
+use libexecutor::executor::{get_current_header, Executor};
 use state_db::StateDB;
 
-use header::Header;
 use util::journaldb::{self, Algorithm};
 use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
 use util::snappy;
 use util::Bytes;
 use util::UtilError;
 use util::{Mutex, RwLock, RwLockReadGuard};
-
-use libproto::ExecutedResult;
 
 /// Number of blocks in an ethash snapshot.
 // make dependent on difficulty incrment divisor?
@@ -53,12 +50,6 @@ const MAX_SNAPSHOT_BLOCKS: u64 = 30000;
 pub trait DatabaseRestore: Send + Sync {
     /// Restart with a new backend. Takes ownership of passed database and moves it to a new location.
     fn restore_db(&self, new_db: &str) -> Result<(), Error>;
-
-    /// Roll back to the specified height
-    fn roll_back(&self, height: u64);
-
-    /// replace executor
-    fn replace_executor(&self, header: Header, is_interrupted: bool);
 }
 
 impl DatabaseRestore for Executor {
@@ -89,37 +80,6 @@ impl DatabaseRestore for Executor {
         self.replace_executor(header, false);
 
         Ok(())
-    }
-
-    fn roll_back(&self, height: u64) {
-        let header = self.block_header_by_height(height).unwrap();
-        self.replace_executor(header, true);
-    }
-
-    fn replace_executor(&self, header: Header, is_interrupted: bool) {
-        *self.current_header.write() = header.clone();
-
-        self.is_sync.store(false, Ordering::SeqCst);
-
-        self.is_interrupted.store(is_interrupted, Ordering::SeqCst);
-        *self.stage.write() = Stage::Idle;
-
-        let height = header.number();
-
-        // executed_map
-        let executed_header = header.generate_executed_header();
-        let mut executed_ret = ExecutedResult::new();
-        executed_ret.mut_executed_info().set_header(executed_header);
-        let mut executed_btmap = BTreeMap::new();
-        executed_btmap.insert(height, executed_ret);
-        *self.executed_result.write() = executed_btmap;
-
-        // max_height
-        self.set_max_height(height as usize);
-
-        // block_map
-        let mut block_map = self.block_map.write();
-        block_map.clear();
     }
 }
 
