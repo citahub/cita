@@ -589,7 +589,7 @@ impl MsgHandler {
                 return;
             }
         }
-        for i in self.history_heights.min_height()..self.history_heights.max_height() {
+        for i in self.history_heights.min_height()..(self.history_heights.max_height() + 1) {
             if !self.history_hashes.contains_key(&i) {
                 let mut req = BlockTxHashesReq::new();
                 req.set_height(i);
