@@ -205,4 +205,89 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffff
 
     可以看到，返回的 result 中在最后增加了一个地址，即当前新增的节点已经成为共识节点。
 
+### 删除共识节点
+
+按照以上方法，普通节点可以被添加为共识节点，那么共识节点怎么删除呢？下面是删除共识节点的示例：
+
+删除共识节点需要由管理员来完成， 具体操作需要调用 deleteNode(address) 合约方法。
+
+#### 首先，获取当前链上的共识节点列表：
+
+```bash
+curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+{"jsonrpc":"2.0","id":2,"result":"0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000009fab2c5c372c3013484709979b318c5c9817bb0000000000000000000000000cd5c86c841af6ebe19c6a0734630bb885152bc83000000000000000000000000e8efbbe34f4f439b73549bc162ecc0fbc06b789b000000000000000000000000fc92fbdafb5edcfe4773080ee2cec6123958f49a00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"}
+```
+
+- to 为共识节点管理合约地址
+- data 为listNode（）的Function signature
+
+返回值为目前的共识节点地址列表（可以看到新添加的共识节点地址 `59a316df602568957f47973332f1f85ae1e2e75e`）
+
+#### 构造交易格式删除共识节点
+
+调用合约遵循 [ABI](https://solidity.readthedocs.io/en/develop/abi-spec.html), 提供工具 `make_tx.py`：
+
+1. 构造 deleteNode 交易信息
+
+    ```bash
+    $ cd script/txtool/txtool
+
+    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "2d4ede9300000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    ```
+
+    - privkey 是私钥，用来签证，确认交易信息合法，系统默认的几个私钥可以看 [系统合约相关](../getting_started/admintool/index.html#_5)
+    - code 前 8 位是函数 hash 值，即 deleteNode 对应的 hash，后面 64 位是函数的参数 address 的值，即节点地址，不足 64 位用 0 补齐。
+
+    生成的交易信息存放在 `../output/transaction/deploycode` 中
+
+2. 发送交易
+
+    ```bash
+    $ python3 send_tx.py 
+    --> {"jsonrpc": "2.0", "method": "sendRawTransaction", "params": ["0x0a83010a2866666666666666666666666666666666666666666666666666666666666666666666303230303031120656415a39553718c0843d20e7032a242d4ede9300000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e3220000000000000000000000000000000000000000000000000000000000000000038011241958dc34c4524e928193902732e9b9445eb585577b5b1d78267b75423951580f31964bcd8b979a25d6cfa1578f012a3f69df91fabd0ce83289fbe9f65cbffaf4a01"], "id": 1}
+    ```
+
+3. 获取回执
+
+    ```bash
+    $ python3 get_receipt.py 
+    {
+      "transactionHash": "0x80fb09bb710a1d742e19fb5195ea95faa4c192c9f1802055ecaf2d687b21cecd",
+      "transactionIndex": "0x0",
+      "blockHash": "0x8b962b7af8332819bcfa54285c9c8553004fe2757362474c1e5dba200094aed8",
+      "blockNumber": "0x195",
+      "cumulativeGasUsed": "0x4fc6",
+      "gasUsed": "0x4fc6",
+      "contractAddress": null,
+      "logs": [
+          {
+            "address": "0xffffffffffffffffffffffffffffffffff020001",
+            "topics": [
+            "0x74976f07ac4bfb6a02b2dbd3bc158d4984ee6027d938e870692126ca9e1931d5",
+            "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
+            ],
+            "data": "0x",
+            "blockHash": "0x8b962b7af8332819bcfa54285c9c8553004fe2757362474c1e5dba200094aed8",
+            "blockNumber": "0x195",
+            "transactionHash": "0x80fb09bb710a1d742e19fb5195ea95faa4c192c9f1802055ecaf2d687b21cecd",
+            "transactionIndex": "0x0",
+            "logIndex": "0x0",
+            "transactionLogIndex": "0x0"
+          }
+      ],
+      "root": null,
+      "logsBloom": "0x00000000000000020040000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000100000000000000000000000000000000000000000000000000000000000800000000000000002000000000000000000000000400000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "errorMessage": null
+    }
+
+    ```
+4. 查看当前的共识节点数
+
+    ```bash
+    $  curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
+    {"jsonrpc":"2.0","id":2,"result":"0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000400000000000000000000000009fab2c5c372c3013484709979b318c5c9817bb0000000000000000000000000cd5c86c841af6ebe19c6a0734630bb885152bc83000000000000000000000000e8efbbe34f4f439b73549bc162ecc0fbc06b789b000000000000000000000000fc92fbdafb5edcfe4773080ee2cec6123958f49a"}
+    ```
+    返回值为目前的共识节点地址列表（可以看到新添加的共识节点地址 59a316df602568957f47973332f1f85ae1e2e75e 已经删除了）
+
 > 以上代码的返回值有所删减，实际操作会略有不同
+
