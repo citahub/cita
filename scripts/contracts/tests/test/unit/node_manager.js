@@ -9,7 +9,7 @@ const { logger, web3, getTxReceipt } = util;
 
 // node_manager
 const {
-  isAdmin, getStatus, listNode, deleteNode, approveNode, addAdmin, newNode,
+  isAdmin, getStatus, listNode, deleteNode, approveNode, addAdmin,
 } = nodeManager;
 
 const { admin } = config.contract.node_manager;
@@ -42,37 +42,8 @@ describe('\n\ntest node manager\n\n', () => {
     });
   });
 
-  describe('\ntest new node\n', () => {
-    before('should be close status', () => {
-      const res = getStatus(config.testAddr[1]);
-      logger.debug('\nthe status of the node:\n', res);
-      assert.equal(res, 0);
-    });
-
-    it('should send a newNode tx and get receipt', (done) => {
-      const res = newNode(config.testAddr[1], admin);
-
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get newNode receipt err:!!!!\n', err);
-          this.skip();
-        });
-    });
-
-    it('should be ready status', () => {
-      const res = getStatus(config.testAddr[1]);
-      logger.debug('\nthe status of the node:\n', res);
-      assert.equal(res, 1);
-    });
-  });
-
   describe('\ntest approve node\n', () => {
-    before('should be ready status', () => {
+    before('should be close status', () => {
       const res = getStatus(config.testAddr[1]);
       logger.debug('\nthe status of the node:\n', res);
       assert.equal(res, 1);
@@ -107,7 +78,7 @@ describe('\n\ntest node manager\n\n', () => {
   });
 
   describe('\ntest delete consensus node\n', () => {
-    before('should be ready status and wait a new block', (done) => {
+    before('should be start status and wait a new block', (done) => {
       const res = getStatus(config.testAddr[1]);
       logger.debug('\nthe status of the node:\n', res);
       assert.equal(res, 2);

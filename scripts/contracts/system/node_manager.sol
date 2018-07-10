@@ -9,18 +9,13 @@ import "./error.sol";
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 interface NodeInterface {
 
-    event NewNode(address indexed _node);
     event ApproveNode(address indexed _node);
     event DeleteNode(address indexed _node);
     event AddAdmin(address indexed _account, address indexed _sender);
     event SetStake(address indexed _node, uint _stake);
 
     /// @notice Add an admin
-    function addAdmin(address _account) public returns (bool);
-
-    /// @notice Apply to be consensus node. status will be ready
-    function newNode(address _node) public returns (bool);
-
+    function addAdmin(address) public returns (bool);
     /// @notice Approve to be consensus node. status will be start
     function approveNode(address _node) public returns (bool);
 
@@ -36,8 +31,7 @@ interface NodeInterface {
     /*
      * @notice Get the status of the node:
      * @return 0: Close
-     * @return 1: Ready
-     * @return 2: Start
+     * @return 1: Start
      */
     function getStatus(address _node) public view returns (uint8);
 
@@ -66,7 +60,7 @@ contract NodeManager is NodeInterface, Error {
     mapping(address => uint64) stakes;
 
     // Default: Close
-    enum NodeStatus { Close, Ready, Start }
+    enum NodeStatus { Close, Start }
 
     modifier onlyAdmin {
         if (admins[msg.sender])
@@ -101,15 +95,6 @@ contract NodeManager is NodeInterface, Error {
             _;
         else {
             ErrorLog(ErrorType.NotStart, "node does not start");
-            return;
-        }
-    }
-
-    modifier onlyReady(address _node) {
-        if (NodeStatus.Ready == status[_node])
-            _;
-        else {
-            ErrorLog(ErrorType.NotReady, "node does no ready");
             return;
         }
     }
@@ -154,19 +139,6 @@ contract NodeManager is NodeInterface, Error {
         return true;
     }
 
-    /// @notice Add a new node
-    /// @param _node The node to be added
-    /// @return true if successed, otherwise false
-    function newNode(address _node)
-        public
-        onlyClose(_node)
-        returns (bool)
-    {
-        status[_node] = NodeStatus.Ready;
-        NewNode(_node);
-        return true;
-    }
-
     /// @notice Approve the new node
     /// @param _node The node to be approved
     /// @return true if successed, otherwise false
@@ -174,7 +146,7 @@ contract NodeManager is NodeInterface, Error {
         public
         onlyAdmin
         oneOperate
-        onlyReady(_node)
+        onlyClose(_node)
         returns (bool)
     {
         status[_node] = NodeStatus.Start;

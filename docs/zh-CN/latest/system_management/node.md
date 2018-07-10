@@ -56,7 +56,7 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
 
 对于共识节点的管理，包括添加、删除及获得共识节点。下面我们将用具体的示例来阐述。
 
-* 添加操作分为发起和确认，节点先调用发起请求，申请成为共识节点，由管理员(拥有管理员角色的账号)确认才完成了添加操作;
+* 添加操作只可由管理员执行;
 * 删除操作只可由管理员执行;
 * 获得共识节点列表。
 
@@ -71,18 +71,11 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
     <th>详细描述</th>
   </tr>
   <tr>
-    <td>newNode(address)<br/><strong>准备共识节点</strong> </td>
-    <td>普通权限及管理员权限</td>
-    <td>新增节点地址</td>
-    <td>操作是否成功 (bool)</td>
-    <td>成功后新节点准备成为共识节点，并将其记录在合约共识节点列表中，同时节点将处于 new 状态</td>
-  </tr>
-  <tr>
     <td>approveNode(address) <br/> <strong>确认共识节点</strong></td>
     <td>管理员权限</td>
     <td>新增共识节点地址</td>
     <td>操作是否成功 (bool)</td>
-    <td>新节点成功准备后，可调用此方法确认节点成为共识节点，同时节点将处于 consensus 状态</td>
+    <td>新节点成功准备后，可调用此方法确认节点成为共识节点，同时节点将处于 start 状态</td>
   </tr>
   <tr>
     <td>deleteNode(address) <br/> <strong>删除共识节点</strong></td>
@@ -96,7 +89,7 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
     <td>普通权限(只读)</td>
     <td>空</td>
     <td>地址列表(address[])</td>
-    <td>获取共识节点列表，即状态为 consensus 的节点</td>
+    <td>获取共识节点列表，即状态为 start 的节点</td>
   </tr>
   <tr>
     <td>getStatus(address) <br/> <strong>获得节点状态</strong></td>
@@ -106,8 +99,7 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
       节点的状态 (uint8):
       <ul>
         <li>0: close 状态</li>
-        <li>1: new 状态</li>
-        <li>2: consensus 状态</li>
+        <li>1: start 状态</li>
       </ul>
     </td>
     <td>获取共识节点状态</td>
@@ -118,7 +110,7 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
 
 节点需先被添加成为普通节点（参考普通节点管理），才能申请成为共识节点，由管理员(拥有管理员角色的账号)确认才完成了添加操作。
 
-从普通节点升级到共识节点，具体操作需要用到上面两个合约方法 `newNode(address)`/`approveNode(address)`。
+从普通节点升级到共识节点，具体操作需要用到上面合约方法 `approveNode(address)`。
 
 共识节点管理合约是系统合约，默认将放在创世块上，下面是共识节点管理合约的 hash：
 
@@ -129,7 +121,6 @@ Function signatures:
     2d4ede93: deleteNode(address)
     30ccebb5: getStatus(address)
     609df32f: listNode()
-    ddad2ffe: newNode(address)
     645b8b1b: status(address)
 ```
 
@@ -153,70 +144,16 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffff
 
 调用合约遵循 [ABI](https://solidity.readthedocs.io/en/develop/abi-spec.html), 提供工具 `make_tx.py`：
 
-1. 构造 newNode 交易信息
+1. 构造 approveNode 交易信息
 
     ```bash
-    $ cd script/txtool/txtool
-
-    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
 
     - privkey 是私钥，用来签证，确认交易信息合法，系统默认的几个私钥可以看 [系统合约相关](./chain/admintool)
     - code 前 8 位是函数 hash 值，即 newNode 对应的 hash，后面 64 位是函数的参数 address 的值，即节点地址，不足 64 位用 0 补齐。
 
-    生成的交易信息存放在 `../output/transaction/deploycode` 中
-
 2. 发送交易
-
-    ```bash
-    $ python3 send_tx.py
-    --> {"params": ["0a5b0a283030303030303030303030303030303030303030303030303030303030303030303133323431613212013018fface20420dc012a24ddad2ffe00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e1241bc58c97ad8979f429bac343157fd8ecb193edb8255ca256ca077d352c24161e31ad634214f5443ea27ac95a3fe0b2ef2efc2a991b26c043f193325ea12033e7400"], "jsonrpc": "2.0", "method": "sendRawTransaction", "id": 1}
-    <-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0xdacbbb3697085eec3bfb0321d5142b86266a88eeaf5fba7ff40552a8350f4323","status":"OK"}} (200 OK)
-    ```
-
-3. 获取回执
-
-    ```bash
-    $ python3 get_receipt.py
-    {
-      "contractAddress": null,
-      "cumulativeGasUsed": "0x5615",
-      "logs": [
-        {
-          "blockHash": "0xe5f58cbe8d4817adabec30c93662610fd4859cf87eecc2f3a4d483d74f9b256d",
-          "transactionHash": "0xdacbbb3697085eec3bfb0321d5142b86266a88eeaf5fba7ff40552a8350f4323",
-          "transactionIndex": "0x0",
-          "topics": [
-            "0xfd96b5bdd2e0412ade018159455c7af2bed1366ab61906962a1b5638f29c68c1",
-            "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
-          ],
-          "blockNumber": "0x89",
-          "address": "0xffffffffffffffffffffffffffffffffff020001",
-          "transactionLogIndex": "0x0",
-          "logIndex": "0x0",
-          "data": "0x"
-        }
-      ],
-      "blockHash": "0xe5f58cbe8d4817adabec30c93662610fd4859cf87eecc2f3a4d483d74f9b256d",
-      "transactionHash": "0xdacbbb3697085eec3bfb0321d5142b86266a88eeaf5fba7ff40552a8350f4323",
-      "root": null,
-      "errorMessage": null,
-      "blockNumber": "0x89",
-      "logsBloom": "0x00000000000000020040000000000000000000000000000000000000000000200000000000000000000004000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000208000000000000000000000000000",
-      "transactionIndex": "0x0",
-      "gasUsed": "0x5615"
-    }
-    ```
-    这里如果交易还没有被处理，则会发生错误，多试几次，得到回执，如果 `errorMassage` 为 null，即表示正常，继续下一步
-
-4. 构造 approveNode 交易信息
-
-    ```bash
-    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
-    ```
-    可以看出，只是 code 中的函数 hash 换了一下而已。
-
-5. 发送交易
 
     ```bash
     $ python3 send_tx.py
@@ -224,7 +161,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffff
     <-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0xd6b38b125efcacb8d59379eef9394e3d9d4f7bb4151e53f0c2c50682f9f037b4","status":"OK"}} (200 OK)
     ```
 
-6. 获取回执
+3. 获取回执
 
     ```bash
     $ python3 get_receipt.py
@@ -258,7 +195,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffff
     }
     ```
 
-7. 查看当前的共识节点数
+4. 查看当前的共识节点数
 
     ```bash
     $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
