@@ -34,11 +34,13 @@ use state::backend::Backend as StateBackend;
 use state::{State, Substate};
 use std::cmp;
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 use trace::{
     ExecutiveTracer, ExecutiveVMTracer, FlatTrace, NoopTracer, NoopVMTracer, Tracer, VMTrace,
     VMTracer,
 };
+use types::reserved_addresses;
 use types::transaction::{Action, SignedTransaction};
 use util::*;
 
@@ -91,7 +93,8 @@ pub fn check_permission(
             check_create_contract(group_accounts, account_permissions, &sender)?;
         }
         Action::Call(address) => {
-            let group_management_addr = Address::from(0x13241c2);
+            let group_management_addr =
+                Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
             trace!("t.data {:?}", t.data);
 
             if t.data.len() < 4 {
@@ -557,14 +560,21 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             Action::Store | Action::AbiStore => {
                 let schedule = Schedule::new_v1();
                 let store_gas_used = U256::from(t.data.len() * schedule.create_data_gas);
-                (
-                    Ok(FinalizationResult {
-                        gas_left: init_gas - store_gas_used,
-                        return_data: ReturnData::empty(),
-                        apply_state: true,
-                    }),
-                    vec![],
-                )
+                if let Some(gas_left) = init_gas.checked_sub(store_gas_used) {
+                    (
+                        Ok(FinalizationResult {
+                            gas_left,
+                            return_data: ReturnData::empty(),
+                            apply_state: true,
+                        }),
+                        vec![],
+                    )
+                } else {
+                    return Err(ExecutionError::NotEnoughBaseGas {
+                        required: base_gas_required.saturating_add(store_gas_used),
+                        got: t.gas,
+                    });
+                }
             }
             Action::GoCreate => (
                 Ok(FinalizationResult {
@@ -1136,6 +1146,66 @@ mod tests {
     use tests::helpers::*;
     use trace::{ExecutiveTracer, ExecutiveVMTracer};
     use types::transaction::Transaction;
+
+    #[test]
+    fn test_transfer_for_store() {
+        let keypair = KeyPair::gen_keypair();
+        let data_len = 4096;
+        let provided_gas = U256::from(100_000);
+        let t = Transaction {
+            action: Action::Store,
+            value: U256::from(0),
+            data: vec![0; data_len],
+            gas: provided_gas,
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1,
+            version: 1,
+        }.fake_sign(keypair.address().clone());
+        let sender = t.sender();
+
+        let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+        let native_factory = NativeFactory::default();
+        let engine = NullEngine::default();
+        let mut state = get_temp_state();
+        state
+            .add_balance(&sender, &U256::from(18 + 100_000))
+            .unwrap();
+        let mut info = EnvInfo::default();
+        info.gas_limit = U256::from(100_000);
+
+        let result = {
+            let mut ex = Executive::new(
+                &mut state,
+                &info,
+                &engine,
+                &factory,
+                &native_factory,
+                false,
+                EconomicalModel::Charge,
+            );
+            let opts = TransactOptions {
+                tracing: false,
+                vm_tracing: false,
+                check_permission: false,
+                check_quota: true,
+            };
+            ex.transact(&t, opts)
+        };
+
+        let expected = {
+            let base_gas_required = U256::from(100);
+            let schedule = Schedule::new_v1();
+            let store_gas_used = U256::from(data_len * schedule.create_data_gas);
+            let required = base_gas_required.saturating_add(store_gas_used);
+            let got = provided_gas;
+            ExecutionError::NotEnoughBaseGas { required, got }
+        };
+
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), expected);
+    }
 
     #[test]
     fn test_transfer_for_charge() {
