@@ -53,13 +53,13 @@ where
     party_seats
 }
 
-pub fn shuffle<T>(node_vec: &mut Vec<T>, rng_seed: u64) {
+pub fn shuffle<T>(items: &mut Vec<T>, rng_seed: u64) {
     let seed: &[_] = &[rng_seed as usize];
     let mut rng: StdRng = SeedableRng::from_seed(seed);
 
-    for i in 0..node_vec.len() {
+    for i in 0..items.len() {
         let j: usize = rng.gen::<usize>() % (i + 1);
-        node_vec.swap(i, j);
+        items.swap(i, j);
     }
 }
 
@@ -128,7 +128,7 @@ mod tests {
     extern crate logger;
     extern crate mktemp;
 
-    use super::{party_seats, NodeManager};
+    use super::{party_seats, shuffle, NodeManager};
     use cita_types::H160;
     use std::str::FromStr;
     use tests::helpers::init_executor;
@@ -177,5 +177,28 @@ mod tests {
         let parties = vec!["a", "b", "c"];
         let seats = vec![2, 2];
         assert_eq!(party_seats(parties, &seats), vec!["a", "a", "b", "b"]);
+    }
+
+    #[test]
+    fn test_shuffle() {
+        let mut items = vec![1, 1, 1, 1, 1, 2, 2, 2, 2, 2];
+        shuffle(&mut items, 998);
+        assert_eq!(items, vec![2, 1, 1, 2, 1, 2, 2, 1, 1, 2]);
+
+        let mut items2 = vec![1; 50];
+        items2.extend(vec![2; 50].iter());
+        items2.extend(vec![3; 50].iter());
+        shuffle(&mut items2, 1024);
+        assert_eq!(
+            items2,
+            vec![
+                2, 2, 1, 3, 2, 3, 1, 2, 1, 1, 1, 1, 3, 3, 1, 3, 3, 3, 1, 2, 3, 3, 3, 1, 1, 2, 2, 2,
+                2, 3, 1, 3, 3, 3, 3, 1, 3, 3, 1, 3, 1, 2, 2, 1, 2, 2, 2, 1, 2, 3, 3, 1, 2, 2, 1, 2,
+                1, 3, 3, 2, 2, 1, 1, 1, 1, 2, 3, 2, 1, 3, 3, 2, 2, 2, 2, 2, 2, 3, 1, 1, 1, 3, 1, 1,
+                2, 1, 1, 2, 3, 1, 3, 3, 2, 2, 1, 2, 2, 1, 3, 3, 3, 1, 3, 3, 3, 1, 1, 1, 3, 1, 2, 1,
+                2, 2, 1, 2, 1, 3, 3, 2, 1, 2, 2, 3, 1, 2, 2, 1, 3, 1, 3, 3, 2, 1, 3, 2, 3, 1, 3, 3,
+                1, 3, 1, 2, 3, 3, 2, 2, 2, 2,
+            ]
+        );
     }
 }
