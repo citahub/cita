@@ -16,6 +16,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Define all Reserved Addresses.
+// # Builtin
+//
+// # Ethreum builtin
+//
+// ecrecover: 0x0000000000000000000000000000000000000001
+// sha256:    0x0000000000000000000000000000000000000002
+// ripemd160: 0x0000000000000000000000000000000000000003
+// identity:  0x0000000000000000000000000000000000000004
+//
+// # CITA builtin
+//
+// edrecover: 0x0000000000000000000000000000000000ff0001
 //
 // # All
 //
@@ -57,6 +69,15 @@
 //     Start: 0xffffffffffffffffffffffffffffffffff030000
 //     End  : 0xffffffffffffffffffffffffffffffffff03ffff
 //
+
+// Ethereum builtin address
+pub const ECRECOVER_ADDRESS: &str = "0000000000000000000000000000000000000001";
+pub const SHA256_ADDRESS: &str = "0000000000000000000000000000000000000002";
+pub const RIPEMD160_ADDRESS: &str = "0000000000000000000000000000000000000003";
+pub const IDENTITY_ADDRESS: &str = "0000000000000000000000000000000000000004";
+
+// CITA builtin address
+pub const EDRECOVER_ADDRESS: &str = "0000000000000000000000000000000000ff0001";
 
 // Normal Action Address
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010000";

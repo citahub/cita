@@ -609,7 +609,7 @@ impl Executor {
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
 
-        let engine = NullEngine::default();
+        let engine = NullEngine::cita();
 
         // Never check permission and quota
         let options = TransactOptions {
