@@ -18,6 +18,7 @@
     - [Overall Architecture](architecture/architecture.md)
     - [Components](architecture/components.md)
 - Reference
+    - [Reserved Addresses](reference/addresses.md)
     - [Glossary](reference/glossary.md)
     - [FAQ](reference/faq.md)
 - [Contributing](contributing.md)
