@@ -24,6 +24,7 @@ use types::log_entry::LogEntry;
 use types::state_diff::StateDiff;
 use cita_types::{U256, Address, U512};
 use util::{Bytes, trie};
+use receipt::ReceiptError;
 
 /// Transaction execution receipt.
 #[derive(Debug, PartialEq, Clone)]
@@ -196,3 +197,20 @@ impl fmt::Display for CallError {
 
 /// Transaction execution result.
 pub type ExecutionResult = Result<Executed, ExecutionError>;
+
+impl From<ExecutionError> for ReceiptError {
+    fn from(error: ExecutionError) -> Self {
+        match error {
+            ExecutionError::NotEnoughBaseGas { .. } => ReceiptError::NotEnoughBaseGas,
+            ExecutionError::BlockGasLimitReached { .. } => ReceiptError::BlockGasLimitReached,
+            ExecutionError::AccountGasLimitReached { .. } => ReceiptError::AccountGasLimitReached,
+            ExecutionError::InvalidNonce { .. } => ReceiptError::InvalidNonce,
+            ExecutionError::NotEnoughCash { .. } => ReceiptError::NotEnoughCash,
+            ExecutionError::NoTransactionPermission => ReceiptError::NoTransactionPermission,
+            ExecutionError::NoContractPermission => ReceiptError::NoContractPermission,
+            ExecutionError::NoCallPermission => ReceiptError::NoCallPermission,
+            ExecutionError::ExecutionInternal { .. } => ReceiptError::ExecutionInternal,
+            ExecutionError::TransactionMalformed { .. } => ReceiptError::TransactionMalformed,
+        }
+    }
+}

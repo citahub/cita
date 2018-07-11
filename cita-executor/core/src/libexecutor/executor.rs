@@ -885,17 +885,11 @@ impl Executor {
                 let blacklist_transaction_hash: Vec<H256> = close_block
                     .receipts
                     .iter()
-                    .filter(|ref receipt_option| match receipt_option {
-                        Some(receipt) => match receipt.error {
-                            Some(ReceiptError::NotEnoughBaseGas) => true,
-                            _ => false,
-                        },
+                    .filter(|ref receipt| match receipt.error {
+                        Some(ReceiptError::NotEnoughBaseGas) => true,
                         _ => false,
                     })
-                    .map(|receipt_option| match receipt_option {
-                        Some(receipt) => receipt.transaction_hash,
-                        None => H256::default(),
-                    })
+                    .map(|receipt| receipt.transaction_hash)
                     .filter(|hash| hash != &H256::default())
                     .collect();
 

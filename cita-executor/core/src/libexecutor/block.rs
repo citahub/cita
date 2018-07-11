@@ -19,7 +19,7 @@ use basic_types::LogBloom;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use db::{self as db, Readable};
-use error::{Error, ExecutionError};
+use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
 use header::*;
@@ -257,9 +257,7 @@ impl ClosedBlock {
             .into_iter()
             .map(|receipt| {
                 let mut receipt_proto_option = ReceiptWithOption::new();
-                if let Some(value) = receipt {
-                    receipt_proto_option.set_receipt(value.protobuf());
-                }
+                receipt_proto_option.set_receipt(receipt.protobuf());
                 receipt_proto_option
             })
             .collect();
@@ -294,7 +292,7 @@ impl DerefMut for ClosedBlock {
 #[derive(Clone, Debug)]
 pub struct ExecutedBlock {
     pub block: Block,
-    pub receipts: Vec<Option<Receipt>>,
+    pub receipts: Vec<Receipt>,
     pub state: State<StateDB>,
     pub current_gas_used: U256,
     traces: Option<Vec<Vec<FlatTrace>>>,
@@ -484,32 +482,6 @@ impl OpenBlock {
         true
     }
 
-    pub fn generate_err_receipt(hash: H256, err: ExecutionError) -> Option<Receipt> {
-        match err {
-            ExecutionError::NotEnoughBaseGas { .. } => Some(ReceiptError::NotEnoughBaseGas),
-            ExecutionError::BlockGasLimitReached { .. } => Some(ReceiptError::BlockGasLimitReached),
-            ExecutionError::AccountGasLimitReached { .. } => {
-                Some(ReceiptError::AccountGasLimitReached)
-            }
-            ExecutionError::InvalidNonce { .. } => Some(ReceiptError::InvalidNonce),
-            ExecutionError::NotEnoughCash { .. } => Some(ReceiptError::NotEnoughCash),
-            ExecutionError::NoTransactionPermission => Some(ReceiptError::NoTransactionPermission),
-            ExecutionError::NoContractPermission => Some(ReceiptError::NoContractPermission),
-            ExecutionError::NoCallPermission => Some(ReceiptError::NoCallPermission),
-            ExecutionError::ExecutionInternal { .. } => Some(ReceiptError::ExecutionInternal),
-            ExecutionError::TransactionMalformed { .. } => Some(ReceiptError::TransactionMalformed),
-        }.map(|receipt_error| {
-            Receipt::new(
-                None,
-                0.into(),
-                Vec::new(),
-                Some(receipt_error),
-                0.into(),
-                hash,
-            )
-        })
-    }
-
     pub fn apply_transaction(
         &mut self,
         t: &SignedTransaction,
@@ -547,7 +519,7 @@ impl OpenBlock {
                         *value = *value - transaction_gas_used;
                     }
                 }
-                self.receipts.push(Some(outcome.receipt));
+                self.receipts.push(outcome.receipt);
             }
             Err(_) => info!("apply_transaction: There must be something wrong!"),
         }
@@ -587,14 +559,16 @@ impl OpenBlock {
                         *value = *value - transaction_gas_used;
                     }
                 }
-                self.receipts.push(Some(receipt));
+                self.receipts.push(receipt);
             }
-            Err(Error::Execution(execution_error)) => {
-                self.receipts.push(Self::generate_err_receipt(
-                    t.get_transaction_hash(),
-                    execution_error,
-                ));
-            }
+            Err(Error::Execution(execution_error)) => self.receipts.push(Receipt::new(
+                None,
+                0.into(),
+                Vec::new(),
+                Some(ReceiptError::from(execution_error)),
+                0.into(),
+                t.get_transaction_hash(),
+            )),
             Err(_) => info!("apply_grpc_vm: There must be something wrong!"),
         }
     }
@@ -610,13 +584,14 @@ impl OpenBlock {
         self.set_receipts_root(receipts_root);
 
         // blocks blooms
-        let log_bloom = self.receipts.clone().into_iter().filter_map(|r| r).fold(
-            LogBloom::zero(),
-            |mut b, r| {
+        let log_bloom = self
+            .receipts
+            .clone()
+            .into_iter()
+            .fold(LogBloom::zero(), |mut b, r| {
                 b = b | r.log_bloom;
                 b
-            },
-        );
+            });
 
         self.set_log_bloom(log_bloom);
 

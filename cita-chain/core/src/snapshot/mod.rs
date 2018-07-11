@@ -463,7 +463,7 @@ impl BlockRebuilder {
                 header: header.clone(),
                 body: BlockBody::new(),
             };
-            let receipts: Vec<Option<Receipt>> = pair.list_at(1)?;
+            let receipts: Vec<Receipt> = pair.list_at(1)?;
             let tx_hashes: Option<Vec<H256>> = pair.list_at(2).ok();
 
             // TODO: abridged_block
@@ -511,7 +511,7 @@ impl BlockRebuilder {
         &mut self,
         batch: &mut DBTransaction,
         block: &Block,
-        receipts: Vec<Option<Receipt>>,
+        receipts: Vec<Receipt>,
         tx_hashes: Option<Vec<H256>>,
         is_best: bool,
     ) {
@@ -568,7 +568,7 @@ impl BlockRebuilder {
     /// This function returns modified block receipts.
     fn prepare_block_receipts_update(
         &self,
-        receipts: Vec<Option<Receipt>>,
+        receipts: Vec<Receipt>,
         info: &BlockInfo,
     ) -> HashMap<H256, BlockReceipts> {
         let mut block_receipts = HashMap::new();

@@ -270,11 +270,11 @@ impl Encodable for TransactionAddress {
 /// Contains all block receipts.
 #[derive(Clone)]
 pub struct BlockReceipts {
-    pub receipts: Vec<Option<Receipt>>,
+    pub receipts: Vec<Receipt>,
 }
 
 impl BlockReceipts {
-    pub fn new(receipts: Vec<Option<Receipt>>) -> Self {
+    pub fn new(receipts: Vec<Receipt>) -> Self {
         BlockReceipts { receipts: receipts }
     }
 }
@@ -300,8 +300,8 @@ impl HeapSizeOf for BlockReceipts {
 }
 
 impl Index<usize> for BlockReceipts {
-    type Output = Option<Receipt>;
-    fn index(&self, i: usize) -> &Option<Receipt> {
+    type Output = Receipt;
+    fn index(&self, i: usize) -> &Receipt {
         &self.receipts[i]
     }
 }
