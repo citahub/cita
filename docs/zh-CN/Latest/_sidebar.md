@@ -18,6 +18,7 @@
     - [整体架构](architecture/architecture.md)
     - [系统组件](architecture/components.md)
 - 参考
+    - [保留地址](reference/addresses.md)
     - [词汇表](reference/glossary.md)
     - [FAQ](reference/faq.md)
 - [贡献代码](contributing.md)
