@@ -166,12 +166,12 @@ contract Authorization {
         return all_accounts;
     }
 
-    /// @notice Check Permission
+    /// @notice Check account has a resource
     /// @param _account The account to be checked
     /// @param _cont The contract of resource
     /// @param _func The function signature of resource
     /// @return true if passed, otherwise false
-    function checkPermission(address _account, address _cont, bytes4 _func)
+    function checkResource(address _account, address _cont, bytes4 _func)
         public
         view
         returns (bool)
@@ -185,6 +185,18 @@ contract Authorization {
         }
 
         return false;
+    }
+
+    /// @notice Check account has a permission
+    /// @param _account The account to be checked
+    /// @param _permission The address of permission
+    /// @return true if passed, otherwise false
+    function checkPermission(address _account, address _permission)
+        public
+        view
+        returns (bool)
+    {
+        return AddressArray.exist(_permission, permissions[_account]);
     }
 
     /// @notice Private: Set the permission to the account

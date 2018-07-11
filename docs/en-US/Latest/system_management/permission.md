@@ -237,8 +237,21 @@ CITA通过智能合约的方式来对权限进行管理。
   </tr>
   <tr>
     <td>
-      checkPermission(account, cont, func) <br/>
+      checkPermission(account, permission) <br/>
       <strong>检查权限</strong>
+    </td>
+    <td>
+      account: 鉴权的帐号对象
+      <br/>
+      permission: 权限地址
+    </td>
+    <td>判断此帐号是否拥有此权限</td>
+    <td>None</td>
+  </tr>
+  <tr>
+    <td>
+      checkResource(account, cont, func) <br/>
+      <strong>检查资源</strong>
     </td>
     <td>
       account: 鉴权的帐号对象
@@ -247,7 +260,7 @@ CITA通过智能合约的方式来对权限进行管理。
       <br/>
       func: 函数签名
     </td>
-    <td>判断此帐号是否拥有执行此合约函数的权限</td>
+    <td>判断此帐号是否拥有此资源</td>
     <td>其中合约地址及函数签名组成了一个资源</td>
   </tr>
   <tr>

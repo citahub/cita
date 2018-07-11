@@ -21,9 +21,9 @@ const queryAccounts = function queryAccounts(perm) {
   return aContractInstance.queryAccounts.call(perm);
 };
 
-// checkPermission
-const checkPermission = function checkPermission(account, addr, func) {
-  return aContractInstance.checkPermission.call(
+// checkResource
+const checkResource = function checkResource(account, addr, func) {
+  return aContractInstance.checkResource.call(
     account,
     addr,
     func,
@@ -38,6 +38,6 @@ const queryAllAccounts = function queryAllAccounts() {
 module.exports = {
   queryPermissions,
   queryAccounts,
-  checkPermission,
+  checkResource,
   queryAllAccounts,
 };

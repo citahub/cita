@@ -8,7 +8,7 @@ const { superAdmin } = config.contract.authorization;
 const { permissions, resources } = config;
 
 const {
-  queryPermissions, queryAccounts, checkPermission, queryAllAccounts,
+  queryPermissions, queryAccounts, checkResource, queryAllAccounts,
 } = authorization;
 
 const { logger } = util;
@@ -52,7 +52,7 @@ describe('test authorization contract', () => {
   it('should check the superAdmin has the resource', () => {
     for (let i = 0; i < resources.length; i += 1) {
       for (let j = 1; j < resources[i].length; j += 1) {
-        const res = checkPermission(
+        const res = checkResource(
           superAdmin.address,
           resources[i][0],
           resources[i][j],
@@ -66,7 +66,7 @@ describe('test authorization contract', () => {
   it('should check the rootGroup has the resource', () => {
     for (let i = 0; i < 2; i += 1) {
       for (let j = 1; j < resources[i].length; j += 1) {
-        const res = checkPermission(
+        const res = checkResource(
           superAdmin.address,
           resources[i][0],
           resources[i][j],
@@ -78,7 +78,7 @@ describe('test authorization contract', () => {
   });
 
   it('should check the superAdmin does not have the resource: wrong func', () => {
-    const res = checkPermission(
+    const res = checkResource(
       superAdmin.address,
       '0xffffffffffffffffffffffffffffffffff020004',
       '0xf036ed57',
@@ -88,7 +88,7 @@ describe('test authorization contract', () => {
   });
 
   it('should check the superAdmin does not have the resource: wrong cont', () => {
-    const res = checkPermission(
+    const res = checkResource(
       superAdmin.address,
       '0xffffffffffffffffffffffffffffffffff020005',
       '0xf036ed56',
