@@ -132,22 +132,7 @@ npm run-script unit_chain
 ```
 
 * To run all integrate test:
-    - Should set the checkPermission be true(scripts/admintool/init_data)example.json):
-
-    ```
-    "0xffffffffffffffffffffffffffffffffff020000": [
-        1,
-        true,
-        false,
-        "test-chain",
-        0,
-        "test-operator",
-        "https://www.example.com",
-        3000,
-        0
-    ],
-    ```
-
+    - Should set the checkPermission be true. [admin](https://docs.nervos.org/cita/#/chain/admintool)
     - Run:
 
     ```
