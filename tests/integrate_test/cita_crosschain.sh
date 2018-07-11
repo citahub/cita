@@ -344,9 +344,6 @@ function main () {
     local main_chain_id=3
     local side_chain_id=4
 
-    title "Install python packages for tools ..."
-    sudo pip3 install -r scripts/txtool/requirements.txt
-
     cd target/install
 
     title "Clean data ..."
