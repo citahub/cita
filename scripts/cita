@@ -41,17 +41,17 @@ setup() {
 start() {
     debug=$1
     mock=$2
-
+    tnode=`echo ${node}|sed 's/\//%2f/g'`
     mkdir -p logs
 
     # clean queues
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/auth               > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/chain              > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/consensus          > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/jsonrpc            > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/network            > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/network_tx         > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${node}/network_consensus  > /dev/null 2>&1 || true
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/auth               > /dev/null 2>&1 || true
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/chain              > /dev/null 2>&1 || true
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/consensus          > /dev/null 2>&1 || true
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/jsonrpc            > /dev/null 2>&1 || true
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/network            > /dev/null 2>&1 || true
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/network_tx         > /dev/null 2>&1 || true
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/network_consensus  > /dev/null 2>&1 || true
 
     [[ -z ${mock} ]] && config="forever.toml" || config="forever_mock.toml"
 
