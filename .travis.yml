@@ -1,7 +1,7 @@
 language: generic
 sudo: required
 cache:
-  timeout: 600
+  timeout: 1000
   directories:
   - $HOME/.docker_cargo
   - $TRAVIS_BUILD_DIR/target
@@ -12,4 +12,4 @@ jobs:
     - stage: Build & Test
       script:
         - docker pull cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
-        - ./env.sh ./scripts/ci.sh
+        - travis_wait ./env.sh ./scripts/ci.sh
