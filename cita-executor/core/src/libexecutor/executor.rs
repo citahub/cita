@@ -667,8 +667,12 @@ impl Executor {
     }
 
     pub fn send_executed_info_to_chain(&self, height: u64, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        let executed_result = match self.executed_result.read().get(&height) {
-            Some(execute_result) => execute_result.clone(),
+        let executed_result_option = {
+            let tmp = self.executed_result.read();
+            tmp.get(&height).cloned().to_owned()
+        };
+        let executed_result = match executed_result_option {
+            Some(execute_result) => execute_result,
             None => {
                 // The execution result is not found in the cache, it may be a restart loss, or other abnormal conditions.
                 // In this case, need to roll back the data state.
