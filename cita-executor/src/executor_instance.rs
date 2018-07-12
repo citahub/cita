@@ -691,9 +691,11 @@ impl ExecutorInstance {
                         }
                     }
                 }
-                Stage::Idle => {
-                    self.send_proposal(blk_height, block);
-                }
+                Stage::Idle => match block_in_queue {
+                    Some(BlockInQueue::ConsensusBlock(_, _)) | Some(BlockInQueue::SyncBlock(_)) => {
+                    }
+                    _ => self.send_proposal(blk_height, block),
+                },
                 Stage::ExecutingBlock => {
                     warn!("Something wrong! Coming proposal while executing consensus block");
                 }
