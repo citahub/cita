@@ -46,7 +46,7 @@ jobs:
           name: test
           command: 'RUSTFLAGS="-F warnings" cargo test --tests'
 
-  build_blake2b:
+  basic_test_blake2b:
     docker:
       - image: cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
     working_directory: ~/cita-build
@@ -62,29 +62,6 @@ jobs:
       - run:
           name: replace_crypt
           command: ./scripts/replace_default_feature.sh ./ secp256k1 ed25519
-      - run:
-          name: build
-          command: 'RUSTFLAGS="-F warnings" cargo build --all'
-          no_output_timeout: 20m
-      - save_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-blake2b
-          paths:
-            - ~/cita-build
-      - save_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-blake2b
-          paths:
-            - /opt/.cargo
-
-  basic_test_blake2b:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
-    working_directory: ~/cita-build
-    resource_class: large
-    steps:
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-blake2b
-      - restore_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-blake2b
       - run:
           name: test
           command: 'RUSTFLAGS="-F warnings" cargo test --tests'
@@ -172,9 +149,11 @@ workflows:
   build-and-test:
     jobs:
       - build_sha3
-      - build_blake2b:
+      - basic_test_blake2b:
           requires:
             - basic_test_sha3
+            - integrate_test_sha3
+            - integrate_test_crosschain_sha3
       - basic_test_sha3:
           requires:
             - build_sha3
@@ -187,6 +166,3 @@ workflows:
       - integrate_test_crosschain_sha3:
           requires:
             - build_sha3
-      - basic_test_blake2b:
-          requires:
-            - build_blake2b
