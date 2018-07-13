@@ -138,7 +138,7 @@ fn check_send_tx(
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
 ) -> Result<(), ExecutionError> {
-    let cont = Address::from(0x1);
+    let cont = Address::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap();
     let func = vec![0; 4];
     let has_permission = has_resource(group_accounts, account_permissions, account, &cont, func);
 
@@ -157,7 +157,7 @@ fn check_create_contract(
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
 ) -> Result<(), ExecutionError> {
-    let cont = Address::from(0x2);
+    let cont = Address::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap();
     let func = vec![0; 4];
     let has_permission = has_resource(group_accounts, account_permissions, account, &cont, func);
 
