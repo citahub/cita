@@ -159,7 +159,8 @@ mod tests {
     #[test]
     fn test_contains_resource() {
         let mut permission_resources: HashMap<Address, Vec<Resource>> = HashMap::new();
-        let addr = Address::from(0x1);
+        let addr1 = Address::from(0x111);
+        let addr2 = Address::from(0x222);
         let resources = vec![
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
@@ -170,34 +171,34 @@ mod tests {
                 func: vec![0xf0, 0x36, 0xed, 0x56],
             },
         ];
-        permission_resources.insert(addr, resources);
+        permission_resources.insert(addr1, resources);
         assert!(contains_resource(
             &permission_resources,
-            &Address::from(0x1),
+            &addr1,
             Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x56]
         ));
         assert!(contains_resource(
             &permission_resources,
-            &Address::from(0x1),
+            &addr1,
             Address::from_str(reserved_addresses::PERMISSION_CREATOR).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x56]
         ));
         assert!(!contains_resource(
             &permission_resources,
-            &Address::from(0x2),
+            &addr2,
             Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x56]
         ));
         assert!(!contains_resource(
             &permission_resources,
-            &Address::from(0x1),
+            &addr1,
             Address::from_str(reserved_addresses::AUTHORIZATION).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x56]
         ));
         assert!(!contains_resource(
             &permission_resources,
-            &Address::from(0x1),
+            &addr1,
             Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
             vec![0xf0, 0x36, 0xed, 0x57]
         ));
