@@ -17,4 +17,4 @@
 
 mod response;
 
-pub use self::response::{Output, ResultBody, RpcFailure, RpcResponse, RpcSuccess};
+pub use self::response::{Output, RpcFailure, RpcResponse, RpcSuccess};
