@@ -284,6 +284,7 @@ class ChainInfo(object):
                 network_data['peers'].append(
                     dict(id_card=node_id, ip=node['host'], port=node['port']))
             with open(network_config, 'wt') as stream:
+                stream.write(f"# Current node ip is {node['host']}\n")
                 toml.dump(network_data, stream)
 
         network_config = os.path.join(node_dir, 'network.toml')
@@ -292,6 +293,7 @@ class ChainInfo(object):
             network_data['id_card'] = node_id
             network_data['port'] = node['port']
         with open(network_config, 'wt') as stream:
+            stream.write(f"# Current node ip is {node['host']}\n")
             toml.dump(network_data, stream)
 
         with open(self.nodes_list, 'at') as stream:
