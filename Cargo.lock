@@ -640,6 +640,7 @@ dependencies = [
  "bloomchain 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "jsonrpc_types 0.1.0",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "serde 1.0.66 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1375,7 +1376,6 @@ version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "common-types 0.1.0",
  "jsonrpc-types-internals 0.1.0",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",

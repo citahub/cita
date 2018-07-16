@@ -19,6 +19,7 @@
 #![allow(unused_attributes)]
 extern crate cita_crypto as crypto;
 extern crate cita_types;
+extern crate jsonrpc_types;
 extern crate libproto;
 extern crate rlp;
 #[macro_use]

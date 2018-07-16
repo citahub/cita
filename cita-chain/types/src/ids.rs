@@ -18,6 +18,7 @@
 //! Unique identifiers.
 
 use cita_types::H256;
+use jsonrpc_types::rpctypes::{BlockNumber as RpcBlockNumber, BlockTag};
 use BlockNumber;
 
 /// Uniquely identifies block.
@@ -37,3 +38,13 @@ pub enum BlockId {
 }
 
 pub type TransactionId = H256;
+
+impl From<RpcBlockNumber> for BlockId {
+    fn from(v: RpcBlockNumber) -> BlockId {
+        match v {
+            RpcBlockNumber::Height(height) => BlockId::Number(height.into()),
+            RpcBlockNumber::Tag(BlockTag::Latest) => BlockId::Latest,
+            RpcBlockNumber::Tag(BlockTag::Earliest) => BlockId::Earliest,
+        }
+    }
+}

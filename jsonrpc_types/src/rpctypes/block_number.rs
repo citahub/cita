@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use rpctypes::{BlockTag, Quantity};
-use types::ids::BlockId;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq)]
 #[serde(untagged)]
@@ -45,16 +44,6 @@ impl BlockNumber {
 impl Default for BlockNumber {
     fn default() -> Self {
         BlockNumber::Tag(BlockTag::Latest)
-    }
-}
-
-impl Into<BlockId> for BlockNumber {
-    fn into(self) -> BlockId {
-        match self {
-            BlockNumber::Height(height) => BlockId::Number(height.into()),
-            BlockNumber::Tag(BlockTag::Latest) => BlockId::Latest,
-            BlockNumber::Tag(BlockTag::Earliest) => BlockId::Earliest,
-        }
     }
 }
 

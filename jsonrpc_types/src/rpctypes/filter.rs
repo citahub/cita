@@ -20,7 +20,6 @@ use serde::de::Error;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::{from_value, Value};
-use types::filter::Filter as EthFilter;
 
 use rpctypes::{BlockNumber, Data20, Data32, VariadicValue};
 
@@ -61,46 +60,6 @@ impl Filter {
             address,
             topics,
             limit: None,
-        }
-    }
-}
-
-impl Into<EthFilter> for Filter {
-    fn into(self) -> EthFilter {
-        EthFilter {
-            from_block: self.from_block.into(),
-            to_block: self.to_block.into(),
-            address: self.address.and_then(|address| match address {
-                VariadicValue::Null => None,
-                VariadicValue::Single(a) => Some(vec![a.into()]),
-                VariadicValue::Multiple(a) => Some(a.into_iter().map(Into::into).collect()),
-            }),
-            topics: {
-                let mut iter = self
-                    .topics
-                    .map_or_else(Vec::new, |topics| {
-                        topics
-                            .into_iter()
-                            .take(4)
-                            .map(|topic| match topic {
-                                VariadicValue::Null => None,
-                                VariadicValue::Single(t) => Some(vec![t.into()]),
-                                VariadicValue::Multiple(t) => {
-                                    Some(t.into_iter().map(Into::into).collect())
-                                }
-                            })
-                            .collect()
-                    })
-                    .into_iter();
-
-                vec![
-                    iter.next().unwrap_or(None),
-                    iter.next().unwrap_or(None),
-                    iter.next().unwrap_or(None),
-                    iter.next().unwrap_or(None),
-                ]
-            },
-            limit: self.limit,
         }
     }
 }

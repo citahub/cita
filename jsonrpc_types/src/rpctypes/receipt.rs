@@ -17,7 +17,6 @@
 
 use cita_types::{Bloom, H160, H256, U256};
 use rpctypes::log::Log;
-use types::receipt::LocalizedReceipt;
 
 /// Receipt
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -54,24 +53,6 @@ pub struct Receipt {
     /// Receipt error message
     #[serde(rename = "errorMessage")]
     pub error_message: Option<String>,
-}
-
-impl From<LocalizedReceipt> for Receipt {
-    fn from(r: LocalizedReceipt) -> Self {
-        Receipt {
-            transaction_hash: Some(r.transaction_hash),
-            transaction_index: Some(r.transaction_index.into()),
-            block_hash: Some(r.block_hash),
-            block_number: Some(r.block_number.into()),
-            cumulative_gas_used: r.cumulative_gas_used,
-            gas_used: Some(r.gas_used),
-            contract_address: r.contract_address.map(Into::into),
-            logs: r.logs.into_iter().map(Into::into).collect(),
-            state_root: r.state_root.map(Into::into),
-            logs_bloom: r.log_bloom,
-            error_message: r.error.map(|error| error.description()),
-        }
-    }
 }
 
 #[cfg(test)]

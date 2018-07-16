@@ -13,7 +13,6 @@ serde_json = "1.0"
 serde_derive = "1.0"
 rustc-serialize = "0.3"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-common-types = { path = "../cita-chain/types" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 jsonrpc-types-internals = { path = "internals" }
 
