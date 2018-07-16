@@ -77,6 +77,8 @@ impl Synchronizer {
         if new_height == old_height && self.local_sync_count < u8::MAX {
             // Chain height does not increase
             self.local_sync_count += 1;
+        } else {
+            self.local_sync_count = 0;
         }
 
         self.latest_status_lists = self
@@ -106,9 +108,11 @@ impl Synchronizer {
 
             if !self.block_lists.is_empty() && new_height < self.sync_end_height {
                 if self.local_sync_count >= 3 {
-                    // Chain height does not increase, must loss data, send cache to executor and chain
+                    // Chain height does not increase, loss data or data is invalid,
+                    // send cache to executor and chain, and clear cache
                     self.submit_blocks();
                     self.local_sync_count = 0;
+                    self.block_lists.clear();
                 }
             } else {
                 // If the block height is equal to the maximum height that has already been synchronized,
