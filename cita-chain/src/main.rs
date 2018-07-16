@@ -64,8 +64,6 @@
 //! [`Chain`]: ../core/libchain/chain/struct.Chain.html
 //!
 
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
 #![allow(unused_must_use)]
 #![feature(custom_attribute)]
 #![feature(refcell_replace_swap)]

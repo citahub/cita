@@ -6,7 +6,6 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
 dotenv = "0.10.0"
-threadpool = "1.7.0"
 clap = "2"
 byteorder = { version = "1", default-features = false }
 serde_json = "1.0"
@@ -20,7 +19,6 @@ jsonrpc_types = { path = "../jsonrpc_types"}
 core = { path = "./core" }
 common-types = { path = "./types" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-clippy = { version = "0.0.175", optional = true }
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -36,4 +34,3 @@ sm3hash = ["util/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
 rabbitmq = ["pubsub/rabbitmq"]
 zeromq = ["pubsub/zeromq"]
 kafka = ["pubsub/kafka"]
-dev = ["clippy"]

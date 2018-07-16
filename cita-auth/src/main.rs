@@ -64,8 +64,6 @@
 //! [`handle module`]: ./handler/index.html
 //!
 
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
 #![feature(custom_attribute)]
 #![feature(integer_atomics)]
 #![feature(try_from)]
@@ -85,13 +83,11 @@ extern crate logger;
 extern crate lru;
 extern crate pubsub;
 extern crate rayon;
-extern crate rustc_serialize;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 #[cfg(test)]
 extern crate tempfile;
-extern crate threadpool;
 extern crate tx_pool;
 #[macro_use]
 extern crate util;

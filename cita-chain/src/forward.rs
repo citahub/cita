@@ -437,7 +437,6 @@ impl Forward {
     }
 
     // Check block group from remote and enqueue
-    #[cfg_attr(feature = "clippy", allow(single_match))]
     fn add_sync_block(&self, block: Block) {
         let block_proof_type = block.proof_type();
         let chain_proof_type = self.chain.get_chain_prooftype();
