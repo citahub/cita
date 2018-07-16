@@ -22,7 +22,6 @@
 #![allow(unused_extern_crates)]
 extern crate bincode;
 extern crate cita_types;
-extern crate common_types as types;
 extern crate libproto;
 #[macro_use]
 extern crate logger;

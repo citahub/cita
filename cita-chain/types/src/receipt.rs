@@ -18,6 +18,7 @@
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
+use jsonrpc_types::rpctypes::Receipt as RpcReceipt;
 use libproto::executor::{
     Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot,
 };
@@ -363,6 +364,24 @@ pub struct LocalizedReceipt {
     pub state_root: Option<H256>,
     /// Receipt error
     pub error: Option<ReceiptError>,
+}
+
+impl Into<RpcReceipt> for LocalizedReceipt {
+    fn into(self) -> RpcReceipt {
+        RpcReceipt {
+            transaction_hash: Some(self.transaction_hash),
+            transaction_index: Some(self.transaction_index.into()),
+            block_hash: Some(self.block_hash),
+            block_number: Some(self.block_number.into()),
+            cumulative_gas_used: self.cumulative_gas_used,
+            gas_used: Some(self.gas_used),
+            contract_address: self.contract_address.map(Into::into),
+            logs: self.logs.into_iter().map(Into::into).collect(),
+            state_root: self.state_root.map(Into::into),
+            logs_bloom: self.log_bloom,
+            error_message: self.error.map(|error| error.description()),
+        }
+    }
 }
 
 #[cfg(test)]

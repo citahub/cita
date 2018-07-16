@@ -22,6 +22,7 @@ use rlp::*;
 use std::ops::Deref;
 use cita_types::{Address, Bloom, H256};
 use cita_types::traits::BloomTools;
+use jsonrpc_types::rpctypes::Log as RpcLog;
 use util::{Bytes, HeapSizeOf};
 use libproto::executor::LogEntry as ProtoLogEntry;
 
@@ -91,6 +92,22 @@ impl LogEntry {
     }
 }
 
+impl Into<RpcLog> for LogEntry {
+    fn into(self) -> RpcLog {
+        RpcLog {
+            address: self.address,
+            topics: self.topics.into_iter().map(Into::into).collect(),
+            data: self.data.into(),
+            block_hash: None,
+            block_number: None,
+            transaction_hash: None,
+            transaction_index: None,
+            log_index: None,
+            transaction_log_index: None,
+        }
+    }
+}
+
 /// Log localized in a blockchain.
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct LocalizedLogEntry {
@@ -115,6 +132,22 @@ impl Deref for LocalizedLogEntry {
 
     fn deref(&self) -> &Self::Target {
         &self.entry
+    }
+}
+
+impl Into<RpcLog> for LocalizedLogEntry {
+    fn into(self) -> RpcLog {
+        RpcLog {
+            address: self.entry.address,
+            topics: self.entry.topics.into_iter().map(Into::into).collect(),
+            data: self.entry.data.into(),
+            block_hash: Some(self.block_hash),
+            block_number: Some(self.block_number.into()),
+            transaction_hash: Some(self.transaction_hash),
+            transaction_index: Some(self.transaction_index.into()),
+            log_index: Some(self.log_index.into()),
+            transaction_log_index: Some(self.transaction_log_index.into()),
+        }
     }
 }
 

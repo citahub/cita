@@ -20,6 +20,7 @@ use ids::BlockId;
 use log_entry::{LogEntry, LogBloom};
 use cita_types::{Address, H256};
 use cita_types::traits::BloomTools;
+use jsonrpc_types::rpctypes::{Filter as RpcFilter, VariadicValue};
 
 /// Blockchain Filter.
 #[derive(Debug, PartialEq)]
@@ -105,6 +106,46 @@ impl Filter {
             },
             _ => true,
         })
+    }
+}
+
+impl From<RpcFilter> for Filter {
+    fn from(v: RpcFilter) -> Filter {
+        Filter {
+            from_block: v.from_block.into(),
+            to_block: v.to_block.into(),
+            address: v.address.and_then(|address| match address {
+                VariadicValue::Null => None,
+                VariadicValue::Single(a) => Some(vec![a.into()]),
+                VariadicValue::Multiple(a) => Some(a.into_iter().map(Into::into).collect()),
+            }),
+            topics: {
+                let mut iter = v
+                    .topics
+                    .map_or_else(Vec::new, |topics| {
+                        topics
+                            .into_iter()
+                            .take(4)
+                            .map(|topic| match topic {
+                                VariadicValue::Null => None,
+                                VariadicValue::Single(t) => Some(vec![t.into()]),
+                                VariadicValue::Multiple(t) => {
+                                    Some(t.into_iter().map(Into::into).collect())
+                                }
+                            })
+                            .collect()
+                    })
+                    .into_iter();
+
+                vec![
+                    iter.next().unwrap_or(None),
+                    iter.next().unwrap_or(None),
+                    iter.next().unwrap_or(None),
+                    iter.next().unwrap_or(None),
+                ]
+            },
+            limit: v.limit,
+        }
     }
 }
 
