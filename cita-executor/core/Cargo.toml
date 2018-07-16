@@ -25,8 +25,6 @@ rust-crypto = "0.2.34"
 num = "0.1"
 num_cpus = "1.2"
 rand = "0.3"
-futures = "0.1"
-bn = { git = "https://github.com/paritytech/bn", rev = "c9831a8d10d55045692394cbc10efe0321ddb16f" }
 time = "0.1"
 crossbeam = "0.2"
 transient-hashmap = "0.4.0"
@@ -37,15 +35,11 @@ cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "de
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 sha3 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
-threadpool = "1.7.0"
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-dotenv = "0.10.0"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
 evm = { path = "../evm" }
 jsonrpc_types = { path = "../../jsonrpc_types"}
-clippy = {version = "*", optional = true}
 ethabi = "4.2.0"
 zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
 enum_primitive = "0.1.1"
@@ -57,16 +51,12 @@ cpuprofiler = "0.0.3"
 mktemp = "0.3.1"
 
 [features]
-default = ["secp256k1", "sha3hash", "rabbitmq"]
+default = ["secp256k1", "sha3hash"]
 secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "proof/secp256k1"]
 ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "proof/ed25519"]
 sm2 = ["cita-crypto/sm2", "libproto/sm2", "proof/sm2"]
 sha3hash = ["util/sha3hash", "libproto/sha3hash", "proof/sha3hash"]
 blake2bhash = ["util/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash"]
 sm3hash = ["util/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
-rabbitmq = ["pubsub/rabbitmq"]
-zeromq = ["pubsub/zeromq"]
-kafka = ["pubsub/kafka"]
 privatetx = ["zktx"]
 evm-debug= []
-dev = ["clippy"]

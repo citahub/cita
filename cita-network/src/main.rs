@@ -74,8 +74,6 @@
 //! [`network_message_to_pubsub_message`]: ./citaprotocol/fn.network_message_to_pubsub_message.html
 //!
 
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
 #![feature(iter_rfind)]
 #![feature(try_from)]
@@ -91,7 +89,6 @@ extern crate logger;
 extern crate notify;
 extern crate pubsub;
 extern crate rand;
-extern crate rustc_serialize;
 #[cfg(test)]
 extern crate tempfile;
 extern crate tokio_io;

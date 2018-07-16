@@ -15,7 +15,6 @@ cpuprofiler = "0.0.3"
 jsonrpc_types = { path = "../jsonrpc_types" }
 dotenv = "0.10.0"
 clap = "2"
-clippy = {version = "0.0.175", optional = true}
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -35,4 +34,3 @@ libc = "0.2"
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-

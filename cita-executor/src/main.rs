@@ -61,13 +61,10 @@
 //! [`StateDB`]: ../core_executor/state_db/struct.StateDB.html
 //!
 
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
 #![feature(custom_attribute)]
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
 #![feature(refcell_replace_swap)]
 #![feature(try_from)]
-extern crate bincode;
 extern crate cita_types;
 extern crate clap;
 extern crate common_types as types;

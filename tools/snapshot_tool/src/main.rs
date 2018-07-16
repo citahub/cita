@@ -15,10 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
 #![feature(custom_attribute)]
-#![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
 #![feature(refcell_replace_swap, try_from)]
 extern crate clap;
 extern crate dotenv;
@@ -27,10 +24,7 @@ extern crate error;
 extern crate libproto;
 #[macro_use]
 extern crate logger;
-extern crate proof;
-extern crate protobuf;
 extern crate pubsub;
-extern crate serde_json;
 #[macro_use]
 extern crate util;
 

@@ -590,7 +590,6 @@ impl ExecutorInstance {
     }
 
     // Check block group from remote and enqueue
-    #[cfg_attr(feature = "clippy", allow(single_match))]
     fn add_sync_block(&self, block: Block) {
         let block_proof_type = block.proof_type();
         let ext_proof_type = self.ext.get_prooftype();
