@@ -23,7 +23,7 @@ use core::libchain::block::Block;
 use core::libchain::chain::{BlockInQueue, Chain};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{
-    self as rpctypes, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter, Log as RpcLog,
+    BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter, Log as RpcLog,
     Receipt as RpcReceipt, RpcBlock,
 };
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -300,23 +300,23 @@ impl Forward {
 
             Request::uninstall_filter(filter_id) => {
                 trace!("uninstall_filter's id is {:?}", filter_id);
-                let index = rpctypes::Index(filter_id as usize);
-                let b = self.chain.uninstall_filter(index);
+                let b = self.chain.uninstall_filter(filter_id as usize);
                 response.set_uninstall_filter(b);
             }
 
             Request::filter_changes(filter_id) => {
                 trace!("filter_changes's id is {:?}", filter_id);
-                let index = rpctypes::Index(filter_id as usize);
-                let log = self.chain.filter_changes(index).unwrap();
+                let log = self.chain.filter_changes(filter_id as usize).unwrap();
                 trace!("Log is: {:?}", log);
                 response.set_filter_changes(serde_json::to_string(&log).unwrap());
             }
 
             Request::filter_logs(filter_id) => {
                 trace!("filter_log's id is {:?}", filter_id);
-                let index = rpctypes::Index(filter_id as usize);
-                let log = self.chain.filter_logs(index).unwrap_or_default();
+                let log = self
+                    .chain
+                    .filter_logs(filter_id as usize)
+                    .unwrap_or_default();
                 trace!("Log is: {:?}", log);
                 response.set_filter_logs(serde_json::to_string(&log).unwrap());
             }

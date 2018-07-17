@@ -16,7 +16,7 @@
 
 use super::{limit_logs, PollFilter, PollId};
 use cita_types::H256;
-use jsonrpc_types::rpctypes::{Filter, FilterChanges, Index, Log};
+use jsonrpc_types::rpctypes::{Filter, FilterChanges, Log};
 use libchain::chain::Chain;
 use types::filter::Filter as EthcoreFilter;
 use types::ids::BlockId;
@@ -24,9 +24,9 @@ use types::ids::BlockId;
 pub trait EthFilter {
     fn new_filter(&self, filter: Filter) -> PollId;
     fn new_block_filter(&self) -> PollId;
-    fn filter_changes(&self, index: Index) -> Option<FilterChanges>;
-    fn filter_logs(&self, index: Index) -> Option<Vec<Log>>;
-    fn uninstall_filter(&self, index: Index) -> bool;
+    fn filter_changes(&self, index: usize) -> Option<FilterChanges>;
+    fn filter_logs(&self, index: usize) -> Option<Vec<Log>>;
+    fn uninstall_filter(&self, index: usize) -> bool;
 }
 
 impl EthFilter for Chain {
@@ -50,9 +50,9 @@ impl EthFilter for Chain {
         id
     }
 
-    fn filter_changes(&self, index: Index) -> Option<FilterChanges> {
+    fn filter_changes(&self, index: usize) -> Option<FilterChanges> {
         let polls = self.poll_filter();
-        let log = match polls.lock().poll_mut(&index.value()) {
+        let log = match polls.lock().poll_mut(&index) {
             None => Some(FilterChanges::Empty),
             Some(filter) => match *filter {
                 PollFilter::Block(ref mut block_number) => {
@@ -91,9 +91,9 @@ impl EthFilter for Chain {
         log
     }
 
-    fn filter_logs(&self, index: Index) -> Option<Vec<Log>> {
+    fn filter_logs(&self, index: usize) -> Option<Vec<Log>> {
         let polls = self.poll_filter();
-        let log = match polls.lock().poll(&index.value()) {
+        let log = match polls.lock().poll(&index) {
             Some(&PollFilter::Logs(ref _block_number, ref _previous_log, ref filter)) => {
                 let filter: EthcoreFilter = filter.clone().into();
                 Some(self.get_logs(filter).into_iter().map(Into::into).collect())
@@ -105,12 +105,12 @@ impl EthFilter for Chain {
         log
     }
 
-    fn uninstall_filter(&self, index: Index) -> bool {
+    fn uninstall_filter(&self, index: usize) -> bool {
         let polls = self.poll_filter();
         let mut polls = polls.lock();
-        let is_uninstall = match polls.poll(&index.value()) {
+        let is_uninstall = match polls.poll(&index) {
             Some(_) => {
-                polls.remove_poll(&index.value());
+                polls.remove_poll(&index);
                 true
             }
             None => false,
