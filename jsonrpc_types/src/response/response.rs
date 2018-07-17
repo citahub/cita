@@ -17,47 +17,13 @@
 
 use error::Error;
 use libproto::response::{Response, Response_oneof_data};
-use request::RequestInfo;
-use rpctypes::{
-    Block, Boolean, Data, FilterChanges, Id, Log, MetaData, Quantity, Receipt, RpcBlock,
-    RpcTransaction, TxResponse, Version,
-};
+use request::{RequestInfo, ResponseResult};
+use rpctypes::{FilterChanges, Id, Log, MetaData, Receipt, RpcBlock, RpcTransaction, Version};
 use serde::de::Error as SError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json;
 use serde_json::{from_value, Value};
 use std::vec::Vec;
-
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ResultBody {
-    BlockNumber(Quantity),
-    FullBlock(Block),
-    #[serde(rename = "null")]
-    Null,
-    Receipt(Receipt),
-    Transaction(RpcTransaction),
-    TxResponse(TxResponse),
-    PeerCount(Quantity),
-    CallResult(Data),
-    Logs(Vec<Log>),
-    TranactionCount(Quantity),
-    ContractCode(Data),
-    ContractAbi(Data),
-    FilterId(Quantity),
-    UninstallFliter(Boolean),
-    FilterChanges(FilterChanges),
-    FilterLog(Vec<Log>),
-    TxProof(Data),
-    MetaData(MetaData),
-    Balance(Quantity),
-}
-
-impl Default for ResultBody {
-    fn default() -> Self {
-        ResultBody::Null
-    }
-}
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct RpcFailure {
@@ -70,7 +36,7 @@ pub struct RpcFailure {
 pub struct RpcSuccess {
     pub jsonrpc: Option<Version>,
     pub id: Id,
-    pub result: ResultBody,
+    pub result: ResponseResult,
 }
 
 impl RpcSuccess {
@@ -78,11 +44,11 @@ impl RpcSuccess {
         RpcSuccess {
             jsonrpc: info.jsonrpc,
             id: info.id,
-            result: ResultBody::default(),
+            result: ResponseResult::default(),
         }
     }
 
-    pub fn set_result(mut self, reuslt: ResultBody) -> Self {
+    pub fn set_result(mut self, reuslt: ResponseResult) -> Self {
         self.result = reuslt;
         self
     }
@@ -111,79 +77,85 @@ impl Output {
                 match data.data.unwrap() {
                     Response_oneof_data::tx_state(tx_state) => {
                         let tx_response = serde_json::from_str(&tx_state).unwrap();
+                        // SendTransaction, SendRawTransaction
                         success
-                            .set_result(ResultBody::TxResponse(tx_response))
+                            .set_result(ResponseResult::SendTransaction(tx_response))
                             .output()
                     }
                     Response_oneof_data::block_number(bn) => success
-                        .set_result(ResultBody::BlockNumber(bn.into()))
+                        .set_result(ResponseResult::BlockNumber(bn.into()))
                         .output(),
                     Response_oneof_data::none(_) => success.output(),
                     Response_oneof_data::block(rpc_block) => {
                         let rpc_block: RpcBlock = serde_json::from_str(&rpc_block).unwrap();
+                        // GetBlockByHash, GetBlockByNumber
                         success
-                            .set_result(ResultBody::FullBlock(rpc_block.into()))
+                            .set_result(ResponseResult::GetBlockByHash(rpc_block.into()))
                             .output()
                     }
                     Response_oneof_data::ts(x) => success
-                        .set_result(ResultBody::Transaction(RpcTransaction::from(x)))
+                        .set_result(ResponseResult::GetTransaction(RpcTransaction::from(x)))
                         .output(),
-                    Response_oneof_data::peercount(x) => {
-                        success.set_result(ResultBody::PeerCount(x.into())).output()
+                    Response_oneof_data::peercount(x) => success
+                        .set_result(ResponseResult::PeerCount(x.into()))
+                        .output(),
+                    Response_oneof_data::call_result(x) => {
+                        success.set_result(ResponseResult::Call(x.into())).output()
                     }
-                    Response_oneof_data::call_result(x) => success
-                        .set_result(ResultBody::CallResult(x.into()))
-                        .output(),
                     Response_oneof_data::logs(serialized) => success
-                        .set_result(ResultBody::Logs(
+                        .set_result(ResponseResult::GetLogs(
                             serde_json::from_str::<Vec<Log>>(&serialized).unwrap(),
                         ))
                         .output(),
-                    Response_oneof_data::receipt(serialized) => success
-                        .set_result(
-                            serde_json::from_str::<Receipt>(&serialized)
-                                .ok()
-                                .map_or(ResultBody::Null, ResultBody::Receipt),
-                        )
-                        .output(),
+                    Response_oneof_data::receipt(serialized) => {
+                        success
+                            .set_result(serde_json::from_str::<Receipt>(&serialized).ok().map_or(
+                                ResponseResult::Null,
+                                ResponseResult::GetTransactionReceipt,
+                            ))
+                            .output()
+                    }
                     Response_oneof_data::transaction_count(x) => success
-                        .set_result(ResultBody::TranactionCount(x.into()))
+                        .set_result(ResponseResult::GetTransactionCount(x.into()))
                         .output(),
                     Response_oneof_data::contract_code(x) => success
-                        .set_result(ResultBody::ContractCode(x.into()))
+                        .set_result(ResponseResult::GetCode(x.into()))
                         .output(),
                     Response_oneof_data::contract_abi(x) => success
-                        .set_result(ResultBody::ContractAbi(x.into()))
+                        .set_result(ResponseResult::GetAbi(x.into()))
                         .output(),
                     Response_oneof_data::balance(x) => success
-                        .set_result(ResultBody::Balance(x.as_slice().into()))
+                        .set_result(ResponseResult::GetBalance(x.as_slice().into()))
                         .output(),
                     Response_oneof_data::filter_id(id) => {
-                        success.set_result(ResultBody::FilterId(id.into())).output()
+                        // NewFilter, NewBlockFilter
+                        success
+                            .set_result(ResponseResult::NewFilter(id.into()))
+                            .output()
                     }
                     Response_oneof_data::uninstall_filter(is_uninstall) => success
-                        .set_result(ResultBody::UninstallFliter(is_uninstall.into()))
+                        .set_result(ResponseResult::UninstallFilter(is_uninstall.into()))
                         .output(),
                     Response_oneof_data::filter_changes(data) => {
                         let changes = serde_json::from_str::<FilterChanges>(&data)
                             .expect("failed to parse into FilterChanges");
                         success
-                            .set_result(ResultBody::FilterChanges(changes))
+                            .set_result(ResponseResult::GetFilterChanges(changes))
                             .output()
                     }
                     Response_oneof_data::filter_logs(log) => success
-                        .set_result(ResultBody::FilterLog(
+                        .set_result(ResponseResult::GetFilterLogs(
                             serde_json::from_str::<Vec<Log>>(&log).unwrap(),
                         ))
                         .output(),
                     Response_oneof_data::transaction_proof(proof) => success
-                        .set_result(ResultBody::TxProof(proof.into()))
+                        .set_result(ResponseResult::GetTransactionProof(proof.into()))
                         .output(),
                     Response_oneof_data::error_msg(err_msg) => Output::Failure(
                         RpcFailure::from_options(info, Error::server_error(code, err_msg)),
                     ),
                     Response_oneof_data::meta_data(data) => success
-                        .set_result(ResultBody::MetaData(
+                        .set_result(ResponseResult::GetMetaData(
                             serde_json::from_str::<MetaData>(&data).unwrap(),
                         ))
                         .output(),
@@ -283,15 +255,15 @@ impl Serialize for RpcResponse {
 
 #[cfg(test)]
 mod tests {
-    use super::{ResultBody, RpcSuccess};
-    use request::RequestInfo;
+    use super::RpcSuccess;
+    use request::{RequestInfo, ResponseResult};
     use rpctypes::{Id, Version};
     use serde_json;
 
     #[test]
     fn test_rpc_deserialize() {
         let rpc = RpcSuccess::new(RequestInfo::new(Some(Version::V2), Id::Num(2)))
-            .set_result(ResultBody::Null);
+            .set_result(ResponseResult::Null);
 
         let rpc_body = serde_json::to_string(&rpc).unwrap();
         assert_eq!(rpc_body, r#"{"jsonrpc":"2.0","id":2,"result":null}"#);
@@ -302,7 +274,7 @@ mod tests {
         let rpc = RpcSuccess::new(RequestInfo::new(
             Some(Version::V2),
             Id::Str("2".to_string()),
-        )).set_result(ResultBody::BlockNumber(3u64.into()));
+        )).set_result(ResponseResult::BlockNumber(3u64.into()));
 
         let rpc_body = serde_json::to_string(&rpc).unwrap();
         assert_eq!(rpc_body, r#"{"jsonrpc":"2.0","id":"2","result":"0x3"}"#);

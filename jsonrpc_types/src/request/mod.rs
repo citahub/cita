@@ -28,5 +28,7 @@ pub use self::request::{
     GetTransactionProofParams, GetTransactionReceiptParams, NewBlockFilterParams, NewFilterParams,
     PeerCountParams, SendRawTransactionParams, SendTransactionParams, UninstallFilterParams,
 };
-pub use self::request::{Call, PartialCall, PartialRequest, Request, RequestInfo};
+pub use self::request::{
+    Call, JsonRpcRequest, PartialCall, PartialRequest, Request, RequestInfo, ResponseResult,
+};
 pub use self::rpcrequest::RpcRequest;

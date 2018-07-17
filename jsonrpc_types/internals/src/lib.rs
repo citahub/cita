@@ -43,6 +43,7 @@ struct ParamsType {
         syn::token::Bracket,
         syn::punctuated::Punctuated<TypeWithAttrs, Token![,]>,
     ),
+    resp: syn::Ident,
 }
 
 impl syn::synom::Synom for ParamsType {
@@ -50,7 +51,9 @@ impl syn::synom::Synom for ParamsType {
         name: syn!(syn::Ident) >>
         punct!(:) >>
         types: brackets!(call!(syn::punctuated::Punctuated::parse_separated)) >>
-        (ParamsType { name, types })
+        punct!(,) >>
+        resp: syn!(syn::Ident) >>
+        (ParamsType { name, types, resp })
     ));
 }
 
@@ -65,6 +68,17 @@ fn construct_rpcname_from_params_name(params_name: &str) -> syn::LitStr {
     }
     let rpcname = params_name[..1].to_ascii_lowercase() + &params_name[1..params_name.len() - 6];
     syn::LitStr::new(&rpcname, proc_macro2::Span::call_site())
+}
+
+#[proc_macro]
+pub fn construct_rpcname(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input: proc_macro2::TokenStream = input.into();
+    let output = {
+        let params_name: syn::Ident = syn::parse2(input).unwrap();
+        let rpcname = construct_rpcname_from_params_name(params_name.to_string().as_ref());
+        quote!(#rpcname)
+    };
+    output.into()
 }
 
 fn generate_attrs_list(attrs_vec: &Vec<syn::Attribute>) -> proc_macro2::TokenStream {
@@ -83,6 +97,7 @@ pub fn construct_params(input: proc_macro::TokenStream) -> proc_macro::TokenStre
         let ParamsType {
             name,
             types: (_, params_types),
+            resp,
         } = syn::parse2(input).unwrap();
 
         let params_size = params_types.len();
@@ -91,6 +106,7 @@ pub fn construct_params(input: proc_macro::TokenStream) -> proc_macro::TokenStre
         let mut types = quote!();
         let mut params_with_types = quote!();
         let mut params = quote!();
+        let mut params_into_vec = quote!();
 
         match params_size {
             0 => {}
@@ -100,9 +116,10 @@ pub fn construct_params(input: proc_macro::TokenStream) -> proc_macro::TokenStre
                 types = quote!(#param_attrs pub #typ, #[serde(skip)] OneItemTupleTrick);
                 params_with_types = quote!(param: #typ);
                 params = quote!(param, OneItemTupleTrick::default());
+                params_into_vec = quote!(serde_json::to_value(self.0).unwrap())
             }
             _ => {
-                let mut param_num = 1;
+                let mut param_num = 0;
                 for TypeWithAttrs { typ, attrs } in params_types.iter() {
                     let param_attrs = generate_attrs_list(attrs);
                     let param_name = format!("p{}", param_num);
@@ -110,6 +127,9 @@ pub fn construct_params(input: proc_macro::TokenStream) -> proc_macro::TokenStre
                     types = quote!(#types #param_attrs pub #typ,);
                     params_with_types = quote!(#params_with_types #param_name: #typ,);
                     params = quote!(#params #param_name,);
+                    params_into_vec = quote!(
+                        #params_into_vec
+                        serde_json::to_value(self.#param_num).unwrap(), );
                     param_num += 1;
                 }
             }
@@ -123,13 +143,22 @@ pub fn construct_params(input: proc_macro::TokenStream) -> proc_macro::TokenStre
                 pub fn new(#params_with_types) -> #name {
                     #name(#params)
                 }
+            }
 
-                pub fn required_len() -> usize {
+            impl JsonRpcRequest for #name {
+
+                type Response = #resp;
+
+                fn required_len() -> usize {
                     #params_size
                 }
 
-                pub fn method_name(&self) -> &'static str {
+                fn method_name(&self) -> &'static str {
                     #rpcname
+                }
+
+                fn value_vec(self) -> Vec<serde_json::Value> {
+                    vec![#params_into_vec]
                 }
             }
         )

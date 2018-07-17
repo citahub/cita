@@ -23,10 +23,13 @@ use jsonrpc_types_internals::construct_params;
 use libproto::request::Request as ProtoRequest;
 
 use error::Error;
+use rpctypes::{Block, FilterChanges, Log, MetaData, Receipt, RpcTransaction, TxResponse};
 use rpctypes::{
     BlockNumber, Boolean, CallRequest, Data, Data20, Data32, Filter, OneItemTupleTrick, Quantity,
 };
 use rpctypes::{Id, Params as PartialParams, Version};
+
+pub type Logs = Vec<Log>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RequestInfo {
@@ -119,14 +122,31 @@ impl PartialRequest {
 }
 
 macro_rules! define_call {
-    ($( ($enum_name:ident, $params_name:ident: $params_list:expr) ),+ ,) => {
-        define_call!($( ($enum_name, $params_name: $params_list) ),+);
+    ($( ($enum_name:ident, $params_name:ident: $params_list:expr, $result_type:ident) ),+ ,) => {
+        define_call!($( ($enum_name, $params_name: $params_list, $result_type) ),+);
     };
-    ($( ($enum_name:ident, $params_name:ident: $params_list:expr) ),+ ) => {
+    ($( ($enum_name:ident, $params_name:ident: $params_list:expr, $result_type:ident) ),+ ) => {
 
         $(
-            construct_params!($params_name: $params_list);
+            construct_params!($params_name: $params_list, $result_type);
         )+
+
+
+        #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+        #[serde(untagged)]
+        pub enum ResponseResult {
+            #[serde(rename = "null")]
+            Null,
+            $(
+                $enum_name($result_type),
+            )+
+        }
+
+        impl Default for ResponseResult {
+            fn default() -> Self {
+                ResponseResult::Null
+            }
+        }
 
         #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
         #[serde(tag = "method", rename_all = "camelCase")]
@@ -230,6 +250,13 @@ macro_rules! define_call {
     };
 }
 
+pub trait JsonRpcRequest {
+    type Response;
+    fn required_len() -> usize;
+    fn method_name(&self) -> &'static str;
+    fn value_vec(self) -> Vec<serde_json::Value>;
+}
+
 // Q. How to add a JSON-RPC method?
 //
 // A.
@@ -243,29 +270,31 @@ macro_rules! define_call {
 //      The params type has some methods, such as `new()` and `method_name()`.
 //      More details can found in the definition of `construct_params`.
 //
+//    - The 3rd item is the type of result of Response object on success.
+//
 //  Second, implement `TryInto<ProtoRequest>` for the new params type.
 //
 //  DONE!
 define_call!(
-    (BlockNumber, BlockNumberParams: []),
-    (PeerCount, PeerCountParams: []),
-    (SendRawTransaction, SendRawTransactionParams: [Data]),
-    (SendTransaction, SendTransactionParams: [Data]),
-    (GetBlockByHash, GetBlockByHashParams: [Data32, Boolean]),
-    (GetBlockByNumber, GetBlockByNumberParams: [BlockNumber, Boolean]),
-    (GetTransactionReceipt, GetTransactionReceiptParams: [Data32]),
-    (GetLogs, GetLogsParams: [Filter]),
-    (Call, CallParams: [CallRequest, BlockNumber]),
-    (GetTransaction, GetTransactionParams: [Data32]),
-    (GetTransactionCount, GetTransactionCountParams: [Data20, BlockNumber]),
-    (GetCode, GetCodeParams: [Data20, BlockNumber]),
-    (GetAbi, GetAbiParams: [Data20, BlockNumber]),
-    (GetBalance, GetBalanceParams: [Data20, BlockNumber]),
-    (NewFilter, NewFilterParams: [Filter]),
-    (NewBlockFilter, NewBlockFilterParams: []),
-    (UninstallFilter, UninstallFilterParams: [Quantity]),
-    (GetFilterChanges, GetFilterChangesParams: [Quantity]),
-    (GetFilterLogs, GetFilterLogsParams: [Quantity]),
-    (GetTransactionProof, GetTransactionProofParams: [Data32]),
-    (GetMetaData, GetMetaDataParams: [BlockNumber]),
+    (BlockNumber, BlockNumberParams: [], Quantity),
+    (PeerCount, PeerCountParams: [], Quantity),
+    (SendRawTransaction, SendRawTransactionParams: [Data], TxResponse),
+    (SendTransaction, SendTransactionParams: [Data], TxResponse),
+    (GetBlockByHash, GetBlockByHashParams: [Data32, Boolean], Block),
+    (GetBlockByNumber, GetBlockByNumberParams: [BlockNumber, Boolean], Block),
+    (GetTransactionReceipt, GetTransactionReceiptParams: [Data32], Receipt),
+    (GetLogs, GetLogsParams: [Filter], Logs),
+    (Call, CallParams: [CallRequest, BlockNumber], Data),
+    (GetTransaction, GetTransactionParams: [Data32], RpcTransaction),
+    (GetTransactionCount, GetTransactionCountParams: [Data20, BlockNumber], Quantity),
+    (GetCode, GetCodeParams: [Data20, BlockNumber], Data),
+    (GetAbi, GetAbiParams: [Data20, BlockNumber], Data),
+    (GetBalance, GetBalanceParams: [Data20, BlockNumber], Quantity),
+    (NewFilter, NewFilterParams: [Filter], Quantity),
+    (NewBlockFilter, NewBlockFilterParams: [], Quantity),
+    (UninstallFilter, UninstallFilterParams: [Quantity], Boolean),
+    (GetFilterChanges, GetFilterChangesParams: [Quantity], FilterChanges),
+    (GetFilterLogs, GetFilterLogsParams: [Quantity], Logs),
+    (GetTransactionProof, GetTransactionProofParams: [Data32], Data),
+    (GetMetaData, GetMetaDataParams: [BlockNumber], MetaData),
 );
