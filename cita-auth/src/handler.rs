@@ -580,6 +580,18 @@ impl MsgHandler {
         let _ = self.tx_request.send(tx_req);
     }
 
+    fn send_single_block_tx_hashes_req(&mut self, height: u64) {
+        let mut req = BlockTxHashesReq::new();
+        req.set_height(height);
+        let msg: Message = req.into();
+        self.tx_pub
+            .send((
+                routing_key!(Auth >> BlockTxHashesReq).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
+    }
+
     fn send_block_tx_hashes_req(&mut self, check: bool) {
         // we will send req for all height
         // so don't too frequent
@@ -589,17 +601,9 @@ impl MsgHandler {
                 return;
             }
         }
-        for i in self.history_heights.min_height()..(self.history_heights.max_height() + 1) {
+        for i in self.history_heights.min_height()..self.history_heights.max_height() {
             if !self.history_hashes.contains_key(&i) {
-                let mut req = BlockTxHashesReq::new();
-                req.set_height(i);
-                let msg: Message = req.into();
-                self.tx_pub
-                    .send((
-                        routing_key!(Auth >> BlockTxHashesReq).into(),
-                        msg.try_into().unwrap(),
-                    ))
-                    .unwrap();
+                self.send_single_block_tx_hashes_req(i);
             }
         }
 
@@ -1041,8 +1045,7 @@ impl MsgHandler {
                     "[snapshot] receive cmd: End, height = {}",
                     snapshot_req.end_height
                 );
-                self.history_heights.update_height(snapshot_req.end_height);
-                self.send_block_tx_hashes_req(false);
+                self.send_single_block_tx_hashes_req(snapshot_req.end_height);
                 self.is_snapshot = false;
 
                 resp.set_resp(Resp::EndAck);
