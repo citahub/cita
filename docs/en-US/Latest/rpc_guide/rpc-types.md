@@ -161,7 +161,7 @@ Topics are order-dependent. A transaction with a log with topics [A, B] will be 
     * `receiptsRoot`- 回执树根
     * `gasUsed`-  The amount of gas used in the block
     * `proof`-
-        * `Tendermint`
+        * `BFT`
             * `proposal`- 提议内容的hash
             * `height` - 块高(十进制)
             * `round` - 投票轮数

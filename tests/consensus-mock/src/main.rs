@@ -22,7 +22,7 @@ use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use libproto::blockchain::{Block, BlockBody, BlockTxs, BlockWithProof};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
-use proof::TendermintProof;
+use proof::BftProof;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::convert::{Into, TryFrom, TryInto};
@@ -42,8 +42,8 @@ pub enum Step {
     Commit,
 }
 
-fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> TendermintProof {
-    let mut proof = TendermintProof::default();
+fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> BftProof {
+    let mut proof = BftProof::default();
     proof.height = (height - 1) as usize;
     proof.round = 0;
     proof.proposal = H256::default();

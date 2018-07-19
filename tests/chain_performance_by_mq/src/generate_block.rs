@@ -19,7 +19,7 @@ use bincode::{serialize, Infinite};
 use cita_types::H256;
 use crypto::*;
 use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
-use proof::TendermintProof;
+use proof::BftProof;
 use protobuf::RepeatedField;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
@@ -107,7 +107,7 @@ impl Generateblock {
         block
             .mut_body()
             .set_transactions(RepeatedField::from_vec(txs));
-        let mut proof = TendermintProof::default();
+        let mut proof = BftProof::default();
         proof.height = (h - 1) as usize;
         proof.round = 0;
         proof.proposal = H256::default();

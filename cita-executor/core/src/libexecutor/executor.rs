@@ -412,7 +412,7 @@ impl Executor {
         match self.prooftype {
             0 => Some(ProofType::AuthorityRound),
             1 => Some(ProofType::Raft),
-            2 => Some(ProofType::Tendermint),
+            2 => Some(ProofType::Bft),
             _ => None,
         }
     }

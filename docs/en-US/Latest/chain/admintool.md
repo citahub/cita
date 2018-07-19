@@ -115,7 +115,7 @@ prooftype = 2
 ```
 其中:
 
-- `prooftype`: 表示当前使用的共识算法，0 表示采用的 Poa 算法、1 表示采用的 Raft 算法、2 表示采用的 Tendermint 算法，默认采用 Tendermint 算法。
+- `prooftype`: 表示当前使用的共识算法，0 表示采用的 Poa 算法、1 表示采用的 Raft 算法、2 表示采用的 CITA-BFT 算法，默认采用 CITA-BFT 算法。
 
 #### cita-executor
 
@@ -129,7 +129,7 @@ grpc_port = 5000
 
 其中:
 
-- `prooftype`: 表示当前使用的共识算法，0 表示采用的 Poa 算法、1 表示采用的 Raft 算法、2 表示采用的 Tendermint 算法，默认采用 Tendermint 算法。
+- `prooftype`: 表示当前使用的共识算法，0 表示采用的 Poa 算法、1 表示采用的 Raft 算法、2 表示采用的 CITA-BFT 算法，默认采用 CITA-BFT 算法。
 - `journaldb_type`: 表示当前使用的 JournalDB 算法，有 "archive" "light" "fast" "basic" 等4种类型，默认是 archive。
 - `grpc_port`: grpc端口
 

@@ -19,7 +19,7 @@ use bincode::{serialize, Infinite};
 use cita_types::{Address, H256, U256};
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
-use proof::TendermintProof;
+use proof::BftProof;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::convert::{Into, TryInto};
@@ -100,7 +100,7 @@ impl BuildBlock {
         block.mut_header().set_height(height);
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
         block.mut_body().set_transactions(txs.clone().into());
-        let mut proof = TendermintProof::default();
+        let mut proof = BftProof::default();
         proof.height = (height - 1) as usize;
         proof.round = 0;
         proof.proposal = H256::default();

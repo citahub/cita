@@ -83,7 +83,7 @@
             "stateRoot": "0xf43dcd61e89b8164168d16079939e33200c130cb69e95666d5e07c9612e2e667",
             "proposer": "0x0000000000000000000000000000000000000000",
             "proof": {
-              "Tendermint": {
+              "Bft": {
                 "commits": {
                   "0x31d40cd88d6a884d2c95cf261c9f8ca495240af2": "0x34dcb4f04b5315365566422e2ec37ad78087a0338b4f99b45e56262069f69ad25323adff577862ddec9ac2ef5568440982cefd3c62783ff2ee1f4e7a3286073e00"
                 },

@@ -15,7 +15,7 @@ use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use libproto::{request, response, Message, SyncResponse};
-use proof::TendermintProof;
+use proof::BftProof;
 use serde_json;
 use std::cell::RefCell;
 use std::convert::{Into, TryFrom, TryInto};
@@ -602,8 +602,8 @@ impl ExecutorInstance {
             return;
         }
         match block_proof_type {
-            Some(ProofType::Tendermint) => {
-                let proof = TendermintProof::from(block.proof().clone());
+            Some(ProofType::Bft) => {
+                let proof = BftProof::from(block.proof().clone());
                 let proof_height = if proof.height == ::std::usize::MAX {
                     0
                 } else {
@@ -705,7 +705,7 @@ impl ExecutorInstance {
     fn set_sync_block(&self, block: Block, proto_proof: Proof) -> bool {
         let number = block.number();
         trace!("set sync block-{}", number);
-        let proof = TendermintProof::from(proto_proof);
+        let proof = BftProof::from(proto_proof);
         let proof_height = if proof.height == ::std::usize::MAX {
             0
         } else {
