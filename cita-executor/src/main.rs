@@ -171,6 +171,7 @@ fn main() {
             ext_instance.execute_block(number);
             timeout_factor = 0;
         } else {
+            info!("Executor enters the timeout retransmission phase");
             for height in ext_instance.ext.executed_result.read().keys() {
                 ext_instance
                     .ext
