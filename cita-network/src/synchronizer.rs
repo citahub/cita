@@ -113,6 +113,7 @@ impl Synchronizer {
                     self.submit_blocks();
                     self.local_sync_count = 0;
                     self.block_lists.clear();
+                    info!("More than 3 times, clear the cache");
                 }
             } else {
                 // If the block height is equal to the maximum height that has already been synchronized,

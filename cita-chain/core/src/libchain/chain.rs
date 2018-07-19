@@ -1240,12 +1240,15 @@ impl Chain {
 
     pub fn validate_hash(&self, block_hash: &H256) -> bool {
         let current_hash = self.get_current_hash();
-        trace!(
-            "validate_hash current_hash {:?} block_hash {:?}",
-            current_hash,
-            block_hash
-        );
-        current_hash == *block_hash
+        if current_hash == *block_hash {
+            true
+        } else {
+            warn!(
+                "Hash is not right, validate_hash current_hash {:?} block_hash {:?}",
+                current_hash, block_hash
+            );
+            false
+        }
     }
 
     pub fn validate_height(&self, block_number: u64) -> bool {

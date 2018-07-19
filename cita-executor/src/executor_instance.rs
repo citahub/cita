@@ -568,7 +568,7 @@ impl ExecutorInstance {
             let rblock = Block::from(block);
 
             trace!(
-                "execute_block rblock {} {:?}  tx hash {:?} len {}",
+                "sync: Received block {} {:?}  tx hash {:?} len {}",
                 rblock.number(),
                 rblock.hash(),
                 rblock.transactions_root(),
@@ -726,6 +726,8 @@ impl ExecutorInstance {
             trace!("set sync block-{} is finished", number);
             true
         } else {
+            warn!("The proof is {:?}", proof);
+            warn!("The authorities is {:?}", authorities);
             trace!("sync block-{} is invalid", number);
             false
         }
