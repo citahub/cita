@@ -243,4 +243,16 @@ The following command is run in the source root directory.
 
     Return the block height, indicating that the node has started to block out normally.
 
+## multiple chains
+
+To plan related port configuration for deploy multiple chains on different servers, Reference [config_tool](./admintool).
+
+Deploying multiple chains on the one server, in addition to planning port configuration, due to the `rabbmitmq` system service limitation, multiple chains can only be run in one docker. Generate a new chain based on the directory where the `test-chain` :
+
+  ```shell
+  ./env.sh ./scripts/create_cita_config.py create --chain_name test2-chain --jsonrpc_port 2337 --ws_port 5337 --grpc_port 6000 --nodes "127.0.0.1:8000,127.0.0.1:8001,127.0.0.1:8002,127.0.0.1:8003"
+  ```
+  
+  Run test2-chain is the same as the test-chain, and can only be run in the same docker.
+
 More APIs (such as contract calls, transaction queries),please check[RPC calls](./rpc_guide/rpc)。

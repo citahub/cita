@@ -246,4 +246,14 @@ cd target/install
 > 在发布件目录(target/install)下运行节点。
 > 可选择使用`./env.sh`
 
+## 多链
+
+在不同服务器部署多条链主要规划相关端口配置，参见[config_tool的功能和用法](./admintool)。在同一台服务器上部署多条链，除了规划端口配置外，由于`rabbmitmq`系统服务限制，多条链只能在一个docker里运行。基于上面test-chain链所在的目录，生成一条新链：
+
+  ```shell
+  ./env.sh ./scripts/create_cita_config.py create --chain_name test2-chain --jsonrpc_port 2337 --ws_port 5337 --grpc_port 6000 --nodes "127.0.0.1:8000,127.0.0.1:8001,127.0.0.1:8002,127.0.0.1:8003"
+  ```
+
+  运行test2-chain方式与上面test-chain一致，并且只能在同一个docker里运行。
+
 更多 API（如合约调用、交易查询）请参见[RPC 调用](./rpc_guide/rpc)。
