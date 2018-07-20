@@ -727,7 +727,10 @@ impl ExecutorInstance {
             true
         } else {
             warn!("The proof is {:?}", proof);
-            warn!("The authorities is {:?}", authorities);
+            warn!(
+                "The authorities is {:?}, prev_authorities is {:?}",
+                authorities, prev_authorities
+            );
             trace!("sync block-{} is invalid", number);
             false
         }
