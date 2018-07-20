@@ -504,7 +504,7 @@ dependencies = [
  "serde_derive 1.0.70 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-io 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "tokio-proto 0.1.1 (git+https://github.com/cryptape/tokio-proto.git)",
+ "tokio-proto 0.1.1 (git+https://github.com/cryptape/tokio-proto.git?rev=7419e3aaca5d89a497acaf379471d53671a94159)",
  "tokio-service 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
 ]
@@ -1291,7 +1291,7 @@ dependencies = [
 [[package]]
 name = "hyper"
 version = "0.11.22"
-source = "git+https://github.com/cryptape/hyper.git?branch=reuse_port#0e4417c424d8d85e47faac093033d065dde64442"
+source = "git+https://github.com/cryptape/hyper.git?branch=reuse_port#6c3eb6679ad9d3ddeca5702df371ccd9e9535f5d"
 dependencies = [
  "base64 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1307,7 +1307,7 @@ dependencies = [
  "time 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-core 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-io 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "tokio-proto 0.1.1 (git+https://github.com/cryptape/tokio-proto.git)",
+ "tokio-proto 0.1.1 (git+https://github.com/cryptape/tokio-proto.git?rev=7419e3aaca5d89a497acaf379471d53671a94159)",
  "tokio-service 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicase 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -2775,7 +2775,7 @@ dependencies = [
 [[package]]
 name = "tokio-proto"
 version = "0.1.1"
-source = "git+https://github.com/cryptape/tokio-proto.git#7419e3aaca5d89a497acaf379471d53671a94159"
+source = "git+https://github.com/cryptape/tokio-proto.git?rev=7419e3aaca5d89a497acaf379471d53671a94159#7419e3aaca5d89a497acaf379471d53671a94159"
 dependencies = [
  "futures 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3523,7 +3523,7 @@ dependencies = [
 "checksum tokio-executor 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "8cac2a7883ff3567e9d66bb09100d09b33d90311feca0206c7ca034bc0c55113"
 "checksum tokio-fs 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "40697ecbea5660df15b15d50a077386477d2f6a35002adf01ce76ff9dd9dce48"
 "checksum tokio-io 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "a5c9635ee806f26d302b8baa1e145689a280d8f5aa8d0552e7344808da54cc21"
-"checksum tokio-proto 0.1.1 (git+https://github.com/cryptape/tokio-proto.git)" = "<none>"
+"checksum tokio-proto 0.1.1 (git+https://github.com/cryptape/tokio-proto.git?rev=7419e3aaca5d89a497acaf379471d53671a94159)" = "<none>"
 "checksum tokio-reactor 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e00ec63bbec2c97ce1178cb0587b2c438b2f6b09d3ee54a33c45a9cf0d530810"
 "checksum tokio-service 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "24da22d077e0f15f55162bdbdc661228c1581892f52074fb242678d015b45162"
 "checksum tokio-tcp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ec9b094851aadd2caf83ba3ad8e8c4ce65a42104f7b94d9e6550023f0407853f"

@@ -10,7 +10,7 @@ serde_derive = "1.0"
 futures = "0.1"
 tokio-io = "0.1"
 byteorder = "1.0.0"
-tokio-proto = { version = "0.1.1", git = "https://github.com/cryptape/tokio-proto.git" }
+tokio-proto = { git = "https://github.com/cryptape/tokio-proto.git", rev = "7419e3aaca5d89a497acaf379471d53671a94159" }
 tokio-service = "0.1"
 dotenv = "0.10.0"
 bytes = "0.4"
