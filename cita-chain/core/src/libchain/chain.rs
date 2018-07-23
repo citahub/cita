@@ -310,6 +310,7 @@ pub struct Chain {
 
     // snapshot: get tx_hashes from file and sent to auth.
     pub tx_hashes_cache: RwLock<LruCache<u64, Vec<H256>>>,
+    pub is_snapshot: RwLock<bool>,
 }
 
 /// Get latest status
@@ -398,6 +399,7 @@ impl Chain {
             prooftype: chain_config.prooftype,
             proof_map: RwLock::new(BTreeMap::new()),
             tx_hashes_cache: RwLock::new(LruCache::new(TX_HASHES_CACHE_ITEMS)),
+            is_snapshot: RwLock::new(false),
         };
 
         if let Some(proto_proof) = chain.current_block_poof() {

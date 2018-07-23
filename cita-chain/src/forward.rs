@@ -606,22 +606,35 @@ impl Forward {
         let mut resp = SnapshotResp::new();
         match snapshot_req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
-                self.take_snapshot(snapshot_req);
+                info!("[snapshot] receive {:?}", snapshot_req);
+                let chain = self.chain.clone();
+                let ctx_pub = self.ctx_pub.clone();
+                let snapshot_req = snapshot_req.clone();
+                thread::spawn(move || {
+                    take_snapshot(chain, &snapshot_req);
 
-                //resp SnapshotAck to snapshot_tool
-                resp.set_resp(Resp::SnapshotAck);
-                let msg: Message = resp.into();
-                self.ctx_pub
-                    .send((
-                        routing_key!(Chain >> SnapshotResp).into(),
-                        msg.try_into().unwrap(),
-                    ))
-                    .unwrap();
+                    //resp SnapshotAck to snapshot_tool
+                    resp.set_resp(Resp::SnapshotAck);
+                    let msg: Message = resp.into();
+                    ctx_pub
+                        .send((
+                            routing_key!(Chain >> SnapshotResp).into(),
+                            msg.try_into().unwrap(),
+                        ))
+                        .unwrap();
+                });
+            }
+            Cmd::Begin => {
+                info!("[snapshot] receive cmd: Begin");
+                let mut is_snapshot = self.chain.is_snapshot.write();
+                *is_snapshot = true;
+            }
+            Cmd::Clear => {
+                info!("[snapshot] receive cmd: Clear");
             }
             Cmd::Restore => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
-                let proof = self.restore_snapshot(snapshot_req).unwrap();
+                info!("[snapshot] receive {:?}", snapshot_req);
+                let proof = restore_snapshot(self.chain.clone(), snapshot_req).unwrap();
 
                 //resp RestoreAck to snapshot_tool
                 resp.set_resp(Resp::RestoreAck);
@@ -636,67 +649,68 @@ impl Forward {
                     .unwrap();
             }
             Cmd::End => {
+                info!("[snapshot] receive {:?}", snapshot_req);
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 thread::spawn(move || {
                     thread::sleep(Duration::new(3, 0));
                     // broadcast status and rich-status.
                     chain.broadcast_current_status(&ctx_pub);
+
+                    let mut is_snapshot = chain.is_snapshot.write();
+                    *is_snapshot = false;
                 });
             }
-            _ => {
-                warn!("[snapshot] receive other cmd: {:?}", snapshot_req);
-            }
         }
     }
+}
 
-    fn take_snapshot(&self, snapshot_req: &SnapshotReq) {
-        // use given path
-        let file_name = snapshot_req.file.clone() + "_chain.rlp";
-        let writer = PackedWriter {
-            file: File::create(file_name).unwrap(), //TODO:use given path
-            block_hashes: Vec::new(),
-            cur_len: 0,
-        };
+fn take_snapshot(chain: Arc<Chain>, snapshot_req: &SnapshotReq) {
+    // use given path
+    let file_name = snapshot_req.file.clone() + "_chain.rlp";
+    let writer = PackedWriter {
+        file: File::create(file_name).unwrap(), //TODO:use given path
+        block_hashes: Vec::new(),
+        cur_len: 0,
+    };
 
-        // use given height: ancient block, or latest
-        let mut block_at = snapshot_req.get_end_height();
-        let current_height = self.chain.get_current_height();
-        if block_at == 0 || block_at > current_height {
-            warn!(
-                "block height is equal to 0 or bigger than current height, \
-                 and be set to current height!"
-            );
-            block_at = current_height;
-        }
-
-        let progress = Arc::new(Progress::default());
-
-        snapshot::take_snapshot(&self.chain, block_at, writer, &*progress).unwrap();
+    // use given height: ancient block, or latest
+    let mut block_at = snapshot_req.get_end_height();
+    let current_height = chain.get_current_height();
+    if block_at == 0 || block_at > current_height {
+        warn!(
+            "block height is equal to 0 or bigger than current height, \
+             and be set to current height!"
+        );
+        block_at = current_height;
     }
 
-    fn restore_snapshot(&self, snapshot_req: &SnapshotReq) -> Result<Proof, String> {
-        let file_name = snapshot_req.file.clone() + "_chain.rlp";
-        let reader = PackedReader::new(Path::new(&file_name))
-            .map_err(|e| format!("Couldn't open snapshot file: {}", e))
-            .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
-        let reader = reader?;
+    let progress = Arc::new(Progress::default());
 
-        let db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let snap_path = DataPath::root_node_path() + "/snapshot_chain";
-        let snapshot_params = SnapServiceParams {
-            db_config: db_config.clone(),
-            snapshot_root: snap_path.into(),
-            db_restore: self.chain.clone(),
-            chain: self.chain.clone(),
-        };
+    snapshot::take_snapshot(&chain, block_at, writer, &*progress).unwrap();
+}
 
-        let snapshot = SnapshotService::new(snapshot_params).unwrap();
-        let snapshot = Arc::new(snapshot);
-        snapshot::restore_using(Arc::clone(&snapshot), &reader, true);
+fn restore_snapshot(chain: Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Proof, String> {
+    let file_name = snapshot_req.file.clone() + "_chain.rlp";
+    let reader = PackedReader::new(Path::new(&file_name))
+        .map_err(|e| format!("Couldn't open snapshot file: {}", e))
+        .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
+    let reader = reader?;
 
-        // return proof
-        let proof = reader.manifest().last_proof.clone();
-        Ok(proof)
-    }
+    let db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
+    let snap_path = DataPath::root_node_path() + "/snapshot_chain";
+    let snapshot_params = SnapServiceParams {
+        db_config: db_config.clone(),
+        snapshot_root: snap_path.into(),
+        db_restore: chain.clone(),
+        chain: chain.clone(),
+    };
+
+    let snapshot = SnapshotService::new(snapshot_params).unwrap();
+    let snapshot = Arc::new(snapshot);
+    snapshot::restore_using(Arc::clone(&snapshot), &reader, true);
+
+    // return proof
+    let proof = reader.manifest().last_proof.clone();
+    Ok(proof)
 }

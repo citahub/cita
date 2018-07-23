@@ -23,7 +23,7 @@ use std::sync::Arc;
 /// Processing blocks and transaction storage
 #[derive(Clone)]
 pub struct BlockProcessor {
-    chain: Arc<Chain>,
+    pub chain: Arc<Chain>,
     ctx_pub: Sender<(String, Vec<u8>)>,
 }
 

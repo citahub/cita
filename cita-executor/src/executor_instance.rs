@@ -23,6 +23,7 @@ use std::fs::File;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
+use std::thread;
 use std::{mem, u8};
 use types::ids::BlockId;
 use util::datapath::DataPath;
@@ -45,6 +46,7 @@ pub struct ExecutorInstance {
     closed_block: RefCell<Option<ClosedBlock>>,
     chain_status: RichStatus,
     local_sync_count: u8,
+    pub is_snapshot: bool,
 }
 
 impl ExecutorInstance {
@@ -76,6 +78,7 @@ impl ExecutorInstance {
             closed_block: RefCell::new(None),
             chain_status: RichStatus::new(),
             local_sync_count: 0,
+            is_snapshot: false,
         }
     }
 
@@ -795,26 +798,38 @@ impl ExecutorInstance {
         self.write_sender.send(blk_height);
     }
 
-    fn deal_snapshot_req(&self, snapshot_req: &SnapshotReq) {
+    fn deal_snapshot_req(&mut self, snapshot_req: &SnapshotReq) {
         let mut resp = SnapshotResp::new();
         match snapshot_req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
-                self.take_snapshot(snapshot_req);
+                info!("[snapshot] receive {:?}", snapshot_req);
+                let ext = self.ext.clone();
+                let snapshot_req = snapshot_req.clone();
+                let ctx_pub = self.ctx_pub.clone();
+                thread::spawn(move || {
+                    take_snapshot(ext, &snapshot_req);
 
-                //resp SnapshotAck to snapshot_tool
-                resp.set_resp(Resp::SnapshotAck);
-                let msg: Message = resp.into();
-                self.ctx_pub
-                    .send((
-                        routing_key!(Executor >> SnapshotResp).into(),
-                        msg.try_into().unwrap(),
-                    ))
-                    .unwrap();
+                    //resp SnapshotAck to snapshot_tool
+                    resp.set_resp(Resp::SnapshotAck);
+                    let msg: Message = resp.into();
+                    ctx_pub
+                        .send((
+                            routing_key!(Executor >> SnapshotResp).into(),
+                            msg.try_into().unwrap(),
+                        ))
+                        .unwrap();
+                });
+            }
+            Cmd::Begin => {
+                info!("[snapshot] receive cmd: Begin");
+                self.is_snapshot = true;
+            }
+            Cmd::Clear => {
+                info!("[snapshot] receive cmd: Clear");
             }
             Cmd::Restore => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
-                self.restore(snapshot_req);
+                info!("[snapshot] receive {:?}", snapshot_req);
+                restore(self.ext.clone(), snapshot_req);
 
                 //resp RestoreAck to snapshot_tool
                 resp.set_resp(Resp::RestoreAck);
@@ -826,62 +841,11 @@ impl ExecutorInstance {
                     ))
                     .unwrap();
             }
-            _ => {
-                warn!("[snapshot] receive other message: {:?}", snapshot_req);
+            Cmd::End => {
+                info!("[snapshot] receive cmd: End");
+                self.is_snapshot = false;
             }
         }
-    }
-
-    fn take_snapshot(&self, snapshot_req: &SnapshotReq) {
-        // use given path
-        let file_name = snapshot_req.file.clone() + "_executor.rlp";
-        let writer = PackedWriter {
-            file: File::create(file_name).unwrap(),
-            state_hashes: Vec::new(),
-            block_hashes: Vec::new(),
-            cur_len: 0,
-        };
-
-        // use given height: ancient block, or latest
-        let mut block_at = snapshot_req.get_end_height();
-        let current_height = self.ext.get_current_height();
-        if block_at == 0 || block_at > current_height {
-            warn!(
-                "block height is equal to 0 or bigger than current height, \
-                 and be set to current height!"
-            );
-            block_at = current_height;
-        }
-        let start_hash = self.ext.block_hash(block_at).unwrap();
-
-        let db = self.ext.state_db.read().boxed_clone();
-
-        let progress = Arc::new(Progress::default());
-
-        snapshot::take_snapshot(&self.ext, start_hash, db.as_hashdb(), writer, &*progress).unwrap();
-    }
-
-    fn restore(&self, snapshot_req: &SnapshotReq) -> Result<(), String> {
-        let file_name = snapshot_req.file.clone() + "_executor.rlp";
-        let reader = PackedReader::new(Path::new(&file_name))
-            .map_err(|e| format!("Couldn't open snapshot file: {}", e))
-            .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
-        let reader = reader?;
-
-        let mut db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let snap_path = DataPath::root_node_path() + "/snapshot_executor";
-        let snapshot_params = SnapServiceParams {
-            db_config: db_config.clone(),
-            pruning: Algorithm::Archive,
-            snapshot_root: snap_path.into(),
-            db_restore: self.ext.clone(),
-            executor: self.ext.clone(),
-        };
-
-        let snapshot = SnapshotService::new(snapshot_params).unwrap();
-        let snapshot = Arc::new(snapshot);
-        snapshot::restore_using(snapshot, &reader, true);
-        Ok(())
     }
 
     /// The processing logic here is the same as the network pruned/re-transmitted information based on
@@ -904,4 +868,56 @@ impl ExecutorInstance {
             self.local_sync_count = 0;
         }
     }
+}
+
+fn take_snapshot(ext: Arc<Executor>, snapshot_req: &SnapshotReq) {
+    // use given path
+    let file_name = snapshot_req.file.clone() + "_executor.rlp";
+    let writer = PackedWriter {
+        file: File::create(file_name).unwrap(),
+        state_hashes: Vec::new(),
+        block_hashes: Vec::new(),
+        cur_len: 0,
+    };
+
+    // use given height: ancient block, or latest
+    let mut block_at = snapshot_req.get_end_height();
+    let current_height = ext.get_current_height();
+    if block_at == 0 || block_at > current_height {
+        warn!(
+            "block height is equal to 0 or bigger than current height, \
+             and be set to current height!"
+        );
+        block_at = current_height;
+    }
+    let start_hash = ext.block_hash(block_at).unwrap();
+
+    let db = ext.state_db.read().boxed_clone();
+
+    let progress = Arc::new(Progress::default());
+
+    snapshot::take_snapshot(&ext, start_hash, db.as_hashdb(), writer, &*progress).unwrap();
+}
+
+fn restore(ext: Arc<Executor>, snapshot_req: &SnapshotReq) -> Result<(), String> {
+    let file_name = snapshot_req.file.clone() + "_executor.rlp";
+    let reader = PackedReader::new(Path::new(&file_name))
+        .map_err(|e| format!("Couldn't open snapshot file: {}", e))
+        .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
+    let reader = reader?;
+
+    let mut db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
+    let snap_path = DataPath::root_node_path() + "/snapshot_executor";
+    let snapshot_params = SnapServiceParams {
+        db_config: db_config.clone(),
+        pruning: Algorithm::Archive,
+        snapshot_root: snap_path.into(),
+        db_restore: ext.clone(),
+        executor: ext.clone(),
+    };
+
+    let snapshot = SnapshotService::new(snapshot_params).unwrap();
+    let snapshot = Arc::new(snapshot);
+    snapshot::restore_using(snapshot, &reader, true);
+    Ok(())
 }
