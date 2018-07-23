@@ -45,7 +45,7 @@ use header::Header;
 use libproto::executor::ExecutedResult;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{BlockTxHashes, FullTransaction, Message};
-use proof::TendermintProof;
+use proof::BftProof;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
 use state::State;
@@ -118,7 +118,7 @@ impl TxProof {
             warn!("txproof verify block header hash failed");
             return false;
         };
-        let proof = TendermintProof::from(self.proposal_proof.clone());
+        let proof = BftProof::from(self.proposal_proof.clone());
         // Verify next block header, use proof.proposal
         if self.next_proposal_header.proposal_protobuf().crypt_hash() == proof.proposal {
         } else {
@@ -401,8 +401,8 @@ impl Chain {
         };
 
         if let Some(proto_proof) = chain.current_block_poof() {
-            if let Some(ProofType::Tendermint) = chain.get_chain_prooftype() {
-                let proof = TendermintProof::from(proto_proof.clone());
+            if let Some(ProofType::Bft) = chain.get_chain_prooftype() {
+                let proof = BftProof::from(proto_proof.clone());
                 chain
                     .proof_map
                     .write()
@@ -1019,7 +1019,7 @@ impl Chain {
         match self.prooftype {
             0 => Some(ProofType::AuthorityRound),
             1 => Some(ProofType::Raft),
-            2 => Some(ProofType::Tendermint),
+            2 => Some(ProofType::Bft),
             _ => None,
         }
     }
@@ -1264,8 +1264,8 @@ impl Chain {
     // Get the height of proof.
     pub fn get_block_proof_height(&self, block: &Block) -> usize {
         match block.proof_type() {
-            Some(ProofType::Tendermint) => {
-                let proof = TendermintProof::from(block.proof().clone());
+            Some(ProofType::Bft) => {
+                let proof = BftProof::from(block.proof().clone());
                 //block height 1's proof is height MAX
                 if proof.height == ::std::usize::MAX {
                     return 0;
@@ -1279,7 +1279,7 @@ impl Chain {
     // Get block proof by height.
     pub fn get_block_proof_by_height(&self, height: u64) -> Option<ProtoProof> {
         match self.current_header.read().proof_type() {
-            Some(ProofType::Tendermint) => {
+            Some(ProofType::Bft) => {
                 // TODO: use CONSTANT to replace the '1'.
                 self.block_by_height(height + 1)
                     .map_or(None, |block| Some(block.header.proof().clone()))

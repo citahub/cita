@@ -33,7 +33,7 @@ use libproto::{
     ExecutedResult, Message, OperateType, Proof, ProofType, Request_oneof_req as Request,
     SyncRequest, SyncResponse,
 };
-use proof::TendermintProof;
+use proof::BftProof;
 use serde_json;
 use std::convert::{Into, TryFrom, TryInto};
 use std::mem;
@@ -452,8 +452,8 @@ impl Forward {
             return;
         }
         match block_proof_type {
-            Some(ProofType::Tendermint) => {
-                let proof = TendermintProof::from(block.proof().clone());
+            Some(ProofType::Bft) => {
+                let proof = BftProof::from(block.proof().clone());
                 let proof_height = if proof.height == ::std::usize::MAX {
                     0
                 } else {
