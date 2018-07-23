@@ -19,7 +19,7 @@
 extern crate num_cpus;
 
 //pub mod service;
-mod error;
+pub mod error;
 pub mod io;
 pub mod service;
 
@@ -172,15 +172,15 @@ pub fn take_snapshot<W: SnapshotWriter + Send>(
         .block_header_by_hash(block_hash)
         .ok_or(Error::InvalidStartingBlock(BlockId::Hash(block_hash)))?;
     let state_root = start_header.state_root();
-    let number = start_header.number();
 
-    info!("Taking snapshot starting at block {}", number);
+    info!("Taking snapshot starting at block {}", block_at);
 
     let writer = Mutex::new(writer);
     let block_hashes = chunk_secondary(chain, block_hash, &writer, p)?;
 
     info!("produced {} block chunks.", block_hashes.len());
 
+    // get last_proof from chain, it will be used by cita-bft when restoring.
     let last_proof: Proof;
     if block_at == chain.get_current_height() {
         last_proof = chain.current_block_poof().unwrap();
@@ -191,7 +191,7 @@ pub fn take_snapshot<W: SnapshotWriter + Send>(
     let manifest_data = ManifestData {
         block_hashes: block_hashes,
         state_root: *state_root,
-        block_number: number,
+        block_number: block_at,
         block_hash: block_hash,
         last_proof: last_proof,
     };
@@ -274,8 +274,6 @@ impl<'a> BlockChunker<'a> {
                 break;
             }
 
-            trace!("Current_hash: {:?}", self.current_hash);
-
             let mut s = RlpStream::new();
             /*let block = self.chain
                 .block_by_hash(self.current_hash)
@@ -288,6 +286,8 @@ impl<'a> BlockChunker<'a> {
                 .ok_or(Error::BlockNotFound(self.current_hash))?;
             header.clone().rlp_append(&mut s);
             let header_rlp = s.out();
+
+            trace!("current height: {:?}", header.number());
 
             let receipts = match self.chain.block_receipts(self.current_hash) {
                 Some(r) => r.receipts,
@@ -440,6 +440,10 @@ impl BlockRebuilder {
         trace!("restoring block chunk with {} blocks.", num_blocks);
 
         if self.fed_blocks + num_blocks > self.snapshot_blocks {
+            info!(
+                "already {}, now {}, total {}",
+                self.fed_blocks, num_blocks, self.snapshot_blocks
+            );
             return Err(
                 Error::TooManyBlocks(self.snapshot_blocks, self.fed_blocks + num_blocks).into(),
             );

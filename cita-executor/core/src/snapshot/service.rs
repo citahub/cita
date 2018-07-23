@@ -441,7 +441,7 @@ impl Service {
             *reader = Some(LooseReader::new(snapshot_dir)?);
         }
 
-        let _ = fs::remove_dir_all(self.restoration_dir());
+        let _ = fs::remove_dir_all(&self.snapshot_root)?;
         *self.status.lock() = RestorationStatus::Inactive;
 
         Ok(())
