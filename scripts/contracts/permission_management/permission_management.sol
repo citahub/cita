@@ -18,21 +18,21 @@ contract PermissionManagement {
     Authorization auth = Authorization(authorizationAddr);
 
     address[15] builtInPermissions = [
-        0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,
-        0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011,
-        0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012,
-        0xfFFFffFffFfffFffFfffFfFFfFFFfFffFf021013,
-        0xfFFFffFfffFFFFffFfFffffFfFFFfffFfF021014,
-        0xFFFFFfffffFFFfFfffffFfFfffffFFffFf021015,
-        0xfFfFFFFFffFFfFFfFFfFFfFfFFfffFFffF021016,
-        0xFFFFffFFFFfFFFFFFfFFffffFFFFFFFFff021017,
-        0xfFFFfFfFFFFFFffFfFFFFfffFffFfFFFFF021018,
-        0xfFFffffffFffFffFFFFFFFFFffFfffFFfF021019,
-        0xFFFFffffffffFFfFffFffFFfFfFfFffFFf02101A,
-        0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B,
-        0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c,
-        0xFFffFFFFfFFFFFFfffFfFFffFfFFFFfFFf021000,
-        0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001
+        0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,       // 0 - newPermission
+        0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011,       // 1 - deletePermission
+        0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012,       // 2 - addResources, deleteResources, updatePermissionName
+        0xfFFFffFffFfffFffFfffFfFFfFFFfFffFf021013,       // 3 - setAuthorization
+        0xfFFFffFfffFFFFffFfFffffFfFFFfffFfF021014,       // 4 - cancelAuthorization, clearAuthorization, cancelAuthorizations
+        0xFFFFFfffffFFFfFfffffFfFfffffFFffFf021015,       // 5 - newRole
+        0xfFfFFFFFffFFfFFfFFfFFfFfFFfffFFffF021016,       // 6 - deleteRole
+        0xFFFFffFFFFfFFFFFFfFFffffFFFFFFFFff021017,       // 7 - addPermissions, deletePermissions, updateRoleName
+        0xfFFFfFfFFFFFFffFfFFFFfffFffFfFFFFF021018,       // 8 - setRole
+        0xfFFffffffFffFffFFFFFFFFFffFfffFFfF021019,       // 9 - cancelRole, clearRole
+        0xFFFFffffffffFFfFffFffFFfFfFfFffFFf02101A,       // 10 - newGroup
+        0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B,       // 11 - deleteGroup
+        0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c,       // 12 - addAccounts, deleteAccounts, updateGroupName
+        0xFFffFFFFfFFFFFFfffFfFFffFfFFFFfFFf021000,       
+        0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001        
     ];
 
     event PermissionDeleted(address _permission);
@@ -49,6 +49,11 @@ contract PermissionManagement {
         _;
     }
 
+    modifier checkPermission(address _permission) {
+        require(auth.checkPermission(msg.sender, _permission));
+        _;
+    }
+
     /// @notice Create a new permission
     /// @dev TODO Check the funcs belong the conts
     /// @param _name  The name of permission
@@ -57,6 +62,7 @@ contract PermissionManagement {
     /// @return New permission's address
     function newPermission(bytes32 _name, address[] _conts, bytes4[] _funcs)
         external
+        checkPermission(builtInPermissions[0])
         sameLength(_conts, _funcs)
         returns (address id)
     {
@@ -68,6 +74,7 @@ contract PermissionManagement {
     /// @return true if successed, otherwise false
     function deletePermission(address _permission)
         external
+        checkPermission(builtInPermissions[1])
         notBuiltInPermission(_permission)
         returns (bool)
     {
@@ -85,6 +92,7 @@ contract PermissionManagement {
     /// @return true if successed, otherwise false
     function updatePermissionName(address _permission, bytes32 _name)
         external
+        checkPermission(builtInPermissions[2])
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -99,6 +107,7 @@ contract PermissionManagement {
     /// @return true if successed, otherwise false
     function addResources(address _permission, address[] _conts, bytes4[] _funcs)
         external
+        checkPermission(builtInPermissions[2])
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -113,6 +122,7 @@ contract PermissionManagement {
     /// @return true if successed, otherwise false
     function deleteResources(address _permission, address[] _conts, bytes4[] _funcs)
         external
+        checkPermission(builtInPermissions[2])
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -125,7 +135,8 @@ contract PermissionManagement {
     /// @param _permissions The multiple permissions to be setted
     /// @return true if successed, otherwise false
     function setAuthorizations(address _account, address[] _permissions)
-        public
+        external
+        checkPermission(builtInPermissions[3])
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++)
@@ -139,7 +150,8 @@ contract PermissionManagement {
     /// @param _permission The permission to be setted
     /// @return true if successed, otherwise false
     function setAuthorization(address _account, address _permission)
-        public
+        external
+        checkPermission(builtInPermissions[3])
         returns (bool)
     {
         require(auth.setAuth(_account, _permission));
@@ -151,7 +163,8 @@ contract PermissionManagement {
     /// @param _permissions The multiple permissions to be canceled
     /// @return true if successed, otherwise false
     function cancelAuthorizations(address _account, address[] _permissions)
-        public
+        external
+        checkPermission(builtInPermissions[4])
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++)
@@ -165,7 +178,8 @@ contract PermissionManagement {
     /// @param _permission The permission to be canceled
     /// @return true if successed, otherwise false
     function cancelAuthorization(address _account, address _permission)
-        public
+        external
+        checkPermission(builtInPermissions[4])
         returns (bool)
     {
         require(auth.cancelAuth(_account, _permission));
@@ -176,7 +190,8 @@ contract PermissionManagement {
     /// @param _account The account to be cleared
     /// @return true if successed, otherwise false
     function clearAuthorization(address _account)
-        public
+        external
+        checkPermission(builtInPermissions[4])
         returns (bool)
     {
         require(auth.clearAuth(_account));
