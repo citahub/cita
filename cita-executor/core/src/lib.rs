@@ -97,6 +97,7 @@ pub mod native;
 pub mod substate;
 
 pub mod contracts;
+pub mod grpc_contracts;
 pub mod libexecutor;
 pub mod snapshot;
 

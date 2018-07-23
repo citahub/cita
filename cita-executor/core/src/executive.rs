@@ -19,6 +19,8 @@
 use cita_types::{Address, H160, H256, U256, U512};
 use contracts::permission_management::contains_resource;
 use contracts::Resource;
+use builtin::Builtin;
+use native::factory::Contract as NativeContract;
 use crossbeam;
 use engines::Engine;
 use error::ExecutionError;
@@ -42,6 +44,7 @@ use trace::{
 };
 use types::reserved_addresses;
 use types::transaction::{Action, SignedTransaction};
+use grpc_contracts::contract::is_grpc_contract;
 use util::*;
 
 /// Roughly estimate what stack size each level of evm depth will use
@@ -68,6 +71,9 @@ const AMEND_CODE: u32 = 2;
 const AMEND_KV_H256: u32 = 3;
 ///amend get the value of db
 const AMEND_GET_KV_H256: u32 = 4;
+
+// minimum required gas, just for check
+const MIN_GAS_REQUIRED: u32 = 100;
 
 /// Returns new address created from address and given nonce.
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
@@ -360,9 +366,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         static_call: bool,
         economical_model: EconomicalModel,
     ) -> Externalities<'any, T, V, B>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where
+            T: Tracer,
+            V: VMTracer,
     {
         let is_static = self.static_flag || static_call;
         Externalities::new(
@@ -441,9 +447,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         mut tracer: T,
         mut vm_tracer: V,
     ) -> Result<Executed, ExecutionError>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where
+            T: Tracer,
+            V: VMTracer,
     {
         let sender = *t.sender();
         let nonce = self.state.nonce(&sender)?;
@@ -459,11 +465,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             )?;
         }
 
-        let base_gas_required = U256::from(100); // `CREATE` transaction cost
-
-        if sender != Address::zero() && t.gas < base_gas_required {
+        if sender != Address::zero() && t.gas < U256::from(MIN_GAS_REQUIRED) {
             return Err(ExecutionError::NotEnoughBaseGas {
-                required: base_gas_required,
+                required: U256::from(MIN_GAS_REQUIRED),
                 got: t.gas,
             });
         }
@@ -555,7 +559,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let mut substate = Substate::new();
 
-        let init_gas = t.gas - base_gas_required;
+        let init_gas = t.gas - U256::from(MIN_GAS_REQUIRED);
         let (result, output) = match t.action {
             Action::Store | Action::AbiStore => {
                 let schedule = Schedule::new_v1();
@@ -571,7 +575,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     )
                 } else {
                     return Err(ExecutionError::NotEnoughBaseGas {
-                        required: base_gas_required.saturating_add(store_gas_used),
+                        required: U256::from(MIN_GAS_REQUIRED).saturating_add(store_gas_used),
                         got: t.gas,
                     });
                 }
@@ -669,9 +673,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         tracer: &mut T,
         vm_tracer: &mut V,
     ) -> evm::Result<FinalizationResult>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where
+            T: Tracer,
+            V: VMTracer,
     {
         let depth_threshold = LOCAL_STACK_SIZE.with(|sz| sz.get() / STACK_SIZE_PER_DEPTH);
         let static_call = params.call_type == CallType::StaticCall;
@@ -732,16 +736,16 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         tracer: &mut T,
         vm_tracer: &mut V,
     ) -> evm::Result<FinalizationResult>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where
+            T: Tracer,
+            V: VMTracer,
     {
         if (params.call_type == CallType::StaticCall
             || (params.call_type == CallType::Call && self.static_flag))
             && params.value.value() > 0.into()
-        {
-            return Err(evm::Error::MutableCallInStaticContext);
-        }
+            {
+                return Err(evm::Error::MutableCallInStaticContext);
+            }
 
         // backup used in case of running out of gas
         self.state.checkpoint();
@@ -751,139 +755,165 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // at first, transfer value to destination
         if let (true, ActionValue::Transfer(val)) = (self.payment_required(), &params.value) {
             self.state
-                .transfer_balance(&params.sender, &params.address, &val)?;
+                .transfer_balance(&params.sender, &params.address, &val)?
         }
 
-        if let Some(mut contract) = self.native_factory.new_contract(params.code_address) {
-            let cost = U256::from(100);
-            if cost <= params.gas {
-                let mut unconfirmed_substate = Substate::new();
-                let mut trace_output = tracer.prepare_trace_output();
-                let output_policy = OutputPolicy::Return(output, trace_output.as_mut());
-                let res = {
-                    let mut tracer = NoopTracer;
-                    let mut vmtracer = NoopVMTracer;
-                    let economical_model = self.economical_model;
-                    let mut ext = self.as_externalities(
-                        OriginInfo::from(&params),
-                        &mut unconfirmed_substate,
-                        output_policy,
-                        &mut tracer,
-                        &mut vmtracer,
-                        static_call,
-                        economical_model,
-                    );
-                    contract.exec(params, &mut ext).finalize(ext)
-                };
-                self.enact_result(&res, substate, unconfirmed_substate);
-                trace!(target: "executive", "enacted: substate={:?}\n", substate);
-                return res;
-            }
+        if let Some(mut native_contract) = self.native_factory.new_contract(params.code_address) {
+            // check and call Native Contract
+            self.call_native_contract(params, substate, output, tracer, static_call, native_contract)
+        } else if is_grpc_contract(params.code_address) {
+            self.call_grpc_contract(params, substate, output)
+        } else if let Some(builtin) = self.engine.builtin(&params.code_address, self.info.number) {
+            // check and call Builtin contract
+            self.call_builtin_contract(params, output, tracer, builtin)
+        } else {
+            // call EVM contract
+            self.call_evm_contract(params, substate, output, tracer, vm_tracer)
         }
-        if let Some(builtin) = self.engine.builtin(&params.code_address, self.info.number) {
-            // if destination is builtin, try to execute it
-            if !builtin.is_active(self.info.number) {
-                panic!(
-                    "Consensus failure: engine implementation prematurely enabled built-in at {}",
-                    params.code_address
-                );
-            }
+    }
 
-            let default = [];
-            let data = if let Some(ref d) = params.data {
-                d as &[u8]
-            } else {
-                &default as &[u8]
+    fn call_grpc_contract(&mut self, params: ActionParams, substate: &mut Substate, output: BytesRef) -> evm::Result<FinalizationResult> {
+        // TODO check and call External contract(Go Contract)
+        Ok(FinalizationResult {
+            gas_left: U256::from_str("").unwrap(),
+            apply_state: true,
+            return_data: ReturnData::empty(),
+        })
+    }
+
+    fn call_evm_contract<T, V>(&mut self, params: ActionParams, substate: &mut Substate, output: BytesRef, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<FinalizationResult> where
+        T: Tracer,
+        V: VMTracer {
+        let trace_info = tracer.prepare_trace_call(&params);
+        let mut trace_output = tracer.prepare_trace_output();
+        let mut subtracer = tracer.subtracer();
+        let gas = params.gas;
+        if params.code.is_some() {
+            // part of substate that may be reverted
+            let mut unconfirmed_substate = Substate::new();
+
+            // TODO: make ActionParams pass by ref then avoid copy altogether.
+            let mut subvmtracer = vm_tracer.prepare_subtrace(
+                params
+                    .code
+                    .as_ref()
+                    .expect("scope is conditional on params.code.is_some(); qed"),
+            );
+
+            let res = {
+                self.exec_vm(
+                    params,
+                    &mut unconfirmed_substate,
+                    OutputPolicy::Return(output, trace_output.as_mut()),
+                    &mut subtracer,
+                    &mut subvmtracer,
+                )
             };
 
-            let trace_info = tracer.prepare_trace_call(&params);
+            vm_tracer.done_subtrace(subvmtracer);
 
-            let cost = builtin.cost(data);
-            if cost <= params.gas {
-                builtin.execute(data, &mut output);
-                self.state.discard_checkpoint();
+            trace!(target: "executive", "res={:?}", res);
 
-                // trace only top level calls to builtins to avoid DDoS attacks
-                if self.depth == 0 {
-                    let mut trace_output = tracer.prepare_trace_output();
-                    if let Some(out) = trace_output.as_mut() {
-                        *out = output.to_owned();
-                    }
-
-                    tracer.trace_call(trace_info, cost, trace_output, vec![]);
+            let traces = subtracer.traces();
+            match res {
+                Ok(ref res) => {
+                    tracer.trace_call(trace_info, gas - res.gas_left, trace_output, traces)
                 }
-                Ok(FinalizationResult {
-                    gas_left: params.gas - cost,
-                    return_data: ReturnData::new(output.to_owned(), 0, output.len()),
-                    apply_state: true,
-                })
-            } else {
-                // just drain the whole gas
-                self.state.revert_to_checkpoint();
+                Err(ref e) => tracer.trace_failed_call(trace_info, traces, e.into()),
+            };
 
-                tracer.trace_failed_call(trace_info, vec![], evm::Error::OutOfGas.into());
+            trace!(target: "executive", "substate={:?}; unconfirmed_substate={:?}\n",
+                   substate, unconfirmed_substate);
 
-                Err(evm::Error::OutOfGas)
-            }
+            self.enact_result(&res, substate, unconfirmed_substate);
+            trace!(target: "executive", "enacted: substate={:?}\n", substate);
+            res
         } else {
-            let trace_info = tracer.prepare_trace_call(&params);
-            let mut trace_output = tracer.prepare_trace_output();
-            let mut subtracer = tracer.subtracer();
+            // otherwise it's just a basic transaction, only do tracing, if necessary.
+            self.state.discard_checkpoint();
 
-            let gas = params.gas;
-
-            if params.code.is_some() {
-                // part of substate that may be reverted
-                let mut unconfirmed_substate = Substate::new();
-
-                // TODO: make ActionParams pass by ref then avoid copy altogether.
-                let mut subvmtracer = vm_tracer.prepare_subtrace(
-                    params
-                        .code
-                        .as_ref()
-                        .expect("scope is conditional on params.code.is_some(); qed"),
-                );
-
-                let res = {
-                    self.exec_vm(
-                        params,
-                        &mut unconfirmed_substate,
-                        OutputPolicy::Return(output, trace_output.as_mut()),
-                        &mut subtracer,
-                        &mut subvmtracer,
-                    )
-                };
-
-                vm_tracer.done_subtrace(subvmtracer);
-
-                trace!(target: "executive", "res={:?}", res);
-
-                let traces = subtracer.traces();
-                match res {
-                    Ok(ref res) => {
-                        tracer.trace_call(trace_info, gas - res.gas_left, trace_output, traces)
-                    }
-                    Err(ref e) => tracer.trace_failed_call(trace_info, traces, e.into()),
-                };
-
-                trace!(target: "executive", "substate={:?}; unconfirmed_substate={:?}\n",
-                       substate, unconfirmed_substate);
-
-                self.enact_result(&res, substate, unconfirmed_substate);
-                trace!(target: "executive", "enacted: substate={:?}\n", substate);
-                res
-            } else {
-                // otherwise it's just a basic transaction, only do tracing, if necessary.
-                self.state.discard_checkpoint();
-
-                tracer.trace_call(trace_info, U256::zero(), trace_output, vec![]);
-                Ok(FinalizationResult {
-                    gas_left: params.gas,
-                    return_data: ReturnData::empty(),
-                    apply_state: true,
-                })
-            }
+            tracer.trace_call(trace_info, U256::zero(), trace_output, vec![]);
+            Ok(FinalizationResult {
+                gas_left: params.gas,
+                return_data: ReturnData::empty(),
+                apply_state: true,
+            })
         }
+    }
+
+    fn call_builtin_contract<T>(&mut self, params: ActionParams, mut output: BytesRef, tracer: &mut T, builtin: &Builtin) -> evm::Result<FinalizationResult>
+        where
+            T: Tracer
+    {
+// if destination is builtin, try to execute it
+        if !builtin.is_active(self.info.number) {
+            panic!(
+                "Consensus failure: engine implementation prematurely enabled built-in at {}",
+                params.code_address
+            );
+        }
+        let default = [];
+        let data = if let Some(ref d) = params.data {
+            d as &[u8]
+        } else {
+            &default as &[u8]
+        };
+        let trace_info = tracer.prepare_trace_call(&params);
+        let cost = builtin.cost(data);
+        if cost <= params.gas {
+            builtin.execute(data, &mut output);
+            self.state.discard_checkpoint();
+
+            // trace only top level calls to builtins to avoid DDoS attacks
+            if self.depth == 0 {
+                let mut trace_output = tracer.prepare_trace_output();
+                if let Some(out) = trace_output.as_mut() {
+                    *out = output.to_owned();
+                }
+
+                tracer.trace_call(trace_info, cost, trace_output, vec![]);
+            }
+            Ok(FinalizationResult {
+                gas_left: params.gas - cost,
+                return_data: ReturnData::new(output.to_owned(), 0, output.len()),
+                apply_state: true,
+            })
+        } else {
+            // just drain the whole gas
+            self.state.revert_to_checkpoint();
+
+            tracer.trace_failed_call(trace_info, vec![], evm::Error::OutOfGas.into());
+
+            Err(evm::Error::OutOfGas)
+        }
+    }
+
+    fn call_native_contract<T>(&mut self, params: ActionParams, substate: &mut Substate, output: BytesRef, tracer: &mut T, static_call: bool, mut contract: Box<NativeContract>)
+                               -> evm::Result<FinalizationResult>
+        where
+            T: Tracer,
+    {
+        let mut unconfirmed_substate = Substate::new();
+        let mut trace_output = tracer.prepare_trace_output();
+        let output_policy = OutputPolicy::Return(output, trace_output.as_mut());
+        let res = {
+            let mut tracer = NoopTracer;
+            let mut vmtracer = NoopVMTracer;
+            let economical_model = self.economical_model;
+            let mut ext = self.as_externalities(
+                OriginInfo::from(&params),
+                &mut unconfirmed_substate,
+                output_policy,
+                &mut tracer,
+                &mut vmtracer,
+                static_call,
+                economical_model,
+            );
+            contract.exec(params, &mut ext).finalize(ext)
+        };
+        self.enact_result(&res, substate, unconfirmed_substate);
+        trace!(target: "executive", "enacted: substate={:?}\n", substate);
+        return res;
     }
 
     /// Creates contract with given contract params.
@@ -896,9 +926,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         tracer: &mut T,
         vm_tracer: &mut V,
     ) -> evm::Result<FinalizationResult>
-    where
-        T: Tracer,
-        V: VMTracer,
+        where
+            T: Tracer,
+            V: VMTracer,
     {
         if self.state.exists_and_has_code_or_nonce(&params.address)? {
             return Err(evm::Error::OutOfGas);
@@ -1113,8 +1143,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             | Err(evm::Error::OutOfBounds)
             | Err(evm::Error::Reverted)
             | Ok(FinalizationResult {
-                apply_state: false, ..
-            }) => {
+                     apply_state: false, ..
+                 }) => {
                 self.state.revert_to_checkpoint();
             }
             Ok(_) | Err(evm::Error::Internal(_)) => {
@@ -1311,10 +1341,10 @@ mod tests {
 
         match result {
             Err(ExecutionError::NotEnoughCash { required, got })
-                if required == U512::from(100_043) && got == U512::from(100_042) =>
-            {
-                ()
-            }
+            if required == U512::from(100_043) && got == U512::from(100_042) =>
+                {
+                    ()
+                }
             _ => assert!(false, "Expected not enough cash error. {:?}", result),
         }
     }

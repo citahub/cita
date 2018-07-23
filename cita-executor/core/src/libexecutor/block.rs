@@ -43,6 +43,7 @@ use trace::FlatTrace;
 use types::reserved_addresses;
 use types::transaction::{Action, SignedTransaction};
 use util::{merklehash, HeapSizeOf};
+use grpc_contracts::contract::{is_grpc_contract as is_go_contract};
 
 /// Check the 256 transactions once
 const CHECK_NUM: usize = 0xff;
@@ -51,16 +52,6 @@ lazy_static! {
     /// Block Reward
     /// HardFork if need to change block reward
     pub static ref BLOCK_REWARD: U256 = U256::from(5_000_000_000_000_000_000 as i64);
-}
-
-lazy_static! {
-    static ref LOW_CONTRACT_ADDRESS: Address =
-        Address::from_str(reserved_addresses::GO_CONTRACT_MIN).unwrap();
-    static ref HIGH_CONTRACT_ADDRESS: Address =
-        Address::from_str(reserved_addresses::GO_CONTRACT_MAX).unwrap();
-}
-pub fn is_go_contract(caddr: Address) -> bool {
-    caddr > *LOW_CONTRACT_ADDRESS && caddr < *HIGH_CONTRACT_ADDRESS
 }
 
 /// Trait for a object that has a state database.
@@ -436,10 +427,10 @@ impl OpenBlock {
                             ip = value.conn_info.get_ip().to_string();
                             port = value.conn_info.get_port();
                         } else if let Some(value) = executor.db.read().read(db::COL_EXTRA, address)
-                        {
-                            ip = value.conn_info.get_ip().to_string();
-                            port = value.conn_info.get_port();
-                        }
+                            {
+                                ip = value.conn_info.get_ip().to_string();
+                                port = value.conn_info.get_port();
+                            }
                     }
                     (ip, port, str_addr)
                 }
