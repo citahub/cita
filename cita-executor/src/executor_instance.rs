@@ -46,6 +46,7 @@ pub struct ExecutorInstance {
     closed_block: RefCell<Option<ClosedBlock>>,
     chain_status: RichStatus,
     local_sync_count: u8,
+    pub is_snapshot: bool,
 }
 
 impl ExecutorInstance {
@@ -77,6 +78,7 @@ impl ExecutorInstance {
             closed_block: RefCell::new(None),
             chain_status: RichStatus::new(),
             local_sync_count: 0,
+            is_snapshot: false,
         }
     }
 
@@ -796,11 +798,11 @@ impl ExecutorInstance {
         self.write_sender.send(blk_height);
     }
 
-    fn deal_snapshot_req(&self, snapshot_req: &SnapshotReq) {
+    fn deal_snapshot_req(&mut self, snapshot_req: &SnapshotReq) {
         let mut resp = SnapshotResp::new();
         match snapshot_req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
+                info!("[snapshot] receive {:?}", snapshot_req);
                 let ext = self.ext.clone();
                 let snapshot_req = snapshot_req.clone();
                 let ctx_pub = self.ctx_pub.clone();
@@ -818,8 +820,15 @@ impl ExecutorInstance {
                         .unwrap();
                 });
             }
+            Cmd::Begin => {
+                info!("[snapshot] receive cmd: Begin");
+                self.is_snapshot = true;
+            }
+            Cmd::Clear => {
+                info!("[snapshot] receive cmd: Clear");
+            }
             Cmd::Restore => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
+                info!("[snapshot] receive {:?}", snapshot_req);
                 restore(self.ext.clone(), snapshot_req);
 
                 //resp RestoreAck to snapshot_tool
@@ -832,8 +841,9 @@ impl ExecutorInstance {
                     ))
                     .unwrap();
             }
-            _ => {
-                warn!("[snapshot] receive other message: {:?}", snapshot_req);
+            Cmd::End => {
+                info!("[snapshot] receive cmd: End");
+                self.is_snapshot = false;
             }
         }
     }

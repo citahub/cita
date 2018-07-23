@@ -187,11 +187,13 @@ fn main() {
                 // 1. Network retransmits block information or initiates a synchronization request,
                 //    and then the executor will receive a block message
                 // 2. Bft will receive the latest status of chain
-                info!("Chain enters the timeout retransmission phase");
-                block_processor.reset_max_store_height();
-                block_processor.broadcast_current_status();
-                if timeout_factor < 6 {
-                    timeout_factor += 1
+                if !*block_processor.chain.is_snapshot.read() {
+                    info!("Chain enters the timeout retransmission phase");
+                    block_processor.reset_max_store_height();
+                    block_processor.broadcast_current_status();
+                    if timeout_factor < 6 {
+                        timeout_factor += 1
+                    }
                 }
             }
         }

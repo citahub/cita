@@ -581,7 +581,7 @@ impl Forward {
         let mut resp = SnapshotResp::new();
         match snapshot_req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
+                info!("[snapshot] receive {:?}", snapshot_req);
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 let snapshot_req = snapshot_req.clone();
@@ -599,8 +599,16 @@ impl Forward {
                         .unwrap();
                 });
             }
+            Cmd::Begin => {
+                info!("[snapshot] receive cmd: Begin");
+                let mut is_snapshot = self.chain.is_snapshot.write();
+                *is_snapshot = true;
+            }
+            Cmd::Clear => {
+                info!("[snapshot] receive cmd: Clear");
+            }
             Cmd::Restore => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
+                info!("[snapshot] receive {:?}", snapshot_req);
                 let proof = restore_snapshot(self.chain.clone(), snapshot_req).unwrap();
 
                 //resp RestoreAck to snapshot_tool
@@ -616,16 +624,17 @@ impl Forward {
                     .unwrap();
             }
             Cmd::End => {
+                info!("[snapshot] receive {:?}", snapshot_req);
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 thread::spawn(move || {
                     thread::sleep(Duration::new(3, 0));
                     // broadcast status and rich-status.
                     chain.broadcast_current_status(&ctx_pub);
+
+                    let mut is_snapshot = chain.is_snapshot.write();
+                    *is_snapshot = false;
                 });
-            }
-            _ => {
-                warn!("[snapshot] receive other cmd: {:?}", snapshot_req);
             }
         }
     }
