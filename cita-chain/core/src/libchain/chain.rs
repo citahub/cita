@@ -911,6 +911,10 @@ impl Chain {
             )
     }
 
+    pub fn get_block_header_bytes(&self, id: BlockId) -> Option<Vec<u8>> {
+        self.block_header(id).map(|x| x.rlp_bytes().into_vec())
+    }
+
     pub fn localized_receipt(&self, id: TransactionId) -> Option<LocalizedReceipt> {
         trace!("Get receipt id: {:?}", id);
 
