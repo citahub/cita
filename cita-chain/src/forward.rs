@@ -320,8 +320,33 @@ impl Forward {
                 trace!("Log is: {:?}", log);
                 response.set_filter_logs(serde_json::to_string(&log).unwrap());
             }
-            _ => {
-                error!("match error Request_oneof_req msg!!!!");
+
+            Request::state_proof(_) => {
+                // TODO to be continued ...
+            }
+
+            Request::block_header_height(block_height) => {
+                let block_height: BlockParamsByNumber =
+                    serde_json::from_str(&block_height).expect("Invalid param");
+                match self
+                    .chain
+                    .get_block_header_bytes(block_height.block_id.into())
+                {
+                    Some(block_header_bytes) => {
+                        response.set_block_header(block_header_bytes);
+                    }
+                    None => {
+                        response.set_none(true);
+                    }
+                }
+            }
+
+            Request::height(_) | Request::batch_req(_) => {
+                error!("Get messages which should not handle by this function!");
+            }
+
+            Request::peercount(_) | Request::un_tx(_) => {
+                error!("Get messages which should sent to other micro services!");
             }
         };
         let msg: Message = response.into();
