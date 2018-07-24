@@ -13,10 +13,9 @@ import "../common/address_array.sol";
 /// @dev TODO Split to a new file: role_auth.sol
 contract RoleManagement {
 
-    address roleCreatorAddress = 0xe9E2593C7D1Db5EE843c143E9cB52b8d996b2380;
+    address roleCreatorAddress = 0xffFfffffFfffFffFFFfFfffffffFfFffFF020008;
     RoleCreator roleCreator = RoleCreator(roleCreatorAddress);
 
-    address internal roleManagementAddr = 0xe3b5DDB80AdDb513b5c981e27Bb030A86A8821eE;
     address internal permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
     address internal authorizationAddr = 0xFFfFffFfffFFFFFfFfFfffFFfFfFfFFfFf020006;
     // bytes4 internal queryPermissionsHash = 0x46f02832;
