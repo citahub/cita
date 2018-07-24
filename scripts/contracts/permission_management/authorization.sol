@@ -11,6 +11,8 @@ import "../common/address_array.sol";
 contract Authorization {
 
     address permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
+    address roleManagementAddr = 0xFFFFfFfFFFFFFfFfffFfffffffFffFFffF020007;
+
     address newPermissionAddr = 0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010;
     address deletePermissionAddr = 0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011;
     address updatePermissionAddr = 0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012;
@@ -39,7 +41,7 @@ contract Authorization {
     event AuthCleared(address indexed _account);
 
     modifier onlyPermissionManagement {
-        require(permissionManagementAddr == msg.sender);
+        require(permissionManagementAddr == msg.sender || roleManagementAddr == msg.sender );
         _;
     }
 
