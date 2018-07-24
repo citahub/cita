@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Traces config.
-#![rustfmt_skip]
 
 use bloomchain::Config as BloomConfig;
 

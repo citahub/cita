@@ -16,7 +16,6 @@
 
 //! Transaction Execution environment.
 
-#![rustfmt_skip]
 ////////////////////////////////////////////////////////////////////////////////
 
 use evm::action_params::{ActionParams, ActionValue};

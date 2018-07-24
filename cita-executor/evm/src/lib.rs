@@ -15,8 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Ethereum virtual machine.
-#![feature(custom_attribute)]
-#![allow(unused_attributes)]
 
 extern crate bit_set;
 extern crate cita_types;
@@ -24,7 +22,7 @@ extern crate common_types as types;
 extern crate rlp;
 extern crate rustc_hex;
 extern crate util;
-#[macro_use]
+#[cfg_attr(feature = "evm-debug", macro_use)]
 extern crate logger;
 
 pub mod action_params;

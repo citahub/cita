@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Call analytics related types
-#![rustfmt_skip]
+
 /// Options concerning what analytics we run on the call.
 #[derive(Eq, PartialEq, Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "ipc", binary)]

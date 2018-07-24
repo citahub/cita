@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Just in time compiler execution environment.
-#![rustfmt_skip]
 
 use evm::{self, GasLeft};
 use evmjit;

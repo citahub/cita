@@ -13,7 +13,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
-#![rustfmt_skip]
 
 pub use self::inner::*;
 #[macro_use]
@@ -35,10 +34,10 @@ mod inner {
 #[macro_use]
 #[cfg(feature = "evm-debug")]
 mod inner {
-    use evm::CostType;
-    use evm::instructions::{Instruction, InstructionInfo, INSTRUCTIONS};
+    use CostType;
+    use instructions::{Instruction, InstructionInfo, INSTRUCTIONS};
 
-    use evm::interpreter::stack::Stack;
+    use interpreter::stack::Stack;
     use std::collections::HashMap;
     use std::iter;
     use std::time::{Instant, Duration};
@@ -109,7 +108,7 @@ mod inner {
         }
 
         pub fn after_instruction(&mut self, instruction: Instruction) {
-            let mut stats = self.stats.entry(instruction).or_insert_with(|| Stats::default());
+            let stats = self.stats.entry(instruction).or_insert_with(|| Stats::default());
             let took = self.last_instruction.elapsed();
             stats.note(took);
         }

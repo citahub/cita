@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Trace filters type definitions
-#![rustfmt_skip]
 
 use super::trace::{Action, Res};
 use basic_types::LogBloom;

@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Rust VM implementation
-#![rustfmt_skip]
 
 #[macro_use]
 mod informant;

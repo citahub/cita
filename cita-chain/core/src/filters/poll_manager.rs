@@ -15,9 +15,8 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Indexes all rpc poll requests.
-#![rustfmt_skip]
 
-use transient_hashmap::{TransientHashMap, Timer, StandardTimer};
+use transient_hashmap::{StandardTimer, Timer, TransientHashMap};
 
 /// Lifetime of poll (in seconds).
 const POLL_LIFETIME: u32 = 60;

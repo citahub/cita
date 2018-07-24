@@ -1,0 +1,8 @@
+ignore = [
+    "src/filters/poll_filter.rs",
+    "src/filters/poll_manager.sr",
+    "src/cache_manager.rs",
+    "src/db.rs",
+    "src/env_info.rs",
+    "src/error.rs"
+]

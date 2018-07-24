@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Database utilities and definitions.
-#![rustfmt_skip]
 
 use rlp::{Decodable, Encodable, encode, decode};
 use std::collections::HashMap;

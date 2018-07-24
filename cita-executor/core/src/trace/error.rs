@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! `TraceDB` errors.
-#![rustfmt_skip]
 
 use std::fmt::{Display, Formatter, Error as FmtError};
 

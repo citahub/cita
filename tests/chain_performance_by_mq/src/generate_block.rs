@@ -45,12 +45,10 @@ impl AsMillis for Duration {
     }
 }
 
-#[allow(unused_variables, dead_code)]
 pub struct Generateblock {
     pre_hash: H256,
 }
 
-#[allow(unused_variables, dead_code)]
 impl Generateblock {
     pub fn new() -> Self {
         Generateblock {

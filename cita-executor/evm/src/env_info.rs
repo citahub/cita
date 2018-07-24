@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 // use std::cmp;
-#![rustfmt_skip]
 
 use types::BlockNumber;
 use std::sync::Arc;

@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! State diff module.
-#![rustfmt_skip]
 
 use account_diff::*;
 use std::collections::BTreeMap;
