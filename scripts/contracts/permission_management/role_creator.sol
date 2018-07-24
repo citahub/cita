@@ -9,7 +9,7 @@ import "./role.sol";
 ///         The interface: None
 contract RoleCreator {
 
-    address roleManagementAddr = 0xe3b5DDB80AdDb513b5c981e27Bb030A86A8821eE;
+    address roleManagementAddr = 0xFFFFfFfFFFFFFfFfffFfffffffFffFFffF020007;
 
     event RoleCreated(address indexed _id, bytes32 indexed _name, address[] indexed _permissions);
 
