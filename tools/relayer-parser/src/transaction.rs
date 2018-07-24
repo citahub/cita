@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use ethabi;
-use rustc_hex::FromHex;
 
 use cita_crypto::PrivKey;
 use cita_types::traits::LowerHex;
@@ -26,27 +25,27 @@ use libproto::blockchain::{Transaction, UnverifiedTransaction};
 pub fn construct_transaction(
     pkey: &PrivKey,
     tx_proof_rlp: Vec<u8>,
-    dest_hasher: &str,
+    dest_hasher: [u8; 4],
     dest_contract: H160,
     chain_id: u32,
     height: U256,
-) -> Option<UnverifiedTransaction> {
-    encode(dest_hasher, tx_proof_rlp).map(|code| sign(pkey, dest_contract, code, chain_id, height))
+) -> UnverifiedTransaction {
+    let code = encode(dest_hasher, tx_proof_rlp);
+    sign(pkey, dest_contract, code, chain_id, height)
 }
 
 #[inline]
-fn encode(dest_hasher: &str, tx_proof_rlp: Vec<u8>) -> Option<Vec<u8>> {
-    FromHex::from_hex(dest_hasher)
-        .map(|hasher| {
-            trace!("encode dest_hasher {:?}", hasher);
-            trace!("encode proof_len {:?}", tx_proof_rlp.len());
-            trace!("encode proof_data {:?}", tx_proof_rlp);
-            let encoded = ethabi::encode(&[ethabi::Token::Bytes(tx_proof_rlp)]);
-            let ret = hasher.into_iter().chain(encoded.into_iter()).collect();
-            trace!("encode result {:?}", ret);
-            ret
-        })
-        .ok()
+fn encode(dest_hasher: [u8; 4], tx_proof_rlp: Vec<u8>) -> Vec<u8> {
+    trace!("encode dest_hasher {:?}", dest_hasher);
+    trace!("encode proof_len {:?}", tx_proof_rlp.len());
+    trace!("encode proof_data {:?}", tx_proof_rlp);
+    let encoded = ethabi::encode(&[ethabi::Token::Bytes(tx_proof_rlp)]);
+    let ret = Vec::from(&dest_hasher[..])
+        .into_iter()
+        .chain(encoded.into_iter())
+        .collect();
+    trace!("encode result {:?}", ret);
+    ret
 }
 
 #[inline]

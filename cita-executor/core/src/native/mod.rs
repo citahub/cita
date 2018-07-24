@@ -15,6 +15,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use byteorder::BigEndian;
+use byteorder::ByteOrder;
+use evm::{action_params::ActionParams, Error};
+use sha3::sha3_256;
+
+// Calculate function signature hash.
+pub fn calc_func_sig(function_name: &[u8]) -> u32 {
+    let out: &mut [u8; 32] = &mut [0; 32];
+    let outptr = out.as_mut_ptr();
+    unsafe {
+        sha3_256(outptr, 32, function_name.as_ptr(), function_name.len());
+    }
+    let signature = BigEndian::read_u32(out.get(0..4).unwrap());
+    signature
+}
+
+// Extract function signature hash.
+pub fn extract_func_sig(params: &ActionParams) -> Result<u32, Error> {
+    if let Some(ref data) = params.data {
+        if let Some(ref bytes4) = data.get(0..4) {
+            Ok(BigEndian::read_u32(bytes4))
+        } else {
+            Err(Error::OutOfGas)
+        }
+    } else {
+        Err(Error::OutOfGas)
+    }
+}
+
 mod crosschain_verify;
 pub mod factory;
 #[cfg(test)]
