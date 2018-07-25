@@ -22,10 +22,9 @@ pub mod call_request;
 pub mod executor;
 pub mod extras;
 pub mod genesis;
-pub mod govm_adapter;
 pub mod transaction;
 
 pub use self::genesis::Genesis;
-pub use self::govm_adapter::{vm_grpc_server, CallEvmImpl};
+pub use grpc_contracts::grpc_vm_adapter::{vm_grpc_server, CallEvmImpl};
 pub use libproto::*;
 pub use util::journaldb;

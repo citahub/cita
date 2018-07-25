@@ -790,10 +790,15 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         substate: &mut Substate,
         output: BytesRef,
     ) -> evm::Result<FinalizationResult> {
-        // FIXME handle case can't find contract
-        let connect_info = service_registry::find_contract(params.code_address, true)
-            .unwrap()
-            .conn_info;
+        let connect_info = match service_registry::find_contract(params.code_address, true) {
+            Some(contract_state) => contract_state.conn_info,
+            None => {
+                return Err(evm::error::Error::Internal(format!(
+                    "can't find grpc contract from address: {:?}",
+                    params.code_address
+                )));
+            }
+        };
         let response = invoke_grpc_contract(
             self.info,
             params.clone(),

@@ -224,6 +224,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         let ip = connect_info.get_ip();
         let port = connect_info.get_port();
         let addr = connect_info.get_addr();
+        let height: u64 = env_info.number.parse().unwrap();
 
         let (resp, contract_address) = {
             match t.action {
@@ -231,11 +232,12 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
                     let resp = self.call(ip, port, invoke_request);
                     (resp, Address::from_slice(&addr))
                 }
-                _ => {
+                Action::GoCreate => {
                     let resp = self.create(ip, port, invoke_request);
                     // set enable
                     let contract_address = Address::from_slice(&t.data);
                     service_registry::enable_contract(contract_address);
+                    service_registry::set_enable_contract_height(contract_address, height);
                     info!(
                         "enable go contract {} at {}:{}",
                         contract_address.lower_hex(),
@@ -244,6 +246,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
                     );
                     (resp, contract_address)
                 }
+                _ => panic!("unknown action {:?}", t.action),
             }
         };
 
@@ -253,7 +256,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
             let value = ContractState::new(ip.to_string(), port, addr.to_string(), h);
             batch.write(db::COL_EXTRA, &contract_address, &value);
             executor.db.read().write(batch).unwrap();
-            service_registry::set_enable_contract_height(contract_address, h);
+            //            service_registry::set_enable_contract_height(contract_address, h);
 
             for storage in resp.get_storages().into_iter() {
                 let mut value = Vec::new();
