@@ -830,7 +830,7 @@ impl ExecutorInstance {
                 match restore_snapshot(self.ext.clone(), snapshot_req) {
                     Ok(_) => {
                         resp.set_flag(true);
-                    },
+                    }
                     Err(e) => {
                         warn!("restore_snapshot failed: {:?}", e);
                         resp.set_flag(false);
@@ -934,9 +934,7 @@ fn restore_snapshot(ext: Arc<Executor>, snapshot_req: &SnapshotReq) -> Result<()
     let snapshot = SnapshotService::new(snapshot_params).unwrap();
     let snapshot = Arc::new(snapshot);
     match snapshot::restore_using(snapshot, &reader, true) {
-        Ok(_) => {
-            Ok(())
-        },
+        Ok(_) => Ok(()),
         Err(e) => {
             warn!("restore_using failed: {:?}", e);
             Err(e)

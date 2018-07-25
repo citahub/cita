@@ -214,12 +214,12 @@ impl SnapShot {
                 if self.acks.get(AckType::AuthAck)
                     && self.acks.get(AckType::ConsensusAck)
                     && self.acks.get(AckType::NetAck)
-                    {
-                        self.acks.reset(AckType::AuthAck);
-                        self.acks.reset(AckType::ConsensusAck);
-                        self.acks.reset(AckType::NetAck);
-                        self.end();
-                    }
+                {
+                    self.acks.reset(AckType::AuthAck);
+                    self.acks.reset(AckType::ConsensusAck);
+                    self.acks.reset(AckType::NetAck);
+                    self.end();
+                }
 
                 false
             }

@@ -637,7 +637,7 @@ impl Forward {
                         resp.set_proof(proof);
                         resp.set_height(self.chain.get_current_height());
                         resp.set_flag(true);
-                    },
+                    }
                     Err(e) => {
                         warn!("restore_snapshot failed: {:?}", e);
                         resp.set_flag(false);
@@ -728,12 +728,10 @@ fn restore_snapshot(chain: Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Pro
             // return proof
             let proof = reader.manifest().last_proof.clone();
             Ok(proof)
-        },
+        }
         Err(e) => {
             warn!("restore_using failed: {:?}", e);
             Err(e)
         }
     }
-
-
 }
