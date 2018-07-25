@@ -629,9 +629,6 @@ impl Forward {
                 let mut is_snapshot = self.chain.is_snapshot.write();
                 *is_snapshot = true;
             }
-            Cmd::Clear => {
-                info!("[snapshot] receive cmd: Clear");
-            }
             Cmd::Restore => {
                 info!("[snapshot] receive {:?}", snapshot_req);
                 let proof = restore_snapshot(self.chain.clone(), snapshot_req).unwrap();
@@ -647,6 +644,9 @@ impl Forward {
                         msg.try_into().unwrap(),
                     ))
                     .unwrap();
+            }
+            Cmd::Clear => {
+                info!("[snapshot] receive cmd: Clear");
             }
             Cmd::End => {
                 info!("[snapshot] receive {:?}", snapshot_req);

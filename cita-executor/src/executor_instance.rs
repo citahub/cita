@@ -824,9 +824,6 @@ impl ExecutorInstance {
                 info!("[snapshot] receive cmd: Begin");
                 self.is_snapshot = true;
             }
-            Cmd::Clear => {
-                info!("[snapshot] receive cmd: Clear");
-            }
             Cmd::Restore => {
                 info!("[snapshot] receive {:?}", snapshot_req);
                 restore(self.ext.clone(), snapshot_req);
@@ -840,6 +837,9 @@ impl ExecutorInstance {
                         msg.try_into().unwrap(),
                     ))
                     .unwrap();
+            }
+            Cmd::Clear => {
+                info!("[snapshot] receive cmd: Clear");
             }
             Cmd::End => {
                 info!("[snapshot] receive cmd: End");

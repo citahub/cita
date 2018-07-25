@@ -101,14 +101,20 @@ impl NetWork {
         let mut resp = SnapshotResp::new();
         let mut send = false;
         match req.cmd {
+            Cmd::Snapshot => {
+                info!("[snapshot] receive cmd: Snapshot");
+            }
             Cmd::Begin => {
                 info!("[snapshot] receive cmd: Begin");
+                self.con.is_disconnect.store(true, Ordering::SeqCst);
                 resp.set_resp(Resp::BeginAck);
                 send = true;
             }
+            Cmd::Restore => {
+                info!("[snapshot] receive cmd: Restore");
+            }
             Cmd::Clear => {
                 info!("[snapshot] receive cmd: Clear");
-                self.con.is_disconnect.store(true, Ordering::SeqCst);
                 resp.set_resp(Resp::ClearAck);
                 send = true;
             }
@@ -117,9 +123,6 @@ impl NetWork {
                 self.con.is_disconnect.store(false, Ordering::SeqCst);
                 resp.set_resp(Resp::EndAck);
                 send = true;
-            }
-            _ => {
-                warn!("[snapshot] receive unexpected cmd = {:?}", req.cmd);
             }
         }
 
