@@ -1,11 +1,13 @@
-const mocha = require('mocha');
-const assert = require('assert');
 const authorization = require('../helpers/authorization');
 const util = require('../helpers/util');
 const config = require('../config');
+const chai = require('chai');
 
-const { superAdmin } = config.contract.authorization;
-const { permissions, resources } = config;
+const { expect } = chai;
+
+const {
+  permissions, resources, superAdmin, rootGroup,
+} = config;
 
 const {
   queryPermissions, queryAccounts, checkResource, queryAllAccounts,
@@ -13,93 +15,90 @@ const {
 
 const { logger } = util;
 
-const { describe, it } = mocha;
-
-const rootGroup = '0xffffffffffffffffffffffffffffffffff020009';
-const len = permissions.length;
-
-// =======================
-
 describe('test authorization contract', () => {
-  it('should be the build-in authorization: superAdmin has the permission', () => {
-    const res = queryPermissions(superAdmin.address);
+  it('should be the build-in authorization: superAdmin has the permission', async () => {
+    const res = await queryPermissions(superAdmin.address);
     logger.debug('\nPermissions of superAdmin:\n', res);
-
-    for (let i = 0; i < len; i += 1) { assert.equal(res[i], permissions[i]); }
+    expect(res).to.deep.equal(permissions);
   });
 
-  it('should be the build-in authorization: rootGroup has the permission', () => {
-    const res = queryPermissions(rootGroup);
+  it('should be the build-in authorization: rootGroup has the permission', async () => {
+    const res = await queryPermissions(rootGroup);
     logger.debug('\nPermissions of rootGroup:\n', res);
 
-    for (let i = 0; i < 2; i += 1) { assert.equal(res[i], permissions[i]); }
+    for (let i = 0; i < 2; i += 1) { expect(res[i]).to.equal(permissions[i]); }
   });
 
-  it('should be the build-in authorization: account of the permission', () => {
-    for (let i = 2; i < len; i += 1) {
-      const res = queryAccounts(permissions[i]);
-      logger.debug('\nAccount of permissions:\n', res);
-      assert.equal(res, superAdmin.address);
-    }
-    for (let i = 0; i < 2; i += 1) {
-      const res = queryAccounts(permissions[i]);
-      logger.debug('\nAccount of permissions:\n', res);
-      assert.equal(res[0], superAdmin.address);
-      assert.equal(res[1], rootGroup);
+  it('should be the build-in authorization: account of the permission', async () => {
+    const results = permissions.map(p => queryAccounts(p));
+    const res = await Promise.all(results);
+    logger.debug('\nAccounts:\n', res);
+    for (let i = 0; i < res.length; i += 1) {
+      if (i > 1) {
+        expect(res[i]).to.deep.equal([superAdmin.address]);
+      } else {
+        expect(res[i]).to.deep.equal([superAdmin.address, rootGroup]);
+      }
     }
   });
 
-  it('should check the superAdmin has the resource', () => {
+  it('should check the superAdmin has the resource', async () => {
+    const results = [];
     for (let i = 0; i < resources.length; i += 1) {
       for (let j = 1; j < resources[i].length; j += 1) {
-        const res = checkResource(
+        const r = checkResource(
           superAdmin.address,
           resources[i][0],
           resources[i][j],
         );
-        logger.debug('\nResult of check:(%i,%j)\n', i, j, res);
-        assert.equal(res, true);
+        results.push(r);
       }
     }
+    const res = await Promise.all(results);
+    res.map(r => expect(r).to.be.true);
   });
 
-  it('should check the rootGroup has the resource', () => {
+  it('should check the rootGroup has the resource', async () => {
+    const results = [];
     for (let i = 0; i < 2; i += 1) {
       for (let j = 1; j < resources[i].length; j += 1) {
-        const res = checkResource(
+        const r = checkResource(
           superAdmin.address,
           resources[i][0],
           resources[i][j],
         );
-        logger.debug('\nResult of check:(%i,%j)\n', i, j, res);
-        assert.equal(res, true);
+        results.push(r);
       }
+    }
+    const res = await Promise.all(results);
+    for (let i = 0; i < res.length; i += 1) {
+      expect(res[i]).to.be.true;
     }
   });
 
-  it('should check the superAdmin does not have the resource: wrong func', () => {
-    const res = checkResource(
+  it('should check the superAdmin does not have the resource: wrong func', async () => {
+    const res = await checkResource(
       superAdmin.address,
       '0xffffffffffffffffffffffffffffffffff020004',
       '0xf036ed57',
     );
     logger.debug('\nResult of check:\n', res);
-    assert.equal(res, false);
+    expect(res).to.be.false;
   });
 
-  it('should check the superAdmin does not have the resource: wrong cont', () => {
-    const res = checkResource(
+  it('should check the superAdmin does not have the resource: wrong cont', async () => {
+    const res = await checkResource(
       superAdmin.address,
       '0xffffffffffffffffffffffffffffffffff020005',
       '0xf036ed56',
     );
     logger.debug('\nResult of check:\n', res);
-    assert.equal(res, false);
+    expect(res).to.be.false;
   });
 
-  it('should have all the accounts', () => {
-    const res = queryAllAccounts();
+  it('should have all the accounts', async () => {
+    const res = await queryAllAccounts();
     logger.debug('\nAll accounts:\n', res);
-    assert.equal(res[0], superAdmin.address);
+    expect(superAdmin.address).to.be.oneOf(res);
   });
 });

@@ -16,7 +16,7 @@ contract Role {
 
     bytes32 name;
     address[] permissions;
-    address internal roleManagementAddr = 0xe3b5DDB80AdDb513b5c981e27Bb030A86A8821eE;
+    address internal roleManagementAddr = 0xFFFFfFfFFFFFFfFfffFfffffffFffFFffF020007;
 
     modifier onlyRoleManagement {
         require(roleManagementAddr == msg.sender);

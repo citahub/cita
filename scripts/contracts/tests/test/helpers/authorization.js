@@ -1,39 +1,29 @@
 const util = require('./util');
 const config = require('../config');
 
-const { web3 } = util;
+const { genContract } = util;
 
 const {
-  aABI, aAddr,
+  abi, addr,
 } = config.contract.authorization;
 
-// authorization
-const auth = web3.eth.contract(aABI);
-const aContractInstance = auth.at(aAddr);
+const contract = genContract(abi, addr);
 
 // queryPermissions
-const queryPermissions = function queryPermissions(account) {
-  return aContractInstance.queryPermissions.call(account);
-};
+const queryPermissions = account => contract.methods.queryPermissions(account).call();
 
 // queryAccounts
-const queryAccounts = function queryAccounts(perm) {
-  return aContractInstance.queryAccounts.call(perm);
-};
+const queryAccounts = perm => contract.methods.queryAccounts(perm).call();
 
 // checkResource
-const checkResource = function checkResource(account, addr, func) {
-  return aContractInstance.checkResource.call(
-    account,
-    addr,
-    func,
-  );
-};
+const checkResource = (account, cont, func) => contract.methods.checkResource(
+  account,
+  cont,
+  func,
+).call();
 
 // queryAllAccounts
-const queryAllAccounts = function queryAllAccounts() {
-  return aContractInstance.queryAllAccounts.call();
-};
+const queryAllAccounts = () => contract.methods.queryAllAccounts().call();
 
 module.exports = {
   queryPermissions,

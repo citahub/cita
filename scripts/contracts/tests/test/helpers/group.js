@@ -1,35 +1,25 @@
 const util = require('./util');
 const config = require('../config');
 
-const { web3 } = util;
+const { genContract } = util;
 
-const { gABI, gAddr } = config.contract.group;
+const { abi, addr } = config.contract.group;
 
-const group = web3.eth.contract(gABI);
-const gContractInstance = group.at(gAddr);
+const contract = genContract(abi, addr);
 
 // queryInfo
-const queryInfo = function queryInfo() {
-  return gContractInstance.queryInfo.call();
-};
+const queryInfo = () => contract.methods.queryInfo().call();
 
 // queryAccounts
-const queryAccounts = function queryAccounts() {
-  return gContractInstance.queryAccounts.call();
-};
+const queryAccounts = () => contract.methods.queryAccounts().call();
 
 // queryParent
-const queryParent = function queryParent() {
-  return gContractInstance.queryParent.call();
-};
+const queryParent = () => contract.methods.queryParent().call();
 
 // inGroup
-const inGroup = function inGroup(account) {
-  return gContractInstance.inGroup.call(account);
-};
+const inGroup = account => contract.methods.inGroup(account).call();
 
 module.exports = {
-  group,
   queryInfo,
   queryAccounts,
   queryParent,
