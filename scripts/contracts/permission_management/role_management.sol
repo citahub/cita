@@ -24,9 +24,32 @@ contract RoleManagement {
     mapping(address => address[]) internal accounts;
     mapping(address => address[]) internal roles;
 
+    address[15] builtInPermissions = [
+        0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,       // 0 - newPermission
+        0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011,       // 1 - deletePermission
+        0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012,       // 2 - addResources, deleteResources, updatePermissionName
+        0xfFFFffFffFfffFffFfffFfFFfFFFfFffFf021013,       // 3 - setAuthorization
+        0xfFFFffFfffFFFFffFfFffffFfFFFfffFfF021014,       // 4 - cancelAuthorization, clearAuthorization, cancelAuthorizations
+        0xFFFFFfffffFFFfFfffffFfFfffffFFffFf021015,       // 5 - newRole
+        0xfFfFFFFFffFFfFFfFFfFFfFfFFfffFFffF021016,       // 6 - deleteRole
+        0xFFFFffFFFFfFFFFFFfFFffffFFFFFFFFff021017,       // 7 - addPermissions, deletePermissions, updateRoleName
+        0xfFFFfFfFFFFFFffFfFFFFfffFffFfFFFFF021018,       // 8 - setRole
+        0xfFFffffffFffFffFFFFFFFFFffFfffFFfF021019,       // 9 - cancelRole, clearRole
+        0xFFFFffffffffFFfFffFffFFfFfFfFffFFf02101A,       // 10 - newGroup
+        0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B,       // 11 - deleteGroup
+        0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c,       // 12 - addAccounts, deleteAccounts, updateGroupName
+        0xFFffFFFFfFFFFFFfffFfFFffFfFFFFfFFf021000,
+        0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001
+    ];
+
     event RoleSetted(address indexed _account, address indexed _role);
     event RoleCanceled(address indexed _account, address indexed _role);
     event RoleCleared(address indexed _account);
+
+    modifier checkPermission(address _permission) {
+        require(authContract.checkPermission(msg.sender, _permission));
+        _;
+    }
 
     /// @notice Create a new role
     /// @param _name The name of role
@@ -34,6 +57,7 @@ contract RoleManagement {
     /// @return New role's address
     function newRole(bytes32 _name, address[] _permissions)
         external
+        checkPermission(builtInPermissions[5])
         returns (address roleid)
     {
         return roleCreator.createRole(_name, _permissions);
@@ -44,6 +68,7 @@ contract RoleManagement {
     /// @return true if successed, otherwise false
     function deleteRole(address _roleid)
         external
+        checkPermission(builtInPermissions[6])
         returns (bool)
     {
         // Cancel the role of the account's which has the role
@@ -62,6 +87,7 @@ contract RoleManagement {
     /// @return true if successed, otherwise false
     function updateRoleName(address _roleid, bytes32 _name)
         external
+        checkPermission(builtInPermissions[7])
         returns (bool)
     {
         Role roleContract = Role(_roleid);
@@ -74,6 +100,7 @@ contract RoleManagement {
     /// @return true if successed, otherwise false
     function addPermissions(address _roleid, address[] _permissions)
         external
+        checkPermission(builtInPermissions[7])
         returns (bool)
     {
         // Set the authorization of all the account's which has the role
@@ -91,6 +118,7 @@ contract RoleManagement {
     /// @return true if successed, otherwise false
     function deletePermissions(address _roleid, address[] _permissions)
         external
+        checkPermission(builtInPermissions[7])
         returns (bool)
     {
         Role roleContract = Role(_roleid);
@@ -109,6 +137,7 @@ contract RoleManagement {
     /// @return true if successed, otherwise false
     function setRole(address _account, address _role)
         external
+        checkPermission(builtInPermissions[8])
         returns (bool)
     {
 
@@ -130,6 +159,7 @@ contract RoleManagement {
     /// @return true if successed, otherwise false
     function cancelRole(address _account, address _role)
         external
+        checkPermission(builtInPermissions[9])
         returns (bool)
     {
         return _cancelRole(_account, _role);
@@ -140,6 +170,7 @@ contract RoleManagement {
     /// @return true if successed, otherwise false
     function clearRole(address _account)
         external
+        checkPermission(builtInPermissions[9])
         returns (bool)
     {
         // Clear account and roles
