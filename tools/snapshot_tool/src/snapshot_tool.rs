@@ -52,53 +52,68 @@ impl From<SubModules> for AckType {
 
 #[derive(Clone)]
 struct GotAck {
-    chain: Cell<bool>,
-    executor: Cell<bool>,
-    auth: Cell<bool>,
-    consensus: Cell<bool>,
-    net: Cell<bool>,
+    // (bool, bool) = (whether or not received response, whether or not succeed)
+    chain: Cell<(bool, bool)>,
+    executor: Cell<(bool, bool)>,
+    auth: Cell<(bool, bool)>,
+    consensus: Cell<(bool, bool)>,
+    net: Cell<(bool, bool)>,
 }
 
 impl Default for GotAck {
     fn default() -> Self {
         GotAck {
-            chain: Cell::new(false),
-            executor: Cell::new(false),
-            auth: Cell::new(false),
-            consensus: Cell::new(false),
-            net: Cell::new(false),
+            chain: Cell::new((false, false)),
+            executor: Cell::new((false, false)),
+            auth: Cell::new((false, false)),
+            consensus: Cell::new((false, false)),
+            net: Cell::new((false, false)),
         }
     }
 }
 
 impl GotAck {
-    pub fn set(&self, ack: AckType) {
+    // set ack with received msgs.
+    pub fn set(&self, ack: AckType, is_succeed: bool) {
         match ack {
-            AckType::ChainAck => self.chain.set(true),
-            AckType::ExecutorAck => self.executor.set(true),
-            AckType::AuthAck => self.auth.set(true),
-            AckType::ConsensusAck => self.consensus.set(true),
-            AckType::NetAck => self.net.set(true),
+            AckType::ChainAck => self.chain.set((true, is_succeed)),
+            AckType::ExecutorAck => self.executor.set((true, is_succeed)),
+            AckType::AuthAck => self.auth.set((true, is_succeed)),
+            AckType::ConsensusAck => self.consensus.set((true, is_succeed)),
+            AckType::NetAck => self.net.set((true, is_succeed)),
         }
     }
 
+    // reset ack
     pub fn reset(&self, ack: AckType) {
         match ack {
-            AckType::ChainAck => self.chain.set(false),
-            AckType::ExecutorAck => self.executor.set(false),
-            AckType::AuthAck => self.auth.set(false),
-            AckType::ConsensusAck => self.consensus.set(false),
-            AckType::NetAck => self.net.set(false),
+            AckType::ChainAck => self.chain.set((false, false)),
+            AckType::ExecutorAck => self.executor.set((false, false)),
+            AckType::AuthAck => self.auth.set((false, false)),
+            AckType::ConsensusAck => self.consensus.set((false, false)),
+            AckType::NetAck => self.net.set((false, false)),
         }
     }
 
+    // whether or not received response.
     pub fn get(&self, ack: AckType) -> bool {
         match ack {
-            AckType::ChainAck => self.chain.get(),
-            AckType::ExecutorAck => self.executor.get(),
-            AckType::AuthAck => self.auth.get(),
-            AckType::ConsensusAck => self.consensus.get(),
-            AckType::NetAck => self.net.get(),
+            AckType::ChainAck => self.chain.get().0,
+            AckType::ExecutorAck => self.executor.get().0,
+            AckType::AuthAck => self.auth.get().0,
+            AckType::ConsensusAck => self.consensus.get().0,
+            AckType::NetAck => self.net.get().0,
+        }
+    }
+
+    // whether or not received response and the result is succeed.
+    pub fn is_succeed(&self, ack: AckType) -> bool {
+        match ack {
+            AckType::ChainAck => self.chain.get().0 && self.chain.get().1,
+            AckType::ExecutorAck => self.executor.get().0 && self.executor.get().1,
+            AckType::AuthAck => self.auth.get().0 && self.auth.get().1,
+            AckType::ConsensusAck => self.consensus.get().0 && self.consensus.get().1,
+            AckType::NetAck => self.net.get().0 && self.net.get().0,
         }
     }
 }
@@ -147,9 +162,10 @@ impl SnapShot {
 
     fn parse_resp(&self, msg: &mut Message, routing_key: RoutingKey) -> bool {
         let sub_module = routing_key.get_sub_module();
-        self.acks.set(sub_module.clone().into());
 
         let snapshot_resp = msg.take_snapshot_resp().unwrap();
+
+        self.acks.set(sub_module.clone().into(), snapshot_resp.flag);
         info!("snapshot_resp = {:?}", snapshot_resp);
 
         match snapshot_resp.resp {
@@ -159,20 +175,6 @@ impl SnapShot {
             }
             Resp::BeginAck => {
                 info!("receive begin ack");
-                if self.acks.get(AckType::AuthAck)
-                    && self.acks.get(AckType::ConsensusAck)
-                    && self.acks.get(AckType::NetAck)
-                {
-                    self.acks.reset(AckType::AuthAck);
-                    self.acks.reset(AckType::ConsensusAck);
-                    self.acks.reset(AckType::NetAck);
-                    self.clear();
-                }
-
-                false
-            }
-            Resp::ClearAck => {
-                info!("receive clear ack");
                 if self.acks.get(AckType::AuthAck)
                     && self.acks.get(AckType::ConsensusAck)
                     && self.acks.get(AckType::NetAck)
@@ -193,10 +195,31 @@ impl SnapShot {
                 }
 
                 if self.acks.get(AckType::ChainAck) && self.acks.get(AckType::ExecutorAck) {
+                    if !self.acks.is_succeed(AckType::ChainAck)
+                        || !self.acks.is_succeed(AckType::ExecutorAck)
+                    {
+                        self.end();
+                    } else {
+                        self.clear();
+                    }
+
                     self.acks.reset(AckType::ChainAck);
                     self.acks.reset(AckType::ExecutorAck);
-                    self.end();
                 }
+
+                false
+            }
+            Resp::ClearAck => {
+                info!("receive clear ack");
+                if self.acks.get(AckType::AuthAck)
+                    && self.acks.get(AckType::ConsensusAck)
+                    && self.acks.get(AckType::NetAck)
+                    {
+                        self.acks.reset(AckType::AuthAck);
+                        self.acks.reset(AckType::ConsensusAck);
+                        self.acks.reset(AckType::NetAck);
+                        self.end();
+                    }
 
                 false
             }

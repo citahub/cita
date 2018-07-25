@@ -632,13 +632,20 @@ impl Forward {
             }
             Cmd::Restore => {
                 info!("[snapshot] receive {:?}", snapshot_req);
-                let proof = restore_snapshot(self.chain.clone(), snapshot_req).unwrap();
+                match restore_snapshot(self.chain.clone(), snapshot_req) {
+                    Ok(proof) => {
+                        resp.set_proof(proof);
+                        resp.set_height(self.chain.get_current_height());
+                        resp.set_flag(true);
+                    },
+                    Err(e) => {
+                        warn!("restore_snapshot failed: {:?}", e);
+                        resp.set_flag(false);
+                    }
+                }
 
                 //resp RestoreAck to snapshot_tool
                 resp.set_resp(Resp::RestoreAck);
-                resp.set_proof(proof);
-                resp.set_height(self.chain.get_current_height());
-                resp.set_flag(true);
                 let msg: Message = resp.into();
                 self.ctx_pub
                     .send((
@@ -697,7 +704,13 @@ fn restore_snapshot(chain: Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Pro
     let reader = PackedReader::new(Path::new(&file_name))
         .map_err(|e| format!("Couldn't open snapshot file: {}", e))
         .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
-    let reader = reader?;
+    let reader = match reader {
+        Ok(r) => r,
+        Err(e) => {
+            warn!("get reader failed: {:?}", e);
+            return Err(e);
+        }
+    };
 
     let db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let snap_path = DataPath::root_node_path() + "/snapshot_chain";
@@ -710,9 +723,17 @@ fn restore_snapshot(chain: Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Pro
 
     let snapshot = SnapshotService::new(snapshot_params).unwrap();
     let snapshot = Arc::new(snapshot);
-    snapshot::restore_using(Arc::clone(&snapshot), &reader, true);
+    match snapshot::restore_using(Arc::clone(&snapshot), &reader, true) {
+        Ok(_) => {
+            // return proof
+            let proof = reader.manifest().last_proof.clone();
+            Ok(proof)
+        },
+        Err(e) => {
+            warn!("restore_using failed: {:?}", e);
+            Err(e)
+        }
+    }
 
-    // return proof
-    let proof = reader.manifest().last_proof.clone();
-    Ok(proof)
+
 }

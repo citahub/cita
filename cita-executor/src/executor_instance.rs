@@ -827,11 +827,18 @@ impl ExecutorInstance {
             }
             Cmd::Restore => {
                 info!("[snapshot] receive {:?}", snapshot_req);
-                restore(self.ext.clone(), snapshot_req);
+                match restore_snapshot(self.ext.clone(), snapshot_req) {
+                    Ok(_) => {
+                        resp.set_flag(true);
+                    },
+                    Err(e) => {
+                        warn!("restore_snapshot failed: {:?}", e);
+                        resp.set_flag(false);
+                    }
+                }
 
                 //resp RestoreAck to snapshot_tool
                 resp.set_resp(Resp::RestoreAck);
-                resp.set_flag(true);
                 let msg: Message = resp.into();
                 self.ctx_pub
                     .send((
@@ -901,12 +908,18 @@ fn take_snapshot(ext: Arc<Executor>, snapshot_req: &SnapshotReq) {
     snapshot::take_snapshot(&ext, start_hash, db.as_hashdb(), writer, &*progress).unwrap();
 }
 
-fn restore(ext: Arc<Executor>, snapshot_req: &SnapshotReq) -> Result<(), String> {
+fn restore_snapshot(ext: Arc<Executor>, snapshot_req: &SnapshotReq) -> Result<(), String> {
     let file_name = snapshot_req.file.clone() + "_executor.rlp";
     let reader = PackedReader::new(Path::new(&file_name))
         .map_err(|e| format!("Couldn't open snapshot file: {}", e))
         .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
-    let reader = reader?;
+    let reader = match reader {
+        Ok(r) => r,
+        Err(e) => {
+            warn!("get reader failed: {:?}", e);
+            return Err(e);
+        }
+    };
 
     let mut db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let snap_path = DataPath::root_node_path() + "/snapshot_executor";
@@ -920,6 +933,13 @@ fn restore(ext: Arc<Executor>, snapshot_req: &SnapshotReq) -> Result<(), String>
 
     let snapshot = SnapshotService::new(snapshot_params).unwrap();
     let snapshot = Arc::new(snapshot);
-    snapshot::restore_using(snapshot, &reader, true);
-    Ok(())
+    match snapshot::restore_using(snapshot, &reader, true) {
+        Ok(_) => {
+            Ok(())
+        },
+        Err(e) => {
+            warn!("restore_using failed: {:?}", e);
+            Err(e)
+        }
+    }
 }
