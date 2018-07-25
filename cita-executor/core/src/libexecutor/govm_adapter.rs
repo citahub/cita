@@ -7,6 +7,8 @@ use error::{Error, ExecutionError};
 use executive::check_permission;
 use grpc::Result as GrpcResult;
 use grpc::Server;
+use grpc_contracts::contract_state::{ConnectInfo, ContractState};
+use grpc_contracts::service_registry;
 use libexecutor::executor::Executor;
 use libproto::citacode::{ActionParams, EnvInfo, InvokeRequest, InvokeResponse};
 use libproto::citacode_grpc::{CitacodeService, CitacodeServiceClient};
@@ -26,183 +28,7 @@ use types::transaction::{Action, SignedTransaction};
 use util::RwLock;
 use util::*;
 
-#[derive(Clone)]
-pub struct ConnectInfo {
-    ip: String,
-    port: u16,
-    address: String,
-}
-
-impl ConnectInfo {
-    pub fn new(ip: String, port: u16, addr: String) -> Self {
-        ConnectInfo {
-            ip: ip,
-            port: port,
-            address: addr,
-        }
-    }
-
-    pub fn get_ip(&self) -> &str {
-        self.ip.as_ref()
-    }
-
-    pub fn get_port(&self) -> u16 {
-        self.port
-    }
-
-    pub fn get_addr(&self) -> &str {
-        self.address.as_ref()
-    }
-
-    pub fn stream_rlp(&self, s: &mut RlpStream) {
-        s.begin_list(3);
-        s.append(&self.ip);
-        s.append(&self.port);
-        s.append(&self.address);
-    }
-
-    /// Get the RLP of this header.
-    pub fn rlp(&self) -> Bytes {
-        let mut s = RlpStream::new();
-        self.stream_rlp(&mut s);
-        s.out()
-    }
-}
-
-impl Encodable for ConnectInfo {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        self.stream_rlp(s);
-    }
-}
-
-impl Decodable for ConnectInfo {
-    fn decode(r: &UntrustedRlp) -> Result<Self, DecoderError> {
-        let conn_info = ConnectInfo {
-            ip: r.val_at(0)?,
-            port: r.val_at(1)?,
-            address: r.val_at(2)?,
-        };
-
-        Ok(conn_info)
-    }
-}
-
-#[derive(Clone)]
-pub struct ContractState {
-    pub conn_info: ConnectInfo,
-    pub height: u64,
-}
-
-impl ContractState {
-    // add code here
-    pub fn new(ip: String, port: u16, address: String, h: u64) -> Self {
-        ContractState {
-            conn_info: ConnectInfo::new(ip, port, address),
-            height: h,
-        }
-    }
-
-    pub fn stream_rlp(&self, s: &mut RlpStream) {
-        s.begin_list(2);
-        s.append(&self.conn_info);
-        s.append(&self.height);
-    }
-
-    /// Get the RLP of this header.
-    pub fn rlp(&self) -> Bytes {
-        let mut s = RlpStream::new();
-        self.stream_rlp(&mut s);
-        s.out()
-    }
-}
-
-impl Encodable for ContractState {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        self.stream_rlp(s);
-    }
-}
-
-impl Decodable for ContractState {
-    fn decode(r: &UntrustedRlp) -> Result<Self, DecoderError> {
-        let contract_state = ContractState {
-            conn_info: r.val_at(0)?,
-            height: r.val_at(1)?,
-        };
-
-        Ok(contract_state)
-    }
-}
-
-impl Key<ContractState> for H160 {
-    type Target = H160;
-
-    fn key(&self) -> H160 {
-        *self
-    }
-}
-
-pub struct ServiceMap {
-    disable: RwLock<HashMap<String, ContractState>>,
-    enable: RwLock<HashMap<String, ContractState>>,
-}
-
-impl ServiceMap {
-    pub fn new() -> Self {
-        ServiceMap {
-            disable: RwLock::new(HashMap::new()),
-            enable: RwLock::new(HashMap::new()),
-        }
-    }
-
-    pub fn set_enable(&self, contract_address: String) {
-        match self.disable.write().remove(&contract_address) {
-            Some(value) => {
-                self.enable.write().insert(contract_address, value);
-            }
-            None => {
-                warn!(
-                    "can't enable go contract address [{}] because it have not registed!",
-                    contract_address
-                );
-            }
-        }
-    }
-
-    pub fn set_enable_height(&self, contract_address: String, height: u64) {
-        if let Some(value) = self.enable.write().get_mut(&contract_address) {
-            value.height = height;
-        }
-    }
-
-    pub fn insert_disable(&self, key: String, ip: String, port: u16, height: u64) {
-        self.disable
-            .write()
-            .insert(key, ContractState::new(ip, port, "".to_string(), height));
-    }
-
-    pub fn contains_key(&self, key: String) -> bool {
-        self.enable.write().contains_key(&key)
-    }
-
-    pub fn get(&self, key: String, enable: bool) -> Option<ContractState> {
-        if enable {
-            if let Some(value) = self.enable.write().get(&key) {
-                Some(value.clone())
-            } else {
-                None
-            }
-        } else {
-            if let Some(value) = self.disable.write().get(&key) {
-                Some(value.clone())
-            } else {
-                None
-            }
-        }
-    }
-}
-
 pub struct ExecutorServiceImpl {
-    service_map: Arc<ServiceMap>,
     ext: Arc<Executor>,
 }
 
@@ -214,16 +40,22 @@ impl ExecutorService for ExecutorServiceImpl {
         req: RegisterRequest,
     ) -> ::grpc::SingleResponse<RegisterResponse> {
         let mut r = RegisterResponse::new();
-        let caddr = req.get_contract_address();
-        let ip = req.get_ip();
-        let port = req.get_port();
+        {
+            let caddr = req.get_contract_address().to_string();
+            let ip = req.get_ip();
+            let port = req.get_port();
 
-        if let Ok(iport) = port.parse::<u16>() {
-            self.service_map
-                .insert_disable(clean_0x(caddr).to_string(), ip.to_string(), iport, 0);
-            r.set_state(format!("OK {}---{}:{}", caddr, ip, port));
-        } else {
-            r.set_state(format!("Error Register {}---{}:{}", caddr, ip, port));
+            if let Ok(iport) = port.parse::<u16>() {
+                service_registry::register_contract(
+                    Address::from_str(&caddr).unwrap(),
+                    ip.to_string(),
+                    iport,
+                    0,
+                );
+                r.set_state(format!("OK {}---{}:{}", caddr, ip, port));
+            } else {
+                r.set_state(format!("Error Register {}---{}:{}", caddr, ip, port));
+            }
         }
         ::grpc::SingleResponse::completed(r)
     }
@@ -235,13 +67,13 @@ impl ExecutorService for ExecutorServiceImpl {
     ) -> ::grpc::SingleResponse<LoadResponse> {
         let mut r = LoadResponse::new();
 
-        let caddr = req.get_contract_address();
+        let caddr = req.get_contract_address().to_string();
         let req_key = req.get_key();
         let key = H256::from_slice(String::from(req_key).as_bytes());
 
-        let address = Address::from_str(caddr.as_ref()).unwrap();
+        let address = Address::from_str(&caddr).unwrap();
         let mut hi: u64 = 0;
-        if let Some(info) = self.service_map.get(clean_0x(caddr).to_string(), true) {
+        if let Some(info) = service_registry::find_contract(address, true) {
             hi = info.height;
         }
 
@@ -264,11 +96,8 @@ impl ExecutorService for ExecutorServiceImpl {
 }
 
 impl ExecutorServiceImpl {
-    pub fn new(service_map: Arc<ServiceMap>, ext: Arc<Executor>) -> Self {
-        ExecutorServiceImpl {
-            service_map: service_map,
-            ext: ext,
-        }
+    pub fn new(ext: Arc<Executor>) -> Self {
+        ExecutorServiceImpl { ext: ext }
     }
 
     //  get vec
@@ -308,15 +137,11 @@ impl ExecutorServiceImpl {
     }
 }
 
-pub fn vm_grpc_server(
-    port: u16,
-    service_map: Arc<ServiceMap>,
-    ext: Arc<Executor>,
-) -> Option<Server> {
+pub fn vm_grpc_server(port: u16, ext: Arc<Executor>) -> Option<Server> {
     let mut server = ::grpc::ServerBuilder::new_plain();
     server.http.set_port(port);
     server.add_service(ExecutorServiceServer::new_service_def(
-        ExecutorServiceImpl::new(service_map, ext),
+        ExecutorServiceImpl::new(ext),
     ));
     server.http.set_cpu_pool_threads(4);
     match server.build() {
@@ -410,9 +235,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
                     let resp = self.create(ip, port, invoke_request);
                     // set enable
                     let contract_address = Address::from_slice(&t.data);
-                    executor
-                        .service_map
-                        .set_enable(contract_address.lower_hex());
+                    service_registry::enable_contract(contract_address);
                     info!(
                         "enable go contract {} at {}:{}",
                         contract_address.lower_hex(),
@@ -430,9 +253,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
             let value = ContractState::new(ip.to_string(), port, addr.to_string(), h);
             batch.write(db::COL_EXTRA, &contract_address, &value);
             executor.db.read().write(batch).unwrap();
-            executor
-                .service_map
-                .set_enable_height(contract_address.lower_hex(), h);
+            service_registry::set_enable_contract_height(contract_address, h);
 
             for storage in resp.get_storages().into_iter() {
                 let mut value = Vec::new();

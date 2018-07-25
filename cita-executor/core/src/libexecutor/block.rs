@@ -22,9 +22,12 @@ use db::{self as db, Readable};
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
+use grpc_contracts::contract::is_grpc_contract as is_go_contract;
+use grpc_contracts::contract_state::ConnectInfo;
+use grpc_contracts::service_registry;
 use header::*;
 use libexecutor::executor::{EconomicalModel, Executor, GlobalSysConfig};
-use libexecutor::{CallEvmImpl, ConnectInfo};
+use libexecutor::CallEvmImpl;
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::citacode::{ActionParams, EnvInfo as ProtoEnvInfo};
@@ -43,7 +46,6 @@ use trace::FlatTrace;
 use types::reserved_addresses;
 use types::transaction::{Action, SignedTransaction};
 use util::{merklehash, HeapSizeOf};
-use grpc_contracts::contract::{is_grpc_contract as is_go_contract};
 
 /// Check the 256 transactions once
 const CHECK_NUM: usize = 0xff;
@@ -423,14 +425,17 @@ impl OpenBlock {
                     if is_go_contract(*address) {
                         go_contract = true;
                         str_addr = address.lower_hex();
-                        if let Some(value) = executor.service_map.get(str_addr.clone(), true) {
+                        if let Some(value) = service_registry::find_contract(
+                            Address::from_str(&str_addr).unwrap(),
+                            true,
+                        ) {
                             ip = value.conn_info.get_ip().to_string();
                             port = value.conn_info.get_port();
                         } else if let Some(value) = executor.db.read().read(db::COL_EXTRA, address)
-                            {
-                                ip = value.conn_info.get_ip().to_string();
-                                port = value.conn_info.get_port();
-                            }
+                        {
+                            ip = value.conn_info.get_ip().to_string();
+                            port = value.conn_info.get_port();
+                        }
                     }
                     (ip, port, str_addr)
                 }
@@ -439,7 +444,10 @@ impl OpenBlock {
                     if is_go_contract(address) {
                         go_contract = true;
                         str_addr = address.lower_hex();
-                        if let Some(ref value) = executor.service_map.get(str_addr.clone(), false) {
+                        if let Some(ref value) = service_registry::find_contract(
+                            Address::from_str(&str_addr).unwrap(),
+                            false,
+                        ) {
                             ip = value.conn_info.get_ip().to_string();
                             port = value.conn_info.get_port();
                         }

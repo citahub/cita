@@ -18,3 +18,6 @@
 //! System contracts.
 
 pub mod contract;
+pub mod contract_state;
+pub mod service_registry;
+pub mod storage;

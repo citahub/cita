@@ -5,7 +5,6 @@ use core::libexecutor::block::{Block, ClosedBlock};
 use core::libexecutor::call_request::CallRequest;
 use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use core::libexecutor::Genesis;
-use core::libexecutor::ServiceMap;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, BlockTag, CountOrCode, MetaData};
 use libproto::auth::Miscellaneous;
@@ -55,7 +54,6 @@ impl ExecutorInstance {
         write_sender: Sender<u64>,
         config_path: &str,
         genesis_path: &str,
-        service_map: Arc<ServiceMap>,
     ) -> Self {
         let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
         let nosql_path = DataPath::root_node_path() + "/statedb";
@@ -66,7 +64,6 @@ impl ExecutorInstance {
         let executor_config = Config::new(config_path);
         let grpc_port = executor_config.grpc_port;
         let mut executor = Executor::init_executor(Arc::new(db), genesis, executor_config);
-        executor.set_service_map(service_map);
         let executor = Arc::new(executor);
         executor.set_gas_and_nodes(executor.get_max_height());
         executor.send_executed_info_to_chain(executor.get_max_height(), &ctx_pub);

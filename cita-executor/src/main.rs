@@ -86,7 +86,7 @@ extern crate util;
 mod executor_instance;
 
 use clap::App;
-use core::libexecutor::{vm_grpc_server, ServiceMap};
+use core::libexecutor::vm_grpc_server;
 use executor_instance::ExecutorInstance;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
@@ -134,14 +134,8 @@ fn main() {
         crx_pub,
     );
 
-    let service_map = Arc::new(ServiceMap::new());
-    let mut ext_instance = ExecutorInstance::new(
-        ctx_pub.clone(),
-        write_sender,
-        config_path,
-        genesis_path,
-        Arc::clone(&service_map),
-    );
+    let mut ext_instance =
+        ExecutorInstance::new(ctx_pub.clone(), write_sender, config_path, genesis_path);
     let mut distribute_ext = ext_instance.clone();
 
     thread::spawn(move || loop {
@@ -153,11 +147,7 @@ fn main() {
     let grpc_ext = ext_instance.clone();
     thread::spawn(move || loop {
         if server.is_none() {
-            server = vm_grpc_server(
-                grpc_ext.grpc_port,
-                Arc::clone(&service_map),
-                Arc::clone(&grpc_ext.ext),
-            );
+            server = vm_grpc_server(grpc_ext.grpc_port, Arc::clone(&grpc_ext.ext));
         } else {
             thread::sleep(Duration::new(8, 0));
         }

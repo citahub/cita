@@ -16,11 +16,10 @@
 
 //! Transaction Execution environment.
 
+use builtin::Builtin;
 use cita_types::{Address, H160, H256, U256, U512};
 use contracts::permission_management::contains_resource;
 use contracts::Resource;
-use builtin::Builtin;
-use native::factory::Contract as NativeContract;
 use crossbeam;
 use engines::Engine;
 use error::ExecutionError;
@@ -30,12 +29,19 @@ use evm::env_info::EnvInfo;
 use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use externalities::*;
+use grpc_contracts;
+use grpc_contracts::contract::{invoke_grpc_contract, is_grpc_contract};
+use grpc_contracts::service_registry;
 use libexecutor::executor::EconomicalModel;
+use libproto::citacode::InvokeResponse;
+use log_entry::LogEntry;
+use native::factory::Contract as NativeContract;
 use native::factory::Factory as NativeFactory;
 use state::backend::Backend as StateBackend;
 use state::{State, Substate};
 use std::cmp;
 use std::collections::HashMap;
+use std::error::Error;
 use std::str::FromStr;
 use std::sync::Arc;
 use trace::{
@@ -44,7 +50,6 @@ use trace::{
 };
 use types::reserved_addresses;
 use types::transaction::{Action, SignedTransaction};
-use grpc_contracts::contract::is_grpc_contract;
 use util::*;
 
 /// Roughly estimate what stack size each level of evm depth will use
@@ -366,9 +371,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         static_call: bool,
         economical_model: EconomicalModel,
     ) -> Externalities<'any, T, V, B>
-        where
-            T: Tracer,
-            V: VMTracer,
+    where
+        T: Tracer,
+        V: VMTracer,
     {
         let is_static = self.static_flag || static_call;
         Externalities::new(
@@ -447,9 +452,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         mut tracer: T,
         mut vm_tracer: V,
     ) -> Result<Executed, ExecutionError>
-        where
-            T: Tracer,
-            V: VMTracer,
+    where
+        T: Tracer,
+        V: VMTracer,
     {
         let sender = *t.sender();
         let nonce = self.state.nonce(&sender)?;
@@ -673,9 +678,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         tracer: &mut T,
         vm_tracer: &mut V,
     ) -> evm::Result<FinalizationResult>
-        where
-            T: Tracer,
-            V: VMTracer,
+    where
+        T: Tracer,
+        V: VMTracer,
     {
         let depth_threshold = LOCAL_STACK_SIZE.with(|sz| sz.get() / STACK_SIZE_PER_DEPTH);
         let static_call = params.call_type == CallType::StaticCall;
@@ -736,16 +741,16 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         tracer: &mut T,
         vm_tracer: &mut V,
     ) -> evm::Result<FinalizationResult>
-        where
-            T: Tracer,
-            V: VMTracer,
+    where
+        T: Tracer,
+        V: VMTracer,
     {
         if (params.call_type == CallType::StaticCall
             || (params.call_type == CallType::Call && self.static_flag))
             && params.value.value() > 0.into()
-            {
-                return Err(evm::Error::MutableCallInStaticContext);
-            }
+        {
+            return Err(evm::Error::MutableCallInStaticContext);
+        }
 
         // backup used in case of running out of gas
         self.state.checkpoint();
@@ -760,7 +765,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         if let Some(mut native_contract) = self.native_factory.new_contract(params.code_address) {
             // check and call Native Contract
-            self.call_native_contract(params, substate, output, tracer, static_call, native_contract)
+            self.call_native_contract(
+                params,
+                substate,
+                output,
+                tracer,
+                static_call,
+                native_contract,
+            )
         } else if is_grpc_contract(params.code_address) {
             self.call_grpc_contract(params, substate, output)
         } else if let Some(builtin) = self.engine.builtin(&params.code_address, self.info.number) {
@@ -772,18 +784,83 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
     }
 
-    fn call_grpc_contract(&mut self, params: ActionParams, substate: &mut Substate, output: BytesRef) -> evm::Result<FinalizationResult> {
-        // TODO check and call External contract(Go Contract)
-        Ok(FinalizationResult {
-            gas_left: U256::from_str("").unwrap(),
-            apply_state: true,
-            return_data: ReturnData::empty(),
-        })
+    fn call_grpc_contract(
+        &mut self,
+        params: ActionParams,
+        substate: &mut Substate,
+        output: BytesRef,
+    ) -> evm::Result<FinalizationResult> {
+        // FIXME handle case can't find contract
+        let connect_info = service_registry::find_contract(params.code_address, true)
+            .unwrap()
+            .conn_info;
+        let response = invoke_grpc_contract(
+            self.info,
+            params.clone(),
+            self.state,
+            true,
+            true,
+            connect_info,
+        );
+        match response {
+            Ok(invoke_response) => {
+                // store grpc return storages to stateDB
+                for storage in invoke_response.get_storages().into_iter() {
+                    let key = storage.get_key();
+                    let value = storage.get_value();
+                    trace!("recv resp: {:?}", storage);
+                    trace!("key: {:?}, value: {:?}", key, value);
+                    grpc_contracts::storage::set_storage(
+                        self.state,
+                        params.address,
+                        key.to_vec(),
+                        value.to_vec(),
+                    );
+                }
+
+                substate.logs = invoke_response
+                    .get_logs()
+                    .into_iter()
+                    .map(|log| {
+                        let mut topics = Vec::new();
+                        let tdata = log.get_topic();
+
+                        for chunk in tdata.chunks(32) {
+                            let value = H256::from(chunk);
+                            topics.push(value);
+                        }
+
+                        let data = Bytes::from(log.get_data());
+                        LogEntry {
+                            address: params.address,
+                            topics: topics,
+                            data: data.to_vec(),
+                        }
+                    })
+                    .collect();
+
+                Ok(FinalizationResult {
+                    gas_left: U256::from_str(invoke_response.get_gas_left()).unwrap(),
+                    apply_state: true,
+                    return_data: ReturnData::empty(),
+                })
+            }
+            Err(e) => Err(evm::error::Error::Internal(e.description().to_string())),
+        }
     }
 
-    fn call_evm_contract<T, V>(&mut self, params: ActionParams, substate: &mut Substate, output: BytesRef, tracer: &mut T, vm_tracer: &mut V) -> evm::Result<FinalizationResult> where
+    fn call_evm_contract<T, V>(
+        &mut self,
+        params: ActionParams,
+        substate: &mut Substate,
+        output: BytesRef,
+        tracer: &mut T,
+        vm_tracer: &mut V,
+    ) -> evm::Result<FinalizationResult>
+    where
         T: Tracer,
-        V: VMTracer {
+        V: VMTracer,
+    {
         let trace_info = tracer.prepare_trace_call(&params);
         let mut trace_output = tracer.prepare_trace_output();
         let mut subtracer = tracer.subtracer();
@@ -841,11 +918,17 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
     }
 
-    fn call_builtin_contract<T>(&mut self, params: ActionParams, mut output: BytesRef, tracer: &mut T, builtin: &Builtin) -> evm::Result<FinalizationResult>
-        where
-            T: Tracer
+    fn call_builtin_contract<T>(
+        &mut self,
+        params: ActionParams,
+        mut output: BytesRef,
+        tracer: &mut T,
+        builtin: &Builtin,
+    ) -> evm::Result<FinalizationResult>
+    where
+        T: Tracer,
     {
-// if destination is builtin, try to execute it
+        // if destination is builtin, try to execute it
         if !builtin.is_active(self.info.number) {
             panic!(
                 "Consensus failure: engine implementation prematurely enabled built-in at {}",
@@ -888,10 +971,17 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
     }
 
-    fn call_native_contract<T>(&mut self, params: ActionParams, substate: &mut Substate, output: BytesRef, tracer: &mut T, static_call: bool, mut contract: Box<NativeContract>)
-                               -> evm::Result<FinalizationResult>
-        where
-            T: Tracer,
+    fn call_native_contract<T>(
+        &mut self,
+        params: ActionParams,
+        substate: &mut Substate,
+        output: BytesRef,
+        tracer: &mut T,
+        static_call: bool,
+        mut contract: Box<NativeContract>,
+    ) -> evm::Result<FinalizationResult>
+    where
+        T: Tracer,
     {
         let mut unconfirmed_substate = Substate::new();
         let mut trace_output = tracer.prepare_trace_output();
@@ -926,9 +1016,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         tracer: &mut T,
         vm_tracer: &mut V,
     ) -> evm::Result<FinalizationResult>
-        where
-            T: Tracer,
-            V: VMTracer,
+    where
+        T: Tracer,
+        V: VMTracer,
     {
         if self.state.exists_and_has_code_or_nonce(&params.address)? {
             return Err(evm::Error::OutOfGas);
@@ -1143,8 +1233,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             | Err(evm::Error::OutOfBounds)
             | Err(evm::Error::Reverted)
             | Ok(FinalizationResult {
-                     apply_state: false, ..
-                 }) => {
+                apply_state: false, ..
+            }) => {
                 self.state.revert_to_checkpoint();
             }
             Ok(_) | Err(evm::Error::Internal(_)) => {
@@ -1341,10 +1431,10 @@ mod tests {
 
         match result {
             Err(ExecutionError::NotEnoughCash { required, got })
-            if required == U512::from(100_043) && got == U512::from(100_042) =>
-                {
-                    ()
-                }
+                if required == U512::from(100_043) && got == U512::from(100_042) =>
+            {
+                ()
+            }
             _ => assert!(false, "Expected not enough cash error. {:?}", result),
         }
     }
