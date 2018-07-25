@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Log entry type definition.
-#![rustfmt_skip]
 
 use BlockNumber;
 use rlp::*;

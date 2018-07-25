@@ -59,4 +59,5 @@ sha3hash = ["util/sha3hash", "libproto/sha3hash", "proof/sha3hash", "jsonrpc-typ
 blake2bhash = ["util/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash", "jsonrpc-types/blake2bhash"]
 sm3hash = ["util/sm3hash", "libproto/sm3hash", "proof/sm3hash", "jsonrpc-types/sm3hash"]
 privatetx = ["zktx"]
-evm-debug= []
+evm-debug = ["evm/evm-debug"]
+evm-debug-tests = ["evm-debug", "evm/evm-debug-tests"]

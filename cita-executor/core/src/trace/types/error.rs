@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Trace errors.
-#![rustfmt_skip]
 
 use evm::Error as EvmError;
 use rlp::{Encodable, RlpStream, Decodable, DecoderError, UntrustedRlp};

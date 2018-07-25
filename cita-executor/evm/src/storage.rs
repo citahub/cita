@@ -126,7 +126,6 @@ impl Scalar {
             let mut bytes = Vec::new();
             while len > 0 {
                 let v = ext.storage_at(&H256::from(key))?;
-                debug!(target: "native", "key: {:?}, value: {:?}", H256::from(key), v);
                 if len > 32 {
                     bytes.extend_from_slice(v.as_ref());
                     key = key + U256::one();

@@ -17,7 +17,6 @@
 //! Evm input params.
 
 // use ethjson;
-#![rustfmt_skip]
 use call_type::CallType;
 
 use std::sync::Arc;

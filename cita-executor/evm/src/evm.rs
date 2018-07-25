@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Evm interface.
-#![rustfmt_skip]
 
 use action_params::ActionParams;
 use Ext;

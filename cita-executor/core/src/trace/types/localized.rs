@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Localized traces type definitions
-#![rustfmt_skip]
 
 use super::trace::{Action, Res};
 use header::BlockNumber;

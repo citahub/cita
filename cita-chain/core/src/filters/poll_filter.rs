@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Helper type with all filter state data.
-#![rustfmt_skip]
 
 use jsonrpc_types::rpctypes::{Log, Filter};
 use std::collections::HashSet;

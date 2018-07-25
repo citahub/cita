@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Blockchain filter
-#![rustfmt_skip]
+
 use ids::BlockId;
 use log_entry::{LogEntry, LogBloom};
 use cita_types::{Address, H256};

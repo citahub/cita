@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Nonoperative tracer.
-#![rustfmt_skip]
 
 use evm::action_params::ActionParams;
 use trace::{Tracer, VMTracer, FlatTrace, TraceError};

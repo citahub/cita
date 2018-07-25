@@ -1,0 +1,8 @@
+ignore = [
+    "src/trace",
+    "src/account_db.rs",
+    "src/executed.rs",
+    "src/externalities.rs",
+    "src/pod_account.rs",
+    "src/substate.rs",
+]
