@@ -615,6 +615,7 @@ impl Forward {
 
                     //resp SnapshotAck to snapshot_tool
                     resp.set_resp(Resp::SnapshotAck);
+                    resp.set_flag(true);
                     let msg: Message = resp.into();
                     ctx_pub
                         .send((
@@ -637,6 +638,7 @@ impl Forward {
                 resp.set_resp(Resp::RestoreAck);
                 resp.set_proof(proof);
                 resp.set_height(self.chain.get_current_height());
+                resp.set_flag(true);
                 let msg: Message = resp.into();
                 self.ctx_pub
                     .send((

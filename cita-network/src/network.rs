@@ -108,6 +108,7 @@ impl NetWork {
                 info!("[snapshot] receive cmd: Begin");
                 self.con.is_disconnect.store(true, Ordering::SeqCst);
                 resp.set_resp(Resp::BeginAck);
+                resp.set_flag(true);
                 send = true;
             }
             Cmd::Restore => {
@@ -116,12 +117,14 @@ impl NetWork {
             Cmd::Clear => {
                 info!("[snapshot] receive cmd: Clear");
                 resp.set_resp(Resp::ClearAck);
+                resp.set_flag(true);
                 send = true;
             }
             Cmd::End => {
                 info!("[snapshot] receive cmd: End");
                 self.con.is_disconnect.store(false, Ordering::SeqCst);
                 resp.set_resp(Resp::EndAck);
+                resp.set_flag(true);
                 send = true;
             }
         }

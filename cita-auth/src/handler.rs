@@ -1017,6 +1017,7 @@ impl MsgHandler {
                 self.is_snapshot = true;
 
                 resp.set_resp(Resp::BeginAck);
+                resp.set_flag(true);
                 send = true;
             }
             Cmd::Restore => {
@@ -1033,6 +1034,7 @@ impl MsgHandler {
                 self.black_list_cache.clear();
 
                 resp.set_resp(Resp::ClearAck);
+                resp.set_flag(true);
                 send = true;
             }
             Cmd::End => {
@@ -1044,6 +1046,7 @@ impl MsgHandler {
                 self.is_snapshot = false;
 
                 resp.set_resp(Resp::EndAck);
+                resp.set_flag(true);
                 send = true;
             }
         }

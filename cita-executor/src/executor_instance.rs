@@ -811,6 +811,7 @@ impl ExecutorInstance {
 
                     //resp SnapshotAck to snapshot_tool
                     resp.set_resp(Resp::SnapshotAck);
+                    resp.set_flag(true);
                     let msg: Message = resp.into();
                     ctx_pub
                         .send((
@@ -830,6 +831,7 @@ impl ExecutorInstance {
 
                 //resp RestoreAck to snapshot_tool
                 resp.set_resp(Resp::RestoreAck);
+                resp.set_flag(true);
                 let msg: Message = resp.into();
                 self.ctx_pub
                     .send((
