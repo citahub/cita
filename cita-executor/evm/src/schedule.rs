@@ -90,7 +90,7 @@ pub struct Schedule {
     pub suicide_to_new_account_cost: usize,
     /// If Some(x): let limit = GAS * (x - 1) / x; let CALL's gas = min(requested, limit). let CREATE's gas = limit.
     /// If None: let CALL's gas = (requested > GAS ? [OOG] : GAS). let CREATE's gas = GAS
-    pub sub_gas_cap_divisor: Option<usize>,
+    pub sub_gas_cap_divisor: usize,
     /// Don't ever make empty accounts; contracts start with nonce=1. Also, don't charge 25k when sending/suicide zero-value.
     pub no_empty: bool,
     /// Kill empty accounts if touched.
@@ -140,7 +140,7 @@ impl Schedule {
             balance_gas: 20,
             suicide_gas: 0,
             suicide_to_new_account_cost: 0,
-            sub_gas_cap_divisor: None,
+            sub_gas_cap_divisor: 64,
             no_empty: false,
             kill_empty: false,
         }
