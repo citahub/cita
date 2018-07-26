@@ -95,12 +95,6 @@ npm run-script unit_group
 npm run-script unit_gm
 ```
 
-* To test role contract
-
-```
-npm run-script unit_role
-```
-
 * To test role management contract
 
 ```
