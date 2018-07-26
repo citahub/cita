@@ -70,25 +70,21 @@ impl<Gas: CostType> Gasometer<Gas> {
         // Try converting requested gas to `Gas` (`U256/u64`)
         // but in EIP150 even if we request more we should never fail from OOG
         let requested = requested.map(Gas::from_u256);
+        let cap_divisor = schedule.sub_gas_cap_divisor;
 
-        match schedule.sub_gas_cap_divisor {
-            Some(cap_divisor) if self.current_gas >= needed => {
-                let gas_remaining = self.current_gas - needed;
-                let max_gas_provided = match cap_divisor {
-                    64 => gas_remaining - (gas_remaining >> 6),
-                    cap_divisor => gas_remaining - gas_remaining / Gas::from(cap_divisor),
-                };
+        if self.current_gas >= needed {
+            let gas_remaining = self.current_gas - needed;
+            let max_gas_provided = match cap_divisor {
+                64 => gas_remaining - (gas_remaining >> 6),
+                cap_divisor => gas_remaining - gas_remaining / Gas::from(cap_divisor),
+            };
 
-                if let Some(Ok(r)) = requested { Ok(cmp::min(r, max_gas_provided)) } else { Ok(max_gas_provided) }
-            }
-            _ => {
-                if let Some(r) = requested {
-                    r
-                } else if self.current_gas >= needed {
-                    Ok(self.current_gas - needed)
-                } else {
-                    Ok(0.into())
-                }
+            if let Some(Ok(r)) = requested { Ok(cmp::min(r, max_gas_provided)) } else { Ok(max_gas_provided) }
+        } else {
+            if let Some(r) = requested {
+                r
+            } else {
+                Ok(0.into())
             }
         }
     }
