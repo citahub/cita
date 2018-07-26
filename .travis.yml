@@ -3,13 +3,144 @@ sudo: required
 cache:
   timeout: 600
   directories:
-  - $HOME/.docker_cargo
-  - $TRAVIS_BUILD_DIR/target
+    # - $HOME/.cargo
+    # - $TRAVIS_BUILD_DIR/target
+    # - $HOME/.cache/yarn
+    - /opt/.cargo
+    - ~/cita-build
 services:
   - docker
+stages:
+  - Fmt
+  - Build
+  - UnitTest
+  - IntegrateTest
+before_install:
+  - docker pull cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
 jobs:
   include:
-    - stage: Build & Test
+    - stage: Fmt
+      name: Fmt the cita
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
       script:
-        - docker pull cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
-        - ./env.sh ./scripts/ci.sh
+        - ./env.sh make fmt
+
+    - stage: Build
+      name: Build the cita
+      # cache: cargo
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+      script:
+        - ./env.sh make
+
+    - stage: UnitTest
+      name: Unit test of cita
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+      script:
+        - ./env.sh make test
+
+    - stage: IntegrateTest
+      name: Basic test of cita
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+        - ./env.sh make
+      script:
+        - ./env.sh ./tests/integrate_test/cita_basic.sh
+
+    - stage: IntegrateTest
+      name: Byzantine test of cita
+      env:
+        # - MODEL=quota
+        # - MODEL=charge
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+        - ./env.sh make
+      script:
+        # - ./env.sh ./tests/integrate_test/cita_byzantinetest.sh MODEL
+        - ./env.sh ./tests/integrate_test/cita_byzantinetest.sh quota
+
+    - stage: IntegrateTest
+      name: Byzantine test of cita
+      env:
+        # - MODEL=quota
+        # - MODEL=charge
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+        - ./env.sh make
+      script:
+        # - ./env.sh ./tests/integrate_test/cita_byzantinetest.sh MODEL
+        - ./env.sh ./tests/integrate_test/cita_byzantinetest.sh charge
+
+    - stage: IntegrateTest
+      name: JSONRPC schema mock test
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+        - ./env.sh make
+      script:
+        - ./env.sh ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
+
+      # - stage: IntegrateTest
+      # name: Crosschain tx test
+      # before_script:
+      #  - cd $TRAVIS_BUILD_DIR
+      #  - ./env.sh make
+      # script:
+      #  - ./env.sh ./tests/integrate_test/cita_crosschain.sh
+
+    - stage: IntegrateTest
+      name: Transfer value test at charge model
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+        - ./env.sh make
+      script:
+        - ./env.sh ./tests/integrate_test/cita_charge_mode.sh
+
+    - stage: UnitTest
+      name: Unit test of contract
+      language: node_js
+      node_js:
+        - lts/*
+      before_install:
+        - rm /opt/cita-run/test-chain -rf
+      install:
+        - cd $TRAVIS_BUILD_DIR
+        - ./env.sh make
+        - cd target/install
+        - ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4100"
+        - ./env.sh ./bin/cita setup test-chain/0
+        - ./daemon.sh ./bin/cita start test-chain/0
+      before_script:
+        - cd $TRAVIS_BUILD_DIR/scripts/contracts/tests
+        - yarn install
+      script:
+        - npm run-script unit_group
+        - npm run-script unit_permission
+        - npm run-script unit_auth
+        - npm run-script unit_chain
+        - npm run-script unit_gm
+        - npm run-script unit_pm
+        - npm run-script unit_rm
+        - npm run-script unit_qm
+
+    - stage: UnitTest
+      name: Test of node
+      language: node_js
+      node_js:
+        - lts/*
+      install:
+        - cd $TRAVIS_BUILD_DIR
+        - ./env.sh make
+        # - ./daemon.sh ./tests/integrate_test/cita_start.sh
+        - cd target/install
+        - ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002"
+        - for i in {0..2} ; do
+             ./env.sh bin/cita setup test-chain/$i &&
+             ./daemon.sh bin/cita start test-chain/$i ;
+          done
+      before_script:
+        - cd $TRAVIS_BUILD_DIR/scripts/contracts/tests
+        - yarn install
+      script:
+        - npm run-script unit_node
