@@ -76,7 +76,7 @@ pub struct RelayInfo {
     pub from_chain_id: u32,
     pub to_chain_id: u32,
     pub dest_contract: Address,
-    pub dest_hasher: String,
+    pub dest_hasher: [u8; 4],
     pub cross_chain_nonce: u64,
 }
 
@@ -144,7 +144,7 @@ impl TxProof {
         // uint256 from_chain_id,
         // uint256 to_chain_id,
         // address dest_contract,
-        // uint256 dest_hasher,
+        // bytes4 dest_hasher,
         // uint256 cross_chain_nonce
         if data.len() != 160 {
             None
@@ -153,14 +153,14 @@ impl TxProof {
             let from_chain_id = U256::from(iter.next().unwrap()).low_u32();
             let to_chain_id = U256::from(iter.next().unwrap()).low_u32();
             let dest_contract = Address::from(H256::from(iter.next().unwrap()));
-            let mut dest_hasher = U256::from(iter.next().unwrap()).lower_hex();
-            // U256 to hex no leading zero
-            if dest_hasher.len() > 8 {
-                return None;
-            }
-            if dest_hasher.len() < 8 {
-                dest_hasher = format!("{:08}", dest_hasher);
-            }
+            let dest_hasher = iter.next().unwrap()[..4]
+                .into_iter()
+                .take(4)
+                .enumerate()
+                .fold([0u8; 4], |mut acc, (idx, val)| {
+                    acc[idx] = *val;
+                    acc
+                });
             let cross_chain_nonce = U256::from(iter.next().unwrap()).low_u64();
             Some(RelayInfo {
                 from_chain_id,
@@ -178,7 +178,7 @@ impl TxProof {
     pub fn extract_crosschain_data(
         &self,
         my_contrac_addr: Address,
-        my_hasher: String,
+        my_hasher: [u8; 4],
         my_cross_chain_nonce: u64,
         my_chain_id: u32,
         authorities: &[Address],
@@ -204,8 +204,9 @@ impl TxProof {
                         && dest_hasher == my_hasher
                         && cross_chain_nonce == my_cross_chain_nonce
                     {
-                        // skip hasher(4 bytes) and 2 args each 32 bytes
-                        let (_, origin_tx_data) = self.tx.data.split_at(4 + 32 * 2);
+                        // sendToSideChain(uint32 toChainId, address destContract, bytes txData)
+                        // skip func hasher, uint32, address, bytes position and length
+                        let (_, origin_tx_data) = self.tx.data.split_at(4 + 32 * 4);
                         Some((self.tx.sender().clone(), origin_tx_data.to_owned()))
                     } else {
                         None

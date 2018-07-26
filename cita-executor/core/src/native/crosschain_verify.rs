@@ -1,12 +1,17 @@
-use byteorder::BigEndian;
-use byteorder::ByteOrder;
-use cita_types::traits::LowerHex;
-use cita_types::{Address, H256, U256};
+use cita_types::{Address, U256};
 use contracts::ChainManagement;
 use core::libchain::chain::TxProof;
+use ethabi;
 use evm::action_params::ActionParams;
 use evm::{Error, Ext, GasLeft, ReturnData};
-use native::factory::Contract;
+use native::{calc_func_sig, extract_func_sig, factory::Contract};
+
+lazy_static! {
+    static ref VERIFY_TRANSACTION_FUNC: u32 =
+        calc_func_sig(b"verifyTransaction(address,bytes4,uint256,bytes)");
+    static ref VERIFY_STATE_FUNC: u32 = calc_func_sig(b"verifyState(bytes)");
+    static ref VERIFY_BLOCK_HEADER_FUNC: u32 = calc_func_sig(b"verifyBlockHeader(bytes)");
+}
 
 #[derive(Clone)]
 pub struct CrossChainVerify {
@@ -15,11 +20,12 @@ pub struct CrossChainVerify {
 
 impl Contract for CrossChainVerify {
     fn exec(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
-        let signature = BigEndian::read_u32(params.clone().data.unwrap().get(0..4).unwrap());
-        match signature {
-            0 => self.verify(params, ext),
+        extract_func_sig(&params).and_then(|signature| match signature {
+            sig if sig == *VERIFY_TRANSACTION_FUNC => self.verify_transaction(params, ext),
+            sig if sig == *VERIFY_STATE_FUNC => self.verify_state(params, ext),
+            sig if sig == *VERIFY_BLOCK_HEADER_FUNC => self.verify_block_header(params, ext),
             _ => Err(Error::OutOfGas),
-        }
+        })
     }
     fn create(&self) -> Box<Contract> {
         Box::new(CrossChainVerify::default())
@@ -33,7 +39,11 @@ impl Default for CrossChainVerify {
 }
 
 impl CrossChainVerify {
-    fn verify(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
+    fn verify_transaction(
+        &mut self,
+        params: ActionParams,
+        ext: &mut Ext,
+    ) -> Result<GasLeft, Error> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
             return Err(Error::OutOfGas);
@@ -43,63 +53,53 @@ impl CrossChainVerify {
         if params.data.is_none() {
             return Err(Error::Internal("no data".to_string()));
         }
+
         let data = params.data.unwrap();
-        let data_len = data.len();
-        if data_len < 4 + 32 * 4 {
-            return Err(Error::Internal("data too short".to_string()));
-        }
-        let mut index = 4;
+        trace!("data = {:?}", data);
+        let tokens = vec![
+            ethabi::ParamType::Address,
+            ethabi::ParamType::FixedBytes(4),
+            ethabi::ParamType::Uint(256),
+            ethabi::ParamType::Bytes,
+        ];
 
-        let mut len = 32;
-        let addr_data = data.get(index..index + len);
-        if addr_data.is_none() {
-            return Err(Error::Internal("no addr".to_string()));
-        }
-        let addr = Address::from(H256::from(addr_data.unwrap()));
-        index = index + len;
-
-        len = 32;
-        let hasher_data = data.get(index..index + len);
-        if hasher_data.is_none() {
-            return Err(Error::Internal("no hasher".to_string()));
-        }
-        // U256 to hex no leading zero
-        let mut hasher = U256::from(hasher_data.unwrap()).lower_hex();
-        if hasher.len() > 8 {
-            return Err(Error::OutOfGas);
-        }
-        if hasher.len() < 8 {
-            hasher = format!("{:08}", hasher);
-        }
-        index = index + len;
-
-        len = 32;
-        let nonce_data = data.get(index..index + len);
-        if nonce_data.is_none() {
-            return Err(Error::Internal("no nonce".to_string()));
-        }
-        let nonce = U256::from(nonce_data.unwrap()).low_u64();
-        index = index + len;
-
-        len = 32;
-        let proof_len_data = data.get(index..index + len);
-        if proof_len_data.is_none() {
-            return Err(Error::Internal("no proof len".to_string()));
-        }
-        let proof_len = U256::from(proof_len_data.unwrap()).low_u64() as usize;
-        trace!("proof_len {:?}", proof_len);
-        index = index + len;
-
-        if index + proof_len > data_len {
-            return Err(Error::Internal("data shorter than proof len".to_string()));
+        let result = ethabi::decode(&tokens, &data[4..]);
+        if result.is_err() {
+            return Err(Error::Internal("decode failed".to_string()));
         }
 
-        let proof_data = data.get(index..index + proof_len);
-        if proof_data.is_none() {
-            return Err(Error::Internal("no proof data".to_string()));
+        let mut decoded = result.unwrap();
+        trace!("decoded = {:?}", decoded);
+        let result = decoded.remove(0).to_address();
+        if result.is_none() {
+            return Err(Error::Internal("decode 1st param failed".to_string()));
         }
-        let proof_data = proof_data.unwrap();
-        trace!("proof_data {:?}", proof_data);
+        let addr = Address::from(result.unwrap());
+        trace!("addr = {}", addr);
+        let result = decoded.remove(0).to_fixed_bytes();
+        if result.is_none() {
+            return Err(Error::Internal("decode 2nd param failed".to_string()));
+        }
+        let hasher = result.unwrap()[..4].into_iter().take(4).enumerate().fold(
+            [0u8; 4],
+            |mut acc, (idx, val)| {
+                acc[idx] = *val;
+                acc
+            },
+        );
+        trace!("hasher = {:?}", hasher);
+        let result = decoded.remove(0).to_uint();
+        if result.is_none() {
+            return Err(Error::Internal("decode 3rd param failed".to_string()));
+        }
+        let nonce = U256::from_big_endian(&result.unwrap()).low_u64();
+        trace!("nonce = {}", nonce);
+        let result = decoded.remove(0).to_bytes();
+        if result.is_none() {
+            return Err(Error::Internal("decode 4th param failed".to_string()));
+        }
+        let proof_data = result.unwrap();
+        trace!("data = {:?}", proof_data);
 
         let proof = TxProof::from_bytes(&proof_data);
 
@@ -135,21 +135,33 @@ impl CrossChainVerify {
         }
         let (sender, tx_data) = ret.unwrap();
 
-        self.output.clear();
-        for _ in 0..12 {
-            self.output.push(0);
-        }
-        for v in sender.0.iter() {
-            self.output.push(*v);
-        }
-        for v in tx_data.iter() {
-            self.output.push(*v);
-        }
+        let tokens = vec![
+            ethabi::Token::Address(sender.into()),
+            ethabi::Token::Bytes(tx_data.clone()),
+        ];
+        let result = ethabi::encode(&tokens);
+        trace!("encoded {:?}", result);
+
+        self.output = result;
 
         Ok(GasLeft::NeedsReturn {
             gas_left: gas_left,
             data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })
+    }
+
+    fn verify_state(&mut self, _params: ActionParams, _ext: &mut Ext) -> Result<GasLeft, Error> {
+        // TODO to be continued ...
+        Err(Error::OutOfGas)
+    }
+
+    fn verify_block_header(
+        &mut self,
+        _params: ActionParams,
+        _ext: &mut Ext,
+    ) -> Result<GasLeft, Error> {
+        // TODO to be continued ...
+        Err(Error::OutOfGas)
     }
 }

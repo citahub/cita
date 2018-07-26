@@ -23,7 +23,6 @@ extern crate ethabi;
 extern crate futures;
 extern crate hyper;
 extern crate parking_lot;
-extern crate rustc_hex;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -132,11 +131,11 @@ fn construct_transaction(
                 .ok()
                 .map(|height| (chain_id, height))
         })
-        .and_then(|(chain_id, height)| {
+        .map(|(chain_id, height)| {
             transaction::construct_transaction(
                 pkey,
                 tx_proof_rlp,
-                &relay_info.dest_hasher,
+                relay_info.dest_hasher,
                 relay_info.dest_contract,
                 chain_id,
                 height,

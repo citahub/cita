@@ -10,6 +10,9 @@ PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
 CMC_ADDR="ffffffffffffffffffffffffffffffffff020002"
 CMC="scripts/contracts/system/chain_manager.sol"
 
+# Base dir for import contract files
+CONTRACT_LIBS_DIR="scripts/contracts"
+
 # Templates for some shell commands
 ETHCALL='{"jsonrpc":"2.0","method":"call", "params":[{"to":"%s", "data":"%s"}, "latest"],"id":2}'
 
@@ -127,7 +130,8 @@ function deploy_contract () {
     local chain="$1"
     local solfile="$2"
     local extra="$3"
-    local code="$(solc --bin "${solfile}" 2>/dev/null | tail -1)${extra}"
+    local code="$(solc --allow-paths "$(pwd)/${CONTRACT_LIBS_DIR}" \
+        --bin "${solfile}" 2>/dev/null | tail -1)${extra}"
     txtool_run ${chain} make_tx.py --privkey "${PKEY}" --code "${code}"
     txtool_run ${chain} send_tx.py
     txtool_run ${chain} get_receipt.py --forever true
@@ -225,6 +229,8 @@ function test_demo_contract () {
     local main_tokens=50000
     local side_tokens=30000
     local crosschain_tokens=1234
+    local crosschain_tokens_bytes=$( \
+        printf "binascii.unhexlify('%064x')" ${crosschain_tokens})
 
     echo "main_chain_id=[${main_chain_id}]"
     echo "side_chain_id=[${side_chain_id}]"
@@ -260,7 +266,7 @@ function test_demo_contract () {
     echo "Demo contract for side at [${SIDE_CONTRACT_ADDR}]."
 
     title "Check from_chain_id for both chains."
-    code="$(func_encode "get_from_chain_id()")"
+    code="$(func_encode "getFromChainId()")"
     assert_equal "${main_chain_id}" \
         "$(hex2dec $(call_demo_for_main "${code}"))" \
         "The from_chain_id is not right for main chain."
@@ -270,7 +276,7 @@ function test_demo_contract () {
 
     title "Check tokens for both chains."
     data=$(printf "%64s" "${PADDR}" | tr ' ' '0')
-    code="$(func_encode 'get_balance(address)')${data}"
+    code="$(func_encode 'getBalance(address)')${data}"
     assert_equal ${main_tokens} \
         "$(hex2dec $(call_demo_for_main "${code}"))" \
         "The tokens is not right for main chain."
@@ -279,12 +285,13 @@ function test_demo_contract () {
         "The tokens is not right for side chain."
 
     title "Send tokens from main chain."
-    local demo_abi=$(solc --combined-json abi ${CONTRACT_DEMO} \
+    local demo_abi=$(solc --allow-paths "$(pwd)/${CONTRACT_LIBS_DIR}" \
+            --combined-json abi ${CONTRACT_DEMO} \
         | sed "s@${CONTRACT_DEMO}:@@g" \
         | json_get '.contracts.MyToken.abi')
     send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
-        "send_to_side_chain" \
-        "${side_chain_id}, '${SIDE_CONTRACT_ADDR}', ${crosschain_tokens}"
+        "sendToSideChain" \
+        "${side_chain_id}, '${SIDE_CONTRACT_ADDR}', ${crosschain_tokens_bytes}"
     local maintx=$(get_tx main)
 
     title "Waiting for proof."
@@ -327,7 +334,7 @@ EOF
 
     title "Check balance for both chains after crosschain transaction."
     data=$(printf "%64s" "${PADDR}" | tr ' ' '0')
-    code="$(func_encode 'get_balance(address)')${data}"
+    code="$(func_encode 'getBalance(address)')${data}"
     assert_equal $((main_tokens-crosschain_tokens)) \
         "$(hex2dec $(call_demo_for_main "${code}"))" \
         "The balance is not right for main chain."
@@ -379,7 +386,7 @@ function main () {
             "ChainManager.parentChainId=${main_chain_id}" \
             "ChainManager.parentChainAuthorities=${main_auths}"
 
-    wait_chain_for_height main 5
+    wait_chain_for_height main 3
 
     title "Register side chain ..."
     local cmc_abi=$(solc --combined-json abi ${CMC} 2>/dev/null \
