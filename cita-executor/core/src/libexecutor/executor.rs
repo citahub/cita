@@ -838,7 +838,11 @@ impl Executor {
         if open_block.apply_transactions(self, conf.check_permission, conf.check_quota) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
-            info!("execute block use {:?}", new_now.duration_since(now));
+            info!(
+                "execute {} block use {:?}",
+                closed_block.header.number(),
+                new_now.duration_since(now)
+            );
             self.finalize_block(closed_block, ctx_pub);
         } else {
             warn!("executing block is interrupted.");
