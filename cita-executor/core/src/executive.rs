@@ -31,6 +31,7 @@ pub use executed::{Executed, ExecutionResult};
 use externalities::*;
 use grpc_contracts;
 use grpc_contracts::contract::{invoke_grpc_contract, is_grpc_contract};
+use grpc_contracts::grpc_vm::extract_logs_from_response;
 use grpc_contracts::service_registry;
 use libexecutor::executor::EconomicalModel;
 use libproto::citacode::InvokeResponse;
@@ -823,26 +824,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     );
                 }
 
-                substate.logs = invoke_response
-                    .get_logs()
-                    .into_iter()
-                    .map(|log| {
-                        let mut topics = Vec::new();
-                        let tdata = log.get_topic();
-
-                        for chunk in tdata.chunks(32) {
-                            let value = H256::from(chunk);
-                            topics.push(value);
-                        }
-
-                        let data = Bytes::from(log.get_data());
-                        LogEntry {
-                            address: params.address,
-                            topics: topics,
-                            data: data.to_vec(),
-                        }
-                    })
-                    .collect();
+                // update contract_state.height
+                service_registry::set_enable_contract_height(params.address, self.info.number);
+                substate.logs = extract_logs_from_response(params.address, &invoke_response);
 
                 Ok(FinalizationResult {
                     gas_left: U256::from_str(invoke_response.get_gas_left()).unwrap(),
