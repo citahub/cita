@@ -418,6 +418,7 @@ impl OpenBlock {
         for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 {
                 if executor.is_interrupted.load(Ordering::SeqCst) {
+                    executor.is_interrupted.store(false, Ordering::SeqCst);
                     return false;
                 }
             }

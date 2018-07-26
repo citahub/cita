@@ -432,12 +432,16 @@ impl Executor {
 
     pub fn validate_height(&self, block_number: u64) -> bool {
         let current_height = self.get_current_height();
-        trace!(
-            "validate_height current_height {:?} block_number {:?}",
-            current_height,
-            block_number - 1
-        );
-        current_height + 1 == block_number
+        if current_height + 1 == block_number {
+            true
+        } else {
+            warn!(
+                "validate_height current_height {:?} block_number {:?}",
+                current_height,
+                block_number - 1
+            );
+            false
+        }
     }
 
     /// Verify the block generation time interval
