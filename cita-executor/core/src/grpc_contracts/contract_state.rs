@@ -101,6 +101,10 @@ impl ContractState {
         }
     }
 
+    pub fn get_address(&self) -> Address {
+        Address::from_str(&self.conn_info.address).unwrap()
+    }
+
     pub fn stream_rlp(&self, s: &mut RlpStream) {
         s.begin_list(2);
         s.append(&self.conn_info);

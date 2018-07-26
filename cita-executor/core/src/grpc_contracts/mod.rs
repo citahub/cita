@@ -24,6 +24,7 @@
 
 pub mod contract;
 pub mod contract_state;
+pub mod grpc_vm;
 pub mod grpc_vm_adapter;
 pub mod service_registry;
 pub mod storage;

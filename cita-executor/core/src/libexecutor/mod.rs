@@ -25,6 +25,7 @@ pub mod genesis;
 pub mod transaction;
 
 pub use self::genesis::Genesis;
-pub use grpc_contracts::grpc_vm_adapter::{vm_grpc_server, CallEvmImpl};
+pub use grpc_contracts::grpc_vm::CallEvmImpl;
+pub use grpc_contracts::grpc_vm_adapter::vm_grpc_server;
 pub use libproto::*;
 pub use util::journaldb;

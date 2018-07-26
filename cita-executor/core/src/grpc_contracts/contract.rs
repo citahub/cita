@@ -7,7 +7,7 @@ use evm::env_info::{EnvInfo, LastHashes};
 use evm::{FinalizationResult, Finalize};
 use grpc::Result as GrpcResult;
 use grpc_contracts::contract_state::ConnectInfo;
-use libexecutor::CallEvmImpl;
+use grpc_contracts::grpc_vm::CallEvmImpl;
 use libproto::citacode::{
     ActionParams as ProtoActionParams, EnvInfo as ProtoEnvInfo, InvokeRequest, InvokeResponse,
 };
@@ -34,7 +34,6 @@ pub fn invoke_grpc_contract<B>(
     env_info: &EnvInfo,
     params: ActionParams,
     state: &mut State<B>,
-    //    executor: &Executor,
     check_permission: bool,
     check_quota: bool,
     connect_info: ConnectInfo,
@@ -52,8 +51,6 @@ where
     proto_params.set_code_address(connect_info.get_addr().to_string());
     proto_params.set_data(params.data.unwrap());
     proto_params.set_sender(params.sender.lower_hex());
-    //to be discussed
-    //action_params.set_gas("1000".to_string());
     let mut invoke_request = InvokeRequest::new();
     invoke_request.set_param(proto_params);
     invoke_request.set_env_info(proto_env_info.clone());
