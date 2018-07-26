@@ -1,32 +1,13 @@
 //use contracts::permission_management::contains_resource;
-use cita_types::clean_0x;
-use cita_types::traits::LowerHex;
-use cita_types::{Address, H160, H256, U256};
-use db::{self as db, Key, Readable, Writable};
-use error::{Error, ExecutionError};
-use executive::check_permission;
-use grpc::Result as GrpcResult;
+use cita_types::{Address, H256, U256};
 use grpc::Server;
-use grpc_contracts::contract_state::{ConnectInfo, ContractState};
 use grpc_contracts::service_registry;
 use libexecutor::executor::Executor;
-use libproto::citacode::{ActionParams, EnvInfo, InvokeRequest, InvokeResponse};
-use libproto::citacode_grpc::{CitacodeService, CitacodeServiceClient};
 use libproto::executor::{LoadRequest, LoadResponse, RegisterRequest, RegisterResponse};
 use libproto::executor_grpc::{ExecutorService, ExecutorServiceServer};
-use log_entry::LogEntry;
-use receipt::Receipt;
-use rlp::*;
-use state::backend::Backend as StateBackend;
-use state::State;
-use std::collections::HashMap;
-use std::error::Error as StdError;
 use std::str::FromStr;
 use std::sync::Arc;
 use types::ids::BlockId;
-use types::transaction::{Action, SignedTransaction};
-use util::RwLock;
-use util::*;
 
 pub struct ExecutorServiceImpl {
     ext: Arc<Executor>,

@@ -18,7 +18,6 @@
 use basic_types::LogBloom;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
-use db::{self as db, Readable};
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
@@ -38,12 +37,10 @@ use state::State;
 use state_db::StateDB;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
 use trace::FlatTrace;
-use types::reserved_addresses;
 use types::transaction::{Action, SignedTransaction};
 use util::{merklehash, HeapSizeOf};
 

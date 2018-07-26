@@ -34,8 +34,6 @@ use grpc_contracts::contract::{invoke_grpc_contract, is_grpc_contract};
 use grpc_contracts::grpc_vm::extract_logs_from_response;
 use grpc_contracts::service_registry;
 use libexecutor::executor::EconomicalModel;
-use libproto::citacode::InvokeResponse;
-use log_entry::LogEntry;
 use native::factory::Contract as NativeContract;
 use native::factory::Factory as NativeFactory;
 use state::backend::Backend as StateBackend;
@@ -738,7 +736,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         &mut self,
         params: ActionParams,
         substate: &mut Substate,
-        mut output: BytesRef,
+        output: BytesRef,
         tracer: &mut T,
         vm_tracer: &mut V,
     ) -> evm::Result<FinalizationResult>
@@ -764,7 +762,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 .transfer_balance(&params.sender, &params.address, &val)?
         }
 
-        if let Some(mut native_contract) = self.native_factory.new_contract(params.code_address) {
+        if let Some(native_contract) = self.native_factory.new_contract(params.code_address) {
             // check and call Native Contract
             self.call_native_contract(
                 params,
@@ -789,7 +787,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         &mut self,
         params: ActionParams,
         substate: &mut Substate,
-        output: BytesRef,
+        _output: BytesRef,
     ) -> evm::Result<FinalizationResult> {
         let connect_info = match service_registry::find_contract(params.code_address, true) {
             Some(contract_state) => contract_state.conn_info,
@@ -821,7 +819,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                         params.address,
                         key.to_vec(),
                         value.to_vec(),
-                    );
+                    ).unwrap();
                 }
 
                 // update contract_state.height

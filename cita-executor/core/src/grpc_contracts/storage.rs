@@ -1,4 +1,4 @@
-use cita_types::{Address, H160, H256, U256, U512};
+use cita_types::{Address, H256, U256};
 use state::backend::Backend;
 use state::State;
 use util::trie;

@@ -1,31 +1,23 @@
-use cita_types::clean_0x;
 use cita_types::traits::LowerHex;
-use cita_types::{Address, H160, H256, U256};
-use db::{self as db, Key, Readable, Writable};
+use cita_types::{Address, H256, U256};
+use db::{self as db, Writable};
 use error::{Error, ExecutionError};
 use executive::check_permission;
 use grpc::Result as GrpcResult;
-use grpc::Server;
+
 use grpc_contracts::contract_state::{ConnectInfo, ContractState};
 use grpc_contracts::service_registry;
 use libexecutor::executor::Executor;
 use libproto::citacode::{ActionParams, EnvInfo, InvokeRequest, InvokeResponse};
 use libproto::citacode_grpc::{CitacodeService, CitacodeServiceClient};
-use libproto::executor::{LoadRequest, LoadResponse, RegisterRequest, RegisterResponse};
-use libproto::executor_grpc::{ExecutorService, ExecutorServiceServer};
 use log_entry::LogEntry;
 use receipt::Receipt;
-use rlp::*;
 use state::backend::Backend as StateBackend;
 use state::State;
-use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::str::FromStr;
-use std::sync::Arc;
-use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction};
-use util::RwLock;
-use util::*;
+use util::Bytes;
 
 pub fn extract_logs_from_response(sender: Address, response: &InvokeResponse) -> Vec<LogEntry> {
     response
@@ -143,8 +135,8 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
 
         let ip = connect_info.get_ip();
         let port = connect_info.get_port();
-        let addr = connect_info.get_addr();
-        let height: u64 = env_info.number.parse().unwrap();
+        let _addr = connect_info.get_addr();
+        let _height: u64 = env_info.number.parse().unwrap();
 
         let (resp, contract_address) = {
             match t.action {

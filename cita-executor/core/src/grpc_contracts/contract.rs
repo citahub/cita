@@ -1,23 +1,17 @@
 use cita_types::traits::LowerHex;
-use cita_types::{Address, H160, H256, U256};
-use error::{Error, ExecutionError};
-use evm;
-use evm::action_params::{ActionParams, ActionValue};
-use evm::env_info::{EnvInfo, LastHashes};
-use evm::{FinalizationResult, Finalize};
+use cita_types::Address;
+use evm::action_params::ActionParams;
+use evm::env_info::EnvInfo;
 use grpc::Result as GrpcResult;
 use grpc_contracts::contract_state::ConnectInfo;
 use grpc_contracts::grpc_vm::CallEvmImpl;
 use libproto::citacode::{
     ActionParams as ProtoActionParams, EnvInfo as ProtoEnvInfo, InvokeRequest, InvokeResponse,
 };
-use receipt::{Receipt, ReceiptError};
 use state::backend::Backend as StateBackend;
 use state::State;
-use state_db::StateDB;
 use std::str::FromStr;
 use types::reserved_addresses;
-use util::Bytes;
 
 lazy_static! {
     static ref LOW_CONTRACT_ADDRESS: Address =
@@ -35,7 +29,7 @@ pub fn invoke_grpc_contract<B>(
     params: ActionParams,
     state: &mut State<B>,
     check_permission: bool,
-    check_quota: bool,
+    _check_quota: bool,
     connect_info: ConnectInfo,
 ) -> GrpcResult<InvokeResponse>
 where

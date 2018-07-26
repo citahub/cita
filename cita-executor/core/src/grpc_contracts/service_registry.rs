@@ -1,11 +1,9 @@
-use cita_types::clean_0x;
 use cita_types::traits::LowerHex;
-use cita_types::{Address, H160, H256, U256};
+use cita_types::Address;
 use grpc_contracts::contract_state::ContractState;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use util::RwLock;
-use util::*;
 
 lazy_static! {
     static ref SERVICE_MAP: Mutex<ServiceMap> = Mutex::new(ServiceMap::new());
@@ -77,9 +75,9 @@ impl ServiceMap {
             .insert(key, ContractState::new(ip, port, "".to_string(), height));
     }
 
-    pub fn contains_key(&self, key: String) -> bool {
-        self.enable.write().contains_key(&key)
-    }
+    //    pub fn contains_key(&self, key: String) -> bool {
+    //        self.enable.write().contains_key(&key)
+    //    }
 
     pub fn get(&self, key: String, enable: bool) -> Option<ContractState> {
         if enable {
