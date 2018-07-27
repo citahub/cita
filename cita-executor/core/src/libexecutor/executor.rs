@@ -432,12 +432,16 @@ impl Executor {
 
     pub fn validate_height(&self, block_number: u64) -> bool {
         let current_height = self.get_current_height();
-        trace!(
-            "validate_height current_height {:?} block_number {:?}",
-            current_height,
-            block_number - 1
-        );
-        current_height + 1 == block_number
+        if current_height + 1 == block_number {
+            true
+        } else {
+            warn!(
+                "validate_height current_height {:?} block_number {:?}",
+                current_height,
+                block_number - 1
+            );
+            false
+        }
     }
 
     /// Verify the block generation time interval
@@ -838,7 +842,11 @@ impl Executor {
         if open_block.apply_transactions(self, conf.check_permission, conf.check_quota) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
-            info!("execute block use {:?}", new_now.duration_since(now));
+            info!(
+                "execute {} block use {:?}",
+                closed_block.header.number(),
+                new_now.duration_since(now)
+            );
             self.finalize_block(closed_block, ctx_pub);
         } else {
             warn!("executing block is interrupted.");

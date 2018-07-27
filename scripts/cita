@@ -52,6 +52,7 @@ start() {
     curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/network            > /dev/null 2>&1 || true
     curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/network_tx         > /dev/null 2>&1 || true
     curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/network_consensus  > /dev/null 2>&1 || true
+    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/executor           > /dev/null 2>&1 || true
 
     [[ -z ${mock} ]] && config="forever.toml" || config="forever_mock.toml"
 

@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 use std::u8;
 use Source;
 
-const SYNC_STEP: u64 = 200;
+const SYNC_STEP: u64 = 20;
 const SYNC_TIME_OUT: u64 = 60;
 
 /// Get messages and determine if need to synchronize or broadcast the current node status
@@ -24,6 +24,7 @@ pub struct Synchronizer {
     latest_status_lists: BTreeMap<u64, VecDeque<u32>>,
     block_lists: BTreeMap<u64, Block>,
     rand: ThreadRng,
+    // Timer for each height processing
     remote_sync_time_out: Instant,
     /// local sync error
     local_sync_count: u8,
@@ -58,10 +59,10 @@ impl Synchronizer {
     ///        - It is equal to the original height more than 2 times, indicating that
     ///          the data in the chain or executor is lost, and the block information is
     ///          sent again from the buffer. If no buffer exists, the data is requested again from other nodes.
-    ///        - When the maximum height of data has been synchronized, a synchronization
-    ///          request is sent to other nodes to confirm that the current node has successfully
-    ///          completed the data synchronization work.
-    /// 3. The height is greater than the maximum height that has been synchronized, ie it is the latest data itself.
+    /// 3. The height is greater than or equal to the global height, indicating that the synchronization
+    ///     has been completed and the synchronization status is exited.
+    /// 4. The height is less than the global height, indicating that synchronization needs to be continued
+    /// 5. Other unknown state
     pub fn update_current_status(&mut self, latest_status: Status) {
         debug!(
             "sync: update_current_status: current height = {}, \
@@ -79,6 +80,7 @@ impl Synchronizer {
             self.local_sync_count += 1;
         } else {
             self.local_sync_count = 0;
+            self.remote_sync_time_out = Instant::now();
         }
 
         self.latest_status_lists = self
@@ -88,17 +90,24 @@ impl Synchronizer {
         self.broadcast_status();
         self.prune_block_list_cache(new_height + 1);
 
+        info!(
+            "current: {}, sync_end: {}, global: {}, sync: {}",
+            new_height,
+            self.sync_end_height,
+            self.global_status.get_height(),
+            self.is_synchronizing
+        );
+
         if new_height < old_height {
             // Chain error, may be a problem with the database, such as the database was deleted
-            self.is_synchronizing = true;
             let start_height = new_height + 1;
 
             if self.block_lists.contains_key(&start_height) && !self.block_lists.is_empty() {
                 self.submit_blocks();
             } else {
-                self.start_sync_req(start_height, 0);
+                self.start_sync_req(start_height);
             }
-        } else if new_height <= self.sync_end_height {
+        } else if new_height < self.sync_end_height {
             // In synchronization, or loss of sync data, need to resend
             debug!(
                 "Syncing: update_current_status: height = {}, block_lists len = {}",
@@ -110,26 +119,37 @@ impl Synchronizer {
                 if self.local_sync_count >= 3 {
                     // Chain height does not increase, loss data or data is invalid,
                     // send cache to executor and chain, and clear cache
-                    self.submit_blocks();
                     self.local_sync_count = 0;
                     self.block_lists.clear();
+                    self.start_sync_req(new_height + 1);
                     info!("More than 3 times, clear the cache");
                 }
-            } else {
-                // If the block height is equal to the maximum height that has already been synchronized,
-                // perform the synchronization operation first to see if it is the latest in the chain
-                self.start_sync_req(new_height + 1, 0);
             }
 
-            self.remote_sync_time_out = Instant::now();
             self.is_synchronizing = true;
+        } else if new_height >= self.global_status.get_height() {
+            if self.is_synchronizing {
+                self.is_synchronizing = false;
+                self.sync_end_height = 0;
+            }
+        } else if new_height < self.global_status.get_height() {
+            // If the block height is equal to the maximum height that has already been synchronized,
+            // perform the synchronization operation first to see if it is the latest in the chain
+            if self.is_synchronizing {
+                self.start_sync_req(new_height + 1);
+            }
         } else {
-            // Greater than the last sync height, expressed as the latest height
-            self.sync_end_height = self.current_status.get_height();
-            self.is_synchronizing = false;
+            info!("...Can't reach this");
         }
     }
 
+    /// 1. Global height is less than current height + 1, no action
+    /// 2. Global height is equal to current height + 1
+    ///     - The global height continues to increase, and if the current state is not synchronized,
+    ///       the synchronization request is initiated immediately.
+    ///     - If the global height is no longer growing, after the predetermined time has elapsed,
+    ///       the synchronization request is also initiated.
+    /// 3. Global height is greater than current height + 1, Timeout or not in sync, initiate synchronization
     pub fn update_global_status(&mut self, status: &Status, origin: u32) {
         debug!(
             "sync: update_global_status: current height = {}, from node = {}, height = {}",
@@ -145,23 +165,20 @@ impl Synchronizer {
 
         if status.get_height() < current_height + 1 {
             // The current node is the latest height and does not need to be synchronized
-            self.is_synchronizing = false;
         } else if status.get_height() == current_height + 1 {
             // A node on the chain blocks out, synchronizing the latest block
             self.add_latest_sync_lists(status.get_height(), origin);
 
             if self.global_status.get_height() > old_global_status.get_height()
-                && self.is_synchronizing
+                && !self.is_synchronizing
             {
-                self.start_sync_req(status.get_height(), status.get_height());
-            } else if self.global_status.get_height() == old_global_status.get_height() {
+                self.start_sync_req(status.get_height());
+            } else if self.global_status.get_height() == old_global_status.get_height()
+                && !self.is_synchronizing
+            {
                 if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT {
-                    self.remote_sync_time_out = Instant::now();
-                    self.start_sync_req(current_height + 1, status.get_height());
-                    self.is_synchronizing = true;
+                    self.start_sync_req(current_height + 1);
                 }
-            } else {
-                self.is_synchronizing = false;
             }
         } else {
             // The node is far behind the data on the chain and initiates a synchronization request
@@ -170,15 +187,8 @@ impl Synchronizer {
             if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
                 || !self.is_synchronizing
             {
-                self.remote_sync_time_out = Instant::now();
-                self.start_sync_req(current_height + 1, status.get_height());
-            } else if self.global_status.get_height() > old_global_status.get_height()
-                && self.is_synchronizing
-            {
-                self.start_sync_req(status.get_height(), status.get_height());
+                self.start_sync_req(current_height + 1);
             }
-
-            self.is_synchronizing = true;
         }
     }
 
@@ -228,16 +238,16 @@ impl Synchronizer {
     }
 
     // Initiate a sync request
-    fn start_sync_req(&mut self, start_height: u64, end_height: u64) {
+    fn start_sync_req(&mut self, start_height: u64) {
         debug!(
-            "sync: start_sync_req: start_height = {}, end_height = {},current height = {}",
+            "sync: start_sync_req: start_height = {}, current height = {}",
             start_height,
-            end_height,
             self.current_status.get_height()
         );
         let mut origin = 0;
-        let mut end_height = end_height;
+        let mut end_height = start_height;
         let mut is_send = false;
+        let current_height = self.current_status.get_height();
 
         if let Some((height, origins)) = self
             .latest_status_lists
@@ -249,11 +259,13 @@ impl Synchronizer {
                 height, origins
             );
             if let Some(origins) = self.latest_status_lists.get(height) {
-                if *height > self.current_status.get_height() {
+                if *height > current_height {
                     origin = origins[self.rand.gen_range(0, origins.len())];
-                    if end_height == 0 {
-                        end_height = *height + 1;
-                    }
+                    end_height = if *height + 1 > current_height + SYNC_STEP {
+                        current_height + SYNC_STEP
+                    } else {
+                        *height + 1
+                    };
                     is_send = true;
                 }
             }
@@ -359,7 +371,7 @@ impl Synchronizer {
         match blocks.last() {
             Some(block) => {
                 if let Some(header) = block.header.as_ref() {
-                    let height = header.get_height();
+                    let height = header.get_height() - 1;
 
                     if height > self.sync_end_height {
                         self.sync_end_height = height;
@@ -374,6 +386,8 @@ impl Synchronizer {
         }
 
         self.pub_blocks(blocks);
+        self.is_synchronizing = true;
+        self.remote_sync_time_out = Instant::now();
     }
 
     fn pub_blocks(&mut self, blocks: Vec<Block>) {
