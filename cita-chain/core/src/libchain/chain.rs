@@ -118,15 +118,15 @@ impl TxProof {
             warn!("txproof verify block header hash failed");
             return false;
         };
-        let proof = BftProof::from(self.proposal_proof.clone());
+        let third_proof = BftProof::from(self.proposal_proof.clone());
         // Verify next block header, use proof.proposal
-        if self.next_proposal_header.proposal_protobuf().crypt_hash() == proof.proposal {
+        if self.next_proposal_header.proposal_protobuf().crypt_hash() == third_proof.proposal {
         } else {
             warn!("txproof verify next block header failed");
             return false;
         };
         // Verify signatures in proposal proof.
-        if proof.check(self.block_header.number() as usize + 1, authorities) {
+        if third_proof.check(self.block_header.number() as usize + 1, authorities) {
         } else {
             warn!("txproof verify signatures for next block header failed");
             return false;

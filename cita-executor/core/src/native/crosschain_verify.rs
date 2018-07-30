@@ -1,20 +1,23 @@
-use cita_types::{Address, U256};
+use cita_types::{Address, H256, U256};
 use contracts::ChainManagement;
+use core::header::Header;
 use core::libchain::chain::TxProof;
 use ethabi;
 use evm::action_params::ActionParams;
+use evm::storage::Scalar;
 use evm::{Error, Ext, GasLeft, ReturnData};
 use native::{calc_func_sig, extract_func_sig, factory::Contract};
 
 lazy_static! {
     static ref VERIFY_TRANSACTION_FUNC: u32 =
-        calc_func_sig(b"verifyTransaction(address,bytes4,uint256,bytes)");
+        calc_func_sig(b"verifyTransaction(address,bytes4,uint64,bytes)");
     static ref VERIFY_STATE_FUNC: u32 = calc_func_sig(b"verifyState(bytes)");
-    static ref VERIFY_BLOCK_HEADER_FUNC: u32 = calc_func_sig(b"verifyBlockHeader(bytes)");
+    static ref VERIFY_BLOCK_HEADER_FUNC: u32 = calc_func_sig(b"verifyBlockHeader(uint32,bytes)");
 }
 
 #[derive(Clone)]
 pub struct CrossChainVerify {
+    block_header: Scalar,
     output: Vec<u8>,
 }
 
@@ -34,7 +37,10 @@ impl Contract for CrossChainVerify {
 
 impl Default for CrossChainVerify {
     fn default() -> Self {
-        CrossChainVerify { output: Vec::new() }
+        CrossChainVerify {
+            block_header: Scalar::new(H256::from(0)),
+            output: Vec::new(),
+        }
     }
 }
 
@@ -59,7 +65,7 @@ impl CrossChainVerify {
         let tokens = vec![
             ethabi::ParamType::Address,
             ethabi::ParamType::FixedBytes(4),
-            ethabi::ParamType::Uint(256),
+            ethabi::ParamType::Uint(64),
             ethabi::ParamType::Bytes,
         ];
 
@@ -67,9 +73,9 @@ impl CrossChainVerify {
         if result.is_err() {
             return Err(Error::Internal("decode failed".to_string()));
         }
-
         let mut decoded = result.unwrap();
         trace!("decoded = {:?}", decoded);
+
         let result = decoded.remove(0).to_address();
         if result.is_none() {
             return Err(Error::Internal("decode 1st param failed".to_string()));
@@ -158,10 +164,75 @@ impl CrossChainVerify {
 
     fn verify_block_header(
         &mut self,
-        _params: ActionParams,
-        _ext: &mut Ext,
+        params: ActionParams,
+        ext: &mut Ext,
     ) -> Result<GasLeft, Error> {
-        // TODO to be continued ...
-        Err(Error::OutOfGas)
+        let gas_cost = U256::from(10000);
+        if params.gas < gas_cost {
+            return Err(Error::OutOfGas);
+        }
+        let mut gas_left = params.gas - gas_cost;
+
+        if params.data.is_none() {
+            return Err(Error::Internal("no data".to_string()));
+        }
+
+        let data = params.data.unwrap();
+        trace!("data = {:?}", data);
+        let tokens = vec![ethabi::ParamType::Uint(32), ethabi::ParamType::Bytes];
+
+        let result = ethabi::decode(&tokens, &data[4..]);
+        if result.is_err() {
+            return Err(Error::Internal("decode failed".to_string()));
+        }
+        let mut decoded = result.unwrap();
+        trace!("decoded = {:?}", decoded);
+
+        let result = decoded.remove(0).to_uint();
+        if result.is_none() {
+            return Err(Error::Internal("decode 3rd param failed".to_string()));
+        }
+        let chain_id = U256::from_big_endian(&result.unwrap()).low_u32();
+        trace!("chain_id = {}", chain_id);
+        let result = decoded.remove(0).to_bytes();
+        if result.is_none() {
+            return Err(Error::Internal("decode 1th param failed".to_string()));
+        }
+        let block_header_curr_bytes = result.unwrap();
+        trace!("data = {:?}", block_header_curr_bytes);
+        let block_header_curr = Header::from_bytes(&block_header_curr_bytes);
+
+        let block_header_prev_bytes = self.block_header.get_bytes::<Vec<u8>>(ext)?;
+
+        let verify_result = if block_header_prev_bytes.len() == 0 {
+            block_header_curr.number() == 1
+        } else {
+            let block_header_prev = Header::from_bytes(&block_header_prev_bytes);
+
+            let ret = ChainManagement::ext_authorities(ext, &gas_left, &params.sender, chain_id);
+            if ret.is_none() {
+                return Err(Error::Internal("get authorities failed".to_owned()));
+            }
+            let (gas_left_new, authorities) = ret.unwrap();
+            gas_left = gas_left_new;
+
+            block_header_prev.verify_next(&block_header_curr, &authorities[..])
+        };
+
+        if verify_result {
+            self.block_header.set_bytes(ext, block_header_curr_bytes)?;
+        }
+
+        let tokens = vec![ethabi::Token::Bool(verify_result)];
+        let result = ethabi::encode(&tokens);
+        trace!("encoded {:?}", result);
+
+        self.output = result;
+
+        Ok(GasLeft::NeedsReturn {
+            gas_left: gas_left,
+            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
+            apply_state: true,
+        })
     }
 }
