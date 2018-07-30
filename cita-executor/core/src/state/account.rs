@@ -253,6 +253,25 @@ impl Account {
         Ok(value)
     }
 
+    /// Get value proof of the trie's storage at `key`.
+    pub fn get_value_proof(
+        &self,
+        trie_factory: &TrieFactory,
+        db: &HashDB,
+        key: &H256,
+    ) -> Option<Vec<Bytes>> {
+        trie_factory
+            .readonly(db, &self.storage_root)
+            .ok()
+            .and_then(|t| t.get_value_proof(key))
+    }
+
+    /// Verify value proof of the trie's storage at `key`.
+    pub fn verify_value_proof(&self, key: &H256, proof: &[Bytes]) -> Option<H256> {
+        trie::triedb::verify_value_proof(key, self.storage_root, proof, ::rlp::decode)
+            .map(|v: U256| v.into())
+    }
+
     /// Get cached storage value if any. Returns `None` if the
     /// key is not in the cache.
     pub fn cached_storage_at(&self, key: &H256) -> Option<H256> {
@@ -732,9 +751,9 @@ mod tests {
         let a = Account::from_rlp(&rlp);
 
         #[cfg(feature = "sha3hash")]
-        let expected = "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2";
+        let expected = "71623f5ec821de33ad5aa81f8c82f0916c6f60de0a536f8c466d440c56715bd5";
         #[cfg(feature = "blake2bhash")]
-        let expected = "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b";
+        let expected = "01d418c29a2942a1257a3be24134e125d9ef52ca2c0e9174969cd86fb9bf74e9";
 
         assert_eq!(a.storage_root().unwrap().lower_hex(), expected);
 
@@ -754,6 +773,131 @@ mod tests {
             ).unwrap(),
             H256::new()
         );
+    }
+
+    #[test]
+    fn value_proof() {
+        let mut db = MemoryDB::new();
+        let mut db = AccountDBMut::new(&mut db, &Address::new());
+        let rlp = {
+            let mut a = Account::new_contract(0.into(), 0.into());
+            a.set_storage(
+                H256::from(&U256::from(0x1234u64)),
+                H256::from(&U256::from(0x4321u64)),
+            );
+            a.set_storage(
+                H256::from(&U256::from(0x123456u64)),
+                H256::from(&U256::from(0x654321u64)),
+            );
+            a.set_storage(
+                H256::from(&U256::from(0x12345678u64)),
+                H256::from(&U256::from(0x87654321u64)),
+            );
+            a.set_storage(
+                H256::from(&U256::from(0x654321u64)),
+                H256::from(&U256::from(0x123456u64)),
+            );
+
+            a.commit_storage(&Default::default(), &mut db).unwrap();
+            a.init_code(vec![]);
+            a.commit_code(&mut db);
+            a.init_abi(vec![]);
+            a.commit_abi(&mut db);
+            a.rlp()
+        };
+
+        let a = Account::from_rlp(&rlp);
+
+        {
+            let value_proof =
+                a.get_value_proof(
+                    &Default::default(),
+                    &db.immutable(),
+                    &H256::from(&U256::from(0x1234u64)),
+                ).unwrap();
+            let val = a
+                .verify_value_proof(&H256::from(&U256::from(0x1234u64)), &value_proof)
+                .unwrap();
+
+            assert_eq!(val, H256::from(&U256::from(0x4321u64)));
+        }
+
+        {
+            let value_proof =
+                a.get_value_proof(
+                    &Default::default(),
+                    &db.immutable(),
+                    &H256::from(&U256::from(0x123456u64)),
+                ).unwrap();
+            let val = a
+                .verify_value_proof(&H256::from(&U256::from(0x123456u64)), &value_proof)
+                .unwrap();
+
+            assert_eq!(val, H256::from(&U256::from(0x654321u64)));
+        }
+
+        {
+            let value_proof =
+                a.get_value_proof(
+                    &Default::default(),
+                    &db.immutable(),
+                    &H256::from(&U256::from(0x12345678u64)),
+                ).unwrap();
+            let val = a
+                .verify_value_proof(&H256::from(&U256::from(0x12345678u64)), &value_proof)
+                .unwrap();
+
+            assert_eq!(val, H256::from(&U256::from(0x87654321u64)));
+        }
+
+        {
+            let value_proof =
+                a.get_value_proof(
+                    &Default::default(),
+                    &db.immutable(),
+                    &H256::from(&U256::from(0x654321u64)),
+                ).unwrap();
+            let val = a
+                .verify_value_proof(&H256::from(&U256::from(0x654321u64)), &value_proof)
+                .unwrap();
+
+            assert_eq!(val, H256::from(&U256::from(0x123456u64)));
+        }
+
+        // bad case
+        {
+            assert_eq!(
+                a.get_value_proof(
+                    &Default::default(),
+                    &db.immutable(),
+                    &H256::from(&U256::from(0x65432100u64)),
+                ),
+                None
+            );
+            let value_proof =
+                a.get_value_proof(
+                    &Default::default(),
+                    &db.immutable(),
+                    &H256::from(&U256::from(0x654321u64)),
+                ).unwrap();
+            assert_eq!(
+                a.verify_value_proof(&H256::from(&U256::from(0x65u64)), &value_proof),
+                None
+            )
+        }
+        // bad case
+        {
+            let value_proof =
+                a.get_value_proof(
+                    &Default::default(),
+                    &db.immutable(),
+                    &H256::from(&U256::from(0x65u64)),
+                ).unwrap();
+            assert_eq!(
+                a.verify_value_proof(&H256::from(&U256::from(0x65u64)), &value_proof),
+                None
+            )
+        }
     }
 
     #[test]
@@ -803,9 +947,9 @@ mod tests {
         assert_eq!(a.storage_root(), None);
 
         #[cfg(feature = "sha3hash")]
-        let expected = "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2";
+        let expected = "71623f5ec821de33ad5aa81f8c82f0916c6f60de0a536f8c466d440c56715bd5";
         #[cfg(feature = "blake2bhash")]
-        let expected = "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b";
+        let expected = "01d418c29a2942a1257a3be24134e125d9ef52ca2c0e9174969cd86fb9bf74e9";
 
         a.commit_storage(&Default::default(), &mut db).unwrap();
         assert_eq!(a.storage_root().unwrap().lower_hex(), expected);
@@ -823,9 +967,9 @@ mod tests {
         a.set_storage(1.into(), 0.into());
 
         #[cfg(feature = "sha3hash")]
-        let expected = "c57e1afb758b07f8d2c8f13a3b6e44fa5ff94ab266facc5a4fd3f062426e50b2";
+        let expected = "71623f5ec821de33ad5aa81f8c82f0916c6f60de0a536f8c466d440c56715bd5";
         #[cfg(feature = "blake2bhash")]
-        let expected = "13d4587aee53fa7d0eae19b6272e780383338a65ef21e92f2b84dbdbad929e7b";
+        let expected = "01d418c29a2942a1257a3be24134e125d9ef52ca2c0e9174969cd86fb9bf74e9";
 
         a.commit_storage(&Default::default(), &mut db).unwrap();
         assert_eq!(a.storage_root().unwrap().lower_hex(), expected);
