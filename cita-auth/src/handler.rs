@@ -1007,19 +1007,21 @@ impl MsgHandler {
 
     fn deal_snapshot(&mut self, snapshot_req: SnapshotReq) {
         let mut resp = SnapshotResp::new();
+        let mut send = false;
         match snapshot_req.cmd {
+            Cmd::Snapshot => {
+                info!("[snapshot] receive cmd: Snapshot");
+            }
             Cmd::Begin => {
                 info!("[snapshot] receive cmd: Begin");
                 self.is_snapshot = true;
 
                 resp.set_resp(Resp::BeginAck);
-                let msg: Message = resp.into();
-                self.tx_pub
-                    .send((
-                        routing_key!(Auth >> SnapshotResp).into(),
-                        (&msg).try_into().unwrap(),
-                    ))
-                    .unwrap();
+                resp.set_flag(true);
+                send = true;
+            }
+            Cmd::Restore => {
+                info!("[snapshot] receive cmd: Restore");
             }
             Cmd::Clear => {
                 info!("[snapshot] receive cmd: Clear");
@@ -1032,13 +1034,8 @@ impl MsgHandler {
                 self.black_list_cache.clear();
 
                 resp.set_resp(Resp::ClearAck);
-                let msg: Message = resp.into();
-                self.tx_pub
-                    .send((
-                        routing_key!(Auth >> SnapshotResp).into(),
-                        (&msg).try_into().unwrap(),
-                    ))
-                    .unwrap();
+                resp.set_flag(true);
+                send = true;
             }
             Cmd::End => {
                 info!(
@@ -1049,17 +1046,19 @@ impl MsgHandler {
                 self.is_snapshot = false;
 
                 resp.set_resp(Resp::EndAck);
-                let msg: Message = resp.into();
-                self.tx_pub
-                    .send((
-                        routing_key!(Auth >> SnapshotResp).into(),
-                        (&msg).try_into().unwrap(),
-                    ))
-                    .unwrap();
+                resp.set_flag(true);
+                send = true;
             }
-            _ => {
-                warn!("[snapshot] receive other cmd: {:?}", snapshot_req.cmd);
-            }
+        }
+
+        if send {
+            let msg: Message = resp.into();
+            self.tx_pub
+                .send((
+                    routing_key!(Auth >> SnapshotResp).into(),
+                    (&msg).try_into().unwrap(),
+                ))
+                .unwrap();
         }
     }
 }
