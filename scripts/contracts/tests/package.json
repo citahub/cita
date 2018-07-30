@@ -27,6 +27,7 @@
     "integrate_call-group": "mocha test/integrate/call_group -t 60s; eslint test/integrate/call_group.js",
     "integrate_deploy_contract": "mocha test/integrate/deploy_contract -t 60s; eslint test/integrate/deploy_contract.js",
     "integrate_send-tx": "mocha test/integrate/send_tx -t 60s; eslint test/integrate/send_tx.js",
+    "integrate_quota": "mocha test/integrate/quota -t 60s; eslint test/integrate/quota.js",
     "abi": "mocha test/integrate/abi.js -t 60s; eslint test/integrate/abi.js",
     "lint": "eslint test",
     "lint-fix": "eslint --fix test"

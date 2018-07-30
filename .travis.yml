@@ -145,3 +145,24 @@ jobs:
         - yarn install
       script:
         - npm run-script unit_node
+
+    - stage: IntegrateTest
+      name: Test of contract when checkQuota
+      language: node_js
+      node_js:
+        - lts/*
+      before_install:
+        - rm /opt/cita-run/test-chain -rf
+      install:
+        - cd $TRAVIS_BUILD_DIR
+        - ./env.sh make
+        - cd target/install
+        - ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4100" --contract_arguments "SysConfig.checkQuota=true"
+        - ./env.sh ./bin/cita setup test-chain/0
+        - ./daemon.sh ./bin/cita start test-chain/0
+      before_script:
+        - cd $TRAVIS_BUILD_DIR/scripts/contracts/tests
+        - yarn install
+      script:
+        - npm run-script integrate_quota
+
