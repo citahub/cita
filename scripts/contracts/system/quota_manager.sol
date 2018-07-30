@@ -2,6 +2,7 @@ pragma solidity ^0.4.18;
 
 import "./quota_interface.sol";
 import "./error.sol";
+import "../common/address_array.sol";
 
 
 /// @title Node manager contract
@@ -95,9 +96,15 @@ contract QuotaManager is QuotaInterface, Error {
         checkBaseLimit(_value)
         returns (bool)
     {
+        uint i = AddressArray.index(_account, accounts);
+        if (i == accounts.length) {
+            // Not exist
+            accounts.push(_account);
+            quotas.push(_value);
+        } else {
+            quotas[i] = _value;
+        }
         quota[_account] = _value;
-        accounts.push(_account);
-        quotas.push(_value);
         AqlSetted(
             _account,
             _value,
