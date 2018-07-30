@@ -216,7 +216,7 @@ impl ExecutorInstance {
             }
             // State must be Idle or WaitFinalized after executed proposal
             Some(BlockInQueue::Proposal(proposal)) => {
-                // Interrupte pre proposal
+                // Interrupt pre proposal
                 if self.ext.is_interrupted.load(Ordering::SeqCst) {
                     self.ext.is_interrupted.store(false, Ordering::SeqCst);
                 }
@@ -224,7 +224,7 @@ impl ExecutorInstance {
                     *self.ext.stage.write() = Stage::ExecutingProposal;
                 }
                 if let Some(closed_block) = self.ext.execute_proposal(proposal) {
-                    // Interruppted by laster proposal/consensus block
+                    // Interrupted by latest proposal/consensus block
                     if self.ext.is_interrupted.load(Ordering::SeqCst) {
                         self.ext.is_interrupted.store(false, Ordering::SeqCst);
                         *self.ext.stage.write() = Stage::Idle;
@@ -236,17 +236,17 @@ impl ExecutorInstance {
                         block_map.get(&number).cloned()
                     };
                     match in_queue {
-                        Some(BlockInQueue::ConsensusBlock(comming, _)) => {
-                            if comming.is_equivalent(&closed_block) {
+                        Some(BlockInQueue::ConsensusBlock(coming, _)) => {
+                            if coming.is_equivalent(&closed_block) {
                                 self.ext
-                                    .finalize_proposal(closed_block, comming, &self.ctx_pub);
-                                {
-                                    *self.ext.stage.write() = Stage::Idle;
-                                }
+                                    .finalize_proposal(closed_block, coming, &self.ctx_pub);
                                 info!("execute proposal block [height {}] finish !", number);
                             } else {
                                 // Maybe never reach
                                 warn!("something is wrong when execute proposal block")
+                            }
+                            {
+                                *self.ext.stage.write() = Stage::Idle;
                             }
                         }
                         Some(BlockInQueue::Proposal(_)) => {
@@ -261,6 +261,9 @@ impl ExecutorInstance {
                         }
                     }
                 } else {
+                    {
+                        *self.ext.stage.write() = Stage::Idle;
+                    }
                     warn!("executing proposal is interrupted.");
                 }
             }

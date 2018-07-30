@@ -109,10 +109,10 @@ pub enum BlockInQueue {
 /// 2.1 and the new proposal is different from the current one(the same transaction root),
 ///     interrupt the current executing and redo the new proposal;
 /// 2.2 otherwise ignore it.
-/// 3. When executor receives a consensus block, compares to the current excuting proposal,
+/// 3. When executor receives a consensus block, compares to the current executing proposal,
 /// 3.1 if they are the same, replace the proposal to consensus block, change the stage to `ExecutingBlock`.
-/// 3.2 Otherwise check whether the propposal is executing,
-/// 3.2.1 if yes, interrupt the current proposal and execute the consensus block,
+/// 3.2 Otherwise check whether the proposal is executing,
+/// 3.2.1 if yes, interrupt the current proposal, set stage to `Idle`, and then execute the consensus block,
 /// 3.2.2 otherwise execute the consensus block.
 /// 4. When executor finishes executing proposal, check the stage,
 /// 4.1 if `ExecutingBlock`, continue;
@@ -334,10 +334,10 @@ impl Executor {
                     return confs[i].clone();
                 }
             }
-            //for after geneis block
+            // for after genesis block
             return confs[0].clone();
         }
-        //it can't hanppen,only in test
+        // it can't happen,only in test
         GlobalSysConfig::new()
     }
 
@@ -763,10 +763,10 @@ impl Executor {
     pub fn finalize_proposal(
         &self,
         mut closed_block: ClosedBlock,
-        comming: Block,
+        coming: Block,
         ctx_pub: &Sender<(String, Vec<u8>)>,
     ) {
-        closed_block.header.set_proof(comming.proof().clone());
+        closed_block.header.set_proof(coming.proof().clone());
         self.finalize_block(closed_block, ctx_pub);
     }
 
@@ -844,7 +844,7 @@ impl Executor {
             let new_now = Instant::now();
             info!(
                 "execute {} block use {:?}",
-                closed_block.header.number(),
+                closed_block.number(),
                 new_now.duration_since(now)
             );
             self.finalize_block(closed_block, ctx_pub);
@@ -873,12 +873,14 @@ impl Executor {
         if open_block.apply_transactions(self, perm, check_quota) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
-            debug!("execute proposal use {:?}", new_now.duration_since(now));
-            let h = closed_block.number();
-            debug!("execute height {} proposal finish !", h);
+            debug!(
+                "execute {} proposal use {:?}",
+                closed_block.number(),
+                new_now.duration_since(now)
+            );
             Some(closed_block)
         } else {
-            warn!("executing block is interrupted.");
+            warn!("executing proposal is interrupted.");
             None
         }
     }
