@@ -16,7 +16,7 @@ stages:
   - UnitTest
   - IntegrateTest
 before_install:
-  - docker pull cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
+  - docker pull cita/cita-build:ubuntu-18.04-20180703
 jobs:
   include:
     - stage: Fmt

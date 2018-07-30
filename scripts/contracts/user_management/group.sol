@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 import "../common/address_array.sol";
 
@@ -29,13 +29,13 @@ contract Group {
     }
 
     /// @notice Constructor
-    function Group(address _parent, bytes32 _name, address[] _accounts)
+    constructor(address _parent, bytes32 _name, address[] _accounts)
         public
     {
         parent = _parent;
         name = _name;
         accounts = _accounts;
-        GroupNewed(_parent, _name, _accounts);
+        emit GroupNewed(_parent, _name, _accounts);
     }
 
     /// @notice Add accounts
@@ -51,7 +51,7 @@ contract Group {
                 accounts.push(_accounts[i]);
         }
 
-        AccountsAdded(_accounts);
+        emit AccountsAdded(_accounts);
         return true;
     }
 
@@ -68,7 +68,7 @@ contract Group {
         for (uint i = 0; i < _accounts.length; i++)
             assert(AddressArray.remove(_accounts[i], accounts));
 
-        AccountsDeleted(_accounts);
+        emit AccountsDeleted(_accounts);
         return true;
     }
 
@@ -80,7 +80,7 @@ contract Group {
         onlyUserManagement
         returns (bool)
     {
-        NameUpdated(name, _name);
+        emit NameUpdated(name, _name);
         name = _name;
         return true;
     }
@@ -94,7 +94,7 @@ contract Group {
         returns (bool)
     {
         assert(AddressArray.remove(_child, children));
-        ChildDeleted(_child);
+        emit ChildDeleted(_child);
         return true;
     }
 
@@ -109,7 +109,7 @@ contract Group {
         if (!AddressArray.exist(_child, children))
             children.push(_child);
 
-        ChildAdded(_child);
+        emit ChildAdded(_child);
         return true;
     }
 
@@ -118,10 +118,8 @@ contract Group {
     function close()
         public
         onlyUserManagement
-        returns (bool)
     {
         selfdestruct(msg.sender);
-        return true;
     }
 
     /// @notice Query the information of the group

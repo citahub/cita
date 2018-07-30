@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 interface CrossChainVerify {
     function verifyBlockHeader(uint32 fromChainId, bytes blockHeader) public view returns (bool);
@@ -53,7 +53,7 @@ contract CrossChain {
         bytes4 destFuncSig
     ) internal {
         uint32 fromChainId = getFromChainId();
-        SendCrossChain(fromChainId, toChainId, destContract, destFuncSig, crossChainSendNonce);
+        emit SendCrossChain(fromChainId, toChainId, destContract, destFuncSig, crossChainSendNonce);
         crossChainSendNonce += 1;
     }
 
@@ -114,7 +114,7 @@ contract CrossChain {
                 txData := add(ptr, 0x40)
             }
         }
-        RecvCrossChain(sender, txData);
+        emit RecvCrossChain(sender, txData);
         crossChainRecvNonce += 1;
     }
 
