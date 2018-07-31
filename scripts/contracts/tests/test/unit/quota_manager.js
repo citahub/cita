@@ -7,8 +7,8 @@ const { expect } = chai;
 const { getTxReceipt, logger } = util;
 const { superAdmin } = config;
 const {
-  getDefaultAQL, getAQL, getBQL, getQuotas, getAccounts, isAdmin, setAQL,
-  setDefaultAQL, setBQL, addAdmin,
+  getDefaultAQL, getAQL, getBQL, getQuotas, getAccounts, setAQL,
+  setDefaultAQL, setBQL,
 } = quota;
 
 // temp
@@ -23,27 +23,6 @@ const admin = superAdmin;
 const addr = config.testAddr[0];
 
 describe('test quota manager', () => {
-  describe('\ntest add admin\n', () => {
-    it('should send a tx: addAdmin ', async () => {
-      const res = await addAdmin(addr, admin);
-      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
-      expect(res.status).to.equal('OK');
-      ({ hash } = res);
-    });
-
-    it('should get receipt: addAdmin', async () => {
-      const res = await getTxReceipt(hash);
-      logger.debug('\nget receipt:\n', res);
-      expect(res.errorMessage).to.be.null;
-    });
-
-    it('should have new admin', async () => {
-      const res = await isAdmin(addr);
-      logger.debug('\nthe account is an admin:\n', res);
-      expect(res).to.be.true;
-    });
-  });
-
   describe('\ntest set block quota limit\n', () => {
     it('should send a tx: setBQL ', async () => {
       const res = await setBQL(value, admin);

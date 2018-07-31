@@ -8,12 +8,6 @@ const { abi, addr } = config.contract.quota;
 
 const contract = genContract(abi, addr);
 
-// addAdmin
-const addAdmin = async (account, _sender = sender) => {
-  const param = await genTxParams(_sender);
-  return contract.methods.addAdmin(account).send(param);
-};
-
 // setBQL
 const setBQL = async (value, _sender = sender) => {
   const param = await genTxParams(_sender);
@@ -32,9 +26,6 @@ const setAQL = async (account, value, _sender = sender) => {
   return contract.methods.setAQL(account, value).send(param);
 };
 
-// isAdmin
-const isAdmin = account => contract.methods.isAdmin(account).call();
-
 // getAccounts
 const getAccounts = () => contract.methods.getAccounts().call();
 
@@ -51,11 +42,9 @@ const getDefaultAQL = () => contract.methods.getDefaultAQL().call();
 const getAQL = account => contract.methods.getAQL(account).call();
 
 module.exports = {
-  addAdmin,
   setBQL,
   setDefaultAQL,
   setAQL,
-  isAdmin,
   getAccounts,
   getQuotas,
   getBQL,

@@ -442,7 +442,8 @@ function main () {
     wait_chain_for_height main 3
 
     title "Register side chain ..."
-    CMC_ABI=$(solc --combined-json abi ${CMC} 2>/dev/null \
+    CMC_ABI=$(solc --allow-paths "$(pwd)/${CONTRACT_LIBS_DIR}" \
+        --combined-json abi ${CMC} 2>/dev/null \
         | sed "s@${CMC}:@@g" \
         | json_get '.contracts.ChainManager.abi')
 

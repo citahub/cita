@@ -8,12 +8,6 @@ const { abi, addr } = config.contract.node_manager;
 
 const contract = genContract(abi, addr);
 
-// addAdmin
-const addAdmin = async (account, _sender = sender) => {
-  const param = await genTxParams(_sender);
-  return contract.methods.addAdmin(account).send(param);
-};
-
 // approveNode
 const approveNode = async (node, _sender = sender) => {
   const param = await genTxParams(_sender);
@@ -32,14 +26,9 @@ const listNode = () => contract.methods.listNode().call();
 // getStatus
 const getStatus = node => contract.methods.getStatus(node).call();
 
-// isAdmin
-const isAdmin = account => contract.methods.isAdmin(account).call();
-
 module.exports = {
-  addAdmin,
   approveNode,
   deleteNode,
   listNode,
   getStatus,
-  isAdmin,
 };

@@ -8,7 +8,7 @@ const { logger } = util;
 const { superAdmin } = config;
 
 const {
-  getAQL, getDefaultAQL, getBQL, getQuotas, getAccounts, isAdmin,
+  getAQL, getDefaultAQL, getBQL, getQuotas, getAccounts,
 } = quota;
 
 // test data TODO as a file
@@ -18,12 +18,6 @@ const defaultAQL = '268435456';
 const AQL = '1073741824';
 
 describe('test quota manager constructor', () => {
-  it('should have build-in admin', async () => {
-    const res = await isAdmin(admin);
-    logger.debug('\nthe account is the admin:\n', res);
-    expect(res).to.be.true;
-  });
-
   it('should have build-in special account', async () => {
     const res = await getAccounts();
     logger.debug('\nthe special accounts:\n', res);

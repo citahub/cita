@@ -1,16 +1,17 @@
 pragma solidity ^0.4.24;
 
 import "./quota_interface.sol";
-import "./error.sol";
+import "../common/error.sol";
 import "../common/address_array.sol";
+import "../common/admin.sol";
+import "../common/address.sol";
 
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020003
-contract QuotaManager is QuotaInterface, Error {
+contract QuotaManager is QuotaInterface, Error, ReservedAddress {
 
-    mapping(address => bool) admins;
     mapping(address => uint) quota;
     // Block quota limit
     uint BQL = 1073741824;
@@ -18,19 +19,11 @@ contract QuotaManager is QuotaInterface, Error {
     uint defaultAQL = 268435456;
     address[] accounts;
     uint[] quotas;
-
-    modifier onlyAdmin {
-        if (admins[msg.sender])
-            _;
-        else {
-            emit ErrorLog(ErrorType.NotAdmin, "Not the admin account");
-            return;
-        }
-    }
+    uint maxLimit = 2 ** 63 - 1;
+    uint baseLimit = 2 ** 22 - 1;
+    Admin admin = Admin(adminAddr);
 
     modifier checkBaseLimit(uint _v) {
-        uint maxLimit = 2 ** 63 - 1;
-        uint baseLimit = 2 ** 22 - 1;
         if (_v <= maxLimit && _v >= baseLimit)
             _;
         else {
@@ -49,27 +42,19 @@ contract QuotaManager is QuotaInterface, Error {
         }
     }
 
+    modifier onlyAdmin {
+        if (admin.isAdmin(msg.sender))
+            _;
+        else return;
+    }
+
     /// @notice Setup
     constructor(address _admin)
         public
     {
-        admins[_admin] = true;
-        quota[_admin] = 1073741824;
+        quota[_admin] = BQL;
         accounts.push(_admin);
-        quotas.push(1073741824);
-    }
-
-    /// @notice Add an admin
-    /// @param _account Address of the admin
-    /// @return true if successed, otherwise false
-    function addAdmin(address _account)
-        public
-        onlyAdmin
-        returns (bool)
-    {
-        admins[_account] = true;
-        emit AdminAdded(_account, msg.sender);
-        return true;
+        quotas.push(BQL);
     }
 
     /// @notice Set the default account quota limit
@@ -126,17 +111,6 @@ contract QuotaManager is QuotaInterface, Error {
         BQL = _value;
         emit BqlSetted(_value, msg.sender);
         return true;
-    }
-
-    /// @notice Check the account is admin
-    /// @param _account The address to be checked
-    /// @return true if it is, otherwise false
-    function isAdmin(address _account)
-        public
-        view
-        returns (bool)
-    {
-        return admins[_account];
     }
 
     /// @notice Get all accounts that have account quota limit
