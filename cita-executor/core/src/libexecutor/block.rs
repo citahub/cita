@@ -18,13 +18,15 @@
 use basic_types::LogBloom;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
-use db::{self as db, Readable};
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
+use grpc_contracts::contract::is_grpc_contract as is_go_contract;
+use grpc_contracts::contract_state::ConnectInfo;
+use grpc_contracts::grpc_vm::CallEvmImpl;
+use grpc_contracts::service_registry;
 use header::*;
 use libexecutor::executor::{EconomicalModel, Executor, GlobalSysConfig};
-use libexecutor::{CallEvmImpl, ConnectInfo};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::citacode::{ActionParams, EnvInfo as ProtoEnvInfo};
@@ -35,12 +37,10 @@ use state::State;
 use state_db::StateDB;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
 use trace::FlatTrace;
-use types::reserved_addresses;
 use types::transaction::{Action, SignedTransaction};
 use util::{merklehash, HeapSizeOf};
 
@@ -51,16 +51,6 @@ lazy_static! {
     /// Block Reward
     /// HardFork if need to change block reward
     pub static ref BLOCK_REWARD: U256 = U256::from(5_000_000_000_000_000_000 as i64);
-}
-
-lazy_static! {
-    static ref LOW_CONTRACT_ADDRESS: Address =
-        Address::from_str(reserved_addresses::GO_CONTRACT_MIN).unwrap();
-    static ref HIGH_CONTRACT_ADDRESS: Address =
-        Address::from_str(reserved_addresses::GO_CONTRACT_MAX).unwrap();
-}
-pub fn is_go_contract(caddr: Address) -> bool {
-    caddr > *LOW_CONTRACT_ADDRESS && caddr < *HIGH_CONTRACT_ADDRESS
 }
 
 /// Trait for a object that has a state database.
@@ -422,55 +412,35 @@ impl OpenBlock {
                     return false;
                 }
             }
-            let mut go_contract = false;
-            let mut str_addr = "".to_string();
-            let mut ip = "".to_string();
-            let mut port = 0;
 
             // Judging the contract address
-            let connect_info = match t.action {
-                Action::Call(ref address) => {
-                    if is_go_contract(*address) {
-                        go_contract = true;
-                        str_addr = address.lower_hex();
-                        if let Some(value) = executor.service_map.get(str_addr.clone(), true) {
-                            ip = value.conn_info.get_ip().to_string();
-                            port = value.conn_info.get_port();
-                        } else if let Some(value) = executor.db.read().read(db::COL_EXTRA, address)
-                        {
-                            ip = value.conn_info.get_ip().to_string();
-                            port = value.conn_info.get_port();
-                        }
-                    }
-                    (ip, port, str_addr)
-                }
+            // FIXME should push error receipt when transaction failed
+            match t.action {
+                // enable grpc contract
                 Action::GoCreate => {
                     let address = Address::from_slice(&t.data);
                     if is_go_contract(address) {
-                        go_contract = true;
-                        str_addr = address.lower_hex();
-                        if let Some(ref value) = executor.service_map.get(str_addr.clone(), false) {
-                            ip = value.conn_info.get_ip().to_string();
-                            port = value.conn_info.get_port();
+                        if let Some(ref value) = service_registry::find_contract(address, false) {
+                            let ip = value.conn_info.get_ip().to_string();
+                            let port = value.conn_info.get_port();
+                            let connect_info = ConnectInfo::new(ip, port, address.to_string());
+                            self.apply_grpc_vm(
+                                executor,
+                                &t,
+                                check_permission,
+                                check_quota,
+                                connect_info,
+                            );
                         }
                     }
-                    (ip, port, str_addr)
                 }
-                _ => (ip, port, str_addr),
-            };
-
-            if go_contract {
-                let connect_info = ConnectInfo::new(connect_info.0, connect_info.1, connect_info.2);
-                self.apply_grpc_vm(executor, &t, check_permission, check_quota, connect_info);
-            } else {
-                // Apply transaction and set account nonce
-                self.apply_transaction(
+                _ => self.apply_transaction(
                     &t,
                     check_permission,
                     check_quota,
                     *executor.economical_model.read(),
-                );
-            }
+                ),
+            };
         }
 
         let now = Instant::now();
@@ -522,7 +492,7 @@ impl OpenBlock {
                 }
                 self.receipts.push(outcome.receipt);
             }
-            Err(_) => info!("apply_transaction: There must be something wrong!"),
+            Err(_) => panic!("apply_transaction: There must be something wrong!"),
         }
     }
 
@@ -570,7 +540,7 @@ impl OpenBlock {
                 0.into(),
                 t.get_transaction_hash(),
             )),
-            Err(_) => info!("apply_grpc_vm: There must be something wrong!"),
+            Err(_) => panic!("apply_grpc_vm: There must be something wrong!"),
         }
     }
 

@@ -37,7 +37,6 @@ use libexecutor::call_request::CallRequest;
 use libexecutor::extras::*;
 use libexecutor::genesis::Genesis;
 pub use libexecutor::transaction::*;
-use libexecutor::ServiceMap;
 
 use libproto::blockchain::{Proof as ProtoProof, ProofType, RichStatus};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -217,8 +216,6 @@ pub struct Executor {
     pub prooftype: u8,
 
     pub sys_configs: RwLock<VecDeque<GlobalSysConfig>>,
-
-    pub service_map: Arc<ServiceMap>,
     pub economical_model: RwLock<EconomicalModel>,
     black_list_cache: RwLock<LRUCache<u64, Address>>,
 }
@@ -293,7 +290,6 @@ impl Executor {
             executed_result: RwLock::new(executed_map),
             prooftype: executor_config.prooftype,
             sys_configs: RwLock::new(VecDeque::new()),
-            service_map: Arc::new(ServiceMap::new()),
             economical_model: RwLock::new(EconomicalModel::Quota),
             black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
         };
@@ -312,10 +308,6 @@ impl Executor {
         }
 
         executor
-    }
-
-    pub fn set_service_map(&mut self, service_map: Arc<ServiceMap>) {
-        self.service_map = service_map;
     }
 
     /// Get block hash by number

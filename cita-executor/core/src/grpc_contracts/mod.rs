@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,17 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod blacklist;
-pub mod block;
-pub mod cache;
-pub mod call_request;
-pub mod executor;
-pub mod extras;
-pub mod genesis;
-pub mod transaction;
+//! GRPC contracts.
+//! You need following steps to use GRPC Contract:
+//! 1. Register a contract info through Executor GRPC interface.
+//! 2. Enable this GRPC contract by send a transaction (See block.rs file).
+//!
+//! now you can invoke this GRPC contract from transaction or EVM contract.
 
-pub use self::genesis::Genesis;
-pub use grpc_contracts::grpc_vm::CallEvmImpl;
-pub use grpc_contracts::grpc_vm_adapter::vm_grpc_server;
-pub use libproto::*;
-pub use util::journaldb;
+pub mod contract;
+pub mod contract_state;
+pub mod grpc_vm;
+pub mod grpc_vm_adapter;
+pub mod service_registry;
+pub mod storage;
