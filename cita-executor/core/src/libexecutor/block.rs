@@ -18,6 +18,7 @@
 use basic_types::LogBloom;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
+use engines::Engine;
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
@@ -435,6 +436,7 @@ impl OpenBlock {
                     }
                 }
                 _ => self.apply_transaction(
+                    &*executor.engine,
                     &t,
                     check_permission,
                     check_quota,
@@ -455,6 +457,7 @@ impl OpenBlock {
 
     pub fn apply_transaction(
         &mut self,
+        engine: &Engine,
         t: &SignedTransaction,
         check_permission: bool,
         check_quota: bool,
@@ -472,6 +475,7 @@ impl OpenBlock {
         let has_traces = self.traces.is_some();
         match self.state.apply(
             &env_info,
+            engine,
             t,
             has_traces,
             check_permission,

@@ -21,7 +21,7 @@
 
 use cita_types::{Address, H256, U256};
 use contracts::Resource;
-use engines::NullEngine;
+use engines::Engine;
 use error::{Error, ExecutionError};
 use evm::env_info::EnvInfo;
 use evm::Error as EvmError;
@@ -686,13 +686,13 @@ impl<B: Backend> State<B> {
     pub fn apply(
         &mut self,
         env_info: &EnvInfo,
+        engine: &Engine,
         t: &SignedTransaction,
         tracing: bool,
         check_permission: bool,
         check_quota: bool,
         economical_model: EconomicalModel,
     ) -> ApplyResult {
-        let engine = &NullEngine::cita();
         let options = TransactOptions {
             tracing: tracing,
             vm_tracing: false,
@@ -1160,6 +1160,7 @@ mod tests {
     use cita_crypto::KeyPair;
     use cita_types::traits::LowerHex;
     use cita_types::{Address, H256};
+    use engines::NullEngine;
     use evm::env_info::EnvInfo;
     use std::sync::Arc;
     use tests::helpers::*;
@@ -1231,9 +1232,19 @@ mod tests {
             account_gas_limit: 1844674.into(),
         };
         let contract_address = ::executive::contract_address(&signed.sender(), &U256::from(1));
+        let engine = NullEngine::cita();
+
         println!("contract_address {:?}", contract_address);
         let result = state
-            .apply(&info, &signed, true, false, false, Default::default())
+            .apply(
+                &info,
+                &engine,
+                &signed,
+                true,
+                false,
+                false,
+                Default::default(),
+            )
             .unwrap();
         println!(
             "{:?}",
