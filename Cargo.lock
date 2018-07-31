@@ -280,6 +280,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "chain_performance_by_mq"
+version = "0.1.0"
+dependencies = [
+ "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "common-types 0.1.0",
+ "core 0.1.0",
+ "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.70 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.70 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "uuid 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "chan"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"

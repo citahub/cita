@@ -11,6 +11,7 @@ members = ["cita-auth"
 ,"tools/relayer-parser"
 ,"tests/chain-executor-mock"
 ,"tests/consensus-mock"
+,"tests/chain_performance_by_mq"
 ]
 
 [profile.bench]
