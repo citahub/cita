@@ -23,8 +23,8 @@ use core::libchain::block::Block;
 use core::libchain::chain::{BlockInQueue, Chain};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{
-    BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter, Log as RpcLog,
-    Receipt as RpcReceipt, RpcBlock,
+    BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
+    Log as RpcLog, Receipt as RpcReceipt, RpcBlock,
 };
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
@@ -326,12 +326,9 @@ impl Forward {
             }
 
             Request::block_header_height(block_height) => {
-                let block_height: BlockParamsByNumber =
+                let block_height: RpcBlockNumber =
                     serde_json::from_str(&block_height).expect("Invalid param");
-                match self
-                    .chain
-                    .get_block_header_bytes(block_height.block_id.into())
-                {
+                match self.chain.get_block_header_bytes(block_height.into()) {
                     Some(block_header_bytes) => {
                         response.set_block_header(block_header_bytes);
                     }

@@ -14,7 +14,8 @@ CMC="scripts/contracts/system/chain_manager.sol"
 CONTRACT_LIBS_DIR="scripts/contracts"
 
 # Templates for some shell commands
-ETHCALL='{"jsonrpc":"2.0","method":"call", "params":[{"to":"%s", "data":"%s"}, "latest"],"id":2}'
+JSONRPC_CALL='{"jsonrpc":"2.0","method":"call", "params":[{"to":"%s", "data":"%s"}, "latest"],"id":2}'
+JSONRPC_BLOCKHEADER='{"jsonrpc":"2.0","method":"getBlockHeader","params":["0x%x"],"id":1}'
 
 # Test contract file
 CONTRACT_DEMO="scripts/contracts/tests/contracts/cross_chain_token.sol"
@@ -163,7 +164,24 @@ function call_contract () {
             exit 1
             ;;
     esac
-    curl -s -X POST -d "$(printf "${ETHCALL}" "0x${addr}" "0x${code}")" \
+    curl -s -X POST -d "$(printf "${JSONRPC_CALL}" "0x${addr}" "0x${code}")" \
+        127.0.0.1:${port} \
+        | json_get .result | xargs -I {} echo {}
+}
+
+function get_block_header () {
+    local chain="$1"
+    local height="$2"
+    case ${chain} in
+        main)
+            port=11337;;
+        side)
+            port=21337;;
+        ?)
+            exit 1
+            ;;
+    esac
+    curl -s -X POST -d "$(printf "${JSONRPC_BLOCKHEADER}" "${height}")" \
         127.0.0.1:${port} \
         | json_get .result | xargs -I {} echo {}
 }
@@ -341,6 +359,44 @@ EOF
     assert_equal $((side_tokens+crosschain_tokens)) \
         "$(hex2dec $(call_demo_for_side "${code}"))" \
         "The balance is not right for side chain."
+
+    title "Check sync block header number."
+    local data=$(printf "%064x" "${side_chain_id}")
+    code="$(func_encode 'getExpectedBlockNumber(uint32)')${data}"
+    assert_equal 0 \
+        "$(hex2dec $(call_demo_for_main "${code}"))" \
+        "The block number of side chain in main chain is wrong."
+
+    title "Get side chain block header bytes."
+    local side_header_0=$(get_block_header side 0 | cut -c 3-)
+    local side_header_1=$(get_block_header side 1 | cut -c 3-)
+    local side_header_2=$(get_block_header side 2 | cut -c 3-)
+    local side_header_3=$(get_block_header side 3 | cut -c 3-)
+    local main_header_3=$(get_block_header main 3 | cut -c 3-)
+
+    title "Sync side chain block header bytes to main chain."
+    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
+        "verifyBlockHeader" \
+        "${side_chain_id}, binascii.unhexlify('${side_header_0}')"
+    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
+        "verifyBlockHeader" \
+        "${side_chain_id}, binascii.unhexlify('${side_header_1}')"
+    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
+        "verifyBlockHeader" \
+        "${side_chain_id}, binascii.unhexlify('${side_header_3}')"
+    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
+        "verifyBlockHeader" \
+        "${side_chain_id}, binascii.unhexlify('${side_header_2}')"
+    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
+        "verifyBlockHeader" \
+        "${side_chain_id}, binascii.unhexlify('${main_header_3}')"
+
+    title "Check sync block header number after sync."
+    local data=$(printf "%064x" "${side_chain_id}")
+    code="$(func_encode 'getExpectedBlockNumber(uint32)')${data}"
+    assert_equal 3 \
+        "$(hex2dec $(call_demo_for_main "${code}"))" \
+        "The block number of side chain in main chain is wrong."
 }
 
 function main () {
