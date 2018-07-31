@@ -59,6 +59,18 @@ impl Deserialize for String {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+impl Serialize for Vec<u8> {
+    fn serialize(&self) -> Result<Vec<u8>, EvmError> {
+        Ok(self.clone())
+    }
+}
+impl Deserialize for Vec<u8> {
+    fn deserialize(bytes: &[u8]) -> Result<Self, EvmError> {
+        Ok(Vec::from(bytes))
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 impl From<FromUtf8Error> for EvmError {
     fn from(err: FromUtf8Error) -> Self {
         EvmError::Internal(format!("Internal error: {}", err))

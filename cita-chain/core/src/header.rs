@@ -19,8 +19,11 @@
 
 use basic_types::{LogBloom, ZERO_LOGBLOOM};
 use cita_types::{Address, H256, U256};
-use libproto::blockchain::{BlockHeader, Proof, ProofType};
-use rlp::*;
+use libproto::blockchain::{
+    BlockHeader as ProtoBlockHeader, Proof as ProtoProof, ProofType as ProtoProofType,
+};
+use proof::BftProof;
+use rlp::{self, Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 use std::cell::Cell;
 use std::cmp;
 use std::ops::Deref;
@@ -66,7 +69,7 @@ pub struct Header {
     /// Block gas limit.
     gas_limit: U256,
     /// the proof of the block
-    proof: Proof,
+    proof: ProtoProof,
     /// The hash of the header.
     hash: HashWrap,
     /// The version of the header.
@@ -103,7 +106,7 @@ impl Default for Header {
             log_bloom: *ZERO_LOGBLOOM,
             gas_used: U256::default(),
             gas_limit: U256::from(u64::max_value()),
-            proof: Proof::new(),
+            proof: ProtoProof::new(),
             hash: HashWrap(Cell::new(None)),
             version: 0,
             proposer: Address::default(),
@@ -111,8 +114,8 @@ impl Default for Header {
     }
 }
 
-impl From<BlockHeader> for Header {
-    fn from(bh: BlockHeader) -> Self {
+impl From<ProtoBlockHeader> for Header {
+    fn from(bh: ProtoBlockHeader) -> Self {
         Header {
             parent_hash: H256::from(bh.get_prevhash()),
             timestamp: bh.get_timestamp(),
@@ -174,7 +177,7 @@ impl Header {
         &self.gas_limit
     }
     /// Get the proof field of the header.
-    pub fn proof(&self) -> &Proof {
+    pub fn proof(&self) -> &ProtoProof {
         &self.proof
     }
     /// Get the version of the block
@@ -182,8 +185,8 @@ impl Header {
         self.version
     }
     /// Get the proof type field of the header.
-    pub fn proof_type(&self) -> Option<ProofType> {
-        if self.proof == Proof::new() {
+    pub fn proof_type(&self) -> Option<ProtoProofType> {
+        if self.proof == ProtoProof::new() {
             None
         } else {
             Some(self.proof.get_field_type())
@@ -250,7 +253,7 @@ impl Header {
         self.note_dirty();
     }
     /// Set the proof the block.
-    pub fn set_proof(&mut self, a: Proof) {
+    pub fn set_proof(&mut self, a: ProtoProof) {
         self.proof = a;
         self.note_dirty();
     }
@@ -310,8 +313,8 @@ impl Header {
     }
 
     /// Generate the protobuf header.
-    pub fn protobuf(&self) -> BlockHeader {
-        let mut bh = BlockHeader::new();
+    pub fn protobuf(&self) -> ProtoBlockHeader {
+        let mut bh = ProtoBlockHeader::new();
         bh.set_prevhash(self.parent_hash.to_vec());
         bh.set_timestamp(self.timestamp);
         bh.set_height(self.number);
@@ -338,8 +341,8 @@ impl Header {
     }
 
     /// Generate the protobuf header, only set the fields which has been set in new proposal.
-    pub fn proposal_protobuf(&self) -> BlockHeader {
-        let mut bh = BlockHeader::new();
+    pub fn proposal_protobuf(&self) -> ProtoBlockHeader {
+        let mut bh = ProtoBlockHeader::new();
         bh.set_prevhash(self.parent_hash.to_vec());
         bh.set_timestamp(self.timestamp);
         bh.set_height(self.number);
@@ -347,6 +350,35 @@ impl Header {
         bh.set_proof(self.proof.clone());
         bh.set_proposer(self.proposer.to_vec());
         bh
+    }
+
+    /// Recover a header from rlp bytes.
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        rlp::decode(bytes)
+    }
+
+    /// Verify if a header is the next header.
+    pub fn verify_next(&self, next: &Header, authorities: &[Address]) -> bool {
+        // Calculate block header hash, and is should be same as the parent_hash in next header
+        if self.note_dirty().hash() == *next.parent_hash() {
+        } else {
+            warn!("verify next block header parent hash failed");
+            return false;
+        };
+        let next_proof = BftProof::from(next.proof().clone());
+        // Verify block header, use proof.proposal
+        if self.proposal_protobuf().crypt_hash() == next_proof.proposal {
+        } else {
+            warn!("verify next block header proposal failed");
+            return false;
+        };
+        // Verify signatures in proposal proof.
+        if next_proof.check(self.number() as usize, authorities) {
+        } else {
+            warn!("verify signatures for next block header failed");
+            return false;
+        };
+        true
     }
 }
 

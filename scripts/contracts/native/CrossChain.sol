@@ -1,5 +1,9 @@
 pragma solidity ^0.4.18;
 
+interface CrossChainVerify {
+    function verifyBlockHeader(uint32 fromChainId, bytes blockHeader) public view returns (bool);
+}
+
 // TODO
 // If solidity support return variable length data in cross-contract calls,
 // we do NOT need to write this assembly codes, and we can change this
@@ -11,20 +15,20 @@ contract CrossChain {
 
     event SendCrossChain(uint32 fromChainId, uint32 toChainId,
                          address destContract, bytes4 destFuncSig,
-                         uint256 sendNonce);
+                         uint64 sendNonce);
     event RecvCrossChain(address indexed sender, bytes txData);
 
     address crossChainVerifyAddr = 0xffFfffFfFFFfFFfffFFFffffFfFfffFfFF030002;
     address chainManagerAddr = 0xffFFFfffFFfFFfFFFFffFFFfFfFFffFFfF020002;
 
-    uint256 crossChainSendNonce;
-    uint256 crossChainRecvNonce;
+    uint64 crossChainSendNonce;
+    uint64 crossChainRecvNonce;
 
-    function getCrossChainSendNonce() public view returns (uint256) {
+    function getCrossChainSendNonce() public view returns (uint64) {
         return crossChainSendNonce;
     }
 
-    function getCrossChainRecvNonce() public view returns (uint256) {
+    function getCrossChainRecvNonce() public view returns (uint64) {
         return crossChainRecvNonce;
     }
 
@@ -68,8 +72,8 @@ contract CrossChain {
             recvFuncSig := mload(ptr)
         }
         address contractAddr = crossChainVerifyAddr;
-        bytes4 nativeFunc = bytes4(keccak256("verifyTransaction(address,bytes4,uint256,bytes)"));
-        uint256 recvNonce = crossChainRecvNonce;
+        bytes4 nativeFunc = bytes4(keccak256("verifyTransaction(address,bytes4,uint64,bytes)"));
+        uint64 recvNonce = crossChainRecvNonce;
         // bytes len + bytes
         uint txProofSize = 0x20 + txProof.length / 0x20 * 0x20;
         if (txProof.length % 0x20 != 0) {
@@ -112,5 +116,13 @@ contract CrossChain {
         }
         RecvCrossChain(sender, txData);
         crossChainRecvNonce += 1;
+    }
+
+    function verifyBlockHeader(
+        uint32 fromChainId,
+        bytes blockHeader
+    ) public view returns (bool) {
+        CrossChainVerify crossChainVerifycontract = CrossChainVerify(crossChainVerifyAddr);
+        return crossChainVerifycontract.verifyBlockHeader(fromChainId, blockHeader);
     }
 }
