@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 
 /// @title Permission contract
@@ -28,7 +28,7 @@ contract Permission {
     }
 
     /// @notice Constructor
-    function Permission(bytes32 _name, address[] _conts, bytes4[] _funcs)
+    constructor(bytes32 _name, address[] _conts, bytes4[] _funcs)
         public
     {
         name = _name;
@@ -60,7 +60,7 @@ contract Permission {
         for (uint i = 0; i < _conts.length; i++)
             require(resourceDelete(_conts[i], _funcs[i]));
 
-        ResourcesDeleted(_conts, _funcs);
+        emit ResourcesDeleted(_conts, _funcs);
         return true;
     }
 
@@ -72,7 +72,7 @@ contract Permission {
         onlyPermissionManagement
         returns (bool)
     {
-        NameUpdated(name, _name);
+        emit NameUpdated(name, _name);
         name = _name;
         return true;
     }
@@ -82,10 +82,8 @@ contract Permission {
     function close()
         public
         onlyPermissionManagement
-        returns (bool)
     {
         selfdestruct(msg.sender);
-        return true;
     }
 
     /// @notice Check resource in the permission
@@ -196,7 +194,7 @@ contract Permission {
             }
         }
 
-        ResourcesAdded(_conts, _funcs);
+        emit ResourcesAdded(_conts, _funcs);
         return true;
     }
 

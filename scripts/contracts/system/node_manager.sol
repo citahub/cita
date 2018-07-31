@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 import "../common/address_array.sol";
 import "../common/SafeMath.sol";
@@ -15,34 +15,34 @@ interface NodeInterface {
     event SetStake(address indexed _node, uint _stake);
 
     /// @notice Add an admin
-    function addAdmin(address) public returns (bool);
+    function addAdmin(address) external returns (bool);
     /// @notice Approve to be consensus node. status will be start
-    function approveNode(address _node) public returns (bool);
+    function approveNode(address _node) external returns (bool);
 
     /// @notice Delete the consensus node that has been approved. status will be close
-    function deleteNode(address _node) public returns (bool);
+    function deleteNode(address _node) external returns (bool);
 
     /// @notice List the consensus nodes that have been approved
     /// which means list the node whose status is start
-    function listNode() public view returns (address[]);
+    function listNode() external view returns (address[]);
 
     /// @notice Set node stake
-    function setStake(address _node, uint64 stake) public;
+    function setStake(address _node, uint64 stake) external;
     /*
      * @notice Get the status of the node:
      * @return 0: Close
      * @return 1: Start
      */
-    function getStatus(address _node) public view returns (uint8);
+    function getStatus(address _node) external view returns (uint8);
 
     /// @notice Check the account is admin
-    function isAdmin(address _account) public view returns (bool);
+    function isAdmin(address _account) external view returns (bool);
 
     /// @notice Node stake list
-    function listStake() public view returns (uint64[] _stakes);
+    function listStake() external view returns (uint64[] _stakes);
 
     /// @notice Stake permillage
-    function stakePermillage(address _node) public view returns (uint64);
+    function stakePermillage(address _node) external view returns (uint64);
 }
 
 
@@ -66,7 +66,7 @@ contract NodeManager is NodeInterface, Error {
         if (admins[msg.sender])
             _;
         else {
-            ErrorLog(ErrorType.NotAdmin, "Not the admin account");
+            emit ErrorLog(ErrorType.NotAdmin, "Not the admin account");
             return;
         }
     }
@@ -76,7 +76,7 @@ contract NodeManager is NodeInterface, Error {
         if (!block_op[block.number])
             _;
         else {
-            ErrorLog(ErrorType.NotOneOperate, "should operate one time in a block");
+            emit ErrorLog(ErrorType.NotOneOperate, "should operate one time in a block");
             return;
         }
     }
@@ -85,7 +85,7 @@ contract NodeManager is NodeInterface, Error {
         if (NodeStatus.Close == status[_node])
             _;
         else {
-            ErrorLog(ErrorType.NotClose, "node does not close");
+            emit ErrorLog(ErrorType.NotClose, "node does not close");
             return;
         }
     }
@@ -94,13 +94,13 @@ contract NodeManager is NodeInterface, Error {
         if (NodeStatus.Start == status[_node])
             _;
         else {
-            ErrorLog(ErrorType.NotStart, "node does not start");
+            emit ErrorLog(ErrorType.NotStart, "node does not start");
             return;
         }
     }
 
     /// @notice Setup
-    function NodeManager(address[] _nodes, address[] _admins, uint64[] _stakes)
+    constructor(address[] _nodes, address[] _admins, uint64[] _stakes)
         public
     {
         // Initialize the address to Start
@@ -122,7 +122,7 @@ contract NodeManager is NodeInterface, Error {
         public
         onlyAdmin
     {
-        SetStake(_node, stake);
+        emit SetStake(_node, stake);
         stakes[_node] = stake;
     }
 
@@ -135,7 +135,7 @@ contract NodeManager is NodeInterface, Error {
         returns (bool)
     {
         admins[_account] = true;
-        AddAdmin(_account, msg.sender);
+        emit AddAdmin(_account, msg.sender);
         return true;
     }
 
@@ -152,7 +152,7 @@ contract NodeManager is NodeInterface, Error {
         status[_node] = NodeStatus.Start;
         block_op[block.number] = true;
         nodes.push(_node);
-        ApproveNode(_node);
+        emit ApproveNode(_node);
         return true;
     }
 
@@ -170,7 +170,7 @@ contract NodeManager is NodeInterface, Error {
         block_op[block.number] = false;
         status[_node] = NodeStatus.Close;
         stakes[_node] = 0;
-        DeleteNode(_node);
+        emit DeleteNode(_node);
         return true;
     }
 

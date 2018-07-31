@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 
 /// @title The interface of quota_manager
@@ -11,32 +11,32 @@ interface QuotaInterface {
     event AqlSetted(address indexed _account, uint _value, address indexed _sender);
 
     /// @notice Add an admin
-    function addAdmin(address _account) public returns (bool);
+    function addAdmin(address _account) external returns (bool);
 
     /// @notice Set the block quota limit
-    function setBQL(uint _value) public returns (bool);
+    function setBQL(uint _value) external returns (bool);
 
     /// @notice Set the default block quota limit
-    function setDefaultAQL(uint _value) public returns (bool);
+    function setDefaultAQL(uint _value) external returns (bool);
 
     /// @notice Set the account quota limit
-    function setAQL(address _account, uint _value) public returns (bool);
+    function setAQL(address _account, uint _value) external returns (bool);
 
     /// @notice Check the account is admin
-    function isAdmin(address _account) public view returns (bool);
+    function isAdmin(address _account) external view returns (bool);
 
     /// @notice Get all accounts that have account quota limit
-    function getAccounts() public view returns (address[]);
+    function getAccounts() external view returns (address[]);
 
     /// @notice Get all accounts' quotas
-    function getQuotas() public view returns (uint[]);
+    function getQuotas() external view returns (uint[]);
 
     /// @notice Get block quota limit
-    function getBQL() public view returns (uint);
+    function getBQL() external view returns (uint);
 
     /// @notice Get default account quota limit
-    function getDefaultAQL() public view returns (uint);
+    function getDefaultAQL() external view returns (uint);
     
     /// @notice Get account quota limit
-    function getAQL(address _account) public view returns (uint);
+    function getAQL(address _account) external view returns (uint);
 }

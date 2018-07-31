@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 import "./error.sol";
 
@@ -28,7 +28,7 @@ contract ChainManager is Error {
         if (parentChainId != 0)
             _;
         else {
-            ErrorLog(ErrorType.NoParentChain, "has no parent chain");
+            emit ErrorLog(ErrorType.NoParentChain, "has no parent chain");
             return;
         }
     }
@@ -37,13 +37,13 @@ contract ChainManager is Error {
         if (sideChains[_id].status != ChainStatus.Unknown)
             _;
         else {
-            ErrorLog(ErrorType.NoSideChain, "has no side chain");
+            emit ErrorLog(ErrorType.NoSideChain, "has no side chain");
             return;
         }
     }
 
     // Constructor.
-    function ChainManager(uint32 _pid, address[] _addrs)
+    constructor(uint32 _pid, address[] _addrs)
         public
     {
         if (_pid == 0) {
@@ -57,7 +57,6 @@ contract ChainManager is Error {
 
     function getChainId()
         public
-        view
         returns (uint32)
     {
         // SysConfig Contract
