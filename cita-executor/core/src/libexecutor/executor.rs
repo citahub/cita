@@ -44,6 +44,7 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{ConsensusConfig, ExecutedResult, Message};
 
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
+use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use native::factory::Factory as NativeFactory;
 use state::State;
@@ -56,12 +57,26 @@ use std::sync::Arc;
 use std::time::Instant;
 use types::ids::BlockId;
 use types::receipt::ReceiptError;
+use types::reserved_addresses::{
+    CHAIN_MANAGER, GROUP_MANAGEMENT, NODE_MANAGER, PERMISSION_MANAGEMENT, QUOTA_MANAGER,
+    ROLE_MANAGEMENT, SYS_CONFIG,
+};
 use types::transaction::{Action, SignedTransaction, Transaction};
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
 use util::RwLock;
 use util::UtilError;
 use util::{journaldb, Bytes};
+
+const SYS_CONTRACT: &[&str] = &[
+    CHAIN_MANAGER,
+    GROUP_MANAGEMENT,
+    NODE_MANAGER,
+    PERMISSION_MANAGEMENT,
+    QUOTA_MANAGER,
+    ROLE_MANAGEMENT,
+    SYS_CONFIG,
+];
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
@@ -178,10 +193,6 @@ impl GlobalSysConfig {
             block_interval: 3000,
         }
     }
-
-    fn check_equal(&self, rhs: &GlobalSysConfig) -> bool {
-        *&self == *&rhs
-    }
 }
 
 pub struct Executor {
@@ -294,7 +305,7 @@ impl Executor {
             executor.set_sys_configs(confs);
         }
 
-        executor.reorg_config();
+        executor.reload_config();
 
         {
             executor.set_gas_and_nodes(header.number());
@@ -748,7 +759,7 @@ impl Executor {
     /// 3. Commited data to db
     /// Notice: Write db if and only if finalize block.
     pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        self.reorg_config();
+        self.reorg_config(&closed_block);
         self.set_executed_result(&closed_block);
         self.pub_black_list(&closed_block, ctx_pub);
         self.send_executed_info_to_chain(closed_block.number(), ctx_pub);
@@ -779,7 +790,22 @@ impl Executor {
     /// 2. BlockGasLimit and AccountGasLimit
     /// 3. Account permissions
     /// 4. Prune history
-    pub fn reorg_config(&self) {
+    pub fn reorg_config(&self, close_block: &ClosedBlock) {
+        if close_block
+            .state
+            .cache()
+            .iter()
+            .filter(|(address, ref a)| {
+                a.is_dirty() && SYS_CONTRACT.contains(&address.lower_hex().as_ref())
+            })
+            .last()
+            .is_some()
+        {
+            self.reload_config();
+        }
+    }
+
+    fn reload_config(&self) {
         let mut conf = GlobalSysConfig::new();
         conf.nodes = self.node_manager().shuffled_stake_nodes();
         conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
@@ -801,17 +827,7 @@ impl Executor {
         conf.account_gas_limit
             .set_common_gas_limit(common_gas_limit);
         conf.account_gas_limit.set_specific_gas_limit(specific);
-
-        //fixbug when max_height is not equal to current_height such as sync
-        let tmp_height = self.get_current_height();
-        if let Some(inconf) = self.sys_configs.read().front() {
-            //don't compare the changed height
-            conf.changed_height = inconf.changed_height;
-            if inconf.check_equal(&conf) {
-                return;
-            }
-            conf.changed_height = tmp_height as usize;
-        }
+        conf.changed_height = self.get_current_height() as usize;
 
         {
             let mut confs = self.sys_configs.write();

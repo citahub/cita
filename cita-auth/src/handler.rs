@@ -355,9 +355,12 @@ impl MsgHandler {
         if self.check_quota {
             let addr = pubkey_to_address(&PubKey::from(signer));
             let mut gas_limit = self.account_gas_limit.get_common_gas_limit();
-            let mut specific_gas_limit = self.account_gas_limit.get_specific_gas_limit().clone();
-            if let Some(value) = specific_gas_limit.remove(&addr.lower_hex()) {
-                gas_limit = value;
+            if let Some(value) = self
+                .account_gas_limit
+                .get_specific_gas_limit()
+                .get(&addr.lower_hex())
+            {
+                gas_limit = *value;
             }
             if quota > gas_limit {
                 return false;
