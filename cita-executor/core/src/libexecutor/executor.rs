@@ -24,7 +24,7 @@ use contracts::{
 };
 use db;
 use db::*;
-use engines::NullEngine;
+use engines::{Engine, NullEngine};
 use error::CallError;
 use evm::env_info::{EnvInfo, LastHashes};
 use evm::Factory as EvmFactory;
@@ -218,6 +218,7 @@ pub struct Executor {
     pub sys_configs: RwLock<VecDeque<GlobalSysConfig>>,
     pub economical_model: RwLock<EconomicalModel>,
     black_list_cache: RwLock<LRUCache<u64, Address>>,
+    pub engine: Box<Engine>,
 }
 
 /// Get latest header
@@ -292,6 +293,7 @@ impl Executor {
             sys_configs: RwLock::new(VecDeque::new()),
             economical_model: RwLock::new(EconomicalModel::Quota),
             black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
+            engine: Box::new(NullEngine::cita()),
         };
 
         // Build executor config
@@ -619,8 +621,6 @@ impl Executor {
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
 
-        let engine = NullEngine::cita();
-
         // Never check permission and quota
         let options = TransactOptions {
             tracing: analytics.transaction_tracing,
@@ -632,7 +632,7 @@ impl Executor {
         Executive::new(
             &mut state,
             &env_info,
-            &engine,
+            &*self.engine,
             &self.factories.vm,
             &self.factories.native,
             false,
