@@ -6,8 +6,8 @@
 
 1. 修改节点目录下的chain.json，将权限检查和配额检查改成false
 2. 启动Chain, Executor进程，或者启动单独一个节点
-3. 使用命令进行压力测试: ../../debug/chain_performance_by_mq --help
-4. 在node目录下启动测试进程，这样可以正确的使用.env文件
+3. 在node目录下启动测试进程，这样可以正确的使用.env文件
+4. 使用命令进行压力测试: ../../../debug/chain_performance_by_mq --help
 
 ## 注意
 

@@ -20,7 +20,6 @@ use cita_types::H256;
 use crypto::*;
 use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
 use proof::BftProof;
-use protobuf::RepeatedField;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::convert::{Into, TryInto};
@@ -45,22 +44,9 @@ impl AsMillis for Duration {
     }
 }
 
-pub struct Generateblock {
-    pre_hash: H256,
-}
+pub struct Generateblock;
 
 impl Generateblock {
-    pub fn new() -> Self {
-        Generateblock {
-            pre_hash: H256::default(),
-        }
-    }
-
-    pub fn set_pre_hash(&mut self, pre_hash: H256) {
-        self.pre_hash = pre_hash;
-        println!("{:?}", self.pre_hash);
-    }
-
     pub fn generate_tx(
         code: &str,
         address: String,
@@ -94,7 +80,6 @@ impl Generateblock {
     ) -> (Vec<u8>, BlockWithProof) {
         let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
-        let pk = keypair.pubkey();
         let sender = keypair.address();
 
         let mut block = Block::new();
@@ -102,9 +87,7 @@ impl Generateblock {
         block.mut_header().set_timestamp(block_time.as_millis());
         block.mut_header().set_height(h);
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
-        block
-            .mut_body()
-            .set_transactions(RepeatedField::from_vec(txs));
+        block.mut_body().set_transactions(txs.into());
         let mut proof = BftProof::default();
         proof.height = (h - 1) as usize;
         proof.round = 0;
