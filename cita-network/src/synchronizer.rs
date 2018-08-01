@@ -11,7 +11,7 @@ use std::u8;
 use Source;
 
 const SYNC_STEP: u64 = 20;
-const SYNC_TIME_OUT: u64 = 60;
+const SYNC_TIME_OUT: u64 = 9;
 
 /// Get messages and determine if need to synchronize or broadcast the current node status
 pub struct Synchronizer {
@@ -42,7 +42,7 @@ impl Synchronizer {
             global_status: Status::new(),
             latest_status_lists: BTreeMap::new(),
             sync_end_height: 0,
-            is_synchronizing: true,
+            is_synchronizing: false,
             block_lists: BTreeMap::new(),
             rand: thread_rng(),
             remote_sync_time_out: (Instant::now() - Duration::from_secs(SYNC_TIME_OUT)),
@@ -75,9 +75,11 @@ impl Synchronizer {
         let old_height = self.current_status.get_height();
         let new_height = latest_status.get_height();
 
-        if new_height == old_height && self.local_sync_count < u8::MAX {
-            // Chain height does not increase
-            self.local_sync_count += 1;
+        if new_height == old_height {
+            if self.local_sync_count < u8::MAX {
+                // Chain height does not increase
+                self.local_sync_count += 1;
+            }
         } else {
             self.local_sync_count = 0;
             self.remote_sync_time_out = Instant::now();
@@ -131,6 +133,7 @@ impl Synchronizer {
             if self.is_synchronizing {
                 self.is_synchronizing = false;
                 self.sync_end_height = 0;
+                self.block_lists.clear();
             }
         } else if new_height < self.global_status.get_height() {
             // If the block height is equal to the maximum height that has already been synchronized,
@@ -145,10 +148,7 @@ impl Synchronizer {
 
     /// 1. Global height is less than current height + 1, no action
     /// 2. Global height is equal to current height + 1
-    ///     - The global height continues to increase, and if the current state is not synchronized,
-    ///       the synchronization request is initiated immediately.
-    ///     - If the global height is no longer growing, after the predetermined time has elapsed,
-    ///       the synchronization request is also initiated.
+    ///     - Start syncing when it is not in sync and timeout
     /// 3. Global height is greater than current height + 1, Timeout or not in sync, initiate synchronization
     pub fn update_global_status(&mut self, status: &Status, origin: u32) {
         debug!(
@@ -158,7 +158,6 @@ impl Synchronizer {
             status.get_height()
         );
         let current_height = self.current_status.get_height();
-        let old_global_status = self.global_status.clone();
         if self.global_status.get_height() < status.get_height() {
             self.global_status = status.clone();
         }
@@ -169,16 +168,10 @@ impl Synchronizer {
             // A node on the chain blocks out, synchronizing the latest block
             self.add_latest_sync_lists(status.get_height(), origin);
 
-            if self.global_status.get_height() > old_global_status.get_height()
+            if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
                 && !self.is_synchronizing
             {
-                self.start_sync_req(status.get_height());
-            } else if self.global_status.get_height() == old_global_status.get_height()
-                && !self.is_synchronizing
-            {
-                if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT {
-                    self.start_sync_req(current_height + 1);
-                }
+                self.start_sync_req(current_height + 1);
             }
         } else {
             // The node is far behind the data on the chain and initiates a synchronization request
