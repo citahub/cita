@@ -133,6 +133,7 @@ impl Synchronizer {
             if self.is_synchronizing {
                 self.is_synchronizing = false;
                 self.sync_end_height = 0;
+                self.block_lists.clear();
             }
         } else if new_height < self.global_status.get_height() {
             // If the block height is equal to the maximum height that has already been synchronized,
@@ -147,10 +148,7 @@ impl Synchronizer {
 
     /// 1. Global height is less than current height + 1, no action
     /// 2. Global height is equal to current height + 1
-    ///     - The global height continues to increase, and if the current state is not synchronized,
-    ///       the synchronization request is initiated immediately.
-    ///     - If the global height is no longer growing, after the predetermined time has elapsed,
-    ///       the synchronization request is also initiated.
+    ///     - Start syncing when it is not in sync and timeout
     /// 3. Global height is greater than current height + 1, Timeout or not in sync, initiate synchronization
     pub fn update_global_status(&mut self, status: &Status, origin: u32) {
         debug!(
