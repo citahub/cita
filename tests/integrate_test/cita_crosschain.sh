@@ -9,6 +9,7 @@ PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
 # Chain Manager Contract
 CMC_ADDR="ffffffffffffffffffffffffffffffffff020002"
 CMC="scripts/contracts/system/chain_manager.sol"
+CMC_ABI=
 
 # Base dir for import contract files
 CONTRACT_LIBS_DIR="scripts/contracts"
@@ -19,6 +20,7 @@ JSONRPC_BLOCKHEADER='{"jsonrpc":"2.0","method":"getBlockHeader","params":["0x%x"
 
 # Test contract file
 CONTRACT_DEMO="scripts/contracts/tests/contracts/cross_chain_token.sol"
+DEMO_ABI=
 
 # Global variables which are set in functions
 MAIN_CONTRACT_ADDR=
@@ -303,11 +305,11 @@ function test_demo_contract () {
         "The tokens is not right for side chain."
 
     title "Send tokens from main chain."
-    local demo_abi=$(solc --allow-paths "$(pwd)/${CONTRACT_LIBS_DIR}" \
+    DEMO_ABI=$(solc --allow-paths "$(pwd)/${CONTRACT_LIBS_DIR}" \
             --combined-json abi ${CONTRACT_DEMO} \
         | sed "s@${CONTRACT_DEMO}:@@g" \
         | json_get '.contracts.MyToken.abi')
-    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
+    send_contract main "${MAIN_CONTRACT_ADDR}" "${DEMO_ABI}" \
         "sendToSideChain" \
         "${side_chain_id}, '${SIDE_CONTRACT_ADDR}', ${crosschain_tokens_bytes}"
     local maintx=$(get_tx main)
@@ -364,7 +366,7 @@ EOF
     local data=$(printf "%064x" "${side_chain_id}")
     code="$(func_encode 'getExpectedBlockNumber(uint32)')${data}"
     assert_equal 0 \
-        "$(hex2dec $(call_demo_for_main "${code}"))" \
+        "$(hex2dec $(call_contract main "${CMC_ADDR}" "${code}"))" \
         "The block number of side chain in main chain is wrong."
 
     title "Get side chain block header bytes."
@@ -375,27 +377,22 @@ EOF
     local main_header_3=$(get_block_header main 3 | cut -c 3-)
 
     title "Sync side chain block header bytes to main chain."
-    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
-        "verifyBlockHeader" \
+    send_contract main "${CMC_ADDR}" "${CMC_ABI}" "verifyBlockHeader" \
         "${side_chain_id}, binascii.unhexlify('${side_header_0}')"
-    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
-        "verifyBlockHeader" \
+    send_contract main "${CMC_ADDR}" "${CMC_ABI}" "verifyBlockHeader" \
         "${side_chain_id}, binascii.unhexlify('${side_header_1}')"
-    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
-        "verifyBlockHeader" \
+    send_contract main "${CMC_ADDR}" "${CMC_ABI}" "verifyBlockHeader" \
         "${side_chain_id}, binascii.unhexlify('${side_header_3}')"
-    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
-        "verifyBlockHeader" \
+    send_contract main "${CMC_ADDR}" "${CMC_ABI}" "verifyBlockHeader" \
         "${side_chain_id}, binascii.unhexlify('${side_header_2}')"
-    send_contract main "${MAIN_CONTRACT_ADDR}" "${demo_abi}" \
-        "verifyBlockHeader" \
+    send_contract main "${CMC_ADDR}" "${CMC_ABI}" "verifyBlockHeader" \
         "${side_chain_id}, binascii.unhexlify('${main_header_3}')"
 
     title "Check sync block header number after sync."
     local data=$(printf "%064x" "${side_chain_id}")
     code="$(func_encode 'getExpectedBlockNumber(uint32)')${data}"
     assert_equal 3 \
-        "$(hex2dec $(call_demo_for_main "${code}"))" \
+        "$(hex2dec $(call_contract main "${CMC_ADDR}" "${code}"))" \
         "The block number of side chain in main chain is wrong."
 }
 
@@ -445,11 +442,11 @@ function main () {
     wait_chain_for_height main 3
 
     title "Register side chain ..."
-    local cmc_abi=$(solc --combined-json abi ${CMC} 2>/dev/null \
+    CMC_ABI=$(solc --combined-json abi ${CMC} 2>/dev/null \
         | sed "s@${CMC}:@@g" \
         | json_get '.contracts.ChainManager.abi')
 
-    send_contract main "${CMC_ADDR}" "${cmc_abi}" \
+    send_contract main "${CMC_ADDR}" "${CMC_ABI}" \
         "newSideChain" "${side_chain_id}, [${side_auths}]"
 
     title "Create side chain configs ..."
@@ -464,7 +461,7 @@ function main () {
     start_chain side 4
 
     title "Enable side chain ..."
-    send_contract main "${CMC_ADDR}" "${cmc_abi}" \
+    send_contract main "${CMC_ADDR}" "${CMC_ABI}" \
         "enableSideChain" "${side_chain_id}"
 
     title "Test the demo contract ..."

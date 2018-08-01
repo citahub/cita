@@ -7,6 +7,9 @@ import "./error.sol";
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 contract ChainManager is Error {
 
+    address sysConfigAddr = 0xFFfffFFfFfFffFFfFFfffFffFfFFFffFFf020000;
+    address crossChainVerifyAddr = 0xffFfffFfFFFfFFfffFFFffffFfFfffFfFF030002;
+
     // Id of the parent chain. 0 means no parent chain.
     uint32 parentChainId;
 
@@ -59,9 +62,7 @@ contract ChainManager is Error {
         public
         returns (uint32)
     {
-        // SysConfig Contract
-        address sysConfigAddr = 0xFFfffFFfFfFffFFfFFfffFffFfFFFffFFf020000;
-        // getChainId() function
+        address contractAddr = sysConfigAddr;
         bytes4 getChainIdHash = bytes4(keccak256("getChainId()"));
 
         uint256 result;
@@ -70,7 +71,7 @@ contract ChainManager is Error {
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, getChainIdHash)
-            result := call(10000, sysConfigAddr, 0, ptr, 0x4, ptr, 0x20)
+            result := call(10000, contractAddr, 0, ptr, 0x4, ptr, 0x20)
             if eq(result, 0) { revert(ptr, 0) }
             cid := mload(ptr)
         }
@@ -126,5 +127,61 @@ contract ChainManager is Error {
         } else {
             // Returns an empty array;
         }
+    }
+
+    function verifyBlockHeader(
+        uint32 chainId,
+        bytes blockHeader
+    ) public hasSideChain(chainId) {
+        address contractAddr = crossChainVerifyAddr;
+        bytes4 funcSig = bytes4(keccak256("verifyBlockHeader(uint32,bytes)"));
+        bool verifyResult;
+        uint blockHeaderSize = 0x20 + blockHeader.length / 0x20 * 0x20;
+        if (blockHeader.length % 0x20 != 0) {
+            blockHeaderSize += 0x20;
+        }
+        // bool
+        uint outSize = 0x20;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, funcSig)
+            mstore(add(ptr, 0x04), chainId)
+            mstore(add(ptr, 0x24), 0x40)
+            let ptrL := add(ptr, 0x44)
+            for {
+                    let blockHeaderL := blockHeader
+                    let blockHeaderR := add(blockHeader, blockHeaderSize)
+                }
+                lt(blockHeaderL, blockHeaderR)
+                {
+                    blockHeaderL := add(blockHeaderL, 0x20)
+                    ptrL := add(ptrL, 0x20)
+                }
+                {
+                mstore(ptrL, mload(blockHeaderL))
+            }
+            let inSize := sub(ptrL, ptr)
+            let result := call(100000, contractAddr, 0, ptr, inSize, ptr, outSize)
+            if eq(result, 0) { revert(ptr, 0) }
+            verifyResult := mload(ptr)
+        }
+        require(verifyResult == true);
+    }
+
+    function getExpectedBlockNumber(
+        uint32 chainId
+    ) public view hasSideChain(chainId) returns (uint64) {
+        address contractAddr = crossChainVerifyAddr;
+        bytes4 funcSig = bytes4(keccak256("getExpectedBlockNumber(uint32)"));
+        uint256 blockNumber;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, funcSig)
+            mstore(add(ptr, 0x04), chainId)
+            let result := call(20000, contractAddr, 0, ptr, 0x24, ptr, 0x20)
+            if eq(result, 0) { revert(ptr, 0) }
+            blockNumber := mload(ptr)
+        }
+        return uint32(blockNumber);
     }
 }
