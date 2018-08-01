@@ -360,6 +360,11 @@ impl Header {
     /// Verify if a header is the next header.
     pub fn verify_next(&self, next: &Header, authorities: &[Address]) -> bool {
         // Calculate block header hash, and is should be same as the parent_hash in next header
+        if self.number() + 1 == next.number() {
+        } else {
+            warn!("verify next block header block number failed");
+            return false;
+        }
         if self.note_dirty().hash() == *next.parent_hash() {
         } else {
             warn!("verify next block header parent hash failed");
@@ -367,7 +372,7 @@ impl Header {
         };
         let next_proof = BftProof::from(next.proof().clone());
         // Verify block header, use proof.proposal
-        if self.proposal_protobuf().crypt_hash() == next_proof.proposal {
+        if self.number() == 0 || self.proposal_protobuf().crypt_hash() == next_proof.proposal {
         } else {
             warn!("verify next block header proposal failed");
             return false;

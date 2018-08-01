@@ -4,7 +4,7 @@ use core::header::Header;
 use core::libchain::chain::TxProof;
 use ethabi;
 use evm::action_params::ActionParams;
-use evm::storage::Scalar;
+use evm::storage::Map;
 use evm::{Error, Ext, GasLeft, ReturnData};
 use native::{calc_func_sig, extract_func_sig, factory::Contract};
 
@@ -13,11 +13,13 @@ lazy_static! {
         calc_func_sig(b"verifyTransaction(address,bytes4,uint64,bytes)");
     static ref VERIFY_STATE_FUNC: u32 = calc_func_sig(b"verifyState(bytes)");
     static ref VERIFY_BLOCK_HEADER_FUNC: u32 = calc_func_sig(b"verifyBlockHeader(uint32,bytes)");
+    static ref GET_EXPECTED_BLOCK_NUMBER_FUNC: u32 =
+        calc_func_sig(b"getExpectedBlockNumber(uint32)");
 }
 
 #[derive(Clone)]
 pub struct CrossChainVerify {
-    block_header: Scalar,
+    block_headers: Map,
     output: Vec<u8>,
 }
 
@@ -27,6 +29,9 @@ impl Contract for CrossChainVerify {
             sig if sig == *VERIFY_TRANSACTION_FUNC => self.verify_transaction(params, ext),
             sig if sig == *VERIFY_STATE_FUNC => self.verify_state(params, ext),
             sig if sig == *VERIFY_BLOCK_HEADER_FUNC => self.verify_block_header(params, ext),
+            sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
+                self.get_expected_block_number(params, ext)
+            }
             _ => Err(Error::OutOfGas),
         })
     }
@@ -38,7 +43,7 @@ impl Contract for CrossChainVerify {
 impl Default for CrossChainVerify {
     fn default() -> Self {
         CrossChainVerify {
-            block_header: Scalar::new(H256::from(0)),
+            block_headers: Map::new(H256::from(0)),
             output: Vec::new(),
         }
     }
@@ -190,22 +195,24 @@ impl CrossChainVerify {
 
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(Error::Internal("decode 3rd param failed".to_string()));
+            return Err(Error::Internal("decode 1th param failed".to_string()));
         }
-        let chain_id = U256::from_big_endian(&result.unwrap()).low_u32();
+        let chain_id_u256 = U256::from_big_endian(&result.unwrap());
+        let chain_id = chain_id_u256.low_u32();
         trace!("chain_id = {}", chain_id);
         let result = decoded.remove(0).to_bytes();
         if result.is_none() {
-            return Err(Error::Internal("decode 1th param failed".to_string()));
+            return Err(Error::Internal("decode 2nd param failed".to_string()));
         }
         let block_header_curr_bytes = result.unwrap();
         trace!("data = {:?}", block_header_curr_bytes);
         let block_header_curr = Header::from_bytes(&block_header_curr_bytes);
 
-        let block_header_prev_bytes = self.block_header.get_bytes::<Vec<u8>>(ext)?;
+        let block_header_prev_bytes: Vec<u8> = self.block_headers.get_bytes(ext, chain_id_u256)?;
 
         let verify_result = if block_header_prev_bytes.len() == 0 {
-            block_header_curr.number() == 1
+            trace!("sync first block header");
+            block_header_curr.number() == 0
         } else {
             let block_header_prev = Header::from_bytes(&block_header_prev_bytes);
 
@@ -220,10 +227,69 @@ impl CrossChainVerify {
         };
 
         if verify_result {
-            self.block_header.set_bytes(ext, block_header_curr_bytes)?;
+            trace!("store the {} block header", block_header_curr.number());
+            self.block_headers
+                .set_bytes(ext, chain_id_u256, block_header_curr_bytes)?;
         }
 
         let tokens = vec![ethabi::Token::Bool(verify_result)];
+        let result = ethabi::encode(&tokens);
+        trace!("encoded {:?}", result);
+
+        self.output = result;
+
+        Ok(GasLeft::NeedsReturn {
+            gas_left: gas_left,
+            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
+            apply_state: true,
+        })
+    }
+
+    fn get_expected_block_number(
+        &mut self,
+        params: ActionParams,
+        ext: &mut Ext,
+    ) -> Result<GasLeft, Error> {
+        let gas_cost = U256::from(10000);
+        if params.gas < gas_cost {
+            return Err(Error::OutOfGas);
+        }
+        let gas_left = params.gas - gas_cost;
+
+        if params.data.is_none() {
+            return Err(Error::Internal("no data".to_string()));
+        }
+
+        let data = params.data.unwrap();
+        trace!("data = {:?}", data);
+        let tokens = vec![ethabi::ParamType::Uint(32)];
+
+        let result = ethabi::decode(&tokens, &data[4..]);
+        if result.is_err() {
+            return Err(Error::Internal("decode failed".to_string()));
+        }
+        let mut decoded = result.unwrap();
+        trace!("decoded = {:?}", decoded);
+
+        let result = decoded.remove(0).to_uint();
+        if result.is_none() {
+            return Err(Error::Internal("decode 1th param failed".to_string()));
+        }
+        let chain_id_u256 = U256::from_big_endian(&result.unwrap());
+        let chain_id = chain_id_u256.low_u32();
+        trace!("chain_id = {}", chain_id);
+
+        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(ext, chain_id_u256)?;
+
+        let block_number = if block_header_bytes.len() == 0 {
+            0
+        } else {
+            let block_header = Header::from_bytes(&block_header_bytes);
+            block_header.number() + 1
+        };
+        trace!("block_number = {}", block_number);
+
+        let tokens = vec![ethabi::Token::Uint(U256::from(block_number).into())];
         let result = ethabi::encode(&tokens);
         trace!("encoded {:?}", result);
 

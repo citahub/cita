@@ -1,9 +1,5 @@
 pragma solidity ^0.4.24;
 
-interface CrossChainVerify {
-    function verifyBlockHeader(uint32 fromChainId, bytes blockHeader) public view returns (bool);
-}
-
 // TODO
 // If solidity support return variable length data in cross-contract calls,
 // we do NOT need to write this assembly codes, and we can change this
@@ -34,7 +30,6 @@ contract CrossChain {
 
     function getFromChainId() public view returns (uint32) {
         address contractAddr = chainManagerAddr;
-        // getChainId() function
         bytes4 funcSig = bytes4(keccak256("getChainId()"));
         uint256 chainId;
         assembly {
@@ -121,8 +116,54 @@ contract CrossChain {
     function verifyBlockHeader(
         uint32 fromChainId,
         bytes blockHeader
-    ) public view returns (bool) {
-        CrossChainVerify crossChainVerifycontract = CrossChainVerify(crossChainVerifyAddr);
-        return crossChainVerifycontract.verifyBlockHeader(fromChainId, blockHeader);
+    ) public {
+        address contractAddr = crossChainVerifyAddr;
+        bytes4 funcSig = bytes4(keccak256("verifyBlockHeader(uint32,bytes)"));
+        bool verifyResult;
+        uint blockHeaderSize = 0x20 + blockHeader.length / 0x20 * 0x20;
+        if (blockHeader.length % 0x20 != 0) {
+            blockHeaderSize += 0x20;
+        }
+        // bool
+        uint outSize = 0x20;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, funcSig)
+            mstore(add(ptr, 0x04), fromChainId)
+            mstore(add(ptr, 0x24), 0x40)
+            let ptrL := add(ptr, 0x44)
+            for {
+                    let blockHeaderL := blockHeader
+                    let blockHeaderR := add(blockHeader, blockHeaderSize)
+                }
+                lt(blockHeaderL, blockHeaderR)
+                {
+                    blockHeaderL := add(blockHeaderL, 0x20)
+                    ptrL := add(ptrL, 0x20)
+                }
+                {
+                mstore(ptrL, mload(blockHeaderL))
+            }
+            let inSize := sub(ptrL, ptr)
+            let result := call(100000, contractAddr, 0, ptr, inSize, ptr, outSize)
+            if eq(result, 0) { revert(ptr, 0) }
+            verifyResult := mload(ptr)
+        }
+        require(verifyResult == true);
+    }
+
+    function getExpectedBlockNumber(uint32 fromChainId) public view returns (uint64) {
+        address contractAddr = crossChainVerifyAddr;
+        bytes4 funcSig = bytes4(keccak256("getExpectedBlockNumber(uint32)"));
+        uint256 blockNumber;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, funcSig)
+            mstore(add(ptr, 0x04), fromChainId)
+            let result := call(20000, contractAddr, 0, ptr, 0x24, ptr, 0x20)
+            if eq(result, 0) { revert(ptr, 0) }
+            blockNumber := mload(ptr)
+        }
+        return uint32(blockNumber);
     }
 }
