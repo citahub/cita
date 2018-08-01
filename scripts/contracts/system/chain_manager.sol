@@ -184,4 +184,49 @@ contract ChainManager is Error {
         }
         return uint32(blockNumber);
     }
+
+    function verifyState(
+        uint32 chainId,
+        uint64 blockNumber,
+        bytes stateProof
+    ) public view hasSideChain(chainId) returns (address, uint, uint) {
+        address contractAddr = crossChainVerifyAddr;
+        bytes4 funcSig = bytes4(keccak256("verifyState(uint32,uint64,bytes)"));
+        uint stateProofSize = 0x20 + stateProof.length / 0x20 * 0x20;
+        if (stateProof.length % 0x20 != 0) {
+            stateProofSize += 0x20;
+        }
+        // address, key, value
+        address addr;
+        uint key;
+        uint value;
+        uint outSize = 0x60;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, funcSig)
+            mstore(add(ptr, 0x04), chainId)
+            mstore(add(ptr, 0x24), blockNumber)
+            mstore(add(ptr, 0x44), 0x60)
+            let ptrL := add(ptr, 0x64)
+            for {
+                    let stateProofL := stateProof
+                    let stateProofR := add(stateProof, stateProofSize)
+                }
+                lt(stateProofL, stateProofR)
+                {
+                    stateProofL := add(stateProofL, 0x20)
+                    ptrL := add(ptrL, 0x20)
+                }
+                {
+                mstore(ptrL, mload(stateProofL))
+            }
+            let inSize := sub(ptrL, ptr)
+            let result := call(100000, contractAddr, 0, ptr, inSize, ptr, outSize)
+            if eq(result, 0) { revert(ptr, 0) }
+            addr := mload(ptr)
+            key := mload(add(ptr, 0x20))
+            value := mload(add(ptr, 0x40))
+        }
+        return (addr, key, value);
+    }
 }

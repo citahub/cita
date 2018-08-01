@@ -17,6 +17,7 @@ CONTRACT_LIBS_DIR="scripts/contracts"
 # Templates for some shell commands
 JSONRPC_CALL='{"jsonrpc":"2.0","method":"call", "params":[{"to":"%s", "data":"%s"}, "latest"],"id":2}'
 JSONRPC_BLOCKHEADER='{"jsonrpc":"2.0","method":"getBlockHeader","params":["0x%x"],"id":1}'
+JSONRPC_STATEPROOF='{"jsonrpc":"2.0","method":"getStateProof","params":["0x%s","0x%s","0x%x"],"id":1}'
 
 # Test contract file
 CONTRACT_DEMO="scripts/contracts/tests/contracts/cross_chain_token.sol"
@@ -61,6 +62,18 @@ function func_encode () {
         "print(keccak.hexdigest()[0:8])"
 }
 
+function map_key_encode () {
+    local key="$1"
+    local position="$2"
+    python_run \
+        "import sha3" \
+        "import binascii" \
+        "keccak = sha3.keccak_256()" \
+        "keccak.update(binascii.unhexlify('${key}'))" \
+        "keccak.update(binascii.unhexlify('${position}'))" \
+        "print(keccak.hexdigest()[0:64])"
+}
+
 function abi_encode () {
     local abi="$1"
     local func="$2"
@@ -102,7 +115,7 @@ function start_chain () {
         bin/cita setup ${chain}chain/${id} && true
     done
     for ((id=0;id<${size};id++)); do
-        bin/cita start ${chain}chain/${id} >/dev/null 2>&1 &
+        bin/cita start ${chain}chain/${id} trace>/dev/null 2>&1 &
     done
 }
 
@@ -188,6 +201,25 @@ function get_block_header () {
         | json_get .result | xargs -I {} echo {}
 }
 
+function get_state_proof () {
+    local chain="$1"
+    local address="$2"
+    local key="$3"
+    local height="$4"
+    case ${chain} in
+        main)
+            port=11337;;
+        side)
+            port=21337;;
+        ?)
+            exit 1
+            ;;
+    esac
+    curl -s -X POST -d "$(printf "${JSONRPC_STATEPROOF}" "${address}" "${key}" "${height}")" \
+        127.0.0.1:${port} \
+        | json_get .result | cut -c 3-
+}
+
 function get_addr () {
     local chain="$1"
     txtool_run ${chain} get_receipt.py --forever true \
@@ -198,6 +230,13 @@ function get_tx () {
     local chain="$1"
     txtool_run ${chain} get_receipt.py --forever true \
         | json_get .transactionHash | cut -c 3-
+}
+
+function get_tx_block_number () {
+    local chain="$1"
+    local txhash="$2"
+    txtool_run ${chain} get_receipt.py --tx=${txhash} --forever true \
+        | json_get .blockNumber
 }
 
 function hex2dec () {
@@ -352,6 +391,12 @@ EOF
     title "Waiting for receipt for ${sidetx}."
     txtool_run side get_receipt.py --tx=${sidetx} --forever true
 
+    local tx_block_number=$(hex2dec $(get_tx_block_number side ${sidetx}))
+    title "Got tx_block_number ${tx_block_number}"
+    # 3 is position of balanceOf in contract scripts/contracts/tests/contracts/cross_chain_token.sol
+    local state_proof=$(get_state_proof side ${SIDE_CONTRACT_ADDR} $(map_key_encode "000000000000000000000000${PADDR}" "0000000000000000000000000000000000000000000000000000000000000003") ${tx_block_number})
+    title "Got state_proof ${state_proof}"
+
     title "Check balance for both chains after crosschain transaction."
     data=$(printf "%64s" "${PADDR}" | tr ' ' '0')
     code="$(func_encode 'getBalance(address)')${data}"
@@ -394,6 +439,26 @@ EOF
     assert_equal 3 \
         "$(hex2dec $(call_contract main "${CMC_ADDR}" "${code}"))" \
         "The block number of side chain in main chain is wrong."
+
+    local max_block_number=$[tx_block_number+1]
+    title "Relay block header until ${max_block_number}."
+    for ((i=3;i<=${max_block_number};i++))
+    do
+        local side_header=$(get_block_header side ${i} | cut -c 3-)
+        send_contract main "${CMC_ADDR}" "${CMC_ABI}" "verifyBlockHeader" \
+            "${side_chain_id}, binascii.unhexlify('${side_header}')"
+    done
+
+    title "verify state proof"
+    # 96 is offset of state proof in call args
+    data=$(printf "%064x%064x%064x%064x" "${side_chain_id}" "${tx_block_number}" "96" "$[${#state_proof}/2]")
+    code="$(func_encode 'verifyState(uint32,uint64,bytes)')${data}${state_proof}"
+    local result=$(call_contract main "${CMC_ADDR}" "${code}")
+    title "verify result ${result}"
+    # result has 0x prefix
+    assert_equal $((side_tokens+crosschain_tokens)) \
+        "$(hex2dec "0x${result:130:194}")" \
+        "The balance is not right for state proof."
 }
 
 function main () {
