@@ -29,6 +29,7 @@ use executive::{Executive, TransactOptions};
 use factory::Factories;
 use libexecutor::executor::EconomicalModel;
 use receipt::{Receipt, ReceiptError};
+use rlp::{self, Encodable};
 use std::cell::{Ref, RefCell, RefMut};
 use std::cmp;
 use std::collections::hash_map::Entry;
@@ -163,6 +164,34 @@ impl AccountEntry {
 
     pub fn account(&self) -> Option<&Account> {
         self.account.as_ref()
+    }
+}
+
+#[derive(Debug, Clone, RlpEncodable, RlpDecodable)]
+pub struct StateProof {
+    address: Address,
+    account_proof: Vec<Bytes>,
+    key: H256,
+    value_proof: Vec<Bytes>,
+}
+
+impl StateProof {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        rlp::decode(bytes)
+    }
+
+    pub fn verify(&self, state_root: H256) -> Option<H256> {
+        trie::triedb::verify_value_proof(
+            &self.address,
+            state_root,
+            &self.account_proof,
+            Account::from_rlp,
+        ).and_then(|a| a.verify_value_proof(&self.key, &self.value_proof))
+    }
+
+    #[cfg(test)]
+    pub fn set_address(&mut self, new_address: Address) {
+        self.address = new_address;
     }
 }
 
@@ -533,6 +562,44 @@ impl<B: Backend> State<B> {
         });
         self.insert_cache(address, AccountEntry::new_clean(maybe_acc));
         r
+    }
+
+    /// Get `value` proof for `key` of account `address`.
+    pub fn get_state_proof(&self, address: &Address, key: &H256) -> Option<Vec<u8>> {
+        // check if the account could exist before any requests to trie
+        if self.db.is_known_null(address) {
+            return None;
+        }
+
+        // get proof from the DB
+        self.factories
+            .trie
+            .readonly(self.db.as_hashdb(), &self.root)
+            .ok()
+            .and_then(|db| {
+                db.get_value_proof(address).and_then(|account_proof| {
+                    db.get_with(address, Account::from_rlp)
+                        .ok()
+                        .and_then(|maybe_acc| {
+                            maybe_acc.as_ref().and_then(|a| {
+                                let account_db = self
+                                    .factories
+                                    .accountdb
+                                    .readonly(self.db.as_hashdb(), a.address_hash(address));
+                                a.get_value_proof(&self.factories.trie, account_db.as_hashdb(), key)
+                                    .map(|value_proof| {
+                                        StateProof {
+                                            address: *address,
+                                            account_proof,
+                                            key: *key,
+                                            value_proof,
+                                        }.rlp_bytes()
+                                            .into_vec()
+                                    })
+                            })
+                        })
+                })
+            })
     }
 
     /// Get accounts' code.
@@ -2229,6 +2296,63 @@ mod tests {
     }
 
     #[test]
+    fn state_proof() {
+        let a = Address::from(0x1234u64);
+        let b = Address::from(0x123456u64);
+        let c = Address::from(0x12345678u64);
+        let d = Address::from(0x4321u64);
+        let err_adr = Address::from(0x1u64);
+        let (root, db) = {
+            let mut state = get_temp_state();
+            state
+                .set_storage(&a, H256::from(0x12u64), H256::from(69u64))
+                .unwrap();
+            state
+                .set_storage(&a, H256::from(0x1234u64), H256::from(70u64))
+                .unwrap();
+            state
+                .set_storage(&a, H256::from(0x123456u64), H256::from(71u64))
+                .unwrap();
+            state
+                .set_storage(&a, H256::from(0x4321u64), H256::from(72u64))
+                .unwrap();
+
+            state
+                .set_storage(&b, H256::from(2u64), H256::from(73u64))
+                .unwrap();
+
+            state
+                .set_storage(&c, H256::from(2u64), H256::from(73u64))
+                .unwrap();
+
+            state
+                .set_storage(&d, H256::from(2u64), H256::from(73u64))
+                .unwrap();
+
+            state.commit().unwrap();
+            state.drop()
+        };
+
+        let s =
+            State::from_existing(db, root.clone(), U256::from(0u8), Default::default()).unwrap();
+        let state_proof_bs = s.get_state_proof(&a, &H256::from(0x123456u64)).unwrap();
+        let mut state_proof = StateProof::from_bytes(&state_proof_bs);
+        assert_eq!(state_proof.verify(root).unwrap(), H256::from(71u64));
+        // test for error key
+        assert_eq!(s.get_state_proof(&a, &H256::from(0x12345678u64)), None);
+        assert_eq!(
+            s.get_state_proof(&err_adr, &H256::from(0x12345678u64)),
+            None
+        );
+        state_proof.set_address(err_adr);
+        assert_eq!(state_proof.verify(root), None);
+
+        let err_state_proof_bs = s.get_state_proof(&a, &H256::from(0x1u64)).unwrap();
+        let err_state_proof = StateProof::from_bytes(&err_state_proof_bs);
+        assert_eq!(err_state_proof.verify(root), None);
+    }
+
+    #[test]
     fn get_from_database() {
         let a = Address::zero();
         let (root, db) = {
@@ -2350,9 +2474,9 @@ mod tests {
         state.commit().unwrap();
 
         #[cfg(feature = "sha3hash")]
-        let expected = "a54656ec37549bd2d5cca77d4a5b32c8d6109727ccd910a54d61634a0f62b694";
+        let expected = "530acecc6ec873396bb3e90b6578161f9688ed7eeeb93d6fba5684895a93b78a";
         #[cfg(feature = "blake2bhash")]
-        let expected = "7221afbf2f39fc39464a4acf9b8debc35bc657ad4454110e0a569d2b35047f3b";
+        let expected = "da6a27e8063dd144a208f56f6b8dd6b3536ce6adbea93a1bcba95ce7fedb802c";
 
         assert_eq!(state.root().lower_hex(), expected);
     }
