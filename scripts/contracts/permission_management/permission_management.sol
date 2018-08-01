@@ -2,6 +2,7 @@ pragma solidity ^0.4.24;
 
 import "./permission_creator.sol";
 import "./authorization.sol";
+import "../common/address.sol";
 
 
 /// @title Permission management contract
@@ -9,31 +10,10 @@ import "./authorization.sol";
 /// @notice The address: 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004
 ///         The interface the can be called: All
 /// @dev TODO check address is contract
-contract PermissionManagement {
+contract PermissionManagement is ReservedAddress {
 
-    address permissionCreatorAddr = 0xffFFFffFfFFffffFffffFFfFffffFfFFFF020005;
     PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
-
-    address authorizationAddr = 0xFFfFffFfffFFFFFfFfFfffFFfFfFfFFfFf020006;
     Authorization auth = Authorization(authorizationAddr);
-
-    address[15] builtInPermissions = [
-        0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,       // 0 - newPermission
-        0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011,       // 1 - deletePermission
-        0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012,       // 2 - addResources, deleteResources, updatePermissionName
-        0xfFFFffFffFfffFffFfffFfFFfFFFfFffFf021013,       // 3 - setAuthorization
-        0xfFFFffFfffFFFFffFfFffffFfFFFfffFfF021014,       // 4 - cancelAuthorization, clearAuthorization, cancelAuthorizations
-        0xFFFFFfffffFFFfFfffffFfFfffffFFffFf021015,       // 5 - newRole
-        0xfFfFFFFFffFFfFFfFFfFFfFfFFfffFFffF021016,       // 6 - deleteRole
-        0xFFFFffFFFFfFFFFFFfFFffffFFFFFFFFff021017,       // 7 - addPermissions, deletePermissions, updateRoleName
-        0xfFFFfFfFFFFFFffFfFFFFfffFffFfFFFFF021018,       // 8 - setRole
-        0xfFFffffffFffFffFFFFFFFFFffFfffFFfF021019,       // 9 - cancelRole, clearRole
-        0xFFFFffffffffFFfFffFffFFfFfFfFffFFf02101A,       // 10 - newGroup
-        0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B,       // 11 - deleteGroup
-        0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c,       // 12 - addAccounts, deleteAccounts, updateGroupName
-        0xFFffFFFFfFFFFFFfffFfFFffFfFFFFfFFf021000,       
-        0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001        
-    ];
 
     event PermissionDeleted(address _permission);
 

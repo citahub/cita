@@ -2,34 +2,14 @@ pragma solidity ^0.4.24;
 
 import "./permission.sol";
 import "../common/address_array.sol";
+import "../common/address.sol";
 
 
 /// @title Authorization about the permission and account
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020006
 ///         The interface can be called: Only query type
-contract Authorization {
-
-    address permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
-    address roleManagementAddr = 0xFFFFfFfFFFFFFfFfffFfffffffFffFFffF020007;
-
-    address newPermissionAddr = 0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010;
-    address deletePermissionAddr = 0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011;
-    address updatePermissionAddr = 0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012;
-    address setAuthAddr = 0xfFFFffFffFfffFffFfffFfFFfFFFfFffFf021013;
-    address cancelAuthAddr = 0xfFFFffFfffFFFFffFfFffffFfFFFfffFfF021014;
-    address newRoleAddr = 0xFFFFFfffffFFFfFfffffFfFfffffFFffFf021015;
-    address deleteRoleAddr = 0xfFfFFFFFffFFfFFfFFfFFfFfFFfffFFffF021016;
-    address updateRoleAddr = 0xFFFFffFFFFfFFFFFFfFFffffFFFFFFFFff021017;
-    address setRoleAddr = 0xfFFFfFfFFFFFFffFfFFFFfffFffFfFFFFF021018;
-    address cancelRoleAddr = 0xfFFffffffFffFffFFFFFFFFFffFfffFFfF021019;
-    address newGroupAddr = 0xFFFFffffffffFFfFffFffFFfFfFfFffFFf02101A;
-    address deleteGroupAddr = 0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B;
-    address updateGroupAddr = 0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c;
-    address sendTxAddr = 0xFFffFFFFfFFFFFFfffFfFFffFfFFFFfFFf021000;
-    address createContractAddr = 0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001;
-
-    address rootGroup = 0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009;
+contract Authorization is ReservedAddress {
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
@@ -68,8 +48,8 @@ contract Authorization {
         _setAuth(_superAdmin, deleteGroupAddr);
         _setAuth(_superAdmin, updateGroupAddr);
         // rootGroup: basic permissions
-        _setAuth(rootGroup, sendTxAddr);
-        _setAuth(rootGroup, createContractAddr);
+        _setAuth(rootGroupAddr, sendTxAddr);
+        _setAuth(rootGroupAddr, createContractAddr);
     }
 
     /// @notice Set permission to the account

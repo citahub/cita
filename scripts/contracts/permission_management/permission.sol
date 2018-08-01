@@ -1,11 +1,13 @@
 pragma solidity ^0.4.24;
 
+import "../common/address.sol";
+
 
 /// @title Permission contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: Created by permissionCreator
 ///         The interface can be called: Only query type
-contract Permission {
+contract Permission is ReservedAddress {
 
     struct Resource {
         // Contract address
@@ -14,7 +16,6 @@ contract Permission {
         bytes4 func;
     }
 
-    address permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
     Resource[] resources;
     bytes32 name;
 

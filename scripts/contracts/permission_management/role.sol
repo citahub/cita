@@ -1,13 +1,14 @@
 pragma solidity ^0.4.24;
 
 import "../common/address_array.sol";
+import "../common/address.sol";
 
 
 /// @title Role contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: Created by roleCreator
 ///         The interface can be called: Only query type
-contract Role {
+contract Role is ReservedAddress {
 
     event NameUpdated(bytes32 indexed _oldName, bytes32 indexed _newName);
     event PermissionsAdded(address[] _permissions);
@@ -16,7 +17,6 @@ contract Role {
 
     bytes32 name;
     address[] permissions;
-    address internal roleManagementAddr = 0xFFFFfFfFFFFFFfFfffFfffffffFffFFffF020007;
 
     modifier onlyRoleManagement {
         require(roleManagementAddr == msg.sender);

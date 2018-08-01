@@ -1,15 +1,14 @@
 pragma solidity ^0.4.24;
 
 import "./role.sol";
+import "../common/address.sol";
 
 
 /// @title Role factory contract to create role contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020008
 ///         The interface: None
-contract RoleCreator {
-
-    address roleManagementAddr = 0xFFFFfFfFFFFFFfFfffFfffffffFffFFffF020007;
+contract RoleCreator is ReservedAddress {
 
     event RoleCreated(address indexed _id, bytes32 indexed _name, address[] indexed _permissions);
 

@@ -4,6 +4,7 @@ import "./role_creator.sol";
 import "./authorization.sol";
 import "../common/contract_check.sol";
 import "../common/address_array.sol";
+import "../common/address.sol";
 
 
 /// @title Role management contract
@@ -11,36 +12,14 @@ import "../common/address_array.sol";
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020007
 ///         The interface the can be called: All
 /// @dev TODO Split to a new file: role_auth.sol
-contract RoleManagement {
+contract RoleManagement is ReservedAddress {
 
-    address roleCreatorAddress = 0xffFfffffFfffFffFFFfFfffffffFfFffFF020008;
-    RoleCreator roleCreator = RoleCreator(roleCreatorAddress);
-
-    address internal authorizationAddr = 0xFFfFffFfffFFFFFfFfFfffFFfFfFfFFfFf020006;
     // bytes4 internal queryPermissionsHash = 0x46f02832;
-
+    RoleCreator roleCreator = RoleCreator(roleCreatorAddress);
     Authorization authContract = Authorization(authorizationAddr);
 
     mapping(address => address[]) internal accounts;
     mapping(address => address[]) internal roles;
-
-    address[15] builtInPermissions = [
-        0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,       // 0 - newPermission
-        0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011,       // 1 - deletePermission
-        0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012,       // 2 - addResources, deleteResources, updatePermissionName
-        0xfFFFffFffFfffFffFfffFfFFfFFFfFffFf021013,       // 3 - setAuthorization
-        0xfFFFffFfffFFFFffFfFffffFfFFFfffFfF021014,       // 4 - cancelAuthorization, clearAuthorization, cancelAuthorizations
-        0xFFFFFfffffFFFfFfffffFfFfffffFFffFf021015,       // 5 - newRole
-        0xfFfFFFFFffFFfFFfFFfFFfFfFFfffFFffF021016,       // 6 - deleteRole
-        0xFFFFffFFFFfFFFFFFfFFffffFFFFFFFFff021017,       // 7 - addPermissions, deletePermissions, updateRoleName
-        0xfFFFfFfFFFFFFffFfFFFFfffFffFfFFFFF021018,       // 8 - setRole
-        0xfFFffffffFffFffFFFFFFFFFffFfffFFfF021019,       // 9 - cancelRole, clearRole
-        0xFFFFffffffffFFfFffFffFFfFfFfFffFFf02101A,       // 10 - newGroup
-        0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B,       // 11 - deleteGroup
-        0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c,       // 12 - addAccounts, deleteAccounts, updateGroupName
-        0xFFffFFFFfFFFFFFfffFfFFffFfFFFFfFFf021000,
-        0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001
-    ];
 
     event RoleSetted(address indexed _account, address indexed _role);
     event RoleCanceled(address indexed _account, address indexed _role);
