@@ -88,33 +88,71 @@ module.exports = {
     },
     role_management: {
       abi: [{
-        constant: false, inputs: [{ name: '_roleid', type: 'address' }, { name: '_permissions', type: 'address[]' }], name: 'addPermissions', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        constant: true, inputs: [], name: 'deleteRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
       }, {
-        constant: false, inputs: [{ name: '_roleid', type: 'address' }, { name: '_permissions', type: 'address[]' }], name: 'deletePermissions', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        constant: false, inputs: [{ name: '_role', type: 'address' }, { name: '_permissions', type: 'address[]' }], name: 'addPermissions', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
       }, {
-        constant: true, inputs: [{ name: '_roleId', type: 'address' }], name: 'queryAccounts', outputs: [{ name: '', type: 'address[]' }], payable: false, stateMutability: 'view', type: 'function',
+        constant: true, inputs: [], name: 'createContractAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
       }, {
-        constant: false, inputs: [{ name: '_roleid', type: 'address' }], name: 'deleteRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        constant: false, inputs: [{ name: '_role', type: 'address' }, { name: '_permissions', type: 'address[]' }], name: 'deletePermissions', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'rootGroupAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'groupCreatorAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'newPermissionAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'permissionCreatorAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'deleteGroupAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: false, inputs: [{ name: '_role', type: 'address' }], name: 'deleteRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
       }, {
         constant: false, inputs: [{ name: '_name', type: 'bytes32' }, { name: '_permissions', type: 'address[]' }], name: 'newRole', outputs: [{ name: 'roleid', type: 'address' }], payable: false, stateMutability: 'nonpayable', type: 'function',
       }, {
-        constant: false, inputs: [{ name: '_role', type: 'address' }], name: 'queryPermissions', outputs: [{ name: '', type: 'address[]' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        constant: true, inputs: [], name: 'newRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'cancelAuthAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'cancelRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'newGroupAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'roleManagementAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'deletePermissionAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'setAuthAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'adminAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'updateRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'userManagementAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
       }, {
         constant: false, inputs: [{ name: '_account', type: 'address' }, { name: '_role', type: 'address' }], name: 'setRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
       }, {
         constant: false, inputs: [{ name: '_account', type: 'address' }, { name: '_role', type: 'address' }], name: 'cancelRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
       }, {
+        constant: true, inputs: [], name: 'updateGroupAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'permissionManagementAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'authorizationAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
+        constant: true, inputs: [], name: 'setRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+      }, {
         constant: false, inputs: [{ name: '_account', type: 'address' }], name: 'clearRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
       }, {
-        constant: false, inputs: [{ name: '_roleid', type: 'address' }, { name: '_name', type: 'bytes32' }], name: 'updateRoleName', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        constant: true, inputs: [], name: 'sendTxAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
       }, {
-        constant: true, inputs: [{ name: '_account', type: 'address' }], name: 'queryRoles', outputs: [{ name: '', type: 'address[]' }], payable: false, stateMutability: 'view', type: 'function',
+        constant: false, inputs: [{ name: '_role', type: 'address' }, { name: '_name', type: 'bytes32' }], name: 'updateRoleName', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
       }, {
-        anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }, { indexed: true, name: '_role', type: 'address' }], name: 'RoleSetted', type: 'event',
+        constant: true, inputs: [], name: 'roleAuthAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
       }, {
-        anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }, { indexed: true, name: '_role', type: 'address' }], name: 'RoleCanceled', type: 'event',
+        constant: true, inputs: [], name: 'updatePermissionAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
       }, {
-        anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }], name: 'RoleCleared', type: 'event',
+        constant: true, inputs: [], name: 'roleCreatorAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
       }],
       addr: '0xffffffffffffffffffffffffffffffffff020007',
     },
@@ -327,6 +365,85 @@ module.exports = {
           anonymous: false, inputs: [{ indexed: true, name: 'errorType', type: 'uint8' }, { indexed: false, name: 'msg', type: 'string' }], name: 'ErrorLog', type: 'event',
         }],
       addr: '0xffffffffffffffffffffffffffffffffff02000c',
+    },
+    role_auth: {
+      abi:
+        [{
+          constant: true, inputs: [], name: 'deleteRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'createContractAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [{ name: '_role', type: 'address' }], name: 'queryAccounts', outputs: [{ name: '', type: 'address[]' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'rootGroupAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'groupCreatorAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'newPermissionAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'permissionCreatorAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'deleteGroupAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'newRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'cancelAuthAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'cancelRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'newGroupAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'roleManagementAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'deletePermissionAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'setAuthAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_role', type: 'address' }], name: 'clearAuthOfRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'adminAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'updateRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'userManagementAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_role', type: 'address' }, { name: '_permissions', type: 'address[]' }], name: 'setPermissionsOfRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_account', type: 'address' }, { name: '_role', type: 'address' }], name: 'setRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_account', type: 'address' }, { name: '_role', type: 'address' }], name: 'cancelRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'updateGroupAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'permissionManagementAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'authorizationAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'setRoleAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_account', type: 'address' }], name: 'clearRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'sendTxAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [{ name: '_account', type: 'address' }, { name: '_permission', type: 'address' }], name: 'hasPermission', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: false, inputs: [{ name: '_role', type: 'address' }, { name: '_permissions', type: 'address[]' }], name: 'cancelPermissionsOfRole', outputs: [{ name: '', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'roleAuthAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'updatePermissionAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [], name: 'roleCreatorAddr', outputs: [{ name: '', type: 'address' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          constant: true, inputs: [{ name: '_account', type: 'address' }], name: 'queryRoles', outputs: [{ name: '', type: 'address[]' }], payable: false, stateMutability: 'view', type: 'function',
+        }, {
+          anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }, { indexed: true, name: '_role', type: 'address' }], name: 'RoleSetted', type: 'event',
+        }, {
+          anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }, { indexed: true, name: '_role', type: 'address' }], name: 'RoleCanceled', type: 'event',
+        }, {
+          anonymous: false, inputs: [{ indexed: true, name: '_account', type: 'address' }], name: 'RoleCleared', type: 'event',
+        }],
+      addr: '0xffffffffffffffffffffffffffffffffff02000d',
     },
   },
   localServer: 'http://127.0.0.1:1337',

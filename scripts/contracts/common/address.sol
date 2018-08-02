@@ -11,7 +11,8 @@ contract ReservedAddress {
     address public roleManagementAddr = 0xFFFFfFfFFFFFFfFfffFfffffffFffFFffF020007;
     address public permissionCreatorAddr = 0xffFFFffFfFFffffFffffFFfFffffFfFFFF020005;
     address public authorizationAddr = 0xFFfFffFfffFFFFFfFfFfffFFfFfFfFFfFf020006;
-    address public roleCreatorAddress = 0xffFfffffFfffFffFFFfFfffffffFfFffFF020008;
+    address public roleCreatorAddr = 0xffFfffffFfffFffFFFfFfffffffFfFffFF020008;
+    address public roleAuthAddr = 0xFFfFFFffffFFfffFfFFffFfFfFFfffFfFF02000d;
 
     address public newPermissionAddr = 0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010;
     address public deletePermissionAddr = 0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011;

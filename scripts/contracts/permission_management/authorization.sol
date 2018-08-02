@@ -21,7 +21,7 @@ contract Authorization is ReservedAddress {
     event AuthCleared(address indexed _account);
 
     modifier onlyPermissionManagement {
-        require(permissionManagementAddr == msg.sender || roleManagementAddr == msg.sender );
+        require(permissionManagementAddr == msg.sender || roleAuthAddr == msg.sender );
         _;
     }
 
