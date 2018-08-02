@@ -1,15 +1,14 @@
 pragma solidity ^0.4.24;
 
 import "../common/address_array.sol";
+import "../common/address.sol";
 
 
 /// @title Group contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: Created by permissionCreator
 ///         The interface can be called: Only query type
-contract Group {
-
-    address userManagementAddr = 0xFFFffFFfffffFFfffFFffffFFFffFfFffF02000a;
+contract Group is ReservedAddress {
 
     bytes32 name;
     address parent;

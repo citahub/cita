@@ -2,6 +2,7 @@ pragma solidity ^0.4.24;
 
 import "./group_creator.sol";
 import "../common/address_array.sol";
+import "../common/address.sol";
 
 
 /// @title User management using group struct
@@ -10,10 +11,8 @@ import "../common/address_array.sol";
 ///         The interface the can be called: All
 ///         Origin: One group choosed by sender from all his groups
 ///         Target: The target group to be operated
-contract GroupManagement {
+contract GroupManagement is ReservedAddress {
 
-    address rootGroupAddr = 0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009;
-    address groupCreatorAddr = 0xfFFffFfFFFFfFFFfFfffffFFfffffffffF02000B;
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
 
     address[] groups;
