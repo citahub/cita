@@ -87,7 +87,7 @@ impl Default for Factory {
         }
         #[cfg(test)]
         {
-            use native::tests::SimpleStorage;
+            use native::storage::SimpleStorage;
             factory.register(
                 Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap(),
                 Box::new(SimpleStorage::default()),

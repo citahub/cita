@@ -217,7 +217,7 @@ pub fn chunk_secondary<'a>(
         let mut chunk_sink = |raw_data: &[u8]| {
             compressed_data.clear();
             snappy::compress_to(raw_data, &mut compressed_data)?;
-            let hash = sha3(&compressed_data);
+            let hash = H256::from_slice(&sha3::keccak256(&compressed_data));
             let size = compressed_data.len();
 
             writer.lock().write_block_chunk(hash, &compressed_data)?;
@@ -804,7 +804,7 @@ pub fn restore_using<R: SnapshotReader>(
             )
         })?;
 
-        let hash = sha3(&chunk);
+        let hash = H256::from_slice(&sha3::keccak256(&chunk));
         if hash != block_hash {
             return Err(format!(
                 "Mismatched chunk hash. Expected {:?}, got {:?}",

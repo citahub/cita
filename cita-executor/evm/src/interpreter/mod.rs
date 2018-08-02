@@ -42,7 +42,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use cita_types::{Address, H256, U256, U512};
-use util::*;
+use util::sha3;
 
 type ProgramCounter = usize;
 
@@ -434,8 +434,10 @@ impl<Cost: CostType> Interpreter<Cost> {
             instructions::SHA3 => {
                 let offset = stack.pop_back();
                 let size = stack.pop_back();
-                let sha3 = sha3(self.mem.read_slice(offset, size));
-                stack.push(U256::from(&*sha3));
+                let hash = U256::from(H256::from_slice(&sha3::keccak256(
+                    self.mem.read_slice(offset, size),
+                )));
+                stack.push(hash);
             }
             instructions::SLOAD => {
                 let key = H256::from(&stack.pop_back());

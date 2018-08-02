@@ -51,7 +51,6 @@ extern crate evm;
 extern crate jsonrpc_types;
 #[macro_use]
 extern crate lazy_static;
-extern crate sha3;
 extern crate time;
 extern crate transient_hashmap;
 

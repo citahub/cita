@@ -111,7 +111,7 @@ impl Scalar {
             ext.set_storage(self.position, H256::from_slice(&byte32))?;
         } else {
             ext.set_storage(self.position, H256::from((length * 2 + 1) as u64))?;
-            let mut key = U256::from(sha3(&self.position));
+            let mut key = U256::from(H256::from_slice(&sha3::keccak256(&self.position)));
             for chunk in encoded.chunks(32) {
                 let value = H256::from(chunk);
                 ext.set_storage(H256::from(key), value)?;
@@ -134,7 +134,7 @@ impl Scalar {
             Ok(Box::new(decoded))
         } else {
             let mut len = ((first.low_u64() as usize) - 1) / 2;
-            let mut key = U256::from(sha3(&self.position));
+            let mut key = U256::from(H256::from_slice(&sha3::keccak256(&self.position)));
             let mut bytes = Vec::new();
             while len > 0 {
                 let v = ext.storage_at(&H256::from(key))?;
@@ -161,17 +161,19 @@ impl Array {
     pub fn new(position: H256) -> Self {
         Array { position: position }
     }
-    pub fn set(self: &Self, ext: &mut Ext, index: u64, value: &U256) -> Result<(), EvmError> {
-        let mut key = U256::from(sha3(&self.position));
+    #[inline]
+    fn key(&self, index: u64) -> H256 {
+        let mut key = U256::from(H256::from_slice(&sha3::keccak256(&self.position)));
         key = key + U256::from(index);
-        let scalar = Scalar::new(H256::from(key));
+        H256::from(key)
+    }
+    pub fn set(self: &Self, ext: &mut Ext, index: u64, value: &U256) -> Result<(), EvmError> {
+        let scalar = Scalar::new(self.key(index));
         scalar.set(ext, *value)
     }
 
     pub fn get(self: &Self, ext: &Ext, index: u64) -> Result<U256, EvmError> {
-        let mut key = U256::from(sha3(&self.position));
-        key = key + U256::from(index);
-        let scalar = Scalar::new(H256::from(key));
+        let scalar = Scalar::new(self.key(index));
         scalar.get(ext)
     }
 
@@ -179,9 +181,7 @@ impl Array {
     where
         T: Serialize,
     {
-        let mut key = U256::from(sha3(&self.position));
-        key = key + U256::from(index);
-        let scalar = Scalar::new(H256::from(key));
+        let scalar = Scalar::new(self.key(index));
         scalar.set_bytes(ext, value)
     }
 
@@ -189,9 +189,7 @@ impl Array {
     where
         T: Deserialize,
     {
-        let mut key = U256::from(sha3(&self.position));
-        key = key + U256::from(index);
-        let scalar = Scalar::new(H256::from(key));
+        let scalar = Scalar::new(self.key(index));
         scalar.get_bytes(ext)
     }
 
@@ -206,14 +204,10 @@ impl Array {
     }
 
     pub fn get_array(self: &mut Self, index: u64) -> Array {
-        let mut key = U256::from(sha3(&self.position));
-        key = key + U256::from(index);
-        Array::new(H256::from(key))
+        Array::new(self.key(index))
     }
     pub fn get_map(self: &mut Self, index: u64) -> Map {
-        let mut key = U256::from(sha3(&self.position));
-        key = key + U256::from(index);
-        Map::new(H256::from(key))
+        Map::new(self.key(index))
     }
 }
 
@@ -227,26 +221,28 @@ impl Map {
     pub fn new(position: H256) -> Self {
         Map { position: position }
     }
-    pub fn set<Key>(self: &Self, ext: &mut Ext, key: Key, value: U256) -> Result<(), EvmError>
+    #[inline]
+    fn key<Key>(&self, key: Key) -> Result<H256, EvmError>
     where
         Key: Serialize,
     {
         let mut bytes = Vec::new();
         bytes.extend_from_slice(&key.serialize()?);
         bytes.extend_from_slice(self.position.as_ref());
-        let key = sha3(&bytes);
-        Scalar::new(key).set(ext, value)
+        Ok(H256::from_slice(&sha3::keccak256(&bytes)))
+    }
+    pub fn set<Key>(self: &Self, ext: &mut Ext, key: Key, value: U256) -> Result<(), EvmError>
+    where
+        Key: Serialize,
+    {
+        Scalar::new(self.key(key)?).set(ext, value)
     }
 
     pub fn get<Key>(self: &Self, ext: &Ext, key: Key) -> Result<U256, EvmError>
     where
         Key: Serialize,
     {
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&key.serialize()?);
-        bytes.extend_from_slice(self.position.as_ref());
-        let key = sha3(&bytes);
-        Scalar::new(key).get(ext)
+        Scalar::new(self.key(key)?).get(ext)
     }
 
     pub fn set_bytes<Key, Value>(
@@ -259,11 +255,7 @@ impl Map {
         Key: Serialize,
         Value: Serialize,
     {
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&key.serialize()?);
-        bytes.extend_from_slice(self.position.as_ref());
-        let key = sha3(&bytes);
-        Scalar::new(key).set_bytes(ext, value)
+        Scalar::new(self.key(key)?).set_bytes(ext, value)
     }
 
     pub fn get_bytes<Key, Value>(self: &Self, ext: &Ext, key: Key) -> Result<Value, EvmError>
@@ -271,33 +263,21 @@ impl Map {
         Key: Serialize,
         Value: Deserialize,
     {
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&key.serialize()?);
-        bytes.extend_from_slice(self.position.as_ref());
-        let key = sha3(&bytes);
-        Ok(*Scalar::new(key).get_bytes(ext)?)
+        Ok(*Scalar::new(self.key(key)?).get_bytes(ext)?)
     }
 
     pub fn get_array<Key>(self: &mut Self, key: Key) -> Result<Array, EvmError>
     where
         Key: Serialize,
     {
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&key.serialize()?);
-        bytes.extend_from_slice(self.position.as_ref());
-        let key = sha3(&bytes);
-        Ok(Array::new(key))
+        Ok(Array::new(self.key(key)?))
     }
 
     pub fn get_map<Key>(self: &mut Self, key: Key) -> Result<Map, EvmError>
     where
         Key: Serialize,
     {
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&key.serialize()?);
-        bytes.extend_from_slice(self.position.as_ref());
-        let key = sha3(&bytes);
-        Ok(Map::new(key))
+        Ok(Map::new(self.key(key)?))
     }
 }
 

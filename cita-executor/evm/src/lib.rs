@@ -19,11 +19,11 @@
 extern crate bit_set;
 extern crate cita_types;
 extern crate common_types as types;
+#[cfg_attr(feature = "evm-debug", macro_use)]
+extern crate logger;
 extern crate rlp;
 extern crate rustc_hex;
 extern crate util;
-#[cfg_attr(feature = "evm-debug", macro_use)]
-extern crate logger;
 
 pub mod action_params;
 pub mod call_type;

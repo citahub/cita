@@ -46,7 +46,6 @@ extern crate common_types as types;
 extern crate crossbeam;
 extern crate crypto;
 extern crate jsonrpc_types;
-extern crate sha3;
 extern crate time;
 extern crate transient_hashmap;
 
