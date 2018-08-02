@@ -124,6 +124,7 @@ jobs:
         - npm run-script unit_rm
         - npm run-script unit_qm
         - npm run-script abi
+        - npm run-script unit_admin
 
     - stage: UnitTest
       name: Test of node

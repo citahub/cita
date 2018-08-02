@@ -35,6 +35,9 @@ NormalContracts:
 - GroupCreator:
     address: '0xffffffffffffffffffffffffffffffffff02000b'
     file: user_management/group_creator.sol
+- Admin:
+    address: '0xffffffffffffffffffffffffffffffffff02000c'
+    file: common/admin.sol
 
 PermissionContracts:
   file: permission_management/permission.sol

@@ -125,6 +125,18 @@ npm run-script unit_quota
 npm run-script unit_chain
 ```
 
+* To test abi
+
+```
+npm run-script abi
+```
+
+* To test admin
+
+```
+npm run-script unit_admin
+```
+
 * To run all integrate test:
     - Should set the checkPermission be true. [admin](https://docs.nervos.org/cita/#/chain/admintool)
     - Run:

@@ -26,8 +26,6 @@ Contracts:
 - NodeManager:
   - nodes:
     - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
-  - admins:
-    - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
   - stakes:
     - 0
 - ChainManager:
@@ -40,6 +38,8 @@ Contracts:
   - name: rootGroup
   - accounts:
     - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+- Admin:
+  - admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
 '''
 
 
@@ -117,10 +117,10 @@ class InitializationData(object):
     def set_super_admin(self, super_admin):
         if not super_admin:
             return
-        self.contracts_cfgs['NodeManager']['admins'] = [super_admin]
         self.contracts_cfgs['QuotaManager']['admin'] = super_admin
         self.contracts_cfgs['Authorization']['superAdmin'] = super_admin
         self.contracts_cfgs['Group']['accounts'] = [super_admin]
+        self.contracts_cfgs['Admin']['admin'] = super_admin
 
     def save_to_file(self, filepath):
         data = dict()

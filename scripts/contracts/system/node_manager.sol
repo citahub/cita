@@ -2,7 +2,9 @@ pragma solidity ^0.4.24;
 
 import "../common/address_array.sol";
 import "../common/SafeMath.sol";
-import "./error.sol";
+import "../common/error.sol";
+import "../common/admin.sol";
+import "../common/address.sol";
 
 
 /// @title The interface of node_manager
@@ -11,11 +13,8 @@ interface NodeInterface {
 
     event ApproveNode(address indexed _node);
     event DeleteNode(address indexed _node);
-    event AddAdmin(address indexed _account, address indexed _sender);
     event SetStake(address indexed _node, uint _stake);
 
-    /// @notice Add an admin
-    function addAdmin(address) external returns (bool);
     /// @notice Approve to be consensus node. status will be start
     function approveNode(address _node) external returns (bool);
 
@@ -35,9 +34,6 @@ interface NodeInterface {
      */
     function getStatus(address _node) external view returns (uint8);
 
-    /// @notice Check the account is admin
-    function isAdmin(address _account) external view returns (bool);
-
     /// @notice Node stake list
     function listStake() external view returns (uint64[] _stakes);
 
@@ -49,10 +45,9 @@ interface NodeInterface {
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020001
-contract NodeManager is NodeInterface, Error {
+contract NodeManager is NodeInterface, Error, ReservedAddress {
 
     mapping(address => NodeStatus) public status;
-    mapping(address => bool) admins;
     // Recode the operation of the block
     mapping(uint => bool) block_op;
     // Consensus node list
@@ -62,14 +57,7 @@ contract NodeManager is NodeInterface, Error {
     // Default: Close
     enum NodeStatus { Close, Start }
 
-    modifier onlyAdmin {
-        if (admins[msg.sender])
-            _;
-        else {
-            emit ErrorLog(ErrorType.NotAdmin, "Not the admin account");
-            return;
-        }
-    }
+    Admin admin = Admin(adminAddr);
 
     // Should operate one time in a block
     modifier oneOperate {
@@ -99,8 +87,14 @@ contract NodeManager is NodeInterface, Error {
         }
     }
 
+    modifier onlyAdmin {
+        if (admin.isAdmin(msg.sender))
+            _;
+        else return;
+    }
+
     /// @notice Setup
-    constructor(address[] _nodes, address[] _admins, uint64[] _stakes)
+    constructor(address[] _nodes, uint64[] _stakes)
         public
     {
         // Initialize the address to Start
@@ -109,11 +103,6 @@ contract NodeManager is NodeInterface, Error {
             status[_nodes[i]] = NodeStatus.Start;
             nodes.push(_nodes[i]);
             stakes[_nodes[i]] = _stakes[i];
-        }
-
-        // Initialize the address of admins
-        for (uint j = 0; j < _admins.length; j++) {
-            admins[_admins[j]] = true;
         }
     }
 
@@ -124,19 +113,6 @@ contract NodeManager is NodeInterface, Error {
     {
         emit SetStake(_node, stake);
         stakes[_node] = stake;
-    }
-
-    /// @notice Add an admin
-    /// @param _account Address of the admin
-    /// @return true if successed, otherwise false
-    function addAdmin(address _account)
-        public
-        onlyAdmin
-        returns (bool)
-    {
-        admins[_account] = true;
-        emit AddAdmin(_account, msg.sender);
-        return true;
     }
 
     /// @notice Approve the new node
@@ -193,17 +169,6 @@ contract NodeManager is NodeInterface, Error {
         returns (uint8)
     {
         return uint8(status[_node]);
-    }
-
-    /// @notice Check the account is admin
-    /// @param _account The address to be checked
-    /// @return true if it is, otherwise false
-    function isAdmin(address _account)
-        public
-        view
-        returns (bool)
-    {
-        return admins[_account];
     }
 
     /// @notice Node stake list

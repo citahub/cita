@@ -7,11 +7,7 @@ interface QuotaInterface {
     
     event DefaultAqlSetted(uint indexed _value, address indexed _sender);
     event BqlSetted(uint indexed _value, address indexed _sender);
-    event AdminAdded(address indexed _account, address indexed _sender);
     event AqlSetted(address indexed _account, uint _value, address indexed _sender);
-
-    /// @notice Add an admin
-    function addAdmin(address _account) external returns (bool);
 
     /// @notice Set the block quota limit
     function setBQL(uint _value) external returns (bool);
@@ -21,9 +17,6 @@ interface QuotaInterface {
 
     /// @notice Set the account quota limit
     function setAQL(address _account, uint _value) external returns (bool);
-
-    /// @notice Check the account is admin
-    function isAdmin(address _account) external view returns (bool);
 
     /// @notice Get all accounts that have account quota limit
     function getAccounts() external view returns (address[]);

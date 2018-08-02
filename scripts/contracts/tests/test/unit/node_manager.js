@@ -8,7 +8,7 @@ const {
   logger, getTxReceipt,
 } = util;
 const {
-  isAdmin, getStatus, listNode, deleteNode, approveNode, addAdmin,
+  getStatus, listNode, deleteNode, approveNode,
 } = nodeManager;
 const { testAddr } = config;
 
@@ -20,27 +20,6 @@ const addr = testAddr[0];
 const addr1 = testAddr[1];
 
 describe('\n\ntest node manager\n\n', () => {
-  describe('\ntest add superAdmin\n', () => {
-    it('should send a tx: addAdmin', async () => {
-      const res = await addAdmin(addr);
-      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
-      expect(res.status).to.equal('OK');
-      ({ hash } = res);
-    });
-
-    it('should get receipt: addAdmin', async () => {
-      const res = await getTxReceipt(hash);
-      logger.debug('\nget receipt:\n', res);
-      expect(res.errorMessage).to.be.null;
-    });
-
-    it('should have new superAdmin', async () => {
-      const res = await isAdmin(addr);
-      logger.debug('\nthe account is an superAdmin:\n', res);
-      expect(res).to.be.true;
-    });
-  });
-
   describe('\ntest approve node\n', () => {
     before('should be close status', async () => {
       const res = await getStatus(addr);
