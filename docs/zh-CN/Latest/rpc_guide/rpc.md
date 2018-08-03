@@ -42,10 +42,12 @@
 
 * Example
 
-    ```js
+    ```shell
     // Request
     curl -X POST --data '{"jsonrpc":"2.0","method":"peerCount","params":[],"id":74}'
+    ```
 
+    ```json
     // Result
     {
         "id": 74,
@@ -70,10 +72,12 @@
 
 * Example
 
-    ```js
+    ```shell
     // Request
     curl -X POST --data '{"jsonrpc":"2.0","method":"blockNumber","params":[],"id":83}'
+    ```
 
+    ```json
     // Result
     {
         "id": 83,
@@ -101,7 +105,7 @@
 
 #### 构造protobuf数据结构
 
-```js
+```protobuf
 // Transaction
 syntax = "proto3";
 enum Crypto {
@@ -229,32 +233,33 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 * Example
 
-    ```js
+    ```shell
     // Request
     curl -X POST --data '{"jsonrpc":"2.0","method":"sendRawTransaction","params":["0x0a910212013218fface20420a0492a8302606060405234156100105760006000fd5b610015565b60e0806100236000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604b5780636d4ce63c14606c576045565b60006000fd5b341560565760006000fd5b606a60048080359060200190919050506093565b005b341560775760006000fd5b607d60a3565b6040518082815260200191505060405180910390f35b8060006000508190909055505b50565b6000600060005054905060b1565b905600a165627a7a72305820942223976c6dd48a3aa1d4749f45ad270915cfacd9c0bf3583c018d4c86f9da200291241edd3fb02bc1e844e1a6743e8986a61e1d8a584aac26db5fa1ce5b32700eba5d16ba4c754731f43692f3f5299e85176627e55b9f61f5fe3e43572ec8c535b0d9201"],"id":1}'
+    ```
 
+    ```json
     // Result
     {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "result": {
-        "hash": "0x4b5d67c1debdd5899fc7b5cd77e71987b8a2d174b361ca2dd4d713434b4ff037",
-        "status": "OK"
-      }
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+            "hash": "0x4b5d67c1debdd5899fc7b5cd77e71987b8a2d174b361ca2dd4d713434b4ff037",
+            "status": "OK"
+        }
     }
+    ```
 
+    ```json
     // 如果是近期发送的重复交易，则会提示重复交易
-
     {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "error": {
-        "code": -32006,
-        "message": "Dup"//重复交易
-      }
+        "jsonrpc": "2.0",
+        "id": 1,
+        "error": {
+            "code": -32006,
+            "message": "Dup"//重复交易
+        }
     }
-
-
     ```
 
 ***
@@ -268,12 +273,12 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
     1. `Data32` - Hash of a block.
     2. `Boolean` - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
 
-    ```shell
-    params: [
-        '0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329',
-        true
-    ]
-    ```
+```js
+params: [
+    '0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329',
+    true
+]
+```
 
 * Returns
 
@@ -284,44 +289,46 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
     ```shell
     // Request
     curl -X POST --data '{"jsonrpc":"2.0","method":"getBlockByHash","params":["0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329", true],"id":1}'
+    ```
 
+    ```json
     // Result
     {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "result": {
-        "version": 0,
-        "hash": "0x5038c222d460c32fd06df36d58bb7cf5c368a55e207a46ecb18695451bfe4069",
-        "header": {
-          "timestamp": 1499756200950,
-          "prevHash": "0xb28ec1911d375350664b9673a61d952e9a748f3e63606f1440f313c4911fde58",
-          "proof": {
-            "proposal": "0x0f25d396361c7d54bb16389f6a14bf95207915f91d180d382093e19adfc4133b",
-            "height": 902,
-            "round": 0,
-            "commits": {
-              "0x2b027dacd33a41ddb09e21805778f19951776ed5": "0x1532c58faedf9e103dd84aa6aacbd2121aa3a8102faa506e7e152fb10e45bafd31b1c3d372cf5d42f8b27a8bfea112ae194de76d99206f73837ad8c30267e6a501",
-              "0x2d74a106464fbdf94e47bb28605a1aa244ab7788": "0x2ec53371cee732d59d23a58cf6cf53d818fb906fdeb5b0521a3a4cdbb75cf29658a1ff5fa95e4dc71563cbed10070c68e2eec0f812fa3be8e019b6df6e9ea66201",
-              "0x3efd4959af72e1214ab83caa0f04a0cc3e54d383": "0xb051f0cc41bc3caed472d3c7a35e06d805e8f6d15ccb3efc257d71ee96932c5877a8e52fc29cb3bef73e0edbad62c617c4dd16763709b2604ab8b1db2d87736301",
-              "0x5223818f7096520bfad68ce3d5ac959267dbc45f": "0x1cf6f8dc9654d461a317db199de0ed0d2d008762833b3358e269ceb3c412b60b3f1a2bd08f969e0dc1c9ebe1a0710002f853438a6ef3ea048de9b4e67387827400"
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+            "version": 0,
+            "hash": "0x5038c222d460c32fd06df36d58bb7cf5c368a55e207a46ecb18695451bfe4069",
+            "header": {
+                "timestamp": 1499756200950,
+                "prevHash": "0xb28ec1911d375350664b9673a61d952e9a748f3e63606f1440f313c4911fde58",
+                "proof": {
+                    "proposal": "0x0f25d396361c7d54bb16389f6a14bf95207915f91d180d382093e19adfc4133b",
+                    "height": 902,
+                    "round": 0,
+                    "commits": {
+                        "0x2b027dacd33a41ddb09e21805778f19951776ed5": "0x1532c58faedf9e103dd84aa6aacbd2121aa3a8102faa506e7e152fb10e45bafd31b1c3d372cf5d42f8b27a8bfea112ae194de76d99206f73837ad8c30267e6a501",
+                        "0x2d74a106464fbdf94e47bb28605a1aa244ab7788": "0x2ec53371cee732d59d23a58cf6cf53d818fb906fdeb5b0521a3a4cdbb75cf29658a1ff5fa95e4dc71563cbed10070c68e2eec0f812fa3be8e019b6df6e9ea66201",
+                        "0x3efd4959af72e1214ab83caa0f04a0cc3e54d383": "0xb051f0cc41bc3caed472d3c7a35e06d805e8f6d15ccb3efc257d71ee96932c5877a8e52fc29cb3bef73e0edbad62c617c4dd16763709b2604ab8b1db2d87736301",
+                        "0x5223818f7096520bfad68ce3d5ac959267dbc45f": "0x1cf6f8dc9654d461a317db199de0ed0d2d008762833b3358e269ceb3c412b60b3f1a2bd08f969e0dc1c9ebe1a0710002f853438a6ef3ea048de9b4e67387827400"
+                    }
+                },
+                "stateRoot": "0xe29266e5574bc0c848b513d36403d4da71f99f328d3324e8d3134809c33d4fb4",
+                "transactionsRoot": "0xf31e32611322f410f430ef8141c2237c19dd1034eddef8dedba692ec9851799b",
+                "receiptsRoot": "0x9646cf2572734b4b13fe1616446ab2658e208cfdbaf25e47ebea9b6327e10c5b",
+                "gasUsed": "0x0",
+                "number": "0x387",
+                "proposer":"0xe6d430a2d830236d3774d148cbee72bbf26cd481",
+            },
+            "body": {
+                "transactions": [
+                    {
+                        "hash": "0xf31e32611322f410f430ef8141c2237c19dd1034eddef8dedba692ec9851799b",
+                        "content":"0x0a28356230373365393233333934346235653732396534366436313866306438656466336439633334611a80040aba030a28356230373365393233333934346235653732396534366436313866306438656466336439633334611a87030a013010a08d0622fd026060604052341561000c57fe5b5b7f4f8cfde3439a1a302c21ca51eec26086efbfd940b8c0279889fc6bb6e73ecc6633604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a15b5b60fd806100806000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11460445780636d4ce63c146061575bfe5b3415604b57fe5b605f60048080359060200190919050506084565b005b3415606857fe5b606e60c6565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055505b50565b600060005490505b905600a165627a7a7230582079ba3769927f0f8cf4bec7ce02513b56823c8fc3f4047989951e042a9a04651900292080808080101241d51ca7a0171113478f47357a71c240bd0431f52639741a6721725de276a88d2e723b12f4bbeb1cdddea63f947ddb9db6e2667f08a03af1577c42d3c1a3dc5a7c01208080808010"
+                    }
+                ]
             }
-          },
-          "stateRoot": "0xe29266e5574bc0c848b513d36403d4da71f99f328d3324e8d3134809c33d4fb4",
-          "transactionsRoot": "0xf31e32611322f410f430ef8141c2237c19dd1034eddef8dedba692ec9851799b",
-          "receiptsRoot": "0x9646cf2572734b4b13fe1616446ab2658e208cfdbaf25e47ebea9b6327e10c5b",
-          "gasUsed": "0x0",
-          "number": "0x387",
-          "proposer":"0xe6d430a2d830236d3774d148cbee72bbf26cd481",
-        },
-        "body": {
-          "transactions": [
-            {
-              "hash": "0xf31e32611322f410f430ef8141c2237c19dd1034eddef8dedba692ec9851799b",
-              "content": "0x0a28356230373365393233333934346235653732396534366436313866306438656466336439633334611a80040aba030a28356230373365393233333934346235653732396534366436313866306438656466336439633334611a87030a013010a08d0622fd026060604052341561000c57fe5b5b7f4f8cfde3439a1a302c21ca51eec26086efbfd940b8c0279889fc6bb6e73ecc6633604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a15b5b60fd806100806000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11460445780636d4ce63c146061575bfe5b3415604b57fe5b605f60048080359060200190919050506084565b005b3415606857fe5b606e60c6565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055505b50565b600060005490505b905600a165627a7a7230582079ba3769927f0f8cf4bec7ce02513b56823c8fc3f4047989951e042a9a04651900292080808080101241d51ca7a0171113478f47357a71c240bd0431f52639741a6721725de276a88d2e723b12f4bbeb1cdddea63f947ddb9db6e2667f08a03af1577c42d3c1a3dc5a7c01208080808010"
-            }
-          ]
         }
-      }
     }
 
     ```
@@ -337,12 +344,12 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
     1. `Quantity` - integer of a block height.
     2. `Boolean` - 是否返回交易信息(True: 返回详细交易列表| False: 只返回交易hash).
 
-    ```js
-    params: [
-       0x1da3,
-       true
-    ]
-    ```
+```shell
+params: [
+    0x1da3,
+    true
+]
+```
 
 * Returns
 
@@ -350,7 +357,7 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 * Example
 
-    ```js
+    ```shell
     // Request
     curl -X POST --data '{"jsonrpc":"2.0","method":"getBlockByNumber","params":["0xF9", true],"id":1}'
     ```
@@ -359,7 +366,7 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"getBlockByNumber","params":["0XF9", true],"id":1}'
-    #或者
+    # 或者
     curl -X POST --data '{"jsonrpc":"2.0","method":"getBlockByNumber","params":[249, true],"id":1}'
     ```
 
@@ -377,11 +384,11 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
     1. `Data32` - hash of a transaction
 
-    ```js
-    params: [
-        "0xb38e5b6572b2613cab8088f93e6835576209f2b796104779b4a43fa5adc737af"
-    ]
-    ```
+```json
+params: [
+    "0xb38e5b6572b2613cab8088f93e6835576209f2b796104779b4a43fa5adc737af"
+]
+```
 
 * Returns
 
@@ -417,10 +424,12 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 
 * Example
 
-    ```js
+    ```shell
     // Request
     curl -X POST --data '{"jsonrpc":"2.0","method":"getTransactionReceipt","params":["0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"],"id":1}'
+    ```
 
+    ```json
     // Result
     {
         "jsonrpc":"2.0",
@@ -452,20 +461,22 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
             "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100040000000010000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
         }
     }
+    ```
 
-    error：
+    ```json
+    // error
     {
-      "contractAddress": "0xbb6f8266fae605da373c2526c386fe07542b4957",
-      "cumulativeGasUsed": "0x0",
-      "logs": [],
-      "blockHash": "0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329",
-      "transactionHash": "0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236",
-      "root": null,
-      "errorMessage": "No contract permission.",
-      "blockNumber": "0x1da3",
-      "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-      "transactionIndex": "0x0",
-      "gasUsed": "0x0"
+        "contractAddress": "0xbb6f8266fae605da373c2526c386fe07542b4957",
+        "cumulativeGasUsed": "0x0",
+        "logs": [],
+        "blockHash": "0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329",
+        "transactionHash": "0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236",
+        "root": null,
+        "errorMessage": "No contract permission.",
+        "blockNumber": "0x1da3",
+        "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "transactionIndex": "0x0",
+        "gasUsed": "0x0"
     }
     ```
 
@@ -484,16 +495,19 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 * Returns
 
     `Array` - Array of log objects, or an empty array if no logs
-      * `address` - 合约地址
-      * `topics`- 用来构造过滤器的topics
-      * `data`- 经过 topics 筛选的 log 数据
+
+    * `address` - 合约地址
+    * `topics`- 用来构造过滤器的topics
+    * `data`- 经过 topics 筛选的 log 数据
 
 * Example
 
-    ```js
+    ```shell
     // Request
     curl -X POST --data '{"jsonrpc":"2.0","method":"getLogs","params":[{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"],"fromBlock": "0x0"}],"id":74}'
+    ```
 
+    ```json
     // Result
     {
         "jsonrpc":"2.0",
@@ -514,7 +528,6 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
             }
         ]
     }
-
     ```
 
 ***
@@ -528,9 +541,16 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
     1. `CallRequest` - The transaction call object. 详见 `CallRequest` 的说明。
     2. `BlockNumber` - block parameter.
 
-    ```js
-    params: [{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5","data":"0x6d4ce63c"}, "0x1d23"]
-    ```
+```shell
+params: [
+    {
+        "from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c",
+        "to":"0xea4f6bc98b456ef085da5c424db710489848cab5",
+        "data":"0x6d4ce63c"
+    },
+    "0x1d23"
+]
+```
 
 * Returns
 
@@ -549,7 +569,9 @@ params = unverify_tx.protobuf_serialize().to_hex_string();
 ```shell
 // Request
 curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"from":"0xca35b7d915458ef540ade6068dfe2f44e8fa733c","to":"0xea4f6bc98b456ef085da5c424db710489848cab5","data":"0x6d4ce63c"}, "0x6"],"id":2}'
+```
 
+```json
 // Result
 {
   "jsonrpc": "2.0",
@@ -569,11 +591,11 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"from":"0xca35b
 
     1. `Data32` - hash of a transaction
 
-    ```js
-    params: [
-        "0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"
-    ]
-    ```
+```json
+params: [
+    "0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"
+]
+```
 
 * Returns
 
@@ -587,21 +609,23 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"from":"0xca35b
 
 * Example
 
-    ```js
+    ```shell
     // Request
     curl -X POST --data '{"jsonrpc":"2.0","method":"getTransaction","params":["0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236"],"id":1}'
+    ```
 
+    ```json
     // Result
     {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "result": {
-        "hash": "0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236",
-        "content": "0x0a9b0412013018fface20420f73b2a8d046060604052341561000f57600080fd5b5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b5b610178806100956000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100495780636d4ce63c1461006c575b600080fd5b341561005457600080fd5b61006a6004808035906020019091905050610095565b005b341561007757600080fd5b61007f610142565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b50565b6000805490505b905600a165627a7a72305820631927ec00e7a86b68950c2304ba2614a8dcb84780b339fc2bfe442bba418ce800291241884bfdfd8e417ab286fd761d42b71a9544071d91084c56f9063471ce82e266122a8f9a24614e1cf75070eea301bf1e7a65857def86093b6892e09ae7d0bcdff901",
-        "blockNumber": "0x1da3",
-        "blockHash": "0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329",
-        "index": "0x0"
-      }
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+            "hash": "0x019abfa50cbb6df5b6dc41eabba47db4e7eb1787a96fd5836820d581287e0236",
+            "content": "0x0a9b0412013018fface20420f73b2a8d046060604052341561000f57600080fd5b5b60646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b5b610178806100956000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100495780636d4ce63c1461006c575b600080fd5b341561005457600080fd5b61006a6004808035906020019091905050610095565b005b341561007757600080fd5b61007f610142565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a15b50565b6000805490505b905600a165627a7a72305820631927ec00e7a86b68950c2304ba2614a8dcb84780b339fc2bfe442bba418ce800291241884bfdfd8e417ab286fd761d42b71a9544071d91084c56f9063471ce82e266122a8f9a24614e1cf75070eea301bf1e7a65857def86093b6892e09ae7d0bcdff901",
+            "blockNumber": "0x1da3",
+            "blockHash": "0x296474ecb4c2c8c92b0ba7800a01530b70a6f2b6e76e5c2ed2f89356429ef329",
+            "index": "0x0"
+        }
     }
     ```
 
@@ -624,12 +648,14 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"from":"0xca35b
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"getTransactionCount","params":["0x5b073e9233944b5e729e46d618f0d8edf3d9c34a","0x1f"],"id":1}'
+    ```
 
+    ```json
     // Result:
     {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "result": "0x1"
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x1"
     }
 
     ```
@@ -653,12 +679,14 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"from":"0xca35b
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"getCode","params":["0xea4f6bc98b456ef085da5c424db710489848cab5", "0x1f"],"id":1}'
+    ```
 
+    ```json
     // Result:
     {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "result": "0x60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11460445780636d4ce63c146061575bfe5b3415604b57fe5b605f60048080359060200190919050506084565b005b3415606857fe5b606e60c6565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055505b50565b600060005490505b905600a165627a7a7230582079ba3769927f0f8cf4bec7ce02513b56823c8fc3f4047989951e042a9a0465190029"
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b11460445780636d4ce63c146061575bfe5b3415604b57fe5b605f60048080359060200190919050506084565b005b3415606857fe5b606e60c6565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055505b50565b600060005490505b905600a165627a7a7230582079ba3769927f0f8cf4bec7ce02513b56823c8fc3f4047989951e042a9a0465190029"
     }
     ```
 
@@ -681,12 +709,14 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call","params":[{"from":"0xca35b
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"getAbi","params":["0x73552bc4e960a1d53013b40074569ea05b950b4d", "latest"],"id":1}'
+    ```
 
+    ```json
     // Result:
     {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "result": "0x4ed3885e000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000001275b7b22636f6e7374616e74223a66616c73652c22696e70757473223a5b7b226e616d65223a2278222c2274797065223a2275696e74323536227d5d2c226e616d65223a22736574222c226f757470757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a2266756e6374696f6e227d2c7b22636f6e7374616e74223a747275652c22696e70757473223a5b5d2c226e616d65223a22676574222c226f757470757473223a5b7b226e616d65223a22222c2274797065223a2275696e74323536227d5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d5d00000000000000000000000000000000000000000000000000"
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x4ed3885e000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000001275b7b22636f6e7374616e74223a66616c73652c22696e70757473223a5b7b226e616d65223a2278222c2274797065223a2275696e74323536227d5d2c226e616d65223a22736574222c226f757470757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a2266756e6374696f6e227d2c7b22636f6e7374616e74223a747275652c22696e70757473223a5b5d2c226e616d65223a22676574222c226f757470757473223a5b7b226e616d65223a22222c2274797065223a2275696e74323536227d5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d5d00000000000000000000000000000000000000000000000000"
     }
 
     ```
@@ -754,14 +784,16 @@ Example
 
 #### 查询abi
 
-```
+```shell
 curl -X POST --data '{"jsonrpc":"2.0","method":"getAbi","params":["0x73552bc4e960a1d53013b40074569ea05b950b4d", "latest"],"id":1}' 127.0.0.1:1337 | jq
+```
 
+```json
 // Result:
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": "0x4ed3885e000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000001275b7b22636f6e7374616e74223a66616c73652c22696e70757473223a5b7b226e616d65223a2278222c2274797065223a2275696e74323536227d5d2c226e616d65223a22736574222c226f757470757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a2266756e6374696f6e227d2c7b22636f6e7374616e74223a747275652c22696e70757473223a5b5d2c226e616d65223a22676574222c226f757470757473223a5b7b226e616d65223a22222c2274797065223a2275696e74323536227d5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d5d00000000000000000000000000000000000000000000000000"
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": "0x4ed3885e000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000001275b7b22636f6e7374616e74223a66616c73652c22696e70757473223a5b7b226e616d65223a2278222c2274797065223a2275696e74323536227d5d2c226e616d65223a22736574222c226f757470757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a2266756e6374696f6e227d2c7b22636f6e7374616e74223a747275652c22696e70757473223a5b5d2c226e616d65223a22676574222c226f757470757473223a5b7b226e616d65223a22222c2274797065223a2275696e74323536227d5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d5d00000000000000000000000000000000000000000000000000"
 }
 ```
 
@@ -784,12 +816,14 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"getAbi","params":["0x73552bc4e96
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"getBalance","params":["0xea4f6bc98b456ef085da5c424db710489848cab5", "0x1f"],"id":1}'
+    ```
 
+    ```json
     // Result:
     {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "result": "0x0"
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0"
     }
     ```
 
@@ -811,12 +845,14 @@ Creates a filter object, based on filter options, to notify when the state chang
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"newFilter","params":[{"topics":["0x8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3"]}],"id":1}'
+    ```
 
+    ```json
     // Result
     {
-      "id":1,
-      "jsonrpc": "2.0",
-      "result": "0x1"
+        "id":1,
+        "jsonrpc": "2.0",
+        "result": "0x1"
     }
     ```
 
@@ -838,12 +874,14 @@ Creates a filter in the node, to notify when a new block arrives. To check if th
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"newBlockFilter","params":[],"id":73}'
+    ```
 
+    ```json
     // Result
     {
-      "id":1,
-      "jsonrpc":  "2.0",
-      "result": "0x1"
+        "id":1,
+        "jsonrpc":  "2.0",
+        "result": "0x1"
     }
     ```
 
@@ -866,12 +904,14 @@ Additonally Filters timeout when they aren't requested with getFilterChanges for
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"uninstallFilter","params":["0xb"],"id":73}'
+    ```
 
+    ```json
     // Result
     {
-      "id":1,
-      "jsonrpc": "2.0",
-      "result": true
+        "id":1,
+        "jsonrpc": "2.0",
+        "result": true
     }
     ```
 
@@ -894,7 +934,9 @@ Polling method for a filter, which returns an array of logs which occurred since
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"getFilterChanges","params":["0x16"],"id":74}'
+    ```
 
+    ```json
     // Result
     {
         "jsonrpc":"2.0",
@@ -945,11 +987,11 @@ Returns an array of all logs matching filter with given id.
 
     1. `Data32` - hash of a transaction
 
-        ```js
-        params: [
-            "0x37f1261203d7b81a5a5cfc4a5c4abf15297555a47fd8686580d5a211876516c4"
-        ]
-        ```
+```json
+params: [
+    "0x37f1261203d7b81a5a5cfc4a5c4abf15297555a47fd8686580d5a211876516c4"
+]
+```
 
 * Returns
 
@@ -957,10 +999,12 @@ Returns an array of all logs matching filter with given id.
 
 * Example
 
-    ```js
+    ```shell
     // Request
     curl -X POST --data '{"jsonrpc":"2.0","method":"getTransactionProof","params":["0x37f1261203d7b81a5a5cfc4a5c4abf15297555a47fd8686580d5a211876516c4"],"id":1}'
+    ```
 
+    ```json
     // Result
     {
         "jsonrpc": "2.0",
@@ -979,11 +1023,11 @@ Returns an array of all logs matching filter with given id.
 
     1. `BlockNumber`, integer of a block height or "latest"
 
-        ```py
-        params: [
-            "0x1da3"
-        ]
-        ```
+```json
+params: [
+    "0x1da3"
+]
+```
 
 * Returns
     * `chainId`, `Integer` - Deal with transaction replay attack
@@ -999,7 +1043,9 @@ Returns an array of all logs matching filter with given id.
 
     ```shell
     curl -X POST --data '{"jsonrpc":"2.0","method":"getMetaData","params":["0xff"],"id":1}' 127.0.0.1:1337
+    ```
 
+    ```json
     {
         "jsonrpc": "2.0",
         "id": 1,
