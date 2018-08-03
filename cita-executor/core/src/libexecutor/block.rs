@@ -16,23 +16,17 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::LogBloom;
-use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use engines::Engine;
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
-use grpc_contracts::contract::is_grpc_contract as is_go_contract;
-use grpc_contracts::contract_state::ConnectInfo;
-use grpc_contracts::grpc_vm::CallEvmImpl;
-use grpc_contracts::service_registry;
 use header::*;
 use libexecutor::executor::{EconomicalModel, Executor, GlobalSysConfig};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
-use libproto::citacode::{ActionParams, EnvInfo as ProtoEnvInfo};
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
-use receipt::{Receipt, ReceiptError};
+use receipt::Receipt;
 use rlp::*;
 use state::State;
 use state_db::StateDB;
@@ -42,7 +36,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
 use trace::FlatTrace;
-use types::transaction::{Action, SignedTransaction};
+use types::transaction::SignedTransaction;
 use util::{merklehash, HeapSizeOf};
 
 /// Check the 256 transactions once
@@ -413,36 +407,13 @@ impl OpenBlock {
                     return false;
                 }
             }
-
-            // Judging the contract address
-            // FIXME should push error receipt when transaction failed
-            match t.action {
-                // enable grpc contract
-                Action::GoCreate => {
-                    let address = Address::from_slice(&t.data);
-                    if is_go_contract(address) {
-                        if let Some(ref value) = service_registry::find_contract(address, false) {
-                            let ip = value.conn_info.get_ip().to_string();
-                            let port = value.conn_info.get_port();
-                            let connect_info = ConnectInfo::new(ip, port, address.to_string());
-                            self.apply_grpc_vm(
-                                executor,
-                                &t,
-                                check_permission,
-                                check_quota,
-                                connect_info,
-                            );
-                        }
-                    }
-                }
-                _ => self.apply_transaction(
-                    &*executor.engine,
-                    &t,
-                    check_permission,
-                    check_quota,
-                    *executor.economical_model.read(),
-                ),
-            };
+            self.apply_transaction(
+                &*executor.engine,
+                &t,
+                check_permission,
+                check_quota,
+                *executor.economical_model.read(),
+            );
         }
 
         let now = Instant::now();
@@ -497,54 +468,6 @@ impl OpenBlock {
                 self.receipts.push(outcome.receipt);
             }
             Err(_) => panic!("apply_transaction: There must be something wrong!"),
-        }
-    }
-
-    fn apply_grpc_vm(
-        &mut self,
-        executor: &Executor,
-        t: &SignedTransaction,
-        check_permission: bool,
-        check_quota: bool,
-        connect_info: ConnectInfo,
-    ) {
-        let mut env_info = ProtoEnvInfo::new();
-        env_info.set_number(format!("{}", self.number()));
-        env_info.set_author(Address::default().lower_hex());
-        let timestamp = self.env_info().timestamp;
-        env_info.set_timestamp(format!("{}", timestamp));
-
-        let mut action_params = ActionParams::new();
-        action_params.set_code_address(connect_info.get_addr().to_string());
-        action_params.set_data(t.data.clone());
-        action_params.set_sender(t.sender().lower_hex());
-        //to be discussed
-        //action_params.set_gas("1000".to_string());
-        let ret = {
-            let mut evm_impl = CallEvmImpl::new(&mut self.state, check_permission);
-            evm_impl.transact(executor, t, env_info, action_params, connect_info)
-        };
-
-        match ret {
-            Ok(receipt) => {
-                let transaction_gas_used = receipt.gas_used - self.current_gas_used;
-                self.current_gas_used = receipt.gas_used;
-                if check_quota {
-                    if let Some(value) = self.account_gas.get_mut(t.sender()) {
-                        *value = *value - transaction_gas_used;
-                    }
-                }
-                self.receipts.push(receipt);
-            }
-            Err(Error::Execution(execution_error)) => self.receipts.push(Receipt::new(
-                None,
-                0.into(),
-                Vec::new(),
-                Some(ReceiptError::from(execution_error)),
-                0.into(),
-                t.get_transaction_hash(),
-            )),
-            Err(_) => panic!("apply_grpc_vm: There must be something wrong!"),
         }
     }
 

@@ -30,7 +30,9 @@ use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use externalities::*;
 use grpc_contracts;
-use grpc_contracts::contract::{invoke_grpc_contract, is_grpc_contract};
+use grpc_contracts::contract::{
+    create_grpc_contract, invoke_grpc_contract, is_create_grpc_address, is_grpc_contract,
+};
 use grpc_contracts::grpc_vm::extract_logs_from_response;
 use grpc_contracts::service_registry;
 use libexecutor::executor::EconomicalModel;
@@ -584,14 +586,28 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     });
                 }
             }
-            Action::GoCreate => (
-                Ok(FinalizationResult {
-                    gas_left: init_gas,
-                    return_data: ReturnData::empty(),
-                    apply_state: true,
-                }),
-                vec![],
-            ),
+            Action::GoCreate => {
+                let address = Address::default();
+                let params = ActionParams {
+                    code_address: address,
+                    address: address,
+                    sender: sender,
+                    origin: sender,
+                    gas: init_gas,
+                    gas_price: t.gas_price(),
+                    value: ActionValue::Transfer(t.value),
+                    code: self.state.code(&address)?,
+                    code_hash: self.state.code_hash(&address)?,
+                    data: Some(t.data.clone()),
+                    call_type: CallType::Call,
+                };
+                trace!(target: "executive", "call: {:?}", params);
+                let mut out = vec![];
+                (
+                    self.call_grpc_contract(params, &mut substate, BytesRef::Flexible(&mut out)),
+                    out,
+                )
+            }
             Action::AmendData => (
                 Ok(FinalizationResult {
                     // Super admin operations do not cost gas
@@ -772,7 +788,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 static_call,
                 native_contract,
             )
-        } else if is_grpc_contract(params.code_address) {
+        } else if is_create_grpc_address(params.code_address)
+            || is_grpc_contract(params.code_address)
+        {
             self.call_grpc_contract(params, substate, output)
         } else if let Some(builtin) = self.engine.builtin(&params.code_address, self.info.number) {
             // check and call Builtin contract
@@ -789,23 +807,48 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         substate: &mut Substate,
         _output: BytesRef,
     ) -> evm::Result<FinalizationResult> {
-        let connect_info = match service_registry::find_contract(params.code_address, true) {
+        let is_create = is_create_grpc_address(params.code_address);
+        let address = if is_create {
+            match params.data.clone() {
+                Some(data) => Address::from_slice(&data),
+                _ => {
+                    return Err(evm::error::Error::Internal(
+                        "GRPC contract creation without data field".to_string(),
+                    ));
+                }
+            }
+        } else {
+            params.code_address
+        };
+
+        let connect_info = match service_registry::find_contract(address, true) {
             Some(contract_state) => contract_state.conn_info,
             None => {
                 return Err(evm::error::Error::Internal(format!(
                     "can't find grpc contract from address: {:?}",
-                    params.code_address
+                    address
                 )));
             }
         };
-        let response = invoke_grpc_contract(
-            self.info,
-            params.clone(),
-            self.state,
-            true,
-            true,
-            connect_info,
-        );
+        let response = if is_create {
+            create_grpc_contract(
+                self.info,
+                params.clone(),
+                self.state,
+                true,
+                true,
+                connect_info,
+            )
+        } else {
+            invoke_grpc_contract(
+                self.info,
+                params.clone(),
+                self.state,
+                true,
+                true,
+                connect_info,
+            )
+        };
         match response {
             Ok(invoke_response) => {
                 // store grpc return storages to stateDB
