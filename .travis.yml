@@ -125,6 +125,7 @@ jobs:
         - npm run-script unit_qm
         - npm run-script abi
         - npm run-script unit_admin
+        - npm run-script store
 
     - stage: UnitTest
       name: Test of node
@@ -166,4 +167,3 @@ jobs:
         - yarn install
       script:
         - npm run-script integrate_quota
-
