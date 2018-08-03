@@ -33,7 +33,6 @@ cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "
 cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-sha3 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../../cita-chain/types" }
