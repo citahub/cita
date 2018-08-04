@@ -157,12 +157,12 @@ git submodule update
 
 执行以下命令依次启动四个节点，该命令正常情况下不会返回，节点后台运行。
 
-    ```shell
-    $ ./daemon.sh ./bin/cita start test-chain/0
-    $ ./daemon.sh ./bin/cita start test-chain/1
-    $ ./daemon.sh ./bin/cita start test-chain/2
-    $ ./daemon.sh ./bin/cita start test-chain/3
-    ```
+ ```shell
+ $ ./daemon.sh ./bin/cita start test-chain/0
+ $ ./daemon.sh ./bin/cita start test-chain/1
+ $ ./daemon.sh ./bin/cita start test-chain/2
+ $ ./daemon.sh ./bin/cita start test-chain/3
+ ```
 
 ### 停止节点
 
