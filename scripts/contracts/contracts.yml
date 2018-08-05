@@ -22,10 +22,10 @@ NormalContracts:
     file: permission_management/authorization.sol
 - RoleManagement:
     address: '0xffffffffffffffffffffffffffffffffff020007'
-    file: permission_management/role_management.sol
+    file: role_management/role_management.sol
 - RoleCreator:
     address: '0xffffffffffffffffffffffffffffffffff020008'
-    file: permission_management/role_creator.sol
+    file: role_management/role_creator.sol
 - Group:
     address: '0xffffffffffffffffffffffffffffffffff020009'
     file: user_management/group.sol
@@ -40,7 +40,7 @@ NormalContracts:
     file: common/admin.sol
 - RoleAuth:
     address: '0xffffffffffffffffffffffffffffffffff02000d'
-    file: permission_management/role_auth.sol
+    file: role_management/role_auth.sol
 
 PermissionContracts:
   file: permission_management/permission.sol

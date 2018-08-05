@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
-import "../common/address_array.sol";
-import "../common/SafeMath.sol";
+import "../lib/address_array.sol";
+import "../lib/safe_math.sol";
 import "../common/error.sol";
 import "../common/admin.sol";
 import "../common/address.sol";
