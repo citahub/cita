@@ -1,5 +1,6 @@
 const util = require('../helpers/util');
 const roleManagement = require('../helpers/role_management');
+const roleAuth = require('../helpers/role_auth');
 const permissionManagement = require('../helpers/permission_management');
 const authorization = require('../helpers/authorization');
 const config = require('../config');
@@ -14,12 +15,14 @@ const {
 
 const roleAbi = config.contract.role.abi;
 const {
-  queryAccounts, queryRoles, deleteRole, clearRole,
+  deleteRole, clearRole,
   cancelRole, setRole, deletePermissions, addPermissions, updateRoleName, newRole,
 } = roleManagement;
 
 // authorization
 const { queryPermissions } = authorization;
+
+const { queryRoles, queryAccounts } = roleAuth;
 
 // permission management
 const { newPermission } = permissionManagement;
@@ -121,6 +124,7 @@ describe('\n\ntest role management contract\n\n', () => {
     it('should get receipt', async () => {
       const res = await getTxReceipt(hash);
       logger.debug('\nget receipt:\n', res);
+      logger.debug('\nThe topic of logs:\n', JSON.stringify(res.logs[0].topics));
       expect(res.errorMessage).to.be.null;
     });
 
@@ -149,6 +153,7 @@ describe('\n\ntest role management contract\n\n', () => {
     it('should get receipt', async () => {
       const res = await getTxReceipt(hash);
       logger.debug('\nget receipt:\n', res);
+      logger.debug('\nThe topic of logs:\n', JSON.stringify(res.logs[0].topics));
       expect(res.errorMessage).to.be.null;
     });
 
@@ -243,6 +248,7 @@ describe('\n\ntest role management contract\n\n', () => {
     it('should get receipt', async () => {
       const res = await getTxReceipt(hash);
       logger.debug('\nget receipt:\n', res);
+      logger.debug('\nThe topic of logs:\n', JSON.stringify(res.logs[0].topics));
       expect(res.errorMessage).to.be.null;
     });
 
@@ -270,6 +276,7 @@ describe('\n\ntest role management contract\n\n', () => {
     it('should get receipt', async () => {
       const res = await getTxReceipt(hash);
       logger.debug('\nget receipt:\n', res);
+      logger.debug('\nThe topic of logs:\n', JSON.stringify(res.logs[0].topics));
       expect(res.errorMessage).to.be.null;
     });
 

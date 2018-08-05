@@ -54,6 +54,7 @@
 | 0xffffffffffffffffffffffffffffffffff02000a | 用户组管理                      |
 | 0xffffffffffffffffffffffffffffffffff02000b |                                 |
 | 0xffffffffffffffffffffffffffffffffff02000c |                                 |
+| 0xffffffffffffffffffffffffffffffffff02000d |                                 |
 |                                            |                                 |
 | 0xffffffffffffffffffffffffffffffffff021000 |                                 |
 | 0xffffffffffffffffffffffffffffffffff021001 |                                 |

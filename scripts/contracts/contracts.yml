@@ -38,6 +38,9 @@ NormalContracts:
 - Admin:
     address: '0xffffffffffffffffffffffffffffffffff02000c'
     file: common/admin.sol
+- RoleAuth:
+    address: '0xffffffffffffffffffffffffffffffffff02000d'
+    file: permission_management/role_auth.sol
 
 PermissionContracts:
   file: permission_management/permission.sol
