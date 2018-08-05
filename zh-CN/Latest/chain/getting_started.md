@@ -121,7 +121,7 @@ git submodule update
 
    节点初始化操作成功后，将在发布件目录下生成节点的配置文件，其生成的节点目录为：
 
-   * test-chian/0
+   * test-chain/0
    * test-chain/1
    * test-chain/2
    * test-chain/3
