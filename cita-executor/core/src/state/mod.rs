@@ -189,6 +189,16 @@ impl StateProof {
         ).and_then(|a| a.verify_value_proof(&self.key, &self.value_proof))
     }
 
+    /// Get the address field of the StateProof.
+    pub fn address(&self) -> &Address {
+        &self.address
+    }
+
+    /// Get the key field of the StateProof.
+    pub fn key(&self) -> &H256 {
+        &self.key
+    }
+
     #[cfg(test)]
     pub fn set_address(&mut self, new_address: Address) {
         self.address = new_address;

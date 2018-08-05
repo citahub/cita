@@ -321,8 +321,12 @@ impl Forward {
                 response.set_filter_logs(serde_json::to_string(&log).unwrap());
             }
 
-            Request::state_proof(_) => {
-                // TODO to be continued ...
+            Request::state_proof(state_info) => {
+                trace!("state_proof info is {:?}", state_info);
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
+                return;
             }
 
             Request::block_header_height(block_height) => {

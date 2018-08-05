@@ -7,11 +7,12 @@ use evm::action_params::ActionParams;
 use evm::storage::Map;
 use evm::{Error, Ext, GasLeft, ReturnData};
 use native::{calc_func_sig, extract_func_sig, factory::Contract};
+use state::StateProof;
 
 lazy_static! {
     static ref VERIFY_TRANSACTION_FUNC: u32 =
         calc_func_sig(b"verifyTransaction(address,bytes4,uint64,bytes)");
-    static ref VERIFY_STATE_FUNC: u32 = calc_func_sig(b"verifyState(bytes)");
+    static ref VERIFY_STATE_FUNC: u32 = calc_func_sig(b"verifyState(uint32,uint64,bytes)");
     static ref VERIFY_BLOCK_HEADER_FUNC: u32 = calc_func_sig(b"verifyBlockHeader(uint32,bytes)");
     static ref GET_EXPECTED_BLOCK_NUMBER_FUNC: u32 =
         calc_func_sig(b"getExpectedBlockNumber(uint32)");
@@ -20,6 +21,7 @@ lazy_static! {
 #[derive(Clone)]
 pub struct CrossChainVerify {
     block_headers: Map,
+    state_roots: Map,
     output: Vec<u8>,
 }
 
@@ -44,6 +46,7 @@ impl Default for CrossChainVerify {
     fn default() -> Self {
         CrossChainVerify {
             block_headers: Map::new(H256::from(0)),
+            state_roots: Map::new(H256::from(1)),
             output: Vec::new(),
         }
     }
@@ -162,9 +165,102 @@ impl CrossChainVerify {
         })
     }
 
-    fn verify_state(&mut self, _params: ActionParams, _ext: &mut Ext) -> Result<GasLeft, Error> {
-        // TODO to be continued ...
-        Err(Error::OutOfGas)
+    fn verify_state(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
+        let gas_cost = U256::from(10000);
+        if params.gas < gas_cost {
+            return Err(Error::OutOfGas);
+        }
+        let gas_left = params.gas - gas_cost;
+
+        if params.data.is_none() {
+            return Err(Error::Internal("no data".to_string()));
+        }
+
+        let data = params.data.unwrap();
+        trace!("data = {:?}", data);
+        let tokens = vec![
+            ethabi::ParamType::Uint(32),
+            ethabi::ParamType::Uint(64),
+            ethabi::ParamType::Bytes,
+        ];
+
+        let result = ethabi::decode(&tokens, &data[4..]);
+        if result.is_err() {
+            return Err(Error::Internal("decode failed".to_string()));
+        }
+        let mut decoded = result.unwrap();
+        trace!("decoded = {:?}", decoded);
+
+        let result = decoded.remove(0).to_uint();
+        if result.is_none() {
+            return Err(Error::Internal("decode 1th param failed".to_string()));
+        }
+        let chain_id_u256 = U256::from_big_endian(&result.unwrap());
+        let chain_id = chain_id_u256.low_u32();
+        trace!("chain_id = {}", chain_id);
+
+        let result = decoded.remove(0).to_uint();
+        if result.is_none() {
+            return Err(Error::Internal("decode 2nd param failed".to_string()));
+        }
+        let block_number = U256::from_big_endian(&result.unwrap()).low_u64();
+        trace!("block_number = {}", block_number);
+
+        let result = self
+            .state_roots
+            .get_array(chain_id_u256)
+            .unwrap()
+            .get(ext, block_number);
+        if result.is_err() {
+            return Err(Error::Internal("get state root failed".to_string()));
+        }
+        let result1 = self
+            .state_roots
+            .get_array(chain_id_u256)
+            .unwrap()
+            .get(ext, block_number + 1);
+        if result1.is_err() {
+            return Err(Error::Internal("get next state root failed".to_string()));
+        }
+        let state_root: H256 = result.unwrap().into();
+        trace!("state_root = {:?}", state_root);
+        let next_state_root: H256 = result1.unwrap().into();
+        trace!("next_state_root = {:?}", next_state_root);
+        if state_root == H256::zero() || next_state_root == H256::zero() {
+            return Err(Error::Internal("state root have not confirmed".to_string()));
+        }
+
+        let result = decoded.remove(0).to_bytes();
+        if result.is_none() {
+            return Err(Error::Internal("decode 3rd param failed".to_string()));
+        }
+        let state_proof_bytes = result.unwrap();
+        trace!("state_proof_bytes = {:?}", state_proof_bytes);
+
+        let state_proof = StateProof::from_bytes(&state_proof_bytes);
+
+        let maybe_val = state_proof.verify(state_root);
+        if maybe_val.is_none() {
+            return Err(Error::Internal("state proof verify failed".to_string()));
+        }
+        let val = maybe_val.unwrap();
+        trace!("val = {:?}", val);
+
+        let tokens = vec![
+            ethabi::Token::Address((*state_proof.address()).into()),
+            ethabi::Token::Uint((*state_proof.key()).into()),
+            ethabi::Token::Uint(val.into()),
+        ];
+        let result = ethabi::encode(&tokens);
+        trace!("encoded {:?}", result);
+
+        self.output = result;
+
+        Ok(GasLeft::NeedsReturn {
+            gas_left: gas_left,
+            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
+            apply_state: true,
+        })
     }
 
     fn verify_block_header(
@@ -230,6 +326,16 @@ impl CrossChainVerify {
             trace!("store the {} block header", block_header_curr.number());
             self.block_headers
                 .set_bytes(ext, chain_id_u256, block_header_curr_bytes)?;
+            trace!(
+                "store the {} block state root {}",
+                block_header_curr.number(),
+                block_header_curr.state_root()
+            );
+            self.state_roots.get_array(chain_id_u256).unwrap().set(
+                ext,
+                block_header_curr.number(),
+                &U256::from(block_header_curr.state_root()),
+            )?;
         }
 
         let tokens = vec![ethabi::Token::Bool(verify_result)];
