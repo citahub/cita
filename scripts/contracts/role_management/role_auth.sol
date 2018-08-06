@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
 import "./role_creator.sol";
-import "./authorization.sol";
-import "../common/contract_check.sol";
-import "../common/address_array.sol";
+import "../permission_management/authorization.sol";
+import "../lib/contract_check.sol";
+import "../lib/address_array.sol";
 
 
 /// @title Authorization about role and account

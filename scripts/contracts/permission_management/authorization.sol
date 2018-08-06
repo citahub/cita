@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "./permission.sol";
-import "../common/address_array.sol";
+import "../lib/address_array.sol";
 import "../common/address.sol";
 
 
