@@ -93,7 +93,7 @@ class GenesisData(object):
         self.timestamp = int(time.time() * 1000) if not timestamp else timestamp
         self.prevhash = DEFAULT_PREVHASH if not prevhash else prevhash
 
-        self.contracts_dir = contracts_dir
+        self.contracts_dir = os.path.join(contracts_dir, 'src')
         self.contracts_docs_dir = contracts_docs_dir
         self.contracts_common_dir = os.path.join(self.contracts_dir, 'common')
         self.contracts_lib_dir = os.path.join(self.contracts_dir, 'lib')

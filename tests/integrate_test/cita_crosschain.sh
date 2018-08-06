@@ -8,7 +8,7 @@ PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
 
 # Chain Manager Contract
 CMC_ADDR="ffffffffffffffffffffffffffffffffff020002"
-CMC="scripts/contracts/system/chain_manager.sol"
+CMC="scripts/contracts/src/system/chain_manager.sol"
 CMC_ABI=
 
 # Base dir for import contract files
