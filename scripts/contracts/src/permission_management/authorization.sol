@@ -3,6 +3,7 @@ pragma solidity ^0.4.24;
 import "./permission.sol";
 import "../lib/address_array.sol";
 import "../common/address.sol";
+import "../system/sys_config.sol";
 
 
 /// @title Authorization about the permission and account
@@ -15,6 +16,7 @@ contract Authorization is ReservedAddress {
     mapping(address => address[]) accounts;
 
     address[] all_accounts;
+    SysConfig sysConfig = SysConfig(sysConfigAddr);
 
     event AuthSetted(address indexed _account, address indexed _permission);
     event AuthCanceled(address indexed _account, address indexed _permission);
@@ -47,6 +49,11 @@ contract Authorization is ReservedAddress {
         _setAuth(_superAdmin, newGroupAddr);
         _setAuth(_superAdmin, deleteGroupAddr);
         _setAuth(_superAdmin, updateGroupAddr);
+        _setAuth(_superAdmin, newNodeAddr);
+        _setAuth(_superAdmin, deleteNodeAddr);
+        _setAuth(_superAdmin, updateNodeAddr);
+        _setAuth(_superAdmin, accountQuotaAddr);
+        _setAuth(_superAdmin, blockQuotaAddr);
         // rootGroup: basic permissions
         _setAuth(rootGroupAddr, sendTxAddr);
         _setAuth(rootGroupAddr, createContractAddr);
@@ -178,7 +185,10 @@ contract Authorization is ReservedAddress {
         view
         returns (bool)
     {
-        return AddressArray.exist(_permission, permissions[_account]);
+        if (sysConfig.getPermissionCheck()) {
+            return AddressArray.exist(_permission, permissions[_account]);
+        }
+        return true;
     }
 
     /// @notice Private: Set the permission to the account

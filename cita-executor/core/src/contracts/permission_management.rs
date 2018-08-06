@@ -250,6 +250,11 @@ mod tests {
             Address::from_str(reserved_addresses::PERMISSION_UPDATE_GROUP).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_NEW_NODE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_DELETE_NODE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_UPDATE_NODE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_ACCOUNT_QUOTA).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_BLOCK_QUOTA).unwrap(),
         ];
         expected_permissions.sort();
 
@@ -407,6 +412,35 @@ mod tests {
             Resource {
                 cont: H160::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap(),
                 func: vec![0, 0, 0, 0],
+            },
+            // new node
+            Resource {
+                cont: H160::from_str(reserved_addresses::NODE_MANAGER).unwrap(),
+                func: vec![0xdd, 0x4c, 0x97, 0xa0],
+            },
+            // delete node
+            Resource {
+                cont: H160::from_str(reserved_addresses::NODE_MANAGER).unwrap(),
+                func: vec![0x2d, 0x4e, 0xde, 0x93],
+            },
+            // update node
+            Resource {
+                cont: H160::from_str(reserved_addresses::NODE_MANAGER).unwrap(),
+                func: vec![0x51, 0x22, 0x2d, 0x50],
+            },
+            // accountQuota
+            Resource {
+                cont: H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap(),
+                func: vec![0x49, 0x9a, 0x1b, 0xcd],
+            },
+            Resource {
+                cont: H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap(),
+                func: vec![0xb1, 0x07, 0xea, 0x12],
+            },
+            // blockQuota
+            Resource {
+                cont: H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap(),
+                func: vec![0x93, 0x1c, 0xd0, 0xcc],
             },
         ];
         expected_resources.sort();
