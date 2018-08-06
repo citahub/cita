@@ -212,18 +212,14 @@ impl Transaction {
             gas_price: U256::default(),
             gas: U256::from(plain_transaction.get_quota()),
             action: {
-                let to = plain_transaction.get_to();
-                match to.is_empty() {
-                    true => Action::Create,
-                    false => match to {
-                        STORE_ADDRESS => Action::Store,
-                        ABI_ADDRESS => Action::AbiStore,
-                        GO_CONTRACT => Action::GoCreate,
-                        AMEND_ADDRESS => Action::AmendData,
-                        _ => Action::Call(
-                            Address::from_str(clean_0x(to)).map_err(|_| Error::ParseError)?
-                        ),
-                    },
+                let to = clean_0x(plain_transaction.get_to());
+                match to {
+                    "" => Action::Create,
+                    STORE_ADDRESS => Action::Store,
+                    ABI_ADDRESS => Action::AbiStore,
+                    GO_CONTRACT => Action::GoCreate,
+                    AMEND_ADDRESS => Action::AmendData,
+                    _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
                 }
             },
             value: U256::from(plain_transaction.get_value()),
