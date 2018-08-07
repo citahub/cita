@@ -27,17 +27,55 @@ jobs:
         - ./env.sh make fmt
 
     - stage: Build
-      name: Build the cita
+      name: Build the cita (sha3hash+secp256k1)
       # cache: cargo
       before_script:
         - cd $TRAVIS_BUILD_DIR
       script:
         - ./env.sh make
 
-    - stage: UnitTest
-      name: Unit test of cita
+    - stage: Build
+      name: Build the cita (blake2bhash+ed25519)
+      # cache: cargo
       before_script:
         - cd $TRAVIS_BUILD_DIR
+        - ./scripts/replace_default_feature.sh ./ sha3hash blake2bhash
+        - ./scripts/replace_default_feature.sh ./ secp256k1 ed25519
+      script:
+        - ./env.sh make
+
+    - stage: Build
+      name: Build the cita (sm3hash+sm2)
+      # cache: cargo
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+        - ./scripts/replace_default_feature.sh ./ sha3hash sm3hash
+        - ./scripts/replace_default_feature.sh ./ secp256k1 sm2
+      script:
+        - ./env.sh make
+
+    - stage: UnitTest
+      name: Unit test of cita (sha3hash+secp256k1)
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+      script:
+        - ./env.sh make test
+
+    - stage: UnitTest
+      name: Unit test of cita (blake2bhash+ed25519)
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+        - ./scripts/replace_default_feature.sh ./ sha3hash blake2bhash
+        - ./scripts/replace_default_feature.sh ./ secp256k1 ed25519
+      script:
+        - ./env.sh make test
+
+    - stage: UnitTest
+      name: Unit test of cita (sm3hash+sm2)
+      before_script:
+        - cd $TRAVIS_BUILD_DIR
+        - ./scripts/replace_default_feature.sh ./ sha3hash sm3hash
+        - ./scripts/replace_default_feature.sh ./ secp256k1 sm2
       script:
         - ./env.sh make test
 
