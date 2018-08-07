@@ -899,6 +899,15 @@ impl ExecutorInstance {
         if self.local_sync_count >= 3 && new_chain_height < self.ext.get_current_height() {
             self.ext
                 .send_executed_info_to_chain(new_chain_height + 1, &self.ctx_pub);
+            let executed_result = {
+                let executed_result = self.ext.executed_result.read();
+                executed_result.clone()
+            };
+            for height in executed_result.keys() {
+                if *height > new_chain_height + 1 {
+                    self.ext.send_executed_info_to_chain(*height, &self.ctx_pub);
+                }
+            }
             self.local_sync_count = 0;
         }
     }
