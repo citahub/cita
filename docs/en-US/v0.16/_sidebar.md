@@ -18,7 +18,7 @@
      - [Quota Management ](system_management/quota.md)
      - [Log Management](system_management/log.md)
      - [Snapshot](system_management/snapshot.md)
-- Cross Chian     
+- Cross Chain
      - [Cross Chain Contract Examples](crosschain/crosschain_contract_example.md)
 - Architecture       
      - [Microservice](architecture/architecture.md)
