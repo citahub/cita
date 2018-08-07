@@ -52,7 +52,7 @@ echo "DONE"
 ################################################################################
 echo -n "4) generate mock data  ...  "
 AMQP_URL=amqp://guest:guest@localhost/mock-chain/0 \
-        ${SOURCE_DIR}/target/debug/chain-executor-mock \
+        ${BINARY_DIR}/bin/chain-executor-mock \
         -m ${SOURCE_DIR}/tests/interfaces/rpc/config/blockchain.yaml
 echo "DONE"
 
