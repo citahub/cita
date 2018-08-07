@@ -41,6 +41,9 @@ NormalContracts:
 - RoleAuth:
     address: '0xffffffffffffffffffffffffffffffffff02000d'
     file: role_management/role_auth.sol
+- BatchTx:
+    address: '0xffffffffffffffffffffffffffffffffff02000e'
+    file: system/batch_tx.sol
 
 PermissionContracts:
   file: permission_management/permission.sol
