@@ -18,6 +18,8 @@
 - CITA Architecture
     - [Overall Architecture](architecture/architecture.md)
     - [Components](architecture/components.md)
+- Cross Chain
+    - [Cross Chain Contract Examples](crosschain/crosschain_contract_example.md)
 - Reference
     - [Reserved Addresses](reference/addresses.md)
     - [Glossary](reference/glossary.md)
