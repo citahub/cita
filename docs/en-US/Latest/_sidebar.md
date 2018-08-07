@@ -1,13 +1,14 @@
 - [Welcome](index.md)
 - Getting Started
     - [Build your own Appchain](chain/getting_started.md)
-    - [Appchain Configuration](chain/admintool.md)
+    - [Appchain Configuration](chain/config_tool.md)
 - System Management
     - [Node Management](system_management/node.md)
     - [Permisson Management](system_management/permission.md)
     - [Account Management](system_management/user.md)
     - [Quota Management ](system_management/quota.md)
     - [Log Management](system_management/log.md)
+    - [System Management](system_management/sys.md)
     - [Snapshot](system_management/snapshot.md)
 - Json-RPC Guide
     - [Json-RPC List](rpc_guide/rpc.md)

@@ -24,4 +24,3 @@
   $ cd docs
   $ docsify serve
   ```
-

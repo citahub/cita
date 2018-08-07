@@ -1,13 +1,14 @@
 - [首页](index.md)
 - 快速入门
     - [快速搭链](chain/getting_started.md)
-    - [链的配置](chain/admintool.md)
+    - [链的配置](chain/config_tool.md)
 - 系统管理
     - [节点管理](system_management/node.md)
     - [权限管理](system_management/permission.md)
     - [用户管理](system_management/user.md)
     - [配额管理](system_management/quota.md)
     - [日志管理](system_management/log.md)
+    - [系统配置](system_management/sys.md)
     - [备份管理](system_management/snapshot.md)
 - Json-RPC指南
     - [Json-RPC列表](rpc_guide/rpc.md)
