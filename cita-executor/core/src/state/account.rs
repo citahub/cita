@@ -754,6 +754,8 @@ mod tests {
         let expected = "71623f5ec821de33ad5aa81f8c82f0916c6f60de0a536f8c466d440c56715bd5";
         #[cfg(feature = "blake2bhash")]
         let expected = "01d418c29a2942a1257a3be24134e125d9ef52ca2c0e9174969cd86fb9bf74e9";
+        #[cfg(feature = "sm3hash")]
+        let expected = "293a5287836ae79f19f88d45b5ac5b2c2fd2f60b7c4250ff595cb228582f49c5";
 
         assert_eq!(a.storage_root().unwrap().lower_hex(), expected);
 
@@ -950,6 +952,8 @@ mod tests {
         let expected = "71623f5ec821de33ad5aa81f8c82f0916c6f60de0a536f8c466d440c56715bd5";
         #[cfg(feature = "blake2bhash")]
         let expected = "01d418c29a2942a1257a3be24134e125d9ef52ca2c0e9174969cd86fb9bf74e9";
+        #[cfg(feature = "sm3hash")]
+        let expected = "293a5287836ae79f19f88d45b5ac5b2c2fd2f60b7c4250ff595cb228582f49c5";
 
         a.commit_storage(&Default::default(), &mut db).unwrap();
         assert_eq!(a.storage_root().unwrap().lower_hex(), expected);
@@ -970,6 +974,8 @@ mod tests {
         let expected = "71623f5ec821de33ad5aa81f8c82f0916c6f60de0a536f8c466d440c56715bd5";
         #[cfg(feature = "blake2bhash")]
         let expected = "01d418c29a2942a1257a3be24134e125d9ef52ca2c0e9174969cd86fb9bf74e9";
+        #[cfg(feature = "sm3hash")]
+        let expected = "293a5287836ae79f19f88d45b5ac5b2c2fd2f60b7c4250ff595cb228582f49c5";
 
         a.commit_storage(&Default::default(), &mut db).unwrap();
         assert_eq!(a.storage_root().unwrap().lower_hex(), expected);
@@ -989,6 +995,8 @@ mod tests {
         let expected = "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb";
         #[cfg(feature = "blake2bhash")]
         let expected = "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845";
+        #[cfg(feature = "sm3hash")]
+        let expected = "a812a243d71509028ca423a5f1d74514468898389d18c4342e1f2d8683b21d73";
 
         assert_eq!(a.code_hash().lower_hex(), expected);
     }
@@ -1007,6 +1015,8 @@ mod tests {
         let expected = "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb";
         #[cfg(feature = "blake2bhash")]
         let expected = "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845";
+        #[cfg(feature = "sm3hash")]
+        let expected = "a812a243d71509028ca423a5f1d74514468898389d18c4342e1f2d8683b21d73";
 
         assert_eq!(a.abi_hash().lower_hex(), expected);
     }
@@ -1025,6 +1035,8 @@ mod tests {
         let expected = "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb";
         #[cfg(feature = "blake2bhash")]
         let expected = "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845";
+        #[cfg(feature = "sm3hash")]
+        let expected = "a812a243d71509028ca423a5f1d74514468898389d18c4342e1f2d8683b21d73";
 
         assert_eq!(a.code_hash().lower_hex(), expected);
 
@@ -1036,6 +1048,8 @@ mod tests {
         let expected = "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be";
         #[cfg(feature = "blake2bhash")]
         let expected = "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01";
+        #[cfg(feature = "sm3hash")]
+        let expected = "657a94d4f15695633005ec909ac5655111599bcd8278b75d183b86feeb778bff";
 
         assert_eq!(a.code_hash().lower_hex(), expected);
     }
@@ -1054,6 +1068,8 @@ mod tests {
         let expected = "af231e631776a517ca23125370d542873eca1fb4d613ed9b5d5335a46ae5b7eb";
         #[cfg(feature = "blake2bhash")]
         let expected = "d9c3b9ce5f61497874544e3c8a111295256705ed0c32730db01ed36a1cef9845";
+        #[cfg(feature = "sm3hash")]
+        let expected = "a812a243d71509028ca423a5f1d74514468898389d18c4342e1f2d8683b21d73";
 
         assert_eq!(a.abi_hash().lower_hex(), expected);
 
@@ -1065,6 +1081,8 @@ mod tests {
         let expected = "37bf2238b11b68cdc8382cece82651b59d3c3988873b6e0f33d79694aa45f1be";
         #[cfg(feature = "blake2bhash")]
         let expected = "32df85a4ebfe3725d6e19352057c4755aa0f2a4c01ba0c94c18dd5813ce43a01";
+        #[cfg(feature = "sm3hash")]
+        let expected = "657a94d4f15695633005ec909ac5655111599bcd8278b75d183b86feeb778bff";
 
         assert_eq!(a.abi_hash().lower_hex(), expected);
     }
@@ -1105,6 +1123,11 @@ mod tests {
                         ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7\
                         665f46c36b9fa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41\
                         c7665f46c36b9f";
+        #[cfg(feature = "sm3hash")]
+        let expected = "f8658080a0995b949869f80fa1465a9d8b6fa759ec65c3020d59c2624662bdff\
+                        059bdf19b3a01ab21d8355cfa17f8e61194831e81a8f22bec8c728fefb747ed0\
+                        35eb5082aa2ba01ab21d8355cfa17f8e61194831e81a8f22bec8c728fefb747e\
+                        d035eb5082aa2b";
 
         assert_eq!(a.rlp().to_hex(), expected);
 
@@ -1134,6 +1157,11 @@ mod tests {
                         ea69b0d9afa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41c7\
                         665f46c36b9fa0d67f729f8d19ed2e92f817cf5c31c7812dd39ed35b0b1aae41\
                         c7665f46c36b9f";
+        #[cfg(feature = "sm3hash")]
+        let expected = "f8658080a0995b949869f80fa1465a9d8b6fa759ec65c3020d59c2624662bdff\
+                        059bdf19b3a01ab21d8355cfa17f8e61194831e81a8f22bec8c728fefb747ed0\
+                        35eb5082aa2ba01ab21d8355cfa17f8e61194831e81a8f22bec8c728fefb747e\
+                        d035eb5082aa2b";
 
         assert_eq!(a.rlp().to_hex(), expected);
     }

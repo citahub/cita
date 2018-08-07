@@ -137,25 +137,12 @@ mod tests {
     extern crate logger;
     extern crate mktemp;
     use super::QuotaManager;
-    use cita_crypto::{PrivKey, SIGNATURE_NAME};
     use cita_types::H160;
     use std::str::FromStr;
     use tests::helpers::init_executor;
 
     #[test]
     fn test_users() {
-        let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from(
-                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8c0e\
-                 304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcfd9786\
-                 61983b8af4bc115d2d66",
-            )
-        } else if SIGNATURE_NAME == "secp256k1" {
-            PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
-        } else {
-            panic!("unexcepted signature algorithm");
-        };
-        println!("privkey: {:?}", privkey);
         let executor = init_executor(vec![
             ((
                 "QuotaManager.admin",
@@ -163,9 +150,7 @@ mod tests {
             )),
         ]);
         println!("init executor finish");
-
         let users = QuotaManager::users(&executor);
-
         assert_eq!(
             users,
             vec![H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap()]
@@ -174,67 +159,25 @@ mod tests {
 
     #[test]
     fn test_quota() {
-        let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from(
-                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c9ca8\
-                 c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed2bcbcf\
-                 d978661983b8af4bc115d2d66",
-            )
-        } else if SIGNATURE_NAME == "secp256k1" {
-            PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
-        } else {
-            panic!("unexcepted signature algorithm");
-        };
-        println!("privkey: {:?}", privkey);
         let executor = init_executor(vec![]);
         println!("init executor finish");
-
         let quota = QuotaManager::quota(&executor);
-
         assert_eq!(quota, vec![1073741824]);
     }
 
     #[test]
     fn test_block_gas_limit() {
-        let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from(
-                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c9\
-                 ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223ed\
-                 2bcbcfd978661983b8af4bc115d2d66",
-            )
-        } else if SIGNATURE_NAME == "secp256k1" {
-            PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
-        } else {
-            panic!("unexcepted signature algorithm");
-        };
-        println!("privkey: {:?}", privkey);
         let executor = init_executor(vec![]);
         println!("init executor finish");
-
         let block_gas_limit = QuotaManager::block_gas_limit(&executor);
-
         assert_eq!(block_gas_limit, 1073741824);
     }
 
     #[test]
     fn test_account_gas_limit() {
-        let privkey = if SIGNATURE_NAME == "ed25519" {
-            PrivKey::from(
-                "fc8937b92a38faf0196bdac328723c52da0e810f78d257c\
-                 9ca8c0e304d6a3ad5bf700d906baec07f766b6492bea4223\
-                 ed2bcbcfd978661983b8af4bc115d2d66",
-            )
-        } else if SIGNATURE_NAME == "secp256k1" {
-            PrivKey::from("35593bd681b8fc0737c2fdbef6e3c89a975dde47176dbd9724091e84fbf305b0")
-        } else {
-            panic!("unexcepted signature algorithm");
-        };
-        println!("privkey: {:?}", privkey);
         let executor = init_executor(vec![]);
         println!("init executor finish");
-
         let account_gas_limit = QuotaManager::account_gas_limit(&executor);
-
         assert_eq!(account_gas_limit, 268435456);
     }
 }

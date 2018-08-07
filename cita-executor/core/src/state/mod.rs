@@ -2487,6 +2487,8 @@ mod tests {
         let expected = "530acecc6ec873396bb3e90b6578161f9688ed7eeeb93d6fba5684895a93b78a";
         #[cfg(feature = "blake2bhash")]
         let expected = "da6a27e8063dd144a208f56f6b8dd6b3536ce6adbea93a1bcba95ce7fedb802c";
+        #[cfg(feature = "sm3hash")]
+        let expected = "63b984566f02930a2a959cef805ab0b17f68653a1430a2422e62f21a9f878cde";
 
         assert_eq!(state.root().lower_hex(), expected);
     }
@@ -2532,6 +2534,8 @@ mod tests {
         let expected = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
         #[cfg(feature = "blake2bhash")]
         let expected = "c14af59107ef14003e4697a40ea912d865eb1463086a4649977c13ea69b0d9af";
+        #[cfg(feature = "sm3hash")]
+        let expected = "995b949869f80fa1465a9d8b6fa759ec65c3020d59c2624662bdff059bdf19b3";
 
         assert_eq!(state.root().lower_hex(), expected);
     }
