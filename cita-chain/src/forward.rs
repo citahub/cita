@@ -553,54 +553,32 @@ impl Forward {
 
     fn deal_block_tx_req(&self, block_tx_hashes_req: &BlockTxHashesReq) {
         let block_height = block_tx_hashes_req.get_height();
-        let tx_hashes: Vec<H256>;
-        let mut need_insert: bool = false;
-        {
-            if let Some(hashes) = self.chain.tx_hashes_cache.write().get_mut(&block_height) {
-                info!(
-                    "get tx_hashes at height {} in chain.tx_hashes",
-                    block_height
-                );
-                tx_hashes = hashes.clone();
-            } else if let Some(hashes) =
-                self.chain.transaction_hashes(BlockId::Number(block_height))
-            {
-                tx_hashes = hashes;
-                need_insert = true;
-            } else {
-                warn!("get block's tx hashes for height:{} error", block_height);
-                return;
-            }
-        }
-        {
-            if need_insert {
-                self.chain
-                    .tx_hashes_cache
-                    .write()
-                    .insert(block_height, tx_hashes.clone());
-            }
-        }
 
-        //prepare and send the block tx hashes to auth
-        let mut block_tx_hashes = BlockTxHashes::new();
-        block_tx_hashes.set_height(block_height);
-        let mut tx_hashes_in_u8 = Vec::new();
-        for tx_hash_in_h256 in &tx_hashes {
-            tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
-        }
-        block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
-        block_tx_hashes
-            .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
-        block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
-        let msg: Message = block_tx_hashes.into();
-        self.ctx_pub
-            .send((
-                routing_key!(Chain >> BlockTxHashes).into(),
-                msg.try_into().unwrap(),
-            ))
-            .unwrap();
+        if let Some(tx_hashes) = self.chain.transaction_hashes(BlockId::Number(block_height)) {
+            //prepare and send the block tx hashes to auth
+            let mut block_tx_hashes = BlockTxHashes::new();
+            block_tx_hashes.set_height(block_height);
+            let mut tx_hashes_in_u8 = Vec::new();
+            for tx_hash_in_h256 in &tx_hashes {
+                tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
+            }
+            block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
+            block_tx_hashes
+                .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
+            let msg: Message = block_tx_hashes.into();
+            self.ctx_pub
+                .send((
+                    routing_key!(Chain >> BlockTxHashes).into(),
+                    msg.try_into().unwrap(),
+                ))
+                .unwrap();
 
-        trace!("response block's tx hashes for height:{}", block_height);
+            trace!("response block's tx hashes for height:{}", block_height);
+        } else {
+            warn!("get block's tx hashes for height:{} error", block_height);
+            return;
+        }
     }
 
     fn deal_snapshot_req(&self, snapshot_req: &SnapshotReq) {

@@ -24,7 +24,6 @@ pub use byteorder::{BigEndian, ByteOrder};
 use cache_manager::CacheManager;
 use db;
 use db::*;
-use lru_cache::LruCache;
 
 use filters::{PollFilter, PollManager};
 use header::*;
@@ -69,7 +68,6 @@ use util::{Mutex, RwLock};
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
 const LOG_BLOOMS_ELEMENTS_PER_INDEX: usize = 16;
-const TX_HASHES_CACHE_ITEMS: usize = 200;
 
 #[derive(Debug, Clone)]
 pub struct RelayInfo {
@@ -309,8 +307,7 @@ pub struct Chain {
     /// Proof type
     pub prooftype: u8,
 
-    // snapshot: get tx_hashes from file and sent to auth.
-    pub tx_hashes_cache: RwLock<LruCache<u64, Vec<H256>>>,
+    // snapshot flag
     pub is_snapshot: RwLock<bool>,
 }
 
@@ -399,7 +396,6 @@ impl Chain {
             check_quota: AtomicBool::new(false),
             prooftype: chain_config.prooftype,
             proof_map: RwLock::new(BTreeMap::new()),
-            tx_hashes_cache: RwLock::new(LruCache::new(TX_HASHES_CACHE_ITEMS)),
             is_snapshot: RwLock::new(false),
         };
 
@@ -743,7 +739,7 @@ impl Chain {
     }
 
     /// Get block body by BlockId
-    fn block_body(&self, id: BlockId) -> Option<BlockBody> {
+    pub fn block_body(&self, id: BlockId) -> Option<BlockBody> {
         match id {
             BlockId::Hash(hash) => self.block_body_by_hash(hash),
             BlockId::Number(number) => self.block_body_by_height(number),
