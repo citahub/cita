@@ -48,7 +48,7 @@
 | 0xffffffffffffffffffffffffffffffffff020004 | 权限管理                        |
 | 0xffffffffffffffffffffffffffffffffff020005 |                                 |
 | 0xffffffffffffffffffffffffffffffffff020006 | 权限管理授权                    |
-| 0xffffffffffffffffffffffffffffffffff020007 | 用户管理                        |
+| 0xffffffffffffffffffffffffffffffffff020007 | 角色管理                        |
 | 0xffffffffffffffffffffffffffffffffff020008 |                                 |
 | 0xffffffffffffffffffffffffffffffffff020009 |                                 |
 | 0xffffffffffffffffffffffffffffffffff02000a | 用户组管理                      |
