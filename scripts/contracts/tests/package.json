@@ -31,6 +31,7 @@
     "integrate_quota": "mocha test/integrate/quota -t 60s; eslint test/integrate/quota.js",
     "abi": "mocha test/integrate/abi.js -t 60s; eslint test/integrate/abi.js",
     "store": "mocha test/integrate/store.js -t 60s; eslint test/integrate/store.js",
+    "batch_tx": "mocha test/integrate/batch_tx.js -t 60s; eslint test/integrate/batch_tx.js",
     "lint": "eslint test",
     "lint-fix": "eslint --fix test"
   },
