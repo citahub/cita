@@ -4,6 +4,7 @@ import "../common/error.sol";
 import "../lib/address_array.sol";
 import "../common/admin.sol";
 import "../common/address.sol";
+import "../permission_management/authorization.sol";
 
 
 /// @title The interface of quota_manager
@@ -55,6 +56,7 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
     uint maxLimit = 2 ** 63 - 1;
     uint baseLimit = 2 ** 22 - 1;
     Admin admin = Admin(adminAddr);
+    Authorization auth = Authorization(authorizationAddr);
 
     modifier checkBaseLimit(uint _v) {
         if (_v <= maxLimit && _v >= baseLimit)
@@ -73,6 +75,11 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
             emit ErrorLog(ErrorType.OutOfBlockLimit, "The value is out of block limit");
             return;
         }
+    }
+
+    modifier checkPermission(address _permission) {
+        require(auth.checkPermission(msg.sender, _permission));
+        _;
     }
 
     modifier onlyAdmin {
@@ -97,6 +104,7 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
         public
         onlyAdmin
         checkBaseLimit(_value)
+        checkPermission(builtInPermissions[18])
         returns (bool)
     {
         defaultAQL = _value;
@@ -112,6 +120,7 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
         public
         onlyAdmin
         checkBaseLimit(_value)
+        checkPermission(builtInPermissions[18])
         returns (bool)
     {
         uint i = AddressArray.index(_account, accounts);
@@ -139,6 +148,7 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
         onlyAdmin
         checkBaseLimit(_value)
         checkBlockLimit(_value)
+        checkPermission(builtInPermissions[19])
         returns (bool)
     {
         BQL = _value;

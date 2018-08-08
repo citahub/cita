@@ -5,6 +5,7 @@ pragma solidity ^0.4.24;
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @dev TODO all the address
 contract ReservedAddress {
+    address public sysConfigAddr = 0xFFfffFFfFfFffFFfFFfffFffFfFFFffFFf020000;
     address public adminAddr = 0xFFFfFFfFfFFFfFfFfFFfFFFffFFFffFFFf02000c;
 
     address public permissionManagementAddr = 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004;
@@ -34,7 +35,14 @@ contract ReservedAddress {
     address public userManagementAddr = 0xFFFffFFfffffFFfffFFffffFFFffFfFffF02000a;
     address public groupCreatorAddr = 0xfFFffFfFFFFfFFFfFfffffFFfffffffffF02000B;
 
-    address[15] builtInPermissions = [
+    address public newNodeAddr =  0xFfFfFFffFffffFffffffffFFFFffFfFFFF021020;
+    address public deleteNodeAddr =  0xFffFFFfFfFFFfFfFfFfFFfffFFFFFffFFF021021;
+    address public updateNodeAddr =  0xFffFfffFFffFFFFfFFFFFfFfFFFfFFFfFF021022;
+
+    address public accountQuotaAddr = 0xffFfffFfffFfFFFFFfFfFffFFfFfffFffF021023;
+    address public blockQuotaAddr = 0xfffffFfFfFFfFFffFfFffFFFFfFFFfFffF021024;
+
+    address[20] builtInPermissions = [
         0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,       // 0 - newPermission
         0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011,       // 1 - deletePermission
         0xfFFfFFfFFFFffffFFFFFfffffFFFFFFFFf021012,       // 2 - addResources, deleteResources, updatePermissionName
@@ -49,6 +57,11 @@ contract ReservedAddress {
         0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B,       // 11 - deleteGroup
         0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c,       // 12 - addAccounts, deleteAccounts, updateGroupName
         0xFFffFFFFfFFFFFFfffFfFFffFfFFFFfFFf021000,       
-        0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001        
+        0xffFFffffFfffFFFfffffFFfFFffFFfFFFf021001,
+        0xFfFfFFffFffffFffffffffFFFFffFfFFFF021020,       // 15 - approveNode
+        0xFffFFFfFfFFFfFfFfFfFFfffFFFFFffFFF021021,       // 16 - deleteNOde
+        0xFffFfffFFffFFFFfFFFFFfFfFFFfFFFfFF021022,       // 17 - setStake
+        0xffFfffFfffFfFFFFFfFfFffFFfFfffFffF021023,       // 18 - setDefaultAQL, setAQL
+        0xfffffFfFfFFfFFffFfFffFFFFfFFFfFffF021024        // 19 - setBQL
     ];
 }

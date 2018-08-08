@@ -5,6 +5,7 @@ import "../lib/safe_math.sol";
 import "../common/error.sol";
 import "../common/admin.sol";
 import "../common/address.sol";
+import "../permission_management/authorization.sol";
 
 
 /// @title The interface of node_manager
@@ -58,6 +59,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
     enum NodeStatus { Close, Start }
 
     Admin admin = Admin(adminAddr);
+    Authorization auth = Authorization(authorizationAddr);
 
     // Should operate one time in a block
     modifier oneOperate {
@@ -93,6 +95,11 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
         else return;
     }
 
+    modifier checkPermission(address _permission) {
+        require(auth.checkPermission(msg.sender, _permission));
+        _;
+    }
+
     /// @notice Setup
     constructor(address[] _nodes, uint64[] _stakes)
         public
@@ -110,6 +117,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
     function setStake(address _node, uint64 stake)
         public
         onlyAdmin
+        checkPermission(builtInPermissions[17])
         returns (bool)
     {
         require(AddressArray.exist(_node, nodes));
@@ -126,6 +134,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
         onlyAdmin
         oneOperate
         onlyClose(_node)
+        checkPermission(builtInPermissions[15])
         returns (bool)
     {
         status[_node] = NodeStatus.Start;
@@ -143,6 +152,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
         onlyAdmin
         oneOperate
         onlyStart(_node)
+        checkPermission(builtInPermissions[16])
         returns (bool)
     {
         require(AddressArray.remove(_node, nodes));

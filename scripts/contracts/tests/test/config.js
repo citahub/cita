@@ -472,6 +472,11 @@ module.exports = {
       '0xFFFFffffffffFFfFffFffFFfFfFfFffFFf02101A',
       '0xFFfFfffFffffffffFFfFfFFFFfFFfFfFFF02101B',
       '0xFFFfFFfffFFffFffffffFFFFFFfFFffffF02101c',
+      '0xFfFfFFffFffffFffffffffFFFFffFfFFFF021020',
+      '0xFffFFFfFfFFFfFfFfFfFFfffFFFFFffFFF021021',
+      '0xFffFfffFFffFFFFfFFFFFfFfFFFfFFFfFF021022',
+      '0xffFfffFfffFfFFFFFfFfFffFFfFfffFffF021023',
+      '0xfffffFfFfFFfFFffFfFffFFFFfFFFfFffF021024',
     ],
   resources: [
     ['0xffffffffffffffffffffffffffffffffff021000', '0x00000000'],

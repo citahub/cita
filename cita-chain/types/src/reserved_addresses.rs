@@ -119,6 +119,12 @@ pub const PERMISSION_CANCEL_ROLE: &str = "ffffffffffffffffffffffffffffffffff0210
 pub const PERMISSION_NEW_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101a";
 pub const PERMISSION_DELETE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101b";
 pub const PERMISSION_UPDATE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101c";
+pub const PERMISSION_NEW_NODE: &str = "FfFfFFffFffffFffffffffFFFFffFfFFFF021020";
+pub const PERMISSION_DELETE_NODE: &str = "FffFFFfFfFFFfFfFfFfFFfffFFFFFffFFF021021";
+pub const PERMISSION_UPDATE_NODE: &str = "FffFfffFFffFFFFfFFFFFfFfFFFfFFFfFF021022";
+pub const PERMISSION_ACCOUNT_QUOTA: &str = "ffFfffFfffFfFFFFFfFfFffFFfFfffFffF021023";
+pub const PERMISSION_BLOCK_QUOTA: &str = "fffffFfFfFFfFFffFfFffFFFFfFFFfFffF021024";
+
 // Native Contracts
 pub const NATIVE_SIMPLE_STORAGE: &str = "ffffffffffffffffffffffffffffffffff030000";
 pub const NATIVE_ZK_PRIVACY: &str = "ffffffffffffffffffffffffffffffffff030001";

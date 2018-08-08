@@ -3,6 +3,7 @@ pragma solidity ^0.4.24;
 import "./group_creator.sol";
 import "../lib/address_array.sol";
 import "../common/address.sol";
+import "../permission_management/authorization.sol";
 
 
 /// @title User management using group struct
@@ -16,6 +17,7 @@ contract GroupManagement is ReservedAddress {
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
 
     address[] groups;
+    Authorization auth = Authorization(authorizationAddr);
 
     event GroupDeleted(address _group);
 
@@ -28,6 +30,11 @@ contract GroupManagement is ReservedAddress {
     modifier inGroup(address _group) {
         Group group = Group(_group);
         require(group.inGroup(msg.sender));
+        _;
+    }
+
+    modifier checkPermission(address _permission) {
+        require(auth.checkPermission(msg.sender, _permission));
         _;
     }
 
@@ -44,6 +51,7 @@ contract GroupManagement is ReservedAddress {
     /// @return New role's address
     function newGroup(address _origin, bytes32 _name, address[] _accounts)
         external
+        checkPermission(builtInPermissions[10])
         returns (address new_group)
     {
         new_group = groupCreator.createGroup(_origin, _name, _accounts);
@@ -59,6 +67,7 @@ contract GroupManagement is ReservedAddress {
         external
         inGroup(_origin)
         onlyLeafNode(_target)
+        checkPermission(builtInPermissions[11])
         returns (bool)
     {
         require(checkScope(_origin, _target));
@@ -81,6 +90,7 @@ contract GroupManagement is ReservedAddress {
     function updateGroupName(address _origin, address _target, bytes32 _name)
         external
         inGroup(_origin)
+        checkPermission(builtInPermissions[12])
         returns (bool)
     {
         require(checkScope(_origin, _target));
@@ -97,6 +107,7 @@ contract GroupManagement is ReservedAddress {
     function addAccounts(address _origin, address _target, address[] _accounts)
         external
         inGroup(_origin)
+        checkPermission(builtInPermissions[12])
         returns (bool)
     {
         require(checkScope(_origin, _target));
@@ -113,6 +124,7 @@ contract GroupManagement is ReservedAddress {
     function deleteAccounts(address _origin, address _target, address[] _accounts)
         external
         inGroup(_origin)
+        checkPermission(builtInPermissions[12])
         returns (bool)
     {
         require(checkScope(_origin, _target));
