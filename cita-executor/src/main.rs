@@ -162,12 +162,7 @@ fn main() {
             timeout_factor = 0;
         } else {
             if !ext_instance.is_snapshot {
-                info!("Executor enters the timeout retransmission phase");
-                for height in ext_instance.ext.executed_result.read().keys() {
-                    ext_instance
-                        .ext
-                        .send_executed_info_to_chain(*height, &ctx_pub);
-                }
+                info!("Executor enters the timeout");
                 if timeout_factor < 6 {
                     timeout_factor += 1
                 }

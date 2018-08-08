@@ -896,9 +896,9 @@ impl Executor {
     /// Prune executed_result on `BTreeMap`
     pub fn prune_execute_result_cache(&self, status: &RichStatus) {
         let height = status.get_height();
-        if height > 1 {
+        {
             let mut executed_map = self.executed_result.write();
-            *executed_map = executed_map.split_off(&(height - 1));
+            *executed_map = executed_map.split_off(&(height + 1));
         }
     }
 
