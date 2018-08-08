@@ -110,9 +110,12 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
     function setStake(address _node, uint64 stake)
         public
         onlyAdmin
+        returns (bool)
     {
+        require(AddressArray.exist(_node, nodes));
         emit SetStake(_node, stake);
         stakes[_node] = stake;
+        return true;
     }
 
     /// @notice Approve the new node
@@ -176,7 +179,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
     function listStake()
         public
         view
-        returns (uint64[] memory _stakes)
+        returns (uint64[] _stakes)
     {
         _stakes = new uint64[](nodes.length);
         for (uint j = 0; j < nodes.length; j++) {
