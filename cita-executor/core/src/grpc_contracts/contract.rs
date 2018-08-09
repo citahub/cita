@@ -22,12 +22,24 @@ lazy_static! {
         Address::from_str(reserved_addresses::GO_CONTRACT_MAX).unwrap();
 }
 
+pub fn low_contract_address() -> Address {
+    *LOW_CONTRACT_ADDRESS
+}
+
+pub fn high_contract_address() -> Address {
+    *HIGH_CONTRACT_ADDRESS
+}
+
+pub fn contract_creation_address() -> Address {
+    *CONTRACT_CREATION_ADDRESS
+}
+
 pub fn is_create_grpc_address(addr: Address) -> bool {
     addr == *CONTRACT_CREATION_ADDRESS
 }
 
 pub fn is_grpc_contract(caddr: Address) -> bool {
-    caddr > *LOW_CONTRACT_ADDRESS && caddr < *HIGH_CONTRACT_ADDRESS
+    caddr >= *LOW_CONTRACT_ADDRESS && caddr <= *HIGH_CONTRACT_ADDRESS
 }
 
 pub fn invoke_grpc_contract<B>(

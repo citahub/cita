@@ -821,7 +821,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             params.code_address
         };
 
-        let connect_info = match service_registry::find_contract(address, true) {
+        let connect_info = match service_registry::find_contract(address, !is_create) {
             Some(contract_state) => contract_state.conn_info,
             None => {
                 return Err(evm::error::Error::Internal(format!(
@@ -830,7 +830,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 )));
             }
         };
+
         let response = if is_create {
+            service_registry::enable_contract(address);
             create_grpc_contract(
                 self.info,
                 params.clone(),
@@ -868,11 +870,12 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 // update contract_state.height
                 service_registry::set_enable_contract_height(params.address, self.info.number);
                 substate.logs = extract_logs_from_response(params.address, &invoke_response);
+                let message = invoke_response.get_message();
 
                 Ok(FinalizationResult {
                     gas_left: U256::from_str(invoke_response.get_gas_left()).unwrap(),
                     apply_state: true,
-                    return_data: ReturnData::empty(),
+                    return_data: ReturnData::new(message.as_bytes().to_vec(), 0, message.len()),
                 })
             }
             Err(e) => Err(evm::error::Error::Internal(e.description().to_string())),

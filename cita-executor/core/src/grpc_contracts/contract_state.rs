@@ -4,7 +4,7 @@ use rlp::*;
 use std::str::FromStr;
 use util::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ConnectInfo {
     ip: String,
     port: u16,

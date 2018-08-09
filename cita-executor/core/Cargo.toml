@@ -60,3 +60,4 @@ sm3hash = ["util/sm3hash", "libproto/sm3hash", "proof/sm3hash", "jsonrpc-types/s
 privatetx = ["zktx"]
 evm-debug = ["evm/evm-debug"]
 evm-debug-tests = ["evm-debug", "evm/evm-debug-tests"]
+
