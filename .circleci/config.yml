@@ -13,20 +13,33 @@ jobs:
       - run:
           name: format
           command: 'echo $CARGO_HOME; cargo fmt --all  -- --check'
-      - run:
-          name: build
-          command: 'RUSTFLAGS="-F warnings" cargo build --all'
-          no_output_timeout: 20m
-      - run:
-          name: check_cargolock
-          command: '[ $(git status --short Cargo.lock | wc -l) -ne 0 ] && echo "[Error] Please update Cargo.lock BEFORE commit." && git diff Cargo.lock && exit 1 || true'
+      - restore_cache:
+          key: security-audit-deps
       - run:
           name: security_audit
           command: 'make security_audit'
       - save_cache:
+          key: security-audit-deps
+          paths:
+            - /opt/.cargo
+      - run:
+          name: clean_security_audit
+          command: 'make clean'
+      - restore_cache:
+          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+      - restore_cache:
+          key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+      - run:
+          name: build
+          command: 'RUSTFLAGS="-F warnings" cargo build --release --all'
+          no_output_timeout: 20m
+      - run:
+          name: check_cargolock
+          command: '[ $(git status --short Cargo.lock | wc -l) -ne 0 ] && echo "[Error] Please update Cargo.lock BEFORE commit." && git diff Cargo.lock && exit 1 || true'
+      - save_cache:
           key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
           paths:
-            - ~/cita-build
+            - ~/cita-build/target
       - save_cache:
           key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
           paths:
@@ -38,13 +51,17 @@ jobs:
     working_directory: ~/cita-build
     resource_class: large
     steps:
+      - checkout
+      - run:
+          name: checkout_submodule
+          command: 'git submodule update --init'
       - restore_cache:
           key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
       - restore_cache:
           key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
       - run:
           name: test
-          command: 'RUSTFLAGS="-F warnings" cargo test --tests'
+          command: 'RUSTFLAGS="-F warnings" cargo test --release --tests'
 
   basic_test_blake2b:
     docker:
@@ -52,6 +69,10 @@ jobs:
     working_directory: ~/cita-build
     resource_class: large
     steps:
+      - checkout
+      - run:
+          name: checkout_submodule
+          command: 'git submodule update --init'
       - restore_cache:
           key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
       - restore_cache:
@@ -64,7 +85,7 @@ jobs:
           command: ./scripts/replace_default_feature.sh ./ secp256k1 ed25519
       - run:
           name: test
-          command: 'RUSTFLAGS="-F warnings" cargo test --tests'
+          command: 'RUSTFLAGS="-F warnings" cargo test --release --tests'
 
   basic_test_sm3:
     docker:
@@ -72,6 +93,10 @@ jobs:
     working_directory: ~/cita-build
     resource_class: large
     steps:
+      - checkout
+      - run:
+          name: checkout_submodule
+          command: 'git submodule update --init'
       - restore_cache:
           key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
       - restore_cache:
@@ -84,7 +109,7 @@ jobs:
           command: ./scripts/replace_default_feature.sh ./ secp256k1 sm2
       - run:
           name: test
-          command: 'RUSTFLAGS="-F warnings" cargo test --tests'
+          command: 'RUSTFLAGS="-F warnings" cargo test --release --tests'
 
   # basic_test_coverage_sha3:
   #   docker:
@@ -120,22 +145,18 @@ jobs:
     working_directory: ~/cita-build
     resource_class: large
     steps:
+      - checkout
+      - run:
+          name: checkout_submodule
+          command: 'git submodule update --init'
       - restore_cache:
           key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
       - run:
           name: config
-          command: './scripts/release.sh debug'
+          command: './scripts/release.sh release'
       - run:
           name: basic
           command: './tests/integrate_test/cita_basic.sh'
-      - run:
-          # EconomicalModel == Quota
-          name: byzantine-quota
-          command: './tests/integrate_test/cita_byzantinetest.sh quota'
-      - run:
-          # EconomicalModel == Charge
-          name: byzantine-charge
-          command: './tests/integrate_test/cita_byzantinetest.sh charge'
       - run:
           # EconomicalModel == Quota
           name: jsonrpc-mock-tests-quota
@@ -149,17 +170,46 @@ jobs:
           name: economical-mode-charge-transfer-value
           command: './tests/integrate_test/cita_charge_mode.sh'
 
+
+  cita_byzantinetest:
+    docker:
+      - image: cita/cita-build:ubuntu-18.04-20180703
+    working_directory: ~/cita-build
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: checkout_submodule
+          command: 'git submodule update --init'
+      - restore_cache:
+          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+      - run:
+          name: config
+          command: './scripts/release.sh release'
+      - run:
+          # EconomicalModel == Quota
+          name: byzantine-quota
+          command: './tests/integrate_test/cita_byzantinetest.sh quota'
+      - run:
+          # EconomicalModel == Charge
+          name: byzantine-charge
+          command: './tests/integrate_test/cita_byzantinetest.sh charge'
+
   integrate_test_crosschain_sha3:
     docker:
       - image: cita/cita-build:ubuntu-18.04-20180703
     working_directory: ~/cita-build
     resource_class: large
     steps:
+      - checkout
+      - run:
+          name: checkout_submodule
+          command: 'git submodule update --init'
       - restore_cache:
           key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
       - run:
           name: config
-          command: './scripts/release.sh debug'
+          command: './scripts/release.sh release'
       - run:
           name: crosschain
           command: './tests/integrate_test/cita_crosschain.sh'
@@ -176,6 +226,9 @@ workflows:
       #     requires:
       #       - build_sha3
       - integrate_test_sha3:
+          requires:
+            - build_sha3
+      - cita_byzantinetest:
           requires:
             - build_sha3
       - integrate_test_crosschain_sha3:
