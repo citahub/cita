@@ -185,7 +185,7 @@ $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffff
     $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
 
-    - privkey 是私钥，用来签证，确认交易信息合法，系统默认的几个私钥可以看 [系统合约相关](./chain/admintool)
+    - privkey 是私钥，用来签证，确认交易信息合法，系统默认的几个私钥可以看 [系统合约相关](./chain/config_tool)
     - code 前 8 位是函数 hash 值，即 newNode 对应的 hash，后面 64 位是函数的参数 address 的值，即节点地址，不足 64 位用 0 补齐。
 
 2. 发送交易
@@ -270,7 +270,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffff
     $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "2d4ede9300000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
     ```
 
-    - privkey 是私钥，用来签证，确认交易信息合法，系统默认的几个私钥可以看 [系统合约相关](../getting_started/admintool/index.html#_5)
+    - privkey 是私钥，用来签证，确认交易信息合法，系统默认的几个私钥可以看 [系统合约相关](../chain/config_tool)
     - code 前 8 位是函数 hash 值，即 deleteNode 对应的 hash，后面 64 位是函数的参数 address 的值，即节点地址，不足 64 位用 0 补齐。
 
     生成的交易信息存放在 `../output/transaction/deploycode` 中
