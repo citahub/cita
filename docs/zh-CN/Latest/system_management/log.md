@@ -8,7 +8,7 @@ CITA 日志文件位于节点文件夹下的 logs 目录中，每个微服务单
 
 ```
 ~/cita/test-chain/0$ ls logs/
-cita-auth.log  cita-bft.log  cita-chain.log  cita-executor.log  cita-jsonrpc.log  cita-network.log
+cita-auth.log  cita-bft.log  cita-chain.log  cita-executor.log  cita-forever.log  cita-jsonrpc.log  cita-network.log
 ```
 
 ## 日志优先级
@@ -103,7 +103,7 @@ CITA 节点需要长时间持续运行，因此日志文件会越来越大，需
 find ./test-chain/*/logs | grep `date "+%Y-%m-%d"`
 ```
 
-然后可以根据用户的需要，移动到专门的备份的地方，压缩保存，甚至是直接删除。
+然后可以根据用户的需要，移动到专门的备份的地方，压缩保存，甚至直接删除。
 
 如果用户想要定时备份/清理日志，可以将上述命令设置为系统的周期任务。
 
