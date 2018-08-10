@@ -227,6 +227,7 @@ fn handle_preflighted(mut headers: Headers) -> Box<Future<Item = Response, Error
         Ascii::new("Origin".to_owned()),
         Ascii::new("Content-Type".to_owned()),
         Ascii::new("X-Requested-With".to_owned()),
+        Ascii::new("User-Agent".to_owned()),
         Ascii::new("Accept".to_owned()),
     ]));
     headers.set(AccessControlMaxAge(CORS_CACHE));
@@ -561,6 +562,7 @@ mod integration_test {
                     Ascii::new("Origin".to_owned()),
                     Ascii::new("Content-Type".to_owned()),
                     Ascii::new("X-Requested-With".to_owned()),
+                    Ascii::new("User-Agent".to_owned()),
                     Ascii::new("Accept".to_owned()),
                 ]))
             );
