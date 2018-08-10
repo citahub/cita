@@ -161,20 +161,23 @@ impl ExecutorInstance {
                         match stage {
                             // Match before proposal
                             Stage::WaitFinalized => {
-                                if let Some(closed_block) = self.closed_block.replace(None) {
+                                {
+                                    *self.ext.stage.write() = Stage::ExecutingBlock;
+                                }
+                                match self.closed_block.replace(None) {
+                                    Some(ref closed_block)
+                                        if closed_block.is_equivalent(&block) =>
                                     {
-                                        *self.ext.stage.write() = Stage::ExecutingBlock;
+                                        self.ext.finalize_proposal(
+                                            closed_block.clone(),
+                                            block,
+                                            &self.ctx_pub,
+                                        );
                                     }
-                                    self.ext
-                                        .finalize_proposal(closed_block, block, &self.ctx_pub);
-                                } else {
-                                    // Maybe never reach
-                                    debug!("at WaitFinalized, but no closed block found!");
-                                    {
-                                        *self.ext.stage.write() = Stage::ExecutingBlock;
+                                    _ => {
+                                        self.ext.execute_block(block, &self.ctx_pub);
                                     }
-                                    self.ext.execute_block(block, &self.ctx_pub);
-                                };
+                                }
                             }
                             // Not receive proposal
                             Stage::Idle => {
