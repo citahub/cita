@@ -589,8 +589,11 @@ impl Forward {
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 let snapshot_req = snapshot_req.clone();
-                thread::spawn(move || {
+                let snapshot_builder = thread::Builder::new().name("snapshot_chain".into());
+                snapshot_builder.spawn(move || {
                     take_snapshot(chain, &snapshot_req);
+
+                    info!("Taking snapshot finished!!!");
 
                     //resp SnapshotAck to snapshot_tool
                     resp.set_resp(Resp::SnapshotAck);
