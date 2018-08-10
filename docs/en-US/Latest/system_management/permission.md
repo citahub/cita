@@ -23,21 +23,26 @@ CITA通过智能合约的方式来对权限进行管理。
 
 用户可自定义权限，其中系统内置了几种权限(禁止对其进行删除操作)，如下所示：
 
-* `sendTx`: 表示发交易的权限
-* `createContract`: 表示创建合约的权限
-* `newPermission`: 表示创建一个新的权限的权限
-* `deletePermission`: 表示删除一个权限的权限
-* `updatePermission`: 表示更新一个权限的权限
-* `setAuth`: 表示对账号进行授权的权限
-* `cancelAuth`: 表示对帐号取消授权的权限
-* `newRole`: 表示创建一个新的角色的权限
-* `deleteRole`: 表示删除一个角色的权限
-* `updateRole`: 表示更新一个角色的权限
-* `setRole`: 表示对账号授予角色的权限
-* `cancelRole`: 表示对帐号取消授予的角色的权限
-* `newGroup`: 表示创建一个新的组的权限
-* `deleteGroup`: 表示删除一个组的权限
-* `updateGroup`: 表示更新一个组的权限
+* `sendTx`:            表示发交易权限
+* `createContract`:    表示创建合约权限
+* `newPermission`:     表示创建一个新的权限权限
+* `deletePermission`:  表示删除一个权限权限
+* `updatePermission`:  表示更新一个权限权限
+* `setAuth`:           表示对账号进行授权权限
+* `cancelAuth`:        表示对帐号取消授权权限
+* `newRole`:           表示创建一个新的角色权限
+* `deleteRole`:        表示删除一个角色权限
+* `updateRole`:        表示更新一个角色权限
+* `setRole`:           表示对账号授予角色权限
+* `cancelRole`:        表示对帐号取消授予角色权限
+* `newGroup`:          表示创建一个新组权限
+* `deleteGroup`:       表示删除一个组权限
+* `updateGroup`:       表示更新一个组权限
+* `newNode`:           表示增加普通节点权限
+* `deleteNode`:        表示删除节点权限
+* `updateNode`:        表示更新节点权限
+* `accountQuota`:      表示账户配额设置权限
+* `blockQuota`:        表示块配额设置权限
 
 系统内置了 superAdmin 的帐号，其拥有以上所有权限，可对其进行正常的权限管理。默认配置情况下其他普通账户也拥有以上权限，建议在初始化 CITA 系统前对权限管理进行配置。
 
