@@ -22,6 +22,7 @@
     "unit_node": "mocha test/unit/node_manager.js -t 60s; eslint test/unit/node_manager.js",
     "unit_chain": "mocha test/unit/chain_manager.js -t 60s; eslint test/unit/chain_manager.js",
     "unit_admin": "mocha test/unit/admin.js -t 60s; eslint test/unit/admin.js",
+    "uint8": "mocha test/unit/uint8.js -t 60s; eslint test/unit/uint8.js",
     "integrate_test": "mocha test/integrate --recursive -t 60s; eslint test/integrate",
     "integrate_call-permission": "mocha test/integrate/call_permission  -t 60s; eslint test/integrate/call_permission.js",
     "integrate_call-role": "mocha test/integrate/call_role -t 60s; eslint test/integrate/call_role.js",
