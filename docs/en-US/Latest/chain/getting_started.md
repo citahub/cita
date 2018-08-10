@@ -245,7 +245,7 @@ The following command is run in the source root directory.
 
 ## multiple chains
 
-To plan related port configuration for deploy multiple chains on different servers, Reference [config_tool](./admintool).
+To plan related port configuration for deploy multiple chains on different servers, Reference [config_tool](./config_tool).
 
 Deploying multiple chains on the one server, in addition to planning port configuration, due to the `rabbmitmq` system service limitation, multiple chains can only be run in one docker. Generate a new chain based on the directory where the `test-chain` :
 

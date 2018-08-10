@@ -142,9 +142,9 @@ $ ./env.sh make release
 >   * 系统合约详细参数
 >   * 共识节点地址
 >
->   该工具更详细的使用说明请参考 [Config Tool](./admintool)。
+>   该工具更详细的使用说明请参考 [Config Tool](./config_tool)。
 > * 对于多服务器部署一条链，选择一台服务器执行命令之后把相关节点目录进行拷贝。不可多服务器都执行配置脚本。
-> * 在不同服务器部署多条链主要规划相关端口配置，参见 [Config_Tool的功能和用法](./admintool)。在同一台服务器上部署多条链，除了规划端口配置外，由于 `RabbitMQ` 系统服务限制，多条链只能在一个Docker里运行。基于上面 test-chain 链所在的目录，生成一条新链：
+> * 在不同服务器部署多条链主要规划相关端口配置，参见 [Config_Tool的功能和用法](./config_tool)。在同一台服务器上部署多条链，除了规划端口配置外，由于 `RabbitMQ` 系统服务限制，多条链只能在一个Docker里运行。基于上面 test-chain 链所在的目录，生成一条新链：
 >
 >   ```shell
 >   $ ./env.sh ./scripts/create_cita_config.py create --chain_name test2-chain --jsonrpc_port 2337 --ws_port 5337 --grpc_port 6000 --nodes "127.0.0.1:8000,127.0.0.1:8001,127.0.0.1:8002,127.0.0.1:8003"
