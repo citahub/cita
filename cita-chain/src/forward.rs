@@ -578,7 +578,6 @@ impl Forward {
             trace!("response block's tx hashes for height:{}", block_height);
         } else {
             warn!("get block's tx hashes for height:{} error", block_height);
-            return;
         }
     }
 

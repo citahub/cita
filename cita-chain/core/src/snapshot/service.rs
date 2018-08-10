@@ -50,7 +50,7 @@ use filters::PollManager;
 // make dependent on difficulty incrment divisor?
 //const SNAPSHOT_BLOCKS: u64 = 5000;
 /// Maximum number of blocks allowed in an ethash snapshot.
-const MAX_SNAPSHOT_BLOCKS: u64 = 30000;
+//const MAX_SNAPSHOT_BLOCKS: u64 = 30000;
 
 /// External database restoration handler
 pub trait DatabaseRestore: Send + Sync {
@@ -163,7 +163,7 @@ impl Restoration {
             params.chain.clone(),
             raw_db.clone(),
             &manifest,
-            MAX_SNAPSHOT_BLOCKS,
+            manifest.block_number,
         );
 
         Ok(Restoration {
