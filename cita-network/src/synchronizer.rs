@@ -139,7 +139,11 @@ impl Synchronizer {
             // If the block height is equal to the maximum height that has already been synchronized,
             // perform the synchronization operation first to see if it is the latest in the chain
             if self.is_synchronizing {
-                self.start_sync_req(new_height + 1);
+                let start = match self.block_lists.iter().last() {
+                    Some((height, _)) => *height + 1,
+                    None => new_height + 1,
+                };
+                self.start_sync_req(start);
             }
         } else {
             info!("...Can't reach this");
