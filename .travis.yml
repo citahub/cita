@@ -140,6 +140,8 @@ jobs:
       script: npm run-script unit_admin
     - <<: *stage-contract-test-sha3-secp256k1
       script: npm run-script store
+    - <<: *stage-contract-test-sha3-secp256k1
+      script: npm run-script batch_tx
 
     - <<: *stage-contract-test-sha3-secp256k1
       install:

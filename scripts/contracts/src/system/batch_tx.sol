@@ -1,12 +1,19 @@
-pragma solidity ^0.4.24; 
+pragma solidity ^0.4.24;
 
 
 /// @title Batch tx
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @dev TODO use native contract
 contract BatchTx {
 
     /// @notice Proxy multiple transactions
-    ///         The encoded transactions: tuple(address,dataLen,data)
+    ///         The encoded transactions data: tuple(address,dataLen,data)
+    ///         dataLen: uint32
+    ///         address: uint160
+    ///         Example:
+    ///             address: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    ///             datalen: 00000004
+    ///                data: xxxxxxxx
     function multiTxs(bytes)
         external
     {
@@ -17,14 +24,13 @@ contract BatchTx {
             //        the len of bytes: 0x20
             let offset := 0x44
             for { } lt(offset, calldatasize) { } {
-                let to := calldataload(offset)
-                let dataLen := calldataload(add(offset, 0x20))
+                let to := and(calldataload(sub(offset, 0xc)), 0x00000000000000000000000fffffffffffffffffffffffffffffffffffffffff)
+                let dataLen := and(calldataload(sub(offset, 0x8)), 0x00000000000000000000000000000000000000000000000000000000ffffffff)
                 let ptr := mload(0x40)
-                calldatacopy(ptr, add(offset, 0x40), dataLen)
-                switch call(gas, to, 0, ptr, dataLen, 0, 0)
+                calldatacopy(ptr, add(offset, 0x18), dataLen)
+                switch call(gas, to, 0, ptr, dataLen, ptr, 0)
                 case 0 { revert(0, 0) }
-                // Ignore the excess 0
-                offset := add(offset, add(0x40, mul(div(add(dataLen, 0x1f), 0x20), 0x20)))
+                offset := add(add(offset, 0x18), dataLen)
             }
         }
     }
