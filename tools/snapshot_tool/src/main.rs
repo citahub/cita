@@ -34,11 +34,24 @@ use clap::App;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
 use snapshot_tool::SnapShot;
+use std::fs::{self, File};
+use std::path::Path;
 use std::sync::mpsc::channel;
 use util::set_panic_handler;
 
+const SNAPSHOT_FILE: &'static str = ".cita_snapshot";
+
 fn main() {
     micro_service_init!("cita-snapshot", "CITA:snapshot");
+
+    // Judge whether snapshot_tool have started.
+    let p = Path::new(SNAPSHOT_FILE);
+    if p.exists() {
+        warn!("Snapshot_tool already started, or existed abnormally last time.");
+        return;
+    } else {
+        let _ = File::create(SNAPSHOT_FILE);
+    }
 
     let matches = App::new("snapshot")
         .version("0.1")
@@ -99,6 +112,8 @@ fn main() {
             exit = snapshot_instance.parse_data(key, msg);
         }
         if exit {
+            // Remove the file
+            let _ = fs::remove_file(p);
             break;
         }
     }
