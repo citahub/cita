@@ -1,5 +1,7 @@
 pragma solidity ^0.4.24;
 
+import "../common/model_type.sol";
+
 
 /// @title The interface of system config
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -44,7 +46,7 @@ interface SysConfigInterface {
 
 /// @title System config contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-contract SysConfig is SysConfigInterface {
+contract SysConfig is SysConfigInterface, EconomicalType{
 
     /// @notice only chain_name, operator, website can be updated
     uint delayBlockNumber;
@@ -57,8 +59,6 @@ contract SysConfig is SysConfigInterface {
     uint64 blockInterval;
     EconomicalModel economicalModel;
     TokenInfo tokenInfo;
-
-    enum EconomicalModel { Quota, Charge }
 
     struct TokenInfo {
         string name;

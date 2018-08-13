@@ -1,10 +1,8 @@
 pragma solidity ^0.4.24;
 
-import "../lib/address_array.sol";
 import "../lib/safe_math.sol";
 import "../common/error.sol";
 import "../common/admin.sol";
-import "../common/address.sol";
 import "../permission_management/authorization.sol";
 
 
@@ -46,7 +44,7 @@ interface NodeInterface {
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020001
-contract NodeManager is NodeInterface, Error, ReservedAddress {
+contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
 
     mapping(address => NodeStatus) public status;
     // Recode the operation of the block
@@ -60,6 +58,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
 
     Admin admin = Admin(adminAddr);
     Authorization auth = Authorization(authorizationAddr);
+    SysConfig sysConfig = SysConfig(sysConfigAddr);
 
     // Should operate one time in a block
     modifier oneOperate {
@@ -98,6 +97,14 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
     modifier checkPermission(address _permission) {
         require(auth.checkPermission(msg.sender, _permission));
         _;
+    }
+
+    modifier OnlyChargeModel() {
+        if(sysConfig.getEconomicalModel() == EconomicalModel.Charge) 
+            _;
+        else {
+            return;
+        }
     }
 
     /// @notice Setup
@@ -205,11 +212,16 @@ contract NodeManager is NodeInterface, Error, ReservedAddress {
     function stakePermillage(address _node) 
         public 
         view 
+        OnlyChargeModel
         returns (uint64) 
     {
         uint total;
         for (uint j = 0; j < nodes.length; j++) {
             total = SafeMath.add(uint(total), uint(stakes[nodes[j]]));
+        }
+
+        if(total == 0) {
+            return; 
         }
         return uint64(SafeMath.div(SafeMath.mul(stakes[_node], 1000), total));
     }
