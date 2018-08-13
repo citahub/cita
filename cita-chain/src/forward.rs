@@ -398,7 +398,10 @@ impl Forward {
         );
 
         let mut res_vec = SyncResponse::new();
-        for height in heights {
+        for height in heights
+            .into_iter()
+            .filter(|height| height <= &self.chain.get_current_height())
+        {
             if let Some(block) = self.chain.block(BlockId::Number(height)) {
                 res_vec.mut_blocks().push(block.protobuf());
                 //push double
