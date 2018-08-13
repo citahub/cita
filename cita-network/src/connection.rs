@@ -94,7 +94,12 @@ impl Connection {
                         .position(|addr| !config_addr.contains(addr));
                     if let Some(index) = index_opt {
                         peers_addr.remove(index);
-                        self.peers_pair.write().remove(index);
+                        let (id_card, addr, conn_opt) = self.peers_pair.write().remove(index);
+                        conn_opt.map(|ref mut stream| {
+                            stream.shutdown(Shutdown::Both).map_err(|err| {
+                                warn!("shutdown {} - {} failed: {}", id_card, addr, err);
+                            })
+                        });
                     } else {
                         break;
                     }
@@ -103,7 +108,17 @@ impl Connection {
             }
             None => {
                 info!("clear all peers after update!");
-                self.peers_pair.write().clear();
+                loop {
+                    if let Some((id_card, addr, conn_opt)) = self.peers_pair.write().pop() {
+                        conn_opt.map(|ref mut stream| {
+                            stream.shutdown(Shutdown::Both).map_err(|err| {
+                                warn!("shutdown {} - {} failed: {}", id_card, addr, err);
+                            })
+                        });
+                    } else {
+                        break;
+                    }
+                }
             }
         }
     }
@@ -147,11 +162,11 @@ fn connect(con: Arc<Connection>) {
     thread::spawn(move || loop {
         for peer in con.peers_pair.write().iter_mut() {
             if con.is_disconnect.load(Ordering::SeqCst) {
-                if let Some(ref mut stream) = peer.2 {
-                    stream
-                        .shutdown(Shutdown::Both)
-                        .expect("shutdown call failed");
-                }
+                peer.2.as_ref().map(|ref mut stream| {
+                    stream.shutdown(Shutdown::Both).map_err(|err| {
+                        warn!("shutdown {} - {} failed: {}", peer.0, peer.1, err);
+                    });
+                });
                 peer.2 = None;
                 thread::sleep(Duration::from_millis(TIMEOUT * 1000));
                 continue;
