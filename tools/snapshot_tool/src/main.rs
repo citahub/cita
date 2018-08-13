@@ -20,6 +20,7 @@
 extern crate clap;
 extern crate dotenv;
 extern crate error;
+extern crate fs2;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
@@ -31,14 +32,27 @@ extern crate util;
 mod snapshot_tool;
 
 use clap::App;
+use fs2::FileExt;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
 use snapshot_tool::SnapShot;
+use std::fs::{self, OpenOptions};
 use std::sync::mpsc::channel;
 use util::set_panic_handler;
 
+const SNAPSHOT_FILE: &'static str = ".cita_snapshot";
+
 fn main() {
     micro_service_init!("cita-snapshot", "CITA:snapshot");
+
+    // Judge whether snapshot_tool have started.
+    let f = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(SNAPSHOT_FILE)
+        .expect("Failed to open lock file");
+    f.try_lock_exclusive().expect("snapshot already started.");
 
     let matches = App::new("snapshot")
         .version("0.1")
@@ -99,6 +113,9 @@ fn main() {
             exit = snapshot_instance.parse_data(key, msg);
         }
         if exit {
+            // Remove the file
+            f.unlock().unwrap();
+            let _ = fs::remove_file(SNAPSHOT_FILE);
             break;
         }
     }
