@@ -6,6 +6,7 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 [dependencies]
 dotenv = "0.10.0"
 clap = "2"
+fs2 = "0.4.3"
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
