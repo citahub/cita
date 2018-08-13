@@ -258,11 +258,7 @@ impl Synchronizer {
             if let Some(origins) = self.latest_status_lists.get(height) {
                 if *height > current_height {
                     origin = origins[self.rand.gen_range(0, origins.len())];
-                    end_height = if *height + 1 > current_height + SYNC_STEP {
-                        current_height + SYNC_STEP
-                    } else {
-                        *height + 1
-                    };
+                    end_height = current_height + SYNC_STEP;
                     is_send = true;
                 }
             }
