@@ -66,16 +66,20 @@ fn main() {
 
     let cmd = matches.value_of("cmd").unwrap_or("snapshot");
     let file = matches.value_of("file").unwrap_or("snapshot");
-    let start_height = matches
-        .value_of("start_height")
-        .unwrap_or("0")
-        .parse::<u64>()
-        .unwrap();
-    let end_height = matches
-        .value_of("end_height")
-        .unwrap_or("0")
-        .parse::<u64>()
-        .unwrap();
+
+    let s = matches.value_of("start_height").unwrap_or("0");
+    let start_height = if s.starts_with("0x") | s.starts_with("0X") {
+        u64::from_str_radix(&s[2..], 16).unwrap()
+    } else {
+        u64::from_str_radix(s, 10).unwrap()
+    };
+
+    let e = matches.value_of("end_height").unwrap_or("0");
+    let end_height = if e.starts_with("0x") | e.starts_with("0X") {
+        u64::from_str_radix(&e[2..], 16).unwrap()
+    } else {
+        u64::from_str_radix(e, 10).unwrap()
+    };
 
     let (tx, rx) = channel();
     let (ctx_pub, crx_pub) = channel();
@@ -104,7 +108,10 @@ fn main() {
             snapshot_instance.begin();
             println!("snapshot_tool send restore cmd");
         }
-        _ => println!("snapshot_tool send error cmd"),
+        _ => {
+            println!("snapshot_tool send error cmd");
+            return;
+        }
     }
     let mut exit = false;
     loop {
