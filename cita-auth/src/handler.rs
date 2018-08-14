@@ -501,7 +501,7 @@ impl MsgHandler {
             return Ret::InvalidNonce;
         }
 
-        if req.get_value().len() > 32 {
+        if req.get_value().len() != 32 {
             return Ret::InvalidValue;
         }
 

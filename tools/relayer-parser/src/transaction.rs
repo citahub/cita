@@ -57,10 +57,12 @@ fn sign(
     height: U256,
 ) -> UnverifiedTransaction {
     let mut tx = Transaction::new();
+    let value: Vec<u8> = vec![0; 32];
     tx.set_data(code);
     tx.set_to(addr.lower_hex());
     tx.set_valid_until_block(height.low_u64() + 100);
     tx.set_quota(1000000);
     tx.set_chain_id(chain_id);
+    tx.set_value(value);
     tx.sign(*pkey).take_transaction_with_sig()
 }
