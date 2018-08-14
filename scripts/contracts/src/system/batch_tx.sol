@@ -24,9 +24,13 @@ contract BatchTx {
             //        the len of bytes: 0x20
             let offset := 0x44
             for { } lt(offset, calldatasize) { } {
-                let to := and(calldataload(sub(offset, 0xc)), 0x00000000000000000000000fffffffffffffffffffffffffffffffffffffffff)
+                // 0xc bytes forward from the offset(0x20-0x14)
+                // Use `and` instruction just for safe
+                let to := and(calldataload(sub(offset, 0xc)), 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff)
+                // 0x8 bytes forward from the offset(0x20-0x14-0x4)
                 let dataLen := and(calldataload(sub(offset, 0x8)), 0x00000000000000000000000000000000000000000000000000000000ffffffff)
                 let ptr := mload(0x40)
+                // Jump the address and dataLen(0x14+0x4)
                 calldatacopy(ptr, add(offset, 0x18), dataLen)
                 switch call(gas, to, 0, ptr, dataLen, ptr, 0)
                 case 0 { revert(0, 0) }
