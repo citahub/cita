@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(custom_attribute)]
-#![allow(unused_attributes)]
 extern crate cita_crypto as crypto;
 extern crate cita_types;
 extern crate jsonrpc_types;

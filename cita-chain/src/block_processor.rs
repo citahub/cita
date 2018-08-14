@@ -47,4 +47,8 @@ impl BlockProcessor {
         self.chain
             .set_max_store_height(self.chain.get_current_height());
     }
+
+    pub fn signal_to_executor(&self) {
+        self.chain.signal_to_executor(&self.ctx_pub)
+    }
 }

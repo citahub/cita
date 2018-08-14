@@ -11,6 +11,7 @@
 //!     | -------- | --------- | ------------------ |
 //!     | executor | Chain     | Request            |
 //!     | executor | Chain     | Richstatus         |
+//!     | executor | Chain     | StateSignal        |
 //!     | executor | Consensus | BlockWithProof     |
 //!     | executor | Consensus | SignedProposal     |
 //!     | executor | Consensus | MiscellaneousReq   |
@@ -61,9 +62,6 @@
 //! [`StateDB`]: ../core_executor/state_db/struct.StateDB.html
 //!
 
-#![feature(custom_attribute)]
-#![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
-#![feature(refcell_replace_swap)]
 #![feature(try_from)]
 extern crate cita_types;
 extern crate clap;
@@ -123,6 +121,7 @@ fn main() {
         routing_key!([
             Chain >> Request,
             Chain >> RichStatus,
+            Chain >> StateSignal,
             Consensus >> BlockWithProof,
             Consensus >> SignedProposal,
             Net >> SyncResponse,
@@ -134,7 +133,7 @@ fn main() {
         crx_pub,
     );
 
-    let mut ext_instance =
+    let ext_instance =
         ExecutorInstance::new(ctx_pub.clone(), write_sender, config_path, genesis_path);
     let mut distribute_ext = ext_instance.clone();
 

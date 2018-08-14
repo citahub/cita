@@ -40,6 +40,7 @@
 //!     | chain | Chain     | Auth          | BlockTxHashes |
 //!     | chain | Chain     | Net           | Status        |
 //!     | chain | Chain     | Executor      | Request       |
+//!     | chain | Chain     | Executor      | StateSignal   |
 //!     | chain | Chain     | Jsonrpc       | Response      |
 //!     | chain | Chain     | Net           | SyncResponse  |
 //!     | chain | Chain     | Snapshot      | SnapshotResp  |
@@ -64,9 +65,6 @@
 //! [`Chain`]: ../core/libchain/chain/struct.Chain.html
 //!
 
-#![allow(unused_must_use)]
-#![feature(custom_attribute)]
-#![feature(refcell_replace_swap)]
 #![feature(try_from)]
 extern crate byteorder;
 extern crate cita_types;
@@ -190,6 +188,7 @@ fn main() {
                 if !*block_processor.chain.is_snapshot.read() {
                     info!("Chain enters the timeout retransmission phase");
                     block_processor.reset_max_store_height();
+                    block_processor.signal_to_executor();
                     block_processor.broadcast_current_status();
                     if timeout_factor < 6 {
                         timeout_factor += 1
