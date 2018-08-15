@@ -46,6 +46,11 @@ impl Dispatcher {
         if wal_enable {
             let num = dispatch.read_tx_from_wal();
             info!("recovery [{}] transactions into pool.", num);
+        } else {
+            /* prev: enable or disable  now: disable -> delete prev saved
+               prev: enable or disable  now: enable  -> read prev saved
+            */
+            dispatch.wal.regenerate("/txwal");
         }
         dispatch
     }

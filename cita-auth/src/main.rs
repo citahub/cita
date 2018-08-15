@@ -141,7 +141,6 @@ fn main() {
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
-        .args_from_usage("--tx_pool_wal_enable=[BOOL] 'enable write ahead log for tx pool'")
         .get_matches();
     let config_path = matches.value_of("config").unwrap_or("config");
 
@@ -152,12 +151,7 @@ fn main() {
     let tx_verify_thread_num = config.tx_verify_thread_num;
     let tx_verify_cache_size = config.tx_verify_cache_size;
     let tx_pool_limit = config.tx_pool_limit;
-
-    let wal_enable = matches
-        .value_of("tx_pool_wal_enable")
-        .unwrap_or("false")
-        .parse::<bool>()
-        .unwrap();
+    let wal_enable = config.wal_enable;
 
     // start profiler
     let flag_prof_start = config.prof_start;
