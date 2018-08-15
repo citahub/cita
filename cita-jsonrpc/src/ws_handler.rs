@@ -46,9 +46,9 @@ impl WsFactory {
         };
         let thread_pool = ThreadPool::with_name("ws_thread_pool".to_string(), thread_number);
         WsFactory {
-            responses: responses,
-            thread_pool: thread_pool,
-            tx: tx,
+            responses,
+            thread_pool,
+            tx,
         }
     }
 }
@@ -77,7 +77,7 @@ impl Handler for WsHandler {
             let mut req_info = RequestInfo::null();
 
             let _ = serde_json::from_str::<PartialRequest>(&msg.into_text().unwrap())
-                .map_err(|err_msg| Error::from(err_msg))
+                .map_err(Error::from)
                 .and_then(|part_req| {
                     req_info = part_req.get_info();
                     part_req.complete_and_into_proto().map(|(full_req, req)| {
