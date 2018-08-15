@@ -48,6 +48,7 @@ use cita_types::{Address, H256, U256};
 use native::factory::Factory as NativeFactory;
 use state::State;
 use state_db::StateDB;
+use std::collections::btree_map::{Keys, Values};
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::convert::{Into, TryInto};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -919,21 +920,15 @@ impl Executor {
                     .collect();
 
                 // Filter out accounts in the black list where the account balance has reached the benchmark value
-                let mut clear_list: Vec<Address> = close_block
-                    .state
-                    .cache()
-                    .iter()
-                    .filter(|&(_, ref a)| a.is_dirty())
-                    .map(|(address, ref mut a)| match a.account() {
-                        Some(ref account)
-                            if self.black_list_cache.read().contains(address)
-                                && account.balance() >= &U256::from(100) =>
-                        {
-                            *address
-                        }
-                        None | Some(_) => Address::default(),
+                let mut clear_list: Vec<Address> = self
+                    .black_list_cache
+                    .read()
+                    .values()
+                    .filter(|address| {
+                        close_block.state.balance(address).unwrap_or(U256::zero())
+                            >= U256::from(100)
                     })
-                    .filter(|address| address != &Address::default())
+                    .map(|address| *address)
                     .collect();
 
                 // Get address of sending account by transaction hash
@@ -960,7 +955,11 @@ impl Executor {
                 if black_list.len() > 0 {
                     let black_list_bytes: Message = black_list.protobuf().into();
 
-                    info!("black list is {:?}", black_list.black_list());
+                    info!(
+                        "black list is {:?}, clear list is {:?}",
+                        black_list.black_list(),
+                        black_list.clear_list()
+                    );
 
                     ctx_pub
                         .send((
@@ -1010,6 +1009,7 @@ impl Executor {
 
 /// This structure is used to perform lru based on block height
 /// supports sequential lru and precise deletion
+#[derive(Debug)]
 struct LRUCache<K, V> {
     cache_by_key: BTreeMap<K, Vec<V>>,
     cache_by_value: BTreeMap<V, K>,
@@ -1031,16 +1031,25 @@ where
     }
 
     /// Determine if key exists
-    pub fn contains(&self, key: &V) -> bool {
-        self.cache_by_value.contains_key(key)
+    #[allow(unused)]
+    pub fn contains_by_key(&self, key: &K) -> bool {
+        self.cache_by_key.contains_key(key)
+    }
+
+    /// Determine if value exists
+    #[allow(unused)]
+    pub fn contains_by_value(&self, value: &V) -> bool {
+        self.cache_by_value.contains_key(value)
     }
 
     /// Extend key-value pairs
     pub fn extend(&mut self, extend: Vec<V>, key: K) -> &mut Self {
-        extend.clone().into_iter().for_each(|value| {
-            let _ = self.cache_by_value.insert(value, key.clone());
-        });
-        self.cache_by_key.insert(key, extend.to_owned());
+        if !extend.is_empty() {
+            extend.clone().into_iter().for_each(|value| {
+                let _ = self.cache_by_value.insert(value, key.clone());
+            });
+            self.cache_by_key.insert(key, extend.to_owned());
+        }
         self
     }
 
@@ -1054,12 +1063,20 @@ where
 
         keys.iter().for_each(|key| {
             self.cache_by_key.entry(key.clone()).and_modify(|values| {
-                let _ = values
+                *values = values
                     .iter()
                     .filter(|ref value| !value_list.contains(&value))
                     .map(|value| value.to_owned())
                     .collect::<Vec<V>>();
             });
+            if self
+                .cache_by_key
+                .get(key)
+                .map(|x| x.is_empty())
+                .unwrap_or(false)
+            {
+                self.cache_by_key.remove(key);
+            }
         });
         self
     }
@@ -1088,6 +1105,18 @@ where
         } else {
             Vec::new()
         }
+    }
+
+    /// Gets an iterator over the values of the map, in order by key.
+    #[allow(unused)]
+    pub fn values<'a>(&'a self) -> Keys<'a, V, K> {
+        self.cache_by_value.keys()
+    }
+
+    /// Gets an iterator over the keys of the map, in sorted order.
+    #[allow(unused)]
+    pub fn keys<'a>(&'a self) -> Values<'a, V, K> {
+        self.cache_by_value.values()
     }
 }
 
