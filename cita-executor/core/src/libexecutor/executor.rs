@@ -925,6 +925,7 @@ impl Executor {
                     .read()
                     .values()
                     .filter(|address| {
+                        // 100 is a basic quota/gas
                         close_block.state.balance(address).unwrap_or(U256::zero())
                             >= U256::from(100)
                     })
@@ -1010,7 +1011,7 @@ impl Executor {
 /// This structure is used to perform lru based on block height
 /// supports sequential lru and precise deletion
 #[derive(Debug)]
-struct LRUCache<K, V> {
+pub struct LRUCache<K, V> {
     cache_by_key: BTreeMap<K, Vec<V>>,
     cache_by_value: BTreeMap<V, K>,
     lru_number: u64,
@@ -1031,13 +1032,11 @@ where
     }
 
     /// Determine if key exists
-    #[allow(unused)]
     pub fn contains_by_key(&self, key: &K) -> bool {
         self.cache_by_key.contains_key(key)
     }
 
     /// Determine if value exists
-    #[allow(unused)]
     pub fn contains_by_value(&self, value: &V) -> bool {
         self.cache_by_value.contains_key(value)
     }
@@ -1108,13 +1107,11 @@ where
     }
 
     /// Gets an iterator over the values of the map, in order by key.
-    #[allow(unused)]
     pub fn values<'a>(&'a self) -> Keys<'a, V, K> {
         self.cache_by_value.keys()
     }
 
     /// Gets an iterator over the keys of the map, in sorted order.
-    #[allow(unused)]
     pub fn keys<'a>(&'a self) -> Values<'a, V, K> {
         self.cache_by_value.values()
     }
@@ -1218,13 +1215,13 @@ mod tests {
         cache
             .extend(vec![Address::from([0; 20]), Address::from([1; 20])], 1)
             .extend(vec![Address::from([2; 20]), Address::from([3; 20])], 2);
-        assert!(cache.contains(&Address::from([0; 20])));
-        assert!(cache.contains(&Address::from([3; 20])));
+        assert!(cache.contains_by_value(&Address::from([0; 20])));
+        assert!(cache.contains_by_value(&Address::from([3; 20])));
 
         cache.prune(&vec![Address::from([0; 20]), Address::from([1; 20])]);
-        assert_eq!(cache.contains(&Address::from([0; 20])), false);
-        assert_eq!(cache.contains(&Address::from([1; 20])), false);
-        assert_eq!(cache.contains(&Address::from([2; 20])), true);
+        assert_eq!(cache.contains_by_value(&Address::from([0; 20])), false);
+        assert_eq!(cache.contains_by_value(&Address::from([1; 20])), false);
+        assert_eq!(cache.contains_by_value(&Address::from([2; 20])), true);
 
         cache.extend(vec![Address::from([2; 20]), Address::from([3; 20])], 3);
         assert_eq!(cache.lru(), Vec::new());
@@ -1233,12 +1230,15 @@ mod tests {
         assert_eq!(cache.lru(), Vec::new());
 
         cache.extend(vec![Address::from([4; 20]), Address::from([5; 20])], 5);
-        assert_eq!(cache.lru(), Vec::new());
+        assert_eq!(
+            cache.lru(),
+            vec![Address::from([2; 20]), Address::from([3; 20])]
+        );
 
         cache.extend(vec![Address::from([4; 20]), Address::from([5; 20])], 5);
         assert_eq!(
             cache.lru(),
-            vec![Address::from([2; 20]), Address::from([3; 20])]
+            vec![Address::from([4; 20]), Address::from([5; 20])]
         );
     }
 }
