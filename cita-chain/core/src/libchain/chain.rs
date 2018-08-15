@@ -35,7 +35,7 @@ pub use libchain::transaction::*;
 
 use libproto::blockchain::{
     AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
-    RichStatus as ProtoRichStatus,
+    RichStatus as ProtoRichStatus, StateSignal,
 };
 
 use cita_types::traits::LowerHex;
@@ -599,6 +599,18 @@ impl Chain {
         self.broadcast_status(&ctx_pub);
     }
 
+    pub fn signal_to_executor(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let mut state_signal = StateSignal::new();
+        state_signal.set_height(self.get_current_height());
+        let msg: Message = state_signal.into();
+        ctx_pub
+            .send((
+                routing_key!(Chain >> StateSignal).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
+    }
+
     pub fn set_executed_result(&self, ret: &ExecutedResult, ctx_pub: &Sender<(String, Vec<u8>)>) {
         // Set config in memory
         self.set_config(ret);
@@ -617,7 +629,7 @@ impl Chain {
         }
 
         // Duplicated block
-        if number == self.get_current_height() {
+        if number <= self.get_current_height() {
             self.broadcast_current_status(&ctx_pub);
             return;
         }
@@ -656,6 +668,7 @@ impl Chain {
                         self.broadcast_current_status(&ctx_pub);
                     }
                 } else {
+                    self.signal_to_executor(&ctx_pub);
                     warn!(
                         "executor'ret is not continous,ret num {} current height {}",
                         number,

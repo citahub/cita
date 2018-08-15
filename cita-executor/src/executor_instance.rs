@@ -43,8 +43,6 @@ pub struct ExecutorInstance {
     pub ext: Arc<Executor>,
     pub grpc_port: u16,
     closed_block: RefCell<Option<ClosedBlock>>,
-    chain_status: RichStatus,
-    local_sync_count: u8,
     pub is_snapshot: bool,
 }
 
@@ -59,11 +57,11 @@ impl ExecutorInstance {
         let nosql_path = DataPath::root_node_path() + "/statedb";
         let db = Database::open(&config, &nosql_path).unwrap();
 
-        let mut genesis = Genesis::init(genesis_path);
+        let genesis = Genesis::init(genesis_path);
 
         let executor_config = Config::new(config_path);
         let grpc_port = executor_config.grpc_port;
-        let mut executor = Executor::init_executor(Arc::new(db), genesis, executor_config);
+        let executor = Executor::init_executor(Arc::new(db), genesis, executor_config);
         let executor = Arc::new(executor);
         executor.set_gas_and_nodes(executor.get_max_height());
         executor.send_executed_info_to_chain(executor.get_max_height(), &ctx_pub);
@@ -73,8 +71,6 @@ impl ExecutorInstance {
             ext: executor,
             grpc_port: grpc_port,
             closed_block: RefCell::new(None),
-            chain_status: RichStatus::new(),
-            local_sync_count: 0,
             is_snapshot: false,
         }
     }
@@ -97,6 +93,25 @@ impl ExecutorInstance {
                 if let Some(status) = msg.take_rich_status() {
                     self.execute_chain_status(status);
                 };
+            }
+
+            routing_key!(Chain >> StateSignal) => {
+                if let Some(state_signal) = msg.take_state_signal() {
+                    let specified_height = state_signal.get_height();
+                    if specified_height < self.ext.get_current_height() {
+                        self.ext
+                            .send_executed_info_to_chain(specified_height + 1, &self.ctx_pub);
+                        let executed_result = {
+                            let executed_result = self.ext.executed_result.read();
+                            executed_result.clone()
+                        };
+                        for height in executed_result.keys() {
+                            if *height > specified_height + 1 {
+                                self.ext.send_executed_info_to_chain(*height, &self.ctx_pub);
+                            }
+                        }
+                    }
+                }
             }
 
             routing_key!(Consensus >> BlockWithProof) => {
@@ -304,7 +319,7 @@ impl ExecutorInstance {
         match req.req.unwrap() {
             Request::call(call) => {
                 trace!("Chainvm Call {:?}", call);
-                serde_json::from_str::<BlockNumber>(&call.height)
+                let _ = serde_json::from_str::<BlockNumber>(&call.height)
                     .map(|block_id| {
                         let call_request = CallRequest::from(call);
                         self.ext
@@ -325,7 +340,7 @@ impl ExecutorInstance {
 
             Request::transaction_count(tx_count) => {
                 trace!("transaction count request from jsonrpc {:?}", tx_count);
-                serde_json::from_str::<CountOrCode>(&tx_count)
+                let _ = serde_json::from_str::<CountOrCode>(&tx_count)
                     .map_err(|err| {
                         response.set_code(ErrorCode::query_error());
                         response.set_error_msg(format!("{:?}", err));
@@ -345,7 +360,7 @@ impl ExecutorInstance {
 
             Request::code(code_content) => {
                 trace!("code request from jsonrpc  {:?}", code_content);
-                serde_json::from_str::<CountOrCode>(&code_content)
+                let _ = serde_json::from_str::<CountOrCode>(&code_content)
                     .map_err(|err| {
                         response.set_code(ErrorCode::query_error());
                         response.set_error_msg(format!("{:?}", err));
@@ -370,7 +385,7 @@ impl ExecutorInstance {
 
             Request::abi(abi_content) => {
                 trace!("abi request from jsonrpc  {:?}", abi_content);
-                serde_json::from_str::<CountOrCode>(&abi_content)
+                let _ = serde_json::from_str::<CountOrCode>(&abi_content)
                     .map_err(|err| {
                         response.set_code(ErrorCode::query_error());
                         response.set_error_msg(format!("{:?}", err));
@@ -395,7 +410,7 @@ impl ExecutorInstance {
 
             Request::balance(balance_content) => {
                 trace!("balance request from jsonrpc  {:?}", balance_content);
-                serde_json::from_str::<CountOrCode>(&balance_content)
+                let _ = serde_json::from_str::<CountOrCode>(&balance_content)
                     .map_err(|err| {
                         response.set_code(ErrorCode::query_error());
                         response.set_error_msg(format!("{:?}", err));
@@ -476,7 +491,7 @@ impl ExecutorInstance {
 
             Request::state_proof(state_info) => {
                 trace!("state_proof info is {:?}", state_info);
-                serde_json::from_str::<BlockNumber>(&state_info.height)
+                let _ = serde_json::from_str::<BlockNumber>(&state_info.height)
                     .map(|block_id| {
                         match self.ext.state_at(block_id.into()).and_then(|state| {
                             state.get_state_proof(
@@ -616,7 +631,7 @@ impl ExecutorInstance {
             self.closed_block.replace(None);
             let number = self.ext.get_current_height() + 1;
             debug!("sync block number is {}", number);
-            self.write_sender.send(number);
+            let _ = self.write_sender.send(number);
         }
     }
 
@@ -813,7 +828,7 @@ impl ExecutorInstance {
                 .insert(blk_height, BlockInQueue::ConsensusBlock(block, proof));
         };
         self.ext.set_max_height(blk_height as usize);
-        self.write_sender.send(blk_height);
+        let _ = self.write_sender.send(blk_height);
     }
 
     fn send_proposal(&self, blk_height: u64, block: Block) {
@@ -823,7 +838,7 @@ impl ExecutorInstance {
                 .write()
                 .insert(blk_height, BlockInQueue::Proposal(block));
         };
-        self.write_sender.send(blk_height);
+        let _ = self.write_sender.send(blk_height);
     }
 
     fn deal_snapshot_req(&mut self, snapshot_req: &SnapshotReq) {
@@ -835,7 +850,7 @@ impl ExecutorInstance {
                 let snapshot_req = snapshot_req.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 let snapshot_builder = thread::Builder::new().name("snapshot_executor".into());
-                snapshot_builder.spawn(move || {
+                let _ = snapshot_builder.spawn(move || {
                     take_snapshot(ext, &snapshot_req);
 
                     info!("Taking snapshot finished!!!");
@@ -890,32 +905,9 @@ impl ExecutorInstance {
 
     /// The processing logic here is the same as the network pruned/re-transmitted information based on
     /// the state of the chain, but here is pruned/re-transmitted `ExecutedResult`.
+    #[inline]
     fn execute_chain_status(&mut self, status: RichStatus) {
-        let old_chain_height = self.chain_status.get_height();
-        let new_chain_height = status.get_height();
         self.ext.prune_execute_result_cache(&status);
-
-        self.chain_status = status;
-
-        if old_chain_height == new_chain_height && self.local_sync_count < u8::MAX {
-            // Chain height does not increase
-            self.local_sync_count += 1;
-        }
-
-        if self.local_sync_count >= 3 && new_chain_height < self.ext.get_current_height() {
-            self.ext
-                .send_executed_info_to_chain(new_chain_height + 1, &self.ctx_pub);
-            let executed_result = {
-                let executed_result = self.ext.executed_result.read();
-                executed_result.clone()
-            };
-            for height in executed_result.keys() {
-                if *height > new_chain_height + 1 {
-                    self.ext.send_executed_info_to_chain(*height, &self.ctx_pub);
-                }
-            }
-            self.local_sync_count = 0;
-        }
     }
 }
 
@@ -961,7 +953,7 @@ fn restore_snapshot(ext: Arc<Executor>, snapshot_req: &SnapshotReq) -> Result<()
         }
     };
 
-    let mut db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
+    let db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let snap_path = DataPath::root_node_path() + "/snapshot_executor";
     let snapshot_params = SnapServiceParams {
         db_config: db_config.clone(),
