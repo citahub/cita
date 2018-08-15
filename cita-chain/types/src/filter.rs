@@ -53,13 +53,11 @@ pub struct Filter {
 impl Clone for Filter {
     fn clone(&self) -> Self {
         let mut topics = [None, None, None, None];
-        for i in 0..4 {
-            topics[i] = self.topics[i].clone();
-        }
+        topics[..4].clone_from_slice(&self.topics[..4]);
 
         Filter {
-            from_block: self.from_block.clone(),
-            to_block: self.to_block.clone(),
+            from_block: self.from_block,
+            to_block: self.to_block,
             address: self.address.clone(),
             topics: topics[..].to_vec(),
             limit: self.limit,
@@ -83,7 +81,7 @@ impl Filter {
             None => bs,
             Some(ref topics) => bs.into_iter().flat_map(|bloom| {
                 topics.into_iter().map(|topic| {
-                    let mut b = bloom.clone();
+                    let mut b = bloom;
                     b.accrue_raw(topic);
                     b
                 }).collect::<Vec<LogBloom>>()

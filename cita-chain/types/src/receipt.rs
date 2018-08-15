@@ -198,16 +198,13 @@ impl Receipt {
         transaction_hash: H256,
     ) -> Receipt {
         Receipt {
-            state_root: state_root,
-            gas_used: gas_used,
-            log_bloom: logs.iter().fold(LogBloom::default(), |mut b, l| {
-                b = &b | &l.bloom();
-                b
-            }), //TODO: use |= operator
-            logs: logs,
-            error: error,
-            account_nonce: account_nonce,
-            transaction_hash: transaction_hash,
+            state_root,
+            gas_used,
+            log_bloom: logs.iter().fold(LogBloom::default(), |b, l| b | l.bloom()),
+            logs,
+            error,
+            account_nonce,
+            transaction_hash,
         }
     }
 
@@ -242,12 +239,13 @@ impl Receipt {
 
 impl From<ProtoReceipt> for Receipt {
     fn from(receipt: ProtoReceipt) -> Self {
-        let mut state_root = None;
-        if receipt.state_root.is_some() {
-            state_root = Some(H256::from_slice(
+        let state_root = if receipt.state_root.is_some() {
+            Some(H256::from_slice(
                 receipt.clone().take_state_root().get_state_root(),
-            ));
-        }
+            ))
+        } else {
+            None
+        };
 
         let gas_used: U256 = U256::from_str(receipt.get_gas_used()).unwrap();
         let account_nonce: U256 = U256::from(receipt.get_account_nonce());
@@ -266,9 +264,9 @@ impl From<ProtoReceipt> for Receipt {
                     .collect();
                 let data: Bytes = Bytes::from(log_entry.get_data());
                 LogEntry {
-                    address: address,
-                    topics: topics,
-                    data: data,
+                    address,
+                    topics,
+                    data,
                 }
             })
             .collect();
