@@ -141,12 +141,3 @@ impl From<SnappyError> for Error {
         Error::Snappy(err)
     }
 }
-
-impl<E> From<Box<E>> for Error
-where
-    Error: From<E>,
-{
-    fn from(err: Box<E>) -> Self {
-        Error::from(*err)
-    }
-}

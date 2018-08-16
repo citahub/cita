@@ -144,12 +144,12 @@ fn main() {
     let chain_config = libchain::chain::Config::new(config_path);
     let chain = Arc::new(libchain::chain::Chain::init_chain(
         Arc::new(db),
-        chain_config,
+        &chain_config,
     ));
 
     let current_height = chain.get_current_height();
     if let Some(block_tx_hashes) = chain.block_tx_hashes(current_height) {
-        chain.delivery_block_tx_hashes(current_height, block_tx_hashes, &ctx_pub);
+        chain.delivery_block_tx_hashes(current_height, &block_tx_hashes, &ctx_pub);
     }
 
     let (write_sender, write_receiver) = channel();

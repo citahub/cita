@@ -81,7 +81,7 @@ impl EthFilter for Chain {
                     // retrieve logs in range from_block..min(BlockId::Latest..to_block)
                     let limit = filter.limit;
                     Some(FilterChanges::Logs(limit_logs(
-                        self.get_logs(filter).into_iter().map(Into::into).collect(),
+                        self.get_logs(&filter).into_iter().map(Into::into).collect(),
                         limit,
                     )))
                 }
@@ -96,7 +96,7 @@ impl EthFilter for Chain {
         let log = match polls.lock().poll(&index) {
             Some(&PollFilter::Logs(ref _block_number, ref _previous_log, ref filter)) => {
                 let filter: EthcoreFilter = filter.clone().into();
-                Some(self.get_logs(filter).into_iter().map(Into::into).collect())
+                Some(self.get_logs(&filter).into_iter().map(Into::into).collect())
             }
             // just empty array
             _ => None,
