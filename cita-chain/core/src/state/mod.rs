@@ -59,7 +59,7 @@ impl<B: Backend> State<B> {
             return Err(TrieError::InvalidStateRoot(root));
         }
 
-        let state = State { db: db, root: root };
+        let state = State { db, root };
 
         Ok(state)
     }

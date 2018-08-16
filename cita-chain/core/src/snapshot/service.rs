@@ -42,8 +42,6 @@ use util::journaldb::{self, Algorithm};
 
 use libchain::chain::{get_chain, get_chain_body_height, Chain};
 
-use header::Header;
-
 use filters::PollManager;
 
 /// Number of blocks in an ethash snapshot.
@@ -76,7 +74,7 @@ impl DatabaseRestore for Chain {
 
         // replace chain
         //*chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
-        let header = get_chain(&*db.clone()).unwrap_or(Header::default());
+        let header = get_chain(&*db.clone()).unwrap_or_default();
 
         let current_height = header.number();
 
@@ -167,7 +165,7 @@ impl Restoration {
         );
 
         Ok(Restoration {
-            manifest: manifest,
+            manifest,
             block_chunks_left: block_chunks,
             secondary: Box::new(block_rebuilder),
             writer: params.writer,
@@ -371,17 +369,18 @@ impl Service {
         fs::create_dir_all(&rest_dir)?;
 
         // make new restoration.
-        let writer = match recover {
-            true => Some(LooseWriter::new(self.temp_recovery_dir())?),
-            false => None,
+        let writer = if recover {
+            Some(LooseWriter::new(self.temp_recovery_dir())?)
+        } else {
+            None
         };
 
         let params = RestorationParams {
             chain: self.chain.clone(),
-            manifest: manifest,
+            manifest,
             db_path: self.restoration_db(),
             db_config: &self.db_config,
-            writer: writer,
+            writer,
             //guard: Guard::new(rest_dir),
         };
 
@@ -431,7 +430,7 @@ impl Service {
             *reader = Some(LooseReader::new(snapshot_dir)?);
         }
 
-        let _ = fs::remove_dir_all(&self.snapshot_root)?;
+        fs::remove_dir_all(&self.snapshot_root)?;
         *self.status.lock() = RestorationStatus::Inactive;
 
         Ok(())
@@ -462,14 +461,12 @@ impl Service {
                         Ok(is_done) => {
                             self.block_chunks.fetch_add(1, Ordering::SeqCst);
 
-                            match is_done {
-                                true => {
-                                    db.flush().map_err(UtilError::from)?;
-                                    drop(db);
-                                    return self.finalize_restoration(&mut *restoration);
-                                }
-                                false => Ok(()),
+                            if is_done {
+                                db.flush().map_err(UtilError::from)?;
+                                drop(db);
+                                return self.finalize_restoration(&mut *restoration);
                             }
+                            Ok(())
                         }
                         other => other.map(drop),
                     };
@@ -514,15 +511,15 @@ impl SnapshotService for Service {
             //*block_chunks_done = self.block_chunks.load(Ordering::SeqCst) as u32;
         }
 
-        cur_status.clone()
+        *cur_status
     }
     /*
-	fn begin_restore(&self, manifest: ManifestData) {
-		if let Err(e) = self.io_channel.lock().send(ClientIoMessage::BeginRestoration(manifest)) {
-			trace!("Error sending snapshot service message: {:?}", e);
-		}
-	}
-*/
+    fn begin_restore(&self, manifest: ManifestData) {
+        if let Err(e) = self.io_channel.lock().send(ClientIoMessage::BeginRestoration(manifest)) {
+            trace!("Error sending snapshot service message: {:?}", e);
+        }
+    }
+    */
 
     fn abort_restore(&self) {
         self.restoring_snapshot.store(false, Ordering::SeqCst);
@@ -530,12 +527,12 @@ impl SnapshotService for Service {
         *self.status.lock() = RestorationStatus::Inactive;
     }
     /*
-	fn restore_state_chunk(&self, hash: H256, chunk: Bytes) {
-		if let Err(e) = self.io_channel.lock().send(ClientIoMessage::FeedStateChunk(hash, chunk)) {
-			trace!("Error sending snapshot service message: {:?}", e);
-		}
-	}
-*/
+    fn restore_state_chunk(&self, hash: H256, chunk: Bytes) {
+        if let Err(e) = self.io_channel.lock().send(ClientIoMessage::FeedStateChunk(hash, chunk)) {
+            trace!("Error sending snapshot service message: {:?}", e);
+        }
+    }
+    */
 }
 /// The interface for a snapshot network service.
 /// This handles:

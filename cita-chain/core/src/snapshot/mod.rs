@@ -128,7 +128,7 @@ pub struct ManifestData {
 /// Snapshot manifest encode/decode.
 impl ManifestData {
     /// Encode the manifest data to rlp.
-    pub fn to_rlp(self) -> Bytes {
+    pub fn to_rlp(&self) -> Bytes {
         let mut stream = RlpStream::new_list(4);
         stream.append_list(&self.block_hashes);
         stream.append(&self.state_root);
@@ -150,11 +150,11 @@ impl ManifestData {
         let last_proof: Proof = decoder.val_at(4)?;
 
         Ok(ManifestData {
-            block_hashes: block_hashes,
-            state_root: state_root,
-            block_number: block_number,
-            block_hash: block_hash,
-            last_proof: last_proof,
+            block_hashes,
+            state_root,
+            block_number,
+            block_hash,
+            last_proof,
         })
     }
 }
@@ -170,7 +170,7 @@ pub fn take_snapshot<W: SnapshotWriter + Send>(
 
     let start_header = chain
         .block_header_by_hash(block_hash)
-        .ok_or(Error::InvalidStartingBlock(BlockId::Hash(block_hash)))?;
+        .ok_or_else(|| Error::InvalidStartingBlock(BlockId::Hash(block_hash)))?;
     let state_root = start_header.state_root();
 
     info!("Taking snapshot starting at block {}", block_at);
@@ -181,19 +181,18 @@ pub fn take_snapshot<W: SnapshotWriter + Send>(
     info!("produced {} block chunks.", block_hashes.len());
 
     // get last_proof from chain, it will be used by cita-bft when restoring.
-    let last_proof: Proof;
-    if block_at == chain.get_current_height() {
-        last_proof = chain.current_block_poof().unwrap();
+    let last_proof = if block_at == chain.get_current_height() {
+        chain.current_block_poof()
     } else {
-        last_proof = chain.get_block_proof_by_height(block_at).unwrap();
-    }
+        chain.get_block_proof_by_height(block_at)
+    }.unwrap();
 
     let manifest_data = ManifestData {
-        block_hashes: block_hashes,
+        block_hashes,
         state_root: *state_root,
         block_number: block_at,
-        block_hash: block_hash,
-        last_proof: last_proof,
+        block_hash,
+        last_proof,
     };
 
     writer.into_inner().finish(manifest_data)?;
@@ -234,7 +233,7 @@ pub fn chunk_secondary<'a>(
         };
 
         BlockChunker {
-            chain: chain,
+            chain,
             rlps: VecDeque::new(),
             current_hash: start_hash,
             writer: &mut chunk_sink,
@@ -283,7 +282,7 @@ impl<'a> BlockChunker<'a> {
             let header = self
                 .chain
                 .block_header_by_hash(self.current_hash)
-                .ok_or(Error::BlockNotFound(self.current_hash))?;
+                .ok_or_else(|| Error::BlockNotFound(self.current_hash))?;
             header.clone().rlp_append(&mut s);
             let header_rlp = s.out();
 
@@ -298,7 +297,7 @@ impl<'a> BlockChunker<'a> {
                 let body: BlockBody = self
                     .chain
                     .block_body(BlockId::Hash(self.current_hash))
-                    .ok_or(Error::BlockNotFound(self.current_hash))?;
+                    .ok_or_else(|| Error::BlockNotFound(self.current_hash))?;
                 let mut s = RlpStream::new();
                 body.rlp_append(&mut s);
                 let body_rlp = s.out();
@@ -352,7 +351,7 @@ impl<'a> BlockChunker<'a> {
         let last_header = self
             .chain
             .block_header_by_hash(last)
-            .ok_or(Error::BlockNotFound(last))?;
+            .ok_or_else(|| Error::BlockNotFound(last))?;
 
         let parent_number = last_header.number() - 1;
         let parent_hash = last_header.parent_hash();
@@ -421,14 +420,14 @@ impl BlockRebuilder {
         snapshot_blocks: u64,
     ) -> Self {
         BlockRebuilder {
-            chain: chain,
+            chain,
             db: db.clone(),
             //_disconnected: Vec::new(),
             best_number: manifest.block_number,
             best_hash: manifest.block_hash,
             best_root: manifest.state_root,
             fed_blocks: 0,
-            snapshot_blocks: snapshot_blocks,
+            snapshot_blocks,
         }
     }
 
@@ -471,14 +470,11 @@ impl BlockRebuilder {
             let receipts: Vec<Receipt> = pair.list_at(1)?;
 
             let mut have_body: bool = false;
-            match pair.at(2) {
-                Ok(b) => {
-                    have_body = true;
-                    let body_rlp = b.as_raw().to_owned();
-                    let body = ::rlp::decode(body_rlp.as_slice());
-                    block.set_body(body);
-                }
-                Err(_) => {}
+            if let Ok(b) = pair.at(2) {
+                have_body = true;
+                let body_rlp = b.as_raw().to_owned();
+                let body = ::rlp::decode(body_rlp.as_slice());
+                block.set_body(body);
             };
 
             // TODO: abridged_block
@@ -543,7 +539,7 @@ impl BlockRebuilder {
 
         // COL_EXTRA
         let info = BlockInfo {
-            hash: hash,
+            hash,
             number: height,
         };
 
@@ -554,7 +550,7 @@ impl BlockRebuilder {
                 block_receipts: self.prepare_block_receipts_update(receipts, &info),
                 blocks_blooms: self.prepare_block_blooms_update(block, &info),
                 //transactions_addresses: self.prepare_transaction_addresses_update(block, &info),
-                info: info,
+                info,
                 block: block.clone(),
             },
             is_best,
@@ -743,7 +739,7 @@ impl BlockRebuilder {
             block_hash: genesis_hash,
             proof: vec![],
         });*/
-        let genesis_block = self.chain.block_by_height(0).unwrap_or(Block::default());
+        let genesis_block = self.chain.block_by_height(0).unwrap_or_default();
         batch.write(COL_HEADERS, &0, &genesis_block.header.clone());
 
         batch.write(COL_BODIES, &0, &genesis_block.body.clone());
@@ -765,7 +761,7 @@ impl BlockRebuilder {
 // helper for reading chunks from arbitrary reader and feeding them into the
 // service.
 pub fn restore_using<R: SnapshotReader>(
-    snapshot: Arc<Service>,
+    snapshot: &Arc<Service>,
     reader: &R,
     recover: bool,
 ) -> Result<(), String> {

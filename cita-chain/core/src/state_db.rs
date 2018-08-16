@@ -25,7 +25,7 @@ pub struct StateDB {
 
 impl StateDB {
     pub fn new(db: Box<JournalDB>) -> StateDB {
-        StateDB { db: db }
+        StateDB { db }
     }
 
     /// Clone the database.

@@ -413,19 +413,10 @@ impl From<EthkeyError> for Error {
 impl From<SnapshotError> for Error {
     fn from(err: SnapshotError) -> Error {
         match err {
-            SnapshotError::Trie(err) => Error::Trie(err).into(),
+            SnapshotError::Trie(err) => err.into(),
             SnapshotError::Decoder(err) => err.into(),
             other => Error::Snapshot(other),
         }
-    }
-}
-
-impl<E> From<Box<E>> for Error
-where
-    Error: From<E>,
-{
-    fn from(err: Box<E>) -> Error {
-        Error::from(*err)
     }
 }
 

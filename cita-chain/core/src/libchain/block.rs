@@ -78,7 +78,7 @@ impl From<ProtoBlock> for Block {
         let mut header = Header::from(b.get_header().clone());
         header.set_version(b.get_version());
         Block {
-            header: header,
+            header,
             body: BlockBody::from(b.get_body().clone()),
         }
     }

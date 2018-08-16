@@ -231,7 +231,7 @@ impl Forward {
                     })
                     .map(|rpc_filter| {
                         let filter: Filter = rpc_filter.into();
-                        let logs = self.chain.get_logs(filter);
+                        let logs = self.chain.get_logs(&filter);
                         let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
                         response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
                     });
@@ -385,7 +385,7 @@ impl Forward {
             self.chain.set_max_store_height(blk_height as u64);
             let tx_hashes = rblock.body().transaction_hashes();
             self.chain
-                .delivery_block_tx_hashes(blk_height as u64, tx_hashes, &self.ctx_pub);
+                .delivery_block_tx_hashes(blk_height as u64, &tx_hashes, &self.ctx_pub);
         }
     }
 
@@ -708,7 +708,7 @@ fn restore_snapshot(chain: Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Pro
 
     let snapshot = SnapshotService::new(snapshot_params).unwrap();
     let snapshot = Arc::new(snapshot);
-    match snapshot::restore_using(Arc::clone(&snapshot), &reader, true) {
+    match snapshot::restore_using(&snapshot, &reader, true) {
         Ok(_) => {
             // return proof
             let proof = reader.manifest().last_proof.clone();
