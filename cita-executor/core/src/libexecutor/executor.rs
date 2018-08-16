@@ -58,7 +58,7 @@ use std::time::Instant;
 use types::ids::BlockId;
 use types::receipt::ReceiptError;
 use types::reserved_addresses::{
-    CHAIN_MANAGER, GROUP_MANAGEMENT, NODE_MANAGER, PERMISSION_MANAGEMENT, QUOTA_MANAGER,
+    ADMIN, CHAIN_MANAGER, GROUP_MANAGEMENT, NODE_MANAGER, PERMISSION_MANAGEMENT, QUOTA_MANAGER,
     ROLE_MANAGEMENT, SYS_CONFIG,
 };
 use types::transaction::{Action, SignedTransaction, Transaction};
@@ -76,6 +76,7 @@ const SYS_CONTRACT: &[&str] = &[
     QUOTA_MANAGER,
     ROLE_MANAGEMENT,
     SYS_CONFIG,
+    ADMIN,
 ];
 
 #[derive(Debug, PartialEq, Deserialize)]
