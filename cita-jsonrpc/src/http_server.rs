@@ -86,7 +86,7 @@ impl Service for Server {
                                         let req_info = full_req.get_info();
                                         let request_id = req.request_id.clone();
                                         let mq_resp = handle_single(
-                                            full_req,
+                                            &full_req,
                                             req,
                                             &responses,
                                             &sender,
@@ -249,7 +249,7 @@ fn read_single(
 }
 
 fn handle_single(
-    full_req: FullRequest,
+    full_req: &FullRequest,
     req: ProtoRequest,
     responses: &RpcMap,
     sender: &mpsc::Sender<(String, ProtoRequest)>,
@@ -331,8 +331,8 @@ impl Server {
         let new_service = NewServer {
             inner: Arc::new(Inner {
                 tx: Mutex::new(tx),
-                responses: responses,
-                timeout: timeout,
+                responses,
+                timeout,
                 reactor_handle: core.handle(),
                 http_headers: headers,
             }),
@@ -347,7 +347,7 @@ impl Server {
 }
 
 fn parse_origin(origin: &Option<String>) -> AccessControlAllowOrigin {
-    match origin.as_ref().map(|s| s.trim().as_ref()) {
+    match origin.as_ref().map(|s| s.trim()) {
         Some("*") => AccessControlAllowOrigin::Any,
         None | Some("") | Some("null") => AccessControlAllowOrigin::Null,
         Some(origin) => AccessControlAllowOrigin::Value(origin.to_string()),

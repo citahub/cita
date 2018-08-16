@@ -174,7 +174,7 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<(String, 
     if length_full == 1 + length_key {
         warn!("network message is empty.");
     }
-    return Some((key, payload_buf.to_vec()));
+    Some((key, payload_buf.to_vec()))
 }
 
 #[cfg(test)]

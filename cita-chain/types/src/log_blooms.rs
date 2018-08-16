@@ -36,7 +36,7 @@ impl From<BloomGroup> for LogBloomGroup {
             .into_iter()
             .map(|x| LogBloom::from(Into::<[u8; 256]>::into(x)))
             .collect();
-        LogBloomGroup { blooms: blooms }
+        LogBloomGroup { blooms }
     }
 }
 
@@ -47,14 +47,14 @@ impl Into<BloomGroup> for LogBloomGroup {
             .into_iter()
             .map(|x| Bloom::from(Into::<[u8; 256]>::into(x)))
             .collect();
-        BloomGroup { blooms: blooms }
+        BloomGroup { blooms }
     }
 }
 
 impl Decodable for LogBloomGroup {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         let blooms = rlp.as_list()?;
-        let group = LogBloomGroup { blooms: blooms };
+        let group = LogBloomGroup { blooms };
         Ok(group)
     }
 }

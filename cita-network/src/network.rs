@@ -26,11 +26,11 @@ impl NetWork {
         tx_consensus: Sender<(String, Vec<u8>)>,
     ) -> Self {
         NetWork {
-            con: con,
-            tx_pub: tx_pub,
-            tx_sync: tx_sync,
-            tx_new_tx: tx_new_tx,
-            tx_consensus: tx_consensus,
+            con,
+            tx_pub,
+            tx_sync,
+            tx_new_tx,
+            tx_consensus,
         }
     }
 
@@ -38,10 +38,10 @@ impl NetWork {
         let (key, data) = payload;
         let rtkey = RoutingKey::from(&key);
         trace!("Network receive Msg from {:?}/{}", source, key);
-        if self.con.is_disconnect.load(Ordering::SeqCst) {
-            if rtkey.get_sub_module() != SubModules::Snapshot {
-                return;
-            }
+        if self.con.is_disconnect.load(Ordering::SeqCst)
+            && rtkey.get_sub_module() != SubModules::Snapshot
+        {
+            return;
         }
         match source {
             // Come from MQ

@@ -125,9 +125,9 @@ impl AccountDiff {
 
 // TODO: refactor into something nicer.
 fn interpreted_hash(u: &H256) -> String {
-    if u <= &H256::from(0xffffffff) {
+    if *u <= H256::from(0xffff_ffff) {
         format!("{} = {:#x}", U256::from(&**u).low_u32(), U256::from(&**u).low_u32())
-    } else if u <= &H256::from(u64::max_value()) {
+    } else if *u <= H256::from(u64::max_value()) {
         format!("{} = {:#x}", U256::from(&**u).low_u64(), U256::from(&**u).low_u64())
     //    } else if u <= &H256::from("0xffffffffffffffffffffffffffffffffffffffff") {
     //        format!("@{}", Address::from(u))
@@ -153,12 +153,12 @@ impl fmt::Display for AccountDiff {
         if let Diff::Born(ref x) = self.code {
             write!(f, "  code {}", x.pretty())?;
         }
-        write!(f, "\n")?;
+        writeln!(f)?;
         for (k, dv) in &self.storage {
             match *dv {
-                Diff::Born(ref v) => write!(f, "    +  {} => {}\n", interpreted_hash(k), interpreted_hash(v))?,
-                Diff::Changed(ref pre, ref post) => write!(f, "    *  {} => {} (was {})\n", interpreted_hash(k), interpreted_hash(post), interpreted_hash(pre))?,
-                Diff::Died(_) => write!(f, "    X  {}\n", interpreted_hash(k))?,
+                Diff::Born(ref v) => writeln!(f, "    +  {} => {}", interpreted_hash(k), interpreted_hash(v))?,
+                Diff::Changed(ref pre, ref post) => writeln!(f, "    *  {} => {} (was {})", interpreted_hash(k), interpreted_hash(post), interpreted_hash(pre))?,
+                Diff::Died(_) => writeln!(f, "    X  {}", interpreted_hash(k))?,
                 _ => {}
             }
         }

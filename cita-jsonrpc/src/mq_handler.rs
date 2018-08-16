@@ -29,9 +29,7 @@ pub struct MqHandler {
 
 impl MqHandler {
     pub fn new(responses: RpcMap) -> Self {
-        MqHandler {
-            responses: responses,
-        }
+        MqHandler { responses }
     }
 
     pub fn handle(&mut self, key: &str, body: &[u8]) {

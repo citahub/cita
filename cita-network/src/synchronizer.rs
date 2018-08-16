@@ -36,8 +36,8 @@ unsafe impl Send for Synchronizer {}
 impl Synchronizer {
     pub fn new(tx_pub: mpsc::Sender<(String, Vec<u8>)>, con: Arc<Connection>) -> Self {
         Synchronizer {
-            tx_pub: tx_pub,
-            con: con,
+            tx_pub,
+            con,
             current_status: Status::new(),
             global_status: Status::new(),
             latest_status_lists: BTreeMap::new(),
@@ -117,15 +117,16 @@ impl Synchronizer {
                 self.block_lists.len()
             );
 
-            if !self.block_lists.is_empty() && new_height < self.sync_end_height {
-                if self.local_sync_count >= 3 {
-                    // Chain height does not increase, loss data or data is invalid,
-                    // send cache to executor and chain, and clear cache
-                    self.local_sync_count = 0;
-                    self.block_lists.clear();
-                    self.start_sync_req(new_height + 1);
-                    info!("More than 3 times, clear the cache");
-                }
+            if !self.block_lists.is_empty()
+                && new_height < self.sync_end_height
+                && self.local_sync_count >= 3
+            {
+                // Chain height does not increase, loss data or data is invalid,
+                // send cache to executor and chain, and clear cache
+                self.local_sync_count = 0;
+                self.block_lists.clear();
+                self.start_sync_req(new_height + 1);
+                info!("More than 3 times, clear the cache");
             }
 
             self.is_synchronizing = true;
@@ -249,7 +250,7 @@ impl Synchronizer {
         if let Some((height, origins)) = self
             .latest_status_lists
             .iter()
-            .rfind(|&(_, origins)| origins.len() > 0)
+            .rfind(|&(_, origins)| !origins.is_empty())
         {
             debug!(
                 "sync: start_sync_req: height = {}, origins = {:?}",
@@ -361,17 +362,14 @@ impl Synchronizer {
             height += 1;
         }
 
-        match blocks.last() {
-            Some(block) => {
-                if let Some(header) = block.header.as_ref() {
-                    let height = header.get_height() - 1;
+        if let Some(block) = blocks.last() {
+            if let Some(header) = block.header.as_ref() {
+                let height = header.get_height() - 1;
 
-                    if height > self.sync_end_height {
-                        self.sync_end_height = height;
-                    }
+                if height > self.sync_end_height {
+                    self.sync_end_height = height;
                 }
             }
-            None => {}
         }
 
         if self.block_lists.contains_key(&::std::u64::MAX) {
@@ -412,7 +410,7 @@ impl Synchronizer {
             origin,
             height
         );
-        if self
+        let insert_is_ok = self
             .latest_status_lists
             .entry(height)
             .or_insert_with(VecDeque::new)
@@ -421,8 +419,8 @@ impl Synchronizer {
                 set.insert(item);
                 set
             })
-            .insert(&origin)
-        {
+            .insert(&origin);
+        if insert_is_ok {
             self.latest_status_lists
                 .entry(height)
                 .or_insert_with(VecDeque::new)

@@ -248,7 +248,7 @@ impl Transaction {
         SignedTransaction {
             transaction: UnverifiedTransaction {
                 unsigned: self,
-                signature: signature,
+                signature,
                 hash: 0.into(),
                 crypto_type: CryptoType::default(),
             },
@@ -350,7 +350,7 @@ impl UnverifiedTransaction {
             unsigned: Transaction::new(utx.get_transaction())?,
             signature: Signature::from(utx.get_signature()),
             crypto_type: CryptoType::from(utx.get_crypto()),
-            hash: hash,
+            hash,
         })
     }
 
@@ -423,7 +423,7 @@ impl Decodable for SignedTransaction {
                 hash: d.val_at(11)?,
             },
             sender: pubkey_to_address(&public),
-            public: public,
+            public,
         })
     }
 }
@@ -486,8 +486,8 @@ impl SignedTransaction {
         let sender = pubkey_to_address(&public);
         Ok(SignedTransaction {
             transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,
-            sender: sender,
-            public: public,
+            sender,
+            public,
         })
     }
 

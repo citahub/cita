@@ -70,7 +70,7 @@ impl LogEntry {
         self.topics.iter().fold(
             LogBloom::from_raw(&self.address),
             |b, t| {
-                let mut b = b.clone();
+                let mut b = b;
                 b.accrue_raw(&t);
                 b
             }
