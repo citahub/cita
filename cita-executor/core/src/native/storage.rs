@@ -27,7 +27,7 @@ pub struct SimpleStorage {
 }
 
 impl Contract for SimpleStorage {
-    fn exec(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let signature = BigEndian::read_u32(params.clone().data.unwrap().get(0..4).unwrap());
         match signature {
             0 => self.init(params, ext),
@@ -60,14 +60,15 @@ impl Default for SimpleStorage {
 }
 
 impl SimpleStorage {
-    fn init(&mut self, _params: ActionParams, _ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn init(&mut self, _params: &ActionParams, _ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         Ok(GasLeft::Known(U256::from(100)))
     }
     // 1) uint
-    fn uint_set(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn uint_set(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let value = U256::from(
             params
                 .data
+                .to_owned()
                 .expect("invalid data")
                 .get(4..36)
                 .expect("no enough data"),
@@ -75,7 +76,7 @@ impl SimpleStorage {
         self.uint_value.set(ext, value)?;
         Ok(GasLeft::Known(U256::from(100)))
     }
-    fn uint_get(&mut self, _params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn uint_get(&mut self, _params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         self.output.resize(32, 0);
         self.uint_value
             .get(ext)?
@@ -88,8 +89,8 @@ impl SimpleStorage {
     }
 
     // 2) string
-    fn string_set(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
-        let data = params.data.expect("invalid data");
+    fn string_set(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+        let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..36).expect("no enough data")).low_u64() as usize + 4;
         let length =
             U256::from(data.get(index..(index + 32)).expect("no enough data")).low_u64() as usize;
@@ -98,10 +99,10 @@ impl SimpleStorage {
             data.get(index..index + length).expect("no enough data"),
         )).unwrap();
 
-        self.string_value.set_bytes(ext, value)?;
+        self.string_value.set_bytes(ext, &value)?;
         Ok(GasLeft::Known(U256::from(100)))
     }
-    fn string_get(&mut self, _params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn string_get(&mut self, _params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         self.output.resize(0, 0);
         let str = self.string_value.get_bytes::<String>(ext)?;
         for i in U256::from(32).0.iter().rev() {
@@ -128,8 +129,8 @@ impl SimpleStorage {
     }
 
     // 3) array
-    fn array_set(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
-        let data = params.data.expect("invalid data");
+    fn array_set(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+        let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
         let index = U256::from(data.get(pilot..pilot + 32).expect("no enough data")).low_u64();
         pilot += 32;
@@ -137,8 +138,8 @@ impl SimpleStorage {
         self.array_value.set(ext, index, &value)?;
         Ok(GasLeft::Known(U256::from(100)))
     }
-    fn array_get(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
-        let data = params.data.expect("invalid data");
+    fn array_get(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+        let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..4 + 32).expect("no enough data")).low_u64();
         for i in self.array_value.get(ext, index)?.0.iter().rev() {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
@@ -152,19 +153,19 @@ impl SimpleStorage {
     }
 
     // 4) map
-    fn map_set(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
-        let data = params.data.expect("invalid data");
+    fn map_set(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+        let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
         let key = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
         pilot += 32;
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
-        self.map_value.set(ext, key, value)?;
+        self.map_value.set(ext, &key, value)?;
         Ok(GasLeft::Known(U256::from(100)))
     }
-    fn map_get(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
-        let data = params.data.expect("invalid data");
+    fn map_get(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+        let data = params.data.to_owned().expect("invalid data");
         let key = U256::from(data.get(4..4 + 32).expect("no enough data"));
-        for i in self.map_value.get(ext, key)?.0.iter().rev() {
+        for i in self.map_value.get(ext, &key)?.0.iter().rev() {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
                 .expect("failed to serialize u64");
         }
@@ -194,7 +195,7 @@ fn test_native_contract() {
         }
         params.data = Some(input);
         let mut contract = factory.new_contract(native_addr).unwrap();
-        let output = contract.exec(params, &mut ext).unwrap();
+        let output = contract.exec(&params, &mut ext).unwrap();
         println!("===={:?}", output);
     }
     {
@@ -206,7 +207,7 @@ fn test_native_contract() {
         params.data = Some(input);
 
         let mut contract = factory.new_contract(native_addr).unwrap();
-        match contract.exec(params, &mut ext) {
+        match contract.exec(&params, &mut ext) {
             Ok(GasLeft::NeedsReturn {
                 gas_left: _,
                 data: return_data,

@@ -30,7 +30,7 @@ use trace::{LocalizedTrace, Config, Filter, Database as TraceDatabase, ImportReq
 use cita_types::{H256, H264};
 use util::{KeyValueDB, DBTransaction, RwLock, HeapSizeOf};
 
-const TRACE_DB_VER: &'static [u8] = b"1.0";
+const TRACE_DB_VER: &[u8] = b"1.0";
 
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "dev", allow(enum_variant_names))]
@@ -137,7 +137,7 @@ where
     T: DatabaseExtras,
 {
     /// Creates new instance of `TraceDB`.
-    pub fn new(config: Config, tracesdb: Arc<KeyValueDB>, extras: Arc<T>) -> Self {
+    pub fn new(config: &Config, tracesdb: Arc<KeyValueDB>, extras: Arc<T>) -> Self {
         let mut batch = DBTransaction::new();
         let genesis = extras.block_hash(0).expect("Genesis block is always inserted upon extras db creation qed");
         batch.write(db::COL_TRACE, &genesis, &FlatBlockTraces::default());
@@ -148,10 +148,10 @@ where
             traces: RwLock::new(HashMap::new()),
             blooms: RwLock::new(HashMap::new()),
             cache_manager: RwLock::new(CacheManager::new(config.pref_cache_size, config.max_cache_size, 10 * 1024)),
-            tracesdb: tracesdb,
+            tracesdb,
             bloom_config: config.blooms,
             enabled: config.enabled,
-            extras: extras,
+            extras,
         }
     }
 
@@ -228,8 +228,8 @@ where
                                             trace_address: trace.trace_address.into_iter().collect(),
                                             transaction_number: tx_number,
                                             transaction_hash: tx_hash,
-                                            block_number: block_number,
-                                            block_hash: block_hash,
+                                            block_number,
+                                            block_hash,
                                         })
                                } else {
                                    None
@@ -324,8 +324,8 @@ where
                         trace_address: trace.trace_address.into_iter().collect(),
                         transaction_number: tx_position,
                         transaction_hash: tx_hash,
-                        block_number: block_number,
-                        block_hash: block_hash,
+                        block_number,
+                        block_hash,
                     }
                 })
         })
@@ -350,8 +350,8 @@ where
                         trace_address: trace.trace_address.into_iter().collect(),
                         transaction_number: tx_position,
                         transaction_hash: tx_hash,
-                        block_number: block_number,
-                        block_hash: block_hash,
+                        block_number,
+                        block_hash,
                     }
                 })
                       .collect()
@@ -379,8 +379,8 @@ where
                             trace_address: trace.trace_address.into_iter().collect(),
                             transaction_number: tx_position,
                             transaction_hash: tx_hash,
-                            block_number: block_number,
-                            block_hash: block_hash,
+                            block_number,
+                            block_hash,
                         }
                     })
                           .collect::<Vec<LocalizedTrace>>()
@@ -471,7 +471,7 @@ mod tests {
         config.enabled = false;
 
         {
-            let tracedb = TraceDB::new(config.clone(), db.clone(), Arc::new(NoopExtras));
+            let tracedb = TraceDB::new(&config, db.clone(), Arc::new(NoopExtras));
             assert_eq!(tracedb.tracing_enabled(), false);
         }
     }
@@ -485,7 +485,7 @@ mod tests {
         config.enabled = true;
 
         {
-            let tracedb = TraceDB::new(config.clone(), db.clone(), Arc::new(NoopExtras));
+            let tracedb = TraceDB::new(&config, db.clone(), Arc::new(NoopExtras));
             assert_eq!(tracedb.tracing_enabled(), true);
         }
     }
@@ -578,7 +578,7 @@ mod tests {
         extras.transaction_hashes.insert(0, vec![tx_0.clone()]);
         extras.transaction_hashes.insert(1, vec![tx_1.clone()]);
 
-        let tracedb = TraceDB::new(config, db.clone(), Arc::new(extras));
+        let tracedb = TraceDB::new(&config, db.clone(), Arc::new(extras));
 
         // import block 0
         let request = create_noncanon_import_request(0, block_0.clone());
@@ -608,7 +608,7 @@ mod tests {
         extras.transaction_hashes.insert(1, vec![tx_1.clone()]);
         extras.transaction_hashes.insert(2, vec![tx_2.clone()]);
 
-        let tracedb = TraceDB::new(config, db.clone(), Arc::new(extras));
+        let tracedb = TraceDB::new(&config, db.clone(), Arc::new(extras));
 
         // import block 1
         let request = create_simple_import_request(1, block_1.clone());
@@ -686,7 +686,7 @@ mod tests {
         config.enabled = true;
 
         {
-            let tracedb = TraceDB::new(config.clone(), db.clone(), Arc::new(extras.clone()));
+            let tracedb = TraceDB::new(&config, db.clone(), Arc::new(extras.clone()));
 
             // import block 1
             let request = create_simple_import_request(1, block_0.clone());
@@ -696,7 +696,7 @@ mod tests {
         }
 
         {
-            let tracedb = TraceDB::new(config.clone(), db.clone(), Arc::new(extras));
+            let tracedb = TraceDB::new(&config, db.clone(), Arc::new(extras));
             let traces = tracedb.transaction_traces(1, 0);
             assert_eq!(traces.unwrap(), vec![create_simple_localized_trace(1, block_0, tx_0)]);
         }
@@ -715,7 +715,7 @@ mod tests {
         // set tracing on
         config.enabled = true;
 
-        let tracedb = TraceDB::new(config.clone(), db.clone(), Arc::new(extras.clone()));
+        let tracedb = TraceDB::new(&config, db.clone(), Arc::new(extras.clone()));
         let traces = tracedb.block_traces(0).unwrap();
 
         assert_eq!(traces.len(), 0);

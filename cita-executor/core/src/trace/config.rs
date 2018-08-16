@@ -19,7 +19,7 @@
 use bloomchain::Config as BloomConfig;
 
 /// Traces config.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Config {
     /// Indicates if tracing should be enabled or not.
     /// If it's None, it will be automatically configured.

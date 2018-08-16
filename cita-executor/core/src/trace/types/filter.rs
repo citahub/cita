@@ -66,7 +66,7 @@ impl AddressesFilter {
             blooms.into_iter()
                   .flat_map(|bloom| {
                       self.list.iter().map(|address| {
-                          let mut bloom = bloom.clone();
+                          let mut bloom = bloom;
                           bloom.accrue_raw(&address);
                           bloom
                       }).collect::<Vec<_>>()

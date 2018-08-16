@@ -27,10 +27,10 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use types::reserved_addresses;
 
-const QUOTAS: &'static [u8] = &*b"getQuotas()";
-const ACCOUNTS: &'static [u8] = &*b"getAccounts()";
-const BQL: &'static [u8] = &*b"getBQL()";
-const DEFAULT_AQL: &'static [u8] = &*b"getDefaultAQL()";
+const QUOTAS: &[u8] = &*b"getQuotas()";
+const ACCOUNTS: &[u8] = &*b"getAccounts()";
+const BQL: &[u8] = &*b"getBQL()";
+const DEFAULT_AQL: &[u8] = &*b"getDefaultAQL()";
 
 lazy_static! {
     static ref QUOTAS_HASH: Vec<u8> = encode_contract_name(QUOTAS);

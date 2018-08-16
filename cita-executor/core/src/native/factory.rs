@@ -46,7 +46,7 @@ impl Clone for Box<Contract> {
 
 // Contract
 pub trait Contract: Sync + Send + ContractClone {
-    fn exec(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error>;
+    fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error>;
     fn create(&self) -> Box<Contract>;
 }
 

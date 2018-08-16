@@ -222,14 +222,14 @@ impl PackedReader {
 
         file.read_exact(&mut off_bytes[..])?;
 
-        let manifest_off: u64 = ((off_bytes[7] as u64) << 56)
-            + ((off_bytes[6] as u64) << 48)
-            + ((off_bytes[5] as u64) << 40)
-            + ((off_bytes[4] as u64) << 32)
-            + ((off_bytes[3] as u64) << 24)
-            + ((off_bytes[2] as u64) << 16)
-            + ((off_bytes[1] as u64) << 8)
-            + (off_bytes[0] as u64);
+        let manifest_off: u64 = (u64::from(off_bytes[7]) << 56)
+            + (u64::from(off_bytes[6]) << 48)
+            + (u64::from(off_bytes[5]) << 40)
+            + (u64::from(off_bytes[4]) << 32)
+            + (u64::from(off_bytes[3]) << 24)
+            + (u64::from(off_bytes[2]) << 16)
+            + (u64::from(off_bytes[1]) << 8)
+            + u64::from(off_bytes[0]);
 
         let manifest_len = file_len - manifest_off - 8;
         trace!(target: "snapshot", "loading manifest of length {} from offset {}", manifest_len, manifest_off);
@@ -259,10 +259,10 @@ impl PackedReader {
         };
 
         Ok(Some(PackedReader {
-            file: file,
+            file,
             state_hashes: state.into_iter().map(|c| (c.0, (c.1, c.2))).collect(),
             block_hashes: blocks.into_iter().map(|c| (c.0, (c.1, c.2))).collect(),
-            manifest: manifest,
+            manifest,
         }))
     }
 }
@@ -310,10 +310,7 @@ impl LooseReader {
 
         dir.pop();
 
-        Ok(LooseReader {
-            dir: dir,
-            manifest: manifest,
-        })
+        Ok(LooseReader { dir, manifest })
     }
 }
 

@@ -125,7 +125,7 @@ pub fn check_permission(
                     account_permissions,
                     &sender,
                     &address,
-                    t.data[0..4].to_vec(),
+                    &t.data[0..4],
                     &H160::from(&t.data[16..36]),
                 )?;
             }
@@ -135,7 +135,7 @@ pub fn check_permission(
                 account_permissions,
                 &sender,
                 &address,
-                t.data[0..4].to_vec(),
+                &t.data[0..4],
             )?;
         }
         _ => {}
@@ -152,7 +152,13 @@ fn check_send_tx(
 ) -> Result<(), ExecutionError> {
     let cont = Address::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap();
     let func = vec![0; 4];
-    let has_permission = has_resource(group_accounts, account_permissions, account, &cont, func);
+    let has_permission = has_resource(
+        group_accounts,
+        account_permissions,
+        account,
+        &cont,
+        &func[..],
+    );
 
     trace!("has send tx permission: {:?}", has_permission);
 
@@ -171,7 +177,13 @@ fn check_create_contract(
 ) -> Result<(), ExecutionError> {
     let cont = Address::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap();
     let func = vec![0; 4];
-    let has_permission = has_resource(group_accounts, account_permissions, account, &cont, func);
+    let has_permission = has_resource(
+        group_accounts,
+        account_permissions,
+        account,
+        &cont,
+        &func[..],
+    );
 
     trace!("has create contract permission: {:?}", has_permission);
 
@@ -188,7 +200,7 @@ fn check_call_contract(
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
     cont: &Address,
-    func: Vec<u8>,
+    func: &[u8],
 ) -> Result<(), ExecutionError> {
     let has_permission = has_resource(group_accounts, account_permissions, account, cont, func);
 
@@ -206,14 +218,14 @@ fn check_origin_group(
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
     cont: &Address,
-    func: Vec<u8>,
+    func: &[u8],
     param: &Address,
 ) -> Result<(), ExecutionError> {
-    let has_permission = contains_resource(account_permissions, account, *cont, func.clone());
+    let has_permission = contains_resource(account_permissions, account, *cont, func);
 
     trace!("Sender has call contract permission: {:?}", has_permission);
 
-    if !has_permission && !contains_resource(account_permissions, param, *cont, func.clone()) {
+    if !has_permission && !contains_resource(account_permissions, param, *cont, func) {
         return Err(ExecutionError::NoCallPermission);
     }
 
@@ -228,13 +240,13 @@ fn has_resource(
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
     cont: &Address,
-    func: Vec<u8>,
+    func: &[u8],
 ) -> bool {
     let groups = get_groups(group_accounts, account);
 
-    if !contains_resource(account_permissions, account, *cont, func.clone()) {
+    if !contains_resource(account_permissions, account, *cont, func) {
         for group in groups {
-            if contains_resource(account_permissions, &group, *cont, func.clone()) {
+            if contains_resource(account_permissions, &group, *cont, func) {
                 return true;
             }
         }
@@ -323,14 +335,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         economical_model: EconomicalModel,
     ) -> Self {
         Executive {
-            state: state,
-            info: info,
-            engine: engine,
-            vm_factory: vm_factory,
-            native_factory: native_factory,
+            state,
+            info,
+            engine,
+            vm_factory,
+            native_factory,
             depth: 0,
-            static_flag: static_flag,
-            economical_model: economical_model,
+            static_flag,
+            economical_model,
         }
     }
 
@@ -350,14 +362,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         economical_model: EconomicalModel,
     ) -> Self {
         Executive {
-            state: state,
-            info: info,
-            engine: engine,
-            vm_factory: vm_factory,
-            native_factory: native_factory,
+            state,
+            info,
+            engine,
+            vm_factory,
+            native_factory,
             depth: parent_depth + 1,
-            static_flag: static_flag,
-            economical_model: economical_model,
+            static_flag,
+            economical_model,
         }
     }
 
@@ -590,8 +602,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 let address = Address::default();
                 let params = ActionParams {
                     code_address: address,
-                    address: address,
-                    sender: sender,
+                    address,
+                    sender,
                     origin: sender,
                     gas: init_gas,
                     gas_price: t.gas_price(),
@@ -604,7 +616,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 trace!(target: "executive", "call: {:?}", params);
                 let mut out = vec![];
                 (
-                    self.call_grpc_contract(params, &mut substate, BytesRef::Flexible(&mut out)),
+                    self.call_grpc_contract(&params, &mut substate, &BytesRef::Flexible(&mut out)),
                     out,
                 )
             }
@@ -630,7 +642,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     code_address: new_address,
                     code_hash: t.data.crypt_hash(),
                     address: new_address,
-                    sender: sender,
+                    sender,
                     origin: sender,
                     gas: init_gas,
                     gas_price: t.gas_price(),
@@ -640,7 +652,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     call_type: CallType::None,
                 };
                 (
-                    self.create(params, &mut substate, &mut tracer, &mut vm_tracer),
+                    self.create(&params, &mut substate, &mut tracer, &mut vm_tracer),
                     vec![],
                 )
             }
@@ -648,7 +660,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 let params = ActionParams {
                     code_address: *address,
                     address: *address,
-                    sender: sender,
+                    sender,
                     origin: sender,
                     gas: init_gas,
                     gas_price: t.gas_price(),
@@ -662,7 +674,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 let mut out = vec![];
                 (
                     self.call(
-                        params,
+                        &params,
                         &mut substate,
                         BytesRef::Flexible(&mut out),
                         &mut tracer,
@@ -687,7 +699,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
     fn exec_vm<T, V>(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         unconfirmed_substate: &mut Substate,
         output_policy: OutputPolicy,
         tracer: &mut T,
@@ -705,7 +717,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             let vm_factory = self.vm_factory;
             let economical_model = self.economical_model;
             let mut ext = self.as_externalities(
-                OriginInfo::from(&params),
+                OriginInfo::from(params),
                 unconfirmed_substate,
                 output_policy,
                 tracer,
@@ -726,7 +738,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             let vm_factory = self.vm_factory;
             let economical_model = self.economical_model;
             let mut ext = self.as_externalities(
-                OriginInfo::from(&params),
+                OriginInfo::from(params),
                 unconfirmed_substate,
                 output_policy,
                 tracer,
@@ -750,7 +762,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Returns either gas_left or `evm::Error`.
     pub fn call<T, V>(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         substate: &mut Substate,
         output: BytesRef,
         tracer: &mut T,
@@ -791,7 +803,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         } else if is_create_grpc_address(params.code_address)
             || is_grpc_contract(params.code_address)
         {
-            self.call_grpc_contract(params, substate, output)
+            self.call_grpc_contract(params, substate, &output)
         } else if let Some(builtin) = self.engine.builtin(&params.code_address, self.info.number) {
             // check and call Builtin contract
             self.call_builtin_contract(params, output, tracer, builtin)
@@ -803,9 +815,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
     fn call_grpc_contract(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         substate: &mut Substate,
-        _output: BytesRef,
+        _output: &BytesRef,
     ) -> evm::Result<FinalizationResult> {
         let is_create = is_create_grpc_address(params.code_address);
         let address = if is_create {
@@ -833,38 +845,20 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let response = if is_create {
             service_registry::enable_contract(address);
-            create_grpc_contract(
-                self.info,
-                params.clone(),
-                self.state,
-                true,
-                true,
-                connect_info,
-            )
+            create_grpc_contract(self.info, &params, self.state, true, true, &connect_info)
         } else {
-            invoke_grpc_contract(
-                self.info,
-                params.clone(),
-                self.state,
-                true,
-                true,
-                connect_info,
-            )
+            invoke_grpc_contract(self.info, &params, self.state, true, true, &connect_info)
         };
         match response {
             Ok(invoke_response) => {
                 // store grpc return storages to stateDB
-                for storage in invoke_response.get_storages().into_iter() {
+                for storage in &invoke_response.get_storages()[..] {
                     let key = storage.get_key();
                     let value = storage.get_value();
                     trace!("recv resp: {:?}", storage);
                     trace!("key: {:?}, value: {:?}", key, value);
-                    grpc_contracts::storage::set_storage(
-                        self.state,
-                        params.address,
-                        key.to_vec(),
-                        value.to_vec(),
-                    ).unwrap();
+                    grpc_contracts::storage::set_storage(self.state, params.address, key, value)
+                        .unwrap();
                 }
 
                 // update contract_state.height
@@ -884,7 +878,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
     fn call_evm_contract<T, V>(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         substate: &mut Substate,
         output: BytesRef,
         tracer: &mut T,
@@ -894,7 +888,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         T: Tracer,
         V: VMTracer,
     {
-        let trace_info = tracer.prepare_trace_call(&params);
+        let trace_info = tracer.prepare_trace_call(params);
         let mut trace_output = tracer.prepare_trace_output();
         let mut subtracer = tracer.subtracer();
         let gas = params.gas;
@@ -953,7 +947,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
     fn call_builtin_contract<T>(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         mut output: BytesRef,
         tracer: &mut T,
         builtin: &Builtin,
@@ -974,7 +968,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         } else {
             &default as &[u8]
         };
-        let trace_info = tracer.prepare_trace_call(&params);
+        let trace_info = tracer.prepare_trace_call(params);
         let cost = builtin.cost(data);
         if cost <= params.gas {
             builtin.execute(data, &mut output);
@@ -1006,7 +1000,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
     fn call_native_contract<T>(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         substate: &mut Substate,
         output: BytesRef,
         tracer: &mut T,
@@ -1032,11 +1026,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 static_call,
                 economical_model,
             );
-            contract.exec(params, &mut ext).finalize(ext)
+            contract.exec(&params, &mut ext).finalize(ext)
         };
         self.enact_result(&res, substate, unconfirmed_substate);
         trace!(target: "executive", "enacted: substate={:?}\n", substate);
-        return res;
+        res
     }
 
     /// Creates contract with given contract params.
@@ -1044,7 +1038,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Modifies the substate.
     pub fn create<T, V>(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         substate: &mut Substate,
         tracer: &mut T,
         vm_tracer: &mut V,
@@ -1105,7 +1099,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let res = {
             self.exec_vm(
-                params,
+                &params,
                 &mut unconfirmed_substate,
                 OutputPolicy::InitContract(trace_output.as_mut()),
                 &mut subtracer,
@@ -1223,11 +1217,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 cumulative_gas_used: self.info.gas_used + t.gas,
                 logs: vec![],
                 contracts_created: vec![],
-                output: output,
-                trace: trace,
-                vm_trace: vm_trace,
+                output,
+                trace,
+                vm_trace,
                 state_diff: None,
-                account_nonce: account_nonce,
+                account_nonce,
             }),
             Ok(r) => Ok(Executed {
                 exception: if r.apply_state {
@@ -1236,16 +1230,16 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     Some(evm::Error::Reverted)
                 },
                 gas: t.gas,
-                gas_used: gas_used,
-                refunded: refunded,
+                gas_used,
+                refunded,
                 cumulative_gas_used: self.info.gas_used + gas_used,
                 logs: substate.logs,
                 contracts_created: substate.contracts_created,
-                output: output,
-                trace: trace,
-                vm_trace: vm_trace,
+                output,
+                trace,
+                vm_trace,
                 state_diff: None,
-                account_nonce: account_nonce,
+                account_nonce,
             }),
         }
     }
@@ -1563,7 +1557,7 @@ contract HelloWorld {
             false,
             EconomicalModel::Quota,
         );
-        let res = ex.create(params.clone(), &mut substate, &mut tracer, &mut vm_tracer);
+        let res = ex.create(&params, &mut substate, &mut tracer, &mut vm_tracer);
         assert!(res.is_err());
         match res {
             Err(e) => assert_eq!(e, evm::Error::OutOfGas),
@@ -1617,7 +1611,7 @@ contract AbiTest {
                 false,
                 EconomicalModel::Quota,
             );
-            let _ = ex.create(params.clone(), &mut substate, &mut tracer, &mut vm_tracer);
+            let _ = ex.create(&params, &mut substate, &mut tracer, &mut vm_tracer);
         }
 
         assert_eq!(
@@ -1680,7 +1674,7 @@ contract AbiTest {
             );
             let mut out = vec![];
             let _ = ex.call(
-                params,
+                &params,
                 &mut substate,
                 BytesRef::Fixed(&mut out),
                 &mut tracer,
@@ -1757,7 +1751,7 @@ contract AbiTest {
             );
             let mut out = vec![];
             let res = ex.call(
-                params,
+                &params,
                 &mut substate,
                 BytesRef::Fixed(&mut out),
                 &mut tracer,
@@ -1839,7 +1833,7 @@ contract AbiTest {
             );
             let mut out = vec![];
             let res = ex.call(
-                params,
+                &params,
                 &mut substate,
                 BytesRef::Fixed(&mut out),
                 &mut tracer,
@@ -1937,7 +1931,7 @@ contract FakePermissionManagement {
             );
             let mut out = vec![];
             let res = ex.call(
-                params,
+                &params,
                 &mut substate,
                 BytesRef::Fixed(&mut out),
                 &mut tracer,

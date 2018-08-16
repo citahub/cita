@@ -110,7 +110,7 @@ pub struct Interpreter<Cost: CostType> {
 }
 
 impl<Cost: CostType> evm::Evm for Interpreter<Cost> {
-    fn exec(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft> {
+    fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft> {
         self.mem.clear();
 
         let mut informant = informant::EvmInformant::new(ext.depth());
@@ -151,7 +151,7 @@ impl<Cost: CostType> evm::Evm for Interpreter<Cost> {
             };
 
             // Execute instruction
-            let result = self.exec_instruction(gasometer.current_gas, &params, ext, instruction, &mut reader, &mut stack, requirements.provide_gas)?;
+            let result = self.exec_instruction(gasometer.current_gas, params, ext, instruction, &mut reader, &mut stack, requirements.provide_gas)?;
 
             evm_debug!({
                            informant.after_instruction(instruction)

@@ -178,7 +178,7 @@ pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
     Arc::new(Executor::init_executor(
         Arc::new(db),
         genesis,
-        executor_config,
+        &executor_config,
     ))
 }
 

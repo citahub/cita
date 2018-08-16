@@ -101,20 +101,20 @@ where
     #[cfg_attr(feature = "dev", allow(too_many_arguments))]
     pub fn new(state: &'a mut State<B>, env_info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, depth: usize, origin_info: OriginInfo, substate: &'a mut Substate, output: OutputPolicy<'a, 'a>, tracer: &'a mut T, vm_tracer: &'a mut V, static_flag: bool, economical_model: EconomicalModel) -> Self {
         Externalities {
-            state: state,
-            env_info: env_info,
-            engine: engine,
-            vm_factory: vm_factory,
-            native_factory: native_factory,
-            depth: depth,
-            origin_info: origin_info,
-            substate: substate,
+            state,
+            env_info,
+            engine,
+            vm_factory,
+            native_factory,
+            depth,
+            origin_info,
+            substate,
             schedule: Schedule::new_v1(),
-            output: output,
-            tracer: tracer,
-            vm_tracer: vm_tracer,
-            static_flag: static_flag,
-            economical_model: economical_model,
+            output,
+            tracer,
+            vm_tracer,
+            static_flag,
+            economical_model,
         }
     }
 }
@@ -138,7 +138,7 @@ where
     }
 
     fn is_static(&self) -> bool {
-         return self.static_flag
+         self.static_flag
      }
 
     fn exists(&self, address: &Address) -> evm::Result<bool> {
@@ -184,7 +184,7 @@ where
         // prepare the params
         let params = ActionParams {
             code_address: address,
-            address: address,
+            address,
             sender: self.origin_info.address,
             origin: self.origin_info.origin,
             gas: *gas,
@@ -205,7 +205,7 @@ where
         let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model);
 
         // TODO: handle internal error separately
-        match ex.create(params, self.substate, self.tracer, self.vm_tracer) {
+        match ex.create(&params, self.substate, self.tracer, self.vm_tracer) {
             Ok(FinalizationResult{ gas_left, apply_state: true, .. }) => {
                 self.substate.contracts_created.push(address);
                 evm::ContractCreateResult::Created(address, gas_left)
@@ -238,10 +238,10 @@ where
             origin: self.origin_info.origin,
             gas: *gas,
             gas_price: self.origin_info.gas_price,
-            code: code,
-            code_hash: code_hash,
+            code,
+            code_hash,
             data: Some(data.to_vec()),
-            call_type: call_type,
+            call_type,
         };
 
         if let Some(value) = value {
@@ -250,7 +250,7 @@ where
 
         let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model);
 
-        match ex.call(params, self.substate, BytesRef::Fixed(output), self.tracer, self.vm_tracer) {
+        match ex.call(&params, self.substate, BytesRef::Fixed(output), self.tracer, self.vm_tracer) {
             Ok(FinalizationResult{ gas_left, return_data, apply_state: true }) => MessageCallResult::Success(gas_left, return_data),
              Ok(FinalizationResult{ gas_left, return_data, apply_state: false }) => MessageCallResult::Reverted(gas_left, return_data),
             _ => MessageCallResult::Failed,
@@ -271,7 +271,7 @@ where
         Self: Sized,
     {
         trace!("ret gas={}, data={:?}", gas, data);
-        let handle_copy = |to: &mut Option<&mut Bytes>| { to.as_mut().map(|b| **b = data.to_vec()); };
+        let handle_copy = |to: &mut Option<&mut Bytes>| { if let Some(b) = to.as_mut() { **b = data.to_vec(); } };
         match self.output {
             OutputPolicy::Return(BytesRef::Fixed(ref mut slice), ref mut copy) => {
                 handle_copy(copy);
@@ -313,8 +313,8 @@ where
 
         let address = self.origin_info.address;
         self.substate.logs.push(LogEntry {
-                                    address: address,
-                                    topics: topics,
+                                    address,
+                                    topics,
                                     data: data.to_vec(),
                                 });
         Ok(())

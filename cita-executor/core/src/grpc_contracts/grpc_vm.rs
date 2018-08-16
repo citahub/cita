@@ -35,7 +35,7 @@ pub fn extract_logs_from_response(sender: Address, response: &InvokeResponse) ->
             let data = Bytes::from(log.get_data());
             LogEntry {
                 address: sender,
-                topics: topics,
+                topics,
                 data: data.to_vec(),
             }
         })
@@ -51,9 +51,9 @@ pub struct CallEvmImpl<'a, B: 'a + StateBackend> {
 impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
     pub fn new(state: &'a mut State<B>, check_permission: bool) -> Self {
         CallEvmImpl {
-            state: state,
+            state,
             gas_used: 0.into(),
-            check_permission: check_permission,
+            check_permission,
         }
     }
 
@@ -79,23 +79,23 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         resp.wait_drop_metadata()
     }
 
-    pub fn save_contract_state(&mut self, executor: &Executor, contract_state: ContractState) {
+    pub fn save_contract_state(&mut self, executor: &Executor, contract_state: &ContractState) {
         let addr = contract_state.get_address();
         let mut batch = executor.db.read().transaction();
-        batch.write(db::COL_EXTRA, &addr, &contract_state);
+        batch.write(db::COL_EXTRA, &addr, contract_state);
         executor.db.read().write(batch).unwrap();
         service_registry::set_enable_contract_height(addr, contract_state.height);
     }
 
     pub fn save_response_state(&mut self, contract_address: Address, response: &InvokeResponse) {
-        for storage in response.get_storages().into_iter() {
+        for storage in &response.get_storages()[..] {
             let mut value = Vec::new();
             let key = H256::from_slice(storage.get_key());
             value.extend_from_slice(storage.get_value());
 
             trace!("recv resp: {:?}", storage);
             trace!("key: {:?}, value: {:?}", key, value);
-            self.set_bytes(contract_address, key, &value)
+            self.set_bytes(contract_address, key, &value[..])
         }
     }
 
@@ -103,17 +103,17 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         &mut self,
         executor: &Executor,
         t: &SignedTransaction,
-        env_info: EnvInfo,
-        action_params: ActionParams,
-        connect_info: ConnectInfo,
+        env_info: &EnvInfo,
+        action_params: &ActionParams,
+        connect_info: &ConnectInfo,
     ) -> Result<Receipt, Error> {
         let mut invoke_request = InvokeRequest::new();
-        invoke_request.set_param(action_params);
-        invoke_request.set_env_info(env_info.clone());
+        invoke_request.set_param(action_params.to_owned());
+        invoke_request.set_env_info(env_info.to_owned());
 
         let sender = *t.sender();
-        let nonce = self.state.nonce(&sender)?;
-        self.state.inc_nonce(&sender)?;
+        let nonce = self.state.nonce(&sender).map_err(|err| *err)?;
+        self.state.inc_nonce(&sender).map_err(|err| *err)?;
 
         trace!("permission should be check: {}", self.check_permission);
         if self.check_permission {
@@ -165,7 +165,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
             let height = env_info.get_number().parse::<u64>().unwrap();
             let contract_state =
                 ContractState::new(ip.to_string(), port, contract_address.to_string(), height);
-            self.save_contract_state(executor, contract_state);
+            self.save_contract_state(executor, &contract_state);
             self.save_response_state(contract_address, &resp);
             // todo cumulative gas
             let gas_left = U256::from_str(resp.get_gas_left()).unwrap();
@@ -191,7 +191,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         }
     }
 
-    pub fn set_bytes(&mut self, address: Address, key: H256, info: &Vec<u8>) {
+    pub fn set_bytes(&mut self, address: Address, key: H256, info: &[u8]) {
         let len = info.len();
         if len == 0 {
             return;

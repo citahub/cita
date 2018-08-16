@@ -12,12 +12,8 @@ pub struct ConnectInfo {
 }
 
 impl ConnectInfo {
-    pub fn new(ip: String, port: u16, addr: String) -> Self {
-        ConnectInfo {
-            ip: ip,
-            port: port,
-            address: addr,
-        }
+    pub fn new(ip: String, port: u16, address: String) -> Self {
+        ConnectInfo { ip, port, address }
     }
 
     pub fn get_ip(&self) -> &str {

@@ -23,8 +23,7 @@ use util::sha3;
 // Calculate function signature hash.
 pub fn calc_func_sig(function_name: &[u8]) -> u32 {
     let data = sha3::keccak256(function_name);
-    let signature = BigEndian::read_u32(&data);
-    signature
+    BigEndian::read_u32(&data)
 }
 
 // Extract function signature hash.

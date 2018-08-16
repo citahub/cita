@@ -294,28 +294,28 @@ mod tests {
 
         // 1) length=30
         let expected = format!("012345678901234567890123456789");
-        assert!(scalar.set_bytes(&mut ext, expected.clone()).is_ok());
+        assert!(scalar.set_bytes(&mut ext, &expected).is_ok());
         let value = scalar.get_bytes::<String>(&ext);
         assert!(value.is_ok());
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
 
         // 2) length=31
         let expected = format!("0123456789012345678901234567890");
-        assert!(scalar.set_bytes(&mut ext, expected.clone()).is_ok());
+        assert!(scalar.set_bytes(&mut ext, &expected).is_ok());
         let value = scalar.get_bytes::<String>(&ext);
         assert!(value.is_ok());
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
 
         // 3) length=32
         let expected = format!("01234567890123456789012345678901");
-        assert!(scalar.set_bytes(&mut ext, expected.clone()).is_ok());
+        assert!(scalar.set_bytes(&mut ext, &expected).is_ok());
         let value = scalar.get_bytes::<String>(&ext);
         assert!(value.is_ok());
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
 
         // 4) length=43
         let expected = format!("012345678901234567890123456789012");
-        assert!(scalar.set_bytes(&mut ext, expected.clone()).is_ok());
+        assert!(scalar.set_bytes(&mut ext, &expected).is_ok());
         let value = scalar.get_bytes::<String>(&ext);
         assert!(value.is_ok());
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
@@ -404,20 +404,20 @@ mod tests {
         let key = U256::from(2);
         let submap = array.get_map(index);
         let expected = U256::from(0x1234);
-        assert!(submap.set(&mut ext, key, expected).is_ok());
-        assert_eq!(submap.get::<U256>(&ext, key).unwrap(), expected);
+        assert!(submap.set(&mut ext, &key, expected).is_ok());
+        assert_eq!(submap.get::<U256>(&ext, &key).unwrap(), expected);
 
         // 4) array[1]["key"] = "1234"
         let key = String::from("key");
         let expected = String::from("1234");
         assert!(
             submap
-                .set_bytes::<String, String>(&mut ext, key.clone(), expected.clone())
+                .set_bytes::<String, String>(&mut ext, &key, &expected)
                 .is_ok()
         );
         assert_eq!(
             submap
-                .get_bytes::<String, String>(&ext, key.clone())
+                .get_bytes::<String, String>(&ext, &key)
                 .unwrap(),
             expected.clone()
         );
@@ -431,32 +431,32 @@ mod tests {
         // 1) map["key"] = "value"
         let key = U256::from(1);
         let value = U256::from(0x1234);
-        assert!(map.set(&mut ext, key, value).is_ok());
-        assert_eq!(map.get(&ext, key).unwrap(), value);
+        assert!(map.set(&mut ext, &key, value).is_ok());
+        assert_eq!(map.get(&ext, &key).unwrap(), value);
 
         // 2) map[0] = "1234567890"
         let key = U256::from(1);
         let value = String::from("1234567890");
-        assert!(map.set_bytes(&mut ext, key, value.clone()).is_ok());
+        assert!(map.set_bytes(&mut ext, &key, &value).is_ok());
         assert_eq!(
-            map.get_bytes::<U256, String>(&ext, key).unwrap(),
+            map.get_bytes::<U256, String>(&ext, &key).unwrap(),
             value.clone()
         );
 
         // 3) map[0] = "123456789012345678901234567890123"
         let key = U256::from(1);
         let value = String::from("123456789012345678901234567890123");
-        assert!(map.set_bytes(&mut ext, key, value.clone()).is_ok());
+        assert!(map.set_bytes(&mut ext, &key, &value).is_ok());
         assert_eq!(
-            map.get_bytes::<U256, String>(&ext, key).unwrap(),
-            value.clone()
+            map.get_bytes::<U256, String>(&ext, &key).unwrap(),
+            value
         );
 
         // 4) map["key"] = 0x1234;
         let key = String::from("key");
         let value = U256::from(0x1234);
-        assert!(map.set(&mut ext, key.clone(), value).is_ok());
-        assert_eq!(map.get(&ext, key.clone()).unwrap(), value);;
+        assert!(map.set(&mut ext, &key, value).is_ok());
+        assert_eq!(map.get(&ext, &key).unwrap(), value);;
     }
 
     #[test]
@@ -468,10 +468,10 @@ mod tests {
         let key1 = String::from("key1");
         let index = 2u64;
         let value = String::from("1234567890");
-        let sub_array = map.get_array(key1).unwrap();
+        let sub_array = map.get_array(&key1).unwrap();
         assert!(
             sub_array
-                .set_bytes(&mut ext, index.clone(), value.clone())
+                .set_bytes(&mut ext, index.clone(), &value)
                 .is_ok()
         );
         assert_eq!(
@@ -483,10 +483,10 @@ mod tests {
         let key1 = String::from("key1");
         let index = 4u64;
         let value = String::from("1234567890");
-        let sub_array = map.get_array(key1).unwrap();
+        let sub_array = map.get_array(&key1).unwrap();
         assert!(
             sub_array
-                .set_bytes(&mut ext, index.clone(), value.clone())
+                .set_bytes(&mut ext, index.clone(), &value)
                 .is_ok()
         );
         assert_eq!(
@@ -504,15 +504,15 @@ mod tests {
         let key1 = String::from("key1");
         let key2 = String::from("key2");
         let value = String::from("1234567890");
-        let sub_map = map.get_map(key1).unwrap();
+        let sub_map = map.get_map(&key1).unwrap();
         assert!(
             sub_map
-                .set_bytes(&mut ext, key2.clone(), value.clone())
+                .set_bytes(&mut ext, &key2, &value)
                 .is_ok()
         );
         assert_eq!(
             sub_map
-                .get_bytes::<String, String>(&ext, key2.clone())
+                .get_bytes::<String, String>(&ext, &key2)
                 .unwrap(),
             value.clone()
         );
@@ -521,10 +521,10 @@ mod tests {
         let key1 = String::from("key1");
         let key2 = U256::from(2);
         let value = String::from("1234567890");
-        let sub_map = map.get_map(key1).unwrap();
-        assert!(sub_map.set_bytes(&mut ext, key2, value.clone()).is_ok());
+        let sub_map = map.get_map(&key1).unwrap();
+        assert!(sub_map.set_bytes(&mut ext, &key2, &value).is_ok());
         assert_eq!(
-            sub_map.get_bytes::<_, String>(&ext, key2).unwrap(),
+            sub_map.get_bytes::<_, String>(&ext, &key2).unwrap(),
             value.clone()
         );
     }

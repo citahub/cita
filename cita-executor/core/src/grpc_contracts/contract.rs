@@ -44,16 +44,16 @@ pub fn is_grpc_contract(caddr: Address) -> bool {
 
 pub fn invoke_grpc_contract<B>(
     env_info: &EnvInfo,
-    params: ActionParams,
+    params: &ActionParams,
     state: &mut State<B>,
     check_permission: bool,
     _check_quota: bool,
-    connect_info: ConnectInfo,
+    connect_info: &ConnectInfo,
 ) -> GrpcResult<InvokeResponse>
 where
     B: StateBackend,
 {
-    let invoke_request = new_invoke_request(params, &connect_info, env_info);
+    let invoke_request = new_invoke_request(params, connect_info, env_info);
     let mut evm_impl = CallEvmImpl::new(state, check_permission);
     evm_impl.call(
         connect_info.get_ip(),
@@ -64,16 +64,16 @@ where
 
 pub fn create_grpc_contract<B>(
     env_info: &EnvInfo,
-    params: ActionParams,
+    params: &ActionParams,
     state: &mut State<B>,
     check_permission: bool,
     _check_quota: bool,
-    connect_info: ConnectInfo,
+    connect_info: &ConnectInfo,
 ) -> GrpcResult<InvokeResponse>
 where
     B: StateBackend,
 {
-    let invoke_request = new_invoke_request(params, &connect_info, env_info);
+    let invoke_request = new_invoke_request(params, connect_info, env_info);
     let mut evm_impl = CallEvmImpl::new(state, check_permission);
     evm_impl.create(
         connect_info.get_ip(),
@@ -83,7 +83,7 @@ where
 }
 
 fn new_invoke_request(
-    params: ActionParams,
+    params: &ActionParams,
     connect_info: &ConnectInfo,
     env_info: &EnvInfo,
 ) -> InvokeRequest {
@@ -94,7 +94,7 @@ fn new_invoke_request(
     proto_env_info.set_timestamp(format!("{}", timestamp));
     let mut proto_params = ProtoActionParams::new();
     proto_params.set_code_address(connect_info.get_addr().to_string());
-    proto_params.set_data(params.data.unwrap());
+    proto_params.set_data(params.data.to_owned().unwrap());
     proto_params.set_sender(params.sender.lower_hex());
     let mut invoke_request = InvokeRequest::new();
     invoke_request.set_param(proto_params);

@@ -27,7 +27,7 @@ pub struct NullEngine {
 impl NullEngine {
     /// Returns new instance of NullEngine with default VM Factory
     pub fn new(builtins: BTreeMap<Address, Builtin>) -> Self {
-        NullEngine { builtins: builtins }
+        NullEngine { builtins }
     }
 }
 

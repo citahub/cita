@@ -61,7 +61,7 @@ impl ExecutorInstance {
 
         let executor_config = Config::new(config_path);
         let grpc_port = executor_config.grpc_port;
-        let executor = Executor::init_executor(Arc::new(db), genesis, executor_config);
+        let executor = Executor::init_executor(Arc::new(db), genesis, &executor_config);
         let executor = Arc::new(executor);
         executor.set_gas_and_nodes(executor.get_max_height());
         executor.send_executed_info_to_chain(executor.get_max_height(), &ctx_pub);
@@ -185,7 +185,7 @@ impl ExecutorInstance {
                                     {
                                         self.ext.finalize_proposal(
                                             closed_block.clone(),
-                                            block,
+                                            &block,
                                             &self.ctx_pub,
                                         );
                                     }
@@ -254,7 +254,7 @@ impl ExecutorInstance {
                         Some(BlockInQueue::ConsensusBlock(coming, _)) => {
                             if coming.is_equivalent(&closed_block) {
                                 self.ext
-                                    .finalize_proposal(closed_block, coming, &self.ctx_pub);
+                                    .finalize_proposal(closed_block, &coming, &self.ctx_pub);
                                 info!("execute proposal block [height {}] finish !", number);
                             } else {
                                 // Maybe never reach
@@ -367,18 +367,11 @@ impl ExecutorInstance {
                     })
                     .map(|code_content| {
                         let address = Address::from_slice(code_content.address.as_ref());
-                        match self.ext.code_at(&address, code_content.block_id.into()) {
-                            Some(code) => match code {
-                                Some(code) => {
-                                    response.set_contract_code(code);
-                                }
-                                None => {
-                                    response.set_contract_code(vec![]);
-                                }
-                            },
-                            None => {
-                                response.set_contract_code(vec![]);
-                            }
+                        if let Some(code) = self.ext.code_at(&address, code_content.block_id.into())
+                        {
+                            response.set_contract_code(code);
+                        } else {
+                            response.set_contract_code(vec![]);
                         };
                     });
             }
@@ -392,18 +385,10 @@ impl ExecutorInstance {
                     })
                     .map(|abi_content| {
                         let address = Address::from_slice(abi_content.address.as_ref());
-                        match self.ext.abi_at(&address, abi_content.block_id.into()) {
-                            Some(abi) => match abi {
-                                Some(abi) => {
-                                    response.set_contract_abi(abi);
-                                }
-                                None => {
-                                    response.set_contract_abi(vec![]);
-                                }
-                            },
-                            None => {
-                                response.set_contract_abi(vec![]);
-                            }
+                        if let Some(abi) = self.ext.abi_at(&address, abi_content.block_id.into()) {
+                            response.set_contract_abi(abi);
+                        } else {
+                            response.set_contract_abi(vec![]);
                         };
                     });
             }
@@ -417,21 +402,13 @@ impl ExecutorInstance {
                     })
                     .map(|balance_content| {
                         let address = Address::from_slice(balance_content.address.as_ref());
-                        match self
+                        if let Some(balance) = self
                             .ext
                             .balance_at(&address, balance_content.block_id.into())
                         {
-                            Some(balance) => match balance {
-                                Some(balance) => {
-                                    response.set_balance(balance);
-                                }
-                                None => {
-                                    response.set_balance(vec![]);
-                                }
-                            },
-                            None => {
-                                response.set_balance(vec![]);
-                            }
+                            response.set_balance(balance);
+                        } else {
+                            response.set_balance(vec![]);
                         };
                     });
             }

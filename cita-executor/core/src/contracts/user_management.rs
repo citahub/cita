@@ -24,8 +24,8 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use types::reserved_addresses;
 
-const ALLGROUPS: &'static [u8] = &*b"queryGroups()";
-const ACCOUNTS: &'static [u8] = &*b"queryAccounts()";
+const ALLGROUPS: &[u8] = &*b"queryGroups()";
+const ACCOUNTS: &[u8] = &*b"queryAccounts()";
 
 lazy_static! {
     static ref ACCOUNTS_HASH: Vec<u8> = encode_contract_name(ACCOUNTS);

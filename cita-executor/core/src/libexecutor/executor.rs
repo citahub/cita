@@ -103,12 +103,10 @@ impl Config {
 impl BloomGroupDatabase for Executor {
     fn blooms_at(&self, position: &GroupPosition) -> Option<BloomGroup> {
         let position = LogGroupPosition::from(position.clone());
-        let result = self
-            .db
+        self.db
             .read()
             .read(db::COL_EXTRA, &position)
-            .map(Into::into);
-        result
+            .map(Into::into)
     }
 }
 
@@ -238,7 +236,7 @@ impl Executor {
     pub fn init_executor(
         db: Arc<KeyValueDB>,
         mut genesis: Genesis,
-        executor_config: Config,
+        executor_config: &Config,
     ) -> Executor {
         info!("executor config: {:?}", executor_config);
 
@@ -282,12 +280,12 @@ impl Executor {
             current_header: RwLock::new(header.clone()),
             is_sync: AtomicBool::new(false),
             is_interrupted: AtomicBool::new(false),
-            max_height: max_height,
+            max_height,
             block_map: RwLock::new(BTreeMap::new()),
             stage: RwLock::new(Stage::Idle),
             db: RwLock::new(db),
             state_db: RwLock::new(state_db),
-            factories: factories,
+            factories,
             last_hashes: RwLock::new(VecDeque::new()),
 
             executed_result: RwLock::new(executed_map),
@@ -316,16 +314,14 @@ impl Executor {
 
     /// Get block hash by number
     pub fn block_hash(&self, index: BlockNumber) -> Option<H256> {
-        let result = self.db.read().read(db::COL_EXTRA, &index);
-        result
+        self.db.read().read(db::COL_EXTRA, &index)
     }
 
     pub fn load_config_from_db(&self) -> Option<VecDeque<GlobalSysConfig>> {
-        let res = self.db.read().read(db::COL_EXTRA, &ConfigHistory);
-        if let Some(bres) = res {
-            return bin_deserialize(&bres).ok();
-        }
-        None
+        self.db
+            .read()
+            .read(db::COL_EXTRA, &ConfigHistory)
+            .and_then(|bres| bin_deserialize(&bres).ok())
     }
 
     pub fn set_sys_configs(&self, confs: VecDeque<GlobalSysConfig>) {
@@ -376,7 +372,7 @@ impl Executor {
             }
         }
         self.block_hash(number)
-            .map_or(None, |h| self.block_header_by_hash(h))
+            .and_then(|h| self.block_header_by_hash(h))
     }
 
     /// Get block header by hash
@@ -387,8 +383,7 @@ impl Executor {
                 return Some(header.clone());
             }
         }
-        let result = self.db.read().read(db::COL_HEADERS, &hash);
-        result
+        self.db.read().read(db::COL_HEADERS, &hash)
     }
 
     fn last_hashes(&self) -> LastHashes {
@@ -540,7 +535,7 @@ impl Executor {
     /// Attempt to get a copy of a specific block's final state.
     pub fn state_at(&self, id: BlockId) -> Option<State<StateDB>> {
         self.block_header(id)
-            .map_or(None, |h| self.gen_state(*h.state_root(), *h.parent_hash()))
+            .and_then(|h| self.gen_state(*h.state_root(), *h.parent_hash()))
     }
 
     /// Generate block's final state.
@@ -550,27 +545,27 @@ impl Executor {
     }
 
     /// Get code by address
-    pub fn code_at(&self, address: &Address, id: BlockId) -> Option<Option<Bytes>> {
+    pub fn code_at(&self, address: &Address, id: BlockId) -> Option<Bytes> {
         self.state_at(id)
             .and_then(|s| s.code(address).ok())
-            .map(|c| c.map(|c| (&*c).clone()))
+            .and_then(|c| c.map(|c| (&*c).clone()))
     }
 
     /// Get abi by address
-    pub fn abi_at(&self, address: &Address, id: BlockId) -> Option<Option<Bytes>> {
+    pub fn abi_at(&self, address: &Address, id: BlockId) -> Option<Bytes> {
         self.state_at(id)
             .and_then(|s| s.abi(address).ok())
-            .map(|c| c.map(|c| (&*c).clone()))
+            .and_then(|c| c.map(|c| (&*c).clone()))
     }
 
     /// Get balance by address
-    pub fn balance_at(&self, address: &Address, id: BlockId) -> Option<Option<Bytes>> {
+    pub fn balance_at(&self, address: &Address, id: BlockId) -> Option<Bytes> {
         self.state_at(id)
             .and_then(|s| s.balance(address).ok())
             .map(|c| {
                 let mut bytes = [0u8; 32];
                 c.to_big_endian(&mut bytes);
-                Some(bytes.to_vec())
+                bytes.to_vec()
             })
     }
 
@@ -579,10 +574,10 @@ impl Executor {
     }
 
     pub fn eth_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
-        let mut signed = self.sign_call(request);
-        let result = self.call(&mut signed, id, Default::default());
+        let signed = self.sign_call(request);
+        let result = self.call(&signed, id, Default::default());
         result
-            .map(|b| b.output.into())
+            .map(|b| b.output)
             .or_else(|e| Err(format!("Call Error {}", e)))
     }
 
@@ -612,10 +607,10 @@ impl Executor {
         let last_hashes = self.build_last_hashes(None, header.number());
         let env_info = EnvInfo {
             number: header.number(),
-            author: header.proposer().clone(),
+            author: *header.proposer(),
             timestamp: header.timestamp(),
             difficulty: U256::default(),
-            last_hashes: last_hashes,
+            last_hashes,
             gas_used: *header.gas_used(),
             gas_limit: *header.gas_limit(),
             account_gas_limit: u64::max_value().into(),
@@ -664,7 +659,7 @@ impl Executor {
 
         executed_map
             .entry(height)
-            .or_insert(ExecutedResult::new())
+            .or_insert_with(ExecutedResult::new)
             .set_config(send_config);
     }
 
@@ -752,7 +747,7 @@ impl Executor {
     /// 2. Update cache
     /// 3. Commited data to db
     /// Notice: Write db if and only if finalize block.
-    pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn finalize_block(&self, closed_block: &ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
         self.reorg_config(&closed_block);
         self.set_executed_result(&closed_block);
         self.pub_black_list(&closed_block, ctx_pub);
@@ -768,11 +763,11 @@ impl Executor {
     pub fn finalize_proposal(
         &self,
         mut closed_block: ClosedBlock,
-        coming: Block,
+        coming: &Block,
         ctx_pub: &Sender<(String, Vec<u8>)>,
     ) {
         closed_block.header.set_proof(coming.proof().clone());
-        self.finalize_block(closed_block, ctx_pub);
+        self.finalize_block(&closed_block, ctx_pub);
     }
 
     pub fn node_manager(&self) -> NodeManager {
@@ -785,16 +780,11 @@ impl Executor {
     /// 3. Account permissions
     /// 4. Prune history
     pub fn reorg_config(&self, close_block: &ClosedBlock) {
-        if close_block
-            .state
-            .cache()
-            .iter()
-            .filter(|(address, ref a)| {
-                a.is_dirty() && SYS_CONTRACT.contains(&address.lower_hex().as_ref())
-            })
-            .last()
-            .is_some()
-        {
+        let cache = close_block.state.cache();
+        let mut has_dirty = cache.iter().take_while(|(address, ref a)| {
+            a.is_dirty() && SYS_CONTRACT.contains(&address.lower_hex().as_ref())
+        });
+        if has_dirty.next().is_some() {
             self.reload_config();
         }
     }
@@ -839,7 +829,7 @@ impl Executor {
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
         let conf = self.get_sys_config(self.get_max_height());
-        let parent_hash = block.parent_hash().clone();
+        let parent_hash = *block.parent_hash();
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
             conf.clone(),
@@ -857,7 +847,7 @@ impl Executor {
                 closed_block.number(),
                 new_now.duration_since(now)
             );
-            self.finalize_block(closed_block, ctx_pub);
+            self.finalize_block(&closed_block, ctx_pub);
         } else {
             warn!("executing block is interrupted.");
         }
@@ -870,7 +860,7 @@ impl Executor {
         let conf = self.get_sys_config(self.get_max_height());
         let perm = conf.check_permission;
         let check_quota = conf.check_quota;
-        let parent_hash = block.parent_hash().clone();
+        let parent_hash = *block.parent_hash();
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
             conf,
@@ -927,10 +917,13 @@ impl Executor {
                     .values()
                     .filter(|address| {
                         // 100 is a basic quota/gas
-                        close_block.state.balance(address).unwrap_or(U256::zero())
-                            >= U256::from(100)
+                        close_block
+                            .state
+                            .balance(address)
+                            .and_then(|x| Ok(x >= U256::from(100)))
+                            .unwrap_or(false)
                     })
-                    .map(|address| *address)
+                    .cloned()
                     .collect();
 
                 // Get address of sending account by transaction hash
@@ -946,7 +939,7 @@ impl Executor {
                     let mut black_list_cache = self.black_list_cache.write();
                     black_list_cache
                         .prune(&clear_list)
-                        .extend(blacklist.clone(), close_block.number());
+                        .extend(&blacklist[..], close_block.number());
                     clear_list.extend(black_list_cache.lru().iter());
                 }
 
@@ -954,7 +947,7 @@ impl Executor {
                     .set_black_list(blacklist)
                     .set_clear_list(clear_list);
 
-                if black_list.len() > 0 {
+                if !black_list.is_empty() {
                     let black_list_bytes: Message = black_list.protobuf().into();
 
                     info!(
@@ -1028,7 +1021,7 @@ where
         LRUCache {
             cache_by_key: BTreeMap::new(),
             cache_by_value: BTreeMap::new(),
-            lru_number: lru_number,
+            lru_number,
         }
     }
 
@@ -1043,10 +1036,10 @@ where
     }
 
     /// Extend key-value pairs
-    pub fn extend(&mut self, extend: Vec<V>, key: K) -> &mut Self {
+    pub fn extend(&mut self, extend: &[V], key: K) -> &mut Self {
         if !extend.is_empty() {
-            extend.clone().into_iter().for_each(|value| {
-                let _ = self.cache_by_value.insert(value, key.clone());
+            extend.iter().for_each(|value| {
+                let _ = self.cache_by_value.insert(value.clone(), key.clone());
             });
             self.cache_by_key.insert(key, extend.to_owned());
         }
@@ -1054,9 +1047,8 @@ where
     }
 
     /// Precise prune value
-    pub fn prune(&mut self, value_list: &Vec<V>) -> &mut Self {
+    pub fn prune(&mut self, value_list: &[V]) -> &mut Self {
         let keys: HashSet<K> = value_list
-            .clone()
             .iter()
             .map(|value| self.cache_by_value.remove(&value).unwrap())
             .collect();
@@ -1108,12 +1100,12 @@ where
     }
 
     /// Gets an iterator over the values of the map, in order by key.
-    pub fn values<'a>(&'a self) -> Keys<'a, V, K> {
+    pub fn values(&self) -> Keys<V, K> {
         self.cache_by_value.keys()
     }
 
     /// Gets an iterator over the keys of the map, in sorted order.
-    pub fn keys<'a>(&'a self) -> Values<'a, V, K> {
+    pub fn keys(&self) -> Values<V, K> {
         self.cache_by_value.values()
     }
 }
@@ -1214,8 +1206,8 @@ mod tests {
     fn test_lru() {
         let mut cache = LRUCache::new(2);
         cache
-            .extend(vec![Address::from([0; 20]), Address::from([1; 20])], 1)
-            .extend(vec![Address::from([2; 20]), Address::from([3; 20])], 2);
+            .extend(&vec![Address::from([0; 20]), Address::from([1; 20])], 1)
+            .extend(&vec![Address::from([2; 20]), Address::from([3; 20])], 2);
         assert!(cache.contains_by_value(&Address::from([0; 20])));
         assert!(cache.contains_by_value(&Address::from([3; 20])));
 
@@ -1224,19 +1216,19 @@ mod tests {
         assert_eq!(cache.contains_by_value(&Address::from([1; 20])), false);
         assert_eq!(cache.contains_by_value(&Address::from([2; 20])), true);
 
-        cache.extend(vec![Address::from([2; 20]), Address::from([3; 20])], 3);
+        cache.extend(&vec![Address::from([2; 20]), Address::from([3; 20])], 3);
         assert_eq!(cache.lru(), Vec::new());
 
-        cache.extend(vec![Address::from([2; 20]), Address::from([3; 20])], 4);
+        cache.extend(&vec![Address::from([2; 20]), Address::from([3; 20])], 4);
         assert_eq!(cache.lru(), Vec::new());
 
-        cache.extend(vec![Address::from([4; 20]), Address::from([5; 20])], 5);
+        cache.extend(&vec![Address::from([4; 20]), Address::from([5; 20])], 5);
         assert_eq!(
             cache.lru(),
             vec![Address::from([2; 20]), Address::from([3; 20])]
         );
 
-        cache.extend(vec![Address::from([4; 20]), Address::from([5; 20])], 5);
+        cache.extend(&vec![Address::from([4; 20]), Address::from([5; 20])], 5);
         assert_eq!(
             cache.lru(),
             vec![Address::from([4; 20]), Address::from([5; 20])]

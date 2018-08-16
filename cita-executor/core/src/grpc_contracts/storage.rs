@@ -6,15 +6,15 @@ use util::trie;
 pub fn set_storage<B>(
     state: &mut State<B>,
     address: Address,
-    key: Vec<u8>,
-    value: Vec<u8>,
+    key: &[u8],
+    value: &[u8],
 ) -> trie::Result<()>
 where
     B: Backend,
 {
     let mut v = Vec::new();
-    let k = H256::from_slice(&key);
-    v.extend_from_slice(&value);
+    let k = H256::from_slice(key);
+    v.extend_from_slice(value);
 
     let len = v.len();
     if len == 0 {

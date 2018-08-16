@@ -28,8 +28,8 @@ use std::iter;
 use std::str::FromStr;
 use types::reserved_addresses;
 
-const LIST_NODE: &'static [u8] = &*b"listNode()";
-const LIST_STAKE: &'static [u8] = *&b"listStake()";
+const LIST_NODE: &[u8] = &*b"listNode()";
+const LIST_STAKE: &[u8] = &*b"listStake()";
 /// Each epoch is divided into 1000 slots, each slot represent one opportunity of block proposer
 const EPOCH: u64 = 1000;
 
@@ -113,7 +113,7 @@ impl<'a> NodeManager<'a> {
             return nodes;
         }
         let stakes = self.stakes();
-        let total = stakes.iter().fold(0, |acc, &x| acc + x);
+        let total: u64 = stakes.iter().sum();
 
         if total == 0 {
             return nodes;

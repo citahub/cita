@@ -33,15 +33,15 @@ use util::{DBTransaction, HashDB, JournalDB, KeyValueDB, Mutex, UtilError};
 /// Value used to initialize bloom bitmap size.
 ///
 /// Bitmap size is the size in bytes (not bits) that will be allocated in memory.
-pub const ACCOUNT_BLOOM_SPACE: usize = 1048576;
+pub const ACCOUNT_BLOOM_SPACE: usize = 1_048_576;
 
 /// Value used to initialize bloom items count.
 ///
 /// Items count is an estimation of the maximum number of items to store.
-pub const DEFAULT_ACCOUNT_PRESET: usize = 1000000;
+pub const DEFAULT_ACCOUNT_PRESET: usize = 1_000_000;
 
 /// Key for a value storing amount of hashes
-pub const ACCOUNT_BLOOM_HASHCOUNT_KEY: &'static [u8] = b"account_hash_count";
+pub const ACCOUNT_BLOOM_HASHCOUNT_KEY: &[u8] = b"account_hash_count";
 
 const STATE_CACHE_BLOCKS: usize = 12;
 
@@ -114,7 +114,7 @@ impl StateDB {
         let cache_items = acc_cache_size / ::std::mem::size_of::<Option<Account>>();
 
         StateDB {
-            db: db,
+            db,
             account_cache: Arc::new(Mutex::new(AccountCache {
                 accounts: LruCache::new(cache_items),
                 modifications: VecDeque::new(),
@@ -122,7 +122,7 @@ impl StateDB {
             code_cache: Arc::new(Mutex::new(MemoryLruCache::new(code_cache_size))),
             local_cache: Vec::new(),
             account_bloom: Arc::new(Mutex::new(bloom)),
-            cache_size: cache_size,
+            cache_size,
             parent_hash: None,
             commit_hash: None,
             commit_number: None,
@@ -155,7 +155,7 @@ impl StateDB {
                 .unwrap_or(0u64);
         }
 
-        let bloom = Bloom::from_parts(&bloom_parts, hash_count as u32);
+        let bloom = Bloom::from_parts(&bloom_parts, u32::from(hash_count));
         trace!(target: "account_bloom", "Bloom is {:?} full, hash functions count = {:?}",
                bloom.saturation(), hash_count);
         bloom
@@ -192,7 +192,7 @@ impl StateDB {
             Self::commit_bloom(batch, bloom_lock.drain_journal())?;
         }
         let records = self.db.journal_under(batch, now, id)?;
-        self.commit_hash = Some(id.clone());
+        self.commit_hash = Some(*id);
         self.commit_number = Some(now);
         Ok(records)
     }
@@ -282,7 +282,7 @@ impl StateDB {
             trace!("committing {} cache entries", self.local_cache.len());
             for account in self.local_cache.drain(..) {
                 if account.modified {
-                    modifications.insert(account.address.clone());
+                    modifications.insert(account.address);
                 }
                 if is_best {
                     let acc = account.account.0;
@@ -304,9 +304,9 @@ impl StateDB {
             let block_changes = BlockChanges {
                 accounts: modifications,
                 number: *number,
-                hash: hash.clone(),
+                hash: *hash,
                 is_canon: is_best,
-                parent: parent.clone(),
+                parent: *parent,
             };
             let insert_at = cache
                 .modifications
@@ -347,7 +347,7 @@ impl StateDB {
             local_cache: Vec::new(),
             account_bloom: self.account_bloom.clone(),
             cache_size: self.cache_size,
-            parent_hash: Some(parent.clone()),
+            parent_hash: Some(*parent),
             commit_hash: None,
             commit_number: None,
         }
@@ -427,11 +427,11 @@ impl Backend for StateDB {
         self.db.as_hashdb_mut()
     }
 
-    fn add_to_account_cache(&mut self, addr: Address, data: Option<Account>, modified: bool) {
+    fn add_to_account_cache(&mut self, address: Address, data: Option<Account>, modified: bool) {
         self.local_cache.push(CacheQueueItem {
-            address: addr,
+            address,
             account: SyncAccount(data),
-            modified: modified,
+            modified,
         })
     }
 
@@ -441,7 +441,7 @@ impl Backend for StateDB {
         cache.insert(hash, code);
     }
 
-    fn get_cached_account(&self, addr: &Address) -> Option<Option<Account>> {
+    fn get_cached_account(&self, addr: &Address) -> Option<Account> {
         let mut cache = self.account_cache.lock();
         if !Self::is_allowed(addr, &self.parent_hash, &cache.modifications) {
             return None;
@@ -449,7 +449,7 @@ impl Backend for StateDB {
         cache
             .accounts
             .get_mut(addr)
-            .map(|a| a.as_ref().map(|a| a.clone_basic()))
+            .and_then(|a| a.as_ref().map(|a| a.clone_basic()))
     }
 
     fn get_cached<F, U>(&self, a: &Address, f: F) -> Option<U>
@@ -466,7 +466,7 @@ impl Backend for StateDB {
     fn get_cached_code(&self, hash: &H256) -> Option<Arc<Vec<u8>>> {
         let mut cache = self.code_cache.lock();
 
-        cache.get_mut(hash).map(|code| code.clone())
+        cache.get_mut(hash).cloned()
     }
 
     fn note_non_null_account(&self, address: &Address) {
@@ -477,9 +477,7 @@ impl Backend for StateDB {
 
     fn is_known_null(&self, address: &Address) -> bool {
         trace!(target: "account_bloom", "Check account bloom: {:?}", address);
-        let bloom = self.account_bloom.lock();
-        let is_null = !bloom.check(address);
-        is_null
+        !self.account_bloom.lock().check(address)
     }
 }
 

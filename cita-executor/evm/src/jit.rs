@@ -302,7 +302,7 @@ pub struct JitEvm {
 }
 
 impl evm::Evm for JitEvm {
-    fn exec(&mut self, params: ActionParams, ext: &mut evm::Ext) -> evm::Result<GasLeft> {
+    fn exec(&mut self, params: &ActionParams, ext: &mut evm::Ext) -> evm::Result<GasLeft> {
         // Dirty hack. This is unsafe, but we interact with ffi, so it's justified.
         let ext_adapter: ExtAdapter<'static> = unsafe { ::std::mem::transmute(ExtAdapter::new(ext, params.address.clone())) };
         let mut ext_handle = evmjit::ExtHandle::new(ext_adapter);
