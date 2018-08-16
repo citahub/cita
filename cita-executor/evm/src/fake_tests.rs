@@ -89,7 +89,7 @@ impl Default for Schedule {
 
 impl Ext for FakeExt {
     fn storage_at(&self, key: &H256) -> error::Result<H256> {
-        Ok(self.store.get(key).unwrap_or(&H256::new()).clone())
+        Ok(self.store.get(key).cloned().unwrap_or_default())
     }
 
     fn set_storage(&mut self, key: H256, value: H256) -> error::Result<()> {
@@ -114,7 +114,7 @@ impl Ext for FakeExt {
     }
 
     fn blockhash(&self, number: &U256) -> H256 {
-        self.blockhashes.get(number).unwrap_or(&H256::new()).clone()
+        self.blockhashes.get(number).cloned().unwrap_or_default()
     }
 
     fn create(&mut self, gas: &U256, value: &U256, code: &[u8]) -> ContractCreateResult {
@@ -135,11 +135,11 @@ impl Ext for FakeExt {
         self.calls.insert(FakeCall {
                               call_type: FakeCallType::Call,
                               gas: *gas,
-                              sender_address: Some(sender_address.clone()),
-                              receive_address: Some(receive_address.clone()),
-                              value: value,
+                              sender_address: Some(*sender_address),
+                              receive_address: Some(*receive_address),
+                              value,
                               data: data.to_vec(),
-                              code_address: Some(code_address.clone()),
+                              code_address: Some(*code_address),
                           });
         MessageCallResult::Success(*gas, ReturnData::empty())
     }
@@ -153,10 +153,11 @@ impl Ext for FakeExt {
     }
 
     fn log(&mut self, topics: Vec<H256>, data: &[u8]) -> error::Result<()> {
-        Ok(self.logs.push(FakeLogEntry {
-                           topics: topics,
+        self.logs.push(FakeLogEntry {
+                           topics,
                            data: data.to_vec(),
-                       }))
+                       });
+        Ok(())
     }
 
     fn ret(self, _gas: &U256, _data: &ReturnData, _apply_state: bool) -> error::Result<U256> {

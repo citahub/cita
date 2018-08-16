@@ -208,7 +208,7 @@ impl CrossChainVerify {
 
         let result = self
             .state_roots
-            .get_array(chain_id_u256)
+            .get_array(&chain_id_u256)
             .unwrap()
             .get(ext, block_number);
         if result.is_err() {
@@ -216,7 +216,7 @@ impl CrossChainVerify {
         }
         let result1 = self
             .state_roots
-            .get_array(chain_id_u256)
+            .get_array(&chain_id_u256)
             .unwrap()
             .get(ext, block_number + 1);
         if result1.is_err() {
@@ -304,7 +304,7 @@ impl CrossChainVerify {
         trace!("data = {:?}", block_header_curr_bytes);
         let block_header_curr = Header::from_bytes(&block_header_curr_bytes);
 
-        let block_header_prev_bytes: Vec<u8> = self.block_headers.get_bytes(ext, chain_id_u256)?;
+        let block_header_prev_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id_u256)?;
 
         let verify_result = if block_header_prev_bytes.len() == 0 {
             trace!("sync first block header");
@@ -325,13 +325,13 @@ impl CrossChainVerify {
         if verify_result {
             trace!("store the {} block header", block_header_curr.number());
             self.block_headers
-                .set_bytes(ext, chain_id_u256, block_header_curr_bytes)?;
+                .set_bytes(ext, &chain_id_u256, &block_header_curr_bytes)?;
             trace!(
                 "store the {} block state root {}",
                 block_header_curr.number(),
                 block_header_curr.state_root()
             );
-            self.state_roots.get_array(chain_id_u256).unwrap().set(
+            self.state_roots.get_array(&chain_id_u256).unwrap().set(
                 ext,
                 block_header_curr.number(),
                 &U256::from(block_header_curr.state_root()),
@@ -385,7 +385,7 @@ impl CrossChainVerify {
         let chain_id = chain_id_u256.low_u32();
         trace!("chain_id = {}", chain_id);
 
-        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(ext, chain_id_u256)?;
+        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id_u256)?;
 
         let block_number = if block_header_bytes.len() == 0 {
             0

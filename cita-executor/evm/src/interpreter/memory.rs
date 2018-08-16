@@ -55,7 +55,7 @@ impl Memory for Vec<u8> {
         for i in self.iter() {
             println!("{:02x} ", i);
         }
-        println!("");
+        println!();
     }
 
     fn size(&self) -> usize {

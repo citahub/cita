@@ -85,11 +85,12 @@ pub struct Scalar {
 
 impl Scalar {
     pub fn new(position: H256) -> Self {
-        Scalar { position: position }
+        Scalar { position }
     }
     // single element
     pub fn set(self: &Self, ext: &mut Ext, value: U256) -> Result<(), EvmError> {
-        Ok(ext.set_storage(self.position, H256::from(value))?)
+        ext.set_storage(self.position, H256::from(value))?;
+        Ok(())
     }
 
     pub fn get(self: &Self, ext: &Ext) -> Result<U256, EvmError> {
@@ -98,7 +99,7 @@ impl Scalar {
     }
 
     // bytes & string
-    pub fn set_bytes<T>(self: &Self, ext: &mut Ext, value: T) -> Result<(), EvmError>
+    pub fn set_bytes<T>(self: &Self, ext: &mut Ext, value: &T) -> Result<(), EvmError>
     where
         T: Serialize,
     {
@@ -159,7 +160,7 @@ pub struct Array {
 }
 impl Array {
     pub fn new(position: H256) -> Self {
-        Array { position: position }
+        Array { position }
     }
     #[inline]
     fn key(&self, index: u64) -> H256 {
@@ -177,7 +178,7 @@ impl Array {
         scalar.get(ext)
     }
 
-    pub fn set_bytes<T>(self: &Self, ext: &mut Ext, index: u64, value: T) -> Result<(), EvmError>
+    pub fn set_bytes<T>(self: &Self, ext: &mut Ext, index: u64, value: &T) -> Result<(), EvmError>
     where
         T: Serialize,
     {
@@ -219,10 +220,10 @@ pub struct Map {
 
 impl Map {
     pub fn new(position: H256) -> Self {
-        Map { position: position }
+        Map { position }
     }
     #[inline]
-    fn key<Key>(&self, key: Key) -> Result<H256, EvmError>
+    fn key<Key>(&self, key: &Key) -> Result<H256, EvmError>
     where
         Key: Serialize,
     {
@@ -231,14 +232,14 @@ impl Map {
         bytes.extend_from_slice(self.position.as_ref());
         Ok(H256::from_slice(&sha3::keccak256(&bytes)))
     }
-    pub fn set<Key>(self: &Self, ext: &mut Ext, key: Key, value: U256) -> Result<(), EvmError>
+    pub fn set<Key>(self: &Self, ext: &mut Ext, key: &Key, value: U256) -> Result<(), EvmError>
     where
         Key: Serialize,
     {
         Scalar::new(self.key(key)?).set(ext, value)
     }
 
-    pub fn get<Key>(self: &Self, ext: &Ext, key: Key) -> Result<U256, EvmError>
+    pub fn get<Key>(self: &Self, ext: &Ext, key: &Key) -> Result<U256, EvmError>
     where
         Key: Serialize,
     {
@@ -248,8 +249,8 @@ impl Map {
     pub fn set_bytes<Key, Value>(
         self: &Self,
         ext: &mut Ext,
-        key: Key,
-        value: Value,
+        key: &Key,
+        value: &Value,
     ) -> Result<(), EvmError>
     where
         Key: Serialize,
@@ -258,7 +259,7 @@ impl Map {
         Scalar::new(self.key(key)?).set_bytes(ext, value)
     }
 
-    pub fn get_bytes<Key, Value>(self: &Self, ext: &Ext, key: Key) -> Result<Value, EvmError>
+    pub fn get_bytes<Key, Value>(self: &Self, ext: &Ext, key: &Key) -> Result<Value, EvmError>
     where
         Key: Serialize,
         Value: Deserialize,
@@ -266,14 +267,14 @@ impl Map {
         Ok(*Scalar::new(self.key(key)?).get_bytes(ext)?)
     }
 
-    pub fn get_array<Key>(self: &mut Self, key: Key) -> Result<Array, EvmError>
+    pub fn get_array<Key>(self: &mut Self, key: &Key) -> Result<Array, EvmError>
     where
         Key: Serialize,
     {
         Ok(Array::new(self.key(key)?))
     }
 
-    pub fn get_map<Key>(self: &mut Self, key: Key) -> Result<Map, EvmError>
+    pub fn get_map<Key>(self: &mut Self, key: &Key) -> Result<Map, EvmError>
     where
         Key: Serialize,
     {

@@ -45,9 +45,9 @@ impl ReturnData {
     /// Create `ReturnData` from give buffer and slice.
     pub fn new(mem: Vec<u8>, offset: usize, size: usize) -> Self {
         ReturnData {
-            mem: mem,
-            offset: offset,
-            size: size,
+            mem,
+            offset,
+            size,
         }
     }
 }

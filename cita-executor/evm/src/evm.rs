@@ -47,10 +47,10 @@ pub trait Finalize {
 impl Finalize for Result<GasLeft> {
     fn finalize<E: Ext>(self, ext: E) -> Result<FinalizationResult> {
         match self {
-            Ok(GasLeft::Known(gas_left)) => Ok(FinalizationResult { gas_left: gas_left, apply_state: true, return_data: ReturnData::empty() }),
+            Ok(GasLeft::Known(gas_left)) => Ok(FinalizationResult { gas_left, apply_state: true, return_data: ReturnData::empty() }),
             Ok(GasLeft::NeedsReturn {gas_left, data, apply_state}) => ext.ret(&gas_left, &data, apply_state).map(|gas_left| FinalizationResult {
-                gas_left: gas_left,
-                apply_state: apply_state,
+                gas_left,
+                apply_state,
                 return_data: data
              }),
             Err(err) => Err(err),
