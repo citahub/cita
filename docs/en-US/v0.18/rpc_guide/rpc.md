@@ -1,7 +1,7 @@
 # CITA JSON-RPC
 
-!> **接口名称更改！**
-老版本用户请注意，为了让接口更加清晰明了，最新版本的CITA去掉了0.16及更老版本中接口的前缀。
+!> **Methods Name Changed ！**
+For the user of V0.16 and older versions: Please pay attention that we deprecated the pre-fix in the name of Json-RPC interfaces, which makes it looks more tidy and easier to use.
 
 ## JSON-RPC
 
@@ -26,7 +26,7 @@
 * [getTransactionProof](#gettransactionproof)
 * [getMetaData](#getmetadata)
 * [getBlockHeader](#getBlockHeader)
-* [getStateProof](#getStateProof)
+* [getStateProof](getStateProof)
 
 ***
 
@@ -1075,7 +1075,7 @@ params: [
 
 ### getBlockHeader
 
-根据高度获取块头，侧链功能使用。
+Get block header by block number. For sidechain.
 
 * Parameters
 
@@ -1108,7 +1108,7 @@ params: [
 
 ### getStateProof
 
-获取合约中一个变量在指定高度的值的证明。侧链功能使用。
+Get proof of a special variable at special block number. For sidechain.
 
 * Parameters
 

@@ -8,4 +8,4 @@ const default_language = 'zh-CN';
 const versionIsSupported = true;
 
 //github url for enabling Edit on GitHub
-const github_url = 'https://github.com/cryptape/cita/blob/gh-pages/';
+const github_url = 'https://github.com/cryptape/cita/blob/develop/docs/';

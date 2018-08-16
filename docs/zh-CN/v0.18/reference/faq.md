@@ -32,6 +32,6 @@ CITA当前支持以太坊的EVM，由于EVM支持图灵完备的语言，所以�
 
 ## 参考文献
 
-- On Settlement finality: [https://blog.ethereum.org/2016/05/09/on-settlement-finality/Security](https://blog.ethereum.org/2016/05/09/on-settlement-finality/)
+- On Settlement finality: [https://blog.ethereum.org/2016/05/09/on-settlement-finality/Security](https://blog.ethereum.org/2016/05/09/on-settlement-finality/Security)
 - How long would it take a large computer to crack a private key?: [https://bitcoin.stackexchange.com/questions/2847/how-long-would-it-take-a-large-computer-to-crack-a-private-key](https://bitcoin.stackexchange.com/questions/2847/how-long-would-it-take-a-large-computer-to-crack-a-private-key)
 - Design Rationale - ethereum/wiki: [https://github.com/ethereum/wiki/wiki/Design-Rationale#accounts-and-not-utxos](https://github.com/ethereum/wiki/wiki/Design-Rationale#accounts-and-not-utxos)
