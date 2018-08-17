@@ -12,6 +12,8 @@ Contracts:
   - delayBlockNumber: 1
   - checkPermission: false
   - checkQuota: false
+  - checkFeeBackPlatform: false
+  - chainOwner: '0x0000000000000000000000000000000000000000'
   - chainName: test-chain
   - chainId: 1
   - operator: test-operator

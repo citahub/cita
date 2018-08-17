@@ -24,6 +24,12 @@ interface SysConfigInterface {
     /// @notice Whether check quota in the system or not, true represents check and false represents don't check.
     function getQuotaCheck() external view returns (bool);
 
+    /// @notice Whether check transaction fee back to operation platform or not, true represents back to platform and false represents back to nodes
+    function getFeeBackPlatformCheck() external view returns (bool);
+
+    /// @notice The owner of the chain
+    function getChainOwner() external view returns (address);
+
     /// @notice The name of current chain
     function getChainName() external view returns (string);
 
@@ -52,6 +58,8 @@ contract SysConfig is SysConfigInterface, EconomicalType{
     uint delayBlockNumber;
     bool checkPermission;
     bool checkQuota;
+    bool checkFeeBackPlatform;
+    address chainOwner;
     string chainName;
     uint32 chainId;
     string operator;
@@ -71,6 +79,8 @@ contract SysConfig is SysConfigInterface, EconomicalType{
         uint _delayBlockNumber,
         bool _checkPermission,
         bool _checkQuota,
+        bool _checkFeeBackPlatform,
+        address _chainOwner,
         string _chainName,
         uint32 _chainId,
         string _operator,
@@ -87,6 +97,8 @@ contract SysConfig is SysConfigInterface, EconomicalType{
         delayBlockNumber = _delayBlockNumber;
         checkPermission = _checkPermission;
         checkQuota = _checkQuota;
+        checkFeeBackPlatform = _checkFeeBackPlatform;
+        chainOwner = _chainOwner;
         chainName = _chainName;
         chainId = _chainId;
         operator = _operator;
@@ -140,6 +152,22 @@ contract SysConfig is SysConfigInterface, EconomicalType{
         returns (bool)
     {
         return checkQuota && (economicalModel == EconomicalModel.Quota);
+    }
+
+    function getFeeBackPlatformCheck()
+        public
+        view
+        returns (bool)
+    {
+        return checkFeeBackPlatform;
+    }
+
+    function getChainOwner()
+        public
+        view
+        returns (address)
+    {
+        return chainOwner;
     }
 
     function getChainName()

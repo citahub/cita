@@ -34,6 +34,9 @@ lazy_static! {
     static ref DELAY_BLOCK_NUMBER: Vec<u8> = encode_contract_name(b"getDelayBlockNumber()");
     static ref PERMISSION_CHECK: Vec<u8> = encode_contract_name(b"getPermissionCheck()");
     static ref QUOTA_CHECK: Vec<u8> = encode_contract_name(b"getQuotaCheck()");
+    static ref FEE_BACK_PLATFORM_CHECK: Vec<u8> =
+        encode_contract_name(b"getFeeBackPlatformCheck()");
+    static ref CHAIN_OWNER: Vec<u8> = encode_contract_name(b"getChainOwner()");
     static ref CHAIN_NAME: Vec<u8> = encode_contract_name(b"getChainName()");
     static ref CHAIN_ID: Vec<u8> = encode_contract_name(b"getChainId()");
     static ref OPERATOR: Vec<u8> = encode_contract_name(b"getOperator()");
@@ -116,6 +119,34 @@ impl<'a> SysConfig<'a> {
                 .expect("decode check quota");
         debug!("check quota: {:?}", check);
         check
+    }
+
+    /// Check fee back to platform or node
+    pub fn fee_back_platform_check(&self) -> bool {
+        let check =
+            self.get_value(
+                &[ParamType::Bool],
+                FEE_BACK_PLATFORM_CHECK.as_slice(),
+                Some(BlockId::Latest),
+            ).remove(0)
+                .to_bool()
+                .unwrap_or_else(|| false);
+        debug!("check fee back platform: {:?}", check);
+        check
+    }
+
+    // The owner of current chain
+    pub fn chain_owner(&self) -> Address {
+        let chain_owner =
+            self.get_value(
+                &[ParamType::Address],
+                CHAIN_OWNER.as_slice(),
+                Some(BlockId::Latest),
+            ).remove(0)
+                .to_address()
+                .unwrap_or_else(|| [0u8; 20]);
+        debug!("Get chain owner: {:?}", chain_owner);
+        Address::from(chain_owner)
     }
 
     /// The name of current chain
@@ -230,6 +261,8 @@ mod tests {
     extern crate mktemp;
 
     use super::{EconomicalModel, SysConfig, TokenInfo};
+    use cita_types::Address;
+    use std::str::FromStr;
     use tests::helpers::init_executor;
 
     #[test]
@@ -251,6 +284,26 @@ mod tests {
         let executor = init_executor(vec![("SysConfig.checkQuota", "true")]);
         let check_quota = SysConfig::new(&executor).quota_check();
         assert_eq!(check_quota, true);
+    }
+
+    #[test]
+    fn test_fee_back_platform_check() {
+        let executor = init_executor(vec![("SysConfig.checkFeeBackPlatform", "true")]);
+        let check_fee_back_platform = SysConfig::new(&executor).fee_back_platform_check();
+        assert_eq!(check_fee_back_platform, true);
+    }
+
+    #[test]
+    fn test_chain_owner() {
+        let executor = init_executor(vec![(
+            "SysConfig.chainOwner",
+            "0x0000000000000000000000000000000000000000",
+        )]);
+        let value = SysConfig::new(&executor).chain_owner();
+        assert_eq!(
+            value,
+            Address::from_str("0000000000000000000000000000000000000000").unwrap()
+        );
     }
 
     #[test]

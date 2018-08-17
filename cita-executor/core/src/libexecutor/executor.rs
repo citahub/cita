@@ -169,6 +169,8 @@ pub struct GlobalSysConfig {
     pub changed_height: usize,
     pub check_quota: bool,
     pub check_permission: bool,
+    pub check_fee_back_platform: bool,
+    pub chain_owner: Address,
     pub account_permissions: HashMap<Address, Vec<Resource>>,
     pub group_accounts: HashMap<Address, Vec<Address>>,
     pub super_admin_account: Option<Address>,
@@ -186,6 +188,8 @@ impl GlobalSysConfig {
             changed_height: 0,
             check_quota: false,
             check_permission: false,
+            check_fee_back_platform: false,
+            chain_owner: Address::from(0),
             account_permissions: HashMap::new(),
             group_accounts: HashMap::new(),
             super_admin_account: None,
@@ -634,6 +638,8 @@ impl Executor {
             &self.factories.native,
             false,
             EconomicalModel::Quota,
+            false,
+            Address::from(0),
         ).transact(t, options)
             .map_err(Into::into)
     }
@@ -797,6 +803,8 @@ impl Executor {
         conf.delay_active_interval = sys_config.delay_block_number() as usize;
         conf.check_permission = sys_config.permission_check();
         conf.check_quota = sys_config.quota_check();
+        conf.check_fee_back_platform = sys_config.fee_back_platform_check();
+        conf.chain_owner = sys_config.chain_owner();
         conf.block_interval = sys_config.block_interval();
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
         conf.super_admin_account = PermissionManagement::get_super_admin_account(self);
@@ -839,7 +847,13 @@ impl Executor {
             current_state_root,
             last_hashes.into(),
         ).unwrap();
-        if open_block.apply_transactions(self, conf.check_permission, conf.check_quota) {
+        if open_block.apply_transactions(
+            self,
+            conf.check_permission,
+            conf.check_quota,
+            conf.check_fee_back_platform,
+            conf.chain_owner,
+        ) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
             info!(
@@ -860,6 +874,8 @@ impl Executor {
         let conf = self.get_sys_config(self.get_max_height());
         let perm = conf.check_permission;
         let check_quota = conf.check_quota;
+        let check_fee_back_platform = conf.check_fee_back_platform;
+        let chain_owner = conf.chain_owner;
         let parent_hash = *block.parent_hash();
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
@@ -870,7 +886,13 @@ impl Executor {
             current_state_root,
             last_hashes.into(),
         ).unwrap();
-        if open_block.apply_transactions(self, perm, check_quota) {
+        if open_block.apply_transactions(
+            self,
+            perm,
+            check_quota,
+            check_fee_back_platform,
+            chain_owner,
+        ) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
             debug!(

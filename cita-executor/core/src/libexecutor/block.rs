@@ -399,6 +399,8 @@ impl OpenBlock {
         executor: &Executor,
         check_permission: bool,
         check_quota: bool,
+        check_fee_back_platform: bool,
+        chain_owner: Address,
     ) -> bool {
         for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 && executor.is_interrupted.load(Ordering::SeqCst) {
@@ -411,6 +413,8 @@ impl OpenBlock {
                 check_permission,
                 check_quota,
                 *executor.economical_model.read(),
+                check_fee_back_platform,
+                chain_owner,
             );
         }
 
@@ -431,6 +435,8 @@ impl OpenBlock {
         check_permission: bool,
         check_quota: bool,
         economical_model: EconomicalModel,
+        check_fee_back_platform: bool,
+        chain_owner: Address,
     ) {
         let mut env_info = self.env_info();
         self.account_gas
@@ -450,6 +456,8 @@ impl OpenBlock {
             check_permission,
             check_quota,
             economical_model,
+            check_fee_back_platform,
+            chain_owner,
         ) {
             Ok(outcome) => {
                 trace!("apply signed transaction {} success", t.hash());
