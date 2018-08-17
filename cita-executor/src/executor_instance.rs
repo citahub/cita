@@ -8,7 +8,7 @@ use core::libexecutor::Genesis;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, BlockTag, CountOrCode, MetaData};
 use libproto::auth::Miscellaneous;
-use libproto::blockchain::{BlockWithProof, Proof, ProofType, RichStatus};
+use libproto::blockchain::{BlockWithProof, Proof, ProofType, RichStatus, StateSignal};
 use libproto::consensus::SignedProposal;
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -110,6 +110,8 @@ impl ExecutorInstance {
                                 self.ext.send_executed_info_to_chain(*height, &self.ctx_pub);
                             }
                         }
+                    } else if specified_height > self.ext.get_current_height() {
+                        self.signal_to_chain(&self.ctx_pub);
                     }
                 }
             }
@@ -119,7 +121,7 @@ impl ExecutorInstance {
                 self.consensus_block_enqueue(proof_blk);
             }
 
-            routing_key!(Net >> SyncResponse) => {
+            routing_key!(Net >> SyncResponse) | routing_key!(Chain >> LocalSync) => {
                 let sync_res = msg.take_sync_response().unwrap();
                 self.deal_sync_blocks(sync_res);
             }
@@ -839,6 +841,18 @@ impl ExecutorInstance {
                 .insert(blk_height, BlockInQueue::Proposal(block));
         };
         let _ = self.write_sender.send(blk_height);
+    }
+
+    pub fn signal_to_chain(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
+        let mut state_signal = StateSignal::new();
+        state_signal.set_height(self.ext.get_current_height());
+        let msg: Message = state_signal.into();
+        ctx_pub
+            .send((
+                routing_key!(Executor >> StateSignal).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
     }
 
     fn deal_snapshot_req(&mut self, snapshot_req: &SnapshotReq) {

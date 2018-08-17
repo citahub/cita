@@ -12,6 +12,7 @@
 //!     | executor | Chain     | Request            |
 //!     | executor | Chain     | Richstatus         |
 //!     | executor | Chain     | StateSignal        |
+//!     | executor | Chain     | LocalSync          |
 //!     | executor | Consensus | BlockWithProof     |
 //!     | executor | Consensus | SignedProposal     |
 //!     | executor | Consensus | MiscellaneousReq   |
@@ -28,6 +29,7 @@
 //!     | executor | Executor  | Chain     | ExecutedResult |
 //!     | executor | Executor  | Auth      | Miscellaneous  |
 //!     | executor | Executor  | Auth      | BlackList      |
+//!     | executor | Executor  | Chain     | StateSignal    |
 //!
 //! ### Key behavior
 //!
@@ -122,6 +124,7 @@ fn main() {
             Chain >> Request,
             Chain >> RichStatus,
             Chain >> StateSignal,
+            Chain >> LocalSync,
             Consensus >> BlockWithProof,
             Consensus >> SignedProposal,
             Net >> SyncResponse,

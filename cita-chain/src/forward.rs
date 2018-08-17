@@ -94,6 +94,15 @@ impl Forward {
                 self.write_sender.send(info).unwrap();
             }
 
+            routing_key!(Executor >> StateSignal) => {
+                if let Some(state_signal) = msg.take_state_signal() {
+                    let specified_height = state_signal.get_height();
+                    let missing_blocks =
+                        (specified_height + 1..=self.chain.get_current_height()).collect();
+                    self.reply_local_syn_req(missing_blocks);
+                }
+            }
+
             routing_key!(Consensus >> BlockWithProof) => {
                 let proof_blk = msg.take_block_with_proof().unwrap();
                 self.consensus_block_enqueue(proof_blk);
@@ -397,6 +406,48 @@ impl Forward {
             origin, heights
         );
 
+        let res_vec = self.sync_response(heights);
+
+        debug!(
+            "sync: reply node = {}, response blocks len = {}",
+            origin,
+            res_vec.get_blocks().len()
+        );
+        if res_vec.get_blocks().len() > 0 {
+            let msg = Message::init(OperateType::Single, origin, res_vec.into());
+            trace!(
+                "sync: origin {:?}, chain.blk: OperateType {:?}",
+                origin,
+                OperateType::Single
+            );
+            self.ctx_pub
+                .send((
+                    routing_key!(Chain >> SyncResponse).into(),
+                    msg.try_into().unwrap(),
+                ))
+                .unwrap();
+        }
+    }
+
+    fn reply_local_syn_req(&self, heights: Vec<u64>) {
+        let res_vec = self.sync_response(heights);
+        if res_vec.get_blocks().len() > 0 {
+            let msg = Message::init(OperateType::Single, 0, res_vec.into());
+            trace!(
+                "local_sync: chain.blk: OperateType {:?}",
+                OperateType::Single
+            );
+            self.ctx_pub
+                .send((
+                    routing_key!(Chain >> LocalSync).into(),
+                    msg.try_into().unwrap(),
+                ))
+                .unwrap();
+        }
+    }
+
+    #[inline]
+    fn sync_response(&self, heights: Vec<u64>) -> SyncResponse {
         let mut res_vec = SyncResponse::new();
         for height in heights
             .into_iter()
@@ -420,26 +471,7 @@ impl Forward {
                 }
             }
         }
-
-        debug!(
-            "sync: reply node = {}, response blocks len = {}",
-            origin,
-            res_vec.get_blocks().len()
-        );
-        if res_vec.mut_blocks().len() > 0 {
-            let msg = Message::init(OperateType::Single, origin, res_vec.into());
-            trace!(
-                "sync: origin {:?}, chain.blk: OperateType {:?}",
-                origin,
-                OperateType::Single
-            );
-            self.ctx_pub
-                .send((
-                    routing_key!(Chain >> SyncResponse).into(),
-                    msg.try_into().unwrap(),
-                ))
-                .unwrap();
-        }
+        res_vec
     }
 
     fn deal_sync_blocks(&self, mut sync_res: SyncResponse) {
