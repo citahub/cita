@@ -32,6 +32,7 @@
 //!     | chain   | Auth        | BlockTxHashesReq |
 //!     | chain   | Executor    | ExecutedResult   |
 //!     | chain   | Snapshot    | SnapshotReq      |
+//!     | chain   | Executor    | StateSignal      |
 //!
 //! 2. Publish channel
 //!
@@ -130,6 +131,7 @@ fn main() {
             Jsonrpc >> Request,
             Auth >> BlockTxHashesReq,
             Executor >> ExecutedResult,
+            Executor >> StateSignal,
             Snapshot >> SnapshotReq,
         ]),
         tx,

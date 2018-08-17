@@ -619,7 +619,7 @@ impl Chain {
         let number = info.get_header().get_height();
 
         // Genesis block
-        if number == 0 {
+        if number == 0 && self.get_current_height() == 0 {
             let blk = Block::default();
             self.set_db_result(ret, &blk);
             let block_tx_hashes = Vec::new();
