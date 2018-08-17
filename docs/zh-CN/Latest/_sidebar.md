@@ -10,6 +10,7 @@
     - [日志管理](system_management/log.md)
     - [系统配置](system_management/sys.md)
     - [备份管理](system_management/snapshot.md)
+    - [批量交易](system_management/batch_tx.md)
 - Json-RPC指南
     - [Json-RPC列表](rpc_guide/rpc.md)
     - [Json-RPC参数和返回值类型](rpc_guide/rpc-types.md)
