@@ -157,8 +157,8 @@ impl Account {
     /// Create a new account.
     pub fn new_basic(balance: U256, nonce: U256) -> Account {
         Account {
-            balance: balance,
-            nonce: nonce,
+            balance,
+            nonce,
             storage_root: HASH_NULL_RLP,
             storage_cache: Self::empty_storage_cache(),
             storage_changes: HashMap::new(),
@@ -184,8 +184,8 @@ impl Account {
     /// NOTE: make sure you use `init_code` on this before `commit`ing.
     pub fn new_contract(balance: U256, nonce: U256) -> Account {
         Account {
-            balance: balance,
-            nonce: nonce,
+            balance,
+            nonce,
             storage_root: HASH_NULL_RLP,
             storage_cache: Self::empty_storage_cache(),
             storage_changes: HashMap::new(),
@@ -651,7 +651,7 @@ impl Account {
     /// Clone basic account data
     pub fn clone_basic(&self) -> Account {
         Account {
-            balance: self.balance.clone(),
+            balance: self.balance,
             nonce: self.nonce,
             storage_root: self.storage_root,
             storage_cache: Self::empty_storage_cache(),

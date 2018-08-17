@@ -50,6 +50,10 @@ impl BlackList {
         self
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn len(&self) -> usize {
         self.black_list.len() + self.clear_list.len()
     }

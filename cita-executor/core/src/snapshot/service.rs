@@ -126,10 +126,10 @@ impl Restoration {
             manifest.block_number,
         );
 
-        let root = manifest.state_root.clone();
+        let root = manifest.state_root;
 
         Ok(Restoration {
-            manifest: manifest,
+            manifest,
             state_chunks_left: state_chunks,
             block_chunks_left: block_chunks,
             state: StateRebuilder::new(raw_db.clone(), params.pruning),
@@ -377,18 +377,19 @@ impl Service {
         fs::create_dir_all(&rest_dir)?;
 
         // make new restoration.
-        let writer = match recover {
-            true => Some(LooseWriter::new(self.temp_recovery_dir())?),
-            false => None,
+        let writer = if recover {
+            Some(LooseWriter::new(self.temp_recovery_dir())?)
+        } else {
+            None
         };
 
         let params = RestorationParams {
             executor: self.executor.clone(),
-            manifest: manifest,
+            manifest,
             pruning: self.pruning,
             db_path: self.restoration_db(),
             db_config: &self.db_config,
-            writer: writer,
+            writer,
             //guard: Guard::new(rest_dir),
         };
 
@@ -441,7 +442,7 @@ impl Service {
             *reader = Some(LooseReader::new(snapshot_dir)?);
         }
 
-        let _ = fs::remove_dir_all(&self.snapshot_root)?;
+        fs::remove_dir_all(&self.snapshot_root)?;
         *self.status.lock() = RestorationStatus::Inactive;
 
         Ok(())
@@ -463,9 +464,10 @@ impl Service {
                         };
 
                         (
-                            match is_state {
-                                true => rest.feed_state(hash, chunk, &self.restoring_snapshot),
-                                false => rest.feed_blocks(hash, chunk, &self.restoring_snapshot),
+                            if is_state {
+                                rest.feed_state(hash, chunk, &self.restoring_snapshot)
+                            } else {
+                                rest.feed_blocks(hash, chunk, &self.restoring_snapshot)
                             }.map(|_| rest.is_done()),
                             rest.db.clone(),
                         )
@@ -473,19 +475,18 @@ impl Service {
 
                     let res = match res {
                         Ok(is_done) => {
-                            match is_state {
-                                true => self.state_chunks.fetch_add(1, Ordering::SeqCst),
-                                false => self.block_chunks.fetch_add(1, Ordering::SeqCst),
+                            if is_state {
+                                self.state_chunks.fetch_add(1, Ordering::SeqCst)
+                            } else {
+                                self.block_chunks.fetch_add(1, Ordering::SeqCst)
                             };
 
-                            match is_done {
-                                true => {
-                                    db.flush().map_err(UtilError::from)?;
-                                    drop(db);
-                                    return self.finalize_restoration(&mut *restoration);
-                                }
-                                false => Ok(()),
+                            if is_done {
+                                db.flush().map_err(UtilError::from)?;
+                                drop(db);
+                                return self.finalize_restoration(&mut *restoration);
                             }
+                            Ok(())
                         }
                         other => other.map(drop),
                     };
@@ -544,14 +545,15 @@ impl SnapshotService for Service {
             *block_chunks_done = self.block_chunks.load(Ordering::SeqCst) as u32;
         }
 
-        cur_status.clone()
+        *cur_status
     }
+
     /*
-	fn begin_restore(&self, manifest: ManifestData) {
-		if let Err(e) = self.io_channel.lock().send(ClientIoMessage::BeginRestoration(manifest)) {
-			trace!("Error sending snapshot service message: {:?}", e);
-		}
-	}
+    fn begin_restore(&self, manifest: ManifestData) {
+        if let Err(e) = self.io_channel.lock().send(ClientIoMessage::BeginRestoration(manifest)) {
+            trace!("Error sending snapshot service message: {:?}", e);
+        }
+    }
     */
 
     fn abort_restore(&self) {
@@ -559,12 +561,13 @@ impl SnapshotService for Service {
         *self.restoration.lock() = None;
         *self.status.lock() = RestorationStatus::Inactive;
     }
+
     /*
-	fn restore_state_chunk(&self, hash: H256, chunk: Bytes) {
-		if let Err(e) = self.io_channel.lock().send(ClientIoMessage::FeedStateChunk(hash, chunk)) {
-			trace!("Error sending snapshot service message: {:?}", e);
-		}
-	}
+    fn restore_state_chunk(&self, hash: H256, chunk: Bytes) {
+        if let Err(e) = self.io_channel.lock().send(ClientIoMessage::FeedStateChunk(hash, chunk)) {
+            trace!("Error sending snapshot service message: {:?}", e);
+        }
+    }
     */
 }
 /// The interface for a snapshot network service.

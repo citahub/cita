@@ -173,11 +173,11 @@ fn main() {
         let mut timeout_factor = 0u8;
         loop {
             if let Ok(einfo) = write_receiver
-                .recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0))
+                .recv_timeout(Duration::new(18 * (2u64.pow(u32::from(timeout_factor))), 0))
             {
-                block_processor.set_executed_result(einfo);
+                block_processor.set_executed_result(&einfo);
                 timeout_factor = 0;
-            } else {
+            } else if !*block_processor.chain.is_snapshot.read() {
                 // Here will be these status:
                 // 1. Executor process restarts, lost cached block information.
                 // 2. Executor encountered an invalid block and cleared the block map.
@@ -187,14 +187,12 @@ fn main() {
                 // 1. Network retransmits block information or initiates a synchronization request,
                 //    and then the executor will receive a block message
                 // 2. Bft will receive the latest status of chain
-                if !*block_processor.chain.is_snapshot.read() {
-                    info!("Chain enters the timeout retransmission phase");
-                    block_processor.reset_max_store_height();
-                    block_processor.signal_to_executor();
-                    block_processor.broadcast_current_status();
-                    if timeout_factor < 6 {
-                        timeout_factor += 1
-                    }
+                info!("Chain enters the timeout retransmission phase");
+                block_processor.reset_max_store_height();
+                block_processor.signal_to_executor();
+                block_processor.broadcast_current_status();
+                if timeout_factor < 6 {
+                    timeout_factor += 1
                 }
             }
         }

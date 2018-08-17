@@ -99,7 +99,7 @@ impl Genesis {
         assert_eq!(pre_hash, spec.prevhash);
 
         Genesis {
-            spec: spec,
+            spec,
             block: Block::default(),
         }
     }

@@ -30,7 +30,7 @@ pub struct ZkPrivacy {
 }
 
 impl Contract for ZkPrivacy {
-    fn exec(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let signature = BigEndian::read_u32(params.clone().data.unwrap().get(0..4).unwrap());
         match signature {
             0 => self.init(params, ext),
@@ -63,7 +63,7 @@ impl Default for ZkPrivacy {
 }
 
 impl ZkPrivacy {
-    fn init(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn init(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let gas_cost = U256::from(5000);
         if params.gas < gas_cost {
             return Err(evm::Error::OutOfGas);
@@ -73,7 +73,7 @@ impl ZkPrivacy {
         Ok(GasLeft::Known(params.gas - gas_cost))
     }
 
-    fn set_balance(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn set_balance(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
             return Err(evm::Error::OutOfGas);
@@ -98,7 +98,7 @@ impl ZkPrivacy {
         Ok(GasLeft::Known(params.gas - gas_cost))
     }
 
-    fn get_balance(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn get_balance(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
             return Err(evm::Error::OutOfGas);
@@ -125,7 +125,7 @@ impl ZkPrivacy {
         })
     }
 
-    fn send_verify(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn send_verify(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
         let gas_cost = U256::from(10000000);
         if params.gas < gas_cost {
             return Err(evm::Error::OutOfGas);
@@ -318,7 +318,7 @@ impl ZkPrivacy {
 
     fn receive_verify(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         ext: &mut Ext,
     ) -> Result<GasLeft, evm::Error> {
         let gas_cost = U256::from(1000000);

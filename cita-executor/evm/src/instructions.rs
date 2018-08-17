@@ -135,12 +135,12 @@ pub struct InstructionInfo {
 impl InstructionInfo {
     pub fn new(name: &'static str, additional: usize, args: usize, ret: usize, side_effects: bool, tier: GasPriceTier) -> Self {
         InstructionInfo {
-            name: name,
-            additional: additional,
-            args: args,
-            ret: ret,
-            side_effects: side_effects,
-            tier: tier,
+            name,
+            additional,
+            args,
+            ret,
+            side_effects,
+            tier,
         }
     }
 }

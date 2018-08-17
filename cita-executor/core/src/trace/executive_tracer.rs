@@ -109,7 +109,7 @@ impl Tracer for ExecutiveTracer {
             subtraces: top_level_subtraces(&subs),
             action: Action::Call(call.expect("self.prepare_trace_call().is_some(): so we must be tracing: qed")),
             result: Res::Call(CallResult {
-                                  gas_used: gas_used,
+                                  gas_used,
                                   output: output.expect("self.prepare_trace_output().is_some(): so we must be tracing: qed"),
                               }),
         };
@@ -123,9 +123,9 @@ impl Tracer for ExecutiveTracer {
             subtraces: top_level_subtraces(&subs),
             action: Action::Create(create.expect("self.prepare_trace_create().is_some(): so we must be tracing: qed")),
             result: Res::Create(CreateResult {
-                                    gas_used: gas_used,
+                                    gas_used,
                                     code: code.expect("self.prepare_trace_output.is_some(): so we must be tracing: qed"),
-                                    address: address,
+                                    address,
                                 }),
             trace_address: Default::default(),
         };
@@ -162,9 +162,9 @@ impl Tracer for ExecutiveTracer {
         let trace = FlatTrace {
             subtraces: 0,
             action: Action::Suicide(Suicide {
-                                        address: address,
-                                        refund_address: refund_address,
-                                        balance: balance,
+                                        address,
+                                        refund_address,
+                                        balance,
                                     }),
             result: Res::None,
             trace_address: Default::default(),
@@ -204,8 +204,8 @@ impl ExecutiveVMTracer {
 impl VMTracer for ExecutiveVMTracer {
     fn trace_prepare_execute(&mut self, pc: usize, instruction: u8, gas_cost: &U256) -> bool {
         self.data.operations.push(VMOperation {
-                                      pc: pc,
-                                      instruction: instruction,
+                                      pc,
+                                      instruction,
                                       gas_cost: *gas_cost,
                                       executed: None,
                                   });
@@ -214,7 +214,7 @@ impl VMTracer for ExecutiveVMTracer {
 
     fn trace_executed(&mut self, gas_used: U256, stack_push: &[U256], mem_diff: Option<(usize, &[u8])>, store_diff: Option<(U256, U256)>) {
         let ex = VMExecutedOperation {
-            gas_used: gas_used,
+            gas_used,
             stack_push: stack_push.to_vec(),
             mem_diff: mem_diff.map(|(s, r)| MemoryDiff { offset: s, data: r.to_vec() }),
             store_diff: store_diff.map(|(l, v)| StorageDiff { location: l, value: v }),

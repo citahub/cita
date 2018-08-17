@@ -72,9 +72,9 @@ impl Forward {
         write_sender: Sender<ExecutedResult>,
     ) -> Forward {
         Forward {
-            chain: chain,
-            ctx_pub: ctx_pub,
-            write_sender: write_sender,
+            chain,
+            ctx_pub,
+            write_sender,
         }
     }
 
@@ -233,17 +233,15 @@ impl Forward {
 
             Request::filter(encoded) => {
                 trace!("filter: {:?}", encoded);
-                serde_json::from_str::<RpcFilter>(&encoded)
-                    .map_err(|err| {
-                        response.set_code(ErrorCode::query_error());
-                        response.set_error_msg(format!("{:?}", err));
-                    })
-                    .map(|rpc_filter| {
-                        let filter: Filter = rpc_filter.into();
-                        let logs = self.chain.get_logs(&filter);
-                        let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
-                        response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
-                    });
+                if let Ok(rpc_filter) = serde_json::from_str::<RpcFilter>(&encoded).map_err(|err| {
+                    response.set_code(ErrorCode::query_error());
+                    response.set_error_msg(format!("{:?}", err));
+                }) {
+                    let filter: Filter = rpc_filter.into();
+                    let logs = self.chain.get_logs(&filter);
+                    let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
+                    response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
+                };
             }
 
             Request::call(call) => {
@@ -451,7 +449,7 @@ impl Forward {
         let mut res_vec = SyncResponse::new();
         for height in heights
             .into_iter()
-            .filter(|height| height <= &self.chain.get_current_height())
+            .filter(|height| *height <= self.chain.get_current_height())
         {
             if let Some(block) = self.chain.block(BlockId::Number(height)) {
                 res_vec.mut_blocks().push(block.protobuf());
@@ -533,8 +531,7 @@ impl Forward {
                         if let Some(prev_block_in_queue) =
                             self.chain.block_map.write().get_mut(&proof_height)
                         {
-                            if let &mut BlockInQueue::SyncBlock(ref mut value) = prev_block_in_queue
-                            {
+                            if let BlockInQueue::SyncBlock(ref mut value) = *prev_block_in_queue {
                                 if value.1.is_none() {
                                     debug!("sync: set prev sync block proof {}", value.0.number());
                                     mem::swap(&mut value.1, &mut Some(block.proof().clone()));
@@ -567,7 +564,7 @@ impl Forward {
                     if let Some(block_in_queue) =
                         self.chain.block_map.write().get_mut(&proof_height)
                     {
-                        if let &mut BlockInQueue::SyncBlock(ref mut value) = block_in_queue {
+                        if let BlockInQueue::SyncBlock(ref mut value) = *block_in_queue {
                             if value.1.is_none() {
                                 debug!("sync: insert block proof {} in map", proof_height);
                                 mem::swap(&mut value.1, &mut Some(block.proof().clone()));
@@ -600,8 +597,7 @@ impl Forward {
             block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
             block_tx_hashes
                 .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes
-                .set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
+            block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone());
             let msg: Message = block_tx_hashes.into();
             self.ctx_pub
                 .send((
@@ -626,7 +622,7 @@ impl Forward {
                 let snapshot_req = snapshot_req.clone();
                 let snapshot_builder = thread::Builder::new().name("snapshot_chain".into());
                 snapshot_builder.spawn(move || {
-                    take_snapshot(chain, &snapshot_req);
+                    take_snapshot(&chain, &snapshot_req);
 
                     info!("Taking snapshot finished!!!");
 
@@ -649,7 +645,7 @@ impl Forward {
             }
             Cmd::Restore => {
                 info!("[snapshot] receive {:?}", snapshot_req);
-                match restore_snapshot(self.chain.clone(), snapshot_req) {
+                match restore_snapshot(&self.chain.clone(), snapshot_req) {
                     Ok(proof) => {
                         resp.set_proof(proof);
                         resp.set_height(self.chain.get_current_height());
@@ -691,7 +687,7 @@ impl Forward {
     }
 }
 
-fn take_snapshot(chain: Arc<Chain>, snapshot_req: &SnapshotReq) {
+fn take_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) {
     // use given path
     let file_name = snapshot_req.file.clone() + "_chain.rlp";
     let writer = PackedWriter {
@@ -713,10 +709,10 @@ fn take_snapshot(chain: Arc<Chain>, snapshot_req: &SnapshotReq) {
 
     let progress = Arc::new(Progress::default());
 
-    snapshot::take_snapshot(&chain, block_at, writer, &*progress).unwrap();
+    snapshot::take_snapshot(chain, block_at, writer, &*progress).unwrap();
 }
 
-fn restore_snapshot(chain: Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Proof, String> {
+fn restore_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Proof, String> {
     let file_name = snapshot_req.file.clone() + "_chain.rlp";
     let reader = PackedReader::new(Path::new(&file_name))
         .map_err(|e| format!("Couldn't open snapshot file: {}", e))

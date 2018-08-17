@@ -112,7 +112,7 @@ fn call_vm(params: ActionParams) -> evm::Result<evm::FinalizationResult> {
     );
     let mut out = vec![];
     ex.call(
-        params,
+        &params,
         &mut substate,
         BytesRef::Fixed(&mut out),
         &mut tracer,
@@ -130,7 +130,7 @@ fn call_grpc_contract() {
     let ip = "127.0.0.1";
     let height = 0;
     // register GRPC contract
-    service_registry::register_contract(address, ip.to_string(), port, height);
+    service_registry::register_contract(address, ip, port, height);
     assert!(service_registry::find_contract(address, true).is_none());
     // enable GRPC contract
     let mut params = ActionParams::default();

@@ -42,7 +42,7 @@ impl From<Call> for CallRequest {
             data: if call.data.is_empty() {
                 None
             } else {
-                Some(Bytes::from(call.data))
+                Some(call.data)
             },
         }
     }

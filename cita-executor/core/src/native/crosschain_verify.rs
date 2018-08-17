@@ -26,7 +26,7 @@ pub struct CrossChainVerify {
 }
 
 impl Contract for CrossChainVerify {
-    fn exec(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
+    fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
         extract_func_sig(&params).and_then(|signature| match signature {
             sig if sig == *VERIFY_TRANSACTION_FUNC => self.verify_transaction(params, ext),
             sig if sig == *VERIFY_STATE_FUNC => self.verify_state(params, ext),
@@ -55,7 +55,7 @@ impl Default for CrossChainVerify {
 impl CrossChainVerify {
     fn verify_transaction(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         ext: &mut Ext,
     ) -> Result<GasLeft, Error> {
         let gas_cost = U256::from(10000);
@@ -68,7 +68,7 @@ impl CrossChainVerify {
             return Err(Error::Internal("no data".to_string()));
         }
 
-        let data = params.data.unwrap();
+        let data = params.data.to_owned().unwrap();
         trace!("data = {:?}", data);
         let tokens = vec![
             ethabi::ParamType::Address,
@@ -159,13 +159,13 @@ impl CrossChainVerify {
         self.output = result;
 
         Ok(GasLeft::NeedsReturn {
-            gas_left: gas_left,
+            gas_left,
             data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })
     }
 
-    fn verify_state(&mut self, params: ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
+    fn verify_state(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
             return Err(Error::OutOfGas);
@@ -176,7 +176,7 @@ impl CrossChainVerify {
             return Err(Error::Internal("no data".to_string()));
         }
 
-        let data = params.data.unwrap();
+        let data = params.data.to_owned().unwrap();
         trace!("data = {:?}", data);
         let tokens = vec![
             ethabi::ParamType::Uint(32),
@@ -208,7 +208,7 @@ impl CrossChainVerify {
 
         let result = self
             .state_roots
-            .get_array(chain_id_u256)
+            .get_array(&chain_id_u256)
             .unwrap()
             .get(ext, block_number);
         if result.is_err() {
@@ -216,7 +216,7 @@ impl CrossChainVerify {
         }
         let result1 = self
             .state_roots
-            .get_array(chain_id_u256)
+            .get_array(&chain_id_u256)
             .unwrap()
             .get(ext, block_number + 1);
         if result1.is_err() {
@@ -257,7 +257,7 @@ impl CrossChainVerify {
         self.output = result;
 
         Ok(GasLeft::NeedsReturn {
-            gas_left: gas_left,
+            gas_left,
             data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })
@@ -265,7 +265,7 @@ impl CrossChainVerify {
 
     fn verify_block_header(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         ext: &mut Ext,
     ) -> Result<GasLeft, Error> {
         let gas_cost = U256::from(10000);
@@ -278,7 +278,7 @@ impl CrossChainVerify {
             return Err(Error::Internal("no data".to_string()));
         }
 
-        let data = params.data.unwrap();
+        let data = params.data.to_owned().unwrap();
         trace!("data = {:?}", data);
         let tokens = vec![ethabi::ParamType::Uint(32), ethabi::ParamType::Bytes];
 
@@ -304,9 +304,9 @@ impl CrossChainVerify {
         trace!("data = {:?}", block_header_curr_bytes);
         let block_header_curr = Header::from_bytes(&block_header_curr_bytes);
 
-        let block_header_prev_bytes: Vec<u8> = self.block_headers.get_bytes(ext, chain_id_u256)?;
+        let block_header_prev_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id_u256)?;
 
-        let verify_result = if block_header_prev_bytes.len() == 0 {
+        let verify_result = if block_header_prev_bytes.is_empty() {
             trace!("sync first block header");
             block_header_curr.number() == 0
         } else {
@@ -325,13 +325,13 @@ impl CrossChainVerify {
         if verify_result {
             trace!("store the {} block header", block_header_curr.number());
             self.block_headers
-                .set_bytes(ext, chain_id_u256, block_header_curr_bytes)?;
+                .set_bytes(ext, &chain_id_u256, &block_header_curr_bytes)?;
             trace!(
                 "store the {} block state root {}",
                 block_header_curr.number(),
                 block_header_curr.state_root()
             );
-            self.state_roots.get_array(chain_id_u256).unwrap().set(
+            self.state_roots.get_array(&chain_id_u256).unwrap().set(
                 ext,
                 block_header_curr.number(),
                 &U256::from(block_header_curr.state_root()),
@@ -345,7 +345,7 @@ impl CrossChainVerify {
         self.output = result;
 
         Ok(GasLeft::NeedsReturn {
-            gas_left: gas_left,
+            gas_left,
             data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })
@@ -353,7 +353,7 @@ impl CrossChainVerify {
 
     fn get_expected_block_number(
         &mut self,
-        params: ActionParams,
+        params: &ActionParams,
         ext: &mut Ext,
     ) -> Result<GasLeft, Error> {
         let gas_cost = U256::from(10000);
@@ -366,7 +366,7 @@ impl CrossChainVerify {
             return Err(Error::Internal("no data".to_string()));
         }
 
-        let data = params.data.unwrap();
+        let data = params.data.to_owned().unwrap();
         trace!("data = {:?}", data);
         let tokens = vec![ethabi::ParamType::Uint(32)];
 
@@ -385,9 +385,9 @@ impl CrossChainVerify {
         let chain_id = chain_id_u256.low_u32();
         trace!("chain_id = {}", chain_id);
 
-        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(ext, chain_id_u256)?;
+        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id_u256)?;
 
-        let block_number = if block_header_bytes.len() == 0 {
+        let block_number = if block_header_bytes.is_empty() {
             0
         } else {
             let block_header = Header::from_bytes(&block_header_bytes);
@@ -402,7 +402,7 @@ impl CrossChainVerify {
         self.output = result;
 
         Ok(GasLeft::NeedsReturn {
-            gas_left: gas_left,
+            gas_left,
             data: ReturnData::new(self.output.clone(), 0, self.output.len()),
             apply_state: true,
         })

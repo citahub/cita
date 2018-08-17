@@ -89,10 +89,7 @@ impl<'db> AccountDB<'db> {
 
     /// Create a new AcountDB from an address' hash.
     pub fn from_hash(db: &'db HashDB, address_hash: H256) -> Self {
-        AccountDB {
-            db: db,
-            address_hash: address_hash,
-        }
+        AccountDB { db, address_hash }
     }
 }
 
@@ -142,10 +139,7 @@ impl<'db> AccountDBMut<'db> {
 
     /// Create a new AcountDB from an address' hash.
     pub fn from_hash(db: &'db mut HashDB, address_hash: H256) -> Self {
-        AccountDBMut {
-            db: db,
-            address_hash: address_hash,
-        }
+        AccountDBMut { db, address_hash }
     }
 
     #[allow(dead_code)]

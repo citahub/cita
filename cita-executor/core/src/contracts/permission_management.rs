@@ -24,9 +24,9 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use types::reserved_addresses;
 
-const ALLACCOUNTS: &'static [u8] = &*b"queryAllAccounts()";
-const PERMISSIONS: &'static [u8] = &*b"queryPermissions(address)";
-const RESOURCES: &'static [u8] = &*b"queryResource()";
+const ALLACCOUNTS: &[u8] = &*b"queryAllAccounts()";
+const PERMISSIONS: &[u8] = &*b"queryPermissions(address)";
+const RESOURCES: &[u8] = &*b"queryResource()";
 
 lazy_static! {
     static ref ALLACCOUNTS_HASH: Vec<u8> = encode_contract_name(ALLACCOUNTS);
@@ -42,11 +42,8 @@ pub struct Resource {
 }
 
 impl Resource {
-    pub fn new(conf: Address, func: Vec<u8>) -> Self {
-        Resource {
-            cont: conf,
-            func: func,
-        }
+    pub fn new(cont: Address, func: Vec<u8>) -> Self {
+        Resource { cont, func }
     }
 
     pub fn set_cont(&mut self, addr: Address) {
@@ -128,13 +125,13 @@ pub fn contains_resource(
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
     cont: Address,
-    func: Vec<u8>,
+    func: &[u8],
 ) -> bool {
     match account_permissions.get(account) {
         Some(resources) => {
             let resource = Resource {
-                cont: cont,
-                func: func,
+                cont,
+                func: func.to_owned(),
             };
             resources.iter().any(|res| *res == resource)
         }
@@ -156,49 +153,50 @@ mod tests {
     use tests::helpers::init_executor;
     use types::reserved_addresses;
 
-    const NEW_PERMISSION: &'static [u8] = &*b"newPermission(bytes32,address[],bytes4[])";
-    const DELETE_PERMISSION: &'static [u8] = &*b"deletePermission(address)";
-    const ADD_RESOURCES: &'static [u8] = &*b"addResources(address,address[],bytes4[])";
-    const DELETE_RESOURCES: &'static [u8] = &*b"deleteResources(address,address[],bytes4[])";
-    const UPDATE_PERMISSIONNAME: &'static [u8] = &*b"updatePermissionName(address,bytes32)";
-    const SET_AUTHORIZATION: &'static [u8] = &*b"setAuthorization(address,address)";
-    const SET_AUTHORIZATIONS: &'static [u8] = &*b"setAuthorizations(address,address[])";
-    const CANCEL_AUTHORIZATION: &'static [u8] = &*b"cancelAuthorization(address,address)";
-    const CLEAR_AUTHORIZATION: &'static [u8] = &*b"clearAuthorization(address)";
-    const CANCEL_AUTHORIZATIONS: &'static [u8] = &*b"cancelAuthorizations(address,address[])";
-    const NEW_ROLE: &'static [u8] = &*b"newRole(bytes32,address[])";
-    const DELETE_ROLE: &'static [u8] = &*b"deleteRole(address)";
-    const ADD_PERMISSIONS: &'static [u8] = &*b"addPermissions(address,address[])";
-    const DELETE_PERMISSIONS: &'static [u8] = &*b"deletePermissions(address,address[])";
-    const UPDATE_ROLENAME: &'static [u8] = &*b"updateRoleName(address,bytes32)";
-    const SET_ROLE: &'static [u8] = &*b"setRole(address,address)";
-    const CANCEL_ROLE: &'static [u8] = &*b"cancelRole(address,address)";
-    const CLEAR_ROLE: &'static [u8] = &*b"clearRole(address)";
-    const NEW_GROUP: &'static [u8] = &*b"newGroup(address,bytes32,address[])";
-    const DELETE_GROUP: &'static [u8] = &*b"deleteGroup(address,address)";
-    const ADD_ACCOUNTS: &'static [u8] = &*b"addAccounts(address,address,address[])";
-    const DELETE_ACCOUNTS: &'static [u8] = &*b"deleteAccounts(address,address,address[])";
-    const UPDATE_GROUPNAME: &'static [u8] = &*b"updateGroupName(address,address,bytes32)";
-    const APPROVE_NODE: &'static [u8] = &*b"approveNode(address)";
-    const DELETE_NODE: &'static [u8] = &*b"deleteNode(address)";
-    const SET_STAKE: &'static [u8] = &*b"setStake(address,uint64)";
-    const SET_DEFAULTAQL: &'static [u8] = &*b"setDefaultAQL(uint256)";
-    const SET_AQL: &'static [u8] = &*b"setAQL(address,uint256)";
-    const SET_BQL: &'static [u8] = &*b"setBQL(uint256)";
+    const NEW_PERMISSION: &[u8] = &*b"newPermission(bytes32,address[],bytes4[])";
+    const DELETE_PERMISSION: &[u8] = &*b"deletePermission(address)";
+    const ADD_RESOURCES: &[u8] = &*b"addResources(address,address[],bytes4[])";
+    const DELETE_RESOURCES: &[u8] = &*b"deleteResources(address,address[],bytes4[])";
+    const UPDATE_PERMISSIONNAME: &[u8] = &*b"updatePermissionName(address,bytes32)";
+    const SET_AUTHORIZATION: &[u8] = &*b"setAuthorization(address,address)";
+    const SET_AUTHORIZATIONS: &[u8] = &*b"setAuthorizations(address,address[])";
+    const CANCEL_AUTHORIZATION: &[u8] = &*b"cancelAuthorization(address,address)";
+    const CLEAR_AUTHORIZATION: &[u8] = &*b"clearAuthorization(address)";
+    const CANCEL_AUTHORIZATIONS: &[u8] = &*b"cancelAuthorizations(address,address[])";
+    const NEW_ROLE: &[u8] = &*b"newRole(bytes32,address[])";
+    const DELETE_ROLE: &[u8] = &*b"deleteRole(address)";
+    const ADD_PERMISSIONS: &[u8] = &*b"addPermissions(address,address[])";
+    const DELETE_PERMISSIONS: &[u8] = &*b"deletePermissions(address,address[])";
+    const UPDATE_ROLENAME: &[u8] = &*b"updateRoleName(address,bytes32)";
+    const SET_ROLE: &[u8] = &*b"setRole(address,address)";
+    const CANCEL_ROLE: &[u8] = &*b"cancelRole(address,address)";
+    const CLEAR_ROLE: &[u8] = &*b"clearRole(address)";
+    const NEW_GROUP: &[u8] = &*b"newGroup(address,bytes32,address[])";
+    const DELETE_GROUP: &[u8] = &*b"deleteGroup(address,address)";
+    const ADD_ACCOUNTS: &[u8] = &*b"addAccounts(address,address,address[])";
+    const DELETE_ACCOUNTS: &[u8] = &*b"deleteAccounts(address,address,address[])";
+    const UPDATE_GROUPNAME: &[u8] = &*b"updateGroupName(address,address,bytes32)";
+    const APPROVE_NODE: &[u8] = &*b"approveNode(address)";
+    const DELETE_NODE: &[u8] = &*b"deleteNode(address)";
+    const SET_STAKE: &[u8] = &*b"setStake(address,uint64)";
+    const SET_DEFAULTAQL: &[u8] = &*b"setDefaultAQL(uint256)";
+    const SET_AQL: &[u8] = &*b"setAQL(address,uint256)";
+    const SET_BQL: &[u8] = &*b"setBQL(uint256)";
 
     #[test]
     fn test_contains_resource() {
         let mut permission_resources: HashMap<Address, Vec<Resource>> = HashMap::new();
         let addr1 = Address::from(0x111);
         let addr2 = Address::from(0x222);
+        let mut func = encode_contract_name(ADD_RESOURCES);
         let resources = vec![
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(ADD_RESOURCES),
+                func: func.clone(),
             },
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_CREATOR).unwrap(),
-                func: encode_contract_name(ADD_RESOURCES),
+                func: func.clone(),
             },
         ];
         permission_resources.insert(addr1, resources);
@@ -206,31 +204,32 @@ mod tests {
             &permission_resources,
             &addr1,
             Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-            encode_contract_name(ADD_RESOURCES)
+            &func
         ));
         assert!(contains_resource(
             &permission_resources,
             &addr1,
             Address::from_str(reserved_addresses::PERMISSION_CREATOR).unwrap(),
-            encode_contract_name(ADD_RESOURCES)
+            &func
         ));
         assert!(!contains_resource(
             &permission_resources,
             &addr2,
             Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-            encode_contract_name(ADD_RESOURCES)
+            &func
         ));
         assert!(!contains_resource(
             &permission_resources,
             &addr1,
             Address::from_str(reserved_addresses::AUTHORIZATION).unwrap(),
-            encode_contract_name(ADD_RESOURCES)
+            &func
         ));
+        func[3] += 1;
         assert!(!contains_resource(
             &permission_resources,
             &addr1,
             Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-            vec![0xf0, 0x36, 0xed, 0x57]
+            &func
         ));
     }
 

@@ -206,7 +206,7 @@ pub struct BlockReceipts {
 
 impl BlockReceipts {
     pub fn new(receipts: Vec<Receipt>) -> Self {
-        BlockReceipts { receipts: receipts }
+        BlockReceipts { receipts }
     }
 }
 

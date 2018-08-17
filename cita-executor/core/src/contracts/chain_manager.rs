@@ -25,8 +25,8 @@ use evm::ext::{Ext, MessageCallResult};
 use std::str::FromStr;
 use types::reserved_addresses;
 
-const CHAIN_ID: &'static [u8] = &*b"getChainId()";
-const AUTHORITIES: &'static [u8] = &*b"getAuthorities(uint32)";
+const CHAIN_ID: &[u8] = &*b"getChainId()";
+const AUTHORITIES: &[u8] = &*b"getAuthorities(uint32)";
 
 lazy_static! {
     static ref CHAIN_ID_ENCODED: Vec<u8> = encode_contract_name(CHAIN_ID);
@@ -56,7 +56,7 @@ impl ChainManagement {
             MessageCallResult::Success(gas_left, return_data) => {
                 decode(&[ParamType::Uint(256)], &*return_data)
                     .ok()
-                    .and_then(|decoded| decoded.first().map(|v| v.clone()))
+                    .and_then(|decoded| decoded.first().cloned())
                     .and_then(|id| id.to_uint())
                     .map(|id| (gas_left, H256::from(id).low_u64() as u32))
             }
@@ -76,7 +76,7 @@ impl ChainManagement {
         );
         let contract = &*CONTRACT_ADDRESS;
         let mut tx_data = AUTHORITIES_ENCODED.to_vec();
-        let param = H256::from(chain_id as u64);
+        let param = H256::from(u64::from(chain_id));
         tx_data.extend(param.to_vec());
         let data = &tx_data.as_slice();
         let mut output = Vec::<u8>::new();
@@ -106,18 +106,15 @@ impl ChainManagement {
                         );
                         decoded
                     })
-                    .and_then(|decoded| decoded.first().map(|v| v.clone()))
+                    .and_then(|decoded| decoded.first().cloned())
                     .and_then(|decoded| decoded.to_array())
                     .and_then(|addrs| {
                         let mut addrs_vec = Vec::new();
-                        for a in addrs.into_iter() {
-                            let a = a.to_address();
-                            if a.is_none() {
-                                return None;
-                            }
-                            addrs_vec.push(Address::from(a.unwrap()));
+                        for a in addrs {
+                            let a = a.to_address()?;
+                            addrs_vec.push(Address::from(a));
                         }
-                        if addrs_vec.len() == 0 {
+                        if addrs_vec.is_empty() {
                             return None;
                         }
                         Some((gas_left, addrs_vec))

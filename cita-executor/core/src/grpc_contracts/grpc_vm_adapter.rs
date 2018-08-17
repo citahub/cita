@@ -22,14 +22,14 @@ impl ExecutorService for ExecutorServiceImpl {
     ) -> ::grpc::SingleResponse<RegisterResponse> {
         let mut r = RegisterResponse::new();
         {
-            let caddr = req.get_contract_address().to_string();
+            let caddr = req.get_contract_address();
             let ip = req.get_ip();
             let port = req.get_port();
 
             if let Ok(iport) = port.parse::<u16>() {
                 service_registry::register_contract(
-                    Address::from_str(&caddr).unwrap(),
-                    ip.to_string(),
+                    Address::from_str(caddr).unwrap(),
+                    ip,
                     iport,
                     0,
                 );
@@ -48,11 +48,11 @@ impl ExecutorService for ExecutorServiceImpl {
     ) -> ::grpc::SingleResponse<LoadResponse> {
         let mut r = LoadResponse::new();
 
-        let caddr = req.get_contract_address().to_string();
+        let caddr = req.get_contract_address();
         let req_key = req.get_key();
         let key = H256::from_slice(String::from(req_key).as_bytes());
 
-        let address = Address::from_str(&caddr).unwrap();
+        let address = Address::from_str(caddr).unwrap();
         let mut hi: u64 = 0;
         if let Some(info) = service_registry::find_contract(address, true) {
             hi = info.height;
@@ -78,7 +78,7 @@ impl ExecutorService for ExecutorServiceImpl {
 
 impl ExecutorServiceImpl {
     pub fn new(ext: Arc<Executor>) -> Self {
-        ExecutorServiceImpl { ext: ext }
+        ExecutorServiceImpl { ext }
     }
 
     //  get vec

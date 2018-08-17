@@ -38,7 +38,7 @@ pub trait Backend: Send {
 
     /// Get basic copy of the cached account. Not required to include storage.
     /// Returns 'None' if cache is disabled or if the account is not cached.
-    fn get_cached_account(&self, addr: &Address) -> Option<Option<Account>>;
+    fn get_cached_account(&self, addr: &Address) -> Option<Account>;
 
     /// Get value from a cached account.
     /// `None` is passed to the closure if the account entry cached

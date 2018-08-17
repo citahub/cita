@@ -83,7 +83,7 @@ impl From<spec::Builtin> for Builtin {
         };
 
         Builtin {
-            pricer: pricer,
+            pricer,
             native: ethereum_builtin(&b.name),
             activate_at: b.activate_at.unwrap_or(0),
         }
@@ -147,9 +147,9 @@ impl Impl for EcRecover {
             _ => return,
         };
 
-        let s = Signature::from_rsv(&r.into(), &s.into(), bit);
+        let s = Signature::from_rsv(&r, &s, bit);
         if s.is_valid() {
-            if let Ok(p) = s.recover(&hash.into()) {
+            if let Ok(p) = s.recover(&hash) {
                 let r = p.crypt_hash();
                 output.write(0, &[0; 12]);
                 output.write(12, &r[12..r.len()]);
@@ -192,7 +192,7 @@ impl Impl for EdRecover {
         let hash = ED_Message::from_slice(&input[0..32]);
         let sig = ED_Signature::from(&input[32..128]);
 
-        if let Ok(p) = sig.recover(&hash.into()) {
+        if let Ok(p) = sig.recover(&hash) {
             let r = p.crypt_hash();
             output.write(0, &[0; 12]);
             output.write(12, &r[12..r.len()]);

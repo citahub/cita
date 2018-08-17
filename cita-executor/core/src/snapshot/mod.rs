@@ -146,7 +146,7 @@ pub struct ManifestData {
 /// Snapshot manifest encode/decode.
 impl ManifestData {
     /// Encode the manifest data to rlp.
-    pub fn to_rlp(self) -> Bytes {
+    pub fn to_rlp(&self) -> Bytes {
         let mut stream = RlpStream::new_list(5);
         stream.append_list(&self.state_hashes);
         stream.append_list(&self.block_hashes);
@@ -168,11 +168,11 @@ impl ManifestData {
         let block_hash: H256 = decoder.val_at(4)?;
 
         Ok(ManifestData {
-            state_hashes: state_hashes,
-            block_hashes: block_hashes,
-            state_root: state_root,
-            block_number: block_number,
-            block_hash: block_hash,
+            state_hashes,
+            block_hashes,
+            state_root,
+            block_number,
+            block_hash,
         })
     }
 }
@@ -187,7 +187,7 @@ pub fn take_snapshot<W: SnapshotWriter + Send>(
 ) -> Result<(), Error> {
     let start_header = executor
         .block_header_by_hash(block_at)
-        .ok_or(Error::InvalidStartingBlock(BlockId::Hash(block_at)))?;
+        .ok_or_else(|| Error::InvalidStartingBlock(BlockId::Hash(block_at)))?;
     let state_root = start_header.state_root();
     let number = start_header.number();
 
@@ -201,8 +201,8 @@ pub fn take_snapshot<W: SnapshotWriter + Send>(
     let block_hashes = chunk_secondary(executor, block_at, &writer, p)?;
 
     let manifest_data = ManifestData {
-        state_hashes: state_hashes,
-        block_hashes: block_hashes,
+        state_hashes,
+        block_hashes,
         state_root: *state_root,
         block_number: number,
         block_hash: block_at,
@@ -284,22 +284,22 @@ pub fn chunk_state<'a>(
     writer: &Mutex<SnapshotWriter + 'a>,
     progress: &'a Progress,
 ) -> Result<Vec<H256>, Error> {
-    let account_trie = TrieDB::new(db, &root)?;
+    let account_trie = TrieDB::new(db, &root).map_err(|err| *err)?;
 
     let mut chunker = StateChunker {
         hashes: Vec::new(),
         rlps: Vec::new(),
         cur_size: 0,
-        writer: writer,
-        progress: progress,
+        writer,
+        progress,
     };
 
     let mut used_code = HashSet::new();
     let mut used_abi = HashSet::new();
 
     // account_key here is the address' hash.
-    for item in account_trie.iter()? {
-        let (account_key, account_data) = item?;
+    for item in account_trie.iter().map_err(|err| *err)? {
+        let (account_key, account_data) = item.map_err(|err| *err)?;
 
         let basic_account = ::rlp::decode(&*account_data);
         let account_key = H256::from_slice(&account_key);
@@ -349,10 +349,7 @@ impl<'a> BlockChunker<'a> {
         let mut loaded_size = 0;
         let mut last = self.current_hash;
 
-        let genesis_block: Header = self
-            .executor
-            .block_header_by_height(0)
-            .unwrap_or(Header::default());
+        let genesis_block = self.executor.block_header_by_height(0).unwrap_or_default();
         let genesis_hash = genesis_block.hash();
         trace!("genesis_hash: {:?}", genesis_hash);
 
@@ -366,7 +363,7 @@ impl<'a> BlockChunker<'a> {
             let header = self
                 .executor
                 .block_header_by_hash(self.current_hash)
-                .ok_or(Error::BlockNotFound(self.current_hash))?;
+                .ok_or_else(|| Error::BlockNotFound(self.current_hash))?;
 
             let mut s = RlpStream::new();
             header.rlp_append(&mut s);
@@ -405,7 +402,7 @@ impl<'a> BlockChunker<'a> {
         let last_header = self
             .executor
             .block_header_by_hash(last)
-            .ok_or(Error::BlockNotFound(last))?;
+            .ok_or_else(|| Error::BlockNotFound(last))?;
 
         let parent_number = last_header.number() - 1;
         let parent_hash = last_header.parent_hash();
@@ -459,7 +456,7 @@ pub fn chunk_secondary<'a>(
         };
 
         BlockChunker {
-            executor: executor,
+            executor,
             rlps: VecDeque::new(),
             current_hash: start_hash,
             writer: &mut chunk_sink,
@@ -509,7 +506,7 @@ impl StateRebuilder {
 
         let status = rebuild_accounts(
             self.db.as_hashdb_mut(),
-            rlp,
+            &rlp,
             &mut pairs,
             &self.known_code,
             &self.known_abi,
@@ -560,18 +557,19 @@ impl StateRebuilder {
         // batch trie writes
         {
             let mut account_trie =
-                TrieDBMut::from_existing(self.db.as_hashdb_mut(), &mut self.state_root)?;
+                TrieDBMut::from_existing(self.db.as_hashdb_mut(), &mut self.state_root)
+                    .map_err(|err| *err)?;
 
             for (addr, thin_rlp) in pairs {
                 if !flag.load(Ordering::SeqCst) {
                     return Err(Error::RestorationAborted.into());
                 }
 
-                if &thin_rlp[..] != &empty_rlp[..] {
+                if thin_rlp[..] != empty_rlp[..] {
                     self.bloom.set(addr);
                 }
 
-                account_trie.insert(&addr, &thin_rlp)?;
+                account_trie.insert(&addr, &thin_rlp).map_err(|err| *err)?;
             }
         }
 
@@ -623,7 +621,7 @@ struct RebuiltStatus {
 // newly-loaded abi and accounts missing abi.
 fn rebuild_accounts(
     db: &mut HashDB,
-    account_fat_rlps: UntrustedRlp,
+    account_fat_rlps: &UntrustedRlp,
     out_chunk: &mut [(Address, Bytes)],
     known_code: &HashMap<H256, Address>,
     known_abi: &HashMap<H256, Address>,
@@ -646,11 +644,11 @@ fn rebuild_accounts(
                 let storage_root = known_storage_roots
                     .get(&address)
                     .cloned()
-                    .unwrap_or(H256::zero());
-                account::from_fat_rlp(&mut acct_db, fat_rlp, storage_root).unwrap()
+                    .unwrap_or_else(H256::zero);
+                account::from_fat_rlp(&mut acct_db, &fat_rlp, storage_root).unwrap()
             };
 
-            let code_hash = acc.code_hash.clone();
+            let code_hash = acc.code_hash;
             match maybe_code {
                 // new inline code
                 Some(code) => status.new_code.push((code_hash, code, address)),
@@ -674,7 +672,7 @@ fn rebuild_accounts(
                     }
                 }
             }
-            let abi_hash = acc.abi_hash.clone();
+            let abi_hash = acc.abi_hash;
             match maybe_abi {
                 // new inline abi
                 Some(abi) => status.new_abi.push((abi_hash, abi, address)),
@@ -734,14 +732,14 @@ impl BlockRebuilder {
         snapshot_blocks: u64,
     ) -> Self {
         BlockRebuilder {
-            executor: executor,
+            executor,
             db: db.clone(),
             //_disconnected: Vec::new(),
             best_number: manifest.block_number,
             best_hash: manifest.block_hash,
             best_root: manifest.state_root,
             fed_blocks: 0,
-            snapshot_blocks: snapshot_blocks,
+            snapshot_blocks,
         }
     }
 
@@ -847,10 +845,7 @@ impl BlockRebuilder {
             block_hash: genesis_hash,
             proof: vec![],
         });*/
-        let genesis_header = self
-            .executor
-            .block_header_by_height(0)
-            .unwrap_or(Header::default());
+        let genesis_header = self.executor.block_header_by_height(0).unwrap_or_default();
         let hash = genesis_header.hash();
         batch.write(COL_HEADERS, &hash, &genesis_header);
         batch.write(COL_EXTRA, &0, &hash);
