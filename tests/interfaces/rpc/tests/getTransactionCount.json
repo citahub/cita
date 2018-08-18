@@ -14,7 +14,7 @@
         ]
       },
       "expectedResponse": {
-        "result": "0xe"
+        "result": "0xd"
       },
       "asserts": [
         {
@@ -33,7 +33,7 @@
         ]
       },
       "expectedResponse": {
-        "result": "0x8"
+        "result": "0x7"
       },
       "asserts": [
         {

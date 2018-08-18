@@ -32,12 +32,14 @@ extern crate pubsub;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
+extern crate dotenv;
 extern crate serde_yaml;
 
 mod generate_block;
 
 use std::collections::HashMap;
 use std::convert::{From, TryFrom};
+use std::env;
 use std::io::Read;
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender};
@@ -59,73 +61,9 @@ pub type PubType = (String, Vec<u8>);
 
 const GENESIS_TIMESTAMP: u64 = 1524000000;
 
-// Build the block from transactions, then send it to MQ
-fn send_block(
-    pre_hash: H256,
-    height: u64,
-    pub_sender: Sender<PubType>,
-    sys_time: Arc<Mutex<time::SystemTime>>,
-    mock_block: &serde_yaml::Value,
-    privkey: &PrivKey,
-) {
-    use libproto::SignedTransaction;
-
-    let txs: Vec<SignedTransaction> = mock_block["transactions"]
-        .as_sequence()
-        .unwrap()
-        .iter()
-        .map(|tx| {
-            let contract_address = tx["to"].as_str().unwrap();
-            let tx_privkey_str = tx["privkey"].as_str().unwrap();
-            let tx_privkey: PrivKey = PrivKey::from_str(tx_privkey_str).unwrap();
-            let data = tx["data"].as_str().unwrap();
-            let quota = tx["quota"].as_u64().unwrap();
-            let nonce = tx["nonce"].as_u64().unwrap() as u32;
-            let valid_until_block = tx["valid_until_block"].as_u64().unwrap();
-
-            let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
-            info!(
-                "sender={}, contract_address={}",
-                sender.lower_hex(),
-                BuildBlock::build_contract_address(&sender, &U256::from(nonce)).lower_hex()
-            );
-            info!(
-                "address={}, quota={}, nonce={}",
-                contract_address, quota, nonce
-            );
-            BuildBlock::build_tx(
-                contract_address,
-                data,
-                quota,
-                nonce,
-                valid_until_block,
-                &tx_privkey,
-            )
-        })
-        .collect();
-
-    // 构造block
-    let (send_data, _block) = BuildBlock::build_block_with_proof(
-        &txs,
-        pre_hash,
-        height,
-        privkey,
-        GENESIS_TIMESTAMP + height * 3,
-    );
-    info!(
-        "===============send block ({} transactions)===============",
-        txs.len()
-    );
-    (*sys_time.lock().unwrap()) = time::SystemTime::now();
-    pub_sender
-        .send((
-            routing_key!(Consensus >> BlockWithProof).into(),
-            send_data.clone(),
-        ))
-        .unwrap();
-}
-
 fn main() {
+    dotenv::dotenv().ok();
+    env::set_var("RUST_BACKTRACE", "full");
     logger::init();
     info!("CITA:Chain executor mock");
 
@@ -198,6 +136,7 @@ fn main() {
                 let rich_status = msg.take_rich_status().unwrap();
                 let height = rich_status.height + 1;
 
+                // Remove previous block
                 if let Some(_) = mock_blocks.remove(&rich_status.height) {
                     _current_height = rich_status.height as u8;
                     repeat = 0;
@@ -233,4 +172,70 @@ fn main() {
         }
     }
     info!("[[DONE]]");
+}
+
+// Build the block from transactions, then send it to MQ
+fn send_block(
+    pre_hash: H256,
+    height: u64,
+    pub_sender: Sender<PubType>,
+    sys_time: Arc<Mutex<time::SystemTime>>,
+    mock_block: &serde_yaml::Value,
+    privkey: &PrivKey,
+) {
+    use libproto::SignedTransaction;
+
+    let txs: Vec<SignedTransaction> = mock_block["transactions"]
+        .as_sequence()
+        .unwrap()
+        .iter()
+        .map(|tx| {
+            let contract_address = tx["to"].as_str().unwrap();
+            let tx_privkey_str = tx["privkey"].as_str().unwrap();
+            let tx_privkey: PrivKey = PrivKey::from_str(tx_privkey_str).unwrap();
+            let data = tx["data"].as_str().unwrap();
+            let quota = tx["quota"].as_u64().unwrap();
+            let nonce = tx["nonce"].as_u64().unwrap() as u32;
+            let valid_until_block = tx["valid_until_block"].as_u64().unwrap();
+
+            let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
+            info!(
+                "sender={}, contract_address={}",
+                sender.lower_hex(),
+                BuildBlock::build_contract_address(&sender, &U256::from(nonce)).lower_hex()
+            );
+            info!(
+                "address={}, quota={}, nonce={}",
+                contract_address, quota, nonce
+            );
+            BuildBlock::build_tx(
+                contract_address,
+                data,
+                quota,
+                nonce,
+                valid_until_block,
+                &tx_privkey,
+            )
+        })
+        .collect();
+
+    // 构造block
+    let (send_data, _block) = BuildBlock::build_block_with_proof(
+        &txs,
+        pre_hash,
+        height,
+        privkey,
+        GENESIS_TIMESTAMP + height * 3,
+    );
+    info!(
+        "===============send block ({} transactions)===============",
+        txs.len()
+    );
+    (*sys_time.lock().unwrap()) = time::SystemTime::now();
+    pub_sender
+        .send((
+            routing_key!(Consensus >> BlockWithProof).into(),
+            send_data.clone(),
+        ))
+        .unwrap();
 }

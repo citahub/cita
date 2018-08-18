@@ -1,7 +1,7 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 contract RevertedDemo {
-    function RevertedDemo() public {
+    constructor() public {
         assert(false);
     }
 }

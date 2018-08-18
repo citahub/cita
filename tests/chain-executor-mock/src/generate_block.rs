@@ -83,6 +83,8 @@ impl BuildBlock {
         // 设置空，则创建合约
         tx.set_to(to_address.to_string());
         tx.set_valid_until_block(valid_until_block);
+        tx.set_value(vec![0u8; 32]);
+        tx.set_chain_id(123);
         tx.sign(*privkey)
     }
 

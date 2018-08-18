@@ -9,7 +9,7 @@
       "request": {
         "method": "getAbi",
         "params": [
-          "0xeffb1dab2e6ed61aa213eacaefbd1a9a41e047ea",
+          "0xa31af83ee35e753a2bb19c2a82468080c2e92eee",
           "latest"
         ]
       },
