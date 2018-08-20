@@ -288,19 +288,21 @@ impl<'a> BlockChunker<'a> {
 
             info!("current height: {:?}", header.number());
 
-            let receipts = match self.chain.block_receipts(self.current_hash) {
-                Some(r) => r.receipts,
-                _ => Vec::new(),
-            };
-
             let pair: Vec<u8> = if blocks_num < BLOCKLIMIT {
-                let body: BlockBody = self
-                    .chain
-                    .block_body(BlockId::Hash(self.current_hash))
-                    .ok_or_else(|| Error::BlockNotFound(self.current_hash))?;
-                let mut s = RlpStream::new();
-                body.rlp_append(&mut s);
-                let body_rlp = s.out();
+                let body_rlp = {
+                    let body: BlockBody = self
+                        .chain
+                        .block_body(BlockId::Hash(self.current_hash))
+                        .ok_or_else(|| Error::BlockNotFound(self.current_hash))?;
+                    let mut s = RlpStream::new();
+                    body.rlp_append(&mut s);
+                    s.out()
+                };
+
+                let receipts = match self.chain.block_receipts(self.current_hash) {
+                    Some(r) => r.receipts,
+                    _ => Vec::new(),
+                };
 
                 blocks_num += 1;
 
@@ -311,10 +313,8 @@ impl<'a> BlockChunker<'a> {
                     .append_raw(&body_rlp, 1);
                 pair_stream.out()
             } else {
-                let mut pair_stream = RlpStream::new_list(2);
-                pair_stream
-                    .append_raw(&header_rlp, 1)
-                    .append_list(&receipts);
+                let mut pair_stream = RlpStream::new_list(1);
+                pair_stream.append_raw(&header_rlp, 1);
                 pair_stream.out()
             };
 
@@ -467,9 +467,11 @@ impl BlockRebuilder {
                 block.set_header(header.clone());
             }
 
-            let receipts: Vec<Receipt> = pair.list_at(1)?;
-
+            // if height + 100 < max_height, there will be bodies and receipts.
             let mut have_body: bool = false;
+
+            let receipts: Vec<Receipt> = pair.list_at(1).unwrap_or_default();
+
             if let Ok(b) = pair.at(2) {
                 have_body = true;
                 let body_rlp = b.as_raw().to_owned();
@@ -547,7 +549,7 @@ impl BlockRebuilder {
             batch,
             ExtrasUpdate {
                 block_hashes: self.prepare_block_hashes_update(block, &info),
-                block_receipts: self.prepare_block_receipts_update(receipts, &info),
+                block_receipts: self.prepare_block_receipts_update(receipts, &info, have_body),
                 blocks_blooms: self.prepare_block_blooms_update(block, &info),
                 //transactions_addresses: self.prepare_transaction_addresses_update(block, &info),
                 info,
@@ -575,10 +577,13 @@ impl BlockRebuilder {
         &self,
         receipts: Vec<Receipt>,
         info: &BlockInfo,
+        have_body: bool,
     ) -> HashMap<H256, BlockReceipts> {
         let mut block_receipts = HashMap::new();
 
-        block_receipts.insert(info.hash, BlockReceipts::new(receipts));
+        if have_body {
+            block_receipts.insert(info.hash, BlockReceipts::new(receipts));
+        }
 
         block_receipts
     }
