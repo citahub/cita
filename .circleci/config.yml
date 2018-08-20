@@ -1,15 +1,35 @@
-version: 2
-jobs:
-  build_sha3:
+alias:
+  - &submodule
+    name: checkout_submodule
+    command: 'git submodule update --init'
+
+  - &save_build_cache
+    key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+    paths: ~/cita-build/target
+
+  - &save_cargo_cache
+    key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+    paths: /opt/.cargo
+
+  - &restore_build_cache
+    key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+
+  - &restore_cargo_cache
+    key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+
+defaults: &defaults
     docker:
       - image: cita/cita-build:ubuntu-18.04-20180813
     working_directory: ~/cita-build
     resource_class: large
+
+version: 2
+jobs:
+  build_sha3:
+    <<: *defaults
     steps:
       - checkout
-      - run:
-          name: checkout_submodule
-          command: 'git submodule update --init'
+      - run: *submodule
       - run:
           name: format
           command: 'echo $CARGO_HOME; cargo fmt --all  -- --check'
@@ -25,10 +45,8 @@ jobs:
       - run:
           name: clean_security_audit
           command: 'make clean'
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-      - restore_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+      - restore_cache: *restore_build_cache
+      - restore_cache: *restore_cargo_cache
       - run:
           name: build
           command: 'RUSTFLAGS="-F warnings" cargo build --release --all'
@@ -36,47 +54,27 @@ jobs:
       - run:
           name: check_cargolock
           command: '[ $(git status --short Cargo.lock | wc -l) -ne 0 ] && echo "[Error] Please update Cargo.lock BEFORE commit." && git diff Cargo.lock && exit 1 || true'
-      - save_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-          paths:
-            - ~/cita-build/target
-      - save_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
-          paths:
-            - /opt/.cargo
+      - save_cache: *save_build_cache
+      - save_cache: *save_cargo_cache
 
   basic_test_sha3:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180813
-    working_directory: ~/cita-build
-    resource_class: large
+    <<: *defaults
     steps:
       - checkout
-      - run:
-          name: checkout_submodule
-          command: 'git submodule update --init'
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-      - restore_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+      - run: *submodule
+      - restore_cache: *restore_build_cache
+      - restore_cache: *restore_cargo_cache
       - run:
           name: test
           command: 'RUSTFLAGS="-F warnings" cargo test --release --tests'
 
   basic_test_blake2b:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180813
-    working_directory: ~/cita-build
-    resource_class: large
+    <<: *defaults
     steps:
       - checkout
-      - run:
-          name: checkout_submodule
-          command: 'git submodule update --init'
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-      - restore_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+      - run: *submodule
+      - restore_cache: *restore_build_cache
+      - restore_cache: *restore_cargo_cache
       - run:
           name: replace_hash
           command: ./scripts/replace_default_feature.sh ./ sha3hash blake2bhash
@@ -88,19 +86,12 @@ jobs:
           command: 'RUSTFLAGS="-F warnings" cargo test --release --tests'
 
   basic_test_sm3:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180813
-    working_directory: ~/cita-build
-    resource_class: large
+    <<: *defaults
     steps:
       - checkout
-      - run:
-          name: checkout_submodule
-          command: 'git submodule update --init'
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-      - restore_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+      - run: *submodule
+      - restore_cache: *restore_build_cache
+      - restore_cache: *restore_cargo_cache
       - run:
           name: replace_hash
           command: ./scripts/replace_default_feature.sh ./ sha3hash sm3hash
@@ -112,15 +103,10 @@ jobs:
           command: 'RUSTFLAGS="-F warnings" cargo test --release --tests'
 
   # basic_test_coverage_sha3:
-  #   docker:
-  #     - image: cita/cita-build:ubuntu-18.04-20180813
-  #   working_directory: ~/cita-build
-  #   resource_class: large
+  #   <<: *defaults
   #   steps:
-  #     - restore_cache:
-  #         key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-  #     - restore_cache:
-  #         key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+  #     - restore_cache: *resotre_build_cache
+  #     - restore_cache: *restore_cargo_cache
   #     - run:
   #         name: test-coverage
   #         command: |
@@ -140,17 +126,11 @@ jobs:
   #             --skip-clean --coveralls ${COVERALLS_TOKEN}
 
   integrate_test_sha3:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180813
-    working_directory: ~/cita-build
-    resource_class: large
+    <<: *defaults
     steps:
       - checkout
-      - run:
-          name: checkout_submodule
-          command: 'git submodule update --init'
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+      - run: *submodule
+      - restore_cache: *restore_build_cache
       - run:
           name: config
           command: './scripts/release.sh release'
@@ -172,17 +152,11 @@ jobs:
 
 
   cita_byzantinetest:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180813
-    working_directory: ~/cita-build
-    resource_class: large
+    <<: *defaults
     steps:
       - checkout
-      - run:
-          name: checkout_submodule
-          command: 'git submodule update --init'
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+      - run: *submodule
+      - restore_cache: *restore_build_cache
       - run:
           name: config
           command: './scripts/release.sh release'
@@ -196,17 +170,11 @@ jobs:
           command: './tests/integrate_test/cita_byzantinetest.sh charge'
 
   integrate_test_crosschain_sha3:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180813
-    working_directory: ~/cita-build
-    resource_class: large
+    <<: *defaults
     steps:
       - checkout
-      - run:
-          name: checkout_submodule
-          command: 'git submodule update --init'
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+      - run: *submodule
+      - restore_cache: *restore_build_cache
       - run:
           name: config
           command: './scripts/release.sh release'
