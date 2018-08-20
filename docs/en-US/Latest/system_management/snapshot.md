@@ -1,43 +1,52 @@
 # 快照
 
-## 快照功能概述
+从字面上解释，“快照”这个词来源于照相、摄影等领域，后来延展到范围很广，当需要保留某件事物某个时间的状态时，就可以说对其做一次“快照”。
 
-状态、区块快照，将必需的区块链数据经高度压缩优化后存档，可在较短时间内同步恢复链数据。
+快照属于工具类的功能，不属于区块链本身的功能。对区块链某个高度的状态做快照，保存状态、区块等数据，然后将快照恢复到另一个节点/本节点，就可以在较短时间内同步/恢复区块链数据。
 
-将重要的状态、区块数据存放在数据库，分别优化压缩到单个文件。
+## 使用说明
 
-下载该文件，解压后恢复，即可得到所需链数据。
+snapshot_tool有两个功能：创建快照和快照恢复
 
-注：当前快照功能还未经充分测试，暂不建议用于生产环境。
+- 创建快照是将当前区块链的状态等数据保存到文件中。
+- 快照恢复是根据保存下来的文件将区块链数据恢复到创建快照时的状态。
 
-## 使用快照功能
+命令格式如下：
 
-使用快照功能包含：创建状态、区块快照文件；依据快照文件恢复状态、区块数据。
+```
+snapshot_tool -m snapshot [-e HEIGHT]  [-f FILE]
+snapshot_tool -m restore [-f FILE]
+```
+
+中括号中的选项是可选的。 
+
+- -m是指定功能，快照或者恢复。
+- -e是指定区块链高度，缺省值是区块链当前高度。
+- -f 是指定快照文件的名字，如果指定为FILE，chain模块会生成FILE_chain.rlp，executor模块会生成FILE_executor.rlp，缺省时是snapshot_chain.rlp和snapshot_executor.rlp。
 
 ### 创建快照
 
-假设当前工作目录为`../cita/target/install/`，执行如下快照命令：
+以对100高度做快照为例（当前链高度需大于100）：
 
-```bash
+```
 $ cd test-chain/0
-$ ../../bin/snapshot_tool -m snapshot
+$ ../../bin/snapshot_tool -m snapshot -e 100
 $ ls snap*
-snap-chain.rlp  snap.rlp
+snapshot_chain.rlp  snapshot_executor.rlp
 ```
 
-快照命令行工具接受快照参数后，在节点当前目录下会生成两个快照文件：
-
-`snap.rlp`、`snap-chain.rlp`，分别表示状态快照、区块快照。
+NOTE：
+由于区块链的区块数据和状态分别保存在Chain和Executor微服务中，所以需要两个模块都进行快照，生成快照文件，恢复的时候根据各自的快照文件进行恢复。
 
 ### 快照恢复
 
-使用快照文件恢复数据。
+以将快照恢复到节点1为例：
 
 1. 将上述生成的快照文件拷贝到需恢复链数据的节点目录下
 
     ```bash
     $ cd test-chain/1
-    $ cp ../0/snap.rlp ../0/snap-chain.rlp ./
+    $ cp ../0/snapshot_chain.rlp ../0/snapshot_executor.rlp ./
     ```
 
 2. 依快照文件快照恢复
