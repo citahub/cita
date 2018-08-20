@@ -17,7 +17,7 @@
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256};
-use crypto::{pubkey_to_address, PubKey, Public, Sign, Signature, SIGNATURE_BYTES_LEN};
+use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use dispatcher::Dispatcher;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
@@ -478,7 +478,7 @@ impl MsgHandler {
     fn verify_black_list(&self, req: &VerifyTxReq) -> Ret {
         match self
             .black_list_cache
-            .get(&pubkey_to_address(&Public::from_slice(req.get_signer())))
+            .get(&pubkey_to_address(&PubKey::from_slice(req.get_signer())))
         {
             Some(credit) => {
                 if credit < &0 {
