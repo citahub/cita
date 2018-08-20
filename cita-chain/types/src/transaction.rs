@@ -18,8 +18,7 @@
 use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
 use crypto::{
-    pubkey_to_address, PubKey, Public, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN,
-    SIGNATURE_BYTES_LEN,
+    pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN,
 };
 use libproto::blockchain::{
     Crypto as ProtoCrypto, SignedTransaction as ProtoSignedTransaction,
@@ -253,7 +252,7 @@ impl Transaction {
                 crypto_type: CryptoType::default(),
             },
             sender: from,
-            public: Public::default(),
+            public: PubKey::default(),
         }
     }
 
@@ -393,7 +392,7 @@ impl UnverifiedTransaction {
 pub struct SignedTransaction {
     transaction: UnverifiedTransaction,
     sender: Address,
-    public: Public,
+    public: PubKey,
 }
 
 /// RLP dose not support struct nesting well
@@ -507,7 +506,7 @@ impl SignedTransaction {
     }
 
     /// Returns a public key of the sender.
-    pub fn public_key(&self) -> &Public {
+    pub fn public_key(&self) -> &PubKey {
         &self.public
     }
 
