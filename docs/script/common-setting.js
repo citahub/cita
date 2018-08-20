@@ -23,8 +23,8 @@ switch (language) {
 if (sessionStorage.getItem("version")) {
     var version = sessionStorage.getItem("version");
 } else {
-    sessionStorage.setItem("version", "Latest");
-    var version = "Latest";
+    sessionStorage.setItem("version", "v0.18");
+    var version = "v0.18";
 }
 
 document.getElementById("tag_version").innerHTML = version;
