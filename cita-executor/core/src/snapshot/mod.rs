@@ -304,6 +304,7 @@ pub fn chunk_state<'a>(
         let basic_account = ::rlp::decode(&*account_data);
         let account_key = H256::from_slice(&account_key);
         let account_address = Address::from_slice(&account_key);
+        info!("Account: {:?}", account_address);
 
         let account_db = AccountDB::new(db, &account_address);
 
@@ -368,6 +369,8 @@ impl<'a> BlockChunker<'a> {
             let mut s = RlpStream::new();
             header.rlp_append(&mut s);
             let header_rlp = s.out();
+
+            info!("current height: {:?}", header.number());
 
             let new_loaded_size = loaded_size + header_rlp.len();
 
