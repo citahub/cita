@@ -781,8 +781,8 @@ impl Executor {
     /// 4. Prune history
     pub fn reorg_config(&self, close_block: &ClosedBlock) {
         let cache = close_block.state.cache();
-        let mut has_dirty = cache.iter().take_while(|(address, ref a)| {
-            a.is_dirty() && SYS_CONTRACT.contains(&address.lower_hex().as_ref())
+        let mut has_dirty = cache.iter().skip_while(|(address, ref a)| {
+            !a.is_dirty() || !SYS_CONTRACT.contains(&address.lower_hex().as_ref())
         });
         if has_dirty.next().is_some() {
             self.reload_config();
