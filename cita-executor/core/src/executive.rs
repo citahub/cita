@@ -77,6 +77,8 @@ const AMEND_CODE: u32 = 2;
 const AMEND_KV_H256: u32 = 3;
 ///amend get the value of db
 const AMEND_GET_KV_H256: u32 = 4;
+///amend account's balance
+const AMEND_ACCOUNT_BALANCE: u32 = 5;
 
 // minimum required gas, just for check
 const MIN_GAS_REQUIRED: u32 = 100;
@@ -445,11 +447,43 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         self.state.reset_code(&account, code.to_vec()).is_ok()
     }
 
-    fn transact_set_kv_h256(&mut self, data: &[u8]) -> bool {
+    fn transact_set_balance(&mut self, data: &[u8]) -> bool {
+        if data.len() < 52 {
+            return false;
+        }
         let account = H160::from(&data[0..20]);
-        let key = H256::from_slice(&data[20..52]);
-        let val = H256::from_slice(&data[52..84]);
-        self.state.set_storage(&account, key, val).is_ok()
+        let balance = U256::from(&data[20..52]);
+        self.state
+            .balance(&account)
+            .and_then(|now_val| {
+                if now_val >= balance {
+                    self.state.sub_balance(&account, &(now_val - balance))
+                } else {
+                    self.state.add_balance(&account, &(balance - now_val))
+                }
+            })
+            .is_ok()
+    }
+
+    fn transact_set_kv_h256(&mut self, data: &[u8]) -> bool {
+        let len = data.len();
+        if len < 84 {
+            return false;
+        }
+        let loop_num: usize = (len - 20) / (32 * 2);
+        let account = H160::from(&data[0..20]);
+
+        self.state.checkpoint();
+        for i in 0..loop_num {
+            let base = 20 + 32 * 2 * i;
+            let key = H256::from_slice(&data[base..base + 32]);
+            let val = H256::from_slice(&data[base + 32..base + 32 * 2]);
+            if self.state.set_storage(&account, key, val).is_err() {
+                self.state.discard_checkpoint();
+                return false;
+            }
+        }
+        true
     }
 
     fn transact_get_kv_h256(&mut self, data: &[u8]) -> Option<H256> {
@@ -541,9 +575,20 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                         ));
                     }
                 }
+                AMEND_ACCOUNT_BALANCE => {
+                    if !self.transact_set_balance(&t.data) {
+                        return Err(ExecutionError::TransactionMalformed(
+                            "Account doesn't exist or incomplete trie error".to_string(),
+                        ));
+                    }
+                }
                 AMEND_GET_KV_H256 => {
                     if let Some(v) = self.transact_get_kv_h256(&t.data) {
                         need_output = v.to_vec();
+                        info!(
+                            "transact_get_kv_h256 key {:?} value{:?}",
+                            t.data, need_output
+                        );
                     } else {
                         return Err(ExecutionError::TransactionMalformed(
                             "May be incomplete trie error".to_string(),
