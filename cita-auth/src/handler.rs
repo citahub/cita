@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cita_types::traits::LowerHex;
-use cita_types::{Address, H256};
+use cita_types::{clean_0x, Address, H256};
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use dispatcher::Dispatcher;
 use error::ErrorCode;
@@ -35,6 +35,7 @@ use rayon::ThreadPoolBuilder;
 use serde_json;
 use std::collections::{HashMap, HashSet};
 use std::convert::{Into, TryFrom, TryInto};
+use std::str::FromStr;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 use util::instrument::{unix_now, AsMillis};
@@ -202,6 +203,18 @@ pub fn verify_tx_sig(req: &VerifyTxReq) -> Result<Vec<u8>, ()> {
             warn!("Unexpected crypto");
             Err(())
         }
+    }
+}
+
+// verify request
+fn verify_request(req: &Request) -> Ret {
+    let un_tx = req.get_un_tx();
+    let tx = un_tx.get_transaction();
+    let to = clean_0x(tx.get_to());
+    if to.is_empty() || Address::from_str(to).is_ok() {
+        Ret::OK
+    } else {
+        Ret::InvalidValue
     }
 }
 
@@ -897,6 +910,18 @@ impl MsgHandler {
                         true
                     }
                 })
+                .filter(|(_tx_hash, (ref _req, ref tx_req, _flag))| {
+                    let ret = verify_request(tx_req);
+                    if ret != Ret::OK {
+                        if is_local {
+                            let request_id = tx_req.get_request_id().to_vec();
+                            self.publish_tx_failed_result(request_id, ret);
+                        }
+                        false
+                    } else {
+                        true
+                    }
+                })
                 .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
                     let ret = self.verify_tx_req(&req);
                     if ret != Ret::OK {
@@ -972,6 +997,14 @@ impl MsgHandler {
 
             // black verify
             let ret = self.verify_black_list(&req);
+            if ret != Ret::OK {
+                if is_local {
+                    self.publish_tx_failed_result(request_id, ret);
+                }
+                return;
+            }
+
+            let ret = verify_request(&newtx_req);
             if ret != Ret::OK {
                 if is_local {
                     self.publish_tx_failed_result(request_id, ret);
