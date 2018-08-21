@@ -118,7 +118,7 @@ jobs:
         - ./daemon.sh ./bin/cita start test-chain/0
       before_script:
         - cd $TRAVIS_BUILD_DIR/target/install/scripts/contracts/tests
-        - yarn install
+        - travis_retry yarn install
       script: npm run-script unit_group
     - <<: *stage-contract-test-sha3-secp256k1
       script: npm run-script unit_permission
