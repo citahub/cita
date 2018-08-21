@@ -131,7 +131,7 @@ contract SysConfig is SysConfigInterface, EconomicalType{
         view
         returns (bool)
     {
-        return checkPermission && (economicalModel == EconomicalModel.Quota);
+        return checkPermission;
     }
 
     function getQuotaCheck()
