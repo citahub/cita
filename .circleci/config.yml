@@ -149,6 +149,9 @@ jobs:
       - run:
           name: economical-mode-charge-transfer-value
           command: './tests/integrate_test/cita_charge_mode.sh'
+      - run:
+          name: robustness-test
+          command: './tests/integrate_test/robustness_test.py'
 
 
   cita_byzantinetest:
