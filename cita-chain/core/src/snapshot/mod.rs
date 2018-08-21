@@ -57,7 +57,7 @@ use types::ids::BlockId;
 
 use libchain::block::{Block, BlockBody};
 use libchain::chain::Chain;
-use libchain::extras::{BlockReceipts, CurrentHash, CurrentHeight, LogGroupPosition};
+use libchain::extras::{BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition};
 
 use libproto::Proof;
 
@@ -407,6 +407,7 @@ pub struct BlockRebuilder {
     best_number: u64,
     best_hash: H256,
     best_root: H256,
+    cur_proof: Proof,
     fed_blocks: u64,
     snapshot_blocks: u64,
 }
@@ -426,6 +427,7 @@ impl BlockRebuilder {
             best_number: manifest.block_number,
             best_hash: manifest.block_hash,
             best_root: manifest.state_root,
+            cur_proof: manifest.last_proof.clone(),
             fed_blocks: 0,
             snapshot_blocks,
         }
@@ -756,7 +758,7 @@ impl BlockRebuilder {
             genesis_block.body.clone(),
             CacheUpdatePolicy::Overwrite,
         );*/
-        //batch.write(COL_EXTRA, &CurrentProof, &update.info.hash);
+        batch.write(COL_EXTRA, &CurrentProof, &self.cur_proof);
 
         self.db.write_buffered(batch);
         Ok(())
