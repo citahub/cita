@@ -43,7 +43,7 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{ConsensusConfig, ExecutedResult, Message};
 
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
-use cita_types::traits::LowerHex;
+// use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use native::factory::Factory as NativeFactory;
 use state::State;
@@ -57,10 +57,10 @@ use std::sync::Arc;
 use std::time::Instant;
 use types::ids::BlockId;
 use types::receipt::ReceiptError;
-use types::reserved_addresses::{
-    ADMIN, CHAIN_MANAGER, GROUP_MANAGEMENT, NODE_MANAGER, PERMISSION_MANAGEMENT, QUOTA_MANAGER,
-    ROLE_MANAGEMENT, SYS_CONFIG,
-};
+// use types::reserved_addresses::{
+//     ADMIN, CHAIN_MANAGER, GROUP_MANAGEMENT, NODE_MANAGER, PERMISSION_MANAGEMENT, QUOTA_MANAGER,
+//     ROLE_MANAGEMENT, SYS_CONFIG,
+// };
 use types::transaction::{Action, SignedTransaction, Transaction};
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
@@ -68,16 +68,16 @@ use util::RwLock;
 use util::UtilError;
 use util::{journaldb, Bytes};
 
-const SYS_CONTRACT: &[&str] = &[
-    CHAIN_MANAGER,
-    GROUP_MANAGEMENT,
-    NODE_MANAGER,
-    PERMISSION_MANAGEMENT,
-    QUOTA_MANAGER,
-    ROLE_MANAGEMENT,
-    SYS_CONFIG,
-    ADMIN,
-];
+// const SYS_CONTRACT: &[&str] = &[
+//     CHAIN_MANAGER,
+//     GROUP_MANAGEMENT,
+//     NODE_MANAGER,
+//     PERMISSION_MANAGEMENT,
+//     QUOTA_MANAGER,
+//     ROLE_MANAGEMENT,
+//     SYS_CONFIG,
+//     ADMIN,
+// ];
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
@@ -774,19 +774,20 @@ impl Executor {
         NodeManager::new(self, self.genesis_header().timestamp())
     }
 
+    /// TODO cancel the comments after permission system moved to vm
     /// Reorg system config from system contract
     /// 1. Consensus nodes
     /// 2. BlockGasLimit and AccountGasLimit
     /// 3. Account permissions
     /// 4. Prune history
-    pub fn reorg_config(&self, close_block: &ClosedBlock) {
-        let cache = close_block.state.cache();
-        let mut has_dirty = cache.iter().skip_while(|(address, ref a)| {
-            !a.is_dirty() || !SYS_CONTRACT.contains(&address.lower_hex().as_ref())
-        });
-        if has_dirty.next().is_some() {
-            self.reload_config();
-        }
+    pub fn reorg_config(&self, _close_block: &ClosedBlock) {
+        // let cache = close_block.state.cache();
+        // let mut has_dirty = cache.iter().skip_while(|(address, ref a)| {
+        //     !a.is_commited() || !SYS_CONTRACT.contains(&address.lower_hex().as_ref())
+        // });
+        // if has_dirty.next().is_some() {
+        self.reload_config();
+        // }
     }
 
     fn reload_config(&self) {

@@ -164,3 +164,12 @@ jobs:
         - ./daemon.sh ./bin/cita start test-chain/0
       script:
         - npm run-script integrate_quota
+
+    - <<: *stage-contract-test-sha3-secp256k1
+      install:
+        - cd $TRAVIS_BUILD_DIR/target/install
+        - ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4100" --contract_arguments "SysConfig.checkPermission=true"
+        - ./env.sh ./bin/cita setup test-chain/0
+        - ./daemon.sh ./bin/cita start test-chain/0
+      script:
+        - npm run-script permission

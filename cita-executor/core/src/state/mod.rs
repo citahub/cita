@@ -97,6 +97,10 @@ impl AccountEntry {
         self.state == AccountState::Dirty
     }
 
+    pub fn is_commited(&self) -> bool {
+        self.state == AccountState::Committed
+    }
+
     fn exists_and_is_null(&self) -> bool {
         self.account.as_ref().map_or(false, |a| a.is_null())
     }
