@@ -33,6 +33,7 @@
     "abi": "mocha test/integrate/abi.js -t 60s; eslint test/integrate/abi.js",
     "store": "mocha test/integrate/store.js -t 60s; eslint test/integrate/store.js",
     "batch_tx": "mocha test/integrate/batch_tx.js -t 60s; eslint test/integrate/batch_tx.js",
+    "permission": "mocha test/integrate/permission.js -t 60s; eslint test/integrate/permission.js",
     "lint": "eslint test",
     "lint-fix": "eslint --fix test"
   },
