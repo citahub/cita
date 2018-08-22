@@ -62,9 +62,9 @@ impl BatchForward {
                     self.batch_forward();
                 }
             } else {
-                thread::sleep(Duration::new(0, self.check_duration * 1000000));
+                thread::sleep(Duration::new(0, self.check_duration * 1_000_000));
                 let now = unix_now().as_millis();
-                if (now - self.last_timestamp) > self.timeout && self.request_buffer.len() != 0 {
+                if (now - self.last_timestamp) > self.timeout && !self.request_buffer.is_empty() {
                     self.batch_forward();
                 }
             }
