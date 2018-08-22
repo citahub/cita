@@ -544,62 +544,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             )?;
         }*/
 
-        let mut need_output: Vec<u8> = vec![];
         if t.action == Action::AbiStore {
             if !self.transact_set_abi(&t.data) {
                 return Err(ExecutionError::TransactionMalformed(
                     "Account doesn't exist".to_string(),
                 ));
-            }
-        } else if t.action == Action::AmendData {
-            let atype = t.value.low_u32();
-            match atype {
-                AMEND_ABI => {
-                    if !self.transact_set_abi(&t.data) {
-                        return Err(ExecutionError::TransactionMalformed(
-                            "Account doesn't exist".to_string(),
-                        ));
-                    }
-                }
-                AMEND_CODE => {
-                    if !self.transact_set_code(&t.data) {
-                        return Err(ExecutionError::TransactionMalformed(
-                            "Account doesn't exist".to_string(),
-                        ));
-                    }
-                }
-                AMEND_KV_H256 => {
-                    if !self.transact_set_kv_h256(&t.data) {
-                        return Err(ExecutionError::TransactionMalformed(
-                            "Account doesn't exist".to_string(),
-                        ));
-                    }
-                }
-                AMEND_ACCOUNT_BALANCE => {
-                    if !self.transact_set_balance(&t.data) {
-                        return Err(ExecutionError::TransactionMalformed(
-                            "Account doesn't exist or incomplete trie error".to_string(),
-                        ));
-                    }
-                }
-                AMEND_GET_KV_H256 => {
-                    if let Some(v) = self.transact_get_kv_h256(&t.data) {
-                        need_output = v.to_vec();
-                        info!(
-                            "transact_get_kv_h256 key {:?} value{:?}",
-                            t.data, need_output
-                        );
-                    } else {
-                        return Err(ExecutionError::TransactionMalformed(
-                            "May be incomplete trie error".to_string(),
-                        ));
-                    }
-                }
-                _ => {
-                    return Err(ExecutionError::TransactionMalformed(
-                        "amend type if error".to_string(),
-                    ));
-                }
             }
         }
 
@@ -665,22 +614,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     out,
                 )
             }
-            Action::AmendData => (
-                Ok(FinalizationResult {
-                    // Super admin operations do not cost gas
-                    gas_left: t.gas,
-                    return_data: {
-                        if need_output.is_empty() {
-                            ReturnData::empty()
-                        } else {
-                            let len = need_output.len();
-                            ReturnData::new(need_output, 0, len)
-                        }
-                    },
-                    apply_state: true,
-                }),
-                vec![],
-            ),
             Action::Create => {
                 let new_address = contract_address(&sender, &nonce);
                 let params = ActionParams {
@@ -699,6 +632,34 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 (
                     self.create(&params, &mut substate, &mut tracer, &mut vm_tracer),
                     vec![],
+                )
+            }
+            Action::AmendData => {
+                let amend_data_address: Address = reserved_addresses::AMEND_ADDRESS.into();
+                let params = ActionParams {
+                    code_address: amend_data_address,
+                    address: amend_data_address,
+                    sender: sender,
+                    origin: sender,
+                    gas: init_gas,
+                    gas_price: t.gas_price(),
+                    value: ActionValue::Apparent(t.value),
+                    code: None,
+                    code_hash: HASH_EMPTY,
+                    data: Some(t.data.clone()),
+                    call_type: CallType::Call,
+                };
+                trace!(target: "executive", "amend data: {:?}", params);
+                let mut out = vec![];
+                (
+                    self.call(
+                        &params,
+                        &mut substate,
+                        BytesRef::Flexible(&mut out),
+                        &mut tracer,
+                        &mut vm_tracer,
+                    ),
+                    out,
                 )
             }
             Action::Call(ref address) => {
@@ -845,6 +806,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 static_call,
                 native_contract,
             )
+        } else if self.is_amend_data_address(params.code_address) {
+            self.call_amend_data(params, substate, &output)
         } else if is_create_grpc_address(params.code_address)
             || is_grpc_contract(params.code_address)
         {
@@ -855,6 +818,76 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         } else {
             // call EVM contract
             self.call_evm_contract(params, substate, output, tracer, vm_tracer)
+        }
+    }
+
+    fn is_amend_data_address(&self, address: Address) -> bool {
+        let amend_address: Address = reserved_addresses::AMEND_ADDRESS.into();
+        amend_address == address
+    }
+
+    fn call_amend_data(
+        &mut self,
+        params: &ActionParams,
+        _substate: &mut Substate,
+        _output: &BytesRef,
+    ) -> evm::Result<FinalizationResult> {
+        // Must send from admin address
+        if Some(params.origin) != self.state.super_admin_account {
+            return Err(evm::error::Error::Internal("no permission".to_owned()));
+        }
+        let atype = params.value.value().low_u32();
+        let mut result = FinalizationResult {
+            gas_left: params.gas,
+            apply_state: true,
+            return_data: ReturnData::empty(),
+        };
+        match atype {
+            AMEND_ABI => if self.transact_set_abi(&(params.data.to_owned().unwrap())) {
+                Ok(result)
+            } else {
+                Err(evm::error::Error::Internal(
+                    "Account doesn't exist".to_owned(),
+                ))
+            },
+            AMEND_CODE => if self.transact_set_code(&(params.data.to_owned().unwrap())) {
+                Ok(result)
+            } else {
+                Err(evm::error::Error::Internal(
+                    "Account doesn't exist".to_owned(),
+                ))
+            },
+            AMEND_KV_H256 => if self.transact_set_kv_h256(&(params.data.to_owned().unwrap())) {
+                Ok(result)
+            } else {
+                Err(evm::error::Error::Internal(
+                    "Account doesn't exist".to_owned(),
+                ))
+            },
+            AMEND_GET_KV_H256 => {
+                if let Some(v) = self.transact_get_kv_h256(&(params.data.to_owned().unwrap())) {
+                    let data = v.to_vec();
+                    let size = data.len();
+                    result.return_data = ReturnData::new(data, 0, size);
+                    Ok(result)
+                } else {
+                    Err(evm::error::Error::Internal(
+                        "May be incomplete trie error".to_owned(),
+                    ))
+                }
+            }
+
+            AMEND_ACCOUNT_BALANCE => {
+                if self.transact_set_balance(&(params.data.to_owned().unwrap())) {
+                    Ok(result)
+                } else {
+                    Err(evm::error::Error::Internal(
+                        "Account doesn't exist or incomplete trie error".to_owned(),
+                    ))
+                }
+            }
+
+            _ => Ok(result),
         }
     }
 
@@ -1727,9 +1760,9 @@ contract AbiTest {
             );
         };
 
+        // it was supposed that value's address is balance.
         assert_eq!(
             state
-                // it was supposed that value's address is balance.
                 .storage_at(&contract_addr, &H256::from(&U256::from(0)))
                 .unwrap(),
             H256::from(&U256::from(0x12345678))
@@ -1809,9 +1842,9 @@ contract AbiTest {
             }
         };
 
+        // it was supposed that value's address is balance.
         assert_eq!(
             state
-                // it was supposed that value's address is balance.
                 .storage_at(&contract_addr, &H256::from(&U256::from(0)))
                 .unwrap(),
             H256::from(&U256::from(0x0))
@@ -1891,9 +1924,9 @@ contract AbiTest {
             }
         };
 
+        // it was supposed that value's address is balance.
         assert_eq!(
             state
-                // it was supposed that value's address is balance.
                 .storage_at(&contract_addr, &H256::from(&U256::from(0)))
                 .unwrap(),
             H256::from(&U256::from(0x12345678))
