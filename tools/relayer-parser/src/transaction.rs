@@ -24,7 +24,7 @@ use libproto::blockchain::{Transaction, UnverifiedTransaction};
 
 pub fn construct_transaction(
     pkey: &PrivKey,
-    tx_proof_rlp: Vec<u8>,
+    tx_proof_rlp: &[u8],
     dest_hasher: [u8; 4],
     dest_contract: H160,
     chain_id: u32,
@@ -35,11 +35,11 @@ pub fn construct_transaction(
 }
 
 #[inline]
-fn encode(dest_hasher: [u8; 4], tx_proof_rlp: Vec<u8>) -> Vec<u8> {
+fn encode(dest_hasher: [u8; 4], tx_proof_rlp: &[u8]) -> Vec<u8> {
     trace!("encode dest_hasher {:?}", dest_hasher);
     trace!("encode proof_len {:?}", tx_proof_rlp.len());
     trace!("encode proof_data {:?}", tx_proof_rlp);
-    let encoded = ethabi::encode(&[ethabi::Token::Bytes(tx_proof_rlp)]);
+    let encoded = ethabi::encode(&[ethabi::Token::Bytes(tx_proof_rlp.to_vec())]);
     let ret = Vec::from(&dest_hasher[..])
         .into_iter()
         .chain(encoded.into_iter())
@@ -57,12 +57,11 @@ fn sign(
     height: U256,
 ) -> UnverifiedTransaction {
     let mut tx = Transaction::new();
-    let value: Vec<u8> = vec![0; 32];
     tx.set_data(code);
     tx.set_to(addr.lower_hex());
     tx.set_valid_until_block(height.low_u64() + 100);
-    tx.set_quota(1000000);
+    tx.set_quota(1_000_000);
     tx.set_chain_id(chain_id);
-    tx.set_value(value);
+    tx.set_value(vec![0u8; 32]);
     tx.sign(*pkey).take_transaction_with_sig()
 }

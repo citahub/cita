@@ -341,7 +341,7 @@ where
         //         .transfer_balance(&address,
         //                           refund_address,
         //                           &balance,
-        //                           self.substate.to_cleanup_mode(&self.schedule))?;
+        //                           self.substate.cleanup_mode(&self.schedule))?;
         // }
 
         self.tracer.trace_suicide(address, balance, *refund_address);

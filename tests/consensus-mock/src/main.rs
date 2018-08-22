@@ -54,14 +54,14 @@ fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> BftProof {
             proof.height,
             proof.round,
             Step::Precommit,
-            sender.clone(),
-            Some(proof.proposal.clone()),
+            sender,
+            Some(proof.proposal),
         ),
         Infinite,
     ).unwrap();
 
-    let signature = Signature::sign(privkey, &message.crypt_hash().into()).unwrap();
-    commits.insert((*sender).into(), signature.into());
+    let signature = Signature::sign(privkey, &message.crypt_hash()).unwrap();
+    commits.insert((*sender).into(), signature);
     proof.commits = commits;
     proof
 }
@@ -74,7 +74,7 @@ fn build_block(
     privkey: &PrivKey,
     time_stamp: u64,
 ) -> (Vec<u8>, BlockWithProof) {
-    let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
+    let sender = KeyPair::from_privkey(*privkey).unwrap().address();
     let mut block = Block::new();
     let proof = build_proof(height, sender, privkey);
     let transaction_root = body.transactions_root().to_vec();
@@ -97,7 +97,7 @@ fn build_block(
 fn send_block(
     pre_block_hash: H256,
     height: u64,
-    pub_sender: Sender<PubType>,
+    pub_sender: &Sender<PubType>,
     timestamp: u64,
     block_txs: &BlockTxs,
     privkey: &PrivKey,
@@ -199,7 +199,7 @@ fn main() {
                             send_block(
                                 H256::from_slice(&rich_status.hash),
                                 send_height,
-                                tx_pub.clone(),
+                                &tx_pub,
                                 timestamp,
                                 &block_txs,
                                 &pk_miner,

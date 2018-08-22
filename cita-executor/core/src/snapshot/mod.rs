@@ -499,14 +499,15 @@ pub struct StateRebuilder {
 impl StateRebuilder {
     /// Create a new state rebuilder to write into the given backing DB.
     pub fn new(db: Arc<Database>, pruning: Algorithm) -> Self {
+        let bloom = StateDB::load_bloom(&*db);
         StateRebuilder {
-            db: journaldb::new(db.clone(), pruning, COL_STATE),
+            db: journaldb::new(db, pruning, COL_STATE),
             state_root: HASH_NULL_RLP,
             known_code: HashMap::new(),
             missing_code: HashMap::new(),
             known_abi: HashMap::new(),
             missing_abi: HashMap::new(),
-            bloom: StateDB::load_bloom(&*db),
+            bloom,
             known_storage_roots: HashMap::new(),
         }
     }
@@ -749,7 +750,7 @@ impl BlockRebuilder {
     ) -> Self {
         BlockRebuilder {
             executor,
-            db: db.clone(),
+            db,
             //_disconnected: Vec::new(),
             best_number: manifest.block_number,
             best_hash: manifest.block_hash,
@@ -874,7 +875,7 @@ impl BlockRebuilder {
 // helper for reading chunks from arbitrary reader and feeding them into the
 // service.
 pub fn restore_using<R: SnapshotReader>(
-    snapshot: Arc<Service>,
+    snapshot: &Arc<Service>,
     reader: &R,
     recover: bool,
 ) -> Result<(), String> {

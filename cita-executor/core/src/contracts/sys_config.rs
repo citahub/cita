@@ -154,7 +154,7 @@ impl<'a> SysConfig<'a> {
         chain_name_bs
             .remove(0)
             .to_string()
-            .ok_or("decode chain name error".to_string())
+            .ok_or_else(|| "decode chain name error".to_owned())
     }
 
     /// The id of current chain
@@ -175,7 +175,7 @@ impl<'a> SysConfig<'a> {
         operator_bs
             .remove(0)
             .to_string()
-            .ok_or("decode operator error".to_string())
+            .ok_or_else(|| "decode operator error".to_owned())
     }
 
     /// Current operator's website URL
@@ -184,7 +184,7 @@ impl<'a> SysConfig<'a> {
         website_bs
             .remove(0)
             .to_string()
-            .ok_or("decode website error".to_string())
+            .ok_or_else(|| "decode website error".to_owned())
     }
 
     /// The interval time for creating a block (milliseconds)
