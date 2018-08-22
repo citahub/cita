@@ -4,7 +4,8 @@ cache:
   timeout: 600
   directories:
     - $TRAVIS_BUILD_DIR/target/debug
-    - /opt/.cargo
+    - /opt/.cargo/git
+    - /opt/.cargo/registry
 services:
   - docker
 git:
@@ -15,7 +16,7 @@ stages:
   - Release
   - IntegrateTest
 before_install:
-  - docker pull cita/cita-build:ubuntu-18.04-20180813
+  - docker pull cita/cita-build:ubuntu-18.04-20180820
 jobs:
   include:
 
