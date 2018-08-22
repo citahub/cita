@@ -428,6 +428,7 @@ impl OpenBlock {
         true
     }
 
+    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
     pub fn apply_transaction(
         &mut self,
         engine: &Engine,

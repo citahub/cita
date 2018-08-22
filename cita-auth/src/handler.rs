@@ -310,6 +310,7 @@ impl MsgHandler {
         }
     }
 
+    #[allow(unknown_lints, option_option)] // TODO clippy
     fn get_ret_from_cache(&self, tx_hash: &H256) -> Option<Option<Vec<u8>>> {
         self.cache.peek(tx_hash).cloned()
     }
@@ -795,6 +796,7 @@ impl MsgHandler {
         self.process_block_verify(blk_req);
     }
 
+    #[allow(unknown_lints, cyclomatic_complexity)] // TODO clippy
     fn deal_request(&mut self, is_local: bool, newtx_req: Request) {
         if newtx_req.has_batch_req() {
             let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();

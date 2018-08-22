@@ -52,6 +52,7 @@ use std::time;
 
 pub type PubType = (String, Vec<u8>);
 
+#[allow(unknown_lints, too_many_arguments)] // TODO clippy
 fn create_contract(
     block_tx_num: u64,
     pre_hash: H256,
