@@ -67,24 +67,28 @@ impl<'a> SysConfig<'a> {
         param_types: &[ParamType],
         method: &[u8],
         block_id: Option<BlockId>,
-    ) -> Vec<Token> {
+    ) -> Result<Vec<Token>, String> {
         let address = &*CONTRACT_ADDRESS;
         let block_id = block_id.unwrap_or(BlockId::Latest);
-        let output = self.executor.call_method(address, method, None, block_id);
+        let output = self.executor.call_method(address, method, None, block_id)?;
+        trace!("sys_config value output: {:?}", output);
+        decode(param_types, &output).map_err(|_| "decode value error".to_string())
+    }
+
+    fn get_latest_value(&self, param_types: &[ParamType], method: &[u8]) -> Vec<Token> {
+        let address = &*CONTRACT_ADDRESS;
+        let output = self.executor.call_method_latest(address, method);
         trace!("sys_config value output: {:?}", output);
         decode(param_types, &output).expect("decode value error")
     }
 
     /// Delay block number before validate
     pub fn delay_block_number(&self) -> u64 {
-        let value =
-            self.get_value(
-                &[ParamType::Uint(256)],
-                DELAY_BLOCK_NUMBER.as_slice(),
-                Some(BlockId::Latest),
-            ).remove(0)
-                .to_uint()
-                .expect("decode delay number");
+        let value = self
+            .get_latest_value(&[ParamType::Uint(256)], DELAY_BLOCK_NUMBER.as_slice())
+            .remove(0)
+            .to_uint()
+            .expect("decode delay number");
         let number = H256::from(value).low_u64();
         debug!("delay block number: {:?}", number);
         number
@@ -92,90 +96,73 @@ impl<'a> SysConfig<'a> {
 
     /// Whether check permission or not
     pub fn permission_check(&self) -> bool {
-        let check =
-            self.get_value(
-                &[ParamType::Bool],
-                PERMISSION_CHECK.as_slice(),
-                Some(BlockId::Latest),
-            ).remove(0)
-                .to_bool()
-                .expect("decode check permission");
+        let check = self
+            .get_latest_value(&[ParamType::Bool], PERMISSION_CHECK.as_slice())
+            .remove(0)
+            .to_bool()
+            .expect("decode check permission");
         debug!("check permission: {:?}", check);
         check
     }
 
     /// Whether check quota or not
     pub fn quota_check(&self) -> bool {
-        let check =
-            self.get_value(
-                &[ParamType::Bool],
-                QUOTA_CHECK.as_slice(),
-                Some(BlockId::Latest),
-            ).remove(0)
-                .to_bool()
-                .expect("decode check quota");
+        let check = self
+            .get_latest_value(&[ParamType::Bool], QUOTA_CHECK.as_slice())
+            .remove(0)
+            .to_bool()
+            .expect("decode check quota");
         debug!("check quota: {:?}", check);
         check
     }
 
     /// The name of current chain
-    pub fn chain_name(&self, block_id: Option<BlockId>) -> String {
-        let chain_name = self
-            .get_value(&[ParamType::String], CHAIN_NAME.as_slice(), block_id)
+    pub fn chain_name(&self, block_id: Option<BlockId>) -> Result<String, String> {
+        let mut chain_name_bs =
+            self.get_value(&[ParamType::String], CHAIN_NAME.as_slice(), block_id)?;
+        chain_name_bs
             .remove(0)
             .to_string()
-            .expect("decode chain name");
-        debug!("current chain name: {:?}", chain_name);
-        chain_name
+            .ok_or("decode chain name error".to_string())
     }
 
     /// The id of current chain
     pub fn chain_id(&self) -> u32 {
-        let value =
-            self.get_value(
-                &[ParamType::Uint(64)],
-                CHAIN_ID.as_slice(),
-                Some(BlockId::Latest),
-            ).remove(0)
-                .to_uint()
-                .expect("decode chain id");
+        let value = self
+            .get_latest_value(&[ParamType::Uint(64)], CHAIN_ID.as_slice())
+            .remove(0)
+            .to_uint()
+            .expect("decode chain id");
         let chain_id = H256::from(value).low_u64() as u32;
         debug!("current chain id: {:?}", chain_id);
         chain_id
     }
 
     /// The operator of current chain
-    pub fn operator(&self, block_id: Option<BlockId>) -> String {
-        let operator = self
-            .get_value(&[ParamType::String], OPERATOR.as_slice(), block_id)
+    pub fn operator(&self, block_id: Option<BlockId>) -> Result<String, String> {
+        let mut operator_bs = self.get_value(&[ParamType::String], OPERATOR.as_slice(), block_id)?;
+        operator_bs
             .remove(0)
             .to_string()
-            .expect("decode operator");
-        debug!("current operator: {:?}", operator);
-        operator
+            .ok_or("decode operator error".to_string())
     }
 
     /// Current operator's website URL
-    pub fn website(&self, block_id: Option<BlockId>) -> String {
-        let website = self
-            .get_value(&[ParamType::String], WEBSITE.as_slice(), block_id)
+    pub fn website(&self, block_id: Option<BlockId>) -> Result<String, String> {
+        let mut website_bs = self.get_value(&[ParamType::String], WEBSITE.as_slice(), block_id)?;
+        website_bs
             .remove(0)
             .to_string()
-            .expect("decode website URL");
-        debug!("website: {:?}", website);
-        website
+            .ok_or("decode website error".to_string())
     }
 
     /// The interval time for creating a block (milliseconds)
     pub fn block_interval(&self) -> u64 {
-        let value =
-            self.get_value(
-                &[ParamType::Uint(64)],
-                BLOCK_INTERVAL.as_slice(),
-                Some(BlockId::Latest),
-            ).remove(0)
-                .to_uint()
-                .expect("decode block interval");
+        let value = self
+            .get_latest_value(&[ParamType::Uint(64)], BLOCK_INTERVAL.as_slice())
+            .remove(0)
+            .to_uint()
+            .expect("decode block interval");
         let interval = H256::from(value).low_u64();
         debug!("block interval: {:?}", interval);
         interval
@@ -185,14 +172,11 @@ impl<'a> SysConfig<'a> {
     /// Quota: Default config is quota
     /// Charge: Charging by gas * gasPrice and reward for proposer
     pub fn economical_model(&self) -> EconomicalModel {
-        let value =
-            self.get_value(
-                &[ParamType::Uint(64)],
-                ECONOMICAL_MODEL.as_slice(),
-                Some(BlockId::Latest),
-            ).remove(0)
-                .to_uint()
-                .expect("decode economical model");
+        let value = self
+            .get_latest_value(&[ParamType::Uint(64)], ECONOMICAL_MODEL.as_slice())
+            .remove(0)
+            .to_uint()
+            .expect("decode economical model");
         let t = H256::from(value).low_u64() as u8;
         debug!("economical model: {:?}", t);
         EconomicalModel::from_u8(t).expect("unknown economical model")
@@ -200,9 +184,9 @@ impl<'a> SysConfig<'a> {
 
     pub fn token_info(&self) -> TokenInfo {
         let address = &*CONTRACT_ADDRESS;
-        let output =
-            self.executor
-                .call_method(address, GET_TOKEN_INFO.as_slice(), None, BlockId::Latest);
+        let output = self
+            .executor
+            .call_method_latest(address, GET_TOKEN_INFO.as_slice());
         let mut token_info = decode(
             &[ParamType::String, ParamType::String, ParamType::String],
             &output,
@@ -256,7 +240,7 @@ mod tests {
     #[test]
     fn test_chain_name() {
         let executor = init_executor(vec![("SysConfig.chainName", "test-chain")]);
-        let value = SysConfig::new(&executor).chain_name(None);
+        let value = SysConfig::new(&executor).chain_name(None).unwrap();
         assert_eq!(value, "test-chain");
     }
 
@@ -270,14 +254,14 @@ mod tests {
     #[test]
     fn test_operator() {
         let executor = init_executor(vec![("SysConfig.operator", "test-operator")]);
-        let value = SysConfig::new(&executor).operator(None);
+        let value = SysConfig::new(&executor).operator(None).unwrap();
         assert_eq!(value, "test-operator");
     }
 
     #[test]
     fn test_website() {
         let executor = init_executor(vec![("SysConfig.website", "https://www.cryptape.com")]);
-        let value = SysConfig::new(&executor).website(None);
+        let value = SysConfig::new(&executor).website(None).unwrap();
         assert_eq!(value, "https://www.cryptape.com");
     }
 

@@ -435,9 +435,28 @@ impl ExecutorInstance {
                             Ok(number)
                         }
                     })
-                    .map(|number: u64| {
-                        // TODO: get chain_name by current block number
+                    .and_then(|number: u64| {
+                        let sys_config = SysConfig::new(&self.ext);
                         let block_id = BlockId::Number(number);
+
+                        sys_config
+                            .chain_name(Some(block_id))
+                            .and_then(|chain_name| {
+                                sys_config.operator(Some(block_id)).and_then(|operator| {
+                                    sys_config
+                                        .website(Some(block_id))
+                                        .and_then(|website| Ok((chain_name, operator, website)))
+                                })
+                            })
+                            .map_err(|_| {
+                                (
+                                    ErrorCode::query_error(),
+                                    format!("get system config at height {} failed", number),
+                                )
+                            })
+                    })
+                    .map(|(chain_name, operator, website)| {
+                        // TODO: get chain_name by current block number
                         let sys_config = SysConfig::new(&self.ext);
                         let genesis_timestamp = self
                             .ext
@@ -448,9 +467,9 @@ impl ExecutorInstance {
                         MetaData {
                             genesis_timestamp,
                             chain_id: sys_config.chain_id(),
-                            chain_name: sys_config.chain_name(Some(block_id)),
-                            operator: sys_config.operator(Some(block_id)),
-                            website: sys_config.website(Some(block_id)),
+                            chain_name,
+                            operator,
+                            website,
                             validators: self.ext.node_manager().shuffled_stake_nodes(),
                             block_interval: sys_config.block_interval(),
                             token_name: token.name,
