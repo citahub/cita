@@ -126,22 +126,22 @@ impl<'a> SysConfig<'a> {
                 &[ParamType::Bool],
                 FEE_BACK_PLATFORM_CHECK.as_slice(),
                 Some(BlockId::Latest),
-            ).remove(0)
-                .to_bool()
+            ).ok()
+                .and_then(|mut x| x.remove(0).to_bool())
                 .unwrap_or_else(|| false);
         debug!("check fee back platform: {:?}", check);
         check
     }
 
-    // The owner of current chain
+    /// The owner of current chain
     pub fn chain_owner(&self) -> Address {
         let chain_owner =
             self.get_value(
                 &[ParamType::Address],
                 CHAIN_OWNER.as_slice(),
                 Some(BlockId::Latest),
-            ).remove(0)
-                .to_address()
+            ).ok()
+                .and_then(|mut x| x.remove(0).to_address())
                 .unwrap_or_else(|| [0u8; 20]);
         debug!("Get chain owner: {:?}", chain_owner);
         Address::from(chain_owner)
