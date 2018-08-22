@@ -767,6 +767,8 @@ impl<B: Backend> State<B> {
         check_permission: bool,
         check_quota: bool,
         economical_model: EconomicalModel,
+        check_fee_back_platform: bool,
+        chain_owner: Address,
     ) -> ApplyResult {
         let options = TransactOptions {
             tracing,
@@ -785,6 +787,8 @@ impl<B: Backend> State<B> {
             &native_factory,
             false,
             economical_model,
+            check_fee_back_platform,
+            chain_owner,
         ).transact(t, options)
         {
             Ok(e) => {
@@ -854,8 +858,19 @@ impl<B: Backend> State<B> {
                     if let Err(err) = self.sub_balance(&sender, &tx_fee_value) {
                         error!("Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}", tx_fee_value, err);
                     }
-                    self.add_balance(&env_info.author, &tx_fee_value)
-                        .expect("Add balance to author(miner) must success");
+
+                    if check_fee_back_platform {
+                        if chain_owner == Address::from(0) {
+                            self.add_balance(&env_info.author, &tx_fee_value)
+                                .expect("Add balance to author(miner) must success");
+                        } else {
+                            self.add_balance(&chain_owner, &tx_fee_value)
+                                .expect("Add balance to chain owner must success");
+                        }
+                    } else {
+                        self.add_balance(&env_info.author, &tx_fee_value)
+                            .expect("Add balance to author(miner) must success");
+                    }
                 }
                 let cumulative_gas_used = env_info.gas_used + tx_gas_used;
                 let receipt = Receipt::new(
@@ -1322,6 +1337,8 @@ mod tests {
                 false,
                 false,
                 Default::default(),
+                false,
+                Address::from(0),
             )
             .unwrap();
         println!(

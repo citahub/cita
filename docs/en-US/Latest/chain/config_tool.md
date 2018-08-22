@@ -60,7 +60,7 @@ optional arguments:
     - 默认的websocket端口：4337到4337+N
     - 默认的rabbitmq端口：4369(epmd)/25672(Erlang distribution)/5671，5672(AMQP)/15672(management plugin)
 
-参数的简单解释：
+参数解释：
 
 - `chain_name` : cita 支持侧链后，通过 chain_name 生成不同的链配置，默认为 test-chain
 
@@ -70,9 +70,11 @@ optional arguments:
 
 	例如：
 
-	- 链的 chain_id 值设为1，默认为随机数 `--contract_arguments "SysConfig.chainId=1"`
-	- 链的经济模型设为 quota，默认为 quota(0), 其他选项有 charge(1) `--contract_arguments "SysConfig.economicalModel=0"`
+    - `--contract_arguments "SysConfig.chainId=1"` 链的 chain_id 值设为1，默认为随机数
+    - `--contract_arguments "SysConfig.economicalModel=0"` 链的经济模型设为 quota，默认为 quota(0), 其他选项有 charge(1)
       (***此模型下只有`super_admin`账户及节点地址有余额***)
+    - `--contract_arguments "SysConfig.checkFeeBackPlatform=true"` 交易激励返回链的持有者（运营方），为 false 时，交易激励返回共识节点
+    - `--contract_arguments "SysConfig.chainOwner=0x0000000000000000000000000000000000000000"` 运营方地址，默认全0
 
 ## setup
 
@@ -193,6 +195,8 @@ Contracts:
   - delayBlockNumber: 1
   - checkPermission: false
   - checkQuota: false
+  - checkFeeBackPlatform: true
+  - chainOwner: '0x0000000000000000000000000000000000000000'
   - chainName: test-chain
   - chainId: 1
   - operator: test-operator

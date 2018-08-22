@@ -88,6 +88,8 @@ where
     vm_tracer: &'a mut V,
     static_flag: bool,
     economical_model: EconomicalModel,
+    check_fee_back_platform: bool,
+    chain_owner: Address,
 }
 
 
@@ -99,7 +101,7 @@ where
 {
     /// Basic `Externalities` constructor.
     #[cfg_attr(feature = "dev", allow(too_many_arguments))]
-    pub fn new(state: &'a mut State<B>, env_info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, depth: usize, origin_info: OriginInfo, substate: &'a mut Substate, output: OutputPolicy<'a, 'a>, tracer: &'a mut T, vm_tracer: &'a mut V, static_flag: bool, economical_model: EconomicalModel) -> Self {
+    pub fn new(state: &'a mut State<B>, env_info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, depth: usize, origin_info: OriginInfo, substate: &'a mut Substate, output: OutputPolicy<'a, 'a>, tracer: &'a mut T, vm_tracer: &'a mut V, static_flag: bool, economical_model: EconomicalModel, check_fee_back_platform: bool, chain_owner: Address) -> Self {
         Externalities {
             state,
             env_info,
@@ -115,6 +117,8 @@ where
             vm_tracer,
             static_flag,
             economical_model,
+            check_fee_back_platform,
+            chain_owner
         }
     }
 }
@@ -202,7 +206,7 @@ where
                 return evm::ContractCreateResult::Failed;
             }
         }
-        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model);
+        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model, self.check_fee_back_platform, self.chain_owner);
 
         // TODO: handle internal error separately
         match ex.create(&params, self.substate, self.tracer, self.vm_tracer) {
@@ -248,7 +252,7 @@ where
             params.value = ActionValue::Transfer(value);
         }
 
-        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model);
+        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model, self.check_fee_back_platform, self.chain_owner);
 
         match ex.call(&params, self.substate, BytesRef::Fixed(output), self.tracer, self.vm_tracer) {
             Ok(FinalizationResult{ gas_left, return_data, apply_state: true }) => MessageCallResult::Success(gas_left, return_data),
