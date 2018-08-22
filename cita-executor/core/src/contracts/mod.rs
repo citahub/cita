@@ -36,7 +36,7 @@ use ethabi::{decode, ParamType, Token};
 use libexecutor::call_request::CallRequest;
 use libexecutor::executor::Executor;
 use types::ids::BlockId;
-use util::sha3;
+use util::{sha3, Bytes};
 
 /// Extend `Executor` with some methods related to contract
 trait ContractCallExt {
@@ -47,10 +47,11 @@ trait ContractCallExt {
         encoded_method: &[u8],
         from: Option<Address>,
         block_id: BlockId,
-    ) -> Vec<u8>;
+    ) -> Result<Bytes, String>;
     /// Call a contract method on latest block
     fn call_method_latest(&self, address: &Address, encoded_method: &[u8]) -> Vec<u8> {
         self.call_method(address, encoded_method, None, BlockId::Latest)
+            .unwrap()
     }
 }
 
@@ -61,7 +62,7 @@ impl ContractCallExt for Executor {
         encoded_method: &[u8],
         from: Option<Address>,
         block_id: BlockId,
-    ) -> Vec<u8> {
+    ) -> Result<Bytes, String> {
         let call_request = CallRequest {
             from,
             to: *address,
@@ -70,7 +71,6 @@ impl ContractCallExt for Executor {
 
         trace!("data: {:?}", call_request.data);
         self.eth_call(call_request, block_id)
-            .expect(&format!("eth call address: {}", address))
     }
 }
 
