@@ -304,7 +304,7 @@ pub fn chunk_state<'a>(
         let basic_account = ::rlp::decode(&*account_data);
         let account_key = H256::from_slice(&account_key);
         let account_address = Address::from_slice(&account_key);
-        info!("Account: {:?}", account_address);
+        trace!("Account: {:?}", account_address);
 
         let account_db = AccountDB::new(db, &account_address);
 
@@ -350,16 +350,25 @@ impl<'a> BlockChunker<'a> {
         let mut loaded_size = 0;
         let mut last = self.current_hash;
 
+        let start_header = self
+            .executor
+            .block_header_by_hash(self.current_hash)
+            .ok_or_else(|| Error::BlockNotFound(self.current_hash))?;
+        let step = if start_header.number() < 100 {
+            1
+        } else {
+            start_header.number() / 100
+        };
+
         let genesis_block = self.executor.block_header_by_height(0).unwrap_or_default();
         let genesis_hash = genesis_block.hash();
-        trace!("genesis_hash: {:?}", genesis_hash);
+        info!("genesis_hash: {:?}", genesis_hash);
+        let mut blocks_num = 0;
 
         loop {
             if self.current_hash == genesis_hash {
                 break;
             }
-
-            trace!("Current_hash: {:?}", self.current_hash);
 
             let header = self
                 .executor
@@ -370,7 +379,9 @@ impl<'a> BlockChunker<'a> {
             header.rlp_append(&mut s);
             let header_rlp = s.out();
 
-            info!("current height: {:?}", header.number());
+            if blocks_num % step == 0 {
+                info!("current height: {:?}", header.number());
+            }
 
             let new_loaded_size = loaded_size + header_rlp.len();
 
@@ -386,6 +397,8 @@ impl<'a> BlockChunker<'a> {
 
             last = self.current_hash;
             self.current_hash = *header.parent_hash();
+
+            blocks_num += 1;
         }
 
         if loaded_size != 0 {

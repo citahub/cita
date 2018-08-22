@@ -261,11 +261,21 @@ impl<'a> BlockChunker<'a> {
         let mut loaded_size = 0;
         let mut last = self.current_hash;
 
+        let start_header = self
+            .chain
+            .block_header_by_hash(self.current_hash)
+            .ok_or_else(|| Error::BlockNotFound(self.current_hash))?;
+        let step = if start_header.number() < 100 {
+            1
+        } else {
+            start_header.number() / 100
+        };
+
         let genesis_hash = self
             .chain
             .block_hash_by_height(0)
             .expect("Genesis hash should always exist");
-        trace!("Genesis_hash: {:?}", genesis_hash);
+        info!("Genesis_hash: {:?}", genesis_hash);
         let mut blocks_num = 0;
 
         loop {
@@ -286,7 +296,9 @@ impl<'a> BlockChunker<'a> {
             header.clone().rlp_append(&mut s);
             let header_rlp = s.out();
 
-            info!("current height: {:?}", header.number());
+            if blocks_num % step == 0 {
+                info!("current height: {:?}", header.number());
+            }
 
             let pair: Vec<u8> = if blocks_num < BLOCKLIMIT {
                 let body_rlp = {
@@ -303,8 +315,6 @@ impl<'a> BlockChunker<'a> {
                     Some(r) => r.receipts,
                     _ => Vec::new(),
                 };
-
-                blocks_num += 1;
 
                 let mut pair_stream = RlpStream::new_list(3);
                 pair_stream
@@ -332,6 +342,8 @@ impl<'a> BlockChunker<'a> {
 
             last = self.current_hash;
             self.current_hash = *header.parent_hash();
+
+            blocks_num += 1;
         }
 
         if loaded_size != 0 {
