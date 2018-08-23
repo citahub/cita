@@ -78,14 +78,6 @@ contract ChainManager is Error {
         return uint32(cid);
     }
 
-    function getParentChainId()
-        public
-        hasParentChain
-        returns (uint32)
-    {
-        return parentChainId;
-    }
-
     // @notice Register a new side chain.
     function newSideChain(uint32 sideChainId, address[] addrs)
         public
@@ -113,26 +105,13 @@ contract ChainManager is Error {
         sideChains[id].status = ChainStatus.Disable;
     }
 
-    function getAuthorities(uint32 id)
-        public
-        view
-        returns (address[])
-    {
-        // Is it the parent chain?
-        if (parentChainId != 0 && parentChainId == id) {
-            return parentChainNodes;
-        // Is it a enabled side chain?
-        } else if (sideChains[id].status == ChainStatus.Enable) {
-            return sideChains[id].nodes;
-        } else {
-            // Returns an empty array;
-        }
-    }
-
     function verifyBlockHeader(
         uint32 chainId,
         bytes blockHeader
-    ) public hasSideChain(chainId) {
+    )
+        public
+        hasSideChain(chainId)
+    {
         address contractAddr = crossChainVerifyAddr;
         bytes4 funcSig = bytes4(keccak256("verifyBlockHeader(uint32,bytes)"));
         bool verifyResult;
@@ -170,7 +149,11 @@ contract ChainManager is Error {
 
     function getExpectedBlockNumber(
         uint32 chainId
-    ) public view hasSideChain(chainId) returns (uint64) {
+    )
+        public
+        hasSideChain(chainId)
+        returns (uint64)
+    {
         address contractAddr = crossChainVerifyAddr;
         bytes4 funcSig = bytes4(keccak256("getExpectedBlockNumber(uint32)"));
         uint256 blockNumber;
@@ -189,7 +172,11 @@ contract ChainManager is Error {
         uint32 chainId,
         uint64 blockNumber,
         bytes stateProof
-    ) public view hasSideChain(chainId) returns (address, uint, uint) {
+    )
+        public
+        hasSideChain(chainId)
+        returns (address, uint, uint)
+    {
         address contractAddr = crossChainVerifyAddr;
         bytes4 funcSig = bytes4(keccak256("verifyState(uint32,uint64,bytes)"));
         uint stateProofSize = 0x20 + stateProof.length / 0x20 * 0x20;
@@ -228,5 +215,29 @@ contract ChainManager is Error {
             value := mload(add(ptr, 0x40))
         }
         return (addr, key, value);
+    }
+
+    function getParentChainId()
+        public
+        view
+        returns (uint32)
+    {
+        return parentChainId;
+    }
+
+    function getAuthorities(uint32 id)
+        public
+        view
+        returns (address[])
+    {
+        // Is it the parent chain?
+        if (parentChainId != 0 && parentChainId == id) {
+            return parentChainNodes;
+        // Is it a enabled side chain?
+        } else if (sideChains[id].status == ChainStatus.Enable) {
+            return sideChains[id].nodes;
+        } else {
+            // Returns an empty array;
+        }
     }
 }
