@@ -169,6 +169,8 @@ pub struct GlobalSysConfig {
     pub changed_height: usize,
     pub check_quota: bool,
     pub check_permission: bool,
+    pub check_send_tx_permission: bool,
+    pub check_create_contract_permission: bool,
     pub check_fee_back_platform: bool,
     pub chain_owner: Address,
     pub account_permissions: HashMap<Address, Vec<Resource>>,
@@ -188,6 +190,8 @@ impl GlobalSysConfig {
             changed_height: 0,
             check_quota: false,
             check_permission: false,
+            check_send_tx_permission: false,
+            check_create_contract_permission: false,
             check_fee_back_platform: false,
             chain_owner: Address::from(0),
             account_permissions: HashMap::new(),
@@ -196,6 +200,14 @@ impl GlobalSysConfig {
             block_interval: 3000,
         }
     }
+}
+
+pub struct CheckOptions {
+    pub permission: bool,
+    pub quota: bool,
+    pub fee_back_platform: bool,
+    pub send_tx_permission: bool,
+    pub create_contract_permission: bool,
 }
 
 pub struct Executor {
@@ -628,6 +640,8 @@ impl Executor {
             vm_tracing: analytics.vm_tracing,
             check_permission: false,
             check_quota: false,
+            check_send_tx_permission: false,
+            check_create_contract_permission: false,
         };
 
         Executive::new(
@@ -640,7 +654,7 @@ impl Executor {
             EconomicalModel::Quota,
             false,
             Address::from(0),
-        ).transact(t, options)
+        ).transact(t, &options)
             .map_err(Into::into)
     }
 
@@ -803,6 +817,8 @@ impl Executor {
         let sys_config = SysConfig::new(self);
         conf.delay_active_interval = sys_config.delay_block_number() as usize;
         conf.check_permission = sys_config.permission_check();
+        conf.check_send_tx_permission = sys_config.send_tx_permission_check();
+        conf.check_create_contract_permission = sys_config.create_contract_permission_check();
         conf.check_quota = sys_config.quota_check();
         conf.check_fee_back_platform = sys_config.fee_back_platform_check();
         conf.chain_owner = sys_config.chain_owner();
@@ -839,6 +855,14 @@ impl Executor {
         let last_hashes = self.last_hashes();
         let conf = self.get_sys_config(self.get_max_height());
         let parent_hash = *block.parent_hash();
+        let check_options = CheckOptions {
+            permission: conf.check_permission,
+            quota: conf.check_quota,
+            fee_back_platform: conf.check_fee_back_platform,
+            send_tx_permission: conf.check_send_tx_permission,
+            create_contract_permission: conf.check_create_contract_permission,
+        };
+
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
             conf.clone(),
@@ -848,13 +872,7 @@ impl Executor {
             current_state_root,
             last_hashes.into(),
         ).unwrap();
-        if open_block.apply_transactions(
-            self,
-            conf.check_permission,
-            conf.check_quota,
-            conf.check_fee_back_platform,
-            conf.chain_owner,
-        ) {
+        if open_block.apply_transactions(self, conf.chain_owner, &check_options) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
             info!(
@@ -873,11 +891,20 @@ impl Executor {
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
         let conf = self.get_sys_config(self.get_max_height());
-        let perm = conf.check_permission;
-        let check_quota = conf.check_quota;
-        let check_fee_back_platform = conf.check_fee_back_platform;
+        // let perm = conf.check_permission;
+        // let check_send_tx_permission = conf.check_send_tx_permission;
+        // let check_create_contract_permission = conf.check_create_contract_permission;
+        // let check_quota = conf.check_quota;
+        // let check_fee_back_platform = conf.check_fee_back_platform;
         let chain_owner = conf.chain_owner;
         let parent_hash = *block.parent_hash();
+        let check_options = CheckOptions {
+            permission: conf.check_permission,
+            quota: conf.check_quota,
+            fee_back_platform: conf.check_fee_back_platform,
+            send_tx_permission: conf.check_send_tx_permission,
+            create_contract_permission: conf.check_create_contract_permission,
+        };
         let mut open_block = OpenBlock::new(
             self.factories.clone(),
             conf,
@@ -887,13 +914,7 @@ impl Executor {
             current_state_root,
             last_hashes.into(),
         ).unwrap();
-        if open_block.apply_transactions(
-            self,
-            perm,
-            check_quota,
-            check_fee_back_platform,
-            chain_owner,
-        ) {
+        if open_block.apply_transactions(self, chain_owner, &check_options) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
             debug!(
@@ -1175,7 +1196,7 @@ mod tests {
 
     #[test]
     fn test_contract_address_from_permission_denied() {
-        let executor = init_executor(vec![("SysConfig.checkPermission", "true")]);
+        let executor = init_executor(vec![("SysConfig.checkCreateContractPermission", "true")]);
         let chain = init_chain();
 
         let data = generate_contract();
@@ -1207,7 +1228,7 @@ mod tests {
 
         let receipt = chain.localized_receipt(hash).unwrap();
         assert_eq!(receipt.contract_address, None);
-        assert_eq!(receipt.error, Some(ReceiptError::NoTransactionPermission));
+        assert_eq!(receipt.error, Some(ReceiptError::NoContractPermission));
     }
 
     #[test]

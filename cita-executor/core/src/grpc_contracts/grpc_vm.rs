@@ -2,7 +2,7 @@ use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use db::{self as db, Writable};
 use error::{Error, ExecutionError};
-use executive::check_permission;
+use executive::{check_permission, TransactOptions};
 use grpc::Result as GrpcResult;
 
 use grpc_contracts::contract_state::{ConnectInfo, ContractState};
@@ -106,6 +106,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         env_info: &EnvInfo,
         action_params: &ActionParams,
         connect_info: &ConnectInfo,
+        options: &TransactOptions,
     ) -> Result<Receipt, Error> {
         let mut invoke_request = InvokeRequest::new();
         invoke_request.set_param(action_params.to_owned());
@@ -121,6 +122,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
                 &self.state.group_accounts,
                 &self.state.account_permissions,
                 t,
+                options,
             )?;
         }
 
