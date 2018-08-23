@@ -66,10 +66,10 @@ impl ExecutorInstance {
         executor.set_gas_and_nodes(executor.get_max_height());
         executor.send_executed_info_to_chain(executor.get_max_height(), &ctx_pub);
         ExecutorInstance {
-            ctx_pub: ctx_pub,
-            write_sender: write_sender,
+            ctx_pub,
+            write_sender,
             ext: executor,
-            grpc_port: grpc_port,
+            grpc_port,
             closed_block: RefCell::new(None),
             is_snapshot: false,
         }
@@ -91,7 +91,7 @@ impl ExecutorInstance {
 
             routing_key!(Chain >> RichStatus) => {
                 if let Some(status) = msg.take_rich_status() {
-                    self.execute_chain_status(status);
+                    self.execute_chain_status(&status);
                 };
             }
 
@@ -559,10 +559,10 @@ impl ExecutorInstance {
             match stage {
                 Stage::ExecutingProposal => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
-                        if !value.is_equivalent(&block) {
-                            if !self.ext.is_interrupted.load(Ordering::SeqCst) {
-                                self.ext.is_interrupted.store(true, Ordering::SeqCst);
-                            }
+                        if !value.is_equivalent(&block)
+                            && !self.ext.is_interrupted.load(Ordering::SeqCst)
+                        {
+                            self.ext.is_interrupted.store(true, Ordering::SeqCst);
                         }
                         self.send_block(blk_height, block, proof);
                     }
@@ -861,7 +861,7 @@ impl ExecutorInstance {
                 let ctx_pub = self.ctx_pub.clone();
                 let snapshot_builder = thread::Builder::new().name("snapshot_executor".into());
                 let _ = snapshot_builder.spawn(move || {
-                    take_snapshot(ext, &snapshot_req);
+                    take_snapshot(&ext, &snapshot_req);
 
                     info!("Taking snapshot finished!!!");
 
@@ -883,7 +883,7 @@ impl ExecutorInstance {
             }
             Cmd::Restore => {
                 info!("[snapshot] receive {:?}", snapshot_req);
-                match restore_snapshot(self.ext.clone(), snapshot_req) {
+                match restore_snapshot(&self.ext, snapshot_req) {
                     Ok(_) => {
                         resp.set_flag(true);
                     }
@@ -916,12 +916,12 @@ impl ExecutorInstance {
     /// The processing logic here is the same as the network pruned/re-transmitted information based on
     /// the state of the chain, but here is pruned/re-transmitted `ExecutedResult`.
     #[inline]
-    fn execute_chain_status(&mut self, status: RichStatus) {
-        self.ext.prune_execute_result_cache(&status);
+    fn execute_chain_status(&mut self, status: &RichStatus) {
+        self.ext.prune_execute_result_cache(status);
     }
 }
 
-fn take_snapshot(ext: Arc<Executor>, snapshot_req: &SnapshotReq) {
+fn take_snapshot(ext: &Arc<Executor>, snapshot_req: &SnapshotReq) {
     // use given path
     let file_name = snapshot_req.file.clone() + "_executor.rlp";
     let writer = PackedWriter {
@@ -950,7 +950,7 @@ fn take_snapshot(ext: Arc<Executor>, snapshot_req: &SnapshotReq) {
     snapshot::take_snapshot(&ext, start_hash, db.as_hashdb(), writer, &*progress).unwrap();
 }
 
-fn restore_snapshot(ext: Arc<Executor>, snapshot_req: &SnapshotReq) -> Result<(), String> {
+fn restore_snapshot(ext: &Arc<Executor>, snapshot_req: &SnapshotReq) -> Result<(), String> {
     let file_name = snapshot_req.file.clone() + "_executor.rlp";
     let reader = PackedReader::new(Path::new(&file_name))
         .map_err(|e| format!("Couldn't open snapshot file: {}", e))
@@ -975,7 +975,7 @@ fn restore_snapshot(ext: Arc<Executor>, snapshot_req: &SnapshotReq) -> Result<()
 
     let snapshot = SnapshotService::new(snapshot_params).unwrap();
     let snapshot = Arc::new(snapshot);
-    match snapshot::restore_using(snapshot, &reader, true) {
+    match snapshot::restore_using(&snapshot, &reader, true) {
         Ok(_) => Ok(()),
         Err(e) => {
             warn!("restore_using failed: {:?}", e);

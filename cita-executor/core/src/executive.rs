@@ -558,12 +558,10 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             )?;
         }*/
 
-        if t.action == Action::AbiStore {
-            if !self.transact_set_abi(&t.data) {
-                return Err(ExecutionError::TransactionMalformed(
-                    "Account doesn't exist".to_string(),
-                ));
-            }
+        if t.action == Action::AbiStore && !self.transact_set_abi(&t.data) {
+            return Err(ExecutionError::TransactionMalformed(
+                "Account doesn't exist".to_owned(),
+            ));
         }
 
         // NOTE: there can be no invalid transactions from this point
@@ -653,7 +651,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 let params = ActionParams {
                     code_address: amend_data_address,
                     address: amend_data_address,
-                    sender: sender,
+                    sender,
                     origin: sender,
                     gas: init_gas,
                     gas_price: t.gas_price(),

@@ -44,11 +44,11 @@ fn write_to_file(path: String, data: &str, append: bool) {
 
 fn create_key(path: String) -> PubKey {
     let keypair = KeyPair::gen_keypair();
-    let privkey = keypair.privkey().clone();
+    let privkey = *keypair.privkey();
     let hex_str = to_hex_string(&privkey);
     let hex_str_with_0x = String::from("0x") + &hex_str + "\n";
     write_to_file(path, &hex_str_with_0x, false);
-    keypair.pubkey().clone()
+    *keypair.pubkey()
 }
 
 fn create_addr(path: String, pubkey: PubKey) {

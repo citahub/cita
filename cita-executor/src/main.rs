@@ -157,17 +157,15 @@ fn main() {
 
     let mut timeout_factor = 0u8;
     loop {
-        if let Ok(number) =
-            write_receiver.recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0))
+        if let Ok(number) = write_receiver
+            .recv_timeout(Duration::new(18 * (2u64.pow(u32::from(timeout_factor))), 0))
         {
             ext_instance.execute_block(number);
             timeout_factor = 0;
-        } else {
-            if !ext_instance.is_snapshot {
-                info!("Executor enters the timeout");
-                if timeout_factor < 6 {
-                    timeout_factor += 1
-                }
+        } else if !ext_instance.is_snapshot {
+            info!("Executor enters the timeout");
+            if timeout_factor < 6 {
+                timeout_factor += 1
             }
         }
     }

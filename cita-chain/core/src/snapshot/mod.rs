@@ -434,7 +434,7 @@ impl BlockRebuilder {
     ) -> Self {
         BlockRebuilder {
             chain,
-            db: db.clone(),
+            db,
             //_disconnected: Vec::new(),
             best_number: manifest.block_number,
             best_hash: manifest.block_hash,

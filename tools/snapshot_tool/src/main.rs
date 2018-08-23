@@ -40,7 +40,7 @@ use std::fs::{self, OpenOptions};
 use std::sync::mpsc::channel;
 use util::set_panic_handler;
 
-const SNAPSHOT_FILE: &'static str = ".cita_snapshot";
+const SNAPSHOT_FILE: &str = ".cita_snapshot";
 
 fn main() {
     micro_service_init!("cita-snapshot", "CITA:snapshot");
@@ -117,7 +117,7 @@ fn main() {
     loop {
         if let Ok((key, msg)) = rx.recv() {
             info!("snapshot_tool receive ack key: {:?}", key);
-            exit = snapshot_instance.parse_data(key, msg);
+            exit = snapshot_instance.parse_data(&key, &msg);
         }
         if exit {
             // Remove the file

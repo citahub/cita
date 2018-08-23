@@ -411,7 +411,7 @@ impl Forward {
             origin,
             res_vec.get_blocks().len()
         );
-        if res_vec.get_blocks().len() > 0 {
+        if !res_vec.get_blocks().is_empty() {
             let msg = Message::init(OperateType::Single, origin, res_vec.into());
             trace!(
                 "sync: origin {:?}, chain.blk: OperateType {:?}",
@@ -429,7 +429,7 @@ impl Forward {
 
     fn reply_local_syn_req(&self, heights: Vec<u64>) {
         let res_vec = self.sync_response(heights);
-        if res_vec.get_blocks().len() > 0 {
+        if !res_vec.get_blocks().is_empty() {
             let msg = Message::init(OperateType::Single, 0, res_vec.into());
             trace!(
                 "local_sync: chain.blk: OperateType {:?}",

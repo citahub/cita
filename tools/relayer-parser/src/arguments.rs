@@ -40,7 +40,7 @@ impl<'a> From<&'a clap::ArgMatches<'a>> for AppArgs {
         AppArgs {
             cfg_file: cfg_file.to_owned(),
             chain_id: chain_id.to_owned(),
-            tx_hash: tx_hash,
+            tx_hash,
         }
     }
 }

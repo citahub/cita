@@ -977,7 +977,7 @@ impl<B: Backend> State<B> {
                 .borrow()
                 .iter()
                 .filter_map(|(address, ref entry)| {
-                    if touched.contains(address)  // Check all touched accounts
+                    let should_kill = touched.contains(address)  // Check all touched accounts
                         && ((remove_empty_touched && entry.exists_and_is_null()) // Remove all empty touched accounts.
                             || min_balance.map_or(false, |ref balance| {
                                 entry.account.as_ref().map_or(false, |account| {
@@ -987,7 +987,8 @@ impl<B: Backend> State<B> {
                                         && account.balance() < balance
                                         && entry.old_balance.as_ref().map_or(false, |b| account.balance() < b)
                                 })
-                            })) {
+                            }));
+                    if should_kill {
                         Some(*address)
                     } else {
                         None
