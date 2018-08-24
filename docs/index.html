@@ -56,17 +56,17 @@
                 <p id="tag_version" class="app-nav-1">Version</p>
                 <ul>
                     <li>
-                        <a href="" onclick="setVersion('Latest');">Latest</a>
+                        <a href="" onclick="toVersion('develop');">Latest</a>
                     </li>
                     <li>
-                        <a href="" onclick="setVersion('v0.18');">v0.18</a>
+                        <a href="" onclick="toVersion('v0.18');">v0.18</a>
                     </li>
                     <li>
-                        <a href="" onclick="setVersion('v0.17');">v0.17</a>
+                        <a href="" onclick="toVersion('v0.17');">v0.17</a>
                     </li>
-                    <li>
-                        <a href="" onclick="setVersion('v0.16');">v0.16</a>
-                    </li>
+                    <!-- <li>
+                        <a href="" onclick="toVersion('v0.16');">v0.16</a>
+                    </li> -->
                 </ul>
             </li>
         </ul>
@@ -79,6 +79,11 @@
 
         function setVersion(version) {
             sessionStorage.setItem("version", version);
+        }
+
+        function toVersion(ver) {
+            localStorage.setItem('version', ver)
+            widnow.location.reload()
         }
     </script>
 
