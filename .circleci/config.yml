@@ -274,9 +274,9 @@ workflows:
       - "Crosschain Test":
           requires:
             - "Release"
-     #- "Robustness Test":
-     #    requires:
-     #      - "Release"
+      - "Robustness Test":
+          requires:
+            - "Release"
 
       - "Unit Test (blake2b & ed25519)":
           requires:
