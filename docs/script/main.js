@@ -1,10 +1,6 @@
-window.onload = function () {
-    const search = window.location.hash.split("?").pop()
-    if (search) {
-
-    }
-
-
+const lngs = {
+    'zh-CN': "中文",
+    'en-US': 'English'
 }
 var initDocsify = function () {
     var configs = [common, customization]
@@ -24,7 +20,10 @@ var initDocsify = function () {
     }
     const vTag = document.getElementById('tag_version')
     vTag.textContent = ver
-    docsify.basePath = baseUrlGen(ver)
+    const lng = window.localStorage.getItem('lng')
+    const lTag = document.getElementById('tag_language') || 'zh-CN'
+    lTag.textContent = lngs[lng]
+    docsify.basePath = baseUrlGen(ver, lng)
     window.$docsify = docsify
 }
 

@@ -74,7 +74,8 @@
 
     <script>
         function setLang(language) {
-            sessionStorage.setItem("language", language);
+            localStorage.setItem("lng", language);
+            widnow.location.reload()
         }
 
         function setVersion(version) {
