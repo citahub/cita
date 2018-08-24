@@ -24,7 +24,6 @@ lazy_static! {
     pub static ref ZERO_LOGBLOOM: LogBloom = LogBloom::from([0x00; 256]);
 }
 
-#[cfg_attr(feature = "dev", allow(enum_variant_names))]
 /// Semantic boolean for when a seal/signature is included.
 pub enum Seal {
     /// The seal/signature is included.

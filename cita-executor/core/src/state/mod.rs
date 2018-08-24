@@ -762,6 +762,7 @@ impl<B: Backend> State<B> {
 
     /// Execute a given transaction.
     /// This will change the state accordingly.
+    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
     pub fn apply(
         &mut self,
         env_info: &EnvInfo,
