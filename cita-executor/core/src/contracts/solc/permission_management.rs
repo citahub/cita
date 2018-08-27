@@ -17,9 +17,8 @@
 //! Permission management.
 
 use super::ContractCallExt;
-use super::{to_address_vec, to_resource_vec};
 use cita_types::{Address, H160, H256};
-use contracts::tools::method as method_tools;
+use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -69,14 +68,17 @@ pub struct PermissionManagement;
 impl PermissionManagement {
     pub fn load_account_permissions(executor: &Executor) -> HashMap<Address, Vec<Resource>> {
         let mut account_permissions = HashMap::new();
-        let accounts = PermissionManagement::all_accounts(executor);
+        let accounts = PermissionManagement::all_accounts(executor).unwrap_or_else(Vec::new);
 
         trace!("ALl accounts: {:?}", accounts);
         for account in accounts {
-            let permissions = PermissionManagement::permissions(executor, &(H256::from(account)));
+            let permissions = PermissionManagement::permissions(executor, &(H256::from(account)))
+                .unwrap_or_else(Vec::new);
             let mut resources = vec![];
             for permission in permissions {
-                resources.extend(PermissionManagement::resources(executor, &permission));
+                resources.extend(
+                    PermissionManagement::resources(executor, &permission).unwrap_or_else(Vec::new),
+                );
             }
             account_permissions.insert(account, resources);
         }
@@ -85,47 +87,39 @@ impl PermissionManagement {
     }
 
     /// Account array
-    pub fn all_accounts(executor: &Executor) -> Vec<Address> {
-        let output = executor
+    pub fn all_accounts(executor: &Executor) -> Option<Vec<Address>> {
+        executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*ALLACCOUNTS_HASH.as_slice(),
                 None,
                 None,
             )
-            .unwrap();
-        trace!("All accounts output: {:?}", output);
-        to_address_vec(&output)
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
     pub fn get_super_admin_account(executor: &Executor) -> Option<Address> {
-        let accounts = PermissionManagement::all_accounts(executor);
-        if accounts.is_empty() {
-            None
-        } else {
-            Some(accounts[0])
-        }
+        PermissionManagement::all_accounts(executor).and_then(|accounts| accounts.first().cloned())
     }
 
     /// Permission array
-    pub fn permissions(executor: &Executor, param: &H256) -> Vec<Address> {
+    pub fn permissions(executor: &Executor, param: &H256) -> Option<Vec<Address>> {
         let mut tx_data = PERMISSIONS_HASH.to_vec();
         tx_data.extend(param.to_vec());
         debug!("tx_data: {:?}", tx_data);
-        let output = executor
+        executor
             .call_method(&*CONTRACT_ADDRESS, &tx_data.as_slice(), None, None)
-            .unwrap();
-        debug!("Permissions output: {:?}", output);
-        to_address_vec(&output)
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
     /// Resources array
-    pub fn resources(executor: &Executor, address: &Address) -> Vec<Resource> {
-        let output = executor
+    pub fn resources(executor: &Executor, address: &Address) -> Option<Vec<Resource>> {
+        executor
             .call_method(address, &*RESOURCES_HASH.as_slice(), None, None)
-            .unwrap();
-        trace!("Resources output: {:?}", output);
-        to_resource_vec(&output)
+            .ok()
+            .and_then(|output| decode_tools::to_resource_vec(&output))
     }
 }
 

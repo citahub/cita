@@ -18,13 +18,11 @@
 //! Node manager.
 
 use super::ContractCallExt;
-use super::{to_address_vec, to_u256_vec};
 use cita_types::{Address, H160};
-use contracts::tools::method as method_tools;
+use contracts::tools::{decode as decode_tools, method as method_tools};
 use largest_remainder_method::apportion;
 use libexecutor::executor::{EconomicalModel, Executor};
 use rand::{Rng, SeedableRng, StdRng};
-use rustc_hex::ToHex;
 use std::iter;
 use std::str::FromStr;
 use types::reserved_addresses;
@@ -75,60 +73,50 @@ impl<'a> NodeManager<'a> {
         NodeManager { executor, rng_seed }
     }
 
-    pub fn nodes(&self) -> Vec<Address> {
-        let output = self
-            .executor
+    pub fn nodes(&self) -> Option<Vec<Address>> {
+        self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*LIST_NODE_ENCODED.as_slice(),
                 None,
                 None,
             )
-            .unwrap();
-        trace!(
-            "node manager output: {:?}",
-            ToHex::to_hex(output.as_slice())
-        );
-        let nodes: Vec<Address> = to_address_vec(&output);
-        trace!("node manager nodes: {:?}", nodes);
-        nodes
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
-    pub fn stakes(&self) -> Vec<u64> {
-        let output = self
-            .executor
+    pub fn stakes(&self) -> Option<Vec<u64>> {
+        self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*LIST_STAKE_ENCODED.as_slice(),
                 None,
                 None,
             )
-            .unwrap();
-        trace!("stakes output: {:?}", ToHex::to_hex(output.as_slice()));
-        let stakes: Vec<u64> = to_u256_vec(&output).iter().map(|i| i.low_u64()).collect();
-        trace!("node manager stakes: {:?}", stakes);
-        stakes
+            .ok()
+            .and_then(|output| decode_tools::to_u64_vec(&output))
     }
 
-    pub fn shuffled_stake_nodes(&self) -> Vec<Address> {
-        let mut stake_nodes = self.stake_nodes();
-        shuffle(&mut stake_nodes, self.rng_seed);
-        stake_nodes
+    pub fn shuffled_stake_nodes(&self) -> Option<Vec<Address>> {
+        self.stake_nodes().map(|mut stake_nodes| {
+            shuffle(&mut stake_nodes, self.rng_seed);
+            stake_nodes
+        })
     }
 
-    pub fn stake_nodes(&self) -> Vec<Address> {
+    pub fn stake_nodes(&self) -> Option<Vec<Address>> {
         let nodes = self.nodes();
         if let EconomicalModel::Quota = *self.executor.economical_model.read() {
             return nodes;
         }
-        let stakes = self.stakes();
+        let stakes = self.stakes().unwrap_or_else(Vec::new);
         let total: u64 = stakes.iter().sum();
 
         if total == 0 {
             return nodes;
         }
         let total_seats = apportion(&stakes, EPOCH);
-        party_seats(nodes, &total_seats)
+        nodes.map(|nodes| party_seats(nodes, &total_seats))
     }
 }
 

@@ -18,10 +18,9 @@
 //! Quota manager.
 
 use super::ContractCallExt;
-use super::{to_address_vec, to_u256, to_u256_vec};
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H160};
-use contracts::tools::method as method_tools;
+use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
@@ -91,8 +90,8 @@ pub struct QuotaManager;
 impl QuotaManager {
     /// Special account gas limit
     pub fn specific(executor: &Executor) -> HashMap<Address, u64> {
-        let users = QuotaManager::users(executor);
-        let quota = QuotaManager::quota(executor);
+        let users = QuotaManager::users(executor).unwrap_or_else(Vec::new);
+        let quota = QuotaManager::quota(executor).unwrap_or_else(Vec::new);
         let mut specific = HashMap::new();
         for (k, v) in users.iter().zip(quota.iter()) {
             specific.insert(*k, *v);
@@ -101,44 +100,40 @@ impl QuotaManager {
     }
 
     /// Quota array
-    pub fn quota(executor: &Executor) -> Vec<u64> {
-        let output = executor
+    pub fn quota(executor: &Executor) -> Option<Vec<u64>> {
+        executor
             .call_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice(), None, None)
-            .unwrap();
-        trace!("quota output: {:?}", output);
-        to_u256_vec(&output).iter().map(|i| i.low_u64()).collect()
+            .ok()
+            .and_then(|output| decode_tools::to_u64_vec(&output))
     }
 
     /// Account array
-    pub fn users(executor: &Executor) -> Vec<Address> {
-        let output = executor
+    pub fn users(executor: &Executor) -> Option<Vec<Address>> {
+        executor
             .call_method(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice(), None, None)
-            .unwrap();
-        trace!("users output: {:?}", output);
-        to_address_vec(&output)
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
     /// Global gas limit
-    pub fn block_gas_limit(executor: &Executor) -> u64 {
-        let output = executor
+    pub fn block_gas_limit(executor: &Executor) -> Option<u64> {
+        executor
             .call_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice(), None, None)
-            .unwrap();
-        trace!("block_gas_limit output: {:?}", output);
-        to_u256(&output).low_u64()
+            .ok()
+            .and_then(|output| decode_tools::to_u64(&output))
     }
 
     /// Global account gas limit
-    pub fn account_gas_limit(executor: &Executor) -> u64 {
-        let output = executor
+    pub fn account_gas_limit(executor: &Executor) -> Option<u64> {
+        executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*DEFAULT_AQL_HASH.as_slice(),
                 None,
                 None,
             )
-            .unwrap();
-        trace!("account_gas_limit output: {:?}", output);
-        to_u256(&output).low_u64()
+            .ok()
+            .and_then(|output| decode_tools::to_u64(&output))
     }
 }
 

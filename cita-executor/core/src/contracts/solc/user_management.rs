@@ -16,10 +16,9 @@
 
 //! User management.
 
-use super::to_address_vec;
 use super::ContractCallExt;
 use cita_types::{Address, H160};
-use contracts::tools::method as method_tools;
+use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -40,11 +39,11 @@ pub struct UserManagement;
 impl UserManagement {
     pub fn load_group_accounts(executor: &Executor) -> HashMap<Address, Vec<Address>> {
         let mut group_accounts = HashMap::new();
-        let groups = UserManagement::all_groups(executor);
+        let groups = UserManagement::all_groups(executor).unwrap_or_else(Vec::new);
 
         trace!("ALl groups: {:?}", groups);
         for group in groups {
-            let accounts = UserManagement::accounts(executor, &group);
+            let accounts = UserManagement::accounts(executor, &group).unwrap_or_else(Vec::new);
             group_accounts.insert(group, accounts);
         }
 
@@ -52,21 +51,19 @@ impl UserManagement {
     }
 
     /// Group array
-    pub fn all_groups(executor: &Executor) -> Vec<Address> {
-        let output = executor
+    pub fn all_groups(executor: &Executor) -> Option<Vec<Address>> {
+        executor
             .call_method(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice(), None, None)
-            .unwrap();
-        trace!("All groups output: {:?}", output);
-        to_address_vec(&output)
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
     /// Accounts array
-    pub fn accounts(executor: &Executor, address: &Address) -> Vec<Address> {
-        let output = executor
+    pub fn accounts(executor: &Executor, address: &Address) -> Option<Vec<Address>> {
+        executor
             .call_method(address, &ACCOUNTS_HASH.as_slice(), None, None)
-            .unwrap();
-        debug!("Accounts output: {:?}", output);
-        to_address_vec(&output)
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
     }
 }
 

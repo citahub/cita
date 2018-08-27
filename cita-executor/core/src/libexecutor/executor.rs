@@ -798,10 +798,16 @@ impl Executor {
         // }
     }
 
+    // TODO We have to update all default value when they was changed in .sol files.
+    // Is there any better solution?
     fn reload_config(&self) {
         let mut conf = GlobalSysConfig::new();
-        conf.nodes = self.node_manager().shuffled_stake_nodes();
-        conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
+        conf.nodes = self
+            .node_manager()
+            .shuffled_stake_nodes()
+            .unwrap_or_else(Vec::new);
+        conf.block_gas_limit =
+            QuotaManager::block_gas_limit(self).unwrap_or(1_073_741_824) as usize;
         let sys_config = SysConfig::new(self);
         conf.delay_active_interval = sys_config.delay_block_number() as usize;
         conf.check_permission = sys_config.permission_check();
@@ -816,7 +822,7 @@ impl Executor {
             *self.economical_model.write() = sys_config.economical_model();
         }
 
-        let common_gas_limit = QuotaManager::account_gas_limit(self);
+        let common_gas_limit = QuotaManager::account_gas_limit(self).unwrap_or(268_435_456);
         let specific = QuotaManager::specific(self);
 
         conf.account_gas_limit

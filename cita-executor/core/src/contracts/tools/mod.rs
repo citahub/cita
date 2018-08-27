@@ -17,4 +17,5 @@
 
 //! Contracts Tools.
 
+pub mod decode;
 pub mod method;

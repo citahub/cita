@@ -470,7 +470,11 @@ impl ExecutorInstance {
                             chain_name,
                             operator,
                             website,
-                            validators: self.ext.node_manager().shuffled_stake_nodes(),
+                            validators: self
+                                .ext
+                                .node_manager()
+                                .shuffled_stake_nodes()
+                                .unwrap_or_else(Vec::new),
                             block_interval: sys_config.block_interval(),
                             token_name: token.name,
                             token_avatar: token.avatar,
