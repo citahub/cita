@@ -77,13 +77,17 @@ impl<'a> NodeManager<'a> {
     pub fn nodes(&self) -> Vec<Address> {
         let output = self
             .executor
-            .call_method_latest(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
-
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*LIST_NODE_ENCODED.as_slice(),
+                None,
+                None,
+            )
+            .unwrap();
         trace!(
             "node manager output: {:?}",
             ToHex::to_hex(output.as_slice())
         );
-
         let nodes: Vec<Address> = to_address_vec(&output);
         trace!("node manager nodes: {:?}", nodes);
         nodes
@@ -92,10 +96,14 @@ impl<'a> NodeManager<'a> {
     pub fn stakes(&self) -> Vec<u64> {
         let output = self
             .executor
-            .call_method_latest(&*CONTRACT_ADDRESS, &*LIST_STAKE_ENCODED.as_slice());
-
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*LIST_STAKE_ENCODED.as_slice(),
+                None,
+                None,
+            )
+            .unwrap();
         trace!("stakes output: {:?}", ToHex::to_hex(output.as_slice()));
-
         let stakes: Vec<u64> = to_u256_vec(&output).iter().map(|i| i.low_u64()).collect();
         trace!("node manager stakes: {:?}", stakes);
         stakes

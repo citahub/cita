@@ -101,33 +101,42 @@ impl QuotaManager {
 
     /// Quota array
     pub fn quota(executor: &Executor) -> Vec<u64> {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice());
+        let output = executor
+            .call_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice(), None, None)
+            .unwrap();
         trace!("quota output: {:?}", output);
-
         to_u256_vec(&output).iter().map(|i| i.low_u64()).collect()
     }
 
     /// Account array
     pub fn users(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice());
+        let output = executor
+            .call_method(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice(), None, None)
+            .unwrap();
         trace!("users output: {:?}", output);
-
         to_address_vec(&output)
     }
 
     /// Global gas limit
     pub fn block_gas_limit(executor: &Executor) -> u64 {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice());
+        let output = executor
+            .call_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice(), None, None)
+            .unwrap();
         trace!("block_gas_limit output: {:?}", output);
-
         to_u256(&output).low_u64()
     }
 
     /// Global account gas limit
     pub fn account_gas_limit(executor: &Executor) -> u64 {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*DEFAULT_AQL_HASH.as_slice());
+        let output = executor
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*DEFAULT_AQL_HASH.as_slice(),
+                None,
+                None,
+            )
+            .unwrap();
         trace!("account_gas_limit output: {:?}", output);
-
         to_u256(&output).low_u64()
     }
 }

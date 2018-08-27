@@ -72,26 +72,18 @@ impl<'a> SysConfig<'a> {
         block_id: Option<BlockId>,
     ) -> Result<Vec<Token>, String> {
         let address = &*CONTRACT_ADDRESS;
-        let block_id = block_id.unwrap_or(BlockId::Latest);
         let output = self.executor.call_method(address, method, None, block_id)?;
         trace!("sys_config value output: {:?}", output);
         decode(param_types, &output).map_err(|_| "decode value error".to_string())
     }
 
-    fn get_latest_value(&self, param_types: &[ParamType], method: &[u8]) -> Vec<Token> {
-        let address = &*CONTRACT_ADDRESS;
-        let output = self.executor.call_method_latest(address, method);
-        trace!("sys_config value output: {:?}", output);
-        decode(param_types, &output).expect("decode value error")
-    }
-
     /// Delay block number before validate
     pub fn delay_block_number(&self) -> u64 {
         let value = self
-            .get_latest_value(&[ParamType::Uint(256)], DELAY_BLOCK_NUMBER.as_slice())
-            .remove(0)
-            .to_uint()
-            .expect("decode delay number");
+            .get_value(&[ParamType::Uint(256)], DELAY_BLOCK_NUMBER.as_slice(), None)
+            .ok()
+            .and_then(|mut x| x.remove(0).to_uint())
+            .unwrap();
         let number = H256::from(value).low_u64();
         debug!("delay block number: {:?}", number);
         number
@@ -100,10 +92,10 @@ impl<'a> SysConfig<'a> {
     /// Whether check permission or not
     pub fn permission_check(&self) -> bool {
         let check = self
-            .get_latest_value(&[ParamType::Bool], PERMISSION_CHECK.as_slice())
-            .remove(0)
-            .to_bool()
-            .expect("decode check permission");
+            .get_value(&[ParamType::Bool], PERMISSION_CHECK.as_slice(), None)
+            .ok()
+            .and_then(|mut x| x.remove(0).to_bool())
+            .unwrap_or_else(|| false);
         debug!("check permission: {:?}", check);
         check
     }
@@ -111,24 +103,21 @@ impl<'a> SysConfig<'a> {
     /// Whether check quota or not
     pub fn quota_check(&self) -> bool {
         let check = self
-            .get_latest_value(&[ParamType::Bool], QUOTA_CHECK.as_slice())
-            .remove(0)
-            .to_bool()
-            .expect("decode check quota");
+            .get_value(&[ParamType::Bool], QUOTA_CHECK.as_slice(), None)
+            .ok()
+            .and_then(|mut x| x.remove(0).to_bool())
+            .unwrap_or_else(|| false);
         debug!("check quota: {:?}", check);
         check
     }
 
     /// Check fee back to platform or node
     pub fn fee_back_platform_check(&self) -> bool {
-        let check =
-            self.get_value(
-                &[ParamType::Bool],
-                FEE_BACK_PLATFORM_CHECK.as_slice(),
-                Some(BlockId::Latest),
-            ).ok()
-                .and_then(|mut x| x.remove(0).to_bool())
-                .unwrap_or_else(|| false);
+        let check = self
+            .get_value(&[ParamType::Bool], FEE_BACK_PLATFORM_CHECK.as_slice(), None)
+            .ok()
+            .and_then(|mut x| x.remove(0).to_bool())
+            .unwrap_or_else(|| false);
         debug!("check fee back platform: {:?}", check);
         check
     }
@@ -160,10 +149,10 @@ impl<'a> SysConfig<'a> {
     /// The id of current chain
     pub fn chain_id(&self) -> u32 {
         let value = self
-            .get_latest_value(&[ParamType::Uint(64)], CHAIN_ID.as_slice())
-            .remove(0)
-            .to_uint()
-            .expect("decode chain id");
+            .get_value(&[ParamType::Uint(64)], CHAIN_ID.as_slice(), None)
+            .ok()
+            .and_then(|mut x| x.remove(0).to_uint())
+            .unwrap();
         let chain_id = H256::from(value).low_u64() as u32;
         debug!("current chain id: {:?}", chain_id);
         chain_id
@@ -190,7 +179,8 @@ impl<'a> SysConfig<'a> {
     /// The interval time for creating a block (milliseconds)
     pub fn block_interval(&self) -> u64 {
         let value = self
-            .get_latest_value(&[ParamType::Uint(64)], BLOCK_INTERVAL.as_slice())
+            .get_value(&[ParamType::Uint(64)], BLOCK_INTERVAL.as_slice(), None)
+            .unwrap()
             .remove(0)
             .to_uint()
             .expect("decode block interval");
@@ -204,7 +194,8 @@ impl<'a> SysConfig<'a> {
     /// Charge: Charging by gas * gasPrice and reward for proposer
     pub fn economical_model(&self) -> EconomicalModel {
         let value = self
-            .get_latest_value(&[ParamType::Uint(64)], ECONOMICAL_MODEL.as_slice())
+            .get_value(&[ParamType::Uint(64)], ECONOMICAL_MODEL.as_slice(), None)
+            .unwrap()
             .remove(0)
             .to_uint()
             .expect("decode economical model");
@@ -217,7 +208,8 @@ impl<'a> SysConfig<'a> {
         let address = &*CONTRACT_ADDRESS;
         let output = self
             .executor
-            .call_method_latest(address, GET_TOKEN_INFO.as_slice());
+            .call_method(address, GET_TOKEN_INFO.as_slice(), None, None)
+            .unwrap();
         let mut token_info = decode(
             &[ParamType::String, ParamType::String, ParamType::String],
             &output,

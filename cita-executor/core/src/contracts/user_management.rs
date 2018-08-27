@@ -52,17 +52,19 @@ impl UserManagement {
 
     /// Group array
     pub fn all_groups(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice());
+        let output = executor
+            .call_method(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice(), None, None)
+            .unwrap();
         trace!("All groups output: {:?}", output);
-
         to_address_vec(&output)
     }
 
     /// Accounts array
     pub fn accounts(executor: &Executor, address: &Address) -> Vec<Address> {
-        let output = executor.call_method_latest(address, &ACCOUNTS_HASH.as_slice());
+        let output = executor
+            .call_method(address, &ACCOUNTS_HASH.as_slice(), None, None)
+            .unwrap();
         debug!("Accounts output: {:?}", output);
-
         to_address_vec(&output)
     }
 }
