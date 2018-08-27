@@ -1,5 +1,5 @@
 use cita_types::{Address, H256};
-use core::contracts::sys_config::SysConfig;
+use core::contracts::solc::sys_config::SysConfig;
 use core::db;
 use core::libexecutor::block::{Block, ClosedBlock};
 use core::libexecutor::call_request::CallRequest;

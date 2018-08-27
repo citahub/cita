@@ -18,8 +18,17 @@
 
 use builtin::Builtin;
 use cita_types::{Address, H160, H256, U256, U512};
-use contracts::permission_management::contains_resource;
-use contracts::Resource;
+use contracts::{
+    grpc::{
+        self,
+        contract::{
+            create_grpc_contract, invoke_grpc_contract, is_create_grpc_address, is_grpc_contract,
+        },
+        grpc_vm::extract_logs_from_response, service_registry,
+    },
+    native::factory::{Contract as NativeContract, Factory as NativeFactory},
+    solc::{permission_management::contains_resource, Resource},
+};
 use crossbeam;
 use engines::Engine;
 use error::ExecutionError;
@@ -29,15 +38,7 @@ use evm::env_info::EnvInfo;
 use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use externalities::*;
-use grpc_contracts;
-use grpc_contracts::contract::{
-    create_grpc_contract, invoke_grpc_contract, is_create_grpc_address, is_grpc_contract,
-};
-use grpc_contracts::grpc_vm::extract_logs_from_response;
-use grpc_contracts::service_registry;
 use libexecutor::executor::EconomicalModel;
-use native::factory::Contract as NativeContract;
-use native::factory::Factory as NativeFactory;
 use state::backend::Backend as StateBackend;
 use state::{State, Substate};
 use std::cmp;
@@ -959,8 +960,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     let value = storage.get_value();
                     trace!("recv resp: {:?}", storage);
                     trace!("key: {:?}, value: {:?}", key, value);
-                    grpc_contracts::storage::set_storage(self.state, params.address, key, value)
-                        .unwrap();
+                    grpc::storage::set_storage(self.state, params.address, key, value).unwrap();
                 }
 
                 // update contract_state.height

@@ -1,10 +1,10 @@
 use self::bincode::internal::serialize_into;
 use self::bincode::Infinite;
+use super::factory::{Contract, Factory};
 use bincode;
 use cita_types::{Address, H256, U256};
 use evm;
 use evm::fake_tests::FakeExt;
-use native::factory::Factory;
 use std::io::Write;
 use std::str::FromStr;
 use types::reserved_addresses;
@@ -15,9 +15,8 @@ use evm::action_params::ActionParams;
 use evm::ext::Ext;
 use evm::return_data::{GasLeft, ReturnData};
 use evm::storage::*;
-use native::factory::Contract;
-#[derive(Clone)]
 
+#[derive(Clone)]
 pub struct SimpleStorage {
     uint_value: Scalar,
     string_value: Scalar,

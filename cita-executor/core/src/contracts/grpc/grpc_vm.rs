@@ -5,8 +5,9 @@ use error::{Error, ExecutionError};
 use executive::check_permission;
 use grpc::Result as GrpcResult;
 
-use grpc_contracts::contract_state::{ConnectInfo, ContractState};
-use grpc_contracts::service_registry;
+use contracts::grpc::{
+    contract_state::{ConnectInfo, ContractState}, service_registry,
+};
 use libexecutor::executor::Executor;
 use libproto::citacode::{ActionParams, EnvInfo, InvokeRequest, InvokeResponse};
 use libproto::citacode_grpc::{CitacodeService, CitacodeServiceClient};

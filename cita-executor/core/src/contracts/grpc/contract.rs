@@ -1,10 +1,9 @@
 use cita_types::traits::LowerHex;
 use cita_types::Address;
+use contracts::grpc::{contract_state::ConnectInfo, grpc_vm::CallEvmImpl};
 use evm::action_params::ActionParams;
 use evm::env_info::EnvInfo;
 use grpc::Result as GrpcResult;
-use grpc_contracts::contract_state::ConnectInfo;
-use grpc_contracts::grpc_vm::CallEvmImpl;
 use libproto::citacode::{
     ActionParams as ProtoActionParams, EnvInfo as ProtoEnvInfo, InvokeRequest, InvokeResponse,
 };

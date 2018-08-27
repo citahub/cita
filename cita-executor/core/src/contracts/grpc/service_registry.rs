@@ -1,6 +1,6 @@
 use cita_types::traits::LowerHex;
 use cita_types::Address;
-use grpc_contracts::contract_state::ContractState;
+use contracts::grpc::contract_state::ContractState;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use util::RwLock;

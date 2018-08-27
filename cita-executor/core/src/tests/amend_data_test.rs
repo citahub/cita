@@ -13,11 +13,11 @@ fn call_vm(
     state: &mut State<StateDB>,
     params: ActionParams,
 ) -> evm::Result<evm::FinalizationResult> {
+    use contracts::native::factory::Factory as NativeFactory;
     use engines::NullEngine;
     use evm::env_info::EnvInfo;
     use evm::{Factory, VMType};
     use libexecutor::executor::EconomicalModel;
-    use native::factory::Factory as NativeFactory;
     use state::Substate;
     use trace::{ExecutiveTracer, ExecutiveVMTracer};
     let factory = Factory::new(VMType::Interpreter, 1024 * 32);

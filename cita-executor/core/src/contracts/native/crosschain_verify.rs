@@ -1,12 +1,13 @@
 use cita_types::{Address, H256, U256};
-use contracts::ChainManagement;
+use contracts::{
+    native::{calc_func_sig, extract_func_sig, factory::Contract}, solc::ChainManagement,
+};
 use core::header::Header;
 use core::libchain::chain::TxProof;
 use ethabi;
 use evm::action_params::ActionParams;
 use evm::storage::Map;
 use evm::{Error, Ext, GasLeft, ReturnData};
-use native::{calc_func_sig, extract_func_sig, factory::Contract};
 use state::StateProof;
 
 lazy_static! {

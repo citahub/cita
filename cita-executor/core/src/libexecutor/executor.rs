@@ -19,8 +19,11 @@ use bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
 use contracts::{
-    AccountGasLimit, NodeManager, PermissionManagement, QuotaManager, Resource, SysConfig,
-    UserManagement,
+    native::factory::Factory as NativeFactory,
+    solc::{
+        AccountGasLimit, NodeManager, PermissionManagement, QuotaManager, Resource, SysConfig,
+        UserManagement,
+    },
 };
 use db;
 use db::*;
@@ -45,7 +48,6 @@ use libproto::{ConsensusConfig, ExecutedResult, Message};
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 // use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
-use native::factory::Factory as NativeFactory;
 use state::State;
 use state_db::StateDB;
 use std::collections::btree_map::{Keys, Values};

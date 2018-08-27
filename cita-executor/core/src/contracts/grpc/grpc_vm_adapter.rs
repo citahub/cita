@@ -1,7 +1,6 @@
-//use contracts::permission_management::contains_resource;
 use cita_types::{Address, H256, U256};
+use contracts::grpc::service_registry;
 use grpc::Server;
-use grpc_contracts::service_registry;
 use libexecutor::executor::Executor;
 use libproto::executor::{LoadRequest, LoadResponse, RegisterRequest, RegisterResponse};
 use libproto::executor_grpc::{ExecutorService, ExecutorServiceServer};
