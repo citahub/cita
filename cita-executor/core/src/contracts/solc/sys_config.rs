@@ -22,30 +22,30 @@ use std::str::FromStr;
 use ethabi::{decode, ParamType, Token};
 
 use cita_types::{Address, H256};
+use contracts::tools::method as method_tools;
 use types::ids::BlockId;
 use types::reserved_addresses;
 
-use super::encode_contract_name;
 use super::ContractCallExt;
 use libexecutor::executor::{EconomicalModel, Executor};
 use num::FromPrimitive;
 
 lazy_static! {
-    static ref DELAY_BLOCK_NUMBER: Vec<u8> = encode_contract_name(b"getDelayBlockNumber()");
-    static ref PERMISSION_CHECK: Vec<u8> = encode_contract_name(b"getPermissionCheck()");
-    static ref QUOTA_CHECK: Vec<u8> = encode_contract_name(b"getQuotaCheck()");
+    static ref DELAY_BLOCK_NUMBER: Vec<u8> = method_tools::encode_to_vec(b"getDelayBlockNumber()");
+    static ref PERMISSION_CHECK: Vec<u8> = method_tools::encode_to_vec(b"getPermissionCheck()");
+    static ref QUOTA_CHECK: Vec<u8> = method_tools::encode_to_vec(b"getQuotaCheck()");
     static ref FEE_BACK_PLATFORM_CHECK: Vec<u8> =
-        encode_contract_name(b"getFeeBackPlatformCheck()");
-    static ref CHAIN_OWNER: Vec<u8> = encode_contract_name(b"getChainOwner()");
-    static ref CHAIN_NAME: Vec<u8> = encode_contract_name(b"getChainName()");
-    static ref CHAIN_ID: Vec<u8> = encode_contract_name(b"getChainId()");
-    static ref OPERATOR: Vec<u8> = encode_contract_name(b"getOperator()");
-    static ref WEBSITE: Vec<u8> = encode_contract_name(b"getWebsite()");
-    static ref BLOCK_INTERVAL: Vec<u8> = encode_contract_name(b"getBlockInterval()");
+        method_tools::encode_to_vec(b"getFeeBackPlatformCheck()");
+    static ref CHAIN_OWNER: Vec<u8> = method_tools::encode_to_vec(b"getChainOwner()");
+    static ref CHAIN_NAME: Vec<u8> = method_tools::encode_to_vec(b"getChainName()");
+    static ref CHAIN_ID: Vec<u8> = method_tools::encode_to_vec(b"getChainId()");
+    static ref OPERATOR: Vec<u8> = method_tools::encode_to_vec(b"getOperator()");
+    static ref WEBSITE: Vec<u8> = method_tools::encode_to_vec(b"getWebsite()");
+    static ref BLOCK_INTERVAL: Vec<u8> = method_tools::encode_to_vec(b"getBlockInterval()");
     static ref CONTRACT_ADDRESS: Address =
         Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
-    static ref ECONOMICAL_MODEL: Vec<u8> = encode_contract_name(b"getEconomicalModel()");
-    static ref GET_TOKEN_INFO: Vec<u8> = encode_contract_name(b"getTokenInfo()");
+    static ref ECONOMICAL_MODEL: Vec<u8> = method_tools::encode_to_vec(b"getEconomicalModel()");
+    static ref GET_TOKEN_INFO: Vec<u8> = method_tools::encode_to_vec(b"getTokenInfo()");
 }
 
 #[derive(PartialEq, Debug)]

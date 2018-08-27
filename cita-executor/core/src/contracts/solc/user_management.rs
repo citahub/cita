@@ -16,9 +16,10 @@
 
 //! User management.
 
+use super::to_address_vec;
 use super::ContractCallExt;
-use super::{encode_contract_name, to_address_vec};
 use cita_types::{Address, H160};
+use contracts::tools::method as method_tools;
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -28,8 +29,8 @@ const ALLGROUPS: &[u8] = &*b"queryGroups()";
 const ACCOUNTS: &[u8] = &*b"queryAccounts()";
 
 lazy_static! {
-    static ref ACCOUNTS_HASH: Vec<u8> = encode_contract_name(ACCOUNTS);
-    static ref ALLGROUPS_HASH: Vec<u8> = encode_contract_name(ALLGROUPS);
+    static ref ACCOUNTS_HASH: Vec<u8> = method_tools::encode_to_vec(ACCOUNTS);
+    static ref ALLGROUPS_HASH: Vec<u8> = method_tools::encode_to_vec(ALLGROUPS);
     static ref CONTRACT_ADDRESS: H160 =
         H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
 }

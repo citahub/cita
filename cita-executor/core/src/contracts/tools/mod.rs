@@ -15,10 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Contracts.
+//! Contracts Tools.
 
-pub mod grpc;
-pub mod native;
-pub mod solc;
-
-pub mod tools;
+pub mod method;

@@ -36,7 +36,7 @@ use ethabi::{decode, ParamType, Token};
 use libexecutor::call_request::CallRequest;
 use libexecutor::executor::Executor;
 use types::ids::BlockId;
-use util::{sha3, Bytes};
+use util::Bytes;
 
 /// Extend `Executor` with some methods related to contract
 trait ContractCallExt {
@@ -67,11 +67,6 @@ impl ContractCallExt for Executor {
         trace!("data: {:?}", call_request.data);
         self.eth_call(call_request, block_id)
     }
-}
-
-// Should move to project top-level for code reuse.
-pub fn encode_contract_name(method_name: &[u8]) -> Vec<u8> {
-    sha3::keccak256(method_name)[0..4].to_vec()
 }
 
 /// Parse solidity return data `address[]` to rust `Vec<Address>`
@@ -145,24 +140,5 @@ fn to_resource_vec(output: &[u8]) -> Vec<Resource> {
                 .collect()
         }
         Err(_) => Vec::new(),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn encode_contract_name() {
-        let testdata = vec![
-            ("thisIsAMethodName(uint256)", vec![0xa8, 0x67, 0x12, 0xe7]),
-            ("aMethodNameAgain(bool)", vec![0xa1, 0xbe, 0xa0, 0xac]),
-            (
-                "thisIsAlsoAMethodName(bytes32)",
-                vec![0xb7, 0x7b, 0xc4, 0x01],
-            ),
-            ("thisIsAMethodNameToo(bytes)", vec![0x87, 0x46, 0x79, 0xca]),
-        ];
-        for (data, expected) in testdata.into_iter() {
-            assert_eq!(super::encode_contract_name(data.as_ref()), expected);
-        }
     }
 }

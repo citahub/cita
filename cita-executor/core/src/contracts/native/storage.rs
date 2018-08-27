@@ -20,6 +20,7 @@ use self::bincode::Infinite;
 use super::factory::{Contract, Factory};
 use bincode;
 use cita_types::{Address, H256, U256};
+use contracts::tools::method as method_tools;
 use evm;
 use evm::fake_tests::FakeExt;
 use std::io::Write;
@@ -27,7 +28,6 @@ use std::str::FromStr;
 use types::reserved_addresses;
 
 use byteorder::BigEndian;
-use byteorder::ByteOrder;
 use evm::action_params::ActionParams;
 use evm::ext::Ext;
 use evm::return_data::{GasLeft, ReturnData};
@@ -44,18 +44,21 @@ pub struct SimpleStorage {
 
 impl Contract for SimpleStorage {
     fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
-        let signature = BigEndian::read_u32(params.clone().data.unwrap().get(0..4).unwrap());
-        match signature {
-            0 => self.init(params, ext),
-            0xaa91543e => self.uint_set(params, ext),
-            0x832b4580 => self.uint_get(params, ext),
-            0xc9615770 => self.string_set(params, ext),
-            0xe3135d14 => self.string_get(params, ext),
-            0x118b229c => self.array_set(params, ext),
-            0x180a4bbf => self.array_get(params, ext),
-            0xaaf27175 => self.map_set(params, ext),
-            0xc567dff6 => self.map_get(params, ext),
-            _ => Err(evm::Error::OutOfGas),
+        if let Some(ref data) = params.data {
+            method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
+                0 => self.init(params, ext),
+                0xaa91543e => self.uint_set(params, ext),
+                0x832b4580 => self.uint_get(params, ext),
+                0xc9615770 => self.string_set(params, ext),
+                0xe3135d14 => self.string_get(params, ext),
+                0x118b229c => self.array_set(params, ext),
+                0x180a4bbf => self.array_get(params, ext),
+                0xaaf27175 => self.map_set(params, ext),
+                0xc567dff6 => self.map_get(params, ext),
+                _ => Err(evm::Error::OutOfGas),
+            })
+        } else {
+            Err(evm::Error::OutOfGas)
         }
     }
     fn create(&self) -> Box<Contract> {
