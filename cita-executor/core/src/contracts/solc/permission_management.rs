@@ -68,17 +68,18 @@ pub struct PermissionManagement;
 impl PermissionManagement {
     pub fn load_account_permissions(executor: &Executor) -> HashMap<Address, Vec<Resource>> {
         let mut account_permissions = HashMap::new();
-        let accounts = PermissionManagement::all_accounts(executor).unwrap_or_else(Vec::new);
-
+        let accounts =
+            PermissionManagement::all_accounts(executor).unwrap_or_else(Self::default_all_accounts);
         trace!("ALl accounts: {:?}", accounts);
         for account in accounts {
             let permissions = PermissionManagement::permissions(executor, &(H256::from(account)))
-                .unwrap_or_else(Vec::new);
+                .unwrap_or_else(Self::default_permissions);
+            trace!("ALl permissions for account {}: {:?}", account, permissions);
             let mut resources = vec![];
             for permission in permissions {
-                resources.extend(
-                    PermissionManagement::resources(executor, &permission).unwrap_or_else(Vec::new),
-                );
+                if let Some(res) = PermissionManagement::resources(executor, &permission) {
+                    resources.extend(res);
+                };
             }
             account_permissions.insert(account, resources);
         }
@@ -99,6 +100,11 @@ impl PermissionManagement {
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
+    pub fn default_all_accounts() -> Vec<Address> {
+        error!("Use default all accounts.");
+        Vec::new()
+    }
+
     pub fn get_super_admin_account(executor: &Executor) -> Option<Address> {
         PermissionManagement::all_accounts(executor).and_then(|accounts| accounts.first().cloned())
     }
@@ -112,6 +118,11 @@ impl PermissionManagement {
             .call_method(&*CONTRACT_ADDRESS, &tx_data.as_slice(), None, None)
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
+    }
+
+    pub fn default_permissions() -> Vec<Address> {
+        error!("Use default permissions.");
+        Vec::new()
     }
 
     /// Resources array
@@ -244,7 +255,7 @@ mod tests {
             "Authorization.superAdmin",
             "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000",
         )]);
-        let all_accounts: Vec<Address> = PermissionManagement::all_accounts(&executor);
+        let all_accounts: Vec<Address> = PermissionManagement::all_accounts(&executor).unwrap();
 
         assert_eq!(
             all_accounts,
@@ -265,7 +276,7 @@ mod tests {
         ]);
         let super_admin = Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000").unwrap();
         let mut permissions: Vec<Address> =
-            PermissionManagement::permissions(&executor, &(H256::from(super_admin)));
+            PermissionManagement::permissions(&executor, &(H256::from(super_admin))).unwrap();
         permissions.sort();
 
         let mut expected_permissions = vec![
@@ -299,7 +310,8 @@ mod tests {
     fn test_resources() {
         let executor = init_executor(vec![]);
         let permission = Address::from_str(reserved_addresses::PERMISSION_NEW_PERMISSION).unwrap();
-        let resources: Vec<Resource> = PermissionManagement::resources(&executor, &permission);
+        let resources: Vec<Resource> =
+            PermissionManagement::resources(&executor, &permission).unwrap();
         assert_eq!(
             resources,
             vec![Resource {
@@ -313,7 +325,7 @@ mod tests {
     fn test_resources_from_not_exist_permission() {
         let executor = init_executor(vec![]);
         let permission = Address::from(0x13);
-        let resources: Vec<Resource> = PermissionManagement::resources(&executor, &permission);
+        let resources = PermissionManagement::resources(&executor, &permission).unwrap();
         assert_eq!(resources, vec![]);
     }
 

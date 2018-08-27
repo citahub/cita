@@ -104,19 +104,27 @@ impl<'a> NodeManager<'a> {
         })
     }
 
-    pub fn stake_nodes(&self) -> Option<Vec<Address>> {
-        let nodes = self.nodes();
-        if let EconomicalModel::Quota = *self.executor.economical_model.read() {
-            return nodes;
-        }
-        let stakes = self.stakes().unwrap_or_else(Vec::new);
-        let total: u64 = stakes.iter().sum();
+    pub fn default_shuffled_stake_nodes() -> Vec<Address> {
+        error!("Use default shuffled stake nodes.");
+        Vec::new()
+    }
 
-        if total == 0 {
-            return nodes;
-        }
-        let total_seats = apportion(&stakes, EPOCH);
-        nodes.map(|nodes| party_seats(nodes, &total_seats))
+    pub fn stake_nodes(&self) -> Option<Vec<Address>> {
+        self.nodes().and_then(|nodes| {
+            if let EconomicalModel::Quota = *self.executor.economical_model.read() {
+                Some(nodes)
+            } else {
+                self.stakes().map(|stakes| {
+                    let total: u64 = stakes.iter().sum();
+                    if total == 0 {
+                        nodes
+                    } else {
+                        let total_seats = apportion(&stakes, EPOCH);
+                        party_seats(nodes, &total_seats)
+                    }
+                })
+            }
+        })
     }
 }
 
@@ -145,7 +153,7 @@ mod tests {
             ("NodeManager.stakes", "1,1,1,1"),
         ]);
         let node_manager = NodeManager::new(&executor, executor.genesis_header().timestamp());
-        let nodes = node_manager.nodes();
+        let nodes = node_manager.nodes().unwrap();
 
         assert_eq!(
             nodes,

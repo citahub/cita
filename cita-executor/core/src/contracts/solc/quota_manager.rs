@@ -90,8 +90,8 @@ pub struct QuotaManager;
 impl QuotaManager {
     /// Special account gas limit
     pub fn specific(executor: &Executor) -> HashMap<Address, u64> {
-        let users = QuotaManager::users(executor).unwrap_or_else(Vec::new);
-        let quota = QuotaManager::quota(executor).unwrap_or_else(Vec::new);
+        let users = QuotaManager::users(executor).unwrap_or_else(Self::default_users);
+        let quota = QuotaManager::quota(executor).unwrap_or_else(Self::default_quota);
         let mut specific = HashMap::new();
         for (k, v) in users.iter().zip(quota.iter()) {
             specific.insert(*k, *v);
@@ -107,6 +107,11 @@ impl QuotaManager {
             .and_then(|output| decode_tools::to_u64_vec(&output))
     }
 
+    pub fn default_quota() -> Vec<u64> {
+        error!("Use default quota.");
+        Vec::new()
+    }
+
     /// Account array
     pub fn users(executor: &Executor) -> Option<Vec<Address>> {
         executor
@@ -115,12 +120,22 @@ impl QuotaManager {
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
+    pub fn default_users() -> Vec<Address> {
+        error!("Use default users.");
+        Vec::new()
+    }
+
     /// Global gas limit
     pub fn block_gas_limit(executor: &Executor) -> Option<u64> {
         executor
             .call_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice(), None, None)
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
+    }
+
+    pub fn default_block_gas_limit() -> u64 {
+        error!("Use default block gas limit.");
+        1_073_741_824
     }
 
     /// Global account gas limit
@@ -134,6 +149,11 @@ impl QuotaManager {
             )
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
+    }
+
+    pub fn default_account_gas_limit() -> u64 {
+        error!("Use default account gas limit.");
+        268_435_456
     }
 }
 
@@ -155,7 +175,7 @@ mod tests {
             )),
         ]);
         println!("init executor finish");
-        let users = QuotaManager::users(&executor);
+        let users = QuotaManager::users(&executor).unwrap();
         assert_eq!(
             users,
             vec![H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap()]
@@ -166,7 +186,7 @@ mod tests {
     fn test_quota() {
         let executor = init_executor(vec![]);
         println!("init executor finish");
-        let quota = QuotaManager::quota(&executor);
+        let quota = QuotaManager::quota(&executor).unwrap();
         assert_eq!(quota, vec![1073741824]);
     }
 
@@ -174,7 +194,7 @@ mod tests {
     fn test_block_gas_limit() {
         let executor = init_executor(vec![]);
         println!("init executor finish");
-        let block_gas_limit = QuotaManager::block_gas_limit(&executor);
+        let block_gas_limit = QuotaManager::block_gas_limit(&executor).unwrap();
         assert_eq!(block_gas_limit, 1073741824);
     }
 
@@ -182,7 +202,7 @@ mod tests {
     fn test_account_gas_limit() {
         let executor = init_executor(vec![]);
         println!("init executor finish");
-        let account_gas_limit = QuotaManager::account_gas_limit(&executor);
+        let account_gas_limit = QuotaManager::account_gas_limit(&executor).unwrap();
         assert_eq!(account_gas_limit, 268435456);
     }
 }

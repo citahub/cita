@@ -39,11 +39,13 @@ pub struct UserManagement;
 impl UserManagement {
     pub fn load_group_accounts(executor: &Executor) -> HashMap<Address, Vec<Address>> {
         let mut group_accounts = HashMap::new();
-        let groups = UserManagement::all_groups(executor).unwrap_or_else(Vec::new);
+        let groups = UserManagement::all_groups(executor).unwrap_or_else(Self::default_all_groups);
 
         trace!("ALl groups: {:?}", groups);
         for group in groups {
-            let accounts = UserManagement::accounts(executor, &group).unwrap_or_else(Vec::new);
+            let accounts =
+                UserManagement::accounts(executor, &group).unwrap_or_else(Self::default_accounts);
+            trace!("ALl accounts for group {}: {:?}", group, accounts);
             group_accounts.insert(group, accounts);
         }
 
@@ -58,12 +60,22 @@ impl UserManagement {
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
+    pub fn default_all_groups() -> Vec<Address> {
+        error!("Use default all groups.");
+        Vec::new()
+    }
+
     /// Accounts array
     pub fn accounts(executor: &Executor, address: &Address) -> Option<Vec<Address>> {
         executor
             .call_method(address, &ACCOUNTS_HASH.as_slice(), None, None)
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
+    }
+
+    pub fn default_accounts() -> Vec<Address> {
+        error!("Use default accounts.");
+        Vec::new()
     }
 }
 
@@ -81,7 +93,7 @@ mod tests {
     #[test]
     fn test_all_groups() {
         let executor = init_executor(vec![]);
-        let all_groups: Vec<Address> = UserManagement::all_groups(&executor);
+        let all_groups: Vec<Address> = UserManagement::all_groups(&executor).unwrap();
 
         assert_eq!(
             all_groups,
@@ -102,7 +114,7 @@ mod tests {
         let accounts: Vec<Address> = UserManagement::accounts(
             &executor,
             &H160::from_str("ffffffffffffffffffffffffffffffffff020009").unwrap(),
-        );
+        ).unwrap();
 
         assert_eq!(
             accounts,
