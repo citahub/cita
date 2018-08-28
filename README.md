@@ -1,6 +1,6 @@
 # <img src="https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true" width="256">
 
-[![Join the chat at https://gitter.im/cryptape/cita](https://badges.gitter.im/cryptape/cita.svg)](https://gitter.im/cryptape/cita?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=develop)](https://travis-ci.org/cryptape/cita)
+[![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=develop)](https://travis-ci.org/cryptape/cita)
 
 ## What is CITA
 
@@ -66,12 +66,10 @@ CITA is currently under the GPLv3 license. See the LICENSE file for details.
 
 ## Credits
 
-<img src="https://github.com/cryptape/assets/blob/master/cryptape-thinking-ape.png?raw=true">
+<img src="https://github.com/cryptape/assets/blob/master/cryptape-logo-square.png?raw=true">
 
 CITA is created by Cryptape team with :heart:.
 
 ## Contact us
 
-WeChat Group:
-
-<img src="https://github.com/cryptape/assets/blob/master/cryptape-wechat.jpeg?raw=true" width="250">
+[Telegram Group](https://t.me/joinchat/E7dJKFL8xTwCe8MaiZWdhw)
