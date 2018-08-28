@@ -17,8 +17,8 @@
 //! Permission management.
 
 use super::ContractCallExt;
-use super::{encode_contract_name, to_address_vec, to_resource_vec};
 use cita_types::{Address, H160, H256};
+use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -29,9 +29,9 @@ const PERMISSIONS: &[u8] = &*b"queryPermissions(address)";
 const RESOURCES: &[u8] = &*b"queryResource()";
 
 lazy_static! {
-    static ref ALLACCOUNTS_HASH: Vec<u8> = encode_contract_name(ALLACCOUNTS);
-    static ref PERMISSIONS_HASH: Vec<u8> = encode_contract_name(PERMISSIONS);
-    static ref RESOURCES_HASH: Vec<u8> = encode_contract_name(RESOURCES);
+    static ref ALLACCOUNTS_HASH: Vec<u8> = method_tools::encode_to_vec(ALLACCOUNTS);
+    static ref PERMISSIONS_HASH: Vec<u8> = method_tools::encode_to_vec(PERMISSIONS);
+    static ref RESOURCES_HASH: Vec<u8> = method_tools::encode_to_vec(RESOURCES);
     static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::AUTHORIZATION).unwrap();
 }
 
@@ -68,14 +68,18 @@ pub struct PermissionManagement;
 impl PermissionManagement {
     pub fn load_account_permissions(executor: &Executor) -> HashMap<Address, Vec<Resource>> {
         let mut account_permissions = HashMap::new();
-        let accounts = PermissionManagement::all_accounts(executor);
-
+        let accounts =
+            PermissionManagement::all_accounts(executor).unwrap_or_else(Self::default_all_accounts);
         trace!("ALl accounts: {:?}", accounts);
         for account in accounts {
-            let permissions = PermissionManagement::permissions(executor, &(H256::from(account)));
+            let permissions = PermissionManagement::permissions(executor, &(H256::from(account)))
+                .unwrap_or_else(Self::default_permissions);
+            trace!("ALl permissions for account {}: {:?}", account, permissions);
             let mut resources = vec![];
             for permission in permissions {
-                resources.extend(PermissionManagement::resources(executor, &permission));
+                if let Some(res) = PermissionManagement::resources(executor, &permission) {
+                    resources.extend(res);
+                };
             }
             account_permissions.insert(account, resources);
         }
@@ -84,39 +88,49 @@ impl PermissionManagement {
     }
 
     /// Account array
-    pub fn all_accounts(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*ALLACCOUNTS_HASH.as_slice());
-        trace!("All accounts output: {:?}", output);
+    pub fn all_accounts(executor: &Executor) -> Option<Vec<Address>> {
+        executor
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*ALLACCOUNTS_HASH.as_slice(),
+                None,
+                None,
+            )
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
+    }
 
-        to_address_vec(&output)
+    pub fn default_all_accounts() -> Vec<Address> {
+        error!("Use default all accounts.");
+        Vec::new()
     }
 
     pub fn get_super_admin_account(executor: &Executor) -> Option<Address> {
-        let accounts = PermissionManagement::all_accounts(executor);
-        if accounts.is_empty() {
-            None
-        } else {
-            Some(accounts[0])
-        }
+        PermissionManagement::all_accounts(executor).and_then(|accounts| accounts.first().cloned())
     }
 
     /// Permission array
-    pub fn permissions(executor: &Executor, param: &H256) -> Vec<Address> {
+    pub fn permissions(executor: &Executor, param: &H256) -> Option<Vec<Address>> {
         let mut tx_data = PERMISSIONS_HASH.to_vec();
         tx_data.extend(param.to_vec());
         debug!("tx_data: {:?}", tx_data);
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &tx_data.as_slice());
-        debug!("Permissions output: {:?}", output);
+        executor
+            .call_method(&*CONTRACT_ADDRESS, &tx_data.as_slice(), None, None)
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
+    }
 
-        to_address_vec(&output)
+    pub fn default_permissions() -> Vec<Address> {
+        error!("Use default permissions.");
+        Vec::new()
     }
 
     /// Resources array
-    pub fn resources(executor: &Executor, address: &Address) -> Vec<Resource> {
-        let output = executor.call_method_latest(address, &*RESOURCES_HASH.as_slice());
-        trace!("Resources output: {:?}", output);
-
-        to_resource_vec(&output)
+    pub fn resources(executor: &Executor, address: &Address) -> Option<Vec<Resource>> {
+        executor
+            .call_method(address, &*RESOURCES_HASH.as_slice(), None, None)
+            .ok()
+            .and_then(|output| decode_tools::to_resource_vec(&output))
     }
 }
 
@@ -147,8 +161,9 @@ mod tests {
     extern crate mktemp;
 
     use super::contains_resource;
-    use super::{encode_contract_name, PermissionManagement, Resource};
+    use super::{PermissionManagement, Resource};
     use cita_types::{Address, H160, H256};
+    use contracts::tools::method as method_tools;
     use std::collections::HashMap;
     use std::str::FromStr;
     use tests::helpers::init_executor;
@@ -189,7 +204,7 @@ mod tests {
         let mut permission_resources: HashMap<Address, Vec<Resource>> = HashMap::new();
         let addr1 = Address::from(0x111);
         let addr2 = Address::from(0x222);
-        let mut func = encode_contract_name(ADD_RESOURCES);
+        let mut func = method_tools::encode_to_vec(ADD_RESOURCES);
         let resources = vec![
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
@@ -240,7 +255,7 @@ mod tests {
             "Authorization.superAdmin",
             "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000",
         )]);
-        let all_accounts: Vec<Address> = PermissionManagement::all_accounts(&executor);
+        let all_accounts: Vec<Address> = PermissionManagement::all_accounts(&executor).unwrap();
 
         assert_eq!(
             all_accounts,
@@ -261,7 +276,7 @@ mod tests {
         ]);
         let super_admin = Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000").unwrap();
         let mut permissions: Vec<Address> =
-            PermissionManagement::permissions(&executor, &(H256::from(super_admin)));
+            PermissionManagement::permissions(&executor, &(H256::from(super_admin))).unwrap();
         permissions.sort();
 
         let mut expected_permissions = vec![
@@ -295,12 +310,13 @@ mod tests {
     fn test_resources() {
         let executor = init_executor(vec![]);
         let permission = Address::from_str(reserved_addresses::PERMISSION_NEW_PERMISSION).unwrap();
-        let resources: Vec<Resource> = PermissionManagement::resources(&executor, &permission);
+        let resources: Vec<Resource> =
+            PermissionManagement::resources(&executor, &permission).unwrap();
         assert_eq!(
             resources,
             vec![Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(NEW_PERMISSION),
+                func: method_tools::encode_to_vec(NEW_PERMISSION),
             }]
         );
     }
@@ -309,7 +325,7 @@ mod tests {
     fn test_resources_from_not_exist_permission() {
         let executor = init_executor(vec![]);
         let permission = Address::from(0x13);
-        let resources: Vec<Resource> = PermissionManagement::resources(&executor, &permission);
+        let resources = PermissionManagement::resources(&executor, &permission).unwrap();
         assert_eq!(resources, vec![]);
     }
 
@@ -331,107 +347,107 @@ mod tests {
             // newPermission
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(NEW_PERMISSION),
+                func: method_tools::encode_to_vec(NEW_PERMISSION),
             },
             // deletePermission
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(DELETE_PERMISSION),
+                func: method_tools::encode_to_vec(DELETE_PERMISSION),
             },
             // updatePermission
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(ADD_RESOURCES),
+                func: method_tools::encode_to_vec(ADD_RESOURCES),
             },
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(DELETE_RESOURCES),
+                func: method_tools::encode_to_vec(DELETE_RESOURCES),
             },
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(UPDATE_PERMISSIONNAME),
+                func: method_tools::encode_to_vec(UPDATE_PERMISSIONNAME),
             },
             // setAuth
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(SET_AUTHORIZATION),
+                func: method_tools::encode_to_vec(SET_AUTHORIZATION),
             },
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(SET_AUTHORIZATIONS),
+                func: method_tools::encode_to_vec(SET_AUTHORIZATIONS),
             },
             // cancelAuth
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(CANCEL_AUTHORIZATION),
+                func: method_tools::encode_to_vec(CANCEL_AUTHORIZATION),
             },
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(CLEAR_AUTHORIZATION),
+                func: method_tools::encode_to_vec(CLEAR_AUTHORIZATION),
             },
             Resource {
                 cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: encode_contract_name(CANCEL_AUTHORIZATIONS),
+                func: method_tools::encode_to_vec(CANCEL_AUTHORIZATIONS),
             },
             // newRole
             Resource {
                 cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
-                func: encode_contract_name(NEW_ROLE),
+                func: method_tools::encode_to_vec(NEW_ROLE),
             },
             // deleteRole
             Resource {
                 cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
-                func: encode_contract_name(DELETE_ROLE),
+                func: method_tools::encode_to_vec(DELETE_ROLE),
             },
             // updateRole
             Resource {
                 cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
-                func: encode_contract_name(ADD_PERMISSIONS),
+                func: method_tools::encode_to_vec(ADD_PERMISSIONS),
             },
             Resource {
                 cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
-                func: encode_contract_name(DELETE_PERMISSIONS),
+                func: method_tools::encode_to_vec(DELETE_PERMISSIONS),
             },
             Resource {
                 cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
-                func: encode_contract_name(UPDATE_ROLENAME),
+                func: method_tools::encode_to_vec(UPDATE_ROLENAME),
             },
             // setRole
             Resource {
                 cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
-                func: encode_contract_name(SET_ROLE),
+                func: method_tools::encode_to_vec(SET_ROLE),
             },
             // cancelRole
             Resource {
                 cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
-                func: encode_contract_name(CANCEL_ROLE),
+                func: method_tools::encode_to_vec(CANCEL_ROLE),
             },
             Resource {
                 cont: H160::from_str(reserved_addresses::ROLE_MANAGEMENT).unwrap(),
-                func: encode_contract_name(CLEAR_ROLE),
+                func: method_tools::encode_to_vec(CLEAR_ROLE),
             },
             // newGroup
             Resource {
                 cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
-                func: encode_contract_name(NEW_GROUP),
+                func: method_tools::encode_to_vec(NEW_GROUP),
             },
             // deleteGroup
             Resource {
                 cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
-                func: encode_contract_name(DELETE_GROUP),
+                func: method_tools::encode_to_vec(DELETE_GROUP),
             },
             // updateGroup
             Resource {
                 cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
-                func: encode_contract_name(ADD_ACCOUNTS),
+                func: method_tools::encode_to_vec(ADD_ACCOUNTS),
             },
             Resource {
                 cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
-                func: encode_contract_name(DELETE_ACCOUNTS),
+                func: method_tools::encode_to_vec(DELETE_ACCOUNTS),
             },
             Resource {
                 cont: H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap(),
-                func: encode_contract_name(UPDATE_GROUPNAME),
+                func: method_tools::encode_to_vec(UPDATE_GROUPNAME),
             },
             // senTx
             Resource {
@@ -446,31 +462,31 @@ mod tests {
             // new node
             Resource {
                 cont: H160::from_str(reserved_addresses::NODE_MANAGER).unwrap(),
-                func: encode_contract_name(APPROVE_NODE),
+                func: method_tools::encode_to_vec(APPROVE_NODE),
             },
             // delete node
             Resource {
                 cont: H160::from_str(reserved_addresses::NODE_MANAGER).unwrap(),
-                func: encode_contract_name(DELETE_NODE),
+                func: method_tools::encode_to_vec(DELETE_NODE),
             },
             // update node
             Resource {
                 cont: H160::from_str(reserved_addresses::NODE_MANAGER).unwrap(),
-                func: encode_contract_name(SET_STAKE),
+                func: method_tools::encode_to_vec(SET_STAKE),
             },
             // accountQuota
             Resource {
                 cont: H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap(),
-                func: encode_contract_name(SET_DEFAULTAQL),
+                func: method_tools::encode_to_vec(SET_DEFAULTAQL),
             },
             Resource {
                 cont: H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap(),
-                func: encode_contract_name(SET_AQL),
+                func: method_tools::encode_to_vec(SET_AQL),
             },
             // blockQuota
             Resource {
                 cont: H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap(),
-                func: encode_contract_name(SET_BQL),
+                func: method_tools::encode_to_vec(SET_BQL),
             },
         ];
         expected_resources.sort();

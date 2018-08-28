@@ -20,7 +20,7 @@
 //! or rolled back.
 
 use cita_types::{Address, H256, U256};
-use contracts::Resource;
+use contracts::solc::Resource;
 use engines::Engine;
 use error::{Error, ExecutionError};
 use evm::env_info::EnvInfo;

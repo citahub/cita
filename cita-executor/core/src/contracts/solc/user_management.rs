@@ -17,8 +17,8 @@
 //! User management.
 
 use super::ContractCallExt;
-use super::{encode_contract_name, to_address_vec};
 use cita_types::{Address, H160};
+use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -28,8 +28,8 @@ const ALLGROUPS: &[u8] = &*b"queryGroups()";
 const ACCOUNTS: &[u8] = &*b"queryAccounts()";
 
 lazy_static! {
-    static ref ACCOUNTS_HASH: Vec<u8> = encode_contract_name(ACCOUNTS);
-    static ref ALLGROUPS_HASH: Vec<u8> = encode_contract_name(ALLGROUPS);
+    static ref ACCOUNTS_HASH: Vec<u8> = method_tools::encode_to_vec(ACCOUNTS);
+    static ref ALLGROUPS_HASH: Vec<u8> = method_tools::encode_to_vec(ALLGROUPS);
     static ref CONTRACT_ADDRESS: H160 =
         H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
 }
@@ -39,11 +39,13 @@ pub struct UserManagement;
 impl UserManagement {
     pub fn load_group_accounts(executor: &Executor) -> HashMap<Address, Vec<Address>> {
         let mut group_accounts = HashMap::new();
-        let groups = UserManagement::all_groups(executor);
+        let groups = UserManagement::all_groups(executor).unwrap_or_else(Self::default_all_groups);
 
         trace!("ALl groups: {:?}", groups);
         for group in groups {
-            let accounts = UserManagement::accounts(executor, &group);
+            let accounts =
+                UserManagement::accounts(executor, &group).unwrap_or_else(Self::default_accounts);
+            trace!("ALl accounts for group {}: {:?}", group, accounts);
             group_accounts.insert(group, accounts);
         }
 
@@ -51,19 +53,29 @@ impl UserManagement {
     }
 
     /// Group array
-    pub fn all_groups(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice());
-        trace!("All groups output: {:?}", output);
+    pub fn all_groups(executor: &Executor) -> Option<Vec<Address>> {
+        executor
+            .call_method(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice(), None, None)
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
+    }
 
-        to_address_vec(&output)
+    pub fn default_all_groups() -> Vec<Address> {
+        error!("Use default all groups.");
+        Vec::new()
     }
 
     /// Accounts array
-    pub fn accounts(executor: &Executor, address: &Address) -> Vec<Address> {
-        let output = executor.call_method_latest(address, &ACCOUNTS_HASH.as_slice());
-        debug!("Accounts output: {:?}", output);
+    pub fn accounts(executor: &Executor, address: &Address) -> Option<Vec<Address>> {
+        executor
+            .call_method(address, &ACCOUNTS_HASH.as_slice(), None, None)
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
+    }
 
-        to_address_vec(&output)
+    pub fn default_accounts() -> Vec<Address> {
+        error!("Use default accounts.");
+        Vec::new()
     }
 }
 
@@ -81,7 +93,7 @@ mod tests {
     #[test]
     fn test_all_groups() {
         let executor = init_executor(vec![]);
-        let all_groups: Vec<Address> = UserManagement::all_groups(&executor);
+        let all_groups: Vec<Address> = UserManagement::all_groups(&executor).unwrap();
 
         assert_eq!(
             all_groups,
@@ -102,7 +114,7 @@ mod tests {
         let accounts: Vec<Address> = UserManagement::accounts(
             &executor,
             &H160::from_str("ffffffffffffffffffffffffffffffffff020009").unwrap(),
-        );
+        ).unwrap();
 
         assert_eq!(
             accounts,

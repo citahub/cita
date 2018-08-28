@@ -1,7 +1,6 @@
 use super::*;
-use byteorder::BigEndian;
-use byteorder::ByteOrder;
 use cita_types::{H256, U256};
+use contracts::tools::method as method_tools;
 use evm::ReturnData;
 use native::storage::*;
 use std::collections::VecDeque;
@@ -31,14 +30,17 @@ pub struct ZkPrivacy {
 
 impl Contract for ZkPrivacy {
     fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
-        let signature = BigEndian::read_u32(params.clone().data.unwrap().get(0..4).unwrap());
-        match signature {
-            0 => self.init(params, ext),
-            0x05e3cb61 => self.set_balance(params, ext),
-            0xd0b07e52 => self.get_balance(params, ext),
-            0xc73b5a8f => self.send_verify(params, ext),
-            0x882b30d2 => self.receive_verify(params, ext),
-            _ => Err(evm::Error::OutOfGas),
+        if let Some(ref data) = params.data {
+            method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
+                0 => self.init(params, ext),
+                0x05e3cb61 => self.set_balance(params, ext),
+                0xd0b07e52 => self.get_balance(params, ext),
+                0xc73b5a8f => self.send_verify(params, ext),
+                0x882b30d2 => self.receive_verify(params, ext),
+                _ => Err(evm::Error::OutOfGas),
+            })
+        } else {
+            Err(evm::Error::OutOfGas)
         }
     }
     fn create(&self) -> Box<Contract> {

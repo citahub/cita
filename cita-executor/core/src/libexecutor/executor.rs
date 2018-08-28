@@ -19,8 +19,11 @@ use bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
 use contracts::{
-    AccountGasLimit, NodeManager, PermissionManagement, QuotaManager, Resource, SysConfig,
-    UserManagement,
+    native::factory::Factory as NativeFactory,
+    solc::{
+        AccountGasLimit, NodeManager, PermissionManagement, QuotaManager, Resource, SysConfig,
+        UserManagement,
+    },
 };
 use db;
 use db::*;
@@ -45,7 +48,6 @@ use libproto::{ConsensusConfig, ExecutedResult, Message};
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 // use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
-use native::factory::Factory as NativeFactory;
 use state::State;
 use state_db::StateDB;
 use std::collections::btree_map::{Keys, Values};
@@ -454,7 +456,9 @@ impl Executor {
     /// Make sure it's longer than 3s
     pub fn validate_timestamp(&self, timestamp: u64) -> bool {
         let sys_config = SysConfig::new(self);
-        let block_interval = sys_config.block_interval();
+        let block_interval = sys_config
+            .block_interval()
+            .unwrap_or_else(SysConfig::default_block_interval);
         let current_timestamp = self.get_current_timestamp();
         trace!(
             "validate_timestamp current_timestamp {:?} timestamp {:?}",
@@ -796,25 +800,48 @@ impl Executor {
         // }
     }
 
+    // TODO We have to update all default value when they was changed in .sol files.
+    // Is there any better solution?
     fn reload_config(&self) {
         let mut conf = GlobalSysConfig::new();
-        conf.nodes = self.node_manager().shuffled_stake_nodes();
-        conf.block_gas_limit = QuotaManager::block_gas_limit(self) as usize;
+        conf.nodes = self
+            .node_manager()
+            .shuffled_stake_nodes()
+            .unwrap_or_else(NodeManager::default_shuffled_stake_nodes);
+        conf.block_gas_limit = QuotaManager::block_gas_limit(self)
+            .unwrap_or_else(QuotaManager::default_block_gas_limit)
+            as usize;
         let sys_config = SysConfig::new(self);
-        conf.delay_active_interval = sys_config.delay_block_number() as usize;
-        conf.check_permission = sys_config.permission_check();
-        conf.check_quota = sys_config.quota_check();
-        conf.check_fee_back_platform = sys_config.fee_back_platform_check();
-        conf.chain_owner = sys_config.chain_owner();
-        conf.block_interval = sys_config.block_interval();
+        conf.delay_active_interval = sys_config
+            .delay_block_number()
+            .unwrap_or_else(SysConfig::default_delay_block_number)
+            as usize;
+        conf.check_permission = sys_config
+            .permission_check()
+            .unwrap_or_else(SysConfig::default_permission_check);
+        conf.check_quota = sys_config
+            .quota_check()
+            .unwrap_or_else(SysConfig::default_quota_check);
+        conf.check_fee_back_platform = sys_config
+            .fee_back_platform_check()
+            .unwrap_or_else(SysConfig::default_fee_back_platform_check);
+        conf.chain_owner = sys_config
+            .chain_owner()
+            .unwrap_or_else(SysConfig::default_chain_owner);
+        conf.block_interval = sys_config
+            .block_interval()
+            .unwrap_or_else(SysConfig::default_block_interval);
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
         conf.super_admin_account = PermissionManagement::get_super_admin_account(self);
         conf.group_accounts = UserManagement::load_group_accounts(self);
         {
-            *self.economical_model.write() = sys_config.economical_model();
+            *self.economical_model.write() = sys_config
+                .economical_model()
+                .unwrap_or_else(SysConfig::default_economical_model);
         }
 
-        let common_gas_limit = QuotaManager::account_gas_limit(self);
+        let common_gas_limit = QuotaManager::account_gas_limit(self)
+            .unwrap_or_else(QuotaManager::default_account_gas_limit);
         let specific = QuotaManager::specific(self);
 
         conf.account_gas_limit

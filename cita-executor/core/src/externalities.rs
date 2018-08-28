@@ -18,13 +18,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+use contracts::native::factory::Factory as NativeFactory;
 use evm::action_params::{ActionParams, ActionValue};
 use engines::Engine;
 use evm::env_info::EnvInfo;
 use evm::{self, MessageCallResult, Schedule, Factory, ReturnData, ContractCreateResult, FinalizationResult};
 use evm::call_type::CallType;
 use executive::*;
-use native::factory::Factory as NativeFactory;
 use state::State;
 use state::backend::Backend as StateBackend;
 use std::cmp;

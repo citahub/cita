@@ -1,5 +1,5 @@
 use cita_types::{Address, H256};
-use core::contracts::sys_config::SysConfig;
+use core::contracts::solc::sys_config::SysConfig;
 use core::db;
 use core::libexecutor::block::{Block, ClosedBlock};
 use core::libexecutor::call_request::CallRequest;
@@ -298,12 +298,12 @@ impl ExecutorInstance {
 
     fn get_auth_miscellaneous(&self) {
         let sys_config = SysConfig::new(&self.ext);
+        let chain_id = sys_config
+            .chain_id()
+            .unwrap_or_else(SysConfig::default_chain_id);
         let mut miscellaneous = Miscellaneous::new();
-        miscellaneous.set_chain_id(sys_config.chain_id());
-        trace!(
-            "the chain id captured in executor is {}",
-            sys_config.chain_id()
-        );
+        miscellaneous.set_chain_id(chain_id);
+        trace!("the chain id captured in executor is {}", chain_id);
         let msg: Message = miscellaneous.into();
 
         self.ctx_pub
@@ -417,8 +417,20 @@ impl ExecutorInstance {
 
             Request::meta_data(data) => {
                 trace!("metadata request from jsonrpc {:?}", data);
-                match serde_json::from_str::<BlockNumber>(&data)
-                    .map_err(|err| (ErrorCode::query_error(), format!("{:?}", err)))
+                let mut metadata = MetaData {
+                    chain_id: 0,
+                    chain_name: "".to_owned(),
+                    operator: "".to_owned(),
+                    website: "".to_owned(),
+                    genesis_timestamp: 0,
+                    validators: Vec::new(),
+                    block_interval: 0,
+                    token_name: "".to_owned(),
+                    token_symbol: "".to_owned(),
+                    token_avatar: "".to_owned(),
+                };
+                let result = serde_json::from_str::<BlockNumber>(&data)
+                    .map_err(|err| format!("{:?}", err))
                     .and_then(|number: BlockNumber| {
                         let current_height = self.ext.get_current_height();
                         let number = match number {
@@ -427,61 +439,60 @@ impl ExecutorInstance {
                             BlockNumber::Tag(BlockTag::Latest) => current_height,
                         };
                         if number > current_height {
-                            Err((
-                                ErrorCode::query_error(),
-                                format!("Block number overflow: {} > {}", number, current_height),
+                            Err(format!(
+                                "Block number overflow: {} > {}",
+                                number, current_height
                             ))
                         } else {
                             Ok(number)
                         }
                     })
-                    .and_then(|number: u64| {
+                    .and_then(|number| {
                         let sys_config = SysConfig::new(&self.ext);
                         let block_id = BlockId::Number(number);
-
+                        sys_config
+                            .chain_id()
+                            .map(|chain_id| metadata.chain_id = chain_id)
+                            .ok_or_else(|| "Query chain id failed".to_owned())?;
                         sys_config
                             .chain_name(Some(block_id))
-                            .and_then(|chain_name| {
-                                sys_config.operator(Some(block_id)).and_then(|operator| {
-                                    sys_config
-                                        .website(Some(block_id))
-                                        .and_then(|website| Ok((chain_name, operator, website)))
-                                })
-                            })
-                            .map_err(|_| {
-                                (
-                                    ErrorCode::query_error(),
-                                    format!("get system config at height {} failed", number),
-                                )
-                            })
-                    })
-                    .map(|(chain_name, operator, website)| {
-                        // TODO: get chain_name by current block number
-                        let sys_config = SysConfig::new(&self.ext);
-                        let genesis_timestamp = self
-                            .ext
+                            .map(|chain_name| metadata.chain_name = chain_name)
+                            .ok_or_else(|| "Query chain name failed".to_owned())?;
+                        sys_config
+                            .operator(Some(block_id))
+                            .map(|operator| metadata.operator = operator)
+                            .ok_or_else(|| "Query operator failed".to_owned())?;
+                        sys_config
+                            .chain_name(Some(block_id))
+                            .map(|website| metadata.website = website)
+                            .ok_or_else(|| "Query website failed".to_owned())?;
+                        self.ext
                             .block_header(BlockId::Earliest)
-                            .unwrap()
-                            .timestamp();
-                        let token = sys_config.token_info();
-                        MetaData {
-                            genesis_timestamp,
-                            chain_id: sys_config.chain_id(),
-                            chain_name,
-                            operator,
-                            website,
-                            validators: self.ext.node_manager().shuffled_stake_nodes(),
-                            block_interval: sys_config.block_interval(),
-                            token_name: token.name,
-                            token_avatar: token.avatar,
-                            token_symbol: token.symbol,
-                        }
-                    }) {
-                    Ok(metadata) => {
-                        response.set_meta_data(serde_json::to_string(&metadata).unwrap())
-                    }
-                    Err((code, error_msg)) => {
-                        response.set_code(code);
+                            .map(|header| metadata.genesis_timestamp = header.timestamp())
+                            .ok_or_else(|| "Query genesis_timestamp failed".to_owned())?;
+                        self.ext
+                            .node_manager()
+                            .shuffled_stake_nodes()
+                            .map(|validators| metadata.validators = validators)
+                            .ok_or_else(|| "Query validators failed".to_owned())?;
+                        sys_config
+                            .block_interval()
+                            .map(|block_interval| metadata.block_interval = block_interval)
+                            .ok_or_else(|| "Query block_interval failed".to_owned())?;
+                        sys_config
+                            .token_info()
+                            .map(|token_info| {
+                                metadata.token_name = token_info.name;
+                                metadata.token_avatar = token_info.avatar;
+                                metadata.token_symbol = token_info.symbol;
+                            })
+                            .ok_or_else(|| "Query token info failed".to_owned())?;
+                        Ok(())
+                    });
+                match result {
+                    Ok(_) => response.set_meta_data(serde_json::to_string(&metadata).unwrap()),
+                    Err(error_msg) => {
+                        response.set_code(ErrorCode::query_error());
                         response.set_error_msg(error_msg);
                     }
                 }

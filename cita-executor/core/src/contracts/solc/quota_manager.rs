@@ -18,9 +18,9 @@
 //! Quota manager.
 
 use super::ContractCallExt;
-use super::{encode_contract_name, to_address_vec, to_u256, to_u256_vec};
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H160};
+use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
@@ -33,10 +33,10 @@ const BQL: &[u8] = &*b"getBQL()";
 const DEFAULT_AQL: &[u8] = &*b"getDefaultAQL()";
 
 lazy_static! {
-    static ref QUOTAS_HASH: Vec<u8> = encode_contract_name(QUOTAS);
-    static ref ACCOUNTS_HASH: Vec<u8> = encode_contract_name(ACCOUNTS);
-    static ref BQL_HASH: Vec<u8> = encode_contract_name(BQL);
-    static ref DEFAULT_AQL_HASH: Vec<u8> = encode_contract_name(DEFAULT_AQL);
+    static ref QUOTAS_HASH: Vec<u8> = method_tools::encode_to_vec(QUOTAS);
+    static ref ACCOUNTS_HASH: Vec<u8> = method_tools::encode_to_vec(ACCOUNTS);
+    static ref BQL_HASH: Vec<u8> = method_tools::encode_to_vec(BQL);
+    static ref DEFAULT_AQL_HASH: Vec<u8> = method_tools::encode_to_vec(DEFAULT_AQL);
     static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap();
 }
 
@@ -90,8 +90,8 @@ pub struct QuotaManager;
 impl QuotaManager {
     /// Special account gas limit
     pub fn specific(executor: &Executor) -> HashMap<Address, u64> {
-        let users = QuotaManager::users(executor);
-        let quota = QuotaManager::quota(executor);
+        let users = QuotaManager::users(executor).unwrap_or_else(Self::default_users);
+        let quota = QuotaManager::quota(executor).unwrap_or_else(Self::default_quota);
         let mut specific = HashMap::new();
         for (k, v) in users.iter().zip(quota.iter()) {
             specific.insert(*k, *v);
@@ -100,35 +100,60 @@ impl QuotaManager {
     }
 
     /// Quota array
-    pub fn quota(executor: &Executor) -> Vec<u64> {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice());
-        trace!("quota output: {:?}", output);
+    pub fn quota(executor: &Executor) -> Option<Vec<u64>> {
+        executor
+            .call_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice(), None, None)
+            .ok()
+            .and_then(|output| decode_tools::to_u64_vec(&output))
+    }
 
-        to_u256_vec(&output).iter().map(|i| i.low_u64()).collect()
+    pub fn default_quota() -> Vec<u64> {
+        error!("Use default quota.");
+        Vec::new()
     }
 
     /// Account array
-    pub fn users(executor: &Executor) -> Vec<Address> {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice());
-        trace!("users output: {:?}", output);
+    pub fn users(executor: &Executor) -> Option<Vec<Address>> {
+        executor
+            .call_method(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice(), None, None)
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
+    }
 
-        to_address_vec(&output)
+    pub fn default_users() -> Vec<Address> {
+        error!("Use default users.");
+        Vec::new()
     }
 
     /// Global gas limit
-    pub fn block_gas_limit(executor: &Executor) -> u64 {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice());
-        trace!("block_gas_limit output: {:?}", output);
+    pub fn block_gas_limit(executor: &Executor) -> Option<u64> {
+        executor
+            .call_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice(), None, None)
+            .ok()
+            .and_then(|output| decode_tools::to_u64(&output))
+    }
 
-        to_u256(&output).low_u64()
+    pub fn default_block_gas_limit() -> u64 {
+        error!("Use default block gas limit.");
+        1_073_741_824
     }
 
     /// Global account gas limit
-    pub fn account_gas_limit(executor: &Executor) -> u64 {
-        let output = executor.call_method_latest(&*CONTRACT_ADDRESS, &*DEFAULT_AQL_HASH.as_slice());
-        trace!("account_gas_limit output: {:?}", output);
+    pub fn account_gas_limit(executor: &Executor) -> Option<u64> {
+        executor
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*DEFAULT_AQL_HASH.as_slice(),
+                None,
+                None,
+            )
+            .ok()
+            .and_then(|output| decode_tools::to_u64(&output))
+    }
 
-        to_u256(&output).low_u64()
+    pub fn default_account_gas_limit() -> u64 {
+        error!("Use default account gas limit.");
+        268_435_456
     }
 }
 
@@ -150,7 +175,7 @@ mod tests {
             )),
         ]);
         println!("init executor finish");
-        let users = QuotaManager::users(&executor);
+        let users = QuotaManager::users(&executor).unwrap();
         assert_eq!(
             users,
             vec![H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap()]
@@ -161,7 +186,7 @@ mod tests {
     fn test_quota() {
         let executor = init_executor(vec![]);
         println!("init executor finish");
-        let quota = QuotaManager::quota(&executor);
+        let quota = QuotaManager::quota(&executor).unwrap();
         assert_eq!(quota, vec![1073741824]);
     }
 
@@ -169,7 +194,7 @@ mod tests {
     fn test_block_gas_limit() {
         let executor = init_executor(vec![]);
         println!("init executor finish");
-        let block_gas_limit = QuotaManager::block_gas_limit(&executor);
+        let block_gas_limit = QuotaManager::block_gas_limit(&executor).unwrap();
         assert_eq!(block_gas_limit, 1073741824);
     }
 
@@ -177,7 +202,7 @@ mod tests {
     fn test_account_gas_limit() {
         let executor = init_executor(vec![]);
         println!("init executor finish");
-        let account_gas_limit = QuotaManager::account_gas_limit(&executor);
+        let account_gas_limit = QuotaManager::account_gas_limit(&executor).unwrap();
         assert_eq!(account_gas_limit, 268435456);
     }
 }

@@ -17,9 +17,8 @@
 
 //! Chain manager.
 
-use super::encode_contract_name;
 use cita_types::{Address, H160, H256, U256};
-use ethabi::{decode, ParamType};
+use contracts::tools::{decode as decode_tools, method as method_tools};
 use evm::call_type::CallType;
 use evm::ext::{Ext, MessageCallResult};
 use std::str::FromStr;
@@ -29,8 +28,8 @@ const CHAIN_ID: &[u8] = &*b"getChainId()";
 const AUTHORITIES: &[u8] = &*b"getAuthorities(uint32)";
 
 lazy_static! {
-    static ref CHAIN_ID_ENCODED: Vec<u8> = encode_contract_name(CHAIN_ID);
-    static ref AUTHORITIES_ENCODED: Vec<u8> = encode_contract_name(AUTHORITIES);
+    static ref CHAIN_ID_ENCODED: Vec<u8> = method_tools::encode_to_vec(CHAIN_ID);
+    static ref AUTHORITIES_ENCODED: Vec<u8> = method_tools::encode_to_vec(AUTHORITIES);
     static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::CHAIN_MANAGER).unwrap();
 }
 
@@ -54,11 +53,7 @@ impl ChainManagement {
             CallType::Call,
         ) {
             MessageCallResult::Success(gas_left, return_data) => {
-                decode(&[ParamType::Uint(256)], &*return_data)
-                    .ok()
-                    .and_then(|decoded| decoded.first().cloned())
-                    .and_then(|id| id.to_uint())
-                    .map(|id| (gas_left, H256::from(id).low_u64() as u32))
+                decode_tools::to_u32(&*return_data).map(|x| (gas_left, x))
             }
             MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
         }
@@ -95,30 +90,7 @@ impl ChainManagement {
                     "call system contract ChainManagement.ext_authorities() return [{:?}]",
                     return_data
                 );
-                decode(
-                    &[ParamType::Array(Box::new(ParamType::Address))],
-                    &return_data,
-                ).ok()
-                    .map(|decoded| {
-                        trace!(
-                            "call system contract ChainManagement.ext_authorities() decoded [{:?}]",
-                            decoded
-                        );
-                        decoded
-                    })
-                    .and_then(|decoded| decoded.first().cloned())
-                    .and_then(|decoded| decoded.to_array())
-                    .and_then(|addrs| {
-                        let mut addrs_vec = Vec::new();
-                        for a in addrs {
-                            let a = a.to_address()?;
-                            addrs_vec.push(Address::from(a));
-                        }
-                        if addrs_vec.is_empty() {
-                            return None;
-                        }
-                        Some((gas_left, addrs_vec))
-                    })
+                decode_tools::to_address_vec(&*return_data).map(|addrs| (gas_left, addrs))
             }
             MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
         }

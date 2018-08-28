@@ -79,7 +79,7 @@ impl Default for Factory {
         };
         // here we register contracts with addresses defined in genesis.json.
         {
-            use native::crosschain_verify::CrossChainVerify;
+            use super::crosschain_verify::CrossChainVerify;
             factory.register(
                 Address::from_str(reserved_addresses::NATIVE_CROSS_CHAIN_VERIFY).unwrap(),
                 Box::new(CrossChainVerify::default()),
@@ -87,7 +87,7 @@ impl Default for Factory {
         }
         #[cfg(test)]
         {
-            use native::storage::SimpleStorage;
+            use super::storage::SimpleStorage;
             factory.register(
                 Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap(),
                 Box::new(SimpleStorage::default()),
@@ -95,7 +95,7 @@ impl Default for Factory {
         }
         #[cfg(feature = "privatetx")]
         {
-            use native::zk_privacy::ZkPrivacy;
+            use super::zk_privacy::ZkPrivacy;
             factory.register(
                 Address::from_str(reserved_addresses::NATIVE_ZK_PRIVACY).unwrap(),
                 Box::new(ZkPrivacy::default()),

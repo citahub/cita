@@ -1,21 +1,39 @@
+// CITA
+// Copyright 2016-2018 Cryptape Technologies LLC.
+
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 use cita_types::{Address, H256, U256};
-use contracts::ChainManagement;
+use contracts::{native::factory::Contract, solc::ChainManagement, tools::method as method_tools};
 use core::header::Header;
 use core::libchain::chain::TxProof;
 use ethabi;
 use evm::action_params::ActionParams;
 use evm::storage::Map;
 use evm::{Error, Ext, GasLeft, ReturnData};
-use native::{calc_func_sig, extract_func_sig, factory::Contract};
 use state::StateProof;
 
 lazy_static! {
     static ref VERIFY_TRANSACTION_FUNC: u32 =
-        calc_func_sig(b"verifyTransaction(address,bytes4,uint64,bytes)");
-    static ref VERIFY_STATE_FUNC: u32 = calc_func_sig(b"verifyState(uint32,uint64,bytes)");
-    static ref VERIFY_BLOCK_HEADER_FUNC: u32 = calc_func_sig(b"verifyBlockHeader(uint32,bytes)");
+        method_tools::encode_to_u32(b"verifyTransaction(address,bytes4,uint64,bytes)");
+    static ref VERIFY_STATE_FUNC: u32 =
+        method_tools::encode_to_u32(b"verifyState(uint32,uint64,bytes)");
+    static ref VERIFY_BLOCK_HEADER_FUNC: u32 =
+        method_tools::encode_to_u32(b"verifyBlockHeader(uint32,bytes)");
     static ref GET_EXPECTED_BLOCK_NUMBER_FUNC: u32 =
-        calc_func_sig(b"getExpectedBlockNumber(uint32)");
+        method_tools::encode_to_u32(b"getExpectedBlockNumber(uint32)");
 }
 
 #[derive(Clone)]
@@ -27,15 +45,19 @@ pub struct CrossChainVerify {
 
 impl Contract for CrossChainVerify {
     fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
-        extract_func_sig(&params).and_then(|signature| match signature {
-            sig if sig == *VERIFY_TRANSACTION_FUNC => self.verify_transaction(params, ext),
-            sig if sig == *VERIFY_STATE_FUNC => self.verify_state(params, ext),
-            sig if sig == *VERIFY_BLOCK_HEADER_FUNC => self.verify_block_header(params, ext),
-            sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
-                self.get_expected_block_number(params, ext)
-            }
-            _ => Err(Error::OutOfGas),
-        })
+        if let Some(ref data) = params.data {
+            method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
+                sig if sig == *VERIFY_TRANSACTION_FUNC => self.verify_transaction(params, ext),
+                sig if sig == *VERIFY_STATE_FUNC => self.verify_state(params, ext),
+                sig if sig == *VERIFY_BLOCK_HEADER_FUNC => self.verify_block_header(params, ext),
+                sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
+                    self.get_expected_block_number(params, ext)
+                }
+                _ => Err(Error::OutOfGas),
+            })
+        } else {
+            Err(Error::OutOfGas)
+        }
     }
     fn create(&self) -> Box<Contract> {
         Box::new(CrossChainVerify::default())

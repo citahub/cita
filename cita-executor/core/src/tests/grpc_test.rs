@@ -1,11 +1,20 @@
-use cita_types::{Address, U256};
-//    use core_executor::tests::helpers::{get_temp_state};
 use super::helpers::*;
+use cita_types::{Address, U256};
+use contracts::{
+    grpc::{
+        contract::{contract_creation_address, low_contract_address}, service_registry,
+    },
+    native::factory::Factory as NativeFactory,
+};
+use engines::NullEngine;
 use evm;
 use evm::action_params::{ActionParams, ActionValue};
+use evm::env_info::EnvInfo;
+use evm::{Factory, VMType};
 use executive::Executive;
-use grpc_contracts::contract::{contract_creation_address, low_contract_address};
-use grpc_contracts::service_registry;
+use libexecutor::executor::EconomicalModel;
+use state::Substate;
+use trace::{ExecutiveTracer, ExecutiveVMTracer};
 use util::BytesRef;
 
 mod grpc_service {
@@ -85,13 +94,6 @@ mod grpc_service {
 }
 
 fn call_vm(params: ActionParams) -> evm::Result<evm::FinalizationResult> {
-    use engines::NullEngine;
-    use evm::env_info::EnvInfo;
-    use evm::{Factory, VMType};
-    use libexecutor::executor::EconomicalModel;
-    use native::factory::Factory as NativeFactory;
-    use state::Substate;
-    use trace::{ExecutiveTracer, ExecutiveVMTracer};
     let factory = Factory::new(VMType::Interpreter, 1024 * 32);
     let native_factory = NativeFactory::default();
     let mut tracer = ExecutiveTracer::default();

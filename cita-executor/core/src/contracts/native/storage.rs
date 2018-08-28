@@ -1,23 +1,39 @@
+// CITA
+// Copyright 2016-2018 Cryptape Technologies LLC.
+
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 use self::bincode::internal::serialize_into;
 use self::bincode::Infinite;
+use super::factory::{Contract, Factory};
 use bincode;
 use cita_types::{Address, H256, U256};
+use contracts::tools::method as method_tools;
 use evm;
 use evm::fake_tests::FakeExt;
-use native::factory::Factory;
 use std::io::Write;
 use std::str::FromStr;
 use types::reserved_addresses;
 
 use byteorder::BigEndian;
-use byteorder::ByteOrder;
 use evm::action_params::ActionParams;
 use evm::ext::Ext;
 use evm::return_data::{GasLeft, ReturnData};
 use evm::storage::*;
-use native::factory::Contract;
-#[derive(Clone)]
 
+#[derive(Clone)]
 pub struct SimpleStorage {
     uint_value: Scalar,
     string_value: Scalar,
@@ -28,18 +44,21 @@ pub struct SimpleStorage {
 
 impl Contract for SimpleStorage {
     fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
-        let signature = BigEndian::read_u32(params.clone().data.unwrap().get(0..4).unwrap());
-        match signature {
-            0 => self.init(params, ext),
-            0xaa91543e => self.uint_set(params, ext),
-            0x832b4580 => self.uint_get(params, ext),
-            0xc9615770 => self.string_set(params, ext),
-            0xe3135d14 => self.string_get(params, ext),
-            0x118b229c => self.array_set(params, ext),
-            0x180a4bbf => self.array_get(params, ext),
-            0xaaf27175 => self.map_set(params, ext),
-            0xc567dff6 => self.map_get(params, ext),
-            _ => Err(evm::Error::OutOfGas),
+        if let Some(ref data) = params.data {
+            method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
+                0 => self.init(params, ext),
+                0xaa91543e => self.uint_set(params, ext),
+                0x832b4580 => self.uint_get(params, ext),
+                0xc9615770 => self.string_set(params, ext),
+                0xe3135d14 => self.string_get(params, ext),
+                0x118b229c => self.array_set(params, ext),
+                0x180a4bbf => self.array_get(params, ext),
+                0xaaf27175 => self.map_set(params, ext),
+                0xc567dff6 => self.map_get(params, ext),
+                _ => Err(evm::Error::OutOfGas),
+            })
+        } else {
+            Err(evm::Error::OutOfGas)
         }
     }
     fn create(&self) -> Box<Contract> {

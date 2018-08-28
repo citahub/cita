@@ -18,12 +18,11 @@
 //! Node manager.
 
 use super::ContractCallExt;
-use super::{encode_contract_name, to_address_vec, to_u256_vec};
 use cita_types::{Address, H160};
+use contracts::tools::{decode as decode_tools, method as method_tools};
 use largest_remainder_method::apportion;
 use libexecutor::executor::{EconomicalModel, Executor};
 use rand::{Rng, SeedableRng, StdRng};
-use rustc_hex::ToHex;
 use std::iter;
 use std::str::FromStr;
 use types::reserved_addresses;
@@ -34,8 +33,8 @@ const LIST_STAKE: &[u8] = &*b"listStake()";
 const EPOCH: u64 = 1000;
 
 lazy_static! {
-    static ref LIST_NODE_ENCODED: Vec<u8> = encode_contract_name(LIST_NODE);
-    static ref LIST_STAKE_ENCODED: Vec<u8> = encode_contract_name(LIST_STAKE);
+    static ref LIST_NODE_ENCODED: Vec<u8> = method_tools::encode_to_vec(LIST_NODE);
+    static ref LIST_STAKE_ENCODED: Vec<u8> = method_tools::encode_to_vec(LIST_STAKE);
     static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::NODE_MANAGER).unwrap();
 }
 
@@ -74,52 +73,58 @@ impl<'a> NodeManager<'a> {
         NodeManager { executor, rng_seed }
     }
 
-    pub fn nodes(&self) -> Vec<Address> {
-        let output = self
-            .executor
-            .call_method_latest(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice());
-
-        trace!(
-            "node manager output: {:?}",
-            ToHex::to_hex(output.as_slice())
-        );
-
-        let nodes: Vec<Address> = to_address_vec(&output);
-        trace!("node manager nodes: {:?}", nodes);
-        nodes
+    pub fn nodes(&self) -> Option<Vec<Address>> {
+        self.executor
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*LIST_NODE_ENCODED.as_slice(),
+                None,
+                None,
+            )
+            .ok()
+            .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
-    pub fn stakes(&self) -> Vec<u64> {
-        let output = self
-            .executor
-            .call_method_latest(&*CONTRACT_ADDRESS, &*LIST_STAKE_ENCODED.as_slice());
-
-        trace!("stakes output: {:?}", ToHex::to_hex(output.as_slice()));
-
-        let stakes: Vec<u64> = to_u256_vec(&output).iter().map(|i| i.low_u64()).collect();
-        trace!("node manager stakes: {:?}", stakes);
-        stakes
+    pub fn stakes(&self) -> Option<Vec<u64>> {
+        self.executor
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*LIST_STAKE_ENCODED.as_slice(),
+                None,
+                None,
+            )
+            .ok()
+            .and_then(|output| decode_tools::to_u64_vec(&output))
     }
 
-    pub fn shuffled_stake_nodes(&self) -> Vec<Address> {
-        let mut stake_nodes = self.stake_nodes();
-        shuffle(&mut stake_nodes, self.rng_seed);
-        stake_nodes
+    pub fn shuffled_stake_nodes(&self) -> Option<Vec<Address>> {
+        self.stake_nodes().map(|mut stake_nodes| {
+            shuffle(&mut stake_nodes, self.rng_seed);
+            stake_nodes
+        })
     }
 
-    pub fn stake_nodes(&self) -> Vec<Address> {
-        let nodes = self.nodes();
-        if let EconomicalModel::Quota = *self.executor.economical_model.read() {
-            return nodes;
-        }
-        let stakes = self.stakes();
-        let total: u64 = stakes.iter().sum();
+    pub fn default_shuffled_stake_nodes() -> Vec<Address> {
+        error!("Use default shuffled stake nodes.");
+        Vec::new()
+    }
 
-        if total == 0 {
-            return nodes;
-        }
-        let total_seats = apportion(&stakes, EPOCH);
-        party_seats(nodes, &total_seats)
+    pub fn stake_nodes(&self) -> Option<Vec<Address>> {
+        self.nodes().and_then(|nodes| {
+            if let EconomicalModel::Quota = *self.executor.economical_model.read() {
+                Some(nodes)
+            } else {
+                self.stakes().map(|stakes| {
+                    let total: u64 = stakes.iter().sum();
+                    if total == 0 {
+                        nodes
+                    } else {
+                        let total_seats = apportion(&stakes, EPOCH);
+                        party_seats(nodes, &total_seats)
+                    }
+                })
+            }
+        })
     }
 }
 
@@ -148,7 +153,7 @@ mod tests {
             ("NodeManager.stakes", "1,1,1,1"),
         ]);
         let node_manager = NodeManager::new(&executor, executor.genesis_header().timestamp());
-        let nodes = node_manager.nodes();
+        let nodes = node_manager.nodes().unwrap();
 
         assert_eq!(
             nodes,
