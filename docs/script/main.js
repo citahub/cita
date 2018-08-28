@@ -20,8 +20,8 @@ var initDocsify = function () {
     }
     const vTag = document.getElementById('tag_version')
     vTag.textContent = ver
-    const lng = window.localStorage.getItem('lng')
-    const lTag = document.getElementById('tag_language') || 'zh-CN'
+    const lng = window.localStorage.getItem('lng') || 'zh-CN'
+    const lTag = document.getElementById('tag_language')
     lTag.textContent = lngs[lng]
     docsify.basePath = baseUrlGen(ver, lng)
     window.$docsify = docsify
