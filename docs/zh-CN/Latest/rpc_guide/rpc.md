@@ -3,7 +3,7 @@
 !> **接口名称更改！**
 老版本用户请注意，为了让接口更加清晰明了，最新版本的CITA去掉了0.16及更老版本中接口的前缀。
 
-## JSON-RPC
+<h2 class="hover-list">JSON-RPC</h2>
 
 * [peerCount](#peercount)
 * [blockNumber](#blocknumber)
