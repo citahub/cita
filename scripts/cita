@@ -11,7 +11,7 @@ sudo(){
     set +o noglob
 }
 
-setup() {
+start_rabbitmq() {
     # config rabbitmq
     if [[ `uname` == 'Darwin' ]]
     then
@@ -25,7 +25,6 @@ setup() {
         sudo rabbitmqctl  set_user_tags  ${RABBITMQ_USER} monitoring           > /dev/null
         sudo rabbitmqctl set_permissions -p ${node}  ${RABBITMQ_USER} '.*' '.*' '.*'      > /dev/null
     else
-
         flock -x -w 30 /tmp/rabbitmq.lock -c "ps -C rabbitmq-server > /dev/null || sudo /etc/init.d/rabbitmq-server restart > /dev/null"
         RABBITMQ_USER=cita_monitor
         RABBITMQ_PASSWD=cita_monitor
@@ -36,6 +35,20 @@ setup() {
         flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl  set_user_tags  ${RABBITMQ_USER} monitoring > /dev/null"
         flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl set_permissions -p ${node}  ${RABBITMQ_USER} '.*' '.*' '.*' > /dev/null"
     fi
+}
+
+setup() {
+    for i in {1..3}
+    do
+        start_rabbitmq
+        curl http://localhost:15672/ > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            echo "setup ok!"
+            exit 0
+        fi
+    done
+    echo "setup failed!"
+    exit 1
 }
 
 start() {
