@@ -21,6 +21,12 @@ interface SysConfigInterface {
     /// @notice Whether check permission in the system or not, true represents check and false represents don't check.
     function getPermissionCheck() external view returns (bool);
 
+    /// @notice Check sender's send transaction permission
+    function getSendTxPermissionCheck() external view returns (bool);
+
+    /// @notice Check sender's create contract permission
+    function getCreateContractPermissionCheck() external view returns (bool);
+
     /// @notice Whether check quota in the system or not, true represents check and false represents don't check.
     function getQuotaCheck() external view returns (bool);
 
@@ -57,6 +63,8 @@ contract SysConfig is SysConfigInterface, EconomicalType{
     /// @notice only chain_name, operator, website can be updated
     uint delayBlockNumber;
     bool checkPermission;
+    bool checkSendTxPermission;
+    bool checkCreateContractPermission;
     bool checkQuota;
     bool checkFeeBackPlatform;
     address chainOwner;
@@ -78,6 +86,8 @@ contract SysConfig is SysConfigInterface, EconomicalType{
     constructor(
         uint _delayBlockNumber,
         bool _checkPermission,
+        bool _checkSendTxPermission,
+        bool _checkCreateContractPermission,
         bool _checkQuota,
         bool _checkFeeBackPlatform,
         address _chainOwner,
@@ -96,6 +106,8 @@ contract SysConfig is SysConfigInterface, EconomicalType{
         require(_chainId > 0);
         delayBlockNumber = _delayBlockNumber;
         checkPermission = _checkPermission;
+        checkSendTxPermission = _checkSendTxPermission;
+        checkCreateContractPermission = _checkCreateContractPermission;
         checkQuota = _checkQuota;
         checkFeeBackPlatform = _checkFeeBackPlatform;
         chainOwner = _chainOwner;
@@ -144,6 +156,22 @@ contract SysConfig is SysConfigInterface, EconomicalType{
         returns (bool)
     {
         return checkPermission;
+    }
+
+    function getSendTxPermissionCheck()
+        public
+        view
+        returns (bool)
+    {
+        return checkSendTxPermission;
+    }
+
+    function getCreateContractPermissionCheck()
+        public
+        view
+        returns (bool)
+    {
+        return checkCreateContractPermission;
     }
 
     function getQuotaCheck()

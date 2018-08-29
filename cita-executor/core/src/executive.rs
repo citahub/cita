@@ -100,13 +100,19 @@ pub fn check_permission(
     group_accounts: &HashMap<Address, Vec<Address>>,
     account_permissions: &HashMap<Address, Vec<Resource>>,
     t: &SignedTransaction,
+    options: &TransactOptions,
 ) -> Result<(), ExecutionError> {
     let sender = *t.sender();
-    check_send_tx(group_accounts, account_permissions, &sender)?;
+
+    if options.check_permission {
+        check_send_tx(group_accounts, account_permissions, &sender)?;
+    }
 
     match t.action {
         Action::Create => {
-            check_create_contract(group_accounts, account_permissions, &sender)?;
+            if options.check_create_contract_permission {
+                check_create_contract(group_accounts, account_permissions, &sender)?;
+            }
         }
         Action::Call(address) => {
             let group_management_addr =
@@ -312,6 +318,10 @@ pub struct TransactOptions {
     pub check_permission: bool,
     /// Check account gas limit
     pub check_quota: bool,
+    /// Check sender's send_tx permission
+    pub check_send_tx_permission: bool,
+    /// Check sender's create_contract permission
+    pub check_create_contract_permission: bool,
 }
 
 /// Transaction executor.
@@ -431,7 +441,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact(
         &'a mut self,
         t: &SignedTransaction,
-        options: TransactOptions,
+        options: &TransactOptions,
     ) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(
@@ -514,7 +524,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
         t: &SignedTransaction,
-        options: TransactOptions,
+        options: &TransactOptions,
         mut tracer: T,
         mut vm_tracer: V,
     ) -> Result<Executed, ExecutionError>
@@ -528,13 +538,13 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         self.state.inc_nonce(&sender)?;
 
         trace!("permission should be check: {}", options.check_permission);
-        if options.check_permission {
-            check_permission(
-                &self.state.group_accounts,
-                &self.state.account_permissions,
-                t,
-            )?;
-        }
+
+        check_permission(
+            &self.state.group_accounts,
+            &self.state.account_permissions,
+            t,
+            options,
+        )?;
 
         if sender != Address::zero() && t.gas < U256::from(MIN_GAS_REQUIRED) {
             return Err(ExecutionError::NotEnoughBaseGas {
@@ -1461,8 +1471,10 @@ mod tests {
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
+                check_send_tx_permission: false,
+                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, &opts)
         };
 
         let expected = {
@@ -1522,8 +1534,10 @@ mod tests {
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
+                check_send_tx_permission: false,
+                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts).unwrap()
+            ex.transact(&t, &opts).unwrap()
         };
 
         assert_eq!(executed.gas, U256::from(100_000));
@@ -1580,8 +1594,10 @@ mod tests {
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
+                check_send_tx_permission: false,
+                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, &opts)
         };
 
         match result {
@@ -1633,8 +1649,10 @@ mod tests {
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
+                check_send_tx_permission: false,
+                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, &opts)
         };
 
         assert!(result.is_ok());

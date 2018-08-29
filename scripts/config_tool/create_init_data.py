@@ -11,6 +11,8 @@ Contracts:
 - SysConfig:
   - delayBlockNumber: 1
   - checkPermission: false
+  - checkSendTxPermission: false
+  - checkCreateContractPermission: false
   - checkQuota: false
   - checkFeeBackPlatform: false
   - chainOwner: '0x0000000000000000000000000000000000000000'
