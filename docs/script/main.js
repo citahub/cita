@@ -19,7 +19,7 @@ var initDocsify = function () {
         ver = window.localStorage.getItem("version") || 'develop'
     }
     const vTag = document.getElementById('tag_version')
-    vTag.textContent = ver
+    vTag.textContent = ver === 'develop' ? 'Latest' : ver
     const lng = window.localStorage.getItem('lng') || 'zh-CN'
     const lTag = document.getElementById('tag_language')
     lTag.textContent = lngs[lng]
