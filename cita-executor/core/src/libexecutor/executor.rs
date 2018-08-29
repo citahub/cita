@@ -833,6 +833,12 @@ impl Executor {
         conf.check_permission = sys_config
             .permission_check()
             .unwrap_or_else(SysConfig::default_permission_check);
+        conf.check_send_tx_permission = sys_config
+            .send_tx_permission_check()
+            .unwrap_or_else(SysConfig::default_send_tx_permission_check);
+        conf.check_create_contract_permission = sys_config
+            .create_contract_permission_check()
+            .unwrap_or_else(SysConfig::default_create_contract_permission_check);
         conf.check_quota = sys_config
             .quota_check()
             .unwrap_or_else(SysConfig::default_quota_check);
@@ -916,11 +922,6 @@ impl Executor {
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
         let conf = self.get_sys_config(self.get_max_height());
-        // let perm = conf.check_permission;
-        // let check_send_tx_permission = conf.check_send_tx_permission;
-        // let check_create_contract_permission = conf.check_create_contract_permission;
-        // let check_quota = conf.check_quota;
-        // let check_fee_back_platform = conf.check_fee_back_platform;
         let chain_owner = conf.chain_owner;
         let parent_hash = *block.parent_hash();
         let check_options = CheckOptions {

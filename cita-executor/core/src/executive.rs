@@ -104,7 +104,7 @@ pub fn check_permission(
 ) -> Result<(), ExecutionError> {
     let sender = *t.sender();
 
-    if options.check_permission {
+    if options.check_send_tx_permission {
         check_send_tx(group_accounts, account_permissions, &sender)?;
     }
 
@@ -115,38 +115,40 @@ pub fn check_permission(
             }
         }
         Action::Call(address) => {
-            let group_management_addr =
-                Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
-            trace!("t.data {:?}", t.data);
+            if options.check_permission {
+                let group_management_addr =
+                    Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
+                trace!("t.data {:?}", t.data);
 
-            if t.data.len() < 4 {
-                return Err(ExecutionError::TransactionMalformed(
-                    "The length of transation data is less than four bytes".to_string(),
-                ));
-            }
-
-            if address == group_management_addr {
-                if t.data.len() < 36 {
+                if t.data.len() < 4 {
                     return Err(ExecutionError::TransactionMalformed(
-                        "Data should have at least one parameter".to_string(),
+                        "The length of transation data is less than four bytes".to_string(),
                     ));
                 }
-                check_origin_group(
+
+                if address == group_management_addr {
+                    if t.data.len() < 36 {
+                        return Err(ExecutionError::TransactionMalformed(
+                            "Data should have at least one parameter".to_string(),
+                        ));
+                    }
+                    check_origin_group(
+                        account_permissions,
+                        &sender,
+                        &address,
+                        &t.data[0..4],
+                        &H160::from(&t.data[16..36]),
+                    )?;
+                }
+
+                check_call_contract(
+                    group_accounts,
                     account_permissions,
                     &sender,
                     &address,
                     &t.data[0..4],
-                    &H160::from(&t.data[16..36]),
                 )?;
             }
-
-            check_call_contract(
-                group_accounts,
-                account_permissions,
-                &sender,
-                &address,
-                &t.data[0..4],
-            )?;
         }
         _ => {}
     }
