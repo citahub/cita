@@ -27,7 +27,7 @@ use evm::env_info::EnvInfo;
 use evm::Error as EvmError;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
-use libexecutor::executor::EconomicalModel;
+use libexecutor::executor::{CheckOptions, EconomicalModel};
 use receipt::{Receipt, ReceiptError};
 use rlp::{self, Encodable};
 use std::cell::{Ref, RefCell, RefMut};
@@ -769,17 +769,17 @@ impl<B: Backend> State<B> {
         engine: &Engine,
         t: &SignedTransaction,
         tracing: bool,
-        check_permission: bool,
-        check_quota: bool,
         economical_model: EconomicalModel,
-        check_fee_back_platform: bool,
         chain_owner: Address,
+        check_options: &CheckOptions,
     ) -> ApplyResult {
         let options = TransactOptions {
             tracing,
             vm_tracing: false,
-            check_permission,
-            check_quota,
+            check_permission: check_options.permission,
+            check_quota: check_options.quota,
+            check_send_tx_permission: check_options.send_tx_permission,
+            check_create_contract_permission: check_options.create_contract_permission,
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
@@ -792,9 +792,9 @@ impl<B: Backend> State<B> {
             &native_factory,
             false,
             economical_model,
-            check_fee_back_platform,
+            check_options.fee_back_platform,
             chain_owner,
-        ).transact(t, options)
+        ).transact(t, &options)
         {
             Ok(e) => {
                 // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
@@ -864,7 +864,7 @@ impl<B: Backend> State<B> {
                         error!("Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}", tx_fee_value, err);
                     }
 
-                    if check_fee_back_platform {
+                    if check_options.fee_back_platform {
                         if chain_owner == Address::from(0) {
                             self.add_balance(&env_info.author, &tx_fee_value)
                                 .expect("Add balance to author(miner) must success");
@@ -1334,17 +1334,23 @@ mod tests {
         let engine = NullEngine::cita();
 
         println!("contract_address {:?}", contract_address);
+
+        let check_options = CheckOptions {
+            permission: false,
+            quota: false,
+            fee_back_platform: false,
+            send_tx_permission: false,
+            create_contract_permission: false,
+        };
         let result = state
             .apply(
                 &info,
                 &engine,
                 &signed,
                 true,
-                false,
-                false,
                 Default::default(),
-                false,
                 Address::from(0),
+                &check_options,
             )
             .unwrap();
         println!(

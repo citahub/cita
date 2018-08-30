@@ -33,6 +33,10 @@ use num::FromPrimitive;
 lazy_static! {
     static ref DELAY_BLOCK_NUMBER: Vec<u8> = method_tools::encode_to_vec(b"getDelayBlockNumber()");
     static ref PERMISSION_CHECK: Vec<u8> = method_tools::encode_to_vec(b"getPermissionCheck()");
+    static ref PERMISSION_SEND_TX_CHECK: Vec<u8> =
+        method_tools::encode_to_vec(b"getSendTxPermissionCheck()");
+    static ref PERMISSION_CREATE_CONTRACT_CHECK: Vec<u8> =
+        method_tools::encode_to_vec(b"getCreateContractPermissionCheck()");
     static ref QUOTA_CHECK: Vec<u8> = method_tools::encode_to_vec(b"getQuotaCheck()");
     static ref FEE_BACK_PLATFORM_CHECK: Vec<u8> =
         method_tools::encode_to_vec(b"getFeeBackPlatformCheck()");
@@ -99,6 +103,34 @@ impl<'a> SysConfig<'a> {
 
     pub fn default_permission_check() -> bool {
         error!("Use default permission check.");
+        false
+    }
+
+    pub fn send_tx_permission_check(&self) -> Option<bool> {
+        self.get_value(
+            &[ParamType::Bool],
+            PERMISSION_SEND_TX_CHECK.as_slice(),
+            None,
+        ).ok()
+            .and_then(|mut x| x.remove(0).to_bool())
+    }
+
+    pub fn default_send_tx_permission_check() -> bool {
+        error!("Use default send tx permission check.");
+        false
+    }
+
+    pub fn create_contract_permission_check(&self) -> Option<bool> {
+        self.get_value(
+            &[ParamType::Bool],
+            PERMISSION_CREATE_CONTRACT_CHECK.as_slice(),
+            None,
+        ).ok()
+            .and_then(|mut x| x.remove(0).to_bool())
+    }
+
+    pub fn default_create_contract_permission_check() -> bool {
+        error!("Use default create contract permission check.");
         false
     }
 
@@ -258,6 +290,24 @@ mod tests {
         let executor = init_executor(vec![("SysConfig.checkPermission", "false")]);
         let check_permission = SysConfig::new(&executor).permission_check().unwrap();
         assert_eq!(check_permission, false);
+    }
+
+    #[test]
+    fn test_permission_send_tx_check() {
+        let executor = init_executor(vec![("SysConfig.checkSendTxPermission", "false")]);
+        let check_send_tx_permission = SysConfig::new(&executor)
+            .send_tx_permission_check()
+            .unwrap();
+        assert_eq!(check_send_tx_permission, false);
+    }
+
+    #[test]
+    fn test_permission_create_contract_check() {
+        let executor = init_executor(vec![("SysConfig.checkCreateContractPermission", "false")]);
+        let check_create_contract_permission = SysConfig::new(&executor)
+            .create_contract_permission_check()
+            .unwrap();
+        assert_eq!(check_create_contract_permission, false);
     }
 
     #[test]
