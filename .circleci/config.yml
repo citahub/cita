@@ -34,8 +34,7 @@ alias:
   - &save-security-audit-cache
     <<: *restore-security-audit-cache
     paths:
-      - /opt/.cargo/git
-      - /opt/.cargo/registry
+      - /opt/.cargo/bin/cargo-audit
 
   - &before-restore-security-audit-cache
     name: Before Restore Security Audit Cache
