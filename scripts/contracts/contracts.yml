@@ -47,7 +47,9 @@ NormalContracts:
 - EmergencyBrake:
     address: '0xffffffffffffffffffffffffffffffffff02000f'
     file: system/emergency_brake.sol
-
+- PriceManager:
+    address: '0xffffffffffffffffffffffffffffffffff020010'
+    file: system/price_manager.sol
 PermissionContracts:
   file: permission_management/permission.sol
   basic:

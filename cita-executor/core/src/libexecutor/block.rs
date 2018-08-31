@@ -17,6 +17,7 @@
 
 use basic_types::LogBloom;
 use cita_types::{Address, H256, U256};
+use contracts::solc::PriceManagement;
 use engines::Engine;
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
@@ -400,11 +401,18 @@ impl OpenBlock {
         chain_owner: Address,
         check_options: &CheckOptions,
     ) -> bool {
-        for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
+        for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 && executor.is_interrupted.load(Ordering::SeqCst) {
                 executor.is_interrupted.store(false, Ordering::SeqCst);
                 return false;
             }
+
+            let economical_model: EconomicalModel = *executor.economical_model.read();
+            if economical_model == EconomicalModel::Charge {
+                t.gas_price = PriceManagement::quota_price(executor)
+                    .unwrap_or_else(PriceManagement::default_quota_price);
+            }
+
             self.apply_transaction(
                 &*executor.engine,
                 &t,
