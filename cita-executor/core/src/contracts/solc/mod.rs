@@ -18,6 +18,7 @@
 //! System contracts.
 
 pub mod chain_manager;
+pub mod emergency_brake;
 pub mod node_manager;
 pub mod permission_management;
 pub mod quota_manager;
@@ -25,6 +26,7 @@ pub mod sys_config;
 pub mod user_management;
 
 pub use self::chain_manager::ChainManagement;
+pub use self::emergency_brake::EmergencyBrake;
 pub use self::node_manager::NodeManager;
 pub use self::permission_management::{PermissionManagement, Resource};
 pub use self::quota_manager::{AccountGasLimit, QuotaManager};

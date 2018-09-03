@@ -42,6 +42,8 @@ contract ReservedAddress {
     address public accountQuotaAddr = 0xffFfffFfffFfFFFFFfFfFffFFfFfffFffF021023;
     address public blockQuotaAddr = 0xfffffFfFfFFfFFffFfFffFFFFfFFFfFffF021024;
 
+    address public emergencyBrakeAddr = 0xFffffFffFFFFfFFFFfFffFFFFFfFfFFfFF02000f;
+
     address[20] builtInPermissions = [
         0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,       // 0 - newPermission
         0xFFfFfffffFFffFfffFffffffFFfFfFfFfF021011,       // 1 - deletePermission

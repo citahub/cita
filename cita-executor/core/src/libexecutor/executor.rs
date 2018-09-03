@@ -21,8 +21,8 @@ use call_analytics::CallAnalytics;
 use contracts::{
     native::factory::Factory as NativeFactory,
     solc::{
-        AccountGasLimit, NodeManager, PermissionManagement, QuotaManager, Resource, SysConfig,
-        UserManagement,
+        AccountGasLimit, EmergencyBrake, NodeManager, PermissionManagement, QuotaManager, Resource,
+        SysConfig, UserManagement,
     },
 };
 use db;
@@ -237,6 +237,7 @@ pub struct Executor {
     pub economical_model: RwLock<EconomicalModel>,
     black_list_cache: RwLock<LRUCache<u64, Address>>,
     pub engine: Box<Engine>,
+    emergency_brake: AtomicBool,
 }
 
 /// Get latest header
@@ -312,6 +313,7 @@ impl Executor {
             economical_model: RwLock::new(EconomicalModel::Quota),
             black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
             engine: Box::new(NullEngine::cita()),
+            emergency_brake: AtomicBool::new(false),
         };
 
         // Build executor config
@@ -876,6 +878,10 @@ impl Executor {
             // TODO: shoud be delay_active_interval + 1? 10 should be enough.
             confs.truncate(10);
         }
+        self.emergency_brake.store(
+            EmergencyBrake::state(self).unwrap_or_else(EmergencyBrake::default_state),
+            Ordering::SeqCst,
+        );
     }
 
     /// Execute Block

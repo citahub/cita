@@ -44,6 +44,9 @@ NormalContracts:
 - BatchTx:
     address: '0xffffffffffffffffffffffffffffffffff02000e'
     file: system/batch_tx.sol
+- EmergencyBrake:
+    address: '0xffffffffffffffffffffffffffffffffff02000f'
+    file: system/emergency_brake.sol
 
 PermissionContracts:
   file: permission_management/permission.sol

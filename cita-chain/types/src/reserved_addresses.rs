@@ -103,6 +103,7 @@ pub const GROUP_CREATOR: &str = "ffffffffffffffffffffffffffffffffff02000b";
 pub const ADMIN: &str = "ffffffffffffffffffffffffffffffffff02000c";
 pub const ROLE_AUTH: &str = "ffffffffffffffffffffffffffffffffff02000d";
 pub const BATCH_TX: &str = "ffffffffffffffffffffffffffffffffff02000e";
+pub const EMERGENCY_BRAKE: &str = "ffffffffffffffffffffffffffffffffff02000f";
 // Permission System Contracts
 pub const PERMISSION_SEND_TX: &str = "ffffffffffffffffffffffffffffffffff021000";
 pub const PERMISSION_CREATE_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff021001";
