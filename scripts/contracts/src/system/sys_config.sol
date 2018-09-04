@@ -1,6 +1,8 @@
 pragma solidity ^0.4.24;
 
 import "../common/model_type.sol";
+import "../common/admin.sol";
+import "../common/address.sol";
 
 
 /// @title The interface of system config
@@ -58,7 +60,7 @@ interface SysConfigInterface {
 
 /// @title System config contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-contract SysConfig is SysConfigInterface, EconomicalType{
+contract SysConfig is SysConfigInterface, EconomicalType, ReservedAddress {
 
     /// @notice only chain_name, operator, website can be updated
     uint delayBlockNumber;
@@ -75,6 +77,14 @@ contract SysConfig is SysConfigInterface, EconomicalType{
     uint64 blockInterval;
     EconomicalModel economicalModel;
     TokenInfo tokenInfo;
+
+    Admin admin = Admin(adminAddr);
+
+    modifier onlyAdmin {
+        if (admin.isAdmin(msg.sender))
+            _;
+        else return;
+    }
 
     struct TokenInfo {
         string name;
@@ -126,18 +136,21 @@ contract SysConfig is SysConfigInterface, EconomicalType{
 
     function setOperator(string _operator)
         external
+        onlyAdmin
     {
         operator = _operator;
     }
 
     function setWebsite(string _website)
         external
+        onlyAdmin
     {
         website = _website;
     }
 
     function setChainName(string _chainName)
         external
+        onlyAdmin
     {
         chainName = _chainName;
     }
