@@ -683,6 +683,10 @@ impl Executor {
         send_config.set_nodes(node_list);
         send_config.set_block_interval(conf.block_interval);
 
+        if self.emergency_brake.load(Ordering::SeqCst) {
+            send_config.set_admin_address(conf.super_admin_account.unwrap().to_vec());
+        }
+
         executed_map
             .entry(height)
             .or_insert_with(ExecutedResult::new)
