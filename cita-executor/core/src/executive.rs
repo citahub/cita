@@ -120,9 +120,14 @@ pub fn check_permission(
                     Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
                 trace!("t.data {:?}", t.data);
 
+                if t.data.is_empty() {
+                    // Transfer transaction, no function call
+                    return Ok(());
+                }
+
                 if t.data.len() < 4 {
                     return Err(ExecutionError::TransactionMalformed(
-                        "The length of transation data is less than four bytes".to_string(),
+                        "The length of transaction data is less than four bytes".to_string(),
                     ));
                 }
 
