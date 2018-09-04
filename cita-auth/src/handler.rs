@@ -236,6 +236,7 @@ pub struct MsgHandler {
     is_snapshot: bool,
     black_list_cache: HashMap<Address, i8>,
     is_need_proposal_new_block: bool,
+    admin_address: Option<Address>,
 }
 
 impl MsgHandler {
@@ -269,6 +270,7 @@ impl MsgHandler {
             is_snapshot: false,
             black_list_cache: HashMap::new(),
             is_need_proposal_new_block: false,
+            admin_address: None,
         }
     }
 
@@ -509,6 +511,14 @@ impl MsgHandler {
             return Ret::InvalidValue;
         }
 
+        if self
+            .admin_address
+            .map(|admin| pubkey_to_address(&PubKey::from_slice(req.get_signer())) != admin)
+            .unwrap_or_else(|| false)
+        {
+            return Ret::Forbidden;
+        }
+
         let valid_until_block = req.get_valid_until_block();
         let next_height = self.history_heights.next_height();
         if valid_until_block < next_height || valid_until_block >= (next_height + BLOCKLIMIT) {
@@ -662,6 +672,7 @@ impl MsgHandler {
                         block_gas_limit,
                         self.account_gas_limit.clone(),
                         self.check_quota,
+                        &self.admin_address,
                     );
 
                     // after proposal new block clear flag
@@ -726,6 +737,11 @@ impl MsgHandler {
             self.check_quota = check_quota;
             self.block_gas_limit = block_gas_limit;
             self.account_gas_limit = account_gas_limit.clone();
+            self.admin_address = if block_tx_hashes.get_admin_address().is_empty() {
+                None
+            } else {
+                Some(Address::from(block_tx_hashes.get_admin_address()))
+            };
 
             // need to proposal new block
             self.is_need_proposal_new_block = true;

@@ -309,6 +309,8 @@ pub struct Chain {
 
     // snapshot flag
     pub is_snapshot: RwLock<bool>,
+
+    admin_address: RwLock<Option<Address>>,
 }
 
 /// Get latest status
@@ -397,6 +399,7 @@ impl Chain {
             prooftype: chain_config.prooftype,
             proof_map: RwLock::new(BTreeMap::new()),
             is_snapshot: RwLock::new(false),
+            admin_address: RwLock::new(None),
         };
 
         if let Some(proto_proof) = chain.current_block_poof() {
@@ -464,6 +467,11 @@ impl Chain {
         *self.account_gas_limit.write() = conf.get_account_gas_limit().clone();
         *self.nodes.write() = nodes.clone();
         *self.block_interval.write() = block_interval;
+        *self.admin_address.write() = if conf.get_admin_address().is_empty() {
+            None
+        } else {
+            Some(Address::from(conf.get_admin_address()))
+        };
     }
 
     pub fn set_db_result(&self, ret: &ExecutedResult, block: &Block) {
@@ -1169,6 +1177,12 @@ impl Chain {
             block_tx_hashes.set_check_quota(self.check_quota.load(Ordering::Relaxed));
             block_tx_hashes.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
             block_tx_hashes.set_account_gas_limit(self.account_gas_limit.read().clone());
+            block_tx_hashes.set_admin_address(
+                self.admin_address
+                    .read()
+                    .map(|admin| admin.to_vec())
+                    .unwrap_or_else(Vec::new),
+            );
         }
 
         let mut tx_hashes_in_u8 = Vec::new();

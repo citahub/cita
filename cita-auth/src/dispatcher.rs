@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cita_types::traits::LowerHex;
-use cita_types::H256;
+use cita_types::{Address, H256};
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
@@ -74,6 +74,7 @@ impl Dispatcher {
         block_gas_limit: u64,
         account_gas_limit: AccountGasLimit,
         check_quota: bool,
+        admin_address: &Option<Address>,
     ) {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
@@ -83,6 +84,7 @@ impl Dispatcher {
             block_gas_limit,
             account_gas_limit,
             check_quota,
+            admin_address,
         );
         info!(
             "public block txs height {} with {:?} transactions",
@@ -130,9 +132,16 @@ impl Dispatcher {
         block_gas_limit: u64,
         account_gas_limit: AccountGasLimit,
         check_quota: bool,
+        admin_address: &Option<Address>,
     ) -> Vec<SignedTransaction> {
         let txs_pool = &mut self.txs_pool.borrow_mut();
-        txs_pool.package(height, block_gas_limit, account_gas_limit, check_quota)
+        txs_pool.package(
+            height,
+            block_gas_limit,
+            account_gas_limit,
+            check_quota,
+            *admin_address,
+        )
     }
 
     pub fn del_txs_from_pool_with_hash(&self, txs: &HashSet<H256>) {
