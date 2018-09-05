@@ -26,7 +26,7 @@ contract PriceManager is ReservedAddress{
         onlyAdmin
         returns (bool)
     {
-        require(_quotaPrice > 0);
+        require(_quotaPrice > 0, "The quota price should larger than zero.");
         quotaPrice = _quotaPrice;
         emit SetQuotaPrice(_quotaPrice);
         return true;

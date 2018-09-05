@@ -24,7 +24,7 @@ contract Permission is ReservedAddress {
     event NameUpdated(bytes32 indexed _oldName, bytes32 indexed _name);
 
     modifier onlyPermissionManagement {
-        require(permissionManagementAddr == msg.sender);
+        require(permissionManagementAddr == msg.sender, "permission denied.");
         _;
     }
 
@@ -33,7 +33,7 @@ contract Permission is ReservedAddress {
         public
     {
         name = _name;
-        require(_addResources(_conts, _funcs));
+        require(_addResources(_conts, _funcs), "constructor failed.");
     }
 
     /// @notice Add the resources
@@ -45,7 +45,7 @@ contract Permission is ReservedAddress {
         onlyPermissionManagement
         returns (bool)
     {
-        require(_addResources(_conts, _funcs));
+        require(_addResources(_conts, _funcs), "addResources failed.");
         return true;
     }
 
@@ -59,7 +59,7 @@ contract Permission is ReservedAddress {
         returns (bool)
     {
         for (uint i = 0; i < _conts.length; i++)
-            require(resourceDelete(_conts[i], _funcs[i]));
+            require(resourceDelete(_conts[i], _funcs[i]), "deleteResources failed.");
 
         emit ResourcesDeleted(_conts, _funcs);
         return true;

@@ -50,9 +50,9 @@ contract ChainManager is Error {
         public
     {
         if (_pid == 0) {
-            require(_addrs.length == 0);
+            require(_addrs.length == 0, "The length should be zero.");
         } else {
-            require(_addrs.length > 0);
+            require(_addrs.length > 0, "The length should larger than zero.");
             parentChainId = _pid;
             parentChainNodes = _addrs;
         }
@@ -68,6 +68,7 @@ contract ChainManager is Error {
         uint256 result;
         uint256 cid;
 
+        // solium-disable-next-line security/no-inline-assembly
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, getChainIdHash)
@@ -82,10 +83,10 @@ contract ChainManager is Error {
     function newSideChain(uint32 sideChainId, address[] addrs)
         public
     {
-        require(addrs.length > 0);
+        require(addrs.length > 0, "The length should larger than zero.");
         uint32 myChainId = getChainId();
-        require(myChainId != sideChainId);
-        require(sideChains[sideChainId].status == ChainStatus.Unknown);
+        require(myChainId != sideChainId, "ChainId should not equal to sideChainId.");
+        require(sideChains[sideChainId].status == ChainStatus.Unknown, "ChainStatus not the same witch sideChainStatus.");
         sideChains[sideChainId] = ChainInfo(ChainStatus.Disable, addrs);
         // TODO A sorted array can search data more fast.
         //      And we can remove duplicated data, simply.
@@ -121,6 +122,7 @@ contract ChainManager is Error {
         }
         // bool
         uint outSize = 0x20;
+        // solium-disable-next-line security/no-inline-assembly
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, funcSig)
@@ -144,7 +146,7 @@ contract ChainManager is Error {
             if eq(result, 0) { revert(ptr, 0) }
             verifyResult := mload(ptr)
         }
-        require(verifyResult == true);
+        require(verifyResult == true, "The verifyResult should be true.");
     }
 
     function getExpectedBlockNumber(
@@ -157,6 +159,7 @@ contract ChainManager is Error {
         address contractAddr = crossChainVerifyAddr;
         bytes4 funcSig = bytes4(keccak256("getExpectedBlockNumber(uint32)"));
         uint256 blockNumber;
+        // solium-disable-next-line security/no-inline-assembly
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, funcSig)
@@ -188,6 +191,7 @@ contract ChainManager is Error {
         uint key;
         uint value;
         uint outSize = 0x60;
+        // solium-disable-next-line security/no-inline-assembly
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, funcSig)
@@ -238,6 +242,7 @@ contract ChainManager is Error {
             return sideChains[id].nodes;
         } else {
             // Returns an empty array;
+            return ;
         }
     }
 }

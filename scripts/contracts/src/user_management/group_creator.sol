@@ -20,7 +20,7 @@ contract GroupCreator is ReservedAddress {
         public
         returns (Group groupAddress)
     {
-        require(userManagementAddr == msg.sender);
+        require(userManagementAddr == msg.sender, "permission denied.");
 
         groupAddress = new Group(_parent, _name, _accounts);
         emit GroupCreated(groupAddress, _parent, _name, _accounts);

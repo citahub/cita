@@ -23,7 +23,7 @@ contract Group is ReservedAddress {
     event ChildAdded(address indexed _child);
 
     modifier onlyUserManagement {
-        require(userManagementAddr == msg.sender);
+        require(userManagementAddr == msg.sender, "permission denied.");
         _;
     }
 
@@ -62,7 +62,7 @@ contract Group is ReservedAddress {
         onlyUserManagement
         returns (bool)
     {
-        require(_accounts.length < accounts.length);
+        require(_accounts.length < accounts.length, "deleteAccounts failed.");
 
         for (uint i = 0; i < _accounts.length; i++)
             assert(AddressArray.remove(_accounts[i], accounts));

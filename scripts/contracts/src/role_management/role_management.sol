@@ -18,7 +18,7 @@ contract RoleManagement is ReservedAddress {
     mapping(address => address[]) internal roles;
 
     modifier checkPermission(address _permission) {
-        require(auth.hasPermission(msg.sender, _permission));
+        require(auth.hasPermission(msg.sender, _permission), "permission denied.");
         _;
     }
 
@@ -43,7 +43,7 @@ contract RoleManagement is ReservedAddress {
         returns (bool)
     {
         // Cancel the role of the account's which has the role
-        require(auth.clearAuthOfRole(_role));
+        require(auth.clearAuthOfRole(_role), "clearAuthOfRole failed.");
 
         Role roleContract = Role(_role);
         roleContract.deleteRole();
@@ -74,10 +74,10 @@ contract RoleManagement is ReservedAddress {
         returns (bool)
     {
         // Set the authorization of all the account's which has the role
-        require(auth.setPermissionsOfRole(_role, _permissions));
+        require(auth.setPermissionsOfRole(_role, _permissions), "setPermissionsOfRole failed.");
 
         Role roleContract = Role(_role);
-        require(roleContract.addPermissions(_permissions));
+        require(roleContract.addPermissions(_permissions), "addPermissions failed.");
         return true;
     }
 
@@ -91,10 +91,10 @@ contract RoleManagement is ReservedAddress {
         returns (bool)
     {
         Role roleContract = Role(_role);
-        require(roleContract.deletePermissions(_permissions));
+        require(roleContract.deletePermissions(_permissions), "deletePermissions failed.");
 
         // Cancel the authorization of all the account's which has the role
-        require(auth.cancelPermissionsOfRole(_role, _permissions));
+        require(auth.cancelPermissionsOfRole(_role, _permissions), "cancelPermissionsOfRole failed.");
         return true;
     }
 
@@ -107,7 +107,7 @@ contract RoleManagement is ReservedAddress {
         checkPermission(builtInPermissions[8])
         returns (bool)
     {
-        require(auth.setRole(_account, _role));
+        require(auth.setRole(_account, _role), "setRole failed.");
         return true;
     }
 
@@ -120,7 +120,7 @@ contract RoleManagement is ReservedAddress {
         checkPermission(builtInPermissions[9])
         returns (bool)
     {
-        require(auth.cancelRole(_account, _role));
+        require(auth.cancelRole(_account, _role), "cancelRole failed.");
         return true;
     }
 
@@ -132,7 +132,7 @@ contract RoleManagement is ReservedAddress {
         checkPermission(builtInPermissions[9])
         returns (bool)
     {
-        require(auth.clearRole(_account));
+        require(auth.clearRole(_account), "clearRole failed.");
         return true;
     }
 }

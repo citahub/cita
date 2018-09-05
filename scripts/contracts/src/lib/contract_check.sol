@@ -16,6 +16,7 @@ library ContractCheck {
         returns (bool)
     {
         uint size;
+        // solium-disable-next-line security/no-inline-assembly
         assembly { size := extcodesize(_target) }
         return size > 0;
     }

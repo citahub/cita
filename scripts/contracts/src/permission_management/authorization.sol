@@ -23,12 +23,12 @@ contract Authorization is ReservedAddress {
     event AuthCleared(address indexed _account);
 
     modifier onlyPermissionManagement {
-        require(permissionManagementAddr == msg.sender || roleAuthAddr == msg.sender );
+        require(permissionManagementAddr == msg.sender || roleAuthAddr == msg.sender, "permission denied");
         _;
     }
 
     modifier notSuperAdmin(address _account) {
-        require(_account != all_accounts[0]);
+        require(_account != all_accounts[0], "not superAdmin");
         _;
     }
 
