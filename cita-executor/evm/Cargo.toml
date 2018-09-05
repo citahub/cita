@@ -1,7 +1,7 @@
 [package]
 name = "evm"
 version = "0.1.0"
-authors = ["Cryptape Technologies <contact@cryptape.com>"]
+authors = ["Parity Technologies <admin@parity.io>", "Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
