@@ -113,7 +113,7 @@ contract SysConfig is SysConfigInterface, EconomicalType, ReservedAddress {
     )
         public
     {
-        require(_chainId > 0);
+        require(_chainId > 0, "The chainId should larger than zero.");
         delayBlockNumber = _delayBlockNumber;
         checkPermission = _checkPermission;
         checkSendTxPermission = _checkSendTxPermission;

@@ -21,7 +21,7 @@ contract PermissionCreator is ReservedAddress {
         public
         returns (Permission permissionAddress)
     {
-        require(permissionManagementAddr == msg.sender);
+        require(permissionManagementAddr == msg.sender, "permission denied.");
 
         permissionAddress = new Permission(_name, _conts, _funcs);
         emit PermissionCreated(permissionAddress, _name, _conts, _funcs);

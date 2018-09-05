@@ -18,19 +18,19 @@ contract PermissionManagement is ReservedAddress {
     event PermissionDeleted(address _permission);
 
     modifier sameLength(address[] _one, bytes4[] _other) {
-        require(_one.length > 0);
-        require(_one.length == _other.length);
+        require(_one.length > 0, "The length must large than zero.");
+        require(_one.length == _other.length, "Two arrays'length not the same.");
         _;
     }
 
     modifier notBuiltInPermission(address _permission) {
         for (uint i = 0; i < builtInPermissions.length; i++)
-            require(_permission != builtInPermissions[i]);
+            require(_permission != builtInPermissions[i], "not buildInPermission.");
         _;
     }
 
     modifier checkPermission(address _permission) {
-        require(auth.checkPermission(msg.sender, _permission));
+        require(auth.checkPermission(msg.sender, _permission), "permission denied.");
         _;
     }
 
@@ -61,7 +61,7 @@ contract PermissionManagement is ReservedAddress {
         Permission perm = Permission(_permission);
         perm.close();
         // Cancel the auth of the accounts who have the permission
-        require(auth.clearAuthOfPermission(_permission));
+        require(auth.clearAuthOfPermission(_permission), "deletePermission failed.");
         emit PermissionDeleted(_permission);
         return true;
     }
@@ -76,7 +76,7 @@ contract PermissionManagement is ReservedAddress {
         returns (bool)
     {
         Permission perm = Permission(_permission);
-        require(perm.updateName(_name));
+        require(perm.updateName(_name), "updatePermissionName failed.");
         return true;
     }
 
@@ -91,7 +91,7 @@ contract PermissionManagement is ReservedAddress {
         returns (bool)
     {
         Permission perm = Permission(_permission);
-        require(perm.addResources(_conts, _funcs));
+        require(perm.addResources(_conts, _funcs), "addResources failed.");
         return true;
     }
 
@@ -106,7 +106,7 @@ contract PermissionManagement is ReservedAddress {
         returns (bool)
     {
         Permission perm = Permission(_permission);
-        require(perm.deleteResources(_conts, _funcs));
+        require(perm.deleteResources(_conts, _funcs), "deleteResources failed.");
         return true;
     }
 
@@ -120,7 +120,7 @@ contract PermissionManagement is ReservedAddress {
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++)
-            require(auth.setAuth(_account, _permissions[i]));
+            require(auth.setAuth(_account, _permissions[i]), "setAuthorizations failed.");
 
         return true;
     }
@@ -134,7 +134,7 @@ contract PermissionManagement is ReservedAddress {
         checkPermission(builtInPermissions[3])
         returns (bool)
     {
-        require(auth.setAuth(_account, _permission));
+        require(auth.setAuth(_account, _permission), "setAuthorization failed.");
         return true;
     }
 
@@ -148,7 +148,7 @@ contract PermissionManagement is ReservedAddress {
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++)
-            require(auth.cancelAuth(_account, _permissions[i]));
+            require(auth.cancelAuth(_account, _permissions[i]), "cancelAuthorizations failed.");
 
         return true;
     }
@@ -162,7 +162,7 @@ contract PermissionManagement is ReservedAddress {
         checkPermission(builtInPermissions[4])
         returns (bool)
     {
-        require(auth.cancelAuth(_account, _permission));
+        require(auth.cancelAuth(_account, _permission), "cancelAuthorization failed.");
         return true;
     }
 
@@ -174,7 +174,7 @@ contract PermissionManagement is ReservedAddress {
         checkPermission(builtInPermissions[4])
         returns (bool)
     {
-        require(auth.clearAuth(_account));
+        require(auth.clearAuth(_account), "clearAuthorization failed.");
         return true;
     }
 }

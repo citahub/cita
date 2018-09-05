@@ -9,9 +9,7 @@ pragma solidity ^0.4.24;
 // Ref: https://github.com/ethereum/solidity/issues/2708#issuecomment-320957367
 contract CrossChain {
 
-    event SendCrossChain(uint32 fromChainId, uint32 toChainId,
-                         address destContract, bytes4 destFuncSig,
-                         uint64 sendNonce);
+    event SendCrossChain(uint32 fromChainId, uint32 toChainId, address destContract, bytes4 destFuncSig, uint64 sendNonce);
     event RecvCrossChain(address indexed sender, bytes txData);
 
     address crossChainVerifyAddr = 0xffFfffFfFFFfFFfffFFFffffFfFfffFfFF030002;
@@ -32,6 +30,7 @@ contract CrossChain {
         address contractAddr = chainManagerAddr;
         bytes4 funcSig = bytes4(keccak256("getChainId()"));
         uint256 chainId;
+        // solium-disable-next-line security/no-inline-assembly
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, funcSig)
@@ -61,6 +60,7 @@ contract CrossChain {
     ) {
         address recvContAddr = address(this);
         bytes4 recvFuncSig;
+        // solium-disable-next-line security/no-inline-assembly
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, 0x0, 0x4)
@@ -79,6 +79,7 @@ contract CrossChain {
         if (txDataSize % 0x20 != 0) {
             outSize += 0x20;
         }
+        // solium-disable-next-line security/no-inline-assembly
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, nativeFunc)

@@ -22,7 +22,7 @@ contract RoleAuth is ReservedAddress {
     event RoleCleared(address indexed _account);
 
     modifier onlyRoleManagement {
-        require(roleManagementAddr == msg.sender);
+        require(roleManagementAddr == msg.sender, "permission denied.");
         _;
     }
 
@@ -39,7 +39,7 @@ contract RoleAuth is ReservedAddress {
         if (!AddressArray.exist(_role, roles[_account])) {
             roles[_account].push(_role);
             // Set role permissions to account.
-            require(_setRolePermissions(_account, _role));
+            require(_setRolePermissions(_account, _role), "setRolePermissions failed.");
         }
         if (!AddressArray.exist(_account, accounts[_role]))
             accounts[_role].push(_account);
@@ -69,7 +69,7 @@ contract RoleAuth is ReservedAddress {
         returns (bool)
     {
         for (uint i = 0; i < accounts[_role].length; i++)
-            require(_cancelRole(accounts[_role][i], _role));
+            require(_cancelRole(accounts[_role][i], _role), "cancelRole failed.");
 
         return true;
     }
@@ -83,7 +83,7 @@ contract RoleAuth is ReservedAddress {
         returns (bool)
     {
         for (uint i = 0; i < accounts[_role].length; i++)
-            require(_setPermissions(accounts[_role][i], _permissions));
+            require(_setPermissions(accounts[_role][i], _permissions), "setPermissions failed.");
 
         return true;
     }
@@ -97,7 +97,7 @@ contract RoleAuth is ReservedAddress {
         returns (bool)
     {
         for (uint i = 0; i < accounts[_role].length; i++)
-            require(_cancelPermissions(accounts[_role][i], _permissions));
+            require(_cancelPermissions(accounts[_role][i], _permissions), "cancelPermissions failed.");
 
         return true;
     }
@@ -113,7 +113,7 @@ contract RoleAuth is ReservedAddress {
         // Clear account and roles
         for (uint i = 0; i < roles[_account].length; i++) {
             // Clear account auth
-            require(_cancelRolePermissions(_account, roles[_account][i]));
+            require(_cancelRolePermissions(_account, roles[_account][i]), "cancelRolePermissions failed.");
             // Clear _account in all roles array.
             assert(AddressArray.remove(_account, accounts[roles[_account][i]]));
         }
@@ -169,7 +169,7 @@ contract RoleAuth is ReservedAddress {
         assert(AddressArray.remove(_role, roles[_account]));
 
         // Cancel role permissions of account.
-        require(_cancelRolePermissions(_account, _role));
+        require(_cancelRolePermissions(_account, _role), "cancelRolePermissions failed.");
 
         emit RoleCanceled(_account, _role);
         return true;
@@ -181,7 +181,7 @@ contract RoleAuth is ReservedAddress {
         returns (bool)
     {
         address[] memory permissions = _queryPermissions(_role);
-        require(_cancelPermissions(_account, permissions));
+        require(_cancelPermissions(_account, permissions), "cancelPermissions failed.");
         return true;
     }
 
@@ -193,7 +193,7 @@ contract RoleAuth is ReservedAddress {
         for (uint i = 0; i<_permissions.length; i++) {
             // Cancel this permission when account has not it in any of his other roles
             if (!_hasPermission(_account, _permissions[i]))
-                require(auth.cancelAuth(_account, _permissions[i]));
+                require(auth.cancelAuth(_account, _permissions[i]), "cancelAuth failed.");
         }
 
         return true;
@@ -217,7 +217,7 @@ contract RoleAuth is ReservedAddress {
         returns (bool)
     {
         address[] memory permissions = _queryPermissions(_role);
-        require(_setPermissions(_account, permissions));
+        require(_setPermissions(_account, permissions), "setPermissions failed.");
         return true;
     }
 
@@ -227,7 +227,7 @@ contract RoleAuth is ReservedAddress {
         returns (bool)
     {
         for (uint i = 0; i<_permissions.length; i++)
-            require(auth.setAuth(_account, _permissions[i]));
+            require(auth.setAuth(_account, _permissions[i]), "setAuth failed.");
 
         return true;
     }
@@ -238,7 +238,7 @@ contract RoleAuth is ReservedAddress {
         view
         returns (address[] permissions)
     {
-        require(ContractCheck.isContract(_role));
+        require(ContractCheck.isContract(_role), "not a valid contract address.");
         Role roleContract = Role(_role);
         permissions = roleContract.queryPermissions();
     }
