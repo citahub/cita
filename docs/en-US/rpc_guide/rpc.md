@@ -1041,6 +1041,7 @@ params: [
     * `tokenName`, `String` - Token name
     * `tokenSymbol`, `String` - Token symbol
     * `tokenAvatar`, `String` - Token avatar url
+    * `version`, `Integer` - chain's version
 * Example
 
     ```shell
@@ -1066,7 +1067,8 @@ params: [
             "blockInterval": 3000,
             "token_name": "tokenName",
             "token_symbol": "tokenSymbol",
-            "token_avatar": "tokenAvatar"
+            "token_avatar": "tokenAvatar",
+            "version":1
         }
     }
     ```

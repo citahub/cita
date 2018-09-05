@@ -55,6 +55,7 @@
 | 0xffffffffffffffffffffffffffffffffff02000d | 角色授权                         |
 | 0xffffffffffffffffffffffffffffffffff02000e | 批量交易                         |
 | 0xffffffffffffffffffffffffffffffffff02000f | 急停合约                         |
+| 0xffffffffffffffffffffffffffffffffff020011 | 版本号管理                       |
 | 0xffffffffffffffffffffffffffffffffff021000 | 发送交易                         |
 | 0xffffffffffffffffffffffffffffffffff021001 | 新建合约                         |
 | 0xffffffffffffffffffffffffffffffffff021010 | 新增权限                         |

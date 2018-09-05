@@ -43,6 +43,7 @@ contract ReservedAddress {
     address public blockQuotaAddr = 0xfffffFfFfFFfFFffFfFffFFFFfFFFfFffF021024;
 
     address public emergencyBrakeAddr = 0xFffffFffFFFFfFFFFfFffFFFFFfFfFFfFF02000f;
+    address public versionManagerAddr = 0xFffFFFfffffFFfFFFFFffffFFfFfFfffFf020011;
 
     address[20] builtInPermissions = [
         0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,       // 0 - newPermission
