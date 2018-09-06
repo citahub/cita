@@ -15,12 +15,11 @@ contract VersionManager is ReservedAddress {
     }
 
     /// @notice Setup
-        constructor(
-           uint32 _version
-        ) public
-        {
-           version = _version;
-        }
+    constructor(uint32 _version) 
+        public
+    {
+        version = _version;
+    }
 
     function setVersion(uint32 _version)
         public
@@ -30,12 +29,10 @@ contract VersionManager is ReservedAddress {
     }
 
     function getVersion()
-            public
-            view
-            returns (uint32)
-        {
-            return version;
-        }
-
-
+        public
+        view
+        returns (uint32)
+    {
+        return version;
+    }
 }
