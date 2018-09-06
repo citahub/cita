@@ -198,12 +198,16 @@ impl ExecutorInstance {
                                 {
                                     *self.ext.stage.write() = Stage::ExecutingBlock;
                                 }
-                                match self.closed_block.replace(None) {
-                                    Some(ref closed_block)
-                                        if closed_block.is_equivalent(&block) =>
-                                    {
+                                match self.closed_block.replace(None).and_then(|closed_block| {
+                                    if closed_block.is_equivalent(&block) {
+                                        Some(closed_block)
+                                    } else {
+                                        None
+                                    }
+                                }) {
+                                    Some(closed_block) => {
                                         self.ext.finalize_proposal(
-                                            closed_block.clone(),
+                                            closed_block,
                                             &block,
                                             &self.ctx_pub,
                                         );
