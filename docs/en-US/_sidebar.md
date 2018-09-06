@@ -11,6 +11,7 @@
     - [System Management](system_management/sys.md)
     - [Snapshot](system_management/snapshot.md)
     - [Batch Tx](system_management/batch_tx.md)
+    - [Emergency Brake](system_management/emergency_brake.md)
 - Json-RPC Guide
     - [Json-RPC List](rpc_guide/rpc.md)
     - [Json-RPC Parameters and Returns](rpc_guide/rpc.md)
