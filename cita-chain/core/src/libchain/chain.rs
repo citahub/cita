@@ -236,15 +236,23 @@ pub enum CacheId {
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct Config {
     pub prooftype: u8,
+    pub cache_size: Option<usize>,
 }
 
 impl Config {
     pub fn default() -> Self {
-        Config { prooftype: 2 }
+        Config {
+            prooftype: 2,
+            cache_size: Some(1 << 20),
+        }
     }
 
     pub fn new(path: &str) -> Self {
-        parse_config!(Config, path)
+        let mut c: Config = parse_config!(Config, path);
+        if c.cache_size.is_none() {
+            c.cache_size = Some(1 << 20 as usize);
+        }
+        c
     }
 }
 
@@ -348,8 +356,14 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
 
 impl Chain {
     pub fn init_chain(db: Arc<KeyValueDB>, chain_config: &Config) -> Chain {
+        info!("chain config: {:?}", chain_config);
+
         // 400 is the avarage size of the key
-        let cache_man = CacheManager::new(1 << 14, 1 << 20, 400);
+        let cache_man = CacheManager::new(
+            chain_config.cache_size.unwrap() * 3 / 4,
+            chain_config.cache_size.unwrap(),
+            400,
+        );
 
         let journal_db = journaldb::new(Arc::clone(&db), journaldb::Algorithm::Archive, COL_STATE);
         let state_db = StateDB::new(journal_db);
@@ -357,8 +371,6 @@ impl Chain {
             levels: LOG_BLOOMS_LEVELS,
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
         };
-
-        info!("chain config: {:?}", chain_config);
 
         let header = get_chain(&*db).unwrap_or_default();
         debug!("get chain head is : {:?}", header);

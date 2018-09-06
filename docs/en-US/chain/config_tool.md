@@ -119,6 +119,12 @@ prooftype = 2
 
 - `prooftype`: 表示当前使用的共识算法，0 表示采用的 Poa 算法、1 表示采用的 Raft 算法、2 表示采用的 CITA-BFT 算法，默认采用 CITA-BFT 算法。
 
+另外还有一项可选配置，如下：
+```shell
+cache_size = 1048576
+```
+指明了 Chain 中缓冲区的大小（缓冲区可以加速用户查询），单位是 Byte 。
+
 #### cita-executor
 
 `config_tool` 下创建 `executor.toml`文件来自定义 `cita-executor` journaldb 的类型等。格式参考 `config_example/executor.toml`文件，如下:
