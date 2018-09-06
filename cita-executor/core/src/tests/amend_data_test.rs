@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::{Address, H256, U256};
 use super::helpers::*;
+use cita_types::{Address, H256, U256};
 use evm;
 use evm::action_params::{ActionParams, ActionValue};
 use executive::Executive;

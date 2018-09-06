@@ -134,6 +134,18 @@ jobs:
           command: make security_audit
       - save_cache: *save-security-audit-cache
 
+  "Check Contracts":
+    docker:
+      - image: circleci/node:8.9.1  
+    steps:
+      - checkout
+      - run: 
+          name: Test system contracts
+          command: |
+            sudo npm install -g solium
+            cd scripts/contracts/
+            solium -d src/
+            
   "Check Clippy":
     <<: *job-default
     steps:
@@ -252,6 +264,8 @@ workflows:
     jobs:
 
       - "Check Basic"
+
+      - "Check Contracts"
 
       - "Check Clippy":
           requires:
