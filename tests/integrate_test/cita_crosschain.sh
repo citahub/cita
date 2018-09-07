@@ -115,7 +115,8 @@ function start_chain () {
         bin/cita setup ${chain}chain/${id} && true
     done
     for ((id=0;id<${size};id++)); do
-        bin/cita start ${chain}chain/${id} trace>/dev/null 2>&1 &
+        bin/cita stop  ${chain}chain/${id}>/dev/null 2>&1 || true
+        bin/cita start ${chain}chain/${id} trace>/dev/null 2>&1
     done
 }
 
