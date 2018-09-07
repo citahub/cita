@@ -25,6 +25,7 @@ pub mod price_manager;
 pub mod quota_manager;
 pub mod sys_config;
 pub mod user_management;
+pub mod version_management;
 
 pub use self::chain_manager::ChainManagement;
 pub use self::emergency_brake::EmergencyBrake;
@@ -34,6 +35,7 @@ pub use self::price_manager::PriceManagement;
 pub use self::quota_manager::{AccountGasLimit, QuotaManager};
 pub use self::sys_config::SysConfig;
 pub use self::user_management::UserManagement;
+pub use self::version_management::VersionManager;
 
 use cita_types::Address;
 use libexecutor::call_request::CallRequest;

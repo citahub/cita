@@ -50,6 +50,10 @@ NormalContracts:
 - PriceManager:
     address: '0xffffffffffffffffffffffffffffffffff020010'
     file: system/price_manager.sol
+- VersionManager:
+    address: '0xffffffffffffffffffffffffffffffffff020011'
+    file: system/version_manager.sol
+
 PermissionContracts:
   file: permission_management/permission.sol
   basic:

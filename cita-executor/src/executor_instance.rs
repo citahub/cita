@@ -449,6 +449,7 @@ impl ExecutorInstance {
                     token_name: "".to_owned(),
                     token_symbol: "".to_owned(),
                     token_avatar: "".to_owned(),
+                    version: 1,
                 };
                 let result = serde_json::from_str::<BlockNumber>(&data)
                     .map_err(|err| format!("{:?}", err))
@@ -508,6 +509,7 @@ impl ExecutorInstance {
                                 metadata.token_symbol = token_info.symbol;
                             })
                             .ok_or_else(|| "Query token info failed".to_owned())?;
+                        metadata.version = self.ext.chain_version.load(Ordering::Relaxed) as u32;
                         Ok(())
                     });
                 match result {

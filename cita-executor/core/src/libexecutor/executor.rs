@@ -22,7 +22,7 @@ use contracts::{
     native::factory::Factory as NativeFactory,
     solc::{
         AccountGasLimit, EmergencyBrake, NodeManager, PermissionManagement, QuotaManager, Resource,
-        SysConfig, UserManagement,
+        SysConfig, UserManagement, VersionManager,
     },
 };
 use db;
@@ -225,6 +225,7 @@ pub struct Executor {
     pub engine: Box<Engine>,
     emergency_brake: AtomicBool,
     need_reload: AtomicBool,
+    pub chain_version: AtomicUsize,
 }
 
 /// Get latest header
@@ -302,6 +303,7 @@ impl Executor {
             engine: Box::new(NullEngine::cita()),
             emergency_brake: AtomicBool::new(false),
             need_reload: AtomicBool::new(false),
+            chain_version: AtomicUsize::new(1),
         };
 
         // Build executor config
@@ -882,6 +884,11 @@ impl Executor {
         self.emergency_brake.store(
             EmergencyBrake::state(self).unwrap_or_else(EmergencyBrake::default_state),
             Ordering::SeqCst,
+        );
+        self.chain_version.store(
+            VersionManager::get_version(self).unwrap_or_else(VersionManager::default_version)
+                as usize,
+            Ordering::Relaxed,
         );
     }
 

@@ -44,6 +44,8 @@ Contracts:
     - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
 - Admin:
   - admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+- VersionManager:
+  - version: 1
 '''
 
 
