@@ -141,4 +141,5 @@ pub const SYS_CONTRACTS: &[&str] = &[
     ADMIN,
     EMERGENCY_BRAKE,
     PRICE_MANAGEMENT,
+    VERSION_MANAGEMENT,
 ];
