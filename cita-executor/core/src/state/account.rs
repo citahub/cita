@@ -562,14 +562,12 @@ impl Account {
 
     /// Increase account balance.
     pub fn add_balance(&mut self, x: &U256) {
-        self.balance = self.balance + *x;
+        self.balance = self.balance.saturating_add(*x);
     }
 
     /// Decrease account balance.
-    /// Panics if balance is less than `x`
     pub fn sub_balance(&mut self, x: &U256) {
-        assert!(self.balance >= *x);
-        self.balance = self.balance - *x;
+        self.balance = self.balance.saturating_sub(*x);
     }
 
     /// Commit the `storage_changes` to the backing DB and update `storage_root`.

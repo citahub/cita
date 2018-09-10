@@ -864,14 +864,9 @@ impl<B: Backend> State<B> {
                         error!("Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}", tx_fee_value, err);
                     }
 
-                    if check_options.fee_back_platform {
-                        if chain_owner == Address::from(0) {
-                            self.add_balance(&env_info.author, &tx_fee_value)
-                                .expect("Add balance to author(miner) must success");
-                        } else {
-                            self.add_balance(&chain_owner, &tx_fee_value)
-                                .expect("Add balance to chain owner must success");
-                        }
+                    if check_options.fee_back_platform && chain_owner != Address::from(0) {
+                        self.add_balance(&chain_owner, &tx_fee_value)
+                            .expect("Add balance to chain owner must success");
                     } else {
                         self.add_balance(&env_info.author, &tx_fee_value)
                             .expect("Add balance to author(miner) must success");
