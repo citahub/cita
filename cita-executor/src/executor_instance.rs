@@ -23,7 +23,7 @@ use core::libexecutor::call_request::CallRequest;
 use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use core::libexecutor::Genesis;
 use error::ErrorCode;
-use jsonrpc_types::rpctypes::{BlockNumber, BlockTag, CountOrCode, MetaData};
+use jsonrpc_types::rpctypes::{BlockNumber, BlockTag, CountOrCode, EconomicalModel, MetaData};
 use libproto::auth::Miscellaneous;
 use libproto::blockchain::{BlockWithProof, Proof, ProofType, RichStatus, StateSignal};
 use libproto::consensus::SignedProposal;
@@ -438,6 +438,8 @@ impl ExecutorInstance {
 
             Request::meta_data(data) => {
                 trace!("metadata request from jsonrpc {:?}", data);
+                let economical_model: EconomicalModel = (*self.ext.economical_model.read()).into();
+                let version = self.ext.chain_version.load(Ordering::Relaxed) as u32;
                 let mut metadata = MetaData {
                     chain_id: 0,
                     chain_name: "".to_owned(),
@@ -449,7 +451,8 @@ impl ExecutorInstance {
                     token_name: "".to_owned(),
                     token_symbol: "".to_owned(),
                     token_avatar: "".to_owned(),
-                    version: 1,
+                    version,
+                    economical_model,
                 };
                 let result = serde_json::from_str::<BlockNumber>(&data)
                     .map_err(|err| format!("{:?}", err))
@@ -509,7 +512,6 @@ impl ExecutorInstance {
                                 metadata.token_symbol = token_info.symbol;
                             })
                             .ok_or_else(|| "Query token info failed".to_owned())?;
-                        metadata.version = self.ext.chain_version.load(Ordering::Relaxed) as u32;
                         Ok(())
                     });
                 match result {

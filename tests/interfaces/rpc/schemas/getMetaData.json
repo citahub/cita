@@ -94,6 +94,12 @@
               },
               "tokenAvata": {
                 "type": "string"
+              },
+              "version": {
+                "type": "integer"
+              },
+              "economicalModel": {
+                "type": "integer"
               }
             }
           }

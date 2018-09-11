@@ -28,7 +28,9 @@
           "blockInterval": 3000,
           "tokenName": "tokenName",
           "tokenSymbol": "tokenSymbol",
-          "tokenAvatar": "tokenAvatar"
+          "tokenAvatar": "tokenAvatar",
+          "version": 1,
+          "economicalModel": 0
         }
       },
       "asserts": [

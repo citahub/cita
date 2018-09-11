@@ -1042,6 +1042,7 @@ params: [
     * `tokenSymbol`, `String` - Token symbol
     * `tokenAvatar`, `String` - Token avatar url
     * `version`, `Integer` - chain's version
+    * `economicalModel`, `EconomicalModel` - The economical model
 * Example
 
     ```shell
@@ -1068,7 +1069,8 @@ params: [
             "token_name": "tokenName",
             "token_symbol": "tokenSymbol",
             "token_avatar": "tokenAvatar",
-            "version": 1
+            "version": 1,
+            "economicalModel": 0
         }
     }
     ```

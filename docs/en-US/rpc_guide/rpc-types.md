@@ -112,14 +112,17 @@
 
 ### `Tag`
 
-标签类型，由特定字符串组成的枚举类型。
-
-目前只有一个 `BlockTag` 类型。
+标签类型，由特定字符串或数字组成的枚举类型。
 
 * `BlockTag`
 
     * `String` `"earliest"` - for the earliest/genesis block.
     * `String` `"latest"` - for the latest mined block.
+
+* `EconomicalModel`
+
+    * `Integer` `0` - the quota economical model.
+    * `Integer` `1` - the charge economical model.
 
 ## 复合类型
 

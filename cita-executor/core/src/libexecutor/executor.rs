@@ -48,11 +48,12 @@ use libproto::{ConsensusConfig, ExecutedResult, Message};
 use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
+use jsonrpc_types::rpctypes::EconomicalModel as RpcEconomicalModel;
 use state::State;
 use state_db::StateDB;
 use std::collections::btree_map::{Keys, Values};
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
-use std::convert::{Into, TryInto};
+use std::convert::{From, Into, TryInto};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -133,18 +134,36 @@ pub enum Stage {
 }
 
 enum_from_primitive! {
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub enum EconomicalModel {
-    /// Default model. Sending Transaction is free, should work with authority together.
-    Quota,
-    /// Transaction charges for gas * gasPrice. BlockProposer get the block reward.
-    Charge,
-}
+    #[derive(Debug, Clone, PartialEq, Copy)]
+    pub enum EconomicalModel {
+        /// Default model. Sending Transaction is free, should work with authority together.
+        Quota,
+        /// Transaction charges for gas * gasPrice. BlockProposer get the block reward.
+        Charge,
+    }
 }
 
 impl Default for EconomicalModel {
     fn default() -> Self {
         EconomicalModel::Quota
+    }
+}
+
+impl From<EconomicalModel> for RpcEconomicalModel {
+    fn from(em: EconomicalModel) -> Self {
+        match em {
+            EconomicalModel::Quota => RpcEconomicalModel::Quota,
+            EconomicalModel::Charge => RpcEconomicalModel::Charge,
+        }
+    }
+}
+
+impl Into<EconomicalModel> for RpcEconomicalModel {
+    fn into(self) -> EconomicalModel {
+        match self {
+            RpcEconomicalModel::Quota => EconomicalModel::Quota,
+            RpcEconomicalModel::Charge => EconomicalModel::Charge,
+        }
     }
 }
 
