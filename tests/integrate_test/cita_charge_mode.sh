@@ -26,7 +26,9 @@ echo -n "2) generate config  ...  "
     create \
     --chain_name "node" \
     --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
-    --contract_arguments "SysConfig.economicalModel=1" > /dev/null 2>&1
+    --contract_arguments "SysConfig.checkFeeBackPlatform=true" \
+    --contract_arguments "SysConfig.economicalModel=1" \
+    --contract_arguments "SysConfig.chainOwner=0x36a60d575b0dee0423abb6a57dbc6ca60bf47545" > /dev/null 2>&1
 echo "DONE"
 
 ################################################################################
@@ -40,7 +42,14 @@ done
 echo "DONE"
 
 ################################################################################
-echo -n "4) Run charge mode tests ...  "
+echo -n "4) Run fee back tests ... "
+cd ./scripts/txtool/txtool
+python3 ${SOURCE_DIR}/tests/integrate_test/test_fee_back.py
+cd ../../..
+echo "DONE"
+
+################################################################################
+echo -n "5) Run charge mode tests ...  "
 echo ""
 
 NODE_0_PRIVKEY=`cat ./node/0/privkey`
@@ -58,13 +67,13 @@ cd ../../..
 echo "DONE"
 
 ################################################################################
-echo -n "5) stop nodes  ...  "
+echo -n "6) stop nodes  ...  "
 for i in {0..3} ; do
     ./bin/cita stop node/$i  > /dev/null
 done
 echo "DONE"
 
 ################################################################################
-echo -n "6) cleanup ... "
+echo -n "7) cleanup ... "
 cleanup
 echo "DONE"
