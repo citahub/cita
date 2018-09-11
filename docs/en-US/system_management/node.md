@@ -15,7 +15,7 @@ The management of ordinary nodes includes adding and deleting. Let's illustrate 
 
 #### Add ordinary nodes
 
-1. Assume that the current working directory is under  `../cita/target/install/` ：
+1. Assume that the current working directory is under  `../cita/target/install/` :
 
     ```bash
     $ pwd
@@ -25,7 +25,7 @@ The management of ordinary nodes includes adding and deleting. Let's illustrate 
     ```
      The current nodes' public key address are saved in file `template/authorities.list` and the block information of genesis is saved in file `template/configs/genesis.json`. We have four nodes currently.
 
-2. Generate new nodes：
+2. Generate new nodes:
 
     ```bash
     $ ./scripts/create_cita_config.py append --node "127.0.0.1:4004"
@@ -33,10 +33,10 @@ The management of ordinary nodes includes adding and deleting. Let's illustrate 
       0  1  2  3  4  template
     ```
 
-    - append：add new node with specified IP
+    - append: add new node with specified IP
     - The script will generate a new node（No.4）automatically and insert the new node's ip and port configuration into `test-chain/*/network.toml`
 
-3. Start new nodes：
+3. Start new nodes:
 
     Just start the new node in normal process. It can connect to the network and start to synchronize the block data on the chain automatically. **Note that the new node here is only an ordinary node and does not participate in the consensus process, which means it can only synchronize data and receive Jsonrpc Request**。
 
@@ -112,11 +112,11 @@ The management of consensus nodes includes adding, deleting, and getting consens
 
 ### Add consensus nodes
 
-Only after a node is added as ordianry nodes, it can make the request to become a consensus node. Then, it is necessary to approve the request by administrator. After all of these operations, a consensus node can be added sucessfully. If a ordinary node want to be updated to a consensus node, detailed steps are as follows：
+Only after a node is added as ordianry nodes, it can make the request to become a consensus node. Then, it is necessary to approve the request by administrator. After all of these operations, a consensus node can be added sucessfully. If a ordinary node want to be updated to a consensus node, detailed steps are as follows:
 
 Let's illustrate how a ordinary node become a consensus node with an example. We will use `approveNode(address)` in the process.
 
-Consensus nodes management contract is system contract and written into genesis by default. Below are function signatures of management contract：
+Consensus nodes management contract is system contract and written into genesis by default. Below are function signatures of management contract:
 
 ```
 contract address: 0xffffffffffffffffffffffffffffffffff020001
@@ -128,169 +128,238 @@ Function signatures:
     645b8b1b: status(address)
 ```
 
-#### First, get the consensus nodes list：
+*First, it needs to start a chain with four nodes. check the [getting_started](../chain/getting_started)*
+
+we will use [cita-cli](https://github.com/cryptape/cita-cli) command mode to show the presentation.
+
+#### Get the consensus nodes list:
 
 ```bash
-$ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
-
-{"jsonrpc":"2.0","id":2,"result":"0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000005000000000000000000000000cb9480d61bf0964687c6839670f1c3e65c1ca193000000000000000000000000dd21b5f342b017a6546a3e5455be1a6e4d6e83a10000000000000000000000000bb7249753e5dcec37c4ad3b917f10c68d64bffa00000000000000000000000011f0bba536cde870fb7c733f93d9b12ecedd13a1"}
-
+$ cita-cli scm NodeManager listNode --url http://127.0.0.1:1337
 ```
 
-- to: consensus nodes management contract address
-- data: function signature of listNode()
+output：
+
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004000000000000000000000000d0f05f536ffc6a5d27b17cd14a544418b0500e92000000000000000000000000cccda2959225fc79f61f99bed213bd1172a7ea830000000000000000000000000014e2a75b4b5399f09732ecb6ed1a5b389c9e700000000000000000000000003e91911ba91b10dfa41f0a34d4a3c5a4f838eace"
+}
+```
 
 The return value is the list of current consensus nodes address.
 
-Now we need to upgrade the new ordinary node to a consensus node by constructing transactions. In the demo, the public key address of the new node is `59a316df602568957f47973332f1f85ae1e2e75e`.
+Now we need to upgrade the new ordinary node to a consensus node by constructing transactions. In the demo, the public key address of the new node is `0x59a316df602568957f47973332f1f85ae1e2e75e`.
 
-#### Construct and send transactions
+#### Approve the node
 
-The standard of calling contract follows [ABI](https://solidity.readthedocs.io/en/develop/abi-spec.html), we privide a transaction tool `make_tx.py`：
 
-1. Construct approveNode transaction inforamtion
-
-    ```bash
-    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
-    ```
-
-    - privkey: private key，used to verify the transaction information. The system's default private keys can be viewed in[systerm contract](./chain/config_tool)
-    - The first 8 bits are the function hash value and the next 64 bits are node address (less than 64 bits are filled with 0).
-
-2. Send transaction
-
-    ```bash
-    $ python3 send_tx.py
-    --> {"params": ["0a5b0a283030303030303030303030303030303030303030303030303030303030303030303133323431613212013118fface20420ef012a24dd4c97a000000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e124177a025eaafcda1f28f4b2eedd1c8ecb0d339b141e452a3bd8736cd9abc45e7387af7ab41045df5646aa411e7cac1b3a8b78e7efc81b356877afcf4a2080c06d500"], "jsonrpc": "2.0", "method": "sendRawTransaction", "id": 1}
-    <-- {"jsonrpc":"2.0","id":1,"result":{"hash":"0xd6b38b125efcacb8d59379eef9394e3d9d4f7bb4151e53f0c2c50682f9f037b4","status":"OK"}} (200 OK)
-    ```
-
-3. Get receipt
-
-    ```bash
-    $ python3 get_receipt.py
-    {
-      "contractAddress": null,
-      "cumulativeGasUsed": "0xcf15",
-      "logs": [
-        {
-          "blockHash": "0x17b24208a3f9af4d8ef65aa385116fc35e789477026bdc7a0fbef162047bdf98",
-          "transactionHash": "0xd6b38b125efcacb8d59379eef9394e3d9d4f7bb4151e53f0c2c50682f9f037b4",
-          "transactionIndex": "0x0",
-          "topics": [
-            "0x5d55f24dd047ef52a5f36ddefc8c424e4b26c8415d8758be1bbb88b5c65e04eb",
-            "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
-          ],
-          "blockNumber": "0x9b",
-          "address": "0xffffffffffffffffffffffffffffffffff020001",
-          "transactionLogIndex": "0x0",
-          "logIndex": "0x0",
-          "data": "0x"
-        }
-      ],
-      "blockHash": "0x17b24208a3f9af4d8ef65aa385116fc35e789477026bdc7a0fbef162047bdf98",
-      "transactionHash": "0xd6b38b125efcacb8d59379eef9394e3d9d4f7bb4151e53f0c2c50682f9f037b4",
-      "root": null,
-      "errorMessage": null,
-      "blockNumber": "0x9b",
-      "logsBloom": "0x00000000000000020040000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000010000000000000000040000000000000000000000000000000000000000000010000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000",
-      "transactionIndex": "0x0",
-      "gasUsed": "0xcf15"
-    }
-    ```
-
-4. View the current number of consensus nodes
-
-    ```bash
-    $ curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
-
-    {"jsonrpc":"2.0","id":2,"result":"0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000005000000000000000000000000cb9480d61bf0964687c6839670f1c3e65c1ca193000000000000000000000000dd21b5f342b017a6546a3e5455be1a6e4d6e83a10000000000000000000000000bb7249753e5dcec37c4ad3b917f10c68d64bffa00000000000000000000000011f0bba536cde870fb7c733f93d9b12ecedd13a100000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"}
-    ```
-    It can be seen that an address is added at the end of the returned result, which means, the newly added node has become a consensus node sucessfully.
-
-### 删除共识节点
-
-按照以上方法，普通节点可以被添加为共识节点，那么共识节点怎么删除呢？下面是删除共识节点的示例：
-
-删除共识节点需要由管理员来完成， 具体操作需要调用 deleteNode(address) 合约方法。
-
-#### 首先，获取当前链上的共识节点列表：
+* Send transaction
 
 ```bash
-curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
-{"jsonrpc":"2.0","id":2,"result":"0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000009fab2c5c372c3013484709979b318c5c9817bb0000000000000000000000000cd5c86c841af6ebe19c6a0734630bb885152bc83000000000000000000000000e8efbbe34f4f439b73549bc162ecc0fbc06b789b000000000000000000000000fc92fbdafb5edcfe4773080ee2cec6123958f49a00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"}
+$ cita-cli scm NodeManager approveNode \
+    --address 0x59a316df602568957f47973332f1f85ae1e2e75e \
+    --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+    --url http://127.0.0.1:1337
 ```
 
-- to 为共识节点管理合约地址
-- data 为listNode（）的Function signature
+`admin-privkey`: private key，used to verify the transaction information. The system's default private keys can be viewed in[systerm contract](./chain/config_tool)
 
-返回值为目前的共识节点地址列表（可以看到新添加的共识节点地址 `59a316df602568957f47973332f1f85ae1e2e75e`）
+output:
 
-#### 构造交易格式删除共识节点
+```json
+{
+  "id": 3,
+  "jsonrpc": "2.0",
+  "result": {
+    "hash": "0x286402ed9e27a11dbbcf5fc3b8296c36f66cb39068a3c468c632ee370e81bdb2",
+    "status": "OK"
+  }
+}
+```
 
-调用合约遵循 [ABI](https://solidity.readthedocs.io/en/develop/abi-spec.html), 提供工具 `make_tx.py`：
+* Get receipt
 
-1. 构造 deleteNode 交易信息
+```bash
+$ cita-cli rpc getTransactionReceipt \
+    --hash 0x286402ed9e27a11dbbcf5fc3b8296c36f66cb39068a3c468c632ee370e81bdb2 \
+    --url http://127.0.0.1:1337
+```
 
-    ```bash
-    $ cd script/txtool/txtool
+output:
 
-    $ python3 make_tx.py --to "ffffffffffffffffffffffffffffffffff020001" --code "2d4ede9300000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e" --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
-    ```
+```
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "blockHash": "0xe7bb245d4ee718703746241c8cf3352063c7761b789b79a74a991d993f6d48e1",
+    "blockNumber": "0xba",
+    "contractAddress": null,
+    "cumulativeGasUsed": "0x11660",
+    "errorMessage": null,
+    "gasUsed": "0x11660",
+    "logs": [
+      {
+        "address": "0xffffffffffffffffffffffffffffffffff020001",
+        "blockHash": "0xe7bb245d4ee718703746241c8cf3352063c7761b789b79a74a991d993f6d48e1",
+        "blockNumber": "0xba",
+        "data": "0x",
+        "logIndex": "0x0",
+        "topics": [
+          "0x5d55f24dd047ef52a5f36ddefc8c424e4b26c8415d8758be1bbb88b5c65e04eb",
+          "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
+        ],
+        "transactionHash": "0x286402ed9e27a11dbbcf5fc3b8296c36f66cb39068a3c468c632ee370e81bdb2",
+        "transactionIndex": "0x0",
+        "transactionLogIndex": "0x0"
+      }
+    ],
+    "logsBloom": "0x00000000000000020040000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000010000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000020000000000800000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "root": null,
+    "transactionHash": "0x286402ed9e27a11dbbcf5fc3b8296c36f66cb39068a3c468c632ee370e81bdb2",
+    "transactionIndex": "0x0"
+  }
+}
+```
 
-    - privkey 是私钥，用来签证，确认交易信息合法，系统默认的几个私钥可以看 [系统合约相关](../chain/config_tool)
-    - code 前 8 位是函数 hash 值，即 deleteNode 对应的 hash，后面 64 位是函数的参数 address 的值，即节点地址，不足 64 位用 0 补齐。
+We can get some related information form the `log` field.
 
-    生成的交易信息存放在 `../output/transaction/deploycode` 中
+#### Check the current number of consensus nodes
 
-2. 发送交易
+```
+$ cita-cli scm NodeManager listNode --url http://127.0.0.1:1337
+```
 
-    ```bash
-    $ python3 send_tx.py 
-    --> {"jsonrpc": "2.0", "method": "sendRawTransaction", "params": ["0x0a83010a2866666666666666666666666666666666666666666666666666666666666666666666303230303031120656415a39553718c0843d20e7032a242d4ede9300000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e3220000000000000000000000000000000000000000000000000000000000000000038011241958dc34c4524e928193902732e9b9445eb585577b5b1d78267b75423951580f31964bcd8b979a25d6cfa1578f012a3f69df91fabd0ce83289fbe9f65cbffaf4a01"], "id": 1}
-    ```
+output:
 
-3. 获取回执
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000005000000000000000000000000d0f05f536ffc6a5d27b17cd14a544418b0500e92000000000000000000000000cccda2959225fc79f61f99bed213bd1172a7ea830000000000000000000000000014e2a75b4b5399f09732ecb6ed1a5b389c9e700000000000000000000000003e91911ba91b10dfa41f0a34d4a3c5a4f838eace00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
+}
+```
 
-    ```bash
-    $ python3 get_receipt.py 
-    {
-      "transactionHash": "0x80fb09bb710a1d742e19fb5195ea95faa4c192c9f1802055ecaf2d687b21cecd",
-      "transactionIndex": "0x0",
-      "blockHash": "0x8b962b7af8332819bcfa54285c9c8553004fe2757362474c1e5dba200094aed8",
-      "blockNumber": "0x195",
-      "cumulativeGasUsed": "0x4fc6",
-      "gasUsed": "0x4fc6",
-      "contractAddress": null,
-      "logs": [
-          {
-            "address": "0xffffffffffffffffffffffffffffffffff020001",
-            "topics": [
-            "0x74976f07ac4bfb6a02b2dbd3bc158d4984ee6027d938e870692126ca9e1931d5",
-            "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
-            ],
-            "data": "0x",
-            "blockHash": "0x8b962b7af8332819bcfa54285c9c8553004fe2757362474c1e5dba200094aed8",
-            "blockNumber": "0x195",
-            "transactionHash": "0x80fb09bb710a1d742e19fb5195ea95faa4c192c9f1802055ecaf2d687b21cecd",
-            "transactionIndex": "0x0",
-            "logIndex": "0x0",
-            "transactionLogIndex": "0x0"
-          }
-      ],
-      "root": null,
-      "logsBloom": "0x00000000000000020040000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000100000000000000000000000000000000000000000000000000000000000800000000000000002000000000000000000000000400000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-      "errorMessage": null
-    }
+It can be seen that an address is added at the end of the returned result, which means, the newly added node has become a consensus node sucessfully.
 
-    ```
-4. 查看当前的共识节点数
+### Delete the consensus node
 
-    ```bash
-    $  curl -X POST --data '{"jsonrpc":"2.0","method":"call", "params":[{"to":"0xffffffffffffffffffffffffffffffffff020001", "data":"0x609df32f"}, "latest"],"id":2}' 127.0.0.1:1337
-    {"jsonrpc":"2.0","id":2,"result":"0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000400000000000000000000000009fab2c5c372c3013484709979b318c5c9817bb0000000000000000000000000cd5c86c841af6ebe19c6a0734630bb885152bc83000000000000000000000000e8efbbe34f4f439b73549bc162ecc0fbc06b789b000000000000000000000000fc92fbdafb5edcfe4773080ee2cec6123958f49a"}
-    ```
-    返回值为目前的共识节点地址列表（可以看到新添加的共识节点地址 59a316df602568957f47973332f1f85ae1e2e75e 已经删除了）
+How to delete a consensus node? Here is an example.
 
-> The return value of the above code has been partially deleted, so the actual operation will be slightly different.
+It's operated by the admin address with calling the `deleteNode(address)` interface.
 
+#### Get the current consensus nodelist
+
+```bash
+$ cita-cli scm NodeManager listNode --url http://127.0.0.1:1337
+```
+
+output:
+
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000005000000000000000000000000d0f05f536ffc6a5d27b17cd14a544418b0500e92000000000000000000000000cccda2959225fc79f61f99bed213bd1172a7ea830000000000000000000000000014e2a75b4b5399f09732ecb6ed1a5b389c9e700000000000000000000000003e91911ba91b10dfa41f0a34d4a3c5a4f838eace00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
+}
+```
+
+(There are five consensus nodes because of previous action.)
+
+#### Delete the consensus node
+
+* send Transaction
+
+```bash
+$ cita-cli scm NodeManager deleteNode \
+    --address 0x59a316df602568957f47973332f1f85ae1e2e75e \
+    --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+    --url http://127.0.0.1:1337
+```
+
+`--admin-privkey` meading private key of admin.
+
+Check the [config_tool](./chain/config_tool)。
+
+output:
+
+```json
+{
+  "id": 3,
+  "jsonrpc": "2.0",
+  "result": {
+    "hash": "0x01a4eac643589780090d5ed9fa1ac56d139776dd79ebc74a6414594d4d607393",
+    "status": "OK"
+  }
+}
+```
+
+* get the receipt
+
+```bash
+$ cita-cli rpc getTransactionReceipt \
+    --hash 0x01a4eac643589780090d5ed9fa1ac56d139776dd79ebc74a6414594d4d607393 \
+    --url http://127.0.0.1:1337
+```
+
+output:
+
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "blockHash": "0xc57c25447a24f7bd2b0d5699dfa151ba42456309d9da70101cfb3f599ec77c8d",
+    "blockNumber": "0x1db",
+    "contractAddress": null,
+    "cumulativeGasUsed": "0x558c",
+    "errorMessage": null,
+    "gasUsed": "0x558c",
+    "logs": [
+      {
+        "address": "0xffffffffffffffffffffffffffffffffff020001",
+        "blockHash": "0xc57c25447a24f7bd2b0d5699dfa151ba42456309d9da70101cfb3f599ec77c8d",
+        "blockNumber": "0x1db",
+        "data": "0x",
+        "logIndex": "0x0",
+        "topics": [
+          "0x74976f07ac4bfb6a02b2dbd3bc158d4984ee6027d938e870692126ca9e1931d5",
+          "0x00000000000000000000000059a316df602568957f47973332f1f85ae1e2e75e"
+        ],
+        "transactionHash": "0x01a4eac643589780090d5ed9fa1ac56d139776dd79ebc74a6414594d4d607393",
+        "transactionIndex": "0x0",
+        "transactionLogIndex": "0x0"
+      }
+    ],
+    "logsBloom": "0x00000000000000020040000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000100000000000000000000000000000000000000000000000000000000000800000000000000002000000000000000000000000400000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "root": null,
+    "transactionHash": "0x01a4eac643589780090d5ed9fa1ac56d139776dd79ebc74a6414594d4d607393",
+    "transactionIndex": "0x0"
+  }
+}
+```
+
+We can get some related information form the `log` field.
+
+#### Check the current consensus nodes lists
+
+```bash
+$ cita-cli scm NodeManager listNode --url http://127.0.0.1:1337
+```
+
+output:
+
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004000000000000000000000000d0f05f536ffc6a5d27b17cd14a544418b0500e92000000000000000000000000cccda2959225fc79f61f99bed213bd1172a7ea830000000000000000000000000014e2a75b4b5399f09732ecb6ed1a5b389c9e700000000000000000000000003e91911ba91b10dfa41f0a34d4a3c5a4f838eace"
+}
+```
+
+The return value is the list of consensus nodes.
+(We can know that the consensus node `0x59a316df602568957f47973332f1f85ae1e2e75e` is already deleted.)
+
+> There will be slightly different during the operation.

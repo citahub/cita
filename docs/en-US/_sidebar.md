@@ -18,7 +18,6 @@
     - [Json-RPC List](rpc_guide/rpc.md)
     - [Json-RPC Parameters and Returns](rpc_guide/rpc.md)
     - [Json-RPC Error Code](rpc_guide/rpc_error_code.md)
-- [Transaction Tools](txtool.md)
 - CITA Architecture
     - [Overall Architecture](architecture/architecture.md)
     - [Components](architecture/components.md)
