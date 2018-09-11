@@ -318,15 +318,19 @@ CITA通过智能合约的方式来对权限进行管理。
 ### 修改系统配置
 
 * 演示中 superAdmin 密钥对如下：
+
     - 公钥： `0x9dcd6b234e2772c5451fd4ccf7582f4283140697`
     - 私钥： `993ef0853d7bf1f4c2977457b50ea6b5f8bc2fd829e3ca3e19f6081ddabb07e9`
+
 * 通过以下命令生成各节点。
 
 	``` shell
 	$ ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
 	                                         --super_admin "0x9dcd6b234e2772c5451fd4ccf7582f4283140697" \
-	                                         --contract_arguments SysConfig.checkPermission=true
+	                                         --contract_arguments SysConfig.checkPermission=true SysConfig.checkSendTxPermission=true SysConfig.checkCreateContractPermission=true
 	```
+
+    其中 `checkPermission`, `checkSendTxPermission`, `checkCreateContractPermission` 分别为合约调用、发送交易及创建合约的开关。
 
 用户生成普通账户，由super_admin账户对其进行授权，实现权限管理。使用super_admin的私钥调用的接口由管理员执行，使用用户john的私钥由用户john执行。
 
