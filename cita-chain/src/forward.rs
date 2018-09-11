@@ -390,9 +390,6 @@ impl Forward {
             self.chain.save_current_block_poof(&proof);
             self.chain.set_block_body(blk_height as u64, &rblock);
             self.chain.set_max_store_height(blk_height as u64);
-            let tx_hashes = rblock.body().transaction_hashes();
-            self.chain
-                .delivery_block_tx_hashes(blk_height as u64, &tx_hashes, &self.ctx_pub);
         }
     }
 

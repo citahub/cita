@@ -666,6 +666,8 @@ impl Chain {
             Some(BlockInQueue::ConsensusBlock(block, _)) => {
                 if self.validate_height(block.number()) && self.validate_hash(block.parent_hash()) {
                     self.set_db_result(&ret, &block);
+                    let tx_hashes = block.body().transaction_hashes();
+                    self.delivery_block_tx_hashes(number, &tx_hashes, &ctx_pub);
                     self.broadcast_current_status(&ctx_pub);
                     debug!("executed set consensus block-{}", number);
                 }
