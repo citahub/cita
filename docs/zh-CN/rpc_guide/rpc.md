@@ -1060,15 +1060,15 @@ params: [
             "website": "https://www.example.com",
             "genesisTimestamp": 1528076976075,
             "validators": [
-            "0x18e79b84cd3e5801e7f3dc66546b3b46af812cbd",
-            "0x5bb02723557a4633cebfa3f83b1ecb657002f444",
-            "0xafbf170735a3535f141cd929f67296de50842638",
-            "0xdd321f6586f2c5ceb4ae3ce28d0bd92fb631d3ae"
+                "0x18e79b84cd3e5801e7f3dc66546b3b46af812cbd",
+                "0x5bb02723557a4633cebfa3f83b1ecb657002f444",
+                "0xafbf170735a3535f141cd929f67296de50842638",
+                "0xdd321f6586f2c5ceb4ae3ce28d0bd92fb631d3ae"
             ],
             "blockInterval": 3000,
-            "token_name": "tokenName",
-            "token_symbol": "tokenSymbol",
-            "token_avatar": "tokenAvatar",
+            "tokenName": "tokenName",
+            "tokenSymbol": "tokenSymbol",
+            "tokenAvatar": "tokenAvatar",
             "version": 1,
             "economicalModel": 0
         }
