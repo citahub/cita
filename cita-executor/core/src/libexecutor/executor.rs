@@ -750,17 +750,11 @@ impl Executor {
     /// 1. Header
     /// 2. CurrentHash
     /// 3. State
-    /// 4. ConfigHistory
     pub fn write_batch(&self, block: ClosedBlock) {
         let mut batch = self.db.read().transaction();
         let height = block.number();
         let hash = block.hash();
         trace!("commit block in db {:?}, {:?}", hash, height);
-
-        self.reorg_config(&block);
-        let confs = self.sys_configs.read().clone();
-        let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
-        batch.write(db::COL_EXTRA, &ConfigHistory, &res);
 
         batch.write(db::COL_HEADERS, &hash, block.header());
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
@@ -783,6 +777,17 @@ impl Executor {
         debug!("db write use {:?}", new_now.duration_since(now));
     }
 
+    pub fn write_config_history(&self) {
+        let mut batch = self.db.read().transaction();
+        let confs = self.sys_configs.read().clone();
+        let changed_heights: Vec<usize> = confs.iter().map(|i| i.changed_height).collect();
+        info!("confs changes at {:?}", changed_heights);
+        let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
+        batch.write(db::COL_EXTRA, &ConfigHistory, &res);
+        self.db.read().write_buffered(batch);
+        self.db.read().flush().expect("DB write failed.");
+    }
+
     /// Finalize block
     /// 1. Delivery rich status
     /// 2. Update cache
@@ -794,6 +799,9 @@ impl Executor {
         }
         self.update_last_hashes(&self.get_current_hash());
         self.write_batch(closed_block.clone());
+
+        self.reorg_config(&closed_block);
+
         self.set_executed_result(&closed_block);
         self.send_executed_info_to_chain(closed_block.number(), ctx_pub);
         self.pub_black_list(&closed_block, ctx_pub);
@@ -819,12 +827,14 @@ impl Executor {
     /// 3. Account permissions
     pub fn reorg_config(&self, close_block: &ClosedBlock) {
         let cache = close_block.state.cache();
-        let has_dirty = cache
-            .iter()
-            .any(|(address, ref _a)| SYS_CONTRACTS.contains(&address.lower_hex().as_ref()));
+        let permissions = PermissionManagement::permission_addresses(self);
+        let has_dirty = cache.iter().any(|(address, ref _a)| {
+            SYS_CONTRACTS.contains(&address.lower_hex().as_ref()) || permissions.contains(&address)
+        });
 
         if has_dirty {
             self.reload_config();
+            self.write_config_history();
         }
     }
 
@@ -884,11 +894,26 @@ impl Executor {
         conf.changed_height = self.get_current_height() as usize;
 
         {
+            let last_conf: Option<GlobalSysConfig>;
+            {
+                let config_history = self.sys_configs.read();
+                last_conf = config_history.get(0).cloned();
+            }
             let mut confs = self.sys_configs.write();
-            confs.push_front(conf);
-            // Prune history config
-            // TODO: shoud be delay_active_interval + 1? 10 should be enough.
-            confs.truncate(10);
+
+            if let Some(last_conf) = last_conf {
+                let mut last_conf = last_conf.clone();
+                last_conf.changed_height = conf.changed_height;
+
+                if last_conf != conf {
+                    confs.push_front(conf);
+                    // Prune history config
+                    // TODO: shoud be delay_active_interval + 1? 10 should be enough.
+                    confs.truncate(10);
+                }
+            } else {
+                confs.push_front(conf);
+            }
         }
         self.emergency_brake.store(
             EmergencyBrake::state(self).unwrap_or_else(EmergencyBrake::default_state),
