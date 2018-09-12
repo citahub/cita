@@ -120,6 +120,17 @@ impl PermissionManagement {
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
+    pub fn permission_addresses(executor: &Executor) -> Vec<Address> {
+        let mut res: Vec<Address> = Vec::new();
+        let accounts = Self::all_accounts(executor).unwrap_or_else(Self::default_all_accounts);
+        for account in accounts {
+            let permissions = Self::permissions(executor, &(H256::from(account)))
+                .unwrap_or_else(Self::default_permissions);
+            res.extend(permissions);
+        }
+        res
+    }
+
     pub fn default_permissions() -> Vec<Address> {
         error!("Use default permissions.");
         Vec::new()
