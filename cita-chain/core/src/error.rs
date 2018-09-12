@@ -275,7 +275,7 @@ impl fmt::Display for ExecutionError {
         use self::ExecutionError::*;
 
         let msg = match *self {
-            NotEnoughBaseGas { ref required, ref got } => format!("Not enough base gas. {} is required, but only {} paid", required, got),
+            NotEnoughBaseGas { ref required, ref got } => format!("Not enough base quota. {} is required, but only {} paid", required, got),
             BlockGasLimitReached {
                 ref gas_limit,
                 ref gas_used,

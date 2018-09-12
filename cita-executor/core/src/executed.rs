@@ -136,13 +136,13 @@ impl fmt::Display for ExecutionError {
         use self::ExecutionError::*;
 
         let msg = match *self {
-            NotEnoughBaseGas { ref required, ref got } => format!("Not enough base gas. {} is required, but only {} paid", required, got),
+            NotEnoughBaseGas { ref required, ref got } => format!("Not enough base quota. {} is required, but only {} paid", required, got),
             BlockGasLimitReached {
                 ref gas_limit,
                 ref gas_used,
                 ref gas,
-            } => format!("Block gas limit reached. The limit is {}, {} has already been used, and {} more is required", gas_limit, gas_used, gas),
-            AccountGasLimitReached { ref gas_limit, ref gas } => format!("Account gas limit reached. The limit is {}, {} more is required", gas_limit, gas),
+            } => format!("Block quota limit reached. The limit is {}, {} has already been used, and {} more is required", gas_limit, gas_used, gas),
+            AccountGasLimitReached { ref gas_limit, ref gas } => format!("Account quota limit reached. The limit is {}, {} more is required", gas_limit, gas),
             InvalidNonce { ref expected, ref got } => format!("Invalid transaction nonce: expected {}, found {}", expected, got),
             NotEnoughCash { ref required, ref got } => format!("Cost of transaction exceeds sender balance. {} is required but the sender only has {}", required, got),
             ExecutionInternal(ref msg) => msg.clone(),
@@ -200,9 +200,9 @@ pub type ExecutionResult = Result<Executed, ExecutionError>;
 impl From<ExecutionError> for ReceiptError {
     fn from(error: ExecutionError) -> Self {
         match error {
-            ExecutionError::NotEnoughBaseGas { .. } => ReceiptError::NotEnoughBaseGas,
-            ExecutionError::BlockGasLimitReached { .. } => ReceiptError::BlockGasLimitReached,
-            ExecutionError::AccountGasLimitReached { .. } => ReceiptError::AccountGasLimitReached,
+            ExecutionError::NotEnoughBaseGas { .. } => ReceiptError::NotEnoughBaseQuota,
+            ExecutionError::BlockGasLimitReached { .. } => ReceiptError::BlockQuotaLimitReached,
+            ExecutionError::AccountGasLimitReached { .. } => ReceiptError::AccountQuotaLimitReached,
             ExecutionError::InvalidNonce { .. } => ReceiptError::InvalidNonce,
             ExecutionError::NotEnoughCash { .. } => ReceiptError::NotEnoughCash,
             ExecutionError::NoTransactionPermission => ReceiptError::NoTransactionPermission,

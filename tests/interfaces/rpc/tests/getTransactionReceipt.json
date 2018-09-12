@@ -112,7 +112,7 @@
       ]
     },
     {
-      "title": "getTransactionReceipt with transaction hash and return errorMessage(Not enough base gas.)",
+      "title": "getTransactionReceipt with transaction hash and return errorMessage(Not enough base quota.)",
       "request": {
         "method": "getTransactionReceipt",
         "params": [
@@ -125,7 +125,7 @@
           "blockNumber": "0x7",
           "contractAddress": null,
           "cumulativeGasUsed": "0x0",
-          "errorMessage": "Not enough base gas.",
+          "errorMessage": "Not enough base quota.",
           "gasUsed": "0x0",
           "logs": [
           ],
@@ -163,7 +163,7 @@
       ]
     },
     {
-      "title": "getTransactionReceipt with transaction hash and return errorMessage(Out of gas.)",
+      "title": "getTransactionReceipt with transaction hash and return errorMessage(Out of quota.)",
       "request": {
         "method": "getTransactionReceipt",
         "params": [
@@ -176,7 +176,7 @@
           "blockNumber": "0x8",
           "contractAddress": null,
           "cumulativeGasUsed": "0x40000001",
-          "errorMessage": "Out of gas.",
+          "errorMessage": "Out of quota.",
           "gasUsed": "0x40000001",
           "logs": [
           ],

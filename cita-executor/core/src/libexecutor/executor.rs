@@ -996,7 +996,7 @@ impl Executor {
                     .receipts
                     .iter()
                     .filter(|ref receipt| match receipt.error {
-                        Some(ReceiptError::NotEnoughBaseGas) => true,
+                        Some(ReceiptError::NotEnoughBaseQuota) => true,
                         _ => false,
                     })
                     .map(|receipt| receipt.transaction_hash)
