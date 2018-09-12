@@ -217,6 +217,7 @@ pub struct CheckOptions {
     pub create_contract_permission: bool,
 }
 
+// TODO: Add cache for diminishing io.
 pub struct Executor {
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
@@ -243,7 +244,6 @@ pub struct Executor {
     black_list_cache: RwLock<LRUCache<u64, Address>>,
     pub engine: Box<Engine>,
     emergency_brake: AtomicBool,
-    need_reload: AtomicBool,
     pub chain_version: AtomicUsize,
 }
 
@@ -321,7 +321,6 @@ impl Executor {
             black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
             engine: Box::new(NullEngine::cita()),
             emergency_brake: AtomicBool::new(false),
-            need_reload: AtomicBool::new(false),
             chain_version: AtomicUsize::new(1),
         };
 
@@ -635,7 +634,7 @@ impl Executor {
         analytics: CallAnalytics,
     ) -> Result<Executed, CallError> {
         let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
-        let last_hashes = self.build_last_hashes(None, header.number());
+        let last_hashes = self.build_last_hashes(Some(header.hash()), header.number());
         let env_info = EnvInfo {
             number: header.number(),
             author: *header.proposer(),
@@ -677,7 +676,7 @@ impl Executor {
         let mut executed_map = self.executed_result.write();
 
         //send the next height's config to chain,and transfer to auth
-        let conf = self.get_sys_config(height + 1);
+        let conf = self.get_sys_config(height);
 
         let mut send_config = ConsensusConfig::new();
         let node_list = conf
@@ -688,6 +687,7 @@ impl Executor {
         send_config.set_block_gas_limit(conf.block_gas_limit as u64);
         send_config.set_account_gas_limit(conf.account_gas_limit.into());
         send_config.set_check_quota(conf.check_quota);
+
         trace!("node_list : {:?}", node_list);
         send_config.set_nodes(node_list);
         send_config.set_block_interval(conf.block_interval);
@@ -746,16 +746,18 @@ impl Executor {
             .unwrap();
     }
 
-    ///  write data to batch
-    ///1、header
-    ///2、currenthash
-    ///3、state
+    /// Write data to db
+    /// 1. Header
+    /// 2. CurrentHash
+    /// 3. State
+    /// 4. ConfigHistory
     pub fn write_batch(&self, block: ClosedBlock) {
         let mut batch = self.db.read().transaction();
         let height = block.number();
         let hash = block.hash();
         trace!("commit block in db {:?}, {:?}", hash, height);
 
+        self.reorg_config(&block);
         let confs = self.sys_configs.read().clone();
         let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
         batch.write(db::COL_EXTRA, &ConfigHistory, &res);
@@ -785,18 +787,16 @@ impl Executor {
     /// 1. Delivery rich status
     /// 2. Update cache
     /// 3. Commited data to db
-    /// Notice: Write db if and only if finalize block.
     pub fn finalize_block(&self, closed_block: &ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
-        self.reorg_config(&closed_block);
-        self.set_executed_result(&closed_block);
-        self.pub_black_list(&closed_block, ctx_pub);
-        self.send_executed_info_to_chain(closed_block.number(), ctx_pub);
-        self.write_batch(closed_block.clone());
         let header = closed_block.header().clone();
         {
             *self.current_header.write() = header;
         }
         self.update_last_hashes(&self.get_current_hash());
+        self.write_batch(closed_block.clone());
+        self.set_executed_result(&closed_block);
+        self.send_executed_info_to_chain(closed_block.number(), ctx_pub);
+        self.pub_black_list(&closed_block, ctx_pub);
     }
 
     pub fn finalize_proposal(
@@ -817,24 +817,14 @@ impl Executor {
     /// 1. Consensus nodes
     /// 2. BlockGasLimit and AccountGasLimit
     /// 3. Account permissions
-    /// 4. Prune history
     pub fn reorg_config(&self, close_block: &ClosedBlock) {
-        let config = { self.sys_configs.read().front().cloned().unwrap() };
-        if config.check_permission {
-            self.reload_config();
-        } else {
-            if self.need_reload.load(Ordering::Relaxed) {
-                self.reload_config();
-                self.need_reload.store(false, Ordering::Relaxed);
-            }
+        let cache = close_block.state.cache();
+        let has_dirty = cache
+            .iter()
+            .any(|(address, ref _a)| SYS_CONTRACTS.contains(&address.lower_hex().as_ref()));
 
-            let cache = close_block.state.cache();
-            let mut has_dirty = cache.iter().skip_while(|(address, ref _a)| {
-                !SYS_CONTRACTS.contains(&address.lower_hex().as_ref())
-            });
-            if has_dirty.next().is_some() {
-                self.need_reload.store(true, Ordering::Relaxed);
-            }
+        if has_dirty {
+            self.reload_config();
         }
     }
 
