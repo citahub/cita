@@ -509,13 +509,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let loop_num: usize = (len - 20) / (32 * 2);
         let account = H160::from(&data[0..20]);
 
-        self.state.checkpoint();
         for i in 0..loop_num {
             let base = 20 + 32 * 2 * i;
             let key = H256::from_slice(&data[base..base + 32]);
             let val = H256::from_slice(&data[base + 32..base + 32 * 2]);
             if self.state.set_storage(&account, key, val).is_err() {
-                self.state.discard_checkpoint();
                 return false;
             }
         }
@@ -849,11 +847,15 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 native_contract,
             )
         } else if self.is_amend_data_address(params.code_address) {
-            self.call_amend_data(params, substate, &output)
+            let res = self.call_amend_data(params, substate, &output);
+            self.enact_self_defined_res(&res);
+            res
         } else if is_create_grpc_address(params.code_address)
             || is_grpc_contract(params.code_address)
         {
-            self.call_grpc_contract(params, substate, &output)
+            let res = self.call_grpc_contract(params, substate, &output);
+            self.enact_self_defined_res(&res);
+            res
         } else if let Some(builtin) = self.engine.builtin(&params.code_address, self.info.number) {
             // check and call Builtin contract
             self.call_builtin_contract(params, output, tracer, builtin)
@@ -866,6 +868,27 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     fn is_amend_data_address(&self, address: Address) -> bool {
         let amend_address: Address = reserved_addresses::AMEND_ADDRESS.into();
         amend_address == address
+    }
+
+    fn enact_self_defined_res(&mut self, result: &evm::Result<FinalizationResult>) {
+        match *result {
+            Err(evm::Error::OutOfGas)
+            | Err(evm::Error::BadJumpDestination { .. })
+            | Err(evm::Error::BadInstruction { .. })
+            | Err(evm::Error::StackUnderflow { .. })
+            | Err(evm::Error::OutOfStack { .. })
+            | Err(evm::Error::MutableCallInStaticContext)
+            | Err(evm::Error::OutOfBounds)
+            | Err(evm::Error::Reverted)
+            | Ok(FinalizationResult {
+                apply_state: false, ..
+            }) => {
+                self.state.revert_to_checkpoint();
+            }
+            Ok(_) | Err(evm::Error::Internal(_)) => {
+                self.state.discard_checkpoint();
+            }
+        }
     }
 
     fn call_amend_data(
