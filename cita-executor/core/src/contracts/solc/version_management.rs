@@ -26,6 +26,7 @@ use libexecutor::executor::Executor;
 use cita_types::Address;
 use cita_types::H256;
 use ethabi::{decode, ParamType};
+use types::ids::BlockId;
 use types::reserved_addresses;
 
 lazy_static! {
@@ -37,9 +38,14 @@ lazy_static! {
 pub struct VersionManager;
 
 impl VersionManager {
-    pub fn get_version(executor: &Executor) -> Option<u32> {
+    pub fn get_version(executor: &Executor, block_id: Option<BlockId>) -> Option<u32> {
         executor
-            .call_method(&*CONTRACT_ADDRESS, &*VERSION_HASH.as_slice(), None, None)
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*VERSION_HASH.as_slice(),
+                None,
+                block_id,
+            )
             .and_then(|output| {
                 decode(&[ParamType::Uint(64)], &output)
                     .map_err(|_| "decode value error".to_string())
@@ -51,6 +57,6 @@ impl VersionManager {
 
     pub fn default_version() -> u32 {
         error!("Use default emergency break state.");
-        1
+        0
     }
 }

@@ -185,6 +185,8 @@ pub struct GlobalSysConfig {
     pub super_admin_account: Option<Address>,
     /// Interval time for creating a block (milliseconds)
     pub block_interval: u64,
+    pub emergency_brake: bool,
+    pub chain_version: u32,
 }
 
 impl GlobalSysConfig {
@@ -205,6 +207,8 @@ impl GlobalSysConfig {
             group_accounts: HashMap::new(),
             super_admin_account: None,
             block_interval: 3000,
+            emergency_brake: false,
+            chain_version: 0,
         }
     }
 }
@@ -243,8 +247,6 @@ pub struct Executor {
     pub economical_model: RwLock<EconomicalModel>,
     black_list_cache: RwLock<LRUCache<u64, Address>>,
     pub engine: Box<Engine>,
-    emergency_brake: AtomicBool,
-    pub chain_version: AtomicUsize,
 }
 
 /// Get latest header
@@ -320,8 +322,6 @@ impl Executor {
             economical_model: RwLock::new(EconomicalModel::Quota),
             black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
             engine: Box::new(NullEngine::cita()),
-            emergency_brake: AtomicBool::new(false),
-            chain_version: AtomicUsize::new(1),
         };
 
         // Build executor config
@@ -692,7 +692,7 @@ impl Executor {
         send_config.set_nodes(node_list);
         send_config.set_block_interval(conf.block_interval);
 
-        if self.emergency_brake.load(Ordering::SeqCst) {
+        if conf.emergency_brake {
             send_config.set_admin_address(conf.super_admin_account.unwrap().to_vec());
         }
 
@@ -892,6 +892,10 @@ impl Executor {
             .set_common_gas_limit(common_gas_limit);
         conf.account_gas_limit.set_specific_gas_limit(specific);
         conf.changed_height = self.get_current_height() as usize;
+        conf.emergency_brake =
+            EmergencyBrake::state(self).unwrap_or_else(EmergencyBrake::default_state);
+        conf.chain_version =
+            VersionManager::get_version(self, None).unwrap_or_else(VersionManager::default_version);
 
         {
             let last_conf: Option<GlobalSysConfig>;
@@ -915,15 +919,6 @@ impl Executor {
                 confs.push_front(conf);
             }
         }
-        self.emergency_brake.store(
-            EmergencyBrake::state(self).unwrap_or_else(EmergencyBrake::default_state),
-            Ordering::SeqCst,
-        );
-        self.chain_version.store(
-            VersionManager::get_version(self).unwrap_or_else(VersionManager::default_version)
-                as usize,
-            Ordering::Relaxed,
-        );
     }
 
     /// Execute Block
