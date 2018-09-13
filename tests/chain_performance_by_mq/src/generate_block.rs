@@ -67,7 +67,7 @@ impl Generateblock {
         tx.set_data(data);
         tx.set_nonce("0".to_string());
         tx.set_quota(quota);
-        //设置空，则创建合约
+        // create contract if `to_address` empty
         tx.set_to(address);
         tx.set_valid_until_block(99_999);
         tx.sign(pv)

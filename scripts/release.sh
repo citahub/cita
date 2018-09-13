@@ -34,6 +34,7 @@ for binary in \
         snapshot_tool \
         consensus-mock \
         chain-executor-mock \
+        box_executor \
         ; do
     cp -rf "target/${type}/${binary}" target/install/bin/
 done

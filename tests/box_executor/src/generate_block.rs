@@ -16,9 +16,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use bincode::{serialize, Infinite};
-use cita_types::{Address, H256, U256};
+use cita_types::H256;
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
-use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
+use libproto::{
+    Block, BlockWithProof, Message, Proposal, SignedProposal, SignedTransaction, Transaction,
+};
 use proof::BftProof;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
@@ -47,15 +49,6 @@ impl AsMillis for Duration {
 pub struct BuildBlock {}
 
 impl BuildBlock {
-    pub fn build_contract_address(sender: &Address, nonce: &U256) -> Address {
-        use rlp::RlpStream;
-
-        let mut stream = RlpStream::new_list(2);
-        stream.append(sender);
-        stream.append(nonce);
-        From::from(stream.out().crypt_hash())
-    }
-
     /// Generate a signed transaction
     ///
     /// ```no_run
@@ -80,7 +73,7 @@ impl BuildBlock {
         tx.set_data(data);
         tx.set_nonce(format!("{}", nonce));
         tx.set_quota(quota);
-        // create contract if `to_address` empty
+        // create contract if `to_address` is empty
         tx.set_to(to_address.to_string());
         tx.set_valid_until_block(valid_until_block);
         tx.set_value(vec![0u8; 32]);
@@ -131,5 +124,42 @@ impl BuildBlock {
 
         let msg: Message = proof_blk.clone().into();
         (msg.try_into().unwrap(), proof_blk)
+    }
+
+    pub fn build_signed_proposal(
+        txs: &[SignedTransaction],
+        prev_hash: H256,
+        height: u64,
+        privkey: &PrivKey,
+        timestamp: u64,
+    ) -> (Vec<u8>, SignedProposal) {
+        let (_, mut proofed_block) =
+            Self::build_block_with_proof(txs, prev_hash, height, privkey, timestamp);
+        let block = proofed_block.take_blk();
+        let proof: BftProof = BftProof::from(proofed_block.take_proof());
+        let mut proposal = Proposal::new();
+        proposal.set_block(block);
+        proposal.set_round(proof.round as u64);
+        proposal.set_height(height);
+
+        let sender = KeyPair::from_privkey(*privkey).unwrap().address();
+        let serialized = serialize(
+            &(
+                proof.height,
+                proof.round,
+                Step::Precommit,
+                sender,
+                Some(proof.proposal),
+            ),
+            Infinite,
+        ).unwrap();
+        let signature = Signature::sign(privkey, &serialized.crypt_hash()).unwrap();
+
+        let mut signed_proposal = SignedProposal::new();
+        signed_proposal.set_proposal(proposal);
+        signed_proposal.set_signature(signature.to_vec());
+        let msg: Message = signed_proposal.clone().into();
+
+        (msg.try_into().unwrap(), signed_proposal)
     }
 }
