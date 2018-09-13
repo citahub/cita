@@ -411,10 +411,10 @@ params: [
 
     * No transaction permission.
     * No contract permission.
-    * Not enough base gas.
-    * Block gas limit reached.
-    * Account gas limit reached.
-    * Out of gas.
+    * Not enough base quota.
+    * Block quota limit reached.
+    * Account quota limit reached.
+    * Out of quota.
     * Jump position wasn't marked with JUMPDEST instruction.
     * Instruction is not supported.
     * Not enough stack elements to execute instruction.

@@ -799,7 +799,7 @@ impl<B: Backend> State<B> {
             Ok(e) => {
                 // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
                 let receipt_error = e.exception.and_then(|evm_error| match evm_error {
-                    EvmError::OutOfGas => Some(ReceiptError::OutOfGas),
+                    EvmError::OutOfGas => Some(ReceiptError::OutOfQuota),
                     EvmError::BadJumpDestination { .. } => Some(ReceiptError::BadJumpDestination),
                     EvmError::BadInstruction { .. } => Some(ReceiptError::BadInstruction),
                     EvmError::StackUnderflow { .. } => Some(ReceiptError::StackUnderflow),
@@ -827,12 +827,14 @@ impl<B: Backend> State<B> {
             }
             Err(err) => {
                 let receipt_error = match err {
-                    ExecutionError::NotEnoughBaseGas { .. } => Some(ReceiptError::NotEnoughBaseGas),
+                    ExecutionError::NotEnoughBaseGas { .. } => {
+                        Some(ReceiptError::NotEnoughBaseQuota)
+                    }
                     ExecutionError::BlockGasLimitReached { .. } => {
-                        Some(ReceiptError::BlockGasLimitReached)
+                        Some(ReceiptError::BlockQuotaLimitReached)
                     }
                     ExecutionError::AccountGasLimitReached { .. } => {
-                        Some(ReceiptError::AccountGasLimitReached)
+                        Some(ReceiptError::AccountQuotaLimitReached)
                     }
                     ExecutionError::InvalidNonce { .. } => Some(ReceiptError::InvalidNonce),
                     ExecutionError::NotEnoughCash { .. } => Some(ReceiptError::NotEnoughCash),
