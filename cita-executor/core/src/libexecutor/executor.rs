@@ -68,6 +68,8 @@ use util::RwLock;
 use util::UtilError;
 use util::{journaldb, Bytes};
 
+const SYNC_STEP: usize = 30;
+
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
     pub prooftype: u8,
@@ -912,8 +914,9 @@ impl Executor {
                 if last_conf != conf {
                     confs.push_front(conf);
                     // Prune history config
-                    // TODO: shoud be delay_active_interval + 1? 10 should be enough.
-                    confs.truncate(10);
+                    // The length of the history configuration retention needs to be at least
+                    // more than the step size of the synchronous operation.
+                    confs.truncate(SYNC_STEP);
                 }
             } else {
                 confs.push_front(conf);
