@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=develop)](https://travis-ci.org/cryptape/cita)
 
+English | [简体中文](./README-CN.md) 
+
 ## What is CITA
 
 CITA is a fast and scalable blockchain for enterprises. CITA supports both native contract and EVM contract, by which enterprise users can build their own blockchain applications. CITA has a unique architecture which enables enterprise users to release all their computing resources.
