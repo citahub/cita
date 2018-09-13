@@ -34,26 +34,9 @@ contract Authorization is ReservedAddress {
 
     /// @notice Initialize the superAdmin's auth
     constructor(address _superAdmin) public {
-        _setAuth(_superAdmin, sendTxAddr);
-        _setAuth(_superAdmin, createContractAddr);
-        _setAuth(_superAdmin, newPermissionAddr);
-        _setAuth(_superAdmin, deletePermissionAddr);
-        _setAuth(_superAdmin, updatePermissionAddr);
-        _setAuth(_superAdmin, setAuthAddr);
-        _setAuth(_superAdmin, cancelAuthAddr);
-        _setAuth(_superAdmin, newRoleAddr);
-        _setAuth(_superAdmin, deleteRoleAddr);
-        _setAuth(_superAdmin, updateRoleAddr);
-        _setAuth(_superAdmin, setRoleAddr);
-        _setAuth(_superAdmin, cancelRoleAddr);
-        _setAuth(_superAdmin, newGroupAddr);
-        _setAuth(_superAdmin, deleteGroupAddr);
-        _setAuth(_superAdmin, updateGroupAddr);
-        _setAuth(_superAdmin, newNodeAddr);
-        _setAuth(_superAdmin, deleteNodeAddr);
-        _setAuth(_superAdmin, updateNodeAddr);
-        _setAuth(_superAdmin, accountQuotaAddr);
-        _setAuth(_superAdmin, blockQuotaAddr);
+        for (uint8 i;i < builtInPermissions.length; i++)
+            _setAuth(_superAdmin, builtInPermissions[i]);
+
         // rootGroup: basic permissions
         _setAuth(rootGroupAddr, sendTxAddr);
         _setAuth(rootGroupAddr, createContractAddr);

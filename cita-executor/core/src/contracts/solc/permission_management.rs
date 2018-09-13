@@ -209,6 +209,10 @@ mod tests {
     const SET_DEFAULTAQL: &[u8] = &*b"setDefaultAQL(uint256)";
     const SET_AQL: &[u8] = &*b"setAQL(address,uint256)";
     const SET_BQL: &[u8] = &*b"setBQL(uint256)";
+    const MULTI_TXS: &[u8] = &*b"multiTxs(bytes)";
+    const SET_STATE: &[u8] = &*b"setState(bool)";
+    const SET_QUOTA_PRICE: &[u8] = &*b"setQuotaPrice(bool)";
+    const SET_VERSION: &[u8] = &*b"setVersion(uint32)";
 
     #[test]
     fn test_contains_resource() {
@@ -311,6 +315,10 @@ mod tests {
             Address::from_str(reserved_addresses::PERMISSION_UPDATE_NODE).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_ACCOUNT_QUOTA).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_BLOCK_QUOTA).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_BATCH_TX).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_EMERGENCY_BRAKE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_QUOTA_PRICE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_VERSION).unwrap(),
         ];
         expected_permissions.sort();
 
@@ -470,34 +478,55 @@ mod tests {
                 cont: H160::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap(),
                 func: vec![0, 0, 0, 0],
             },
-            // new node
+            // approveNode
             Resource {
                 cont: H160::from_str(reserved_addresses::NODE_MANAGER).unwrap(),
                 func: method_tools::encode_to_vec(APPROVE_NODE),
             },
-            // delete node
+            // deleteNode
             Resource {
                 cont: H160::from_str(reserved_addresses::NODE_MANAGER).unwrap(),
                 func: method_tools::encode_to_vec(DELETE_NODE),
             },
-            // update node
+            // setStake
             Resource {
                 cont: H160::from_str(reserved_addresses::NODE_MANAGER).unwrap(),
                 func: method_tools::encode_to_vec(SET_STAKE),
             },
-            // accountQuota
+            // defaultAQL
             Resource {
                 cont: H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap(),
                 func: method_tools::encode_to_vec(SET_DEFAULTAQL),
             },
+            // AQL
             Resource {
                 cont: H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap(),
                 func: method_tools::encode_to_vec(SET_AQL),
             },
-            // blockQuota
+            // BQL
             Resource {
                 cont: H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap(),
                 func: method_tools::encode_to_vec(SET_BQL),
+            },
+            // batchTx
+            Resource {
+                cont: H160::from_str(reserved_addresses::BATCH_TX).unwrap(),
+                func: method_tools::encode_to_vec(MULTI_TXS),
+            },
+            // emergencyBrake
+            Resource {
+                cont: H160::from_str(reserved_addresses::EMERGENCY_BRAKE).unwrap(),
+                func: method_tools::encode_to_vec(SET_STATE),
+            },
+            // quotaPrice
+            Resource {
+                cont: H160::from_str(reserved_addresses::PRICE_MANAGEMENT).unwrap(),
+                func: method_tools::encode_to_vec(SET_QUOTA_PRICE),
+            },
+            // version
+            Resource {
+                cont: H160::from_str(reserved_addresses::VERSION_MANAGEMENT).unwrap(),
+                func: method_tools::encode_to_vec(SET_VERSION),
             },
         ];
         expected_resources.sort();
