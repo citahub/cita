@@ -17,6 +17,7 @@
 
 use cita_types::{Address, H256};
 use core::contracts::solc::sys_config::SysConfig;
+use core::contracts::solc::VersionManager;
 use core::db;
 use core::libexecutor::block::{Block, ClosedBlock};
 use core::libexecutor::call_request::CallRequest;
@@ -439,7 +440,6 @@ impl ExecutorInstance {
             Request::meta_data(data) => {
                 trace!("metadata request from jsonrpc {:?}", data);
                 let economical_model: EconomicalModel = (*self.ext.economical_model.read()).into();
-                let version = self.ext.chain_version.load(Ordering::Relaxed) as u32;
                 let mut metadata = MetaData {
                     chain_id: 0,
                     chain_name: "".to_owned(),
@@ -451,7 +451,7 @@ impl ExecutorInstance {
                     token_name: "".to_owned(),
                     token_symbol: "".to_owned(),
                     token_avatar: "".to_owned(),
-                    version,
+                    version: 0,
                     economical_model,
                 };
                 let result = serde_json::from_str::<BlockNumber>(&data)
@@ -512,6 +512,8 @@ impl ExecutorInstance {
                                 metadata.token_symbol = token_info.symbol;
                             })
                             .ok_or_else(|| "Query token info failed".to_owned())?;
+                        metadata.version = VersionManager::get_version(&*self.ext, Some(block_id))
+                            .unwrap_or_else(VersionManager::default_version);
                         Ok(())
                     });
                 match result {
