@@ -160,35 +160,59 @@ PermissionContracts:
       - 'addAccounts(address,address,address[])'
       - 'deleteAccounts(address,address,address[])'
       - 'updateGroupName(address,address,bytes32)'
-  - newNodeAddr:
-      address: '0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021020'
+  - newNode:
+      address: '0xffffffffffffffffffffffffffffffffff021020'
       contracts:
       - NodeManager
       functions:
       - 'approveNode(address)'
-  - deleteNodeAddr:
-      address: '0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021021'
+  - deleteNode:
+      address: '0xffffffffffffffffffffffffffffffffff021021'
       contracts:
       - NodeManager
       functions:
       - 'deleteNode(address)'
-  - updateNodeAddr:
-      address: '0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021022'
+  - updateNode:
+      address: '0xffffffffffffffffffffffffffffffffff021022'
       contracts:
       - NodeManager
       functions:
       - 'setStake(address,uint64)'
-  - accountQuotaAddr:
-      address: '0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021023'
+  - accountQuota:
+      address: '0xffffffffffffffffffffffffffffffffff021023'
       contracts:
       - QuotaManager
       - QuotaManager
       functions:
       - 'setDefaultAQL(uint256)'
       - 'setAQL(address,uint256)'
-  - blockQuotaAddr:
-      address: '0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021024'
+  - blockQuota:
+      address: '0xffffffffffffffffffffffffffffffffff021024'
       contracts:
       - QuotaManager
       functions:
       - 'setBQL(uint256)'
+  - batchTx:
+      address: '0xffffffffffffffffffffffffffffffffff021025'
+      contracts:
+      - BatchTx
+      functions:
+      - 'multiTxs(bytes)'
+  - emergencyBrake:
+      address: '0xffffffffffffffffffffffffffffffffff021026'
+      contracts:
+      - EmergencyBrake
+      functions:
+      - 'setState(bool)'
+  - quotaPrice:
+      address: '0xffffffffffffffffffffffffffffffffff021027'
+      contracts:
+      - PriceManager
+      functions:
+      - 'setQuotaPrice(bool)'
+  - version:
+      address: '0xffffffffffffffffffffffffffffffffff021028'
+      contracts:
+      - VersionManager
+      functions:
+      - 'setVersion(uint32)'
