@@ -60,7 +60,6 @@ use std::sync::Arc;
 use std::time::Instant;
 use types::ids::BlockId;
 use types::receipt::ReceiptError;
-use types::reserved_addresses::SYS_CONTRACTS;
 use types::transaction::{Action, SignedTransaction, Transaction};
 use util::kvdb::*;
 use util::trie::{TrieFactory, TrieSpec};
@@ -831,7 +830,8 @@ impl Executor {
         let cache = close_block.state.cache();
         let permissions = PermissionManagement::permission_addresses(self);
         let has_dirty = cache.iter().any(|(address, ref _a)| {
-            SYS_CONTRACTS.contains(&address.lower_hex().as_ref()) || permissions.contains(&address)
+            &address.lower_hex()[..34] == "ffffffffffffffffffffffffffffffffff"
+                || permissions.contains(&address)
         });
 
         if has_dirty {
