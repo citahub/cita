@@ -136,14 +136,3 @@ pub const PERMISSION_VERSION: &str = "ffffffffffffffffffffffffffffffffff021028";
 pub const NATIVE_SIMPLE_STORAGE: &str = "ffffffffffffffffffffffffffffffffff030000";
 pub const NATIVE_ZK_PRIVACY: &str = "ffffffffffffffffffffffffffffffffff030001";
 pub const NATIVE_CROSS_CHAIN_VERIFY: &str = "ffffffffffffffffffffffffffffffffff030002";
-
-pub const SYS_CONTRACTS: &[&str] = &[
-    SYS_CONFIG,
-    NODE_MANAGER,
-    CHAIN_MANAGER,
-    QUOTA_MANAGER,
-    ADMIN,
-    EMERGENCY_BRAKE,
-    PRICE_MANAGEMENT,
-    VERSION_MANAGEMENT,
-];
