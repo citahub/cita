@@ -25,8 +25,8 @@
 * [getFilterLogs](#getfilterlogs)
 * [getTransactionProof](#gettransactionproof)
 * [getMetaData](#getmetadata)
-* [getBlockHeader](#getBlockHeader)
-* [getStateProof](#getStateProof)
+* [getBlockHeader](#getblockheader)
+* [getStateProof](#getstateproof)
 
 ***
 

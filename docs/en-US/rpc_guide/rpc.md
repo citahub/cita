@@ -25,8 +25,8 @@ For the user of V0.16 and older versions: Please pay attention that we deprecate
 * [getFilterLogs](#getfilterlogs)
 * [getTransactionProof](#gettransactionproof)
 * [getMetaData](#getmetadata)
-* [getBlockHeader](#getBlockHeader)
-* [getStateProof](getStateProof)
+* [getBlockHeader](#getblockheader)
+* [getStateProof](#getstateproof)
 
 ***
 
