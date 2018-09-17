@@ -211,7 +211,7 @@ mod tests {
     const SET_BQL: &[u8] = &*b"setBQL(uint256)";
     const MULTI_TXS: &[u8] = &*b"multiTxs(bytes)";
     const SET_STATE: &[u8] = &*b"setState(bool)";
-    const SET_QUOTA_PRICE: &[u8] = &*b"setQuotaPrice(bool)";
+    const SET_QUOTA_PRICE: &[u8] = &*b"setQuotaPrice(uint256)";
     const SET_VERSION: &[u8] = &*b"setVersion(uint32)";
 
     #[test]
