@@ -209,7 +209,7 @@ PermissionContracts:
       contracts:
       - PriceManager
       functions:
-      - 'setQuotaPrice(bool)'
+      - 'setQuotaPrice(uint256)'
   - version:
       address: '0xffffffffffffffffffffffffffffffffff021028'
       contracts:
