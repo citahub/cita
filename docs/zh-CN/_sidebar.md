@@ -18,7 +18,6 @@
     - [Json-RPC列表](rpc_guide/rpc.md)
     - [Json-RPC参数和返回值类型](rpc_guide/rpc-types.md)
     - [Json-RPC错误码](rpc_guide/rpc_error_code.md)
-- [交易相关的工具指南](txtool.md)
 - 架构设计
     - [整体架构](architecture/architecture.md)
     - [系统组件](architecture/components.md)
