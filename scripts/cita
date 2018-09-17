@@ -347,12 +347,6 @@ case "${COMMAND}" in
 
         do_start $3 $4
         ;;
-    start_without_clearing_mq)
-        do_stop      # TODO: should not do so, but present tests need this
-        node_down_check
-
-        do_start $3 $4
-        ;;
 
     stop)
         node_up_check
