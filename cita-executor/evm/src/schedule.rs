@@ -100,10 +100,10 @@ pub struct Schedule {
 impl Schedule {
     /// Schedule for the v1 of the cita main net.
     pub fn new_v1() -> Schedule {
-        Self::new(21_000)
+        Self::new()
     }
 
-    fn new(tcg: usize) -> Schedule {
+    fn new() -> Schedule {
         Schedule {
             stack_limit: 1024,
             max_depth: 1024,
@@ -131,7 +131,7 @@ impl Schedule {
             create_data_gas: 200,
             create_data_limit: usize::max_value(),
             tx_gas: 21_000,
-            tx_create_gas: tcg,
+            tx_create_gas: 53_000,
             tx_data_zero_gas: 4,
             tx_data_non_zero_gas: 68,
             copy_gas: 3,

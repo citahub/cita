@@ -31,6 +31,7 @@ use engines::{Engine, NullEngine};
 use error::CallError;
 use evm::env_info::{EnvInfo, LastHashes};
 use evm::Factory as EvmFactory;
+use evm::Schedule;
 use executive::{Executed, Executive, TransactOptions};
 use factory::*;
 use header::*;
@@ -51,6 +52,7 @@ use cita_types::{Address, H256, U256};
 use jsonrpc_types::rpctypes::EconomicalModel as RpcEconomicalModel;
 use state::State;
 use state_db::StateDB;
+use std::cmp::min;
 use std::collections::btree_map::{Keys, Values};
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::convert::{From, Into, TryInto};
@@ -1026,17 +1028,19 @@ impl Executor {
                     .filter(|hash| hash != &H256::default())
                     .collect();
 
-                // Filter out accounts in the black list where the account balance has reached the benchmark value
+                let schedule = Schedule::new_v1();
+                // Filter out accounts in the black list where the account balance has reached the benchmark value.
+                // Get the smaller value between tx_create_gas and tx_gas for the benchmark value.
+                let bm_value = min(schedule.tx_gas, schedule.tx_create_gas);
                 let mut clear_list: Vec<Address> = self
                     .black_list_cache
                     .read()
                     .values()
                     .filter(|address| {
-                        // 100 is a basic quota/gas
                         close_block
                             .state
                             .balance(address)
-                            .and_then(|x| Ok(x >= U256::from(100)))
+                            .and_then(|x| Ok(x >= U256::from(bm_value)))
                             .unwrap_or(false)
                     })
                     .cloned()

@@ -25,6 +25,7 @@ use engines::Engine;
 use error::{Error, ExecutionError};
 use evm::env_info::EnvInfo;
 use evm::Error as EvmError;
+use evm::Schedule;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
 use libexecutor::executor::{CheckOptions, EconomicalModel};
@@ -852,12 +853,13 @@ impl<B: Backend> State<B> {
                         Some(ReceiptError::TransactionMalformed)
                     }
                 };
+                let schedule = Schedule::new_v1();
                 let sender = *t.sender();
                 let tx_gas_used = match err {
                     ExecutionError::ExecutionInternal { .. } => t.gas,
                     _ => cmp::min(
                         self.balance(&sender).unwrap_or_else(|_| U256::from(0)),
-                        U256::from(100),
+                        U256::from(schedule.tx_gas),
                     ),
                 };
                 if economical_model == EconomicalModel::Charge {

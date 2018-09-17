@@ -81,9 +81,6 @@ const AMEND_GET_KV_H256: u32 = 4;
 ///amend account's balance
 const AMEND_ACCOUNT_BALANCE: u32 = 5;
 
-// minimum required gas, just for check
-const MIN_GAS_REQUIRED: u32 = 100;
-
 /// Returns new address created from address and given nonce.
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
     use rlp::RlpStream;
@@ -551,9 +548,17 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             options,
         )?;
 
-        if sender != Address::zero() && t.gas < U256::from(MIN_GAS_REQUIRED) {
+        let schedule = Schedule::new_v1();
+
+        let base_gas_required = match t.action {
+            Action::Create => schedule.tx_create_gas,
+            Action::GoCreate => schedule.tx_create_gas,
+            _ => schedule.tx_gas,
+        };
+
+        if sender != Address::zero() && t.gas < U256::from(base_gas_required) {
             return Err(ExecutionError::NotEnoughBaseGas {
-                required: U256::from(MIN_GAS_REQUIRED),
+                required: U256::from(base_gas_required),
                 got: t.gas,
             });
         }
@@ -603,7 +608,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let mut substate = Substate::new();
 
-        let init_gas = t.gas - U256::from(MIN_GAS_REQUIRED);
+        let init_gas = t.gas - U256::from(base_gas_required);
         let (result, output) = match t.action {
             Action::Store | Action::AbiStore => {
                 let schedule = Schedule::new_v1();
@@ -619,7 +624,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     )
                 } else {
                     return Err(ExecutionError::NotEnoughBaseGas {
-                        required: U256::from(MIN_GAS_REQUIRED).saturating_add(store_gas_used),
+                        required: U256::from(base_gas_required).saturating_add(store_gas_used),
                         got: t.gas,
                     });
                 }
@@ -1447,6 +1452,7 @@ mod tests {
     use engines::NullEngine;
     use evm::action_params::{ActionParams, ActionValue};
     use evm::env_info::EnvInfo;
+    use evm::Schedule;
     use evm::{Factory, VMType};
     use state::Substate;
     use std::ops::Deref;
@@ -1507,8 +1513,9 @@ mod tests {
             ex.transact(&t, &opts)
         };
 
+        let schedule = Schedule::new_v1();
         let expected = {
-            let base_gas_required = U256::from(100);
+            let base_gas_required = U256::from(schedule.tx_gas);
             let schedule = Schedule::new_v1();
             let store_gas_used = U256::from(data_len * schedule.create_data_gas);
             let required = base_gas_required.saturating_add(store_gas_used);
@@ -1570,14 +1577,17 @@ mod tests {
             ex.transact(&t, &opts).unwrap()
         };
 
+        let schedule = Schedule::new_v1();
         assert_eq!(executed.gas, U256::from(100_000));
-        assert_eq!(executed.gas_used, U256::from(100));
+
+        // Actually, this is an Action::Create transaction
+        assert_eq!(executed.gas_used, U256::from(schedule.tx_create_gas));
         assert_eq!(executed.refunded, U256::from(0));
         assert_eq!(executed.logs.len(), 0);
         assert_eq!(executed.contracts_created.len(), 0);
         assert_eq!(
             state.balance(&sender).unwrap(),
-            U256::from(18 + 100_000 - 17 - 100)
+            U256::from(18 + 100_000 - 17 - schedule.tx_create_gas)
         );
         assert_eq!(state.balance(&contract).unwrap(), U256::from(17));
         assert_eq!(state.nonce(&sender).unwrap(), U256::from(1));
@@ -1703,9 +1713,10 @@ contract HelloWorld {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
         let nonce = U256::zero();
-        let gas_required = U256::from(1000);
+        let gas_required = U256::from(schedule.tx_gas + 1000);
 
         let (deploy_code, _runtime_code) = solc("HelloWorld", source);
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
@@ -1758,9 +1769,10 @@ contract AbiTest {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
         let nonce = U256::zero();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
 
         let (deploy_code, runtime_code) = solc("AbiTest", source);
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
@@ -1815,8 +1827,9 @@ contract AbiTest {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
         let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
         let (_, runtime_code) = solc("AbiTest", source);
         // big endian: value=0x12345678
@@ -1894,8 +1907,9 @@ contract AbiTest {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
         let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
         let (_, runtime_code) = solc("AbiTest", source);
         // big endian: value=0x12345678
@@ -1978,8 +1992,9 @@ contract AbiTest {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
         let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
         let (_, runtime_code) = solc("AbiTest", source);
         // big endian: value=0x12345678
@@ -2071,8 +2086,9 @@ contract FakePermissionManagement {
     }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
         let auth_addr = Address::from_str("27ec3678e4d61534ab8a87cf8feb8ac110ddeda5").unwrap();
         let permission_addr =
             Address::from_str("33f4b16d67b112409ab4ac87274926382daacfac").unwrap();

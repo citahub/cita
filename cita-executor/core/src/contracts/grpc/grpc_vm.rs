@@ -144,7 +144,8 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
             )?;
         }
 
-        let base_gas_required = U256::from(100); // `CREATE` transaction cost
+        // FIXME: Need to check the gas required for go vm.
+        let base_gas_required = U256::from(21_000);
 
         if sender != Address::zero() && t.action != Action::Store && t.gas < base_gas_required {
             return Err(From::from(ExecutionError::NotEnoughBaseGas {

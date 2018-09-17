@@ -15,13 +15,13 @@ from ecdsa import SigningKey, SECP256k1
 from jsonrpcclient.http_client import HTTPClient
 
 
-def send_tx(privkey, to_addr, value=0, quota=1000, code=""):
+def send_tx(privkey, to_addr, value=0, quota=30000, code=""):
     """
     Send a transfer transaction to a node
 
         python3 make_tx.py \
         --value 20000 \
-        --quota 1000\
+        --quota 100000\
         --code "" \
         --privkey 101c286e965ddf8176dd6c0793e9ad5f3d745105fab744eea6ffdae6a98d0553 \
         --to 0xc94bcce78b4e618c6a259d4eb8e7bf45e145f0d0 \
@@ -151,19 +151,19 @@ def main():
                   sender_is_miner=True)
     assert get_balance(alice_address) == 10 * 10000, \
         'Alice({}) should have 10 * 10000 now'.format(alice_address)
-    # Send 200 from alice to bob
-    test_transfer(alice_privkey, bob_address, 200)
-    assert get_balance(bob_address) == 200, \
-        'Bob({}) should have 200 now'.format(bob_address)
+    # Send 50000 from alice to bob
+    test_transfer(alice_privkey, bob_address, 30000)
+    assert get_balance(bob_address) == 30000, \
+        'Bob({}) should have 30000 now'.format(bob_address)
 
     # Bob send an invalid transaction to chain (Error=NotEnoughCash)
-    tx_hash = send_tx(bob_privkey, "", quota=300, code="")
+    tx_hash = send_tx(bob_privkey, "", quota=29000, code="")
     # Wait the transaction receipt then check the balance
     get_receipt(tx_hash)
     bob_balance = get_balance(bob_address)
-    # Because base_gas_required=100 (200 - 100 = 100)
-    assert bob_balance == 100, \
-        'Bob({}) should have 100 now (got: {})'.format(bob_address, bob_balance)
+    # Because base_gas_required=21000 (30000 - 21000 = 9000)
+    assert bob_balance == 9000, \
+        'Bob({}) should have 9000 now (got: {})'.format(bob_address, bob_balance)
 
     print('>>> Charge Mode test successfully!')
 
