@@ -191,47 +191,6 @@ $ ./env.sh ./bin/cita help
 > * 请勿在一台服务器上运行多个容器。因为虽然 CITA 在 Docker 中运行，但是容器并没有做网络隔离。
 > * 请不要同时在 host 系统里面运行 CITA 以及相关的 RabbitMQ 等软件，以免造成端口冲突
 
-
-## 测试
-
-除了上述的基本操作命令，为了方便用户对 Demo 进行相关测试，我们在目录`cita/tests/integreate_test`下提供了一些测试脚本。
-
-以下命令在源码根目录下运行。
-
-1.  启动 4 个节点
-
-    ```shell
-    ./env.sh tests/integrate_test/cita_start.sh
-    ```
-
-    该命令正常情况下不会返回，需要保持 shell 不退出。或者用`daemon.sh`运行。
-
-2.  停止 4 个节点
-
-    上一节中的命令中止，或者执行命令：
-
-    ```shell
-    ./env.sh ./tests/integrate_test/cita_stop.sh
-    ```
-
-3.  基本功能测试
-
-    4 个节点启动并成功出块，基本功能测试然后停止 4 个节点：
-
-    ```shell
-    ./env.sh ./tests/integrate_test/cita_basic.sh
-    ```
-
-4.  拜占庭测试
-
-    模拟网络异常情况下的功能测试。
-
-    ```shell
-    ./env.sh ./tests/integrate_test/cita_byzantinetest.sh
-    ```
-
-!> 必须使用`./env.sh`
-
 ## 验证
 
 * 查询节点个数
