@@ -110,3 +110,41 @@
     <td>None</td>
   </tr>
 </table>
+
+## Quota_price 设置
+
+CITA 中支持用户自定义 `quota_price`，使用 cita-cli 可以轻易的做到这一点，以下是操作示例：
+
+首先查询当前的 `quota_price`：
+```bash
+$ cita-cli scm PriceManager getQuotaPrice
+```
+
+输出：
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+}
+
+```
+
+自定义设置 `quota_price`， 我们把 `quota_price` 由 1  改为 2:
+```bash
+$ cita-cli scm PriceManager setQuotaPrice --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 --price 0x0000000000000000000000000000000000000000000000000000000000000002
+```
+
+再次查询， 发现 `quota_price` 已更新：
+```bash
+$ cita-cli scm PriceManager getQuotaPrice
+```
+
+输出：
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": "0x0000000000000000000000000000000000000000000000000000000000000002"
+}
+```
