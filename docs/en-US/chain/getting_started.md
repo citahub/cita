@@ -146,54 +146,6 @@ The commands of operation the nodes are the same. Take`test-chain/0`as an exampl
     ./env.sh ./bin/cita help
     ```
 
-## Build test environment
-
-There are two ways to set up test environment.
-
-- You can start 4 nodes one by one as mentioned in previous section. When you do not need to use them, close them one by one.
-- You can also start and shut down nodes in batches by using the following script.
-
-    The following commands run in the source root directory.
-
-	- Start 4 nodes
-
-        ```shell
-        ./env.sh tests/integrate_test/cita_start.sh
-        ```
-
-        This command does not return normally and you need to keep the shell from exiting. Or run with`daemon.sh`.
-
-	- Stop 4 nodes
-
-        ```shell
-        ./env.sh ./tests/integrate_test/cita_stop.sh
-        ```
-
-
-## Test
-
-***Need to be executed after the test environment is set up***
-
-In addition to the above basic operation commands, in order to facilitate user to test Demo, we provide some test scripts under the`cita/tests/integreate_test`.
-
-The following command is run in the source root directory.
-
-1.  Basic function test
-
-    4 nodes runn and generate blocks successfully. After basic function tests, stop 4 nodes.
-
-    ```shell
-    ./env.sh ./tests/integrate_test/cita_basic.sh
-    ```
-
-2.  Byzantine test
-
-    Functional tests under abnormal network conditions.
-
-    ```shell
-    ./env.sh ./tests/integrate_test/cita_byzantinetest.sh
-    ```
-
 ## Verification
 
 ***Need to be executed after the test environment is set up***
