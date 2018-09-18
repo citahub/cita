@@ -222,13 +222,7 @@ $ ./env.sh ./bin/cita help
     ./env.sh ./tests/integrate_test/cita_basic.sh
     ```
 
-4.  发送交易测试
-
-    ```shell
-    ./env.sh ./tests/integrate_test/cita_transactiontest.sh
-    ```
-
-5.  拜占庭测试
+4.  拜占庭测试
 
     模拟网络异常情况下的功能测试。
 

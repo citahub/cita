@@ -186,13 +186,7 @@ The following command is run in the source root directory.
     ./env.sh ./tests/integrate_test/cita_basic.sh
     ```
 
-2.  Transaction test
-
-    ```shell
-    ./env.sh ./tests/integrate_test/cita_transactiontest.sh
-    ```
-
-3.  Byzantine test
+2.  Byzantine test
 
     Functional tests under abnormal network conditions.
 
