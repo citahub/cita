@@ -224,6 +224,9 @@ jobs:
       - run:
           name: Test Transfer Value in Charge Mode
           command: ./tests/integrate_test/cita_charge_mode.sh
+      - run:
+          name: Test Executor Process SignProposal/BlockWithProof
+          command: ./tests/integrate_test/box_executor_test.sh
 
   "Byzantine Test":
     <<: *job-default
