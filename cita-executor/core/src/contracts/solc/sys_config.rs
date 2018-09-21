@@ -182,8 +182,8 @@ impl<'a> SysConfig<'a> {
     }
 
     /// The id of current chain
-    pub fn chain_id(&self) -> Option<u32> {
-        self.get_value(&[ParamType::Uint(64)], CHAIN_ID.as_slice(), None)
+    pub fn chain_id(&self, block_id: Option<BlockId>) -> Option<u32> {
+        self.get_value(&[ParamType::Uint(64)], CHAIN_ID.as_slice(), block_id)
             .ok()
             .and_then(|mut x| x.remove(0).to_uint())
             .map(|x| H256::from(x).low_u64() as u32)
@@ -209,8 +209,8 @@ impl<'a> SysConfig<'a> {
     }
 
     /// The interval time for creating a block (milliseconds)
-    pub fn block_interval(&self) -> Option<u64> {
-        self.get_value(&[ParamType::Uint(64)], BLOCK_INTERVAL.as_slice(), None)
+    pub fn block_interval(&self, block_id: Option<BlockId>) -> Option<u64> {
+        self.get_value(&[ParamType::Uint(64)], BLOCK_INTERVAL.as_slice(), block_id)
             .ok()
             .and_then(|mut x| x.remove(0).to_uint())
             .map(|x| H256::from(x).low_u64())
@@ -237,9 +237,14 @@ impl<'a> SysConfig<'a> {
         EconomicalModel::Quota
     }
 
-    pub fn token_info(&self) -> Option<TokenInfo> {
+    pub fn token_info(&self, block_id: Option<BlockId>) -> Option<TokenInfo> {
         self.executor
-            .call_method(&*CONTRACT_ADDRESS, GET_TOKEN_INFO.as_slice(), None, None)
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                GET_TOKEN_INFO.as_slice(),
+                None,
+                block_id,
+            )
             .ok()
             .and_then(|output| {
                 decode(
@@ -347,7 +352,7 @@ mod tests {
     #[test]
     fn test_chain_id() {
         let executor = init_executor(vec![("SysConfig.chainId", "123")]);
-        let value = SysConfig::new(&executor).chain_id().unwrap();
+        let value = SysConfig::new(&executor).chain_id(None).unwrap();
         assert_eq!(value, 123);
     }
 
@@ -368,7 +373,7 @@ mod tests {
     #[test]
     fn test_block_interval() {
         let executor = init_executor(vec![("SysConfig.blockInterval", "3006")]);
-        let value = SysConfig::new(&executor).block_interval().unwrap();
+        let value = SysConfig::new(&executor).block_interval(None).unwrap();
         assert_eq!(value, 3006);
     }
 
@@ -386,7 +391,7 @@ mod tests {
             ("SysConfig.symbol", "symbol"),
             ("SysConfig.avatar", "avatar"),
         ]);
-        let value = SysConfig::new(&executor).token_info().unwrap();
+        let value = SysConfig::new(&executor).token_info(None).unwrap();
         assert_eq!(
             value,
             TokenInfo {

@@ -321,7 +321,7 @@ impl ExecutorInstance {
     fn get_auth_miscellaneous(&self) {
         let sys_config = SysConfig::new(&self.ext);
         let chain_id = sys_config
-            .chain_id()
+            .chain_id(None)
             .unwrap_or_else(SysConfig::default_chain_id);
         let mut miscellaneous = Miscellaneous::new();
         miscellaneous.set_chain_id(chain_id);
@@ -476,7 +476,7 @@ impl ExecutorInstance {
                         let sys_config = SysConfig::new(&self.ext);
                         let block_id = BlockId::Number(number);
                         sys_config
-                            .chain_id()
+                            .chain_id(Some(block_id))
                             .map(|chain_id| metadata.chain_id = chain_id)
                             .ok_or_else(|| "Query chain id failed".to_owned())?;
                         sys_config
@@ -497,15 +497,15 @@ impl ExecutorInstance {
                             .ok_or_else(|| "Query genesis_timestamp failed".to_owned())?;
                         self.ext
                             .node_manager()
-                            .shuffled_stake_nodes()
+                            .shuffled_stake_nodes(Some(block_id))
                             .map(|validators| metadata.validators = validators)
                             .ok_or_else(|| "Query validators failed".to_owned())?;
                         sys_config
-                            .block_interval()
+                            .block_interval(Some(block_id))
                             .map(|block_interval| metadata.block_interval = block_interval)
                             .ok_or_else(|| "Query block_interval failed".to_owned())?;
                         sys_config
-                            .token_info()
+                            .token_info(Some(block_id))
                             .map(|token_info| {
                                 metadata.token_name = token_info.name;
                                 metadata.token_avatar = token_info.avatar;
