@@ -482,7 +482,7 @@ impl Executor {
     pub fn validate_timestamp(&self, timestamp: u64) -> bool {
         let sys_config = SysConfig::new(self);
         let block_interval = sys_config
-            .block_interval()
+            .block_interval(None)
             .unwrap_or_else(SysConfig::default_block_interval);
         let current_timestamp = self.get_current_timestamp();
         trace!(
@@ -848,7 +848,7 @@ impl Executor {
         let mut conf = GlobalSysConfig::new();
         conf.nodes = self
             .node_manager()
-            .shuffled_stake_nodes()
+            .shuffled_stake_nodes(None)
             .unwrap_or_else(NodeManager::default_shuffled_stake_nodes);
         conf.block_gas_limit = QuotaManager::block_gas_limit(self)
             .unwrap_or_else(QuotaManager::default_block_gas_limit)
@@ -877,7 +877,7 @@ impl Executor {
             .chain_owner()
             .unwrap_or_else(SysConfig::default_chain_owner);
         conf.block_interval = sys_config
-            .block_interval()
+            .block_interval(None)
             .unwrap_or_else(SysConfig::default_block_interval);
         conf.account_permissions = PermissionManagement::load_account_permissions(self);
         conf.super_admin_account = PermissionManagement::get_super_admin_account(self);
