@@ -32,7 +32,7 @@ usage() {
     cat <<EOF
 Usage: $SCRIPT <command> <node> [options]
 where <command> is one of the following:
-    { help | start | stop | restart | ping
+    { help | setup | start | stop | restart | ping
       top | backup | clean | logs | logrotate }
 
 Run \`$SCRIPT help\` for more detailed information.
@@ -51,6 +51,11 @@ This is the primary script for controlling the $SCRIPT node.
         You are here.
 
  SERVICE CONTROL COMMANDS
+    setup <node>
+        Ensuring the required runtime environment for $SCRIPT node, like
+        RabbitMQ service. You should run this command at the first time
+        of running $SCRIPT node.
+
     start <node>
         Starts the $SCRIPT node in the background. If the node is already
         started, you will get the message "Node is already running!" If the
