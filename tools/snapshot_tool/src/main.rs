@@ -84,7 +84,7 @@ fn main() {
     let (tx, rx) = channel();
     let (ctx_pub, crx_pub) = channel();
 
-    let snapshot_instance = SnapShot::new(ctx_pub, start_height, end_height, file.to_string());
+    let mut snapshot_instance = SnapShot::new(ctx_pub, start_height, end_height, file.to_string());
 
     start_pubsub(
         "snapshot",
