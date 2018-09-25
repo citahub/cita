@@ -33,8 +33,8 @@ contract GroupManagement is ReservedAddress {
         _;
     }
 
-    modifier checkPermission(address _permission) {
-        require(auth.checkPermission(msg.sender, _permission), "Permission denied.");
+    modifier checkPermission(address _permission, address _origin) {
+        require(auth.checkPermission(msg.sender, _permission) || auth.checkPermission(_origin, _permission), "Permission denied.");
         _;
     }
 
@@ -49,9 +49,11 @@ contract GroupManagement is ReservedAddress {
     /// @param _name  The name of group
     /// @param _accounts The accounts of group
     /// @return New role's address
+    /// @dev TODO Add a param: target.
     function newGroup(address _origin, bytes32 _name, address[] _accounts)
         external
-        checkPermission(builtInPermissions[10])
+        // Have to check all the permission of account's groups. but can not do it for now.
+        checkPermission(builtInPermissions[10], 0x0)
         returns (address new_group)
     {
         new_group = groupCreator.createGroup(_origin, _name, _accounts);
@@ -67,7 +69,7 @@ contract GroupManagement is ReservedAddress {
         external
         inGroup(_origin)
         onlyLeafNode(_target)
-        checkPermission(builtInPermissions[11])
+        checkPermission(builtInPermissions[11], _origin)
         returns (bool)
     {
         require(checkScope(_origin, _target), "The target group not in origin group.");
@@ -90,7 +92,7 @@ contract GroupManagement is ReservedAddress {
     function updateGroupName(address _origin, address _target, bytes32 _name)
         external
         inGroup(_origin)
-        checkPermission(builtInPermissions[12])
+        checkPermission(builtInPermissions[12], _origin)
         returns (bool)
     {
         require(checkScope(_origin, _target), "The target not in origin group.");
@@ -107,7 +109,7 @@ contract GroupManagement is ReservedAddress {
     function addAccounts(address _origin, address _target, address[] _accounts)
         external
         inGroup(_origin)
-        checkPermission(builtInPermissions[12])
+        checkPermission(builtInPermissions[12], _origin)
         returns (bool)
     {
         require(checkScope(_origin, _target), "The target not in origin group.");
@@ -124,7 +126,7 @@ contract GroupManagement is ReservedAddress {
     function deleteAccounts(address _origin, address _target, address[] _accounts)
         external
         inGroup(_origin)
-        checkPermission(builtInPermissions[12])
+        checkPermission(builtInPermissions[12], _origin)
         returns (bool)
     {
         require(checkScope(_origin, _target), "The target not in origin group.");
