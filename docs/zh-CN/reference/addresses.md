@@ -48,13 +48,15 @@
 | 0xffffffffffffffffffffffffffffffffff020006 | 权限管理授权                     |
 | 0xffffffffffffffffffffffffffffffffff020007 | 角色管理                         |
 | 0xffffffffffffffffffffffffffffffffff020008 | 创建角色                         |
-| 0xffffffffffffffffffffffffffffffffff020009 |                                 |
-| 0xffffffffffffffffffffffffffffffffff02000a | 用户组管理                       |
+| 0xffffffffffffffffffffffffffffffffff020009 | 组内用户管理                      |
+| 0xffffffffffffffffffffffffffffffffff02000a | 组管理                           |
 | 0xffffffffffffffffffffffffffffffffff02000b | 创建用户组                        |
 | 0xffffffffffffffffffffffffffffffffff02000c | admin管理                        |
 | 0xffffffffffffffffffffffffffffffffff02000d | 角色授权                         |
 | 0xffffffffffffffffffffffffffffffffff02000e | 批量交易                         |
 | 0xffffffffffffffffffffffffffffffffff02000f | 急停合约                         |
+| 0xffffffffffffffffffffffffffffffffff020010 | QuotaPrice管理                   |
+| 0xffffffffffffffffffffffffffffffffff020011 | 协议版本号管理                     |
 | 0xffffffffffffffffffffffffffffffffff021000 | 发送交易                         |
 | 0xffffffffffffffffffffffffffffffffff021001 | 新建合约                         |
 | 0xffffffffffffffffffffffffffffffffff021010 | 新增权限                         |
