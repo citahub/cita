@@ -91,9 +91,7 @@ extern crate pubsub;
 extern crate rand;
 #[cfg(test)]
 extern crate tempfile;
-extern crate tokio_io;
-extern crate tokio_proto;
-extern crate tokio_service;
+extern crate tokio;
 #[macro_use]
 extern crate util;
 

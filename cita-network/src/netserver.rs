@@ -15,43 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use citaprotocol::{CitaProto, CitaRequest, CitaResponse};
-use futures::future::result;
-use futures::{BoxFuture, Future};
+use citaprotocol::{CitaCodec, CitaRequest};
+use futures::Future;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::mpsc::Sender;
-use tokio_proto::TcpServer;
-use tokio_service::{NewService, Service};
+use tokio;
+use tokio::codec::Decoder;
+use tokio::net::{TcpListener, TcpStream};
+use tokio::prelude::*;
 use Source;
 
 #[derive(Clone)]
 pub struct NetServer {
     net_sender: Sender<(Source, CitaRequest)>,
-}
-
-impl Service for NetServer {
-    type Request = CitaRequest;
-    type Response = CitaResponse;
-    type Error = io::Error;
-    type Future = BoxFuture<Self::Response, io::Error>;
-
-    fn call(&self, payload: Self::Request) -> Self::Future {
-        trace!("SERVER get msg: {:?}", payload);
-        self.net_sender.send((Source::REMOTE, payload));
-        result(Ok(None)).boxed()
-    }
-}
-
-impl NewService for NetServer {
-    type Request = CitaRequest;
-    type Response = CitaResponse;
-    type Error = io::Error;
-    type Instance = Self;
-    /// Create and return a new service value.
-    fn new_service(&self) -> io::Result<Self::Instance> {
-        Ok(self.clone())
-    }
 }
 
 impl NetServer {
@@ -60,8 +37,29 @@ impl NetServer {
     }
 
     pub fn server(self, addr: SocketAddr) {
-        TcpServer::new(CitaProto, addr).serve(self);
+        let listener = TcpListener::bind(&addr).unwrap();
+        let server = listener
+            .incoming()
+            .for_each(move |socket| {
+                process(socket, self.net_sender.clone());
+                Ok(())
+            })
+            .map_err(|err| {
+                error!("accept error = {:?}", err);
+            });
+
+        tokio::run(server);
     }
+}
+
+fn process(socket: TcpStream, send: Sender<(Source, CitaRequest)>) {
+    let (_tx, rx) = CitaCodec.framed(socket).split();
+    let task =
+        rx.for_each(move |chunk| {
+            send.send((Source::REMOTE, chunk))
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+        }).map_err(|e| error!("reading error = {:?}", e));
+    tokio::spawn(task);
 }
 
 unsafe impl Send for NetServer {}
