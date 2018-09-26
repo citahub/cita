@@ -1,6 +1,6 @@
 var log = console.log.bind(console);
 var dir = (ver) => {
-  if (['v0.17', 'v0.18rc', 'v0.18'].indexOf(ver) > -1) {
+  if (['v0.17', 'v0.18'].indexOf(ver) > -1) {
     return 'Latest'
   }
   return ''
@@ -21,7 +21,7 @@ const loadTags = () => {
 
   }
   if (fetch) {
-    fetch('https://api.github.com/repos/cryptape/cita/tags').then(res => res.json()).then(tags => tags.slice(0, -5).map(tag => tag.name)).then(tagNames => {
+    fetch('https://api.github.com/repos/cryptape/cita/tags').then(res => res.json()).then(tags => tags.slice(0, -5).filter(tag => !tag.name.endsWith('rc')).map(tag => tag.name)).then(tagNames => {
       appendTags(tagNames)
     })
   } else {
