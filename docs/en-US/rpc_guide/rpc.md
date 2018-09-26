@@ -1,7 +1,7 @@
 # CITA JSON-RPC
 
 !> **Methods Name Changed ！**
-For the user of V0.16 and older versions: Please pay attention that we deprecated the pre-fix in the name of Json-RPC interfaces, which makes it looks more tidy and easier to use.
+For the user of V0.16 and older versions: Please pay attention that we deprecated the pre-fix in the name of JSON-RPC interfaces, which makes it looks more tidy and easier to use.
 
 <h2 class="hover-list">JSON-RPC</h2>
 
@@ -639,7 +639,7 @@ params: [
 * Parameters
 
     1. `Data20` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -670,7 +670,7 @@ params: [
 * Parameters
 
     1. `Data20` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -700,7 +700,7 @@ params: [
 * Parameters
 
     1. `Data20` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -820,7 +820,7 @@ $ cita-cli rpc getAbi \
 * Parameters
 
     1. `Data` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -1035,7 +1035,7 @@ params: [
 
 * Parameters
 
-    1. `BlockNumber`, integer of a block height or "latest"
+    1. `BlockNumber`, `BlockNumber`
 
 ```json
 params: [
@@ -1095,7 +1095,7 @@ Get block header by block number. For sidechain.
 
 * Parameters
 
-    1. `BlockNumber`, integer of a block height or "latest"
+    1. `BlockNumber`, `BlockNumber`
 
 ```json
 params: [
@@ -1130,7 +1130,7 @@ Get proof of a special variable at special block number. For sidechain.
 
     1. `Data20` - address.
     2. `Data32` - key, position of the variable
-    3. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    3. `BlockNumber` - `BlockNumber`
 
 * Returns
     `Data` - State proof of special value. Include address, account proof, key, value proof.

@@ -38,7 +38,7 @@ The management of ordinary nodes includes adding and deleting. Let's illustrate 
 
 3. Start new nodes:
 
-    Just start the new node in normal process. It can connect to the network and start to synchronize the block data on the chain automatically. **Note that the new node here is only an ordinary node and does not participate in the consensus process, which means it can only synchronize data and receive Jsonrpc Request**。
+    Just start the new node in normal process. It can connect to the network and start to synchronize the block data on the chain automatically. **Note that the new node here is only an ordinary node and does not participate in the consensus process, which means it can only synchronize data and receive JSON-RPC Request**。
 
     ```bash
     $ ./bin/cita setup test-chain/4

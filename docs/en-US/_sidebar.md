@@ -14,10 +14,10 @@
     - [Emergency Brake](system_management/emergency_brake.md)
     - [Amend Data](system_management/amend.md)
     - [Fee back](system_management/fee_back.md)
-- Json-RPC Guide
-    - [Json-RPC List](rpc_guide/rpc.md)
-    - [Json-RPC Parameters and Returns](rpc_guide/rpc.md)
-    - [Json-RPC Error Code](rpc_guide/rpc_error_code.md)
+- JSON-RPC Guide
+    - [JSON-RPC Parameters and Returns](rpc_guide/rpc_types.md)
+    - [JSON-RPC List](rpc_guide/rpc.md)
+    - [JSON-RPC Error Code](rpc_guide/rpc_error_code.md)
 - CITA Architecture
     - [Overall Architecture](architecture/architecture.md)
     - [Components](architecture/components.md)

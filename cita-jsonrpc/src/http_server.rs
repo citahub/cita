@@ -193,7 +193,7 @@ impl Service for Server {
                                                             req_info,
                                                             Error::server_error(
                                                                 ErrorCode::time_out_error(),
-                                                                "system time out, please resend",
+                                                                "System time out, please resend",
                                                             ),
                                                         );
                                                         let resp_body =
@@ -255,7 +255,7 @@ impl Service for Server {
                                                         let failure =
                                                             RpcFailure::from(Error::server_error(
                                                                 ErrorCode::time_out_error(),
-                                                                "system time out, please resend",
+                                                                "System time out, please resend",
                                                             ));
                                                         let resp_body =
                                                             serde_json::to_string(&failure).expect(

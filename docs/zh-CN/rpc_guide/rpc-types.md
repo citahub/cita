@@ -1,5 +1,16 @@
 # Types of JSON-RPC Parameters and Returns
 
+## JSON-RPC support
+
+| | CITA |
+|-------|:------------:|
+| JSON-RPC 1.0 | &#x2713; | 
+| JSON-RPC 2.0 | &#x2713; |
+| Batch requests | &#x2713; | 
+| HTTP | &#x2713; |
+| IPC | |
+| WS | &#x2713; |
+
 ## 基本类型
 
 ### `Quantity`
@@ -118,6 +129,7 @@
 
     * `String` `"earliest"` - for the earliest/genesis block.
     * `String` `"latest"` - for the latest mined block.
+    * `String` `"pending"` - for the pending state/transactions
 
 * `EconomicalModel`
 

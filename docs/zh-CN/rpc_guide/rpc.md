@@ -640,7 +640,7 @@ params: [
 * Parameters
 
     1. `Data20` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -671,7 +671,7 @@ params: [
 * Parameters
 
     1. `Data20` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -701,7 +701,7 @@ params: [
 * Parameters
 
     1. `Data20` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -821,7 +821,7 @@ $ cita-cli rpc getAbi \
 * Parameters
 
     1. `Data` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -1036,7 +1036,7 @@ params: [
 
 * Parameters
 
-    1. `BlockNumber`, integer of a block height or "latest"
+    1. `BlockNumber`, `BlockNumber`
 
 ```json
 params: [
@@ -1096,7 +1096,7 @@ params: [
 
 * Parameters
 
-    1. `BlockNumber`, integer of a block height or "latest"
+    1. `BlockNumber`, `BlockNumber`
 
 ```json
 params: [
@@ -1131,7 +1131,7 @@ params: [
 
     1. `Data20` - address.
     2. `Data32` - key, position of the variable
-    3. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    3. `BlockNumber` - `BlockNumber`
 
 * Returns
     `Data` - State proof of special value. Include address, account proof, key, value proof.
