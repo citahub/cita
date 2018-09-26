@@ -8,19 +8,21 @@ var initDocsify = function () {
     configs.forEach(function (conf) {
         _.assign(docsify, conf)
     })
+    loadTags()
 
-    let ver = 'develop'
+    let ver, lng
 
     const search = window.location.hash.split("?").pop()
-    if (search && URLSearchParams) {
+    if (search && search !== '#/' && URLSearchParams) {
         const urlP = new URLSearchParams(search)
-        ver = urlP.get("version") || ver
-    } else {
-        ver = window.localStorage.getItem("version") || 'develop'
+        ver = urlP.get("version")
+        lng = urlP.get("language")
     }
+    ver = ver || window.localStorage.getItem("version") || 'develop'
+    lng = lng || window.localStorage.getItem('lng') || 'zh-CN'
+
     const vTag = document.getElementById('tag_version')
     vTag.textContent = ver === 'develop' ? 'Latest' : ver
-    const lng = window.localStorage.getItem('lng') || 'zh-CN'
     const lTag = document.getElementById('tag_language')
     lTag.textContent = lngs[lng]
     docsify.basePath = baseUrlGen(ver, lng)
