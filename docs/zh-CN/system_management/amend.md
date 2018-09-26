@@ -15,7 +15,7 @@ Amend 交易现在有四种不同的数据订正的类型 ABI,Code,Balance,Key-V
 
 * admin-private-key 参数为超级管理员的私钥
 
-* url 参数后面是JsonRpc的地址
+* url 参数后面是 JSON-RPC 的地址
 
 下面介绍具体的数据订正操作：
 
