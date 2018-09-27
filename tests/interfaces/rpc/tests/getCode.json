@@ -10,7 +10,7 @@
         "method": "getCode",
         "params": [
           "0xfdde938c6f71b066eb34c1c92e5814186dbdcb5e",
-          "latest"
+          "pending"
         ]
       },
       "expectedResponse": {
@@ -29,7 +29,7 @@
         "method": "getCode",
         "params": [
           "0xa31af83ee35e753a2bb19c2a82468080c2e92eee",
-          "latest"
+          "pending"
         ]
       },
       "expectedResponse": {
@@ -48,7 +48,7 @@
         "method": "getCode",
         "params": [
           "0xeffb1dab2e6ed61aa213eacaefbd1a9a41e00000",
-          "latest"
+          "pending"
         ]
       },
       "expectedResponse": {

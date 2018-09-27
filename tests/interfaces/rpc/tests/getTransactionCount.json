@@ -5,12 +5,12 @@
   },
   "tests": [
     {
-      "title": "getTransactionCount success (BlockNumber = latest)",
+      "title": "getTransactionCount success (BlockNumber = pending)",
       "request": {
         "method": "getTransactionCount",
         "params": [
           "0x31d40cd88d6a884d2c95cf261c9f8ca495240af2",
-          "latest"
+          "pending"
         ]
       },
       "expectedResponse": {
@@ -48,7 +48,7 @@
         "method": "getTransactionCount",
         "params": [
           "0x31d40cd88d6a884d2c95cf261c9f8ca495000000",
-          "latest"
+          "pending"
         ]
       },
       "expectedResponse": {

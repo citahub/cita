@@ -387,10 +387,11 @@ impl Executor {
     /// Get block header by BlockId
     pub fn block_header(&self, id: BlockId) -> Option<Header> {
         match id {
-            BlockId::Latest => self.block_header_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_header_by_height(self.get_latest_height()),
             BlockId::Hash(hash) => self.block_header_by_hash(hash),
             BlockId::Number(number) => self.block_header_by_height(number),
             BlockId::Earliest => self.block_header_by_height(0),
+            BlockId::Pending => self.block_header_by_height(self.get_pending_height()),
         }
     }
 
@@ -421,22 +422,37 @@ impl Executor {
         LastHashes::from(self.last_hashes.read().clone())
     }
 
+    #[inline]
+    pub fn get_latest_height(&self) -> u64 {
+        self.current_header.read().number().saturating_sub(1)
+    }
+
+    #[inline]
+    pub fn get_pending_height(&self) -> u64 {
+        self.current_header.read().number()
+    }
+
+    #[inline]
     pub fn get_current_height(&self) -> u64 {
         self.current_header.read().number()
     }
 
+    #[inline]
     pub fn get_current_timestamp(&self) -> u64 {
         self.current_header.read().timestamp()
     }
 
+    #[inline]
     pub fn get_max_height(&self) -> u64 {
         self.max_height.load(Ordering::SeqCst) as u64
     }
 
+    #[inline]
     pub fn set_max_height(&self, height: usize) {
         self.max_height.store(height, Ordering::SeqCst);
     }
 
+    #[inline]
     pub fn get_current_hash(&self) -> H256 {
         self.current_header.read().hash()
     }
