@@ -377,25 +377,35 @@ impl Forward {
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
         let current_height = self.chain.get_current_height() as usize;
         let mut proof_blk = proof_blk;
-        let block = proof_blk.take_blk();
+        let proto_block = proof_blk.take_blk();
         let proof = proof_blk.take_proof();
-        let blk_height = block.get_header().get_height() as usize;
+        let blk_height = proto_block.get_header().get_height() as usize;
+
         trace!(
-            "Received consensus block: block_number:{:?} current_height: {:?}",
+            "Received consensus block: block_number:{:?} current_height: {:?} ",
             blk_height,
             current_height
         );
-        let rblock = Block::from(block);
+
+        let block = Block::from(proto_block);
+        debug!(
+            "consensus block {} {:?} tx hash  {:?} len {} version {}",
+            block.number(),
+            block.hash(),
+            block.transactions_root(),
+            block.body().transactions().len(),
+            block.header.version()
+        );
         if blk_height == (current_height + 1) {
             {
                 self.chain.block_map.write().insert(
                     blk_height as u64,
-                    BlockInQueue::ConsensusBlock(rblock.clone(), proof.clone()),
+                    BlockInQueue::ConsensusBlock(block.clone(), proof.clone()),
                 );
             };
             self.chain.set_proof_with_height(blk_height as u64, &proof);
             self.chain.save_current_block_poof(&proof);
-            self.chain.set_block_body(blk_height as u64, &rblock);
+            self.chain.set_block_body(blk_height as u64, &block);
             self.chain.set_max_store_height(blk_height as u64);
         }
     }

@@ -206,16 +206,12 @@ pub fn verify_tx_sig(req: &VerifyTxReq) -> Result<Vec<u8>, ()> {
     }
 }
 
-// verify request
-fn verify_request(req: &Request) -> Ret {
-    let un_tx = req.get_un_tx();
-    let tx = un_tx.get_transaction();
-    let to = clean_0x(tx.get_to());
-    if to.is_empty() || Address::from_str(to).is_ok() {
-        Ret::OK
-    } else {
-        Ret::InvalidValue
-    }
+pub struct SysConfigInfo {
+    pub block_gas_limit: u64,
+    pub account_gas_limit: AccountGasLimit,
+    pub check_quota: bool,
+    pub admin_address: Option<Address>,
+    pub version: Option<u32>,
 }
 
 pub struct MsgHandler {
@@ -228,15 +224,12 @@ pub struct MsgHandler {
     cache_block_req: Option<VerifyBlockReq>,
     history_hashes: HashMap<u64, HashSet<H256>>,
     dispatcher: Dispatcher,
-    check_quota: bool,
-    block_gas_limit: u64,
-    account_gas_limit: AccountGasLimit,
     tx_request: Sender<Request>,
     tx_pool_limit: usize,
     is_snapshot: bool,
     black_list_cache: HashMap<Address, i8>,
     is_need_proposal_new_block: bool,
-    admin_address: Option<Address>,
+    config_info: SysConfigInfo,
 }
 
 impl MsgHandler {
@@ -262,20 +255,26 @@ impl MsgHandler {
             cache_block_req: None,
             history_hashes: HashMap::with_capacity(BLOCKLIMIT as usize),
             dispatcher,
-            check_quota: false,
-            block_gas_limit: 0,
-            account_gas_limit: AccountGasLimit::new(),
             tx_request,
             tx_pool_limit,
             is_snapshot: false,
             black_list_cache: HashMap::new(),
             is_need_proposal_new_block: false,
-            admin_address: None,
+            config_info: SysConfigInfo {
+                block_gas_limit: 0,
+                account_gas_limit: AccountGasLimit::new(),
+                check_quota: false,
+                admin_address: None,
+                version: None,
+            },
         }
     }
 
     fn is_ready(&self) -> bool {
-        self.history_heights.is_init() && self.chain_id.is_some() && !self.is_snapshot
+        self.history_heights.is_init()
+            && self.chain_id.is_some()
+            && !self.is_snapshot
+            && self.config_info.version.is_some()
     }
 
     fn is_flow_control(&self, tx_count: usize) -> bool {
@@ -323,10 +322,14 @@ impl MsgHandler {
 
     pub fn verify_block_quota(&self, blkreq: &VerifyBlockReq) -> bool {
         let reqs = blkreq.get_reqs();
-        let gas_limit = self.account_gas_limit.get_common_gas_limit();
-        let mut specific_gas_limit = self.account_gas_limit.get_specific_gas_limit().clone();
+        let gas_limit = self.config_info.account_gas_limit.get_common_gas_limit();
+        let mut specific_gas_limit = self
+            .config_info
+            .account_gas_limit
+            .get_specific_gas_limit()
+            .clone();
         let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
-        let mut n = self.block_gas_limit;
+        let mut n = self.config_info.block_gas_limit;
         for req in reqs {
             let quota = req.get_quota();
             let signer = pubkey_to_address(&PubKey::from(req.get_signer()));
@@ -335,7 +338,7 @@ impl MsgHandler {
                 return false;
             }
 
-            if self.check_quota {
+            if self.config_info.check_quota {
                 let value = account_gas_used.entry(signer).or_insert_with(|| {
                     if let Some(value) = specific_gas_limit.remove(&signer.lower_hex()) {
                         value
@@ -355,13 +358,14 @@ impl MsgHandler {
     }
 
     pub fn verify_tx_quota(&self, quota: u64, signer: &[u8]) -> bool {
-        if quota > self.block_gas_limit {
+        if quota > self.config_info.block_gas_limit {
             return false;
         }
-        if self.check_quota {
+        if self.config_info.check_quota {
             let addr = pubkey_to_address(&PubKey::from(signer));
-            let mut gas_limit = self.account_gas_limit.get_common_gas_limit();
+            let mut gas_limit = self.config_info.account_gas_limit.get_common_gas_limit();
             if let Some(value) = self
+                .config_info
                 .account_gas_limit
                 .get_specific_gas_limit()
                 .get(&addr.lower_hex())
@@ -480,6 +484,23 @@ impl MsgHandler {
         self.publish_block_verification_result(request_id, Ret::OK);
     }
 
+    // verify to and version
+    fn verify_request(&self, req: &Request) -> Ret {
+        let un_tx = req.get_un_tx();
+        let tx = un_tx.get_transaction();
+        let to = clean_0x(tx.get_to());
+        if !to.is_empty() && Address::from_str(to).is_err() {
+            return Ret::InvalidValue;
+        }
+
+        let tx_version = tx.get_version();
+        if tx_version != self.config_info.version.unwrap() {
+            return Ret::InvalidVersion;
+        }
+
+        Ret::OK
+    }
+
     /// Verify black list
     fn verify_black_list(&self, req: &VerifyTxReq) -> Ret {
         if let Some(credit) = self
@@ -512,6 +533,7 @@ impl MsgHandler {
         }
 
         if self
+            .config_info
             .admin_address
             .map(|admin| pubkey_to_address(&PubKey::from_slice(req.get_signer())) != admin)
             .unwrap_or_else(|| false)
@@ -660,20 +682,19 @@ impl MsgHandler {
                 }
 
                 if self.is_need_proposal_new_block {
-                    // if not ready we will proposal empty blk by set block_gas_limit 0
-                    let block_gas_limit = if self.is_ready() {
-                        self.block_gas_limit
+                    // if not ready we will proposal empty block
+                    if self.is_ready() {
+                        self.dispatcher.proposal_tx_list(
+                            (self.history_heights.next_height() - 1) as usize, // todo fix bft
+                            &self.tx_pub,
+                            &self.config_info,
+                        );
                     } else {
-                        0
-                    };
-                    self.dispatcher.proposal_tx_list(
-                        (self.history_heights.next_height() - 1) as usize, // todo fix bft
-                        &self.tx_pub,
-                        block_gas_limit,
-                        self.account_gas_limit.clone(),
-                        self.check_quota,
-                        &self.admin_address,
-                    );
+                        self.dispatcher.proposal_empty(
+                            (self.history_heights.next_height() - 1) as usize, // todo fix bft
+                            &self.tx_pub,
+                        );
+                    }
 
                     // after proposal new block clear flag
                     self.is_need_proposal_new_block = false;
@@ -734,14 +755,15 @@ impl MsgHandler {
             let block_gas_limit = block_tx_hashes.get_block_gas_limit();
             let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
             let check_quota = block_tx_hashes.get_check_quota();
-            self.check_quota = check_quota;
-            self.block_gas_limit = block_gas_limit;
-            self.account_gas_limit = account_gas_limit.clone();
-            self.admin_address = if block_tx_hashes.get_admin_address().is_empty() {
+            self.config_info.check_quota = check_quota;
+            self.config_info.block_gas_limit = block_gas_limit;
+            self.config_info.account_gas_limit = account_gas_limit.clone();
+            self.config_info.admin_address = if block_tx_hashes.get_admin_address().is_empty() {
                 None
             } else {
                 Some(Address::from(block_tx_hashes.get_admin_address()))
             };
+            self.config_info.version = Some(block_tx_hashes.get_version());
 
             // need to proposal new block
             self.is_need_proposal_new_block = true;
@@ -909,7 +931,7 @@ impl MsgHandler {
                     }
                 })
                 .filter(|(_tx_hash, (ref _req, ref tx_req, _flag))| {
-                    let ret = verify_request(tx_req);
+                    let ret = self.verify_request(tx_req);
                     if ret != Ret::OK {
                         if is_local {
                             let request_id = tx_req.get_request_id().to_vec();
@@ -1000,7 +1022,7 @@ impl MsgHandler {
                 return;
             }
 
-            let ret = verify_request(&newtx_req);
+            let ret = self.verify_request(&newtx_req);
             if ret != Ret::OK {
                 if is_local {
                     self.publish_tx_failed_result(request_id, ret);

@@ -603,11 +603,12 @@ impl ExecutorInstance {
         let block = Block::from(proto_block);
 
         debug!(
-            "consensus block {} {:?} tx hash  {:?} len {}",
+            "consensus block {} {:?} tx hash  {:?} len {} version {}",
             block.number(),
             block.hash(),
             block.transactions_root(),
-            block.body().transactions().len()
+            block.body().transactions().len(),
+            block.header.version()
         );
         if self.is_dup_block(block.number()) {
             return;
