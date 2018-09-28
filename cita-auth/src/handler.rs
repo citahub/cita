@@ -681,21 +681,12 @@ impl MsgHandler {
                     }
                 }
 
-                if self.is_need_proposal_new_block {
-                    // if not ready we will proposal empty block
-                    if self.is_ready() {
-                        self.dispatcher.proposal_tx_list(
-                            (self.history_heights.next_height() - 1) as usize, // todo fix bft
-                            &self.tx_pub,
-                            &self.config_info,
-                        );
-                    } else {
-                        self.dispatcher.proposal_empty(
-                            (self.history_heights.next_height() - 1) as usize, // todo fix bft
-                            &self.tx_pub,
-                        );
-                    }
-
+                if self.is_need_proposal_new_block && self.is_ready() {
+                    self.dispatcher.proposal_tx_list(
+                        (self.history_heights.next_height() - 1) as usize, // todo fix bft
+                        &self.tx_pub,
+                        &self.config_info,
+                    );
                     // after proposal new block clear flag
                     self.is_need_proposal_new_block = false;
                 }

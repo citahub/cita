@@ -757,6 +757,7 @@ impl Executor {
             }
         };
 
+        trace!("send ExecutedResult {}", height);
         let msg: Message = executed_result.into();
         ctx_pub
             .send((

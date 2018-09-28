@@ -81,7 +81,7 @@ impl ExecutorInstance {
         let grpc_port = executor_config.grpc_port;
         let executor = Executor::init_executor(Arc::new(db), genesis, &executor_config);
         let executor = Arc::new(executor);
-        executor.set_gas_and_nodes(executor.get_max_height());
+        // send init executed info only have ConsensusConfig
         executor.send_executed_info_to_chain(executor.get_max_height(), &ctx_pub);
         ExecutorInstance {
             ctx_pub,
