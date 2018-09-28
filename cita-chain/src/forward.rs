@@ -356,6 +356,13 @@ impl Forward {
             Request::peercount(_) | Request::un_tx(_) => {
                 error!("Get messages which should sent to other micro services!");
             }
+            Request::storage_key(skey) => {
+                trace!("storage key info is {:?}", skey);
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
+                return;
+            }
         };
         let msg: Message = response.into();
         self.ctx_pub
