@@ -461,7 +461,8 @@ impl ExecutorInstance {
                         let number = match number {
                             BlockNumber::Tag(BlockTag::Earliest) => 0,
                             BlockNumber::Height(n) => n.into(),
-                            BlockNumber::Tag(BlockTag::Latest) => current_height,
+                            BlockNumber::Tag(BlockTag::Latest) => current_height.saturating_sub(1),
+                            BlockNumber::Tag(BlockTag::Pending) => current_height,
                         };
                         if number > current_height {
                             Err(format!(

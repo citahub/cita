@@ -57,7 +57,7 @@ def rpc_request(method, params):
 
 def get_balance(addr):
     """ Get the balance of an address """
-    return int(rpc_request('getBalance', [addr, 'latest']), 16)
+    return int(rpc_request('getBalance', [addr, 'pending']), 16)
 
 def get_receipt(tx_hash, retry=8):
     """ Get receipt of a transaction """

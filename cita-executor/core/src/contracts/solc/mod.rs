@@ -68,7 +68,7 @@ impl ContractCallExt for Executor {
             to: *address,
             data: Some(encoded_method.to_vec()),
         };
-        let block_id = block_id.unwrap_or(BlockId::Latest);
+        let block_id = block_id.unwrap_or(BlockId::Pending);
         trace!("data: {:?}", call_request.data);
         self.eth_call(call_request, block_id)
     }

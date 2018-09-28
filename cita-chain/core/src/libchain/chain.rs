@@ -47,7 +47,6 @@ use libproto::{BlockTxHashes, FullTransaction, Message};
 use proof::BftProof;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
-use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::{Into, TryInto};
@@ -278,9 +277,6 @@ pub enum BlockInQueue {
     SyncBlock((Block, Option<ProtoProof>)),
 }
 
-/// Database read and write and cache
-// TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
-// 所有直接unwrap的地方都可能会报错！
 pub struct Chain {
     pub blooms_config: BloomChainConfig,
     pub current_header: RwLock<Header>,
@@ -432,7 +428,8 @@ impl Chain {
             BlockId::Number(number) => Some(number),
             BlockId::Hash(hash) => self.block_height_by_hash(hash),
             BlockId::Earliest => Some(0),
-            BlockId::Latest => Some(self.get_current_height()),
+            BlockId::Latest => Some(self.get_latest_height()),
+            BlockId::Pending => Some(self.get_pending_height()),
         }
     }
 
@@ -715,11 +712,12 @@ impl Chain {
             BlockId::Hash(hash) => self.block_by_hash(hash),
             BlockId::Number(number) => self.block_by_height(number),
             BlockId::Earliest => self.block_by_height(0),
-            BlockId::Latest => self.block_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_by_height(self.get_latest_height()),
+            BlockId::Pending => self.block_by_height(self.get_pending_height()),
         }
     }
 
-    // Get block by hash
+    /// Get block by hash
     pub fn block_by_hash(&self, hash: H256) -> Option<Block> {
         self.block_height_by_hash(hash)
             .and_then(|h| self.block_by_height(h))
@@ -742,11 +740,12 @@ impl Chain {
             BlockId::Hash(hash) => self.block_header_by_hash(hash),
             BlockId::Number(number) => self.block_header_by_height(number),
             BlockId::Earliest => self.block_header_by_height(0),
-            BlockId::Latest => self.block_header_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_header_by_height(self.get_latest_height()),
+            BlockId::Pending => self.block_header_by_height(self.get_pending_height()),
         }
     }
 
-    // Get block header by hash
+    /// Get block header by hash
     pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
         {
             let header = self.current_header.read();
@@ -779,7 +778,8 @@ impl Chain {
             BlockId::Hash(hash) => self.block_body_by_hash(hash),
             BlockId::Number(number) => self.block_body_by_height(number),
             BlockId::Earliest => self.block_body_by_height(0),
-            BlockId::Latest => self.block_body_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_body_by_height(self.get_latest_height()),
+            BlockId::Pending => self.block_body_by_height(self.get_pending_height()),
         }
     }
 
@@ -787,7 +787,8 @@ impl Chain {
         self.block_header_by_height(height)
             .and_then(|hdr| Some(hdr.hash()))
     }
-    // Get block body by hash
+
+    /// Get block body by hash
     fn block_body_by_hash(&self, hash: H256) -> Option<BlockBody> {
         self.block_height_by_hash(hash)
             .and_then(|h| self.block_body_by_height(h))
@@ -1019,27 +1020,43 @@ impl Chain {
         }
     }
 
+    #[inline]
     pub fn get_current_height(&self) -> u64 {
         self.current_height.load(Ordering::SeqCst) as u64
     }
 
+    #[inline]
+    pub fn get_pending_height(&self) -> u64 {
+        self.current_header.read().number()
+    }
+
+    #[inline]
+    pub fn get_latest_height(&self) -> u64 {
+        self.current_header.read().number().saturating_sub(1)
+    }
+
+    #[inline]
     pub fn get_current_hash(&self) -> H256 {
         self.current_header.read().hash()
     }
 
+    #[inline]
     pub fn get_max_store_height(&self) -> u64 {
         self.max_store_height.load(Ordering::SeqCst) as u64
     }
 
+    #[inline]
     pub fn set_max_store_height(&self, height: u64) {
         self.max_store_height
             .store(height as usize, Ordering::SeqCst);
     }
 
+    #[inline]
     pub fn current_state_root(&self) -> H256 {
         *self.current_header.read().state_root()
     }
 
+    #[inline]
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
         self.db.read().read(db::COL_EXTRA, &CurrentProof)
     }
@@ -1267,19 +1284,6 @@ impl Chain {
         status.set_hash(self.get_current_hash());
         status.set_number(self.get_current_height());
         status
-    }
-
-    // TODO: Need remove. Later the state may be moved back to chain, so keep it here.
-    /// Attempt to get a copy of a specific block's final state.
-    pub fn state_at(&self, id: BlockId) -> Option<State<StateDB>> {
-        self.block_header(id)
-            .and_then(|h| self.gen_state(*h.state_root()))
-    }
-
-    /// generate block's final state.
-    pub fn gen_state(&self, root: H256) -> Option<State<StateDB>> {
-        let db = self.state_db.read().boxed_clone();
-        State::from_existing(db, root).ok()
     }
 
     pub fn validate_hash(&self, block_hash: &H256) -> bool {
