@@ -24,6 +24,25 @@
       ]
     },
     {
+      "title": "getTransactionCount success (BlockNumber = latest)",
+      "request": {
+        "method": "getTransactionCount",
+        "params": [
+          "0x31d40cd88d6a884d2c95cf261c9f8ca495240af2",
+          "latest"
+        ]
+      },
+      "expectedResponse": {
+        "result": "0xb"
+      },
+      "asserts": [
+        {
+          "description": "getTransactionCount result should be equal",
+          "program": ".receivedResponse.result == .expectedResponse.result"
+        }
+      ]
+    },
+    {
       "title": "getTransactionCount success (BlockNumber = 0x9)",
       "request": {
         "method": "getTransactionCount",
