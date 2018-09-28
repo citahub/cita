@@ -498,7 +498,7 @@ impl Executor {
     pub fn validate_timestamp(&self, timestamp: u64) -> bool {
         let sys_config = SysConfig::new(self);
         let block_interval = sys_config
-            .block_interval(None)
+            .block_interval(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_block_interval);
         let current_timestamp = self.get_current_timestamp();
         trace!(
@@ -836,6 +836,7 @@ impl Executor {
         self.finalize_block(&closed_block, ctx_pub);
     }
 
+    #[inline]
     pub fn node_manager(&self) -> NodeManager {
         NodeManager::new(self, self.genesis_header().timestamp())
     }
@@ -846,7 +847,8 @@ impl Executor {
     /// 3. Account permissions
     pub fn reorg_config(&self, close_block: &ClosedBlock) {
         let cache = close_block.state.cache();
-        let permissions = PermissionManagement::permission_addresses(self);
+        let permission_management = PermissionManagement::new(self);
+        let permissions = permission_management.permission_addresses(BlockId::Pending);
         let has_dirty = cache.iter().any(|(address, ref _a)| {
             &address.lower_hex()[..34] == "ffffffffffffffffffffffffffffffffff"
                 || permissions.contains(&address)
@@ -864,58 +866,72 @@ impl Executor {
         let mut conf = GlobalSysConfig::new();
         conf.nodes = self
             .node_manager()
-            .shuffled_stake_nodes(None)
+            .shuffled_stake_nodes(BlockId::Pending)
             .unwrap_or_else(NodeManager::default_shuffled_stake_nodes);
-        conf.block_gas_limit = QuotaManager::block_gas_limit(self)
+
+        let quota_manager = QuotaManager::new(self);
+        conf.block_gas_limit = quota_manager
+            .block_gas_limit(BlockId::Pending)
             .unwrap_or_else(QuotaManager::default_block_gas_limit)
             as usize;
         let sys_config = SysConfig::new(self);
         conf.delay_active_interval = sys_config
-            .delay_block_number()
+            .delay_block_number(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_delay_block_number)
             as usize;
         conf.check_permission = sys_config
-            .permission_check()
+            .permission_check(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_permission_check);
         conf.check_send_tx_permission = sys_config
-            .send_tx_permission_check()
+            .send_tx_permission_check(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_send_tx_permission_check);
         conf.check_create_contract_permission = sys_config
-            .create_contract_permission_check()
+            .create_contract_permission_check(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_create_contract_permission_check);
         conf.check_quota = sys_config
-            .quota_check()
+            .quota_check(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_quota_check);
         conf.check_fee_back_platform = sys_config
-            .fee_back_platform_check()
+            .fee_back_platform_check(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_fee_back_platform_check);
         conf.chain_owner = sys_config
-            .chain_owner()
+            .chain_owner(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_chain_owner);
         conf.block_interval = sys_config
-            .block_interval(None)
+            .block_interval(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_block_interval);
-        conf.account_permissions = PermissionManagement::load_account_permissions(self);
-        conf.super_admin_account = PermissionManagement::get_super_admin_account(self);
-        conf.group_accounts = UserManagement::load_group_accounts(self);
+
+        let permission_manager = PermissionManagement::new(self);
+        conf.account_permissions = permission_manager.load_account_permissions(BlockId::Pending);
+        conf.super_admin_account = permission_manager.get_super_admin_account(BlockId::Pending);
+
+        let user_manager = UserManagement::new(self);
+        conf.group_accounts = user_manager.load_group_accounts(BlockId::Pending);
         {
             *self.economical_model.write() = sys_config
-                .economical_model()
+                .economical_model(BlockId::Pending)
                 .unwrap_or_else(SysConfig::default_economical_model);
         }
 
-        let common_gas_limit = QuotaManager::account_gas_limit(self)
+        let common_gas_limit = quota_manager
+            .account_gas_limit(BlockId::Pending)
             .unwrap_or_else(QuotaManager::default_account_gas_limit);
-        let specific = QuotaManager::specific(self);
+        let specific = quota_manager.specific(BlockId::Pending);
 
         conf.account_gas_limit
             .set_common_gas_limit(common_gas_limit);
         conf.account_gas_limit.set_specific_gas_limit(specific);
         conf.changed_height = self.get_current_height() as usize;
-        conf.emergency_brake =
-            EmergencyBrake::state(self).unwrap_or_else(EmergencyBrake::default_state);
-        conf.chain_version =
-            VersionManager::get_version(self, None).unwrap_or_else(VersionManager::default_version);
+
+        let emergency_manager = EmergencyBrake::new(self);
+        conf.emergency_brake = emergency_manager
+            .state(BlockId::Pending)
+            .unwrap_or_else(EmergencyBrake::default_state);
+
+        let version_manager = VersionManager::new(self);
+        conf.chain_version = version_manager
+            .get_version(BlockId::Pending)
+            .unwrap_or_else(VersionManager::default_version);
 
         {
             let last_conf: Option<GlobalSysConfig>;

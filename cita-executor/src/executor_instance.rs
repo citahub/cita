@@ -321,7 +321,7 @@ impl ExecutorInstance {
     fn get_auth_miscellaneous(&self) {
         let sys_config = SysConfig::new(&self.ext);
         let chain_id = sys_config
-            .chain_id(None)
+            .chain_id(BlockId::Pending)
             .unwrap_or_else(SysConfig::default_chain_id);
         let mut miscellaneous = Miscellaneous::new();
         miscellaneous.set_chain_id(chain_id);
@@ -477,19 +477,19 @@ impl ExecutorInstance {
                         let sys_config = SysConfig::new(&self.ext);
                         let block_id = BlockId::Number(number);
                         sys_config
-                            .chain_id(Some(block_id))
+                            .chain_id(block_id)
                             .map(|chain_id| metadata.chain_id = chain_id)
                             .ok_or_else(|| "Query chain id failed".to_owned())?;
                         sys_config
-                            .chain_name(Some(block_id))
+                            .chain_name(block_id)
                             .map(|chain_name| metadata.chain_name = chain_name)
                             .ok_or_else(|| "Query chain name failed".to_owned())?;
                         sys_config
-                            .operator(Some(block_id))
+                            .operator(block_id)
                             .map(|operator| metadata.operator = operator)
                             .ok_or_else(|| "Query operator failed".to_owned())?;
                         sys_config
-                            .chain_name(Some(block_id))
+                            .chain_name(block_id)
                             .map(|website| metadata.website = website)
                             .ok_or_else(|| "Query website failed".to_owned())?;
                         self.ext
@@ -498,22 +498,25 @@ impl ExecutorInstance {
                             .ok_or_else(|| "Query genesis_timestamp failed".to_owned())?;
                         self.ext
                             .node_manager()
-                            .shuffled_stake_nodes(Some(block_id))
+                            .shuffled_stake_nodes(block_id)
                             .map(|validators| metadata.validators = validators)
                             .ok_or_else(|| "Query validators failed".to_owned())?;
                         sys_config
-                            .block_interval(Some(block_id))
+                            .block_interval(block_id)
                             .map(|block_interval| metadata.block_interval = block_interval)
                             .ok_or_else(|| "Query block_interval failed".to_owned())?;
                         sys_config
-                            .token_info(Some(block_id))
+                            .token_info(block_id)
                             .map(|token_info| {
                                 metadata.token_name = token_info.name;
                                 metadata.token_avatar = token_info.avatar;
                                 metadata.token_symbol = token_info.symbol;
                             })
                             .ok_or_else(|| "Query token info failed".to_owned())?;
-                        metadata.version = VersionManager::get_version(&*self.ext, Some(block_id))
+
+                        let version_manager = VersionManager::new(&*self.ext);
+                        metadata.version = version_manager
+                            .get_version(block_id)
                             .unwrap_or_else(VersionManager::default_version);
                         Ok(())
                     });
