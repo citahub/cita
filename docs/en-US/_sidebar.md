@@ -16,6 +16,7 @@
     - [Emergency Brake](system_management/emergency_brake.md)
     - [Amend Data](system_management/amend.md)
     - [Fee back](system_management/fee_back.md)
+    - [Protocol Version Management](system_management/version.md)
 - JSON-RPC Guide
     - [JSON-RPC Parameters and Returns](rpc_guide/rpc_types.md)
     - [JSON-RPC List](rpc_guide/rpc.md)

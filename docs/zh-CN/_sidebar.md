@@ -16,6 +16,7 @@
     - [紧急制动](system_management/emergency_brake.md)
     - [数据订正](system_management/amend.md)
     - [出块激励返回管理](system_management/fee_back.md)
+    - [协议版本管理](system_management/version.md)
 - JSON-RPC指南
     - [JSON-RPC参数和返回值类型](rpc_guide/rpc-types.md)
     - [JSON-RPC列表](rpc_guide/rpc.md)
