@@ -25,6 +25,7 @@ use libexecutor::executor::Executor;
 
 use cita_types::Address;
 use ethabi::{decode, ParamType};
+use types::ids::BlockId;
 use types::reserved_addresses;
 
 lazy_static! {
@@ -33,12 +34,19 @@ lazy_static! {
         Address::from_str(reserved_addresses::EMERGENCY_BRAKE).unwrap();
 }
 
-pub struct EmergencyBrake;
+/// Configuration items from system contract
+pub struct EmergencyBrake<'a> {
+    executor: &'a Executor,
+}
 
-impl EmergencyBrake {
-    pub fn state(executor: &Executor) -> Option<bool> {
-        executor
-            .call_method(&*CONTRACT_ADDRESS, &*STATE_HASH.as_slice(), None, None)
+impl<'a> EmergencyBrake<'a> {
+    pub fn new(executor: &'a Executor) -> Self {
+        EmergencyBrake { executor }
+    }
+
+    pub fn state(&self, block_id: BlockId) -> Option<bool> {
+        self.executor
+            .call_method(&*CONTRACT_ADDRESS, &*STATE_HASH.as_slice(), None, block_id)
             .and_then(|output| {
                 decode(&[ParamType::Bool], &output).map_err(|_| "decode value error".to_string())
             })

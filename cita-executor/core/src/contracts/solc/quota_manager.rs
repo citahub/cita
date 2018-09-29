@@ -25,6 +25,7 @@ use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
+use types::ids::BlockId;
 use types::reserved_addresses;
 
 const QUOTAS: &[u8] = &*b"getQuotas()";
@@ -85,13 +86,19 @@ impl Into<ProtoAccountGasLimit> for AccountGasLimit {
     }
 }
 
-pub struct QuotaManager;
+pub struct QuotaManager<'a> {
+    executor: &'a Executor,
+}
 
-impl QuotaManager {
+impl<'a> QuotaManager<'a> {
+    pub fn new(executor: &'a Executor) -> Self {
+        QuotaManager { executor }
+    }
+
     /// Special account gas limit
-    pub fn specific(executor: &Executor) -> HashMap<Address, u64> {
-        let users = QuotaManager::users(executor).unwrap_or_else(Self::default_users);
-        let quota = QuotaManager::quota(executor).unwrap_or_else(Self::default_quota);
+    pub fn specific(&self, block_id: BlockId) -> HashMap<Address, u64> {
+        let users = self.users(block_id).unwrap_or_else(Self::default_users);
+        let quota = self.quota(block_id).unwrap_or_else(Self::default_quota);
         let mut specific = HashMap::new();
         for (k, v) in users.iter().zip(quota.iter()) {
             specific.insert(*k, *v);
@@ -100,9 +107,9 @@ impl QuotaManager {
     }
 
     /// Quota array
-    pub fn quota(executor: &Executor) -> Option<Vec<u64>> {
-        executor
-            .call_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice(), None, None)
+    pub fn quota(&self, block_id: BlockId) -> Option<Vec<u64>> {
+        self.executor
+            .call_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice(), None, block_id)
             .ok()
             .and_then(|output| decode_tools::to_u64_vec(&output))
     }
@@ -113,9 +120,14 @@ impl QuotaManager {
     }
 
     /// Account array
-    pub fn users(executor: &Executor) -> Option<Vec<Address>> {
-        executor
-            .call_method(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice(), None, None)
+    pub fn users(&self, block_id: BlockId) -> Option<Vec<Address>> {
+        self.executor
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*ACCOUNTS_HASH.as_slice(),
+                None,
+                block_id,
+            )
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
@@ -126,9 +138,9 @@ impl QuotaManager {
     }
 
     /// Global gas limit
-    pub fn block_gas_limit(executor: &Executor) -> Option<u64> {
-        executor
-            .call_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice(), None, None)
+    pub fn block_gas_limit(&self, block_id: BlockId) -> Option<u64> {
+        self.executor
+            .call_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice(), None, block_id)
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
     }
@@ -139,13 +151,13 @@ impl QuotaManager {
     }
 
     /// Global account gas limit
-    pub fn account_gas_limit(executor: &Executor) -> Option<u64> {
-        executor
+    pub fn account_gas_limit(&self, block_id: BlockId) -> Option<u64> {
+        self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*DEFAULT_AQL_HASH.as_slice(),
                 None,
-                None,
+                block_id,
             )
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
@@ -165,6 +177,7 @@ mod tests {
     use cita_types::H160;
     use std::str::FromStr;
     use tests::helpers::init_executor;
+    use types::ids::BlockId;
 
     #[test]
     fn test_users() {
@@ -175,7 +188,9 @@ mod tests {
             )),
         ]);
         println!("init executor finish");
-        let users = QuotaManager::users(&executor).unwrap();
+
+        let quota_management = QuotaManager::new(&executor);
+        let users = quota_management.users(BlockId::Pending).unwrap();
         assert_eq!(
             users,
             vec![H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap()]
@@ -186,7 +201,9 @@ mod tests {
     fn test_quota() {
         let executor = init_executor(vec![]);
         println!("init executor finish");
-        let quota = QuotaManager::quota(&executor).unwrap();
+
+        let quota_management = QuotaManager::new(&executor);
+        let quota = quota_management.quota(BlockId::Pending).unwrap();
         assert_eq!(quota, vec![1073741824]);
     }
 
@@ -194,7 +211,9 @@ mod tests {
     fn test_block_gas_limit() {
         let executor = init_executor(vec![]);
         println!("init executor finish");
-        let block_gas_limit = QuotaManager::block_gas_limit(&executor).unwrap();
+
+        let quota_management = QuotaManager::new(&executor);
+        let block_gas_limit = quota_management.block_gas_limit(BlockId::Pending).unwrap();
         assert_eq!(block_gas_limit, 1073741824);
     }
 
@@ -202,7 +221,11 @@ mod tests {
     fn test_account_gas_limit() {
         let executor = init_executor(vec![]);
         println!("init executor finish");
-        let account_gas_limit = QuotaManager::account_gas_limit(&executor).unwrap();
+
+        let quota_management = QuotaManager::new(&executor);
+        let account_gas_limit = quota_management
+            .account_gas_limit(BlockId::Pending)
+            .unwrap();
         assert_eq!(account_gas_limit, 268435456);
     }
 }

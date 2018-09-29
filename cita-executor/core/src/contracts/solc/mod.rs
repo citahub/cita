@@ -51,7 +51,7 @@ trait ContractCallExt {
         address: &Address,
         encoded_method: &[u8],
         from: Option<Address>,
-        block_id: Option<BlockId>,
+        block_id: BlockId,
     ) -> Result<Bytes, String>;
 }
 
@@ -61,14 +61,13 @@ impl ContractCallExt for Executor {
         address: &Address,
         encoded_method: &[u8],
         from: Option<Address>,
-        block_id: Option<BlockId>,
+        block_id: BlockId,
     ) -> Result<Bytes, String> {
         let call_request = CallRequest {
             from,
             to: *address,
             data: Some(encoded_method.to_vec()),
         };
-        let block_id = block_id.unwrap_or(BlockId::Pending);
         trace!("data: {:?}", call_request.data);
         self.eth_call(call_request, block_id)
     }
