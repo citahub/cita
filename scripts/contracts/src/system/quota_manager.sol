@@ -4,13 +4,12 @@ import "../common/error.sol";
 import "../lib/address_array.sol";
 import "../common/admin.sol";
 import "../common/address.sol";
-import "../permission_management/authorization.sol";
-
+import "../common/check.sol";
 
 /// @title The interface of quota_manager
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 interface QuotaInterface {
-    
+
     event DefaultAqlSetted(uint indexed _value, address indexed _sender);
     event BqlSetted(uint indexed _value, address indexed _sender);
     event AqlSetted(address indexed _account, uint _value, address indexed _sender);
@@ -35,7 +34,7 @@ interface QuotaInterface {
 
     /// @notice Get default account quota limit
     function getDefaultAQL() external view returns (uint);
-    
+
     /// @notice Get account quota limit
     function getAQL(address _account) external view returns (uint);
 }
@@ -44,7 +43,7 @@ interface QuotaInterface {
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020003
-contract QuotaManager is QuotaInterface, Error, ReservedAddress {
+contract QuotaManager is QuotaInterface, Error, Check {
 
     mapping(address => uint) quota;
     // Block quota limit
@@ -75,11 +74,6 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
             emit ErrorLog(ErrorType.OutOfBlockLimit, "The value is out of block limit");
             return;
         }
-    }
-
-    modifier checkPermission(address _permission) {
-        require(auth.checkPermission(msg.sender, _permission), "permission denied.");
-        _;
     }
 
     modifier onlyAdmin {

@@ -1,19 +1,17 @@
 pragma solidity ^0.4.24;
 
 import "./permission_creator.sol";
-import "./authorization.sol";
-import "../common/address.sol";
-
+import "../common/check.sol";
 
 /// @title Permission management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004
 ///         The interface the can be called: All
 /// @dev TODO check address is contract
-contract PermissionManagement is ReservedAddress {
+// contract PermissionManagement is ReservedAddress {
+contract PermissionManagement is Check {
 
     PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
-    Authorization auth = Authorization(authorizationAddr);
 
     event PermissionDeleted(address _permission);
 
@@ -26,11 +24,6 @@ contract PermissionManagement is ReservedAddress {
     modifier notBuiltInPermission(address _permission) {
         for (uint i = 0; i < builtInPermissions.length; i++)
             require(_permission != builtInPermissions[i], "not buildInPermission.");
-        _;
-    }
-
-    modifier checkPermission(address _permission) {
-        require(auth.checkPermission(msg.sender, _permission), "permission denied.");
         _;
     }
 

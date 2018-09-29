@@ -147,19 +147,6 @@ contract RoleAuth is ReservedAddress {
         return accounts[_role];
     }
 
-    /// @notice Check the account has the permission
-    /// @param _account The account to be checked
-    /// @param _permission The permission to be checked
-    /// @return true if has, otherwise false
-    function hasPermission(address _account, address _permission)
-        public 
-        view
-        returns (bool)
-    {
-
-        return auth.checkPermission(_account, _permission);
-    }
-
     /// @notice Private: cancelRole
     function _cancelRole(address _account, address _role)
         private
