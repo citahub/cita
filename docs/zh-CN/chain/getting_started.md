@@ -76,7 +76,6 @@ $ ./env.sh make release
 >
 >   即表示在 Docker 环境中运行 `make debug`。
 > * 不带任何参数运行 `./env.sh`，将直接获取一个 Docker 环境的 shell。
-> * 国内用户请使用 `env_cn.sh`，提供了编译时的国内镜像加速。
 > * 还提供了 `daemon.sh`，用法同 `env.sh`，效果是后台运行。
 
 > **Notice**
