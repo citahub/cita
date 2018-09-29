@@ -22,8 +22,8 @@ Contracts:
   - website: https://www.example.com
   - blockInterval: 3000
   - economicalModel: 0
-  - name: Nervos AppChain Test Coin
-  - symbol: NAC
+  - name: Nervos AppChain Test Token
+  - symbol: NATT
   - avatar: https://avatars1.githubusercontent.com/u/35361817
 - QuotaManager:
   - admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
