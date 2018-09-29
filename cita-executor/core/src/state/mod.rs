@@ -862,8 +862,16 @@ impl<B: Backend> State<B> {
                         U256::from(schedule.tx_gas),
                     ),
                 };
+
                 if economical_model == EconomicalModel::Charge {
-                    let tx_fee_value = tx_gas_used * t.gas_price();
+                    let fee_value = tx_gas_used * t.gas_price();
+                    let sender_balance = self.balance(&sender).unwrap();
+
+                    let tx_fee_value = if fee_value > sender_balance {
+                        sender_balance
+                    } else {
+                        fee_value
+                    };
                     if let Err(err) = self.sub_balance(&sender, &tx_fee_value) {
                         error!("Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}", tx_fee_value, err);
                     }
