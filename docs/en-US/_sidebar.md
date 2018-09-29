@@ -2,7 +2,9 @@
 - Getting Started
     - [Build your own Appchain](chain/getting_started.md)
     - [Appchain Configuration](chain/config_tool.md)
+    - [Micro serives Configuration](chain/service_config.md)
 - System Management
+    - [System Contracts](system_management/contracts.md)
     - [Node Management](system_management/node.md)
     - [Permisson Management](system_management/permission.md)
     - [Account Management](system_management/user.md)
