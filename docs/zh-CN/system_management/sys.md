@@ -1,12 +1,10 @@
 # 系统配置
 
-使用 CITA 搭建一条链，用户需要在区块链生成创世块时完成配置，创世块一旦生成，只有 chainName, operator, website 这三项可通过本合约接口进行修改。
-
-## 初始化
-
-sys_config.sol 合约通过写入创世块的方式来初始化，查看 [链的配置](../chain/config_tool.md)
+使用 CITA 搭建一条链， 会把链的一些基本配置(例如链名称， 链的运营方机构，权限配置等等)写入创世块中，创世块一旦生成，除 chainName, operator, website 三项可以在运行时通过系统合约更改，其他信息无法修改。
 
 ## 接口
+
+我们提供了设置上述三项信息的接口，以及查询其他基本信息接口如下：
 
 ### 操作类接口
 
@@ -53,9 +51,54 @@ sys_config.sol 合约通过写入创世块的方式来初始化，查看 [链的
   </tr>
 </table>
 
+### 操作示例：
+
+> 接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 交互模式进行演示。
+
+仅以管理员设置 `chainName` 作为示例：
+
+确保你的链正常运行，进入 cita-cli 交互式模式，输入命令：
+```shell
+$ scm SysConfig setChainName --chain-name "AAA" --admin-private \ 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
+```
+
+查询交易回执无误后，我们成功的把链名称从默认的 `test-chain` 更改为 `AAA`。
+
+我们可以通过 `getMeta` 查询更改后的结果，示例如下：
+
+```shell
+$ rpc getMetaData
+```
+
+输出：
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "blockInterval": 3000,
+    "chainId": 1,
+    "chainName": "AAA",
+    "economicalModel": 1,
+    "genesisTimestamp": 1538101178583,
+    "operator": "test-operator",
+    "tokenAvatar": "https://avatars1.githubusercontent.com/u/35361817",
+    "tokenName": "Nervos AppChain Test Token",
+    "tokenSymbol": "NATT",
+    "validators": [
+      "0x185e7072f53574666cf8ed8ec080e09b7e39c98f"
+    ],
+    "version": 1,
+    "website": "AAA"
+  }
+}
+
+```
+`chainName` 已更新。
+
 #### 查询类接口
 
-查询类接口不需要权限，默认值可参考 [链的配置](../chain/config_tool.md)
+查询类接口不需要权限，默认值可参考 [链的配置](./chain/config_tool.md)
 
 <table style = "text-align: center;">
   <tr>
@@ -262,3 +305,27 @@ sys_config.sol 合约通过写入创世块的方式来初始化，查看 [链的
     </td>
   </tr>
 </table>
+
+## 操作示例
+
+> 接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 交互模式进行演示， 部分 cita-cli 查询不到的接口，请通过 getMeta 查询。
+
+仅以查询链经济模型作为示例：
+
+确保你的链正常运行，进入 cita-cli 交互式模式，输入命令：
+```shell
+$ scm SysConfig getEconomicalModel
+```
+
+输出:
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+}
+
+
+```
+
+`economicalModel = 1`, 表示链的经济模型为 `charge`。
