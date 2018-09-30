@@ -11,7 +11,7 @@ CITA 链生成时，通过系统合约来生成创世块，并作为链的最基
 
 节点管理合约存放在`/scripts/contracts/src/system/node_manager.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff020001`
 
-节点管理的相关描述及方法介绍见 [node_manager](./node)
+节点管理的相关描述及方法介绍见 [node_manager](./system_management/node)
 
 ### 配额管理系统合约
 
@@ -21,7 +21,7 @@ CITA 中关于配额，有两个限制 BQL(BlockQuotaLimit) 和 AQL(AccountQuota
 
 配额管理合约存放在 `/scripts/contracts/src/system/quota_manager.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff020003`
 
-配额管理的相关描述及方法介绍见 [quota_manager](./quota)
+配额管理的相关描述及方法介绍见 [quota_manager](./system_management/quota)
 
 ### 配额价格管理系统合约
 
@@ -29,13 +29,15 @@ CITA 中关于配额，有两个限制 BQL(BlockQuotaLimit) 和 AQL(AccountQuota
 
 配额管理合约存放在 `/scripts/contracts/src/system/price_management.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff020010`
 
+配额价格管理的相关描述及方法介绍见 [price_manager](./system_management/price)
+
 ### 权限管理系统合约
 
 CITA 是一个面向企业级应用的区块链平台，严格的权限管理必不可少。我们提供了完整的权限管理接口，覆盖了企业级应用最常见的权限场景。
 
 权限管理合约存放在 `/scripts/contracts/src/system/permission_management.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff020004`
 
-权限管理的相关描述及方法介绍见 [permission_management](./permission)
+权限管理的相关描述及方法介绍见 [permission_management](./system_management/permission)
 
 ### 用户管理系统合约
 
@@ -45,13 +47,15 @@ CITA 为了方便对用户的管理， 我们采用基于组的管理方式，�
 
 组用户管理合约存放在 `/scripts/contracts/src/user_management/group.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff020009`
 
+用户管理的相关描述及方法介绍见 [user_manager](./system_management/user)
+
 ### 批量转发系统合约
 
 CITA 支持批量调用合约。
 
 批量转发合约存放在 `/scripts/contracts/src/system/batch_tx.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff02000e`
 
-权限管理的相关描述及方法介绍见 [batch_tx](./batch_tx)
+权限管理的相关描述及方法介绍见 [batch_tx](./system_management/batch_tx)
 
 ### 紧急制动系统合约
 
@@ -60,12 +64,15 @@ CITA 支持批量调用合约。
 批量转发合约存放在 `/scripts/contracts/src/system/emergency_brake.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff02000f`
 
 紧急制动相关描述及方法介绍见 [emergency_brake](./emergency_brake)
+紧急制动相关描述及方法介绍见 [emergency_brake](./system_management/emergency_brake)
 
 ### 协议号管理系统合约
 
 自 CITA 诞生以来，我们致力于研发成熟稳定，功能健全的区块链平台。CITA 的性能，功能上依旧在快速迭代，考虑到未来可能存在的兼容性问题，减少对现有客户的影响，我们增加了协议号管理系统合约。
 
 协议号管理系统合约存放在 `/scripts/contracts/src/system/version_manager.sol`， 地址是　`0xffffffffffffffffffffffffffffffffff020011`
+
+协议号管理的相关描述及方法介绍见 [version_manager](./system_management/version)
 
 ## 合约函数签名
 
