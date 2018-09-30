@@ -40,14 +40,7 @@ yarn install
 
 ### 1.0 Run the cita
 
-Use the script:
-
-```
-tests/integrate_test/cita_start.sh
-```
-
-Or other ways.
-Check the doc of CITA [getting_started](https://cryptape.github.io/cita/getting_started/).
+Check the doc of CITA [getting_started](https://docs.nervos.org/cita/#/chain/getting_started),
 
 ### 1.1 Run the test
 
@@ -59,17 +52,7 @@ Some options of mocha usage:
 * `-t 60s`: set test-case timeout
 * `-g <pattern>`: only run tests matching <pattern>
 
-* To run all tests:
-
-```
-npm test
-```
-
-* To run all uint test:
-
-```
-npm run-script unit_test
-```
+Some test command:
 
 * To test permission contract:
 
@@ -137,36 +120,44 @@ npm run-script abi
 npm run-script unit_admin
 ```
 
-* To run all integrate test:
-    - Should set the checkPermission be true. [admin](https://docs.nervos.org/cita/#/chain/admintool)
-    - Run:
-
-    ```
-    npm run-script integrate_test
-    ```
-
-* To run integrate call_permission test:
+* To test uint8 op of solidity
 
 ```
-npm run-script integrate_call-permission
+npm run-script uint8
 ```
 
-* To run integrate call_role test:
+* To test integrate quota
+
+*Should set the checkQuota be true. [config_tool](https://docs.nervos.org/cita/#/chain/config_tool?id=%E4%B8%BB%E8%A6%81%E5%8A%9F%E8%83%BD)*
 
 ```
-npm run-script integrate_call-role
+npm run-script integrate_quota
 ```
 
-* To run integrate deploy_contract test:
+* To test amend abi
 
 ```
-npm run-script integrate_deploy-contract
+npm run-script abi
 ```
 
-* To run integrate send_tx test:
+* To test store
 
 ```
-npm run-script integrate_send-tx
+npm run-script store
+```
+
+* To test batch_tx
+
+```
+npm run-script batch_tx
+```
+
+* To test integrate permission
+
+*Should set the checkPermission be true. [config_tool](https://docs.nervos.org/cita/#/chain/config_tool?id=%E4%B8%BB%E8%A6%81%E5%8A%9F%E8%83%BD)*
+
+```
+npm run-script permission
 ```
 
 * To lint test directory:
@@ -175,25 +166,42 @@ npm run-script integrate_send-tx
 npm run-script lint
 ```
 
+* To fix lint of test directory:
+
+```
+npm run-script lint-fix
+```
+
 ## 2. Which contracts?
 
 Include:
 
-* Permission management (path: `../permission_management`):
-    - authorization
+* Permission management (path: `../src/permission_management`):
     - permission
+    - authorization
     - permission_management
-    - role_management
+    - permission_creator
 
-* User management (path: `../user_management`):
+* Role management (path: `../src/role_management`):
+    - role
+    - role_auth
+    - role_management
+    - role_creator
+
+* User management (path: `../src/user_management`):
     - group
+    - group_creator
     - group_management
 
-* Quota manager (path: `../system/quota_manager.sol`):
+* Quota manager (path: `../src/system/quota_manager.sol`):
 
-* Node manager (path: `../system/node_manager.sol`):
+* Node manager (path: `../src/system/node_manager.sol`):
 
-* Sidechain manager (path: `../system/sidechain_manager.sol`):
+* chain manager (path: `../src/system/chain_manager.sol`):
+
+* sys config (path: `../src/system/sys_config.sol`):
+
+* batch tx (path: `../src/system/batch_tx.sol`):
 
 # Other directory
 

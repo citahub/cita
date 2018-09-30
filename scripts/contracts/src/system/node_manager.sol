@@ -95,7 +95,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
     }
 
     modifier checkPermission(address _permission) {
-        require(auth.checkPermission(msg.sender, _permission));
+        require(auth.checkPermission(msg.sender, _permission), "permission denied.");
         _;
     }
 
@@ -112,7 +112,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
         public
     {
         // Initialize the address to Start
-        require(_nodes.length == _stakes.length);
+        require(_nodes.length == _stakes.length, "nodes's length not equal to stakes's length.");
         for (uint i = 0; i < _nodes.length; i++) {
             status[_nodes[i]] = NodeStatus.Start;
             nodes.push(_nodes[i]);
@@ -127,7 +127,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
         checkPermission(builtInPermissions[17])
         returns (bool)
     {
-        require(AddressArray.exist(_node, nodes));
+        require(AddressArray.exist(_node, nodes), "node not exist.");
         emit SetStake(_node, stake);
         stakes[_node] = stake;
         return true;
@@ -162,7 +162,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
         checkPermission(builtInPermissions[16])
         returns (bool)
     {
-        require(AddressArray.remove(_node, nodes));
+        require(AddressArray.remove(_node, nodes), "remove node failed.");
         block_op[block.number] = false;
         status[_node] = NodeStatus.Close;
         stakes[_node] = 0;

@@ -1,5 +1,22 @@
 #!/bin/bash
+# -*- tab-width:4;indent-tabs-mode:nil -*-
+# ex: ts=4 sw=4 et
+
+# Exit immediately if a command exits with a non-zero status
 set -e
+
+# Add cita scripts into system executable paths
+export PATH=$PATH:$(cd $(dirname "$0")/../bin; pwd)
+
+SERVICES=( forever auth bft chain executor jsonrpc network )
+SCRIPT=`basename $0`
+COMMAND=$1
+NODE_NAME=$2
+NODE_PATH="$(pwd)/${NODE_NAME}"
+NODE_LOGS_DIR="${NODE_PATH}/logs"
+NODE_DATA_DIR="${NODE_PATH}/data"
+TNODE=`echo ${NODE_NAME} | sed 's/\//%2f/g'`
+
 sudo(){
     set -o noglob
 
@@ -11,51 +28,135 @@ sudo(){
     set +o noglob
 }
 
-setup() {
-    # config rabbitmq
+usage() {
+    cat <<EOF
+Usage: $SCRIPT <command> <node> [options]
+where <command> is one of the following:
+    { help | setup | start | stop | restart | ping
+      top | backup | clean | logs | logrotate }
+
+Run \`$SCRIPT help\` for more detailed information.
+
+EOF
+}
+
+
+help() {
+    cat <<EOF
+Usage: $SCRIPT <command> <node> [options]
+This is the primary script for controlling the $SCRIPT node.
+
+ INFORMATIONAL COMMANDS
+    help
+        You are here.
+
+ SERVICE CONTROL COMMANDS
+    setup <node>
+        Ensuring the required runtime environment for $SCRIPT node, like
+        RabbitMQ service. You should run this command at the first time
+        of running $SCRIPT node.
+
+    start <node>
+        Starts the $SCRIPT node in the background. If the node is already
+        started, you will get the message "Node is already running!" If the
+        node is not already running, no output will be given.
+
+    stop <node> [debug] [mock]
+        Stops the running $SCRIPT node. Prints "ok" when successful.  When
+        the node is already stopped or not responding, prints:
+        "Node 'NODE_NAME' not responding to pings."
+
+    restart <node>
+        Stops and then starts the running $SCRIPT node. Prints "ok"
+        when successful.  When the node is already stopped or not
+        responding, prints: "Node 'NODE_NAME' not responding to
+        pings."
+
+ DIAGNOSTIC COMMANDS
+    ping <node>
+        Checks that the $SCRIPT node is running. Prints "pong" when
+        successful.  When the node is stopped or not responding, prints:
+        "Node 'NODE_NAME' not responding to pings."
+
+    top <node>
+        Prints services processes information similar
+        to the information provided by the \`top\` command.
+
+    stat <node> (deprecated, use 'top' instead)
+
+    logs <node> <service>
+        Fetch the logs of the specified service.
+
+ SCRIPTING COMMANDS
+    backup <node>
+        Backup the data and logs into backup directory. Prints the specified
+        backup commands. When the node is running, prints:
+        "Node is already running!"
+
+    clean <node> (deprecated, use 'backup' instead)
+
+    logrotate <node>
+        Archives the current node logs, starts fresh logs. Prints the archived
+        logs path.
+EOF
+
+}
+
+start_rabbitmq() {
+    # Config and start RabbitMQ
     if [[ `uname` == 'Darwin' ]]
     then
         ps -ax | grep rabbitmq-server | grep -v grep > /dev/null || brew services restart rabbitmq > /dev/null
         RABBITMQ_USER=cita_monitor
         RABBITMQ_PASSWD=cita_monitor
-        sudo rabbitmqctl list_vhosts | grep ${node}                            > /dev/null || sudo rabbitmqctl add_vhost ${node} > /dev/null
-        sudo rabbitmqctl set_permissions -p ${node} guest '.*' '.*' '.*'       > /dev/null
+        sudo rabbitmqctl list_vhosts | grep ${NODE_NAME}                            > /dev/null || sudo rabbitmqctl add_vhost ${NODE_NAME} > /dev/null
+        sudo rabbitmqctl set_permissions -p ${NODE_NAME} guest '.*' '.*' '.*'       > /dev/null
         sudo rabbitmq-plugins enable rabbitmq_management                       > /dev/null
         sudo rabbitmqctl  list_users | grep ${RABBITMQ_USER}                   > /dev/null || sudo rabbitmqctl add_user ${RABBITMQ_USER} ${RABBITMQ_PASSWD} > /dev/null
         sudo rabbitmqctl  set_user_tags  ${RABBITMQ_USER} monitoring           > /dev/null
-        sudo rabbitmqctl set_permissions -p ${node}  ${RABBITMQ_USER} '.*' '.*' '.*'      > /dev/null
+        sudo rabbitmqctl set_permissions -p ${NODE_NAME}  ${RABBITMQ_USER} '.*' '.*' '.*'      > /dev/null
     else
-
         flock -x -w 30 /tmp/rabbitmq.lock -c "ps -C rabbitmq-server > /dev/null || sudo /etc/init.d/rabbitmq-server restart > /dev/null"
         RABBITMQ_USER=cita_monitor
         RABBITMQ_PASSWD=cita_monitor
-        flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl list_vhosts | grep ${node} > /dev/null || sudo rabbitmqctl add_vhost ${node} > /dev/null"
-        flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl set_permissions -p ${node} guest '.*' '.*' '.*' > /dev/null"
+        flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl list_vhosts | grep ${NODE_NAME} > /dev/null || sudo rabbitmqctl add_vhost ${NODE_NAME} > /dev/null"
+        flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl set_permissions -p ${NODE_NAME} guest '.*' '.*' '.*' > /dev/null"
         flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmq-plugins enable rabbitmq_management > /dev/null"
         flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl  list_users | grep ${RABBITMQ_USER} > /dev/null || sudo rabbitmqctl add_user ${RABBITMQ_USER} ${RABBITMQ_PASSWD} > /dev/null"
         flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl  set_user_tags  ${RABBITMQ_USER} monitoring > /dev/null"
-        flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl set_permissions -p ${node}  ${RABBITMQ_USER} '.*' '.*' '.*' > /dev/null"
+        flock -x -w 30 /tmp/rabbitmq.lock -c "sudo rabbitmqctl set_permissions -p ${NODE_NAME}  ${RABBITMQ_USER} '.*' '.*' '.*' > /dev/null"
     fi
 }
 
-start() {
+do_setup() {
+    for i in {1..3}
+    do
+        start_rabbitmq
+        curl http://localhost:15672/ > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            return 0
+        fi
+    done
+    echo "Failed to start RabbitMQ"
+    exit 1
+}
+
+
+do_start() {
     debug=$1
     mock=$2
-    tnode=`echo ${node}|sed 's/\//%2f/g'`
-    mkdir -p logs
 
-    # clean queues
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/auth               > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/chain              > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/consensus          > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/jsonrpc            > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/network            > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/network_tx         > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/network_consensus  > /dev/null 2>&1 || true
-    curl -i -u guest:guest -H "content-type:application/json" -XDELETE http://localhost:15672/api/queues/${tnode}/executor           > /dev/null 2>&1 || true
+    # Make sure log directory exists
+    mkdir -p ${NODE_LOGS_DIR}
 
-    [[ -z ${mock} ]] && config="forever.toml" || config="forever_mock.toml"
+    # Tricky
+    if [[ -z ${mock} ]]; then
+        config="${NODE_PATH}/forever.toml"
+    else
+        config="${NODE_PATH}/forever_mock.toml"
+    fi
 
+    # Start cita-forever
     if [ -z ${debug} ]; then
         cita-forever -c ${config} start > /dev/null 2>&1
     else
@@ -64,145 +165,259 @@ core_executor=${debug},engine=${debug},jsonrpc_types=${debug},libproto=${debug},
         cita-forever -c ${config} start > /dev/null 2>&1
     fi
 
-    sleep 3
+    # Wait for the node to come up
+    WAIT=3
+    while [ $WAIT -gt 0 ]; do
+        WAIT=`expr $WAIT - 1`
+        sleep 1
+        do_ping
+        if [ "${PING_STATUS}" == "pong" ]; then
+            exit 0
+        fi
+    done
+    echo "Failed to start within 3 seconds,"
+    echo "See ${NODE_LOGS_DIR}/cita-forever.log for detail"
+    exit 1
+}
 
-    cita_pid=`cat .cita-forever.pid`
-    pid_file="/proc/${cita_pid}/cmdline"
+do_stop() {
+    cita-forever stop > /dev/null 2>&1
 
-    while [ -e ${pid_file} ];do
-        sleep 3;
+    # Make sure node stopped
+    do_ping
+    if [ "${PING_STATUS}" == "pong" ]; then
+        echo "Failed to stop,"
+        echo "See ${NODE_LOGS_DIR}/cita-forever.log for detail"
+        exit 1
+    fi
+
+    echo "ok"
+}
+
+PING_STATUS=""
+do_ping() {
+    for service in forever; do
+        pidfile="${NODE_PATH}/.cita-${service}.pid"
+        if [ ! -e $pidfile ]; then
+            PING_STATUS="pang"
+            return
+        fi
+
+        alive=`ps -p $(cat ${pidfile}) | wc -l`
+        if [ "${alive}" -le "1" ]; then
+            PING_STATUS="pang"
+            return
+        fi
+    done
+
+    PING_STATUS="pong"
+}
+
+do_top() {
+    for service in "${SERVICES[@]}"; do
+        pidfile="${NODE_PATH}/.cita-${service}.pid"
+        if [ -e $pidfile ]; then
+            ps -p `cat ${pidfile}` -f | tail -n +2
+        fi
     done
 }
 
-clean() {
-    # backup and clean data&log
-    backup_dir=$(date -Iseconds)/
-    if [[ -e data && -e logs ]] ; then
-        mkdir ${backup_dir}
-    fi
-    if [ -e data ] ; then
-        mv data ${backup_dir}
-    fi
-    if [ -e logs ] ; then
-        mv logs ${backup_dir}
-    fi
-}
-
-stop() {
-    cita-forever stop > /dev/null 2>&1
-}
-
-rotate() {
-    cita-forever logrotate > /dev/null 2>&1
-}
-
-status() {
+do_status() {
     for pid_file in `find . -name "*.pid"`; do
         pid=$(cat ${pid_file})
         ps -A -o command=50,pid,time|grep ${pid} |grep -v "grep" || true
     done
-
 }
 
-logs() {
-    service=$1
-    tail -f logs/cita-${service}.log
+do_backup() {
+    # Backup empty node always successfully
+    if [[ ! -d ${NODE_DATA_DIR} || ! -d ${NODE_LOGS_DIR} ]]; then
+        echo "Node ${NODE_NAME} has no data and logs directories"
+        exit 0
+    fi
+
+    # Move data/ and logs/ into backup directory
+    backup_dir="$(pwd)/backup.$(date -Iseconds)"
+    mkdir -p ${backup_dir}
+    if [ -e ${NODE_DATA_DIR} ] ; then
+        echo "mv ${NODE_DATA_DIR} ${backup_dir}/"
+        mv ${NODE_DATA_DIR} ${backup_dir}/
+    fi
+    if [ -e ${NODE_LOGS_DIR} ] ; then
+        echo "mv ${NODE_LOGS_DIR} ${backup_dir}/"
+        mv ${NODE_LOGS_DIR} ${backup_dir}/
+    fi
 }
 
-stat() {
-    stat_cmd="pidstat -r -u -d"
-    for pid_file in `find . -name "*.pid"`; do
-        pid=$(cat ${pid_file})
-        stat_cmd=$stat_cmd" -p ${pid}"
-    done
-    while [ 1 ]; do
-        $stat_cmd
+do_logs() {
+    service0=$1
+    if [ -z ${service0} ]; then
+        echo "'${SCRIPT} logs' requires exactly 2 arguments."
         echo
-        echo "disk usage bytes $(du -s ./data)"
-        sleep 3
-    done
-}
-
-usage(){
-    echo "      usage: $0 COMMAND node_dir [args...]"
-    echo "      Commands:"
-    echo "      setup            setup cita run environment"
-    echo "      start            start cita"
-    echo "      stop             stop cita"
-    echo "      restart          restart cita"
-    echo "      logrotate        logrotate cita"
-    echo "      status           display cita process status"
-    echo "      logs             display cita's service(jsonrpc/chain/bft/network/auth) logs"
-    echo "      clean            backup and clean cita data&log file"
-    echo "      stat             display cita's cpu/ram/io/disk information"
-    echo "      usage            display help information"
-}
-
-if [[ `uname` == 'Darwin' ]]
-then
-    SCRIPT_DIR=$(dirname $(realpath $0))
-else
-    SCRIPT_DIR=$(dirname $(readlink -f $0))
-fi
-
-export PATH=$PATH:${SCRIPT_DIR}/../bin
-
-if [ $# -gt 4 ];
-then
-    help
-else
-    node=$2
-    pushd . > /dev/null
-    if [ ! -e ${node} ] ; then
-        echo "no such node directory: ${node}"
+        echo "Usage:  ${SCRIPT} logs NODE_NAME SERVICE"
+        echo
         exit 1
     fi
-    cd ${node}
-    case $1 in
-        setup)
-            setup
-            ;;
-        start)
-            stop > /dev/null 2>&1 || true
-            debug=$3
-            mock=$4
-            start ${debug} ${mock}
-            ;;
-        stop)
-            stop
-            ;;
-        restart)
-            stop ||true
-            debug=$3
-            mock=$4
-            start ${debug} ${mock}
-            ;;
-        logrotate)
-            rotate
-            ;;
-        status)
-            status
-            ;;
-        logs)
-            if [ $# -ne 3 ]; then
-                echo "usage: $0 logs node service"
-                exit 1
-            fi
-            service=$3
-            logs ${service}
-            ;;
-        stat)
-            stat
-            ;;
-        clean)
-            clean
-            ;;
-        help)
-            usage
-            ;;
-        *)
-            usage
-            ;;
-    esac
-    popd > /dev/null
+
+    for service in "${SERVICES[@]}"; do
+        if [[ $service = $service0 || "cita-${service}" = $service0 ]]; then
+            tail -f "${NODE_LOGS_DIR}/cita-${service}.log"
+            exit 0
+        fi
+    done
+
+    echo "No such service: ${service0}"
+    exit 1
+}
+
+do_logrotate() {
+    logs=$(ls -1 ${NODE_LOGS_DIR}/cita-*.log)
+    cita-forever logrotate > /dev/null 2>&1
+
+    # Wait for services to rotate their logs
+    sleep 2
+    for logfile in ${NODE_LOGS_DIR}/cita-*.log; do
+        if [[ ${logs} != *"${logfile}"* ]]; then
+            echo "${logfile}"
+        fi
+    done
+}
+
+clear_rabbit_mq() {
+    MQ_COMMAND="curl -i -u guest:guest -H content-type:application/json -XDELETE http://localhost:15672/api/queues/${TNODE}"
+
+    $MQ_COMMAND/auth              > /dev/null 2>&1 || true
+    $MQ_COMMAND/chain             > /dev/null 2>&1 || true
+    $MQ_COMMAND/consensus         > /dev/null 2>&1 || true
+    $MQ_COMMAND/jsonrpc           > /dev/null 2>&1 || true
+    $MQ_COMMAND/network           > /dev/null 2>&1 || true
+    $MQ_COMMAND/network_tx        > /dev/null 2>&1 || true
+    $MQ_COMMAND/network_consensus > /dev/null 2>&1 || true
+    $MQ_COMMAND/executor          > /dev/null 2>&1 || true
+}
+
+node_down_check() {
+    do_ping
+    if [ "${PING_STATUS}" == "pong" ]; then
+        echo "Node is already running!"
+        exit 1
+    fi
+}
+
+node_up_check() {
+    do_ping
+    if [ "${PING_STATUS}" == "pang" ]; then
+        echo "Node '${NODE_NAME}' not responding to pings"
+        exit 1
+    fi
+}
+
+
+if [ "${COMMAND}" = "help" ]; then
+    help
+    exit 0
+elif [ "${COMMAND}" = "usage" ]; then
+    usage
+    exit 0
+elif [ $# -lt 2 ]; then
+    usage
+    exit 1
 fi
+
+# Make sure the node directory exists
+if [ ! -d "${NODE_PATH}" ]; then
+    echo "No such node directory: ${NODE_NAME}"
+    exit 1
+elif [[ ! -e "${NODE_PATH}/forever.toml" && ! -e "${NODE_PATH}/forever_mock.toml" ]]; then
+    echo "'${NODE_NAME}' is not a ${SCRIPT} node directory"
+    exit 1
+fi
+
+# Enter the node directory
+pushd . > /dev/null
+cd ${NODE_PATH}
+
+# Check the ${COMMAND} for instructions
+case "${COMMAND}" in
+    setup)
+        do_setup
+        ;;
+
+    start)
+        do_stop      # TODO: should not do so, but present tests need this
+        node_down_check
+
+        # Make sure the RabbitMQ fresh
+        clear_rabbit_mq
+
+        do_start $3 $4
+        ;;
+
+    stop)
+        node_up_check
+        do_stop
+        ;;
+
+    restart)
+        node_up_check
+        do_stop
+
+        # Make sure the RabbitMQ fresh
+        clear_rabbit_mq
+
+        do_start $3 $4
+        ;;
+
+    ping)
+        do_ping
+        if [ "${PING_STATUS}" == "pong" ]; then
+            echo "pong"
+        else
+            echo "Node '${NODE_NAME}' not responding to pings."
+            exit 1
+        fi
+        ;;
+
+    top)
+        node_up_check
+        do_top
+        ;;
+
+    stat)   # deprecated, use 'top' instead
+        node_up_check
+        do_top
+        ;;
+
+    status) # similar to 'top', but ... ?
+        do_status
+        ;;
+
+    logrotate)
+        do_logrotate
+        ;;
+
+    logs)
+        do_logs $3
+        ;;
+
+    backup)
+        node_down_check
+        do_backup
+        ;;
+
+    clean) # deprecated, use 'backup' instead
+        node_down_check
+        do_backup
+        ;;
+
+    help)
+        help
+        ;;
+    *)
+        usage
+        ;;
+esac
+popd > /dev/null
+
+exit 0
+

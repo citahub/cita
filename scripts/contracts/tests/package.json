@@ -9,8 +9,6 @@
     "eslint-plugin-import": "^2.12.0"
   },
   "scripts": {
-    "test": "mocha test --recursive -t 60s; eslint test",
-    "unit_test": "mocha test/unit --recursive -t 60s; eslint test/unit",
     "unit_group": "mocha test/unit/group.js -t 60s; eslint test/unit/group.js",
     "unit_permission": "mocha test/unit/permission.js  -t 60s; eslint test/unit/permission.js",
     "unit_gm": "mocha test/unit/group_management.js -t 60s; eslint test/unit/group_management.js",
@@ -23,12 +21,6 @@
     "unit_chain": "mocha test/unit/chain_manager.js -t 60s; eslint test/unit/chain_manager.js",
     "unit_admin": "mocha test/unit/admin.js -t 60s; eslint test/unit/admin.js",
     "uint8": "mocha test/unit/uint8.js -t 60s; eslint test/unit/uint8.js",
-    "integrate_test": "mocha test/integrate --recursive -t 60s; eslint test/integrate",
-    "integrate_call-permission": "mocha test/integrate/call_permission  -t 60s; eslint test/integrate/call_permission.js",
-    "integrate_call-role": "mocha test/integrate/call_role -t 60s; eslint test/integrate/call_role.js",
-    "integrate_call-group": "mocha test/integrate/call_group -t 60s; eslint test/integrate/call_group.js",
-    "integrate_deploy_contract": "mocha test/integrate/deploy_contract -t 60s; eslint test/integrate/deploy_contract.js",
-    "integrate_send-tx": "mocha test/integrate/send_tx -t 60s; eslint test/integrate/send_tx.js",
     "integrate_quota": "mocha test/integrate/quota -t 60s; eslint test/integrate/quota.js",
     "abi": "mocha test/integrate/abi.js -t 60s; eslint test/integrate/abi.js",
     "store": "mocha test/integrate/store.js -t 60s; eslint test/integrate/store.js",

@@ -20,7 +20,7 @@ contract RoleCreator is ReservedAddress {
         public
         returns (Role roleAddress)
     {
-        require(roleManagementAddr == msg.sender);
+        require(roleManagementAddr == msg.sender, "permission denied.");
 
         roleAddress = new Role(_name, _permissions);
         emit RoleCreated(roleAddress, _name, _permissions);

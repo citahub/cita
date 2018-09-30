@@ -59,7 +59,7 @@ use pubsub::start_pubsub;
 
 pub type PubType = (String, Vec<u8>);
 
-const GENESIS_TIMESTAMP: u64 = 1524000000;
+const GENESIS_TIMESTAMP: u64 = 1_524_000_000;
 
 fn main() {
     dotenv::dotenv().ok();
@@ -108,7 +108,7 @@ fn main() {
         PrivKey::from_str(privkey_str).unwrap()
     };
     let mut mock_blocks: HashMap<u64, &serde_yaml::Value> = HashMap::new();
-    for block in mock_data["blocks"].as_sequence_mut().unwrap().into_iter() {
+    for block in mock_data["blocks"].as_sequence_mut().unwrap() {
         let block_number = block["number"].as_u64().unwrap();
         mock_blocks.insert(block_number, block);
     }
@@ -130,45 +130,42 @@ fn main() {
         let (key, body) = rx_sub.recv().unwrap();
         info!("received: key={}", key);
         let mut msg = Message::try_from(&body).unwrap();
-        match RoutingKey::from(&key) {
-            // 接受 chain 发送的 authorities_list
-            routing_key!(Chain >> RichStatus) => {
-                let rich_status = msg.take_rich_status().unwrap();
-                let height = rich_status.height + 1;
+        // 接受 chain 发送的 authorities_list
+        if RoutingKey::from(&key) == routing_key!(Chain >> RichStatus) {
+            let rich_status = msg.take_rich_status().unwrap();
+            let height = rich_status.height + 1;
 
-                // Remove previous block
-                if let Some(_) = mock_blocks.remove(&rich_status.height) {
-                    _current_height = rich_status.height as u8;
-                    repeat = 0;
-                } else if repeat < u8::MAX {
-                    repeat += 1;
-                }
-
-                if repeat >= 3 {
-                    warn!("the {} block can't generate", height);
-                }
-
-                if let Some(mock_block) = mock_blocks.get(&height) {
-                    info!(
-                        "send consensus block rich_status.height={} height = {:?}",
-                        rich_status.height, height
-                    );
-                    send_block(
-                        H256::from_slice(&rich_status.hash),
-                        height,
-                        tx_pub.clone(),
-                        sys_time.clone(),
-                        &mock_block,
-                        &privkey,
-                    );
-                } else {
-                    warn!("No data for this block height = {:?}", height);
-                };
-                if mock_blocks.is_empty() {
-                    break;
-                }
+            // Remove previous block
+            if mock_blocks.remove(&rich_status.height).is_some() {
+                _current_height = rich_status.height as u8;
+                repeat = 0;
+            } else if repeat < u8::MAX {
+                repeat += 1;
             }
-            _ => (),
+
+            if repeat >= 3 {
+                warn!("the {} block can't generate", height);
+            }
+
+            if let Some(mock_block) = mock_blocks.get(&height) {
+                info!(
+                    "send consensus block rich_status.height={} height = {:?}",
+                    rich_status.height, height
+                );
+                send_block(
+                    H256::from_slice(&rich_status.hash),
+                    height,
+                    &tx_pub,
+                    &sys_time.clone(),
+                    &mock_block,
+                    &privkey,
+                );
+            } else {
+                warn!("No data for this block height = {:?}", height);
+            };
+            if mock_blocks.is_empty() {
+                break;
+            }
         }
     }
     info!("[[DONE]]");
@@ -178,8 +175,8 @@ fn main() {
 fn send_block(
     pre_hash: H256,
     height: u64,
-    pub_sender: Sender<PubType>,
-    sys_time: Arc<Mutex<time::SystemTime>>,
+    pub_sender: &Sender<PubType>,
+    sys_time: &Arc<Mutex<time::SystemTime>>,
     mock_block: &serde_yaml::Value,
     privkey: &PrivKey,
 ) {
@@ -198,7 +195,7 @@ fn send_block(
             let nonce = tx["nonce"].as_u64().unwrap() as u32;
             let valid_until_block = tx["valid_until_block"].as_u64().unwrap();
 
-            let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
+            let sender = KeyPair::from_privkey(*privkey).unwrap().address();
             info!(
                 "sender={}, contract_address={}",
                 sender.lower_hex(),
@@ -221,7 +218,7 @@ fn send_block(
 
     // 构造block
     let (send_data, _block) = BuildBlock::build_block_with_proof(
-        &txs,
+        &txs[..],
         pre_hash,
         height,
         privkey,

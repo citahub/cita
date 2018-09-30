@@ -63,7 +63,6 @@ struct CodeReader<'a> {
     code: &'a [u8],
 }
 
-#[cfg_attr(feature = "dev", allow(len_without_is_empty))]
 impl<'a> CodeReader<'a> {
     /// Create new code reader - starting at position 0.
     fn new(code: &'a [u8]) -> Self {
@@ -245,7 +244,7 @@ impl<Cost: CostType> Interpreter<Cost> {
         }
     }
 
-    #[cfg_attr(feature = "dev", allow(too_many_arguments))]
+    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
     fn exec_instruction(&mut self, gas: Cost, params: &ActionParams, ext: &mut Ext, instruction: Instruction, code: &mut CodeReader, stack: &mut Stack<U256>, provided: Option<Cost>) -> Result<InstructionResult<Cost>> {
         match instruction {
             instructions::JUMP => {

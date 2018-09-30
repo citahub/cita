@@ -1,3 +1,20 @@
+// CITA
+// Copyright 2016-2018 Cryptape Technologies LLC.
+
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 #![feature(try_from)]
 extern crate bincode;
 extern crate chrono;
@@ -54,14 +71,14 @@ fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> BftProof {
             proof.height,
             proof.round,
             Step::Precommit,
-            sender.clone(),
-            Some(proof.proposal.clone()),
+            sender,
+            Some(proof.proposal),
         ),
         Infinite,
     ).unwrap();
 
-    let signature = Signature::sign(privkey, &message.crypt_hash().into()).unwrap();
-    commits.insert((*sender).into(), signature.into());
+    let signature = Signature::sign(privkey, &message.crypt_hash()).unwrap();
+    commits.insert((*sender).into(), signature);
     proof.commits = commits;
     proof
 }
@@ -74,7 +91,7 @@ fn build_block(
     privkey: &PrivKey,
     time_stamp: u64,
 ) -> (Vec<u8>, BlockWithProof) {
-    let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
+    let sender = KeyPair::from_privkey(*privkey).unwrap().address();
     let mut block = Block::new();
     let proof = build_proof(height, sender, privkey);
     let transaction_root = body.transactions_root().to_vec();
@@ -97,7 +114,7 @@ fn build_block(
 fn send_block(
     pre_block_hash: H256,
     height: u64,
-    pub_sender: Sender<PubType>,
+    pub_sender: &Sender<PubType>,
     timestamp: u64,
     block_txs: &BlockTxs,
     privkey: &PrivKey,
@@ -199,7 +216,7 @@ fn main() {
                             send_block(
                                 H256::from_slice(&rich_status.hash),
                                 send_height,
-                                tx_pub.clone(),
+                                &tx_pub,
                                 timestamp,
                                 &block_txs,
                                 &pk_miner,

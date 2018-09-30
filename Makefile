@@ -11,13 +11,16 @@ release:
 test:
 	RUST_BACKTRACE=full $(CARGO) test --all 2>&1
 
+test-release:
+	RUST_BACKTRACE=full $(CARGO) test --release --all
+
 bench:
 	-rm target/bench.log
 	cargo bench --all --no-run |tee target/bench.log
 	cargo bench --all --jobs 1 |tee -a target/bench.log
 
 fmt:
-	cargo fmt --all  -- --check
+	cargo fmt --all -- --check
 
 cov:
 	cargo cov test --all
@@ -28,7 +31,7 @@ clean:
 	rm -rf target/release/
 
 clippy:
-	cargo build --features clippy --all
+	$(CARGO) clippy --all
 
 # use cargo-audit to audit Cargo.lock for crates with security vulnerabilities
 # expecting to see "Success No vulnerable packages found"

@@ -1,6 +1,8 @@
 pragma solidity ^0.4.24;
 
 import "../common/model_type.sol";
+import "../common/admin.sol";
+import "../common/address.sol";
 
 
 /// @title The interface of system config
@@ -20,6 +22,12 @@ interface SysConfigInterface {
 
     /// @notice Whether check permission in the system or not, true represents check and false represents don't check.
     function getPermissionCheck() external view returns (bool);
+
+    /// @notice Check sender's send transaction permission
+    function getSendTxPermissionCheck() external view returns (bool);
+
+    /// @notice Check sender's create contract permission
+    function getCreateContractPermissionCheck() external view returns (bool);
 
     /// @notice Whether check quota in the system or not, true represents check and false represents don't check.
     function getQuotaCheck() external view returns (bool);
@@ -52,11 +60,13 @@ interface SysConfigInterface {
 
 /// @title System config contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-contract SysConfig is SysConfigInterface, EconomicalType{
+contract SysConfig is SysConfigInterface, EconomicalType, ReservedAddress {
 
     /// @notice only chain_name, operator, website can be updated
     uint delayBlockNumber;
     bool checkPermission;
+    bool checkSendTxPermission;
+    bool checkCreateContractPermission;
     bool checkQuota;
     bool checkFeeBackPlatform;
     address chainOwner;
@@ -68,6 +78,14 @@ contract SysConfig is SysConfigInterface, EconomicalType{
     EconomicalModel economicalModel;
     TokenInfo tokenInfo;
 
+    Admin admin = Admin(adminAddr);
+
+    modifier onlyAdmin {
+        if (admin.isAdmin(msg.sender))
+            _;
+        else return;
+    }
+
     struct TokenInfo {
         string name;
         string symbol;
@@ -78,6 +96,8 @@ contract SysConfig is SysConfigInterface, EconomicalType{
     constructor(
         uint _delayBlockNumber,
         bool _checkPermission,
+        bool _checkSendTxPermission,
+        bool _checkCreateContractPermission,
         bool _checkQuota,
         bool _checkFeeBackPlatform,
         address _chainOwner,
@@ -93,9 +113,11 @@ contract SysConfig is SysConfigInterface, EconomicalType{
     )
         public
     {
-        require(_chainId > 0);
+        require(_chainId > 0, "The chainId should larger than zero.");
         delayBlockNumber = _delayBlockNumber;
         checkPermission = _checkPermission;
+        checkSendTxPermission = _checkSendTxPermission;
+        checkCreateContractPermission = _checkCreateContractPermission;
         checkQuota = _checkQuota;
         checkFeeBackPlatform = _checkFeeBackPlatform;
         chainOwner = _chainOwner;
@@ -114,18 +136,21 @@ contract SysConfig is SysConfigInterface, EconomicalType{
 
     function setOperator(string _operator)
         external
+        onlyAdmin
     {
         operator = _operator;
     }
 
     function setWebsite(string _website)
         external
+        onlyAdmin
     {
         website = _website;
     }
 
     function setChainName(string _chainName)
         external
+        onlyAdmin
     {
         chainName = _chainName;
     }
@@ -144,6 +169,22 @@ contract SysConfig is SysConfigInterface, EconomicalType{
         returns (bool)
     {
         return checkPermission;
+    }
+
+    function getSendTxPermissionCheck()
+        public
+        view
+        returns (bool)
+    {
+        return checkSendTxPermission;
+    }
+
+    function getCreateContractPermissionCheck()
+        public
+        view
+        returns (bool)
+    {
+        return checkCreateContractPermission;
     }
 
     function getQuotaCheck()

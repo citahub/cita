@@ -63,17 +63,23 @@ fn main() {
     // and relay the transaction to the to-chain.
     // The chain id of to-chain is in the tx proof.
     // Relay the transaction to each server in to-chain servers list, until succeed.
-    cfg.get_servers(args.chain_id)
-        .and_then(|servers| fetch_txproof(servers, args.tx_hash))
+    let _ = cfg
+        .get_servers(args.chain_id)
+        .and_then(|servers| fetch_txproof(&servers[..], args.tx_hash))
         .and_then(|tx_proof_rlp| {
-            deconstruct_txproof(&tx_proof_rlp).map(|relay_info| (tx_proof_rlp, relay_info))
+            deconstruct_txproof(&tx_proof_rlp[..]).map(|relay_info| (tx_proof_rlp, relay_info))
         })
         .and_then(|(tx_proof_rlp, relay_info)| {
             cfg.get_servers(relay_info.to_chain_id)
                 .map(|to_servers| (to_servers, tx_proof_rlp, relay_info))
         })
         .and_then(|(to_servers, tx_proof_rlp, relay_info)| {
-            relay_transaction(to_servers, &cfg.get_private_key(), tx_proof_rlp, relay_info)
+            relay_transaction(
+                &to_servers[..],
+                &cfg.get_private_key(),
+                &tx_proof_rlp[..],
+                &relay_info,
+            )
         })
         .map(|tx_hash| {
             println!("{:?}", tx_hash);
@@ -83,7 +89,7 @@ fn main() {
 }
 
 #[inline]
-fn fetch_txproof(servers: &Vec<UpStream>, tx_hash: H256) -> Option<Vec<u8>> {
+fn fetch_txproof(servers: &[UpStream], tx_hash: H256) -> Option<Vec<u8>> {
     let mut ret = None;
     for upstream in servers.iter() {
         if let Ok(tx_proof_rlp) = communication::cita_get_transaction_proof(upstream, tx_hash) {
@@ -110,8 +116,8 @@ fn deconstruct_txproof(tx_proof_rlp: &[u8]) -> Option<RelayInfo> {
 fn construct_transaction(
     upstream: &UpStream,
     pkey: &PrivKey,
-    tx_proof_rlp: Vec<u8>,
-    relay_info: RelayInfo,
+    tx_proof_rlp: &[u8],
+    relay_info: &RelayInfo,
 ) -> Option<UnverifiedTransaction> {
     communication::cita_get_metadata(upstream)
         .ok()
@@ -145,16 +151,14 @@ fn construct_transaction(
 
 #[inline]
 fn relay_transaction(
-    servers: &Vec<UpStream>,
+    servers: &[UpStream],
     pkey: &PrivKey,
-    tx_proof_rlp: Vec<u8>,
-    relay_info: RelayInfo,
+    tx_proof_rlp: &[u8],
+    relay_info: &RelayInfo,
 ) -> Option<H256> {
     let mut ret = None;
     for upstream in servers.iter() {
-        if let Some(utx) =
-            construct_transaction(upstream, pkey, tx_proof_rlp.clone(), relay_info.clone())
-        {
+        if let Some(utx) = construct_transaction(upstream, pkey, tx_proof_rlp, relay_info) {
             if let Ok(hash) = communication::cita_send_transaction(upstream, &utx) {
                 ret = Some(hash);
                 break;

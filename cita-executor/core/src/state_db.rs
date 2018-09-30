@@ -146,9 +146,13 @@ impl StateDB {
 
         let mut bloom_parts = vec![0u64; ACCOUNT_BLOOM_SPACE / 8];
         let mut key = [0u8; 8];
-        for i in 0..ACCOUNT_BLOOM_SPACE / 8 {
+        for (i, part) in bloom_parts
+            .iter_mut()
+            .enumerate()
+            .take(ACCOUNT_BLOOM_SPACE / 8)
+        {
             LittleEndian::write_u64(&mut key, i as u64);
-            bloom_parts[i] = db
+            *part = db
                 .get(COL_ACCOUNT_BLOOM, &key)
                 .expect("low-level database error")
                 .and_then(|val| Some(LittleEndian::read_u64(&val[..])))

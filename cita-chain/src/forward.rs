@@ -390,9 +390,6 @@ impl Forward {
             self.chain.save_current_block_poof(&proof);
             self.chain.set_block_body(blk_height as u64, &rblock);
             self.chain.set_max_store_height(blk_height as u64);
-            let tx_hashes = rblock.body().transaction_hashes();
-            self.chain
-                .delivery_block_tx_hashes(blk_height as u64, &tx_hashes, &self.ctx_pub);
         }
     }
 
@@ -411,7 +408,7 @@ impl Forward {
             origin,
             res_vec.get_blocks().len()
         );
-        if res_vec.get_blocks().len() > 0 {
+        if !res_vec.get_blocks().is_empty() {
             let msg = Message::init(OperateType::Single, origin, res_vec.into());
             trace!(
                 "sync: origin {:?}, chain.blk: OperateType {:?}",
@@ -429,7 +426,7 @@ impl Forward {
 
     fn reply_local_syn_req(&self, heights: Vec<u64>) {
         let res_vec = self.sync_response(heights);
-        if res_vec.get_blocks().len() > 0 {
+        if !res_vec.get_blocks().is_empty() {
             let msg = Message::init(OperateType::Single, 0, res_vec.into());
             trace!(
                 "local_sync: chain.blk: OperateType {:?}",

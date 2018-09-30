@@ -17,12 +17,13 @@
 
 use basic_types::LogBloom;
 use cita_types::{Address, H256, U256};
+use contracts::solc::PriceManagement;
 use engines::Engine;
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
 use header::*;
-use libexecutor::executor::{EconomicalModel, Executor, GlobalSysConfig};
+use libexecutor::executor::{CheckOptions, EconomicalModel, Executor, GlobalSysConfig};
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
@@ -397,24 +398,27 @@ impl OpenBlock {
     pub fn apply_transactions(
         &mut self,
         executor: &Executor,
-        check_permission: bool,
-        check_quota: bool,
-        check_fee_back_platform: bool,
         chain_owner: Address,
+        check_options: &CheckOptions,
     ) -> bool {
-        for (index, t) in self.body.transactions.clone().into_iter().enumerate() {
+        for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 && executor.is_interrupted.load(Ordering::SeqCst) {
                 executor.is_interrupted.store(false, Ordering::SeqCst);
                 return false;
             }
+
+            let economical_model: EconomicalModel = *executor.economical_model.read();
+            if economical_model == EconomicalModel::Charge {
+                t.gas_price = PriceManagement::quota_price(executor)
+                    .unwrap_or_else(PriceManagement::default_quota_price);
+            }
+
             self.apply_transaction(
                 &*executor.engine,
                 &t,
-                check_permission,
-                check_quota,
                 *executor.economical_model.read(),
-                check_fee_back_platform,
                 chain_owner,
+                check_options,
             );
         }
 
@@ -428,15 +432,14 @@ impl OpenBlock {
         true
     }
 
+    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
     pub fn apply_transaction(
         &mut self,
         engine: &Engine,
         t: &SignedTransaction,
-        check_permission: bool,
-        check_quota: bool,
         economical_model: EconomicalModel,
-        check_fee_back_platform: bool,
         chain_owner: Address,
+        check_options: &CheckOptions,
     ) {
         let mut env_info = self.env_info();
         self.account_gas
@@ -453,11 +456,9 @@ impl OpenBlock {
             engine,
             t,
             has_traces,
-            check_permission,
-            check_quota,
             economical_model,
-            check_fee_back_platform,
             chain_owner,
+            check_options,
         ) {
             Ok(outcome) => {
                 trace!("apply signed transaction {} success", t.hash());
@@ -466,7 +467,7 @@ impl OpenBlock {
                 }
                 let transaction_gas_used = outcome.receipt.gas_used - self.current_gas_used;
                 self.current_gas_used = outcome.receipt.gas_used;
-                if check_quota {
+                if check_options.quota {
                     if let Some(value) = self.account_gas.get_mut(t.sender()) {
                         *value = *value - transaction_gas_used;
                     }

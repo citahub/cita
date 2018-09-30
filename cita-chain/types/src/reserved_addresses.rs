@@ -103,6 +103,9 @@ pub const GROUP_CREATOR: &str = "ffffffffffffffffffffffffffffffffff02000b";
 pub const ADMIN: &str = "ffffffffffffffffffffffffffffffffff02000c";
 pub const ROLE_AUTH: &str = "ffffffffffffffffffffffffffffffffff02000d";
 pub const BATCH_TX: &str = "ffffffffffffffffffffffffffffffffff02000e";
+pub const EMERGENCY_BRAKE: &str = "ffffffffffffffffffffffffffffffffff02000f";
+pub const PRICE_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020010";
+pub const VERSION_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020011";
 // Permission System Contracts
 pub const PERMISSION_SEND_TX: &str = "ffffffffffffffffffffffffffffffffff021000";
 pub const PERMISSION_CREATE_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff021001";
@@ -119,11 +122,15 @@ pub const PERMISSION_CANCEL_ROLE: &str = "ffffffffffffffffffffffffffffffffff0210
 pub const PERMISSION_NEW_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101a";
 pub const PERMISSION_DELETE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101b";
 pub const PERMISSION_UPDATE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101c";
-pub const PERMISSION_NEW_NODE: &str = "FfFfFFffFffffFffffffffFFFFffFfFFFF021020";
-pub const PERMISSION_DELETE_NODE: &str = "FffFFFfFfFFFfFfFfFfFFfffFFFFFffFFF021021";
-pub const PERMISSION_UPDATE_NODE: &str = "FffFfffFFffFFFFfFFFFFfFfFFFfFFFfFF021022";
-pub const PERMISSION_ACCOUNT_QUOTA: &str = "ffFfffFfffFfFFFFFfFfFffFFfFfffFffF021023";
-pub const PERMISSION_BLOCK_QUOTA: &str = "fffffFfFfFFfFFffFfFffFFFFfFFFfFffF021024";
+pub const PERMISSION_NEW_NODE: &str = "ffffffffffffffffffffffffffffffffff021020";
+pub const PERMISSION_DELETE_NODE: &str = "ffffffffffffffffffffffffffffffffff021021";
+pub const PERMISSION_UPDATE_NODE: &str = "ffffffffffffffffffffffffffffffffff021022";
+pub const PERMISSION_ACCOUNT_QUOTA: &str = "ffffffffffffffffffffffffffffffffff021023";
+pub const PERMISSION_BLOCK_QUOTA: &str = "ffffffffffffffffffffffffffffffffff021024";
+pub const PERMISSION_BATCH_TX: &str = "ffffffffffffffffffffffffffffffffff021025";
+pub const PERMISSION_EMERGENCY_BRAKE: &str = "ffffffffffffffffffffffffffffffffff021026";
+pub const PERMISSION_QUOTA_PRICE: &str = "ffffffffffffffffffffffffffffffffff021027";
+pub const PERMISSION_VERSION: &str = "ffffffffffffffffffffffffffffffffff021028";
 
 // Native Contracts
 pub const NATIVE_SIMPLE_STORAGE: &str = "ffffffffffffffffffffffffffffffffff030000";

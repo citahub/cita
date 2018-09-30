@@ -1,3 +1,20 @@
+// CITA
+// Copyright 2016-2018 Cryptape Technologies LLC.
+
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 //! ## Summary
 //! One of cita's main core components is to execute transaction,
 //! create contracts, maintain world state trees, and send executed
@@ -157,17 +174,15 @@ fn main() {
 
     let mut timeout_factor = 0u8;
     loop {
-        if let Ok(number) =
-            write_receiver.recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0))
+        if let Ok(number) = write_receiver
+            .recv_timeout(Duration::new(18 * (2u64.pow(u32::from(timeout_factor))), 0))
         {
             ext_instance.execute_block(number);
             timeout_factor = 0;
-        } else {
-            if !ext_instance.is_snapshot {
-                info!("Executor enters the timeout");
-                if timeout_factor < 6 {
-                    timeout_factor += 1
-                }
+        } else if !ext_instance.is_snapshot {
+            info!("Executor enters the timeout");
+            if timeout_factor < 6 {
+                timeout_factor += 1
             }
         }
     }

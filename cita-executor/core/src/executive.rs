@@ -18,8 +18,17 @@
 
 use builtin::Builtin;
 use cita_types::{Address, H160, H256, U256, U512};
-use contracts::permission_management::contains_resource;
-use contracts::Resource;
+use contracts::{
+    grpc::{
+        self,
+        contract::{
+            create_grpc_contract, invoke_grpc_contract, is_create_grpc_address, is_grpc_contract,
+        },
+        grpc_vm::extract_logs_from_response, service_registry,
+    },
+    native::factory::{Contract as NativeContract, Factory as NativeFactory},
+    solc::{permission_management::contains_resource, Resource},
+};
 use crossbeam;
 use engines::Engine;
 use error::ExecutionError;
@@ -29,15 +38,7 @@ use evm::env_info::EnvInfo;
 use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use externalities::*;
-use grpc_contracts;
-use grpc_contracts::contract::{
-    create_grpc_contract, invoke_grpc_contract, is_create_grpc_address, is_grpc_contract,
-};
-use grpc_contracts::grpc_vm::extract_logs_from_response;
-use grpc_contracts::service_registry;
 use libexecutor::executor::EconomicalModel;
-use native::factory::Contract as NativeContract;
-use native::factory::Factory as NativeFactory;
 use state::backend::Backend as StateBackend;
 use state::{State, Substate};
 use std::cmp;
@@ -80,9 +81,6 @@ const AMEND_GET_KV_H256: u32 = 4;
 ///amend account's balance
 const AMEND_ACCOUNT_BALANCE: u32 = 5;
 
-// minimum required gas, just for check
-const MIN_GAS_REQUIRED: u32 = 100;
-
 /// Returns new address created from address and given nonce.
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
     use rlp::RlpStream;
@@ -94,51 +92,65 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
 }
 
 /// Check the sender's permission
+#[allow(unknown_lints, implicit_hasher)] // TODO clippy
 pub fn check_permission(
     group_accounts: &HashMap<Address, Vec<Address>>,
     account_permissions: &HashMap<Address, Vec<Resource>>,
     t: &SignedTransaction,
+    options: &TransactOptions,
 ) -> Result<(), ExecutionError> {
     let sender = *t.sender();
-    check_send_tx(group_accounts, account_permissions, &sender)?;
+
+    if options.check_send_tx_permission {
+        check_send_tx(group_accounts, account_permissions, &sender)?;
+    }
 
     match t.action {
         Action::Create => {
-            check_create_contract(group_accounts, account_permissions, &sender)?;
+            if options.check_create_contract_permission {
+                check_create_contract(group_accounts, account_permissions, &sender)?;
+            }
         }
         Action::Call(address) => {
-            let group_management_addr =
-                Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
-            trace!("t.data {:?}", t.data);
+            if options.check_permission {
+                let group_management_addr =
+                    Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
+                trace!("t.data {:?}", t.data);
 
-            if t.data.len() < 4 {
-                return Err(ExecutionError::TransactionMalformed(
-                    "The length of transation data is less than four bytes".to_string(),
-                ));
-            }
+                if t.data.is_empty() {
+                    // Transfer transaction, no function call
+                    return Ok(());
+                }
 
-            if address == group_management_addr {
-                if t.data.len() < 36 {
+                if t.data.len() < 4 {
                     return Err(ExecutionError::TransactionMalformed(
-                        "Data should have at least one parameter".to_string(),
+                        "The length of transaction data is less than four bytes".to_string(),
                     ));
                 }
-                check_origin_group(
+
+                if address == group_management_addr {
+                    if t.data.len() < 36 {
+                        return Err(ExecutionError::TransactionMalformed(
+                            "Data should have at least one parameter".to_string(),
+                        ));
+                    }
+                    check_origin_group(
+                        account_permissions,
+                        &sender,
+                        &address,
+                        &t.data[0..4],
+                        &H160::from(&t.data[16..36]),
+                    )?;
+                }
+
+                check_call_contract(
+                    group_accounts,
                     account_permissions,
                     &sender,
                     &address,
                     &t.data[0..4],
-                    &H160::from(&t.data[16..36]),
                 )?;
             }
-
-            check_call_contract(
-                group_accounts,
-                account_permissions,
-                &sender,
-                &address,
-                &t.data[0..4],
-            )?;
         }
         _ => {}
     }
@@ -310,6 +322,10 @@ pub struct TransactOptions {
     pub check_permission: bool,
     /// Check account gas limit
     pub check_quota: bool,
+    /// Check sender's send_tx permission
+    pub check_send_tx_permission: bool,
+    /// Check sender's create_contract permission
+    pub check_create_contract_permission: bool,
 }
 
 /// Transaction executor.
@@ -329,6 +345,7 @@ pub struct Executive<'a, B: 'a + StateBackend> {
 
 impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Basic constructor.
+    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
     pub fn new(
         state: &'a mut State<B>,
         info: &'a EnvInfo,
@@ -359,6 +376,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Populates executive from parent properties. Increments executive depth.
+    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
     pub fn from_parent(
         state: &'a mut State<B>,
         info: &'a EnvInfo,
@@ -386,6 +404,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Creates `Externalities` from `Executive`.
+    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
     pub fn as_externalities<'any, T, V>(
         &'any mut self,
         origin_info: OriginInfo,
@@ -426,7 +445,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact(
         &'a mut self,
         t: &SignedTransaction,
-        options: TransactOptions,
+        options: &TransactOptions,
     ) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(
@@ -487,13 +506,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let loop_num: usize = (len - 20) / (32 * 2);
         let account = H160::from(&data[0..20]);
 
-        self.state.checkpoint();
         for i in 0..loop_num {
             let base = 20 + 32 * 2 * i;
             let key = H256::from_slice(&data[base..base + 32]);
             let val = H256::from_slice(&data[base + 32..base + 32 * 2]);
             if self.state.set_storage(&account, key, val).is_err() {
-                self.state.discard_checkpoint();
                 return false;
             }
         }
@@ -509,7 +526,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
         t: &SignedTransaction,
-        options: TransactOptions,
+        options: &TransactOptions,
         mut tracer: T,
         mut vm_tracer: V,
     ) -> Result<Executed, ExecutionError>
@@ -523,17 +540,25 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         self.state.inc_nonce(&sender)?;
 
         trace!("permission should be check: {}", options.check_permission);
-        if options.check_permission {
-            check_permission(
-                &self.state.group_accounts,
-                &self.state.account_permissions,
-                t,
-            )?;
-        }
 
-        if sender != Address::zero() && t.gas < U256::from(MIN_GAS_REQUIRED) {
+        check_permission(
+            &self.state.group_accounts,
+            &self.state.account_permissions,
+            t,
+            options,
+        )?;
+
+        let schedule = Schedule::new_v1();
+
+        let base_gas_required = match t.action {
+            Action::Create => schedule.tx_create_gas,
+            Action::GoCreate => schedule.tx_create_gas,
+            _ => schedule.tx_gas,
+        };
+
+        if sender != Address::zero() && t.gas < U256::from(base_gas_required) {
             return Err(ExecutionError::NotEnoughBaseGas {
-                required: U256::from(MIN_GAS_REQUIRED),
+                required: U256::from(base_gas_required),
                 got: t.gas,
             });
         }
@@ -558,12 +583,10 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             )?;
         }*/
 
-        if t.action == Action::AbiStore {
-            if !self.transact_set_abi(&t.data) {
-                return Err(ExecutionError::TransactionMalformed(
-                    "Account doesn't exist".to_string(),
-                ));
-            }
+        if t.action == Action::AbiStore && !self.transact_set_abi(&t.data) {
+            return Err(ExecutionError::TransactionMalformed(
+                "Account doesn't exist".to_owned(),
+            ));
         }
 
         // NOTE: there can be no invalid transactions from this point
@@ -585,7 +608,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let mut substate = Substate::new();
 
-        let init_gas = t.gas - U256::from(MIN_GAS_REQUIRED);
+        let init_gas = t.gas - U256::from(base_gas_required);
         let (result, output) = match t.action {
             Action::Store | Action::AbiStore => {
                 let schedule = Schedule::new_v1();
@@ -601,7 +624,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     )
                 } else {
                     return Err(ExecutionError::NotEnoughBaseGas {
-                        required: U256::from(MIN_GAS_REQUIRED).saturating_add(store_gas_used),
+                        required: U256::from(base_gas_required).saturating_add(store_gas_used),
                         got: t.gas,
                     });
                 }
@@ -653,7 +676,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 let params = ActionParams {
                     code_address: amend_data_address,
                     address: amend_data_address,
-                    sender: sender,
+                    sender,
                     origin: sender,
                     gas: init_gas,
                     gas_price: t.gas_price(),
@@ -829,11 +852,15 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 native_contract,
             )
         } else if self.is_amend_data_address(params.code_address) {
-            self.call_amend_data(params, substate, &output)
+            let res = self.call_amend_data(params, substate, &output);
+            self.enact_self_defined_res(&res);
+            res
         } else if is_create_grpc_address(params.code_address)
             || is_grpc_contract(params.code_address)
         {
-            self.call_grpc_contract(params, substate, &output)
+            let res = self.call_grpc_contract(params, substate, &output);
+            self.enact_self_defined_res(&res);
+            res
         } else if let Some(builtin) = self.engine.builtin(&params.code_address, self.info.number) {
             // check and call Builtin contract
             self.call_builtin_contract(params, output, tracer, builtin)
@@ -846,6 +873,27 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     fn is_amend_data_address(&self, address: Address) -> bool {
         let amend_address: Address = reserved_addresses::AMEND_ADDRESS.into();
         amend_address == address
+    }
+
+    fn enact_self_defined_res(&mut self, result: &evm::Result<FinalizationResult>) {
+        match *result {
+            Err(evm::Error::OutOfGas)
+            | Err(evm::Error::BadJumpDestination { .. })
+            | Err(evm::Error::BadInstruction { .. })
+            | Err(evm::Error::StackUnderflow { .. })
+            | Err(evm::Error::OutOfStack { .. })
+            | Err(evm::Error::MutableCallInStaticContext)
+            | Err(evm::Error::OutOfBounds)
+            | Err(evm::Error::Reverted)
+            | Ok(FinalizationResult {
+                apply_state: false, ..
+            }) => {
+                self.state.revert_to_checkpoint();
+            }
+            Ok(_) | Err(evm::Error::Internal(_)) => {
+                self.state.discard_checkpoint();
+            }
+        }
     }
 
     fn call_amend_data(
@@ -957,8 +1005,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     let value = storage.get_value();
                     trace!("recv resp: {:?}", storage);
                     trace!("key: {:?}, value: {:?}", key, value);
-                    grpc_contracts::storage::set_storage(self.state, params.address, key, value)
-                        .unwrap();
+                    grpc::storage::set_storage(self.state, params.address, key, value).unwrap();
                 }
 
                 // update contract_state.height
@@ -1229,6 +1276,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Finalizes the transaction (does refunds and suicides).
+    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
     fn finalize(
         &mut self,
         t: &SignedTransaction,
@@ -1404,6 +1452,7 @@ mod tests {
     use engines::NullEngine;
     use evm::action_params::{ActionParams, ActionValue};
     use evm::env_info::EnvInfo;
+    use evm::Schedule;
     use evm::{Factory, VMType};
     use state::Substate;
     use std::ops::Deref;
@@ -1458,12 +1507,15 @@ mod tests {
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
+                check_send_tx_permission: false,
+                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, &opts)
         };
 
+        let schedule = Schedule::new_v1();
         let expected = {
-            let base_gas_required = U256::from(100);
+            let base_gas_required = U256::from(schedule.tx_gas);
             let schedule = Schedule::new_v1();
             let store_gas_used = U256::from(data_len * schedule.create_data_gas);
             let required = base_gas_required.saturating_add(store_gas_used);
@@ -1519,18 +1571,23 @@ mod tests {
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
+                check_send_tx_permission: false,
+                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts).unwrap()
+            ex.transact(&t, &opts).unwrap()
         };
 
+        let schedule = Schedule::new_v1();
         assert_eq!(executed.gas, U256::from(100_000));
-        assert_eq!(executed.gas_used, U256::from(100));
+
+        // Actually, this is an Action::Create transaction
+        assert_eq!(executed.gas_used, U256::from(schedule.tx_create_gas));
         assert_eq!(executed.refunded, U256::from(0));
         assert_eq!(executed.logs.len(), 0);
         assert_eq!(executed.contracts_created.len(), 0);
         assert_eq!(
             state.balance(&sender).unwrap(),
-            U256::from(18 + 100_000 - 17 - 100)
+            U256::from(18 + 100_000 - 17 - schedule.tx_create_gas)
         );
         assert_eq!(state.balance(&contract).unwrap(), U256::from(17));
         assert_eq!(state.nonce(&sender).unwrap(), U256::from(1));
@@ -1577,8 +1634,10 @@ mod tests {
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
+                check_send_tx_permission: false,
+                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, &opts)
         };
 
         match result {
@@ -1630,8 +1689,10 @@ mod tests {
                 vm_tracing: false,
                 check_permission: false,
                 check_quota: true,
+                check_send_tx_permission: false,
+                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, &opts)
         };
 
         assert!(result.is_ok());
@@ -1652,9 +1713,10 @@ contract HelloWorld {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
         let nonce = U256::zero();
-        let gas_required = U256::from(1000);
+        let gas_required = U256::from(schedule.tx_gas + 1000);
 
         let (deploy_code, _runtime_code) = solc("HelloWorld", source);
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
@@ -1707,9 +1769,10 @@ contract AbiTest {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
         let nonce = U256::zero();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
 
         let (deploy_code, runtime_code) = solc("AbiTest", source);
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
@@ -1764,8 +1827,9 @@ contract AbiTest {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
         let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
         let (_, runtime_code) = solc("AbiTest", source);
         // big endian: value=0x12345678
@@ -1843,8 +1907,9 @@ contract AbiTest {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
         let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
         let (_, runtime_code) = solc("AbiTest", source);
         // big endian: value=0x12345678
@@ -1927,8 +1992,9 @@ contract AbiTest {
   }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
         let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
         let (_, runtime_code) = solc("AbiTest", source);
         // big endian: value=0x12345678
@@ -2020,8 +2086,9 @@ contract FakePermissionManagement {
     }
 }
 "#;
+        let schedule = Schedule::new_v1();
         let sender = Address::from_str("cd1722f3947def4cf144679da39c4c32bdc35681").unwrap();
-        let gas_required = U256::from(100_000);
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
         let auth_addr = Address::from_str("27ec3678e4d61534ab8a87cf8feb8ac110ddeda5").unwrap();
         let permission_addr =
             Address::from_str("33f4b16d67b112409ab4ac87274926382daacfac").unwrap();

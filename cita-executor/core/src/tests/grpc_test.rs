@@ -1,11 +1,37 @@
-use cita_types::{Address, U256};
-//    use core_executor::tests::helpers::{get_temp_state};
+// CITA
+// Copyright 2016-2018 Cryptape Technologies LLC.
+
+// This program is free software: you can redistribute it
+// and/or modify it under the terms of the GNU General Public
+// License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any
+// later version.
+
+// This program is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 use super::helpers::*;
+use cita_types::{Address, U256};
+use contracts::{
+    grpc::{
+        contract::{contract_creation_address, low_contract_address}, service_registry,
+    },
+    native::factory::Factory as NativeFactory,
+};
+use engines::NullEngine;
 use evm;
 use evm::action_params::{ActionParams, ActionValue};
+use evm::env_info::EnvInfo;
+use evm::{Factory, VMType};
 use executive::Executive;
-use grpc_contracts::contract::{contract_creation_address, low_contract_address};
-use grpc_contracts::service_registry;
+use libexecutor::executor::EconomicalModel;
+use state::Substate;
+use trace::{ExecutiveTracer, ExecutiveVMTracer};
 use util::BytesRef;
 
 mod grpc_service {
@@ -85,13 +111,6 @@ mod grpc_service {
 }
 
 fn call_vm(params: ActionParams) -> evm::Result<evm::FinalizationResult> {
-    use engines::NullEngine;
-    use evm::env_info::EnvInfo;
-    use evm::{Factory, VMType};
-    use libexecutor::executor::EconomicalModel;
-    use native::factory::Factory as NativeFactory;
-    use state::Substate;
-    use trace::{ExecutiveTracer, ExecutiveVMTracer};
     let factory = Factory::new(VMType::Interpreter, 1024 * 32);
     let native_factory = NativeFactory::default();
     let mut tracer = ExecutiveTracer::default();

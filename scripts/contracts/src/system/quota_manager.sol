@@ -78,7 +78,7 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
     }
 
     modifier checkPermission(address _permission) {
-        require(auth.checkPermission(msg.sender, _permission));
+        require(auth.checkPermission(msg.sender, _permission), "permission denied.");
         _;
     }
 

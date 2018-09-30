@@ -111,6 +111,7 @@ impl fmt::Display for TransactionError {
     }
 }
 
+#[allow(unknown_lints, large_enum_variant)] // TODO clippy
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 /// Errors concerning block processing.
 pub enum BlockError {
@@ -274,7 +275,7 @@ impl fmt::Display for ExecutionError {
         use self::ExecutionError::*;
 
         let msg = match *self {
-            NotEnoughBaseGas { ref required, ref got } => format!("Not enough base gas. {} is required, but only {} paid", required, got),
+            NotEnoughBaseGas { ref required, ref got } => format!("Not enough base quota. {} is required, but only {} paid", required, got),
             BlockGasLimitReached {
                 ref gas_limit,
                 ref gas_used,
@@ -294,6 +295,7 @@ impl fmt::Display for ExecutionError {
     }
 }
 
+#[allow(unknown_lints, large_enum_variant)] // TODO clippy
 #[derive(Debug)]
 /// General error type which should be capable of representing all errors in ethcore.
 pub enum Error {

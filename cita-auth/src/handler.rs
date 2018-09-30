@@ -236,6 +236,7 @@ pub struct MsgHandler {
     is_snapshot: bool,
     black_list_cache: HashMap<Address, i8>,
     is_need_proposal_new_block: bool,
+    admin_address: Option<Address>,
 }
 
 impl MsgHandler {
@@ -269,6 +270,7 @@ impl MsgHandler {
             is_snapshot: false,
             black_list_cache: HashMap::new(),
             is_need_proposal_new_block: false,
+            admin_address: None,
         }
     }
 
@@ -310,10 +312,9 @@ impl MsgHandler {
         }
     }
 
+    #[allow(unknown_lints, option_option)] // TODO clippy
     fn get_ret_from_cache(&self, tx_hash: &H256) -> Option<Option<Vec<u8>>> {
-        self.cache
-            .peek(tx_hash)
-            .map(|option_pubkey| option_pubkey.clone())
+        self.cache.peek(tx_hash).cloned()
     }
 
     fn save_ret_to_cache(&mut self, tx_hash: H256, option_pubkey: Option<Vec<u8>>) {
@@ -322,7 +323,7 @@ impl MsgHandler {
 
     pub fn verify_block_quota(&self, blkreq: &VerifyBlockReq) -> bool {
         let reqs = blkreq.get_reqs();
-        let mut gas_limit = self.account_gas_limit.get_common_gas_limit();
+        let gas_limit = self.account_gas_limit.get_common_gas_limit();
         let mut specific_gas_limit = self.account_gas_limit.get_specific_gas_limit().clone();
         let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
         let mut n = self.block_gas_limit;
@@ -335,28 +336,20 @@ impl MsgHandler {
             }
 
             if self.check_quota {
-                if account_gas_used.contains_key(&signer) {
-                    if let Some(value) = account_gas_used.get_mut(&signer) {
-                        if *value < quota {
-                            return false;
-                        } else {
-                            *value = *value - quota;
-                        }
-                    }
-                } else {
+                let value = account_gas_used.entry(signer).or_insert_with(|| {
                     if let Some(value) = specific_gas_limit.remove(&signer.lower_hex()) {
-                        gas_limit = value;
-                    }
-                    let mut _remainder = 0;
-                    if quota < gas_limit {
-                        _remainder = gas_limit - quota;
+                        value
                     } else {
-                        return false;
+                        gas_limit
                     }
-                    account_gas_used.insert(Address::from(signer), _remainder);
+                });
+                if *value < quota {
+                    return false;
+                } else {
+                    *value -= quota;
                 }
             }
-            n = n - quota;
+            n -= quota;
         }
         true
     }
@@ -489,18 +482,18 @@ impl MsgHandler {
 
     /// Verify black list
     fn verify_black_list(&self, req: &VerifyTxReq) -> Ret {
-        match self
+        if let Some(credit) = self
             .black_list_cache
             .get(&pubkey_to_address(&PubKey::from_slice(req.get_signer())))
         {
-            Some(credit) => {
-                if credit < &0 {
-                    return Ret::Forbidden;
-                }
+            if *credit < 0 {
+                Ret::Forbidden
+            } else {
+                Ret::OK
             }
-            None => {}
+        } else {
+            Ret::OK
         }
-        Ret::OK
     }
 
     // verify chain id, nonce, valid_until_block, dup, quota and black list
@@ -516,6 +509,14 @@ impl MsgHandler {
 
         if req.get_value().len() != 32 {
             return Ret::InvalidValue;
+        }
+
+        if self
+            .admin_address
+            .map(|admin| pubkey_to_address(&PubKey::from_slice(req.get_signer())) != admin)
+            .unwrap_or_else(|| false)
+        {
+            return Ret::Forbidden;
         }
 
         let valid_until_block = req.get_valid_until_block();
@@ -540,7 +541,7 @@ impl MsgHandler {
             return Ret::QuotaNotEnough;
         }
 
-        return Ret::OK;
+        Ret::OK
     }
 
     fn publish_block_verification_result(&self, request_id: u64, ret: Ret) {
@@ -611,11 +612,9 @@ impl MsgHandler {
     fn send_block_tx_hashes_req(&mut self, check: bool) {
         // we will send req for all height
         // so don't too frequent
-        if check {
-            if self.history_heights.is_too_frequent() {
-                warn!("Too frequent to send request!");
-                return;
-            }
+        if check && self.history_heights.is_too_frequent() {
+            warn!("Too frequent to send request!");
+            return;
         }
         for i in self.history_heights.min_height()..self.history_heights.max_height() {
             if !self.history_hashes.contains_key(&i) {
@@ -673,6 +672,7 @@ impl MsgHandler {
                         block_gas_limit,
                         self.account_gas_limit.clone(),
                         self.check_quota,
+                        &self.admin_address,
                     );
 
                     // after proposal new block clear flag
@@ -681,50 +681,46 @@ impl MsgHandler {
             }
 
             // process message from MQ
-            match self.rx_sub.recv_timeout(Duration::new(3, 0)) {
-                Ok((key, payload)) => {
-                    let mut msg = Message::try_from(&payload).unwrap();
-                    let rounting_key = RoutingKey::from(&key);
-                    match rounting_key {
-                        // we got this message when chain reach new height or response the BlockTxHashesReq
-                        routing_key!(Chain >> BlockTxHashes) => {
-                            let block_tx_hashes = msg.take_block_tx_hashes().unwrap();
-                            self.deal_block_tx_hashes(block_tx_hashes)
-                        }
-                        routing_key!(Executor >> BlackList) => {
-                            let black_list = msg.take_black_list().unwrap();
-                            self.deal_black_list(black_list);
-                        }
-                        routing_key!(Consensus >> VerifyBlockReq) => {
-                            let blk_req = msg.take_verify_block_req().unwrap();
-                            self.deal_verify_block_req(blk_req);
-                        }
-                        routing_key!(Net >> Request)
-                        | routing_key!(Jsonrpc >> RequestNewTxBatch) => {
-                            let is_local = rounting_key.is_sub_module(SubModules::Jsonrpc);
-                            let newtx_req = msg.take_request().unwrap();
-                            self.deal_request(is_local, newtx_req);
-                        }
-                        routing_key!(Executor >> Miscellaneous) => {
-                            let miscellaneous = msg.take_miscellaneous().unwrap();
-                            info!("Get chain_id({}) from executor", miscellaneous.chain_id);
-                            self.chain_id = Some(miscellaneous.chain_id);
-                        }
-                        routing_key!(Snapshot >> SnapshotReq) => {
-                            let snapshot_req = msg.take_snapshot_req().unwrap();
-                            self.deal_snapshot(snapshot_req);
-                        }
-                        _ => {
-                            error!("receive unexpected message key {}", key);
-                        }
+            if let Ok((key, payload)) = self.rx_sub.recv_timeout(Duration::new(3, 0)) {
+                let mut msg = Message::try_from(&payload).unwrap();
+                let rounting_key = RoutingKey::from(&key);
+                match rounting_key {
+                    // we got this message when chain reach new height or response the BlockTxHashesReq
+                    routing_key!(Chain >> BlockTxHashes) => {
+                        let block_tx_hashes = msg.take_block_tx_hashes().unwrap();
+                        self.deal_block_tx_hashes(&block_tx_hashes)
+                    }
+                    routing_key!(Executor >> BlackList) => {
+                        let black_list = msg.take_black_list().unwrap();
+                        self.deal_black_list(&black_list);
+                    }
+                    routing_key!(Consensus >> VerifyBlockReq) => {
+                        let blk_req = msg.take_verify_block_req().unwrap();
+                        self.deal_verify_block_req(blk_req);
+                    }
+                    routing_key!(Net >> Request) | routing_key!(Jsonrpc >> RequestNewTxBatch) => {
+                        let is_local = rounting_key.is_sub_module(SubModules::Jsonrpc);
+                        let newtx_req = msg.take_request().unwrap();
+                        self.deal_request(is_local, newtx_req);
+                    }
+                    routing_key!(Executor >> Miscellaneous) => {
+                        let miscellaneous = msg.take_miscellaneous().unwrap();
+                        info!("Get chain_id({}) from executor", miscellaneous.chain_id);
+                        self.chain_id = Some(miscellaneous.chain_id);
+                    }
+                    routing_key!(Snapshot >> SnapshotReq) => {
+                        let snapshot_req = msg.take_snapshot_req().unwrap();
+                        self.deal_snapshot(&snapshot_req);
+                    }
+                    _ => {
+                        error!("receive unexpected message key {}", key);
                     }
                 }
-                _ => {}
             }
         }
     }
 
-    fn deal_block_tx_hashes(&mut self, block_tx_hashes: BlockTxHashes) {
+    fn deal_block_tx_hashes(&mut self, block_tx_hashes: &BlockTxHashes) {
         let height = block_tx_hashes.get_height();
         info!("get block tx hashes for height {:?}", height);
         let tx_hashes = block_tx_hashes.get_tx_hashes();
@@ -741,6 +737,11 @@ impl MsgHandler {
             self.check_quota = check_quota;
             self.block_gas_limit = block_gas_limit;
             self.account_gas_limit = account_gas_limit.clone();
+            self.admin_address = if block_tx_hashes.get_admin_address().is_empty() {
+                None
+            } else {
+                Some(Address::from(block_tx_hashes.get_admin_address()))
+            };
 
             // need to proposal new block
             self.is_need_proposal_new_block = true;
@@ -762,12 +763,10 @@ impl MsgHandler {
         for i in old_min_height..self.history_heights.min_height() {
             self.history_hashes.remove(&i);
         }
-        if !self.history_hashes.contains_key(&height) {
-            self.history_hashes.insert(height, tx_hashes_h256);
-        }
+        self.history_hashes.entry(height).or_insert(tx_hashes_h256);
     }
 
-    fn deal_black_list(&mut self, black_list: BlackList) {
+    fn deal_black_list(&mut self, black_list: &BlackList) {
         black_list
             .get_clear_list()
             .into_iter()
@@ -813,6 +812,7 @@ impl MsgHandler {
         self.process_block_verify(blk_req);
     }
 
+    #[allow(unknown_lints, cyclomatic_complexity)] // TODO clippy
     fn deal_request(&mut self, is_local: bool, newtx_req: Request) {
         if newtx_req.has_batch_req() {
             let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
@@ -878,19 +878,17 @@ impl MsgHandler {
                 .collect();
 
             for (tx_hash, option_pubkey) in results {
-                self.save_ret_to_cache(tx_hash.clone(), option_pubkey.clone());
+                self.save_ret_to_cache(tx_hash, option_pubkey.clone());
                 if let Some(pubkey) = option_pubkey {
                     if let Some(ref mut v) = requests.get_mut(&tx_hash) {
                         v.0.set_signer(pubkey);
                     }
-                } else {
-                    if let Some(ref mut v) = requests.get_mut(&tx_hash) {
-                        if is_local {
-                            let request_id = v.1.get_request_id().to_vec();
-                            self.publish_tx_failed_result(request_id, Ret::BadSig);
-                        }
-                        v.2 = false;
+                } else if let Some(ref mut v) = requests.get_mut(&tx_hash) {
+                    if is_local {
+                        let request_id = v.1.get_request_id().to_vec();
+                        self.publish_tx_failed_result(request_id, Ret::BadSig);
                     }
+                    v.2 = false;
                 }
             }
 
@@ -942,15 +940,13 @@ impl MsgHandler {
                     let request_id = tx_req.get_request_id().to_vec();
                     if self.dispatcher.add_tx_to_pool(&signed_tx) {
                         if is_local {
-                            self.publish_tx_success_result(request_id, Ret::OK, tx_hash.clone());
+                            self.publish_tx_success_result(request_id, Ret::OK, tx_hash);
                         }
                         // new tx need forward to other nodes
                         self.forward_request(tx_req.clone());
-                    } else {
+                    } else if is_local {
                         // dup with transaction in tx pool
-                        if is_local {
-                            self.publish_tx_success_result(request_id, Ret::Dup, tx_hash.clone());
-                        }
+                        self.publish_tx_success_result(request_id, Ret::Dup, tx_hash);
                     }
                 });
         } else if newtx_req.has_un_tx() {
@@ -1032,16 +1028,14 @@ impl MsgHandler {
                 }
                 // new tx need forward to other nodes
                 self.forward_request(newtx_req);
-            } else {
+            } else if is_local {
                 // dup with transaction in tx pool
-                if is_local {
-                    self.publish_tx_success_result(request_id, Ret::Dup, tx_hash);
-                }
+                self.publish_tx_success_result(request_id, Ret::Dup, tx_hash);
             }
         }
     }
 
-    fn deal_snapshot(&mut self, snapshot_req: SnapshotReq) {
+    fn deal_snapshot(&mut self, snapshot_req: &SnapshotReq) {
         let mut resp = SnapshotResp::new();
         let mut send = false;
         match snapshot_req.cmd {

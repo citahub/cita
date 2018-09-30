@@ -32,7 +32,6 @@ macro_rules! overflowing {
     }}
 }
 
-#[cfg_attr(feature = "dev", allow(enum_variant_names))]
 enum Request<Cost: CostType> {
     Gas(Cost),
     GasMem(Cost, Cost),
@@ -87,7 +86,6 @@ impl<Gas: CostType> Gasometer<Gas> {
         }
     }
 
-    #[cfg_attr(feature = "dev", allow(cyclomatic_complexity))]
     /// Determine how much gas is used by the given instruction, given the machine's state.
     ///
     /// We guarantee that the final element of the returned tuple (`provided`) will be `Some`

@@ -68,8 +68,8 @@ library AddressArray {
     /// @param _array The array to check from
     /// @return true if is null, false otherwise
     function isNull(address[] _array)
-        pure
         internal
+        pure
         returns (bool)
     {
         if (_array.length == 0)

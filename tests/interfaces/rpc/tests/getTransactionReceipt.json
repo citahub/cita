@@ -9,7 +9,7 @@
       "request": {
         "method": "getTransactionReceipt",
         "params": [
-          "0x919acce87f8cb141557f6223c13a6e46fbb0d3e51f5f06f3b4aa5c51f4f6e113"
+          "0xd7363c838d68065c7a8b02b2f5e27efe15c512f421a4a6ede23ef0a389ca7ef6"
         ]
       },
       "expectedResponse": {
@@ -24,7 +24,7 @@
           ],
           "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
           "root": null,
-          "transactionHash": "0x919acce87f8cb141557f6223c13a6e46fbb0d3e51f5f06f3b4aa5c51f4f6e113",
+          "transactionHash": "0xd7363c838d68065c7a8b02b2f5e27efe15c512f421a4a6ede23ef0a389ca7ef6",
           "transactionIndex": "0x0"
         }
       },
@@ -112,7 +112,7 @@
       ]
     },
     {
-      "title": "getTransactionReceipt with transaction hash and return errorMessage(Not enough base gas.)",
+      "title": "getTransactionReceipt with transaction hash and return errorMessage(Not enough base quota.)",
       "request": {
         "method": "getTransactionReceipt",
         "params": [
@@ -125,7 +125,7 @@
           "blockNumber": "0x7",
           "contractAddress": null,
           "cumulativeGasUsed": "0x0",
-          "errorMessage": "Not enough base gas.",
+          "errorMessage": "Not enough base quota.",
           "gasUsed": "0x0",
           "logs": [
           ],
@@ -163,7 +163,7 @@
       ]
     },
     {
-      "title": "getTransactionReceipt with transaction hash and return errorMessage(Out of gas.)",
+      "title": "getTransactionReceipt with transaction hash and return errorMessage(Out of quota.)",
       "request": {
         "method": "getTransactionReceipt",
         "params": [
@@ -176,7 +176,7 @@
           "blockNumber": "0x8",
           "contractAddress": null,
           "cumulativeGasUsed": "0x40000001",
-          "errorMessage": "Out of gas.",
+          "errorMessage": "Out of quota.",
           "gasUsed": "0x40000001",
           "logs": [
           ],
@@ -218,7 +218,7 @@
       "request": {
         "method": "getTransactionReceipt",
         "params": [
-          "0x5bddf39ab57bf08e7f0385ad58e012365a9fe0794a889980c0a40f3311ffbc89"
+          "0xcb55625ee53ac7479910a5b97b8cef92b109d9b5af4df422d2f922bcea1118be"
         ]
       },
       "expectedResponse": {
@@ -233,7 +233,7 @@
           ],
           "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
           "root": null,
-          "transactionHash": "0x5bddf39ab57bf08e7f0385ad58e012365a9fe0794a889980c0a40f3311ffbc89",
+          "transactionHash": "0xcb55625ee53ac7479910a5b97b8cef92b109d9b5af4df422d2f922bcea1118be",
           "transactionIndex": "0x0"
         }
       },

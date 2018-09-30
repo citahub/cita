@@ -12,7 +12,7 @@
     <meta name="description" content="Description">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <link rel="stylesheet" href="//unpkg.com/docsify/lib/themes/vue.css">
-
+    <link rel="stylesheet" href="https://cdn.cryptape.com/styles/docs.css?1">
 </head>
 
 <body>
@@ -22,25 +22,25 @@
         <ul>
             <!-- links to other docs -->
             <li>
-                <a href="https://cryptape.github.io/" target="_about">Nervos</a>
+                <a href="https://cryptape.github.io/" target="_about" class="app-nav-1">Nervos</a>
                 <ul>
                     <li>
-                        <a href="https://cryptape.github.io/Nervos-AppChain-Docs/" target="_about">AppChain</a>
+                        <a href="https://cryptape.github.io/nervos-appchain-docs/" target="_about">AppChain</a>
                     </li>
                     <li>
                         <a href="https://cryptape.github.io/cita/">CITA</a>
                     </li>
                     <li>
-                        <a href="https://cryptape.github.io/Neuron-Android/#/" target="_about">Neuron</a>
+                        <a href="https://cryptape.github.io/neuron-android/#/" target="_about">Neuron</a>
                     </li>
                     <li>
-                        <a href="https://cryptape.github.io/Microscope/" target="_about">Microscope</a>
+                        <a href="https://cryptape.github.io/microscope/" target="_about">Microscope</a>
                     </li>
                 </ul>
             </li>
             <!-- language selection -->
             <li>
-                <p id="tag_language">Language</p>
+                <p id="tag_language" class="app-nav-1">Language</p>
                 <ul>
                     <li>
                         <a href="" onclick="setLang('en-US');">English</a>
@@ -53,20 +53,20 @@
             <!-- version selection -->
             <!-- you can add a new version by adding another <li></li> tag -->
             <li>
-                <p id="tag_version">Version</p>
+                <p id="tag_version" class="app-nav-1">Version</p>
                 <ul>
                     <li>
-                        <a href="" onclick="setVersion('Latest');">Latest</a>
+                        <a href="" onclick="toVersion('develop');">Latest</a>
                     </li>
                     <li>
-                        <a href="" onclick="setVersion('v0.18');">v0.18</a>
-                    </li>
+                        <a href="" onclick="toVersion('v0.18');">v0.18</a>
+                    </li> 
                     <li>
-                        <a href="" onclick="setVersion('v0.17');">v0.17</a>
+                        <a href="" onclick="toVersion('v0.17');">v0.17</a>
                     </li>
-                    <li>
-                        <a href="" onclick="setVersion('v0.16');">v0.16</a>
-                    </li>
+                    <!-- <li>
+                        <a href="" onclick="toVersion('v0.16');">v0.16</a>
+                    </li> -->
                 </ul>
             </li>
         </ul>
@@ -74,11 +74,17 @@
 
     <script>
         function setLang(language) {
-            sessionStorage.setItem("language", language);
+            localStorage.setItem("lng", language);
+            widnow.location.reload()
         }
 
         function setVersion(version) {
             sessionStorage.setItem("version", version);
+        }
+
+        function toVersion(ver) {
+            localStorage.setItem('version', ver)
+            widnow.location.reload()
         }
     </script>
 
@@ -107,6 +113,7 @@
 
         gtag('config', 'UA-122001869-6');
     </script>
+    <script src="https://cdn.cryptape.com/scripts/external.js"></script>
 
 </body>
 

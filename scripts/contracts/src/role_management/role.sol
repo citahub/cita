@@ -19,7 +19,7 @@ contract Role is ReservedAddress {
     address[] permissions;
 
     modifier onlyRoleManagement {
-        require(roleManagementAddr == msg.sender);
+        require(roleManagementAddr == msg.sender, "permission denied.");
         _;
     }
 

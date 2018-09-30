@@ -61,6 +61,7 @@ pub trait Cache<K, V> {
     fn get(&self, k: &K) -> Option<&V>;
 }
 
+#[allow(unknown_lints, implicit_hasher)] // TODO clippy
 impl<K, V> Cache<K, V> for HashMap<K, V>
 where
     K: Hash + Eq,

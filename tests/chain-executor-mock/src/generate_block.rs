@@ -40,7 +40,7 @@ pub trait AsMillis {
 
 impl AsMillis for Duration {
     fn as_millis(&self) -> u64 {
-        self.as_secs() * 1_000 + (self.subsec_nanos() / 1_000_000) as u64
+        self.as_secs() * 1_000 + u64::from(self.subsec_nanos() / 1_000_000)
     }
 }
 
@@ -80,7 +80,7 @@ impl BuildBlock {
         tx.set_data(data);
         tx.set_nonce(format!("{}", nonce));
         tx.set_quota(quota);
-        // 设置空，则创建合约
+        // create contract if `to_address` empty
         tx.set_to(to_address.to_string());
         tx.set_valid_until_block(valid_until_block);
         tx.set_value(vec![0u8; 32]);
@@ -90,18 +90,18 @@ impl BuildBlock {
 
     /// Build a signed block with given transactions
     pub fn build_block_with_proof(
-        txs: &Vec<SignedTransaction>,
+        txs: &[SignedTransaction],
         pre_hash: H256,
         height: u64,
         privkey: &PrivKey,
         timestamp: u64,
     ) -> (Vec<u8>, BlockWithProof) {
-        let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
+        let sender = KeyPair::from_privkey(*privkey).unwrap().address();
         let mut block = Block::new();
         block.mut_header().set_timestamp(timestamp * 1000);
         block.mut_header().set_height(height);
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
-        block.mut_body().set_transactions(txs.clone().into());
+        block.mut_body().set_transactions(txs.into());
         let mut proof = BftProof::default();
         proof.height = (height - 1) as usize;
         proof.round = 0;
@@ -112,13 +112,13 @@ impl BuildBlock {
                 proof.height,
                 proof.round,
                 Step::Precommit,
-                sender.clone(),
-                Some(proof.proposal.clone()),
+                sender,
+                Some(proof.proposal),
             ),
             Infinite,
         ).unwrap();
-        let signature = Signature::sign(privkey, &msg.crypt_hash().into()).unwrap();
-        commits.insert((*sender).into(), signature.into());
+        let signature = Signature::sign(privkey, &msg.crypt_hash()).unwrap();
+        commits.insert((*sender).into(), signature);
         proof.commits = commits;
         block.mut_header().set_proof(proof.clone().into());
         let transactions_root = block.get_body().transactions_root();

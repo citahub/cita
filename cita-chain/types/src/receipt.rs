@@ -31,9 +31,9 @@ use BlockNumber;
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
     // ExecutionError
-    NotEnoughBaseGas,
-    BlockGasLimitReached,
-    AccountGasLimitReached,
+    NotEnoughBaseQuota,
+    BlockQuotaLimitReached,
+    AccountQuotaLimitReached,
     InvalidNonce,
     NotEnoughCash,
     NoTransactionPermission,
@@ -42,7 +42,7 @@ pub enum ReceiptError {
     ExecutionInternal,
     TransactionMalformed,
     // EVM error(chain/core/src/evm/evm.rs)
-    OutOfGas,
+    OutOfQuota,
     BadJumpDestination,
     BadInstruction,
     StackUnderflow,
@@ -57,9 +57,9 @@ impl ReceiptError {
     /// Returns human-readable description
     pub fn description(&self) -> String {
         let desc = match *self {
-            ReceiptError::NotEnoughBaseGas => "Not enough base gas.",
-            ReceiptError::BlockGasLimitReached => "Block gas limit reached.",
-            ReceiptError::AccountGasLimitReached => "Account gas limit reached.",
+            ReceiptError::NotEnoughBaseQuota => "Not enough base quota.",
+            ReceiptError::BlockQuotaLimitReached => "Block quota limit reached.",
+            ReceiptError::AccountQuotaLimitReached => "Account quota limit reached.",
             ReceiptError::InvalidNonce => "Invalid transaction nonce.",
             ReceiptError::NotEnoughCash => "Cost of transaction exceeds sender balance.",
             ReceiptError::NoTransactionPermission => "No transaction permission.",
@@ -67,7 +67,7 @@ impl ReceiptError {
             ReceiptError::NoCallPermission => "No Call contract permission.",
             ReceiptError::ExecutionInternal => "Execution internal error.",
             ReceiptError::TransactionMalformed => "Malformed transaction.",
-            ReceiptError::OutOfGas => "Out of gas.",
+            ReceiptError::OutOfQuota => "Out of quota.",
             ReceiptError::BadJumpDestination => {
                 "Jump position wasn't marked with JUMPDEST instruction."
             }
@@ -84,9 +84,9 @@ impl ReceiptError {
 
     pub fn protobuf(&self) -> ProtoReceiptError {
         match *self {
-            ReceiptError::NotEnoughBaseGas => ProtoReceiptError::NotEnoughBaseGas,
-            ReceiptError::BlockGasLimitReached => ProtoReceiptError::BlockGasLimitReached,
-            ReceiptError::AccountGasLimitReached => ProtoReceiptError::AccountGasLimitReached,
+            ReceiptError::NotEnoughBaseQuota => ProtoReceiptError::NotEnoughBaseQuota,
+            ReceiptError::BlockQuotaLimitReached => ProtoReceiptError::BlockQuotaLimitReached,
+            ReceiptError::AccountQuotaLimitReached => ProtoReceiptError::AccountQuotaLimitReached,
             ReceiptError::InvalidNonce => ProtoReceiptError::InvalidTransactionNonce,
             ReceiptError::NotEnoughCash => ProtoReceiptError::NotEnoughCash,
             ReceiptError::NoTransactionPermission => ProtoReceiptError::NoTransactionPermission,
@@ -94,7 +94,7 @@ impl ReceiptError {
             ReceiptError::NoCallPermission => ProtoReceiptError::NoCallPermission,
             ReceiptError::ExecutionInternal => ProtoReceiptError::ExecutionInternal,
             ReceiptError::TransactionMalformed => ProtoReceiptError::TransactionMalformed,
-            ReceiptError::OutOfGas => ProtoReceiptError::OutOfGas,
+            ReceiptError::OutOfQuota => ProtoReceiptError::OutOfQuota,
             ReceiptError::BadJumpDestination => ProtoReceiptError::BadJumpDestination,
             ReceiptError::BadInstruction => ProtoReceiptError::BadInstruction,
             ReceiptError::StackUnderflow => ProtoReceiptError::StackUnderflow,
@@ -110,9 +110,9 @@ impl ReceiptError {
 
     fn from_proto(receipt_error: ProtoReceiptError) -> Self {
         match receipt_error {
-            ProtoReceiptError::NotEnoughBaseGas => ReceiptError::NotEnoughBaseGas,
-            ProtoReceiptError::BlockGasLimitReached => ReceiptError::BlockGasLimitReached,
-            ProtoReceiptError::AccountGasLimitReached => ReceiptError::AccountGasLimitReached,
+            ProtoReceiptError::NotEnoughBaseQuota => ReceiptError::NotEnoughBaseQuota,
+            ProtoReceiptError::BlockQuotaLimitReached => ReceiptError::BlockQuotaLimitReached,
+            ProtoReceiptError::AccountQuotaLimitReached => ReceiptError::AccountQuotaLimitReached,
             ProtoReceiptError::InvalidTransactionNonce => ReceiptError::InvalidNonce,
             ProtoReceiptError::NotEnoughCash => ReceiptError::NotEnoughCash,
             ProtoReceiptError::NoTransactionPermission => ReceiptError::NoTransactionPermission,
@@ -120,7 +120,7 @@ impl ReceiptError {
             ProtoReceiptError::NoCallPermission => ReceiptError::NoCallPermission,
             ProtoReceiptError::ExecutionInternal => ReceiptError::ExecutionInternal,
             ProtoReceiptError::TransactionMalformed => ReceiptError::TransactionMalformed,
-            ProtoReceiptError::OutOfGas => ReceiptError::OutOfGas,
+            ProtoReceiptError::OutOfQuota => ReceiptError::OutOfQuota,
             ProtoReceiptError::BadJumpDestination => ReceiptError::BadJumpDestination,
             ProtoReceiptError::BadInstruction => ReceiptError::BadInstruction,
             ProtoReceiptError::StackUnderflow => ReceiptError::StackUnderflow,
@@ -138,9 +138,9 @@ impl ReceiptError {
 impl Decodable for ReceiptError {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         match rlp.as_val::<u8>()? {
-            0 => Ok(ReceiptError::NotEnoughBaseGas),
-            1 => Ok(ReceiptError::BlockGasLimitReached),
-            2 => Ok(ReceiptError::AccountGasLimitReached),
+            0 => Ok(ReceiptError::NotEnoughBaseQuota),
+            1 => Ok(ReceiptError::BlockQuotaLimitReached),
+            2 => Ok(ReceiptError::AccountQuotaLimitReached),
             3 => Ok(ReceiptError::InvalidNonce),
             4 => Ok(ReceiptError::NotEnoughCash),
             5 => Ok(ReceiptError::NoTransactionPermission),
@@ -148,7 +148,7 @@ impl Decodable for ReceiptError {
             7 => Ok(ReceiptError::NoCallPermission),
             8 => Ok(ReceiptError::ExecutionInternal),
             9 => Ok(ReceiptError::TransactionMalformed),
-            10 => Ok(ReceiptError::OutOfGas),
+            10 => Ok(ReceiptError::OutOfQuota),
             11 => Ok(ReceiptError::BadJumpDestination),
             12 => Ok(ReceiptError::BadInstruction),
             13 => Ok(ReceiptError::StackUnderflow),
