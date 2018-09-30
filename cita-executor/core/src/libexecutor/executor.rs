@@ -710,6 +710,7 @@ impl Executor {
         trace!("node_list : {:?}", node_list);
         send_config.set_nodes(node_list);
         send_config.set_block_interval(conf.block_interval);
+        send_config.set_version(conf.chain_version);
 
         if conf.emergency_brake {
             send_config.set_admin_address(conf.super_admin_account.unwrap().to_vec());
@@ -756,6 +757,7 @@ impl Executor {
             }
         };
 
+        trace!("send ExecutedResult {}", height);
         let msg: Message = executed_result.into();
         ctx_pub
             .send((
@@ -773,7 +775,13 @@ impl Executor {
         let mut batch = self.db.read().transaction();
         let height = block.number();
         let hash = block.hash();
-        trace!("commit block in db {:?}, {:?}", hash, height);
+        let version = block.version();
+        trace!(
+            "commit block in db hash {:?}, height {:?}, version {}",
+            hash,
+            height,
+            version
+        );
 
         batch.write(db::COL_HEADERS, &hash, block.header());
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);

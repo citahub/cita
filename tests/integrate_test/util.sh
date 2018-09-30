@@ -70,17 +70,17 @@ check_height_growth () {
     while [ 1 ] ; do
         new=$(get_height ${id})
         if [[ $? -ne 0 ]] ; then
-            echo "failed to get_height(new): ${new}"
+            echo "failed to get_height! old height: ${old} new height: ${new}"
             return 1
         fi
 
         now=$(date +%s)
-        if [ ${new} -gt ${old} ]; then
+        if [ ${new} -gt $(($old + 2)) ]; then
             echo "$((now-start))"
             return 0
         fi
         if [ $((now-start)) -gt ${timeout} ] ; then
-            echo "timeout: $((now-start))"
+            echo "time used: $((now-start)) old height: ${old} new height: ${new}"
             return 20
         fi
         sleep 1
@@ -100,7 +100,7 @@ check_height_growth_normal () {
     for i in {0..1}; do
         msg=$(check_height_growth ${id} ${timeout})
         if [ $? -ne 0 ] ; then
-            echo "failed to check_height_growth ${id} ${timeout}: ${msg}"
+            echo "check_height_growth_normal failed id(${id}) timeout(${timeout}) msg(${msg})"
             return 1
         fi
         if [[ ${msg} -lt ${timeout} ]]; then
@@ -109,7 +109,7 @@ check_height_growth_normal () {
             return 0
         fi
     done
-    echo "block height growth time(${msg}) > timeout(${timeout})"
+    echo "check_height_growth_normal timeout(${timeout}) msg(${msg})"
     return 1
 }
 
@@ -124,7 +124,7 @@ check_height_sync () {
     timeout=180                  # seconds
     refer_height=$(get_height ${refer})
     if [ $? -ne 0 ] ; then
-        echo "failed to get_height(refer): ${refer_height}"
+        echo "check_height_sync failed to get_height(refer): ${refer_height}"
         return 1
     fi
     start=$(date +%s)
@@ -132,7 +132,7 @@ check_height_sync () {
     while [ 1 ] ; do
         height=$(get_height ${id})
         if [ $? -ne 0 ] ; then
-            echo "failed to get_height(sync): ${height}"
+            echo "check_height_sync failed to get_height(sync): ${height}"
             return 1
         fi
         now=$(date +%s)
@@ -142,7 +142,7 @@ check_height_sync () {
         fi
 
         if [ $((now-start)) -gt ${timeout} ] ; then
-            echo "timeout: $((now-start))s"
+            echo "check_height_sync timeout(${timeout}) time used $((now-start))  refer height ${refer_height} sync height ${height}"
             return 1
         fi
         sleep 1
@@ -159,7 +159,7 @@ check_height_stopped () {
     timeout=$2
     old=$(get_height ${id})
     if [ $? -ne 0 ] ; then
-        echo "failed to get_height(old): ${old}"
+        echo "check_height_stopped failed to get_height(old): ${old}"
         return 1
     fi
 
@@ -172,12 +172,12 @@ check_height_stopped () {
         fi
         new=$(get_height ${id})
         if [ $? -ne 0 ] ; then
-            echo "failed to get_height(new): ${new}"
+            echo "check_height_stopped failed to get_height(new): ${new}"
             return 1
         fi
-        if [ $new -gt $(($old + 1)) ]; then
+        if [ $new -gt $(($old + 2)) ]; then
             # if two more blocks was generated, it shows cita still reach consensus.
-            echo "height change from ${old} to ${new}"
+            echo "check_height_stopped height change from ${old} to ${new}"
             return 1
         fi
         sleep 1

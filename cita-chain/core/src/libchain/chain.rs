@@ -315,6 +315,8 @@ pub struct Chain {
     pub is_snapshot: RwLock<bool>,
 
     admin_address: RwLock<Option<Address>>,
+
+    pub version: RwLock<Option<u32>>,
 }
 
 /// Get latest status
@@ -408,6 +410,7 @@ impl Chain {
             proof_map: RwLock::new(BTreeMap::new()),
             is_snapshot: RwLock::new(false),
             admin_address: RwLock::new(None),
+            version: RwLock::new(None),
         };
 
         if let Some(proto_proof) = chain.current_block_poof() {
@@ -464,9 +467,10 @@ impl Chain {
             .map(|vecaddr| Address::from_slice(&vecaddr[..]))
             .collect();
         let block_interval = conf.get_block_interval();
+        let version = conf.get_version();
         debug!(
-            "consensus nodes {:?}, block_interval {:?}",
-            nodes, block_interval
+            "consensus nodes {:?}, block_interval {:?}, version {}",
+            nodes, block_interval, version
         );
 
         self.check_quota
@@ -481,11 +485,13 @@ impl Chain {
         } else {
             Some(Address::from(conf.get_admin_address()))
         };
+        *self.version.write() = Some(version);
     }
 
     pub fn set_db_result(&self, ret: &ExecutedResult, block: &Block) {
         let info = ret.get_executed_info();
         let number = info.get_header().get_height();
+        let version = block.version();
         let mut hdr = Header::new();
         let log_bloom = LogBloom::from(info.get_header().get_log_bloom());
         hdr.set_gas_limit(U256::from(info.get_header().get_gas_limit()));
@@ -500,8 +506,15 @@ impl Chain {
         hdr.set_log_bloom(log_bloom);
         hdr.set_proof(block.proof().clone());
         hdr.set_proposer(Address::from(info.get_header().get_proposer()));
+        hdr.set_version(version);
 
         let hash = hdr.hash();
+        trace!(
+            "commit block in db hash {:?}, height {:?}, version {}",
+            hash,
+            number,
+            version
+        );
         let block_transaction_addresses = block.transaction_addresses(hash);
         let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = if log_bloom.is_zero() {
             HashMap::new()
@@ -1202,6 +1215,11 @@ impl Chain {
         ctx_pub: &Sender<(String, Vec<u8>)>,
     ) {
         let ctx_pub_clone = ctx_pub.clone();
+        let version_opt = self.version.read();
+        if version_opt.is_none() {
+            trace!("delivery_block_tx_hashes : version is not ready!");
+            return;
+        }
         let mut block_tx_hashes = BlockTxHashes::new();
         block_tx_hashes.set_height(block_height);
         {
@@ -1214,6 +1232,7 @@ impl Chain {
                     .map(|admin| admin.to_vec())
                     .unwrap_or_else(Vec::new),
             );
+            block_tx_hashes.set_version(version_opt.unwrap());
         }
 
         let mut tx_hashes_in_u8 = Vec::new();
@@ -1236,8 +1255,10 @@ impl Chain {
     /// Consensus should resend block if chain commit block failed.
     pub fn delivery_current_rich_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let header = &*self.current_header.read();
+        let version_opt = self.version.read();
 
-        if self.nodes.read().is_empty() {
+        if self.nodes.read().is_empty() || version_opt.is_none() {
+            trace!("delivery_current_rich_status : node list or version is not ready!");
             return;
         }
         let current_hash = header.hash();
@@ -1250,6 +1271,7 @@ impl Chain {
         rich_status.set_height(current_height);
         rich_status.set_nodes(nodes.into_iter().map(|address| address.to_vec()).collect());
         rich_status.set_interval(*block_interval);
+        rich_status.set_version(version_opt.unwrap());
 
         let msg: Message = rich_status.into();
         ctx_pub

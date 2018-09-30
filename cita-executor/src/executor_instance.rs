@@ -81,7 +81,7 @@ impl ExecutorInstance {
         let grpc_port = executor_config.grpc_port;
         let executor = Executor::init_executor(Arc::new(db), genesis, &executor_config);
         let executor = Arc::new(executor);
-        executor.set_gas_and_nodes(executor.get_max_height());
+        // send init executed info only have ConsensusConfig
         executor.send_executed_info_to_chain(executor.get_max_height(), &ctx_pub);
         ExecutorInstance {
             ctx_pub,
@@ -603,11 +603,12 @@ impl ExecutorInstance {
         let block = Block::from(proto_block);
 
         debug!(
-            "consensus block {} {:?} tx hash  {:?} len {}",
+            "consensus block {} {:?} tx hash  {:?} len {} version {}",
             block.number(),
             block.hash(),
             block.transactions_root(),
-            block.body().transactions().len()
+            block.body().transactions().len(),
+            block.header.version()
         );
         if self.is_dup_block(block.number()) {
             return;
