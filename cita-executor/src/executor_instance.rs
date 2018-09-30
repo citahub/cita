@@ -553,6 +553,33 @@ impl ExecutorInstance {
                         response.set_error_msg(format!("{:?}", err));
                     });
             }
+            Request::storage_key(skey) => {
+                trace!("storage key info is {:?}", skey);
+                let _ = serde_json::from_str::<BlockNumber>(&skey.height)
+                    .map(|block_id| {
+                        match self.ext.state_at(block_id.into()).and_then(|state| {
+                            state
+                                .storage_at(
+                                    &Address::from(skey.get_address()),
+                                    &H256::from(skey.get_position()),
+                                )
+                                .ok()
+                        }) {
+                            Some(storage_val) => {
+                                response.set_storage_value(storage_val.to_vec());
+                            }
+                            None => {
+                                response.set_code(ErrorCode::query_error());
+                                response
+                                    .set_error_msg("get storage at something failed".to_string());
+                            }
+                        }
+                    })
+                    .map_err(|err| {
+                        response.set_code(ErrorCode::query_error());
+                        response.set_error_msg(format!("{:?}", err));
+                    });
+            }
 
             _ => {
                 error!("bad request msg!!!!");

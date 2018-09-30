@@ -1152,6 +1152,35 @@ params: [
 
 ***
 
+### getStorageAt
+
+获取合约中在指定高度的 Key 对应的值。
+
+* Parameters
+
+    1. `Data20` - address.
+    2. `Data32` - key, position of the variable
+    3. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+
+* Returns
+    `Data` - H256 value of the key in address.
+* Example
+
+    ```shell
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getStorageAt","params":["0xffffffffffffffffffffffffffffffffff020000", "0x0000000000000000000000000000000000000000000000000000000000000007", "16"],"id":1}' 127.0.0.1:1337
+    ```
+
+    ```json
+    // Result
+    {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x000000000000000000000000ffffffffffffffffffffffffffffffffff02000d"
+    }
+    ```
+
+***
+
 ## RPC Errors
 
 ### Invalid Request
