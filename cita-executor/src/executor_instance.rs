@@ -489,7 +489,7 @@ impl ExecutorInstance {
                             .map(|operator| metadata.operator = operator)
                             .ok_or_else(|| "Query operator failed".to_owned())?;
                         sys_config
-                            .chain_name(block_id)
+                            .website(block_id)
                             .map(|website| metadata.website = website)
                             .ok_or_else(|| "Query website failed".to_owned())?;
                         self.ext
