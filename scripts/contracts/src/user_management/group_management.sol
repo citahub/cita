@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 
 import "./group_creator.sol";
+import "./all_groups.sol";
 import "../lib/address_array.sol";
 import "../common/address.sol";
 import "../permission_management/authorization.sol";
-
 
 /// @title User management using group struct
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -15,9 +15,8 @@ import "../permission_management/authorization.sol";
 contract GroupManagement is ReservedAddress {
 
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
-
-    address[] groups;
     Authorization auth = Authorization(authorizationAddr);
+    AllGroups groups = AllGroups(allGroupsAddr);
 
     event GroupDeleted(address _group);
 
@@ -38,12 +37,6 @@ contract GroupManagement is ReservedAddress {
         _;
     }
 
-    /// @notice Constructor
-    constructor() public {
-        // Root
-        groups.push(rootGroupAddr);
-    }
-
     /// @notice Create a new group
     /// @param _origin The sender's orgin group
     /// @param _name  The name of group
@@ -58,7 +51,7 @@ contract GroupManagement is ReservedAddress {
     {
         new_group = groupCreator.createGroup(_origin, _name, _accounts);
         require(addChild(_origin, new_group), "addChild failed.");
-        groups.push(new_group);
+        groups.insert(new_group);
     }
 
     /// @notice Delete the group
@@ -78,9 +71,9 @@ contract GroupManagement is ReservedAddress {
         require(deleteChild(group.queryParent(), _target), "deleteChild failed.");
         // Selfdestruct
         group.close();
-        // Remove it from the groups
-        AddressArray.remove(_target, groups);
         emit GroupDeleted(_target);
+        // Remove it from the groups
+        groups.drop(_target);
         return true;
     }
 
@@ -157,13 +150,14 @@ contract GroupManagement is ReservedAddress {
     }
 
     /// @notice Query all groups
+    ///         (for compatible)
     /// @return All groups
     function queryGroups()
         public
         view
         returns (address[])
     {
-        return groups;
+        return groups.queryGroups();
     }
 
     /// @notice Private: Delete the child group

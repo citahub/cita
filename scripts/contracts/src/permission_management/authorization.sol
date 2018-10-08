@@ -1,6 +1,5 @@
 pragma solidity ^0.4.24;
 
-import "./permission.sol";
 import "../lib/address_array.sol";
 import "../common/address.sol";
 import "../system/sys_config.sol";
@@ -138,25 +137,22 @@ contract Authorization is ReservedAddress {
         return all_accounts;
     }
 
-    /// @notice Check account has a resource
-    /// @param _account The account to be checked
-    /// @param _cont The contract of resource
-    /// @param _func The function signature of resource
+    /// @notice Check account has a resource(deprecation)
     /// @return true if passed, otherwise false
-    function checkResource(address _account, address _cont, bytes4 _func)
+    function checkResource(address, address, bytes4)
         public
-        view
+        pure 
         returns (bool)
     {
-        address[] memory perms = queryPermissions(_account);
+        // address[] memory perms = queryPermissions(_account);
 
-        for (uint i = 0; i < perms.length; i++) {
-            Permission perm = Permission(perms[i]);
-            if (perm.inPermission(_cont, _func))
-                return true;
-        }
+        // for (uint i = 0; i < perms.length; i++) {
+        //     Permission perm = Permission(perms[i]);
+        //     if (perm.inPermission(_cont, _func))
+        //         return true;
+        // }
 
-        return false;
+        // return false;
     }
 
     /// @notice Check account has a permission

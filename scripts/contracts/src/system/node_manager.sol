@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "../lib/safe_math.sol";
 import "../common/error.sol";
 import "../common/admin.sol";
-import "../permission_management/authorization.sol";
+import "../common/check.sol";
 
 
 /// @title The interface of node_manager
@@ -44,7 +44,7 @@ interface NodeInterface {
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020001
-contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
+contract NodeManager is NodeInterface, Error, Check, EconomicalType {
 
     mapping(address => NodeStatus) public status;
     // Recode the operation of the block
@@ -94,13 +94,8 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
         else return;
     }
 
-    modifier checkPermission(address _permission) {
-        require(auth.checkPermission(msg.sender, _permission), "permission denied.");
-        _;
-    }
-
     modifier OnlyChargeModel() {
-        if(sysConfig.getEconomicalModel() == EconomicalModel.Charge) 
+        if(sysConfig.getEconomicalModel() == EconomicalModel.Charge)
             _;
         else {
             return;
@@ -209,11 +204,11 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
     /// This is the slot number which ignore the remainder, not exactly precise.
     /// https://en.wikipedia.org/wiki/Largest_remainder_method
     /// Hare quota
-    function stakePermillage(address _node) 
-        public 
-        view 
+    function stakePermillage(address _node)
+        public
+        view
         OnlyChargeModel
-        returns (uint64) 
+        returns (uint64)
     {
         uint total;
         for (uint j = 0; j < nodes.length; j++) {
@@ -221,7 +216,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
         }
 
         if(total == 0) {
-            return; 
+            return;
         }
         return uint64(SafeMath.div(SafeMath.mul(stakes[_node], 1000), total));
     }
