@@ -89,7 +89,7 @@ $ rpc getMetaData
       "0x185e7072f53574666cf8ed8ec080e09b7e39c98f"
     ],
     "version": 1,
-    "website": "AAA"
+    "website": "https://www.example.com"
   }
 }
 
