@@ -54,7 +54,7 @@ address = "0.pool.ntp.org:123"
 
 * `enabled` : 为 true 表示开启 ntp
 * `threshold` : 表示时间偏移的阈值
-* `address` : 表示 npt 服务器的地址
+* `address` : 表示 ntp 服务器的地址
 
 ## Chain
 
@@ -144,11 +144,11 @@ count_per_batch = 30
     - `enable`: 开关
     - `flag_prof_duration`: 性能采样分析持续时间
 * `http_config`:
-    - `allow_origin`:
+    - `allow_origin`:响应头。`*`表示可以被任意外域访问
     - `timeout`: 超时时间
     - `enable`: 默认开启
     - `listen_port`: 监听端口
-    - `listen_ip`: 监听 ip 地址
+    - `listen_ip`: 监听 IP 地址
 * `ws_config`:
     - `panic_on_internal`: 出现内部错误的时候，是否退出，默认 true
     - `fragments_grow`: 当 fragments_capacity 达到时，是否重新分配，默认为 true
@@ -174,7 +174,7 @@ count_per_batch = 30
     - `panic_on_io`: 出现 IO 错误时，是否退出，默认 false
     - `panic_on_new_connection`: TCP 连接失败后，是否退出，默认 false
     - `out_buffer_capacity`: 不动态增加情况下，输出缓存大小， 默认 2048
-    - `encrypt_server`: 服务端是否采用 ssl 加密接受链接，默认 false
+    - `encrypt_server`: 服务端是否采用 SSL 加密接受链接，默认 false
     - `in_buffer_grow`: 当输入缓冲达到 in_buffer_capacity， 是否重新动态增加，默认 true
     - `panic_on_shutdown`: 收到关闭 WebSocket 请求时，是否退出， 默认 false
     - `panic_on_encoding`: 编码问题出现时，是否退出，默认 false
