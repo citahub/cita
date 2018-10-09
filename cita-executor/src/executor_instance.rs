@@ -825,11 +825,11 @@ impl ExecutorInstance {
         } else {
             proof.height as u64
         };
-        let conf = self.ext.get_sys_config(number);
+        let conf = self.ext.global_config.read().clone();
         let authorities = conf.nodes.clone();
 
-        //fixbug when conf have changed such as adding consensus node
-        let prev_conf = self.ext.get_sys_config(number - 1);
+        // fixbug when conf have changed such as adding consensus node
+        let prev_conf = self.ext.load_config(BlockId::Number(number - 1));
         let prev_authorities = prev_conf.nodes.clone();
 
         if self.ext.validate_height(number)
