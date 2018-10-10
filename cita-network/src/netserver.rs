@@ -54,11 +54,12 @@ impl NetServer {
 
 fn process(socket: TcpStream, send: Sender<(Source, CitaRequest)>) {
     let (_tx, rx) = CitaCodec.framed(socket).split();
-    let task =
-        rx.for_each(move |chunk| {
+    let task = rx
+        .for_each(move |chunk| {
             send.send((Source::REMOTE, chunk))
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
-        }).map_err(|e| error!("reading error = {:?}", e));
+        })
+        .map_err(|e| error!("reading error = {:?}", e));
     tokio::spawn(task);
 }
 

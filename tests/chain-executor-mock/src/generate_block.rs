@@ -116,7 +116,8 @@ impl BuildBlock {
                 Some(proof.proposal),
             ),
             Infinite,
-        ).unwrap();
+        )
+        .unwrap();
         let signature = Signature::sign(privkey, &msg.crypt_hash()).unwrap();
         commits.insert((*sender).into(), signature);
         proof.commits = commits;

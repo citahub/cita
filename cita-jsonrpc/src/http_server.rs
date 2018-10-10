@@ -28,8 +28,10 @@ use hyper::header::{
 use hyper::server::{Http, NewService, Request, Response, Service};
 use hyper::{self, Method, StatusCode};
 use jsonrpc_types::{
-    request::{PartialRequest, Request as FullRequest, RpcRequest}, response::RpcFailure,
-    rpctypes::Id as RpcId, Error,
+    request::{PartialRequest, Request as FullRequest, RpcRequest},
+    response::RpcFailure,
+    rpctypes::Id as RpcId,
+    Error,
 };
 use libproto::request::Request as ProtoRequest;
 use net2;
@@ -180,38 +182,41 @@ impl Service for Server {
                                                 &http_headers,
                                             );
 
-                                            let resp = mq_resp.select2(timeout).then(move |res| {
-                                                match res {
-                                                    Ok(Either::A((got, _timeout))) => Ok(got),
-                                                    Ok(Either::B((_timeout_error, _get))) => {
-                                                        {
-                                                            timeout_responses
-                                                                .lock()
-                                                                .remove(&request_id);
-                                                        }
-                                                        let failure = RpcFailure::from_options(
+                                            let resp =
+                                                mq_resp.select2(timeout).then(
+                                                    move |res| match res {
+                                                        Ok(Either::A((got, _timeout))) => Ok(got),
+                                                        Ok(Either::B((_timeout_error, _get))) => {
+                                                            {
+                                                                timeout_responses
+                                                                    .lock()
+                                                                    .remove(&request_id);
+                                                            }
+                                                            let failure = RpcFailure::from_options(
                                                             req_info,
                                                             Error::server_error(
                                                                 ErrorCode::time_out_error(),
                                                                 "System time out, please resend",
                                                             ),
                                                         );
-                                                        let resp_body =
-                                                            serde_json::to_string(&failure).expect(
+                                                            let resp_body = serde_json::to_string(
+                                                                &failure,
+                                                            )
+                                                            .expect(
                                                                 "should be serialize by serde_json",
                                                             );
-                                                        Ok(Response::new()
-                                                            .with_headers(http_headers)
-                                                            .with_body(resp_body))
-                                                    }
-                                                    Err(Either::A((get_error, _timeout))) => {
-                                                        Err(get_error)
-                                                    }
-                                                    Err(Either::B((timeout_error, _get))) => {
-                                                        Err(From::from(timeout_error))
-                                                    }
-                                                }
-                                            });
+                                                            Ok(Response::new()
+                                                                .with_headers(http_headers)
+                                                                .with_body(resp_body))
+                                                        }
+                                                        Err(Either::A((get_error, _timeout))) => {
+                                                            Err(get_error)
+                                                        }
+                                                        Err(Either::B((timeout_error, _get))) => {
+                                                            Err(From::from(timeout_error))
+                                                        }
+                                                    },
+                                                );
                                             Either::A(Either::A(resp))
                                         } else {
                                             Either::B(futures::future::ok(
@@ -241,38 +246,41 @@ impl Service for Server {
 
                                         if let Ok(timeout) = Timeout::new(timeout, &reactor_handle)
                                         {
-                                            let resp = mq_resp.select2(timeout).then(move |res| {
-                                                match res {
-                                                    Ok(Either::A((got, _timeout))) => Ok(got),
-                                                    Ok(Either::B((_timeout_error, _get))) => {
-                                                        {
-                                                            let mut guard =
-                                                                timeout_responses.lock();
-                                                            for request_id in request_ids {
-                                                                guard.remove(&request_id);
+                                            let resp =
+                                                mq_resp.select2(timeout).then(
+                                                    move |res| match res {
+                                                        Ok(Either::A((got, _timeout))) => Ok(got),
+                                                        Ok(Either::B((_timeout_error, _get))) => {
+                                                            {
+                                                                let mut guard =
+                                                                    timeout_responses.lock();
+                                                                for request_id in request_ids {
+                                                                    guard.remove(&request_id);
+                                                                }
                                                             }
-                                                        }
-                                                        let failure =
+                                                            let failure =
                                                             RpcFailure::from(Error::server_error(
                                                                 ErrorCode::time_out_error(),
                                                                 "System time out, please resend",
                                                             ));
-                                                        let resp_body =
-                                                            serde_json::to_string(&failure).expect(
+                                                            let resp_body = serde_json::to_string(
+                                                                &failure,
+                                                            )
+                                                            .expect(
                                                                 "should be serialize by serde_json",
                                                             );
-                                                        Ok(Response::new()
-                                                            .with_headers(http_headers)
-                                                            .with_body(resp_body))
-                                                    }
-                                                    Err(Either::A((get_error, _timeout))) => {
-                                                        Err(get_error)
-                                                    }
-                                                    Err(Either::B((timeout_error, _get))) => {
-                                                        Err(From::from(timeout_error))
-                                                    }
-                                                }
-                                            });
+                                                            Ok(Response::new()
+                                                                .with_headers(http_headers)
+                                                                .with_body(resp_body))
+                                                        }
+                                                        Err(Either::A((get_error, _timeout))) => {
+                                                            Err(get_error)
+                                                        }
+                                                        Err(Either::B((timeout_error, _get))) => {
+                                                            Err(From::from(timeout_error))
+                                                        }
+                                                    },
+                                                );
                                             Either::A(Either::B(resp))
                                         } else {
                                             Either::B(futures::future::ok(
@@ -492,10 +500,11 @@ mod test {
             (Some("*".to_owned()), AccessControlAllowOrigin::Any),
             (Some(" * ".to_owned()), AccessControlAllowOrigin::Any),
             (None, AccessControlAllowOrigin::Null),
-        ].into_iter()
-            .for_each(|(origin, result)| {
-                assert_eq!(parse_origin(&origin), result);
-            });
+        ]
+        .into_iter()
+        .for_each(|(origin, result)| {
+            assert_eq!(parse_origin(&origin), result);
+        });
     }
 }
 
@@ -634,7 +643,8 @@ mod integration_test {
         let mut works: Vec<Box<Future<Item = (), Error = _>>> = vec![];
         let uri = hyper::Uri::from_str(
             format!("http://{}:{}/", serve.addr.ip(), serve.addr.port()).as_str(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
         let work_empty = client.request(req).and_then(|resp| {

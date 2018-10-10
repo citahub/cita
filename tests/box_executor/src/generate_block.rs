@@ -109,7 +109,8 @@ impl BuildBlock {
                 Some(proof.proposal),
             ),
             Infinite,
-        ).unwrap();
+        )
+        .unwrap();
         let signature = Signature::sign(privkey, &msg.crypt_hash()).unwrap();
         commits.insert((*sender).into(), signature);
         proof.commits = commits;
@@ -152,7 +153,8 @@ impl BuildBlock {
                 Some(proof.proposal),
             ),
             Infinite,
-        ).unwrap();
+        )
+        .unwrap();
         let signature = Signature::sign(privkey, &serialized.crypt_hash()).unwrap();
 
         let mut signed_proposal = SignedProposal::new();

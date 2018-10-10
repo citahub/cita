@@ -468,7 +468,8 @@ impl Service {
                                 rest.feed_state(hash, chunk, &self.restoring_snapshot)
                             } else {
                                 rest.feed_blocks(hash, chunk, &self.restoring_snapshot)
-                            }.map(|_| rest.is_done()),
+                            }
+                            .map(|_| rest.is_done()),
                             rest.db.clone(),
                         )
                     };

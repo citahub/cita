@@ -832,7 +832,8 @@ impl ExecutorInstance {
         let prev_conf = self.ext.get_sys_config(number - 1);
         let prev_authorities = prev_conf.nodes.clone();
 
-        if self.ext.validate_height(number) && self.ext.validate_hash(block.parent_hash())
+        if self.ext.validate_height(number)
+            && self.ext.validate_hash(block.parent_hash())
             && (proof.check(proof_height as usize, &authorities)
                 || proof.check(proof_height as usize, &prev_authorities))
         {

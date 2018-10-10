@@ -191,7 +191,8 @@ impl StateProof {
             state_root,
             &self.account_proof,
             Account::from_rlp,
-        ).and_then(|a| a.verify_value_proof(&self.key, &self.value_proof))
+        )
+        .and_then(|a| a.verify_value_proof(&self.key, &self.value_proof))
     }
 
     /// Get the address field of the StateProof.
@@ -608,8 +609,9 @@ impl<B: Backend> State<B> {
                                             account_proof,
                                             key: *key,
                                             value_proof,
-                                        }.rlp_bytes()
-                                            .into_vec()
+                                        }
+                                        .rlp_bytes()
+                                        .into_vec()
                                     })
                             })
                         })
@@ -717,7 +719,7 @@ impl<B: Backend> State<B> {
             || Account::new_contract(0.into(), self.account_start_nonce),
             |_| {},
         )?
-            .init_code(code);
+        .init_code(code);
         Ok(())
     }
 
@@ -730,7 +732,7 @@ impl<B: Backend> State<B> {
             || Account::new_contract(0.into(), self.account_start_nonce),
             |_| {},
         )?
-            .reset_code(code);
+        .reset_code(code);
         Ok(())
     }
 
@@ -744,7 +746,7 @@ impl<B: Backend> State<B> {
             || Account::new_contract(0.into(), self.account_start_nonce),
             |_| {},
         )?
-            .init_abi(abi);
+        .init_abi(abi);
         Ok(())
     }
 
@@ -757,7 +759,7 @@ impl<B: Backend> State<B> {
             || Account::new_contract(0.into(), self.account_start_nonce),
             |_| {},
         )?
-            .reset_abi(abi);
+        .reset_abi(abi);
         Ok(())
     }
 
@@ -795,7 +797,8 @@ impl<B: Backend> State<B> {
             economical_model,
             check_options.fee_back_platform,
             chain_owner,
-        ).transact(t, options)
+        )
+        .transact(t, options)
         {
             Ok(e) => {
                 // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));

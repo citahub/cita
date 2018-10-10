@@ -899,8 +899,9 @@ impl Chain {
                     .and_then(|receipt| {
                         merklehash::MerkleTree::from_bytes(
                             receipts.receipts.iter().map(|r| r.rlp_bytes().into_vec()),
-                        ).get_proof_by_input_index(index)
-                            .map(|receipt_proof| (index, block, receipt.clone(), receipt_proof))
+                        )
+                        .get_proof_by_input_index(index)
+                        .map(|receipt_proof| (index, block, receipt.clone(), receipt_proof))
                     })
             })
             .and_then(|(index, block, receipt, receipt_proof)| {
@@ -953,8 +954,9 @@ impl Chain {
                         block_header,
                         next_proposal_header,
                         proposal_proof,
-                    }.rlp_bytes()
-                        .into_vec()
+                    }
+                    .rlp_bytes()
+                    .into_vec()
                 },
             )
     }
@@ -1196,8 +1198,12 @@ impl Chain {
     }
 
     pub fn get_logs(&self, filter: &Filter) -> Vec<LocalizedLogEntry> {
-        let blocks = filter.bloom_possibilities().iter()
-            .filter_map(|bloom| self.blocks_with_bloom_by_id(bloom, filter.from_block, filter.to_block))
+        let blocks = filter
+            .bloom_possibilities()
+            .iter()
+            .filter_map(|bloom| {
+                self.blocks_with_bloom_by_id(bloom, filter.from_block, filter.to_block)
+            })
             .flat_map(|m| m)
             // remove duplicate elements
             .collect::<HashSet<u64>>()

@@ -23,7 +23,8 @@ use executive::{check_permission, TransactOptions};
 use grpc::Result as GrpcResult;
 
 use contracts::grpc::{
-    contract_state::{ConnectInfo, ContractState}, service_registry,
+    contract_state::{ConnectInfo, ContractState},
+    service_registry,
 };
 use libexecutor::executor::Executor;
 use libproto::citacode::{ActionParams, EnvInfo, InvokeRequest, InvokeResponse};

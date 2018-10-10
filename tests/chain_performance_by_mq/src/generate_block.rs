@@ -84,7 +84,9 @@ impl Generateblock {
 
         let mut block = Block::new();
         let block_time = Self::unix_now();
-        block.mut_header().set_timestamp(AsMillis::as_millis(&block_time));
+        block
+            .mut_header()
+            .set_timestamp(AsMillis::as_millis(&block_time));
         block.mut_header().set_height(h);
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
         block.mut_body().set_transactions(txs.into());
@@ -102,7 +104,8 @@ impl Generateblock {
                 Some(proof.proposal),
             ),
             Infinite,
-        ).unwrap();
+        )
+        .unwrap();
         let signature = Signature::sign(pv, &msg.crypt_hash()).unwrap();
         commits.insert((*sender).into(), signature);
         proof.commits = commits;

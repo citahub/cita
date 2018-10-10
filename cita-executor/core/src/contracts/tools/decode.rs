@@ -108,51 +108,52 @@ pub fn to_resource_vec(output: &[u8]) -> Option<Vec<Resource>> {
                 ParamType::Array(Box::new(ParamType::FixedBytes(4))),
             ],
             output,
-        ).ok()
-            .and_then(|mut decoded| {
-                if decoded.len() < 2 {
+        )
+        .ok()
+        .and_then(|mut decoded| {
+            if decoded.len() < 2 {
+                return None;
+            }
+            Some((decoded.remove(0), decoded.remove(0)))
+        })
+        .and_then(|(cont_bytes, func_bytes)| {
+            cont_bytes
+                .to_array()
+                .map(|cont_array| (cont_array, func_bytes))
+        })
+        .and_then(|(cont_array, func_bytes)| {
+            func_bytes
+                .to_array()
+                .map(|func_array| (cont_array, func_array))
+        })
+        .and_then(|(cont_array, func_array)| {
+            let mut v = Vec::new();
+            for x in cont_array {
+                if let Some(x) = x.to_address() {
+                    v.push(Address::from(x))
+                } else {
                     return None;
                 }
-                Some((decoded.remove(0), decoded.remove(0)))
-            })
-            .and_then(|(cont_bytes, func_bytes)| {
-                cont_bytes
-                    .to_array()
-                    .map(|cont_array| (cont_array, func_bytes))
-            })
-            .and_then(|(cont_array, func_bytes)| {
-                func_bytes
-                    .to_array()
-                    .map(|func_array| (cont_array, func_array))
-            })
-            .and_then(|(cont_array, func_array)| {
-                let mut v = Vec::new();
-                for x in cont_array {
-                    if let Some(x) = x.to_address() {
-                        v.push(Address::from(x))
-                    } else {
-                        return None;
-                    }
+            }
+            Some((v, func_array))
+        })
+        .and_then(|(cont_vec, func_array)| {
+            let mut v = Vec::new();
+            for x in func_array {
+                if let Some(x) = x.to_fixed_bytes() {
+                    v.push(x)
+                } else {
+                    return None;
                 }
-                Some((v, func_array))
-            })
-            .and_then(|(cont_vec, func_array)| {
-                let mut v = Vec::new();
-                for x in func_array {
-                    if let Some(x) = x.to_fixed_bytes() {
-                        v.push(x)
-                    } else {
-                        return None;
-                    }
-                }
-                Some((cont_vec, v))
-            })
-            .map(|(cont_vec, func_vec)| {
-                cont_vec
-                    .into_iter()
-                    .zip(func_vec.into_iter())
-                    .map(|(cont, func)| Resource::new(cont, func))
-                    .collect()
-            })
+            }
+            Some((cont_vec, v))
+        })
+        .map(|(cont_vec, func_vec)| {
+            cont_vec
+                .into_iter()
+                .zip(func_vec.into_iter())
+                .map(|(cont, func)| Resource::new(cont, func))
+                .collect()
+        })
     }
 }

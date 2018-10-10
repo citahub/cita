@@ -762,7 +762,8 @@ mod tests {
                 &Default::default(),
                 &db.immutable(),
                 &H256::from(&U256::from(0x00u64))
-            ).unwrap(),
+            )
+            .unwrap(),
             H256::from(&U256::from(0x1234u64))
         );
         assert_eq!(
@@ -770,7 +771,8 @@ mod tests {
                 &Default::default(),
                 &db.immutable(),
                 &H256::from(&U256::from(0x01u64))
-            ).unwrap(),
+            )
+            .unwrap(),
             H256::new()
         );
     }
@@ -809,12 +811,13 @@ mod tests {
         let a = Account::from_rlp(&rlp);
 
         {
-            let value_proof =
-                a.get_value_proof(
+            let value_proof = a
+                .get_value_proof(
                     &Default::default(),
                     &db.immutable(),
                     &H256::from(&U256::from(0x1234u64)),
-                ).unwrap();
+                )
+                .unwrap();
             let val = a
                 .verify_value_proof(&H256::from(&U256::from(0x1234u64)), &value_proof)
                 .unwrap();
@@ -823,12 +826,13 @@ mod tests {
         }
 
         {
-            let value_proof =
-                a.get_value_proof(
+            let value_proof = a
+                .get_value_proof(
                     &Default::default(),
                     &db.immutable(),
                     &H256::from(&U256::from(0x123456u64)),
-                ).unwrap();
+                )
+                .unwrap();
             let val = a
                 .verify_value_proof(&H256::from(&U256::from(0x123456u64)), &value_proof)
                 .unwrap();
@@ -837,12 +841,13 @@ mod tests {
         }
 
         {
-            let value_proof =
-                a.get_value_proof(
+            let value_proof = a
+                .get_value_proof(
                     &Default::default(),
                     &db.immutable(),
                     &H256::from(&U256::from(0x12345678u64)),
-                ).unwrap();
+                )
+                .unwrap();
             let val = a
                 .verify_value_proof(&H256::from(&U256::from(0x12345678u64)), &value_proof)
                 .unwrap();
@@ -851,12 +856,13 @@ mod tests {
         }
 
         {
-            let value_proof =
-                a.get_value_proof(
+            let value_proof = a
+                .get_value_proof(
                     &Default::default(),
                     &db.immutable(),
                     &H256::from(&U256::from(0x654321u64)),
-                ).unwrap();
+                )
+                .unwrap();
             let val = a
                 .verify_value_proof(&H256::from(&U256::from(0x654321u64)), &value_proof)
                 .unwrap();
@@ -874,12 +880,13 @@ mod tests {
                 ),
                 None
             );
-            let value_proof =
-                a.get_value_proof(
+            let value_proof = a
+                .get_value_proof(
                     &Default::default(),
                     &db.immutable(),
                     &H256::from(&U256::from(0x654321u64)),
-                ).unwrap();
+                )
+                .unwrap();
             assert_eq!(
                 a.verify_value_proof(&H256::from(&U256::from(0x65u64)), &value_proof),
                 None
@@ -887,12 +894,13 @@ mod tests {
         }
         // bad case
         {
-            let value_proof =
-                a.get_value_proof(
+            let value_proof = a
+                .get_value_proof(
                     &Default::default(),
                     &db.immutable(),
                     &H256::from(&U256::from(0x65u64)),
-                ).unwrap();
+                )
+                .unwrap();
             assert_eq!(
                 a.verify_value_proof(&H256::from(&U256::from(0x65u64)), &value_proof),
                 None

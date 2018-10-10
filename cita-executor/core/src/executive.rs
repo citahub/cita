@@ -24,7 +24,8 @@ use contracts::{
         contract::{
             create_grpc_contract, invoke_grpc_contract, is_create_grpc_address, is_grpc_contract,
         },
-        grpc_vm::extract_logs_from_response, service_registry,
+        grpc_vm::extract_logs_from_response,
+        service_registry,
     },
     native::factory::{Contract as NativeContract, Factory as NativeFactory},
     solc::{permission_management::contains_resource, Resource},
@@ -804,7 +805,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     .exec(params, &mut ext)
                     .finalize(ext)
             })
-        }).join()
+        })
+        .join()
     }
 
     /// Calls contract function with given contract params.
@@ -913,27 +915,33 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             return_data: ReturnData::empty(),
         };
         match atype {
-            AMEND_ABI => if self.transact_set_abi(&(params.data.to_owned().unwrap())) {
-                Ok(result)
-            } else {
-                Err(evm::error::Error::Internal(
-                    "Account doesn't exist".to_owned(),
-                ))
-            },
-            AMEND_CODE => if self.transact_set_code(&(params.data.to_owned().unwrap())) {
-                Ok(result)
-            } else {
-                Err(evm::error::Error::Internal(
-                    "Account doesn't exist".to_owned(),
-                ))
-            },
-            AMEND_KV_H256 => if self.transact_set_kv_h256(&(params.data.to_owned().unwrap())) {
-                Ok(result)
-            } else {
-                Err(evm::error::Error::Internal(
-                    "Account doesn't exist".to_owned(),
-                ))
-            },
+            AMEND_ABI => {
+                if self.transact_set_abi(&(params.data.to_owned().unwrap())) {
+                    Ok(result)
+                } else {
+                    Err(evm::error::Error::Internal(
+                        "Account doesn't exist".to_owned(),
+                    ))
+                }
+            }
+            AMEND_CODE => {
+                if self.transact_set_code(&(params.data.to_owned().unwrap())) {
+                    Ok(result)
+                } else {
+                    Err(evm::error::Error::Internal(
+                        "Account doesn't exist".to_owned(),
+                    ))
+                }
+            }
+            AMEND_KV_H256 => {
+                if self.transact_set_kv_h256(&(params.data.to_owned().unwrap())) {
+                    Ok(result)
+                } else {
+                    Err(evm::error::Error::Internal(
+                        "Account doesn't exist".to_owned(),
+                    ))
+                }
+            }
             AMEND_GET_KV_H256 => {
                 if let Some(v) = self.transact_get_kv_h256(&(params.data.to_owned().unwrap())) {
                     let data = v.to_vec();
@@ -1477,7 +1485,8 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
-        }.fake_sign(keypair.address().clone());
+        }
+        .fake_sign(keypair.address().clone());
         let sender = t.sender();
 
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
@@ -1540,7 +1549,8 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
-        }.fake_sign(keypair.address().clone());
+        }
+        .fake_sign(keypair.address().clone());
         let sender = t.sender();
         let contract = contract_address(t.sender(), &U256::zero());
 
@@ -1607,7 +1617,8 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
-        }.fake_sign(keypair.address().clone());
+        }
+        .fake_sign(keypair.address().clone());
 
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
         let native_factory = NativeFactory::default();
@@ -1663,7 +1674,8 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
-        }.fake_sign(keypair.address().clone());
+        }
+        .fake_sign(keypair.address().clone());
 
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
         let native_factory = NativeFactory::default();

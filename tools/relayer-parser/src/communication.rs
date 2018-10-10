@@ -52,8 +52,8 @@ impl RpcClient {
             mpsc::channel::<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>(65_535);
         let timeout_duration = upstream.timeout;
 
-        let _tb =
-            tb.spawn(move || {
+        let _tb = tb
+            .spawn(move || {
                 let mut core = Core::new().unwrap();
                 let handle = core.handle();
                 let client = hyper::Client::configure()
@@ -81,7 +81,8 @@ impl RpcClient {
                 });
 
                 core.run(messages).unwrap();
-            }).expect("Couldn't spawn a thread.");
+            })
+            .expect("Couldn't spawn a thread.");
 
         ::std::sync::Arc::new(RpcClient {
             sender: Mutex::new(tx),
