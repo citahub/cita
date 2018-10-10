@@ -25,7 +25,11 @@ var initDocsify = function () {
     vTag.textContent = ver === 'develop' ? 'Latest' : ver
     const lTag = document.getElementById('tag_language')
     lTag.textContent = lngs[lng]
-    docsify.basePath = baseUrlGen(ver, lng)
+    if (window.location.hostname === 'localhost') {
+        docsify.basePath = `./${lng}`
+    } else {
+        docsify.basePath = baseUrlGen(ver, lng)
+    }
     window.$docsify = docsify
 }
 
