@@ -19,16 +19,15 @@
 
 use std::str::FromStr;
 
-use ethabi::{decode, ParamType, Token};
-
-use cita_types::{Address, H256};
-use contracts::tools::method as method_tools;
-use types::ids::BlockId;
-use types::reserved_addresses;
-
 use super::ContractCallExt;
+use cita_types::{Address, H256, U256};
+use contracts::solc::version_management::VersionManager;
+use contracts::tools::method as method_tools;
+use ethabi::{decode, ParamType, Token};
 use libexecutor::executor::{EconomicalModel, Executor};
 use num::FromPrimitive;
+use types::ids::BlockId;
+use types::reserved_addresses;
 
 lazy_static! {
     static ref DELAY_BLOCK_NUMBER: Vec<u8> = method_tools::encode_to_vec(b"getDelayBlockNumber()");
@@ -43,6 +42,7 @@ lazy_static! {
     static ref CHAIN_OWNER: Vec<u8> = method_tools::encode_to_vec(b"getChainOwner()");
     static ref CHAIN_NAME: Vec<u8> = method_tools::encode_to_vec(b"getChainName()");
     static ref CHAIN_ID: Vec<u8> = method_tools::encode_to_vec(b"getChainId()");
+    static ref CHAIN_ID_V1: Vec<u8> = method_tools::encode_to_vec(b"getChainIdV1()");
     static ref OPERATOR: Vec<u8> = method_tools::encode_to_vec(b"getOperator()");
     static ref WEBSITE: Vec<u8> = method_tools::encode_to_vec(b"getWebsite()");
     static ref BLOCK_INTERVAL: Vec<u8> = method_tools::encode_to_vec(b"getBlockInterval()");
@@ -57,6 +57,12 @@ pub struct TokenInfo {
     pub name: String,
     pub symbol: String,
     pub avatar: String,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ChainId {
+    pub id_v0: u32,
+    pub id_v1: U256,
 }
 
 /// Configuration items from system contract
@@ -201,6 +207,19 @@ impl<'a> SysConfig<'a> {
         1
     }
 
+    /// The id v1 of current chain
+    pub fn chain_id_v1(&self, block_id: BlockId) -> Option<U256> {
+        self.get_value(&[ParamType::Uint(256)], CHAIN_ID_V1.as_slice(), block_id)
+            .ok()
+            .and_then(|mut x| x.remove(0).to_uint())
+            .map(U256::from)
+    }
+
+    pub fn default_chain_id_v1() -> U256 {
+        error!("Use default chain id.");
+        U256::from(1)
+    }
+
     /// The operator of current chain
     pub fn operator(&self, block_id: BlockId) -> Option<String> {
         self.get_value(&[ParamType::String], OPERATOR.as_slice(), block_id)
@@ -282,6 +301,31 @@ impl<'a> SysConfig<'a> {
                 symbol,
                 avatar,
             })
+    }
+
+    pub fn deal_chain_id_version(&self, version_manager: &VersionManager) -> Option<ChainId> {
+        let version = version_manager
+            .get_version(BlockId::Pending)
+            .unwrap_or_else(VersionManager::default_version);
+
+        if version == 0 {
+            let id_v0 = self
+                .chain_id(BlockId::Pending)
+                .unwrap_or_else(SysConfig::default_chain_id);
+
+            let id_v1 = SysConfig::default_chain_id_v1();
+            Some(ChainId { id_v0, id_v1 })
+        } else if version == 1 {
+            let id_v1 = self
+                .chain_id_v1(BlockId::Pending)
+                .unwrap_or_else(SysConfig::default_chain_id_v1);
+
+            let id_v0 = SysConfig::default_chain_id();
+            Some(ChainId { id_v0, id_v1 })
+        } else {
+            error!("unexpected version {}!", version);
+            None
+        }
     }
 }
 

@@ -26,6 +26,7 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddress {
     TokenInfo tokenInfo;
 
     Admin admin = Admin(adminAddr);
+    uint chainIdV1;
 
     modifier onlyAdmin {
         if (admin.isAdmin(msg.sender))
@@ -172,6 +173,14 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddress {
         returns (uint32)
     {
         return chainId;
+    }
+
+    function getChainIdV1()
+        public
+        view
+        returns (uint)
+    {
+        return chainIdV1;
     }
 
     function getOperator()

@@ -320,15 +320,22 @@ impl ExecutorInstance {
     }
 
     fn get_auth_miscellaneous(&self) {
-        let sys_config = SysConfig::new(&self.ext);
-        let chain_id = sys_config
-            .chain_id(BlockId::Pending)
-            .unwrap_or_else(SysConfig::default_chain_id);
-        let mut miscellaneous = Miscellaneous::new();
-        miscellaneous.set_chain_id(chain_id);
-        trace!("the chain id captured in executor is {}", chain_id);
-        let msg: Message = miscellaneous.into();
+        let version_manager = VersionManager::new(&self.ext);
 
+        let sys_config = SysConfig::new(&self.ext);
+        let mut miscellaneous = Miscellaneous::new();
+
+        if let Some(chain_id) = sys_config.deal_chain_id_version(&version_manager) {
+            miscellaneous.set_chain_id(chain_id.id_v0);
+            miscellaneous.set_chain_id_v1(<[u8; 32]>::from(chain_id.id_v1).to_vec());
+            trace!(
+                "miscellaneous msg, chain_id: id_v0 = {}, id_v1 = {}",
+                chain_id.id_v0,
+                chain_id.id_v1
+            );
+        }
+
+        let msg: Message = miscellaneous.into();
         self.ctx_pub
             .send((
                 routing_key!(Executor >> Miscellaneous).into(),
@@ -479,10 +486,6 @@ impl ExecutorInstance {
                         let sys_config = SysConfig::new(&self.ext);
                         let block_id = BlockId::Number(number);
                         sys_config
-                            .chain_id(block_id)
-                            .map(|chain_id| metadata.chain_id = chain_id)
-                            .ok_or_else(|| "Query chain id failed".to_owned())?;
-                        sys_config
                             .chain_name(block_id)
                             .map(|chain_name| metadata.chain_name = chain_name)
                             .ok_or_else(|| "Query chain name failed".to_owned())?;
@@ -520,6 +523,14 @@ impl ExecutorInstance {
                         metadata.version = version_manager
                             .get_version(block_id)
                             .unwrap_or_else(VersionManager::default_version);
+
+                        sys_config
+                            .deal_chain_id_version(&version_manager)
+                            .map(|chain_id| {
+                                metadata.chain_id = chain_id.id_v0;
+                                metadata.chain_id_v1 = chain_id.id_v1.lower_hex()
+                            })
+                            .ok_or_else(|| "Query chain id failed".to_owned())?;
                         Ok(())
                     });
                 match result {
