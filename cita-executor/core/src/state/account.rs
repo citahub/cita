@@ -101,8 +101,8 @@ impl Account {
         abi: Bytes,
     ) -> Account {
         Account {
-            balance: balance,
-            nonce: nonce,
+            balance,
+            nonce,
             storage_root: HASH_NULL_RLP,
             storage_cache: Self::empty_storage_cache(),
             storage_changes: storage,

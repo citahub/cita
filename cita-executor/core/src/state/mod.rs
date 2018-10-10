@@ -304,12 +304,12 @@ impl<B: Backend> State<B> {
         }
 
         State {
-            db: db,
-            root: root,
+            db,
+            root,
             cache: RefCell::new(HashMap::new()),
             checkpoints: RefCell::new(Vec::new()),
-            account_start_nonce: account_start_nonce,
-            factories: factories,
+            account_start_nonce,
+            factories,
             account_permissions: HashMap::new(),
             group_accounts: HashMap::new(),
             super_admin_account: None,
@@ -763,7 +763,7 @@ impl<B: Backend> State<B> {
 
     /// Execute a given transaction.
     /// This will change the state accordingly.
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn apply(
         &mut self,
         env_info: &EnvInfo,
@@ -795,7 +795,7 @@ impl<B: Backend> State<B> {
             economical_model,
             check_options.fee_back_platform,
             chain_owner,
-        ).transact(t, &options)
+        ).transact(t, options)
         {
             Ok(e) => {
                 // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));

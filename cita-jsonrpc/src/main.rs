@@ -53,6 +53,8 @@
 //!
 
 #![feature(try_from)]
+#![feature(tool_lints)]
+
 extern crate bytes;
 extern crate clap;
 extern crate cpuprofiler;

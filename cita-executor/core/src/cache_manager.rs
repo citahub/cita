@@ -43,7 +43,6 @@ where
             max_cache_size,
             bytes_per_cache_entry,
             cache_usage: (0..COLLECTION_QUEUE_SIZE)
-                .into_iter()
                 .map(|_| Default::default())
                 .collect(),
         }

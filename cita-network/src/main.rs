@@ -75,8 +75,9 @@
 //!
 
 #![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
-#![feature(iter_rfind)]
 #![feature(try_from)]
+#![feature(tool_lints)]
+
 extern crate byteorder;
 extern crate bytes;
 extern crate clap;

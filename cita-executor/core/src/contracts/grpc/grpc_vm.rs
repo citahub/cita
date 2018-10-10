@@ -124,7 +124,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         env_info: &EnvInfo,
         action_params: &ActionParams,
         connect_info: &ConnectInfo,
-        options: &TransactOptions,
+        options: TransactOptions,
     ) -> Result<Receipt, Error> {
         let mut invoke_request = InvokeRequest::new();
         invoke_request.set_param(action_params.to_owned());

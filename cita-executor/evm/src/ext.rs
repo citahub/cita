@@ -87,7 +87,7 @@ pub trait Ext {
     /// Returns Err, if we run out of gas.
     /// Otherwise returns call_result which contains gas left
     /// and true if subcall was successfull.
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     fn call(&mut self, gas: &U256, sender_address: &Address, receive_address: &Address, value: Option<U256>, data: &[u8], code_address: &Address, output: &mut [u8], call_type: CallType) -> MessageCallResult;
 
     /// Returns code at given address

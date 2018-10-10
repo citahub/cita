@@ -687,7 +687,7 @@ impl Executor {
             EconomicalModel::Quota,
             false,
             Address::from(0),
-        ).transact(t, &options)
+        ).transact(t, options)
             .map_err(Into::into)
     }
 

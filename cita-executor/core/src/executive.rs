@@ -92,12 +92,12 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
 }
 
 /// Check the sender's permission
-#[allow(unknown_lints, implicit_hasher)] // TODO clippy
+#[allow(unknown_lints, clippy::implicit_hasher)] // TODO clippy
 pub fn check_permission(
     group_accounts: &HashMap<Address, Vec<Address>>,
     account_permissions: &HashMap<Address, Vec<Resource>>,
     t: &SignedTransaction,
-    options: &TransactOptions,
+    options: TransactOptions,
 ) -> Result<(), ExecutionError> {
     let sender = *t.sender();
 
@@ -345,7 +345,7 @@ pub struct Executive<'a, B: 'a + StateBackend> {
 
 impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Basic constructor.
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn new(
         state: &'a mut State<B>,
         info: &'a EnvInfo,
@@ -376,7 +376,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Populates executive from parent properties. Increments executive depth.
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn from_parent(
         state: &'a mut State<B>,
         info: &'a EnvInfo,
@@ -404,7 +404,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Creates `Externalities` from `Executive`.
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn as_externalities<'any, T, V>(
         &'any mut self,
         origin_info: OriginInfo,
@@ -445,7 +445,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact(
         &'a mut self,
         t: &SignedTransaction,
-        options: &TransactOptions,
+        options: TransactOptions,
     ) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(
@@ -526,7 +526,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
         t: &SignedTransaction,
-        options: &TransactOptions,
+        options: TransactOptions,
         mut tracer: T,
         mut vm_tracer: V,
     ) -> Result<Executed, ExecutionError>
@@ -1276,7 +1276,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Finalizes the transaction (does refunds and suicides).
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     fn finalize(
         &mut self,
         t: &SignedTransaction,

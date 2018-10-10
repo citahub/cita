@@ -509,7 +509,7 @@ mod tests {
                 ]),
             ]),
             block_hash: block_hash.clone(),
-            block_number: block_number,
+            block_number,
             enacted: vec![block_hash],
             retracted: 0,
         }
@@ -535,7 +535,7 @@ mod tests {
                 ]),
             ]),
             block_hash: block_hash.clone(),
-            block_number: block_number,
+            block_number,
             enacted: vec![],
             retracted: 0,
         }
@@ -556,8 +556,8 @@ mod tests {
             subtraces: 0,
             transaction_number: 0,
             transaction_hash: tx_hash,
-            block_number: block_number,
-            block_hash: block_hash,
+            block_number,
+            block_hash,
         }
     }
 

@@ -111,7 +111,7 @@ impl fmt::Display for TransactionError {
     }
 }
 
-#[allow(unknown_lints, large_enum_variant)] // TODO clippy
+#[allow(unknown_lints, clippy::large_enum_variant)] // TODO clippy
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 /// Errors concerning block processing.
 pub enum BlockError {
@@ -295,7 +295,7 @@ impl fmt::Display for ExecutionError {
     }
 }
 
-#[allow(unknown_lints, large_enum_variant)] // TODO clippy
+#[allow(unknown_lints, clippy::large_enum_variant)] // TODO clippy
 #[derive(Debug)]
 /// General error type which should be capable of representing all errors in ethcore.
 pub enum Error {

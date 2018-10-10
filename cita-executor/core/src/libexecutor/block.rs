@@ -436,7 +436,7 @@ impl OpenBlock {
         true
     }
 
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn apply_transaction(
         &mut self,
         engine: &Engine,
@@ -519,7 +519,7 @@ mod tests {
         stx.data = vec![1; 200];
         let transactions = vec![stx; 200];
         let body = BlockBody {
-            transactions: transactions,
+            transactions,
         };
         let body_rlp = rlp::encode(&body);
         let body: BlockBody = rlp::decode(&body_rlp);
