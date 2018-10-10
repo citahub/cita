@@ -58,10 +58,10 @@ const deleteAccounts = async (origin, target, accounts, _sender = sender) => {
 };
 
 // checkScope
-const checkScope = async (origin, target) => contract.methods.checkScope(origin, target).call();
+const checkScope = async (origin, target) => contract.methods.checkScope(origin, target).call('pending');
 
 // queryGroups
-const queryGroups = () => contract.methods.queryGroups().call();
+const queryGroups = () => contract.methods.queryGroups().call('pending');
 
 module.exports = {
   newGroup,

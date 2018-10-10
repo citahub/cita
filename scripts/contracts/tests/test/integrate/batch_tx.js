@@ -44,7 +44,7 @@ describe('\n\nDeploy a contract\n\n', () => {
 describe('\n\ntest batch tx\n\n', () => {
   before('get the x before batch tx', async () => {
     const contract = genContract(abi, addr);
-    const ret = await contract.methods.x().call();
+    const ret = await contract.methods.x().call('pending');
     logger.debug('\nThe x:\n', ret);
     expect(ret).to.equal('0');
   });
@@ -71,7 +71,7 @@ describe('\n\ntest batch tx\n\n', () => {
 
   it('get the x after batch tx', async () => {
     const contract = genContract(abi, addr);
-    const ret = await contract.methods.x().call();
+    const ret = await contract.methods.x().call('pending');
     logger.debug('\nThe x:\n', ret);
     expect(ret).to.equal('2');
   });

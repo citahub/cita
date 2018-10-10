@@ -15,7 +15,7 @@ const update = async (account, _sender = sender) => {
 };
 
 // isAdmin
-const isAdmin = account => contract.methods.isAdmin(account).call();
+const isAdmin = account => contract.methods.isAdmin(account).call('pending');
 
 module.exports = {
   update,

@@ -21,10 +21,10 @@ const deleteNode = async (node, _sender = sender) => {
 };
 
 // listNode
-const listNode = () => contract.methods.listNode().call();
+const listNode = () => contract.methods.listNode().call('pending');
 
 // getStatus
-const getStatus = node => contract.methods.getStatus(node).call();
+const getStatus = node => contract.methods.getStatus(node).call('pending');
 
 module.exports = {
   approveNode,

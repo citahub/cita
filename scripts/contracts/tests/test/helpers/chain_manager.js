@@ -33,13 +33,13 @@ const disableSideChain = async (id, _sender = sender) => {
 };
 
 // getChainId
-const getChainId = () => contract.methods.getChainId().call();
+const getChainId = () => contract.methods.getChainId().call('pending');
 
 // getParentChainId
-const getParentChainId = () => contract.methods.getParentChainId().call();
+const getParentChainId = () => contract.methods.getParentChainId().call('pending');
 
 // Get the nodes of side chain
-const getAuthorities = id => contract.methods.getAuthoritirs(id).call();
+const getAuthorities = id => contract.methods.getAuthoritirs(id).call('pending');
 
 module.exports = {
   newSideChain,
