@@ -1519,7 +1519,7 @@ mod tests {
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
             };
-            ex.transact(&t, &opts)
+            ex.transact(&t, opts)
         };
 
         let schedule = Schedule::new_v1();
@@ -1584,7 +1584,7 @@ mod tests {
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
             };
-            ex.transact(&t, &opts).unwrap()
+            ex.transact(&t, opts).unwrap()
         };
 
         let schedule = Schedule::new_v1();
@@ -1648,7 +1648,7 @@ mod tests {
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
             };
-            ex.transact(&t, &opts)
+            ex.transact(&t, opts)
         };
 
         match result {
@@ -1704,7 +1704,7 @@ mod tests {
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
             };
-            ex.transact(&t, &opts)
+            ex.transact(&t, opts)
         };
 
         assert!(result.is_ok());

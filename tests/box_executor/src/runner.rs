@@ -121,7 +121,7 @@ fn validate_rich_status(config: &mut Config, rich_status: &RichStatus) {
     config.blocks.remove(&rich_status.get_height());
     assert_eq!(
         &(rich_status.get_height() + 1),
-        config.blocks.keys().into_iter().min_by_key(|x| *x).unwrap(),
+        config.blocks.keys().min_by_key(|x| *x).unwrap(),
     );
 }
 

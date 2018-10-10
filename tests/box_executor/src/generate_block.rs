@@ -42,7 +42,7 @@ pub trait AsMillis {
 
 impl AsMillis for Duration {
     fn as_millis(&self) -> u64 {
-        self.as_secs() * 1_000 + u64::from(self.subsec_nanos() / 1_000_000)
+        self.as_secs() * 1_000 + u64::from(self.subsec_millis())
     }
 }
 

@@ -565,8 +565,8 @@ mod integration_test {
                 let new_service = NewServer {
                     inner: Arc::new(Inner {
                         tx: Mutex::new(tx),
-                        responses: responses,
-                        timeout: timeout,
+                        responses,
+                        timeout,
                         reactor_handle: core.handle(),
                         http_headers: headers,
                     }),

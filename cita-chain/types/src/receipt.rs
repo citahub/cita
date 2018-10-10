@@ -55,8 +55,8 @@ pub enum ReceiptError {
 
 impl ReceiptError {
     /// Returns human-readable description
-    pub fn description(&self) -> String {
-        let desc = match *self {
+    pub fn description(self) -> String {
+        let desc = match self {
             ReceiptError::NotEnoughBaseQuota => "Not enough base quota.",
             ReceiptError::BlockQuotaLimitReached => "Block quota limit reached.",
             ReceiptError::AccountQuotaLimitReached => "Account quota limit reached.",
@@ -82,8 +82,8 @@ impl ReceiptError {
         desc.to_string()
     }
 
-    pub fn protobuf(&self) -> ProtoReceiptError {
-        match *self {
+    pub fn protobuf(self) -> ProtoReceiptError {
+        match self {
             ReceiptError::NotEnoughBaseQuota => ProtoReceiptError::NotEnoughBaseQuota,
             ReceiptError::BlockQuotaLimitReached => ProtoReceiptError::BlockQuotaLimitReached,
             ReceiptError::AccountQuotaLimitReached => ProtoReceiptError::AccountQuotaLimitReached,
