@@ -52,14 +52,13 @@ impl EthFilter for Chain {
 
     fn filter_changes(&self, index: usize) -> Option<FilterChanges> {
         let polls = self.poll_filter();
-        let log = match polls.lock().poll_mut(&index) {
+        let log = match polls.lock().poll_mut(index) {
             None => Some(FilterChanges::Empty),
             Some(filter) => match *filter {
                 PollFilter::Block(ref mut block_number) => {
                     // + 1, cause we want to return hashes including current block hash.
                     let current_number = self.get_current_height() + 1;
                     let hashes = (*block_number..current_number)
-                        .into_iter()
                         .filter_map(|_id| self.block_hash_by_height(_id))
                         .collect::<Vec<H256>>();
 
@@ -93,7 +92,7 @@ impl EthFilter for Chain {
 
     fn filter_logs(&self, index: usize) -> Option<Vec<Log>> {
         let polls = self.poll_filter();
-        let log = match polls.lock().poll(&index) {
+        let log = match polls.lock().poll(index) {
             Some(&PollFilter::Logs(ref _block_number, ref _previous_log, ref filter)) => {
                 let filter: EthcoreFilter = filter.clone().into();
                 Some(self.get_logs(&filter).into_iter().map(Into::into).collect())
@@ -108,9 +107,9 @@ impl EthFilter for Chain {
     fn uninstall_filter(&self, index: usize) -> bool {
         let polls = self.poll_filter();
         let mut polls = polls.lock();
-        let is_uninstall = match polls.poll(&index) {
+        let is_uninstall = match polls.poll(index) {
             Some(_) => {
-                polls.remove_poll(&index);
+                polls.remove_poll(index);
                 true
             }
             None => false,

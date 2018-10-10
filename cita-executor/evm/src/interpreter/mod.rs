@@ -244,7 +244,7 @@ impl<Cost: CostType> Interpreter<Cost> {
         }
     }
 
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     fn exec_instruction(&mut self, gas: Cost, params: &ActionParams, ext: &mut Ext, instruction: Instruction, code: &mut CodeReader, stack: &mut Stack<U256>, provided: Option<Cost>) -> Result<InstructionResult<Cost>> {
         match instruction {
             instructions::JUMP => {

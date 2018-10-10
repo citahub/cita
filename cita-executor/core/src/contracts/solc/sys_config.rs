@@ -87,9 +87,10 @@ impl<'a> SysConfig<'a> {
             &[ParamType::Uint(256)],
             DELAY_BLOCK_NUMBER.as_slice(),
             block_id,
-        ).ok()
-            .and_then(|mut x| x.remove(0).to_uint())
-            .map(|x| H256::from(x).low_u64())
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_uint())
+        .map(|x| H256::from(x).low_u64())
     }
 
     pub fn default_delay_block_number() -> u64 {
@@ -114,8 +115,9 @@ impl<'a> SysConfig<'a> {
             &[ParamType::Bool],
             PERMISSION_SEND_TX_CHECK.as_slice(),
             block_id,
-        ).ok()
-            .and_then(|mut x| x.remove(0).to_bool())
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_bool())
     }
 
     pub fn default_send_tx_permission_check() -> bool {
@@ -128,8 +130,9 @@ impl<'a> SysConfig<'a> {
             &[ParamType::Bool],
             PERMISSION_CREATE_CONTRACT_CHECK.as_slice(),
             block_id,
-        ).ok()
-            .and_then(|mut x| x.remove(0).to_bool())
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_bool())
     }
 
     pub fn default_create_contract_permission_check() -> bool {
@@ -155,8 +158,9 @@ impl<'a> SysConfig<'a> {
             &[ParamType::Bool],
             FEE_BACK_PLATFORM_CHECK.as_slice(),
             block_id,
-        ).ok()
-            .and_then(|mut x| x.remove(0).to_bool())
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_bool())
     }
 
     pub fn default_fee_back_platform_check() -> bool {
@@ -232,10 +236,11 @@ impl<'a> SysConfig<'a> {
             &[ParamType::Uint(64)],
             ECONOMICAL_MODEL.as_slice(),
             block_id,
-        ).ok()
-            .and_then(|mut x| x.remove(0).to_uint())
-            .map(|x| H256::from(x).low_u64() as u8)
-            .and_then(EconomicalModel::from_u8)
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_uint())
+        .map(|x| H256::from(x).low_u64() as u8)
+        .and_then(EconomicalModel::from_u8)
     }
 
     pub fn default_economical_model() -> EconomicalModel {
@@ -256,7 +261,8 @@ impl<'a> SysConfig<'a> {
                 decode(
                     &[ParamType::String, ParamType::String, ParamType::String],
                     &output,
-                ).ok()
+                )
+                .ok()
             })
             .and_then(|mut token_info| {
                 if token_info.len() < 3 {

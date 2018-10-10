@@ -643,7 +643,8 @@ impl Executor {
             // TODO: Should Fixed?
             chain_id: u32::min_value(),
             version: 0u32,
-        }.fake_sign(from)
+        }
+        .fake_sign(from)
     }
 
     fn call(
@@ -687,8 +688,9 @@ impl Executor {
             EconomicalModel::Quota,
             false,
             Address::from(0),
-        ).transact(t, &options)
-            .map_err(Into::into)
+        )
+        .transact(t, options)
+        .map_err(Into::into)
     }
 
     pub fn set_gas_and_nodes(&self, height: u64) {
@@ -990,7 +992,8 @@ impl Executor {
             self.state_db.read().boxed_clone_canon(&parent_hash),
             current_state_root,
             last_hashes.into(),
-        ).unwrap();
+        )
+        .unwrap();
         if open_block.apply_transactions(self, conf.chain_owner, &check_options) {
             let closed_block = open_block.close();
             let new_now = Instant::now();
@@ -1027,7 +1030,8 @@ impl Executor {
             self.state_db.read().boxed_clone_canon(&parent_hash),
             current_state_root,
             last_hashes.into(),
-        ).unwrap();
+        )
+        .unwrap();
         if open_block.apply_transactions(self, chain_owner, &check_options) {
             let closed_block = open_block.close();
             let new_now = Instant::now();

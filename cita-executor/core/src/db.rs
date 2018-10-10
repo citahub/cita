@@ -61,7 +61,7 @@ pub trait Cache<K, V> {
     fn get(&self, k: &K) -> Option<&V>;
 }
 
-#[allow(unknown_lints, implicit_hasher)] // TODO clippy
+#[allow(unknown_lints, clippy::implicit_hasher)] // TODO clippy
 impl<K, V> Cache<K, V> for HashMap<K, V>
 where
     K: Hash + Eq,
@@ -139,14 +139,18 @@ pub trait Writable {
         R: Deref<Target = [u8]>,
     {
         match policy {
-            CacheUpdatePolicy::Overwrite => for (key, value) in values {
-                self.write(col, &key, &value);
-                cache.insert(key, value);
-            },
-            CacheUpdatePolicy::Remove => for (key, value) in &values {
-                self.write(col, key, value);
-                cache.remove(key);
-            },
+            CacheUpdatePolicy::Overwrite => {
+                for (key, value) in values {
+                    self.write(col, &key, &value);
+                    cache.insert(key, value);
+                }
+            }
+            CacheUpdatePolicy::Remove => {
+                for (key, value) in &values {
+                    self.write(col, key, value);
+                    cache.remove(key);
+                }
+            }
         }
     }
 
@@ -163,20 +167,24 @@ pub trait Writable {
         R: Deref<Target = [u8]>,
     {
         match policy {
-            CacheUpdatePolicy::Overwrite => for (key, value) in values {
-                match value {
-                    Some(ref v) => self.write(col, &key, v),
-                    None => self.delete(col, &key),
+            CacheUpdatePolicy::Overwrite => {
+                for (key, value) in values {
+                    match value {
+                        Some(ref v) => self.write(col, &key, v),
+                        None => self.delete(col, &key),
+                    }
+                    cache.insert(key, value);
                 }
-                cache.insert(key, value);
-            },
-            CacheUpdatePolicy::Remove => for (key, value) in values {
-                match value {
-                    Some(v) => self.write(col, &key, &v),
-                    None => self.delete(col, &key),
+            }
+            CacheUpdatePolicy::Remove => {
+                for (key, value) in values {
+                    match value {
+                        Some(v) => self.write(col, &key, &v),
+                        None => self.delete(col, &key),
+                    }
+                    cache.remove(&key);
                 }
-                cache.remove(&key);
-            },
+            }
         }
     }
 }

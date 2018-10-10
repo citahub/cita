@@ -82,6 +82,8 @@
 //!
 
 #![feature(try_from)]
+#![feature(tool_lints)]
+
 extern crate cita_types;
 extern crate clap;
 extern crate common_types as types;

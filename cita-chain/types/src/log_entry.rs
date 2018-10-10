@@ -169,7 +169,7 @@ mod tests {
             .unwrap();
         let address = "0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6".parse::<Address>().unwrap();
         let log = LogEntry {
-            address: address,
+            address,
             topics: vec![],
             data: vec![],
         };

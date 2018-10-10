@@ -75,7 +75,8 @@ fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> BftProof {
             Some(proof.proposal),
         ),
         Infinite,
-    ).unwrap();
+    )
+    .unwrap();
 
     let signature = Signature::sign(privkey, &message.crypt_hash()).unwrap();
     commits.insert((*sender).into(), signature);

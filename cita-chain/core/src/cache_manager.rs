@@ -38,7 +38,7 @@ where
             pref_cache_size,
             max_cache_size,
             bytes_per_cache_entry,
-            cache_usage: (0..COLLECTION_QUEUE_SIZE).into_iter().map(|_| Default::default()).collect(),
+            cache_usage: (0..COLLECTION_QUEUE_SIZE).map(|_| Default::default()).collect(),
         }
     }
 

@@ -52,7 +52,7 @@ impl Config {
     }
 
     fn detect_missing_blocks(blocks: &HashMap<u64, serde_yaml::Value>) {
-        for number in 1..(blocks.len() as u64 + 1) {
+        for number in 1..=blocks.len() as u64 {
             if !blocks.contains_key(&number) {
                 panic!("missing block-{}", number);
             }

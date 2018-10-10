@@ -244,7 +244,8 @@ mod tests {
             &o[..],
             &(FromHex::from_hex(
                 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
 
         let mut o8 = [255u8; 8];
@@ -260,7 +261,8 @@ mod tests {
             &o34[..],
             &(FromHex::from_hex(
                 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855ffff"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
 
         let mut ov = vec![];
@@ -269,7 +271,8 @@ mod tests {
             &ov[..],
             &(FromHex::from_hex(
                 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
     }
 
@@ -286,7 +289,8 @@ mod tests {
             &o[..],
             &(FromHex::from_hex(
                 "0000000000000000000000009c1185a5c5e9fc54612808977ee8f548b2258d31"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
 
         let mut o8 = [255u8; 8];
@@ -302,7 +306,8 @@ mod tests {
             &o34[..],
             &(FromHex::from_hex(
                 "0000000000000000000000009c1185a5c5e9fc54612808977ee8f548b2258d31ffff"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
     }
 
@@ -355,7 +360,8 @@ mod tests {
             &o[..],
             &(FromHex::from_hex(
                 "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
 
         let i_bad = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b000000000000000000000000000000000000000000000000000000000000001b0000000000000000000000000000000000000000000000000000000000000000").unwrap();
@@ -365,7 +371,8 @@ mod tests {
             &o[..],
             &(FromHex::from_hex(
                 "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
 
         let i_bad = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001b").unwrap();
@@ -375,7 +382,8 @@ mod tests {
             &o[..],
             &(FromHex::from_hex(
                 "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
 
         let i_bad = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000001b").unwrap();
@@ -385,7 +393,8 @@ mod tests {
             &o[..],
             &(FromHex::from_hex(
                 "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
 
         let i_bad = FromHex::from_hex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b000000000000000000000000000000000000000000000000000000000000001bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
@@ -395,11 +404,12 @@ mod tests {
             &o[..],
             &(FromHex::from_hex(
                 "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            ).unwrap())[..]
+            )
+            .unwrap())[..]
         );
 
         // TODO: Should this (corrupted version of the above) fail rather than returning some address?
-    /*    let i_bad = FromHex::from_hex("48173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
+        /*    let i_bad = FromHex::from_hex("48173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
         let mut o = [255u8; 32];
         f.execute(&i_bad[..], &mut BytesRef::Fixed(&mut o[..]));
         assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/    }

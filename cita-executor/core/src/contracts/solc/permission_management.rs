@@ -159,7 +159,7 @@ impl<'a> PermissionManagement<'a> {
 }
 
 /// Check the account contains the resource
-#[allow(unknown_lints, implicit_hasher)] // TODO clippy
+#[allow(unknown_lints, clippy::implicit_hasher)] // TODO clippy
 pub fn contains_resource(
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,

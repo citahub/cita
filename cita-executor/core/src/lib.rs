@@ -17,6 +17,8 @@
 
 #![feature(try_from)]
 #![cfg_attr(test, feature(test))]
+#![feature(tool_lints)]
+
 extern crate bincode;
 extern crate byteorder;
 #[macro_use]

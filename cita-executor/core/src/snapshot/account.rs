@@ -64,7 +64,7 @@ impl CodeState {
 // walk the account's storage trie, returning a vector of RLP items containing the
 // account address hash, account properties and the storage. Each item contains at most `max_storage_items`
 // storage records split according to snapshot format definition.
-#[allow(unknown_lints, implicit_hasher)] // TODO clippy
+#[allow(unknown_lints, clippy::implicit_hasher)] // TODO clippy
 pub fn to_fat_rlps(
     address: &Address,
     acc: &BasicAccount,

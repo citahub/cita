@@ -126,12 +126,12 @@ impl HistoryHeights {
 
     // at least wait 3s from latest update
     pub fn is_too_frequent(&self) -> bool {
-        unix_now().as_millis() < self.last_timestamp + 3000
+        AsMillis::as_millis(&unix_now()) < self.last_timestamp + 3000
     }
 
     pub fn update_time_stamp(&mut self) {
         // update time_stamp
-        self.last_timestamp = unix_now().as_millis();
+        self.last_timestamp = AsMillis::as_millis(&unix_now());
     }
 }
 
@@ -311,7 +311,7 @@ impl MsgHandler {
         }
     }
 
-    #[allow(unknown_lints, option_option)] // TODO clippy
+    #[allow(unknown_lints, clippy::option_option)] // TODO clippy
     fn get_ret_from_cache(&self, tx_hash: &H256) -> Option<Option<Vec<u8>>> {
         self.cache.peek(tx_hash).cloned()
     }
@@ -825,7 +825,7 @@ impl MsgHandler {
         self.process_block_verify(blk_req);
     }
 
-    #[allow(unknown_lints, cyclomatic_complexity)] // TODO clippy
+    #[allow(unknown_lints, clippy::cyclomatic_complexity)] // TODO clippy
     fn deal_request(&mut self, is_local: bool, newtx_req: Request) {
         if newtx_req.has_batch_req() {
             let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();

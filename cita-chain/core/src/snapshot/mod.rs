@@ -185,7 +185,8 @@ pub fn take_snapshot<W: SnapshotWriter + Send>(
         chain.current_block_poof()
     } else {
         chain.get_block_proof_by_height(block_at)
-    }.unwrap();
+    }
+    .unwrap();
 
     let manifest_data = ManifestData {
         block_hashes,
@@ -238,7 +239,8 @@ pub fn chunk_secondary<'a>(
             current_hash: start_hash,
             writer: &mut chunk_sink,
             preferred_size: PREFERRED_CHUNK_SIZE,
-        }.chunk_all()?
+        }
+        .chunk_all()?
     }
 
     Ok(chunk_hashes)
@@ -495,7 +497,7 @@ impl BlockRebuilder {
 
             // TODO: abridged_block
             /*let receipts_root = ordered_trie_root(pair.at(1)?.iter().map(|r| r.as_raw()));
-
+            
             let block = abridged_block.to_block(parent_hash, cur_number, receipts_root)?;
             let block_bytes = block.rlp_bytes();*/
 
@@ -649,7 +651,7 @@ impl BlockRebuilder {
         info: &BlockInfo,
     ) -> HashMap<H256, TransactionAddress> {
         let transaction_hashes = block.body().transaction_hashes();
-
+    
         transaction_hashes
             .into_iter()
             .enumerate()
@@ -742,7 +744,7 @@ impl BlockRebuilder {
 
         /*for (first_num, first_hash) in self.disconnected.drain(..) {
             let parent_num = first_num - 1;
-
+        
             // check if the parent is even in the chain.
             // since we don't restore every single block in the chain,
             // the first block of the first chunks has nothing to connect to.

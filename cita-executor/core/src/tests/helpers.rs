@@ -194,7 +194,7 @@ pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u3
     let mut block = Block::new();
 
     block.set_parent_hash(executor.get_current_hash());
-    block.set_timestamp(UNIX_EPOCH.elapsed().unwrap().as_millis());
+    block.set_timestamp(AsMillis::as_millis(&UNIX_EPOCH.elapsed().unwrap()));
     block.set_number(executor.get_current_height() + 1);
     // header.proof= ?;
 

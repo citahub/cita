@@ -411,7 +411,7 @@ impl Synchronizer {
             let mut sync_res = SyncResponse::new();
             sync_res.set_blocks(blocks.into());
             let msg: Message = sync_res.into();
-            self.tx_pub.send((
+            let _ = self.tx_pub.send((
                 routing_key!(Net >> SyncResponse).into(),
                 msg.try_into().unwrap(),
             ));

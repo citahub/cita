@@ -24,7 +24,8 @@ use contracts::{
         contract::{
             create_grpc_contract, invoke_grpc_contract, is_create_grpc_address, is_grpc_contract,
         },
-        grpc_vm::extract_logs_from_response, service_registry,
+        grpc_vm::extract_logs_from_response,
+        service_registry,
     },
     native::factory::{Contract as NativeContract, Factory as NativeFactory},
     solc::{permission_management::contains_resource, Resource},
@@ -92,12 +93,12 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
 }
 
 /// Check the sender's permission
-#[allow(unknown_lints, implicit_hasher)] // TODO clippy
+#[allow(unknown_lints, clippy::implicit_hasher)] // TODO clippy
 pub fn check_permission(
     group_accounts: &HashMap<Address, Vec<Address>>,
     account_permissions: &HashMap<Address, Vec<Resource>>,
     t: &SignedTransaction,
-    options: &TransactOptions,
+    options: TransactOptions,
 ) -> Result<(), ExecutionError> {
     let sender = *t.sender();
 
@@ -345,7 +346,7 @@ pub struct Executive<'a, B: 'a + StateBackend> {
 
 impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     /// Basic constructor.
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn new(
         state: &'a mut State<B>,
         info: &'a EnvInfo,
@@ -376,7 +377,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Populates executive from parent properties. Increments executive depth.
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn from_parent(
         state: &'a mut State<B>,
         info: &'a EnvInfo,
@@ -404,7 +405,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Creates `Externalities` from `Executive`.
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn as_externalities<'any, T, V>(
         &'any mut self,
         origin_info: OriginInfo,
@@ -445,7 +446,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact(
         &'a mut self,
         t: &SignedTransaction,
-        options: &TransactOptions,
+        options: TransactOptions,
     ) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(
@@ -526,7 +527,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
         t: &SignedTransaction,
-        options: &TransactOptions,
+        options: TransactOptions,
         mut tracer: T,
         mut vm_tracer: V,
     ) -> Result<Executed, ExecutionError>
@@ -804,7 +805,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     .exec(params, &mut ext)
                     .finalize(ext)
             })
-        }).join()
+        })
+        .join()
     }
 
     /// Calls contract function with given contract params.
@@ -913,27 +915,33 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             return_data: ReturnData::empty(),
         };
         match atype {
-            AMEND_ABI => if self.transact_set_abi(&(params.data.to_owned().unwrap())) {
-                Ok(result)
-            } else {
-                Err(evm::error::Error::Internal(
-                    "Account doesn't exist".to_owned(),
-                ))
-            },
-            AMEND_CODE => if self.transact_set_code(&(params.data.to_owned().unwrap())) {
-                Ok(result)
-            } else {
-                Err(evm::error::Error::Internal(
-                    "Account doesn't exist".to_owned(),
-                ))
-            },
-            AMEND_KV_H256 => if self.transact_set_kv_h256(&(params.data.to_owned().unwrap())) {
-                Ok(result)
-            } else {
-                Err(evm::error::Error::Internal(
-                    "Account doesn't exist".to_owned(),
-                ))
-            },
+            AMEND_ABI => {
+                if self.transact_set_abi(&(params.data.to_owned().unwrap())) {
+                    Ok(result)
+                } else {
+                    Err(evm::error::Error::Internal(
+                        "Account doesn't exist".to_owned(),
+                    ))
+                }
+            }
+            AMEND_CODE => {
+                if self.transact_set_code(&(params.data.to_owned().unwrap())) {
+                    Ok(result)
+                } else {
+                    Err(evm::error::Error::Internal(
+                        "Account doesn't exist".to_owned(),
+                    ))
+                }
+            }
+            AMEND_KV_H256 => {
+                if self.transact_set_kv_h256(&(params.data.to_owned().unwrap())) {
+                    Ok(result)
+                } else {
+                    Err(evm::error::Error::Internal(
+                        "Account doesn't exist".to_owned(),
+                    ))
+                }
+            }
             AMEND_GET_KV_H256 => {
                 if let Some(v) = self.transact_get_kv_h256(&(params.data.to_owned().unwrap())) {
                     let data = v.to_vec();
@@ -1276,7 +1284,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     /// Finalizes the transaction (does refunds and suicides).
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     fn finalize(
         &mut self,
         t: &SignedTransaction,
@@ -1477,7 +1485,8 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
-        }.fake_sign(keypair.address().clone());
+        }
+        .fake_sign(keypair.address().clone());
         let sender = t.sender();
 
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
@@ -1510,7 +1519,7 @@ mod tests {
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
             };
-            ex.transact(&t, &opts)
+            ex.transact(&t, opts)
         };
 
         let schedule = Schedule::new_v1();
@@ -1540,7 +1549,8 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
-        }.fake_sign(keypair.address().clone());
+        }
+        .fake_sign(keypair.address().clone());
         let sender = t.sender();
         let contract = contract_address(t.sender(), &U256::zero());
 
@@ -1574,7 +1584,7 @@ mod tests {
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
             };
-            ex.transact(&t, &opts).unwrap()
+            ex.transact(&t, opts).unwrap()
         };
 
         let schedule = Schedule::new_v1();
@@ -1607,7 +1617,8 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
-        }.fake_sign(keypair.address().clone());
+        }
+        .fake_sign(keypair.address().clone());
 
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
         let native_factory = NativeFactory::default();
@@ -1637,7 +1648,7 @@ mod tests {
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
             };
-            ex.transact(&t, &opts)
+            ex.transact(&t, opts)
         };
 
         match result {
@@ -1663,7 +1674,8 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
-        }.fake_sign(keypair.address().clone());
+        }
+        .fake_sign(keypair.address().clone());
 
         let factory = Factory::new(VMType::Interpreter, 1024 * 32);
         let native_factory = NativeFactory::default();
@@ -1692,7 +1704,7 @@ mod tests {
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
             };
-            ex.transact(&t, &opts)
+            ex.transact(&t, opts)
         };
 
         assert!(result.is_ok());

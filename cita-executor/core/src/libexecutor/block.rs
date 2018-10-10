@@ -436,7 +436,7 @@ impl OpenBlock {
         true
     }
 
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn apply_transaction(
         &mut self,
         engine: &Engine,
@@ -489,7 +489,8 @@ impl OpenBlock {
         self.set_state_root(state_root);
         let receipts_root = merklehash::MerkleTree::from_bytes(
             self.receipts.iter().map(|r| r.rlp_bytes().to_vec()),
-        ).get_root_hash();
+        )
+        .get_root_hash();
         self.set_receipts_root(receipts_root);
 
         // blocks blooms
@@ -518,9 +519,7 @@ mod tests {
         let mut stx = SignedTransaction::default();
         stx.data = vec![1; 200];
         let transactions = vec![stx; 200];
-        let body = BlockBody {
-            transactions: transactions,
-        };
+        let body = BlockBody { transactions };
         let body_rlp = rlp::encode(&body);
         let body: BlockBody = rlp::decode(&body_rlp);
         let body_encoded = rlp::encode(&body).into_vec();
