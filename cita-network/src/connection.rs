@@ -151,7 +151,7 @@ impl Connection {
     }
 
     pub fn broadcast_rawbytes(&self, key: String, data: &[u8]) {
-        let mut msg = Message::try_from(data).unwrap();
+        let msg = Message::try_from(data).unwrap();
         self.broadcast(key, msg);
     }
 }
@@ -161,7 +161,7 @@ fn connect(con: Arc<Connection>) {
         for peer in con.peers_pair.write().iter_mut() {
             if con.is_disconnect.load(Ordering::SeqCst) {
                 if let Some(ref mut stream) = peer.2.as_ref() {
-                    stream.shutdown(Shutdown::Both).map_err(|err| {
+                    let _ = stream.shutdown(Shutdown::Both).map_err(|err| {
                         warn!("shutdown {} - {} failed: {}", peer.0, peer.1, err);
                     });
                 }

@@ -64,7 +64,7 @@ impl NetWork {
             // Come from MQ
             Source::LOCAL => match rtkey {
                 routing_key!(Chain >> Status) => {
-                    self.tx_sync.send((source, (key, data)));
+                    let _ = self.tx_sync.send((source, (key, data)));
                 }
                 routing_key!(Chain >> SyncResponse) => {
                     self.con.broadcast_rawbytes(
@@ -87,22 +87,26 @@ impl NetWork {
             Source::REMOTE => match rtkey {
                 routing_key!(Synchronizer >> Status)
                 | routing_key!(Synchronizer >> SyncResponse) => {
-                    self.tx_sync.send((source, (key, data)));
+                    let _ = self.tx_sync.send((source, (key, data)));
                 }
                 routing_key!(Synchronizer >> SyncRequest) => {
-                    self.tx_pub
+                    let _ = self
+                        .tx_pub
                         .send((routing_key!(Net >> SyncRequest).into(), data));
                 }
                 routing_key!(Auth >> Request) => {
-                    self.tx_new_tx
+                    let _ = self
+                        .tx_new_tx
                         .send((routing_key!(Net >> Request).into(), data));
                 }
                 routing_key!(Consensus >> SignedProposal) => {
-                    self.tx_consensus
+                    let _ = self
+                        .tx_consensus
                         .send((routing_key!(Net >> SignedProposal).into(), data));
                 }
                 routing_key!(Consensus >> RawBytes) => {
-                    self.tx_consensus
+                    let _ = self
+                        .tx_consensus
                         .send((routing_key!(Net >> RawBytes).into(), data));
                 }
                 _ => {

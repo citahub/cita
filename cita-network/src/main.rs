@@ -74,7 +74,6 @@
 //! [`network_message_to_pubsub_message`]: ./citaprotocol/fn.network_message_to_pubsub_message.html
 //!
 
-#![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
 #![feature(try_from)]
 #![feature(tool_lints)]
 
@@ -194,7 +193,7 @@ fn main() {
     //connections manage to loop
     let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
-    watcher.watch(".", RecursiveMode::NonRecursive);
+    let _ = watcher.watch(".", RecursiveMode::NonRecursive);
 
     let (sync_tx, sync_rx) = channel();
     let con = Arc::new(Connection::new(&config));
