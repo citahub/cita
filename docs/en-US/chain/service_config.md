@@ -1,21 +1,23 @@
-# 微服务配置
+# Nodes Configuration
 
-CITA 最大的特色就是将区块链节点的必要功能解耦为六个微服务：RPC，Auth，Consensus，Chain，Executor，Network， 它们分工合作，共同完成去中心化的任务。先了解一下都有哪些配置文件， toml 配置文件的位置在 `test-chain/*/` ( `test-chain` 是默认链名称)。
+The most notable feature of CITA is the microservice architecture, that is, in CITA, functionalities of a node are decoupled into six microservices, including RPC, Auth, Consensus, Chain, Executor, Network. These six microservices coordinating with each other via message queue to complete the node's task. 
+
+Let's take a look at the configuration files which are .toml files under the `test-chain/*/` path. (`test-chain` is the default name of the chain).
 
 ```bash
 $ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
 $ ls test—chain/
-  0  1  2  3  template
+  0 1 2 3 template
 $ ls 0
-  auth.toml executor.toml jsonrpc.toml chain.toml forever.toml logs
-  consensus.toml network.toml genesis.json privkey
+  auth.toml executor.toml jsonrpc.toml chain.toml forever.toml logs
+  consensus.toml network.toml genesis.json privkey
 ```
 
-了解一下各个关键微服务的配置吧！
+The following sections will show you how to config each microservice.
 
 ## Auth
 
-auth.toml 是 Auth 微服务的配置文件，如下：
+Auth.toml is the configuration file for the Auth microservice, as follows:
 
 ```bash
 
@@ -30,18 +32,18 @@ prof_duration = 0
 
 ```
 
-* `count_per_batch` : 表示批量处理阈值
-* `buffer_duration` : 表示超时时间(当达到批量数量或是超时时间到了，就开始交易处理流程)
-* `tx_verify_thread_num` : 交易验证线程数
-* `tx_verify_cache_size` : 交易验证缓存结果大小，缓存交易验证结果，减少重复计算
-* `tx_pool_limit` : 交易池数量上限，默认是0，表示无上限
-* `wal_enable` : 交易持久化开关，开启后，交易池交易进行持久化，节点重启后池内交易不丢失
-* `prof_start` : 性能采样分析参数，表示进行启动多久之后进行性能采样，单位是秒。
-* `prof_duration` : 性能采样分析参数，表示采样持续时间，单位是秒，为 0，表示不采样。
+* `count_per_batch` : threshold of batch processing 
+* `buffer_duration`: timeout period (when the batch quantity is reached or the timeout period is up, the transaction processing flow starts)
+* `tx_verify_thread_num` : number of transaction verification threads
+* `tx_verify_cache_size` : size of transaction verification cache (reduce double counting)
+* `tx_pool_limit` : the maximum number of transactions in trading pools (default is 0, indicating no limit)
+* `wal_enable` : Transaction persistence switch. If `Wal_enable = true`, transactions  would be persisted, which means these transactions would not be lost after node restart
+* `prof_start`: Performance sampling parameter, indicating how long after starting to perform the performance sampling, in seconds
+* `prof_duration`: Performance sampling parameter, indicating the sampling duration, in seconds. `Prof_duration = 0` indicating no sampling
 
 ## Consensus
 
-executor.toml 是 Consensus 微服务的配置文件，如下：
+Executor.toml is the configuration file for the Consensus microservice，as follows:
 
 ```bash
 
@@ -52,13 +54,13 @@ address = "0.pool.ntp.org:123"
 
 ```
 
-* `enabled` : 为 true 表示开启 ntp
-* `threshold` : 表示时间偏移的阈值
-* `address` : 表示 npt 服务器的地址
+* `enabled` : `Enabled = true` means to enable ntp
+* `threshold` : threshold of the time offset
+* `address` : address of the ntp server
 
 ## Chain
 
-chain.toml 是 Chain 微服务的配置文件，如下：
+Chain.toml is the configuration file for the Chain microservice, as follows:
 
 ```bash
 
@@ -66,11 +68,11 @@ prooftype = 2
 
 ```
 
-* `prooftype` : 表示当前的共识算法，目前只支持 CITA-BFT 算法。
+* `prooftype`: type of consensus algorithm (CITA only supports the CITA-BFT algorithm in current)
 
 ## Executor
 
-executor.toml 是 Executor 微服务的配置文件，如下：
+Executor.toml is the configuration file for the Executor microservice as follows:
 
 ```bash
 
@@ -80,13 +82,13 @@ grpc_port = 5000
 
 ```
 
-* `journaldb_type` : 表示当前使用的 JournalDB 算法，有 "archive" "light" "fast" "basic" 等4种类型，默认是 archive。
-* `prooftype` : 表示当前使用的共识算法，目前只支持 CITA-BFT 算法。
-* `grpc_port` : grpc 端口
+* `journaldb_type` : type of JournalDB algorithm. There are 4 types, including "archive", "light", "fast" and "basic". The default is `archive`
+* `prooftype` : tyoe of consensus algorithm, (CITA only supports the CITA-BFT algorithm in current)
+* `grpc_port` : grpc port
 
 ## RPC
 
-jsonrpc.toml 是 RPC 微服务的配置文件， CITA 支持 JsonRpc 和 Websocket 两种通信协议，该文件主要是协议配置相关。如下:
+Jsonrpc.toml is the configuration file for the  RPC microservice. CITA supports JsonRpc and Websocket communication protocols. 
 
 ```shell
 backlog_capacity = 1000
@@ -138,53 +140,53 @@ buffer_duration = 30000000
 count_per_batch = 30
 ```
 
-* `backlog_capacity`: 连接容量大小
-* `profile_config`: 性能采样分析
-    - `flag_prof_start`: 进程启动多久后开始性能采样
-    - `enable`: 开关
-    - `flag_prof_duration`: 性能采样分析持续时间
+* `backlog_capacity`: connection capacity
+* `profile_config`: performance sampling analysis
+  - `flag_prof_start`: how long after starting to perform the performance sampling, in seconds 
+  - `enable`: switch
+  - `flag_prof_duration`: sampling duration, in seconds. `Prof_duration = 0` indicating no sampling
 * `http_config`:
-    - `allow_origin`:
-    - `timeout`: 超时时间
-    - `enable`: 默认开启
-    - `listen_port`: 监听端口
-    - `listen_ip`: 监听 ip 地址
-* `ws_config`:
-    - `panic_on_internal`: 出现内部错误的时候，是否退出，默认 true
-    - `fragments_grow`: 当 fragments_capacity 达到时，是否重新分配，默认为 true
-    - `panic_on_protocol`: 出现协议错误时，是否退出，默认 false
-    - `enable`: 默认开启
-    - `in_buffer_capacity`: 不动态增加情况下，输入缓存大小， 默认 2048
-    - `panic_on_queue`: 出现队列错误时，是否退出，默认 false
-    - `fragment_size`: 最长帧片段，超过后截取成片段，默认 65535
-    - `panic_on_timeout`: 出现超时时，是否退出，默认 false
-    - `method_strict`:  是否检查握手请求，默认 false
-    - `thread_number`: 线程数，默认 2
-    - `panic_on_capacity`: 达到容量时，是否退出，默认 false
-    - `masking_strict`: 帧安全检查， 默认 false
-    - `key_strict`:  客户端是否检查服务端返回的 key 值，默认 false
-    - `max_connections`: websocket 最大链接数，默认是 800
-    - `listen_ip`: 监听地址， 默认 0.0.0.0
-    - `listen_port`: 监听端口， 默认 4337
-    - `queue_size`: 单个链接的事件队列大小，默认 200
-    - `fragments_capacity`: 不动态增加情况下，连接能处理的最大片段数， 默认 100
-    - `tcp_nodelay`: tcp socket 会积攒报文包到一定数量，一块发送，默认 false
-    - `shutdown_on_interrupt`: 当中断出现时，是否关闭事件监听，默认 true
-    - `out_buffer_grow`: 当输出缓冲达到 out_buffer_capacity 是否重新动态增加，默认 true
-    - `panic_on_io`: 出现 IO 错误时，是否退出，默认 false
-    - `panic_on_new_connection`: TCP 连接失败后，是否退出，默认 false
-    - `out_buffer_capacity`: 不动态增加情况下，输出缓存大小， 默认 2048
-    - `encrypt_server`: 服务端是否采用 ssl 加密接受链接，默认 false
-    - `in_buffer_grow`: 当输入缓冲达到 in_buffer_capacity， 是否重新动态增加，默认 true
-    - `panic_on_shutdown`: 收到关闭 WebSocket 请求时，是否退出， 默认 false
-    - `panic_on_encoding`: 编码问题出现时，是否退出，默认 false
+  - `allow_origin`: reponse header. `*` indicate allowing all origins
+  - `timeout`: timeout value
+  - `enable`: switch
+  - `listen_port`: listener port
+  - `listen_ip`: listener IP address
+* `ws_config`: 
+  - `panic_on_internal`: whether to exit when an internal error occurs. True means to exit
+  - `fragments_grow`: whether to reassign when fragments_capacity is reached. True means to reassign.
+  - `panic_on_protocol`: whether to exit when a protocol error occurs. Fause means not to exit
+  - `enable`: switch
+  - `in_buffer_capacity`: input cache size without the dynamic increase. The default is 2048
+  - `panic_on_queue`: whether to exit when a queue error occurs. The default is false, which means not to exit
+  - `fragment_size`: the max limit of frame fragment length, after which it is truncated into fragments, default 65535
+  - `panic_on_timeout`: whether to exit when a timeout occurs. The default is false, which means to exit
+  - `method_strict`: whether to check the handshake request. The default is false, which means not to check
+  - `thread_number`: number of threads. The default is 2
+  - `panic_on_capacity`: whether to exit when capacity is reached. The default is false
+  - `masking_strict`: frame security check. The default is false
+  - `key_strict`: whether the client checks the key value returned by the server. The default is false.
+  - `max_connections`: maximum allowable connections of WebSocket. The default is 800
+  - `listen_ip`: listening address, default 0.0.0.0
+  - `listen_port`: listening port, default 4337
+  - `queue_size`: event queue size for a single connection. The default is 200
+  - `fragments_capacity`: the maximum number of fragments that the connection can handle without dynamic addition. The default is 100
+  - `tcp_nodelay`: whether TCP socket accumulates packets to a certain number, and send together. The default is false
+  - `shutdown_on_interrupt`: whether the event listener is turned off when the interrupt occurs. The default is true
+  - `out_buffer_grow`: whether it is dynamically incremented when the output buffer reaches out_buffer_capacity. The default is true
+  - `panic_on_io`: Whether to exit when an IO error occurs. The default is false
+  - `panic_on_new_connection`: Whether to exit after a TCP connection failure. The default is false.
+  - `out_buffer_capacity`: Output cache size without the dynamic increase. The default is 2048
+  - `encrypt_server`: whether the server accepts the connections with SSL encryption. The default is false
+  - `in_buffer_grow`: whether it is dynamically incremented when the input buffer reaches in_buffer_capacity. The default is true
+  - `panic_on_shutdown`: Whether to exit when receiving a WebSocket stop request. The default is false
+  - `panic_on_encoding`: Whether to exit when the encoding problem occurs. The default is false
 * `new_tx_flow_config`:
-    - `buffer_duration`: 超时时间
-    - `count_per_batch`: 批量处理阈值
+  - `buffer_duration`: timeout period
+  - `count_per_batch`: threshold of batch processing 
 
 ## Network
 
-network.toml 是 Network 微服务的配置文件。文件记录了总节点数、本地节点端口以及其它节点的ip和端口号，用户可以通过增加节点信息来添加节点，并且支持热更新，直接把修改后的文件拷贝过来覆盖即可生效，不用重启进程。
+Network.toml is the configuration file for Network Microservices. The file records the total number of nodes, the local node port, and the IP and port of other nodes. The user can add nodes by adding node information and support hot update. Copy the modified file directly to cover older one, and it will take effect without restarting the process. 
 
 ```shell
 # Current node ip is 127.0.0.1
@@ -209,7 +211,7 @@ port = 4003
 
 ## Forever
 
-forever.toml 是守护进程的配置文件，每个进程对应一个微服务，`respawn` 表示唤醒次数。
+Forever.toml is the daemon's configuration file. Each process corresponds to a microservice, and `respawn` indicates the number of wakeups.
 
 ```
 name="cita-forever"
