@@ -21,6 +21,8 @@
     - [JSON-RPC参数和返回值类型](rpc_guide/rpc-types.md)
     - [JSON-RPC列表](rpc_guide/rpc.md)
     - [JSON-RPC错误码](rpc_guide/rpc_error_code.md)
+- CITA 系统合约接口指南
+    - [系统合约接口列表](contracts_guide/interfaces.md)
 - 架构设计
     - [整体架构](architecture/architecture.md)
     - [系统组件](architecture/components.md)

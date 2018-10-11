@@ -21,6 +21,8 @@
     - [JSON-RPC Parameters and Returns](rpc_guide/rpc_types.md)
     - [JSON-RPC List](rpc_guide/rpc.md)
     - [JSON-RPC Error Code](rpc_guide/rpc_error_code.md)
+- CITA Contracts Interfaces
+    - [Contract Interfaces List](contracts_guide/interfaces.md)
 - CITA Architecture
     - [Overall Architecture](architecture/architecture.md)
     - [Components](architecture/components.md)
