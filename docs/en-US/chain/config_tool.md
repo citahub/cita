@@ -94,17 +94,6 @@ CITA 中存在两种经济模型，Quota(默认) 和 Charge。
 
 `economicalModel = 1` 表示 Charge 模型， 交易需要手续费，针对交易的每一步执行进行单步扣费模式，扣除余额。
 
-## 默认超级管理员
-
-CITA 链中，我们设置了一个管理员账户，该账户拥有所有的可置权限，用来管理整条链的运行状态。如果你想把你的地址设置成为管理员，下方的配置工具会做详细介绍，如果没有特殊指定，默认管理员地址信息如下:
-
-```json
-{
-  address: 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
-  private-key: 5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
-}
-```
-
 ## 配置工具
 
 在 `docker` 环境下，我们使用 `./script/create_cita_config.py` 来构建一条链， 有两种模式：
@@ -168,6 +157,23 @@ $ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.
 
 上述命令，生成一条包含四个节点，端口默认 4000 , 4001 , 4002 , 4003， 超级管理员地址 `0xab159a4817542585c93f01cfce9cfe6cd4cbd26a`， 运营方地址
 `0x9a6bd7272edb238f13002911d8c93dd6bb646d15`， 经济模型 `Charge`， 出块激励返回运营方，权限全开的链。
+
+### 配置超级管理员帐户地址
+
+```shell
+$ ./env.sh ./scripts/create_cita_config.py create --super_admin=0xab159a4817542585c93f01cfce9cfe6cd4cbd26a ...
+```
+
+上述命令行参数中的 `--super_admin` 参数，用于设置超级管理员账户地址，该账户拥有最高权限，用来管理整条链的运行状态。在使用的时候，为安全起见，用户**应该/必须**自行设置超级管理员地址。
+
+对于测试场合，CITA 配置了一个默认管理员账户地址（及其对应的私钥，只针对 secp256k1_sha3 版本）:
+
+```json
+{
+  address: 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
+  private-key: 5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
+}
+```
 
 ### Append 配置
 
