@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::{Address, H256};
+use cita_types::traits::LowerHex;
+use cita_types::{Address, H256, U256};
 use core::contracts::solc::sys_config::SysConfig;
 use core::contracts::solc::VersionManager;
 use core::db;
@@ -442,6 +443,7 @@ impl ExecutorInstance {
                 let economical_model: EconomicalModel = (*self.ext.economical_model.read()).into();
                 let mut metadata = MetaData {
                     chain_id: 0,
+                    chain_id_v1: U256::from(0).lower_hex(),
                     chain_name: "".to_owned(),
                     operator: "".to_owned(),
                     website: "".to_owned(),

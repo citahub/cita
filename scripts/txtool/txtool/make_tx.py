@@ -78,6 +78,25 @@ def get_chainid():
     logger.debug("final chainId is {}".format(chainid))
     return chainid
 
+def get_chainid_v1():
+    params = ['latest']
+    chainid = 0
+
+    try:
+        url = endpoint()
+        logger.debug(url)
+        response = HTTPClient(url).request("getMetaData", params)
+        chainid = response['chainIdV1']
+        logger.debug(response)
+    except:
+        chainid = "0"
+
+    # padding to 32 bytes
+    chainid = hex2bytes(chainid.ljust(64, '0'))
+    chainid = chainid.ljust(32, b'\0')
+    logger.debug("final chainId is {}".format(chainid))
+    return chainid
+
 
 def generate_deploy_data(current_height,
                          bytecode,
@@ -108,16 +127,28 @@ def _blake2b_ed25519_deploy_data(current_height,
     logger.debug(sender)
     nonce = get_nonce()
     logger.debug("nonce is {}".format(nonce))
-    chainid = get_chainid()
-    logger.debug("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
-    tx.chain_id = chainid
     tx.version = version
+    if version == 0:
+        chainid = get_chainid()
+        logger.debug("chainid is {}".format(chainid))
+        tx.chain_id = chainid
+    elif version == 1:
+        chainid = get_chainid_v1()
+        logger.debug("chainid_v1 is {}".format(chainid))
+        tx.chain_id_v1 = chainid
+    else:
+        logger.error("unexpected version {}".format(version))
     if receiver is not None:
-        tx.to = receiver
+        if version == 0:
+            tx.to = receiver
+        elif version == 1:
+            tx.to_v1 = hex2bytes(receiver)
+        else:
+            logger.error("unexpected version {}".format(version))
     tx.data = hex2bytes(bytecode)
     tx.value = value.to_bytes(32, byteorder='big')
     tx.quota = quota
@@ -159,16 +190,28 @@ def _sha3_secp256k1_deploy_data(current_height,
     logger.debug(sender)
     nonce = get_nonce()
     logger.debug("nonce is {}".format(nonce))
-    chainid = get_chainid()
-    logger.debug("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
-    tx.chain_id = chainid
     tx.version = version
+    if version == 0:
+        chainid = get_chainid()
+        logger.debug("chainid is {}".format(chainid))
+        tx.chain_id = chainid
+    elif version == 1:
+        chainid = get_chainid_v1()
+        logger.debug("chainid_v1 is {}".format(chainid))
+        tx.chain_id_v1 = chainid
+    else:
+        logger.error("unexpected version {}".format(version))
     if receiver is not None:
-        tx.to = receiver
+        if version == 0:
+            tx.to = receiver
+        elif version == 1:
+            tx.to_v1 = hex2bytes(receiver)
+        else:
+            logger.error("unexpected version {}".format(version))
     tx.data = hex2bytes(bytecode)
     tx.value = value.to_bytes(32, byteorder='big')
     tx.quota = quota
