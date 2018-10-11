@@ -161,12 +161,12 @@ $ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.
 ### 配置超级管理员帐户地址
 
 ```shell
-$ ./env.sh ./scripts/create_cita_config.py create ... --contract_arguments ... SysConfig.super_admin=0xab159a4817542585c93f01cfce9cfe6cd4cbd26a
+$ ./env.sh ./scripts/create_cita_config.py create --super_admin=0xab159a4817542585c93f01cfce9cfe6cd4cbd26a ...
 ```
 
-上述命令行参数中的 `super_admin` 参数，用于设置超级管理员账户地址，该账户拥有最高权限，用来管理整条链的运行状态。用户在使用的时候，**应该**自行设置超级管理员地址，因此，这个参数是必须设置的。
+上述命令行参数中的 `--super_admin` 参数，用于设置超级管理员账户地址，该账户拥有最高权限，用来管理整条链的运行状态。在使用的时候，为安全起见，用户**应该/必须**自行设置超级管理员地址。
 
-对于测试场合，CITA 配置了一个默认管理员账户地址（及其对应的私钥）:
+对于测试场合，CITA 配置了一个默认管理员账户地址（及其对应的私钥，只针对 secp256k1_sha3 版本）:
 
 ```json
 {
