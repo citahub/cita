@@ -56,12 +56,7 @@ use super::state_db::StateDB;
 use ethcore_bloom_journal::Bloom;
 use header::Header;
 
-use libexecutor::extras::{ConfigHistory, CurrentHash};
-
-use bincode::{serialize as bin_serialize, Infinite};
-
-//#[cfg(test)]
-//mod tests;
+use libexecutor::extras::CurrentHash;
 
 /// A sink for produced chunks.
 pub type ChunkSink<'a> = FnMut(&[u8]) -> Result<(), Error> + 'a;
@@ -834,10 +829,6 @@ impl BlockRebuilder {
 
         if is_best {
             batch.write(COL_EXTRA, &CurrentHash, &hash);
-
-            let confs = self.executor.sys_configs.read().clone();
-            let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
-            batch.write(COL_EXTRA, &ConfigHistory, &res);
         }
     }
 

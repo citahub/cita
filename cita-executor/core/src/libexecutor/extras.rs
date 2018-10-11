@@ -51,16 +51,6 @@ impl Key<H256> for CurrentHash {
     }
 }
 
-pub struct ConfigHistory;
-
-impl Key<Vec<u8>> for ConfigHistory {
-    type Target = H256;
-
-    fn key(&self) -> H256 {
-        H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f61")
-    }
-}
-
 impl Key<Header> for H256 {
     type Target = H256;
 

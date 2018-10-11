@@ -46,7 +46,6 @@ use libproto::blockchain::{Proof as ProtoProof, ProofType, RichStatus};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{ConsensusConfig, ExecutedResult, Message};
 
-use bincode::{deserialize as bin_deserialize, serialize as bin_serialize, Infinite};
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use jsonrpc_types::rpctypes::EconomicalModel as RpcEconomicalModel;
@@ -68,8 +67,6 @@ use util::trie::{TrieFactory, TrieSpec};
 use util::RwLock;
 use util::UtilError;
 use util::{journaldb, Bytes};
-
-const SYNC_STEP: usize = 30;
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
@@ -224,7 +221,6 @@ pub struct CheckOptions {
     pub create_contract_permission: bool,
 }
 
-// TODO: Add cache for diminishing io.
 pub struct Executor {
     pub current_header: RwLock<Header>,
     pub is_sync: AtomicBool,
@@ -246,7 +242,7 @@ pub struct Executor {
     /// Proof type
     pub prooftype: u8,
 
-    pub sys_configs: RwLock<VecDeque<GlobalSysConfig>>,
+    pub global_config: RwLock<GlobalSysConfig>,
     pub economical_model: RwLock<EconomicalModel>,
     black_list_cache: RwLock<LRUCache<u64, Address>>,
     pub engine: Box<Engine>,
@@ -321,7 +317,7 @@ impl Executor {
 
             executed_result: RwLock::new(executed_map),
             prooftype: executor_config.prooftype,
-            sys_configs: RwLock::new(VecDeque::new()),
+            global_config: RwLock::new(GlobalSysConfig::new()),
             economical_model: RwLock::new(EconomicalModel::Quota),
             black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
             engine: Box::new(NullEngine::cita()),
@@ -330,11 +326,10 @@ impl Executor {
         // Build executor config
         executor.build_last_hashes(Some(header.hash()), header.number());
 
-        if let Some(confs) = executor.load_config_from_db() {
-            executor.set_sys_configs(confs);
+        let conf = executor.load_config(BlockId::Pending);
+        {
+            *executor.global_config.write() = conf;
         }
-
-        executor.reload_config();
 
         {
             executor.set_gas_and_nodes(header.number());
@@ -346,33 +341,6 @@ impl Executor {
     /// Get block hash by number
     pub fn block_hash(&self, index: BlockNumber) -> Option<H256> {
         self.db.read().read(db::COL_EXTRA, &index)
-    }
-
-    pub fn load_config_from_db(&self) -> Option<VecDeque<GlobalSysConfig>> {
-        self.db
-            .read()
-            .read(db::COL_EXTRA, &ConfigHistory)
-            .and_then(|bres| bin_deserialize(&bres).ok())
-    }
-
-    pub fn set_sys_configs(&self, confs: VecDeque<GlobalSysConfig>) {
-        *self.sys_configs.write() = confs;
-    }
-
-    pub fn get_sys_config(&self, now_height: BlockNumber) -> GlobalSysConfig {
-        let confs = self.sys_configs.read().clone();
-        let len = confs.len();
-        if len > 0 {
-            for i in 0..len {
-                if confs[i].changed_height + confs[0].delay_active_interval <= now_height as usize {
-                    return confs[i].clone();
-                }
-            }
-            // for after genesis block
-            return confs[0].clone();
-        }
-        // it can't happen,only in test
-        GlobalSysConfig::new()
     }
 
     pub fn current_state_root(&self) -> H256 {
@@ -696,8 +664,8 @@ impl Executor {
     pub fn set_gas_and_nodes(&self, height: u64) {
         let mut executed_map = self.executed_result.write();
 
-        //send the next height's config to chain,and transfer to auth
-        let conf = self.get_sys_config(height);
+        // send the next height's config to chain,and transfer to auth
+        let conf = self.global_config.read().clone();
 
         let mut send_config = ConsensusConfig::new();
         let node_list = conf
@@ -806,17 +774,6 @@ impl Executor {
         debug!("db write use {:?}", new_now.duration_since(now));
     }
 
-    pub fn write_config_history(&self) {
-        let mut batch = self.db.read().transaction();
-        let confs = self.sys_configs.read().clone();
-        let changed_heights: Vec<usize> = confs.iter().map(|i| i.changed_height).collect();
-        info!("confs changes at {:?}", changed_heights);
-        let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
-        batch.write(db::COL_EXTRA, &ConfigHistory, &res);
-        self.db.read().write_buffered(batch);
-        self.db.read().flush().expect("DB write failed.");
-    }
-
     /// Finalize block
     /// 1. Delivery rich status
     /// 2. Update cache
@@ -865,68 +822,70 @@ impl Executor {
         });
 
         if has_dirty {
-            self.reload_config();
-            self.write_config_history();
+            let conf = self.load_config(BlockId::Pending);
+            {
+                *self.global_config.write() = conf;
+            }
         }
     }
 
     // TODO We have to update all default value when they was changed in .sol files.
     // Is there any better solution?
-    fn reload_config(&self) {
+    pub fn load_config(&self, block_id: BlockId) -> GlobalSysConfig {
         let mut conf = GlobalSysConfig::new();
         conf.nodes = self
             .node_manager()
-            .shuffled_stake_nodes(BlockId::Pending)
+            .shuffled_stake_nodes(block_id)
             .unwrap_or_else(NodeManager::default_shuffled_stake_nodes);
 
         let quota_manager = QuotaManager::new(self);
         conf.block_gas_limit = quota_manager
-            .block_gas_limit(BlockId::Pending)
+            .block_gas_limit(block_id)
             .unwrap_or_else(QuotaManager::default_block_gas_limit)
             as usize;
         let sys_config = SysConfig::new(self);
         conf.delay_active_interval = sys_config
-            .delay_block_number(BlockId::Pending)
+            .delay_block_number(block_id)
             .unwrap_or_else(SysConfig::default_delay_block_number)
             as usize;
         conf.check_permission = sys_config
-            .permission_check(BlockId::Pending)
+            .permission_check(block_id)
             .unwrap_or_else(SysConfig::default_permission_check);
         conf.check_send_tx_permission = sys_config
-            .send_tx_permission_check(BlockId::Pending)
+            .send_tx_permission_check(block_id)
             .unwrap_or_else(SysConfig::default_send_tx_permission_check);
         conf.check_create_contract_permission = sys_config
-            .create_contract_permission_check(BlockId::Pending)
+            .create_contract_permission_check(block_id)
             .unwrap_or_else(SysConfig::default_create_contract_permission_check);
         conf.check_quota = sys_config
-            .quota_check(BlockId::Pending)
+            .quota_check(block_id)
             .unwrap_or_else(SysConfig::default_quota_check);
         conf.check_fee_back_platform = sys_config
-            .fee_back_platform_check(BlockId::Pending)
+            .fee_back_platform_check(block_id)
             .unwrap_or_else(SysConfig::default_fee_back_platform_check);
         conf.chain_owner = sys_config
-            .chain_owner(BlockId::Pending)
+            .chain_owner(block_id)
             .unwrap_or_else(SysConfig::default_chain_owner);
         conf.block_interval = sys_config
-            .block_interval(BlockId::Pending)
+            .block_interval(block_id)
             .unwrap_or_else(SysConfig::default_block_interval);
 
         let permission_manager = PermissionManagement::new(self);
-        conf.account_permissions = permission_manager.load_account_permissions(BlockId::Pending);
-        conf.super_admin_account = permission_manager.get_super_admin_account(BlockId::Pending);
+        conf.account_permissions = permission_manager.load_account_permissions(block_id);
+        conf.super_admin_account = permission_manager.get_super_admin_account(block_id);
 
         let user_manager = UserManagement::new(self);
-        conf.group_accounts = user_manager.load_group_accounts(BlockId::Pending);
+        conf.group_accounts = user_manager.load_group_accounts(block_id);
         {
             *self.economical_model.write() = sys_config
-                .economical_model(BlockId::Pending)
+                .economical_model(block_id)
                 .unwrap_or_else(SysConfig::default_economical_model);
         }
 
         let common_gas_limit = quota_manager
-            .account_gas_limit(BlockId::Pending)
+            .account_gas_limit(block_id)
             .unwrap_or_else(QuotaManager::default_account_gas_limit);
-        let specific = quota_manager.specific(BlockId::Pending);
+        let specific = quota_manager.specific(block_id);
 
         conf.account_gas_limit
             .set_common_gas_limit(common_gas_limit);
@@ -935,37 +894,15 @@ impl Executor {
 
         let emergency_manager = EmergencyBrake::new(self);
         conf.emergency_brake = emergency_manager
-            .state(BlockId::Pending)
+            .state(block_id)
             .unwrap_or_else(EmergencyBrake::default_state);
 
         let version_manager = VersionManager::new(self);
         conf.chain_version = version_manager
-            .get_version(BlockId::Pending)
+            .get_version(block_id)
             .unwrap_or_else(VersionManager::default_version);
 
-        {
-            let last_conf: Option<GlobalSysConfig>;
-            {
-                let config_history = self.sys_configs.read();
-                last_conf = config_history.get(0).cloned();
-            }
-            let mut confs = self.sys_configs.write();
-
-            if let Some(last_conf) = last_conf {
-                let mut last_conf = last_conf.clone();
-                last_conf.changed_height = conf.changed_height;
-
-                if last_conf != conf {
-                    confs.push_front(conf);
-                    // Prune history config
-                    // The length of the history configuration retention needs to be at least
-                    // more than the step size of the synchronous operation.
-                    confs.truncate(SYNC_STEP);
-                }
-            } else {
-                confs.push_front(conf);
-            }
-        }
+        conf
     }
 
     /// Execute Block
@@ -974,7 +911,7 @@ impl Executor {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let conf = self.get_sys_config(self.get_max_height());
+        let conf = self.global_config.read();
         let parent_hash = *block.parent_hash();
         let check_options = CheckOptions {
             permission: conf.check_permission,
@@ -1012,7 +949,7 @@ impl Executor {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let conf = self.get_sys_config(self.get_max_height());
+        let conf = self.global_config.read().clone();
         let chain_owner = conf.chain_owner;
         let parent_hash = *block.parent_hash();
         let check_options = CheckOptions {
@@ -1140,29 +1077,43 @@ impl Executor {
 
     /// Replace executor
     pub fn replace_executor(&self, header: Header, is_interrupted: bool) {
-        *self.current_header.write() = header.clone();
+        {
+            *self.current_header.write() = header.clone();
+        }
 
         self.is_sync.store(false, Ordering::SeqCst);
 
-        self.is_interrupted.store(is_interrupted, Ordering::SeqCst);
-        *self.stage.write() = Stage::Idle;
+        {
+            self.is_interrupted.store(is_interrupted, Ordering::SeqCst);
+            *self.stage.write() = Stage::Idle;
+        }
 
         let height = header.number();
 
         // executed_map
-        let executed_header = header.generate_executed_header();
-        let mut executed_ret = ExecutedResult::new();
-        executed_ret.mut_executed_info().set_header(executed_header);
-        let mut executed_btmap = BTreeMap::new();
-        executed_btmap.insert(height, executed_ret);
-        *self.executed_result.write() = executed_btmap;
+        {
+            let executed_header = header.generate_executed_header();
+            let mut executed_ret = ExecutedResult::new();
+            executed_ret.mut_executed_info().set_header(executed_header);
+            let mut executed_btmap = BTreeMap::new();
+            executed_btmap.insert(height, executed_ret);
+            *self.executed_result.write() = executed_btmap;
+        }
 
         // max_height
         self.set_max_height(height as usize);
 
         // block_map
-        let mut block_map = self.block_map.write();
-        block_map.clear();
+        {
+            let mut block_map = self.block_map.write();
+            block_map.clear();
+        }
+
+        // Rollback global config
+        {
+            let conf = self.load_config(BlockId::Pending);
+            *self.global_config.write() = conf;
+        }
     }
 }
 
