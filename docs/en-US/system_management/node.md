@@ -28,7 +28,7 @@ The management of ordinary nodes includes adding and deleting. Let's illustrate 
 2. Generate new nodes:
 
     ```bash
-    $ ./scripts/create_cita_config.py append --node "127.0.0.1:4004"
+    $ ./scripts/create_cita_config.py append --chain_name test-chain --node "127.0.0.1:4004"
     $ ls test-chain/
       0  1  2  3  4  template
     ```

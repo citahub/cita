@@ -32,7 +32,7 @@ CITA 作为联盟链共识节点采用轮流出块的方式进行出块。作为
 2. 生成新 node：
 
     ```bash
-    $ ./scripts/create_cita_config.py append --node "127.0.0.1:4004"
+    $ ./scripts/create_cita_config.py append --chain_name test-chain --node "127.0.0.1:4004"
     $ ls test-chain/
       0  1  2  3  4  template
     ```
@@ -143,7 +143,7 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
 
 从普通节点升级到共识节点，具体操作需要用到上面合约方法 `approveNode(address)`。
 
-共识节点管理合约是系统合约，默认将放在创世块上，下面是共识节点管理合约的 hash：
+共识节点管理合约是系统合约，默认将放在创世块上，下面使用 [solc](https://solidity-cn.readthedocs.io/zh/develop/installing-solidity.html) 命令(solidity 的命令行编译器，在 cita 镜像中已安装)查看共识节点管理合约的 hash：
 
 ```bash
 # solc --hashes system/node_manager.sol --allow-paths .
@@ -161,7 +161,7 @@ Function signatures:
 
 *首先需要启动一条链，具体方法见快速入门部分*
 
-接下来的测试，用 cita-cli 命令行模式（与交互式模式的命令是一致的）进行演示。
+接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 命令行模式（与交互式模式的命令是一致的）进行演示。
 
 #### 查看当前的共识节点列表：
 
