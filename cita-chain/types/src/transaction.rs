@@ -211,14 +211,38 @@ impl Transaction {
             gas_price: U256::default(),
             gas: U256::from(plain_transaction.get_quota()),
             action: {
-                let to = clean_0x(plain_transaction.get_to());
-                match to {
-                    "" => Action::Create,
-                    STORE_ADDRESS => Action::Store,
-                    ABI_ADDRESS => Action::AbiStore,
-                    GO_CONTRACT => Action::GoCreate,
-                    AMEND_ADDRESS => Action::AmendData,
-                    _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
+                let version = plain_transaction.get_version();
+                if version == 0 {
+                    let to = clean_0x(plain_transaction.get_to());
+                    match to {
+                        "" => Action::Create,
+                        STORE_ADDRESS => Action::Store,
+                        ABI_ADDRESS => Action::AbiStore,
+                        GO_CONTRACT => Action::GoCreate,
+                        AMEND_ADDRESS => Action::AmendData,
+                        _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
+                    }
+                } else if version == 1 {
+                    let to = plain_transaction.get_to_v1();
+                    if to.is_empty() {
+                        Action::Create
+                    } else {
+                        let to_addr = Address::from(to);
+                        if to_addr == STORE_ADDRESS.into() {
+                            Action::Store
+                        } else if to_addr == ABI_ADDRESS.into() {
+                            Action::AbiStore
+                        } else if to_addr == GO_CONTRACT.into() {
+                            Action::GoCreate
+                        } else if to_addr == AMEND_ADDRESS.into() {
+                            Action::AmendData
+                        } else {
+                            Action::Call(to_addr)
+                        }
+                    }
+                } else {
+                    // error!("unexpected version {}!", version);
+                    return Err(Error::ParseError);
                 }
             },
             value: U256::from(plain_transaction.get_value()),

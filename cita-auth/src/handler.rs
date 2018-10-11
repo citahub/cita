@@ -16,12 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cita_types::traits::LowerHex;
-use cita_types::{clean_0x, Address, H256};
+use cita_types::{clean_0x, Address, H256, U256};
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use dispatcher::Dispatcher;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::auth::MiscellaneousReq;
+use libproto::auth::{Miscellaneous, MiscellaneousReq};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
@@ -214,12 +214,18 @@ pub struct SysConfigInfo {
     pub version: Option<u32>,
 }
 
+#[derive(Debug, PartialEq)]
+enum ChainId {
+    V0(u32),
+    V1(U256),
+}
+
 pub struct MsgHandler {
     rx_sub: Receiver<(String, Vec<u8>)>,
     tx_pub: Sender<(String, Vec<u8>)>,
     // only cache verify sig
     cache: LruCache<H256, Option<Vec<u8>>>,
-    chain_id: Option<u32>,
+    chain_id: Option<ChainId>,
     history_heights: HistoryHeights,
     cache_block_req: Option<VerifyBlockReq>,
     history_hashes: HashMap<u64, HashSet<H256>>,
@@ -488,14 +494,32 @@ impl MsgHandler {
     fn verify_request(&self, req: &Request) -> Ret {
         let un_tx = req.get_un_tx();
         let tx = un_tx.get_transaction();
-        let to = clean_0x(tx.get_to());
-        if !to.is_empty() && Address::from_str(to).is_err() {
-            return Ret::InvalidValue;
-        }
-
         let tx_version = tx.get_version();
         if tx_version != self.config_info.version.unwrap() {
             return Ret::InvalidVersion;
+        }
+        if tx_version == 0 {
+            // new to must be empty
+            if !tx.get_to_v1().is_empty() {
+                return Ret::InvalidValue;
+            }
+            let to = clean_0x(tx.get_to());
+            if !to.is_empty() && Address::from_str(to).is_err() {
+                return Ret::InvalidValue;
+            }
+        } else if tx_version == 1 {
+            // old to must be empty
+            if !tx.get_to().is_empty() {
+                return Ret::InvalidValue;
+            }
+            // check to_v1
+            let to = tx.get_to_v1();
+            if !to.is_empty() && to.len() != 20 {
+                return Ret::InvalidValue;
+            }
+        } else {
+            error!("unexpected version {}!", tx_version);
+            return Ret::InvalidValue;
         }
 
         Ret::OK
@@ -517,11 +541,41 @@ impl MsgHandler {
         }
     }
 
+    fn verify_tx_req_chain_id(&self, req: &VerifyTxReq) -> Ret {
+        let version = self.config_info.version.unwrap();
+        let chain_id = if version == 0 {
+            // new chain id must be empty
+            if !req.get_chain_id_v1().is_empty() {
+                None
+            } else {
+                let chain_id = req.get_chain_id();
+                Some(ChainId::V0(chain_id))
+            }
+        } else if version == 1 {
+            // old chain id must be empty
+            if req.get_chain_id() != 0 || req.get_chain_id_v1().len() != 32 {
+                None
+            } else {
+                let chain_id = U256::from(req.get_chain_id_v1());
+                Some(ChainId::V1(chain_id))
+            }
+        } else {
+            error!("unexpected version {}!", version);
+            None
+        };
+
+        if chain_id != self.chain_id {
+            return Ret::BadChainId;
+        }
+
+        Ret::OK
+    }
+
     // verify chain id, nonce, valid_until_block, dup, quota and black list
     fn verify_tx_req(&self, req: &VerifyTxReq) -> Ret {
-        let chain_id = req.get_chain_id();
-        if chain_id != self.chain_id.unwrap() {
-            return Ret::BadChainId;
+        let ret = self.verify_tx_req_chain_id(req);
+        if ret != Ret::OK {
+            return ret;
         }
 
         if req.get_nonce().len() > 128 {
@@ -717,8 +771,7 @@ impl MsgHandler {
                     }
                     routing_key!(Executor >> Miscellaneous) => {
                         let miscellaneous = msg.take_miscellaneous().unwrap();
-                        info!("Get chain_id({}) from executor", miscellaneous.chain_id);
-                        self.chain_id = Some(miscellaneous.chain_id);
+                        self.deal_miscellaneous(&miscellaneous);
                     }
                     routing_key!(Snapshot >> SnapshotReq) => {
                         let snapshot_req = msg.take_snapshot_req().unwrap();
@@ -1102,6 +1155,28 @@ impl MsgHandler {
                     (&msg).try_into().unwrap(),
                 ))
                 .unwrap();
+        }
+    }
+
+    fn deal_miscellaneous(&mut self, miscellaneous: &Miscellaneous) {
+        if let Some(version) = self.config_info.version {
+            self.chain_id = if version == 0 {
+                Some(ChainId::V0(miscellaneous.chain_id))
+            } else if version == 1 {
+                if miscellaneous.chain_id_v1.len() == 32 {
+                    Some(ChainId::V1(U256::from(
+                        miscellaneous.chain_id_v1.as_slice(),
+                    )))
+                } else {
+                    // TODO
+                    // mock chain id v1 for test
+                    Some(ChainId::V1(U256::from(0)))
+                }
+            } else {
+                error!("unexpected version {}!", version);
+                None
+            };
+            info!("Get chain_id({:?}) from executor", self.chain_id);
         }
     }
 }
