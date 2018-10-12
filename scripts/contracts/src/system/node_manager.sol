@@ -1,50 +1,19 @@
 pragma solidity ^0.4.24;
 
+import "../common/model_type.sol";
 import "../lib/safe_math.sol";
+import "../lib/address_array.sol";
 import "../common/error.sol";
 import "../common/admin.sol";
 import "../common/check.sol";
-
-
-/// @title The interface of node_manager
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
-interface NodeInterface {
-
-    event ApproveNode(address indexed _node);
-    event DeleteNode(address indexed _node);
-    event SetStake(address indexed _node, uint _stake);
-
-    /// @notice Approve to be consensus node. status will be start
-    function approveNode(address _node) external returns (bool);
-
-    /// @notice Delete the consensus node that has been approved. status will be close
-    function deleteNode(address _node) external returns (bool);
-
-    /// @notice List the consensus nodes that have been approved
-    /// which means list the node whose status is start
-    function listNode() external view returns (address[]);
-
-    /// @notice Set node stake
-    function setStake(address _node, uint64 stake) external;
-    /*
-     * @notice Get the status of the node:
-     * @return 0: Close
-     * @return 1: Start
-     */
-    function getStatus(address _node) external view returns (uint8);
-
-    /// @notice Node stake list
-    function listStake() external view returns (uint64[] _stakes);
-
-    /// @notice Stake permillage
-    function stakePermillage(address _node) external view returns (uint64);
-}
-
+import "../common/model_type.sol";
+import "../interfaces/node_manager.sol";
+import "../interfaces/sys_config.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020001
-contract NodeManager is NodeInterface, Error, Check, EconomicalType {
+contract NodeManager is INodeManager, Error, Check, EconomicalType {
 
     mapping(address => NodeStatus) public status;
     // Recode the operation of the block
@@ -57,8 +26,7 @@ contract NodeManager is NodeInterface, Error, Check, EconomicalType {
     enum NodeStatus { Close, Start }
 
     Admin admin = Admin(adminAddr);
-    Authorization auth = Authorization(authorizationAddr);
-    SysConfig sysConfig = SysConfig(sysConfigAddr);
+    ISysConfig sysConfig = ISysConfig(sysConfigAddr);
 
     // Should operate one time in a block
     modifier oneOperate {
@@ -95,7 +63,7 @@ contract NodeManager is NodeInterface, Error, Check, EconomicalType {
     }
 
     modifier OnlyChargeModel() {
-        if(sysConfig.getEconomicalModel() == EconomicalModel.Charge)
+        if(sysConfig.getEconomicalModel() == uint(EconomicalModel.Charge))
             _;
         else {
             return;

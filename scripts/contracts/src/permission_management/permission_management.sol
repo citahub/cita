@@ -2,6 +2,7 @@ pragma solidity ^0.4.24;
 
 import "./permission_creator.sol";
 import "../common/check.sol";
+import "../interfaces/permission_management.sol";
 
 /// @title Permission management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -9,7 +10,7 @@ import "../common/check.sol";
 ///         The interface the can be called: All
 /// @dev TODO check address is contract
 // contract PermissionManagement is ReservedAddress {
-contract PermissionManagement is Check {
+contract PermissionManagement is IPermissionManagement, Check {
 
     PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
 

@@ -1,10 +1,11 @@
 pragma solidity ^0.4.24;
 
 import "./group_creator.sol";
-import "./all_groups.sol";
 import "../lib/address_array.sol";
 import "../common/address.sol";
-import "../permission_management/authorization.sol";
+import "../interfaces/authorization.sol";
+import "../interfaces/group_management.sol";
+import "../interfaces/all_groups.sol";
 
 /// @title User management using group struct
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -12,11 +13,11 @@ import "../permission_management/authorization.sol";
 ///         The interface the can be called: All
 ///         Origin: One group choosed by sender from all his groups
 ///         Target: The target group to be operated
-contract GroupManagement is ReservedAddress {
+contract GroupManagement is IGroupManagement, ReservedAddress {
 
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
-    Authorization auth = Authorization(authorizationAddr);
-    AllGroups groups = AllGroups(allGroupsAddr);
+    IAuthorization auth = IAuthorization(authorizationAddr);
+    IAllGroups groups = IAllGroups(allGroupsAddr);
 
     event GroupDeleted(address _group);
 
@@ -154,7 +155,6 @@ contract GroupManagement is ReservedAddress {
     /// @return All groups
     function queryGroups()
         public
-        view
         returns (address[])
     {
         return groups.queryGroups();

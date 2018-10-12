@@ -2,20 +2,20 @@ pragma solidity ^0.4.24;
 
 import "../lib/address_array.sol";
 import "../common/address.sol";
-import "../system/sys_config.sol";
-
+import "../interfaces/sys_config.sol";
+import "../interfaces/authorization.sol";
 
 /// @title Authorization about the permission and account
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020006
 ///         The interface can be called: Only query type
-contract Authorization is ReservedAddress {
+contract Authorization is IAuthorization, ReservedAddress {
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
 
     address[] all_accounts;
-    SysConfig sysConfig = SysConfig(sysConfigAddr);
+    ISysConfig sysConfig = ISysConfig(sysConfigAddr);
 
     event AuthSetted(address indexed _account, address indexed _permission);
     event AuthCanceled(address indexed _account, address indexed _permission);
@@ -141,7 +141,7 @@ contract Authorization is ReservedAddress {
     /// @return true if passed, otherwise false
     function checkResource(address, address, bytes4)
         public
-        pure 
+        pure
         returns (bool)
     {
         // address[] memory perms = queryPermissions(_account);

@@ -1,13 +1,12 @@
-
 pragma solidity ^0.4.24;
 
 import "../common/admin.sol";
 import "../common/address.sol";
-
+import "../interfaces/price_manager.sol";
 
 /// @title Quota Price Manager
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-contract PriceManager is ReservedAddress{
+contract PriceManager is IPriceManager, ReservedAddress{
     uint quotaPrice = 1;
 
     Admin admin = Admin(adminAddr);
@@ -34,7 +33,7 @@ contract PriceManager is ReservedAddress{
 
     /// @notice Get guota price
     function getQuotaPrice()
-        public 
+        public
         view
         returns (uint)
     {
