@@ -651,11 +651,11 @@ impl MsgHandler {
             .unwrap();
     }
 
-    fn publish_tx_success_result(&self, request_id: Vec<u8>, ret: Ret, tx_hash: H256) {
+    fn publish_tx_success_result(&self, request_id: Vec<u8>, tx_hash: H256) {
         let mut response = Response::new();
         response.set_request_id(request_id);
 
-        let result = format!("{:?}", ret);
+        let result = format!("{:?}", Ret::OK);
         let tx_response = TxResponse::new(tx_hash, result.clone());
         let tx_state = serde_json::to_string(&tx_response).unwrap();
         response.set_tx_state(tx_state);
@@ -1006,13 +1006,13 @@ impl MsgHandler {
                     let request_id = tx_req.get_request_id().to_vec();
                     if self.dispatcher.add_tx_to_pool(&signed_tx) {
                         if is_local {
-                            self.publish_tx_success_result(request_id, Ret::OK, tx_hash);
+                            self.publish_tx_success_result(request_id, tx_hash);
                         }
                         // new tx need forward to other nodes
                         self.forward_request(tx_req.clone());
                     } else if is_local {
                         // dup with transaction in tx pool
-                        self.publish_tx_success_result(request_id, Ret::Dup, tx_hash);
+                        self.publish_tx_failed_result(request_id, Ret::Dup);
                     }
                 });
         } else if newtx_req.has_un_tx() {
@@ -1090,13 +1090,13 @@ impl MsgHandler {
             signed_tx.set_tx_hash(tx_hash.to_vec());
             if self.dispatcher.add_tx_to_pool(&signed_tx) {
                 if is_local {
-                    self.publish_tx_success_result(request_id, Ret::OK, tx_hash);
+                    self.publish_tx_success_result(request_id, tx_hash);
                 }
                 // new tx need forward to other nodes
                 self.forward_request(newtx_req);
             } else if is_local {
                 // dup with transaction in tx pool
-                self.publish_tx_success_result(request_id, Ret::Dup, tx_hash);
+                self.publish_tx_failed_result(request_id, Ret::Dup);
             }
         }
     }
