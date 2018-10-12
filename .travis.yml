@@ -107,7 +107,6 @@ jobs:
 
     - &stage-contract-test-sha3-secp256k1
       <<: *stage-integrate-test-sha3-secp256k1
-      name: Contract Test
       language: node_js
       node_js:
         - lts/*
@@ -122,28 +121,40 @@ jobs:
         - travis_retry yarn install
       script: npm run-script unit_group
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Permission
       script: npm run-script unit_permission
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Auth
       script: npm run-script unit_auth
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Chain
       script: npm run-script unit_chain
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Group Management
       script: npm run-script unit_gm
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Permission Management
       script: npm run-script unit_pm
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Role Management
       script: npm run-script unit_rm
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Quota Management
       script: npm run-script unit_qm
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Abi
       script: npm run-script abi
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Admin
       script: npm run-script unit_admin
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Store
       script: npm run-script store
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Batch Tx
       script: npm run-script batch_tx
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Uint8
       script: npm run-script uint8
 
     - <<: *stage-contract-test-sha3-secp256k1
@@ -158,6 +169,7 @@ jobs:
         - npm run-script unit_node
 
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Integrate Quota
       install:
         - cd $TRAVIS_BUILD_DIR/target/install
         - ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4100" --contract_arguments "SysConfig.checkQuota=true"
@@ -167,6 +179,7 @@ jobs:
         - npm run-script integrate_quota
 
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Integrate Permission
       install:
         - cd $TRAVIS_BUILD_DIR/target/install
         - ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4100" --contract_arguments "SysConfig.checkPermission=true"
