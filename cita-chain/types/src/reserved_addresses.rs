@@ -106,6 +106,7 @@ pub const BATCH_TX: &str = "ffffffffffffffffffffffffffffffffff02000e";
 pub const EMERGENCY_BRAKE: &str = "ffffffffffffffffffffffffffffffffff02000f";
 pub const PRICE_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020010";
 pub const VERSION_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020011";
+pub const ALL_GROUPS: &str = "ffffffffffffffffffffffffffffffffff020012";
 // Permission System Contracts
 pub const PERMISSION_SEND_TX: &str = "ffffffffffffffffffffffffffffffffff021000";
 pub const PERMISSION_CREATE_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff021001";
